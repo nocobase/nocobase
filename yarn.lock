@@ -3745,21 +3745,6 @@
     react-sortable-hoc "^1.11.0"
     react-sticky-box "^0.9.3"
 
-"@formily/antd@2.2.25":
-  version "2.2.25"
-  resolved "https://registry.yarnpkg.com/@formily/antd/-/antd-2.2.25.tgz#fb8d356c2f9c2cd69d84509a2867149e2b50b7bf"
-  dependencies:
-    "@formily/core" "2.2.25"
-    "@formily/grid" "2.2.25"
-    "@formily/json-schema" "2.2.25"
-    "@formily/react" "2.2.25"
-    "@formily/reactive" "2.2.25"
-    "@formily/reactive-react" "2.2.25"
-    "@formily/shared" "2.2.25"
-    classnames "^2.2.6"
-    react-sortable-hoc "^1.11.0"
-    react-sticky-box "^0.9.3"
-
 "@formily/core@2.2.24":
   version "2.2.24"
   resolved "https://registry.yarnpkg.com/@formily/core/-/core-2.2.24.tgz#b96b72def806ee4c71c0a0279b678ffcc23828bf"
@@ -3768,26 +3753,11 @@
     "@formily/shared" "2.2.24"
     "@formily/validator" "2.2.24"
 
-"@formily/core@2.2.25":
-  version "2.2.25"
-  resolved "https://registry.yarnpkg.com/@formily/core/-/core-2.2.25.tgz#e90d0345b202b13777a7604214244015c9ed3de0"
-  dependencies:
-    "@formily/reactive" "2.2.25"
-    "@formily/shared" "2.2.25"
-    "@formily/validator" "2.2.25"
-
 "@formily/grid@2.2.24":
   version "2.2.24"
   resolved "https://registry.yarnpkg.com/@formily/grid/-/grid-2.2.24.tgz#e5e1163ef9597a4417fc2f2f4e438d48c0d3dd59"
   dependencies:
     "@formily/reactive" "2.2.24"
-    "@juggle/resize-observer" "^3.3.1"
-
-"@formily/grid@2.2.25":
-  version "2.2.25"
-  resolved "https://registry.yarnpkg.com/@formily/grid/-/grid-2.2.25.tgz#eb8a9f1e80cad40ed7cd6f681dcad2e9b256b8d4"
-  dependencies:
-    "@formily/reactive" "2.2.25"
     "@juggle/resize-observer" "^3.3.1"
 
 "@formily/json-schema@2.2.24":
@@ -3798,21 +3768,9 @@
     "@formily/reactive" "2.2.24"
     "@formily/shared" "2.2.24"
 
-"@formily/json-schema@2.2.25":
-  version "2.2.25"
-  resolved "https://registry.yarnpkg.com/@formily/json-schema/-/json-schema-2.2.25.tgz#8208e5eb318722373ae30f378c782e3e76be2a7f"
-  dependencies:
-    "@formily/core" "2.2.25"
-    "@formily/reactive" "2.2.25"
-    "@formily/shared" "2.2.25"
-
 "@formily/path@2.2.24":
   version "2.2.24"
   resolved "https://registry.yarnpkg.com/@formily/path/-/path-2.2.24.tgz#1c15352dc72f78ef3e8924633a9d8a8182364d6b"
-
-"@formily/path@2.2.25":
-  version "2.2.25"
-  resolved "https://registry.yarnpkg.com/@formily/path/-/path-2.2.25.tgz#a7775835f4bf09a8be877fcca56956d40b7c430b"
 
 "@formily/react@2.2.24":
   version "2.2.24"
@@ -3826,18 +3784,6 @@
     "@formily/validator" "2.2.24"
     hoist-non-react-statics "^3.3.2"
 
-"@formily/react@2.2.25":
-  version "2.2.25"
-  resolved "https://registry.yarnpkg.com/@formily/react/-/react-2.2.25.tgz#fa3159f61bfba19278093b070c7b1c690b91503f"
-  dependencies:
-    "@formily/core" "2.2.25"
-    "@formily/json-schema" "2.2.25"
-    "@formily/reactive" "2.2.25"
-    "@formily/reactive-react" "2.2.25"
-    "@formily/shared" "2.2.25"
-    "@formily/validator" "2.2.25"
-    hoist-non-react-statics "^3.3.2"
-
 "@formily/reactive-react@2.2.24":
   version "2.2.24"
   resolved "https://registry.yarnpkg.com/@formily/reactive-react/-/reactive-react-2.2.24.tgz#187e6f07b1aab09f41134c4335200b38afdcc67c"
@@ -3845,20 +3791,9 @@
     "@formily/reactive" "2.2.24"
     hoist-non-react-statics "^3.3.2"
 
-"@formily/reactive-react@2.2.25":
-  version "2.2.25"
-  resolved "https://registry.yarnpkg.com/@formily/reactive-react/-/reactive-react-2.2.25.tgz#4bcfdfab9b0dddb3b1ee6dec82199b183e0f43a4"
-  dependencies:
-    "@formily/reactive" "2.2.25"
-    hoist-non-react-statics "^3.3.2"
-
 "@formily/reactive@2.2.24":
   version "2.2.24"
   resolved "https://registry.yarnpkg.com/@formily/reactive/-/reactive-2.2.24.tgz#758b0fb26568970cbd326e1abb86f0264713f0c1"
-
-"@formily/reactive@2.2.25":
-  version "2.2.25"
-  resolved "https://registry.yarnpkg.com/@formily/reactive/-/reactive-2.2.25.tgz#e77d272c22a441d0ae5a2342e036216eb412833f"
 
 "@formily/shared@2.2.24":
   version "2.2.24"
@@ -3872,29 +3807,11 @@
     pascal-case "^3.1.1"
     upper-case "^2.0.1"
 
-"@formily/shared@2.2.25":
-  version "2.2.25"
-  resolved "https://registry.yarnpkg.com/@formily/shared/-/shared-2.2.25.tgz#a2a8436836b884e392cd2b685ed4c9566d528ac1"
-  dependencies:
-    "@formily/path" "2.2.25"
-    camel-case "^4.1.1"
-    lower-case "^2.0.1"
-    no-case "^3.0.4"
-    param-case "^3.0.4"
-    pascal-case "^3.1.1"
-    upper-case "^2.0.1"
-
 "@formily/validator@2.2.24":
   version "2.2.24"
   resolved "https://registry.yarnpkg.com/@formily/validator/-/validator-2.2.24.tgz#03fc909fe93694e895d73e6d9e445a9f89bc1d51"
   dependencies:
     "@formily/shared" "2.2.24"
-
-"@formily/validator@2.2.25":
-  version "2.2.25"
-  resolved "https://registry.yarnpkg.com/@formily/validator/-/validator-2.2.25.tgz#6b13bcdfbb16080ee6de38aa7c0607d8939ac946"
-  dependencies:
-    "@formily/shared" "2.2.25"
 
 "@formulajs/formulajs@4.2.0":
   version "4.2.0"
