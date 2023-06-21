@@ -1,16 +1,16 @@
 import {
   CollectionManagerProvider,
   PluginManagerContext,
+  registerField,
+  registerTemplate,
   SchemaComponentOptions,
   SchemaInitializerContext,
   SchemaInitializerProvider,
   SettingsCenterProvider,
-  registerField,
-  registerTemplate,
   useCollection,
 } from '@nocobase/client';
 import { forEach } from '@nocobase/utils/client';
-import React, { useContext } from 'react';
+import React, { FC, useContext } from 'react';
 import { FileStoragePane } from './FileStorage';
 import * as hooks from './hooks';
 import * as initializers from './initializers';
