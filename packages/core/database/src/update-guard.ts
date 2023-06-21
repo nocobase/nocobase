@@ -146,7 +146,7 @@ export class UpdateGuard {
 
       if (associationObj.associationType === 'BelongsTo') {
         if (typeof associationValues === 'object' && associationValues !== null) {
-          if (associationValues[(associationObj as any).targetKey]) {
+          if (associationValues[(associationObj as any).targetKey] != null) {
             values[(associationObj as any).foreignKey] = associationValues[(associationObj as any).targetKey];
           }
         } else {
