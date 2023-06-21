@@ -3730,6 +3730,21 @@
     intl-messageformat "10.3.5"
     tslib "^2.4.0"
 
+"@formily/antd@2.2.24":
+  version "2.2.24"
+  resolved "https://registry.yarnpkg.com/@formily/antd/-/antd-2.2.24.tgz#d536cba6d4691b9c2089efd818cb85681a6d4c9b"
+  dependencies:
+    "@formily/core" "2.2.24"
+    "@formily/grid" "2.2.24"
+    "@formily/json-schema" "2.2.24"
+    "@formily/react" "2.2.24"
+    "@formily/reactive" "2.2.24"
+    "@formily/reactive-react" "2.2.24"
+    "@formily/shared" "2.2.24"
+    classnames "^2.2.6"
+    react-sortable-hoc "^1.11.0"
+    react-sticky-box "^0.9.3"
+
 "@formily/antd@2.2.25":
   version "2.2.25"
   resolved "https://registry.yarnpkg.com/@formily/antd/-/antd-2.2.25.tgz#fb8d356c2f9c2cd69d84509a2867149e2b50b7bf"
@@ -3745,6 +3760,14 @@
     react-sortable-hoc "^1.11.0"
     react-sticky-box "^0.9.3"
 
+"@formily/core@2.2.24":
+  version "2.2.24"
+  resolved "https://registry.yarnpkg.com/@formily/core/-/core-2.2.24.tgz#b96b72def806ee4c71c0a0279b678ffcc23828bf"
+  dependencies:
+    "@formily/reactive" "2.2.24"
+    "@formily/shared" "2.2.24"
+    "@formily/validator" "2.2.24"
+
 "@formily/core@2.2.25":
   version "2.2.25"
   resolved "https://registry.yarnpkg.com/@formily/core/-/core-2.2.25.tgz#e90d0345b202b13777a7604214244015c9ed3de0"
@@ -3753,12 +3776,27 @@
     "@formily/shared" "2.2.25"
     "@formily/validator" "2.2.25"
 
+"@formily/grid@2.2.24":
+  version "2.2.24"
+  resolved "https://registry.yarnpkg.com/@formily/grid/-/grid-2.2.24.tgz#e5e1163ef9597a4417fc2f2f4e438d48c0d3dd59"
+  dependencies:
+    "@formily/reactive" "2.2.24"
+    "@juggle/resize-observer" "^3.3.1"
+
 "@formily/grid@2.2.25":
   version "2.2.25"
   resolved "https://registry.yarnpkg.com/@formily/grid/-/grid-2.2.25.tgz#eb8a9f1e80cad40ed7cd6f681dcad2e9b256b8d4"
   dependencies:
     "@formily/reactive" "2.2.25"
     "@juggle/resize-observer" "^3.3.1"
+
+"@formily/json-schema@2.2.24":
+  version "2.2.24"
+  resolved "https://registry.yarnpkg.com/@formily/json-schema/-/json-schema-2.2.24.tgz#b23b9ae18a24fbcb716cd0e23677c8597abc5689"
+  dependencies:
+    "@formily/core" "2.2.24"
+    "@formily/reactive" "2.2.24"
+    "@formily/shared" "2.2.24"
 
 "@formily/json-schema@2.2.25":
   version "2.2.25"
@@ -3768,9 +3806,25 @@
     "@formily/reactive" "2.2.25"
     "@formily/shared" "2.2.25"
 
+"@formily/path@2.2.24":
+  version "2.2.24"
+  resolved "https://registry.yarnpkg.com/@formily/path/-/path-2.2.24.tgz#1c15352dc72f78ef3e8924633a9d8a8182364d6b"
+
 "@formily/path@2.2.25":
   version "2.2.25"
   resolved "https://registry.yarnpkg.com/@formily/path/-/path-2.2.25.tgz#a7775835f4bf09a8be877fcca56956d40b7c430b"
+
+"@formily/react@2.2.24":
+  version "2.2.24"
+  resolved "https://registry.yarnpkg.com/@formily/react/-/react-2.2.24.tgz#415ca8df2c445ba43fe596d0a6e8bd4236abe8d6"
+  dependencies:
+    "@formily/core" "2.2.24"
+    "@formily/json-schema" "2.2.24"
+    "@formily/reactive" "2.2.24"
+    "@formily/reactive-react" "2.2.24"
+    "@formily/shared" "2.2.24"
+    "@formily/validator" "2.2.24"
+    hoist-non-react-statics "^3.3.2"
 
 "@formily/react@2.2.25":
   version "2.2.25"
@@ -3784,6 +3838,13 @@
     "@formily/validator" "2.2.25"
     hoist-non-react-statics "^3.3.2"
 
+"@formily/reactive-react@2.2.24":
+  version "2.2.24"
+  resolved "https://registry.yarnpkg.com/@formily/reactive-react/-/reactive-react-2.2.24.tgz#187e6f07b1aab09f41134c4335200b38afdcc67c"
+  dependencies:
+    "@formily/reactive" "2.2.24"
+    hoist-non-react-statics "^3.3.2"
+
 "@formily/reactive-react@2.2.25":
   version "2.2.25"
   resolved "https://registry.yarnpkg.com/@formily/reactive-react/-/reactive-react-2.2.25.tgz#4bcfdfab9b0dddb3b1ee6dec82199b183e0f43a4"
@@ -3791,9 +3852,25 @@
     "@formily/reactive" "2.2.25"
     hoist-non-react-statics "^3.3.2"
 
+"@formily/reactive@2.2.24":
+  version "2.2.24"
+  resolved "https://registry.yarnpkg.com/@formily/reactive/-/reactive-2.2.24.tgz#758b0fb26568970cbd326e1abb86f0264713f0c1"
+
 "@formily/reactive@2.2.25":
   version "2.2.25"
   resolved "https://registry.yarnpkg.com/@formily/reactive/-/reactive-2.2.25.tgz#e77d272c22a441d0ae5a2342e036216eb412833f"
+
+"@formily/shared@2.2.24":
+  version "2.2.24"
+  resolved "https://registry.yarnpkg.com/@formily/shared/-/shared-2.2.24.tgz#f7939d8a36796db7fce580c2e6c52d04fed1b13b"
+  dependencies:
+    "@formily/path" "2.2.24"
+    camel-case "^4.1.1"
+    lower-case "^2.0.1"
+    no-case "^3.0.4"
+    param-case "^3.0.4"
+    pascal-case "^3.1.1"
+    upper-case "^2.0.1"
 
 "@formily/shared@2.2.25":
   version "2.2.25"
@@ -3806,6 +3883,12 @@
     param-case "^3.0.4"
     pascal-case "^3.1.1"
     upper-case "^2.0.1"
+
+"@formily/validator@2.2.24":
+  version "2.2.24"
+  resolved "https://registry.yarnpkg.com/@formily/validator/-/validator-2.2.24.tgz#03fc909fe93694e895d73e6d9e445a9f89bc1d51"
+  dependencies:
+    "@formily/shared" "2.2.24"
 
 "@formily/validator@2.2.25":
   version "2.2.25"
@@ -5833,14 +5916,7 @@
     lodash "^4.17.15"
     redent "^3.0.0"
 
-"@testing-library/react-hooks@^8.0.1":
-  version "8.0.1"
-  resolved "https://registry.yarnpkg.com/@testing-library/react-hooks/-/react-hooks-8.0.1.tgz#0924bbd5b55e0c0c0502d1754657ada66947ca12"
-  dependencies:
-    "@babel/runtime" "^7.12.5"
-    react-error-boundary "^3.1.0"
-
-"@testing-library/react@^12.1.2":
+"@testing-library/react@^12.1.2", "@testing-library/react@^12.1.5":
   version "12.1.5"
   resolved "https://registry.yarnpkg.com/@testing-library/react/-/react-12.1.5.tgz#bb248f72f02a5ac9d949dea07279095fa577963b"
   dependencies:
@@ -21410,7 +21486,7 @@ react-drag-listview@^0.1.9:
     babel-runtime "^6.26.0"
     prop-types "^15.5.8"
 
-react-error-boundary@^3.1.0, react-error-boundary@^3.1.4:
+react-error-boundary@^3.1.4:
   version "3.1.4"
   resolved "https://registry.yarnpkg.com/react-error-boundary/-/react-error-boundary-3.1.4.tgz#255db92b23197108757a888b01e5b729919abde0"
   dependencies:

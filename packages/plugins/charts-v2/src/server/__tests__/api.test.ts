@@ -7,7 +7,7 @@ describe('api', () => {
   let app: MockServer;
   let db: Database;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     app = mockServer({
       acl: true,
       plugins: ['users', 'auth'],
@@ -47,9 +47,8 @@ describe('api', () => {
     });
   });
 
-  afterAll(async (done) => {
+  afterAll(async () => {
     await db.close();
-    done();
   });
 
   test('query', () => {
