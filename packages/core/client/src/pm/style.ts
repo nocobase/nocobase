@@ -5,6 +5,7 @@ export const useStyles = createStyles(() => {
     pageHeader: {
       backgroundColor: 'white',
       paddingBottom: 0,
+      paddingTop: 12,
       '& .ant-tabs-nav': {
         marginBottom: 0,
       },
