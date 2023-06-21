@@ -15,13 +15,13 @@ import compose from 'koa-compose';
 import semver from 'semver';
 import { promisify } from 'util';
 import { createACL } from './acl';
+import { AppSupervisor } from './app-supervisor';
 import { registerCli } from './commands';
+import { ApplicationFsm } from './fsm';
+import { Gateway } from './gateway';
 import { createI18n, createResourcer, registerMiddlewares } from './helper';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
-import { AppSupervisor } from './app-supervisor';
-import { Gateway } from './gateway';
-import { ApplicationFsm } from './fsm';
 
 const packageJson = require('../package.json');
 

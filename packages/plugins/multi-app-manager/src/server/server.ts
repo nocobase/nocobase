@@ -1,5 +1,9 @@
-import { Transactionable } from '@nocobase/database';
-import Application from '@nocobase/server';
+import { Database, IDatabaseOptions, Transactionable } from '@nocobase/database';
+import Application, { AppManager, AppSupervisor, Gateway, Plugin } from '@nocobase/server';
+import { Mutex } from 'async-mutex';
+import lodash from 'lodash';
+import path, { resolve } from 'path';
+import { ApplicationModel } from '../server';
 
 export type AppDbCreator = (app: Application, transaction?: Transactionable) => Promise<void>;
 export type AppOptionsFactory = (appName: string, mainApp: Application) => any;
@@ -140,7 +144,7 @@ export class PluginMultiAppManager extends Plugin {
     });
 
     this.db.on('applications.afterDestroy', async (model: ApplicationModel) => {
-      await this.app.appManager.removeApplication(model.get('name') as string);
+      await AppSupervisor.getInstance().removeApp(model.get('name') as string);
     });
 
     // lazy load application

@@ -1,3 +1,5 @@
+import http, { IncomingMessage, OutgoingMessage } from 'http';
+import { AppSupervisor } from './app-supervisor';
 import Application from './application';
 
 type AppSelectorReturn = Application | string | undefined | null;
@@ -10,7 +12,7 @@ export class Gateway {
 
   private port: number = process.env.APP_PORT ? parseInt(process.env.APP_PORT) : null;
 
-  private host: string = '0.0.0.0';
+  private host = '0.0.0.0';
 
   private constructor() {}
 
@@ -34,7 +36,7 @@ export class Gateway {
   async requestHandler(req: IncomingMessage, res: OutgoingMessage) {
     const handleApp = (await this.appSelector(req)) || 'main';
 
-    const app: Application = typeof handleApp === 'string' ? AppSupervisor.getInstance().getApp(handleApp) : handleApp;
+    const app = typeof handleApp === 'string' ? await AppSupervisor.getInstance().getApp(handleApp) : handleApp;
 
     if (!app) {
       console.log(`app ${handleApp} not found`);
