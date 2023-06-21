@@ -68,9 +68,7 @@ export const useIterationVariable = ({
   const fields = getFilterOptions(collectionField?.collectionName);
   const children = useMemo(() => {
     const allowFields = fields.filter((field) => {
-      return (
-        field.name !== collectionField.name && Object.keys(blockForm.fields).some((name) => name.includes(field.name))
-      );
+      return Object.keys(blockForm.fields).some((name) => name.includes(field.name));
     });
     return (
       getChildren(allowFields, {
