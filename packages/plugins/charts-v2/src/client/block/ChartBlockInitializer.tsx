@@ -14,7 +14,7 @@ const ConfigureButton = itemWrap((props) => {
       {...props}
       onClick={() => {
         setCurrent({ schema: {}, field: null, collection: props.item?.name });
-        setData('');
+        setData([]);
         setVisible(true);
       }}
     />

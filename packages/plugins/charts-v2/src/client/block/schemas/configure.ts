@@ -1,6 +1,6 @@
 import { ISchema } from '@formily/react';
-import { lang } from '../../locale';
 import { uid } from '@formily/shared';
+import { lang } from '../../locale';
 
 const getArraySchema = (fields = {}, extra = {}) => ({
   type: 'array',
@@ -310,6 +310,7 @@ export const querySchema: ISchema = {
                           options: '{{ fields }}',
                           placeholder: '{{t("Field")}}',
                         },
+                        required: true,
                       },
                       order: {
                         type: 'string',

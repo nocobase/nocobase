@@ -70,16 +70,16 @@ export const ChartRenderer: React.FC<{
       onSuccess: (data) => {
         setData(data);
       },
-      onFinally(params, data, e) {
+      onFinally(params, data, error: any) {
         if (!configuring) {
           return;
         }
-        if (e) {
-          setQueryData(e.stack);
+        if (error) {
+          const message = error?.response?.data?.errors?.map?.((error: any) => error.message).join('\n');
+          setQueryData(message || error.message);
           return;
         }
-        const sampleData = data.length > 10 ? data.slice(0, 10) : data;
-        setQueryData(JSON.stringify(sampleData, null, 2));
+        setQueryData(data);
       },
     },
   );

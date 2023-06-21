@@ -1,5 +1,4 @@
 import { RightSquareOutlined } from '@ant-design/icons';
-import { css } from '@emotion/css';
 import { ArrayItems, Editable, Form, FormCollapse, FormItem, Switch } from '@formily/antd';
 import { createForm, Form as FormType, ObjectField, onFieldChange, onFormInit } from '@formily/core';
 import { FormConsumer, ISchema } from '@formily/react';
@@ -16,7 +15,7 @@ import {
   useDesignable,
   useFilterFieldOptions,
 } from '@nocobase/client';
-import { Button, Card, Col, Modal, Row, Space, Tabs, Typography } from 'antd';
+import { Alert, Button, Card, Col, Modal, Row, Space, Table, Tabs, Typography } from 'antd';
 import { cloneDeep, isEqual } from 'lodash';
 import React, { createContext, useContext, useMemo, useRef } from 'react';
 import {
@@ -50,8 +49,8 @@ export const ChartConfigContext = createContext<{
   setVisible?: (visible: boolean) => void;
   current?: ChartConfigCurrent;
   setCurrent?: (current: ChartConfigCurrent) => void;
-  data?: string;
-  setData?: (data: string) => void;
+  data?: any[] | string;
+  setData?: (data: any[] | string) => void;
 }>({
   visible: true,
 });
@@ -71,9 +70,10 @@ export const ChartConfigure: React.FC<{
   Config: React.FC;
   Query: React.FC;
   Transform: React.FC;
+  Data: React.FC;
 } = (props) => {
   const { t } = useChartsTranslation();
-  const { visible, setVisible, current, data } = useContext(ChartConfigContext);
+  const { visible, setVisible, current } = useContext(ChartConfigContext);
   const { schema, field, collection } = current || {};
   const { dn } = useDesignable();
   const { insert } = props;
@@ -240,19 +240,7 @@ export const ChartConfigure: React.FC<{
                   {
                     label: t('Data'),
                     key: 'data',
-                    children: (
-                      <Paragraph ellipsis={true}>
-                        <Text>{t('The first 10 records of the query result:')}</Text>
-                        <pre
-                          className={css`
-                            max-height: 700px;
-                            overflow: scroll;
-                          `}
-                        >
-                          <Text>{data || t('Please run query to retrive data.')}</Text>
-                        </pre>
-                      </Paragraph>
-                    ),
+                    children: <ChartConfigure.Data />,
                   },
                 ]}
               />
@@ -426,5 +414,22 @@ ChartConfigure.Transform = function Transform() {
       components={{ Select, FormItem, ArrayItems, Space }}
       scope={{ useChartFields: getChartFields, useFieldTypeOptions, useTransformers, t }}
     />
+  );
+};
+
+ChartConfigure.Data = function Data() {
+  const { data } = useContext(ChartConfigContext);
+  return Array.isArray(data) ? (
+    <Table
+      dataSource={data}
+      columns={Object.keys(data[0] || {}).map((col) => ({
+        title: col,
+        dataIndex: col,
+        key: col,
+      }))}
+      size="small"
+    />
+  ) : (
+    <Alert message="Error" type="error" description={data} showIcon />
   );
 };

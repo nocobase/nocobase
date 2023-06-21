@@ -6,7 +6,7 @@ export const ChartV2Block: React.FC = (props) => {
   const { insertAdjacent } = useDesignable();
   const [visible, setVisible] = React.useState(false);
   const [current, setCurrent] = React.useState<ChartConfigCurrent>({} as any);
-  const [data, setData] = React.useState<string>();
+  const [data, setData] = React.useState<string | any[]>([]);
   return (
     <ChartConfigContext.Provider value={{ visible, setVisible, current, setCurrent, data, setData }}>
       {props.children}
