@@ -8,7 +8,7 @@ import { BlockSchemaComponentPlugin } from '../block-provider';
 import { RemoteDocumentTitlePlugin } from '../document-title';
 import { PinnedPluginListPlugin } from '../plugin-manager';
 import { PMPlugin } from '../pm';
-import { AdminLayout, AuthLayout, RouteSchemaComponent } from '../route-switch';
+import { AdminLayout, AdminLayoutPlugin, AuthLayout, RouteSchemaComponent } from '../route-switch';
 import { AntdSchemaComponentPlugin, MenuItemInitializers, SchemaComponentPlugin } from '../schema-component';
 import { SchemaInitializerPlugin } from '../schema-initializer';
 import { BlockTemplateDetails, BlockTemplatePage } from '../schema-templates';
@@ -28,36 +28,38 @@ export class NoCoBaseBuildInPlugin extends Plugin {
 
     this.router.add('admin', {
       path: '/admin',
-      element: <AdminLayout />,
+      Component: 'AdminLayout',
     });
     this.router.add('admin.page', {
       path: '/admin/:name',
-      element: <RouteSchemaComponent />,
+      Component: 'RouteSchemaComponent',
     });
 
     this.router.add('auth', {
-      element: <AuthLayout />,
+      Component: 'AuthLayout',
     });
     this.router.add('auth.signin', {
       path: '/signin',
-      element: <SigninPage />,
+      Component: 'SigninPage',
     });
     this.router.add('auth.signup', {
       path: '/signup',
-      element: <SignupPage />,
+      Component: 'SignupPage',
     });
   }
 
   addComponents() {
     this.app.addComponents({
       AuthLayout,
-      AdminLayout,
+      SigninPage,
+      SignupPage,
       RouteSchemaComponent,
       BlockTemplatePage,
       BlockTemplateDetails,
     });
   }
   addPlugins() {
+    this.app.pm.add(AdminLayoutPlugin);
     this.app.pm.add(AntdConfigPlugin, { remoteLocale: true });
     this.app.pm.add(SystemSettingsPlugin);
     this.app.pm.add(PinnedPluginListPlugin, {

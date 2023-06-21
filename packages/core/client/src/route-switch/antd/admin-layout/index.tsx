@@ -11,6 +11,7 @@ import {
   findMenuItem,
   PinnedPluginList,
   RemoteCollectionManagerProvider,
+  RemoteSchemaTemplateManagerPlugin,
   RemoteSchemaTemplateManagerProvider,
   SchemaComponent,
   useACLRoleContext,
@@ -19,6 +20,7 @@ import {
   useRoute,
   useSystemSettings,
 } from '../../../';
+import { Plugin } from '../../../application-v2';
 import { useCollectionManager } from '../../../collection-manager';
 
 const filterByACL = (schema, options) => {
@@ -304,4 +306,9 @@ export const AdminLayout = (props) => {
   );
 };
 
-export default AdminLayout;
+export class AdminLayoutPlugin extends Plugin {
+  async load() {
+    this.app.pm.add(RemoteSchemaTemplateManagerPlugin);
+    this.app.use(AdminLayout);
+  }
+}

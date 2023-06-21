@@ -1,6 +1,6 @@
-import { i18n, PluginManagerContext, RouteSwitchContext, SettingsCenterProvider } from '@nocobase/client';
+import { i18n, PluginManagerContext, SettingsCenterProvider } from '@nocobase/client';
 import { Select } from 'antd';
-import React, { ReactNode, useContext } from 'react';
+import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const ns = '@nocobase/plugin-sample-shop-i18n';
@@ -38,7 +38,6 @@ function OrderStatusSelect() {
 
 const ShopI18n = React.memo((props) => {
   const ctx = useContext(PluginManagerContext);
-  const { routes, components, ...others } = useContext(RouteSwitchContext);
 
   return (
     <SettingsCenterProvider
@@ -62,9 +61,7 @@ const ShopI18n = React.memo((props) => {
           },
         }}
       >
-        <RouteSwitchContext.Provider value={{ components: { ...components }, ...others, routes }}>
-          {props.children}
-        </RouteSwitchContext.Provider>
+        {props.children}
       </PluginManagerContext.Provider>
     </SettingsCenterProvider>
   );

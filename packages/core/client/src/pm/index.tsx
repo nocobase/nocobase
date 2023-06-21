@@ -20,15 +20,15 @@ export class PMPlugin extends Plugin {
   }
 
   addRoutes() {
-    this.app.router.add('admin.pm-list', {
+    this.app.router.add('admin.pm.list', {
       path: '/admin/pm/list',
       element: <PluginList />,
     });
-    this.app.router.add('admin.pm-list-tab', {
+    this.app.router.add('admin.pm.list-tab', {
       path: '/admin/pm/list/:tabName',
       element: <PluginList />,
     });
-    this.app.router.add('admin.pm-list-tab-mdfile', {
+    this.app.router.add('admin.pm.list-tab-mdfile', {
       path: '/admin/pm/list/:tabName/:mdfile',
       element: <PluginList />,
     });
@@ -37,11 +37,11 @@ export class PMPlugin extends Plugin {
       path: '/admin/settings',
       element: <SettingsCenter />,
     });
-    this.app.router.add('admin.settings.list-pluginName', {
+    this.app.router.add('admin.settings.pluginName', {
       path: '/admin/settings/:pluginName',
       element: <SettingsCenter />,
     });
-    this.app.router.add('admin.settings.list-pluginName-tabName', {
+    this.app.router.add('admin.settings.pluginName-tabName', {
       path: '/admin/settings/:pluginName/:tabName',
       element: <SettingsCenter />,
     });

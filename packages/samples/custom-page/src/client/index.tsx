@@ -1,19 +1,21 @@
-import { RouteSwitchContext } from '@nocobase/client';
-import React, { useContext } from 'react';
+import { Plugin } from '@nocobase/client';
+import React from 'react';
 
 const HelloWorld = () => {
   return <div>Hello ui router</div>;
 };
 
-const CustomPage = React.memo((props) => {
-  const ctx = useContext(RouteSwitchContext);
-  ctx.routes.push({
-    type: 'route',
-    path: '/hello-world',
-    component: HelloWorld,
-  });
-  return <RouteSwitchContext.Provider value={ctx}>{props.children}</RouteSwitchContext.Provider>;
-});
-CustomPage.displayName = 'CustomPage';
+class CustomPlugin extends Plugin {
+  async load() {
+    this.addRoutes();
+  }
 
-export default CustomPage;
+  addRoutes() {
+    this.app.router.add('hello', {
+      path: '/hello',
+      element: <HelloWorld />,
+    });
+  }
+}
+
+export default CustomPlugin;

@@ -28,19 +28,25 @@ export class Router {
      * get RouteObject tree
      *
      * @example
-     * { a: { name: '1', children: { b: { name: '2' }, c: {name: '3'} } } }
+     * { a: { name: '1', children: { b: { name: '2' }, c: { children: { d: { name: '3' } } } } } }
      * =>
      * { name: '1', children: [{ name: '2' }, { name: '3' }] }
      */
     const buildRoutesTree = (routes: RouteTypeWithChildren): RouteObject[] => {
-      return Object.values(routes).map<RouteObject>((item: RouteTypeWithChildren) => {
-        const { Component, children, ...reset } = item;
-        return {
-          ...reset,
-          element: Component ? this.app.renderComponent(Component) : item.element,
-          children: children ? buildRoutesTree(children) : undefined,
-        } as RouteObject;
-      });
+      return Object.values(routes).reduce<RouteObject[]>((acc, item) => {
+        if (Object.keys(item).length === 1 && item.children) {
+          acc.push(...buildRoutesTree(item.children));
+        } else {
+          const { Component, children, ...reset } = item;
+          const res = {
+            ...reset,
+            element: Component ? this.app.renderComponent(Component) : item.element,
+            children: children ? buildRoutesTree(children) : undefined,
+          } as RouteObject;
+          acc.push(res);
+        }
+        return acc;
+      }, []);
     };
 
     return buildRoutesTree(routes);
