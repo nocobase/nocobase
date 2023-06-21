@@ -3,7 +3,7 @@ import moment from 'moment';
 import React, { createContext, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../api-client';
-import { Plugin } from '../application-v2';
+import { Plugin } from '../application-v2/Plugin';
 import { loadConstrueLocale } from './loadConstrueLocale';
 
 export const AppLangContext = createContext<any>({});

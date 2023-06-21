@@ -1,4 +1,4 @@
-import { Plugin } from '../application-v2';
+import { Plugin } from '../application-v2/Plugin';
 import { SigninPageExtensionProvider } from './SigninPageExtension';
 
 export * from './OptionsComponent';

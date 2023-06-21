@@ -1,7 +1,7 @@
 export * from './ACLProvider';
 export * from './ACLShortcut';
 
-import { Plugin } from '../application-v2';
+import { Plugin } from '../application-v2/Plugin';
 import {
   ACLActionProvider,
   ACLCollectionFieldProvider,

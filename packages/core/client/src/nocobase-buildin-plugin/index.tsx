@@ -2,7 +2,7 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { ACLPlugin } from '../acl';
 import { AntdConfigPlugin } from '../antd-config-provider';
-import { Plugin } from '../application-v2';
+import { Plugin } from '../application-v2/Plugin';
 import { SigninPage, SigninPageExtensionPlugin, SignupPage } from '../auth';
 import { BlockSchemaComponentPlugin } from '../block-provider';
 import { RemoteDocumentTitlePlugin } from '../document-title';

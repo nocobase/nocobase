@@ -1,4 +1,4 @@
-import { Plugin } from '../application-v2';
+import { Plugin } from '../application-v2/Plugin';
 import { RecordLink, useParamsFromRecord, useSourceIdFromParentRecord, useSourceIdFromRecord } from './BlockProvider';
 import { CalendarBlockProvider, useCalendarBlockProps } from './CalendarBlockProvider';
 import { DetailsBlockProvider, useDetailsBlockProps } from './DetailsBlockProvider';

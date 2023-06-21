@@ -1,5 +1,5 @@
 import * as components from '.';
-import { Plugin } from '../../application-v2';
+import { Plugin } from '../../application-v2/Plugin';
 import * as common from '../common';
 import { useFilterActionProps } from './filter/useFilterActionProps';
 import { requestChartData } from './g2plot/requestChartData';

@@ -4,7 +4,7 @@ import { Spin } from 'antd';
 import { cloneDeep } from 'lodash';
 import React, { ReactNode, createContext, useContext, useMemo } from 'react';
 import { useAPIClient, useRequest } from '../api-client';
-import { Plugin } from '../application-v2';
+import { Plugin } from '../application-v2/Plugin';
 import { BlockTemplate } from './BlockTemplate';
 
 export const SchemaTemplateManagerContext = createContext<any>({});

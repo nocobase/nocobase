@@ -15,7 +15,7 @@ export {
   useTableColumnInitializerFields,
 } from './utils';
 
-import { Plugin } from '../application-v2';
+import { Plugin } from '../application-v2/Plugin';
 import { SchemaInitializerProvider } from './SchemaInitializerProvider';
 
 export class SchemaInitializerPlugin<SchemaInitializerProviderProps> extends Plugin {

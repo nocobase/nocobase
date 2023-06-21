@@ -4,7 +4,7 @@ export * from './RemoteSchemaComponent';
 export * from './SchemaComponent';
 export * from './SchemaComponentOptions';
 export * from './SchemaComponentProvider';
-import { Plugin } from '../../application-v2';
+import { Plugin } from '../../application-v2/Plugin';
 import { DesignableSwitch } from './DesignableSwitch';
 import { SchemaComponentProvider } from './SchemaComponentProvider';
 

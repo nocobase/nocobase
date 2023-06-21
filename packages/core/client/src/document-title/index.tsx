@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet';
-import { Plugin } from '../application-v2';
+import { Plugin } from '../application-v2/Plugin';
 import { useSystemSettings } from '../system-settings';
 
 interface DocumentTitleContextProps {

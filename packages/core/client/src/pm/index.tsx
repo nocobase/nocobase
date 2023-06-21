@@ -1,7 +1,7 @@
 export * from './PluginManagerLink';
 export * from './PMProvider';
 import React from 'react';
-import { Plugin } from '../application-v2';
+import { Plugin } from '../application-v2/Plugin';
 import { PluginManagerLink, SettingsCenterDropdown } from './PluginManagerLink';
 import { PluginList, PMProvider, SettingsCenter } from './PMProvider';
 
