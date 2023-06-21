@@ -154,7 +154,8 @@ export const InternalAdminLayout = (props: any) => {
       <Layout.Header
         className={css`
           .ant-menu.ant-menu-dark .ant-menu-item-selected,
-          .ant-menu-submenu-popup.ant-menu-dark .ant-menu-item-selected {
+          .ant-menu-submenu-popup.ant-menu-dark .ant-menu-item-selected,
+          .ant-menu-submenu-horizontal.ant-menu-submenu-selected {
             background-color: rgba(255, 255, 255, 0.1);
           }
           .ant-menu-dark.ant-menu-horizontal > .ant-menu-item:hover {
