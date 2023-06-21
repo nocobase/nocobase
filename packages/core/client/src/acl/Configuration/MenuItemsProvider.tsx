@@ -1,7 +1,7 @@
 import { Spin } from 'antd';
 import React, { createContext, useContext } from 'react';
 import { useRequest } from '../../api-client';
-import { useSystemSettings } from '../../system-settings';
+import { useAdminSchemaUid } from '../../hooks';
 
 const MenuItemsContext = createContext(null);
 
