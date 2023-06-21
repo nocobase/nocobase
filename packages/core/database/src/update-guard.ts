@@ -144,11 +144,14 @@ export class UpdateGuard {
       // set association values to sanitized value
       values[association] = associationValues;
 
-      if (
-        associationObj.associationType === 'BelongsTo' &&
-        (typeof associationValues !== 'object' || associationValues === null)
-      ) {
-        values[(associationObj as any).foreignKey] = associationValues;
+      if (associationObj.associationType === 'BelongsTo') {
+        if (typeof associationValues === 'object' && associationValues !== null) {
+          if (associationValues[(associationObj as any).targetKey]) {
+            values[(associationObj as any).foreignKey] = associationValues[(associationObj as any).targetKey];
+          }
+        } else {
+          values[(associationObj as any).foreignKey] = associationValues;
+        }
       }
     });
 

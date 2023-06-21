@@ -557,10 +557,10 @@ describe('repository.update', () => {
 
     expect(r1).toEqual(1);
 
-    const updatedP1 = await Post.repository.findOne({
+    const p1Updated = await Post.repository.findOne({
       filterByTk: p1.id,
     });
-    expect(updatedP1.userId).toBe(u2.id);
+    expect(p1Updated.userId).toBe(u2.id);
 
     const r2 = await Post.repository.update({
       filter: {
@@ -574,10 +574,27 @@ describe('repository.update', () => {
 
     expect(r2).toEqual(1);
 
-    const updatedP2 = await Post.repository.findOne({
+    const p2Updated = await Post.repository.findOne({
       filterByTk: p2.id,
     });
-    expect(updatedP2.userId).toBe(null);
+    expect(p2Updated.userId).toBe(null);
+
+    const r3 = await Post.repository.update({
+      filter: {
+        id: p1.id,
+      },
+      values: {
+        user: { id: u1.id },
+      },
+      individualHooks: false,
+    });
+
+    expect(r3).toEqual(1);
+
+    const p1Updated2 = await Post.repository.findOne({
+      filterByTk: p1.id,
+    });
+    expect(p1Updated2.userId).toBe(u1.id);
   });
 });
 
