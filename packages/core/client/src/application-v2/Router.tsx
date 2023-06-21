@@ -9,7 +9,10 @@ import { RouterOptions, RouteType } from './types';
 export class Router {
   protected routes: Record<string, RouteType> = {};
 
-  constructor(protected options: RouterOptions, protected app: Application) { }
+  constructor(protected options: RouterOptions, protected app: Application) {
+    this.options = options;
+    this.app = app;
+  }
 
   getRoutes(): RouteObject[] {
     type RouteTypeWithChildren = RouteType & { children?: RouteTypeWithChildren };
@@ -53,27 +56,26 @@ export class Router {
   }
 
   createRouter() {
-    const { type, ...opts } = this.options;
+    const { type = 'browser', ...opts } = this.options || {};
     const Routers = {
       hash: HashRouter,
       browser: BrowserRouter,
       memory: MemoryRouter,
     };
 
-    const ReactRouter = Routers[type] || BrowserRouter;
+    const ReactRouter = Routers[type];
 
     const RenderRoutes = () => {
-      const element = useRoutes(this.getRoutes());
+      const routes = this.getRoutes();
+      const element = useRoutes(routes);
       return element;
     };
 
-    const RenderRouter: React.FC<{ BaseLayout?: ComponentType }> = ({ BaseLayout = BlankComponent }) => {
+    const RenderRouter = () => {
       return (
         <RouterContextCleaner>
           <ReactRouter {...opts}>
-            <BaseLayout>
-              <RenderRoutes />
-            </BaseLayout>
+            <RenderRoutes />
           </ReactRouter>
         </RouterContextCleaner>
       );

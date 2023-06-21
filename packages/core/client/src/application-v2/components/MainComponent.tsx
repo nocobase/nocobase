@@ -8,7 +8,9 @@ export const MainComponent = React.memo(() => {
   const Providers = useMemo(() => app.renderProviders(), [app]);
   return (
     <SchemaComponentOptions components={app.components} scope={app.scopes}>
-      <Router BaseLayout={Providers} />
+      <Providers>
+        <Router />
+      </Providers>
     </SchemaComponentOptions>
   );
 });

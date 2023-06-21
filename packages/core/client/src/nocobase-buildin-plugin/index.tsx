@@ -15,8 +15,10 @@ import { BlockTemplateDetails, BlockTemplatePage } from '../schema-templates';
 import { SystemSettingsPlugin } from '../system-settings';
 
 export class NoCoBaseBuildInPlugin extends Plugin {
-  async load() {
+  async afterAdd(): Promise<void> {
     this.addPlugins();
+  }
+  async load() {
     this.addComponents();
     this.addRoutes();
   }

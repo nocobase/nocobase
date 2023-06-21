@@ -15,7 +15,7 @@ export class NoCoBaseClientPresetPlugin extends Plugin {
 
     for await (const pluginName of pluginNames) {
       const ProviderComponent = await import(`./plugins/${pluginName}`);
-      this.app.pm.add(ProviderComponent);
+      this.app.pm.add(ProviderComponent.default);
     }
   }
 }

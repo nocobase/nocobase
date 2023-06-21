@@ -313,6 +313,6 @@ export const AdminLayout = (props) => {
 export class AdminLayoutPlugin extends Plugin {
   async load() {
     this.app.pm.add(RemoteSchemaTemplateManagerPlugin);
-    this.app.use(AdminLayout);
+    this.app.addComponents({ AdminLayout });
   }
 }
