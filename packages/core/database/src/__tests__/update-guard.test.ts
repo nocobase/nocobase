@@ -370,6 +370,7 @@ describe('One2One Association', () => {
         uid: 1,
         name: '123',
       },
+      userId: 1,
     };
 
     const guard = new UpdateGuard();
@@ -381,6 +382,7 @@ describe('One2One Association', () => {
       user: {
         uid: 1,
       },
+      userId: 1,
     });
 
     guard.setAssociationKeysToBeUpdate(['user']);
