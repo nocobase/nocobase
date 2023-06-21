@@ -3,6 +3,7 @@ import moment from 'moment';
 import React, { createContext, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../api-client';
+import { Plugin } from '../application-v2';
 import { loadConstrueLocale } from './loadConstrueLocale';
 
 export const AppLangContext = createContext<any>({});
@@ -49,4 +50,10 @@ export function AntdConfigProvider(props) {
       </ConfigProvider>
     </AppLangContext.Provider>
   );
+}
+
+export class AntdConfigPlugin extends Plugin {
+  async load() {
+    this.app.use(AntdConfigProvider, this.options);
+  }
 }

@@ -1,18 +1,26 @@
-import React from 'react';
 import * as components from '.';
+import { Plugin } from '../../application-v2';
 import * as common from '../common';
-import { SchemaComponentOptions } from '../core/SchemaComponentOptions';
 import { useFilterActionProps } from './filter/useFilterActionProps';
 import { requestChartData } from './g2plot/requestChartData';
 
-export const AntdSchemaComponentProvider = (props) => {
-  const { children } = props;
-  return (
-    <SchemaComponentOptions
-      scope={{ requestChartData, useFilterActionProps }}
-      components={{ ...components, ...common } as any}
-    >
-      {children}
-    </SchemaComponentOptions>
-  );
-};
+export class AntdSchemaComponentPlugin extends Plugin {
+  async load() {
+    this.addComponents();
+    this.addScopes();
+  }
+
+  addComponents() {
+    this.app.addComponents({
+      ...(components as any),
+      ...common,
+    });
+  }
+
+  addScopes() {
+    this.app.addScopes({
+      requestChartData,
+      useFilterActionProps,
+    });
+  }
+}

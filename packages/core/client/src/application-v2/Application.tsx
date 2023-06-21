@@ -5,6 +5,7 @@ import set from 'lodash/set';
 import React, { ComponentType } from 'react';
 import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
+import { Link, Navigate, NavLink } from 'react-router-dom';
 import { APIClient, APIClientProvider } from '../api-client';
 import { i18n } from '../i18n';
 import { AppComponent } from './components';
@@ -40,11 +41,20 @@ export class Application {
     this.router = new Router(options.router, this);
     this.pm = new PluginManager(options.plugins, this);
     this.useDefaultProviders();
+    this.addReactRouterComponents();
   }
 
-  useDefaultProviders() {
+  private useDefaultProviders() {
     this.use(APIClientProvider, { apiClient: this.apiClient });
     this.use(I18nextProvider, { i18n: this.i18n });
+  }
+
+  private addReactRouterComponents() {
+    this.addComponents({
+      Link,
+      Navigate: Navigate as ComponentType,
+      NavLink,
+    });
   }
 
   renderProviders() {
@@ -76,17 +86,17 @@ export class Application {
     return React.createElement(this.getComponent(Component), props);
   }
 
-  registerComponent(name: string, component: any) {
+  addComponent(name: string, component: any) {
     set(this.components, name, component);
   }
 
-  registerComponents(components: Record<string, ComponentType>) {
+  addComponents(components: Record<string, ComponentType>) {
     Object.keys(components).forEach((name) => {
-      this.registerComponent(name, components[name]);
+      this.addComponent(name, components[name]);
     });
   }
 
-  registerScopes(scopes: Record<string, any>) {
+  addScopes(scopes: Record<string, any>) {
     this.scopes = merge(this.scopes, scopes);
   }
 

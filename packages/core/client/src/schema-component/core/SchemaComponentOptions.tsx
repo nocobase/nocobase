@@ -10,7 +10,7 @@ const useSchemaOptionsContext = () => {
 export const SchemaComponentOptions: React.FC<ISchemaComponentOptionsProps> = (props) => {
   const { children } = props;
   const options = useSchemaOptionsContext();
-  const components = { ...options.components, ...props.components };
+  const components = { ...options.components };
   const scope = { ...options.scope, ...props.scope };
   return (
     <SchemaOptionsContext.Provider value={{ scope, components }}>

@@ -17,7 +17,7 @@ export * from './formula';
 export * from './hooks';
 export * from './i18n';
 export * from './icon';
-export * from './nocobase-providers-plugin';
+export * from './nocobase-buildin-plugin';
 export * from './plugin-manager';
 export * from './pm';
 export * from './powered-by';
