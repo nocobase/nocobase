@@ -17,7 +17,7 @@ export const InterfaceRouter: React.FC = () => {
       element: <MApplication />,
     });
     router.add('mobile.page', {
-      path: '/mobile/:id',
+      path: '/mobile/:name',
       element: 'RouteSchemaComponent',
     });
 
