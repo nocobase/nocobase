@@ -3,7 +3,6 @@ import {
   FieldContext,
   observer,
   RecursionField,
-  Schema,
   SchemaContext,
   SchemaExpressionScopeContext,
   useField,
@@ -179,7 +178,6 @@ const HeaderMenu = ({
   others,
   schema,
   mode,
-  setSideMenuSchema,
   onSelect,
   setLoading,
   setDefaultSelectedKeys,
@@ -218,7 +216,6 @@ const HeaderMenu = ({
         onSelect={(info: any) => {
           const s = schema.properties[info.key];
           if (mode === 'mix') {
-            setSideMenuSchema(s);
             if (s['x-component'] !== 'Menu.SubMenu') {
               onSelect && onSelect(info);
             } else {
@@ -300,7 +297,7 @@ const SideMenu = ({
     }
 
     return result;
-  }, [render, sideMenuSchema, designable]);
+  }, [render, sideMenuSchema, designable, loading]);
 
   if (loading) {
     return null;
@@ -383,8 +380,17 @@ export const Menu: ComposedMenu = observer(
       }
       return dOpenKeys;
     });
-    const [sideMenuSchema, setSideMenuSchema] = useState<Schema>(() => {
-      const key = defaultSelectedKeys?.[0] || null;
+
+    const sideMenuSchema = useMemo(() => {
+      let key;
+
+      if (selectedUid) {
+        const keys = findKeysByUid(schema, selectedUid);
+        key = keys?.[0] || null;
+      } else {
+        key = defaultSelectedKeys?.[0] || null;
+      }
+
       if (mode === 'mix' && key) {
         const s = schema.properties?.[key];
         if (s['x-component'] === 'Menu.SubMenu') {
@@ -392,7 +398,8 @@ export const Menu: ComposedMenu = observer(
         }
       }
       return null;
-    });
+    }, [defaultSelectedKeys, mode, schema, selectedUid]);
+
     useEffect(() => {
       if (!selectedUid) {
         setSelectedKeys(undefined);
@@ -403,17 +410,6 @@ export const Menu: ComposedMenu = observer(
       setSelectedKeys(keys);
       if (['inline', 'mix'].includes(mode)) {
         setDefaultOpenKeys(dOpenKeys || keys);
-      }
-      const key = keys?.[0] || null;
-      if (mode === 'mix') {
-        if (key) {
-          const s = schema.properties?.[key];
-          if (s['x-component'] === 'Menu.SubMenu') {
-            setSideMenuSchema(s);
-          }
-        } else {
-          setSideMenuSchema(null);
-        }
       }
     }, [selectedUid]);
     useEffect(() => {
@@ -430,7 +426,6 @@ export const Menu: ComposedMenu = observer(
               others={others}
               schema={schema}
               mode={mode}
-              setSideMenuSchema={setSideMenuSchema}
               onSelect={onSelect}
               setLoading={setLoading}
               setDefaultSelectedKeys={setDefaultSelectedKeys}
@@ -596,7 +591,7 @@ Menu.SubMenu = observer(
           return <RecursionField schema={schema} onlyRenderProperties />;
         }),
       };
-    }, [field.title, icon, schema]);
+    }, [field.title, icon, schema, children]);
 
     if (!pushMenuItem) {
       error('Menu.SubMenu must be wrapped by GetMenuItemsContext.Provider');
