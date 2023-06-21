@@ -83,7 +83,7 @@ const sidebar = {
           link: 'https://github.com/nocobase/nocobase/blob/main/CHANGELOG.md',
         },
         // '/welcome/release/index',
-        '/welcome/release/v08-changelog',
+        // '/welcome/release/v08-changelog',
         '/welcome/release/v10-changelog',
       ],
     },
@@ -287,15 +287,15 @@ const sidebar = {
     },
     {
       title: '@nocobase/cli',
-      path: '/api/cli',
+      link: '/api/cli',
     },
     {
       title: '@nocobase/actions',
-      path: '/api/actions',
+      link: '/api/actions',
     },
     {
       title: '@nocobase/sdk',
-      path: '/api/sdk',
+      link: '/api/sdk',
     },
   ],
 };

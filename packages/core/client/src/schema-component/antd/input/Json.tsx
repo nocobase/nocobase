@@ -40,9 +40,7 @@ export const Json = React.forwardRef<typeof Input.TextArea, JSONTextAreaProps>(
               JSON.parse(ev.target.value);
             }
             field.setFeedback({});
-            onChange?.(v);
           } catch (err) {
-            onChange?.(ev);
             field.setFeedback({
               type: 'error',
               code: 'JSONSyntaxError',
@@ -56,7 +54,6 @@ export const Json = React.forwardRef<typeof Input.TextArea, JSONTextAreaProps>(
             field.setFeedback({});
             onChange?.(v);
           } catch (err) {
-            onChange?.(ev);
             field.setFeedback({
               type: 'error',
               code: 'JSONSyntaxError',

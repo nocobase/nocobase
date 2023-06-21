@@ -310,7 +310,7 @@ export const PluginCard = (props: { data: IPluginData }) => {
           defaultChecked={enabled}
         ></Switch>,
       ].filter(Boolean),
-    [api, enabled, history, id, name, t],
+    [api, enabled, navigate, id, name, t],
   );
   return (
     <>

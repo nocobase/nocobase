@@ -1,6 +1,6 @@
 import { i18n, PluginManagerContext, SettingsCenterProvider } from '@nocobase/client';
 import { Select } from 'antd';
-import React, { useContext } from 'react';
+import React, { ReactNode, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const ns = '@nocobase/plugin-sample-shop-i18n';

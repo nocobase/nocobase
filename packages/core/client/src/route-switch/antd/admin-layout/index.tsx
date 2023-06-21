@@ -1,19 +1,19 @@
 import { css } from '@emotion/css';
 import { Layout, Spin } from 'antd';
-import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Outlet, useNavigate, useParams } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
   CurrentAppInfoProvider,
   CurrentUser,
   CurrentUserProvider,
-  findByUid,
-  findMenuItem,
   PinnedPluginList,
   RemoteCollectionManagerProvider,
   RemoteSchemaTemplateManagerPlugin,
   RemoteSchemaTemplateManagerProvider,
   SchemaComponent,
+  findByUid,
+  findMenuItem,
   useACLRoleContext,
   useDocumentTitle,
   useRequest,
@@ -56,6 +56,12 @@ const useMenuProps = () => {
     defaultSelectedUid,
   };
 };
+
+const useAdminSchemaUid = () => {
+  const ctx = useSystemSettings();
+  return ctx?.data?.data?.options?.adminSchemaUid;
+};
+
 const MenuEditor = (props) => {
   const { setTitle } = useDocumentTitle();
   const navigate = useNavigate();
@@ -64,18 +70,22 @@ const MenuEditor = (props) => {
   const { sideMenuRef } = props;
   const ctx = useACLRoleContext();
   const route = useRoute();
+  const [current, setCurrent] = useState(null);
   const onSelect = ({ item }) => {
     const schema = item.props.schema;
     setTitle(schema.title);
+    setCurrent(schema);
     navigate(`/admin/${schema['x-uid']}`);
   };
 
+  const adminSchemaUid = useAdminSchemaUid();
+
   const { data, loading } = useRequest(
     {
-      url: `/uiSchemas:getJsonSchema/${route.uiSchemaUid}`,
+      url: `/uiSchemas:getJsonSchema/${adminSchemaUid}`,
     },
     {
-      refreshDeps: [route.uiSchemaUid],
+      refreshDeps: [adminSchemaUid],
       onSuccess(data) {
         const schema = filterByACL(data?.data, ctx);
         // url 为 `/admin` 的情况
@@ -111,7 +121,7 @@ const MenuEditor = (props) => {
   );
 
   useEffect(() => {
-    const properties = data?.data?.properties;
+    const properties = Object.values(current?.root?.properties || {}).shift()?.['properties'] || data?.data?.properties;
     if (properties && sideMenuRef.current) {
       const pageType = Object.values(properties).find(
         (item) => item['x-uid'] === params.name && item['x-component'] === 'Menu.Item',

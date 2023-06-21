@@ -141,6 +141,7 @@ export const TriggerConfig = () => {
   const { workflow, refresh } = useFlowContext();
   const [editingTitle, setEditingTitle] = useState<string>('');
   const [editingConfig, setEditingConfig] = useState(false);
+  let typeTitle = '';
   useEffect(() => {
     if (workflow) {
       setEditingTitle(workflow.title ?? typeTitle);
@@ -151,7 +152,9 @@ export const TriggerConfig = () => {
     return null;
   }
   const { title, type, config, executed } = workflow;
-  const { title: typeTitle, fieldset, scope, components } = triggers.get(type);
+  const trigger = triggers.get(type);
+  const { fieldset, scope, components } = trigger;
+  typeTitle = trigger.title;
   const detailText = executed ? '{{t("View")}}' : '{{t("Configure")}}';
   const titleText = `${lang('Trigger')}: ${compile(typeTitle)}`;
 

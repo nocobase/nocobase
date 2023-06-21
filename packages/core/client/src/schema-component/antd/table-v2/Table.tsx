@@ -222,7 +222,7 @@ export const Table: any = observer((props: any) => {
   const [selectedRowKeys, setSelectedRowKeys] = useState<any[]>(field?.data?.selectedRowKeys || []);
   const [selectedRow, setSelectedRow] = useState([]);
   const dataSource = field?.value?.slice?.()?.filter?.(Boolean) || [];
-  const isRowSelect = rowSelection.type !== 'none';
+  const isRowSelect = rowSelection?.type !== 'none';
 
   let onRow = null,
     highlightRow = '';

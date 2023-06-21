@@ -1,5 +1,11 @@
 import { css, cx } from '@emotion/css';
-import { ActionContextProvider, AdminProvider, RemoteSchemaComponent, useRoute, useViewport } from '@nocobase/client';
+import {
+  ActionContextProvider,
+  AdminProvider,
+  RemoteSchemaComponent,
+  useSystemSettings,
+  useViewport,
+} from '@nocobase/client';
 import { DrawerProps, ModalProps } from 'antd';
 import React, { useMemo } from 'react';
 import { Outlet, useParams } from 'react-router-dom';
@@ -66,8 +72,13 @@ const modalProps = {
   `,
 };
 
+const useMobileSchemaUid = () => {
+  const ctx = useSystemSettings();
+  return ctx?.data?.data?.options?.mobileSchemaUid;
+};
+
 const MApplication: React.FC = (props) => {
-  const route = useRoute();
+  const mobileSchemaUid = useMobileSchemaUid();
   const params = useParams<{ name: string }>();
   const interfaceContext = useInterfaceContext();
   const Provider = useMemo(() => {
@@ -99,7 +110,7 @@ const MApplication: React.FC = (props) => {
             {params.name && !params.name.startsWith('tab_') ? (
               <Outlet />
             ) : (
-              <RemoteSchemaComponent key={route.uiSchemaUid} uid={route.uiSchemaUid}>
+              <RemoteSchemaComponent key={mobileSchemaUid} uid={mobileSchemaUid}>
                 {props.children}
               </RemoteSchemaComponent>
             )}

@@ -1,6 +1,6 @@
-import { defineConfig } from 'dumi';
-import { defineThemeConfig } from 'dumi-theme-nocobase'
 import { getUmiConfig } from '@nocobase/devtools/umiConfig';
+import { defineConfig } from 'dumi';
+import { defineThemeConfig } from 'dumi-theme-nocobase';
 import { nav, sidebar } from './docs/config';
 
 const umiConfig = getUmiConfig();
@@ -46,8 +46,8 @@ export default defineConfig({
     github: 'https://github.com/nocobase/nocobase',
     footer: 'nocobase | Copyright © 2022',
     localesEnhance: [
-      { id: 'zh-CN', switchPrefix: '中' },
-      { id: 'en-US', switchPrefix: 'en' }
+      { id: 'zh-CN', switchPrefix: '中', hostname: 'docs-cn.nocobase.com' },
+      { id: 'en-US', switchPrefix: 'en', hostname: 'docs.nocobase.com' }
     ],
   }),
   // mfsu: true, // 报错

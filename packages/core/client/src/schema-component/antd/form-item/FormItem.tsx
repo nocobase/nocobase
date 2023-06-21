@@ -566,7 +566,7 @@ FormItem.Designer = function Designer() {
       {showFieldMode && (
         <SchemaSettings.SelectItem
           key="field-mode"
-          title={t('Field mode')}
+          title={t('Field component')}
           options={fieldModeOptions}
           value={fieldMode}
           onChange={(mode) => {
@@ -664,11 +664,11 @@ FormItem.Designer = function Designer() {
       {!field.readPretty && isAssociationField && ['Select'].includes(fieldMode) && (
         <SchemaSettings.SelectItem
           key="add-mode"
-          title={t('Add new mode')}
+          title={t('Quick create')}
           options={[
             { label: t('None'), value: 'none' },
-            { label: t('Quick add'), value: 'quickAdd' },
-            { label: t('Modal add'), value: 'modalAdd' },
+            { label: t('Dropdown'), value: 'quickAdd' },
+            { label: t('Pop-up'), value: 'modalAdd' },
           ]}
           value={field.componentProps?.addMode || 'none'}
           onChange={(mode) => {
@@ -833,7 +833,7 @@ FormItem.Designer = function Designer() {
           }}
         />
       )}
-      {options.length > 0 && isAssociationField&&fieldMode!=='SubTable' && (
+      {options.length > 0 && isAssociationField && fieldMode !== 'SubTable' && (
         <SchemaSettings.SelectItem
           key="title-field"
           title={t('Title field')}

@@ -1,17 +1,17 @@
 import { CloseCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { observer, useField } from '@formily/react';
 import { TreeSelect } from '@formily/antd';
+import { observer } from '@formily/react';
+import { uid } from '@formily/shared';
 import { Select, Space } from 'antd';
 import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { uid } from '@formily/shared';
 import { useCompile } from '../..';
-import { RemoveActionContext, LinkageLogicContext } from './context';
 import { DynamicComponent } from './DynamicComponent';
-import { useValues } from './useValues';
-import { ActionType } from './type';
 import { ValueDynamicComponent } from './ValueDynamicComponent';
+import { LinkageLogicContext, RemoveActionContext } from './context';
+import { ActionType } from './type';
+import { useValues } from './useValues';
 
 export const FormFieldLinkageRuleAction = observer(
   (props: any) => {
@@ -69,7 +69,7 @@ export const FormFieldLinkageRuleAction = observer(
               onChange={(value) => {
                 setDataIndex(value);
               }}
-              placeholder={t('Select Field')}
+              placeholder={t('Select field')}
             />
             <Select
               value={operator}

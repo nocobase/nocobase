@@ -1,11 +1,11 @@
 {
   "name": "@nocobase/devtools",
-  "version": "0.9.4-alpha.2",
+  "version": "0.10.0-alpha.2",
   "description": "",
   "license": "Apache-2.0",
   "main": "./src/index.js",
   "dependencies": {
-    "@nocobase/build": "0.9.4-alpha.2",
+    "@nocobase/build": "0.10.0-alpha.2",
     "@testing-library/react": "^12.1.2",
     "@types/jest": "^26.0.0",
     "@types/koa": "^2.13.4",
@@ -34,6 +34,7 @@
     "jest-localstorage-mock": "^2.3.0",
     "jest-styled-components": "6.3.3",
     "jest-watch-lerna-packages": "^1.1.0",
+    "jsdom": "^16.0.0",
     "lerna": "^4.0.0",
     "prettier": "^2.2.1",
     "pretty-format": "^24.0.0",

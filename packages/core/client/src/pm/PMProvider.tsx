@@ -335,5 +335,3 @@ export const SettingsCenterProvider = (props) => {
 export const PMProvider = (props) => {
   return <SettingsCenterProvider settings={settings}>{props.children}</SettingsCenterProvider>;
 };
-
-export default PMProvider;
