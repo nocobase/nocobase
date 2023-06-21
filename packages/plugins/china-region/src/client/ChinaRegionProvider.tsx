@@ -1,9 +1,8 @@
 import { ArrayField } from '@formily/core';
 import { useField } from '@formily/react';
-import { SchemaComponentOptions, useAPIClient, useRequest } from '@nocobase/client';
-import React from 'react';
+import { useAPIClient, useRequest } from '@nocobase/client';
 
-const useChinaRegionDataSource = (options) => {
+export const useChinaRegionDataSource = (options) => {
   const field = useField<ArrayField>();
   const maxLevel = field.componentProps.maxLevel;
   return useRequest(
@@ -36,7 +35,7 @@ const useChinaRegionDataSource = (options) => {
   );
 };
 
-const useChinaRegionLoadData = () => {
+export const useChinaRegionLoadData = () => {
   const api = useAPIClient();
   const field = useField<ArrayField>();
   const maxLevel = field.componentProps.maxLevel;
@@ -68,13 +67,3 @@ const useChinaRegionLoadData = () => {
       });
   };
 };
-
-export const ChinaRegionProvider = (props) => {
-  return (
-    <SchemaComponentOptions scope={{ useChinaRegionDataSource, useChinaRegionLoadData }}>
-      {props.children}
-    </SchemaComponentOptions>
-  );
-};
-
-export default ChinaRegionProvider;

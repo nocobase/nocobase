@@ -8,7 +8,7 @@ import { BlockSchemaComponentPlugin } from '../block-provider';
 import { RemoteDocumentTitlePlugin } from '../document-title';
 import { PinnedPluginListPlugin } from '../plugin-manager';
 import { PMPlugin } from '../pm';
-import { AdminLayout, AdminLayoutPlugin, AuthLayout, RouteSchemaComponent } from '../route-switch';
+import { AdminLayoutPlugin, AuthLayout, RouteSchemaComponent } from '../route-switch';
 import { AntdSchemaComponentPlugin, MenuItemInitializers, SchemaComponentPlugin } from '../schema-component';
 import { SchemaInitializerPlugin } from '../schema-initializer';
 import { BlockTemplateDetails, BlockTemplatePage } from '../schema-templates';
