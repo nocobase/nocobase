@@ -1,4 +1,4 @@
-import { ISchema, connect, mapProps, useField, useFieldSchema } from '@formily/react';
+import { connect, ISchema, mapProps, useField, useFieldSchema } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
 import { Tree as AntdTree, Menu } from 'antd';
 import { cloneDeep } from 'lodash';
@@ -252,8 +252,8 @@ export const ActionDesigner = (props) => {
                     title: t('Duplicate mode'),
                     default: fieldSchema['x-component-props']?.duplicateMode || 'quickDulicate',
                     enum: [
-                      { value: 'quickDulicate', label: '{{t("Quick duplicate")}}' },
-                      { value: 'continueduplicate', label: '{{t("Duplicate and continue")}}' },
+                      { value: 'quickDulicate', label: '{{t("Direct duplicate")}}' },
+                      { value: 'continueduplicate', label: '{{t("Copy into the form and continue to fill in")}}' },
                     ],
                   },
                   collection: {

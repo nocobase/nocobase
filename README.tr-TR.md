@@ -2,9 +2,11 @@
 
 ![](https://nocobase.oss-cn-beijing.aliyuncs.com/bbcedd403d31cd1ccc4e9709581f5c2f.png)  
 
-**Not:** 📌
+**Note:** 📌
 
 NocoBase, geliştirmenin ilk aşamasındadır ve sık sık değişiklik yaparak geliştiriyoruz. Lütfen üretim ortamlarında dikkatli olun.
+
+NocoBase v0.10 has been released, see [v0.10: update instructions](http://docs.nocobase.com/welcome/release/v10-changelog) for details.
 
 ## Çalışma arkadaşımız olabilirsiniz
 

@@ -1,8 +1,7 @@
 ---
-nav:
-  path: /client
 group:
-  path: /schema-components
+  title: Schema Components
+  order: 3
 ---
 
 # DatePicker
@@ -11,27 +10,27 @@ group:
 
 ### Basic
 
-<code src="./demos/demo1.tsx" />
+<code src="./demos/demo1.tsx"></code>
 
 ### DatePicker (GMT)
 
-<code src="./demos/demo2.tsx" />
+<code src="./demos/demo2.tsx"></code>
 
 ### DatePicker (non-UTC)
 
-<code src="./demos/demo3.tsx" />
+<code src="./demos/demo3.tsx"></code>
 
 ### RangePicker (GMT)
 
-<code src="./demos/demo4.tsx" />
+<code src="./demos/demo4.tsx"></code>
 
 ### RangePicker (non-GMT)
 
-<code src="./demos/demo5.tsx" />
+<code src="./demos/demo5.tsx"></code>
 
 ### RangePicker (non-UTC)
 
-<code src="./demos/demo6.tsx" />
+<code src="./demos/demo6.tsx"></code>
 
 ## API
 

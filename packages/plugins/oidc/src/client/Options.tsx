@@ -1,6 +1,6 @@
 import React from 'react';
 import { SchemaComponent } from '@nocobase/client';
-import { Card, message } from 'antd';
+import { Card, message, Space } from 'antd';
 import { CopyOutlined } from '@ant-design/icons';
 import { observer } from '@formily/react';
 import { FormItem, Input } from '@nocobase/client';
@@ -83,43 +83,37 @@ const schema = {
             type: 'object',
             'x-decorator': 'ArrayItems.Item',
             properties: {
-              source: {
-                type: 'string',
-                title: '{{t("source")}}',
-                'x-decorator': 'Editable',
-                'x-component': 'Input',
-                'x-component-props': {
-                  placeholder: '{{t("source")}}',
-                },
-                'x-decorator-props': {
-                  style: {
-                    width: '45%',
-                  },
-                },
-              },
-              target: {
-                type: 'string',
-                title: '{{t("target")}}',
-                'x-decorator': 'Editable',
-                'x-component': 'Select',
-                'x-component-props': {
-                  placeholder: '{{t("target")}}',
-                },
-                'x-decorator-props': {
-                  style: {
-                    width: '45%',
-                  },
-                },
-                enum: [
-                  { label: 'Nickname', value: 'nickname' },
-                  { label: 'Email', value: 'email' },
-                  { label: 'Phone', value: 'phone' },
-                ],
-              },
-              remove: {
+              space: {
                 type: 'void',
-                'x-decorator': 'FormItem',
-                'x-component': 'ArrayItems.Remove',
+                'x-component': 'Space',
+                properties: {
+                  source: {
+                    type: 'string',
+                    'x-decorator': 'FormItem',
+                    'x-component': 'Input',
+                    'x-component-props': {
+                      placeholder: '{{t("source")}}',
+                    },
+                  },
+                  target: {
+                    type: 'string',
+                    'x-decorator': 'FormItem',
+                    'x-component': 'Select',
+                    'x-component-props': {
+                      placeholder: '{{t("target")}}',
+                    },
+                    enum: [
+                      { label: 'Nickname', value: 'nickname' },
+                      { label: 'Email', value: 'email' },
+                      { label: 'Phone', value: 'phone' },
+                    ],
+                  },
+                  remove: {
+                    type: 'void',
+                    'x-decorator': 'FormItem',
+                    'x-component': 'ArrayItems.Remove',
+                  },
+                },
               },
             },
           },
@@ -162,5 +156,5 @@ const Usage = observer(() => {
 
 export const Options = () => {
   const { t } = useOidcTranslation();
-  return <SchemaComponent scope={{ t }} components={{ Usage, ArrayItems }} schema={schema} />;
+  return <SchemaComponent scope={{ t }} components={{ Usage, ArrayItems, Space }} schema={schema} />;
 };

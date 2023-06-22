@@ -1,8 +1,7 @@
 ---
-nav:
-  path: /client
 group:
-  path: /client
+  title: Client
+  order: 1
 ---
 
 # APIClient
@@ -55,7 +54,7 @@ const { data, loading, run } = apiClient.service('uid');
 
 `api.service(uid)` 的例子，ComponentB 里刷新 ComponentA 的请求数据
 
-<code src="./demos/demo3.tsx" />
+<code src="./demos/demo3.tsx"></code>
 
 ## APIClientProvider
 
@@ -99,7 +98,7 @@ run({
 
 例子如下：
 
-<code src="./demos/demo2.tsx" />
+<code src="./demos/demo2.tsx"></code>
 
 或者是 NocoBase 的 resource & action 请求：
 
@@ -120,7 +119,7 @@ run({
 
 例子如下：
 
-<code src="./demos/demo1.tsx" />
+<code src="./demos/demo1.tsx"></code>
 
 也可以是自定义的异步函数：
 

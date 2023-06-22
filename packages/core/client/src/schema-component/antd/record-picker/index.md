@@ -1,17 +1,16 @@
 ---
-nav:
-  path: /client
 group:
-  path: /schema-components
+  title: Schema Components
+  order: 3
 ---
 
-# RecordPicker - 记录选择器 <Badge>待定</Badge>
+# RecordPicker <Badge>待定</Badge>
 
 ## JSON Schema
 
 ### Examples
 
-<code src="./demos/demo1.tsx"/>
+<code src="./demos/demo1.tsx"></code>
 
 通过弹窗选择可选项，可选项用表格展示，在特定的 `RecordPicker.RowSelection` 节点里配置，仅当 `x-read-pretty: false` 时有效。
 

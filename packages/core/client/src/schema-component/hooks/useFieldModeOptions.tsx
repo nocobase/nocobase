@@ -1,4 +1,4 @@
-import { useFieldSchema, useField } from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollection, useCollectionManager } from '../../collection-manager';
@@ -26,9 +26,9 @@ export const useFieldModeOptions = () => {
             { label: t('File manager'), value: 'FileManager' },
           ]
         : [
-            { label: t('File manager'), value: 'FileManager' },
-            { label: t('Record picker'), value: 'Picker' },
             { label: t('Select'), value: 'Select' },
+            { label: t('Record picker'), value: 'Picker' },
+            { label: t('File manager'), value: 'FileManager' },
           ];
     }
 
@@ -37,27 +37,27 @@ export const useFieldModeOptions = () => {
         return isReadPretty
           ? [
               { label: t('Title'), value: 'Select' },
-              { label: t('Subtable'), value: 'SubTable' },
+              { label: t('Sub-table'), value: 'SubTable' },
               { label: t('Sub-details'), value: 'Nester' },
             ]
           : [
-              { label: t('Record picker'), value: 'Picker' },
-              { label: t('Subtable'), value: 'SubTable' },
               { label: t('Select'), value: 'Select' },
-              { label: t('Subform'), value: 'Nester' },
+              { label: t('Record picker'), value: 'Picker' },
+              { label: t('Sub-form'), value: 'Nester' },
+              { label: t('Sub-table'), value: 'SubTable' },
             ];
       case 'm2m':
         return isReadPretty
           ? [
               { label: t('Title'), value: 'Select' },
               { label: t('Sub-details'), value: 'Nester' },
-              { label: t('Subtable'), value: 'SubTable' },
+              { label: t('Sub-table'), value: 'SubTable' },
             ]
           : [
-              { label: t('Record picker'), value: 'Picker' },
-              { label: t('Subtable'), value: 'SubTable' },
               { label: t('Select'), value: 'Select' },
-              { label: t('Subform'), value: 'Nester' },
+              { label: t('Record picker'), value: 'Picker' },
+              { label: t('Sub-table'), value: 'SubTable' },
+              { label: t('Sub-form'), value: 'Nester' },
             ];
       case 'm2o':
       case 'linkTo':
@@ -67,9 +67,9 @@ export const useFieldModeOptions = () => {
               { label: t('Sub-details'), value: 'Nester' },
             ]
           : [
-              { label: t('Record picker'), value: 'Picker' },
               { label: t('Select'), value: 'Select' },
-              { label: t('Subform'), value: 'Nester' },
+              { label: t('Record picker'), value: 'Picker' },
+              { label: t('Sub-form'), value: 'Nester' },
             ];
 
       default:
@@ -79,9 +79,9 @@ export const useFieldModeOptions = () => {
               { label: t('Sub-details'), value: 'Nester' },
             ]
           : [
-              { label: t('Record picker'), value: 'Picker' },
               { label: t('Select'), value: 'Select' },
-              { label: t('Subform'), value: 'Nester' },
+              { label: t('Record picker'), value: 'Picker' },
+              { label: t('Sub-form'), value: 'Nester' },
             ];
     }
   }, [t, collectionField?.interface, label]);

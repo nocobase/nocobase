@@ -1,9 +1,9 @@
-import React, { useMemo } from 'react';
 import { css, cx } from '@emotion/css';
-import { ContainerDesigner } from './Container.Designer';
-import { RouteSwitch, SchemaComponent, SortableItem, useDesigner } from '@nocobase/client';
 import { useFieldSchema } from '@formily/react';
-import { Redirect, RouteProps, useParams, useRouteMatch } from 'react-router-dom';
+import { RouteSwitch, SchemaComponent, SortableItem, useDesigner } from '@nocobase/client';
+import React, { useMemo } from 'react';
+import { Navigate, RouteProps, useLocation, useParams } from 'react-router-dom';
+import { ContainerDesigner } from './Container.Designer';
 
 const findGrid = (schema, uid) => {
   return schema.reduceProperties((final, next) => {
@@ -23,7 +23,7 @@ const TabContentComponent = () => {
   if (!name) return <></>;
   const gridSchema = findGrid(fieldSchema.properties['tabBar'], name.replace('tab_', ''));
   if (!gridSchema) {
-    return <Redirect to="../" />;
+    return <Navigate replace to="../" />;
   }
   return <SchemaComponent schema={gridSchema} />;
 };
@@ -32,7 +32,7 @@ const InternalContainer: React.FC = (props) => {
   const Designer = useDesigner();
   const fieldSchema = useFieldSchema();
   const params = useParams<{ name: string }>();
-  const match = useRouteMatch();
+  const location = useLocation();
   const tabBarSchema = fieldSchema?.properties?.['tabBar'];
   const tabBarCurrentFirstKey = tabBarSchema?.properties ? Object.keys(tabBarSchema.properties)[0] : null;
   let redirectToUid = null;
@@ -44,22 +44,23 @@ const InternalContainer: React.FC = (props) => {
     if (!redirectToUid) {
       return [];
     }
+    const locationPath = location.pathname.endsWith('/') ? location.pathname.slice(0, -1) : location.pathname;
+
     return [
       !params.name
         ? {
-            type: 'redirect',
-            to: `${match.url}/tab_${redirectToUid}`,
-            from: match.url,
-            exact: true,
+          type: 'redirect',
+          to: `${locationPath}/tab_${redirectToUid}`,
+          from: location.pathname,
           }
         : null,
       {
         type: 'route',
-        path: match.path,
+        path: location.pathname,
         component: TabContentComponent,
       },
     ].filter(Boolean) as any[];
-  }, [redirectToUid, params.name, match.url, match.path]);
+  }, [redirectToUid, params.name, location.pathname]);
 
   return (
     <SortableItem
