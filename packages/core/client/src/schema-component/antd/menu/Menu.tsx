@@ -221,7 +221,7 @@ const HeaderMenu = ({
             } else {
               const menuItemSchema = findMenuItem(s);
               if (!menuItemSchema) {
-                return;
+                return onSelect && onSelect(info);
               }
               // TODO
               setLoading(true);
