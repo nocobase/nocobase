@@ -71,11 +71,13 @@ export class Router {
       return element;
     };
 
-    const RenderRouter = () => {
+    const RenderRouter: React.FC<{ BaseLayout?: ComponentType }> = ({ BaseLayout = BlankComponent }) => {
       return (
         <RouterContextCleaner>
           <ReactRouter {...opts}>
-            <RenderRoutes />
+            <BaseLayout>
+              <RenderRoutes />
+            </BaseLayout>
           </ReactRouter>
         </RouterContextCleaner>
       );

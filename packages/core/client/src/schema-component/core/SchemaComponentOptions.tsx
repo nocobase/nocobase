@@ -11,7 +11,6 @@ export const useSchemaOptionsContext = () => {
 export const SchemaComponentOptions: React.FC<ISchemaComponentOptionsProps> = (props) => {
   const { children } = props;
   const options = useSchemaOptionsContext();
-  // TODO: MainComponent 的 SchemaComponentOptions 未起作用，所以暂时写在这里
   const app = useApp();
   const components = { ...app.components, ...options.components, ...props.components };
   const scope = { ...app.scopes, ...options.scope, ...props.scope };

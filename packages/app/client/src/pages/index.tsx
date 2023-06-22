@@ -9,7 +9,6 @@ const getCurrentTimezone = () => {
 };
 
 export const app = new Application({
-  // TODO: review 这里把 apiClient 从内核中移到这里来，为了更加纯粹
   apiClient: {
     baseURL: process.env.API_BASE_URL,
     headers: {
