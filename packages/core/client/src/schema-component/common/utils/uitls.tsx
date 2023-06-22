@@ -1,3 +1,4 @@
+
 import flat from 'flat';
 import _, { every, findIndex, isArray, some } from 'lodash';
 import moment from 'moment';
@@ -13,7 +14,6 @@ type VariablesCtx = {
 
 export const useVariablesCtx = (): VariablesCtx => {
   const { data } = useCurrentUserContext() || {};
-
   return useMemo(() => {
     return {
       $user: data?.data || {},
@@ -44,7 +44,7 @@ export const parseVariables = (str: string, ctx: VariablesCtx) => {
   }
 };
 
-function getInnermostKeyAndValue(obj) {
+export function getInnermostKeyAndValue(obj) {
   if (typeof obj !== 'object' || obj === null) {
     return null;
   }
