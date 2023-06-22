@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, sleep, userEvent } from 'testUtils';
+import { render, screen, sleep, userEvent, waitFor } from 'testUtils';
 import App1 from '../demos/demo1';
 import App2 from '../demos/demo2';
 import App3 from '../demos/demo3';
@@ -77,8 +77,8 @@ describe('RangePicker', () => {
     await userEvent.click(document.querySelector('[title="2023-05-01"]') as HTMLElement);
     await userEvent.click(document.querySelector('[title="2023-05-02"]') as HTMLElement);
 
-    expect(startInput).toHaveValue('2023-05-01');
-    expect(endInput).toHaveValue('2023-05-02');
+    await waitFor(() => expect(startInput).toHaveValue('2023-05-01'));
+    await waitFor(() => expect(endInput).toHaveValue('2023-05-02'));
     // Read pretty
     expect(screen.getByText('2023-05-01~2023-05-02', { selector: '.ant-description-text' })).toBeInTheDocument();
     // Value
