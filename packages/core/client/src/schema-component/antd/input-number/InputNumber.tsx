@@ -3,14 +3,17 @@ import { InputNumber as AntdNumber, InputNumberProps } from 'antd';
 import React from 'react';
 import { ReadPretty } from './ReadPretty';
 
-type ComposedInputNumber = React.FC<InputNumberProps> & {
+type ComposedInputNumber = React.ForwardRefExoticComponent<
+  Pick<Partial<any>, string | number | symbol> & React.RefAttributes<unknown>
+> & {
   ReadPretty?: React.FC<InputNumberProps>;
 };
 
 export const InputNumber: ComposedInputNumber = connect((props) => {
   const { onChange, ...others } = props;
   const handleChange = (v) => {
-    onChange(parseFloat(v));
+    const result = parseFloat(v);
+    onChange(Number.isNaN(result) ? '' : result);
   };
   return <AntdNumber onChange={handleChange} {...others} />;
 }, mapReadPretty(ReadPretty));

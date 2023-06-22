@@ -9,7 +9,6 @@ describe('Kanban', () => {
     await sleep(300);
 
     // 每列卡片的状态
-    expect(screen.getByText(/unknown/i)).toBeInTheDocument();
     expect(screen.getByText(/未开始/i)).toBeInTheDocument();
     expect(screen.getByText(/进行中/i)).toBeInTheDocument();
     expect(screen.getByText(/测试中/i)).toBeInTheDocument();

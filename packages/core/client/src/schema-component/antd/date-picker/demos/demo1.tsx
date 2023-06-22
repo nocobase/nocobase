@@ -15,7 +15,7 @@ const schema = {
       'x-component': 'DatePicker',
       'x-component-props': {
         dateFormat: 'YYYY/MM/DD',
-        showTime: false,
+        showTime: true,
       },
       'x-reactions': {
         target: '*(read1,read2)',

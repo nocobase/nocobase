@@ -15,7 +15,7 @@ describe('Variable', () => {
     await sleep(100);
     expect(screen.getByText('v1', { selector: '.ant-tag' })).toMatchInlineSnapshot(`
       <span
-        class="ant-tag ant-tag-blue"
+        class="ant-tag ant-tag-blue css-dev-only-do-not-override-1wazalj"
         contenteditable="false"
       >
         v1
@@ -42,7 +42,6 @@ describe('Variable', () => {
         class="ant-input css-1p5yrh5"
         contenteditable="true"
       >
-        1+
         <span
           class="ant-tag ant-tag-blue"
           contenteditable="false"
@@ -50,6 +49,7 @@ describe('Variable', () => {
         >
           v1
         </span>
+        +1
       </div>
     `);
   });

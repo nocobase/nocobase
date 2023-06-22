@@ -62,9 +62,9 @@ export type UseComponentStyleResult = {
 
 export const genStyleHook = <ComponentName extends OverrideComponent>(
   component: ComponentName,
-  styleFn: (token: TokenWithCommonCls<GlobalToken>, info: StyleInfo) => CSSInterpolation,
+  styleFn: (token: TokenWithCommonCls<GlobalToken>, props: any, info: StyleInfo) => CSSInterpolation,
 ) => {
-  return (): UseComponentStyleResult => {
+  return (props?: any): UseComponentStyleResult => {
     const { theme, token, hashId } = useToken();
     const { getPrefixCls, iconPrefixCls } = useConfig();
     const prefixCls = usePrefixCls(component);
@@ -87,7 +87,7 @@ export const genStyleHook = <ComponentName extends OverrideComponent>(
             antCls: `.${rootPrefixCls}`,
           });
 
-          const styleInterpolation = styleFn(mergedToken, {
+          const styleInterpolation = styleFn(mergedToken, props, {
             hashId,
             prefixCls,
             rootPrefixCls,

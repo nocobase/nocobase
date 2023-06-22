@@ -56,7 +56,7 @@ describe('Checkbox.Group', () => {
     expect(container.querySelectorAll('.ant-tag')).toMatchInlineSnapshot(`
       NodeList [
         <span
-          class="ant-tag ant-tag-red"
+          class="ant-tag ant-tag-red css-dev-only-do-not-override-1wazalj"
         >
           选项1
         </span>,
@@ -66,12 +66,12 @@ describe('Checkbox.Group', () => {
     expect(container.querySelectorAll('.ant-tag')).toMatchInlineSnapshot(`
       NodeList [
         <span
-          class="ant-tag ant-tag-red"
+          class="ant-tag ant-tag-red css-dev-only-do-not-override-1wazalj"
         >
           选项1
         </span>,
         <span
-          class="ant-tag ant-tag-blue"
+          class="ant-tag ant-tag-blue css-dev-only-do-not-override-1wazalj"
         >
           选项2
         </span>,

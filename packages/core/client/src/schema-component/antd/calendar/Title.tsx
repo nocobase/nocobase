@@ -1,4 +1,6 @@
 import { observer } from '@formily/react';
+import { dayjs } from '@nocobase/utils/client';
+import { Button } from 'antd';
 import React, { useContext, useMemo } from 'react';
 import { useDesignable } from '../../hooks';
 import { CalendarToolbarContext } from './context';
@@ -7,7 +9,7 @@ import { getLunarDay } from './utils';
 export const Title = observer(
   () => {
     const { DesignableBar } = useDesignable();
-    const { date, view, label, showLunar } = useContext(CalendarToolbarContext);
+    const { date, view, showLunar } = useContext(CalendarToolbarContext);
 
     const lunarElement = useMemo(() => {
       if (!showLunar || view !== 'day') {
@@ -17,11 +19,11 @@ export const Title = observer(
     }, [view, date, showLunar]);
 
     return (
-      <div className="ant-btn-group" style={{ fontSize: '1.75em', fontWeight: 300 }}>
-        <span>{label}</span>
+      <Button.Group style={{ fontSize: '1.75em', fontWeight: 300 }}>
+        <span>{dayjs(date).format('YYYY-M')}</span>
         <span style={{ marginLeft: '4px' }}>{lunarElement}</span>
         <DesignableBar />
-      </div>
+      </Button.Group>
     );
   },
   { displayName: 'Title' },

@@ -41,7 +41,7 @@
     "react-iframe": "~1.8.5",
     "react-image-lightbox": "^5.1.4",
     "react-js-cron": "^3.1.0",
-    "react-quill": "^1.3.5",
+    "react-quill": "^2.0.0",
     "react-router-dom": "^6.11.2",
     "react-to-print": "^2.14.7",
     "sanitize-html": "2.10.0",

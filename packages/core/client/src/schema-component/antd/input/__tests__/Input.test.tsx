@@ -42,8 +42,8 @@ describe('Input.TextArea', () => {
     expect(screen.getAllByText('Hello World, Hello World')).toMatchInlineSnapshot(`
       [
         <textarea
-          class="ant-input"
-          style="height: -40px; resize: none; min-height: -12px; max-height: -40px;"
+          class="ant-input css-dev-only-do-not-override-1wazalj"
+          style="resize: none; height: -70px; min-height: -14px; max-height: -70px;"
         >
           Hello World, Hello World
         </textarea>,
@@ -90,7 +90,7 @@ describe('Input.URL', () => {
     expect(input.value).toBe('https://www.nocobase.com');
     expect(screen.getByText('https://www.nocobase.com')).toMatchInlineSnapshot(`
       <a
-        class="ant-typography ant-typography-ellipsis ant-typography-single-line ant-typography-ellipsis-single-line"
+        class="ant-typography ant-typography-ellipsis ant-typography-single-line ant-typography-ellipsis-single-line css-dev-only-do-not-override-1wazalj"
         href="https://www.nocobase.com"
         rel="noopener noreferrer"
         target="_blank"
@@ -108,7 +108,7 @@ describe('Input.URL', () => {
     expect(input.value).toBe('abcd');
     expect(screen.getByText('abcd')).toMatchInlineSnapshot(`
       <a
-        class="ant-typography ant-typography-ellipsis ant-typography-single-line ant-typography-ellipsis-single-line"
+        class="ant-typography ant-typography-ellipsis ant-typography-single-line ant-typography-ellipsis-single-line css-dev-only-do-not-override-1wazalj"
         href="abcd"
         rel="noopener noreferrer"
         target="_blank"
