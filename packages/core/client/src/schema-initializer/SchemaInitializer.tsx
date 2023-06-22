@@ -186,7 +186,6 @@ SchemaInitializer.Button = observer(
             setShouldRender(false);
             setVisible(false);
           }}
-          mouseEnterDelay={0}
           menu={{
             style: {
               maxHeight: '60vh',
