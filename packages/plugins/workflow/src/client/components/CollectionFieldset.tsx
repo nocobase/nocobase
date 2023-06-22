@@ -1,9 +1,9 @@
-import React, { useCallback } from 'react';
-import { observer, useForm, useField } from '@formily/react';
-import { Input, Button, Dropdown, Menu, Form } from 'antd';
-import { PlusOutlined, CloseCircleOutlined } from '@ant-design/icons';
-import { useTranslation } from 'react-i18next';
+import { CloseCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
+import { observer, useField, useForm } from '@formily/react';
+import { Button, Dropdown, Form, Input, MenuProps } from 'antd';
+import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import {
   CollectionField,
@@ -53,8 +53,23 @@ const CollectionFieldSet = observer(
     const collectionFields = useCollectionUIFields(collectionName);
     const fields = filter ? collectionFields.filter(filter.bind(config)) : collectionFields;
 
-    const unassignedFields = fields.filter((field) => !value || !(field.name in value));
+    const unassignedFields = useMemo(() => fields.filter((field) => !value || !(field.name in value)), [fields, value]);
     const mergedDisabled = disabled || form.disabled;
+    const menu = useMemo<MenuProps>(() => {
+      return {
+        onClick: ({ key }) => {
+          onChange({ ...value, [key]: null });
+        },
+        style: {
+          maxHeight: 300,
+          overflowY: 'auto',
+        },
+        items: unassignedFields.map((field) => ({
+          key: field.name,
+          label: compile(field.uiSchema?.title ?? field.name),
+        })),
+      };
+    }, [onChange, unassignedFields, value]);
 
     return (
       <fieldset
@@ -127,21 +142,7 @@ const CollectionFieldSet = observer(
                 );
               })}
             {unassignedFields.length ? (
-              <Dropdown
-                overlay={
-                  <Menu
-                    items={unassignedFields.map((field) => ({
-                      key: field.name,
-                      label: compile(field.uiSchema?.title ?? field.name),
-                    }))}
-                    onClick={({ key }) => onChange({ ...value, [key]: null })}
-                    className={css`
-                      max-height: 300px;
-                      overflow-y: auto;
-                    `}
-                  />
-                }
-              >
+              <Dropdown menu={menu}>
                 <Button icon={<PlusOutlined />}>{t('Add field')}</Button>
               </Dropdown>
             ) : null}

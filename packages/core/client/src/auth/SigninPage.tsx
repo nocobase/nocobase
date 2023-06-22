@@ -1,19 +1,19 @@
+import { css } from '@emotion/css';
+import { useForm } from '@formily/react';
 import { Space, Tabs } from 'antd';
 import React, {
+  FunctionComponent,
+  FunctionComponentElement,
+  createContext,
+  createElement,
   useCallback,
   useContext,
-  createContext,
-  FunctionComponent,
-  createElement,
   useState,
-  FunctionComponentElement,
 } from 'react';
-import { css } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAPIClient, useCurrentDocumentTitle, useRequest, useViewport } from '..';
 import { useSigninPageExtension } from './SigninPageExtension';
-import { useForm } from '@formily/react';
 
 const SigninPageContext = createContext<{
   [authType: string]: {
@@ -132,13 +132,7 @@ export const SigninPage = () => {
         `}
       >
         {tabs.length > 1 ? (
-          <Tabs>
-            {tabs.map((tab) => (
-              <Tabs.TabPane tab={tab.tabTitle} key={tab.name}>
-                {tab.component}
-              </Tabs.TabPane>
-            ))}
-          </Tabs>
+          <Tabs items={tabs.map((tab) => ({ label: tab.tabTitle, key: tab.name, children: tab.component }))} />
         ) : tabs.length ? (
           <div>{tabs[0].component}</div>
         ) : (

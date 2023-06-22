@@ -5,7 +5,7 @@ import {
   SchemaComponent,
   SchemaComponentOptions,
   SettingsCenterProvider,
-  useCollectionDataSource
+  useCollectionDataSource,
 } from '@nocobase/client';
 import { Card } from 'antd';
 import React, { useContext } from 'react';

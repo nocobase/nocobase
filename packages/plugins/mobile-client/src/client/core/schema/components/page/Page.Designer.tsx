@@ -1,11 +1,11 @@
-import { GeneralSchemaDesigner, SchemaSettings, useDesignable } from '@nocobase/client';
+import { MenuOutlined } from '@ant-design/icons';
+import { useField, useFieldSchema } from '@formily/react';
+import { uid } from '@formily/shared';
+import { SchemaSettings, useDesignable } from '@nocobase/client';
+import { Button } from 'antd';
 import React from 'react';
 import { generateNTemplate, useTranslation } from '../../../../locale';
-import { useField, useFieldSchema } from '@formily/react';
 import { findGridSchema } from '../../helpers';
-import { uid } from '@formily/shared';
-import { Button } from 'antd';
-import { MenuOutlined } from '@ant-design/icons';
 
 export const PageDesigner = (props) => {
   const { showBack } = props;
@@ -28,6 +28,7 @@ export const PageDesigner = (props) => {
           style={{
             borderColor: 'rgb(241, 139, 98)',
             color: 'rgb(241, 139, 98)',
+            width: '100%',
           }}
           icon={<MenuOutlined />}
           type="dashed"

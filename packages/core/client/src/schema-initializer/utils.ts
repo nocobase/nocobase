@@ -1,8 +1,10 @@
 import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import React, { useContext, useMemo, useState } from 'react';
+import { error } from '@nocobase/utils/client';
+import _ from 'lodash';
+import React, { useCallback, useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BlockRequestContext, SchemaInitializerItemOptions } from '../';
+import { BlockRequestContext, SchemaInitializerButtonContext, SchemaInitializerItemOptions } from '../';
 import { FieldOptions, useCollection, useCollectionManager } from '../collection-manager';
 import { isAssocField } from '../filter-provider/utils';
 import { useActionContext, useDesignable } from '../schema-component';
@@ -807,24 +809,28 @@ export const useCollectionDataSourceItems = (componentName) => {
   const { t } = useTranslation();
   const { collections, getCollectionFields } = useCollectionManager();
   const { getTemplatesByCollection } = useSchemaTemplateManager();
-  const [selected, setSelected] = useState([]);
-  const [value, onChange] = useState(null);
+  const { searchValue, setSearchValue } = useContext(SchemaInitializerButtonContext);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const onChange = useCallback(_.debounce(setSearchValue, 300), [setSearchValue]);
+
+  if (!setSearchValue) {
+    error('useCollectionDataSourceItems: please use in SchemaInitializerButtonContext and provide setSearchValue');
+    return [];
+  }
+
   const clearKeywords = () => {
-    setSelected([]);
-    onChange(null);
+    setSearchValue('');
   };
   return [
     {
       key: 'tableBlock',
       type: 'itemGroup',
       title: React.createElement(SelectCollection, {
-        value,
+        value: searchValue,
         onChange,
-        setSelected,
       }),
       children: collections
         ?.filter((item) => {
-          const b = !value || selected.includes(item.name);
           if (item.inherit) {
             return false;
           }
@@ -836,7 +842,12 @@ export const useCollectionDataSourceItems = (componentName) => {
           } else if (item.template === 'file' && ['Kanban', 'FormItem', 'Calendar'].includes(componentName)) {
             return false;
           } else {
-            return b && !(item?.isThrough && item?.autoCreate);
+            if (!item.title) {
+              return false;
+            }
+            return (
+              item.title.toUpperCase().includes(searchValue.toUpperCase()) && !(item?.isThrough && item?.autoCreate)
+            );
           }
         })
         ?.map((item, index) => {
