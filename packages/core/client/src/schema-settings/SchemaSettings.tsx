@@ -1105,7 +1105,6 @@ SchemaSettings.EnableChildCollections = function EnableChildCollectionsItem(prop
     <SchemaSettings.ModalItem
       title={t('Enable child collections')}
       components={{ ArrayItems, FormLayout }}
-      width={600}
       schema={
         {
           type: 'object',
