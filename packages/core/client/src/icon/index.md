@@ -1,8 +1,7 @@
 ---
-nav:
-  path: /client
 group:
-  path: /client
+  title: Client
+  order: 1
 ---
 
 # Icon
@@ -25,12 +24,12 @@ Use @ant-design/icons
 
 Use iconfont.cn
 
-<code src="./demos/iconfont.tsx"/>
+<code src="./demos/iconfont.tsx"></code>
 
 Custom Icon
 
-<code src="./demos/custom-icon.tsx"/>
+<code src="./demos/custom-icon.tsx"></code>
 
 Register Icon
 
-<code src="./demos/register-icon.tsx"/>
+<code src="./demos/register-icon.tsx"></code>

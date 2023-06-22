@@ -89,6 +89,7 @@ export enum AssignedFieldValueType {
 export const AssignedField = (props: any) => {
   const { t } = useTranslation();
   const compile = useCompile();
+  const collection = useCollection();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const isDynamicValue =
@@ -110,7 +111,7 @@ export const AssignedField = (props: any) => {
   const [options, setOptions] = useState<any[]>([]);
   const { getField } = useCollection();
   const collectionField = getField(fieldSchema.name);
-  const fields = useCollectionFilterOptions(collectionField?.collectionName);
+  const fields = useCollectionFilterOptions(collection?.name);
   const userFields = useCollectionFilterOptions('users');
   const dateTimeFields = ['createdAt', 'datetime', 'time', 'updatedAt'];
   useEffect(() => {

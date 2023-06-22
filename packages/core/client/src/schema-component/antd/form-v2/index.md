@@ -1,8 +1,7 @@
 ---
-nav:
-  path: /client
 group:
-  path: /schema-components
+  title: Schema Components
+  order: 3
 ---
 
 # FormV2
@@ -11,15 +10,15 @@ group:
 
 ### 基础用法
 
-<code src="./demos/demo1.tsx"/>
+<code src="./demos/demo1.tsx"></code>
 
 ### Initial values
 
-<code src="./demos/demo2.tsx"/>
+<code src="./demos/demo2.tsx"></code>
 
 ### Read pretty
 
-<code src="./demos/demo3.tsx"/>
+<code src="./demos/demo3.tsx"></code>
 
 ## API
 

@@ -1,4 +1,4 @@
-# 内置常用资源操作
+# @nocobase/actions
 
 ## 概览
 

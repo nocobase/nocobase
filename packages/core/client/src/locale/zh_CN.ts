@@ -675,7 +675,7 @@ export default {
   "User": "用户",
   "Field": "字段",
   "Select": "选择",
-  "Select Field": "选择字段",
+  "Select field": "选择字段",
   "Field value changes": "变更记录",
   "One to one (has one)": "一对一（has one）",
   "One to one (belongs to)": "一对一（belongs to）",
@@ -783,5 +783,11 @@ export default {
   "Find by the following fields":"通过以下字段查找",
   "Create":"仅新增",
   "Current form":"当前表单",
-  "Current object":"当前对象"
+  "Current object":"当前对象",
+  "Quick create": "快速创建",
+  "Dropdown": "下拉菜单",
+  "Pop-up": "弹窗",
+  "File manager": "文件管理器",
+  "Direct duplicate": "直接复制",
+  "Copy into the form and continue to fill in": "复制到表单并继续填写",
 }

@@ -26,7 +26,7 @@ forEach(templates, (template, key: string) => {
 registerField(attachment.group, 'attachment', attachment);
 
 export default function (props) {
-  const initializes = useContext(SchemaInitializerContext);
+  const initializes = useContext<any>(SchemaInitializerContext);
   const hasUploadAction = initializes.TableActionInitializers.items[0].children.some(
     (initialize) => initialize.component === 'UploadActionInitializer',
   );
