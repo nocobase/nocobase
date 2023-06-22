@@ -2,7 +2,7 @@ import { i18n as i18next } from 'i18next';
 import { merge } from 'lodash';
 import get from 'lodash/get';
 import set from 'lodash/set';
-import React, { ComponentType, FC, ReactElement, ReactNode } from 'react';
+import React, { ComponentType, FC, ReactElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
 import { Link, Navigate, NavLink } from 'react-router-dom';

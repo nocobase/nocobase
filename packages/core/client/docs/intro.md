@@ -809,7 +809,7 @@ const { data, loading } = useRequest();
 
 但是这样的方式不利于 Providers 的管理和扩展，为此提炼了 `compose()` 函数用于配置多个 providers，如下：
 
-<code id='intro-demo2' defaultShowCode="true" titile="compose" src="../src/application/demos/demo1/index.tsx"></code>
+<code id='intro-demo2' defaultShowCode="true" titile="compose" src="../src/application-v2/demos/demo1.tsx"></code>
 
 ## Application
 
