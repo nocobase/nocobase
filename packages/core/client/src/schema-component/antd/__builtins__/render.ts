@@ -1,11 +1,10 @@
 import { ReactElement } from 'react';
 import * as ReactDOM from 'react-dom';
-// import type { Root } from 'react-dom/client';
+import type { Root } from 'react-dom/client';
 
 // 移植自rc-util: https://github.com/react-component/util/blob/master/src/React/render.ts
 
-// type CreateRoot = (container: ContainerType) => Root;
-type CreateRoot = (container: ContainerType) => any;
+type CreateRoot = (container: ContainerType) => Root;
 
 // Let compiler not to search module usage
 const fullClone = {

@@ -2,7 +2,7 @@ import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty, useField } from '@formily/react';
 import { isValid } from '@formily/shared';
 import { Checkbox as AntdCheckbox, Tag } from 'antd';
-import type { CheckboxGroupProps } from 'antd/es/checkbox';
+import type { CheckboxGroupProps, CheckboxProps } from 'antd/es/checkbox';
 import uniq from 'lodash/uniq';
 import React from 'react';
 import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';

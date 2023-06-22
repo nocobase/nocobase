@@ -66,7 +66,7 @@ const ColDivider = (props) => {
       if (!isDragging) {
         return;
       }
-      dragIdRef.current = event.active.id;
+      dragIdRef.current = event.active.id as any;
       const el = dividerRef.current;
       const prev = el.previousElementSibling as HTMLDivElement;
       const next = el.nextElementSibling as HTMLDivElement;
@@ -87,7 +87,7 @@ const ColDivider = (props) => {
     },
     onDragEnd(event) {
       if (!dragIdRef.current) return;
-      if (dragIdRef.current?.startsWith(event.active.id)) {
+      if (dragIdRef.current?.startsWith(event.active.id as any)) {
         if (!dragIdRef.current.endsWith('_move')) {
           return;
         }
