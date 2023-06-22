@@ -16,8 +16,8 @@ export const AppComponent: FC<AppComponentProps> = (props) => {
   const handleErrors = useCallback((error: Error, info: { componentStack: string }) => {
     console.log(error, info);
   }, []);
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Load Plugin Error: {error.message}</div>;
+  if (loading) return app.renderComponent('App.Spin');
+  if (error) return app.renderComponent('App.Spin', { error });
 
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback} onError={handleErrors}>

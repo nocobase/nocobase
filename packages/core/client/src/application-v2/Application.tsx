@@ -2,13 +2,13 @@ import { i18n as i18next } from 'i18next';
 import { merge } from 'lodash';
 import get from 'lodash/get';
 import set from 'lodash/set';
-import React, { ComponentType, FC } from 'react';
+import React, { ComponentType, FC, ReactElement, ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
 import { Link, Navigate, NavLink } from 'react-router-dom';
 import { APIClient, APIClientProvider } from '../api-client';
 import { i18n } from '../i18n';
-import { AppComponent } from './components';
+import { AppComponent, defaultAppComponents } from './components';
 import { BlankComponent } from './components/BlankComponent';
 import { compose } from './compose';
 import { PluginManager } from './PluginManager';
@@ -22,7 +22,7 @@ export class Application {
   scopes: Record<string, any> = {};
   i18n: i18next;
   apiClient: APIClient;
-  components: Record<string, ComponentType> = {};
+  components: Record<string, ComponentType> = { ...defaultAppComponents };
   pm: PluginManager;
 
   constructor(protected options: ApplicationOptions) {
@@ -78,18 +78,18 @@ export class Application {
     return this.pm.load();
   }
 
-  getComponent(Component: ComponentTypeAndString) {
+  getComponent(Component: ComponentTypeAndString): ComponentType {
     if (!Component) return null;
     if (typeof Component !== 'string') return Component;
     const res = get(this.components, Component);
     if (!res) {
-      console.warn(`Component ${Component} not found`);
+      console.error(`Component ${Component} not found`);
       return BlankComponent;
     }
     return res;
   }
 
-  renderComponent<T extends {}>(Component: ComponentTypeAndString, props?: T) {
+  renderComponent<T extends {}>(Component: ComponentTypeAndString, props?: T): ReactElement {
     return React.createElement(this.getComponent(Component), props);
   }
 

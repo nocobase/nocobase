@@ -8,9 +8,20 @@ import { useBlockRequestContext } from '../block-provider/BlockProvider';
 import { useCollection } from '../collection-manager';
 import { useResourceActionContext } from '../collection-manager/ResourceActionProvider';
 import { useRecord } from '../record-provider';
-import { useDesignable } from '../schema-component';
+import { SchemaComponentOptions, useDesignable } from '../schema-component';
 
 export const ACLContext = createContext<any>({});
+
+// TODO: delete this，replace by `ACLPlugin`
+export const ACLProvider = (props) => {
+  return (
+    <SchemaComponentOptions
+      components={{ ACLCollectionFieldProvider, ACLActionProvider, ACLMenuItemProvider, ACLCollectionProvider }}
+    >
+      {props.children}
+    </SchemaComponentOptions>
+  );
+};
 
 const getRouteUrl = (props) => {
   if (props?.match) {

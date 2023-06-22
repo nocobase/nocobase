@@ -1,4 +1,6 @@
+import React from 'react';
 import { Plugin } from '../application-v2/Plugin';
+import { SchemaComponentOptions } from '../schema-component';
 import { RecordLink, useParamsFromRecord, useSourceIdFromParentRecord, useSourceIdFromRecord } from './BlockProvider';
 import { CalendarBlockProvider, useCalendarBlockProps } from './CalendarBlockProvider';
 import { DetailsBlockProvider, useDetailsBlockProps } from './DetailsBlockProvider';
@@ -11,6 +13,44 @@ import { KanbanBlockProvider, useKanbanBlockProps } from './KanbanBlockProvider'
 import { TableBlockProvider, useTableBlockProps } from './TableBlockProvider';
 import { TableFieldProvider, useTableFieldProps } from './TableFieldProvider';
 import { TableSelectorProvider, useTableSelectorProps } from './TableSelectorProvider';
+
+// TODO: delete this, replaced by `BlockSchemaComponentPlugin`
+export const BlockSchemaComponentProvider: React.FC = (props) => {
+  return (
+    <SchemaComponentOptions
+      components={{
+        GanttBlockProvider,
+        CalendarBlockProvider,
+        TableFieldProvider,
+        TableBlockProvider,
+        TableSelectorProvider,
+        FormBlockProvider,
+        FilterFormBlockProvider,
+        FormFieldProvider,
+        DetailsBlockProvider,
+        KanbanBlockProvider,
+        RecordLink,
+      }}
+      scope={{
+        ...bp,
+        useSourceIdFromRecord,
+        useSourceIdFromParentRecord,
+        useParamsFromRecord,
+        useCalendarBlockProps,
+        useFormBlockProps,
+        useFormFieldProps,
+        useDetailsBlockProps,
+        useTableFieldProps,
+        useTableBlockProps,
+        useTableSelectorProps,
+        useKanbanBlockProps,
+        useGanttBlockProps,
+      }}
+    >
+      {props.children}
+    </SchemaComponentOptions>
+  );
+};
 
 export class BlockSchemaComponentPlugin extends Plugin {
   async load() {

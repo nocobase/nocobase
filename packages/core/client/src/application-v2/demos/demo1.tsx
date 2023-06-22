@@ -90,7 +90,7 @@ const app = new Application({
 const HelloProvider: FC = (props) => {
   const location = useLocation();
   if (location.pathname === '/hello') {
-    return <div>HelloProvider</div>;
+    return <div>Hello</div>;
   }
   return <>{props.children}</>;
 };
