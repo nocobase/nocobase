@@ -189,7 +189,7 @@ const sidebar = {
       children: [
         '/development/client',
         {
-          title: 'UI 设计器',
+          title: 'UI Designer',
           'title.zh-CN': 'UI 设计器',
           'title.TR-TR': 'Kullanıcı Arayüz Tasarımcısı',
           children: [
@@ -260,7 +260,7 @@ const sidebar = {
       children: [
         // '/api/client',
         '/api/client/application',
-        '/api/client/route-switch',
+        '/api/client/router',
         {
           title: 'SchemaDesigner',
           'title.zh-CN': 'SchemaDesigner',

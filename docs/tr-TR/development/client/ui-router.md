@@ -1,6 +1,6 @@
 # UI Routing
 
-NocoBase Client's Router is based on [React Router](https://v5.reactrouter.com/web/guides/quick-start) and can be configured via `<RouteSwitch routes={[]} />` to configure ui routes with the following example.
+NocoBase Client's Router is based on [React Router](https://v5.reactrouter.com/web/guides/quick-start) and can be configured via `app.router` to configure ui routes with the following example.
 
 ```tsx
 /**
