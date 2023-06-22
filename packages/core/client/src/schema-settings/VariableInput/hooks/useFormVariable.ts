@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { useCompile, useGetFilterOptions } from '../../../schema-component';
 import { Schema } from '@formily/react';
-import { options } from '../../../collection-manager/Configuration/interfaces';
 import { FieldOption, Option } from '../type';
 
 interface GetOptionsParams {
@@ -100,18 +99,20 @@ export const useFormVariable = ({
   };
 
   const result = useMemo(() => {
-    return {
-      label: `{{t("Current form")}}`,
-      value: '$form',
-      key: '$form',
-      children: [],
-      isLeaf: false,
-      field: {
-        target: rootCollection,
-      },
-      depth: 0,
-      loadChildren,
-    };
+    return (
+      blockForm && {
+        label: `{{t("Current form")}}`,
+        value: '$form',
+        key: '$form',
+        children: [],
+        isLeaf: false,
+        field: {
+          target: rootCollection,
+        },
+        depth: 0,
+        loadChildren,
+      }
+    );
   }, [rootCollection]);
   return result;
 };
