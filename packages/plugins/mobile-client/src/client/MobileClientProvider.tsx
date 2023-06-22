@@ -11,7 +11,7 @@ export const MobileClientProvider = React.memo((props) => {
   const navigation = useNavigate();
 
   useEffect(() => {
-    if (isJSBridge && location.pathname === '/admin') {
+    if (isJSBridge() && location.pathname === '/admin') {
       navigation('/mobile', { replace: true });
     }
   }, [location.pathname, navigation]);

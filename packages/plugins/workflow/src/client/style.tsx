@@ -255,6 +255,10 @@ export const nodeJobButtonClass = css`
     border: none;
   }
 
+  &.inner{
+    position: static;
+  }
+
   .ant-tag {
     padding: 0;
     width: 100%;
