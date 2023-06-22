@@ -8,7 +8,7 @@ import { saveAs } from 'file-saver';
 import React, { useState } from 'react';
 import Lightbox from 'react-image-lightbox';
 import { useRecord } from '../../../record-provider';
-import { isImage, toArr, toImages } from './shared';
+import { isImage, isPdf, toArr, toImages } from './shared';
 import type { UploadProps } from './type';
 
 type Composed = React.FC<UploadProps> & {
@@ -25,7 +25,13 @@ ReadPretty.File = (props: UploadProps) => {
   const images = toImages(toArr(value));
   const [photoIndex, setPhotoIndex] = useState(0);
   const [visible, setVisible] = useState(false);
+  const [visiblePDF, setVisiblePDF] = useState(false);
   const { size } = props;
+
+  function closePdfIFrame() {
+    setVisiblePDF(false);
+  }
+
   return (
     <div>
       <div className={cls('ant-upload-picture-card-wrapper nb-upload', size ? `nb-upload-${size}` : null)}>
@@ -37,6 +43,11 @@ ReadPretty.File = (props: UploadProps) => {
                 e.preventDefault();
                 e.stopPropagation();
                 setVisible(true);
+                setPhotoIndex(index);
+              } else if(isPdf(file.extname)) {
+                e.preventDefault();
+                e.stopPropagation();
+                setVisiblePDF(true);
                 setPhotoIndex(index);
               }
               // else {
@@ -131,6 +142,61 @@ ReadPretty.File = (props: UploadProps) => {
           ]}
         />
       )}
+      
+      {visiblePDF && (
+        <div
+         style={{ 
+          position: 'fixed', left: '0px', top: '0px', zIndex: 100,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'rgba(0,0,0,0.5)', width: '100%', height: '100%',
+          padding: '64px'
+        }}
+        >
+          <div style={{
+            padding: '8px',
+            maxWidth: '90vw',
+            maxHeight: 'calc(100vh - 112px)',
+            height: '90vh',
+            width: '90vw',
+            background: 'white',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            overflowY: 'auto'
+          }} >
+            <iframe src={images[photoIndex].url} style={{
+              width: '100%',
+              maxHeight: '90vh',
+              flex: '1 1 auto'
+            }}>
+            </iframe>
+            <div style={{
+              padding: '18px'
+            }}>
+              <Button
+                style={{
+                  marginRight: '4px'
+                }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const file = images[photoIndex];
+                  saveAs(file.url, `${file.title}${file.extname}`);
+                }}
+              >
+                Download
+              </Button>
+              <Button onClick={closePdfIFrame}>
+                Close
+              </Button>
+            </div>
+          </div>
+          
+        </div>
+      )}
+
     </div>
   );
 };
