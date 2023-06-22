@@ -11,7 +11,7 @@ export class PluginManager {
     this.loadStaticPlugin = this.initStaticPlugins(_plugins);
   }
 
-  private async initStaticPlugins(_plugins: PluginType[]) {
+  private async initStaticPlugins(_plugins: PluginType[] = []) {
     for await (const plugin of _plugins) {
       const pluginClass = Array.isArray(plugin) ? plugin[0] : plugin;
       const opts = Array.isArray(plugin) ? plugin[1] : undefined;

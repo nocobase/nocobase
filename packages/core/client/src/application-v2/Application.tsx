@@ -26,8 +26,8 @@ export class Application {
   pm: PluginManager;
 
   constructor(protected options: ApplicationOptions) {
-    this.scopes = options.scopes || {};
-    this.components = options.components || {};
+    this.scopes = merge(this.scopes, options.scopes);
+    this.components = merge(this.components, options.components);
     this.apiClient = new APIClient(options.apiClient);
     this.i18n = options.i18n || i18n;
     this.router = new Router(options.router, this);
