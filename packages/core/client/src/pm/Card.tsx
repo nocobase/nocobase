@@ -136,7 +136,7 @@ function PluginDetail(props: IPluginDetail) {
           padding-top: 0;
         }
 
-        .ant-modal-body {
+        .ant-modal-content {
           background: #f0f2f5;
           .plugin-desc {
             padding-bottom: 8px;
