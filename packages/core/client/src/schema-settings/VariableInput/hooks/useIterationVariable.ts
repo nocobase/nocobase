@@ -83,7 +83,7 @@ export const useIterationVariable = ({
   return useMemo(() => {
     return rootCollection !== collectionField?.collectionName && children.length > 0
       ? compile({
-          label: `{{t("Current iteration")}}`,
+          label: `{{t("Current Object")}}`,
           value: '$iteration',
           key: '$iteration',
           disabled: children.every((option) => option.disabled),

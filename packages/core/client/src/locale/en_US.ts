@@ -705,5 +705,5 @@ export default {
   "Find by the following fields":"Find by the following fields",
   "Create":"Create",
   "Current form": "Current form",
-  "Current iteration":"Current iteration"
+  "Current object":"Current object"
 };

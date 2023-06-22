@@ -783,5 +783,5 @@ export default {
   "Find by the following fields":"通过以下字段查找",
   "Create":"仅新增",
   "Current form":"当前表单",
-  "Current iteration":"当前迭代"
+  "Current object":"当前对象"
 }

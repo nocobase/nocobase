@@ -616,5 +616,5 @@ export default {
   "Find by the following fields":"次のフィールドで検索",
   "Create":"新規のみ"  ,
   "Current form":"現在のフォーム",
-  "Current iteration":"現在のオブジェクト"
+  "Current object":"現在のオブジェクト"
 }
