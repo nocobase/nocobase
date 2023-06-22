@@ -2,7 +2,7 @@ import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Tabs as AntdTabs, TabPaneProps, TabsProps } from 'antd';
 import classNames from 'classnames';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Icon } from '../../../icon';
 import { useSchemaInitializer } from '../../../schema-initializer';
 import { DndContext, SortableItem } from '../../common';
@@ -36,6 +36,7 @@ export const Tabs: any = observer(
         result.push({
           key: 'designer',
           label: render(),
+          children: null,
         });
       }
 
