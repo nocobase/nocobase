@@ -1,8 +1,9 @@
 import { PlusOutlined } from '@ant-design/icons';
+import { PageHeader as AntdPageHeader } from '@ant-design/pro-layout';
 import { css } from '@emotion/css';
 import { FormDialog, FormLayout } from '@formily/antd';
 import { Schema, SchemaOptionsContext, useFieldSchema } from '@formily/react';
-import { Button, PageHeader as AntdPageHeader, Spin, Tabs } from 'antd';
+import { Button, Spin, Tabs } from 'antd';
 import classNames from 'classnames';
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -119,6 +120,25 @@ const pageWithFixedBlockCss = classNames([
   `,
 ]);
 
+const pageHeaderCss = css`
+  background-color: white;
+  &.ant-page-header-has-footer {
+    padding-top: 12px;
+    padding-bottom: 0;
+    .ant-page-header-heading-left {
+      /* margin: 0; */
+    }
+    .ant-page-header-footer {
+      margin-top: 0;
+    }
+  }
+`;
+
+const height0 = css`
+  font-size: 0;
+  height: 0;
+`;
+
 export const Page = (props) => {
   const { children, ...others } = props;
   const compile = useCompile();
@@ -156,6 +176,8 @@ export const Page = (props) => {
   const handleErrors = (error) => {
     console.error(error);
   };
+
+  const pageHeaderTitle = hidePageTitle ? undefined : fieldSchema.title || compile(title);
   return (
     <FilterBlockProvider>
       <div className={pageDesignerCss}>
@@ -167,19 +189,10 @@ export const Page = (props) => {
         >
           {!disablePageHeader && (
             <AntdPageHeader
-              className={css`
-                &.has-footer {
-                  padding-top: 12px;
-                  .ant-page-header-heading-left {
-                    /* margin: 0; */
-                  }
-                  .ant-page-header-footer {
-                    margin-top: 0;
-                  }
-                }
-              `}
+              className={classNames(pageHeaderCss, pageHeaderTitle ? '' : height0)}
               ghost={false}
-              title={hidePageTitle ? undefined : fieldSchema.title || compile(title)}
+              // 如果标题为空的时候会导致 PageHeader 不渲染，所以这里设置一个空白字符，然后再设置高度为 0
+              title={pageHeaderTitle || ' '}
               {...others}
               footer={
                 enablePageTabs && (
@@ -247,26 +260,23 @@ export const Page = (props) => {
                           </Button>
                         )
                       }
-                    >
-                      {fieldSchema.mapProperties((schema) => {
-                        return (
-                          <Tabs.TabPane
-                            tab={
-                              <SortableItem
-                                id={schema.name as string}
-                                schema={schema}
-                                className={classNames('nb-action-link', designerCss, props.className)}
-                              >
-                                {schema['x-icon'] && <Icon style={{ marginRight: 8 }} type={schema['x-icon']} />}
-                                <span>{schema.title || t('Unnamed')}</span>
-                                <PageTabDesigner schema={schema} />
-                              </SortableItem>
-                            }
-                            key={schema.name}
-                          />
-                        );
+                      items={fieldSchema.mapProperties((schema) => {
+                        return {
+                          label: (
+                            <SortableItem
+                              id={schema.name as string}
+                              schema={schema}
+                              className={classNames('nb-action-link', designerCss, props.className)}
+                            >
+                              {schema['x-icon'] && <Icon style={{ marginRight: 8 }} type={schema['x-icon']} />}
+                              <span>{schema.title || t('Unnamed')}</span>
+                              <PageTabDesigner schema={schema} />
+                            </SortableItem>
+                          ),
+                          key: schema.name as string,
+                        };
                       })}
-                    </Tabs>
+                    />
                   </DndContext>
                 )
               }

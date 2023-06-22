@@ -1,9 +1,8 @@
-import React, { useEffect, useMemo, useState, useCallback, MouseEventHandler } from 'react';
-import { useAPIClient, useRequest } from '../api-client';
+import { DeleteOutlined, SettingOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
 import {
   Avatar,
   Card,
-  message,
   Modal,
   Popconfirm,
   Spin,
@@ -13,14 +12,15 @@ import {
   Tag,
   Tooltip,
   Typography,
+  message,
 } from 'antd';
-import { css } from '@emotion/css';
 import cls from 'classnames';
-import { useNavigate } from 'react-router-dom';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DeleteOutlined, SettingOutlined } from '@ant-design/icons';
-import { useParseMarkdown } from '../schema-component/antd/markdown/util';
+import { useNavigate } from 'react-router-dom';
 import type { IPluginData } from '.';
+import { useAPIClient, useRequest } from '../api-client';
+import { useParseMarkdown } from '../schema-component/antd/markdown/util';
 
 interface PluginDocumentProps {
   path: string;
@@ -163,7 +163,7 @@ function PluginDetail(props: IPluginDetail) {
       destroyOnClose
     >
       {plugin?.description && <div className={'plugin-desc'}>{plugin?.description}</div>}
-      <Tabs items={items}></Tabs>
+      <Tabs items={items} />
     </Modal>
   );
 }
