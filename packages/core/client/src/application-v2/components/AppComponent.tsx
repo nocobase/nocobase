@@ -12,7 +12,7 @@ interface AppComponentProps {
 
 export const AppComponent: FC<AppComponentProps> = (props) => {
   const { app } = props;
-  const { error, loading } = useRequest(() => app.load(), { refreshDeps: [] });
+  const { error, loading } = useRequest(() => app.load(), { refreshDeps: [app] });
   const handleErrors = useCallback((error: Error, info: { componentStack: string }) => {
     console.log(error, info);
   }, []);

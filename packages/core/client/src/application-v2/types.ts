@@ -27,6 +27,7 @@ export type PluginType<Opts = any> = typeof Plugin | [typeof Plugin, Opts];
 export interface ApplicationOptions {
   apiClient?: any;
   i18n?: i18next;
+  providers?: (ComponentType | [ComponentType, any])[];
   plugins?: PluginType[];
   components?: Record<string, ComponentType>;
   scopes?: Record<string, any>;
