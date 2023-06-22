@@ -1,5 +1,6 @@
-import dayjs from 'dayjs';
 import set from 'lodash/set';
+import { offsetFromString } from './date';
+import { dayjs } from './dayjs';
 import { getValuesByPath } from './getValuesByPath';
 
 const re = /^\s*\{\{([\s\S]*)\}\}\s*$/;
@@ -177,17 +178,17 @@ export const parseFilter = async (filter: any, opts: ParseFilterOptions = {}) =>
 
 export type GetDayRangeOptions = {
   now?: any;
-  timezone?: string;
+  timezone?: string | number;
   offset: number;
 };
 
 export function getDayRange(options: GetDayRangeOptions) {
   const { now, timezone = '+00:00', offset } = options;
-  const m = toMoment(now).utcOffset(timezone);
+  let m = toMoment(now).utcOffset(offsetFromString(timezone));
   if (offset > 0) {
     return [
       // 第二天开始计算
-      m.add(1, 'day').startOf('day').format('YYYY-MM-DD'),
+      (m = m.add(1, 'day').startOf('day')).format('YYYY-MM-DD'),
       // 第九天开始前结束
       m.clone().add(offset, 'day').startOf('day').format('YYYY-MM-DD'),
       '[)',
@@ -221,19 +222,19 @@ function toMoment(value) {
 export type Utc2unitOptions = {
   now?: any;
   unit: any;
-  timezone?: string;
+  timezone?: string | number;
   offset?: number;
 };
 
 export function utc2unit(options: Utc2unitOptions) {
   const { now, unit, timezone = '+00:00', offset } = options;
-  const m = toMoment(now);
-  m.utcOffset(timezone);
-  m.startOf(unit);
+  let m = toMoment(now);
+  m = m.utcOffset(offsetFromString(timezone));
+  m = m.startOf(unit);
   if (offset > 0) {
-    m.add(offset, unit === 'isoWeek' ? 'week' : unit);
+    m = m.add(offset, unit === 'isoWeek' ? 'week' : unit);
   } else if (offset < 0) {
-    m.subtract(-1 * offset, unit === 'isoWeek' ? 'week' : unit);
+    m = m.subtract(-1 * offset, unit === 'isoWeek' ? 'week' : unit);
   }
   const fn = {
     year: () => m.format('YYYY'),

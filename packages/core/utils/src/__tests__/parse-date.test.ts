@@ -1,4 +1,4 @@
-import dayjs from 'dayjs';
+import { dayjs } from '../dayjs';
 import { parseDate } from '../parse-date';
 
 describe('parse date', () => {

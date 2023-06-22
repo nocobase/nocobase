@@ -1,3 +1,4 @@
+import _ from 'lodash';
 import { dayjs } from './dayjs';
 
 export interface Str2momentOptions {
@@ -60,12 +61,12 @@ const toMoment = (val: any, options?: Str2momentOptions) => {
   }
 
   if (dayjs.isDayjs(val)) {
-    return val.utcOffset(offset);
+    return val.utcOffset(offsetFromString(offset));
   }
   if (gmt || picker) {
     return dayjs(val).utcOffset(0);
   }
-  return dayjs(val).utcOffset(offset);
+  return dayjs(val).utcOffset(offsetFromString(offset));
 };
 
 export const str2moment = (value?: string | string[], options: Str2momentOptions = {}): any => {
@@ -122,3 +123,56 @@ export const moment2str = (value?: dayjs.Dayjs, options: Moment2strOptions = {})
   }
   return toGmtByPicker(value, picker);
 };
+
+/**
+ * from https://github.com/moment/moment/blob/dca02edaeceda3fcd52b20b51c130631a058a022/src/lib/units/offset.js#L55-L70
+ */
+export function offsetFromString(string: string | number) {
+  if (!_.isString(string)) {
+    return string;
+  }
+
+  // timezone chunker
+  // '+10:00' > ['10',  '00']
+  // '-1530'  > ['-15', '30']
+  const chunkOffset = /([+-]|\d\d)/gi;
+
+  const matchShortOffset = /Z|[+-]\d\d(?::?\d\d)?/gi, // +00 -00 +00:00 -00:00 +0000 -0000 or Z
+    matchTimestamp = /[+-]?\d+(\.\d{1,3})?/; // 123456789 123456789.123
+
+  let matches = (string || '').match(matchShortOffset);
+  if (matches === null) {
+    matches = (string || '').match(matchTimestamp);
+  }
+
+  if (matches === null) {
+    return null;
+  }
+
+  const chunk = matches[matches.length - 1] || [];
+  const parts = (chunk + '').match(chunkOffset) || ['-', 0, 0];
+  const minutes = +(Number(parts[1]) * 60) + toInt(parts[2]);
+
+  return minutes === 0 ? 0 : parts[0] === '+' ? minutes : -minutes;
+}
+
+function toInt(argumentForCoercion) {
+  // eslint-disable-next-line prefer-const
+  let coercedNumber = +argumentForCoercion,
+    value = 0;
+
+  if (coercedNumber !== 0 && isFinite(coercedNumber)) {
+    value = absFloor(coercedNumber);
+  }
+
+  return value;
+}
+
+function absFloor(number) {
+  if (number < 0) {
+    // -0 -> 0
+    return Math.ceil(number) || 0;
+  } else {
+    return Math.floor(number);
+  }
+}

@@ -1,4 +1,5 @@
-import dayjs from 'dayjs';
+import { offsetFromString } from './date';
+import { dayjs } from './dayjs';
 
 function parseUTC(value) {
   if (value instanceof Date || dayjs.isDayjs(value)) {
@@ -35,15 +36,19 @@ function parseQuarter(value) {
 
 function parseWeek(value) {
   if (/^\d\d\d\d[W]\d\d$/.test(value)) {
+    const arr = value.split('W');
+    // dayjs 还不支持 dayjs("2019W19","gggg[W]ww") 这种语法
+    // 参见：https://github.com/iamkun/dayjs/issues/784
     return {
       unit: 'isoWeek',
-      start: dayjs(value, 'GGGG[W]W').format('YYYY-MM-DD HH:mm:ss'),
+      start: dayjs(arr[0], 'YYYY').add(Number(arr[1]), 'weeks').format('YYYY-MM-DD HH:mm:ss'),
     };
   }
   if (/^\d\d\d\d[w]\d\d$/.test(value)) {
+    const arr = value.split('w');
     return {
       unit: 'week',
-      start: dayjs(value, 'gggg[w]w').format('YYYY-MM-DD HH:mm:ss'),
+      start: dayjs(arr[0], 'YYYY').week(Number(arr[1])).format('YYYY-MM-DD HH:mm:ss'),
     };
   }
 }
@@ -135,8 +140,8 @@ function dateRange(r: ParseDateResult) {
   } else {
     m = dayjs(`${r?.start}${r?.timezone}`);
   }
-  m = m.utcOffset(r.timezone);
-  return [m.startOf(r.unit), m.clone().add(1, r.unit).startOf(r.unit)].map(toISOString);
+  m = m.utcOffset(offsetFromString(r.timezone));
+  return [(m = m.startOf(r.unit)), m.add(1, r.unit === 'isoWeek' ? 'weeks' : r.unit).startOf(r.unit)].map(toISOString);
 }
 
 export function parseDate(value: any, options = {} as { timezone?: string }) {
