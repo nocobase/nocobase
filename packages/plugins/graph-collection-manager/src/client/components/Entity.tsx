@@ -5,7 +5,7 @@ import { uid } from '@formily/shared';
 import {
   Action,
   Checkbox,
-  collection,
+  CollectionCategroriesContext,
   CollectionField,
   CollectionProvider,
   Form,
@@ -19,15 +19,15 @@ import {
   SchemaComponent,
   SchemaComponentProvider,
   Select,
+  collection,
   useCollectionManager,
   useCompile,
   useCurrentAppInfo,
   useRecord,
-  CollectionCategroriesContext,
 } from '@nocobase/client';
 import { Badge, Dropdown, Popover, Tag } from 'antd';
 import { groupBy } from 'lodash';
-import React, { useRef, useState, useContext } from 'react';
+import React, { useContext, useRef, useState } from 'react';
 import {
   useAsyncDataSource,
   useCancelAction,
@@ -37,7 +37,7 @@ import {
   useValuesFromRecord,
 } from '../action-hooks';
 import { collectiionPopoverClass, entityContainer, headClass, tableBtnClass, tableNameClass } from '../style';
-import { useGCMTranslation } from '../utils';
+import { getPopupContainer, useGCMTranslation } from '../utils';
 import { AddFieldAction } from './AddFieldAction';
 import { CollectionNodeProvder } from './CollectionNodeProvder';
 import { EditCollectionAction } from './EditCollectionAction';
@@ -161,9 +161,7 @@ const Entity: React.FC<{
 
                           confirm: {
                             title: "{{t('Delete record')}}",
-                            getContainer: () => {
-                              return document.getElementById('graph_container');
-                            },
+                            getContainer: getPopupContainer,
                             collectionConten: "{{t('Are you sure you want to delete it?')}}",
                           },
                           useAction: () => useDestroyActionAndRefreshCM({ name, id }),
@@ -233,6 +231,7 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
       return 'orange';
     }
   };
+
   const OperationButton = ({ property }) => {
     const isInheritField = !(property.collectionName !== name);
     return (
@@ -244,14 +243,7 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
             Input,
             Form,
             ResourceActionProvider,
-            Select: (props) => (
-              <Select
-                {...props}
-                getPopupContainer={() => {
-                  return document.getElementById('graph_container');
-                }}
-              />
-            ),
+            Select: (props) => <Select {...props} getPopupContainer={getPopupContainer} />,
             Checkbox,
             Radio,
             InputNumber,
@@ -334,9 +326,7 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
                       `,
                       confirm: {
                         title: "{{t('Delete record')}}",
-                        getContainer: () => {
-                          return document.getElementById('graph_container');
-                        },
+                        getContainer: getPopupContainer,
                         collectionConten: "{{t('Are you sure you want to delete it?')}}",
                       },
                       useAction: () =>
@@ -409,9 +399,7 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
           property.uiSchema && (
             <Popover
               content={CollectionConten(property)}
-              getPopupContainer={() => {
-                return document.getElementById('graph_container');
-              }}
+              getPopupContainer={getPopupContainer}
               mouseLeaveDelay={0}
               zIndex={100}
               title={
@@ -452,9 +440,7 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
               property.uiSchema && (
                 <Popover
                   content={CollectionConten(property)}
-                  getPopupContainer={() => {
-                    return document.getElementById('graph_container');
-                  }}
+                  getPopupContainer={getPopupContainer}
                   mouseLeaveDelay={0}
                   zIndex={100}
                   title={

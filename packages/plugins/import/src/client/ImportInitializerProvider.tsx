@@ -18,7 +18,7 @@ export const ImportInitializerProvider = (props: any) => {
           skipScopeCheck: true,
         },
       },
-      visible: () => {
+      visible: function useVisible() {
         const collection = useCollection();
         return collection.template !== 'view' && collection.template !== 'file';
       },
