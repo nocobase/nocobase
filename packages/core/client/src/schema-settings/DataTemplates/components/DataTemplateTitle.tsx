@@ -8,6 +8,7 @@ import cls from 'classnames';
 import { clone } from 'lodash';
 import React, { Fragment, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useStyles } from './DataTemplateTitle.style';
 
 const DataTemplateTitle = observer<{ index: number; item: any }>((props) => {
   const array = ArrayBase.useArray();
@@ -102,13 +103,13 @@ const insertActiveKeys = (activeKeys: number[], index: number) => {
 
 export const ArrayCollapse: ComposedArrayCollapse = observer(
   (props: IArrayCollapseProps) => {
+    const { styles } = useStyles();
     const field = useField<ArrayField>();
     const dataSource = Array.isArray(field.value) ? field.value : [];
     const [activeKeys, setActiveKeys] = useState<number[]>(
       takeDefaultActiveKeys(dataSource.length, props.defaultOpenPanelCount),
     );
     const schema = useFieldSchema();
-    const prefixCls = 'ant-formily-array-collapse';
     useEffect(() => {
       if (!field.modified && dataSource.length) {
         setActiveKeys(takeDefaultActiveKeys(dataSource.length, props.defaultOpenPanelCount));
@@ -127,7 +128,7 @@ export const ArrayCollapse: ComposedArrayCollapse = observer(
     const renderEmpty = () => {
       if (dataSource.length) return;
       return (
-        <Card className={cls(`${prefixCls}-item`, props.className)}>
+        <Card className={cls(`${styles.arrayCollapseItem}`, props.className)}>
           <Empty />
         </Card>
       );
@@ -139,7 +140,7 @@ export const ArrayCollapse: ComposedArrayCollapse = observer(
           {...props}
           activeKey={activeKeys}
           onChange={(keys: string[]) => setActiveKeys(toArr(keys).map(Number))}
-          className={cls(`${prefixCls}-item`, props.className)}
+          className={cls(`${styles.arrayCollapseItem}`, props.className)}
         >
           {dataSource.map((item, index) => {
             const items = Array.isArray(schema.items) ? schema.items[index] || schema.items[0] : schema.items;
