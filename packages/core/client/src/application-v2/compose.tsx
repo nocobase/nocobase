@@ -1,5 +1,5 @@
 import React, { ComponentType, FC } from 'react';
-import { BlankComponent } from './components/BlankComponent';
+import { BlankComponent } from './components';
 import { ComponentAndProps } from './types';
 
 export const compose = (...components: ComponentAndProps[]) => {

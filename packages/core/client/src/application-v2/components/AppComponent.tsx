@@ -1,9 +1,8 @@
-import { useRequest } from 'ahooks';
 import React, { FC, useCallback } from 'react';
-import { ErrorBoundary } from 'react-error-boundary';
-import { ErrorFallback } from '../../schema-component/antd/error-fallback';
-import { Application } from '../Application';
+import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
+import type { Application } from '../Application';
 import { ApplicationContext } from '../context';
+import { useAppPluginLoad } from '../hooks';
 
 interface AppComponentProps {
   app: Application;
@@ -11,7 +10,7 @@ interface AppComponentProps {
 
 export const AppComponent: FC<AppComponentProps> = (props) => {
   const { app } = props;
-  const { error, loading } = useRequest(() => app.load(), { refreshDeps: [app] });
+  const { loading, error } = useAppPluginLoad(app);
   const handleErrors = useCallback((error: Error, info: { componentStack: string }) => {
     console.log(error, info);
   }, []);
@@ -19,7 +18,7 @@ export const AppComponent: FC<AppComponentProps> = (props) => {
   if (error) return app.renderComponent('AppError', { error });
 
   return (
-    <ErrorBoundary FallbackComponent={ErrorFallback} onError={handleErrors}>
+    <ErrorBoundary FallbackComponent={app.getComponent<FallbackProps>('FallbackComponent')} onError={handleErrors}>
       <ApplicationContext.Provider value={app}>{app.renderComponent('AppMain')}</ApplicationContext.Provider>
     </ErrorBoundary>
   );

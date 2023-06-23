@@ -1,4 +1,4 @@
-import { Application } from './Application';
+import type { Application } from './Application';
 
 export class Plugin<T = any> {
   constructor(protected options: T, protected app: Application) {

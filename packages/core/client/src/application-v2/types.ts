@@ -1,20 +1,20 @@
-import { i18n as i18next } from 'i18next';
-import { ComponentType } from 'react';
-import { BrowserRouterProps, HashRouterProps, MemoryRouterProps, RouteObject } from 'react-router-dom';
-import { Plugin } from './Plugin';
+import type { i18n as i18next } from 'i18next';
+import type { ComponentType } from 'react';
+import type { BrowserRouterProps, HashRouterProps, MemoryRouterProps, RouteObject } from 'react-router-dom';
+import type { Plugin } from './Plugin';
 
 export interface BrowserRouterOptions extends Omit<BrowserRouterProps, 'children'> {
-  type: 'browser';
+  type?: 'browser';
 }
 export interface HashRouterOptions extends Omit<HashRouterProps, 'children'> {
-  type: 'hash';
+  type?: 'hash';
 }
 export interface MemoryRouterOptions extends Omit<MemoryRouterProps, 'children'> {
-  type: 'memory';
+  type?: 'memory';
 }
 export type RouterOptions = HashRouterOptions | BrowserRouterOptions | MemoryRouterOptions;
 
-export type ComponentTypeAndString = ComponentType | string;
+export type ComponentTypeAndString<T = any> = ComponentType<T> | string;
 
 export interface RouteType extends Omit<RouteObject, 'children' | 'Component'> {
   Component?: ComponentTypeAndString;

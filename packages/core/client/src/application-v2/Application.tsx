@@ -1,6 +1,6 @@
 import { i18n as i18next } from 'i18next';
-import { merge } from 'lodash';
 import get from 'lodash/get';
+import merge from 'lodash/merge';
 import set from 'lodash/set';
 import React, { ComponentType, FC, ReactElement } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -8,8 +8,7 @@ import { I18nextProvider } from 'react-i18next';
 import { Link, Navigate, NavLink } from 'react-router-dom';
 import { APIClient, APIClientProvider } from '../api-client';
 import { i18n } from '../i18n';
-import { AppComponent, defaultAppComponents } from './components';
-import { BlankComponent } from './components/BlankComponent';
+import { AppComponent, BlankComponent, defaultAppComponents } from './components';
 import { compose } from './compose';
 import { PluginManager } from './PluginManager';
 import { Router } from './Router';
@@ -17,27 +16,27 @@ import { ApplicationOptions, ComponentAndProps, ComponentTypeAndString } from '.
 import { normalizeContainer } from './utils';
 
 export class Application {
-  providers: ComponentAndProps[] = [];
-  router: Router;
-  scopes: Record<string, any> = {};
-  i18n: i18next;
-  apiClient: APIClient;
-  components: Record<string, ComponentType> = { ...defaultAppComponents };
-  pm: PluginManager;
+  public providers: ComponentAndProps[] = [];
+  public router: Router;
+  public scopes: Record<string, any> = {};
+  public i18n: i18next;
+  public apiClient: APIClient;
+  public components: Record<string, ComponentType> = { ...defaultAppComponents };
+  public pm: PluginManager;
 
-  constructor(protected options: ApplicationOptions) {
+  constructor(protected options: ApplicationOptions = {}) {
     this.scopes = merge(this.scopes, options.scopes);
     this.components = merge(this.components, options.components);
     this.apiClient = new APIClient(options.apiClient);
     this.i18n = options.i18n || i18n;
     this.router = new Router(options.router, this);
     this.pm = new PluginManager(options.plugins, this);
-    this.useDefaultProviders();
+    this.addDefaultProviders();
     this.addReactRouterComponents();
     this.addProviders(options.providers || []);
   }
 
-  private useDefaultProviders() {
+  private addDefaultProviders() {
     this.use(APIClientProvider, { apiClient: this.apiClient });
     this.use(I18nextProvider, { i18n: this.i18n });
   }
@@ -61,7 +60,7 @@ export class Application {
   }
 
   addProvider<T = any>(component: ComponentType, props?: T) {
-    this.providers.push([component, props]);
+    return this.providers.push([component, props]);
   }
 
   addProviders(providers: (ComponentType | [ComponentType, any])[]) {
@@ -78,28 +77,46 @@ export class Application {
     return this.pm.load();
   }
 
-  getComponent(Component: ComponentTypeAndString): ComponentType {
-    if (!Component) return null;
-    if (typeof Component !== 'string') return Component;
-    const res = get(this.components, Component);
-    if (!res) {
-      console.error(`Component ${Component} not found`);
-      return BlankComponent;
+  getComponent<T = any>(Component: ComponentTypeAndString<T>, isShowError = true): ComponentType<T> | undefined {
+    const showError = (msg: string) => isShowError && console.error(msg);
+    if (!Component) {
+      showError(`getComponent called with ${Component}`);
+      return;
     }
-    return res;
+
+    // ClassComponent or FunctionComponent
+    if (typeof Component === 'function') return Component;
+
+    // Component is a string, try to get it from this.components
+    if (typeof Component === 'string') {
+      const res = get(this.components, Component) as ComponentType<T>;
+      if (!res) {
+        showError(`Component ${Component} not found`);
+        return;
+      }
+      return res;
+    }
+
+    showError(`Component ${Component} should be a string or a React component`);
+    return;
   }
 
   renderComponent<T extends {}>(Component: ComponentTypeAndString, props?: T): ReactElement {
     return React.createElement(this.getComponent(Component), props);
   }
 
-  addComponent(name: string, component: any) {
-    set(this.components, name, component);
+  addComponent(component: ComponentType, name?: string) {
+    const componentName = name || component.displayName || component.name;
+    if (!componentName) {
+      console.error('Component must have a displayName or pass name as second argument');
+      return;
+    }
+    set(this.components, componentName, component);
   }
 
   addComponents(components: Record<string, ComponentType>) {
     Object.keys(components).forEach((name) => {
-      this.addComponent(name, components[name]);
+      this.addComponent(components[name], name);
     });
   }
 

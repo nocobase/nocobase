@@ -1,6 +1,6 @@
-import { Application } from './Application';
-import { Plugin } from './Plugin';
-import { PluginType } from './types';
+import type { Application } from './Application';
+import type { Plugin } from './Plugin';
+import type { PluginType } from './types';
 
 export class PluginManager {
   protected pluginInstances: Plugin[] = [];

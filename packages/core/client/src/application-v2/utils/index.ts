@@ -1,7 +1,10 @@
-import { isString } from '@nocobase/utils';
-
 export function normalizeContainer(container: Element | ShadowRoot | string): Element | null {
-  if (isString(container)) {
+  if (!container) {
+    console.warn(`Failed to mount app: mount target should not be null or undefined.`);
+    return null;
+  }
+
+  if (typeof container === 'string') {
     const res = document.querySelector(container);
     if (res) {
       console.warn(`Failed to mount app: mount target selector "${container}" returned null.`);

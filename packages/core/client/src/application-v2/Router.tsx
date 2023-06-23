@@ -1,10 +1,9 @@
 import set from 'lodash/set';
 import React, { ComponentType } from 'react';
 import { BrowserRouter, HashRouter, MemoryRouter, RouteObject, useRoutes } from 'react-router-dom';
-import { Application } from './Application';
-import { BlankComponent } from './components/BlankComponent';
-import { RouterContextCleaner } from './components/RouterContextCleaner';
-import { RouterOptions, RouteType } from './types';
+import type { Application } from './Application';
+import { BlankComponent, RouterContextCleaner } from './components';
+import type { RouterOptions, RouteType } from './types';
 
 export class Router {
   protected routes: Record<string, RouteType> = {};

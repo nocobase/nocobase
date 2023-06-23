@@ -1,4 +1,4 @@
 import { createContext } from 'react';
-import { Application } from './Application';
+import type { Application } from './Application';
 
 export const ApplicationContext = createContext<Application>(null);

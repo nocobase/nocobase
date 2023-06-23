@@ -1,5 +1,5 @@
 import { useContext } from 'react';
-import { Application } from '../Application';
+import type { Application } from '../Application';
 import { ApplicationContext } from '../context';
 
 export const useApp = () => {

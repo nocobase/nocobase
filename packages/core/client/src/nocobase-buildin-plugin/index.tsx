@@ -1,3 +1,4 @@
+import { Spin } from 'antd';
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { ACLPlugin } from '../acl';
@@ -10,9 +11,16 @@ import { PinnedPluginListPlugin } from '../plugin-manager';
 import { PMPlugin } from '../pm';
 import { AdminLayoutPlugin, AuthLayout, RouteSchemaComponent } from '../route-switch';
 import { AntdSchemaComponentPlugin, MenuItemInitializers, SchemaComponentPlugin } from '../schema-component';
+import { ErrorFallback } from '../schema-component/antd/error-fallback';
 import { SchemaInitializerPlugin } from '../schema-initializer';
 import { BlockTemplateDetails, BlockTemplatePage } from '../schema-templates';
 import { SystemSettingsPlugin } from '../system-settings';
+
+const AppSpin = () => (
+  <div style={{ textAlign: 'center', margin: 50 }}>
+    <Spin />
+  </div>
+);
 
 export class NoCoBaseBuildInPlugin extends Plugin {
   async afterAdd(): Promise<void> {
@@ -52,9 +60,11 @@ export class NoCoBaseBuildInPlugin extends Plugin {
 
   addComponents() {
     this.app.addComponents({
+      AppSpin,
       AuthLayout,
       SigninPage,
       SignupPage,
+      FallbackComponent: ErrorFallback,
       RouteSchemaComponent,
       BlockTemplatePage,
       BlockTemplateDetails,
