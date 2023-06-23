@@ -161,7 +161,9 @@ export default class WorkflowPlugin extends Plugin {
       workflows.forEach((workflow: WorkflowModel) => {
         this.toggle(workflow);
       });
+    });
 
+    this.app.on('afterStart', () => {
       // check for not started executions
       this.dispatch();
     });
