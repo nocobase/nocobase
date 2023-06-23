@@ -4,7 +4,7 @@ import type { Application } from '../Application';
 import { ApplicationContext } from '../context';
 import { useAppPluginLoad } from '../hooks';
 
-interface AppComponentProps {
+export interface AppComponentProps {
   app: Application;
 }
 

@@ -8,7 +8,6 @@ group:
 
 <img src="https://nocobase.oss-cn-beijing.aliyuncs.com/5be7ebc2f47effef85be7a0c75cf76f9.png" style="max-width: 800px;" />
 
-
 ## Usage
 
 ### Basic
@@ -18,3 +17,357 @@ group:
 ### Nested
 
 <code src="./demos/demo2.tsx">Demo2</code>
+
+## API
+
+### Components
+
+#### add component
+
+```tsx | pure
+const Hello = () => <div>Hello</div>;
+const World = () => <div>Wold</div>;
+
+// initial Application with components
+const app = new Application({
+  components: {
+    Hello,
+    World
+  }
+});
+
+// add multiple components
+app.addComponent({
+  Hello,
+  World
+});
+
+// add single component
+app.component(Hello, 'Hello');
+```
+
+Add component in plugin.
+
+```tsx | pure
+import { Application, Plugin } from '@nocobase/client';
+const Hello = () => <div>Hello</div>;
+
+class MyPlugin extends Plugin {
+  async load() {
+    this.app.addComponents({
+      Hello
+    });
+  }
+}
+
+const app = new Application({
+  plugins: [MyPlugin]
+});
+```
+
+#### get component
+
+```tsx | pure
+const app = new Application({
+  components: {
+    Hello
+  }
+});
+
+const Hello = app.component('Hello');
+```
+
+#### render component
+
+```tsx | pure
+const Test = (props) => <div>{props.name}</div>;
+const app = new Application({
+  components: {
+    Test
+  }
+});
+
+const Hello = () => {
+  return <div>
+    {app.renderComponent('Test', { name: 'foo' })}
+  </div>
+};
+```
+
+### Router
+
+#### initial
+
+```tsx | pure
+const app = new Application({
+  router: {
+    type: 'history' // default
+  }
+});
+
+// other type
+const app = new Application({
+  router: {
+    type: 'hash'
+  }
+});
+
+const app = new Application({
+  router: {
+    type: 'memory',
+    initialEntries: ['/', '/foo']
+  }
+});
+```
+
+#### add route
+
+```tsx | pure
+const app = new Application();
+app.router.add('home', {
+  path: '/',
+  element: <div>Home</div>
+});
+app.router.add('about', {
+  path: '/about',
+  element: <div>About</div>
+});
+```
+
+nested route
+
+```tsx | pure
+import { Link, Outlet } from 'react-router-dom';
+
+const app = new Application();
+const Root = () => <div>
+  <div>
+      <Link to='/'>Home</Link>
+      <Link to='/about'>About</Link>
+  </div>
+  <Outlet />
+</div>;
+
+app.router.add('root', {
+  element: <Layout />
+});
+app.router.add('root.home', {
+  path: '/',
+  element: <div>Home</div>
+});
+app.router.add('root.about', {
+  path: '/about',
+  element: <div>About</div>
+});
+
+const AdminLayout = () => {
+  return <div>
+    <div>
+      <Link to='/admin'>Admin Home</Link>
+      <Link to='/admin/user'>Admin User</Link>
+    </div>
+    <Outlet />
+  </div>
+}
+
+app.router.add('root.admin', {
+  path: '/admin',
+  element: <AdminLayout />
+});
+app.router.add('root.admin.home', {
+  path: '/admin',
+  element: <div>Admin Home</div>
+});
+app.router.add('root.admin.about', {
+  path: '/admin/user',
+  element: <div>Admin User</div>
+});
+```
+
+support `Component` is string.
+
+```tsx | pure
+const Hello = () => <div>Hello</div>;
+const World = () => <div>World</div>;
+app.addComponents({ World });
+
+app.router.add('hello', {
+  path: '/hello',
+  Component: Hello
+});
+
+app.router.add('hello', {
+  path: '/hello',
+  Component: 'World' // string
+})
+```
+
+Add route in plugin.
+
+```tsx | pure
+import { Application, Plugin } from '@nocobase/client';
+const Hello = () => <div>Hello</div>;
+
+class MyPlugin extends Plugin {
+  async load() {
+    this.app.router.add('hello', {
+      path: '/hello',
+      element: <Hello />
+    });
+  }
+}
+
+const app = new Application({
+  plugins: [MyPlugin]
+});
+```
+
+
+#### remove route
+
+```tsx | pure
+const app = new Application();
+app.router.add('home', {
+  path: '/',
+  element: <div>Home</div>
+});
+
+// remove by name
+app.router.remove('home');
+```
+
+### Scopes
+
+```tsx | pure
+const scopes = { foo: 'xxx' };
+// initial Application with scopes
+const app = new Application({ scopes });
+
+// add multiple scopes
+app.addScopes({ bar: 'xxx' });
+```
+
+### Providers
+
+```tsx | pure
+// Provider must render props.children
+const Hello = (props) => <div>Hello {props.children}</div>;
+const World = (props) => (
+  <div>
+    World {props.name} {props.children}
+  </div>
+);
+
+// initial Application with providers
+const app = new Application({
+  providers: [Hello, [World, { name: 'aaa' }]]
+});
+```
+
+It will render:
+
+```tsx | pure
+<Hello><World name='aaa'>{routes}</World></Hello>
+```
+
+```tsx | pure
+// add multiple providers
+app.addProviders([Hello, [World, { name: 'bbb' }]]);
+
+// add single provider
+app.addProvider(Hello);
+app.addProvider(World, { name: 'ccc' });
+```
+
+add provider in plugin.
+
+```tsx | pure
+import { Application, Plugin } from '@nocobase/client';
+const Hello = (props) => <div>Hello {props.children}</div>;
+
+class MyPlugin extends Plugin {
+  async load() {
+    this.app.addProvider(Hello);
+  }
+}
+
+const app = new Application({
+  plugins: [MyPlugin]
+});
+```
+
+### Plugins
+
+```tsx | pure
+import { Plugin } from '@nocobase/client';
+
+class MyPlugin extends Plugin {
+  async afterAdd() {
+    // You can load other plugins here.
+    // this.app.pm.add(OtherPlugin)
+  }
+
+  async load() {
+    // modify app
+    // this.app.router.add('hello', { xx })
+    // this.app.addComponents({ Hello })
+    // this.app.addProviders([Hello])
+    // this.app.addScopes({ foo: 'xxx' })
+  }
+
+  async afterLoad() {
+    // do something
+  }
+}
+```
+
+load other plugin.
+
+```tsx | pure
+
+class HelloPlugin extends Plugin {
+  async load() {
+    this.app.router.add('hello', {
+      path: '/hello',
+      element: <div>Hello</div>
+    })
+  }
+}
+
+const World = () => <div>World</div>;
+class WorldPlugin extends Plugin {
+  async load() {
+    this.app.addComponents({
+      World
+    })
+  }
+}
+
+class MyPlugin extends Plugin {
+  async afterAdd() {
+    this.app.pm.add(HelloPlugin);
+    this.app.pm.add(WorldPlugin);
+  }
+}
+```
+
+### render
+
+#### Root Component
+
+```tsx | pure
+const RootComponent = app.getRootComponent();
+
+const App = () => {
+  return <div>
+    My other logic
+    <RootComponent />
+  </div>
+}
+```
+
+#### mount
+
+```tsx | pure
+app.mount('#app');
+```

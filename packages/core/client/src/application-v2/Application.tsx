@@ -1,3 +1,4 @@
+import { APIClientOptions } from '@nocobase/sdk';
 import { i18n as i18next } from 'i18next';
 import get from 'lodash/get';
 import merge from 'lodash/merge';
@@ -9,15 +10,26 @@ import { Link, Navigate, NavLink } from 'react-router-dom';
 import { APIClient, APIClientProvider } from '../api-client';
 import { i18n } from '../i18n';
 import { AppComponent, BlankComponent, defaultAppComponents } from './components';
-import { compose } from './compose';
+import { Plugin } from './Plugin';
 import { PluginManager } from './PluginManager';
-import { Router } from './Router';
-import { ApplicationOptions, ComponentAndProps, ComponentTypeAndString } from './types';
-import { normalizeContainer } from './utils';
+import { RouterManager, RouterOptions } from './RouterManager';
+import { compose, normalizeContainer } from './utils';
+
+export type ComponentAndProps<T = any> = [ComponentType, T];
+export type PluginType<Opts = any> = typeof Plugin | [typeof Plugin, Opts];
+export interface ApplicationOptions {
+  apiClient?: APIClientOptions;
+  i18n?: i18next;
+  providers?: (ComponentType | ComponentAndProps)[];
+  plugins?: PluginType[];
+  components?: Record<string, ComponentType>;
+  scopes?: Record<string, any>;
+  router?: RouterOptions;
+}
 
 export class Application {
   public providers: ComponentAndProps[] = [];
-  public router: Router;
+  public router: RouterManager;
   public scopes: Record<string, any> = {};
   public i18n: i18next;
   public apiClient: APIClient;
@@ -29,7 +41,7 @@ export class Application {
     this.components = merge(this.components, options.components);
     this.apiClient = new APIClient(options.apiClient);
     this.i18n = options.i18n || i18n;
-    this.router = new Router(options.router, this);
+    this.router = new RouterManager(options.router, this);
     this.pm = new PluginManager(options.plugins, this);
     this.addDefaultProviders();
     this.addReactRouterComponents();

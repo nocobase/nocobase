@@ -1,4 +1,4 @@
-import { Router, useApp } from '@nocobase/client';
+import { RouterManager, useApp } from '@nocobase/client';
 import React, { useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
 import MApplication from './Application';
@@ -7,7 +7,7 @@ import { InterfaceProvider } from './InterfaceProvider';
 export const InterfaceRouter: React.FC = () => {
   const app = useApp();
   const MobileRouter = useMemo(() => {
-    const router = new Router({ type: 'hash' }, app);
+    const router = new RouterManager({ type: 'hash' }, app);
     router.add('root', {
       path: '/',
       element: <Navigate replace to="/mobile" />,

@@ -1,11 +1,34 @@
 import set from 'lodash/set';
 import React, { ComponentType } from 'react';
-import { BrowserRouter, HashRouter, MemoryRouter, RouteObject, useRoutes } from 'react-router-dom';
+import {
+  BrowserRouter,
+  BrowserRouterProps,
+  HashRouter,
+  HashRouterProps,
+  MemoryRouter,
+  MemoryRouterProps,
+  RouteObject,
+  useRoutes,
+} from 'react-router-dom';
 import type { Application } from './Application';
 import { BlankComponent, RouterContextCleaner } from './components';
-import type { RouterOptions, RouteType } from './types';
 
-export class Router {
+export interface BrowserRouterOptions extends Omit<BrowserRouterProps, 'children'> {
+  type?: 'browser';
+}
+export interface HashRouterOptions extends Omit<HashRouterProps, 'children'> {
+  type?: 'hash';
+}
+export interface MemoryRouterOptions extends Omit<MemoryRouterProps, 'children'> {
+  type?: 'memory';
+}
+export type RouterOptions = HashRouterOptions | BrowserRouterOptions | MemoryRouterOptions;
+export type ComponentTypeAndString<T = any> = ComponentType<T> | string;
+export interface RouteType extends Omit<RouteObject, 'children' | 'Component'> {
+  Component?: ComponentTypeAndString;
+}
+
+export class RouterManager {
   protected routes: Record<string, RouteType> = {};
 
   constructor(protected options: RouterOptions, protected app: Application) {
