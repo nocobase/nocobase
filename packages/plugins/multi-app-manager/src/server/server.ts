@@ -1,5 +1,5 @@
 import { Database, IDatabaseOptions, Transactionable } from '@nocobase/database';
-import Application, { AppManager, AppSupervisor, Gateway, Plugin } from '@nocobase/server';
+import Application, { AppSupervisor, Gateway, Plugin } from '@nocobase/server';
 import { Mutex } from 'async-mutex';
 import lodash from 'lodash';
 import path, { resolve } from 'path';
@@ -124,7 +124,7 @@ export class PluginMultiAppManager extends Plugin {
     this.db.on('applications.afterCreateWithAssociations', async (model: ApplicationModel, options) => {
       const { transaction } = options;
 
-      const subApp = model.registerToMainApp(this.app, {
+      const subApp = model.registerToSupervisor(this.app, {
         appOptionsFactory: this.appOptionsFactory,
       });
 
@@ -149,11 +149,11 @@ export class PluginMultiAppManager extends Plugin {
 
     // lazy load application
     // if application not in appManager, load it from database
-    this.app.on(
+    AppSupervisor.getInstance().on(
       'beforeGetApplication',
-      async ({ appManager, name, options }: { appManager: AppManager; name: string; options: any }) => {
+      async ({ appSupervisor, name, options }: { appSupervisor: AppSupervisor; name: string; options: any }) => {
         await this.beforeGetApplicationMutex.runExclusive(async () => {
-          if (appManager.applications.has(name)) {
+          if (appSupervisor.hasApp(name)) {
             return;
           }
 
@@ -166,7 +166,7 @@ export class PluginMultiAppManager extends Plugin {
           const instanceOptions = applicationRecord.get('options');
 
           // skip standalone deployment application
-          if (instanceOptions?.standaloneDeployment && appManager.runningMode !== 'single') {
+          if (instanceOptions?.standaloneDeployment && appSupervisor.runningMode !== 'single') {
             return;
           }
 
@@ -174,7 +174,7 @@ export class PluginMultiAppManager extends Plugin {
             return;
           }
 
-          const subApp = await applicationRecord.registerToMainApp(this.app, {
+          const subApp = await applicationRecord.registerToSupervisor(this.app, {
             appOptionsFactory: this.appOptionsFactory,
           });
 
@@ -188,21 +188,22 @@ export class PluginMultiAppManager extends Plugin {
 
     this.app.on('afterStart', async (app) => {
       const repository = this.db.getRepository('applications');
-      const appManager = this.app.appManager;
-      if (appManager.runningMode == 'single') {
+      const appSupervisor = AppSupervisor.getInstance();
+
+      if (appSupervisor.runningMode == 'single') {
         // If the sub application is running in single mode, register the application automatically
         try {
           const subApp = await repository.findOne({
             filter: {
-              name: appManager.singleAppName,
+              name: appSupervisor.singleAppName,
             },
           });
-          const registeredApp = await subApp.registerToMainApp(this.app, {
+          const registeredApp = await subApp.registerToSupervisor(this.app, {
             appOptionsFactory: this.appOptionsFactory,
           });
           await registeredApp.load();
         } catch (err) {
-          console.error('Auto register sub application in single mode failed: ', appManager.singleAppName, err);
+          console.error('Auto register sub application in single mode failed: ', appSupervisor.singleAppName, err);
         }
         return;
       }
@@ -213,7 +214,7 @@ export class PluginMultiAppManager extends Plugin {
           },
         });
         for (const subApp of subApps) {
-          const registeredApp = await subApp.registerToMainApp(this.app, {
+          const registeredApp = await subApp.registerToSupervisor(this.app, {
             appOptionsFactory: this.appOptionsFactory,
           });
           await registeredApp.load();
@@ -229,11 +230,11 @@ export class PluginMultiAppManager extends Plugin {
       const repository = this.db.getRepository('applications');
       const findOptions = {};
 
-      const appManager = this.app.appManager;
+      const appSupervisor = AppSupervisor.getInstance();
 
-      if (appManager.runningMode == 'single') {
+      if (appSupervisor.runningMode == 'single') {
         findOptions['filter'] = {
-          name: appManager.singleAppName,
+          name: appSupervisor.singleAppName,
         };
       }
 
@@ -243,11 +244,11 @@ export class PluginMultiAppManager extends Plugin {
         const instanceOptions = instance.get('options');
 
         // skip standalone deployment application
-        if (instanceOptions?.standaloneDeployment && appManager.runningMode !== 'single') {
+        if (instanceOptions?.standaloneDeployment && appSupervisor.runningMode !== 'single') {
           continue;
         }
 
-        const subApp = await appManager.getApplication(instance.name, {
+        const subApp = await appSupervisor.getApp(instance.name, {
           upgrading: true,
         });
 

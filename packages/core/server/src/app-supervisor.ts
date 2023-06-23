@@ -1,12 +1,24 @@
+import { applyMixins, AsyncEmitter } from '@nocobase/utils';
+import { EventEmitter } from 'events';
 import type Application from './application';
 
-export class AppSupervisor {
+export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   private static instance: AppSupervisor;
+  public runningMode: 'single' | 'multiple' = 'multiple';
+  public singleAppName: string | null = null;
+  declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
   private apps: {
     [key: string]: Application;
   } = {};
 
-  private constructor() {}
+  private constructor() {
+    super();
+
+    if (process.env.STARTUP_SUBAPP) {
+      this.runningMode = 'single';
+      this.singleAppName = process.env.STARTUP_SUBAPP;
+    }
+  }
 
   public static getInstance(): AppSupervisor {
     if (!AppSupervisor.instance) {
@@ -16,9 +28,18 @@ export class AppSupervisor {
     return AppSupervisor.instance;
   }
 
-  async getApp(appName: string) {
-    console.log(this.apps);
+  async getApp(appName: string, options = {}) {
+    await this.emitAsync('beforeGetApplication', {
+      appSupervisor: this,
+      name: appName,
+      options,
+    });
+
     return this.apps[appName];
+  }
+
+  hasApp(appName: string): Boolean {
+    return !!this.apps[appName];
   }
 
   addApp(app: Application) {
@@ -34,3 +55,5 @@ export class AppSupervisor {
     delete this.apps[appName];
   }
 }
+
+applyMixins(AppSupervisor, [AsyncEmitter]);

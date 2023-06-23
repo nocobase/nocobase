@@ -1,5 +1,5 @@
 import { Model, Transactionable } from '@nocobase/database';
-import { Application } from '@nocobase/server';
+import { Application, AppSupervisor } from '@nocobase/server';
 import { AppOptionsFactory } from '../server';
 
 export interface registerAppOptions extends Transactionable {
@@ -8,7 +8,7 @@ export interface registerAppOptions extends Transactionable {
 }
 
 export class ApplicationModel extends Model {
-  registerToMainApp(mainApp: Application, options: registerAppOptions) {
+  registerToSupervisor(mainApp: Application, options: registerAppOptions) {
     const appName = this.get('name') as string;
     const appOptions = (this.get('options') as any) || {};
 
@@ -20,9 +20,9 @@ export class ApplicationModel extends Model {
 
     const subApp = new Application(subAppOptions);
 
-    mainApp.appManager.addSubApp(subApp);
+    AppSupervisor.getInstance().addApp(subApp);
 
-    console.log(`register application ${appName} to main app`);
+    console.log(`register application ${appName} `);
     return subApp;
   }
 }
