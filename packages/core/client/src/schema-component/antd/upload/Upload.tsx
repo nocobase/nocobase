@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 import Lightbox from 'react-image-lightbox';
 import 'react-image-lightbox/style.css'; // This only needs to be imported once in your app
 import { ReadPretty } from './ReadPretty';
-import { isImage, toArr, toFileList, toItem, toValue, useUploadProps } from './shared';
+import { isImage, isPdf, toArr, toFileList, toItem, toValue, useUploadProps } from './shared';
 import './style.less';
 import type { ComposedUpload, DraggerProps, DraggerV2Props, UploadProps } from './type';
 
@@ -31,7 +31,11 @@ Upload.Attachment = connect((props: UploadProps) => {
   const images = fileList;
   const [photoIndex, setPhotoIndex] = useState(0);
   const [visible, setVisible] = useState(false);
+  const [visiblePDF, setVisiblePDF] = useState(false);
   const { t } = useTranslation();
+  function closePdfIFrame() {
+    setVisiblePDF(false);
+  }
   useEffect(() => {
     if (sync) {
       setFileList(toFileList(value));
@@ -49,6 +53,9 @@ Upload.Attachment = connect((props: UploadProps) => {
               const index = fileList.indexOf(file);
               if (isImage(file.extname)) {
                 setVisible(true);
+                setPhotoIndex(index);
+              } else if(isPdf(file.extname)) {
+                setVisiblePDF(true);
                 setPhotoIndex(index);
               } else {
                 saveAs(file.url, `${file.title}${file.extname}`);
@@ -188,6 +195,60 @@ Upload.Attachment = connect((props: UploadProps) => {
             </button>,
           ]}
         />
+      )}
+            
+      {visiblePDF && (
+        <div
+         style={{ 
+          position: 'fixed', left: '0px', top: '0px', zIndex: 100,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'rgba(0,0,0,0.5)', width: '100%', height: '100%',
+          padding: '64px'
+        }}
+        >
+          <div style={{
+            padding: '8px',
+            maxWidth: '90vw',
+            maxHeight: 'calc(100vh - 112px)',
+            height: '90vh',
+            width: '90vw',
+            background: 'white',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            overflowY: 'auto'
+          }} >
+            <iframe src={images[photoIndex].url} style={{
+              width: '100%',
+              maxHeight: '90vh',
+              flex: '1 1 auto'
+            }}>
+            </iframe>
+            <div style={{
+              padding: '18px'
+            }}>
+              <Button
+                style={{
+                  marginRight: '4px'
+                }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const file = images[photoIndex];
+                  saveAs(file.url, `${file.title}${file.extname}`);
+                }}
+              >
+                Download
+              </Button>
+              <Button onClick={closePdfIFrame}>
+                Close
+              </Button>
+            </div>
+          </div>
+          
+        </div>
       )}
     </div>
   );
