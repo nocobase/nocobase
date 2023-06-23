@@ -1,5 +1,5 @@
 import { Database } from '@nocobase/database';
-import { AppSupervisor } from '@nocobase/server';
+import { AppSupervisor, Gateway } from '@nocobase/server';
 import { mockServer, MockServer } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
 import { PluginMultiAppManager } from '../server';
@@ -60,7 +60,7 @@ describe('multiple apps create', () => {
       },
     });
 
-    expect(AppSupervisor.getInstance().getApp(name)).toBeDefined();
+    expect(await AppSupervisor.getInstance().getApp(name)).toBeDefined();
   });
 
   it('should remove application', async () => {
@@ -74,7 +74,7 @@ describe('multiple apps create', () => {
       },
     });
 
-    expect(AppSupervisor.getInstance().getApp(name)).toBeDefined();
+    expect(await AppSupervisor.getInstance().getApp(name)).toBeDefined();
 
     await db.getRepository('applications').destroy({
       filter: {
@@ -82,7 +82,7 @@ describe('multiple apps create', () => {
       },
     });
 
-    expect(AppSupervisor.getInstance().getApp(name)).toBeUndefined();
+    expect(await AppSupervisor.getInstance().getApp(name)).toBeUndefined();
   });
 
   it('should create with plugins', async () => {
@@ -110,6 +110,7 @@ describe('multiple apps create', () => {
   it('should lazy load applications', async () => {
     const name = `td_${uid()}`;
 
+    // create app instance
     await db.getRepository('applications').create({
       values: {
         name,
@@ -119,13 +120,17 @@ describe('multiple apps create', () => {
       },
     });
 
+    // remove it from supervisor
     AppSupervisor.getInstance().removeApp(name);
 
-    expect(AppSupervisor.getInstance().getApp(name)).toBeFalsy();
+    expect(AppSupervisor.getInstance().hasApp(name)).toBeFalsy();
 
+    Gateway.getInstance().appSelector = () => name;
+
+    // access it ?
     await app.agent().resource('test').test();
 
-    expect(AppSupervisor.getInstance().getApp(name)).toBeTruthy();
+    expect(AppSupervisor.getInstance().hasApp(name)).toBeTruthy();
   });
 
   it('should upgrade sub apps when main app upgrade', async () => {

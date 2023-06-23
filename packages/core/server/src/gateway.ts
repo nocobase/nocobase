@@ -46,13 +46,18 @@ export class Gateway {
     app.callback()(req, res);
   }
 
+  getCallback() {
+    return this.requestHandler.bind(this);
+  }
+
   start() {
     if (!this.port) {
       console.log('gateway port is not set, http server will not start');
       return;
     }
 
-    this.server = http.createServer(this.requestHandler.bind(this));
+    this.server = http.createServer(this.getCallback());
+
     this.server.listen(this.port, () => {
       console.log(`Gateway Server running at http://${this.host}:${this.port}/`);
     });

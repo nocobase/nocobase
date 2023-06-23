@@ -1,5 +1,5 @@
 import { Database, mockDatabase } from '@nocobase/database';
-import Application, { ApplicationOptions, PluginManager } from '@nocobase/server';
+import Application, { ApplicationOptions, Gateway, PluginManager } from '@nocobase/server';
 import jwt from 'jsonwebtoken';
 import qs from 'qs';
 import supertest, { SuperAgentTest } from 'supertest';
@@ -86,7 +86,7 @@ export class MockServer extends Application {
     loginUsingId: (userId: number) => SuperAgentTest;
     resource: (name: string, resourceOf?: any) => Resource;
   } {
-    const agent = supertest.agent(this.appManager.callback());
+    const agent = supertest.agent(Gateway.getInstance().getCallback());
     const prefix = this.resourcer.options.prefix;
     const proxy = new Proxy(agent, {
       get(target, method: string, receiver) {

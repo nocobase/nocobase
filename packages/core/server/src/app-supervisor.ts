@@ -38,7 +38,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return this.apps[appName];
   }
 
-  hasApp(appName: string): Boolean {
+  hasApp(appName: string): boolean {
     return !!this.apps[appName];
   }
 

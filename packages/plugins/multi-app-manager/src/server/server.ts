@@ -163,6 +163,10 @@ export class PluginMultiAppManager extends Plugin {
             },
           })) as ApplicationModel | null;
 
+          if (!applicationRecord) {
+            return;
+          }
+
           const instanceOptions = applicationRecord.get('options');
 
           // skip standalone deployment application
