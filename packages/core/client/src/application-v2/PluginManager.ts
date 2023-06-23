@@ -1,6 +1,7 @@
 import type { Application } from './Application';
 import type { Plugin } from './Plugin';
-import type { PluginType } from './types';
+
+export type PluginType<Opts = any> = typeof Plugin | [typeof Plugin, Opts];
 
 export class PluginManager {
   protected pluginInstances: Plugin[] = [];

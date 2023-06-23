@@ -10,13 +10,11 @@ import { Link, Navigate, NavLink } from 'react-router-dom';
 import { APIClient, APIClientProvider } from '../api-client';
 import { i18n } from '../i18n';
 import { AppComponent, BlankComponent, defaultAppComponents } from './components';
-import { Plugin } from './Plugin';
-import { PluginManager } from './PluginManager';
-import { RouterManager, RouterOptions } from './RouterManager';
+import { PluginManager, PluginType } from './PluginManager';
+import { ComponentTypeAndString, RouterManager, RouterOptions } from './RouterManager';
 import { compose, normalizeContainer } from './utils';
 
 export type ComponentAndProps<T = any> = [ComponentType, T];
-export type PluginType<Opts = any> = typeof Plugin | [typeof Plugin, Opts];
 export interface ApplicationOptions {
   apiClient?: APIClientOptions;
   i18n?: i18next;
