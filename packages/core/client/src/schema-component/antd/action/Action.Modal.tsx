@@ -46,18 +46,8 @@ export const ActionModal: ComposedActionDrawer<ModalProps> = observer(
                 display: none;
               }
 
-              .ant-modal-body {
-                padding-top: 16px;
-              }
-
-              .ant-modal-body {
+              .ant-modal-content {
                 background: #f0f2f5;
-              }
-
-              .ant-modal-close-x {
-                width: 32px;
-                height: 32px;
-                line-height: 32px;
               }
             }
           `,
