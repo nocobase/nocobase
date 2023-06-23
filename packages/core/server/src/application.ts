@@ -395,6 +395,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   async destroy(options: any = {}) {
     await this.emitAsync('beforeDestroy', this, options);
     await this.stop(options);
+
+    await AppSupervisor.getInstance().removeApp(this.name);
     await this.emitAsync('afterDestroy', this, options);
   }
 

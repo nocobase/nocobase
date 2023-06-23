@@ -217,10 +217,12 @@ export class PluginMultiAppManager extends Plugin {
             'options.autoStart': true,
           },
         });
+
         for (const subApp of subApps) {
           const registeredApp = await subApp.registerToSupervisor(this.app, {
             appOptionsFactory: this.appOptionsFactory,
           });
+
           await registeredApp.load();
         }
       } catch (err) {

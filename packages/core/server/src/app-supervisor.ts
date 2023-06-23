@@ -49,6 +49,11 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     }
 
     this.apps[app.name] = app;
+
+    this.emitAsync('afterAppAdded', {
+      appSupervisor: this,
+      app,
+    });
   }
 
   removeApp(appName: string) {

@@ -166,24 +166,32 @@ describe('multiple apps create', () => {
         options: {},
       },
     });
+
     await AppSupervisor.getInstance().removeApp(subAppName);
 
     await app.start();
-    expect(AppSupervisor.getInstance().getApp(subAppName)).toBeUndefined();
+
+    expect(AppSupervisor.getInstance().hasApp(subAppName)).toBeFalsy();
+
     await subApp.update({
       options: {
         autoStart: true,
       },
     });
+
     await AppSupervisor.getInstance().removeApp(subAppName);
+
+    expect(AppSupervisor.getInstance().hasApp(subAppName)).toBeFalsy();
+
     await app.start();
-    expect(AppSupervisor.getInstance().getApp(subAppName)).toBeDefined();
+
+    expect(AppSupervisor.getInstance().hasApp(subAppName)).toBeTruthy();
   });
 
   it('should get same obj ref when asynchronously access with same sub app name', async () => {
     const subAppName = `t_${uid()}`;
 
-    const subApp = await app.db.getRepository('applications').create({
+    await app.db.getRepository('applications').create({
       values: {
         name: subAppName,
         options: {},
@@ -191,7 +199,8 @@ describe('multiple apps create', () => {
     });
 
     await AppSupervisor.getInstance().removeApp(subAppName);
-    expect(AppSupervisor.getInstance().getApp(subAppName)).toBeUndefined();
+
+    expect(AppSupervisor.getInstance().hasApp(subAppName)).toBeFalsy();
 
     const instances = [];
 
