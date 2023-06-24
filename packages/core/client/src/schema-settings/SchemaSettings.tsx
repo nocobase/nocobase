@@ -82,6 +82,8 @@ interface SchemaSettingsContextProps {
   collectionName?: any;
 }
 
+const mouseEnterDelay = 100;
+
 const SchemaSettingsContext = createContext<SchemaSettingsContextProps>(null);
 
 /**
