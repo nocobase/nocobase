@@ -216,7 +216,7 @@ function toMoment(value) {
   if (dayjs.isDayjs(value)) {
     return value;
   }
-  return dayjs.utc(value);
+  return dayjs(value);
 }
 
 export type Utc2unitOptions = {
