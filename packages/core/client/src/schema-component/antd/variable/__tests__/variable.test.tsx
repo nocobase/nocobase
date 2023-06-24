@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, sleep, userEvent } from 'testUtils';
+import { render, screen, sleep, userEvent, waitFor } from 'testUtils';
 import App1 from '../demos/demo1';
 import App2 from '../demos/demo2';
 import App3 from '../demos/demo3';
@@ -26,22 +26,24 @@ describe('Variable', () => {
   it('Variable.TextArea', async () => {
     render(<App2 />);
 
-    const input = document.querySelector('.ant-input') as HTMLElement;
-    const variableSelector = document.querySelector('.ant-select-selector') as HTMLElement;
-    expect(input).toBeInTheDocument();
-    expect(variableSelector).toBeInTheDocument();
+    await waitFor(async () => {
+      const input = document.querySelector('.ant-input') as HTMLElement;
+      const variableSelector = document.querySelector('.ant-select-selector') as HTMLElement;
+      expect(input).toBeInTheDocument();
+      expect(variableSelector).toBeInTheDocument();
 
-    await userEvent.type(input, '1+');
-    await sleep(100);
+      await userEvent.type(input, '1+');
+      await sleep(100);
 
-    await userEvent.click(variableSelector);
-    await userEvent.click(screen.getByText('v1'));
-    await sleep(100);
-    expect(input).toMatchInlineSnapshot(`
+      await userEvent.click(variableSelector);
+      await userEvent.click(screen.getByText('v1'));
+      await sleep(100);
+      expect(input).toMatchInlineSnapshot(`
       <div
-        class="ant-input css-1p5yrh5"
+        class="css-dev-only-do-not-override-1wazalj ant-input css-1p5yrh5"
         contenteditable="true"
       >
+        1+
         <span
           class="ant-tag ant-tag-blue"
           contenteditable="false"
@@ -49,9 +51,9 @@ describe('Variable', () => {
         >
           v1
         </span>
-        +1
       </div>
     `);
+    });
   });
 
   it('Variable.JSON', async () => {

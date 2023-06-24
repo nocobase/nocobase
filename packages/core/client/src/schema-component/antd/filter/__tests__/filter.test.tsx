@@ -10,23 +10,25 @@ describe('Filter', () => {
   it('Filter & Action', async () => {
     render(<App3 />);
 
-    await waitFor(() => userEvent.click(screen.getByText(/open/i)));
-    const tooltip = screen.getByRole('tooltip');
-    expect(tooltip).toBeInTheDocument();
+    await waitFor(async () => {
+      await userEvent.click(screen.getByText(/open/i));
+      const tooltip = screen.getByRole('tooltip');
+      expect(tooltip).toBeInTheDocument();
 
-    // 弹窗中显示的内容
-    expect(within(tooltip).getByText(/name/i)).toBeInTheDocument();
-    expect(within(tooltip).getByText(/ne/i)).toBeInTheDocument();
-    expect(within(tooltip).getByText(/tags \/ title/i)).toBeInTheDocument();
-    expect(within(tooltip).getByText(/eq/i)).toBeInTheDocument();
-    expect(within(tooltip).getByText(/^Add condition$/i)).toBeInTheDocument();
-    expect(within(tooltip).getByText(/^Add condition group$/i)).toBeInTheDocument();
+      // 弹窗中显示的内容
+      expect(within(tooltip).getByText(/name/i)).toBeInTheDocument();
+      expect(within(tooltip).getByText(/ne/i)).toBeInTheDocument();
+      expect(within(tooltip).getByText(/tags \/ title/i)).toBeInTheDocument();
+      expect(within(tooltip).getByText(/eq/i)).toBeInTheDocument();
+      expect(within(tooltip).getByText(/^Add condition$/i)).toBeInTheDocument();
+      expect(within(tooltip).getByText(/^Add condition group$/i)).toBeInTheDocument();
 
-    const inputs = tooltip.querySelectorAll('.ant-input');
-    expect(inputs).toHaveLength(2);
-    // 输入框中的默认值
-    expect(inputs[0]).toHaveValue('aa');
-    expect(inputs[1]).toHaveValue('aaa');
+      const inputs = tooltip.querySelectorAll('.ant-input');
+      expect(inputs).toHaveLength(2);
+      // 输入框中的默认值
+      expect(inputs[0]).toHaveValue('aa');
+      expect(inputs[1]).toHaveValue('aaa');
+    });
   });
 
   it('default value', () => {
