@@ -64,10 +64,12 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
     this.apps[app.name] = app;
 
+    // listen afterDestroy event, after app destroyed, remove it from supervisor
     const afterDestroy = () => {
       delete this.apps[app.name];
     };
 
+    // set alwaysBind to true, so that afterDestroy will always be listened after application reload
     afterDestroy.alwaysBind = true;
 
     app.on('afterDestroy', afterDestroy);
@@ -80,6 +82,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
       return;
     }
 
+    // call app.destroy
     await this.apps[appName].destroy();
   }
 }
