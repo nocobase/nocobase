@@ -91,6 +91,7 @@ export const useTableColumnInitializerFields = () => {
   const isSubTable = fieldSchema['x-component'] === 'AssociationField.SubTable';
   const form = useForm();
   const isReadPretty = isSubTable ? form.readPretty : true;
+
   return currentFields
     .filter(
       (field) => field?.interface && field?.interface !== 'subTable' && !field?.isForeignKey && !field?.treeChildren,
@@ -201,6 +202,10 @@ export const useAssociatedTableColumnInitializerFields = () => {
 export const useInheritsTableColumnInitializerFields = () => {
   const { name } = useCollection();
   const { getInterface, getInheritCollections, getCollection, getParentCollectionFields } = useCollectionManager();
+  const fieldSchema = useFieldSchema();
+  const isSubTable = fieldSchema['x-component'] === 'AssociationField.SubTable';
+  const form = useForm();
+  const isReadPretty = isSubTable ? form.readPretty : true;
   const inherits = getInheritCollections(name);
   return inherits?.map((v) => {
     const fields = getParentCollectionFields(v, name);
@@ -215,7 +220,7 @@ export const useInheritsTableColumnInitializerFields = () => {
           const schema = {
             name: `${k.name}`,
             'x-component': 'CollectionField',
-            'x-read-pretty': true,
+            'x-read-pretty': isReadPretty || k.uiSchema?.['x-read-pretty'],
             'x-collection-field': `${name}.${k.name}`,
             'x-component-props': {},
           };
