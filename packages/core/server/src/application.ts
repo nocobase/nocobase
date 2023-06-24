@@ -294,7 +294,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   async load(options?: any) {
     if (options?.reload) {
-      console.log(`Reload the ${this.name} application configuration`);
+      this.log.info(`Reload application configuration`);
       const oldDb = this._db;
       this.init();
       await oldDb.close();
@@ -306,12 +306,14 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async reload(options?: any) {
+    this.log.debug(`start reload`);
     await this.load({
       ...options,
       reload: true,
     });
 
     await this.emitAsync('afterReload', this, options);
+    this.log.debug(`finish reload`);
   }
 
   getPlugin<P extends Plugin>(name: string) {
@@ -381,6 +383,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       // close database connection
       // silent if database already closed
       if (!this.db.closed()) {
+        console.log(`close ${this.name} db`);
         await this.db.close();
       }
     } catch (e) {
@@ -476,7 +479,13 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   protected init() {
     const options = this.options;
 
-    const logger = createAppLogger(options.logger);
+    const logger = createAppLogger({
+      ...options.logger,
+      defaultMeta: {
+        app: this.name,
+      },
+    });
+
     this._logger = logger.instance;
 
     // @ts-ignore

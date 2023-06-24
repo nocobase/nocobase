@@ -131,16 +131,15 @@ export class PluginMultiAppManager extends Plugin {
       // create database
       await this.appDbCreator(subApp, transaction);
 
-      // reload subApp plugin
-      await subApp.reload();
-
-      // sync subApp collections
-      await subApp.db.sync();
-
-      // install subApp
-      await subApp.install();
-
-      await subApp.reload();
+      await subApp.load();
+      //
+      // // sync subApp collections
+      // await subApp.db.sync();
+      //
+      // // install subApp
+      // await subApp.install();
+      //
+      // await subApp.reload();
     });
 
     this.db.on('applications.afterDestroy', async (model: ApplicationModel) => {

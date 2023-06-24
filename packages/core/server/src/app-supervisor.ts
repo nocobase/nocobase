@@ -7,7 +7,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   public runningMode: 'single' | 'multiple' = 'multiple';
   public singleAppName: string | null = null;
   declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
-  private apps: {
+  public apps: {
     [key: string]: Application;
   } = {};
 
@@ -26,6 +26,15 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     }
 
     return AppSupervisor.instance;
+  }
+
+  public reset() {
+    this.apps = {};
+  }
+
+  destroy() {
+    this.reset();
+    AppSupervisor.instance = null;
   }
 
   async getApp(appName: string, options = {}) {
@@ -50,10 +59,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
     this.apps[app.name] = app;
 
-    this.emitAsync('afterAppAdded', {
-      appSupervisor: this,
-      app,
-    });
+    this.emit('afterAppAdded', app);
   }
 
   removeApp(appName: string) {

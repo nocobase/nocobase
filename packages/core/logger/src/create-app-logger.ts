@@ -27,7 +27,9 @@ export function createAppLogger(options: AppLoggerOptions = {}) {
     responseWhitelist = defaultResponseWhitelist,
     ...others
   } = options;
+
   const instance = createLogger(others);
+
   const middleware = async (ctx: Koa.Context, next: Koa.Next) => {
     if (skip && (await skip(ctx))) {
       return next();

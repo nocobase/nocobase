@@ -7,14 +7,17 @@ export type AppSelector = (req: IncomingMessage) => AppSelectorReturn | Promise<
 
 export class Gateway {
   private static instance: Gateway;
-
+  /**
+   * use main app as default app to handle request
+   */
+  appSelector;
   private server: http.Server | null = null;
-
   private port: number = process.env.APP_PORT ? parseInt(process.env.APP_PORT) : null;
-
   private host = '0.0.0.0';
 
-  private constructor() {}
+  private constructor() {
+    this.reset();
+  }
 
   public static getInstance(): Gateway {
     if (!Gateway.instance) {
@@ -24,10 +27,18 @@ export class Gateway {
     return Gateway.instance;
   }
 
-  /**
-   * use main app as default app to handle request
-   */
-  appSelector: AppSelector = () => 'main';
+  destroy() {
+    this.reset();
+    Gateway.instance = null;
+  }
+
+  public reset() {
+    this.appSelector = () => 'main';
+    if (this.server) {
+      this.server.close();
+      this.server = null;
+    }
+  }
 
   setAppSelector(selector: AppSelector) {
     this.appSelector = selector;

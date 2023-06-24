@@ -1,5 +1,5 @@
 import { Database, mockDatabase } from '@nocobase/database';
-import Application, { ApplicationOptions, Gateway, PluginManager } from '@nocobase/server';
+import Application, { ApplicationOptions, AppSupervisor, Gateway, PluginManager } from '@nocobase/server';
 import jwt from 'jsonwebtoken';
 import qs from 'qs';
 import supertest, { SuperAgentTest } from 'supertest';
@@ -79,6 +79,13 @@ export class MockServer extends Application {
 
   async cleanDb() {
     await this.db.clean({ drop: true });
+  }
+
+  async destroy(options: any = {}): Promise<void> {
+    await super.destroy(options);
+
+    Gateway.getInstance().destroy();
+    AppSupervisor.getInstance().destroy();
   }
 
   agent(): SuperAgentTest & {
@@ -168,6 +175,9 @@ export function mockServer(options: ApplicationOptions = {}) {
   if (typeof TextDecoder === 'undefined') {
     global.TextDecoder = require('util').TextDecoder;
   }
+
+  Gateway.getInstance().reset();
+  AppSupervisor.getInstance().reset();
 
   // @ts-ignore
   if (!PluginManager.findPackagePatched) {
