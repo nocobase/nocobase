@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Input } from 'antd';
+import { css, cx } from '@emotion/css';
 import { useForm } from '@formily/react';
-import { cx, css } from '@emotion/css';
-import { useTranslation } from 'react-i18next';
+import { Input } from 'antd';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import * as sanitizeHTML from 'sanitize-html';
 
 import { EllipsisWithTooltip, useCompile } from '../..';
 import { VariableSelect } from './VariableSelect';
+import { useStyles } from './style';
 
 type RangeIndexes = [number, number, number, number];
 
@@ -185,6 +185,7 @@ function getCurrentRange(element: HTMLElement): RangeIndexes {
 }
 
 export function TextArea(props) {
+  const { wrapSSR, hashId, componentCls } = useStyles();
   const { value = '', scope, onChange, multiline = true } = props;
   const compile = useCompile();
   const inputRef = useRef<HTMLDivElement>(null);
@@ -331,24 +332,28 @@ export function TextArea(props) {
 
   const disabled = props.disabled || form.disabled;
 
-  return (
+  return wrapSSR(
     <Input.Group
       compact
-      className={css`
-        &.ant-input-group.ant-input-group-compact {
-          display: flex;
-          .ant-input {
-            flex-grow: 1;
-            min-width: 200px;
-          }
-          .ant-input-disabled {
-            .ant-tag {
-              color: #bfbfbf;
-              border-color: #d9d9d9;
+      className={cx(
+        componentCls,
+        hashId,
+        css`
+          &.ant-input-group.ant-input-group-compact {
+            display: flex;
+            .ant-input {
+              flex-grow: 1;
+              min-width: 200px;
+            }
+            .ant-input-disabled {
+              .ant-tag {
+                color: #bfbfbf;
+                border-color: #d9d9d9;
+              }
             }
           }
-        }
-      `}
+        `,
+      )}
     >
       <div
         onInput={onInput}
@@ -356,6 +361,7 @@ export function TextArea(props) {
         onKeyDown={onKeyDown}
         onPaste={onPaste}
         className={cx(
+          hashId,
           'ant-input',
           { 'ant-input-disabled': disabled },
           css`
@@ -376,7 +382,7 @@ export function TextArea(props) {
         dangerouslySetInnerHTML={{ __html: html }}
       />
       {!disabled ? <VariableSelect options={options} onInsert={onInsert} /> : null}
-    </Input.Group>
+    </Input.Group>,
   );
 }
 
