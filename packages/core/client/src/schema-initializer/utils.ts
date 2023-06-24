@@ -217,12 +217,30 @@ export const useInheritsTableColumnInitializerFields = () => {
         })
         .map((k) => {
           const interfaceConfig = getInterface(k.interface);
+          const isFileCollection = k?.target && getCollection(k?.target)?.template === 'file';
           const schema = {
             name: `${k.name}`,
             'x-component': 'CollectionField',
             'x-read-pretty': isReadPretty || k.uiSchema?.['x-read-pretty'],
             'x-collection-field': `${name}.${k.name}`,
-            'x-component-props': {},
+            'x-component-props': isFileCollection
+              ? {
+                  fieldNames: {
+                    label: 'preview',
+                    value: 'id',
+                  },
+                }
+              : {},
+            'x-decorator': isSubTable
+              ? quickEditField.includes(k.interface) || isFileCollection
+                ? 'QuickEdit'
+                : 'FormItem'
+              : null,
+            'x-decorator-props': {
+              labelStyle: {
+                display: 'none',
+              },
+            },
           };
           return {
             type: 'item',
