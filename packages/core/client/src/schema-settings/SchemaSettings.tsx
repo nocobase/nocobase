@@ -20,7 +20,7 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import _, { cloneDeep } from 'lodash';
-import React, { ReactNode, createContext, useCallback, useContext, useMemo, useState } from 'react';
+import React, { ReactNode, createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -72,6 +72,8 @@ interface SchemaSettingsContextProps {
   template?: any;
   collectionName?: any;
 }
+
+const mouseEnterDelay = 100;
 
 const SchemaSettingsContext = createContext<SchemaSettingsContextProps>(null);
 
@@ -132,13 +134,19 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
   const [visible, setVisible] = useState(false);
   const { Component, getMenuItems } = useMenuItem();
   const [shouldRender, setShouldRender] = useState(false);
+  const timer = useRef(null);
 
   if (!shouldRender) {
     return (
       <div
         onMouseEnter={() => {
-          setShouldRender(true);
-          setVisible(true);
+          timer.current = setTimeout(() => {
+            setShouldRender(true);
+            setVisible(true);
+          }, mouseEnterDelay);
+        }}
+        onMouseLeave={() => {
+          timer.current && clearTimeout(timer.current);
         }}
       >
         {typeof title === 'string' ? <span>{title}</span> : title}

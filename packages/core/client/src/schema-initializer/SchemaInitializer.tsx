@@ -16,6 +16,8 @@ import {
   SchemaInitializerItemProps,
 } from './types';
 
+const mouseEnterDelay = 100;
+
 const overlayClassName = css`
   .ant-dropdown-menu-item-group-list {
     max-height: 40vh;
@@ -58,6 +60,7 @@ SchemaInitializer.Button = observer(
     const { Component: CollectionComponent, getMenuItem, clean } = useMenuItem();
     const [shouldRender, setShouldRender] = useState(false);
     const [searchValue, setSearchValue] = useState('');
+    const timer = React.useRef(null);
 
     if (!designable && props.designable !== true) {
       return null;
@@ -67,8 +70,13 @@ SchemaInitializer.Button = observer(
       <div
         style={{ display: 'inline-block' }}
         onMouseEnter={() => {
-          setShouldRender(true);
-          setVisible(true);
+          timer.current = setTimeout(() => {
+            setShouldRender(true);
+            setVisible(true);
+          }, mouseEnterDelay);
+        }}
+        onMouseLeave={() => {
+          timer.current && clearTimeout(timer.current);
         }}
       >
         {component ? (
