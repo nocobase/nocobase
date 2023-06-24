@@ -28,16 +28,15 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return AppSupervisor.instance;
   }
 
-  public reset() {
-    this.apps = {};
+  async reset() {
+    const appNames = Object.keys(this.apps);
+    for (const appName of appNames) {
+      await this.removeApp(appName);
+    }
   }
 
   async destroy() {
-    for (const appName in this.apps) {
-      await this.apps[appName].destroy();
-    }
-
-    this.reset();
+    await this.reset();
     AppSupervisor.instance = null;
   }
 
@@ -61,17 +60,27 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
       throw new Error(`app ${app.name} already exists`);
     }
 
+    console.log(`add app ${app.name} into supervisor`);
+
     this.apps[app.name] = app;
 
+    const afterDestroy = () => {
+      delete this.apps[app.name];
+    };
+
+    afterDestroy.alwaysBind = true;
+
+    app.on('afterDestroy', afterDestroy);
     this.emit('afterAppAdded', app);
   }
 
-  removeApp(appName: string) {
+  async removeApp(appName: string) {
     if (!this.apps[appName]) {
+      console.log(`app ${appName} not exists`);
       return;
     }
-    
-    delete this.apps[appName];
+
+    await this.apps[appName].destroy();
   }
 }
 

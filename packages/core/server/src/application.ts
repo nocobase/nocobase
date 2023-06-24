@@ -12,6 +12,7 @@ import { Server } from 'http';
 import { i18n, InitOptions } from 'i18next';
 import Koa, { DefaultContext as KoaDefaultContext, DefaultState as KoaDefaultState } from 'koa';
 import compose from 'koa-compose';
+import lodash from 'lodash';
 import semver from 'semver';
 import { promisify } from 'util';
 import { createACL } from './acl';
@@ -398,11 +399,15 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async destroy(options: any = {}) {
+    this.logger.debug('start destroy app');
+
     await this.emitAsync('beforeDestroy', this, options);
     await this.stop(options);
 
-    await AppSupervisor.getInstance().removeApp(this.name);
+    this.logger.debug('emit afterDestroy');
     await this.emitAsync('afterDestroy', this, options);
+
+    this.logger.debug('finish destroy app');
   }
 
   async dbVersionCheck(options?: { exit?: boolean }) {
@@ -490,6 +495,20 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this._logger = logger.instance;
 
+    const alwaysRebindEvents = [];
+
+    // @ts-ignore
+    for (const event of Object.keys(this._events)) {
+      // @ts-ignore
+      const events = lodash.castArray(this._events[event] || []);
+
+      events
+        .filter((listener: any) => listener.alwaysBind)
+        .forEach((listener: any) => {
+          alwaysRebindEvents.push([event, listener]);
+        });
+    }
+
     // @ts-ignore
     this._events = [];
     // @ts-ignore
@@ -552,6 +571,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     registerCli(this);
 
     this._version = new ApplicationVersion(this);
+
+    for (const [event, listener] of alwaysRebindEvents) {
+      this.on(event, listener);
+    }
   }
 
   private createDatabase(options: ApplicationOptions) {

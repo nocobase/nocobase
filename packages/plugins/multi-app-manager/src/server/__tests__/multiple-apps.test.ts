@@ -4,7 +4,7 @@ import { mockServer, MockServer } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
 import { PluginMultiAppManager } from '../server';
 
-describe('multiple apps create', () => {
+describe('multiple apps', () => {
   let app: MockServer;
   let db: Database;
 
@@ -121,7 +121,7 @@ describe('multiple apps create', () => {
     });
 
     // remove it from supervisor
-    AppSupervisor.getInstance().removeApp(name);
+    await AppSupervisor.getInstance().removeApp(name);
 
     expect(AppSupervisor.getInstance().hasApp(name)).toBeFalsy();
 
