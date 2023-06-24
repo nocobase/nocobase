@@ -1,9 +1,10 @@
+import { Model } from '@nocobase/database';
 import { Migration } from '@nocobase/server';
 
 export default class extends Migration {
   async up() {
     const systemSettings = this.db.getRepository('systemSettings');
-    const instance = await systemSettings.findOne();
+    let instance: Model = await systemSettings.findOne();
     const uiRoutes = this.db.getRepository('uiRoutes');
     const routes = await uiRoutes.find();
     for (const route of routes) {
@@ -11,10 +12,15 @@ export default class extends Migration {
         const options = instance.options || {};
         options['mobileSchemaUid'] = route.uiSchemaUid;
         instance.set('options', options);
-        console.log('options.mobileSchemaUid', route.uiSchemaUid);
+        instance.changed('options', true);
         await instance.save();
         return;
       }
     }
+    instance = await systemSettings.findOne();
+    if (!instance.get('options')?.mobileSchemaUid) {
+      throw new Error('mobileSchemaUid invalid');
+    }
+    this.app.log.info('systemSettings.options', instance.toJSON());
   }
 }
