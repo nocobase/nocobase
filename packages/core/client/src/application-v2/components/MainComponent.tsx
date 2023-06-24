@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { SchemaComponentOptions } from '../../schema-component';
+import { SchemaComponentOptions } from '../../schema-component/core/SchemaComponentOptions';
 import { useApp } from '../hooks';
 
 export const MainComponent = React.memo(() => {

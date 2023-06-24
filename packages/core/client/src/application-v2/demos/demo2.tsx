@@ -3,7 +3,7 @@ import { Link, Navigate, Outlet, useParams } from 'react-router-dom';
 import { Application } from '../Application';
 import { useApp } from '../hooks';
 import { Plugin } from '../Plugin';
-import { Router } from '../Router';
+import { RouterManager } from '../RouterManager';
 
 const Root = () => {
   return (
@@ -46,7 +46,7 @@ const MobilePage = () => {
 const AdminSetting = () => {
   const app = useApp();
   const MobileRouter = useMemo(() => {
-    const router = new Router({ type: 'memory', initialEntries: ['/'] }, app);
+    const router = new RouterManager({ type: 'memory', initialEntries: ['/'] }, app);
     router.add('mobile', {
       element: <MobileLayout />,
     });

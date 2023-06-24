@@ -12,13 +12,13 @@ export const AppComponent: FC<AppComponentProps> = (props) => {
   const { app } = props;
   const { loading, error } = useAppPluginLoad(app);
   const handleErrors = useCallback((error: Error, info: { componentStack: string }) => {
-    console.log(error, info);
+    console.error(error, info);
   }, []);
   if (loading) return app.renderComponent('AppSpin');
   if (error) return app.renderComponent('AppError', { error });
 
   return (
-    <ErrorBoundary FallbackComponent={app.getComponent<FallbackProps>('FallbackComponent')} onError={handleErrors}>
+    <ErrorBoundary FallbackComponent={app.getComponent<FallbackProps>('ErrorFallback')} onError={handleErrors}>
       <ApplicationContext.Provider value={app}>{app.renderComponent('AppMain')}</ApplicationContext.Provider>
     </ErrorBoundary>
   );

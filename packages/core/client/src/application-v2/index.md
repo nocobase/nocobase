@@ -10,25 +10,35 @@ group:
 
 ## Usage
 
-### Basic
+### 基础用法
 
 <code src="./demos/demo1.tsx">Demo1</code>
 
-### Nested
+### 嵌套 Router
 
 <code src="./demos/demo2.tsx">Demo2</code>
 
 ## API
 
-### Components
+Application 提供了强大的功能，包括：
 
-#### add component
+- 组件管理
+- 路由管理
+- scopes 管理
+- providers 管理
+- 插件管理
+
+### 组件管理
+
+通过在 `Application` 实例上添加组件，可以在后续的路由或者 `schema` 中以字符串的方式使用。
+
+#### 添加组件
 
 ```tsx | pure
 const Hello = () => <div>Hello</div>;
 const World = () => <div>Wold</div>;
 
-// initial Application with components
+// 初始化时添加组件
 const app = new Application({
   components: {
     Hello,
@@ -36,17 +46,17 @@ const app = new Application({
   }
 });
 
-// add multiple components
-app.addComponent({
+// 通过实例添加多个组件
+app.addComponents({
   Hello,
   World
 });
 
-// add single component
-app.component(Hello, 'Hello');
+// 添加单个组件
+app.addComponent(Hello, 'Hello');
 ```
 
-Add component in plugin.
+在插件中添加组件。
 
 ```tsx | pure
 import { Application, Plugin } from '@nocobase/client';
@@ -65,7 +75,7 @@ const app = new Application({
 });
 ```
 
-#### get component
+#### 获取组件
 
 ```tsx | pure
 const app = new Application({
@@ -77,7 +87,7 @@ const app = new Application({
 const Hello = app.component('Hello');
 ```
 
-#### render component
+#### 渲染组件
 
 ```tsx | pure
 const Test = (props) => <div>{props.name}</div>;
@@ -94,18 +104,20 @@ const Hello = () => {
 };
 ```
 
-### Router
+### 路由管理
 
-#### initial
+提供了路由的增删改查功能。
+
+#### 初始化路由
 
 ```tsx | pure
 const app = new Application({
   router: {
-    type: 'history' // default
+    type: 'history' // 默认是 history 类型
   }
 });
 
-// other type
+// 其他类型
 const app = new Application({
   router: {
     type: 'hash'
@@ -120,21 +132,25 @@ const app = new Application({
 });
 ```
 
-#### add route
+#### 添加路由
 
 ```tsx | pure
 const app = new Application();
+
+// 通过 add 方法添加路由
+// 第一个是 name，第二个是路由配置
 app.router.add('home', {
   path: '/',
   element: <div>Home</div>
 });
+
 app.router.add('about', {
   path: '/about',
   element: <div>About</div>
 });
 ```
 
-nested route
+嵌套路由。
 
 ```tsx | pure
 import { Link, Outlet } from 'react-router-dom';
@@ -151,6 +167,8 @@ const Root = () => <div>
 app.router.add('root', {
   element: <Layout />
 });
+
+// 通过 . 区分路由层级
 app.router.add('root.home', {
   path: '/',
   element: <div>Home</div>
@@ -184,25 +202,26 @@ app.router.add('root.admin.about', {
 });
 ```
 
-support `Component` is string.
+支持 `Component` is 是字符串类型。
 
 ```tsx | pure
 const Hello = () => <div>Hello</div>;
 const World = () => <div>World</div>;
-app.addComponents({ World });
 
 app.router.add('hello', {
   path: '/hello',
   Component: Hello
 });
 
+// 先通过 addComponents 添加组件
+app.addComponents({ World });
 app.router.add('hello', {
   path: '/hello',
-  Component: 'World' // string
+  Component: 'World' // 路由上使用 Component 字符串
 })
 ```
 
-Add route in plugin.
+在插件中添加路由。
 
 ```tsx | pure
 import { Application, Plugin } from '@nocobase/client';
@@ -223,7 +242,7 @@ const app = new Application({
 ```
 
 
-#### remove route
+#### 删除路由
 
 ```tsx | pure
 const app = new Application();
@@ -232,11 +251,11 @@ app.router.add('home', {
   element: <div>Home</div>
 });
 
-// remove by name
+// 通过 name 删除路由
 app.router.remove('home');
 ```
 
-### Scopes
+### Scopes 管理
 
 ```tsx | pure
 const scopes = { foo: 'xxx' };
@@ -247,7 +266,7 @@ const app = new Application({ scopes });
 app.addScopes({ bar: 'xxx' });
 ```
 
-### Providers
+### Providers 管理
 
 ```tsx | pure
 // Provider must render props.children
@@ -296,7 +315,7 @@ const app = new Application({
 });
 ```
 
-### Plugins
+### 插件管理
 
 ```tsx | pure
 import { Plugin } from '@nocobase/client';
@@ -351,7 +370,7 @@ class MyPlugin extends Plugin {
 }
 ```
 
-### render
+### 渲染
 
 #### Root Component
 

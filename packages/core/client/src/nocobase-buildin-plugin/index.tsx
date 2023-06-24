@@ -64,7 +64,7 @@ export class NoCoBaseBuildInPlugin extends Plugin {
       AuthLayout,
       SigninPage,
       SignupPage,
-      FallbackComponent: ErrorFallback,
+      ErrorFallback,
       RouteSchemaComponent,
       BlockTemplatePage,
       BlockTemplateDetails,

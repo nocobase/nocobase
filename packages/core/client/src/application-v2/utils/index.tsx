@@ -9,7 +9,7 @@ export function normalizeContainer(container: Element | ShadowRoot | string): El
 
   if (typeof container === 'string') {
     const res = document.querySelector(container);
-    if (res) {
+    if (!res) {
       console.warn(`Failed to mount app: mount target selector "${container}" returned null.`);
     }
     return res;
