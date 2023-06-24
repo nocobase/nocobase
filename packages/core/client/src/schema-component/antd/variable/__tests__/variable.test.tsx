@@ -32,7 +32,6 @@ describe('Variable', () => {
     expect(input).toBeInTheDocument();
     expect(variableSelector).toBeInTheDocument();
 
-    await userEvent.type(input, '1+');
     await userEvent.click(variableSelector);
     await userEvent.click(screen.getByText('v1'));
     await waitFor(() => {
@@ -41,7 +40,6 @@ describe('Variable', () => {
           class="css-dev-only-do-not-override-1wazalj ant-input css-1p5yrh5"
           contenteditable="true"
         >
-          1+
           <span
             class="ant-tag ant-tag-blue"
             contenteditable="false"

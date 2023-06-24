@@ -232,9 +232,9 @@ export function utc2unit(options: Utc2unitOptions) {
   m = m.utcOffset(offsetFromString(timezone));
   m = m.startOf(unit);
   if (offset > 0) {
-    m = m.add(offset, unit === 'isoWeek' ? 'week' : unit);
+    m = m.add(offset, unit);
   } else if (offset < 0) {
-    m = m.subtract(-1 * offset, unit === 'isoWeek' ? 'week' : unit);
+    m = m.subtract(-1 * offset, unit);
   }
   const fn = {
     year: () => m.format('YYYY'),
