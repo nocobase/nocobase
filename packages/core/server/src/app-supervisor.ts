@@ -32,7 +32,11 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     this.apps = {};
   }
 
-  destroy() {
+  async destroy() {
+    for (const appName in this.apps) {
+      await this.apps[appName].destroy();
+    }
+
     this.reset();
     AppSupervisor.instance = null;
   }
@@ -63,6 +67,10 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   removeApp(appName: string) {
+    if (!this.apps[appName]) {
+      return;
+    }
+    
     delete this.apps[appName];
   }
 }

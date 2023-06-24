@@ -43,9 +43,9 @@ describe('multiple apps create', () => {
       },
     });
 
-    // await AppSupervisor.getInstance().removeApp(name);
-    //
-    // expect(fn).toBeCalled();
+    await AppSupervisor.getInstance().removeApp(name);
+
+    expect(fn).toBeCalled();
   });
 
   it('should create application', async () => {

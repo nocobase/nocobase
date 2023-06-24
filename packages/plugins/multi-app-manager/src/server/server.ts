@@ -130,24 +130,16 @@ export class PluginMultiAppManager extends Plugin {
 
       // create database
       await this.appDbCreator(subApp, transaction);
-
-      await subApp.load();
-      //
-      // // sync subApp collections
-      // await subApp.db.sync();
-      //
-      // // install subApp
-      // await subApp.install();
-      //
-      // await subApp.reload();
+      await subApp.reload();
+      await subApp.db.sync();
+      await subApp.install();
+      await subApp.reload();
     });
 
     this.db.on('applications.afterDestroy', async (model: ApplicationModel) => {
       await AppSupervisor.getInstance().removeApp(model.get('name') as string);
     });
 
-    // lazy load application
-    // if application not in appManager, load it from database
     AppSupervisor.getInstance().on(
       'beforeGetApplication',
       async ({ appSupervisor, name, options }: { appSupervisor: AppSupervisor; name: string; options: any }) => {

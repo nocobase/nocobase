@@ -85,7 +85,7 @@ export class MockServer extends Application {
     await super.destroy(options);
 
     Gateway.getInstance().destroy();
-    AppSupervisor.getInstance().destroy();
+    await AppSupervisor.getInstance().destroy();
   }
 
   agent(): SuperAgentTest & {
