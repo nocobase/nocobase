@@ -16,7 +16,7 @@ import {
   SchemaInitializerItemProps,
 } from './types';
 
-const mouseEnterDelay = 100;
+const mouseEnterDelay = 150;
 
 const overlayClassName = css`
   .ant-dropdown-menu-item-group-list {
