@@ -7,9 +7,11 @@ export default class extends Migration {
     const uiRoutes = this.db.getRepository('uiRoutes');
     const routes = await uiRoutes.find();
     for (const route of routes) {
-      if (route.uiSchemaUid && route?.options?.component === 'AdminLayout') {
-        instance.set('options.adminSchemaUid', route.uiSchemaUid);
-        console.log('options.adminSchemaUid', route.uiSchemaUid);
+      if (route.uiSchemaUid && route?.options?.component === 'MApplication') {
+        const options = instance.options || {};
+        options['mobileSchemaUid'] = route.uiSchemaUid;
+        instance.set('options', options);
+        console.log('options.mobileSchemaUid', route.uiSchemaUid);
         await instance.save();
         return;
       }
