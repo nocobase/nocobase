@@ -1,5 +1,5 @@
-import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
+import { Application } from '@nocobase/server';
 import { getApp, sleep } from '..';
 import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
 
@@ -34,7 +34,7 @@ describe('workflow > instructions > query', () => {
     });
   });
 
-  afterEach(() => db.close());
+  afterEach(() => app.destroy());
 
   describe('query one', () => {
     it('params: empty', async () => {

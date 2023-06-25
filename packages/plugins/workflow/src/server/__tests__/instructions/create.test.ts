@@ -1,5 +1,5 @@
-import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
+import { Application } from '@nocobase/server';
 import { getApp, sleep } from '..';
 
 describe('workflow > instructions > create', () => {
@@ -29,7 +29,7 @@ describe('workflow > instructions > create', () => {
     });
   });
 
-  afterEach(() => db.close());
+  afterEach(() => app.destroy());
 
   describe('create one', () => {
     it('params: from context', async () => {

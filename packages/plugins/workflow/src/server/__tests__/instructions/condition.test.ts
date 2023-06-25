@@ -1,7 +1,7 @@
-import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
+import { Application } from '@nocobase/server';
 import { getApp, sleep } from '..';
-import { EXECUTION_STATUS, BRANCH_INDEX } from '../../constants';
+import { BRANCH_INDEX, EXECUTION_STATUS } from '../../constants';
 
 describe('workflow > instructions > condition', () => {
   let app: Application;
@@ -28,7 +28,7 @@ describe('workflow > instructions > condition', () => {
     });
   });
 
-  afterEach(() => db.close());
+  afterEach(() => app.destroy());
 
   describe('config.rejectOnFalse', () => {});
 

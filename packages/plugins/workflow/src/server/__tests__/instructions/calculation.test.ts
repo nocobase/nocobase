@@ -1,5 +1,5 @@
-import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
+import { Application } from '@nocobase/server';
 import { getApp, sleep } from '..';
 import { JOB_STATUS } from '../../constants';
 
@@ -30,7 +30,7 @@ describe('workflow > instructions > calculation', () => {
     });
   });
 
-  afterEach(() => db.close());
+  afterEach(() => app.destroy());
 
   describe('math.js', () => {
     it('syntax error', async () => {

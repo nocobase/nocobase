@@ -1,5 +1,5 @@
-import { MockServer } from '@nocobase/test';
 import Database from '@nocobase/database';
+import { MockServer } from '@nocobase/test';
 import { getApp, sleep } from '..';
 
 describe('workflow > actions > workflows', () => {
@@ -20,9 +20,6 @@ describe('workflow > actions > workflows', () => {
   });
 
   afterEach(() => app.destroy());
-
-  // describe('create', () => {
-  // });
 
   describe('update', () => {
     it('update unexecuted workflow should be ok', async () => {

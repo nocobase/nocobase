@@ -1,5 +1,5 @@
-import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
+import { Application } from '@nocobase/server';
 import { getApp, sleep } from '..';
 
 describe('workflow > instructions > destroy', () => {
@@ -27,7 +27,7 @@ describe('workflow > instructions > destroy', () => {
     });
   });
 
-  afterEach(() => db.close());
+  afterEach(() => app.destroy());
 
   describe('destroy one', () => {
     it('params: from context', async () => {

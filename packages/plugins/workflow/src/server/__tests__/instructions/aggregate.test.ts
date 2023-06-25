@@ -1,5 +1,5 @@
-import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
+import { Application } from '@nocobase/server';
 import { getApp, sleep } from '..';
 
 describe('workflow > instructions > aggregate', () => {
@@ -31,7 +31,7 @@ describe('workflow > instructions > aggregate', () => {
     });
   });
 
-  afterEach(() => db.close());
+  afterEach(() => app.destroy());
 
   describe('based on collection', () => {
     it('count', async () => {

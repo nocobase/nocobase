@@ -1,8 +1,8 @@
-import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
+import { Application } from '@nocobase/server';
 import { getApp, sleep } from '..';
-import { RequestConfig } from '../../instructions/request';
 import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
+import { RequestConfig } from '../../instructions/request';
 
 const PORT = 12345;
 
@@ -32,7 +32,7 @@ describe('workflow > instructions > request', () => {
         ctx.withoutDataWrapping = true;
         ctx.body = {
           meta: { title: ctx.query.title },
-          data: { title: ctx.request.body.title },
+          data: { title: (ctx.request.body as any).title },
         };
       }
       next();
@@ -55,7 +55,7 @@ describe('workflow > instructions > request', () => {
     });
   });
 
-  afterEach(() => app.stop());
+  afterEach(() => app.destroy());
 
   describe('request', () => {
     it('request', async () => {

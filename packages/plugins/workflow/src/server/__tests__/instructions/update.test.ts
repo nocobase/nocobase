@@ -1,5 +1,5 @@
-import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
+import { Application } from '@nocobase/server';
 import { getApp, sleep } from '..';
 import DefinedWorkflowModel from '../../models/Workflow';
 
@@ -27,7 +27,7 @@ describe('workflow > instructions > update', () => {
     });
   });
 
-  afterEach(() => db.close());
+  afterEach(() => app.destroy());
 
   describe('update one', () => {
     it('params: from context', async () => {

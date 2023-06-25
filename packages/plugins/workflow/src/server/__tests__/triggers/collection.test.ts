@@ -1,5 +1,5 @@
-import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
+import { Application } from '@nocobase/server';
 import { getApp, sleep } from '..';
 import { EXECUTION_STATUS } from '../../constants';
 
@@ -23,7 +23,7 @@ describe('workflow > triggers > collection', () => {
     TagRepo = db.getCollection('tags').repository;
   });
 
-  afterEach(() => db.close());
+  afterEach(() => app.destroy());
 
   describe('toggle', () => {
     it('when collection change', async () => {
