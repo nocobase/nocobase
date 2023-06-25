@@ -1,5 +1,11 @@
-import { CollectionManagerContext, SchemaComponentOptions, SettingsCenterProvider } from '@nocobase/client';
+import {
+  CollectionManagerContext,
+  CollectionManagerProvider,
+  SchemaComponentOptions,
+  SettingsCenterProvider,
+} from '@nocobase/client';
 import React, { useContext } from 'react';
+import { apiKeysCollection } from '../collections';
 import { Configuration } from './Configuration';
 import { useTranslation } from './locale';
 
@@ -9,12 +15,12 @@ const ApiKeysProvider = React.memo((props) => {
   return (
     <SettingsCenterProvider
       settings={{
-        map: {
-          title: t('Map Manager'),
+        ['api-keys']: {
+          title: t('Keys manager'),
           icon: 'EnvironmentOutlined',
           tabs: {
             configuration: {
-              title: t('Configuration'),
+              title: t('Keys manager'),
               component: Configuration,
             },
           },
@@ -22,9 +28,7 @@ const ApiKeysProvider = React.memo((props) => {
       }}
     >
       <SchemaComponentOptions components={{}}>
-        <CollectionManagerContext.Provider value={{ ...ctx, interfaces: { ...ctx.interfaces } }}>
-          {props.children}
-        </CollectionManagerContext.Provider>
+        <CollectionManagerProvider collections={[apiKeysCollection]}>{props.children}</CollectionManagerProvider>
       </SchemaComponentOptions>
     </SettingsCenterProvider>
   );

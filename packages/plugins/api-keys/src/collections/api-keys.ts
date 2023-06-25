@@ -29,49 +29,45 @@ export default {
       type: 'belongsTo',
       name: 'role',
       target: 'roles',
-      foreignKey: 'roleId',
-      sourceKey: 'id',
-      targetKey: 'name',
+      foreignKey: 'roleName',
       uiSchema: {
         type: 'object',
         title: '{{t("Roles")}}',
         'x-component': 'AssociationField',
         'x-component-props': {
           fieldNames: {
-            label: 'title',
+            label: 'name',
             value: 'name',
           },
         },
       },
     },
     {
-      name: 'expires',
-      type: 'date',
+      name: 'expiresIn',
+      type: 'string',
       interface: 'select',
       uiSchema: {
         type: 'string',
         title: '{{t("Expires")}}',
         'x-component': 'Select',
-        'x-component-props': {
-          enum: [
-            {
-              label: '{{t("Never")}}',
-              value: 0,
-            },
-            {
-              label: '{{t("1 week"}}',
-              value: 24 * 60 * 60 * 1000 * 7,
-            },
-            {
-              label: '{{t("1 month")}}',
-              value: 24 * 60 * 60 * 1000 * 30,
-            },
-            {
-              label: '{{t("1 year")}}',
-              value: 24 * 60 * 60 * 1000 * 365,
-            },
-          ],
-        },
+        enum: [
+          {
+            label: '{{t("1 day")}}',
+            value: '1d',
+          },
+          {
+            label: '{{t("7 days")}}',
+            value: '7d',
+          },
+          {
+            label: '{{t("30 days")}}',
+            value: '30d',
+          },
+          {
+            label: '{{t("90 days")}}',
+            value: '90d',
+          },
+        ],
       },
     },
   ],

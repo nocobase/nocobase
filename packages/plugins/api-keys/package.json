@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/plugin-api-keys",
-  "displayName": "api keys",
-  "displayName.zh-CN": "api 密钥",
+  "displayName": "Api keys",
+  "displayName.zh-CN": "Api keys",
   "description": "Allow user use api key to fetch nocobase api",
   "description.zh-CN": "允许用户使用 api 密钥来访问 nocobase api",
   "version": "0.10.0-alpha.2",

@@ -1,6 +1,6 @@
+import { Collection, Model } from '@nocobase/database';
 import { Auth, AuthConfig } from '../auth';
 import { JwtOptions, JwtService } from './jwt-service';
-import { Collection, Model } from '@nocobase/database';
 
 /**
  * BaseAuth
@@ -29,6 +29,14 @@ export class BaseAuth extends Auth {
     return this.ctx.state.currentUser;
   }
 
+  async parseToken() {
+    const token = this.ctx.getBearerToken();
+    if (!token) {
+      return null;
+    }
+    return this.jwt.decode(token);
+  }
+
   async check() {
     const token = this.ctx.getBearerToken();
     if (!token) {
@@ -52,7 +60,7 @@ export class BaseAuth extends Auth {
     return null;
   }
 
-  async signIn() {
+  async signIn(payload: any) {
     let user: Model;
     try {
       user = await this.validate();
@@ -65,6 +73,7 @@ export class BaseAuth extends Auth {
     }
     const token = this.jwt.sign({
       userId: user.id,
+      ...payload,
     });
     return {
       user,

@@ -14,16 +14,23 @@ export async function setCurrentRole(ctx, next) {
   const roles = await repository.find();
   ctx.state.currentUser.setDataValue('roles', roles);
 
-  if (roles.length == 1) {
-    currentRole = roles[0].name;
-  } else if (roles.length > 1) {
-    const role = roles.find((item) => item.name === currentRole);
-    if (!role) {
-      const defaultRole = roles.find((item) => item?.rolesUsers?.default);
-      currentRole = (defaultRole || roles[0])?.name;
+  // api keys provide role
+  const { roleName } = await ctx.auth.parseToken();
+  if (roleName) {
+    currentRole = roles.find((role) => role.name === roleName);
+  } else {
+    if (roles.length == 1) {
+      currentRole = roles[0].name;
+    } else if (roles.length > 1) {
+      const role = roles.find((item) => item.name === currentRole);
+      if (!role) {
+        const defaultRole = roles.find((item) => item?.rolesUsers?.default);
+        currentRole = (defaultRole || roles[0])?.name;
+      }
     }
   }
 
+  console.log('🚀 ~ file: setCurrentRole.ts:34 ~ setCurrentRole ~ currentRole:', currentRole);
   if (currentRole) {
     ctx.state.currentRole = currentRole;
   }

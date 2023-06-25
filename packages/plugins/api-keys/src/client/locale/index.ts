@@ -1,5 +1,5 @@
 import { i18n } from '@nocobase/client';
-import { useTranslation as useGlobalTranslation } from 'react-i18next';
+import { useTranslation as useT } from 'react-i18next';
 import { NAMESPACE } from '../../constants';
 import enUS from './en-US';
 import zhCN from './zh-CN';
@@ -12,9 +12,11 @@ export function lang(key: string) {
 }
 
 export function generateNTemplate(key: string) {
-  return `{{t('${key}', { ns: '${NAMESPACE}' })}}`;
+  return `{{t('${key}', { ns: '${NAMESPACE}', nsMode: 'fallback' })}}`;
 }
 
 export function useTranslation() {
-  return useGlobalTranslation(NAMESPACE);
+  return useT([NAMESPACE, 'client'], {
+    nsMode: 'fallback',
+  });
 }
