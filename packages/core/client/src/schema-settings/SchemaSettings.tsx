@@ -20,7 +20,16 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import _, { cloneDeep } from 'lodash';
-import React, { ReactNode, createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
+import React, {
+  ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useTransition as useReactTransition,
+  useRef,
+  useState,
+} from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -73,9 +82,14 @@ interface SchemaSettingsContextProps {
   collectionName?: any;
 }
 
-const mouseEnterDelay = 150;
-
 const SchemaSettingsContext = createContext<SchemaSettingsContextProps>(null);
+
+/**
+ * 用于去除菜单的消失动画，优化操作体验
+ */
+const hidden = css`
+  display: none;
+`;
 
 export const useSchemaSettings = () => {
   return useContext(SchemaSettingsContext);
@@ -133,37 +147,28 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
   const { title, dn, ...others } = props;
   const [visible, setVisible] = useState(false);
   const { Component, getMenuItems } = useMenuItem();
-  const [shouldRender, setShouldRender] = useState(false);
-  const timer = useRef(null);
+  const menuItems = useRef([]);
+  const [isPending, startTransition] = useReactTransition();
 
-  if (!shouldRender) {
-    return (
-      <div
-        onMouseEnter={() => {
-          timer.current = setTimeout(() => {
-            setShouldRender(true);
-            setVisible(true);
-          }, mouseEnterDelay);
-        }}
-        onMouseLeave={() => {
-          timer.current && clearTimeout(timer.current);
-        }}
-      >
-        {typeof title === 'string' ? <span>{title}</span> : title}
-      </div>
-    );
+  const changeMenu = (v: boolean) => {
+    startTransition(() => {
+      setVisible(v);
+    });
+  };
+
+  if (visible) {
+    menuItems.current = getMenuItems(() => props.children);
   }
 
   const dropdownMenu = () => (
     <>
-      <Component />
+      {visible ? <Component /> : null}
       <Dropdown
         open={visible}
         onOpenChange={() => {
-          setShouldRender(false);
-          setVisible(false);
+          changeMenu(!visible);
         }}
-        menu={{ items: getMenuItems(() => props.children) }}
+        menu={{ items: menuItems.current, className: classNames({ [hidden]: !visible }) }}
         overlayClassName={overlayClassName}
       >
         {typeof title === 'string' ? <span>{title}</span> : title}
