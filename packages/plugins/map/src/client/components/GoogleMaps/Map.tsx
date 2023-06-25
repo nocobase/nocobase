@@ -69,7 +69,7 @@ export interface GoogleMapsComponentProps {
 export interface GoogleMapForwardedRefProps {
   setOverlay: (t: MapEditorType, v: any, o?: OverlayOptions) => google.maps.MVCObject;
   getOverlay: (t: MapEditorType, v: any, o?: OverlayOptions) => google.maps.MVCObject;
-  setFitView: (overlays: google.maps.MVCObject[]) => void;
+  setFitView: (overlays: google.maps.MVCObject[]) => Promise<void>;
   createDraw: (onlyCreate?: boolean, additionalOptions?: OverlayOptions) => any;
   map: google.maps.Map;
   overlay: google.maps.MVCObject;
@@ -177,10 +177,12 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
       });
 
       map.current.fitBounds(bounds);
-      if (type === 'point') {
-        requestAnimationFrame(() => {
-          map.current.setZoom(zoom);
-        });
+      if (type === 'point' || block) {
+        setTimeout(() => {
+          if (map.current.getZoom() > 18) {
+            map.current.setZoom(zoom);
+          }
+        }, 300);
       }
     });
 
