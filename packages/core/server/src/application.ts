@@ -351,7 +351,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async start(options: StartOptions = {}) {
-    console.log('start app');
+    this.setWorkingMessage('starting app...');
     this.fsm.interpret.send('START');
 
     if (this.db.closed()) {
@@ -359,7 +359,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
 
     if (options.dbSync) {
-      console.log('db sync...');
+      this.log.info(`sync db`);
+      this.setWorkingMessage('sync db');
       await this.db.sync();
     }
 

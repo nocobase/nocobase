@@ -54,11 +54,24 @@ class CliHttpServer {
 
       c.on('data', (data) => {
         const dataAsString = data.toString();
-        const dataObj = JSON.parse(dataAsString);
-        if (dataObj.status == 'worker-ready') {
-          this.server.close();
+        const messages = dataAsString.split('\n');
 
-          c.write('start');
+        for (const message of messages) {
+          if (message.length === 0) {
+            continue;
+          }
+
+          const dataObj = JSON.parse(message);
+
+          if (dataObj.workingMessage) {
+            this.setCliDoingWork(dataObj.workingMessage);
+          }
+
+          if (dataObj.status === 'worker-ready') {
+            this.server.close();
+
+            c.write('start');
+          }
         }
       });
     });

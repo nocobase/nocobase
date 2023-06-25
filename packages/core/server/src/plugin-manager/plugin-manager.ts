@@ -355,15 +355,27 @@ export class PluginManager {
   async load(options: any = {}) {
     this.app.setWorkingMessage('loading plugins...');
 
+    const total = this.plugins.size;
+
+    let current = 0;
+
     for (const [name, plugin] of this.plugins) {
+      current += 1;
+
+      this.app.setWorkingMessage(`before load plugin [${name}], ${current}/${total}`);
       if (!plugin.enabled) {
         continue;
       }
+
       this.app.logger.debug(`before load plugin [${name}]...`);
       await plugin.beforeLoad();
     }
 
+    current = 0;
     for (const [name, plugin] of this.plugins) {
+      current += 1;
+      this.app.setWorkingMessage(`load plugin [${name}], ${current}/${total}`);
+
       if (!plugin.enabled) {
         continue;
       }
