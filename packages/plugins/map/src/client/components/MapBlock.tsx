@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { useMapTranslation } from '../locale';
 import { AMapBlock } from './AMap';
 import { GoogleMapsBlock } from './GoogleMaps';

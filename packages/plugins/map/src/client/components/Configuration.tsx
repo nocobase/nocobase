@@ -1,11 +1,10 @@
 import { useAPIClient, useCompile } from '@nocobase/client';
 import { useBoolean } from 'ahooks';
-import { Button, Card, Form, Input, Tabs, message } from 'antd';
+import { Button, Card, Form, Input, message, Tabs } from 'antd';
 import React, { useEffect, useMemo } from 'react';
-import { MapTypes } from '../constants';
 import { useLocation } from 'react-router-dom';
-
-import { MapConfigurationResourceKey, getSSKey, useMapConfiguration } from '../hooks';
+import { MapTypes } from '../constants';
+import { getSSKey, MapConfigurationResourceKey, useMapConfiguration } from '../hooks';
 import { useMapTranslation } from '../locale';
 
 interface BaseConfigurationProps {
@@ -104,9 +103,7 @@ export const Configuration = () => {
   const search = new URLSearchParams(location.search);
   return (
     <Card bordered>
-      <Tabs type="card"
-       defaultActiveKey={search.get('tab')}
-      >
+      <Tabs type="card" defaultActiveKey={search.get('tab')}>
         {tabList.map((tab) => {
           return (
             <Tabs.TabPane key={tab.value} tab={compile(tab.label)}>
@@ -114,7 +111,7 @@ export const Configuration = () => {
             </Tabs.TabPane>
           );
         })}
-      />
+      </Tabs>
     </Card>
   );
 };

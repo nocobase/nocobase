@@ -1,11 +1,10 @@
-import { connect, mapReadPretty } from '@formily/react';
-import React, { useMemo } from 'react';
-import { AMapComponentProps } from './AMap';
-import ReadPretty from './ReadPretty';
 import { css } from '@emotion/css';
+import { connect, mapReadPretty } from '@formily/react';
+import React from 'react';
+import { AMapComponentProps } from './AMap';
 import Designer from './Designer';
-import { useMapTranslation } from '../locale';
 import { MapComponent } from './MapComponent';
+import ReadPretty from './ReadPretty';
 
 type MapProps = AMapComponentProps;
 

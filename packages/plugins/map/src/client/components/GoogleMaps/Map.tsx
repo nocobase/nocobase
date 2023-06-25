@@ -1,18 +1,18 @@
+import { SyncOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
 import { useFieldSchema } from '@formily/react';
-import React, { useEffect, useMemo, useRef, useState, useImperativeHandle } from 'react';
+import { Loader } from '@googlemaps/js-api-loader';
+import { useAPIClient, useCollection } from '@nocobase/client';
+import { useMemoizedFn } from 'ahooks';
+import { Alert, Button, Modal, Spin } from 'antd';
+import React, { useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router';
+import { defaultImage } from '../../constants';
 import { useMapConfiguration } from '../../hooks';
 import { useMapTranslation } from '../../locale';
-import { Loader } from '@googlemaps/js-api-loader';
-import { css } from '@emotion/css';
-import { useAPIClient, useCollection } from '@nocobase/client';
-import { useHistory } from 'react-router';
-import { Alert, Button, Modal, Spin } from 'antd';
-import { SyncOutlined } from '@ant-design/icons';
-import { useMemoizedFn } from 'ahooks';
-import { getCurrentPosition } from '../../utils';
-import { defaultImage } from '../../constants';
-import { Search } from './Search';
 import { MapEditorType } from '../../types';
+import { getCurrentPosition } from '../../utils';
+import { Search } from './Search';
 import { getIcon } from './utils';
 
 export type OverlayOptions = google.maps.PolygonOptions & google.maps.MarkerOptions & google.maps.PolylineOptions;
@@ -108,7 +108,7 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
       ...overlayCommonOptions,
     });
 
-    const history = useHistory();
+    const navigate = useNavigate();
     const mapContainerRef = useRef<HTMLDivElement>();
     const cleanupOverlayListenersRef = useRef<Set<() => void>>(new Set());
 
@@ -358,7 +358,7 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
       return (
         <Alert
           action={
-            <Button type="primary" onClick={() => history.push('/admin/settings/map/configuration?tab=google')}>
+            <Button type="primary" onClick={() => navigate('/admin/settings/map/configuration?tab=google')}>
               {t('Go to the configuration page')}
             </Button>
           }
@@ -408,6 +408,19 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
                 icon={<SyncOutlined />}
               ></Button>
             </div>
+            {type === 'lineString' ? (
+              <div
+                className={css`
+                  position: absolute;
+                  bottom: 20px;
+                  left: 10px;
+                  z-index: 2;
+                  pointer-events: none;
+                `}
+              >
+                <Alert message={t('Connecting the end point to the start point ends the drawing')} type="info" />
+              </div>
+            ) : null}
             <div
               className={css`
                 position: absolute;
