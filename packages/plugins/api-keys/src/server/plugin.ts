@@ -28,15 +28,16 @@ export default class ApiKeysPlugin extends Plugin<ApiKeysPluginConfig> {
       },
       only: ['list', 'create', 'destroy'],
     });
+
+    this.app.acl.registerSnippet({
+      name: ['pm', this.name, 'configuration'].join('.'),
+      actions: ['apiKeys:list', 'apiKeys:create', 'apiKeys:destroy'],
+    });
   }
 
   async load() {
     await this.db.import({
       directory: resolve(__dirname, '../collections'),
     });
-  }
-
-  async install(options) {
-    const apiKeys = this.db.getCollection('apiKeys');
   }
 }

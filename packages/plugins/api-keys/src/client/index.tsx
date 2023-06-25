@@ -16,7 +16,7 @@ const ApiKeysProvider = React.memo((props) => {
     <SettingsCenterProvider
       settings={{
         ['api-keys']: {
-          title: t('Keys manager'),
+          title: t('Api keys'),
           icon: 'EnvironmentOutlined',
           tabs: {
             configuration: {
