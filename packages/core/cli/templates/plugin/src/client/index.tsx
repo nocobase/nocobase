@@ -1,8 +1,8 @@
 import React from 'react';
 
-const CommonMemo = React.memo((props) => {
+const MyProvider = React.memo((props) => {
   return <>{props.children}</>;
 });
-CommonMemo.displayName = 'CommonMemo';
+MyProvider.displayName = 'MyProvider';
 
-export default CommonMemo;
+export default MyProvider;

@@ -2,9 +2,9 @@ import { PlusOutlined } from '@ant-design/icons';
 import { ArrayTable } from '@formily/antd';
 import { useField, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import { Button, Dropdown, Menu } from 'antd';
+import { Button, Dropdown, MenuProps } from 'antd';
 import { cloneDeep } from 'lodash';
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
 import { RecordProvider, useRecord } from '../../record-provider';
@@ -12,7 +12,6 @@ import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } 
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
-import { useOptions } from '../hooks/useOptions';
 import { IField } from '../interfaces/types';
 import * as components from './components';
 import { getOptions } from './interfaces';
@@ -175,8 +174,7 @@ export const AddFieldAction = (props) => {
   const [schema, setSchema] = useState({});
   const compile = useCompile();
   const { t } = useTranslation();
-  const options = useOptions();
-  const getFieldOptions = () => {
+  const getFieldOptions = useCallback(() => {
     const { availableFieldInterfaces } = getTemplate(record.template) || {};
     const { exclude, include } = availableFieldInterfaces || {};
     const optionArr = [];
@@ -218,52 +216,57 @@ export const AddFieldAction = (props) => {
       }
     });
     return optionArr;
-  };
+  }, [getTemplate, record]);
+  const items = useMemo<MenuProps['items']>(() => {
+    return getFieldOptions().map((option) => {
+      if (option.children.length === 0) {
+        return null;
+      }
+
+      return {
+        type: 'group',
+        label: compile(option.label),
+        title: compile(option.label),
+        key: option.label,
+        children: option.children
+          .filter((child) => !['o2o', 'subTable', 'linkTo'].includes(child.name))
+          .map((child) => {
+            return {
+              label: compile(child.title),
+              title: compile(child.title),
+              key: child.name,
+              dataTargetScope: child.targetScope,
+            };
+          }),
+      };
+    });
+  }, [getFieldOptions]);
+
+  const menu = useMemo<MenuProps>(() => {
+    return {
+      style: {
+        maxHeight: '60vh',
+        overflow: 'auto',
+      },
+      onClick: (e) => {
+        //@ts-ignore
+        const targetScope = e.item.props['data-targetScope'];
+        targetScope && setTargetScope(targetScope);
+        const schema = getSchema(getInterface(e.key), record, compile);
+        if (schema) {
+          setSchema(schema);
+          setVisible(true);
+        }
+      },
+      items,
+    };
+  }, [getInterface, items, record]);
+
   return (
     record.template !== 'view' && (
       <RecordProvider record={record}>
         <ActionContextProvider value={{ visible, setVisible }}>
-          <Dropdown
-            getPopupContainer={getContainer}
-            trigger={trigger}
-            align={align}
-            overlay={
-              <Menu
-                style={{
-                  maxHeight: '60vh',
-                  overflow: 'auto',
-                }}
-                onClick={(e) => {
-                  //@ts-ignore
-                  const targetScope = e.item.props['data-targetScope'];
-                  targetScope && setTargetScope(targetScope);
-                  const schema = getSchema(getInterface(e.key), record, compile);
-                  if (schema) {
-                    setSchema(schema);
-                    setVisible(true);
-                  }
-                }}
-              >
-                {getFieldOptions().map((option) => {
-                  return (
-                    option.children.length > 0 && (
-                      <Menu.ItemGroup key={option.label} title={compile(option.label)}>
-                        {option.children
-                          .filter((child) => !['o2o', 'subTable', 'linkTo'].includes(child.name))
-                          .map((child) => {
-                            return (
-                              <Menu.Item key={child.name} data-targetScope={child.targetScope}>
-                                {compile(child.title)}
-                              </Menu.Item>
-                            );
-                          })}
-                      </Menu.ItemGroup>
-                    )
-                  );
-                })}
-              </Menu>
-            }
-          >
+          <Dropdown getPopupContainer={getContainer} trigger={trigger} align={align} menu={menu}>
             {children || (
               <Button icon={<PlusOutlined />} type={'primary'}>
                 {t('Add field')}

@@ -12,19 +12,19 @@ import { css, cx } from '@emotion/css';
 import { SchemaOptionsContext } from '@formily/react';
 import {
   APIClientProvider,
-  collection,
+  CollectionCategroriesContext,
+  CollectionCategroriesProvider,
   CollectionManagerContext,
   CollectionManagerProvider,
   CurrentAppInfoContext,
   SchemaComponent,
   SchemaComponentOptions,
   Select,
+  collection,
   useAPIClient,
   useCollectionManager,
   useCompile,
   useCurrentAppInfo,
-  CollectionCategroriesProvider,
-  CollectionCategroriesContext,
 } from '@nocobase/client';
 import { useFullscreen } from 'ahooks';
 import { Button, Input, Layout, Menu, Popover, Switch, Tooltip } from 'antd';
@@ -42,6 +42,7 @@ import {
   getDiffEdge,
   getDiffNode,
   getInheritCollections,
+  getPopupContainer,
   useGCMTranslation,
 } from './utils';
 
@@ -231,10 +232,6 @@ function getEdges(edges) {
     }
   });
 }
-
-const getPopupContainer = () => {
-  return document.getElementById('graph_container');
-};
 
 const CollapsedContext = createContext<any>({});
 const formatNodeData = () => {
@@ -1021,14 +1018,7 @@ export const GraphDrawPage = React.memo(() => {
             <div className={cx(collectionListClass)}>
               <SchemaComponent
                 components={{
-                  Select: (props) => (
-                    <Select
-                      {...props}
-                      getPopupContainer={() => {
-                        return document.getElementById('graph_container');
-                      }}
-                    />
-                  ),
+                  Select: (props) => <Select {...props} getPopupContainer={getPopupContainer} />,
                   AddCollectionAction,
                 }}
                 schema={{
@@ -1100,7 +1090,7 @@ export const GraphDrawPage = React.memo(() => {
                             },
                             collectionList: {
                               type: 'void',
-                              'x-component': () => {
+                              'x-component': function Com() {
                                 const { handleSearchCollection, collectionList } = useContext(CollapsedContext);
                                 const [selectedKeys, setSelectKey] = useState([]);
                                 const content = (
@@ -1121,13 +1111,13 @@ export const GraphDrawPage = React.memo(() => {
                                         }
                                       `}
                                       style={{ maxHeight: '70vh', overflowY: 'auto', border: 'none' }}
-                                    >
-                                      <Menu.Divider />
-                                      {collectionList.map((v) => {
-                                        return (
-                                          <Menu.Item
-                                            key={v.name}
-                                            onClick={(e: any) => {
+                                      items={[
+                                        { type: 'divider' },
+                                        ...collectionList.map((v) => {
+                                          return {
+                                            key: v.name,
+                                            label: compile(v.title),
+                                            onClick: (e: any) => {
                                               if (e.key !== selectedKeys[0]) {
                                                 setSelectKey([e.key]);
                                                 handleFiterCollections(e.key);
@@ -1136,13 +1126,11 @@ export const GraphDrawPage = React.memo(() => {
                                                 handleFiterCollections(false);
                                                 setSelectKey([]);
                                               }
-                                            }}
-                                          >
-                                            <span>{compile(v.title)}</span>
-                                          </Menu.Item>
-                                        );
-                                      })}
-                                    </Menu>
+                                            },
+                                          };
+                                        }),
+                                      ]}
+                                    />
                                   </div>
                                 );
                                 return (
@@ -1226,24 +1214,22 @@ export const GraphDrawPage = React.memo(() => {
                                         }
                                       `}
                                       style={{ maxHeight: '70vh', overflowY: 'auto', border: 'none' }}
-                                    >
-                                      <Menu.Divider />
-                                      {menuItems.map((v) => {
-                                        return (
-                                          <Menu.Item
-                                            key={v.key}
-                                            onClick={(e: any) => {
+                                      items={[
+                                        { type: 'divider' },
+                                        ...menuItems.map((v) => {
+                                          return {
+                                            key: v.key,
+                                            label: t(v.label),
+                                            onClick: (e: any) => {
                                               targetGraph.connectionType = v.key;
                                               const { filterConfig } = targetGraph;
                                               filterConfig && handleFiterCollections(filterConfig.key);
                                               handleSetRelationshipType(v.key);
-                                            }}
-                                          >
-                                            <span>{t(v.label)}</span>
-                                          </Menu.Item>
-                                        );
-                                      })}
-                                    </Menu>
+                                            },
+                                          };
+                                        }),
+                                      ]}
+                                    />
                                   </div>
                                 );
                                 return (
@@ -1303,25 +1289,23 @@ export const GraphDrawPage = React.memo(() => {
                                         }
                                       `}
                                       style={{ maxHeight: '70vh', overflowY: 'auto', border: 'none' }}
-                                    >
-                                      <Menu.Divider />
-                                      {menuItems.map((v) => {
-                                        return (
-                                          <Menu.Item
-                                            key={v.key}
-                                            onClick={(e: any) => {
+                                      items={[
+                                        { type: 'divider' },
+                                        ...menuItems.map((v) => {
+                                          return {
+                                            key: v.key,
+                                            label: t(v.label),
+                                            onClick: (e: any) => {
                                               targetGraph.direction = v.key;
                                               const { filterConfig } = targetGraph;
                                               if (filterConfig) {
                                                 handleFiterCollections(filterConfig.key);
                                               }
-                                            }}
-                                          >
-                                            <span>{t(v.label)}</span>
-                                          </Menu.Item>
-                                        );
-                                      })}
-                                    </Menu>
+                                            },
+                                          };
+                                        }),
+                                      ]}
+                                    />
                                   </div>
                                 );
                                 return (

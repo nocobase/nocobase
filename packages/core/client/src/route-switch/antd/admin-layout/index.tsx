@@ -14,9 +14,9 @@ import {
   findByUid,
   findMenuItem,
   useACLRoleContext,
+  useAdminSchemaUid,
   useDocumentTitle,
   useRequest,
-  useRoute,
   useSystemSettings,
 } from '../../../';
 import { useCollectionManager } from '../../../collection-manager';
@@ -54,6 +54,7 @@ const useMenuProps = () => {
     defaultSelectedUid,
   };
 };
+
 const MenuEditor = (props) => {
   const { setTitle } = useDocumentTitle();
   const navigate = useNavigate();
@@ -61,7 +62,6 @@ const MenuEditor = (props) => {
   const defaultSelectedUid = params.name;
   const { sideMenuRef } = props;
   const ctx = useACLRoleContext();
-  const route = useRoute();
   const [current, setCurrent] = useState(null);
   const onSelect = ({ item }) => {
     const schema = item.props.schema;
@@ -70,12 +70,14 @@ const MenuEditor = (props) => {
     navigate(`/admin/${schema['x-uid']}`);
   };
 
+  const adminSchemaUid = useAdminSchemaUid();
+
   const { data, loading } = useRequest(
     {
-      url: `/uiSchemas:getJsonSchema/${route.uiSchemaUid}`,
+      url: `/uiSchemas:getJsonSchema/${adminSchemaUid}`,
     },
     {
-      refreshDeps: [route.uiSchemaUid],
+      refreshDeps: [adminSchemaUid],
       onSuccess(data) {
         const schema = filterByACL(data?.data, ctx);
         // url 为 `/admin` 的情况

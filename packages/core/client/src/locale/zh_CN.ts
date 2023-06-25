@@ -782,6 +782,8 @@ export default {
   "Update or create":"不存在时新增,存在时更新",
   "Find by the following fields":"通过以下字段查找",
   "Create":"仅新增",
+  "Current form":"当前表单",
+  "Current object":"当前对象",
   "Quick create": "快速创建",
   "Dropdown": "下拉菜单",
   "Pop-up": "弹窗",

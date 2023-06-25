@@ -703,5 +703,7 @@ export default {
   "First or create":"First or create",
   "Update or create":"Update or create",
   "Find by the following fields":"Find by the following fields",
-  "Create":"Create"
+  "Create":"Create",
+  "Current form": "Current form",
+  "Current object":"Current object"
 };

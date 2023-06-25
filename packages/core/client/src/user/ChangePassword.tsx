@@ -1,11 +1,10 @@
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import { Menu } from 'antd';
-import React, { useContext, useState } from 'react';
+import { MenuProps } from 'antd';
+import React, { useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActionContextProvider, SchemaComponent, useActionContext } from '../';
+import { ActionContextProvider, DropdownVisibleContext, SchemaComponent, useActionContext } from '../';
 import { useAPIClient } from '../api-client';
-import { DropdownVisibleContext } from './CurrentUser';
 
 const useCloseAction = () => {
   const { setVisible } = useActionContext();
@@ -114,23 +113,29 @@ const schema: ISchema = {
   },
 };
 
-export const ChangePassword = () => {
+export const useChangePassword = () => {
+  const ctx = useContext(DropdownVisibleContext);
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
-  const ctx = useContext(DropdownVisibleContext);
-  return (
-    <ActionContextProvider value={{ visible, setVisible }}>
-      <Menu.Item
-        key="password"
-        eventKey={'ChangePassword'}
-        onClick={() => {
-          ctx?.setVisible?.(false);
-          setVisible(true);
-        }}
-      >
-        {t('Change password')}
-      </Menu.Item>
-      <SchemaComponent scope={{ useCloseAction, useSaveCurrentUserValues }} schema={schema} />
-    </ActionContextProvider>
-  );
+
+  return useMemo<MenuProps['items'][0]>(() => {
+    return {
+      key: 'password',
+      eventKey: 'ChangePassword',
+      onClick: () => {
+        setVisible(true);
+        ctx?.setVisible(false);
+      },
+      label: (
+        <>
+          {t('Change password')}
+          <ActionContextProvider value={{ visible, setVisible }}>
+            <div onClick={(e) => e.stopPropagation()}>
+              <SchemaComponent scope={{ useCloseAction, useSaveCurrentUserValues }} schema={schema} />
+            </div>
+          </ActionContextProvider>
+        </>
+      ),
+    };
+  }, [visible]);
 };

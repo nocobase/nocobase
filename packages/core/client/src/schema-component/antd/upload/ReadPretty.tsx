@@ -18,7 +18,7 @@ type Composed = React.FC<UploadProps> & {
 
 export const ReadPretty: Composed = () => null;
 
-ReadPretty.File = (props: UploadProps) => {
+ReadPretty.File = function File(props: UploadProps) {
   const record = useRecord();
   const field = useField<Field>();
   const value = isString(field.value) ? record : field.value;
@@ -44,7 +44,7 @@ ReadPretty.File = (props: UploadProps) => {
               // }
             };
             return (
-              <div className={'ant-upload-list-picture-card-container'}>
+              <div key={file.name} className={'ant-upload-list-picture-card-container'}>
                 <div className="ant-upload-list-item ant-upload-list-item-done ant-upload-list-item-list-type-picture-card">
                   <div className={'ant-upload-list-item-info'}>
                     <span className="ant-upload-span">
@@ -114,6 +114,7 @@ ReadPretty.File = (props: UploadProps) => {
           imageTitle={images[photoIndex]?.title}
           toolbarButtons={[
             <button
+              key={'download'}
               style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
               type="button"
               aria-label="Zoom in"
@@ -135,10 +136,10 @@ ReadPretty.File = (props: UploadProps) => {
   );
 };
 
-ReadPretty.Upload = (props) => {
+ReadPretty.Upload = function Upload(props) {
   const field = useField<Field>();
   return (field.value || []).map((item) => (
-    <div>
+    <div key={item.name}>
       {item.url ? (
         <a target={'_blank'} href={item.url} rel="noreferrer">
           {item.name}

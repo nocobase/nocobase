@@ -1,7 +1,7 @@
-import React from 'react';
-import { SettingsMenu, SortableItem, useDesigner } from '@nocobase/client';
-import { SettingsDesigner } from './Settings.Designer';
 import { css, cx } from '@emotion/css';
+import { SettingsMenu, SortableItem, useDesigner } from '@nocobase/client';
+import React from 'react';
+import { SettingsDesigner } from './Settings.Designer';
 export const InternalSettings = () => {
   const Designer = useDesigner();
   return (
