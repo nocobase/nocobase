@@ -7,7 +7,7 @@ import formatters from './block/formatters';
 import transformers from './block/transformers';
 import { lang } from './locale';
 import { ChartRendererProps } from './renderer';
-import { getSelectedFields } from './utils';
+import { getField, getSelectedFields } from './utils';
 
 export type FieldOption = {
   value: string;
@@ -18,6 +18,8 @@ export type FieldOption = {
   type?: string;
   interface?: string;
   uiSchema?: ISchema;
+  target?: string;
+  targetFields?: FieldOption[];
 };
 
 export const useFields = (collection?: string) => {
@@ -28,7 +30,7 @@ export const useFields = (collection?: string) => {
   const { getCollectionFields } = useCollectionManager();
   const fields = (getCollectionFields(collection) || [])
     .filter((field) => {
-      return !['belongsTo', 'hasMany', 'belongsToMany', 'hasOne'].includes(field.type) && field.interface;
+      return field.interface;
     })
     .map((field) => ({
       key: field.name,
@@ -39,29 +41,38 @@ export const useFields = (collection?: string) => {
   return fields;
 };
 
-export const useCompiledFields = (collection?: string) => {
-  const fields = useFields(collection);
+export const useFieldsWithAssosiation = (collection?: string) => {
+  const { getCollectionFields } = useCollectionManager();
   const { t } = useTranslation();
-  return Schema.compile(fields, { t }) as FieldOption[];
+  const fields = useFields(collection);
+  return fields.map((field) => {
+    const label = Schema.compile(field.uiSchema?.title || field.name, { t });
+    if (!field.target) {
+      return { ...field, label };
+    }
+    const targetFields = (getCollectionFields(field.target) || [])
+      .filter((targetField) => {
+        return targetField.interface;
+      })
+      .map((targetField) => ({
+        key: targetField.name,
+        label: `${label} / ${Schema.compile(targetField.uiSchema?.title || targetField.name, { t })}`,
+        value: `${field.name}.${targetField.name}`,
+        ...targetField,
+      }));
+    return {
+      ...field,
+      label,
+      targetFields,
+    };
+  });
 };
 
-export const useChartFields =
-  (fields: FieldOption[], scope = {}) =>
-  (field: any) => {
-    const query = field.query('query').get('value') || {};
-    const selectedFields = getSelectedFields(fields, query);
-    /**
-     * chartFields is used for configuring chart fields
-     * since the default alias is field display name, we need to set the option values to field display name
-     * see also: 'useQueryWithAlias'
-     */
-    const chartFields = selectedFields.map((field) => ({
-      ...field,
-      label: Schema.compile(field.label, scope),
-      value: field.label,
-    }));
-    field.dataSource = chartFields;
-  };
+export const useChartFields = (fields: FieldOption[]) => (field: any) => {
+  const query = field.query('query').get('value') || {};
+  const selectedFields = getSelectedFields(fields, query);
+  field.dataSource = selectedFields;
+};
 
 export const useFormatters = (fields: FieldOption[]) => (field: any) => {
   const selectedField = field.query('.field').get('value');
@@ -70,7 +81,7 @@ export const useFormatters = (fields: FieldOption[]) => (field: any) => {
     return;
   }
   let options = [];
-  const fieldInterface = fields.find((field) => field.name === selectedField)?.interface;
+  const fieldInterface = getField(fields, selectedField)?.interface;
   switch (fieldInterface) {
     case 'datetime':
     case 'createdAt':
@@ -119,7 +130,7 @@ export const useFieldTypes = (fields: FieldOption[]) => (field: any) => {
   const selectedField = field.query('.field').get('value');
   const query = field.query('query').get('value') || {};
   const selectedFields = getSelectedFields(fields, query);
-  const fieldProps = selectedFields.find((field) => field.label === selectedField);
+  const fieldProps = selectedFields.find((field) => field.value === selectedField);
   const supports = Object.keys(transformers);
   field.dataSource = supports.map((key) => ({
     label: lang(key),
@@ -164,14 +175,31 @@ export const useTransformers = (field: any) => {
 export const useFieldTransformer = (transform: ChartRendererProps['transform'], locale = 'en-US') => {
   return (transform || [])
     .filter((item) => item.field && item.type && item.format)
-    .reduce((meta, item) => {
-      const formatter = transformers[item.type][item.format];
-      if (!formatter) {
-        return meta;
+    .reduce((mp, item) => {
+      console.log(item.type, item.format);
+      const transformer = transformers[item.type][item.format];
+      if (!transformer) {
+        return mp;
       }
-      meta[item.field] = {
-        formatter: (val: any) => formatter(val, locale),
-      };
-      return meta;
+      mp[item.field] = (val: any) => transformer(val, locale);
+      return mp;
     }, {});
+};
+
+export const useOrderFieldsOptions = (defaultOptions: any[], fields: FieldOption[]) => (field: any) => {
+  const query = field.query('query').get('value') || {};
+  const { measures = [] } = query;
+  const hasAgg = measures.some((measure: { aggregation?: string }) => measure.aggregation);
+  if (!hasAgg) {
+    field.componentProps.fieldNames = {
+      label: 'title',
+      value: 'name',
+      children: 'children',
+    };
+    field.dataSource = defaultOptions;
+    return;
+  }
+  const selectedFields = getSelectedFields(fields, query);
+  field.componentProps.fieldNames = {};
+  field.dataSource = selectedFields;
 };

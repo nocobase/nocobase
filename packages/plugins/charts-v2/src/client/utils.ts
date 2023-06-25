@@ -23,11 +23,34 @@ export const createRendererSchema = (decoratorProps: any, componentProps = {}) =
   };
 };
 
+// For AssociationField, the format of field is [targetField, field]
+export const parseField = (field: string | string[]) => {
+  let target: string;
+  let name: string;
+  if (!Array.isArray(field)) {
+    name = field;
+  } else if (field.length === 1) {
+    name = field[0];
+  } else if (field.length > 1) {
+    [target, name] = field;
+  }
+  return { target, name, alias: target ? `${target}.${name}` : name };
+};
+
+export const getField = (fields: FieldOption[], field: string | string[]) => {
+  const { target, name } = parseField(field);
+  if (!target) {
+    return fields.find((f) => f.name === name);
+  }
+  const targetField = fields.find((f) => f.name === target)?.targetFields?.find((f) => f.name === name);
+  return targetField;
+};
+
 export const getSelectedFields = (fields: FieldOption[], query: QueryProps) => {
   // When field alias is set, appends it to the field list
   const process = (selectedFields: SelectedField[]) => {
     return selectedFields.map((selectedField) => {
-      const fieldProps = fields.find((field) => field.name === selectedField.field);
+      const fieldProps = getField(fields, selectedField.field);
       return {
         ...fieldProps,
         key: selectedField.alias || fieldProps?.key,
@@ -56,19 +79,18 @@ export const processData = (fields: FieldOption[], data: any[]) => {
   return data.map((record) => {
     const processed = {};
     Object.entries(record).forEach(([key, value]) => {
-      const field = fields.find((field) => field.name === key);
+      const field = getField(fields, key.split('.'));
       if (!field) {
         processed[key] = value;
         return;
       }
-      const label = field.label || key;
       switch (field.interface) {
         case 'select':
         case 'radioGroup':
-          processed[label] = parseEnum(field, value);
+          processed[key] = parseEnum(field, value);
           break;
         default:
-          processed[label] = value;
+          processed[key] = value;
       }
     });
     return processed;

@@ -1,4 +1,4 @@
-import { ACLCollectionProvider } from '@nocobase/client';
+import { MaybeCollectionProvider } from '@nocobase/client';
 import React, { createContext } from 'react';
 
 export type MeasureProps = {
@@ -11,6 +11,12 @@ export type DimensionProps = {
   field: string;
   alias?: string;
   format?: string;
+};
+
+export type TransformProps = {
+  field: string;
+  type: string;
+  format: string;
 };
 
 export type QueryProps = Partial<{
@@ -36,20 +42,17 @@ export type ChartRendererProps = {
     general: any;
     advanced: any;
   };
-  transform?: {
-    field: string;
-    type: string;
-    format: string;
-  }[];
+  transform?: TransformProps[];
   mode?: 'builder' | 'sql';
 };
 
 export const ChartRendererContext = createContext<ChartRendererProps>({} as any);
 
 export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
+  const { collection } = props;
   return (
-    <ACLCollectionProvider>
+    <MaybeCollectionProvider collection={collection}>
       <ChartRendererContext.Provider value={{ ...props }}>{props.children}</ChartRendererContext.Provider>
-    </ACLCollectionProvider>
+    </MaybeCollectionProvider>
   );
 };

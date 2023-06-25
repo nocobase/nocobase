@@ -32,7 +32,14 @@ const basicSchema = {
   },
 };
 
-const useProps: usePropsFunc = ({ data, meta, general, advanced }) => {
+const useProps: usePropsFunc = ({ data, fieldProps, general, advanced }) => {
+  const meta = {};
+  Object.entries(fieldProps).forEach(([key, props]) => {
+    meta[key] = {
+      formatter: props.transformer,
+      alias: props.label,
+    };
+  });
   return {
     data,
     meta,
@@ -83,9 +90,9 @@ export const G2PlotLibrary: Charts = {
       const { xField, yField, seriesField } = infer(fields, { measures, dimensions });
       return {
         general: {
-          xField: yField?.label,
-          yField: xField?.label,
-          seriesField: seriesField?.label,
+          xField: yField?.value,
+          yField: xField?.value,
+          seriesField: seriesField?.value,
         },
       };
     },
@@ -123,8 +130,8 @@ export const G2PlotLibrary: Charts = {
       const { xField, yField } = infer(fields, { measures, dimensions });
       return {
         general: {
-          colorField: xField?.label,
-          angleField: yField?.label,
+          colorField: xField?.value,
+          angleField: yField?.value,
         },
       };
     },
@@ -137,12 +144,10 @@ export const G2PlotLibrary: Charts = {
   dualAxes: {
     name: lang('Dual Axes Chart'),
     component: DualAxes,
-    useProps: ({ data, meta, general, advanced }) => {
+    useProps: ({ data, fieldProps, general, advanced }) => {
       return {
+        ...useProps({ data, fieldProps, general, advanced }),
         data: [data, data],
-        meta,
-        ...general,
-        ...advanced,
       };
     },
     schema: {
@@ -203,8 +208,8 @@ export const G2PlotLibrary: Charts = {
       const { xField, yFields } = infer(fields, { measures, dimensions });
       return {
         general: {
-          xField: xField?.label,
-          yField: yFields?.map((f) => f.label).slice(0, 2) || [],
+          xField: xField?.value,
+          yField: yFields?.map((f) => f.value).slice(0, 2) || [],
         },
       };
     },

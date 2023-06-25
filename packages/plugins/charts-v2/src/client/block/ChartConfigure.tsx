@@ -1,9 +1,10 @@
 import { RightSquareOutlined } from '@ant-design/icons';
 import { ArrayItems, Editable, Form, FormCollapse, FormItem, Switch } from '@formily/antd';
 import { createForm, Form as FormType, ObjectField, onFieldChange, onFormInit } from '@formily/core';
-import { FormConsumer, ISchema } from '@formily/react';
+import { FormConsumer, ISchema, Schema } from '@formily/react';
 import {
   AutoComplete,
+  Cascader,
   DatePicker,
   Filter,
   gridRowColWrap,
@@ -12,24 +13,26 @@ import {
   Radio,
   SchemaComponent,
   Select,
+  useCollectionFieldsOptions,
+  useCollectionFilterOptions,
   useDesignable,
-  useFilterFieldOptions,
 } from '@nocobase/client';
 import { Alert, Button, Card, Col, Modal, Row, Space, Table, Tabs, Typography } from 'antd';
 import { cloneDeep, isEqual } from 'lodash';
 import React, { createContext, useContext, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   useChartFields,
   useCollectionOptions,
-  useCompiledFields,
-  useFields,
+  useFieldsWithAssosiation,
   useFieldTypes,
   useFormatters,
+  useOrderFieldsOptions,
   useTransformers,
 } from '../hooks';
 import { useChartsTranslation } from '../locale';
 import { ChartRenderer, ChartRendererProvider, useCharts, useChartTypes } from '../renderer';
-import { createRendererSchema, getSelectedFields } from '../utils';
+import { createRendererSchema, getField, getSelectedFields } from '../utils';
 import { getConfigSchema, querySchema, transformSchema } from './schemas/configure';
 const { Paragraph, Text } = Typography;
 
@@ -79,7 +82,7 @@ export const ChartConfigure: React.FC<{
   const { insert } = props;
 
   const charts = useCharts();
-  const fields = useFields(collection);
+  const fields = useFieldsWithAssosiation(collection);
   const initChart = (overwrite = false) => {
     if (!form.modified) {
       return;
@@ -309,12 +312,15 @@ ChartConfigure.Renderer = function Renderer(props) {
 
 ChartConfigure.Query = function Query() {
   const { t } = useChartsTranslation();
-  const fields = useCompiledFields();
+  const fields = useFieldsWithAssosiation();
   const useFormatterOptions = useFormatters(fields);
-  const filterOptions = useFilterFieldOptions(fields);
   const collectionOptions = useCollectionOptions();
   const { current, setCurrent } = useContext(ChartConfigContext);
-  const formCollapse = FormCollapse.createFormCollapse(['measures', 'dimensions', 'sort', 'filter']);
+  const { collection } = current || {};
+  const fieldOptions = useCollectionFieldsOptions(collection);
+  const compiledFieldOptions = Schema.compile(fieldOptions, { t: useTranslation() });
+  const filterOptions = useCollectionFilterOptions(collection);
+  const formCollapse = FormCollapse.createFormCollapse(['measures', 'dimensions']);
   const onCollectionChange = (value: string) => {
     const { schema, field } = current;
     const newSchema = { ...schema };
@@ -337,8 +343,9 @@ ChartConfigure.Query = function Query() {
       scope={{
         t,
         formCollapse,
-        fields,
-        filterOptions,
+        fieldOptions: compiledFieldOptions,
+        filterOptions: Schema.compile(filterOptions, { t: useTranslation() }),
+        useOrderOptions: useOrderFieldsOptions(compiledFieldOptions, fields),
         collectionOptions,
         useFormatterOptions,
         onCollectionChange,
@@ -360,6 +367,7 @@ ChartConfigure.Query = function Query() {
         DatePicker,
         Text,
         FromSql,
+        Cascader,
       }}
     />
   );
@@ -368,9 +376,9 @@ ChartConfigure.Query = function Query() {
 ChartConfigure.Config = function Config() {
   const { t } = useChartsTranslation();
   const chartTypes = useChartTypes();
-  const fields = useFields();
+  const fields = useFieldsWithAssosiation();
   const charts = useCharts();
-  const getChartFields = useChartFields(fields, { t });
+  const getChartFields = useChartFields(fields);
   const getReference = (chartType: string) => {
     const reference = charts[chartType]?.reference;
     if (!reference) return '';
@@ -405,7 +413,7 @@ ChartConfigure.Config = function Config() {
 
 ChartConfigure.Transform = function Transform() {
   const { t } = useChartsTranslation();
-  const fields = useFields();
+  const fields = useFieldsWithAssosiation();
   const useFieldTypeOptions = useFieldTypes(fields);
   const getChartFields = useChartFields(fields);
   return (
@@ -419,14 +427,18 @@ ChartConfigure.Transform = function Transform() {
 
 ChartConfigure.Data = function Data() {
   const { data } = useContext(ChartConfigContext);
+  const fields = useFieldsWithAssosiation();
   return Array.isArray(data) ? (
     <Table
       dataSource={data}
-      columns={Object.keys(data[0] || {}).map((col) => ({
-        title: col,
-        dataIndex: col,
-        key: col,
-      }))}
+      columns={Object.keys(data[0] || {}).map((col) => {
+        const field = getField(fields, col.split('.'));
+        return {
+          title: field?.label || col,
+          dataIndex: col,
+          key: col,
+        };
+      })}
       size="small"
     />
   ) : (

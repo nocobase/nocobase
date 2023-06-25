@@ -1,9 +1,10 @@
-import { Schema, useField, useFieldSchema } from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import {
   GeneralSchemaDesigner,
   gridRowColWrap,
   SchemaSettings,
   useAPIClient,
+  useCollection,
   useDesignable,
   useRequest,
 } from '@nocobase/client';
@@ -11,9 +12,9 @@ import { Empty, Result, Typography } from 'antd';
 import React, { useContext, useEffect, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { ChartConfigContext } from '../block';
-import { useCompiledFields, useFieldTransformer } from '../hooks';
+import { useFieldsWithAssosiation, useFieldTransformer } from '../hooks';
 import { useChartsTranslation } from '../locale';
-import { createRendererSchema, processData } from '../utils';
+import { createRendererSchema, getField, parseField, processData } from '../utils';
 import { useCharts } from './ChartLibrary';
 import { ChartRendererContext, DimensionProps, MeasureProps, QueryProps } from './ChartRendererProvider';
 const { Paragraph, Text } = Typography;
@@ -32,7 +33,7 @@ export const ChartRenderer: React.FC<{
   const advanced = config?.advanced || {};
   const schema = useFieldSchema();
   const currentSchema = schema || current?.schema;
-  const fields = useCompiledFields(collection);
+  const fields = useFieldsWithAssosiation(collection);
   const api = useAPIClient();
   const [data, setData] = useState<any[]>([]);
   const { runAsync } = useRequest(
@@ -48,14 +49,16 @@ export const ChartRenderer: React.FC<{
             dimensions: (query?.dimensions || []).map((item: DimensionProps) => {
               const dimension = { ...item };
               if (item.format && !item.alias) {
-                dimension.alias = item.field;
+                const { alias } = parseField(item.field);
+                dimension.alias = alias;
               }
               return dimension;
             }),
             measures: (query?.measures || []).map((item: MeasureProps) => {
               const measure = { ...item };
               if (item.aggregation && !item.alias) {
-                measure.alias = item.field;
+                const { alias } = parseField(item.field);
+                measure.alias = alias;
               }
               return measure;
             }),
@@ -104,8 +107,21 @@ export const ChartRenderer: React.FC<{
   const chart = charts[config?.chartType];
   const Component = chart?.component;
   const locale = api.auth.getLocale();
-  const meta = useFieldTransformer(transform, locale);
-  const info = Schema.compile({ data, meta, general, advanced }, { t });
+  const transformers = useFieldTransformer(transform, locale);
+  const info = {
+    data,
+    general,
+    advanced,
+    fieldProps: Object.keys(data[0] || {}).reduce((props, name) => {
+      if (!props[name]) {
+        const field = getField(fields, name.split('.'));
+        const transformer = transformers[name];
+        props[name] = { ...field, transformer };
+      }
+      return props;
+    }, {}),
+    locale,
+  };
   const componentProps = chart?.useProps?.(info) || info;
   const C = () =>
     Component ? (
@@ -134,13 +150,13 @@ ChartRenderer.Designer = function Designer() {
   const field = useField();
   const schema = useFieldSchema();
   const { insertAdjacent } = useDesignable();
-  const collection = field?.decoratorProps?.collection;
+  const { name, title } = useCollection();
   return (
-    <GeneralSchemaDesigner disableInitializer>
+    <GeneralSchemaDesigner disableInitializer title={title || name}>
       <SchemaSettings.Item
         key="configure"
         onClick={() => {
-          setCurrent({ schema, field, collection });
+          setCurrent({ schema, field, collection: name });
           setVisible(true);
         }}
       >

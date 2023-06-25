@@ -100,7 +100,7 @@ export const querySchema: ISchema = {
   properties: {
     settings: {
       type: 'void',
-      'x-component': 'FormItem',
+      // 'x-component': 'FormItem',
       properties: {
         // mode: {
         //   type: 'string',
@@ -147,14 +147,9 @@ export const querySchema: ISchema = {
         //   ],
         // },
         collection: {
+          title: '{{t("Collection")}}',
           type: 'string',
           'x-decorator': 'FormItem',
-          'x-decorator-props': {
-            style: {
-              display: 'inline-block',
-              width: '30%',
-            },
-          },
           'x-component': 'Select',
           'x-component-props': {
             options: '{{ collectionOptions }}',
@@ -191,11 +186,16 @@ export const querySchema: ISchema = {
                         field: {
                           type: 'string',
                           'x-decorator': 'FormItem',
-                          'x-component': 'Select',
+                          'x-component': 'Cascader',
                           'x-component-props': {
                             placeholder: '{{t("Field")}}',
+                            fieldNames: {
+                              label: 'title',
+                              value: 'name',
+                              children: 'children',
+                            },
                           },
-                          enum: '{{ fields }}',
+                          enum: '{{ fieldOptions }}',
                           required: true,
                         },
                         aggregation: {
@@ -238,11 +238,16 @@ export const querySchema: ISchema = {
                       field: {
                         type: 'string',
                         'x-decorator': 'FormItem',
-                        'x-component': 'Select',
+                        'x-component': 'Cascader',
                         'x-component-props': {
                           placeholder: '{{t("Field")}}',
+                          fieldNames: {
+                            label: 'title',
+                            value: 'name',
+                            children: 'children',
+                          },
                         },
-                        enum: '{{ fields }}',
+                        enum: '{{ fieldOptions }}',
                         required: true,
                       },
                       format: {
@@ -305,11 +310,11 @@ export const querySchema: ISchema = {
                       field: {
                         type: 'string',
                         'x-decorator': 'FormItem',
-                        'x-component': 'Select',
+                        'x-component': 'Cascader',
                         'x-component-props': {
-                          options: '{{ fields }}',
                           placeholder: '{{t("Field")}}',
                         },
+                        'x-reactions': '{{ useOrderOptions }}',
                         required: true,
                       },
                       order: {

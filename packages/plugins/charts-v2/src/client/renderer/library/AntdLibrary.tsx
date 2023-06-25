@@ -17,16 +17,12 @@ export const AntdLibrary: Charts = {
         },
       },
     },
-    useProps: ({ data, meta, general, advanced }) => {
-      let formatter: (val: any) => any;
-      const fieldMeta = Object.values(meta)[0];
-      if (fieldMeta && fieldMeta.formatter) {
-        formatter = fieldMeta.formatter;
-      }
+    useProps: ({ data, fieldProps, general, advanced }) => {
+      const props = Object.values(fieldProps)[0];
       const value = Object.values(data[0] || {})[0];
       return {
         value,
-        formatter,
+        formatter: props.transformer,
         ...general,
         ...advanced,
       };
@@ -39,21 +35,19 @@ export const AntdLibrary: Charts = {
   table: {
     name: lang('Table'),
     component: Table,
-    useProps: ({ data, meta, general, advanced }) => {
-      let formatter: (val: any) => any;
+    useProps: ({ data, fieldProps, general, advanced }) => {
       const columns = data.length
         ? Object.keys(data[0]).map((item) => ({
-            title: item,
+            title: fieldProps[item]?.label || item,
             dataIndex: item,
             key: item,
           }))
         : [];
       const dataSource = data.map((item: any) => {
         Object.keys(item).map((key: string) => {
-          const fieldMeta = meta[key];
-          if (fieldMeta && fieldMeta.formatter) {
-            formatter = fieldMeta.formatter;
-            item[key] = formatter(item[key]);
+          const props = fieldProps[key];
+          if (props?.transformer) {
+            item[key] = props.transformer(item[key]);
           }
         });
         return item;
