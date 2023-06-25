@@ -43,6 +43,7 @@ export default {
         title: '{{t("Email")}}',
         'x-component': 'Input',
         'x-validator': 'email',
+        required: true,
       },
     },
     {
