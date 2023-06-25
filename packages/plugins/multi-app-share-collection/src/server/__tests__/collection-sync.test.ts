@@ -41,7 +41,7 @@ pgOnly()('enable plugin', () => {
   });
 });
 
-describe('collection sync', () => {
+pgOnly()('collection sync', () => {
   let mainDb: Database;
   let mainApp: MockServer;
 
