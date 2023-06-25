@@ -1,6 +1,4 @@
-import { HandlerType } from '@nocobase/resourcer';
 import { Plugin } from '@nocobase/server';
-import { Registry } from '@nocobase/utils';
 import { resolve } from 'path';
 import { NAMESPACE } from '../constants';
 import { create } from './actions/api-keys';
@@ -11,8 +9,6 @@ export interface ApiKeysPluginConfig {
 }
 
 export default class ApiKeysPlugin extends Plugin<ApiKeysPluginConfig> {
-  public authenticators: Registry<HandlerType> = new Registry();
-
   constructor(app, options) {
     super(app, options);
   }
