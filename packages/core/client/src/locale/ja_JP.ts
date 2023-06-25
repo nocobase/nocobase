@@ -540,7 +540,7 @@ export default {
   "Quick upload": "クイックアップロード",
   "Select file": "ファイルを選択",
   "Subtable": "サブテーブル",
-  "Subform": "サブフォーム",
+  "Sub-form": "サブフォーム",
   "Sub-details":"サブリスト",
   "Field mode":"フィールドコンポーネント",
   "Allow add new data":"データの追加を許可",
@@ -614,5 +614,7 @@ export default {
   "First or create":"存在しない場合に追加",
   "Update or create":"存在しなければ新規、存在すれば更新",
   "Find by the following fields":"次のフィールドで検索",
-  "Create":"新規のみ"
+  "Create":"新規のみ"  ,
+  "Current form":"現在のフォーム",
+  "Current object":"現在のオブジェクト"
 }

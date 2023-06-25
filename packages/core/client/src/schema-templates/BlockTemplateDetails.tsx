@@ -1,4 +1,5 @@
-import { PageHeader as AntdPageHeader, Input, Spin } from 'antd';
+import { PageHeader as AntdPageHeader } from '@ant-design/pro-layout';
+import { Input, Spin } from 'antd';
 import React, { useContext, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAPIClient, useRequest, useSchemaTemplateManager } from '..';
@@ -75,6 +76,7 @@ export const BlockTemplateDetails = () => {
   return (
     <div>
       <AntdPageHeader
+        style={{ backgroundColor: 'white' }}
         onBack={() => {
           navigate('/admin/plugins/block-templates');
         }}

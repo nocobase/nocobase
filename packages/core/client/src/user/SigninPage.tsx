@@ -1,7 +1,7 @@
+import { css } from '@emotion/css';
 import { ISchema, useForm } from '@formily/react';
 import { Space, Tabs } from 'antd';
-import React, { useCallback, useContext } from 'react';
-import { css } from '@emotion/css';
+import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { SchemaComponent, useAPIClient, useCurrentDocumentTitle, useSystemSettings } from '..';
@@ -142,21 +142,30 @@ export const SigninPage = (props: SigninPageProps) => {
       `}
     >
       {smsAuthEnabled ? (
-        <Tabs defaultActiveKey="password">
-          <Tabs.TabPane tab={t('Sign in via account')} key="password">
-            <SchemaComponent scope={{ usePasswordSignIn }} schema={schema || passwordForm} />
-          </Tabs.TabPane>
-          <Tabs.TabPane tab={t('Sign in via phone')} key="phone">
-            <SchemaComponent
-              schema={phoneForm}
-              scope={{ usePhoneSignIn, ...scope }}
-              components={{
-                VerificationCode,
-                ...components,
-              }}
-            />
-          </Tabs.TabPane>
-        </Tabs>
+        <Tabs
+          defaultActiveKey="password"
+          items={[
+            {
+              label: t('Sign in via account'),
+              key: 'password',
+              children: <SchemaComponent scope={{ usePasswordSignIn }} schema={schema || passwordForm} />,
+            },
+            {
+              label: t('Sign in via phone'),
+              key: 'phone',
+              children: (
+                <SchemaComponent
+                  schema={phoneForm}
+                  scope={{ usePhoneSignIn, ...scope }}
+                  components={{
+                    VerificationCode,
+                    ...components,
+                  }}
+                />
+              ),
+            },
+          ]}
+        />
       ) : (
         <SchemaComponent
           components={{ ...components }}
