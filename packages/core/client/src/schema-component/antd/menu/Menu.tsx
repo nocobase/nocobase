@@ -488,13 +488,13 @@ Menu.Item = observer(
                 >
                   {field.title}
                 </span>
-                {Designer && <Designer />}
+                <Designer />
               </SortableItem>
             </FieldContext.Provider>
           </SchemaContext.Provider>
         ),
       };
-    }, [field.title, icon, schema]);
+    }, [field.title, icon, schema, Designer]);
 
     if (!pushMenuItem) {
       error('Menu.Item must be wrapped by GetMenuItemsContext.Provider');
@@ -546,13 +546,13 @@ Menu.URL = observer(
                 >
                   {field.title}
                 </span>
-                {Designer && <Designer />}
+                <Designer />
               </SortableItem>
             </FieldContext.Provider>
           </SchemaContext.Provider>
         ),
       };
-    }, [field.title, icon, props.href, schema]);
+    }, [field.title, icon, props.href, schema, Designer]);
 
     pushMenuItem(item);
     return null;
@@ -581,7 +581,7 @@ Menu.SubMenu = observer(
               <SortableItem className={subMenuDesignerCss} removeParentsIfNoChildren={false}>
                 <Icon type={icon} />
                 {field.title}
-                {Designer && <Designer />}
+                <Designer />
               </SortableItem>
             </FieldContext.Provider>
           </SchemaContext.Provider>
@@ -590,7 +590,7 @@ Menu.SubMenu = observer(
           return <RecursionField schema={schema} onlyRenderProperties />;
         }),
       };
-    }, [field.title, icon, schema, children]);
+    }, [field.title, icon, schema, children, Designer]);
 
     if (!pushMenuItem) {
       error('Menu.SubMenu must be wrapped by GetMenuItemsContext.Provider');
