@@ -294,7 +294,7 @@ export default {
   "Quick upload": "Quick upload",
   "Select file": "Select file",
   "Subtable": "Sub-table",
-  "Subform": "Sub-form",
+  "Sub-form": "Sub-form",
   "Field mode":"Field mode",
   "Allow add new data":"Allow add new data",
   "Record picker": "Record picker",
