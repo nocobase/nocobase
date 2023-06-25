@@ -244,7 +244,7 @@ export default {
   "Select file": "Selecionar arquivo",
   "Allow multiple": "Permitir múltiplos",
   "Subtable": "Subtabela",
-  "Subform": "Subformulário",
+  "Sub-form": "Subformulário",
   "Record picker": "Selecionador de registros",
   "Toggles the subfield mode": "Alterna o modo de subcampo",
   "Selector mode": "Modo de seleção",
