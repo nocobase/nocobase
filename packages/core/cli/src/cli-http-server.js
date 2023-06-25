@@ -7,6 +7,8 @@ class CliHttpServer {
   server;
 
   workerReady = false;
+  cliDoingWork = null;
+
   ipcServer;
   socketPath = '/tmp/cli-http-server.sock';
 
@@ -25,15 +27,17 @@ class CliHttpServer {
     this.server = http.createServer((req, res) => {
       if (!this.workerReady) {
         res.writeHead(503);
-        res.end('worker not ready');
-        return;
+        res.end(`worker not ready, doing ${this.cliDoingWork}`);
       }
-      console.log('request');
     });
 
     this.server.listen(port, () => {
       console.log(`cli http server listening on port ${port}`);
     });
+  }
+
+  setCliDoingWork(cliDoingWork) {
+    this.cliDoingWork = cliDoingWork;
   }
 
   listenDomainSocket() {

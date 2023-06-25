@@ -353,6 +353,8 @@ export class PluginManager {
   }
 
   async load(options: any = {}) {
+    this.app.setWorkingMessage('loading plugins...');
+
     for (const [name, plugin] of this.plugins) {
       if (!plugin.enabled) {
         continue;

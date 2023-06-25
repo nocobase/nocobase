@@ -19,7 +19,6 @@ import { createACL } from './acl';
 import { AppSupervisor } from './app-supervisor';
 import { registerCli } from './commands';
 import { ApplicationFsm } from './fsm';
-import { Gateway } from './gateway';
 import { createI18n, createResourcer, registerMiddlewares } from './helper';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
@@ -156,10 +155,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   stopped = false;
   declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
   protected plugins = new Map<string, Plugin>();
-
   protected _appSupervisor: AppSupervisor = AppSupervisor.getInstance();
-
-  protected _gateway: Gateway = Gateway.getInstance();
+  private workingMessage: string = null;
 
   constructor(public options: ApplicationOptions) {
     super();
@@ -295,6 +292,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async load(options?: any) {
+    this.setWorkingMessage('start load');
+
     if (options?.reload) {
       this.log.info(`Reload application configuration`);
       const oldDb = this._db;
@@ -311,6 +310,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   async reload(options?: any) {
     this.log.debug(`start reload`);
+
     await this.load({
       ...options,
       reload: true,
@@ -364,7 +364,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
 
     await this.emitAsync('beforeStart', this, options);
-
     await this.emitAsync('afterStart', this, options);
     this.fsm.interpret.send('STARTED');
     this.stopped = false;
@@ -483,6 +482,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return {
       appName: this.name,
     };
+  }
+
+  public setWorkingMessage(message: string) {
+    this.workingMessage = message;
+    this.emit('workingMessageChanged', this.workingMessage);
   }
 
   protected init() {

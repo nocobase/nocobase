@@ -59,7 +59,10 @@ module.exports = (cli) => {
         const cliHttpServer = CliHttpServer.getInstance();
         cliHttpServer.listen(serverPort);
 
+        cliHttpServer.setCliDoingWork('install');
         await runAppCommand('install', ['--silent']);
+
+        cliHttpServer.setCliDoingWork('start server process');
 
         const argv = [
           '-P',
