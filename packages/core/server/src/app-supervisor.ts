@@ -53,7 +53,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     AppSupervisor.instance = null;
   }
 
-  async getApp(appName: string, options = {}) {
+  async bootStrapApp(appName: string, options = {}) {
     if (!this.hasApp(appName) && this.appBootstrapper) {
       await this.appBootstrapper({
         appSupervisor: this,
@@ -61,7 +61,10 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
         options,
       });
     }
+  }
 
+  async getApp(appName: string, options = {}) {
+    await this.bootStrapApp(appName, options);
     return this.apps[appName];
   }
 
