@@ -2,9 +2,9 @@ import { PlusOutlined } from '@ant-design/icons';
 import { ArrayTable } from '@formily/antd';
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { Button, Dropdown, Menu } from 'antd';
+import { Button, Dropdown, MenuProps } from 'antd';
 import { cloneDeep } from 'lodash';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
 import { RecordProvider } from '../../record-provider';
@@ -101,34 +101,36 @@ export const AddSubFieldAction = () => {
   const compile = useCompile();
   const options = useOptions();
   const { t } = useTranslation();
-  const items = options.map((option) => {
-    const children = option.children.map((child) => {
-      return { label: compile(child.title), key: child.name };
+  const items = useMemo(() => {
+    return options.map((option) => {
+      const children = option.children.map((child) => {
+        return { label: compile(child.title), key: child.name };
+      });
+      return {
+        label: compile(option.label),
+        key: option.key,
+        children,
+      };
     });
+  }, [options]);
+  const menu = useMemo<MenuProps>(() => {
     return {
-      label: compile(option.label),
-      key: option.key,
-      children,
+      style: {
+        maxHeight: '60vh',
+        overflow: 'auto',
+      },
+      onClick: (info) => {
+        const schema = getSchema(getInterface(info.key));
+        setSchema(schema);
+        setVisible(true);
+      },
+      items,
     };
-  });
+  }, [items]);
+
   return (
     <ActionContextProvider value={{ visible, setVisible }}>
-      <Dropdown
-        overlay={
-          <Menu
-            style={{
-              maxHeight: '60vh',
-              overflow: 'auto',
-            }}
-            onClick={(info) => {
-              const schema = getSchema(getInterface(info.key));
-              setSchema(schema);
-              setVisible(true);
-            }}
-            items={items}
-          />
-        }
-      >
+      <Dropdown menu={menu}>
         <Button icon={<PlusOutlined />} type={'primary'}>
           {t('Add field')}
         </Button>

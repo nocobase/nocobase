@@ -109,7 +109,7 @@ export default class Processor {
       const head = this.nodes.find((item) => !item.upstream);
       await this.run(head, { result: execution.context });
     } else {
-      await this.exit(null);
+      await this.exit(JOB_STATUS.RESOLVED);
     }
   }
 
@@ -192,7 +192,7 @@ export default class Processor {
   }
 
   // parent node should take over the control
-  public async end(node, job) {
+  public async end(node, job: JobModel) {
     this.logger.debug(`branch ended at node (${node.id})`);
     const parentNode = this.findBranchParentNode(node);
     // no parent, means on main flow
@@ -204,7 +204,7 @@ export default class Processor {
 
     // really done for all nodes
     // * should mark execution as done with last job status
-    return this.exit(job);
+    return this.exit(job.status);
   }
 
   async recall(node, job) {
@@ -217,12 +217,12 @@ export default class Processor {
     return this.exec(instruction.resume.bind(instruction), node, job);
   }
 
-  async exit(job: JobModel | null) {
-    const status = job
-      ? (<typeof Processor>this.constructor).StatusMap[job.status] ?? Math.sign(job.status)
-      : EXECUTION_STATUS.RESOLVED;
-    this.logger.info(`execution (${this.execution.id}) all nodes finished, finishing execution...`);
-    await this.execution.update({ status }, { transaction: this.transaction });
+  async exit(s?: number) {
+    if (typeof s === 'number') {
+      const status = (<typeof Processor>this.constructor).StatusMap[s] ?? Math.sign(s);
+      await this.execution.update({ status }, { transaction: this.transaction });
+    }
+    this.logger.info(`execution (${this.execution.id}) exiting with status ${this.execution.status}`);
     await this.commit();
     return null;
   }
@@ -235,9 +235,8 @@ export default class Processor {
     if (payload instanceof model) {
       job = await payload.save({ transaction: this.transaction });
     } else if (payload.id) {
-      [job] = await model.update(payload, {
-        where: { id: payload.id },
-        returning: true,
+      job = await model.findByPk(payload.id);
+      await job.update(payload, {
         transaction: this.transaction,
       });
     } else {

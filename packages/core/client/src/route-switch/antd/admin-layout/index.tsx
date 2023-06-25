@@ -14,9 +14,9 @@ import {
   findByUid,
   findMenuItem,
   useACLRoleContext,
+  useAdminSchemaUid,
   useDocumentTitle,
   useRequest,
-  useRoute,
   useSystemSettings,
 } from '../../../';
 import { useCollectionManager } from '../../../collection-manager';
@@ -55,11 +55,6 @@ const useMenuProps = () => {
   };
 };
 
-const useAdminSchemaUid = () => {
-  const ctx = useSystemSettings();
-  return ctx?.data?.data?.options?.adminSchemaUid;
-};
-
 const MenuEditor = (props) => {
   const { setTitle } = useDocumentTitle();
   const navigate = useNavigate();
@@ -67,7 +62,6 @@ const MenuEditor = (props) => {
   const defaultSelectedUid = params.name;
   const { sideMenuRef } = props;
   const ctx = useACLRoleContext();
-  const route = useRoute();
   const [current, setCurrent] = useState(null);
   const onSelect = ({ item }) => {
     const schema = item.props.schema;

@@ -240,7 +240,7 @@ function InnerJobButton({ job, ...props }) {
   const { icon, color } = JobStatusOptionsMap[job.status];
 
   return (
-    <Button {...props} shape="circle" className={nodeJobButtonClass}>
+    <Button {...props} shape="circle" className={cx(nodeJobButtonClass, props.className)}>
       <Tag color={color}>{icon}</Tag>
     </Button>
   );
@@ -292,7 +292,7 @@ export function JobButton() {
                   }
                 `}
               >
-                <span className={nodeJobButtonClass}>
+                <span className={cx(nodeJobButtonClass, 'inner')}>
                   <Tag color={color}>{icon}</Tag>
                 </span>
                 <time>{str2moment(job.updatedAt).format('YYYY-MM-DD HH:mm:ss')}</time>

@@ -1,6 +1,7 @@
+import { PageHeader } from '@ant-design/pro-layout';
 import { css } from '@emotion/css';
-import { Layout, Menu, PageHeader, Result, Spin, Tabs } from 'antd';
-import { sortBy } from 'lodash';
+import { Layout, Menu, Result, Spin, Tabs } from 'antd';
+import _, { sortBy } from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
@@ -126,6 +127,10 @@ const PluginList = (props) => {
   return snippets.includes('pm') ? (
     <div>
       <PageHeader
+        style={{
+          backgroundColor: 'white',
+          paddingBottom: 0,
+        }}
         ghost={false}
         title={t('Plugin manager')}
         footer={
@@ -134,11 +139,21 @@ const PluginList = (props) => {
             onChange={(activeKey) => {
               navigate(`/admin/pm/list/${activeKey}`);
             }}
-          >
-            <Tabs.TabPane tab={t('Local')} key={'local'} />
-            <Tabs.TabPane tab={t('Built-in')} key={'built-in'} />
-            <Tabs.TabPane tab={t('Marketplace')} key={'marketplace'} />
-          </Tabs>
+            items={[
+              {
+                key: 'local',
+                label: t('Local'),
+              },
+              {
+                key: 'built-in',
+                label: t('Built-in'),
+              },
+              {
+                key: 'marketplace',
+                label: t('Marketplace'),
+              },
+            ]}
+          />
         }
       />
       <div className={'m24'} style={{ margin: 24, display: 'flex', flexFlow: 'row wrap' }}>
@@ -202,7 +217,7 @@ const settings = {
   },
 };
 
-export const getPluginsTabs = (items, snippets) => {
+export const getPluginsTabs = _.memoize((items, snippets) => {
   const pluginsTabs = Object.keys(items).map((plugin) => {
     const tabsObj = items[plugin].tabs;
     const tabs = sortBy(
@@ -223,7 +238,7 @@ export const getPluginsTabs = (items, snippets) => {
     };
   });
   return sortBy(pluginsTabs, (o) => !o.isAllow);
-};
+});
 
 const SettingsCenter = (props) => {
   const { snippets = [] } = useACLRoleContext();
@@ -296,6 +311,7 @@ const SettingsCenter = (props) => {
         <Layout.Content>
           {aclPluginTabCheck && (
             <PageHeader
+              style={{ backgroundColor: 'white', paddingBottom: 0 }}
               ghost={false}
               title={compile(items[pluginName]?.title)}
               footer={
@@ -304,11 +320,16 @@ const SettingsCenter = (props) => {
                   onChange={(activeKey) => {
                     navigate(`/admin/settings/${pluginName}/${activeKey}`);
                   }}
-                >
-                  {plugin.tabs?.map((tab) => {
-                    return tab.isAllow && <Tabs.TabPane tab={compile(tab?.title)} key={tab.key} />;
+                  items={plugin.tabs?.map((tab) => {
+                    if (!tab.isAllow) {
+                      return null;
+                    }
+                    return {
+                      label: compile(tab?.title),
+                      key: tab.key,
+                    };
                   })}
-                </Tabs>
+                />
               }
             />
           )}

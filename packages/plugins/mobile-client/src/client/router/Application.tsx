@@ -3,7 +3,6 @@ import {
   ActionContextProvider,
   AdminProvider,
   RemoteSchemaComponent,
-  useRoute,
   useSystemSettings,
   useViewport,
 } from '@nocobase/client';
@@ -79,7 +78,6 @@ const useMobileSchemaUid = () => {
 };
 
 const MApplication: React.FC = (props) => {
-  const route = useRoute();
   const mobileSchemaUid = useMobileSchemaUid();
   console.log('mobileSchemaUid', mobileSchemaUid);
   const params = useParams<{ name: string }>();
@@ -117,6 +115,7 @@ const MApplication: React.FC = (props) => {
                 {props.children}
               </RemoteSchemaComponent>
             )}
+            {/* Global action will insert here */}
             <div id="nb-position-container"></div>
           </div>
         </ActionContextProvider>
