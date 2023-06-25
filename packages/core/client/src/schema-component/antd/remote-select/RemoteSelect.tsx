@@ -5,7 +5,6 @@ import { uniqBy } from 'lodash';
 import moment from 'moment';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
-import { useBlockRequestContext } from '../../../block-provider/BlockProvider';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { defaultFieldNames, Select } from '../select';
@@ -44,7 +43,6 @@ const InternalRemoteSelect = connect(
     const fieldSchema = useFieldSchema();
     const isQuickAdd = fieldSchema['x-component-props']?.addMode === 'quickAdd';
     const field = useField();
-    const ctx = useBlockRequestContext();
     const { getField } = useCollection();
     const searchData = useRef(null);
     const { getCollectionJoinField, getInterface } = useCollectionManager();
@@ -172,7 +170,7 @@ const InternalRemoteSelect = connect(
                 },
               }
             : {},
-          field.componentProps?.service?.params?.filter || service?.params?.filter,
+          service?.params?.filter,
         ]),
       });
       searchData.current = search;
