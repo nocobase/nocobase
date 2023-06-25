@@ -121,7 +121,7 @@ const InternalRemoteSelect = connect(
       [targetField?.uiSchema, fieldNames],
     );
     const parseFilter = (rules) => {
-      if (!rules) {
+      if (!rules || Object.keys(rules).length === 0) {
         return undefined;
       }
       const type = Object.keys(rules)[0] || '$and';
