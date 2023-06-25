@@ -1,13 +1,17 @@
 import { GeneralField } from '@formily/core';
-import { useFieldSchema } from '@formily/react';
+import { useField, useFieldSchema, useForm } from '@formily/react';
+import flat from 'flat';
 import cloneDeep from 'lodash/cloneDeep';
 import { useCallback, useContext, useMemo } from 'react';
+import { useBlockRequestContext } from '../../../block-provider/BlockProvider';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { isInFilterFormBlock } from '../../../filter-provider';
 import { useRecord } from '../../../record-provider';
+import { getInnermostKeyAndValue } from '../../common/utils/uitls';
 import { useDesignable } from '../../hooks';
 import { AssociationFieldContext } from './context';
+import { extractFilterfield, extractValuesByPattern, generatePattern, parseVariables } from './util';
 
 export const useInsertSchema = (component) => {
   const fieldSchema = useFieldSchema();
@@ -43,10 +47,54 @@ export default function useServiceOptions(props) {
   const { action = 'list', service, fieldNames } = props;
   const params = service?.params || {};
   const fieldSchema = useFieldSchema();
+  const field = useField();
+  const form = useForm();
+  const ctx = useBlockRequestContext();
   const { getField } = useCollection();
   const { getCollectionFields, getCollectionJoinField } = useCollectionManager();
   const record = useRecord();
-
+  const parseFilter = (rules) => {
+    if (!rules || Object.keys(rules).length === 0) {
+      return undefined;
+    }
+    const type = Object.keys(rules)[0] || '$and';
+    const conditions = rules[type];
+    const results = [];
+    conditions?.forEach((c) => {
+      const jsonlogic = getInnermostKeyAndValue(c);
+      const regex = /{{(.*?)}}/;
+      const matches = jsonlogic.value?.match?.(regex);
+      if (!matches || (!matches[1].includes('$form') && !matches[1].includes('$iteration'))) {
+        results.push(c);
+        return;
+      }
+      const associationfield = extractFilterfield(matches[1]);
+      const filterCollectionField = getCollectionJoinField(`${ctx.props.collection}.${associationfield}`);
+      if (['o2m', 'm2m'].includes(filterCollectionField?.interface)) {
+        // 对多子表单
+        const pattern = generatePattern(matches?.[1], associationfield);
+        const parseValue: any = extractValuesByPattern(flat(form.values), pattern);
+        const filters = parseValue.map((v) => {
+          return JSON.parse(JSON.stringify(c).replace(jsonlogic.value, v));
+        });
+        results.push({ $or: filters });
+      } else {
+        const variablesCtx = { $form: form.values, $iteration: form.values };
+        let str = matches?.[1];
+        if (str.includes('$iteration')) {
+          const path = field.path.segments.concat([]);
+          path.pop();
+          str = str.replace('$iteration.', `$iteration.${path.join('.')}.`);
+        }
+        const parseValue = parseVariables(str, variablesCtx);
+        const filterObj = JSON.parse(
+          JSON.stringify(c).replace(jsonlogic.value, str.endsWith('id') ? parseValue ?? 0 : parseValue),
+        );
+        results.push(filterObj);
+      }
+    });
+    return { [type]: results };
+  };
   const normalizeValues = useCallback(
     (obj) => {
       if (obj && typeof obj === 'object') {
@@ -85,7 +133,7 @@ export default function useServiceOptions(props) {
                 },
               }
             : null,
-          params?.filter,
+          parseFilter(field.componentProps?.service?.params?.filter),
         ]),
         isOToAny &&
         sourceValue !== undefined &&
