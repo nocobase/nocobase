@@ -49,7 +49,7 @@ describe('workflow > instructions > manual', () => {
     });
   });
 
-  afterEach(() => db.close());
+  afterEach(() => app.destroy());
 
   describe('mode: 0 (single record)', () => {
     it('the only user assigned could submit', async () => {
