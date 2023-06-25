@@ -16,6 +16,40 @@ describe('create view', () => {
     await db.close();
   });
 
+  it('should insert data into view collection', async () => {
+    const c1 = db.collection({
+      name: 'c1',
+      fields: [{ type: 'string', name: 'name' }],
+    });
+
+    await db.sync();
+
+    const viewName = 'test_view';
+    const dropViewSQL = `DROP VIEW IF EXISTS test_view`;
+    await db.sequelize.query(dropViewSQL);
+
+    const viewSQL = `CREATE VIEW test_view AS select * from ${c1.quotedTableName()}`;
+    await db.sequelize.query(viewSQL);
+
+    const viewCollection = db.collection({
+      name: viewName,
+      viewName,
+      writeableView: true,
+      fields: [{ type: 'string', name: 'name' }],
+    });
+
+    await db.sync();
+
+    await viewCollection.repository.create({
+      values: {
+        name: '123',
+      },
+    });
+
+    const record = await viewCollection.repository.findOne();
+    expect(record.get('name')).toBe('123');
+  });
+
   it('should create view collection in difference schema', async () => {
     if (!db.inDialect('postgres')) return;
     const schemaName = `t_${uid(6)}`;

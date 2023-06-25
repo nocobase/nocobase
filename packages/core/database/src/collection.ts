@@ -13,8 +13,8 @@ import { Database } from './database';
 import { BelongsToField, Field, FieldOptions, HasManyField } from './fields';
 import { Model } from './model';
 import { Repository } from './repository';
-import { checkIdentifier, md5, snakeCase } from './utils';
 import { AdjacencyListRepository } from './tree-repository/adjacency-list-repository';
+import { checkIdentifier, md5, snakeCase } from './utils';
 
 export type RepositoryType = typeof Repository;
 
@@ -44,6 +44,7 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> 
   tableName?: string;
   inherits?: string[] | string;
   viewName?: string;
+  writeableView?: boolean;
 
   filterTargetKey?: string;
   fields?: FieldOptions[];
