@@ -3,7 +3,8 @@ import { ISchema, observer, useForm } from '@formily/react';
 import { error, isString } from '@nocobase/utils/client';
 import { Button, Dropdown, MenuProps, Switch } from 'antd';
 import classNames from 'classnames';
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+// @ts-ignore
+import React, { createContext, useCallback, useContext, useMemo, useRef, useState, useTransition } from 'react';
 import { useCollectMenuItem, useMenuItem } from '../hooks/useMenuItem';
 import { Icon } from '../icon';
 import { SchemaComponent, useActionContext } from '../schema-component';
@@ -21,6 +22,12 @@ const overlayClassName = css`
     max-height: 40vh;
     overflow: auto;
   }
+`;
+/**
+ * 用于去除菜单的消失动画，优化操作体验
+ */
+const hidden = css`
+  display: none;
 `;
 
 const defaultWrap = (s: ISchema) => s;
@@ -56,42 +63,36 @@ SchemaInitializer.Button = observer(
     const { insertAdjacent, findComponent, designable } = useDesignable();
     const [visible, setVisible] = useState(false);
     const { Component: CollectionComponent, getMenuItem, clean } = useMenuItem();
-    const [shouldRender, setShouldRender] = useState(false);
     const [searchValue, setSearchValue] = useState('');
+    const [isPending, startTransition] = useTransition();
+    const menuItems = useRef([]);
+
+    const changeMenu = (v: boolean) => {
+      startTransition(() => {
+        setVisible(v);
+      });
+    };
 
     if (!designable && props.designable !== true) {
       return null;
     }
 
-    const buttonDom = (
-      <div
-        style={{ display: 'inline-block' }}
-        onMouseEnter={() => {
-          setShouldRender(true);
-          setVisible(true);
+    const buttonDom = component ? (
+      component
+    ) : (
+      <Button
+        type={'dashed'}
+        style={{
+          borderColor: '#f18b62',
+          color: '#f18b62',
+          ...style,
         }}
+        {...others}
+        icon={typeof icon === 'string' ? <Icon type={icon as string} /> : icon}
       >
-        {component ? (
-          component
-        ) : (
-          <Button
-            type={'dashed'}
-            style={{
-              borderColor: '#f18b62',
-              color: '#f18b62',
-              ...style,
-            }}
-            {...others}
-            icon={typeof icon === 'string' ? <Icon type={icon as string} /> : icon}
-          >
-            {compile(props.children || props.title)}
-          </Button>
-        )}
-      </div>
+        {compile(props.children || props.title)}
+      </Button>
     );
-    if (!shouldRender || !items.length) {
-      return buttonDom;
-    }
 
     const insertSchema = (schema) => {
       if (insert) {
@@ -169,12 +170,14 @@ SchemaInitializer.Button = observer(
         });
     };
 
-    clean();
-    const menuItems = renderItems(items);
+    if (visible) {
+      clean();
+      menuItems.current = renderItems(items);
+    }
 
     return (
       <SchemaInitializerButtonContext.Provider value={{ visible, setVisible, searchValue, setSearchValue }}>
-        <CollectionComponent />
+        {visible ? <CollectionComponent /> : null}
         <Dropdown
           className={classNames('nb-schema-initializer-button')}
           openClassName={`nb-schema-initializer-button-open`}
@@ -183,15 +186,15 @@ SchemaInitializer.Button = observer(
           onOpenChange={() => {
             // 如果不清空输入框的值，那么下次打开的时候会出现上次输入的值
             setSearchValue('');
-            setShouldRender(false);
-            setVisible(false);
+            changeMenu(!visible);
           }}
           menu={{
             style: {
               maxHeight: '60vh',
               overflowY: 'auto',
             },
-            items: menuItems,
+            className: classNames({ [hidden]: !visible }),
+            items: menuItems.current,
           }}
           {...dropdown}
         >
