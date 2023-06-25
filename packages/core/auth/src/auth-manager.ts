@@ -76,14 +76,14 @@ export class AuthManager {
    * @description Auth middleware, used to check the authentication status.
    */
   middleware() {
-    return async (ctx: Context, next: Next) => {
+    return async (ctx: Context & { auth: Auth }, next: Next) => {
       const name = ctx.get(this.options.authKey) || this.options.default;
       let authenticator: Auth;
       try {
         authenticator = await ctx.app.authManager.get(name, ctx);
         ctx.auth = authenticator;
       } catch (err) {
-        ctx.auth;
+        ctx.auth = {} as Auth;
         ctx.app.logger.warn(`auth, ${err.message}, ${err.stack}`);
         return next();
       }
