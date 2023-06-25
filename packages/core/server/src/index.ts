@@ -1,4 +1,3 @@
-export { AppManager } from './app-manager';
 export * from './app-supervisor';
 export * from './application';
 export { Application as default } from './application';

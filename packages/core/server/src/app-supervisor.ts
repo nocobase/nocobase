@@ -2,6 +2,14 @@ import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import { EventEmitter } from 'events';
 import type Application from './application';
 
+type BootOptions = {
+  appName: string;
+  options: any;
+  appSupervisor: AppSupervisor;
+};
+
+type AppBootstrapper = (bootOptions: BootOptions) => Promise<void>;
+
 export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   private static instance: AppSupervisor;
   public runningMode: 'single' | 'multiple' = 'multiple';
@@ -10,6 +18,8 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   public apps: {
     [key: string]: Application;
   } = {};
+
+  private appBootstrapper: AppBootstrapper = null;
 
   private constructor() {
     super();
@@ -41,13 +51,19 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   async getApp(appName: string, options = {}) {
-    await this.emitAsync('beforeGetApplication', {
-      appSupervisor: this,
-      name: appName,
-      options,
-    });
+    if (!this.hasApp(appName) && this.appBootstrapper) {
+      await this.appBootstrapper({
+        appSupervisor: this,
+        appName,
+        options,
+      });
+    }
 
     return this.apps[appName];
+  }
+
+  setAppBootstrapper(appBootstrapper: AppBootstrapper) {
+    this.appBootstrapper = appBootstrapper;
   }
 
   hasApp(appName: string): boolean {
@@ -88,6 +104,21 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
   subApps() {
     return Object.values(this.apps).filter((app) => app.name !== 'main');
+  }
+
+  on(eventName: string | symbol, listener: (...args: any[]) => void): this {
+    const listeners = this.listeners(eventName);
+    const listenerName = listener.name;
+
+    if (listenerName !== '') {
+      const exists = listeners.find((l) => l.name === listenerName);
+
+      if (exists) {
+        super.removeListener(eventName, exists as any);
+      }
+    }
+
+    return super.on(eventName, listener);
   }
 }
 

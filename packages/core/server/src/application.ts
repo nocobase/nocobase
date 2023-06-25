@@ -246,6 +246,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   plugin<O = any>(pluginClass: any, options?: O): Plugin {
+    this.log.debug(`add plugin ${pluginClass.name}`);
     return this.pm.addStatic(pluginClass, options);
   }
 
@@ -315,6 +316,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       reload: true,
     });
 
+    this.log.debug('emit afterReload');
     await this.emitAsync('afterReload', this, options);
     this.log.debug(`finish reload`);
   }

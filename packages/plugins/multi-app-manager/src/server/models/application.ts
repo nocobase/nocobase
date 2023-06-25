@@ -18,8 +18,6 @@ export class ApplicationModel extends Model {
       name: appName,
     };
 
-    const subApp = new Application(subAppOptions);
-
-    return subApp;
+    return new Application(subAppOptions);
   }
 }

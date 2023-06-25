@@ -148,20 +148,28 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       }
     };
 
-    this.app.on('afterSubAppAdded', (subApp) => {
-      subApp.plugin(SubAppPlugin, { name: 'sub-app', mainApp: this.app });
+    const self = this;
+
+    AppSupervisor.getInstance().on('afterAppAdded', function AddSubAppPluginIntoSubApp(app: Application) {
+      if (app.name == 'main') {
+        return;
+      }
+
+      app.plugin(SubAppPlugin, { name: 'sub-app', mainApp: self.app });
     });
 
     this.app.db.on('users.afterCreateWithAssociations', async (model, options) => {
       await traverseSubApps(async (subApp) => {
         const { transaction } = options;
         const repository = subApp.db.getRepository('roles');
-        const subAppModel = await subApp.db.getCollection('users').repository.findOne({
+
+        const subAppUserModel = await subApp.db.getCollection('users').repository.findOne({
           filter: {
             id: model.get('id'),
           },
           transaction,
         });
+
         const defaultRole = await repository.findOne({
           filter: {
             default: true,
@@ -169,8 +177,8 @@ export class MultiAppShareCollectionPlugin extends Plugin {
           transaction,
         });
 
-        if (defaultRole && (await subAppModel.countRoles({ transaction })) == 0) {
-          await subAppModel.addRoles(defaultRole, { transaction });
+        if (defaultRole && (await subAppUserModel.countRoles({ transaction })) == 0) {
+          await subAppUserModel.addRoles(defaultRole, { transaction });
         }
       });
     });
@@ -261,11 +269,6 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       directory: resolve(__dirname, 'collections'),
     });
 
-    // this.db.addMigrations({
-    //   namespace: 'multi-app-share-collection',
-    //   directory: resolve(__dirname, './migrations'),
-    // });
-
     this.app.resourcer.registerActionHandlers({
       'applications:shareCollections': async (ctx, next) => {
         const { filterByTk, values } = ctx.action.params;
@@ -277,7 +280,6 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       },
     });
 
-    // 子应用启动参数
     multiAppManager.setAppOptionsFactory((appName, mainApp) => {
       const mainAppDbConfig = PluginMultiAppManager.getDatabaseConfig(mainApp);
 
@@ -318,6 +320,7 @@ export class MultiAppShareCollectionPlugin extends Plugin {
 
     // 子应用数据库创建
     multiAppManager.setAppDbCreator(async (app) => {
+      app.logger.debug('app db creator called');
       const schema = app.options.database.schema;
       await this.app.db.sequelize.query(`CREATE SCHEMA IF NOT EXISTS ${schema}`);
     });

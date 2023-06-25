@@ -140,46 +140,56 @@ export class PluginMultiAppManager extends Plugin {
       await AppSupervisor.getInstance().removeApp(model.get('name') as string);
     });
 
-    AppSupervisor.getInstance().on(
-      'beforeGetApplication',
-      async ({ appSupervisor, name, options }: { appSupervisor: AppSupervisor; name: string; options: any }) => {
-        await this.beforeGetApplicationMutex.runExclusive(async () => {
-          if (appSupervisor.hasApp(name)) {
-            return;
-          }
+    const self = this;
 
-          const applicationRecord = (await this.app.db.getRepository('applications').findOne({
-            filter: {
-              name,
-            },
-          })) as ApplicationModel | null;
+    async function LazyLoadApplication({
+      appSupervisor,
+      appName,
+      options,
+    }: {
+      appSupervisor: AppSupervisor;
+      appName: string;
+      options: any;
+    }) {
+      const name = appName;
+      await self.beforeGetApplicationMutex.runExclusive(async () => {
+        if (appSupervisor.hasApp(name)) {
+          return;
+        }
 
-          if (!applicationRecord) {
-            return;
-          }
+        const applicationRecord = (await self.app.db.getRepository('applications').findOne({
+          filter: {
+            name,
+          },
+        })) as ApplicationModel | null;
 
-          const instanceOptions = applicationRecord.get('options');
+        if (!applicationRecord) {
+          return;
+        }
 
-          // skip standalone deployment application
-          if (instanceOptions?.standaloneDeployment && appSupervisor.runningMode !== 'single') {
-            return;
-          }
+        const instanceOptions = applicationRecord.get('options');
 
-          if (!applicationRecord) {
-            return;
-          }
+        // skip standalone deployment application
+        if (instanceOptions?.standaloneDeployment && appSupervisor.runningMode !== 'single') {
+          return;
+        }
 
-          const subApp = await applicationRecord.registerToSupervisor(this.app, {
-            appOptionsFactory: this.appOptionsFactory,
-          });
+        if (!applicationRecord) {
+          return;
+        }
 
-          // must skip load on upgrade
-          if (!options?.upgrading) {
-            await subApp.load();
-          }
+        const subApp = await applicationRecord.registerToSupervisor(self.app, {
+          appOptionsFactory: self.appOptionsFactory,
         });
-      },
-    );
+
+        // must skip load on upgrade
+        if (!options?.upgrading) {
+          await subApp.load();
+        }
+      });
+    }
+
+    AppSupervisor.getInstance().setAppBootstrapper(LazyLoadApplication);
 
     this.app.on('afterStart', async (app) => {
       const repository = this.db.getRepository('applications');
