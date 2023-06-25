@@ -34,7 +34,7 @@ export const FilterItem = observer(
             onChange={(value) => {
               setDataIndex(value);
             }}
-            placeholder={t('Select Field')}
+            placeholder={t('Select field')}
           />
           <Select
             className={css`

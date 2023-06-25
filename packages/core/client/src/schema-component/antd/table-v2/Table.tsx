@@ -1,9 +1,10 @@
-import { MenuOutlined } from '@ant-design/icons';
+import { DeleteOutlined, MenuOutlined } from '@ant-design/icons';
 import { SortableContext, useSortable } from '@dnd-kit/sortable';
 import { css } from '@emotion/css';
 import { ArrayField, Field } from '@formily/core';
+import { spliceArrayState } from '@formily/core/esm/shared/internals';
 import { RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
-import { reaction } from '@formily/reactive';
+import { action, reaction } from '@formily/reactive';
 import { useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
@@ -71,12 +72,41 @@ const useTableColumns = (props) => {
   if (!exists) {
     return columns;
   }
-  return columns.concat({
+
+  const tableColumns = columns.concat({
     title: render(),
     dataIndex: 'TABLE_COLUMN_INITIALIZER',
     key: 'TABLE_COLUMN_INITIALIZER',
     render: designable ? () => <div style={{ minWidth: 300 }} /> : null,
   });
+
+  if (props.showDel) {
+    tableColumns.push({
+      title: '',
+      key: 'delete',
+      width: 60,
+      align: 'center',
+      fixed: 'right',
+      render: (v, record, index) => {
+        return (
+          <DeleteOutlined
+            style={{ cursor: 'pointer' }}
+            onClick={() => {
+              action(() => {
+                spliceArrayState(field as any, {
+                  startIndex: index,
+                  deleteCount: 1,
+                });
+                field.value.splice(index, 1);
+                return field.onInput(field.value);
+              });
+            }}
+          />
+        );
+      },
+    });
+  }
+  return tableColumns;
 };
 
 const topActiveClass = css`
@@ -97,7 +127,7 @@ const SortableRow = (props) => {
   });
 
   const className =
-    (active?.data.current?.sortable.index ?? -1) > (over?.data.current?.sortable.index ?? -1)
+    (active?.data.current?.sortable.index ?? -1) > (over?.data.current?.sortable?.index ?? -1)
       ? topActiveClass
       : bottomActiveClass;
 
@@ -184,14 +214,16 @@ export const Table: any = observer(
     const isTableSelector = schema?.parent?.['x-decorator'] === 'TableSelectorProvider';
     const ctx = isTableSelector ? useTableSelectorContext() : useTableBlockContext();
     const { expandFlag } = ctx;
-    const onRowDragEnd = useMemoizedFn(others.onRowDragEnd || (() => { }));
+    const onRowDragEnd = useMemoizedFn(others.onRowDragEnd || (() => {}));
     const paginationProps = usePaginationProps(pagination1, pagination2);
-    const requiredValidator = field.required || required;
+    // const requiredValidator = field.required || required;
     const { treeTable } = schema?.parent?.['x-decorator-props'] || {};
     const [expandedKeys, setExpandesKeys] = useState([]);
     const [allIncludesChildren, setAllIncludesChildren] = useState([]);
     const [selectedRowKeys, setSelectedRowKeys] = useState<any[]>(field?.data?.selectedRowKeys || []);
     const [selectedRow, setSelectedRow] = useState([]);
+    const dataSource = field?.value?.slice?.()?.filter?.(Boolean) || [];
+    const isRowSelect = rowSelection?.type !== 'none';
 
     let onRow = null,
       highlightRow = '';
@@ -212,14 +244,14 @@ export const Table: any = observer(
       `;
     }
 
-    useEffect(() => {
-      field.setValidator((value) => {
-        if (requiredValidator) {
-          return Array.isArray(value) && value.length > 0 ? null : 'The field value is required';
-        }
-        return;
-      });
-    }, [requiredValidator]);
+    // useEffect(() => {
+    //   field.setValidator((value) => {
+    //     if (requiredValidator) {
+    //       return Array.isArray(value) && value.length > 0 ? null : 'The field value is required';
+    //     }
+    //     return;
+    //   });
+    // }, [requiredValidator]);
 
     useEffect(() => {
       if (treeTable !== false) {
@@ -322,33 +354,33 @@ export const Table: any = observer(
     const restProps = {
       rowSelection: rowSelection
         ? {
-          type: 'checkbox',
-          selectedRowKeys: selectedRowKeys,
-          onChange(selectedRowKeys: any[], selectedRows: any[]) {
-            field.data = field.data || {};
-            field.data.selectedRowKeys = selectedRowKeys;
-            setSelectedRowKeys(selectedRowKeys);
-            onRowSelectionChange?.(selectedRowKeys, selectedRows);
-          },
-          renderCell: (checked, record, index, originNode) => {
-            if (!dragSort && !showIndex) {
-              return originNode;
-            }
-            const current = props?.pagination?.current;
-            const pageSize = props?.pagination?.pageSize || 20;
-            if (current) {
-              index = index + (current - 1) * pageSize + 1;
-            } else {
-              index = index + 1;
-            }
-            if (record.__index) {
-              index = extractIndex(record.__index);
-            }
-            return (
-              <div
-                className={classNames(
-                  checked ? 'checked' : null,
-                  css`
+            type: 'checkbox',
+            selectedRowKeys: selectedRowKeys,
+            onChange(selectedRowKeys: any[], selectedRows: any[]) {
+              field.data = field.data || {};
+              field.data.selectedRowKeys = selectedRowKeys;
+              setSelectedRowKeys(selectedRowKeys);
+              onRowSelectionChange?.(selectedRowKeys, selectedRows);
+            },
+            renderCell: (checked, record, index, originNode) => {
+              if (!dragSort && !showIndex) {
+                return originNode;
+              }
+              const current = props?.pagination?.current;
+              const pageSize = props?.pagination?.pageSize || 20;
+              if (current) {
+                index = index + (current - 1) * pageSize + 1;
+              } else {
+                index = index + 1;
+              }
+              if (record.__index) {
+                index = extractIndex(record.__index);
+              }
+              return (
+                <div
+                  className={classNames(
+                    checked ? 'checked' : null,
+                    css`
                       position: relative;
                       display: flex;
                       float: left;
@@ -363,65 +395,70 @@ export const Table: any = observer(
                           opacity: 1;
                         }
                       }
-                      &:hover {
-                        .nb-table-index {
-                          opacity: 0;
-                        }
-                        .nb-origin-node {
-                          display: block;
-                        }
-                      }
                     `,
-                )}
-              >
-                <div
-                  className={classNames(
-                    checked ? 'checked' : null,
-                    css`
+                    {
+                      [css`
+                        &:hover {
+                          .nb-table-index {
+                            opacity: 0;
+                          }
+                          .nb-origin-node {
+                            display: block;
+                          }
+                        }
+                      `]: isRowSelect,
+                    },
+                  )}
+                >
+                  <div
+                    className={classNames(
+                      checked ? 'checked' : null,
+                      css`
                         position: relative;
                         display: flex;
                         align-items: center;
                         justify-content: space-evenly;
                       `,
+                    )}
+                  >
+                    {dragSort && <SortHandle id={getRowKey(record)} />}
+                    {showIndex && <TableIndex index={index} />}
+                  </div>
+                  {isRowSelect && (
+                    <div
+                      className={classNames(
+                        'nb-origin-node',
+                        checked ? 'checked' : null,
+                        css`
+                          position: absolute;
+                          right: 50%;
+                          transform: translateX(50%);
+                          &:not(.checked) {
+                            display: none;
+                          }
+                        `,
+                      )}
+                    >
+                      {originNode}
+                    </div>
                   )}
-                >
-                  {dragSort && <SortHandle id={getRowKey(record)} />}
-                  {showIndex && <TableIndex index={index} />}
                 </div>
-                <div
-                  className={classNames(
-                    'nb-origin-node',
-                    checked ? 'checked' : null,
-                    css`
-                        position: absolute;
-                        right: 50%;
-                        transform: translateX(50%);
-                        &:not(.checked) {
-                          display: none;
-                        }
-                      `,
-                  )}
-                >
-                  {originNode}
-                </div>
-              </div>
-            );
-          },
-          ...rowSelection,
-        }
+              );
+            },
+            ...rowSelection,
+          }
         : undefined,
     };
-
     const SortableWrapper = useCallback<React.FC>(
       ({ children }) => {
         return dragSort
           ? React.createElement(SortableContext, {
-            items: field.value.map(getRowKey),
-            children: children,
-          })
+              items: field.value?.map?.(getRowKey) || [],
+              children,
+            })
           : React.createElement(React.Fragment, {
-            children,
-          });
+              children,
+            });
       },
       [field, dragSort],
     );
@@ -429,18 +466,16 @@ export const Table: any = observer(
     const fixedBlock = fieldSchema?.parent?.['x-decorator-props']?.fixedBlock;
 
     const { height: tableHeight, tableSizeRefCallback } = useTableSize();
-
     const scroll = useMemo(() => {
       return fixedBlock
         ? {
-          x: 'max-content',
-          y: tableHeight,
-        }
+            x: 'max-content',
+            y: tableHeight,
+          }
         : {
-          x: 'max-content',
-        };
+            x: 'max-content',
+          };
     }, [fixedBlock, tableHeight]);
-
     return (
       <div
         className={css`
@@ -467,7 +502,7 @@ export const Table: any = observer(
           <AntdTable
             ref={tableSizeRefCallback}
             rowKey={rowKey ?? defaultRowKey}
-            dataSource={field?.value?.slice?.()}
+            dataSource={dataSource}
             {...others}
             {...restProps}
             pagination={paginationProps}

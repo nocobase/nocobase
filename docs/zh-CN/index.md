@@ -1,1 +1,3 @@
-<Redirect to="/welcome/introduction" />
+# Index
+
+<Navigate replace to="/welcome/introduction"></Navigate>

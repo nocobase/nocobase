@@ -2,9 +2,9 @@ import { DownOutlined, PlusOutlined } from '@ant-design/icons';
 import { ArrayTable } from '@formily/antd';
 import { ISchema, useField, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import { Button, Dropdown, Menu } from 'antd';
+import { Button, Dropdown, MenuProps } from 'antd';
 import { cloneDeep } from 'lodash';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
 import { RecordProvider, useRecord } from '../../record-provider';
@@ -246,41 +246,41 @@ export const AddCollectionAction = (props) => {
   const [schema, setSchema] = useState({});
   const compile = useCompile();
   const { t } = useTranslation();
-  const collectionTemplates = templateOptions();
-  const items = [];
-  collectionTemplates.forEach((item) => {
-    if (item.divider) {
-      items.push({
-        type: 'divider',
-      });
-    }
-    items.push({ label: compile(item.title), key: item.name });
-  });
+  const collectionTemplates = useMemo(templateOptions, []);
+  const items = useMemo(() => {
+    const result = [];
+    collectionTemplates.forEach((item) => {
+      if (item.divider) {
+        result.push({
+          type: 'divider',
+        });
+      }
+      result.push({ label: compile(item.title), key: item.name });
+    });
+    return result;
+  }, [collectionTemplates]);
   const {
     state: { category },
   } = useResourceActionContext();
+  const menu = useMemo<MenuProps>(() => {
+    return {
+      style: {
+        maxHeight: '60vh',
+        overflow: 'auto',
+      },
+      onClick: (info) => {
+        const schema = getSchema(getTemplate(info.key), category, compile);
+        setSchema(schema);
+        setVisible(true);
+      },
+      items,
+    };
+  }, [category, items]);
+
   return (
     <RecordProvider record={record}>
       <ActionContextProvider value={{ visible, setVisible }}>
-        <Dropdown
-          getPopupContainer={getContainer}
-          trigger={trigger}
-          align={align}
-          overlay={
-            <Menu
-              style={{
-                maxHeight: '60vh',
-                overflow: 'auto',
-              }}
-              onClick={(info) => {
-                const schema = getSchema(getTemplate(info.key), category, compile);
-                setSchema(schema);
-                setVisible(true);
-              }}
-              items={items}
-            />
-          }
-        >
+        <Dropdown getPopupContainer={getContainer} trigger={trigger} align={align} menu={menu}>
           {children || (
             <Button icon={<PlusOutlined />} type={'primary'}>
               {t('Create collection')} <DownOutlined />

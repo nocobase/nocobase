@@ -4,7 +4,6 @@ export default [
   {
     type: 'route',
     path: '/',
-    exact: true,
     component: 'RouteSchemaComponent',
     schema: {
       name: 'home',

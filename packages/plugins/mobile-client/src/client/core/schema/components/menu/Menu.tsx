@@ -14,6 +14,7 @@ import { useFieldSchema } from '@formily/react';
 import { List } from 'antd-mobile';
 import { useTranslation } from '../../../../locale';
 import { menuItemSchema } from './schema';
+import { PageSchema } from '../../common';
 
 const InternalMenu: React.FC = (props) => {
   const Designer = useDesigner();
@@ -24,31 +25,7 @@ const InternalMenu: React.FC = (props) => {
 
   const onAddMenuItem = (values: any) => {
     const properties = {
-      page: {
-        type: 'void',
-        'x-component': 'MPage',
-        'x-designer': 'MPage.Designer',
-        'x-component-props': {},
-        properties: {
-          header: {
-            type: 'void',
-            'x-component': 'MHeader',
-            'x-designer': 'MHeader.Designer',
-            'x-component-props': {
-              title: values.name,
-              showBack: true,
-            },
-          },
-          grid: {
-            type: 'void',
-            'x-component': 'Grid',
-            'x-component-props': {
-              showDivider: false,
-            },
-            'x-initializer': 'MBlockInitializers',
-          },
-        },
-      },
+      page: PageSchema,
     };
 
     return insertBeforeEnd({

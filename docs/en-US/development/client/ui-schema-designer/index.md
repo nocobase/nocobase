@@ -1,3 +1,3 @@
 # Overview
 
-<code src="./demo1.tsx" />
+<code src="./demo1.tsx"></code>

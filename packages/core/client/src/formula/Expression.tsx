@@ -1,8 +1,8 @@
 import { css } from '@emotion/css';
 import { Field, onFormSubmitValidateStart } from '@formily/core';
 import { useField, useFormEffects } from '@formily/react';
-import { Dropdown, Menu } from 'antd';
-import React, { useEffect, useRef, useState } from 'react';
+import { Dropdown, MenuProps } from 'antd';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 function pasteHtml(html, selectPastedContent = false) {
@@ -71,19 +71,27 @@ export const Expression = (props) => {
   const inputRef = useRef<any>();
   const [changed, setChanged] = useState(false);
 
-  const onChange = (value) => {
-    setChanged(true);
-    props.onChange(value);
-  };
+  const onChange = useCallback(
+    (value) => {
+      setChanged(true);
+      props.onChange(value);
+    },
+    [props.onChange],
+  );
 
-  const numColumns = new Map<string, string>();
-  const scope = {};
-  fields
-    .filter((field) => supports.includes(field.interface))
-    .forEach((field) => {
-      numColumns.set(field.name, field.uiSchema.title);
-      scope[field.name] = 1;
-    });
+  const { numColumns, scope } = useMemo(() => {
+    const numColumns = new Map<string, string>();
+    const scope = {};
+    fields
+      .filter((field) => supports.includes(field.interface))
+      .forEach((field) => {
+        numColumns.set(field.name, field.uiSchema.title);
+        scope[field.name] = 1;
+      });
+
+    return { numColumns, scope };
+  }, [fields, supports]);
+
   const keys = Array.from(numColumns.keys());
   const [html, setHtml] = useState(() => {
     const scope = {};
@@ -95,6 +103,7 @@ export const Expression = (props) => {
     }
     return renderExp(value || '', scope);
   });
+
   useEffect(() => {
     if (changed) {
       return;
@@ -109,34 +118,44 @@ export const Expression = (props) => {
     const val = renderExp(value || '', scope);
     setHtml(val);
   }, [value]);
-  const menu = (
-    <Menu>
-      {keys.length > 0 ? (
-        keys.map((key) => (
-          <Menu.Item disabled key={key}>
-            <button
-              onClick={async (args) => {
-                (inputRef.current as any).focus();
-                const val = numColumns.get(key);
-                pasteHtml(
-                  `  <span class="ant-tag" style="margin: 0 3px;" contentEditable="false" data-key="${key}">${val}</span>  `,
-                );
-                const text = getValue(inputRef.current);
-                onChange(text);
-                console.log('onChange', text);
-              }}
-            >
-              {numColumns.get(key)}
-            </button>
-          </Menu.Item>
-        ))
-      ) : (
-        <Menu.Item disabled key={0}>
-          {t('No available fields')}
-        </Menu.Item>
-      )}
-    </Menu>
-  );
+
+  const menuItems = useMemo<MenuProps['items']>(() => {
+    if (keys.length > 0) {
+      return keys.map((key) => ({
+        key,
+        disabled: true,
+        label: (
+          <button
+            onClick={async (args) => {
+              (inputRef.current as any).focus();
+              const val = numColumns.get(key);
+              pasteHtml(
+                `  <span class="ant-tag" style="margin: 0 3px;" contentEditable="false" data-key="${key}">${val}</span>  `,
+              );
+              const text = getValue(inputRef.current);
+              onChange(text);
+            }}
+          >
+            {numColumns.get(key)}
+          </button>
+        ),
+      }));
+    } else {
+      return [
+        {
+          key: 0,
+          disabled: true,
+          label: t('No available fields'),
+        },
+      ];
+    }
+  }, [keys, numColumns, onChange]);
+
+  const menu = useMemo<MenuProps>(() => {
+    return {
+      items: menuItems,
+    };
+  }, [menuItems]);
 
   useFormEffects(() => {
     onFormSubmitValidateStart(() => {
@@ -157,7 +176,7 @@ export const Expression = (props) => {
   return (
     <Dropdown
       trigger={['click']}
-      overlay={menu}
+      menu={menu}
       overlayClassName={css`
         .ant-dropdown-menu-item {
           padding: 0;

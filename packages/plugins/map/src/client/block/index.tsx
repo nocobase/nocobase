@@ -8,7 +8,7 @@ import { MapBlockInitializer } from './MapBlockInitializer';
 import { MapBlockProvider, useMapBlockProps } from './MapBlockProvider';
 
 export const MapBlockOptions: React.FC = (props) => {
-  const items = useContext(SchemaInitializerContext);
+  const items = useContext<any>(SchemaInitializerContext);
   const children = items.BlockInitializers.items[0].children;
 
   useEffect(() => {

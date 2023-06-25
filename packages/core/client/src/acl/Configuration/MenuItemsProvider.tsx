@@ -1,7 +1,7 @@
 import { Spin } from 'antd';
 import React, { createContext, useContext } from 'react';
-import { useRequest, useAPIClient } from '../../api-client';
-import { useRoute } from '../../route-switch';
+import { useRequest } from '../../api-client';
+import { useAdminSchemaUid } from '../../hooks';
 
 const MenuItemsContext = createContext(null);
 
@@ -28,9 +28,9 @@ export const useMenuItems = () => {
 };
 
 export const MenuItemsProvider = (props) => {
-  const route = useRoute();
+  const adminSchemaUid = useAdminSchemaUid();
   const options = {
-    url: `uiSchemas:getProperties/${route.uiSchemaUid}`,
+    url: `uiSchemas:getProperties/${adminSchemaUid}`,
   };
   const service = useRequest(options);
   if (service.loading) {

@@ -88,7 +88,10 @@ const InternalSelect = connect(
     }
     const toValue = (v) => {
       if (['tags', 'multiple'].includes(props.mode) || props.multiple) {
-        return toArr(v);
+        if (v) {
+          return toArr(v);
+        }
+        return undefined;
       }
       return v;
     };

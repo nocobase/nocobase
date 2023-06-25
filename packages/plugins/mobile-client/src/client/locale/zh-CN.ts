@@ -26,6 +26,8 @@ const locale = {
   Settings: '设置',
   'Delete settings block': '删除设置区块',
   'Delete menu block': '删除菜单区块',
+  'Mobile client access address': '移动端访问地址',
+  'The full address is': '完整的地址是',
 };
 
 export default locale;

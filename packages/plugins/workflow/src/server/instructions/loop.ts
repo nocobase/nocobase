@@ -57,7 +57,7 @@ export default {
     const { result, status } = job;
     // if loop has been done (resolved / rejected), do not care newly executed branch jobs.
     if (status !== JOB_STATUS.PENDING) {
-      return null;
+      return processor.exit();
     }
 
     const nextIndex = result + 1;

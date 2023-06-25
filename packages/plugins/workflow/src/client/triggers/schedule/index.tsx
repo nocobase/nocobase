@@ -3,7 +3,6 @@ import { useCollectionDataSource, SchemaInitializerItemOptions } from '@nocobase
 import { ScheduleConfig } from './ScheduleConfig';
 import { SCHEDULE_MODE } from './constants';
 import { NAMESPACE, useWorkflowTranslation } from '../../locale';
-import { CollectionFieldInitializers } from '../../components/CollectionFieldInitializers';
 import { CollectionBlockInitializer } from '../../components/CollectionBlockInitializer';
 import { useCollectionFieldOptions } from '../../variable';
 import { appends } from '../../schemas/collection';
@@ -72,7 +71,5 @@ export default {
       dataSource: '{{$context.data}}',
     };
   },
-  initializers: {
-    CollectionFieldInitializers,
-  },
+  initializers: {},
 };

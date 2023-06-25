@@ -5,15 +5,14 @@ import {
   SettingsCenterProvider,
   useRequest,
 } from '@nocobase/client';
-import { Button, Dropdown, Menu } from 'antd';
+import { Button, Dropdown } from 'antd';
 import React from 'react';
-import { useHistory, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { AppManager } from './AppManager';
 import { AppNameInput } from './AppNameInput';
 import { usePluginUtils } from './utils';
 
 const MultiAppManager = () => {
-  const history = useHistory();
   const { data, loading, run } = useRequest(
     {
       resource: 'applications',

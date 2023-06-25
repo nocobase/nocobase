@@ -46,7 +46,7 @@ const ToManyNester = observer(
             allowed = !value?.[options.targetKey];
           }
           return (
-            <>
+            <React.Fragment key={index}>
               <div style={{ textAlign: 'right' }}>
                 {field.editable && allowMultiple && (
                   <Tooltip key={'add'} title={t('Add new')}>
@@ -88,7 +88,7 @@ const ToManyNester = observer(
               </div>
               <RecursionField onlyRenderProperties basePath={field.address.concat(index)} schema={fieldSchema} />
               <Divider />
-            </>
+            </React.Fragment>
           );
         })}
       </Card>
