@@ -26,6 +26,7 @@ import React, {
   useCallback,
   useContext,
   useMemo,
+  // @ts-ignore
   useTransition as useReactTransition,
   useRef,
   useState,

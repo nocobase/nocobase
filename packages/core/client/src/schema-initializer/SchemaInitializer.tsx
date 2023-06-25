@@ -3,6 +3,7 @@ import { ISchema, observer, useForm } from '@formily/react';
 import { error, isString } from '@nocobase/utils/client';
 import { Button, Dropdown, MenuProps, Switch } from 'antd';
 import classNames from 'classnames';
+// @ts-ignore
 import React, { createContext, useCallback, useContext, useMemo, useRef, useState, useTransition } from 'react';
 import { useCollectMenuItem, useMenuItem } from '../hooks/useMenuItem';
 import { Icon } from '../icon';
