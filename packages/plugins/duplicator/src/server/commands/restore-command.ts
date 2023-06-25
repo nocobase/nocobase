@@ -1,6 +1,6 @@
-import { Application } from '@nocobase/server';
-import { Restorer } from '../restorer';
+import { Application, AppSupervisor } from '@nocobase/server';
 import inquirer from 'inquirer';
+import { Restorer } from '../restorer';
 import InquireQuestionBuilder from './inquire-question-builder';
 
 export default function addRestoreCommand(app: Application) {
@@ -26,7 +26,7 @@ export default function addRestoreCommand(app: Application) {
           });
         }
 
-        const subApp = await app.appManager.getApplication(options.app);
+        const subApp = await AppSupervisor.getInstance().getApp(options.app);
 
         if (!subApp) {
           app.log.error(`app ${options.app} not found`);
