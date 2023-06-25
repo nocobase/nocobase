@@ -8,10 +8,10 @@ import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
-import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction, useUpdateAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
 import { IField } from '../interfaces/types';
+import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import * as components from './components';
 
 const getSchema = (schema: IField, record: any, compile, getContainer): ISchema => {
@@ -24,6 +24,7 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
   }
 
   if (schema.hasDefaultValue === true) {
+    delete schema.default.uiSchema.required;
     properties['defaultValue'] = cloneDeep(schema.default.uiSchema) || {};
     properties['defaultValue']['title'] = compile('{{ t("Default value") }}');
     properties['defaultValue']['x-decorator'] = 'FormItem';
