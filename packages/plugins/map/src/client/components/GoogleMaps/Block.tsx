@@ -222,7 +222,7 @@ export const GoogleMapsBlock = (props) => {
 
   const mapRefCallback = (instance: GoogleMapForwardedRefProps) => {
     mapRef.current = instance;
-    setIsMapInitialization(!!instance?.map);
+    setIsMapInitialization(!!instance?.map && !instance.errMessage);
   };
 
   return (

@@ -191,7 +191,7 @@ export const AMapBlock = (props) => {
 
   const mapRefCallback = (instance: AMapForwardedRefProps) => {
     mapRef.current = instance;
-    setIsMapInitialization(!!instance?.aMap);
+    setIsMapInitialization(!!instance?.map && !instance.errMessage);
   };
 
   return (
@@ -209,38 +209,40 @@ export const AMapBlock = (props) => {
           z-index: 999;
         `}
       >
-        <Space direction="vertical">
-          <Button
-            style={{
-              color: !selectingMode ? '#F18b62' : undefined,
-              borderColor: 'currentcolor',
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              setSelecting('');
-            }}
-            icon={<EnvironmentOutlined />}
-          ></Button>
-          <Button
-            style={{
-              color: selectingMode === 'selection' ? '#F18b62' : undefined,
-              borderColor: 'currentcolor',
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              setSelecting('selection');
-            }}
-            icon={<ExpandOutlined />}
-          ></Button>
-          {selectingMode === 'selection' ? (
+        {isMapInitialization && !mapRef.current.errMessage ? (
+          <Space direction="vertical">
             <Button
-              type="primary"
-              icon={<CheckOutlined />}
-              title={t('Confirm selection')}
-              onClick={onSelectingComplete}
+              style={{
+                color: !selectingMode ? '#F18b62' : undefined,
+                borderColor: 'currentcolor',
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelecting('');
+              }}
+              icon={<EnvironmentOutlined />}
             ></Button>
-          ) : null}
-        </Space>
+            <Button
+              style={{
+                color: selectingMode === 'selection' ? '#F18b62' : undefined,
+                borderColor: 'currentcolor',
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelecting('selection');
+              }}
+              icon={<ExpandOutlined />}
+            ></Button>
+            {selectingMode === 'selection' ? (
+              <Button
+                type="primary"
+                icon={<CheckOutlined />}
+                title={t('Confirm selection')}
+                onClick={onSelectingComplete}
+              ></Button>
+            ) : null}
+          </Space>
+        ) : null}
       </div>
       <MapBlockDrawer record={record} setVisible={setRecord} />
       <AMapComponent

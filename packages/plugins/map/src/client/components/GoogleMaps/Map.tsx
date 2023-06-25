@@ -69,11 +69,12 @@ export interface GoogleMapsComponentProps {
 export interface GoogleMapForwardedRefProps {
   setOverlay: (t: MapEditorType, v: any, o?: OverlayOptions) => google.maps.MVCObject;
   getOverlay: (t: MapEditorType, v: any, o?: OverlayOptions) => google.maps.MVCObject;
-  setFitView: (overlays: google.maps.MVCObject[]) => Promise<void>;
+  setFitView: (overlays: google.maps.MVCObject[]) => void;
   createDraw: (onlyCreate?: boolean, additionalOptions?: OverlayOptions) => any;
   map: google.maps.Map;
   overlay: google.maps.MVCObject;
   drawingManager: google.maps.drawing.DrawingManager;
+  errMessage?: string;
 }
 
 export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, GoogleMapsComponentProps>(
@@ -287,15 +288,29 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
 
     useEffect(() => {
       if (!accessKey || map.current || !mapContainerRef.current) return;
+      let loader: Loader;
+      try {
+        loader = new Loader({
+          apiKey: accessKey,
+          version: 'weekly',
+          language: api.auth.getLocale(),
+        });
+      } catch (err) {
+        setErrMessage(t('Load google maps failed, Please check the Api key and refresh the page'));
+        return;
+      }
 
-      const loader = new Loader({
-        apiKey: accessKey,
-        version: 'weekly',
-        language: api.auth.getLocale(),
-      });
+      // google maps api error
+      const error = console.error;
+      console.error = (err, ...args) => {
+        if (err?.includes('InvalidKeyMapError')) {
+          setErrMessage(t('Load google maps failed, Please check the Api key and refresh the page'));
+        }
+        error(err, ...args);
+      };
 
       Promise.all([loader.importLibrary('drawing'), loader.importLibrary('core'), loader.importLibrary('geometry')])
-        .then(async () => {
+        .then(async (res) => {
           const center = await getCurrentPosition();
           map.current = new google.maps.Map(mapContainerRef.current, {
             zoom,
@@ -337,6 +352,7 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
       map: map.current,
       overlay: overlayRef.current,
       drawingManager: drawingManagerRef.current,
+      errMessage,
     }));
 
     const onReset = useMemoizedFn(() => {
@@ -364,7 +380,7 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
               {t('Go to the configuration page')}
             </Button>
           }
-          message={errMessage || t('Please configure the AccessKey and SecurityJsCode first')}
+          message={errMessage || t('Please configure the Api key first')}
           type="error"
         />
       );

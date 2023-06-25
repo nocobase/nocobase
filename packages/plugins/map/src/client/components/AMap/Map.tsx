@@ -79,6 +79,7 @@ export interface AMapForwardedRefProps {
     close: (clear?: boolean) => void;
   };
   overlay: AMap.Polygon;
+  errMessage?: string;
 }
 
 export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapComponentProps>((props, ref) => {
@@ -357,6 +358,7 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
     overlay: overlay.current,
     mouseTool: () => mouseTool.current,
     editor: () => editor.current,
+    errMessage,
   }));
 
   if (!accessKey || errMessage) {
