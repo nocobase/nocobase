@@ -23,13 +23,13 @@ const DatePickerContext = React.createContext<IDatePickerProps>({ utc: true });
 export const useDatePickerContext = () => React.useContext(DatePickerContext);
 export const DatePickerProvider = DatePickerContext.Provider;
 
-const _DatePicker: ComposedDatePicker = connect(
+const InternalDatePicker: ComposedDatePicker = connect(
   AntdDatePicker,
   mapProps(mapDatePicker()),
   mapReadPretty(ReadPretty.DatePicker),
 );
 
-const _RangePicker = connect(
+const InternalRangePicker = connect(
   AntdDatePicker.RangePicker,
   mapProps(mapRangePicker()),
   mapReadPretty(ReadPretty.DateRangePicker),
@@ -38,7 +38,7 @@ const _RangePicker = connect(
 export const DatePicker = (props) => {
   const { utc = true } = useDatePickerContext();
   props = { utc, ...props };
-  return <_DatePicker {...props} />;
+  return <InternalDatePicker {...props} />;
 };
 
 DatePicker.ReadPretty = ReadPretty.DatePicker;
@@ -69,7 +69,7 @@ DatePicker.RangePicker = function RangePicker(props) {
     { label: t('Next 90 days'), value: rangesValue.next90Days },
   ];
   props = { utc, presets, ...props };
-  return <_RangePicker {...props} />;
+  return <InternalRangePicker {...props} />;
 };
 
 export default DatePicker;
