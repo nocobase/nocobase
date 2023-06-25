@@ -96,6 +96,8 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
     app.on('afterDestroy', afterDestroy);
     this.emit('afterAppAdded', app);
+
+    return app;
   }
 
   async removeApp(appName: string) {

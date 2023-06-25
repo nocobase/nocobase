@@ -1,7 +1,7 @@
 import Database, { Repository } from '@nocobase/database';
+import UsersPlugin from '@nocobase/plugin-users';
 import { mockServer, MockServer } from '@nocobase/test';
 import AuthPlugin from '../';
-import UsersPlugin from '@nocobase/plugin-users';
 
 describe('actions', () => {
   describe('authenticators', () => {
@@ -92,7 +92,7 @@ describe('actions', () => {
     });
 
     afterAll(async () => {
-      await db.close();
+      await app.destroy();
     });
 
     it('should sign in with email and password', async () => {

@@ -47,7 +47,7 @@ describe('application', () => {
   });
 
   afterEach(async () => {
-    return app.db.close();
+    await app.destroy();
   });
 
   it('should get application fsm', async () => {

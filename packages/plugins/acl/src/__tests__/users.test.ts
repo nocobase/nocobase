@@ -31,7 +31,7 @@ describe('actions', () => {
   });
 
   afterEach(async () => {
-    await db.close();
+    await app.destroy();
   });
 
   it('update profile with roles', async () => {

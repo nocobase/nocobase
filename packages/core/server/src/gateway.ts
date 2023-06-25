@@ -1,4 +1,4 @@
-import http, { IncomingMessage, OutgoingMessage } from 'http';
+import http, { IncomingMessage, ServerResponse } from 'http';
 import { AppSupervisor } from './app-supervisor';
 import Application from './application';
 
@@ -44,13 +44,15 @@ export class Gateway {
     this.appSelector = selector;
   }
 
-  async requestHandler(req: IncomingMessage, res: OutgoingMessage) {
+  async requestHandler(req: IncomingMessage, res: ServerResponse) {
     const handleApp = (await this.appSelector(req)) || 'main';
 
     const app = typeof handleApp === 'string' ? await AppSupervisor.getInstance().getApp(handleApp) : handleApp;
 
     if (!app) {
       console.log(`app ${handleApp} not found`);
+      res.statusCode = 404;
+      res.end(`app ${handleApp} not found`);
       return;
     }
 
