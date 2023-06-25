@@ -43,6 +43,9 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     for (const appName of appNames) {
       await this.removeApp(appName);
     }
+
+    this.appBootstrapper = null;
+    this.removeAllListeners();
   }
 
   async destroy() {
