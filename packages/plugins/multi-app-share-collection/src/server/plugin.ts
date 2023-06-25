@@ -1,5 +1,5 @@
 import PluginMultiAppManager from '@nocobase/plugin-multi-app-manager';
-import { Application, Plugin } from '@nocobase/server';
+import { Application, AppSupervisor, Plugin } from '@nocobase/server';
 import lodash from 'lodash';
 import { resolve } from 'path';
 
@@ -134,14 +134,14 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       if (lodash.get(options, 'loadFromDatabase')) {
         for (const application of await this.app.db.getCollection('applications').repository.find()) {
           const appName = application.get('name');
-          const subApp = await this.app.appManager.getApplication(appName);
+          const subApp = await AppSupervisor.getInstance().getApp(appName);
           await callback(subApp);
         }
 
         return;
       }
 
-      const subApps = [...this.app.appManager.applications.values()];
+      const subApps = [...AppSupervisor.getInstance().subApps()];
 
       for (const subApp of subApps) {
         await callback(subApp);
@@ -228,7 +228,7 @@ export class MultiAppShareCollectionPlugin extends Plugin {
     });
 
     this.app.db.on('field.afterRemove', (removedField) => {
-      const subApps = [...this.app.appManager.applications.values()];
+      const subApps = [...AppSupervisor.getInstance().subApps()];
       for (const subApp of subApps) {
         const collectionName = removedField.collection.name;
         const collection = subApp.db.getCollection(collectionName);
@@ -242,7 +242,7 @@ export class MultiAppShareCollectionPlugin extends Plugin {
     });
 
     this.app.db.on(`afterRemoveCollection`, (collection) => {
-      const subApps = [...this.app.appManager.applications.values()];
+      const subApps = [...AppSupervisor.getInstance().subApps()];
       for (const subApp of subApps) {
         subApp.db.removeCollection(collection.name);
       }

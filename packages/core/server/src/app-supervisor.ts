@@ -85,6 +85,10 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     // call app.destroy
     await this.apps[appName].destroy();
   }
+
+  subApps() {
+    return Object.values(this.apps).filter((app) => app.name !== 'main');
+  }
 }
 
 applyMixins(AppSupervisor, [AsyncEmitter]);
