@@ -160,7 +160,7 @@ export const AssignedField = (props: any) => {
     setType(val);
     if (val === AssignedFieldValueType.DynamicValue) {
       field.validator = null;
-      field.validating = true;
+      field.form.clearErrors();
     }
   };
 
