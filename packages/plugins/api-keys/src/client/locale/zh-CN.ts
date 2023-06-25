@@ -7,6 +7,7 @@ const locale = {
   'Delete api key': '删除 api key',
   Role: '角色',
   'Keys manager': '密钥管理',
+  'Created at': '创建时间',
 };
 
 export default locale;

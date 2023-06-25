@@ -161,9 +161,6 @@ export const configurationSchema: ISchema = {
           'x-component': 'TableV2',
           'x-component-props': {
             rowKey: 'id',
-            rowSelection: {
-              type: 'checkbox',
-            },
             useProps: '{{ useTableBlockProps }}',
           },
           properties: {
@@ -211,6 +208,23 @@ export const configurationSchema: ISchema = {
               },
             },
             column4: {
+              type: 'void',
+              'x-decorator': 'TableV2.Column.Decorator',
+              'x-component': 'TableV2.Column',
+              title: generateNTemplate('Created at'),
+              properties: {
+                createdAt: {
+                  type: 'date',
+                  // 'x-component': 'CollectionField',
+                  'x-component': 'DatePicker',
+                  'x-component-props': {
+                    format: 'YYYY-MM-DD HH:mm:ss',
+                  },
+                  'x-read-pretty': true,
+                },
+              },
+            },
+            actionColumn: {
               type: 'void',
               title: '{{ t("Actions") }}',
               'x-action-column': 'actions',
