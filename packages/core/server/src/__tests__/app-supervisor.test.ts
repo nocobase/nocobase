@@ -20,6 +20,6 @@ describe('App Supervisor', () => {
       registerActions: false,
     });
 
-    expect(appSupervisor.getApp(app.name)).toBe(app);
+    expect(await appSupervisor.getApp(app.name)).toBe(app);
   });
 });

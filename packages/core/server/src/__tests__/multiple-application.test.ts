@@ -5,10 +5,19 @@ import { IncomingMessage } from 'http';
 import * as url from 'url';
 import Application from '../application';
 
-describe('multiple apps', () => {
-  it('should stop sub app after main app stopped', async () => {
-    const app = mockServer();
+describe('multiple application', () => {
+  let app: MockServer;
+  beforeEach(async () => {
+    app = mockServer({
+      acl: false,
+    });
+  });
 
+  afterEach(async () => {
+    await app.destroy();
+  });
+
+  it('should stop sub app after main app stopped', async () => {
     const subApp1 = new Application({
       database: app.db,
       name: 'sub1',
@@ -21,19 +30,6 @@ describe('multiple apps', () => {
     await app.stop();
 
     expect(subApp1StopFn).toBeCalledTimes(1);
-  });
-});
-
-describe('multiple application', () => {
-  let app: MockServer;
-  beforeEach(async () => {
-    app = mockServer({
-      acl: false,
-    });
-  });
-
-  afterEach(async () => {
-    await app.destroy();
   });
 
   it('should add multiple apps', async () => {
