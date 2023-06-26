@@ -129,22 +129,25 @@ export const infer = (
   let yField: FieldOption;
   let seriesField: FieldOption;
   let yFields: FieldOption[];
-  const getField = (fields: FieldOption[], field: string | string[]) => {
-    const { alias } = parseField(field);
+  const getField = (fields: FieldOption[], selected: { field: string | string[]; alias?: string }) => {
+    if (selected.alias) {
+      return fields.find((f) => f.value === selected.alias);
+    }
+    const { alias } = parseField(selected.field);
     return fields.find((f) => f.value === alias);
   };
   if (measures?.length) {
-    yField = getField(fields, measures[0].field);
-    yFields = measures.map((m) => getField(fields, m.field));
+    yField = getField(fields, measures[0]);
+    yFields = measures.map((m) => getField(fields, m));
   }
   if (dimensions) {
     if (dimensions.length === 1) {
-      xField = getField(fields, dimensions[0].field);
+      xField = getField(fields, dimensions[0]);
     } else if (dimensions.length > 1) {
       // If there is a time field, it is used as the x-axis field by default.
       let xIndex: number;
       dimensions.forEach((d, i) => {
-        const field = getField(fields, d.field);
+        const field = getField(fields, d);
         if (['date', 'time', 'datetime'].includes(field?.type)) {
           xField = field;
           xIndex = i;
@@ -153,10 +156,10 @@ export const infer = (
       if (xIndex) {
         // If there is a time field, the other field is used as the series field by default.
         const index = xIndex === 0 ? 1 : 0;
-        seriesField = getField(fields, dimensions[index].field);
+        seriesField = getField(fields, dimensions[index]);
       } else {
-        xField = getField(fields, dimensions[0].field);
-        seriesField = getField(fields, dimensions[1].field);
+        xField = getField(fields, dimensions[0]);
+        seriesField = getField(fields, dimensions[1]);
       }
     }
   }
