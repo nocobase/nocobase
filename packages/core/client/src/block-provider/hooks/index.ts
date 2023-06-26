@@ -175,7 +175,7 @@ export const useCreateActionProps = () => {
             ...overwriteValues,
             ...assignedValues,
           },
-          filterKeys:filterKeys,
+          filterKeys: filterKeys,
         });
         actionField.data.loading = false;
         actionField.data.data = data;
