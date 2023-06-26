@@ -11,7 +11,7 @@ export const AssociationFieldProvider = observer(
     const fieldSchema = useFieldSchema();
     const allowMultiple = fieldSchema['x-component-props']?.multiple !== false;
     const allowDissociate = fieldSchema['x-component-props']?.allowDissociate !== false;
-
+    console.log(field.required);
     const collectionField = useMemo(
       () => getCollectionJoinField(fieldSchema['x-collection-field']),
       // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -27,19 +27,6 @@ export const AssociationFieldProvider = observer(
       // eslint-disable-next-line react-hooks/exhaustive-deps
       [fieldSchema['x-component-props']?.mode],
     );
-
-    // const targetKeyValue = useMemo(() => {
-    //   if (!field.value) return '';
-    //   if (['belongsTo', 'hasOne'].includes(collectionField.type)) {
-    //     return field.value[collectionField.targetKey] ?? '';
-    //   }
-    //   if (['belongsToMany', 'hasMany'].includes(collectionField.type)) {
-    //     if (Array.isArray(field.value)) {
-    //       return field.value.map((v) => v[collectionField.targetKey] ?? '').join(',');
-    //     }
-    //   }
-    //   return '';
-    // }, [collectionField, field.value]);
 
     const fieldValue = useMemo(() => JSON.stringify(field.value), [field.value]);
 
@@ -80,7 +67,7 @@ export const AssociationFieldProvider = observer(
       if (currentMode === 'Nester') {
         if (['belongsTo', 'hasOne'].includes(collectionField.type)) {
           field.value = {};
-        } else if (['belongsToMany', 'hasMany'].includes(collectionField.type)) {
+        } else if (['belongsToMany', 'hasMany'].includes(collectionField.type) && field.required) {
           field.value = [{}];
         }
       }
