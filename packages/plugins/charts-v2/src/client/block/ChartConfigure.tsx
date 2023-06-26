@@ -24,7 +24,7 @@ import { useTranslation } from 'react-i18next';
 import {
   useChartFields,
   useCollectionOptions,
-  useFieldsWithAssosiation,
+  useFieldsWithAssociation,
   useFieldTypes,
   useFormatters,
   useOrderFieldsOptions,
@@ -82,7 +82,7 @@ export const ChartConfigure: React.FC<{
   const { insert } = props;
 
   const charts = useCharts();
-  const fields = useFieldsWithAssosiation(collection);
+  const fields = useFieldsWithAssociation(collection);
   const initChart = (overwrite = false) => {
     if (!form.modified) {
       return;
@@ -312,7 +312,7 @@ ChartConfigure.Renderer = function Renderer(props) {
 
 ChartConfigure.Query = function Query() {
   const { t } = useChartsTranslation();
-  const fields = useFieldsWithAssosiation();
+  const fields = useFieldsWithAssociation();
   const useFormatterOptions = useFormatters(fields);
   const collectionOptions = useCollectionOptions();
   const { current, setCurrent } = useContext(ChartConfigContext);
@@ -376,7 +376,7 @@ ChartConfigure.Query = function Query() {
 ChartConfigure.Config = function Config() {
   const { t } = useChartsTranslation();
   const chartTypes = useChartTypes();
-  const fields = useFieldsWithAssosiation();
+  const fields = useFieldsWithAssociation();
   const charts = useCharts();
   const getChartFields = useChartFields(fields);
   const getReference = (chartType: string) => {
@@ -413,7 +413,7 @@ ChartConfigure.Config = function Config() {
 
 ChartConfigure.Transform = function Transform() {
   const { t } = useChartsTranslation();
-  const fields = useFieldsWithAssosiation();
+  const fields = useFieldsWithAssociation();
   const useFieldTypeOptions = useFieldTypes(fields);
   const getChartFields = useChartFields(fields);
   return (
@@ -427,7 +427,7 @@ ChartConfigure.Transform = function Transform() {
 
 ChartConfigure.Data = function Data() {
   const { data } = useContext(ChartConfigContext);
-  const fields = useFieldsWithAssosiation();
+  const fields = useFieldsWithAssociation();
   return Array.isArray(data) ? (
     <Table
       dataSource={data}

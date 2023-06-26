@@ -5,6 +5,8 @@ describe('hooks', () => {
     vi.restoreAllMocks();
   });
 
+  test('useFieldsWithAssociation');
+
   // test('useChartFields', () => {
   //   const { t } = renderHook(() => useChartsTranslation()).result.current;
   //   const { result } = renderHook(() =>

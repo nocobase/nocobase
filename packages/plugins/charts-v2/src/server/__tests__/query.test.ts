@@ -1,5 +1,5 @@
 import { MockServer, mockServer } from '@nocobase/test';
-import { cacheWrap, parseFieldAndAssosiations } from '../actions/query';
+import { cacheWrap, parseFieldAndAssociations } from '../actions/query';
 
 describe('query', () => {
   describe('parseBuilder', () => {
@@ -62,7 +62,7 @@ describe('query', () => {
     });
 
     it('should parse field and associations', () => {
-      const associations = parseFieldAndAssosiations(ctx, {
+      const associations = parseFieldAndAssociations(ctx, {
         collection: 'orders',
         measures: [{ field: ['price'], aggregation: 'sum', alias: 'price' }],
         dimensions: [{ field: ['createdAt'] }, { field: ['user', 'name'] }],

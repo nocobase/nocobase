@@ -41,7 +41,7 @@ export const useFields = (collection?: string) => {
   return fields;
 };
 
-export const useFieldsWithAssosiation = (collection?: string) => {
+export const useFieldsWithAssociation = (collection?: string) => {
   const { getCollectionFields } = useCollectionManager();
   const { t } = useTranslation();
   const fields = useFields(collection);

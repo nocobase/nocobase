@@ -12,7 +12,7 @@ import { Empty, Result, Typography } from 'antd';
 import React, { useContext, useEffect, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { ChartConfigContext } from '../block';
-import { useFieldsWithAssosiation, useFieldTransformer } from '../hooks';
+import { useFieldsWithAssociation, useFieldTransformer } from '../hooks';
 import { useChartsTranslation } from '../locale';
 import { createRendererSchema, getField, parseField, processData } from '../utils';
 import { useCharts } from './ChartLibrary';
@@ -33,7 +33,7 @@ export const ChartRenderer: React.FC<{
   const advanced = config?.advanced || {};
   const schema = useFieldSchema();
   const currentSchema = schema || current?.schema;
-  const fields = useFieldsWithAssosiation(collection);
+  const fields = useFieldsWithAssociation(collection);
   const api = useAPIClient();
   const [data, setData] = useState<any[]>([]);
   const { runAsync } = useRequest(

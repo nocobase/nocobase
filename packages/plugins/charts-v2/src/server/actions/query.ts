@@ -44,7 +44,7 @@ type QueryParams = Partial<{
   refresh: boolean;
 }>;
 
-export const parseFieldAndAssosiations = (ctx: Context, params: QueryParams) => {
+export const parseFieldAndAssociations = (ctx: Context, params: QueryParams) => {
   const { collection, measures, dimensions, orders } = params;
   const fields = ctx.db.getCollection(collection).fields;
   const underscored = ctx.db.options.underscored;
@@ -98,7 +98,7 @@ export const parseFieldAndAssosiations = (ctx: Context, params: QueryParams) => 
 export const parseBuilder = (ctx: Context, builder: QueryParams) => {
   const { sequelize } = ctx.db;
   const { collection, filter, limit } = builder;
-  const { measures, dimensions, orders, include } = parseFieldAndAssosiations(ctx, builder);
+  const { measures, dimensions, orders, include } = parseFieldAndAssociations(ctx, builder);
   const repository = ctx.db.getRepository(collection);
   const attributes = [];
   const group = [];
