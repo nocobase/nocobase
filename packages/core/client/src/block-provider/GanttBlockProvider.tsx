@@ -1,9 +1,9 @@
 import { useField } from '@formily/react';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { BlockProvider, useBlockRequestContext } from './BlockProvider';
-import { TableBlockProvider } from './TableBlockProvider';
 import { useACLRoleContext } from '../acl/ACLProvider';
 import { useCollection } from '../collection-manager/hooks';
+import { BlockProvider, useBlockRequestContext } from './BlockProvider';
+import { TableBlockProvider } from './TableBlockProvider';
 
 export const GanttBlockContext = createContext<any>({});
 
@@ -88,7 +88,7 @@ export const useGanttBlockContext = () => {
 export const useGanttBlockProps = () => {
   const ctx = useGanttBlockContext();
   const [tasks, setTasks] = useState<any>([]);
-  const { getPrimaryKey, name, template } = useCollection();
+  const { getPrimaryKey, name, template, writeableView } = useCollection();
   const { parseAction } = useACLRoleContext();
   const primaryKey = getPrimaryKey();
   const checkPermassion = (record) => {
@@ -96,7 +96,7 @@ export const useGanttBlockProps = () => {
     const schema = {};
     const recordPkValue = record?.[primaryKey];
     const params = parseAction(actionPath, { schema, recordPkValue });
-    return template === 'view' || !params;
+    return (template === 'view' && !writeableView) || !params;
   };
 
   const onExpanderClick = (task: any) => {
