@@ -15,6 +15,7 @@ import { WorkflowProvider } from './WorkflowProvider';
 export class WorkflowPlugin extends Plugin {
   async load() {
     this.addRoutes();
+    this.addComponents();
     this.app.use(WorkflowProvider);
   }
 
