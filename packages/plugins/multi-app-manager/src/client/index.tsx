@@ -25,7 +25,7 @@ const MultiAppManager = () => {
   const { t } = usePluginUtils();
   const items = [
     ...(data?.data || []).map((app) => {
-      let link = `/apps/${app.name}/admin/`;
+      let link = `/apps/${app.name}/admin`;
       if (app.options?.standaloneDeployment && app.cname) {
         link = `//${app.cname}`;
       }

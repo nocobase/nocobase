@@ -9,7 +9,7 @@ const useLink = () => {
   if (record.options?.standaloneDeployment && record.cname) {
     return `//${record.cname}`;
   }
-  return `/apps/${record.name}/admin/`;
+  return `/apps/${record.name}/admin`;
 };
 
 const AppVisitor = () => {
