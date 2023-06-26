@@ -1,4 +1,3 @@
-import { useFieldSchema, Schema } from '@formily/react';
 import { useCollection } from '../../collection-manager';
 
 // 表单的操作配置
@@ -34,7 +33,7 @@ export const GridCardActionInitializers = {
           },
           visible: () => {
             const collection = useCollection();
-            return collection.template !== 'view' && collection.template !== 'file';
+            return (collection.template !== 'view' && collection.template !== 'file') || collection?.writeableView;
           },
         },
         {
@@ -166,7 +165,7 @@ export const GridCardItemActionInitializers = {
           },
           visible: () => {
             const collection = useCollection();
-            return (collection as any).template !== 'view';
+            return (collection as any).template !== 'view' || collection?.writeableView;
           },
         },
         {
@@ -264,7 +263,7 @@ export const GridCardItemActionInitializers = {
           },
           visible: () => {
             const collection = useCollection();
-            return (collection as any).template !== 'view';
+            return (collection as any).template !== 'view' || collection?.writeableView;
           },
         },
         {
@@ -290,7 +289,7 @@ export const GridCardItemActionInitializers = {
           },
           visible: () => {
             const collection = useCollection();
-            return (collection as any).template !== 'view';
+            return (collection as any).template !== 'view' || collection?.writeableView;
           },
         },
       ],

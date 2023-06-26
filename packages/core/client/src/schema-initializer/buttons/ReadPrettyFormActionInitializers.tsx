@@ -2,7 +2,7 @@ import { useCollection } from '../..';
 
 const useVisibleCollection = () => {
   const collection = useCollection();
-  return collection.template !== 'view';
+  return collection.template !== 'view' || collection?.writeableView;
 };
 // 表单的操作配置
 export const ReadPrettyFormActionInitializers = {

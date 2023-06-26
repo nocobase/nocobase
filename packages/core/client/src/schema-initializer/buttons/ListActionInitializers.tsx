@@ -1,4 +1,3 @@
-import { useFieldSchema, Schema } from '@formily/react';
 import { useCollection } from '../../collection-manager';
 
 // 表单的操作配置
@@ -32,7 +31,7 @@ export const ListActionInitializers = {
               skipScopeCheck: true,
             },
           },
-          visible: () => {
+          visible: function useVisible() {
             const collection = useCollection();
             return collection.template !== 'view' && collection.template !== 'file';
           },
@@ -164,9 +163,9 @@ export const ListItemActionInitializers = {
             'x-decorator': 'ACLActionProvider',
             'x-align': 'left',
           },
-          visible: () => {
+          visible: function useVisible() {
             const collection = useCollection();
-            return (collection as any).template !== 'view';
+            return (collection as any).template !== 'view' || collection?.writeableView;
           },
         },
         {
@@ -262,9 +261,9 @@ export const ListItemActionInitializers = {
               useProps: '{{ useCustomizeUpdateActionProps }}',
             },
           },
-          visible: () => {
+          visible: function useVisible() {
             const collection = useCollection();
-            return (collection as any).template !== 'view';
+            return (collection as any).template !== 'view' || collection?.writeableView;
           },
         },
         {
@@ -288,9 +287,9 @@ export const ListItemActionInitializers = {
               useProps: '{{ useCustomizeRequestActionProps }}',
             },
           },
-          visible: () => {
+          visible: function useVisible() {
             const collection = useCollection();
-            return (collection as any).template !== 'view';
+            return (collection as any).template !== 'view' || collection?.writeableView;
           },
         },
       ],
