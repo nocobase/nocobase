@@ -8,6 +8,11 @@ const getCurrentTimezone = () => {
   return (timezoneOffset > 0 ? '+' : '-') + timezone;
 };
 
+function getBasename() {
+  const match = location.pathname.match(/^\/apps\/([^/]*)\//);
+  return match ? match[0] : '/';
+}
+
 export const app = new Application({
   apiClient: {
     baseURL: process.env.API_BASE_URL,
@@ -15,6 +20,10 @@ export const app = new Application({
       'X-Hostname': window?.location?.hostname,
       'X-Timezone': getCurrentTimezone(),
     },
+  },
+  router: {
+    type: 'browser',
+    basename: getBasename(),
   },
   plugins: [NoCoBaseClientPresetPlugin],
 });

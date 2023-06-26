@@ -32,8 +32,12 @@ export class RouterManager {
   protected routes: Record<string, RouteType> = {};
 
   constructor(protected options: RouterOptions, protected app: Application) {
-    this.options = options;
+    this.options = options || {};
     this.app = app;
+  }
+
+  setBasename(basename: string) {
+    this.options.basename = basename;
   }
 
   getRoutes(): RouteObject[] {

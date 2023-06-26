@@ -1,7 +1,7 @@
 import { css } from '@emotion/css';
 import { Layout, Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Outlet, useNavigate, useParams } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
   CurrentAppInfoProvider,
@@ -61,7 +61,6 @@ const MenuEditor = (props) => {
   const { setTitle } = useDocumentTitle();
   const navigate = useNavigate();
   const params = useParams<any>();
-  const location = useLocation();
   const defaultSelectedUid = params.name;
   const { sideMenuRef } = props;
   const ctx = useACLRoleContext();
@@ -84,7 +83,7 @@ const MenuEditor = (props) => {
       onSuccess(data) {
         const schema = filterByACL(data?.data, ctx);
         // url 为 `/admin` 的情况
-        if (location.pathname === '/admin') {
+        if (params['*'] === undefined) {
           const s = findMenuItem(schema);
           if (s) {
             navigate(`/admin/${s['x-uid']}`);
