@@ -2,13 +2,13 @@ import { MaybeCollectionProvider } from '@nocobase/client';
 import React, { createContext } from 'react';
 
 export type MeasureProps = {
-  field: string;
+  field: string | string[];
   aggregation?: string;
   alias?: string;
 };
 
 export type DimensionProps = {
-  field: string;
+  field: string | string[];
   alias?: string;
   format?: string;
 };

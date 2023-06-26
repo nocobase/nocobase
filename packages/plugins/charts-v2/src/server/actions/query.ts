@@ -155,7 +155,7 @@ export const parseBuilder = (ctx: Context, builder: QueryParams) => {
     queryParams: {
       where,
       attributes,
-      include: [...include, ...filterInclude],
+      include: [...include, ...(filterInclude || [])],
       group,
       order,
       limit: limit > 2000 ? 2000 : limit,

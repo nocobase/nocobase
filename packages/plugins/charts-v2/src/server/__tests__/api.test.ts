@@ -58,17 +58,17 @@ describe('api', () => {
         collection: 'chart_test',
         measures: [
           {
-            field: 'price',
+            field: ['price'],
             alias: 'Price',
           },
           {
-            field: 'count',
+            field: ['count'],
             alias: 'Count',
           },
         ],
         dimensions: [
           {
-            field: 'title',
+            field: ['title'],
             alias: 'Title',
           },
         ],
@@ -83,20 +83,19 @@ describe('api', () => {
         collection: 'chart_test',
         measures: [
           {
-            field: 'price',
+            field: ['price'],
             aggregation: 'sum',
             alias: 'Price',
           },
         ],
         dimensions: [
           {
-            field: 'title',
+            field: ['title'],
             alias: 'Title',
           },
           {
-            field: 'createdAt',
+            field: ['createdAt'],
             format: 'YYYY',
-            alias: 'Created At',
           },
         ],
         orders: [{ field: 'createdAt', order: 'asc' }],

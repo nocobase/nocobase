@@ -1,5 +1,6 @@
 import { MockServer, mockServer } from '@nocobase/test';
-import { cacheWrap, parseFieldAndAssociations } from '../actions/query';
+import * as formatter from '../actions/formatter';
+import { cacheWrap, parseBuilder, parseFieldAndAssociations } from '../actions/query';
 
 describe('query', () => {
   describe('parseBuilder', () => {
@@ -54,6 +55,7 @@ describe('query', () => {
           sequelize,
           getRepository: (name: string) => app.db.getRepository(name),
           getModel: (name: string) => app.db.getModel(name),
+          getCollection: (name: string) => app.db.getCollection(name),
           options: {
             underscored: true,
           },
@@ -73,62 +75,62 @@ describe('query', () => {
           { field: 'orders.created_at', alias: 'createdAt', type: 'date' },
           { field: 'user.name', alias: 'user.name' },
         ],
-        include: [{ model: app.db.getModel('users'), as: 'user' }],
+        include: [{ association: 'user' }],
       });
     });
 
-    // it('should parse measures', () => {
-    //   const measures1 = [
-    //     {
-    //       field: 'field',
-    //     },
-    //   ];
-    //   const { queryParams: result1 } = parseBuilder(ctx, { measures: measures1 });
-    //   expect(result1.attributes).toEqual(['field']);
+    it('should parse measures', () => {
+      const measures1 = [
+        {
+          field: ['price'],
+        },
+      ];
+      const { queryParams: result1 } = parseBuilder(ctx, { collection: 'orders', measures: measures1 });
+      expect(result1.attributes).toEqual([['orders.price', 'price']]);
 
-    //   const measures2 = [
-    //     {
-    //       field: 'field',
-    //       aggregation: 'sum',
-    //       alias: 'alias',
-    //     },
-    //   ];
-    //   const { queryParams: result2 } = parseBuilder(ctx, { measures: measures2 });
-    //   expect(result2.attributes).toEqual([[['sum', 'field'], 'alias']]);
-    // });
+      const measures2 = [
+        {
+          field: ['price'],
+          aggregation: 'sum',
+          alias: 'price-alias',
+        },
+      ];
+      const { queryParams: result2 } = parseBuilder(ctx, { collection: 'orders', measures: measures2 });
+      expect(result2.attributes).toEqual([[['sum', 'orders.price'], 'price-alias']]);
+    });
 
-    // it('should parse dimensions', () => {
-    //   jest.spyOn(formatter, 'formatter').mockReturnValue('formatted-field');
-    //   const dimensions = [
-    //     {
-    //       field: 'testField',
-    //       format: 'YYYY-MM-DD',
-    //       alias: 'alias',
-    //     },
-    //   ];
-    //   const { queryParams: result } = parseBuilder(ctx, { dimensions });
-    //   expect(result.attributes).toEqual([['formatted-field', 'alias']]);
-    //   expect(result.group).toEqual([]);
+    it('should parse dimensions', () => {
+      jest.spyOn(formatter, 'formatter').mockReturnValue('formatted-field');
+      const dimensions = [
+        {
+          field: ['createdAt'],
+          format: 'YYYY-MM-DD',
+          alias: 'Created at',
+        },
+      ];
+      const { queryParams: result } = parseBuilder(ctx, { collection: 'orders', dimensions });
+      expect(result.attributes).toEqual([['formatted-field', 'Created at']]);
+      expect(result.group).toEqual([]);
 
-    //   const measures = [
-    //     {
-    //       field: 'field',
-    //       aggregation: 'sum',
-    //     },
-    //   ];
-    //   const { queryParams: result2 } = parseBuilder(ctx, { measures, dimensions });
-    //   expect(result2.group).toEqual(['alias']);
-    // });
+      const measures = [
+        {
+          field: ['field'],
+          aggregation: 'sum',
+        },
+      ];
+      const { queryParams: result2 } = parseBuilder(ctx, { collection: 'orders', measures, dimensions });
+      expect(result2.group).toEqual(['Created at']);
+    });
 
-    // it('should parse filter', () => {
-    //   const filter = {
-    //     testField: {
-    //       $gt: '2020-01-01',
-    //     },
-    //   };
-    //   const { queryParams: result } = parseBuilder(ctx, { filter });
-    //   expect(result.where.testField).toBeDefined();
-    // });
+    it('should parse filter', () => {
+      const filter = {
+        createdAt: {
+          $gt: '2020-01-01',
+        },
+      };
+      const { queryParams: result } = parseBuilder(ctx, { collection: 'orders', filter });
+      expect(result.where.createdAt).toBeDefined();
+    });
   });
 
   describe('cacheWrap', () => {

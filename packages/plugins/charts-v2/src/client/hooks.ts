@@ -33,10 +33,10 @@ export const useFields = (collection?: string) => {
       return field.interface;
     })
     .map((field) => ({
+      ...field,
       key: field.name,
       label: field.uiSchema?.title || field.name,
       value: field.name,
-      ...field,
     }));
   return fields;
 };
@@ -55,10 +55,10 @@ export const useFieldsWithAssociation = (collection?: string) => {
         return targetField.interface;
       })
       .map((targetField) => ({
-        key: targetField.name,
+        ...targetField,
+        key: `${field.name}.${targetField.name}`,
         label: `${label} / ${Schema.compile(targetField.uiSchema?.title || targetField.name, { t })}`,
         value: `${field.name}.${targetField.name}`,
-        ...targetField,
       }));
     return {
       ...field,
@@ -176,7 +176,6 @@ export const useFieldTransformer = (transform: ChartRendererProps['transform'], 
   return (transform || [])
     .filter((item) => item.field && item.type && item.format)
     .reduce((mp, item) => {
-      console.log(item.type, item.format);
       const transformer = transformers[item.type][item.format];
       if (!transformer) {
         return mp;

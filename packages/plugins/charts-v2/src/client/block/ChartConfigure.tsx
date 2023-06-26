@@ -43,7 +43,7 @@ export type ChartConfigCurrent = {
 };
 
 export type SelectedField = {
-  field: string;
+  field: string | string[];
   alias?: string;
 };
 
