@@ -29,27 +29,22 @@ export class BaseAuth extends Auth {
     return this.ctx.state.currentUser;
   }
 
-  async parseToken() {
-    const token = this.ctx.getBearerToken();
-    if (!token) {
-      return null;
-    }
-    return this.jwt.decode(token);
-  }
-
   async check() {
     const token = this.ctx.getBearerToken();
     if (!token) {
       return null;
     }
     try {
-      const { userId } = await this.jwt.decode(token);
+      const { userId, roleName } = await this.jwt.decode(token);
       const user = await this.userCollection.repository.findOne({
         filter: {
           id: userId,
         },
       });
-      return user;
+      return {
+        user,
+        roleName,
+      };
     } catch (err) {
       this.ctx.logger.error(err);
       return null;

@@ -88,9 +88,10 @@ export class AuthManager {
         return next();
       }
       if (authenticator) {
-        const user = await ctx.auth.check();
+        const { user, roleName } = (await ctx.auth.check()) || {};
         if (user) {
           ctx.auth.user = user;
+          ctx.state.roleName = roleName;
         }
       }
       await next();

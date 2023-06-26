@@ -15,9 +15,9 @@ export async function setCurrentRole(ctx, next) {
   ctx.state.currentUser.setDataValue('roles', roles);
 
   // api keys provide role
-  const { roleName } = (await ctx.auth?.parseToken()) || {};
+  const roleName = ctx.state.roleName;
   if (roleName) {
-    currentRole = roles.find((role) => role.name === roleName);
+    currentRole = roles.find((role) => role.name === roleName)?.name;
   } else {
     if (roles.length == 1) {
       currentRole = roles[0].name;
