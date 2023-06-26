@@ -2,8 +2,9 @@ import { CloseOutlined, PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { ArrayField } from '@formily/core';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
-import { RecursionField, observer, useFieldSchema } from '@formily/react';
+import { observer, RecursionField, useFieldSchema } from '@formily/react';
 import { action } from '@formily/reactive';
+import { each } from '@formily/shared';
 import { Button, Card, Divider, Tooltip } from 'antd';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -61,13 +62,13 @@ const ToManyNester = observer(
                             startIndex: index + 1,
                             insertCount: 1,
                           });
-                          setTimeout(() => {
-                            field.value.splice(index + 1, 0, {});
+                          field.value.splice(index + 1, 0, {});
+
+                          each(field.form.fields, (field, key) => {
+                            if (!field) {
+                              delete field.form.fields[key];
+                            }
                           });
-                          const fields = Object.fromEntries(
-                            Object.entries(field.form.fields).filter(([key, value]) => value),
-                          );
-                          field.form.fields = fields;
                           return field.onInput(field.value);
                         });
                       }}
