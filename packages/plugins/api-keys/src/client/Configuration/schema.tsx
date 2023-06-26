@@ -47,7 +47,7 @@ const useDestroyAction = () => {
   return {
     async run() {
       await resource.destroy({
-        filterByTk: record.name,
+        filterByTk: record.id,
       });
       service.refresh();
     },

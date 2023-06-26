@@ -44,10 +44,6 @@ export async function list(ctx: Context, next: Next) {
 }
 
 export async function destroy(ctx: Context, next: Next) {
-  ctx.action.params.filter = {
-    createBy: {
-      id: ctx.auth.user.id,
-    },
-  };
+  ctx.action.params.filter = { $and: [{ createdBy: { id: { $eq: ctx.auth.user.id } } }] };
   return actions.destroy(ctx, next);
 }

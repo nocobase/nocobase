@@ -13,10 +13,17 @@ export default {
   logging: true,
   fields: [
     {
+      name: 'id',
+      type: 'bigInt',
+      autoIncrement: true,
+      primaryKey: true,
+      allowNull: false,
+      uiSchema: { type: 'number', title: '{{t("ID")}}', 'x-component': 'InputNumber', 'x-read-pretty': true },
+      interface: 'id',
+    },
+    {
       type: 'string',
       name: 'name',
-      prefix: 'r_',
-      primaryKey: true,
       interface: 'input',
       uiSchema: {
         type: 'string',
@@ -36,8 +43,19 @@ export default {
         'x-component': 'AssociationField',
         'x-component-props': {
           fieldNames: {
-            label: 'name',
+            label: 'title',
             value: 'name',
+          },
+          service: {
+            params: {
+              filter: {
+                $and: [
+                  {
+                    users: { id: { $eq: '{{$user.id}}' } },
+                  },
+                ],
+              },
+            },
           },
         },
       },
