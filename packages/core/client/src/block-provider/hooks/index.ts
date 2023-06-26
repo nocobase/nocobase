@@ -728,7 +728,7 @@ export const useUpdateActionProps = () => {
       } = actionSchema?.['x-action-settings'] ?? {};
       const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentRecord, currentUser });
       if (!skipValidator) {
-        await form.validate();
+        await form.submit();
       }
       const fieldNames = fields.map((field) => field.name);
       const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
