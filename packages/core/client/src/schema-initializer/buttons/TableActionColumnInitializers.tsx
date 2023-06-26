@@ -53,7 +53,6 @@ export const TableActionColumnInitializers = (props: any) => {
   const { t } = useTranslation();
   const collection = useCollection();
   const { treeTable } = fieldSchema?.parent?.parent['x-decorator-props'] || {};
-  const modifyFlag = (collection as any).template !== 'view';
   return (
     <SchemaInitializer.Button
       insertPosition={'beforeEnd'}
@@ -102,11 +101,11 @@ export const TableActionColumnInitializers = (props: any) => {
                 'x-decorator': 'ACLActionProvider',
               },
               visible: () => {
-                return (collection as any).template !== 'view';
+                return collection.template !== 'view' || collection.writeableView;
               },
             },
 
-            modifyFlag && {
+            {
               type: 'item',
               title: t('Delete'),
               component: 'DestroyActionInitializer',
@@ -114,6 +113,9 @@ export const TableActionColumnInitializers = (props: any) => {
                 'x-component': 'Action.Link',
                 'x-action': 'destroy',
                 'x-decorator': 'ACLActionProvider',
+              },
+              visible: () => {
+                return collection.template !== 'view' || collection.writeableView;
               },
             },
             collection.tree &&
@@ -137,7 +139,7 @@ export const TableActionColumnInitializers = (props: any) => {
                 'x-decorator': 'ACLActionProvider',
               },
               visible: () => {
-                return (collection as any).template !== 'view';
+                return collection.template !== 'view' || collection.writeableView;
               },
             },
           ],
@@ -223,7 +225,7 @@ export const TableActionColumnInitializers = (props: any) => {
                 },
               },
               visible: () => {
-                return (collection as any).template !== 'view';
+                return collection.template !== 'view' || collection.writeableView;
               },
             },
             {
@@ -248,7 +250,7 @@ export const TableActionColumnInitializers = (props: any) => {
                 },
               },
               visible: () => {
-                return (collection as any).template !== 'view';
+                return collection.template !== 'view' || collection.writeableView;
               },
             },
           ],
