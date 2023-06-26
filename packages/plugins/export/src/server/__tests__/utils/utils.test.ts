@@ -10,7 +10,10 @@ describe('utils', () => {
     app = mockServer();
     db = app.db;
   });
-  afterEach(async () => {});
+
+  afterEach(async () => {
+    await app.destroy();
+  });
 
   it('first columns2Appends', async () => {
     columns = [

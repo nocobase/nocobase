@@ -27,7 +27,7 @@ describe('actions', () => {
     });
 
     afterAll(async () => {
-      await db.close();
+      await app.destroy();
     });
 
     it('should list authenticator types', async () => {

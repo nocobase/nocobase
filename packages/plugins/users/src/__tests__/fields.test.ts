@@ -3,6 +3,7 @@ import PluginACL from '@nocobase/plugin-acl';
 import UsersPlugin from '@nocobase/plugin-users';
 import { mockServer, MockServer } from '@nocobase/test';
 import { userPluginConfig } from './utils';
+
 describe('createdBy/updatedBy', () => {
   let api: MockServer;
   let db: Database;
@@ -16,7 +17,7 @@ describe('createdBy/updatedBy', () => {
   });
 
   afterEach(async () => {
-    await db.close();
+    await app.destroy();
   });
 
   describe('collection definition', () => {
