@@ -33,7 +33,7 @@ export const ListActionInitializers = {
           },
           visible: function useVisible() {
             const collection = useCollection();
-            return collection.template !== 'view' && collection.template !== 'file';
+            return (collection.template !== 'view' || collection?.writeableView) && collection.template !== 'file';
           },
         },
         {
