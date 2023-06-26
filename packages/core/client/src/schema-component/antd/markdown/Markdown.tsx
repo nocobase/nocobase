@@ -20,16 +20,18 @@ export const Markdown: any = connect(
       suffix: <span>{field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffix}</span>,
     };
   }),
-  mapReadPretty((props) => {
-    const { html, loading } = useParseMarkdown(props.value);
-    const text = convertToText(html);
-    const value = <div className={'nb-markdown'} dangerouslySetInnerHTML={{ __html: html }} />;
-    if (loading) {
-      return <Spin />;
-    }
-    return <InputReadPretty.TextArea {...props} autop={false} text={text} value={value} />;
-  }),
+  mapReadPretty((props) => <MarkdownReadPretty {...props} />),
 );
+
+export const MarkdownReadPretty = (props) => {
+  const { html = '', loading } = useParseMarkdown(props.value);
+  const text = convertToText(html);
+  const value = <div className={'nb-markdown'} dangerouslySetInnerHTML={{ __html: html }} />;
+  if (loading) {
+    return <Spin />;
+  }
+  return <InputReadPretty.TextArea {...props} autop={false} text={text} value={value} />;
+};
 
 Markdown.Void = MarkdownVoid;
 

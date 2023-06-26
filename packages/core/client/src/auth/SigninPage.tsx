@@ -1,19 +1,19 @@
+import { css } from '@emotion/css';
+import { useForm } from '@formily/react';
 import { Space, Tabs } from 'antd';
 import React, {
+  FunctionComponent,
+  FunctionComponentElement,
+  createContext,
+  createElement,
   useCallback,
   useContext,
-  createContext,
-  FunctionComponent,
-  createElement,
   useState,
-  FunctionComponentElement,
 } from 'react';
-import { css } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAPIClient, useCurrentDocumentTitle, useRequest, useViewport } from '..';
 import { useSigninPageExtension } from './SigninPageExtension';
-import { useForm } from '@formily/react';
 
 const SigninPageContext = createContext<{
   [authType: string]: {
@@ -48,12 +48,11 @@ export type Authenticator = {
 export const AuthenticatorsContext = createContext<Authenticator[]>([]);
 
 export function useRedirect(next = '/admin') {
-  const location = useLocation<any>();
-  const history = useHistory();
-  const redirect = location?.['query']?.redirect;
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   return useCallback(() => {
-    history.replace(redirect || '/admin');
-  }, [redirect, history]);
+    navigate(searchParams.get('redirect') || '/admin', { replace: true });
+  }, [navigate, searchParams]);
 }
 
 export const useSignIn = (authenticator) => {
@@ -133,13 +132,7 @@ export const SigninPage = () => {
         `}
       >
         {tabs.length > 1 ? (
-          <Tabs>
-            {tabs.map((tab) => (
-              <Tabs.TabPane tab={tab.tabTitle} key={tab.name}>
-                {tab.component}
-              </Tabs.TabPane>
-            ))}
-          </Tabs>
+          <Tabs items={tabs.map((tab) => ({ label: tab.tabTitle, key: tab.name, children: tab.component }))} />
         ) : tabs.length ? (
           <div>{tabs[0].component}</div>
         ) : (

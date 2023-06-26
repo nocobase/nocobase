@@ -12,19 +12,32 @@ cd my-nocobase-app
 git pull
 ```
 
-## 3. Update dependencies
+## 3. 删除旧依赖文件（非必须）
+
+v0.10 进行了依赖的重大升级，如果 v0.9 升级 v0.10，需要删掉以下目录之后再升级
+
+```bash
+# Remove .umi cache
+yarn rimraf -rf "./**/{.umi,.umi-production}"
+# Delete compiled files
+yarn rimraf -rf "./packages/*/*/{lib,esm,es,dist,node_modules}"
+# Remove dependencies
+yarn rimraf -rf node_modules
+```
+
+## 4. Update dependencies
 
 ```bash
 yarn install
 ```
 
-## 4. Execute the update command
+## 5. Execute the update command
 
 ```bash
 yarn nocobase upgrade
 ```
 
-## 5. Start NocoBase
+## 6. Start NocoBase
 
 development environment
 
@@ -41,4 +54,3 @@ yarn build
 # Start
 yarn start # Not supported on Windows platforms yet
 ```
-

@@ -1,8 +1,7 @@
 ---
-nav:
-  path: /client
 group:
-  path: /schema-components
+  title: Schema Components
+  order: 3
 ---
 
 # Radio
@@ -11,12 +10,12 @@ group:
 
 ### Basic
 
-<code src="./demos/demo1.tsx" />
+<code src="./demos/demo1.tsx"></code>
 
 ### Radio Group
 
-<code src="./demos/demo2.tsx" />
+<code src="./demos/demo2.tsx"></code>
 
 ### Radio Group with color
 
-<code src="./demos/demo3.tsx" />
+<code src="./demos/demo3.tsx"></code>

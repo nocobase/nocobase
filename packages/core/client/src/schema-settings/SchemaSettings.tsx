@@ -11,8 +11,8 @@ import {
   CascaderProps,
   Dropdown,
   Empty,
-  Menu,
   MenuItemProps,
+  MenuProps,
   Modal,
   Select,
   Space,
@@ -20,7 +20,17 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import _, { cloneDeep } from 'lodash';
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import React, {
+  ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  // @ts-ignore
+  useTransition as useReactTransition,
+  useRef,
+  useState,
+} from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -46,6 +56,7 @@ import {
 } from '..';
 import { findFilterTargets, updateFilterTargets } from '../block-provider/hooks';
 import { FilterBlockType, isSameCollection, useSupportedBlocks } from '../filter-provider/utils';
+import { useCollectMenuItem, useCollectMenuItems, useMenuItem } from '../hooks/useMenuItem';
 import { getTargetKey } from '../schema-component/antd/association-filter/utilts';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
@@ -59,6 +70,7 @@ interface SchemaSettingsProps {
   dn?: Designable;
   field?: GeneralField;
   fieldSchema?: Schema;
+  children?: ReactNode;
 }
 
 interface SchemaSettingsContextProps {
@@ -72,6 +84,13 @@ interface SchemaSettingsContextProps {
 }
 
 const SchemaSettingsContext = createContext<SchemaSettingsContextProps>(null);
+
+/**
+ * 用于去除菜单的消失动画，优化操作体验
+ */
+const hidden = css`
+  display: none;
+`;
 
 export const useSchemaSettings = () => {
   return useContext(SchemaSettingsContext);
@@ -115,37 +134,57 @@ export const SchemaSettingsProvider: React.FC<SchemaSettingsProviderProps> = (pr
   );
 };
 
+const overlayClassName = classNames(
+  'nb-schema-initializer-button-overlay',
+  css`
+    .ant-dropdown-menu-item-group-list {
+      max-height: 40vh;
+      overflow: auto;
+    }
+  `,
+);
+
 export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNested = (props) => {
   const { title, dn, ...others } = props;
   const [visible, setVisible] = useState(false);
-  const DropdownMenu = (
-    <Dropdown
-      open={visible}
-      onOpenChange={(visible) => {
-        setVisible(visible);
-      }}
-      overlay={<Menu>{props.children}</Menu>}
-      overlayClassName={classNames(
-        'nb-schema-initializer-button-overlay',
-        css`
-          .ant-dropdown-menu-item-group-list {
-            max-height: 40vh;
-            overflow: auto;
-          }
-        `,
-      )}
-    >
-      {typeof title === 'string' ? <span>{title}</span> : title}
-    </Dropdown>
+  const { Component, getMenuItems } = useMenuItem();
+  const menuItems = useRef([]);
+  const [isPending, startTransition] = useReactTransition();
+
+  const changeMenu = (v: boolean) => {
+    startTransition(() => {
+      setVisible(v);
+    });
+  };
+
+  if (visible) {
+    menuItems.current = getMenuItems(() => props.children);
+  }
+
+  const dropdownMenu = () => (
+    <>
+      {visible ? <Component /> : null}
+      <Dropdown
+        open={visible}
+        onOpenChange={() => {
+          changeMenu(!visible);
+        }}
+        menu={{ items: menuItems.current, className: classNames({ [hidden]: !visible }) }}
+        overlayClassName={overlayClassName}
+      >
+        {typeof title === 'string' ? <span>{title}</span> : title}
+      </Dropdown>
+    </>
   );
+
   if (dn) {
     return (
       <SchemaSettingsProvider visible={visible} setVisible={setVisible} dn={dn} {...others}>
-        {DropdownMenu}
+        {dropdownMenu()}
       </SchemaSettingsProvider>
     );
   }
-  return DropdownMenu;
+  return dropdownMenu();
 };
 
 SchemaSettings.Template = function Template(props) {
@@ -386,35 +425,70 @@ SchemaSettings.FormItemTemplate = function FormItemTemplate(props) {
 };
 
 SchemaSettings.Item = function Item(props) {
+  const { pushMenuItem } = useCollectMenuItems();
+  const { collectMenuItem } = useCollectMenuItem();
   const { eventKey } = props;
   const key = useMemo(() => uid(), []);
-  return (
-    <Menu.Item
-      key={key}
-      eventKey={(eventKey as any) || key}
-      {...props}
-      onClick={(info) => {
-        info.domEvent.preventDefault();
-        info.domEvent.stopPropagation();
-        props?.onClick?.(info);
-      }}
-      style={{ minWidth: 120 }}
-    >
-      {props.children || props.title}
-    </Menu.Item>
-  );
+  const item = {
+    ..._.omit(props, ['children']),
+    key,
+    eventKey: (eventKey as any) || key,
+    onClick: (info) => {
+      info.domEvent.preventDefault();
+      info.domEvent.stopPropagation();
+      props?.onClick?.(info);
+    },
+    style: { minWidth: 120 },
+    label: props.children || props.title,
+    title: props.title,
+  } as MenuProps['items'][0];
+
+  pushMenuItem?.(item);
+  collectMenuItem?.(item);
+  return null;
 };
 
-SchemaSettings.ItemGroup = (props) => {
-  return <Menu.ItemGroup {...props} />;
+SchemaSettings.ItemGroup = function ItemGroup(props) {
+  const { Component, getMenuItems } = useMenuItem();
+  const { pushMenuItem } = useCollectMenuItems();
+  const key = useMemo(() => uid(), []);
+  const item = {
+    key,
+    type: 'group',
+    title: props.title,
+    label: props.title,
+    children: getMenuItems(() => props.children),
+  } as MenuProps['items'][0];
+
+  pushMenuItem(item);
+  return <Component />;
 };
 
-SchemaSettings.SubMenu = (props) => {
-  return <Menu.SubMenu {...props} />;
+SchemaSettings.SubMenu = function SubMenu(props) {
+  const { Component, getMenuItems } = useMenuItem();
+  const { pushMenuItem } = useCollectMenuItems();
+  const key = useMemo(() => uid(), []);
+  const item = {
+    key,
+    label: props.title,
+    title: props.title,
+    children: getMenuItems(() => props.children),
+  } as MenuProps['items'][0];
+
+  pushMenuItem(item);
+  return <Component />;
 };
 
-SchemaSettings.Divider = (props) => {
-  return <Menu.Divider {...props} />;
+SchemaSettings.Divider = function Divider() {
+  const { pushMenuItem } = useCollectMenuItems();
+  const key = useMemo(() => uid(), []);
+  const item = {
+    key,
+    type: 'divider',
+  } as MenuProps['items'][0];
+
+  pushMenuItem(item);
+  return null;
 };
 
 SchemaSettings.Remove = function Remove(props: any) {
@@ -468,6 +542,7 @@ SchemaSettings.ConnectDataBlocks = function ConnectDataBlocks(props: {
   const collection = useCollection();
   const { inProvider } = useFilterBlock();
   const dataBlocks = useSupportedBlocks(type);
+  // eslint-disable-next-line prefer-const
   let { targets = [], uid } = findFilterTargets(fieldSchema);
   const compile = useCompile();
 
@@ -576,11 +651,13 @@ SchemaSettings.ConnectDataBlocks = function ConnectDataBlocks(props: {
       {Content.length ? (
         Content
       ) : (
-        <Empty
-          style={{ width: 160, padding: '0 1em' }}
-          description={emptyDescription}
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-        />
+        <SchemaSettings.Item>
+          <Empty
+            style={{ width: 160, padding: '0 1em' }}
+            description={emptyDescription}
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+          />
+        </SchemaSettings.Item>
       )}
     </SchemaSettings.SubMenu>
   );
@@ -609,6 +686,7 @@ SchemaSettings.SelectItem = function SelectItem(props) {
       <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
         {title}
         <Select
+          dropdownMatchSelectWidth={false}
           bordered={false}
           defaultValue={value}
           onChange={(...arg) => (setOpen(false), onChange(...arg))}
@@ -752,7 +830,7 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
             title={compile(title)}
             {...others}
             destroyOnClose
-            visible={visible}
+            open={visible}
             onCancel={cancelHandler}
             footer={
               <Space>
@@ -1102,7 +1180,6 @@ SchemaSettings.EnableChildCollections = function EnableChildCollectionsItem(prop
     <SchemaSettings.ModalItem
       title={t('Enable child collections')}
       components={{ ArrayItems, FormLayout }}
-      width={600}
       schema={
         {
           type: 'object',

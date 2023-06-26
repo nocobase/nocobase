@@ -1,4 +1,4 @@
-import { PageHeader as AntdPageHeader } from 'antd';
+import { PageHeader as AntdPageHeader } from '@ant-design/pro-layout';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { CollectionManagerProvider } from '../collection-manager';
@@ -10,7 +10,7 @@ export const BlockTemplatePage = () => {
   const { t } = useTranslation();
   return (
     <div>
-      <AntdPageHeader ghost={false} title={t('Block templates')} />
+      <AntdPageHeader style={{ backgroundColor: 'white' }} ghost={false} title={t('Block templates')} />
       <div style={{ margin: 'var(--nb-spacing)' }}>
         <CollectionManagerProvider collections={[uiSchemaTemplatesCollection]}>
           <SchemaComponent schema={uiSchemaTemplatesSchema} />

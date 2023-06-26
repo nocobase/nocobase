@@ -1,18 +1,17 @@
-import { useFieldSchema, useField, ISchema } from '@formily/react';
-import React, { useMemo } from 'react';
 import { ArrayItems } from '@formily/antd';
+import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { Slider } from 'antd';
 import _ from 'lodash';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollection, useCollectionFilterOptions, useSortFields } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
+import { SchemaComponentOptions } from '../../core';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
 import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
-import { SchemaComponentOptions } from '../../core';
 import { defaultColumnCount, gridSizes, pageSizeOptions, screenSizeMaps, screenSizeTitleMaps } from './options';
-Slider;
 
 const columnCountMarks = [1, 2, 3, 4, 6, 8, 12, 24].reduce((obj, cur) => {
   obj[cur] = cur;

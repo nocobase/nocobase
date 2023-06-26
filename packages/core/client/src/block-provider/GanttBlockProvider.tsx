@@ -1,9 +1,9 @@
 import { useField } from '@formily/react';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { BlockProvider, useBlockRequestContext } from './BlockProvider';
-import { TableBlockProvider } from './TableBlockProvider';
 import { useACLRoleContext } from '../acl/ACLProvider';
 import { useCollection } from '../collection-manager/hooks';
+import { BlockProvider, useBlockRequestContext } from './BlockProvider';
+import { TableBlockProvider } from './TableBlockProvider';
 
 export const GanttBlockContext = createContext<any>({});
 
@@ -13,15 +13,15 @@ const formatData = (
   tasks: any[] = [],
   projectId: any = undefined,
   hideChildren = false,
-  checkPermassion?: Function,
+  checkPermassion?: (any) => boolean,
 ) => {
   data.forEach((item: any) => {
     const disable = checkPermassion(item);
     const percent = item[fieldNames.progress] * 100;
     if (item.children && item.children.length) {
       tasks.push({
-        start: new Date(item[fieldNames.start]),
-        end: new Date(item[fieldNames.end]),
+        start: new Date(item[fieldNames.start] ?? undefined),
+        end: new Date(item[fieldNames.end] ?? undefined),
         name: item[fieldNames.title],
         id: item.id + '',
         type: 'project',

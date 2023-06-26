@@ -1,29 +1,50 @@
 import { ArrayField, createForm } from '@formily/core';
 import { FormContext, useField, useFieldSchema } from '@formily/react';
+import { boolean } from 'mathjs';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useCollectionManager } from '../collection-manager';
 import { useFilterBlock } from '../filter-provider/FilterProvider';
 import { useRecord } from '../record-provider';
-import { FixedBlockWrapper, SchemaComponentOptions, removeNullCondition } from '../schema-component';
+import { FixedBlockWrapper, removeNullCondition, SchemaComponentOptions } from '../schema-component';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
-import { mergeFilter } from './SharedFilterProvider';
 import { findFilterTargets } from './hooks';
+import { mergeFilter } from './SharedFilterProvider';
 
 export const TableBlockContext = createContext<any>({});
-
+export function getIdsWithChildren(nodes) {
+  const ids = [];
+  if (nodes) {
+    for (const node of nodes) {
+      if (node?.children && node.children.length > 0) {
+        ids.push(node.id);
+        ids.push(...getIdsWithChildren(node?.children));
+      }
+    }
+  }
+  return ids;
+}
 interface Props {
   params?: any;
   showIndex?: boolean;
   dragSort?: boolean;
   rowKey?: string;
   childrenColumnName: any;
+  fieldNames?: any;
 }
 
 const InternalTableBlockProvider = (props: Props) => {
-  const { params, showIndex, dragSort, rowKey, childrenColumnName } = props;
+  const { params, showIndex, dragSort, rowKey, childrenColumnName, fieldNames } = props;
   const field: any = useField();
   const { resource, service } = useBlockRequestContext();
-  const [expandFlag, setExpandFlag] = useState(false);
+  const fieldSchema = useFieldSchema();
+  const { treeTable } = fieldSchema?.['x-decorator-props'] || {};
+  const [expandFlag, setExpandFlag] = useState(fieldNames ? true : false);
+  const allIncludesChildren = useMemo(() => {
+    if (treeTable !== false) {
+      const keys = getIdsWithChildren(service?.data?.data);
+      return keys || [];
+    }
+  }, [service?.loading]);
   return (
     <FixedBlockWrapper>
       <TableBlockContext.Provider
@@ -37,6 +58,7 @@ const InternalTableBlockProvider = (props: Props) => {
           rowKey,
           expandFlag,
           childrenColumnName,
+          allIncludesChildren,
           setExpandFlag: () => setExpandFlag(!expandFlag),
         }}
       >
@@ -127,7 +149,7 @@ export const TableBlockProvider = (props) => {
   return (
     <SchemaComponentOptions scope={{ treeTable }}>
       <FormContext.Provider value={form}>
-        <BlockProvider {...props} params={params}>
+        <BlockProvider {...props} params={params} runWhenParamsChanged>
           <InternalTableBlockProvider {...props} childrenColumnName={childrenColumnName} params={params} />
         </BlockProvider>
       </FormContext.Provider>

@@ -1,8 +1,7 @@
 import { BlockInitializers, SchemaInitializerItemOptions, useCollectionManager } from '@nocobase/client';
 
 import { CollectionBlockInitializer } from '../../components/CollectionBlockInitializer';
-import { CollectionFieldInitializers } from '../../components/CollectionFieldInitializers';
-import { filterTypedFields, useCollectionFieldOptions } from '../../variable';
+import { useCollectionFieldOptions } from '../../variable';
 import { NAMESPACE } from '../../locale';
 import { SchemaConfig, SchemaConfigButton } from './SchemaConfig';
 import { ModeConfig } from './ModeConfig';
@@ -149,7 +148,5 @@ export default {
         }
       : null;
   },
-  initializers: {
-    CollectionFieldInitializers,
-  },
+  initializers: {},
 };

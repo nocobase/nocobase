@@ -1,4 +1,4 @@
-# NocoBase CLI
+# @nocobase/cli
 
 The NocoBase CLI is designed to help you develop, build, and deploy NocoBase applications.
 

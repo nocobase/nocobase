@@ -58,7 +58,7 @@ export const appends = {
   'x-component': 'FieldsSelect',
   'x-component-props': {
     mode: 'multiple',
-    placeholder: '{{t("Select Field")}}',
+    placeholder: '{{t("Select field")}}',
     filter(field) {
       return ['linkTo', 'belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type);
     },
