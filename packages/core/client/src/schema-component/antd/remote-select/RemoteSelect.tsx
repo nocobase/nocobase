@@ -1,18 +1,18 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty, useField, useFieldSchema, useForm } from '@formily/react';
-import { SelectProps, Tag, Empty, Divider } from 'antd';
-import { uniqBy } from 'lodash';
+import { Divider, SelectProps, Tag } from 'antd';
 import flat from 'flat';
+import { uniqBy } from 'lodash';
 import moment from 'moment';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
+import { useBlockRequestContext } from '../../../block-provider/BlockProvider';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
-import { Select, defaultFieldNames } from '../select';
-import { ReadPretty } from './ReadPretty';
-import { useBlockRequestContext } from '../../../block-provider/BlockProvider';
 import { getInnermostKeyAndValue } from '../../common/utils/uitls';
-import { parseVariables, extractFilterfield, generatePattern, extractValuesByPattern } from './utils';
+import { defaultFieldNames, Select } from '../select';
+import { ReadPretty } from './ReadPretty';
+import { extractFilterfield, extractValuesByPattern, generatePattern, parseVariables } from './utils';
 const EMPTY = 'N/A';
 
 export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
@@ -229,8 +229,10 @@ const InternalRemoteSelect = connect(
       if (!data?.data?.length) {
         return value != null ? (Array.isArray(value) ? value : [value]) : [];
       }
-      return uniqBy(data?.data || [], fieldNames.value);
+      const valueOptions = (value != null && (Array.isArray(value) ? value : [value])) || [];
+      return uniqBy(data?.data?.concat(valueOptions) || [], fieldNames.value);
     }, [data?.data, value]);
+
     const onDropdownVisibleChange = (visible) => {
       setOpen(visible);
       searchData.current = null;

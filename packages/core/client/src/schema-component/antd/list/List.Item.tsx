@@ -1,7 +1,7 @@
-import React from 'react';
 import { css } from '@emotion/css';
-import { useField } from '@formily/react';
 import { ObjectField } from '@formily/core';
+import { useField } from '@formily/react';
+import React from 'react';
 import { RecordSimpleProvider } from '../../../record-provider';
 
 const itemCss = css`
@@ -9,7 +9,7 @@ const itemCss = css`
   width: 100%;
   flex-direction: column;
   // gap: 8px;
-  padding: 5px 0;
+  padding: 4px 5px 0;
   border-bottom: 1px solid #f0f0f0;
 `;
 

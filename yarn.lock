@@ -2981,12 +2981,6 @@
   version "0.8.0"
   resolved "https://registry.yarnpkg.com/@babel/regjsgen/-/regjsgen-0.8.0.tgz#f0ba69b075e1f05fb2825b7fad991e7adbb18310"
 
-"@babel/runtime@7.18.6":
-  version "7.18.6"
-  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.18.6.tgz#6a1ef59f838debd670421f8c7f2cbb8da9751580"
-  dependencies:
-    regenerator-runtime "^0.13.4"
-
 "@babel/runtime@7.21.0", "@babel/runtime@^7.1.5", "@babel/runtime@^7.10.1", "@babel/runtime@^7.10.4", "@babel/runtime@^7.11.1", "@babel/runtime@^7.11.2", "@babel/runtime@^7.12.1", "@babel/runtime@^7.12.5", "@babel/runtime@^7.14.5", "@babel/runtime@^7.14.6", "@babel/runtime@^7.15.4", "@babel/runtime@^7.16.7", "@babel/runtime@^7.18.0", "@babel/runtime@^7.18.3", "@babel/runtime@^7.18.6", "@babel/runtime@^7.2.0", "@babel/runtime@^7.20.0", "@babel/runtime@^7.20.6", "@babel/runtime@^7.20.7", "@babel/runtime@^7.21.0", "@babel/runtime@^7.3.0", "@babel/runtime@^7.4.2", "@babel/runtime@^7.6.3", "@babel/runtime@^7.7.6", "@babel/runtime@^7.8.4", "@babel/runtime@^7.8.7", "@babel/runtime@^7.9.2":
   version "7.21.0"
   resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.21.0.tgz#5b55c9d394e5fcf304909a8b00c07dc217b56673"
@@ -7130,48 +7124,6 @@
   dependencies:
     "@umijs/bundler-utils" "4.0.69"
 
-"@umijs/babel-plugin-auto-css-modules@3.5.39":
-  version "3.5.39"
-  resolved "https://registry.npmmirror.com/@umijs/babel-plugin-auto-css-modules/-/babel-plugin-auto-css-modules-3.5.39.tgz#7b35c5d9cb36fe7b2d582c5fc1f7f0000bcbc0bd"
-  integrity sha512-T/gaGdti7xFqXRB07aEpmQN/hnhOBYf2AZ56A4SYBIALGeLxKP89L4Y21Gi1CbQUC2ma+JGAFZnfMsNpokzCUg==
-  dependencies:
-    "@umijs/utils" "3.5.39"
-
-"@umijs/babel-plugin-import-to-await-require@3.5.39":
-  version "3.5.39"
-  resolved "https://registry.npmmirror.com/@umijs/babel-plugin-import-to-await-require/-/babel-plugin-import-to-await-require-3.5.39.tgz#cbdbd685faac379c5f548aef9b57c278aceac58b"
-  integrity sha512-RaXWe7c2dWPMcSokAEN5tlP0pBCC6tL11/B3yEbmhL721bgs9JxVKn5sVBW1Sn+PTG+Liqe6/PGiDUDjzs/V5g==
-  dependencies:
-    "@umijs/utils" "3.5.39"
-
-"@umijs/babel-plugin-lock-core-js-3@3.5.39":
-  version "3.5.39"
-  resolved "https://registry.npmmirror.com/@umijs/babel-plugin-lock-core-js-3/-/babel-plugin-lock-core-js-3-3.5.39.tgz#934b7cbf16b4168392576e8a7c906c81335a2848"
-  integrity sha512-7vzlDAMzV7H+jfka0l7Q+MqDkUZGDuMeHRu/voZcxawZoZ6xI23xvmJcd4S9WWEoUdNcxb1bI1kwIU/h4tUFcQ==
-  dependencies:
-    "@umijs/utils" "3.5.39"
-    core-js "3.6.5"
-
-"@umijs/babel-plugin-no-anonymous-default-export@3.5.39":
-  version "3.5.39"
-  resolved "https://registry.npmmirror.com/@umijs/babel-plugin-no-anonymous-default-export/-/babel-plugin-no-anonymous-default-export-3.5.39.tgz#22fa818acd3cd74074f459fedf01a9284e06a06c"
-  integrity sha512-3BGK6zhO2rDtYPrya1P/Kw+xcCgKEXOZA17YapVm5ykOOE2/BE2sKfkkPl6JsLtdJ93CoaldYgnVHpLEPwjekg==
-  dependencies:
-    "@umijs/utils" "3.5.39"
-
-"@umijs/babel-preset-umi@3.5.39":
-  version "3.5.39"
-  resolved "https://registry.npmmirror.com/@umijs/babel-preset-umi/-/babel-preset-umi-3.5.39.tgz#d339071bb20a99ad78137e3670b0762427273467"
-  integrity sha512-35Wl3kB6am3SGMuQ7R2JAsyiD8tm1KIuFDzwO7ywiYAR9zUIwWN7egpT4qq6U0bfhs2U7nXFucU+4GWMVD1kHQ==
-  dependencies:
-    "@babel/runtime" "7.18.6"
-    "@umijs/babel-plugin-auto-css-modules" "3.5.39"
-    "@umijs/babel-plugin-import-to-await-require" "3.5.39"
-    "@umijs/babel-plugin-lock-core-js-3" "3.5.39"
-    "@umijs/babel-plugin-no-anonymous-default-export" "3.5.39"
-    "@umijs/deps" "3.5.39"
-    "@umijs/utils" "3.5.39"
-
 "@umijs/babel-preset-umi@4.0.69":
   version "4.0.69"
   resolved "https://registry.yarnpkg.com/@umijs/babel-preset-umi/-/babel-preset-umi-4.0.69.tgz#094b46e84e4eda73a92916fb4b2801aa29470c5e"
@@ -7260,10 +7212,10 @@
     "@umijs/bundler-utils" "4.0.69"
     "@umijs/utils" "4.0.69"
 
-"@umijs/deps@3.5.39":
-  version "3.5.39"
-  resolved "https://registry.npmmirror.com/@umijs/deps/-/deps-3.5.39.tgz#5ab1063cd7051244c2780380529953ae5b35bd85"
-  integrity sha512-V7vTEeq8iyp6LVM1tOfqBQKeYldASmJ64KQyeslafEJHpagnR8lCUWZSrsX6yx8kOibiDwWOaiCJacipx7iYGg==
+"@umijs/deps@3.5.20":
+  version "3.5.20"
+  resolved "https://registry.yarnpkg.com/@umijs/deps/-/deps-3.5.20.tgz#002ad616fbe5c8b238f80fc9289d0aceb9b89c3c"
+  integrity sha512-75iqB0+ITFtxlLb945W2b6lVEgLWRFXaSQZD+wH6c4/WDiagOdYMWX9aiPs2JSzoM/yCtKpMaLeGbmVXsb7y4g==
   dependencies:
     "@bloomberg/record-tuple-polyfill" "0.0.3"
     chokidar "3.5.1"
@@ -7271,7 +7223,6 @@
     esbuild "0.12.15"
     jest-worker "24.9.0"
     prettier "2.2.1"
-    regenerate-unicode-properties "10.0.1"
 
 "@umijs/did-you-know@1.0.3":
   version "1.0.3"
@@ -7471,12 +7422,12 @@
   resolved "https://registry.npmmirror.com/@umijs/use-params/-/use-params-1.0.9.tgz#0ae4a87f4922d8e8e3fb4495b0f8f4de9ca38c52"
   integrity sha512-QlN0RJSBVQBwLRNxbxjQ5qzqYIGn+K7USppMoIOVlf7fxXHsnQZ2bEsa6Pm74bt6DVQxpUE8HqvdStn6Y9FV1w==
 
-"@umijs/utils@3.5.39", "@umijs/utils@^3.5.20":
-  version "3.5.39"
-  resolved "https://registry.yarnpkg.com/@umijs/utils/-/utils-3.5.39.tgz#86a57e262bfbdbc356cdcacaf415b11b1a450e12"
+"@umijs/utils@3.5.20":
+  version "3.5.20"
+  resolved "https://registry.yarnpkg.com/@umijs/utils/-/utils-3.5.20.tgz#45e89eeac734a3963205d55b0f533bd96492f3b9"
+  integrity sha512-Y0i27zZTCKoqdHHyTuebO/GOIY4gGLUwDFs1eoH+m4etPn+uRq0iax9KJOkelmax2K3YLsT4KbRwM1enlSsv3A==
   dependencies:
-    "@umijs/babel-preset-umi" "3.5.39"
-    "@umijs/deps" "3.5.39"
+    "@umijs/deps" "3.5.20"
 
 "@umijs/utils@4.0.69":
   version "4.0.69"
@@ -10351,10 +10302,6 @@ core-js@3.28.0:
   version "3.28.0"
   resolved "https://registry.yarnpkg.com/core-js/-/core-js-3.28.0.tgz#ed8b9e99c273879fdfff0edfc77ee709a5800e4a"
   integrity sha512-GiZn9D4Z/rSYvTeg1ljAIsEqFm0LaN9gVtwDCrKL80zHtS31p9BAjmTxVqTQDMpwlMolJZOFntUG2uwyj7DAqw==
-
-core-js@3.6.5:
-  version "3.6.5"
-  resolved "https://registry.yarnpkg.com/core-js/-/core-js-3.6.5.tgz#7395dc273af37fb2e50e9bd3d9fe841285231d1a"
 
 core-js@^2.4.0:
   version "2.6.12"
@@ -22505,12 +22452,6 @@ reflect.ownkeys@^0.2.0:
   version "0.2.0"
   resolved "https://registry.yarnpkg.com/reflect.ownkeys/-/reflect.ownkeys-0.2.0.tgz#749aceec7f3fdf8b63f927a04809e90c5c0b3460"
 
-regenerate-unicode-properties@10.0.1:
-  version "10.0.1"
-  resolved "https://registry.yarnpkg.com/regenerate-unicode-properties/-/regenerate-unicode-properties-10.0.1.tgz#7f442732aa7934a3740c779bb9b3340dccc1fb56"
-  dependencies:
-    regenerate "^1.4.2"
-
 regenerate-unicode-properties@10.1.0, regenerate-unicode-properties@^10.1.0:
   version "10.1.0"
   resolved "https://registry.yarnpkg.com/regenerate-unicode-properties/-/regenerate-unicode-properties-10.1.0.tgz#7c3192cab6dd24e21cb4461e5ddd7dd24fa8374c"
@@ -22521,7 +22462,7 @@ regenerate@^1.4.2:
   version "1.4.2"
   resolved "https://registry.yarnpkg.com/regenerate/-/regenerate-1.4.2.tgz#b9346d8827e8f5a32f7ba29637d398b69014848a"
 
-regenerator-runtime@0.13.11, regenerator-runtime@^0.13.11, regenerator-runtime@^0.13.2, regenerator-runtime@^0.13.4:
+regenerator-runtime@0.13.11, regenerator-runtime@^0.13.11, regenerator-runtime@^0.13.2:
   version "0.13.11"
   resolved "https://registry.yarnpkg.com/regenerator-runtime/-/regenerator-runtime-0.13.11.tgz#f6dca3e7ceec20590d07ada785636a90cdca17f9"
 
