@@ -1,10 +1,10 @@
-import { Application, NoCoBaseBuildInPlugin } from '@nocobase/client';
+import { Application, NocoBaseBuildInPlugin } from '@nocobase/client';
 
 export const app = new Application({
   apiClient: {
     baseURL: process.env.API_BASE_URL,
   },
-  plugins: [NoCoBaseBuildInPlugin],
+  plugins: [NocoBaseBuildInPlugin],
 });
 
 export default app.getRootComponent();

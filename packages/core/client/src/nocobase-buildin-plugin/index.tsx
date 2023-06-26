@@ -22,7 +22,7 @@ const AppSpin = () => (
   </div>
 );
 
-export class NoCoBaseBuildInPlugin extends Plugin {
+export class NocoBaseBuildInPlugin extends Plugin {
   async afterAdd(): Promise<void> {
     this.addPlugins();
   }

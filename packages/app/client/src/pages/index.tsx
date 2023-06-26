@@ -1,6 +1,6 @@
 import '@/theme';
 import { Application } from '@nocobase/client';
-import { NoCoBaseClientPresetPlugin } from '@nocobase/preset-nocobase/client';
+import { NocoBaseClientPresetPlugin } from '@nocobase/preset-nocobase/client';
 
 const getCurrentTimezone = () => {
   const timezoneOffset = new Date().getTimezoneOffset() / -60;
@@ -25,7 +25,7 @@ export const app = new Application({
     type: 'browser',
     basename: getBasename(),
   },
-  plugins: [NoCoBaseClientPresetPlugin],
+  plugins: [NocoBaseClientPresetPlugin],
 });
 
 export default app.getRootComponent();

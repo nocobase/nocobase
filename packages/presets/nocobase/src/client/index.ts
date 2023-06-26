@@ -1,8 +1,8 @@
-import { NoCoBaseBuildInPlugin, Plugin } from '@nocobase/client';
+import { NocoBaseBuildInPlugin, Plugin } from '@nocobase/client';
 
-export class NoCoBaseClientPresetPlugin extends Plugin {
+export class NocoBaseClientPresetPlugin extends Plugin {
   async afterAdd() {
-    this.app.pm.add(NoCoBaseBuildInPlugin);
+    this.app.pm.add(NocoBaseBuildInPlugin);
     await this.loadRemotePlugin();
   }
 
