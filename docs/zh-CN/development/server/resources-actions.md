@@ -384,7 +384,7 @@ curl 'http://localhost:13000/api/orders:list?productId=1&fields=id,status,quanti
 
 并得到预期的查询结果。
 
-另外，如果我们需要对创建订单的接口限制不能由客户端提交订单编号（`id`）、总价（`totalPrice`）等字段，可以通过对 `create` 操作定义默认参数控制：
+另外，如果我们需要限制不能由客户端提交的订单编号（`id`）、总价（`totalPrice`）等字段创建订单接口，可以通过对 `create` 操作定义默认参数控制：
 
 ```ts
 import { Plugin } from '@nocobase/server';
