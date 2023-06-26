@@ -15,8 +15,7 @@ export const isImage = (extName: string) => {
 };
 
 export const isPdf = (extName: string) => {
-  const reg = /\.(pdf|PDF)$/;
-  return reg.test(extName);
+  return extName.toLowerCase().endsWith('.pdf');
 };
 
 export const toMap = (fileList: any) => {
