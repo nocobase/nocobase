@@ -19,7 +19,7 @@ import {
   useTableSelectorContext,
 } from '../../../';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
-import { extractIndex, getIdsWithChildren, isCollectionFieldComponent, isColumnComponent } from './utils';
+import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
 
 const useArrayField = (props) => {
   const field = useField<ArrayField>();
@@ -213,10 +213,9 @@ export const Table: any = observer(
     const schema = useFieldSchema();
     const isTableSelector = schema?.parent?.['x-decorator'] === 'TableSelectorProvider';
     const ctx = isTableSelector ? useTableSelectorContext() : useTableBlockContext();
-    const { expandFlag } = ctx;
+    const { expandFlag, allIncludesChildren } = ctx;
     const onRowDragEnd = useMemoizedFn(others.onRowDragEnd || (() => {}));
     const paginationProps = usePaginationProps(pagination1, pagination2);
-    const { treeTable } = schema?.parent?.['x-decorator-props'] || {};
     const [expandedKeys, setExpandesKeys] = useState([]);
     const [selectedRowKeys, setSelectedRowKeys] = useState<any[]>(field?.data?.selectedRowKeys || []);
     const [selectedRow, setSelectedRow] = useState([]);
@@ -241,20 +240,13 @@ export const Table: any = observer(
       `;
     }
 
-    const allIncludesChildren = useMemo(() => {
-      if (treeTable !== false) {
-        const keys = getIdsWithChildren(dataSource);
-        return keys || [];
-      }
-    }, [field?.value]);
-
     useEffect(() => {
       if (expandFlag) {
         setExpandesKeys(allIncludesChildren);
       } else {
         setExpandesKeys([]);
       }
-    }, [expandFlag, allIncludesChildren, dataSource]);
+    }, [expandFlag, allIncludesChildren]);
 
     const components = useMemo(() => {
       return {
