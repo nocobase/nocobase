@@ -52,12 +52,11 @@ export function WorkflowCanvas() {
     setTitle?.(`${lang('Workflow')}${title ? `: ${title}` : ''}`);
   }, [data?.data]);
 
-  if (!data?.data && !loading) {
-    return <div>{lang('Load failed')}</div>;
+  if (!data?.data) {
+    return <div>{loading ? lang('Loading') : lang('Load failed')}</div>;
   }
 
   const { nodes = [], revisions = [], ...workflow } = data?.data ?? {};
-
   linkNodes(nodes);
 
   const entry = nodes.find((item) => !item.upstream);
