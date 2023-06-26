@@ -1,7 +1,7 @@
 import { css } from '@emotion/css';
 import { Layout, Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Outlet, useNavigate, useParams } from 'react-router-dom';
+import { Outlet, useNavigate, useParams, useMatches, useMatch } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
   CurrentAppInfoProvider,
@@ -61,6 +61,8 @@ const MenuEditor = (props) => {
   const { setTitle } = useDocumentTitle();
   const navigate = useNavigate();
   const params = useParams<any>();
+  const isMatchAdmin = useMatch('/admin');
+  const isMatchAdminName = useMatch('/admin/:name');
   const defaultSelectedUid = params.name;
   const { sideMenuRef } = props;
   const ctx = useACLRoleContext();
@@ -73,7 +75,6 @@ const MenuEditor = (props) => {
   };
 
   const adminSchemaUid = useAdminSchemaUid();
-
   const { data, loading } = useRequest(
     {
       url: `/uiSchemas:getJsonSchema/${adminSchemaUid}`,
@@ -83,7 +84,7 @@ const MenuEditor = (props) => {
       onSuccess(data) {
         const schema = filterByACL(data?.data, ctx);
         // url 为 `/admin` 的情况
-        if (params['*'] === undefined) {
+        if (isMatchAdmin) {
           const s = findMenuItem(schema);
           if (s) {
             navigate(`/admin/${s['x-uid']}`);
@@ -95,8 +96,7 @@ const MenuEditor = (props) => {
         }
 
         // url 不为 `/admin/xxx` 的情况，不做处理
-        const paramsArr = params['*'].split('/');
-        if (paramsArr[0] !== 'admin' || paramsArr[1] !== defaultSelectedUid || paramsArr.length > 2) return;
+        if (!isMatchAdminName) return;
 
         // url 为 `admin/xxx` 的情况
         const s = findByUid(schema, defaultSelectedUid);
