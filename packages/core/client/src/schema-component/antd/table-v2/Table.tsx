@@ -3,7 +3,7 @@ import { SortableContext, useSortable } from '@dnd-kit/sortable';
 import { css } from '@emotion/css';
 import { ArrayField, Field } from '@formily/core';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
-import { RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
+import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { action, reaction } from '@formily/reactive';
 import { useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, TableColumnProps } from 'antd';
@@ -216,15 +216,12 @@ export const Table: any = observer(
     const { expandFlag } = ctx;
     const onRowDragEnd = useMemoizedFn(others.onRowDragEnd || (() => {}));
     const paginationProps = usePaginationProps(pagination1, pagination2);
-    // const requiredValidator = field.required || required;
     const { treeTable } = schema?.parent?.['x-decorator-props'] || {};
     const [expandedKeys, setExpandesKeys] = useState([]);
-    const [allIncludesChildren, setAllIncludesChildren] = useState([]);
     const [selectedRowKeys, setSelectedRowKeys] = useState<any[]>(field?.data?.selectedRowKeys || []);
     const [selectedRow, setSelectedRow] = useState([]);
     const dataSource = field?.value?.slice?.()?.filter?.(Boolean) || [];
     const isRowSelect = rowSelection?.type !== 'none';
-
     let onRow = null,
       highlightRow = '';
 
@@ -244,28 +241,20 @@ export const Table: any = observer(
       `;
     }
 
-    // useEffect(() => {
-    //   field.setValidator((value) => {
-    //     if (requiredValidator) {
-    //       return Array.isArray(value) && value.length > 0 ? null : 'The field value is required';
-    //     }
-    //     return;
-    //   });
-    // }, [requiredValidator]);
-
-    useEffect(() => {
+    const allIncludesChildren = useMemo(() => {
       if (treeTable !== false) {
-        const keys = getIdsWithChildren(field.value?.slice?.());
-        setAllIncludesChildren(keys);
+        const keys = getIdsWithChildren(dataSource);
+        return keys || [];
       }
-    }, [field.value]);
+    }, [field?.value]);
+
     useEffect(() => {
       if (expandFlag) {
         setExpandesKeys(allIncludesChildren);
       } else {
         setExpandesKeys([]);
       }
-    }, [expandFlag, allIncludesChildren]);
+    }, [expandFlag, allIncludesChildren, dataSource]);
 
     const components = useMemo(() => {
       return {
