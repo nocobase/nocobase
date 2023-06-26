@@ -1,5 +1,5 @@
 import Database from '@nocobase/database';
-import { Application } from '@nocobase/server';
+import { Application, Gateway } from '@nocobase/server';
 import { getApp, sleep } from '..';
 import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
 import { RequestConfig } from '../../instructions/request';
@@ -38,7 +38,7 @@ describe('workflow > instructions > request', () => {
       next();
     });
 
-    await app.start({ listen: { port: PORT } });
+    Gateway.getInstance().start({ port: PORT });
 
     db = app.db;
     WorkflowModel = db.getCollection('workflows').model;

@@ -63,7 +63,11 @@ export class Gateway {
     return this.requestHandler.bind(this);
   }
 
-  start() {
+  start(options?: { port: number }) {
+    if (options?.port) {
+      this.port = options.port;
+    }
+
     if (!this.port) {
       console.log('gateway port is not set, http server will not start');
       return;
