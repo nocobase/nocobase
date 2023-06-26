@@ -1,7 +1,7 @@
 import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { NAMESPACE } from '../constants';
-import { create } from './actions/api-keys';
+import { create, destroy, list } from './actions/api-keys';
 import { enUS, zhCN } from './locale';
 
 export interface ApiKeysPluginConfig {
@@ -21,6 +21,8 @@ export default class ApiKeysPlugin extends Plugin<ApiKeysPluginConfig> {
       name: 'apiKeys',
       actions: {
         create,
+        list,
+        destroy,
       },
       only: ['list', 'create', 'destroy'],
     });
