@@ -46,7 +46,7 @@ export const DeleteEvent = observer(
     return createPortal(
       <Modal
         title={cron ? t('Delete events') : null}
-        visible={visible}
+        open={visible}
         onCancel={() => setVisible(false)}
         onOk={() => onOk()}
         confirmLoading={loading}

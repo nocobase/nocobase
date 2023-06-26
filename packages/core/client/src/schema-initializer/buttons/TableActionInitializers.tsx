@@ -32,7 +32,7 @@ export const TableActionInitializers = {
               skipScopeCheck: true,
             },
           },
-          visible: () => {
+          visible: function useVisible() {
             const collection = useCollection();
             return collection.template !== 'view' && collection.template !== 'file';
           },
@@ -45,7 +45,7 @@ export const TableActionInitializers = {
             'x-align': 'right',
             'x-decorator': 'ACLActionProvider',
           },
-          visible: () => {
+          visible: function useVisible() {
             const collection = useCollection();
             return (collection as any).template !== 'view';
           },
@@ -65,7 +65,7 @@ export const TableActionInitializers = {
           schema: {
             'x-align': 'right',
           },
-          visible: () => {
+          visible: function useVisible() {
             const schema = useFieldSchema();
             const collection = useCollection();
             const { treeTable } = schema?.parent?.['x-decorator-props'] || {};
@@ -76,7 +76,7 @@ export const TableActionInitializers = {
     },
     {
       type: 'divider',
-      visible: () => {
+      visible: function useVisible() {
         const collection = useCollection();
         return (collection as any).template !== 'view';
       },
@@ -157,7 +157,7 @@ export const TableActionInitializers = {
           },
         },
       ],
-      visible: () => {
+      visible: function useVisible() {
         const collection = useCollection();
         return (collection as any).template !== 'view';
       },

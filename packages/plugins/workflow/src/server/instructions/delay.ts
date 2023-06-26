@@ -90,7 +90,7 @@ export default class implements Instruction {
     // add to schedule
     this.schedule(job, duration);
 
-    return processor.end(node, job);
+    return processor.exit();
   };
 
   resume = async (node, prevJob, processor: Processor) => {

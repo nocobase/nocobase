@@ -478,7 +478,7 @@ export default {
   "Quick upload": "Быстрая загрузка",
   "Select file": "Выбрать файл",
   "Subtable": "Подтаблица",
-  "Subform": "Подформа",
+  "Sub-form": "Подформа",
   "Regular expression": "Образец",
   "Enabled languages": "Включенные языки",
   "View all plugins": "Посмотреть все плагины",

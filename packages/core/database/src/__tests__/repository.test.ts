@@ -398,6 +398,7 @@ describe('repository.update', () => {
       fields: [
         { type: 'string', name: 'name' },
         { type: 'hasMany', name: 'comments' },
+        { type: 'belongsTo', name: 'user' },
       ],
     });
     Comment = db.collection({
@@ -411,7 +412,7 @@ describe('repository.update', () => {
     await db.close();
   });
 
-  it('update1', async () => {
+  it('update with filterByTk and with associations', async () => {
     const user = await User.model.create<any>({
       name: 'user1',
     });
@@ -454,7 +455,7 @@ describe('repository.update', () => {
     expect(updated2.posts.length).toBe(2);
   });
 
-  it('update2', async () => {
+  it('update with filterByTk', async () => {
     const user = await User.model.create<any>({
       name: 'user1',
     });
@@ -463,6 +464,9 @@ describe('repository.update', () => {
       name: 'user2',
     });
 
+    const hook = jest.fn();
+    db.on('users.afterUpdate', hook);
+
     await User.repository.update({
       filterByTk: user.id,
       values: {
@@ -470,12 +474,127 @@ describe('repository.update', () => {
       },
     });
 
+    expect(hook).toBeCalledTimes(1);
+
     const updated = await User.model.findByPk(user.id);
 
     expect(updated.get('name')).toEqual('user11');
 
     const u2 = await User.model.findByPk(user2.id);
     expect(u2.get('name')).toEqual('user2');
+  });
+
+  it('update with filter one by one when individualHooks is not set', async () => {
+    const u1 = await User.repository.create({ values: { name: 'u1' } });
+
+    const p1 = await Post.repository.create({ values: { name: 'p1', userId: u1.id } });
+    const p2 = await Post.repository.create({ values: { name: 'p2', userId: u1.id } });
+    const p3 = await Post.repository.create({ values: { name: 'p3' } });
+
+    const hook = jest.fn();
+    db.on('posts.afterUpdate', hook);
+
+    await Post.repository.update({
+      filter: {
+        userId: u1.id,
+      },
+      values: {
+        name: 'pp',
+      },
+    });
+
+    const postsAfterUpdated = await Post.repository.find({ order: [['id', 'ASC']] });
+    expect(postsAfterUpdated[0].name).toBe('pp');
+    expect(postsAfterUpdated[1].name).toBe('pp');
+    expect(postsAfterUpdated[2].name).toBe('p3');
+
+    expect(hook).toBeCalledTimes(2);
+  });
+
+  it('update in batch when individualHooks is false', async () => {
+    const u1 = await User.repository.create({ values: { name: 'u1' } });
+
+    const p1 = await Post.repository.create({ values: { name: 'p1', userId: u1.id } });
+    const p2 = await Post.repository.create({ values: { name: 'p2', userId: u1.id } });
+    const p3 = await Post.repository.create({ values: { name: 'p3' } });
+
+    const hook = jest.fn();
+    db.on('posts.afterUpdate', hook);
+
+    await Post.repository.update({
+      filter: {
+        userId: u1.id,
+      },
+      values: {
+        name: 'pp',
+      },
+      individualHooks: false,
+    });
+
+    const postsAfterUpdated = await Post.repository.find({ order: [['id', 'ASC']] });
+    expect(postsAfterUpdated[0].name).toBe('pp');
+    expect(postsAfterUpdated[1].name).toBe('pp');
+    expect(postsAfterUpdated[2].name).toBe('p3');
+
+    expect(hook).toBeCalledTimes(0);
+  });
+
+  it('update in batch with belongsTo field as foreignKey', async () => {
+    const u1 = await User.repository.create({ values: { name: 'u1' } });
+    const u2 = await User.repository.create({ values: { name: 'u2' } });
+    const p1 = await Post.repository.create({ values: { name: 'p1', userId: u1.id } });
+    const p2 = await Post.repository.create({ values: { name: 'p2', userId: u1.id } });
+
+    const r1 = await Post.repository.update({
+      filter: {
+        name: p1.name,
+      },
+      values: {
+        user: u2.id,
+      },
+      individualHooks: false,
+    });
+
+    expect(r1).toEqual(1);
+
+    const p1Updated = await Post.repository.findOne({
+      filterByTk: p1.id,
+    });
+    expect(p1Updated.userId).toBe(u2.id);
+
+    const r2 = await Post.repository.update({
+      filter: {
+        id: p2.id,
+      },
+      values: {
+        user: null,
+      },
+      individualHooks: false,
+    });
+
+    expect(r2).toEqual(1);
+
+    const p2Updated = await Post.repository.findOne({
+      filterByTk: p2.id,
+    });
+    expect(p2Updated.userId).toBe(null);
+
+    const r3 = await Post.repository.update({
+      filter: {
+        id: p1.id,
+      },
+      values: {
+        user: { id: u1.id },
+      },
+      individualHooks: false,
+    });
+
+    expect(r3).toEqual(1);
+
+    const p1Updated2 = await Post.repository.findOne({
+      filterByTk: p1.id,
+    });
+    expect(p1Updated2.userId).toBe(u1.id);
   });
 });
 

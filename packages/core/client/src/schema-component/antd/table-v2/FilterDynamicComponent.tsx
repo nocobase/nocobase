@@ -3,8 +3,8 @@ import { useVariableOptions } from '../../../schema-settings/VariableInput/hooks
 import { Variable } from '../variable';
 
 export function FilterDynamicComponent(props) {
-  const { value, onChange, renderSchemaComponent } = props;
-  const options = useVariableOptions();
+  const { value, onChange, renderSchemaComponent, form, collectionField, ...other } = props;
+  const options = useVariableOptions({ form, collectionField, ...other });
 
   return (
     <Variable.Input value={value} onChange={onChange} scope={options}>
