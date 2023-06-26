@@ -177,14 +177,7 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
         }
       });
 
-      map.current.fitBounds(bounds);
-      if (type === 'point' || block) {
-        setTimeout(() => {
-          if (map.current.getZoom() > 18) {
-            map.current.setZoom(zoom);
-          }
-        }, 300);
-      }
+      map.current.setCenter(bounds.getCenter());
     });
 
     const onFocusOverlay = () => {
@@ -426,7 +419,7 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
                 icon={<SyncOutlined />}
               ></Button>
             </div>
-            {type === 'lineString' ? (
+            {type === 'lineString' || type === 'polygon' ? (
               <div
                 className={css`
                   position: absolute;
