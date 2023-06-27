@@ -1,1 +1,3 @@
-export * from './lib/server';
+export * from './src/server';
+export { default } from './src/server';
+
