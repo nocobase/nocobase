@@ -429,7 +429,10 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
                   pointer-events: none;
                 `}
               >
-                <Alert message={t('Connecting the end point to the start point ends the drawing')} type="info" />
+                <Alert
+                  message={t('Click to select the starting point and double-click to end the drawing')}
+                  type="info"
+                />
               </div>
             ) : null}
             <div
