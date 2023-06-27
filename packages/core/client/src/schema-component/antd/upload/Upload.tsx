@@ -1,10 +1,10 @@
 import { DeleteOutlined, DownloadOutlined, InboxOutlined, LoadingOutlined, PlusOutlined } from '@ant-design/icons';
 import { usePrefixCls } from '@formily/antd/esm/__builtins__';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
-import { Upload as AntdUpload, Button, Progress, Space, Modal } from 'antd';
+import { Upload as AntdUpload, Button, Modal, Progress, Space, UploadFile } from 'antd';
 import cls from 'classnames';
 import { saveAs } from 'file-saver';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Lightbox from 'react-image-lightbox';
 import 'react-image-lightbox/style.css'; // This only needs to be imported once in your app
@@ -32,12 +32,16 @@ Upload.Attachment = connect((props: UploadProps) => {
   const [visible, setVisible] = useState(false);
   const [fileType, setFileType] = useState<'image' | 'pdf'>();
   const { t } = useTranslation();
+  const internalFileList = useRef([]);
+
   function closeIFrameModal() {
     setVisible(false);
   }
   useEffect(() => {
     if (sync) {
-      setFileList(toFileList(value));
+      const fileList = toFileList(value);
+      setFileList(fileList);
+      internalFileList.current = fileList;
     }
   }, [value, sync]);
   const uploadProps = useUploadProps({ ...props });
@@ -54,7 +58,7 @@ Upload.Attachment = connect((props: UploadProps) => {
                 setFileType('image');
                 setVisible(true);
                 setFileIndex(index);
-              } else if(isPdf(file.extname)) {
+              } else if (isPdf(file.extname)) {
                 setVisible(true);
                 setFileIndex(index);
                 setFileType('pdf');
@@ -114,6 +118,9 @@ Upload.Attachment = connect((props: UploadProps) => {
                               }
                               const index = prevFileList.indexOf(file);
                               prevFileList.splice(index, 1);
+                              internalFileList.current = internalFileList.current.filter(
+                                (item) => item.uid !== file.uid,
+                              );
                               onChange(toValue([...prevFileList]));
                               return [...prevFileList];
                             });
@@ -140,12 +147,17 @@ Upload.Attachment = connect((props: UploadProps) => {
                 listType={'picture-card'}
                 fileList={fileList}
                 onChange={(info) => {
+                  // info.fileList 有 BUG，会导致上传状态一直是 uploading
+                  // 所以这里仿照 antd 源码，自己维护一个 fileList
+                  const list = updateFileList(info.file, internalFileList.current);
+                  internalFileList.current = list;
+
                   setSync(false);
                   if (multiple) {
                     if (info.file.status === 'done') {
-                      onChange(toValue(info.fileList));
+                      onChange(toValue(list));
                     }
-                    setFileList(info.fileList.map(toItem));
+                    setFileList(list.map(toItem));
                   } else {
                     if (info.file.status === 'done') {
                       // TODO(BUG): object 的联动有问题，不响应，折中的办法先置空再赋值
@@ -197,7 +209,7 @@ Upload.Attachment = connect((props: UploadProps) => {
           ]}
         />
       )}
-            
+
       {visible && fileType === 'pdf' && (
         <Modal
           open={visible}
@@ -206,7 +218,7 @@ Upload.Attachment = connect((props: UploadProps) => {
           footer={[
             <Button
               style={{
-                textTransform: 'capitalize'
+                textTransform: 'capitalize',
               }}
               onClick={(e) => {
                 e.preventDefault();
@@ -217,31 +229,35 @@ Upload.Attachment = connect((props: UploadProps) => {
             >
               {t('download')}
             </Button>,
-            <Button onClick={closeIFrameModal} style={{textTransform: 'capitalize'}}>
+            <Button onClick={closeIFrameModal} style={{ textTransform: 'capitalize' }}>
               {t('close')}
-            </Button>
+            </Button>,
           ]}
           width={'85vw'}
           centered={true}
         >
-          <div style={{
-            padding: '8px',
-            maxWidth: '100%',
-            maxHeight: 'calc(100vh - 256px)',
-            height: '90vh',
-            width: '100%',
-            background: 'white',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            overflowY: 'auto'
-          }} >
-            <iframe src={images[fileIndex].url} style={{
+          <div
+            style={{
+              padding: '8px',
+              maxWidth: '100%',
+              maxHeight: 'calc(100vh - 256px)',
+              height: '90vh',
               width: '100%',
-              maxHeight: '90vh',
-              flex: '1 1 auto'
-            }}>
-            </iframe>
+              background: 'white',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              overflowY: 'auto',
+            }}
+          >
+            <iframe
+              src={images[fileIndex].url}
+              style={{
+                width: '100%',
+                maxHeight: '90vh',
+                flex: '1 1 auto',
+              }}
+            ></iframe>
           </div>
         </Modal>
       )}
@@ -304,3 +320,14 @@ Upload.DraggerV2 = connect(
 );
 
 export default Upload;
+
+export function updateFileList(file: UploadFile, fileList: (UploadFile | Readonly<UploadFile>)[]) {
+  const nextFileList = [...fileList];
+  const fileIndex = nextFileList.findIndex(({ uid }) => uid === file.uid);
+  if (fileIndex === -1) {
+    nextFileList.push(file);
+  } else {
+    nextFileList[fileIndex] = file;
+  }
+  return nextFileList;
+}

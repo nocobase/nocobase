@@ -212,7 +212,10 @@ export function useUploadProps<T extends IUploadProps = UploadProps>({ serviceEr
 
 export const toItem = (file) => {
   if (file?.response?.data) {
-    file = file.response.data;
+    file = {
+      uid: file.uid,
+      ...file.response.data,
+    };
   }
   return {
     ...file,
