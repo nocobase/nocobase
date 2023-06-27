@@ -1,8 +1,12 @@
-import React from 'react';
+import { Plugin } from '@nocobase/client';
 
-const MyProvider = React.memo((props) => {
-  return <>{props.children}</>;
-});
-MyProvider.displayName = 'MyProvider';
+export class DemoPlugin extends Plugin {
+  static pluginName = 'demo';
 
-export default MyProvider;
+  // You can get and modify the app instance here
+  async load() {
+    console.log(this.app);
+  }
+}
+
+export default DemoPlugin;
