@@ -6,8 +6,7 @@ import { resolve } from 'path';
 const subAppFilteredPlugins = ['multi-app-share-collection', 'multi-app-manager'];
 
 class SubAppPlugin extends Plugin {
-  beforeLoad() {
-    const mainApp = this.options.mainApp;
+  async beforeLoad() {
     const subApp = this.app;
 
     const sharedCollectionGroups = [
@@ -23,7 +22,8 @@ class SubAppPlugin extends Plugin {
       'verification',
     ];
 
-    const collectionGroups = mainApp.db.collectionGroupManager.getGroups();
+    const collectionGroups = await AppSupervisor.getInstance().rpcCall('main', 'db.collectionGroupManager.getGroups');
+    const mainSchema = await AppSupervisor.getInstance().rpcCall('main', 'db.options.schema');
 
     const sharedCollectionGroupsCollections = [];
 
@@ -40,7 +40,7 @@ class SubAppPlugin extends Plugin {
 
       // 指向主应用的 系统schema
       if (sharedCollections.includes(name)) {
-        options.schema = mainApp.db.options.schema || 'public';
+        options.schema = mainSchema || 'public';
       }
     });
 
