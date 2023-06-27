@@ -321,7 +321,7 @@ Upload.DraggerV2 = connect(
 
 export default Upload;
 
-export function updateFileList(file: UploadFile, fileList: (UploadFile | Readonly<UploadFile>)[]) {
+function updateFileList(file: UploadFile, fileList: (UploadFile | Readonly<UploadFile>)[]) {
   const nextFileList = [...fileList];
   const fileIndex = nextFileList.findIndex(({ uid }) => uid === file.uid);
   if (fileIndex === -1) {

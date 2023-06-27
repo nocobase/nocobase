@@ -2,7 +2,6 @@ import { Field } from '@formily/core';
 import { useField } from '@formily/react';
 import { reaction } from '@formily/reactive';
 import { isArr, isValid, toArr as toArray } from '@formily/shared';
-import { UploadChangeParam } from 'antd/es/upload';
 import { UploadFile } from 'antd/es/upload/interface';
 import { useEffect } from 'react';
 import { useAPIClient } from '../../../api-client';
@@ -167,7 +166,7 @@ export const useUploadValidator = (serviceErrorMessage = 'Upload Service Error')
 
 export function useUploadProps<T extends IUploadProps = UploadProps>({ serviceErrorMessage, ...props }: T) {
   useUploadValidator(serviceErrorMessage);
-  const onChange = (param: UploadChangeParam<UploadFile>) => {
+  const onChange = (param: { fileList: any[] }) => {
     props.onChange?.(normalizeFileList([...param.fileList]));
   };
 
