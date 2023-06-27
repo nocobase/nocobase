@@ -3,7 +3,6 @@ import { usePrefixCls } from '@formily/antd/esm/__builtins__';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { Upload as AntdUpload, Button, Progress, Space, Modal } from 'antd';
 import cls from 'classnames';
-import { css } from '@emotion/css';
 import { saveAs } from 'file-saver';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -64,7 +63,7 @@ Upload.Attachment = connect((props: UploadProps) => {
               }
             };
             return (
-              <div className={'ant-upload-list-picture-card-container'}>
+              <div key={file.uid || file.id} className={'ant-upload-list-picture-card-container'}>
                 <div className="ant-upload-list-item ant-upload-list-item-done ant-upload-list-item-list-type-picture-card">
                   <div className={'ant-upload-list-item-info'}>
                     <span className="ant-upload-span">
@@ -141,12 +140,29 @@ Upload.Attachment = connect((props: UploadProps) => {
                 listType={'picture-card'}
                 fileList={fileList}
                 onChange={(info) => {
+                  // ----------------------------------------------
+                  // 使用 info.fileList 会导致一直显示 Uploading 的问题
+                  // 注意：此方法依然不能保证一定不会出现 Uploading 的问题，但相比之前有很大改善，具体原因不明
+                  let list = fileList;
+                  if (!list.find((file) => file.uid === info.file.uid)) {
+                    list.push({ ...info.file });
+                  }
+                  list = list.map((file) => {
+                    if (file.uid === info.file.uid) {
+                      return { ...info.file };
+                    }
+                    return file;
+                  });
+                  // ----------------------------------------------
+
+                  console.log(info.file.uid, info.file.status);
+
                   setSync(false);
                   if (multiple) {
                     if (info.file.status === 'done') {
-                      onChange(toValue(info.fileList));
+                      onChange(toValue(list));
                     }
-                    setFileList(info.fileList.map(toItem));
+                    setFileList(list.map(toItem));
                   } else {
                     if (info.file.status === 'done') {
                       // TODO(BUG): object 的联动有问题，不响应，折中的办法先置空再赋值
