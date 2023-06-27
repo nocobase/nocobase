@@ -1,5 +1,6 @@
 import { Collection, Model } from '@nocobase/database';
 import { Auth, AuthConfig } from '../auth';
+import { JwtService } from './jwt-service';
 
 /**
  * BaseAuth
@@ -7,10 +8,6 @@ import { Auth, AuthConfig } from '../auth';
  */
 export class BaseAuth extends Auth {
   protected userCollection: Collection;
-
-  get jwt() {
-    return this.ctx.app.authManager.jwt;
-  }
 
   constructor(
     config: AuthConfig & {
@@ -20,6 +17,14 @@ export class BaseAuth extends Auth {
     const { userCollection } = config;
     super(config);
     this.userCollection = userCollection;
+  }
+
+  get userRepository() {
+    return this.userCollection.repository;
+  }
+
+  get jwt(): JwtService {
+    return this.ctx.app.authManager.jwt;
   }
 
   set user(user: Model) {
@@ -36,13 +41,13 @@ export class BaseAuth extends Auth {
       return null;
     }
     try {
-      const { userId, roleName } = await this.ctx.app.authManager.jwt.decode(token);
+      const { userId, roleName } = await this.jwt.decode(token);
 
       if (roleName) {
         this.ctx.headers['X-Role'] = roleName;
       }
 
-      return await this.userCollection.repository.findOne({
+      return await this.userRepository.findOne({
         filter: {
           id: userId,
         },

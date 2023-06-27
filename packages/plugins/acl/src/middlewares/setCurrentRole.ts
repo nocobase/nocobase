@@ -17,11 +17,15 @@ export async function setCurrentRole(ctx: Context, next) {
   const roles = await repository.find();
   ctx.state.currentUser.setDataValue('roles', roles);
 
-  ctx.state.currentRole = roles.find((role) => {
-    // 1. If the X-Role is set, use the specified role
-    // 2. If the X-Role is not set, use the default role
-    return currentRole ? role.name === currentRole : role.default;
-  })?.name;
+  // 1. If the X-Role is set, use the specified role
+  if (currentRole) {
+    ctx.state.currentRole = roles.find((role) => role.name === currentRole)?.name;
+  }
+  // 2. If the X-Role is not set, use the default role
+  else {
+    const defaultRole = roles.find((item) => item?.rolesUsers?.default);
+    ctx.state.currentRole = (defaultRole || roles[0])?.name;
+  }
 
   if (!ctx.state.currentRole) {
     return ctx.throw(401, 'User role not found');
