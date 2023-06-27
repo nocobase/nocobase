@@ -1,1 +1,1 @@
-export const NAMESPACE = 'map';
+export const NAMESPACE = 'api-keys';

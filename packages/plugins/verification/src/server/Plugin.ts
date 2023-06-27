@@ -1,12 +1,14 @@
+import path from 'path';
+
 import { Context } from '@nocobase/actions';
 import { Op } from '@nocobase/database';
 import { HandlerType } from '@nocobase/resourcer';
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
-import path from 'path';
+
 import { namespace } from '.';
 import initActions from './actions';
-import { CODE_STATUS_UNUSED, PROVIDER_TYPE_SMS_ALIYUN } from './constants';
+import { CODE_STATUS_UNUSED, CODE_STATUS_USED, PROVIDER_TYPE_SMS_ALIYUN } from './constants';
 import { zhCN } from './locale';
 import initProviders, { Provider } from './providers';
 
@@ -55,12 +57,12 @@ export default class VerificationPlugin extends Plugin {
       },
     });
 
-    // if (!item) {
-    //   return context.throw(400, {
-    //     code: 'InvalidVerificationCode',
-    //     message: context.t('Verification code is invalid', { ns: namespace }),
-    //   });
-    // }
+    if (!item) {
+      return context.throw(400, {
+        code: 'InvalidVerificationCode',
+        message: context.t('Verification code is invalid', { ns: namespace }),
+      });
+    }
 
     // TODO: code should be removed if exists in values
     // context.action.mergeParams({
@@ -72,9 +74,9 @@ export default class VerificationPlugin extends Plugin {
       await next();
     } finally {
       // or delete
-      // await item.update({
-      //   status: CODE_STATUS_USED,
-      // });
+      await item.update({
+        status: CODE_STATUS_USED,
+      });
     }
   };
 
