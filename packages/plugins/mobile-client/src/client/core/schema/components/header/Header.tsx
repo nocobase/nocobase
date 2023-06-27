@@ -1,11 +1,11 @@
 import { css, cx } from '@emotion/css';
-import { SortableItem, useCompile, useDesigner } from '@nocobase/client';
+import { useField } from '@formily/react';
+import { SortableItem, useCompile, useDesigner, useDocumentTitle } from '@nocobase/client';
 import { NavBar, NavBarProps } from 'antd-mobile';
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { HeaderDesigner } from './Header.Designer';
-import { useField } from '@formily/react';
 import { generateNTemplate } from '../../../../locale';
+import { HeaderDesigner } from './Header.Designer';
 
 export interface HeaderProps extends NavBarProps {
   title?: string;
@@ -18,10 +18,11 @@ const InternalHeader = (props: HeaderProps) => {
   const compile = useCompile();
   const compiledTitle = compile(title);
   const navigate = useNavigate();
+  const { setTitle } = useDocumentTitle();
 
   useEffect(() => {
     // sync title
-    document.title = `${compiledTitle} - NocoBase`;
+    setTitle(`${compiledTitle} - NocoBase`);
   }, [compiledTitle]);
 
   return (
