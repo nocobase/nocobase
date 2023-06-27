@@ -55,7 +55,7 @@ describe('role', () => {
     expect(ctx.state.currentRole).toBe('root');
   });
 
-  it('should set role with default when x-role does not exist', async () => {
+  it('should throw 401', async () => {
     ctx.state.currentUser = await db.getRepository('users').findOne({
       appends: ['roles'],
     });
@@ -64,8 +64,17 @@ describe('role', () => {
         return 'abc';
       }
     };
-    await setCurrentRole(ctx, () => {});
-    expect(ctx.state.currentRole).toBe('root');
+    ctx.throw = (code, msg) => {
+      throw new Error(msg);
+    };
+    let msg = '';
+    try {
+      await setCurrentRole(ctx, () => {});
+    } catch (error) {
+      msg = error.message;
+    }
+    expect(msg).toBe('User role not found');
+    expect(ctx.state.currentRole).not.toBeDefined();
   });
 
   it('should set role with anonymous', async () => {
