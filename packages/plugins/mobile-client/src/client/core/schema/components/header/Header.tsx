@@ -22,7 +22,7 @@ const InternalHeader = (props: HeaderProps) => {
 
   useEffect(() => {
     // sync title
-    setTitle(`${compiledTitle} - NocoBase`);
+    setTitle(compiledTitle);
   }, [compiledTitle]);
 
   return (
