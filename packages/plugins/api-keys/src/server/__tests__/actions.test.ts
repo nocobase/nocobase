@@ -1,0 +1,171 @@
+import Database, { Repository } from '@nocobase/database';
+import { mockServer, MockServer } from '@nocobase/test';
+
+describe('actions', () => {
+  let app: MockServer;
+  let db: Database;
+  let repo: Repository;
+  let agent;
+  let resource;
+
+  beforeEach(async () => {
+    app = mockServer({
+      registerActions: true,
+      acl: true,
+      plugins: ['users', 'auth', 'api-keys', 'acl'],
+    });
+
+    // app.plugin(ApiKeysPlugin);
+    await app.loadAndInstall({ clean: true });
+    db = app.db;
+    repo = db.getRepository('apiKeys');
+    agent = app.agent();
+    resource = agent.set('X-Role', 'admin').resource('apiKeys');
+  });
+
+  afterEach(async () => {
+    await repo.destroy({
+      truncate: true,
+    });
+    await db.close();
+  });
+
+  let user;
+  let testUser;
+  let role;
+  let testRole;
+  let createData;
+  const expiresIn = 60 * 60 * 24;
+
+  beforeEach(async () => {
+    const userRepo = await db.getRepository('users');
+    user = await userRepo.findOne({
+      appends: ['roles'],
+    });
+    testUser = await userRepo.create({
+      values: {
+        nickname: 'test',
+        roles: user.roles,
+      },
+    });
+    const roleRepo = await db.getRepository('roles');
+    testRole = await roleRepo.create({
+      values: {
+        name: 'TEST_ROLE',
+      },
+    });
+
+    role = await (db.getRepository('users.roles', user.id) as unknown as Repository).findOne({
+      where: {
+        default: true,
+      },
+    });
+    createData = {
+      values: {
+        name: 'TEST',
+        role,
+        expiresIn,
+      },
+    };
+    await agent.login(user);
+  });
+
+  describe('create', () => {
+    let result;
+    let tokenData;
+
+    beforeEach(async () => {
+      result = (await resource.create(createData)).body.data;
+      tokenData = await app.authManager.jwt.decode(result.token);
+    });
+
+    it('basic', async () => {
+      expect(result).toHaveProperty('token');
+    });
+
+    it('the role that does not belong to you should throw error', async () => {
+      const res = await resource.create({
+        values: {
+          ...createData,
+          role: testRole,
+        },
+      });
+      expect(res.status).toBe(400);
+      expect(res.text).toBe('Role not found');
+    });
+
+    it('token should work', async () => {
+      const checkRes = await agent.set('Authorization', `Bearer ${result.token}`).resource('auth').check();
+      expect(checkRes.body.data.nickname).toBe(user.nickname);
+    });
+
+    it('token expiresIn correctly', async () => {
+      expect(tokenData.exp - tokenData.iat).toBe(expiresIn);
+    });
+
+    it('token roleName correctly', async () => {
+      expect(tokenData.roleName).toBe(role.name);
+    });
+  });
+
+  describe('list', () => {
+    beforeEach(async () => {
+      await resource.create(createData);
+    });
+
+    it('basic', async () => {
+      const res = await resource.list();
+      expect(res.body.data.length).toBe(1);
+      const data = res.body.data[0];
+      expect(data.name).toContain(createData.values.name);
+      expect(data.roleName).toContain(createData.values.role.name);
+    });
+
+    it("Only show current user's API Keys", async () => {
+      expect((await resource.list()).body.data.length).toBe(1);
+      await agent.login(testUser);
+      expect((await resource.list()).body.data.length).toBe(0);
+      const values = {
+        name: 'TEST_USER_KEY',
+        expiresIn: 180 * 24 * 60 * 60,
+        role,
+      };
+      await resource.create({
+        values,
+      });
+      const listData = (await resource.list()).body.data;
+      expect(listData.length).toBe(1);
+      expect(listData[0].name).toBe(values.name);
+    });
+  });
+
+  describe('destroy', () => {
+    let result;
+
+    beforeEach(async () => {
+      result = (await resource.create(createData)).body.data;
+    });
+
+    it('basic', async () => {
+      const res = await resource.list();
+      expect(res.body.data.length).toBe(1);
+      const data = res.body.data[0];
+      await resource.destroy({
+        id: data.id,
+      });
+      expect((await resource.list()).body.data.length).toBe(0);
+    });
+
+    it("Cannot delete other user's API keys", async () => {
+      const res = await resource.list();
+      expect(res.body.data.length).toBe(1);
+      const data = res.body.data[0];
+      await agent.login(testUser);
+      await resource.destroy({
+        id: data.id,
+      });
+      await agent.login(user);
+      expect((await resource.list()).body.data.length).toBe(1);
+    });
+  });
+});
