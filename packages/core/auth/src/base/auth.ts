@@ -1,4 +1,4 @@
-import { Collection, Model, Repository } from '@nocobase/database';
+import { Collection, Model } from '@nocobase/database';
 import { Auth, AuthConfig } from '../auth';
 import { JwtOptions, JwtService, SignPayload } from './jwt-service';
 
@@ -71,11 +71,6 @@ export class BaseAuth extends Auth {
       userId: user.id,
       ...payload,
     });
-
-    const roleRepo = this.ctx.db.getRepository('users.roles', user.id);
-    const roles = await (roleRepo as unknown as Repository).find();
-    user.setDataValue('roles', roles);
-
     return {
       user,
       token,
