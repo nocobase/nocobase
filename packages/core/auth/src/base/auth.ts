@@ -1,6 +1,5 @@
 import { Collection, Model } from '@nocobase/database';
 import { Auth, AuthConfig } from '../auth';
-import { SignPayload } from './jwt-service';
 
 /**
  * BaseAuth
@@ -58,7 +57,7 @@ export class BaseAuth extends Auth {
     return null;
   }
 
-  async signIn(payload: SignPayload) {
+  async signIn() {
     let user: Model;
     try {
       user = await this.validate();
@@ -71,7 +70,6 @@ export class BaseAuth extends Auth {
     }
     const token = this.jwt.sign({
       userId: user.id,
-      ...payload,
     });
     return {
       user,

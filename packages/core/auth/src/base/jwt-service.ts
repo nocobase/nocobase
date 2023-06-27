@@ -5,7 +5,7 @@ export interface JwtOptions {
   expiresIn?: string;
 }
 
-export type SignPayload = Record<string, any>;
+export type SignPayload = Parameters<typeof jwt.sign>[0];
 
 export class JwtService {
   constructor(
