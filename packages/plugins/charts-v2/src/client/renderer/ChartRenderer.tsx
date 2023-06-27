@@ -66,7 +66,7 @@ export const ChartRenderer: React.FC<{
         })
         .then((res) => {
           const data = res?.data?.data || [];
-          return processData(fields, data);
+          return processData(fields, data, { t });
         }),
     {
       manual: true,

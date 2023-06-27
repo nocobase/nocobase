@@ -1,3 +1,4 @@
+import { Schema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { SelectedField } from './block';
 import { FieldOption } from './hooks';
@@ -67,14 +68,14 @@ export const getSelectedFields = (fields: FieldOption[], query: QueryProps) => {
   return selectedFields;
 };
 
-export const processData = (fields: FieldOption[], data: any[]) => {
+export const processData = (fields: FieldOption[], data: any[], scope: any) => {
   const parseEnum = (field: FieldOption, value: any) => {
     const options = field.uiSchema?.enum as { value: string; label: string }[];
     if (!options || !Array.isArray(options)) {
       return value;
     }
     const option = options.find((option) => option.value === value);
-    return option?.label || value;
+    return Schema.compile(option?.label || value, scope);
   };
   return data.map((record) => {
     const processed = {};

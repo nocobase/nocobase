@@ -137,7 +137,7 @@ export const parseBuilder = (ctx: Context, builder: QueryParams) => {
     }
     attributes.push(attribute.length > 1 ? attribute : attribute[0]);
     if (hasAgg) {
-      group.push(attribute.length > 1 ? attribute[1] : attribute[0]);
+      group.push(attribute[0]);
     }
     fieldMap[alias || field] = dimension;
   });
