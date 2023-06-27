@@ -21,7 +21,7 @@ export const InterfaceRouter: React.FC = () => {
       element: 'RouteSchemaComponent',
     });
 
-    return router.createRouter();
+    return router.getRouterComponent();
   }, [app]);
 
   return (

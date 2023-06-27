@@ -51,6 +51,8 @@ export const useCurrentDocumentTitle = (title: string) => {
 };
 
 export class RemoteDocumentTitlePlugin extends Plugin {
+  static pluginName = 'remote-document-title';
+
   async load() {
     this.app.use(RemoteDocumentTitleProvider, this.options);
   }

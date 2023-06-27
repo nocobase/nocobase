@@ -53,6 +53,8 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
 };
 
 export class BlockSchemaComponentPlugin extends Plugin {
+  static pluginName = 'block-schema-component';
+
   async load() {
     this.addComponents();
     this.addScopes();

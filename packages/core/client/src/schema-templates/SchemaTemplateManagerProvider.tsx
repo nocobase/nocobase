@@ -2,7 +2,7 @@ import { ISchema, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Spin } from 'antd';
 import { cloneDeep } from 'lodash';
-import React, { ReactNode, createContext, useContext, useMemo } from 'react';
+import React, { createContext, ReactNode, useContext, useMemo } from 'react';
 import { useAPIClient, useRequest } from '../api-client';
 import { Plugin } from '../application-v2/Plugin';
 import { BlockTemplate } from './BlockTemplate';
@@ -138,6 +138,7 @@ export const RemoteSchemaTemplateManagerProvider: React.FC<{ children?: ReactNod
 };
 
 export class RemoteSchemaTemplateManagerPlugin extends Plugin {
+  static pluginName = 'remote-schema-template-manager';
   async load() {
     this.addRoutes();
     this.addComponents();

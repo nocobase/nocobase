@@ -59,7 +59,7 @@ const AdminSetting = () => {
       element: <MobilePage />,
     });
 
-    return router.createRouter();
+    return router.getRouterComponent();
   }, [app]);
 
   return (
@@ -71,6 +71,8 @@ const AdminSetting = () => {
 };
 
 class NocobasePresetPlugin extends Plugin {
+  static pluginName = 'nocobase-preset';
+
   async load() {
     this.router.add('root', {
       path: '/',

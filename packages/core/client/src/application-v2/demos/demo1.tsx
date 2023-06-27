@@ -36,6 +36,8 @@ const About = () => {
 };
 
 class Test1Plugin extends Plugin {
+  static pluginName = 'test1';
+
   async load() {
     this.router.add('root.team', {
       path: 'team',
@@ -45,6 +47,8 @@ class Test1Plugin extends Plugin {
 }
 
 class Test2Plugin extends Plugin {
+  static pluginName = 'test2';
+
   async load() {
     this.router.add('root.about', {
       path: 'about',
@@ -54,6 +58,8 @@ class Test2Plugin extends Plugin {
 }
 
 class NocobasePresetPlugin extends Plugin {
+  static pluginName = 'nocobase-preset';
+
   async afterAdd() {
     // mock load remote plugin
     await this.addRemotePlugin();

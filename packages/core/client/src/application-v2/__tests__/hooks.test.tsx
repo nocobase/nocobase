@@ -1,8 +1,9 @@
 import React from 'react';
 import { render, sleep } from 'testUtils';
 import { describe } from 'vitest';
+import { Plugin } from '../Plugin'
 import { Application } from '../Application';
-import { useApp, useRouter } from '../hooks';
+import { useApp, useRouter, usePlugin } from '../hooks';
 
 describe('Application Hooks', () => {
   describe('useApp', () => {
@@ -30,6 +31,26 @@ describe('Application Hooks', () => {
         return null;
       };
       app.addProviders([Hello]);
+      const Root = app.getRootComponent();
+      render(<Root />);
+
+      await sleep(10);
+    });
+  });
+
+  describe('usePlugin', () => {
+    it('should return the plugin instance', async () => {
+      class DemoPlugin extends Plugin {
+        static pluginName = 'demo';
+        test = 'test';
+      }
+      const Hello = () => {
+        const demo = usePlugin<{ test: string }>('demo');
+        expect(demo).toBeInstanceOf(DemoPlugin);
+        expect(demo.test).toBe('test');
+        return null;
+      };
+      const app = new Application({ plugins: [DemoPlugin], providers: [Hello] });
       const Root = app.getRootComponent();
       render(<Root />);
 

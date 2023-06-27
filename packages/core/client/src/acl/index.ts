@@ -11,6 +11,8 @@ import {
 import './style.less';
 
 export class ACLPlugin extends Plugin {
+  static pluginName = 'acl';
+
   async load() {
     this.app.addComponents({
       ACLCollectionFieldProvider,

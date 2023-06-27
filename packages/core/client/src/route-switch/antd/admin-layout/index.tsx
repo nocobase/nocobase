@@ -312,6 +312,8 @@ export const AdminLayout = (props) => {
 };
 
 export class AdminLayoutPlugin extends Plugin {
+  static pluginName = 'admin-layout';
+
   async load() {
     this.app.pm.add(RemoteSchemaTemplateManagerPlugin);
     this.app.addComponents({ AdminLayout });

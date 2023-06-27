@@ -19,7 +19,9 @@ import { Plugin } from '../application-v2/Plugin';
 import { SchemaInitializerProvider } from './SchemaInitializerProvider';
 
 export class SchemaInitializerPlugin<SchemaInitializerProviderProps> extends Plugin {
+  static pluginName = 'schema-initializer';
+
   async load() {
-    this.app.use<SchemaInitializerProviderProps>(SchemaInitializerProvider, this.options);
+    this.app.use<SchemaInitializerProviderProps>(SchemaInitializerProvider, this.options?.config);
   }
 }

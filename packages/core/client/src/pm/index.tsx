@@ -360,6 +360,8 @@ export const PMProvider = (props) => {
   return <SettingsCenterProvider settings={settings}>{props.children}</SettingsCenterProvider>;
 };
 export class PMPlugin extends Plugin {
+  static pluginName = 'pm';
+
   async load() {
     this.addComponents();
     this.addRoutes();

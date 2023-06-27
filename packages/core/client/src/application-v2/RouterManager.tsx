@@ -10,7 +10,6 @@ import {
   RouteObject,
   useRoutes,
 } from 'react-router-dom';
-import type { Application } from './Application';
 import { BlankComponent, RouterContextCleaner } from './components';
 
 export interface BrowserRouterOptions extends Omit<BrowserRouterProps, 'children'> {
@@ -22,18 +21,24 @@ export interface HashRouterOptions extends Omit<HashRouterProps, 'children'> {
 export interface MemoryRouterOptions extends Omit<MemoryRouterProps, 'children'> {
   type?: 'memory';
 }
-export type RouterOptions = HashRouterOptions | BrowserRouterOptions | MemoryRouterOptions;
+export type RouterOptions = (HashRouterOptions | BrowserRouterOptions | MemoryRouterOptions) & {
+  renderComponent?: RenderComponentType;
+};
 export type ComponentTypeAndString<T = any> = ComponentType<T> | string;
 export interface RouteType extends Omit<RouteObject, 'children' | 'Component'> {
   Component?: ComponentTypeAndString;
 }
+export type RenderComponentType = (Component: ComponentTypeAndString, props?: any) => React.ReactNode;
 
 export class RouterManager {
   protected routes: Record<string, RouteType> = {};
 
-  constructor(protected options: RouterOptions, protected app: Application) {
+  constructor(protected options: RouterOptions) {
     this.options = options || {};
-    this.app = app;
+  }
+
+  setType(type: RouterOptions['type']) {
+    this.options.type = type;
   }
 
   setBasename(basename: string) {
@@ -66,10 +71,18 @@ export class RouterManager {
         if (Object.keys(item).length === 1 && item.children) {
           acc.push(...buildRoutesTree(item.children));
         } else {
-          const { Component, children, ...reset } = item;
+          const { Component, element, children, ...reset } = item;
+          let ele = element;
+          if (Component) {
+            if (typeof Component === 'string') {
+              ele = this.options.renderComponent ? this.options.renderComponent(Component) : Component;
+            } else {
+              ele = React.createElement(Component);
+            }
+          }
           const res = {
             ...reset,
-            element: Component ? this.app.renderComponent(Component) : item.element,
+            element: ele,
             children: children ? buildRoutesTree(children) : undefined,
           } as RouteObject;
           acc.push(res);
@@ -81,7 +94,7 @@ export class RouterManager {
     return buildRoutesTree(routes);
   }
 
-  createRouter() {
+  getRouterComponent() {
     const { type = 'browser', ...opts } = this.options || {};
     const Routers = {
       hash: HashRouter,
@@ -119,4 +132,8 @@ export class RouterManager {
   remove(name: string) {
     delete this.routes[name];
   }
+}
+
+export function createRouterManager(options?: RouterOptions) {
+  return new RouterManager(options);
 }

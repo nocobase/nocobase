@@ -3,8 +3,8 @@ import { useApp } from '../hooks';
 
 export const MainComponent = React.memo(() => {
   const app = useApp();
-  const Router = useMemo(() => app.router.createRouter(), [app]);
-  const Providers = useMemo(() => app.renderProviders(), [app]);
+  const Router = useMemo(() => app.router.getRouterComponent(), [app]);
+  const Providers = useMemo(() => app.getComposeProviders(), [app]);
   return <Router BaseLayout={Providers} />;
 });
 

@@ -1,11 +1,12 @@
 import type { Application } from './Application';
 import type { Plugin } from './Plugin';
 
-export type PluginType<Opts = any> = typeof Plugin | [typeof Plugin, Opts];
+export type PluginOptions<T = any> = { name?: string; config?: T };
+export type PluginType<Opts = any> = typeof Plugin | [typeof Plugin, PluginOptions<Opts>];
 
 export class PluginManager {
-  protected pluginInstances: Plugin[] = [];
-  protected plugins: PluginType[] = [];
+  protected pluginInstances: Record<string, Plugin> = {};
+  protected plugins: Record<string, PluginType> = {};
   private loadStaticPlugin: Promise<void>;
   constructor(protected _plugins: PluginType[], protected app: Application) {
     this.app = app;
@@ -20,14 +21,23 @@ export class PluginManager {
     }
   }
 
-  async add<T = any>(plugin: typeof Plugin, opts?: T) {
+  async add<T = any>(plugin: typeof Plugin, opts: PluginOptions<T> = {}) {
+    const name = opts.name || plugin.pluginName;
+    if (!name) {
+      throw new Error(`${plugin.name}'s name is required, you can set it in plugin \`static publicName\` or options`);
+    }
+
     // add plugin class
-    this.plugins.push([plugin, opts]);
+    this.plugins[name] = [plugin, opts];
     const instance = this.getInstance(plugin, opts);
 
     // add plugin instance
-    this.pluginInstances.push(instance);
+    this.pluginInstances[name] = instance;
     await instance.afterAdd();
+  }
+
+  get<T = any>(name: string): T {
+    return this.pluginInstances[name] as T;
   }
 
   private getInstance<T>(plugin: typeof Plugin, opts?: T) {
@@ -37,11 +47,11 @@ export class PluginManager {
   async load() {
     await this.loadStaticPlugin;
 
-    for (const plugin of this.pluginInstances) {
+    for (const plugin of Object.values(this.pluginInstances)) {
       await plugin.beforeLoad();
     }
 
-    for (const plugin of this.pluginInstances) {
+    for (const plugin of Object.values(this.pluginInstances)) {
       await plugin.load();
     }
   }

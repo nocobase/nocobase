@@ -6,7 +6,7 @@ describe('Plugin', () => {
     const afterAdd = vitest.fn();
     const beforeLoad = vitest.fn();
     const load = vitest.fn();
-    class MyPlugin extends Plugin {
+    class DemoPlugin extends Plugin {
       async afterAdd() {
         afterAdd();
       }
@@ -17,7 +17,9 @@ describe('Plugin', () => {
         load();
       }
     }
-    const app = new Application({ plugins: [MyPlugin] });
+    const app = new Application({
+      plugins: [[DemoPlugin, { name: 'demo1' }]],
+    });
     await app.load();
 
     expect(afterAdd).toBeCalledTimes(1);
@@ -29,57 +31,78 @@ describe('Plugin', () => {
 describe('PluginManager', () => {
   it('static Plugins', async () => {
     const fn1 = vitest.fn();
-    class MyPlugin extends Plugin {
+    class Demo1Plugin extends Plugin {
       async load() {
         fn1();
       }
     }
     const fn2 = vitest.fn();
-    const options = { a: 1 };
-    class MyPlugin2 extends Plugin {
+    const config = { a: 1 };
+    class Demo2Plugin extends Plugin {
       async load() {
-        fn2(this.options);
+        fn2(this.options.config);
       }
     }
 
     const app = new Application({
-      plugins: [MyPlugin, [MyPlugin2, options]],
+      plugins: [
+        [Demo1Plugin, { name: 'demo1' }],
+        [Demo2Plugin, { name: 'demo2', config }],
+      ],
     });
     await app.load();
 
     expect(fn1).toBeCalledTimes(1);
     expect(fn2).toBeCalledTimes(1);
-    expect(fn2).toBeCalledWith(options);
+    expect(fn2).toBeCalledWith(config);
   });
 
   it('dynamic Plugins', async () => {
     const fn2 = vitest.fn();
-    const options = { a: 1 };
-    class MyPlugin2 extends Plugin {
+    const config = { a: 1 };
+    class Demo2 extends Plugin {
       async load() {
-        fn2(this.options);
+        fn2(this.options.config);
       }
     }
 
-    class MyPlugin extends Plugin {
+    class Demo1Plugin extends Plugin {
       async afterAdd() {
-        this.app.pm.add(MyPlugin2, options);
+        this.app.pm.add(Demo2, { name: 'demo2', config });
       }
     }
-    const app = new Application({ plugins: [MyPlugin] });
+    const app = new Application({
+      plugins: [[Demo1Plugin, { name: 'demo1' }]],
+    });
     await app.load();
     expect(fn2).toBeCalledTimes(1);
-    expect(fn2).toBeCalledWith(options);
+    expect(fn2).toBeCalledWith(config);
   });
 
   it('getter', async () => {
-    class MyPlugin extends Plugin {
+    class DemoPlugin extends Plugin {
       async afterAdd() {
         expect(this.pm).toBe(this.app.pm);
         expect(this.router).toBe(this.app.router);
       }
     }
-    const app = new Application({ plugins: [MyPlugin] });
+    const app = new Application({ plugins: [[DemoPlugin, { name: 'demo' }]] });
     await app.load();
+  });
+
+  it('get', async () => {
+    class DemoPlugin extends Plugin { }
+    const app = new Application({ plugins: [[DemoPlugin, { name: 'demo' }]] });
+    await app.load();
+    expect(app.pm.get('demo')).toBeInstanceOf(DemoPlugin);
+  });
+
+  it('static pluginName', async () => {
+    class DemoPlugin extends Plugin {
+      static pluginName = 'demo';
+    }
+    const app = new Application({ plugins: [DemoPlugin] });
+    await app.load();
+    expect(app.pm.get('demo')).toBeInstanceOf(DemoPlugin);
   });
 });

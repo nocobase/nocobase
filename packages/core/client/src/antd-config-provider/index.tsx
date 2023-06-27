@@ -53,7 +53,9 @@ export function AntdConfigProvider(props) {
 }
 
 export class AntdConfigPlugin extends Plugin {
+  static pluginName = 'antd-config';
+
   async load() {
-    this.app.use(AntdConfigProvider, this.options);
+    this.app.use(AntdConfigProvider, this.options?.config || {});
   }
 }

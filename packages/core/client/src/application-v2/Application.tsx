@@ -39,7 +39,10 @@ export class Application {
     this.components = merge(this.components, options.components);
     this.apiClient = new APIClient(options.apiClient);
     this.i18n = options.i18n || i18n;
-    this.router = new RouterManager(options.router, this);
+    this.router = new RouterManager({
+      ...options.router,
+      renderComponent: this.renderComponent.bind(this),
+    });
     this.pm = new PluginManager(options.plugins, this);
     this.addDefaultProviders();
     this.addReactRouterComponents();
@@ -59,7 +62,7 @@ export class Application {
     });
   }
 
-  renderProviders() {
+  getComposeProviders() {
     const Providers = compose(...this.providers)(BlankComponent);
     Providers.displayName = 'Providers';
     return Providers;

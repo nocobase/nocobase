@@ -7,7 +7,7 @@ import { Plugin } from '../application-v2/Plugin';
 import { SigninPage, SigninPageExtensionPlugin, SignupPage } from '../auth';
 import { BlockSchemaComponentPlugin } from '../block-provider';
 import { RemoteDocumentTitlePlugin } from '../document-title';
-import { PinnedPluginListPlugin } from '../plugin-manager';
+import { PinnedListPlugin } from '../plugin-manager';
 import { PMPlugin } from '../pm';
 import { AdminLayoutPlugin, AuthLayout, RouteSchemaComponent } from '../route-switch';
 import { AntdSchemaComponentPlugin, MenuItemInitializers, SchemaComponentPlugin } from '../schema-component';
@@ -23,6 +23,8 @@ const AppSpin = () => (
 );
 
 export class NocoBaseBuildInPlugin extends Plugin {
+  static pluginName = 'nocobase-buildin';
+
   async afterAdd(): Promise<void> {
     this.addPlugins();
   }
@@ -71,27 +73,33 @@ export class NocoBaseBuildInPlugin extends Plugin {
     });
   }
   addPlugins() {
-    this.app.pm.add(AdminLayoutPlugin);
-    this.app.pm.add(AntdConfigPlugin, { remoteLocale: true });
-    this.app.pm.add(SystemSettingsPlugin);
-    this.app.pm.add(PinnedPluginListPlugin, {
-      items: {
-        ui: { order: 100, component: 'DesignableSwitch', pin: true, snippet: 'ui.*' },
-        pm: { order: 200, component: 'PluginManagerLink', pin: true, snippet: 'pm' },
-        sc: { order: 300, component: 'SettingsCenterDropdown', pin: true, snippet: 'pm.*' },
+    this.app.pm.add(AdminLayoutPlugin, { name: 'admin-layout' });
+    this.app.pm.add(AntdConfigPlugin, { name: 'antd-config', config: { remoteLocale: true } });
+    this.app.pm.add(SystemSettingsPlugin, { name: 'system-setting' });
+    this.app.pm.add(PinnedListPlugin, {
+      name: 'pinned-list',
+      config: {
+        items: {
+          ui: { order: 100, component: 'DesignableSwitch', pin: true, snippet: 'ui.*' },
+          pm: { order: 200, component: 'PluginManagerLink', pin: true, snippet: 'pm' },
+          sc: { order: 300, component: 'SettingsCenterDropdown', pin: true, snippet: 'pm.*' },
+        },
       },
     });
-    this.app.pm.add(SchemaComponentPlugin);
+    this.app.pm.add(SchemaComponentPlugin, { name: 'schema-component' });
     this.app.pm.add(SchemaInitializerPlugin, {
-      initializers: {
-        MenuItemInitializers,
+      name: 'schema-initializer',
+      config: {
+        initializers: {
+          MenuItemInitializers,
+        },
       },
     });
-    this.app.pm.add(BlockSchemaComponentPlugin);
-    this.app.pm.add(AntdSchemaComponentPlugin);
-    this.app.pm.add(SigninPageExtensionPlugin);
-    this.app.pm.add(ACLPlugin);
-    this.app.pm.add(RemoteDocumentTitlePlugin);
-    this.app.pm.add(PMPlugin);
+    this.app.pm.add(BlockSchemaComponentPlugin, { name: 'block-schema-component' });
+    this.app.pm.add(AntdSchemaComponentPlugin, { name: 'antd-schema-component' });
+    this.app.pm.add(SigninPageExtensionPlugin, { name: 'signin-page-extension' });
+    this.app.pm.add(ACLPlugin, { name: 'acl' });
+    this.app.pm.add(RemoteDocumentTitlePlugin, { name: 'remote-document-title' });
+    this.app.pm.add(PMPlugin, { name: 'pm' });
   }
 }

@@ -181,9 +181,9 @@ describe('Application', () => {
       ]);
     });
 
-    it('renderProviders', () => {
+    it('getComposeProviders', () => {
       const app = new Application({ router, providers: [Hello, [World, { name: 'aaa' }]] });
-      const Providers = app.renderProviders();
+      const Providers = app.getComposeProviders();
       render(
         <Providers>
           <Foo />
@@ -277,12 +277,12 @@ describe('Application', () => {
       const app = new Application({
         router,
       });
-      class MyPlugin extends Plugin {
+      class DemoPlugin extends Plugin {
         async load() {
           throw new Error('error');
         }
       }
-      app.pm.add(MyPlugin);
+      app.pm.add(DemoPlugin, { name: 'demo' });
 
       const Root = app.getRootComponent();
       render(<Root />);

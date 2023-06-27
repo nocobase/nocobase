@@ -15,7 +15,7 @@ describe('Router', () => {
     let router: RouterManager;
 
     beforeEach(() => {
-      router = new RouterManager({ type: 'memory', initialEntries: ['/'] }, app);
+      router = new RouterManager({ type: 'memory', initialEntries: ['/'] });
     });
 
     it('basic', () => {
@@ -83,6 +83,11 @@ describe('Router', () => {
     });
 
     it('Component is string', () => {
+      const router = new RouterManager({
+        type: 'memory',
+        initialEntries: ['/'],
+        renderComponent: app.renderComponent.bind(app),
+      });
       const Hello = () => <div></div>;
       app.addComponents({ Hello });
       const route: RouteType = {
@@ -98,7 +103,7 @@ describe('Router', () => {
     let router: RouterManager;
 
     beforeEach(() => {
-      router = new RouterManager({ type: 'memory', initialEntries: ['/'] }, app);
+      router = new RouterManager({ type: 'memory', initialEntries: ['/'] });
     });
     it('basic', () => {
       const route1: RouteType = {
@@ -112,9 +117,9 @@ describe('Router', () => {
     });
   });
 
-  describe('createRouter', () => {
+  describe('getRouterComponent', () => {
     it('basic', async () => {
-      const router = new RouterManager({ type: 'memory', initialEntries: ['/'] }, app);
+      const router = new RouterManager({ type: 'memory', initialEntries: ['/'] });
       const Layout = () => {
         return (
           <div>
@@ -137,7 +142,7 @@ describe('Router', () => {
         path: '/about',
         element: <div>AboutComponent</div>,
       });
-      const RouterComponent = router.createRouter();
+      const RouterComponent = router.getRouterComponent();
       render(<RouterComponent />);
       expect(screen.getByText('HomeComponent')).toBeInTheDocument();
 
@@ -146,12 +151,12 @@ describe('Router', () => {
     });
 
     it('BaseLayout', () => {
-      const router = new RouterManager({ type: 'memory', initialEntries: ['/'] }, app);
+      const router = new RouterManager({ type: 'memory', initialEntries: ['/'] });
       router.add('home', {
         path: '/',
         element: <div>HomeComponent</div>,
       });
-      const RouterComponent = router.createRouter();
+      const RouterComponent = router.getRouterComponent();
       const BaseLayout: FC = (props) => {
         return <div>BaseLayout {props.children}</div>;
       };
@@ -161,15 +166,15 @@ describe('Router', () => {
     });
 
     it('nested router', () => {
-      const router = new RouterManager({ type: 'memory', initialEntries: ['/'] }, app);
+      const router = new RouterManager({ type: 'memory', initialEntries: ['/'] });
 
       const Test = () => {
-        const router2 = new RouterManager({ type: 'memory', initialEntries: ['/'] }, app);
+        const router2 = new RouterManager({ type: 'memory', initialEntries: ['/'] });
         router2.add('rooter2', {
           path: '/',
           element: <div>Router2</div>,
         });
-        const RouterComponent = router2.createRouter();
+        const RouterComponent = router2.getRouterComponent();
         return (
           <div>
             Router1
@@ -183,7 +188,7 @@ describe('Router', () => {
         element: <Test />,
       });
 
-      const RouterComponent = router.createRouter();
+      const RouterComponent = router.getRouterComponent();
       render(<RouterComponent />);
 
       expect(screen.getByText('Router1')).toBeInTheDocument();

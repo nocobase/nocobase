@@ -9,6 +9,8 @@ import { DesignableSwitch } from './DesignableSwitch';
 import { SchemaComponentProvider } from './SchemaComponentProvider';
 
 export class SchemaComponentPlugin extends Plugin {
+  static pluginName = 'schema-component';
+
   async load() {
     this.addComponents();
     this.app.use(SchemaComponentProvider);

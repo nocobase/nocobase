@@ -20,6 +20,8 @@ export const AntdSchemaComponentProvider = (props) => {
 };
 
 export class AntdSchemaComponentPlugin extends Plugin {
+  static pluginName = 'antd-schema-component';
+
   async load() {
     this.addComponents();
     this.addScopes();
