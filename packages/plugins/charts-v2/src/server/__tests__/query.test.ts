@@ -119,7 +119,7 @@ describe('query', () => {
         },
       ];
       const { queryParams: result2 } = parseBuilder(ctx, { collection: 'orders', measures, dimensions });
-      expect(result2.group).toEqual(['Created at']);
+      expect(result2.group).toEqual(['formatted-field']);
     });
 
     it('should parse filter', () => {

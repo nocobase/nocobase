@@ -312,13 +312,14 @@ ChartConfigure.Renderer = function Renderer(props) {
 
 ChartConfigure.Query = function Query() {
   const { t } = useChartsTranslation();
+  const { t: lang } = useTranslation();
   const fields = useFieldsWithAssociation();
   const useFormatterOptions = useFormatters(fields);
   const collectionOptions = useCollectionOptions();
   const { current, setCurrent } = useContext(ChartConfigContext);
   const { collection } = current || {};
-  const fieldOptions = useCollectionFieldsOptions(collection);
-  const compiledFieldOptions = Schema.compile(fieldOptions, { t: useTranslation() });
+  const fieldOptions = useCollectionFieldsOptions(collection, 1);
+  const compiledFieldOptions = Schema.compile(fieldOptions, { t: lang });
   const filterOptions = useCollectionFilterOptions(collection);
   const formCollapse = FormCollapse.createFormCollapse(['measures', 'dimensions']);
   const onCollectionChange = (value: string) => {
@@ -344,7 +345,7 @@ ChartConfigure.Query = function Query() {
         t,
         formCollapse,
         fieldOptions: compiledFieldOptions,
-        filterOptions: Schema.compile(filterOptions, { t: useTranslation() }),
+        filterOptions,
         useOrderOptions: useOrderFieldsOptions(compiledFieldOptions, fields),
         collectionOptions,
         useFormatterOptions,
