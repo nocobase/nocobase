@@ -6,7 +6,6 @@ import {
   SchemaInitializerProvider,
 } from '@nocobase/client';
 import React, { useEffect } from 'react';
-import { AppendsTreeSelect } from './components/AppendsTreeSelect';
 import { SnapshotOwnerCollectionFieldsSelect } from './components/SnapshotOwnerCollectionFieldsSelect';
 import { snapshot } from './interface';
 import { SnapshotBlockInitializers } from './SnapshotBlock/SnapshotBlockInitializers/SnapshotBlockInitializers';
@@ -36,7 +35,6 @@ const SnapshotField = React.memo((props) => {
               SnapshotRecordPicker,
               SnapshotBlockProvider,
               SnapshotBlockInitializersDetailItem,
-              AppendsTreeSelect,
               SnapshotOwnerCollectionFieldsSelect,
             }}
           >

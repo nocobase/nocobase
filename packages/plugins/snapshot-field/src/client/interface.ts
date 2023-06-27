@@ -1,5 +1,5 @@
 import type { Field } from '@formily/core';
-import { ISchema } from '@formily/react';
+import { ISchema, useForm } from '@formily/react';
 import { IField, interfacesProperties, useCollectionManager, useRecord } from '@nocobase/client';
 import { cloneDeep } from 'lodash';
 import { NAMESPACE } from './locale';
@@ -17,6 +17,13 @@ export const useTopRecord = () => {
   }
   return record;
 };
+
+function useRecordCollection() {
+  const { getCollectionField } = useCollectionManager();
+  const record = useTopRecord();
+  const formValues = useForm().values;
+  return getCollectionField(`${record.name}.${formValues.targetField}`)?.target;
+}
 
 const onTargetFieldChange = (field: Field) => {
   field.value; // for watch
@@ -161,6 +168,9 @@ export const snapshot: IField = {
       title: `{{t("Snapshot the snapshot's association fields", {ns: "${NAMESPACE}"})}}`,
       'x-decorator': 'FormItem',
       'x-component': 'AppendsTreeSelect',
+      'x-component-props': {
+        useCollection: useRecordCollection,
+      },
       'x-reactions': [
         {
           dependencies: [TARGET_FIELD],

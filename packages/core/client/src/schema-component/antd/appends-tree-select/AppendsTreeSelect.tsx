@@ -1,10 +1,8 @@
-import { useForm } from '@formily/react';
 import { CollectionFieldOptions, useCollectionManager, useCompile } from '@nocobase/client';
 import { Tag, TreeSelect } from 'antd';
 import type { DefaultOptionType } from 'rc-tree-select/es/TreeSelect';
-import React from 'react';
-import { useTopRecord } from '../interface';
-import { useSnapshotTranslation } from '../locale';
+import React, { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export type TreeCacheMapNode = {
   parent?: TreeCacheMapNode;
@@ -16,53 +14,56 @@ export type TreeCacheMapNode = {
 export type AppendsTreeSelectProps = {
   value: string[];
   onChange: (value: string[]) => void;
+  collection?: string;
+  useCollection?(props: Pick<AppendsTreeSelectProps, 'collection'>): string;
 };
 
 type TreeOptionType = Omit<DefaultOptionType, 'value'> & { value: string };
 
+function buildTreeData(list: TreeOptionType[], parent?: TreeCacheMapNode, result = {}) {
+  return (list || []).map(({ children, value, title }) => {
+    const node: TreeCacheMapNode = (result[value] = {
+      parent,
+      path: value,
+      title,
+    });
+    node.children = buildTreeData(children, node, result);
+    return node;
+  });
+}
+
+function usePropsCollection({ collection }) {
+  return collection;
+}
+
 export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
-  const { value = [], onChange, ...restProps } = props;
-  const record = useTopRecord();
-  const { getCollectionFields, getCollectionField } = useCollectionManager();
+  const { value = [], onChange, collection, useCollection = usePropsCollection, ...restProps } = props;
+  const { getCollectionFields } = useCollectionManager();
   const compile = useCompile();
-  const formValues = useForm().values;
-  const { t } = useSnapshotTranslation();
+  const { t } = useTranslation();
+  const targetCollection = useCollection({ collection });
 
-  const fieldsToOptions = (
-    fields: CollectionFieldOptions[] = [],
-    fieldPath: CollectionFieldOptions[] = [],
-  ): TreeOptionType[] => {
-    const filter = (i: CollectionFieldOptions) =>
-      !!i.target && !!i.interface && !fieldPath.find((p) => p.target === i.target);
-    return fields.filter(filter).map((i) => ({
-      title: compile(i.uiSchema?.title) ?? i.name,
-      value: fieldPath
-        .map((p) => p.name)
-        .concat(i.name)
-        .join('.'),
-      children: fieldsToOptions(getCollectionFields(i.target), [...fieldPath, i]),
-    }));
-  };
-
-  const treeData = fieldsToOptions(
-    getCollectionFields(getCollectionField(`${record.name}.${formValues.targetField}`)?.target),
+  const fieldsToOptions = useCallback(
+    (fields: CollectionFieldOptions[] = [], fieldPath: CollectionFieldOptions[] = []): TreeOptionType[] => {
+      const filter = (i: CollectionFieldOptions) =>
+        i.target && i.interface && !fieldPath.find((p) => p.target === i.target);
+      return fields.filter(filter).map((i) => ({
+        title: compile(i.uiSchema?.title) ?? i.name,
+        value: fieldPath
+          .map((p) => p.name)
+          .concat(i.name)
+          .join('.'),
+        children: fieldsToOptions(getCollectionFields(i.target), [...fieldPath, i]),
+      }));
+    },
+    [],
   );
+
+  const treeData = fieldsToOptions(getCollectionFields(targetCollection));
 
   const valueMap: Record<string, TreeCacheMapNode> = {};
 
-  function loops(list: TreeOptionType[], parent?: TreeCacheMapNode) {
-    return (list || []).map(({ children, value, title }) => {
-      const node: TreeCacheMapNode = (valueMap[value] = {
-        parent,
-        path: value,
-        title,
-      });
-      node.children = loops(children, node);
-      return node;
-    });
-  }
-
-  loops(treeData);
+  buildTreeData(treeData, undefined, valueMap);
 
   const handleChange = (newNodes: DefaultOptionType[]) => {
     const newValue = newNodes.map((i) => i.value) as string[];
@@ -107,7 +108,7 @@ export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
     <TreeSelect
       value={filterdValue}
       dropdownStyle={{ maxHeight: 400, overflow: 'auto' }}
-      placeholder={t('Please select')}
+      placeholder={t('Select field')}
       showCheckedStrategy="SHOW_ALL"
       allowClear
       multiple

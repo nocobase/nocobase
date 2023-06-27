@@ -1,4 +1,5 @@
 export * from './action';
+export * from './appends-tree-select';
 export * from './association-field';
 export * from './association-select';
 export * from './block-item';
@@ -32,6 +33,7 @@ export * from './pagination';
 export * from './password';
 export * from './percent';
 export * from './preview';
+export * from './quick-edit';
 export * from './radio';
 export * from './record-picker';
 export * from './remote-select';
@@ -45,5 +47,4 @@ export * from './time-picker';
 export * from './tree-select';
 export * from './upload';
 export * from './variable';
-export * from './quick-edit'
 import './index.less';
