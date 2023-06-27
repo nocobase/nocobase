@@ -5,6 +5,8 @@ export interface JwtOptions {
   expiresIn?: string;
 }
 
+export type SignPayload = Record<string, any>;
+
 export class JwtService {
   constructor(protected options: JwtOptions) {
     const { secret, expiresIn } = options || {};
@@ -22,7 +24,7 @@ export class JwtService {
     return this.options.secret;
   }
 
-  sign(payload: any) {
+  sign(payload: SignPayload) {
     return jwt.sign(payload, this.secret(), { expiresIn: this.expiresIn() });
   }
 

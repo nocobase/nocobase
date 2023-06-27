@@ -1,6 +1,6 @@
 import { Collection, Model, Repository } from '@nocobase/database';
 import { Auth, AuthConfig } from '../auth';
-import { JwtOptions, JwtService } from './jwt-service';
+import { JwtOptions, JwtService, SignPayload } from './jwt-service';
 
 /**
  * BaseAuth
@@ -36,15 +36,16 @@ export class BaseAuth extends Auth {
     }
     try {
       const { userId, roleName } = await this.jwt.decode(token);
-      const user = await this.userCollection.repository.findOne({
+
+      if (roleName) {
+        this.ctx.headers['X-Role'] = roleName;
+      }
+
+      return await this.userCollection.repository.findOne({
         filter: {
           id: userId,
         },
       });
-      return {
-        user,
-        roleName,
-      };
     } catch (err) {
       this.ctx.logger.error(err);
       return null;
@@ -55,7 +56,7 @@ export class BaseAuth extends Auth {
     return null;
   }
 
-  async signIn(payload: any) {
+  async signIn(payload: SignPayload) {
     let user: Model;
     try {
       user = await this.validate();
