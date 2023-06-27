@@ -3,7 +3,6 @@ import { usePrefixCls } from '@formily/antd/esm/__builtins__';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { Upload as AntdUpload, Button, Progress, Space, Modal } from 'antd';
 import cls from 'classnames';
-import { css } from '@emotion/css';
 import { saveAs } from 'file-saver';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -64,7 +63,7 @@ Upload.Attachment = connect((props: UploadProps) => {
               }
             };
             return (
-              <div className={'ant-upload-list-picture-card-container'}>
+              <div key={file.uid || file.id} className={'ant-upload-list-picture-card-container'}>
                 <div className="ant-upload-list-item ant-upload-list-item-done ant-upload-list-item-list-type-picture-card">
                   <div className={'ant-upload-list-item-info'}>
                     <span className="ant-upload-span">
