@@ -1,5 +1,7 @@
 import { Context } from '@nocobase/actions';
 import { Model } from '@nocobase/database';
+import { SignOptions } from 'jsonwebtoken';
+import { SignPayload } from './base/jwt-service';
 
 export type AuthConfig = {
   authenticator: Model;
@@ -15,7 +17,7 @@ interface IAuth {
   user: Model;
   // Check the authenticaiton status and return the current user.
   check(): Promise<Model>;
-  signIn(): Promise<any>;
+  signIn(payload: SignPayload, options: SignOptions): Promise<any>;
   signUp(): Promise<any>;
   signOut(): Promise<any>;
 }
