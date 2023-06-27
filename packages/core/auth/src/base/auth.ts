@@ -8,7 +8,7 @@ import { Auth, AuthConfig } from '../auth';
 export class BaseAuth extends Auth {
   protected userCollection: Collection;
 
-  protected get jwt() {
+  get jwt() {
     return this.ctx.app.authManager.jwt;
   }
 
