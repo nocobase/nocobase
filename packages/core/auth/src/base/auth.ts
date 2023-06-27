@@ -7,7 +7,7 @@ import { JwtOptions, JwtService, SignPayload } from './jwt-service';
  * @description A base class with jwt provide some common methods.
  */
 export class BaseAuth extends Auth {
-  protected jwt: JwtService;
+  public jwt: JwtService;
   protected userCollection: Collection;
 
   constructor(

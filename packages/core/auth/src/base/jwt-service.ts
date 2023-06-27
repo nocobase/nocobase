@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 
 export interface JwtOptions {
   secret: string;
@@ -24,8 +24,8 @@ export class JwtService {
     return this.options.secret;
   }
 
-  sign(payload: SignPayload) {
-    return jwt.sign(payload, this.secret(), { expiresIn: this.expiresIn() });
+  sign(payload: SignPayload, options?: SignOptions) {
+    return jwt.sign(payload, this.secret(), { expiresIn: this.expiresIn(), ...options });
   }
 
   decode(token: string): Promise<any> {
