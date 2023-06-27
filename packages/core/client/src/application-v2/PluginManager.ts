@@ -37,7 +37,7 @@ export class PluginManager {
   }
 
   get<T = any>(name: string): T {
-    return this.pluginInstances[name] as T;
+    return this.pluginInstances[name] as unknown as T;
   }
 
   private getInstance<T>(plugin: typeof Plugin, opts?: T) {
