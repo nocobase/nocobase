@@ -1,5 +1,4 @@
 import actions, { Context, Next } from '@nocobase/actions';
-import { BaseAuth } from '@nocobase/auth';
 import { Repository } from '@nocobase/database';
 
 export async function create(ctx: Context, next: Next) {
@@ -9,7 +8,7 @@ export async function create(ctx: Context, next: Next) {
     return;
   }
 
-  const repository = ctx.db.getRepository('users.roles', ctx.state.currentUser.id) as unknown as Repository;
+  const repository = ctx.db.getRepository('users.roles', ctx.auth.user.id) as unknown as Repository;
   const role = await repository.findOne({
     filter: {
       name: values.role.name,
@@ -20,8 +19,8 @@ export async function create(ctx: Context, next: Next) {
   }
 
   return actions.create(ctx, async () => {
-    const token = (ctx.auth as BaseAuth).jwt.sign(
-      { userId: ctx.user.id, roleName: role.name },
+    const token = ctx.app.authManager.jwt.sign(
+      { userId: ctx.auth.user.id, roleName: role.name },
       { expiresIn: values.expiresIn },
     );
 

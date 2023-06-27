@@ -42,7 +42,7 @@ export default class ApiKeysPlugin extends Plugin<ApiKeysPluginConfig> {
       if (resourceName == this.resourceName && ['list', 'destroy'].includes(actionName)) {
         ctx.action.mergeParams({
           filter: {
-            filter: { createdById: ctx.auth.user.id },
+            createdById: ctx.auth.user.id,
           },
         });
       }

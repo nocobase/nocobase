@@ -8,10 +8,14 @@ export interface JwtOptions {
 export type SignPayload = Record<string, any>;
 
 export class JwtService {
-  constructor(protected options: JwtOptions) {
-    const { secret, expiresIn } = options || {};
+  constructor(
+    protected options: JwtOptions = {
+      secret: process.env.APP_KEY,
+    },
+  ) {
+    const { secret, expiresIn } = options;
     this.options = {
-      secret: secret || process.env.APP_KEY,
+      secret: secret,
       expiresIn: expiresIn || process.env.JWT_EXPIRES_IN || '7d',
     };
   }

@@ -1,24 +1,26 @@
 import { Collection, Model } from '@nocobase/database';
 import { Auth, AuthConfig } from '../auth';
-import { JwtOptions, JwtService, SignPayload } from './jwt-service';
+import { SignPayload } from './jwt-service';
 
 /**
  * BaseAuth
  * @description A base class with jwt provide some common methods.
  */
 export class BaseAuth extends Auth {
-  public jwt: JwtService;
   protected userCollection: Collection;
+
+  protected get jwt() {
+    return this.ctx.app.authManager.jwt;
+  }
 
   constructor(
     config: AuthConfig & {
       userCollection: Collection;
     },
   ) {
-    const { options, userCollection } = config;
+    const { userCollection } = config;
     super(config);
     this.userCollection = userCollection;
-    this.jwt = new JwtService(options.jwt as JwtOptions);
   }
 
   set user(user: Model) {
@@ -35,7 +37,7 @@ export class BaseAuth extends Auth {
       return null;
     }
     try {
-      const { userId, roleName } = await this.jwt.decode(token);
+      const { userId, roleName } = await this.ctx.app.authManager.jwt.decode(token);
 
       if (roleName) {
         this.ctx.headers['X-Role'] = roleName;
