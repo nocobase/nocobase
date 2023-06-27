@@ -64,16 +64,10 @@ describe('role', () => {
         return 'abc';
       }
     };
-    ctx.throw = (code, msg) => {
-      throw new Error(msg);
-    };
-    let msg = '';
-    try {
-      await setCurrentRole(ctx, () => {});
-    } catch (error) {
-      msg = error.message;
-    }
-    expect(msg).toBe('User role not found');
+    const throwFn = jest.fn();
+    ctx.throw = throwFn;
+    await setCurrentRole(ctx, () => {});
+    expect(throwFn).lastCalledWith(401, 'User role not found');
     expect(ctx.state.currentRole).not.toBeDefined();
   });
 
