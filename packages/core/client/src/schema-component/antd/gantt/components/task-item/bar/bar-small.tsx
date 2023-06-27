@@ -1,9 +1,9 @@
-import React from 'react';
 import { cx } from '@emotion/css';
+import React from 'react';
 import { getProgressPoint } from '../../../helpers/bar-helper';
+import { TaskItemProps } from '../task-item';
 import { BarDisplay } from './bar-display';
 import { BarProgressHandle } from './bar-progress-handle';
-import { TaskItemProps } from '../task-item';
 import { barWrapper } from './style';
 
 export const BarSmall: React.FC<TaskItemProps> = ({
