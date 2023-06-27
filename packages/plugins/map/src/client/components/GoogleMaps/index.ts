@@ -1,2 +1,2 @@
-export * from './Map';
 export * from './Block';
+export * from './Map';

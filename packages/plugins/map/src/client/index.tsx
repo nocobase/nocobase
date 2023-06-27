@@ -9,8 +9,8 @@ import { MapBlockOptions } from './block';
 import { Configuration, Map } from './components';
 import { interfaces } from './fields';
 import { MapInitializer } from './initialize';
-import { useMapTranslation } from './locale';
 import './locale';
+import { useMapTranslation } from './locale';
 
 const MapProvider = React.memo((props) => {
   const ctx = useContext(CollectionManagerContext);

@@ -11,9 +11,8 @@ import { defaultImage } from '../../constants';
 import { useMapConfiguration } from '../../hooks';
 import { useMapTranslation } from '../../locale';
 import { MapEditorType } from '../../types';
-import { getCurrentPosition } from '../../utils';
 import { Search } from './Search';
-import { getIcon } from './utils';
+import { getCurrentPosition, getIcon } from './utils';
 
 export type OverlayOptions = google.maps.PolygonOptions & google.maps.MarkerOptions & google.maps.PolylineOptions;
 
