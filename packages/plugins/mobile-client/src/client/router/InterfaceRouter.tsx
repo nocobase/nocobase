@@ -1,32 +1,16 @@
-import { RouterManager, useApp } from '@nocobase/client';
-import React, { useMemo } from 'react';
-import { Navigate } from 'react-router-dom';
-import MApplication from './Application';
+import { usePlugin } from '@nocobase/client';
+import React from 'react';
+import type { MobileClientPlugin } from '../index';
 import { InterfaceProvider } from './InterfaceProvider';
 
-export const InterfaceRouter: React.FC = () => {
-  const app = useApp();
-  const MobileRouter = useMemo(() => {
-    const router = new RouterManager({ type: 'hash' }, app);
-    router.add('root', {
-      path: '/',
-      element: <Navigate replace to="/mobile" />,
-    });
-    router.add('mobile', {
-      path: '/mobile',
-      element: <MApplication />,
-    });
-    router.add('mobile.page', {
-      path: '/mobile/:name',
-      element: 'RouteSchemaComponent',
-    });
-
-    return router.getRouterComponent();
-  }, [app]);
+export const InterfaceRouter: React.FC = React.memo(() => {
+  const plugin = usePlugin<MobileClientPlugin>('mobile-client');
+  const MobileRouter = plugin.getMobileRouterComponent();
 
   return (
     <InterfaceProvider>
       <MobileRouter />
     </InterfaceProvider>
   );
-};
+});
+InterfaceRouter.displayName = 'InterfaceRouter';
