@@ -37,13 +37,3 @@ export async function create(ctx: Context, next: Next) {
     await next();
   });
 }
-
-export async function list(ctx: Context, next: Next) {
-  ctx.action.params.filter = { $and: [{ createdBy: { id: { $eq: ctx.auth.user.id } } }] };
-  return actions.list(ctx, next);
-}
-
-export async function destroy(ctx: Context, next: Next) {
-  ctx.action.params.filter = { $and: [{ createdBy: { id: { $eq: ctx.auth.user.id } } }] };
-  return actions.destroy(ctx, next);
-}

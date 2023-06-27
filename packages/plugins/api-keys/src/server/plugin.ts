@@ -1,7 +1,7 @@
 import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { NAMESPACE } from '../constants';
-import { create, destroy, list } from './actions/api-keys';
+import { create } from './actions/api-keys';
 import { enUS, zhCN } from './locale';
 
 export interface ApiKeysPluginConfig {
@@ -9,6 +9,7 @@ export interface ApiKeysPluginConfig {
 }
 
 export default class ApiKeysPlugin extends Plugin<ApiKeysPluginConfig> {
+  resourceName = 'apiKeys';
   constructor(app, options) {
     super(app, options);
   }
@@ -18,11 +19,9 @@ export default class ApiKeysPlugin extends Plugin<ApiKeysPluginConfig> {
     this.app.i18n.addResources('en-US', NAMESPACE, enUS);
 
     await this.app.resourcer.define({
-      name: 'apiKeys',
+      name: this.resourceName,
       actions: {
         create,
-        list,
-        destroy,
       },
       only: ['list', 'create', 'destroy'],
     });
@@ -36,6 +35,18 @@ export default class ApiKeysPlugin extends Plugin<ApiKeysPluginConfig> {
   async load() {
     await this.db.import({
       directory: resolve(__dirname, '../collections'),
+    });
+
+    this.app.resourcer.use(async (ctx, next) => {
+      const { resourceName, actionName } = ctx.action.params;
+      if (resourceName == this.resourceName && ['list', 'destroy'].includes(actionName)) {
+        ctx.action.mergeParams({
+          filter: {
+            filter: { createdById: ctx.auth.user.id },
+          },
+        });
+      }
+      await next();
     });
   }
 }
