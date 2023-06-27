@@ -72,7 +72,7 @@ export const FileSelector = (props: Props) => {
               }
             };
             return (
-              <div key={file.id} className={'ant-upload-list-picture-card-container'}>
+              <div key={file.uid || file.id} className={'ant-upload-list-picture-card-container'}>
                 <div className="ant-upload-list-item ant-upload-list-item-done ant-upload-list-item-list-type-picture-card">
                   <div className={'ant-upload-list-item-info'}>
                     <span className="ant-upload-span">
