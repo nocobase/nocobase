@@ -42,10 +42,13 @@ export default {
     FilterDynamicComponent,
   },
   useVariables({ config }, options) {
+    const depth = config?.params?.appends?.length
+      ? config?.params?.appends.reduce((max, item) => Math.max(max, item.split('.').length), 1) + 1
+      : 1;
     const result = useCollectionFieldOptions({
       collection: config?.collection,
       ...options,
-      depth: options?.depth ?? config?.params?.appends?.length ? 1 : 0,
+      depth: options?.depth ?? depth,
     });
 
     return result?.length ? result : null;

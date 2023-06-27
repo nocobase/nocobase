@@ -195,7 +195,7 @@ export default class WorkflowPlugin extends Plugin {
     }
   }
 
-  public trigger(workflow: WorkflowModel, context: { [key: string]: any }, options: { context?: any } = {}): void {
+  public trigger(workflow: WorkflowModel, context: object, options: { context?: any } = {}): void {
     // `null` means not to trigger
     if (context == null) {
       return;

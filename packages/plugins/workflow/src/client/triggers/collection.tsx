@@ -145,10 +145,13 @@ export default {
         },
       },
     ];
+    const depth = config.appends?.length
+      ? config.appends.reduce((max, item) => Math.max(max, item.split('.').length), 1) + 1
+      : 1;
     const result = useCollectionFieldOptions({
       ...options,
       fields: rootFields,
-      depth: options?.depth ?? (config.appends?.length ? 2 : 1),
+      depth: options?.depth ?? depth,
     });
     return result;
   },
