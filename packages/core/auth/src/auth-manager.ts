@@ -91,7 +91,9 @@ export class AuthManager {
         const { user, roleName } = (await ctx.auth.check()) || {};
         if (user) {
           ctx.auth.user = user;
-          ctx.state.roleName = roleName;
+          if (roleName) {
+            ctx.headers['X-Role'] = roleName;
+          }
         }
       }
       await next();

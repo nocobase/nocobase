@@ -353,6 +353,9 @@ export class ACL extends EventEmitter {
         ctx.log?.info && ctx.log.info('ctx permission', permission);
 
         if ((!permission.can || typeof permission.can !== 'object') && !permission.skip) {
+          if (!ctx.state.currentRole) {
+            return ctx.throw(401, 'User role not found');
+          }
           ctx.throw(403, 'No permissions');
           return;
         }
