@@ -81,7 +81,7 @@ const MenuEditor = (props) => {
       onSuccess(data) {
         const schema = filterByACL(data?.data, ctx);
         // url 为 `/admin` 的情况
-        if (params['*'] === 'admin') {
+        if (params['*'] === 'admin' || params['*'] === 'admin/') {
           const s = findMenuItem(schema);
           if (s) {
             navigate(`/admin/${s['x-uid']}`);

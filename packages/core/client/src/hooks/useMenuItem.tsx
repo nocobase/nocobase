@@ -1,5 +1,6 @@
 import { MenuProps } from 'antd';
-import React, { ReactNode, createContext, useCallback, useContext, useRef } from 'react';
+import _ from 'lodash';
+import React, { createContext, ReactNode, useCallback, useContext, useRef } from 'react';
 
 type Item = MenuProps['items'][0] & {
   /** 在清空数组时，如果该字段为 true 则保留该选项 */
@@ -61,7 +62,7 @@ export const useMenuItem = () => {
 
     shouldRerender.current = true;
     renderItems.current = () => {
-      const notDeleteItems = items.filter((item) => item.notdelete);
+      const notDeleteItems = items.filter((item) => item.notdelete).map((item) => _.omit(item, 'notdelete') as Item);
       items.length = 0;
       items.push(...notDeleteItems);
       return (

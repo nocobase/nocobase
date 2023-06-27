@@ -1,6 +1,6 @@
-import { Task } from '../types/public-types';
 import { BarTask, TaskTypeInternal } from '../types/bar-task';
 import { BarMoveAction } from '../types/gantt-task-actions';
+import { Task } from '../types/public-types';
 
 export const convertToBarTasks = (
   tasks: Task[],
@@ -161,7 +161,7 @@ const convertToBar = (
   let typeInternal: TaskTypeInternal = task.type;
   if (typeInternal === 'task' && x2 - x1 < handleWidth * 2) {
     typeInternal = 'smalltask';
-    x2 = x1 + handleWidth * 2;
+    x2 = x1 > 0 ? x1 + handleWidth * 2 : x1;
   }
 
   const [progressWidth, progressX] = progressWithByParams(x1, x2, task.progress, rtl);
@@ -244,20 +244,19 @@ const convertToMilestone = (
 
 const taskXCoordinate = (xDate: Date, dates: Date[], columnWidth: number) => {
   const index = dates.findIndex((d) => d?.getTime() >= xDate?.getTime()) - 1;
-
   const remainderMillis = xDate?.getTime() - dates[index]?.getTime();
   const percentOfInterval = remainderMillis / (dates[index + 1]?.getTime() - dates[index]?.getTime());
   const x = index * columnWidth + percentOfInterval * columnWidth;
-  return x;
+  return isNaN(x) ? 0 : x;
 };
 const taskXCoordinateRTL = (xDate: Date, dates: Date[], columnWidth: number) => {
   let x = taskXCoordinate(xDate, dates, columnWidth);
   x += columnWidth;
-  return x;
+  return isNaN(x) ? 0 : x;
 };
 const taskYCoordinate = (index: number, rowHeight: number, taskHeight: number) => {
   const y = index * rowHeight + (rowHeight - taskHeight) / 2;
-  return y;
+  return isNaN(y) ? 0 : y;
 };
 
 export const progressWithByParams = (taskX1: number, taskX2: number, progress: number, rtl: boolean) => {
