@@ -1,5 +1,7 @@
 import { Context } from '@nocobase/actions';
 import { Model } from '@nocobase/database';
+import { SignOptions } from 'jsonwebtoken';
+import { SignPayload } from './base/jwt-service';
 
 export type AuthConfig = {
   authenticator: Model;
@@ -11,7 +13,16 @@ export type AuthConfig = {
 
 export type AuthExtend<T extends Auth> = new (config: AuthConfig) => T;
 
-export abstract class Auth {
+interface IAuth {
+  user: Model;
+  // Check the authenticaiton status and return the current user.
+  check(): Promise<Model>;
+  signIn(payload: SignPayload, options: SignOptions): Promise<any>;
+  signUp(): Promise<any>;
+  signOut(): Promise<any>;
+}
+
+export abstract class Auth implements IAuth {
   abstract user: Model;
   protected authenticator: Model;
   protected options: {
@@ -27,9 +38,9 @@ export abstract class Auth {
   }
 
   // The abstract methods are required to be implemented by all authentications.
-  abstract check(): Promise<Model>;
+  abstract check();
   // The following methods are mainly designed for user authentications.
-  async signIn(): Promise<any> {}
+  async signIn(payload: SignPayload): Promise<any> {}
   async signUp(): Promise<any> {}
   async signOut(): Promise<any> {}
 }
