@@ -20,7 +20,7 @@ const useCreateAction = () => {
       });
 
       modalIns.success({
-        title: t('Api key created successfully'),
+        title: t('API Key created successfully'),
         onOk: () => {
           form.reset();
           setVisible(false);
@@ -86,7 +86,7 @@ export const configurationSchema: ISchema = {
             create: {
               type: 'void',
               'x-action': 'create',
-              title: "{{t('Create api key')}}",
+              title: "{{t('Add API Key')}}",
               'x-component': 'Action',
               'x-component-props': {
                 openMode: 'drawer',
@@ -95,7 +95,7 @@ export const configurationSchema: ISchema = {
               properties: {
                 drawer: {
                   type: 'void',
-                  title: "{{t('Create api key')}}",
+                  title: "{{t('Add API Key')}}",
                   'x-decorator': 'Form',
                   'x-component': 'Action.Modal',
                   'x-component-props': {
@@ -244,7 +244,7 @@ export const configurationSchema: ISchema = {
                       'x-component': 'Action.Link',
                       'x-component-props': {
                         confirm: {
-                          title: generateNTemplate('Delete api key'),
+                          title: generateNTemplate('Delete API Key'),
                           content: "{{t('Are you sure you want to delete it?')}}",
                         },
                         useAction: useDestroyAction,

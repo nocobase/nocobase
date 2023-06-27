@@ -1,8 +1,8 @@
 {
   "name": "@nocobase/plugin-api-keys",
-  "displayName": "Api keys",
-  "displayName.zh-CN": "Api keys",
-  "description": "Allow user use api key to fetch nocobase api",
+  "displayName": "API Keys",
+  "displayName.zh-CN": "API Keys",
+  "description": "Allow user use API Key to fetch nocobase api",
   "description.zh-CN": "允许用户使用 api 密钥来访问 nocobase api",
   "version": "0.10.0-alpha.4",
   "license": "AGPL-3.0",

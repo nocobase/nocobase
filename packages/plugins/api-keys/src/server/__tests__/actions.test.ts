@@ -156,7 +156,7 @@ describe('actions', () => {
       expect((await resource.list()).body.data.length).toBe(0);
     });
 
-    it("Cannot delete other user's API keys", async () => {
+    it("Cannot delete other user's API Keys", async () => {
       const res = await resource.list();
       expect(res.body.data.length).toBe(1);
       const data = res.body.data[0];
