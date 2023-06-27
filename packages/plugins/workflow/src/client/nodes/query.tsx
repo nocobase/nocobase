@@ -5,7 +5,6 @@ import { NAMESPACE } from '../locale';
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
 import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
 import { useCollectionFieldOptions } from '../variable';
-import { FieldsSelect } from '../components/FieldsSelect';
 
 export default {
   title: `{{t("Query record", { ns: "${NAMESPACE}" })}}`,
@@ -41,7 +40,6 @@ export default {
   },
   components: {
     FilterDynamicComponent,
-    FieldsSelect,
   },
   useVariables({ config }, options) {
     const result = useCollectionFieldOptions({

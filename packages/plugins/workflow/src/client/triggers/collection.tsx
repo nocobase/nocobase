@@ -1,6 +1,5 @@
 import { SchemaInitializerItemOptions, useCollectionDataSource } from '@nocobase/client';
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
-import { FieldsSelect } from '../components/FieldsSelect';
 import { NAMESPACE, useWorkflowTranslation } from '../locale';
 import { appends, collection, filter } from '../schemas/collection';
 import { useCollectionFieldOptions } from '../variable';
@@ -100,6 +99,9 @@ export default {
     condition: {
       ...filter,
       title: `{{t("Only triggers when match conditions", { ns: "${NAMESPACE}" })}}`,
+      'x-component-props': {
+        useProps: filter['x-component-props'].useProps,
+      },
       'x-reactions': [
         {
           dependencies: ['collection'],
@@ -129,9 +131,7 @@ export default {
   scope: {
     useCollectionDataSource,
   },
-  components: {
-    FieldsSelect,
-  },
+  components: {},
   useVariables(config, options) {
     const { t } = useWorkflowTranslation();
     const rootFields = [

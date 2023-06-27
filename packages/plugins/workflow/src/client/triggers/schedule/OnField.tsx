@@ -3,12 +3,15 @@ import { css } from '@emotion/css';
 import { InputNumber, Select } from 'antd';
 import { useTranslation } from 'react-i18next';
 
-import { DateFieldsSelect } from './DateFieldsSelect';
-import { useWorkflowTranslation } from '../../locale';
+import { FieldsSelect } from '../../components/FieldsSelect';
+import { lang } from '../../locale';
+
+function dateFieldFilter(field) {
+  return !field.hidden && (field.uiSchema ? field.type === 'date' : false);
+}
 
 export function OnField({ value, onChange }) {
   const { t } = useTranslation();
-  const { t: localT } = useWorkflowTranslation();
   const [dir, setDir] = useState(value.offset ? value.offset / Math.abs(value.offset) : 0);
 
   return (
@@ -18,7 +21,12 @@ export function OnField({ value, onChange }) {
         gap: 0.5em;
       `}
     >
-      <DateFieldsSelect value={value.field} onChange={(field) => onChange({ ...value, field })} />
+      <FieldsSelect
+        value={value.field}
+        onChange={(field) => onChange({ ...value, field })}
+        filter={dateFieldFilter}
+        placeholder={t('Select field')}
+      />
       {value.field ? (
         <Select
           value={dir}
@@ -26,11 +34,12 @@ export function OnField({ value, onChange }) {
             setDir(v);
             onChange({ ...value, offset: Math.abs(value.offset) * v });
           }}
-        >
-          <Select.Option value={0}>{localT('Exactly at')}</Select.Option>
-          <Select.Option value={-1}>{t('Before')}</Select.Option>
-          <Select.Option value={1}>{t('After')}</Select.Option>
-        </Select>
+          options={[
+            { value: 0, label: lang('Exactly at') },
+            { value: -1, label: t('Before') },
+            { value: 1, label: t('After') },
+          ]}
+        />
       ) : null}
       {dir ? (
         <>
@@ -38,12 +47,16 @@ export function OnField({ value, onChange }) {
             value={Math.abs(value.offset)}
             onChange={(v) => onChange({ ...value, offset: (v ?? 0) * dir })}
           />
-          <Select value={value.unit || 86400000} onChange={(unit) => onChange({ ...value, unit })}>
-            <Select.Option value={86400000}>{localT('Days')}</Select.Option>
-            <Select.Option value={3600000}>{localT('Hours')}</Select.Option>
-            <Select.Option value={60000}>{localT('Minutes')}</Select.Option>
-            <Select.Option value={1000}>{localT('Seconds')}</Select.Option>
-          </Select>
+          <Select
+            value={value.unit || 86400000}
+            onChange={(unit) => onChange({ ...value, unit })}
+            options={[
+              { value: 86400000, label: lang('Days') },
+              { value: 3600000, label: lang('Hours') },
+              { value: 60000, label: lang('Minutes') },
+              { value: 1000, label: lang('Seconds') },
+            ]}
+          />
         </>
       ) : null}
     </fieldset>

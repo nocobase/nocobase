@@ -5,7 +5,6 @@ import CollectionFieldset from '../components/CollectionFieldset';
 import { NAMESPACE } from '../locale';
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
 import { useCollectionFieldOptions } from '../variable';
-import { FieldsSelect } from '../components/FieldsSelect';
 
 export default {
   title: `{{t("Create record", { ns: "${NAMESPACE}" })}}`,
@@ -38,7 +37,6 @@ export default {
   },
   components: {
     CollectionFieldset,
-    FieldsSelect,
   },
   useVariables({ config }, options) {
     const result = useCollectionFieldOptions({

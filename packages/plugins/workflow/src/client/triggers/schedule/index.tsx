@@ -5,7 +5,6 @@ import { SCHEDULE_MODE } from './constants';
 import { NAMESPACE, useWorkflowTranslation } from '../../locale';
 import { CollectionBlockInitializer } from '../../components/CollectionBlockInitializer';
 import { useCollectionFieldOptions } from '../../variable';
-import { FieldsSelect } from '../../components/FieldsSelect';
 
 export default {
   title: `{{t("Schedule event", { ns: "${NAMESPACE}" })}}`,
@@ -22,7 +21,6 @@ export default {
   },
   components: {
     ScheduleConfig,
-    FieldsSelect,
   },
   useVariables(config, { types }) {
     const { t } = useWorkflowTranslation();
