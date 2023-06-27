@@ -102,7 +102,9 @@ export const TaskItem: React.FC<TaskItemProps> = (props) => {
         className={isProjectBar ? cx(projectLabel) : isTextInside ? cx(barLabel) : cx(barLabel) && cx(barLabelOutside)}
         ref={textRef}
       >
-        {isProjectBar ? `${task.name}: ${getYmd(task.start)} ~ ${getYmd(task.end)}` : task.name}
+        {isProjectBar && getYmd(task.start) && getYmd(task.end)
+          ? `${task.name}:  ${getYmd(task.start)} ~ ${getYmd(task.end)}`
+          : task.name}
       </text>
     </g>
   );

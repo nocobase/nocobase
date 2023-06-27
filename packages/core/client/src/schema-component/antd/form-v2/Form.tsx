@@ -141,7 +141,7 @@ const WithForm = (props) => {
       form.removeEffects(id);
     };
   }, [linkageRules]);
-  return fieldSchema['x-decorator'] === 'Form' ? <FormDecorator {...props} /> : <FormComponent {...props} />;
+  return fieldSchema['x-decorator'] === 'FormV2' ? <FormDecorator {...props} /> : <FormComponent {...props} />;
 };
 
 const WithoutForm = (props) => {
@@ -159,7 +159,7 @@ const WithoutForm = (props) => {
       }),
     [],
   );
-  return fieldSchema['x-decorator'] === 'Form' ? (
+  return fieldSchema['x-decorator'] === 'FormV2' ? (
     <FormDecorator form={form} {...props} />
   ) : (
     <FormComponent form={form} {...props} />
