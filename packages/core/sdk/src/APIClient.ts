@@ -165,15 +165,6 @@ export class Auth {
     const data = response?.data?.data;
     this.setToken(data?.token);
     this.setAuthenticator(authenticator);
-    const roles = data?.user?.roles;
-    if (!this.getRole() && roles?.length) {
-      const role = roles.find((role: any) => role.default);
-      if (role) {
-        this.setRole(role.name);
-      } else {
-        this.setRole(roles[0].name);
-      }
-    }
     return response;
   }
 
