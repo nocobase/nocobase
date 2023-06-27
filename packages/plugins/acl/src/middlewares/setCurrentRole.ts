@@ -23,5 +23,9 @@ export async function setCurrentRole(ctx: Context, next) {
     return currentRole ? role.name === currentRole : role.default;
   })?.name;
 
+  if (!ctx.state.currentRole) {
+    return ctx.throw(401, 'User role not found');
+  }
+
   await next();
 }
