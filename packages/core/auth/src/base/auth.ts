@@ -1,6 +1,5 @@
 import { Collection, Model } from '@nocobase/database';
 import { Auth, AuthConfig } from '../auth';
-import { SignPayload } from './jwt-service';
 
 /**
  * BaseAuth
@@ -56,26 +55,5 @@ export class BaseAuth extends Auth {
 
   async validate(): Promise<Model> {
     return null;
-  }
-
-  async signIn(payload: SignPayload) {
-    let user: Model;
-    try {
-      user = await this.validate();
-    } catch (err) {
-      console.log(err);
-      this.ctx.throw(401, err.message);
-    }
-    if (!user) {
-      this.ctx.throw(401, 'Unauthorized');
-    }
-    const token = this.jwt.sign({
-      userId: user.id,
-      ...payload,
-    });
-    return {
-      user,
-      token,
-    };
   }
 }
