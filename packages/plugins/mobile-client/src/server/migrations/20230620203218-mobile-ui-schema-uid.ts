@@ -8,9 +8,9 @@ export default class extends Migration {
     const uiRoutes = this.db.getRepository('uiRoutes');
     const routes = await uiRoutes.find();
     for (const route of routes) {
-      if (route.uiSchemaUid && route?.options?.component === 'AdminLayout') {
+      if (route.uiSchemaUid && route?.options?.component === 'MApplication') {
         const options = instance.options || {};
-        options['adminSchemaUid'] = route.uiSchemaUid;
+        options['mobileSchemaUid'] = route.uiSchemaUid;
         instance.set('options', options);
         instance.changed('options', true);
         await instance.save();
@@ -18,8 +18,8 @@ export default class extends Migration {
       }
     }
     instance = await systemSettings.findOne();
-    if (!instance.get('options')?.mobileSchemaUid) {
-      throw new Error('adminSchemaUid invalid');
+    if (!instance?.options?.mobileSchemaUid) {
+      throw new Error('mobileSchemaUid invalid');
     }
     this.app.log.info('systemSettings.options', instance.toJSON());
   }

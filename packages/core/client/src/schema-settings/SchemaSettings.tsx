@@ -28,7 +28,6 @@ import React, {
   useMemo,
   // @ts-ignore
   useTransition as useReactTransition,
-  useRef,
   useState,
 } from 'react';
 import { createPortal } from 'react-dom';
@@ -148,7 +147,6 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
   const { title, dn, ...others } = props;
   const [visible, setVisible] = useState(false);
   const { Component, getMenuItems } = useMenuItem();
-  const menuItems = useRef([]);
   const [isPending, startTransition] = useReactTransition();
 
   const changeMenu = (v: boolean) => {
@@ -157,19 +155,17 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
     });
   };
 
-  if (visible) {
-    menuItems.current = getMenuItems(() => props.children);
-  }
+  const items = getMenuItems(() => props.children);
 
   const dropdownMenu = () => (
     <>
-      {visible ? <Component /> : null}
+      <Component />
       <Dropdown
         open={visible}
         onOpenChange={() => {
           changeMenu(!visible);
         }}
-        menu={{ items: menuItems.current, className: classNames({ [hidden]: !visible }) }}
+        menu={{ items, className: classNames({ [hidden]: !visible }) }}
         overlayClassName={overlayClassName}
       >
         {typeof title === 'string' ? <span>{title}</span> : title}
