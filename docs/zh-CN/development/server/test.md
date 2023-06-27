@@ -90,7 +90,7 @@ describe('my suite', () => {
 
 ## 示例
 
-我们以之前在 [资源与操作](development/server/resources-actions) 章节的功能为例，来写一个插件的测试：
+我们以之前在 [资源与操作](resources-actions) 章节的功能为例，来写一个插件的测试：
 
 ```ts
 import { mockServer } from '@nocobase/test';
