@@ -1,6 +1,6 @@
 import { Statistic, Table } from 'antd';
 import { lang } from '../../locale';
-import { Charts } from '../ChartLibrary';
+import { Charts, infer } from '../ChartLibrary';
 
 export const AntdLibrary: Charts = {
   statistic: {
@@ -9,6 +9,14 @@ export const AntdLibrary: Charts = {
     schema: {
       type: 'object',
       properties: {
+        field: {
+          title: lang('Field'),
+          type: 'string',
+          'x-decorator': 'FormItem',
+          'x-component': 'Select',
+          'x-reactions': '{{ useChartFields }}',
+          required: true,
+        },
         title: {
           title: lang('Title'),
           type: 'string',
@@ -17,12 +25,22 @@ export const AntdLibrary: Charts = {
         },
       },
     },
-    useProps: ({ data, fieldProps, general, advanced }) => {
-      const props = Object.values(fieldProps)[0];
-      const value = Object.values(data[0] || {})[0];
+    init: (fields, { measures, dimensions }) => {
+      const { yField } = infer(fields, { measures, dimensions });
       return {
-        value,
-        formatter: props.transformer,
+        general: {
+          field: yField?.value,
+          title: yField?.label,
+        },
+      };
+    },
+    useProps: ({ data, fieldProps, general, advanced }) => {
+      const record = data[0] || {};
+      const field = general?.field;
+      const props = fieldProps[field];
+      return {
+        value: record[field],
+        formatter: props?.transformer,
         ...general,
         ...advanced,
       };
