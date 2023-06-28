@@ -121,7 +121,7 @@ describe('actions', () => {
       expect(data.roleName).toContain(createData.values.role.name);
     });
 
-    it("Only show current user's API Keys", async () => {
+    it("Only show current user's API keys", async () => {
       expect((await resource.list()).body.data.length).toBe(1);
       await agent.login(testUser);
       expect((await resource.list()).body.data.length).toBe(0);
@@ -156,7 +156,7 @@ describe('actions', () => {
       expect((await resource.list()).body.data.length).toBe(0);
     });
 
-    it("Cannot delete other user's API Keys", async () => {
+    it("Cannot delete other user's API keys", async () => {
       const res = await resource.list();
       expect(res.body.data.length).toBe(1);
       const data = res.body.data[0];

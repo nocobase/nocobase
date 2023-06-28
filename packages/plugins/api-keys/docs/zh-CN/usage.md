@@ -1,8 +1,8 @@
-# API Keys 使用方法
+# API keys 使用方法
 
 ## 创建 API Key
 
-当你启用插件后，前往 API Keys 的插件管理页面，点击 `添加 API Key` 并填写相关信息，点击 `保存` 即可创建 API Key。
+当你启用插件后，前往 API keys 的插件管理页面，点击 `添加 API Key` 并填写相关信息，点击 `保存` 即可创建 API Key。
 
 ## 使用 API Key
 

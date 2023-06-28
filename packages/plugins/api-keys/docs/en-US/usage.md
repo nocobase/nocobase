@@ -1,8 +1,8 @@
-# API Keys Usage
+# API keys Usage
 
 ## Creating an API Key
 
-After enabling the plugin, go to the API Keys plugin management page, click `Add API Key`, fill in the relevant information, and click Save to create an API Key.
+After enabling the plugin, go to the API keys plugin management page, click `Add API Key`, fill in the relevant information, and click Save to create an API Key.
 
 ## Using an API Key
 
