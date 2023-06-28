@@ -86,7 +86,7 @@ export const configurationSchema: ISchema = {
             create: {
               type: 'void',
               'x-action': 'create',
-              title: "{{t('Add API Key')}}",
+              title: generateNTemplate('Add API Key'),
               'x-component': 'Action',
               'x-component-props': {
                 openMode: 'drawer',
@@ -95,7 +95,7 @@ export const configurationSchema: ISchema = {
               properties: {
                 drawer: {
                   type: 'void',
-                  title: "{{t('Add API Key')}}",
+                  title: generateNTemplate('Add API Key'),
                   'x-decorator': 'Form',
                   'x-component': 'Action.Modal',
                   'x-component-props': {
