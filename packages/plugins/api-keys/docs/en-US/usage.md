@@ -6,7 +6,7 @@ After enabling the plugin, go to the API Keys plugin management page, click `Add
 
 ## Using an API Key
 
-Add the `Authorization` field to the request header, with the value of `Bearer ${API_KEY}`, to access all `nocobase` APIs using the API Key.
+Add the `Authorization` field to the request header, with the value of `Bearer ${API_KEY}`, to access all `NocoBase` APIs using the API Key.
 
 Here's an example using cURL:
 

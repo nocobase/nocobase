@@ -6,7 +6,7 @@
 
 ## 使用 API Key
 
-在请求头中添加 `Authorization` 字段，值为 `Bearer ${API_KEY}`，即可使用 API Key 访问 `nocobase` 所有 API。
+在请求头中添加 `Authorization` 字段，值为 `Bearer ${API_KEY}`，即可使用 API Key 访问 `NocoBase` 所有 API。
 
 cURL 的例子如下
 
