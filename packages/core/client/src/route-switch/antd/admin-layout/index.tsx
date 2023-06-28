@@ -166,7 +166,8 @@ export const InternalAdminLayout = (props: any) => {
           }
 
           position: fixed;
-          width: 100%;
+          left: 0;
+          right: 0;
           height: 46px;
           line-height: 46px;
           padding: 0;
