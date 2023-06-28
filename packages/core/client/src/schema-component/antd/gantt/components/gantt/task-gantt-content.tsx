@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { EventOption } from '../../types/public-types';
-import { BarTask } from '../../types/bar-task';
-import { Arrow } from '../other/arrow';
 import { handleTaskBySVGMouseEvent } from '../../helpers/bar-helper';
 import { isKeyboardEvent } from '../../helpers/other-helper';
-import { TaskItem } from '../task-item/task-item';
+import { BarTask } from '../../types/bar-task';
 import { BarMoveAction, GanttContentMoveAction, GanttEvent } from '../../types/gantt-task-actions';
+import { EventOption } from '../../types/public-types';
+import { Arrow } from '../other/arrow';
+import { TaskItem } from '../task-item/task-item';
 
 let lastAction = null;
 let lastStart = null;
@@ -28,6 +28,7 @@ export type TaskGanttContentProps = {
   setGanttEvent: (value: GanttEvent) => void;
   setFailedTask: (value: BarTask | null) => void;
   setSelectedTask: (taskId: string) => void;
+  defaultStart?: any;
 } & EventOption;
 
 export const TaskGanttContent: React.FC<TaskGanttContentProps> = ({
@@ -53,6 +54,7 @@ export const TaskGanttContent: React.FC<TaskGanttContentProps> = ({
   onDoubleClick,
   onClick,
   onDelete,
+  defaultStart,
 }) => {
   const point = svg?.current?.createSVGPoint();
   const [xStep, setXStep] = useState(0);
@@ -81,7 +83,7 @@ export const TaskGanttContent: React.FC<TaskGanttContentProps> = ({
       const { isChanged, changedTask } = handleTaskBySVGMouseEvent(
         cursor.x,
         ganttEvent.action as BarMoveAction,
-        ganttEvent.changedTask,
+        { ...ganttEvent.changedTask, start: ganttEvent.changedTask.start || defaultStart },
         xStep,
         timeStep,
         initEventX1Delta,
@@ -102,7 +104,7 @@ export const TaskGanttContent: React.FC<TaskGanttContentProps> = ({
       const { changedTask: newChangedTask } = handleTaskBySVGMouseEvent(
         cursor.x,
         action as BarMoveAction,
-        changedTask,
+        { ...changedTask, start: changedTask.start || defaultStart },
         xStep,
         timeStep,
         initEventX1Delta,

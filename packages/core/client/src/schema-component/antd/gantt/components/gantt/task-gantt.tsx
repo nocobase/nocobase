@@ -1,9 +1,9 @@
-import React, { useRef, useEffect, forwardRef } from 'react';
 import { cx } from '@emotion/css';
-import { GridProps, Grid } from '../grid/grid';
-import { CalendarProps, Calendar } from '../calendar/calendar';
-import { TaskGanttContentProps, TaskGanttContent } from './task-gantt-content';
+import React, { forwardRef, useEffect, useRef } from 'react';
+import { Calendar, CalendarProps } from '../calendar/calendar';
+import { Grid, GridProps } from '../grid/grid';
 import { ganttVerticalContainer, horizontalContainer } from './style';
+import { TaskGanttContent, TaskGanttContentProps } from './task-gantt-content';
 
 export type TaskGanttProps = {
   gridProps: GridProps;
@@ -19,7 +19,6 @@ export const TaskGantt: React.FC<TaskGanttProps> = forwardRef(
     const ganttSVGRef = useRef<SVGSVGElement>(null);
     const horizontalContainerRef = useRef<HTMLDivElement>(null);
     const newBarProps = { ...barProps, svg: ganttSVGRef };
-
     useEffect(() => {
       if (horizontalContainerRef.current) {
         horizontalContainerRef.current.scrollTop = scrollY;
@@ -57,7 +56,7 @@ export const TaskGantt: React.FC<TaskGanttProps> = forwardRef(
             style={{ borderBottom: '1px solid #f0f0f0' }}
           >
             <Grid {...gridProps} />
-            <TaskGanttContent {...newBarProps} />
+            <TaskGanttContent {...newBarProps} defaultStart={calendarProps.dateSetup.dates[0]} />
           </svg>
         </div>
       </div>
