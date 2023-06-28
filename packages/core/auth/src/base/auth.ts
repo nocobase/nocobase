@@ -44,7 +44,7 @@ export class BaseAuth extends Auth {
       const { userId, roleName } = await this.jwt.decode(token);
 
       if (roleName) {
-        this.ctx.set('X-Role', roleName);
+        this.ctx.headers['x-role'] = roleName;
       }
 
       return await this.userRepository.findOne({
