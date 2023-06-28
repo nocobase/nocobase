@@ -156,6 +156,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return await app.handleEventPush(event, options);
   }
 
+  // broadcast event to all other apps
   async rpcBroadcast(caller: Application, event: string, eventOptions?: any) {
     const appNames = Object.keys(this.apps);
     for (const appName of appNames) {

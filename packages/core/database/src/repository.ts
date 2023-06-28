@@ -555,12 +555,16 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         ...options,
         transaction,
       });
+
       await this.database.emitAsync(`${this.collection.name}.afterSaveWithAssociations`, instance, {
         ...options,
         transaction,
       });
+
       instance.clearChangedWithAssociations();
     }
+
+    await this.database.emitAsync(`${this.collection.name}.afterCreateOutTransaction`, instance);
 
     return instance;
   }

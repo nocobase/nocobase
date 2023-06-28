@@ -129,12 +129,32 @@ class SubAppPlugin extends Plugin {
     this.app.on('rpc:afterRemoveCollection', async ({ collectionName }) => {
       this.db.removeCollection(collectionName);
     });
+
+    this.app.on('rpc:users.afterCreateOutTransaction', async ({ id }) => {
+      const user = await this.app.db.getRepository('users').findOne({
+        filter: {
+          id,
+        },
+      });
+
+      if (!user) {
+        return;
+      }
+
+      const defaultRole = await this.app.db.getRepository('roles').findOne({
+        filter: {
+          default: true,
+        },
+      });
+
+      if (defaultRole && (await user.countRoles()) == 0) {
+        await user.addRoles(defaultRole);
+      }
+    });
   }
 }
 
 export class MultiAppShareCollectionPlugin extends Plugin {
-  afterAdd() {}
-
   async beforeEnable() {
     if (!this.db.inDialect('postgres')) {
       throw new Error('multi-app-share-collection plugin only support postgres');
@@ -145,29 +165,6 @@ export class MultiAppShareCollectionPlugin extends Plugin {
     if (!this.db.inDialect('postgres')) {
       throw new Error('multi-app-share-collection plugin only support postgres');
     }
-
-    const traverseSubApps = async (
-      callback: (subApp: Application) => void,
-      options?: {
-        loadFromDatabase: boolean;
-      },
-    ) => {
-      if (lodash.get(options, 'loadFromDatabase')) {
-        for (const application of await this.app.db.getCollection('applications').repository.find()) {
-          const appName = application.get('name');
-          const subApp = await AppSupervisor.getInstance().getApp(appName);
-          await callback(subApp);
-        }
-
-        return;
-      }
-
-      const subApps = [...AppSupervisor.getInstance().subApps()];
-
-      for (const subApp of subApps) {
-        await callback(subApp);
-      }
-    };
 
     const appSupervisor = AppSupervisor.getInstance();
 
@@ -181,28 +178,9 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       app.plugin(SubAppPlugin, { name: 'sub-app', mainApp: self.app });
     });
 
-    this.app.db.on('users.afterCreateWithAssociations', async (model, options) => {
-      await traverseSubApps(async (subApp) => {
-        const { transaction } = options;
-        const repository = subApp.db.getRepository('roles');
-
-        const subAppUserModel = await subApp.db.getCollection('users').repository.findOne({
-          filter: {
-            id: model.get('id'),
-          },
-          transaction,
-        });
-
-        const defaultRole = await repository.findOne({
-          filter: {
-            default: true,
-          },
-          transaction,
-        });
-
-        if (defaultRole && (await subAppUserModel.countRoles({ transaction })) == 0) {
-          await subAppUserModel.addRoles(defaultRole, { transaction });
-        }
+    this.app.db.on('users.afterCreateOutTransaction', async (model) => {
+      await appSupervisor.rpcBroadcast(this.app, 'users.afterCreateOutTransaction', {
+        id: model.get('id'),
       });
     });
 
