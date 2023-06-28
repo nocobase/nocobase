@@ -1,5 +1,6 @@
 import { SchemaInitializerItemOptions, useCollectionDataSource } from '@nocobase/client';
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
+import { FieldsSelect } from '../components/FieldsSelect';
 import { NAMESPACE, useWorkflowTranslation } from '../locale';
 import { appends, collection, filter } from '../schemas/collection';
 import { useCollectionFieldOptions } from '../variable';
@@ -75,6 +76,7 @@ export default {
       'x-decorator': 'FormItem',
       'x-component': 'FieldsSelect',
       'x-component-props': {
+        className: 'full-width',
         mode: 'multiple',
         placeholder: '{{t("Select field")}}',
         filter(field) {
@@ -131,7 +133,9 @@ export default {
   scope: {
     useCollectionDataSource,
   },
-  components: {},
+  components: {
+    FieldsSelect,
+  },
   useVariables(config, options) {
     const { t } = useWorkflowTranslation();
     const rootFields = [
