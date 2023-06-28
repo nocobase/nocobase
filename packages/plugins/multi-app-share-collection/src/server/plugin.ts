@@ -6,6 +6,8 @@ import { resolve } from 'path';
 const subAppFilteredPlugins = ['multi-app-share-collection', 'multi-app-manager'];
 
 class SubAppPlugin extends Plugin {
+  appCollectionBlacklist = [];
+
   async beforeLoad() {
     const sharedCollectionGroups = [
       'audit-logs',
@@ -61,19 +63,10 @@ class SubAppPlugin extends Plugin {
       }
 
       if (actionName === 'list' && resourceName === 'collections') {
-        // 在子应用内存中维护，不再实时从主应用取
-        const appCollectionBlacklistCollection = mainApp.db.getCollection('appCollectionBlacklist');
-
-        const blackList = await appCollectionBlacklistCollection.model.findAll({
-          where: {
-            applicationName: subApp.name,
-          },
-        });
-
-        if (blackList.length > 0) {
+        if (this.appCollectionBlacklist.length > 0) {
           ctx.action.mergeParams({
             filter: {
-              'name.$notIn': blackList.map((item) => item.get('collectionName')),
+              'name.$notIn': this.appCollectionBlacklist.map((item) => item.get('collectionName')),
             },
           });
         }
