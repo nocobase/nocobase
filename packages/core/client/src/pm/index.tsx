@@ -11,7 +11,6 @@ import { ACLPane } from '../acl/ACLShortcut';
 import { useRequest } from '../api-client';
 import { Plugin } from '../application-v2/Plugin';
 import { CollectionManagerPane } from '../collection-manager';
-import { useDocumentTitle } from '../document-title';
 import { Icon } from '../icon';
 import { useCompile } from '../schema-component';
 import { BlockTemplatesPane } from '../schema-templates';
@@ -115,7 +114,6 @@ const PluginList = (props) => {
   const params = useParams<any>();
   const navigate = useNavigate();
   const { tabName = 'local' } = params;
-  const { setTitle } = useDocumentTitle();
   const { t } = useTranslation();
   const { snippets = [] } = useACLRoleContext();
 
