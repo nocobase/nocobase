@@ -129,7 +129,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return super.on(eventName, listener);
   }
 
-  async rpcCall(appName: string, method: string, ...args: any[]) {
+  async rpcCall(appName: string, method: string, ...args: any[]): Promise<{ result: any }> {
     const app = this.apps[appName];
     if (!app) {
       throw new Error(`rpc call failed, app ${appName} not exists`);

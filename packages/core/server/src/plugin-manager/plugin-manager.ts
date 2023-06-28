@@ -162,6 +162,10 @@ export class PluginManager {
     return this.plugins;
   }
 
+  getPluginsAsArray() {
+    return Array.from(this.plugins.values());
+  }
+
   get(name: string) {
     return this.plugins.get(name);
   }

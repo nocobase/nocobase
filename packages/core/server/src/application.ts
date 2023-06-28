@@ -490,15 +490,17 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.emit('workingMessageChanged', this.workingMessage);
   }
 
-  public async handleDynamicCall(method, ...args) {
+  public async handleDynamicCall(method, ...args): Promise<{ result: any }> {
     const target = lodash.get(this, method);
+    let result = target;
+
     if (typeof target === 'function') {
       const methodPaths: Array<string> = method.split('.');
       methodPaths.pop();
-      return target.apply(methodPaths.length > 0 ? lodash.get(this, methodPaths.join('.')) : this, args);
+      result = await target.apply(methodPaths.length > 0 ? lodash.get(this, methodPaths.join('.')) : this, args);
     }
 
-    return target;
+    return JSON.parse(JSON.stringify({ result }));
   }
 
   protected init() {

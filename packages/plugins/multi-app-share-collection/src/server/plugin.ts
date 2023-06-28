@@ -7,8 +7,6 @@ const subAppFilteredPlugins = ['multi-app-share-collection', 'multi-app-manager'
 
 class SubAppPlugin extends Plugin {
   async beforeLoad() {
-    const subApp = this.app;
-
     const sharedCollectionGroups = [
       'audit-logs',
       'workflow',
@@ -22,8 +20,10 @@ class SubAppPlugin extends Plugin {
       'verification',
     ];
 
-    const collectionGroups = await AppSupervisor.getInstance().rpcCall('main', 'db.collectionGroupManager.getGroups');
-    const mainSchema = await AppSupervisor.getInstance().rpcCall('main', 'db.options.schema');
+    const collectionGroups = (await AppSupervisor.getInstance().rpcCall('main', 'db.collectionGroupManager.getGroups'))
+      .result;
+
+    const mainSchema = (await AppSupervisor.getInstance().rpcCall('main', 'db.options.schema')).result;
 
     const sharedCollectionGroupsCollections = [];
 
@@ -35,7 +35,7 @@ class SubAppPlugin extends Plugin {
 
     const sharedCollections = [...sharedCollectionGroupsCollections.flat(), 'users', 'users_jobs'];
 
-    subApp.db.on('beforeDefineCollection', (options) => {
+    this.app.db.on('beforeDefineCollection', (options) => {
       const name = options.name;
 
       // 指向主应用的 系统schema
@@ -44,9 +44,9 @@ class SubAppPlugin extends Plugin {
       }
     });
 
-    subApp.db.on('beforeUpdateCollection', (collection, newOptions) => {
+    this.app.db.on('beforeUpdateCollection', (collection, newOptions) => {
       if (collection.name === 'roles') {
-        newOptions.schema = subApp.db.options.schema;
+        newOptions.schema = this.app.db.options.schema;
       }
     });
 
@@ -61,6 +61,7 @@ class SubAppPlugin extends Plugin {
       }
 
       if (actionName === 'list' && resourceName === 'collections') {
+        // 在子应用内存中维护，不再实时从主应用取
         const appCollectionBlacklistCollection = mainApp.db.getCollection('appCollectionBlacklist');
 
         const blackList = await appCollectionBlacklistCollection.model.findAll({
@@ -80,34 +81,20 @@ class SubAppPlugin extends Plugin {
       await next();
     });
 
-    // new subApp sync plugins from mainApp
-    // subApp.on('beforeInstall', async () => {
-    //   const subAppPluginsCollection = subApp.db.getCollection('applicationPlugins');
-    //   const mainAppPluginsCollection = mainApp.db.getCollection('applicationPlugins');
-    //
-    //   // delete old collection
-    //   await subApp.db.sequelize.query(`TRUNCATE ${subAppPluginsCollection.quotedTableName()}`);
-    //
-    //   await subApp.db.sequelize.query(`
-    //     INSERT INTO ${subAppPluginsCollection.quotedTableName()}
-    //     SELECT *
-    //     FROM ${mainAppPluginsCollection.quotedTableName()}
-    //     WHERE "name" not in ('multi-app-manager', 'multi-app-share-collection');
-    //   `);
-    //
-    //   const sequenceNameSql = `SELECT pg_get_serial_sequence('"${subAppPluginsCollection.collectionSchema()}"."${
-    //     subAppPluginsCollection.model.tableName
-    //   }"', 'id')`;
-    //
-    //   const sequenceName = (await subApp.db.sequelize.query(sequenceNameSql, { type: 'SELECT' })) as any;
-    //   await subApp.db.sequelize.query(`
-    //     SELECT setval('${
-    //       sequenceName[0]['pg_get_serial_sequence']
-    //     }', (SELECT max("id") FROM ${subAppPluginsCollection.quotedTableName()}));
-    //   `);
-    //
-    //   console.log(`sync plugins from ${mainApp.name} app to sub app ${subApp.name}`);
-    // });
+    this.app.on('beforeInstall', async () => {
+      const applicationPluginsCollection = this.app.db.getCollection('applicationPlugins');
+      await this.app.db.sequelize.query(`TRUNCATE ${applicationPluginsCollection.quotedTableName()}`);
+
+      const mainAppPlugins = (
+        await AppSupervisor.getInstance().rpcCall('main', 'db.callToRepository', 'applicationPlugins', 'find')
+      ).result;
+
+      const appPlugins = mainAppPlugins.filter((item) => !subAppFilteredPlugins.includes(item.name));
+
+      await applicationPluginsCollection.repository.create({
+        values: appPlugins,
+      });
+    });
   }
 }
 
