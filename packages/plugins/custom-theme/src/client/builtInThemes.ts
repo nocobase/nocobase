@@ -1,19 +1,25 @@
-import type { ThemeConfig as Config } from 'antd';
 import { theme } from 'antd';
+import { useMemo } from 'react';
+import { useTranslation } from './locale';
+import { ThemeConfig } from './types';
 
-type ThemeConfig = Config & { id: string };
+export const useBuiltInThemes = (): ThemeConfig[] => {
+  const { t } = useTranslation();
 
-export const defaultTheme: ThemeConfig = {
-  id: 'default',
-  algorithm: theme.defaultAlgorithm,
-};
-
-export const darkTheme: ThemeConfig = {
-  id: 'dark',
-  algorithm: theme.darkAlgorithm,
-};
-
-export const compactTheme: ThemeConfig = {
-  id: 'compact',
-  algorithm: theme.compactAlgorithm,
+  return useMemo(() => {
+    return [
+      {
+        name: t('Default theme'),
+        algorithm: theme.defaultAlgorithm,
+      },
+      {
+        name: t('Dark theme'),
+        algorithm: theme.darkAlgorithm,
+      },
+      {
+        name: t('Compact theme'),
+        algorithm: theme.compactAlgorithm,
+      },
+    ];
+  }, []);
 };

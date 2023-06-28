@@ -1,12 +1,12 @@
 import { useRequest } from '@nocobase/client';
-import type { ThemeConfig } from 'antd';
 import { Spin } from 'antd';
 import React from 'react';
-import { compactTheme, darkTheme, defaultTheme } from '../builtInThemes';
+import { useBuiltInThemes } from '../builtInThemes';
+import { ThemeConfig } from '../types';
 import ThemeCard from './ThemeCard';
 
 interface TData {
-  data: (ThemeConfig & { id: number })[];
+  data: ThemeConfig[];
 }
 
 const ThemeList = () => {
@@ -17,6 +17,8 @@ const ThemeList = () => {
       paginate: false,
     },
   });
+  const builtInThemes = useBuiltInThemes();
+
   if (loading) {
     return <Spin />;
   }
@@ -25,7 +27,7 @@ const ThemeList = () => {
     throw new Error('ThemeList: data is empty');
   }
 
-  const list = [defaultTheme, compactTheme, darkTheme, ...data.data];
+  const list = [...builtInThemes, ...data.data];
 
   return (
     <>
