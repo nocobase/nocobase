@@ -100,6 +100,13 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return app;
   }
 
+  // get registered app names
+  async getAppsNames() {
+    const apps = Object.values(this.apps);
+
+    return apps.map((app) => app.name);
+  }
+
   async removeApp(appName: string) {
     if (!this.apps[appName]) {
       console.log(`app ${appName} not exists`);
@@ -129,6 +136,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return super.on(eventName, listener);
   }
 
+  // call rpc method of other app
   async rpcCall(appName: string, method: string, ...args: any[]): Promise<{ result: any }> {
     const app = this.apps[appName];
     if (!app) {
@@ -136,6 +144,27 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     }
 
     return await app.handleDynamicCall(method, ...args);
+  }
+
+  // push event to other app
+  async rpcPush(appName: string, event: string, options?: any) {
+    const app = this.apps[appName];
+    if (!app) {
+      throw new Error(`rpc call failed, app ${appName} not exists`);
+    }
+
+    return await app.handleEventPush(event, options);
+  }
+
+  async rpcBroadcast(caller: Application, event: string, eventOptions?: any) {
+    const appNames = Object.keys(this.apps);
+    for (const appName of appNames) {
+      if (appName === caller.name) {
+        continue;
+      }
+
+      await this.rpcPush(appName, event, eventOptions);
+    }
   }
 }
 

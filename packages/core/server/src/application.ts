@@ -503,6 +503,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return JSON.parse(JSON.stringify({ result }));
   }
 
+  public async handleEventPush(eventName: string, options?: any) {
+    await this.emitAsync(`rpc:${eventName}`, options);
+  }
+
   protected init() {
     const options = this.options;
 

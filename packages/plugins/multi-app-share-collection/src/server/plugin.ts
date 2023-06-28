@@ -88,6 +88,47 @@ class SubAppPlugin extends Plugin {
         values: appPlugins,
       });
     });
+
+    this.app.on('rpc:afterEnablePlugin', async (pluginName) => {
+      await this.app.pm.enable(pluginName);
+    });
+
+    this.app.on('rpc:afterDisablePlugin', async (pluginName) => {
+      await this.app.pm.disable(pluginName);
+    });
+
+    this.app.on('rcp:collection:loaded', async ({ collectionName }) => {
+      const collectionRecord = await this.app.db.getRepository('collections').findOne({
+        filter: {
+          name: collectionName,
+        },
+      });
+
+      await collectionRecord.load();
+    });
+
+    this.app.on('rpc:field:loaded', async ({ fieldKey }) => {
+      const fieldRecord = await this.db.getRepository('fields').findOne({
+        filterByTk: fieldKey,
+      });
+
+      if (fieldRecord) {
+        await fieldRecord.load();
+      }
+    });
+
+    this.app.on('rpc:field.afterRemove', async ({ collectionName, fieldName }) => {
+      const collection = this.db.getCollection(collectionName);
+      if (!collection) {
+        return;
+      }
+
+      collection.removeField(fieldName);
+    });
+
+    this.app.on('rpc:afterRemoveCollection', async ({ collectionName }) => {
+      this.db.removeCollection(collectionName);
+    });
   }
 }
 
@@ -128,6 +169,8 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       }
     };
 
+    const appSupervisor = AppSupervisor.getInstance();
+
     const self = this;
 
     AppSupervisor.getInstance().on('afterAppAdded', function AddSubAppPluginIntoSubApp(app: Application) {
@@ -163,77 +206,37 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       });
     });
 
-    this.app.db.on('collection:loaded', async ({ transaction, collection }) => {
-      await traverseSubApps(async (subApp) => {
-        const name = collection.name;
-
-        const collectionRecord = await subApp.db.getRepository('collections').findOne({
-          filter: {
-            name,
-          },
-          transaction,
-        });
-
-        await collectionRecord.load({ transaction });
+    this.app.db.on('collection:loaded', async ({ collection }) => {
+      await appSupervisor.rpcBroadcast(this.app, 'collection:loaded', {
+        collectionName: collection.name,
       });
     });
 
-    this.app.db.on('field:loaded', async ({ transaction, fieldKey }) => {
-      await traverseSubApps(async (subApp) => {
-        const fieldRecord = await subApp.db.getRepository('fields').findOne({
-          filterByTk: fieldKey,
-          transaction,
-        });
-
-        if (fieldRecord) {
-          await fieldRecord.load({ transaction });
-        }
+    this.app.db.on('field:loaded', async ({ fieldKey }) => {
+      await appSupervisor.rpcBroadcast(this.app, 'field:loaded', {
+        fieldKey,
       });
     });
 
-    this.app.on('afterEnablePlugin', async (pluginName) => {
-      await traverseSubApps(
-        async (subApp) => {
-          if (subAppFilteredPlugins.includes(pluginName)) return;
-          await subApp.pm.enable(pluginName);
-        },
-        {
-          loadFromDatabase: true,
-        },
-      );
+    this.app.db.on('afterEnablePlugin', async (pluginName) => {
+      if (subAppFilteredPlugins.includes(pluginName)) return;
+      await appSupervisor.rpcBroadcast(this.app, 'afterEnablePlugin', pluginName);
     });
 
-    this.app.on('afterDisablePlugin', async (pluginName) => {
-      await traverseSubApps(
-        async (subApp) => {
-          if (subAppFilteredPlugins.includes(pluginName)) return;
-          await subApp.pm.disable(pluginName);
-        },
-        {
-          loadFromDatabase: true,
-        },
-      );
+    this.app.db.on('afterDisablePlugin', async (pluginName) => {
+      if (subAppFilteredPlugins.includes(pluginName)) return;
+      await appSupervisor.rpcBroadcast(this.app, 'afterDisablePlugin', pluginName);
     });
 
-    this.app.db.on('field.afterRemove', (removedField) => {
-      const subApps = [...AppSupervisor.getInstance().subApps()];
-      for (const subApp of subApps) {
-        const collectionName = removedField.collection.name;
-        const collection = subApp.db.getCollection(collectionName);
-        if (!collection) {
-          subApp.log.warn(`collection ${collectionName} not found in ${subApp.name}`);
-          continue;
-        }
-
-        collection.removeField(removedField.name);
-      }
+    this.app.db.on('field.afterRemove', async (removeField) => {
+      await appSupervisor.rpcBroadcast(this.app, 'field.afterRemove', {
+        collectionName: removeField.collection.name,
+        fieldName: removeField.name,
+      });
     });
 
-    this.app.db.on(`afterRemoveCollection`, (collection) => {
-      const subApps = [...AppSupervisor.getInstance().subApps()];
-      for (const subApp of subApps) {
-        subApp.db.removeCollection(collection.name);
-      }
+    this.app.db.on('afterRemoveCollection', async (collection) => {
+      await appSupervisor.rpcBroadcast(this.app, 'afterRemoveCollection', { collectionName: collection.name });
     });
   }
 
@@ -297,7 +300,6 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       };
     });
 
-    // 子应用数据库创建
     multiAppManager.setAppDbCreator(async (app) => {
       app.logger.debug('app db creator called');
       const schema = app.options.database.schema;
