@@ -92,6 +92,7 @@ export const GoogleMapsBlock = (props) => {
       listenerSet.forEach((i) => {
         i();
       });
+      if (!mapRef.current) return;
       selectionOverlayRef.current?.unbindAll();
       selectionOverlayRef.current?.setMap(null);
       selectionOverlayRef.current = null;

@@ -53,6 +53,7 @@ export const AMapBlock = (props) => {
   };
 
   const removeSelection = () => {
+    if (!mapRef.current) return;
     mapRef.current.mouseTool().close(true);
     mapRef.current.editor().setTarget(null);
     mapRef.current.editor().close();
