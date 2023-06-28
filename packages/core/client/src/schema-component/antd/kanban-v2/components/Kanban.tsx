@@ -57,7 +57,6 @@ export const KanbanV2: any = (props) => {
   const { resource } = useBlockRequestContext();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
-
   useEffect(() => {
     const newColumns = columns.map((v) => {
       const column = columnData.find((h) => {
@@ -77,7 +76,7 @@ export const KanbanV2: any = (props) => {
       if (value === '__unknown__') {
         const defaultFilter = isAssociationField
           ? {
-              $and: [{ [groupField.name]: { id: { $notExists: true } } }],
+              $and: [{ [groupField.name]: { [groupField?.targetKey || 'id']: { $notExists: true } } }],
             }
           : {
               $and: [{ [groupField.name]: { $empty: true } }],
