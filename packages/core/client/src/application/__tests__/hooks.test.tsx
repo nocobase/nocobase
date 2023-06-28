@@ -45,11 +45,14 @@ describe('Application Hooks', () => {
       }
       const Hello = () => {
         const demo = usePlugin<{ test: string }>('demo');
+        const demo2 = usePlugin(DemoPlugin);
         expect(demo).toBeInstanceOf(DemoPlugin);
+        expect(demo2).toBeInstanceOf(DemoPlugin);
         expect(demo.test).toBe('test');
+        expect(demo2.test).toBe('test');
         return null;
       };
-      const app = new Application({ plugins: [DemoPlugin], providers: [Hello] });
+      const app = new Application({ plugins: [[DemoPlugin, { name: 'demo' }]], providers: [Hello] });
       const Root = app.getRootComponent();
       render(<Root />);
 
