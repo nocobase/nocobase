@@ -8,7 +8,11 @@
   "description.zh-CN": "支持自定义主题功能",
   "dependencies": {
     "@nocobase/client": "0.10.0-alpha.4",
-    "antd-token-previewer": "^1.1.0"
+    "antd-token-previewer": "^1.1.0",
+    "react": "^18.2.0",
+    "antd": "^5.6.3",
+    "vanilla-jsoneditor": "^0.17.8",
+    "@emotion/css": "^11.11.2"
   },
   "devDependencies": {
     "@nocobase/server": "0.10.0-alpha.4",

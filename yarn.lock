@@ -3305,7 +3305,7 @@
     "@emotion/weak-memoize" "^0.3.1"
     stylis "4.2.0"
 
-"@emotion/css@^11", "@emotion/css@^11.7.1":
+"@emotion/css@^11", "@emotion/css@^11.11.2", "@emotion/css@^11.7.1":
   version "11.11.2"
   resolved "https://registry.npmmirror.com/@emotion/css/-/css-11.11.2.tgz#e5fa081d0c6e335352e1bc2b05953b61832dca5a"
   integrity sha512-VJxe1ucoMYMS7DkiMdC2T7PWNbrEI0a39YRiyDvK2qq4lXwjRbVP/z4lpG+odCsRzadlR+1ywwrTzhdm5HNdew==
@@ -8775,7 +8775,7 @@ antd-token-previewer@^2.0.0-alpha.6:
     use-debouncy "^4.3.0"
     vanilla-jsoneditor "^0.16.1"
 
-antd@5.6.3, antd@^5.4.2, antd@^5.5.1:
+antd@^5:
   version "5.6.3"
   resolved "https://registry.npmmirror.com/antd/-/antd-5.6.3.tgz#18ac8a7245949ff972a01fad7b841f9292c75597"
   integrity sha512-SbZ1rX/eNXiSerF0V048wmh3tdTJdJpP4OsQS2sNH5f+WjZHgC92M7Qqp5YKOM4Rs8GYq63aePpk7SITl85Jqg==
@@ -24940,7 +24940,7 @@ react-to-print@^2.14.7:
   resolved "https://registry.npmmirror.com/react-to-print/-/react-to-print-2.14.13.tgz#cd0349f7ef93c8af5120fac0ef6c4f3d100df490"
   integrity sha512-PqUGgTRZvkyBzWgaZHVBECWPX2nGEc3HOUy6WNXof6HT4yTFI92wtIkqQtr4jfvHbadqjwTgzgh6vgN8KXlWWw==
 
-react@18.1.0, react@18.x, react@^16.8.6, react@^18.0.0, react@^18.2.0:
+react@18.1.0, react@^16.8.6, react@^18.0.0, react@^18.2.0:
   version "18.2.0"
   resolved "https://registry.npmmirror.com/react/-/react-18.2.0.tgz#555bd98592883255fa00de14f1151a917b5d77d5"
   integrity sha512-/3IjMdb2L9QbBdWiW5e3P2/npwMBaU9mHCSCUzNln0ZCYbcfTsGbTJrU/kGemdH2IWmB2ioZ+zkxtmq6g09fGQ==
@@ -29072,6 +29072,11 @@ vanilla-jsoneditor@^0.16.1:
   version "0.16.1"
   resolved "https://registry.npmmirror.com/vanilla-jsoneditor/-/vanilla-jsoneditor-0.16.1.tgz#0408c02cc377dce72bd719439750cf24b581843e"
   integrity sha512-Wirg6DoCrJpYwMHxkwyvgQ16gr4kgH9zzueHSSSovzQDvlg/XSqpY/stVsI5lz1vqJW1RAtr0Ilyyg1AbokRXA==
+
+vanilla-jsoneditor@^0.17.8:
+  version "0.17.8"
+  resolved "https://registry.npmmirror.com/vanilla-jsoneditor/-/vanilla-jsoneditor-0.17.8.tgz#449ae39e986611e020df8a651fdf3f11329b2a84"
+  integrity sha512-DP9GP/IBQjYOnC820CYoFuXs3vgrL+zdGGp1X83qFirSkRWPeP+6zB/14a0LYhvomQNNezes5Gwel89MKc4Qbg==
 
 vary@^1, vary@^1.1.2, vary@~1.1.2:
   version "1.1.2"
