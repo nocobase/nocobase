@@ -6,7 +6,7 @@ export type PluginType<Opts = any> = typeof Plugin | [typeof Plugin, PluginOptio
 
 export class PluginManager {
   protected pluginInstances: Map<typeof Plugin, Plugin> = new Map();
-  protected plugins: Record<string, Plugin> = {};
+  protected pluginsAliases: Record<string, Plugin> = {};
   private loadStaticPlugin: Promise<void>;
   constructor(protected _plugins: PluginType[], protected app: Application) {
     this.app = app;
@@ -22,13 +22,12 @@ export class PluginManager {
   }
 
   async add<T = any>(plugin: typeof Plugin, opts: PluginOptions<T> = {}) {
-    const name = opts.name || plugin.pluginName;
     const instance = this.getInstance(plugin, opts);
 
     this.pluginInstances.set(plugin, instance);
 
     if (opts.name) {
-      this.plugins[name] = instance;
+      this.pluginsAliases[opts.name] = instance;
     }
     await instance.afterAdd();
   }
@@ -37,7 +36,7 @@ export class PluginManager {
   get<T extends {}>(name: string): T;
   get(name: any) {
     if (typeof name === 'string') {
-      return this.plugins[name];
+      return this.pluginsAliases[name];
     }
     return this.pluginInstances.get(name);
   }
