@@ -25,6 +25,7 @@ export const useThemeSettings = () => {
           <Select
             style={{ minWidth: 100 }}
             bordered={false}
+            dropdownMatchSelectWidth={false}
             defaultValue={localStorage.getItem('NOCOBASE_THEME')}
             options={[
               { label: t('Default theme'), value: 'default' },

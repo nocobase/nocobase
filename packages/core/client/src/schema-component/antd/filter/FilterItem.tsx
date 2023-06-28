@@ -40,6 +40,7 @@ export const FilterItem = observer(
             className={css`
               min-width: 110px;
             `}
+            dropdownMatchSelectWidth={false}
             value={operator?.value}
             options={compile(operators)}
             onChange={(value) => {
