@@ -135,7 +135,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
       throw new Error(`rpc call failed, app ${appName} not exists`);
     }
 
-    return await app[method](...args);
+    return await app.handleDynamicCall(method, ...args);
   }
 }
 

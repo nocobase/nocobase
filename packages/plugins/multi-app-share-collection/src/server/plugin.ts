@@ -81,33 +81,33 @@ class SubAppPlugin extends Plugin {
     });
 
     // new subApp sync plugins from mainApp
-    subApp.on('beforeInstall', async () => {
-      const subAppPluginsCollection = subApp.db.getCollection('applicationPlugins');
-      const mainAppPluginsCollection = mainApp.db.getCollection('applicationPlugins');
-
-      // delete old collection
-      await subApp.db.sequelize.query(`TRUNCATE ${subAppPluginsCollection.quotedTableName()}`);
-
-      await subApp.db.sequelize.query(`
-        INSERT INTO ${subAppPluginsCollection.quotedTableName()}
-        SELECT *
-        FROM ${mainAppPluginsCollection.quotedTableName()}
-        WHERE "name" not in ('multi-app-manager', 'multi-app-share-collection');
-      `);
-
-      const sequenceNameSql = `SELECT pg_get_serial_sequence('"${subAppPluginsCollection.collectionSchema()}"."${
-        subAppPluginsCollection.model.tableName
-      }"', 'id')`;
-
-      const sequenceName = (await subApp.db.sequelize.query(sequenceNameSql, { type: 'SELECT' })) as any;
-      await subApp.db.sequelize.query(`
-        SELECT setval('${
-          sequenceName[0]['pg_get_serial_sequence']
-        }', (SELECT max("id") FROM ${subAppPluginsCollection.quotedTableName()}));
-      `);
-
-      console.log(`sync plugins from ${mainApp.name} app to sub app ${subApp.name}`);
-    });
+    // subApp.on('beforeInstall', async () => {
+    //   const subAppPluginsCollection = subApp.db.getCollection('applicationPlugins');
+    //   const mainAppPluginsCollection = mainApp.db.getCollection('applicationPlugins');
+    //
+    //   // delete old collection
+    //   await subApp.db.sequelize.query(`TRUNCATE ${subAppPluginsCollection.quotedTableName()}`);
+    //
+    //   await subApp.db.sequelize.query(`
+    //     INSERT INTO ${subAppPluginsCollection.quotedTableName()}
+    //     SELECT *
+    //     FROM ${mainAppPluginsCollection.quotedTableName()}
+    //     WHERE "name" not in ('multi-app-manager', 'multi-app-share-collection');
+    //   `);
+    //
+    //   const sequenceNameSql = `SELECT pg_get_serial_sequence('"${subAppPluginsCollection.collectionSchema()}"."${
+    //     subAppPluginsCollection.model.tableName
+    //   }"', 'id')`;
+    //
+    //   const sequenceName = (await subApp.db.sequelize.query(sequenceNameSql, { type: 'SELECT' })) as any;
+    //   await subApp.db.sequelize.query(`
+    //     SELECT setval('${
+    //       sequenceName[0]['pg_get_serial_sequence']
+    //     }', (SELECT max("id") FROM ${subAppPluginsCollection.quotedTableName()}));
+    //   `);
+    //
+    //   console.log(`sync plugins from ${mainApp.name} app to sub app ${subApp.name}`);
+    // });
   }
 }
 
@@ -314,7 +314,6 @@ export class MultiAppShareCollectionPlugin extends Plugin {
             'header.x-app',
           ],
         },
-        // pmSock: resolve(process.cwd(), 'storage', `${appName}.sock`),
       };
     });
 
