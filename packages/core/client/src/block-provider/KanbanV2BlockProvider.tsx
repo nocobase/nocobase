@@ -1,14 +1,14 @@
 import { createForm } from '@formily/core';
-import { Spin } from 'antd';
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { Schema, useField, useFieldSchema, useForm } from '@formily/react';
-import uniq from 'lodash/uniq';
+import { Spin } from 'antd';
 import flat from 'flat';
+import uniq from 'lodash/uniq';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { SchemaComponentOptions } from '../';
+import { useAssociationCreateActionProps as useCAP } from '../block-provider/hooks';
 import { useCollectionManager } from '../collection-manager';
 import { RecordProvider } from '../record-provider';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
-import { SchemaComponentOptions } from '../';
-import { useCreateActionProps as useCAP } from '../block-provider/hooks';
 
 export const KanbanV2BlockContext = createContext<any>({});
 
@@ -131,22 +131,24 @@ export const KanbanV2BlockProvider = (props) => {
   const appends = useAssociationNames(collection);
   const groupField: any = useGroupField(props);
   const [kanbanColumns, setKanbanColumns] = useState(columns);
-  if (!groupField) {
-    return null;
-  }
-  if (!Object.keys(params).includes('appends')) {
-    params['appends'] = appends;
-  }
+  const [targetColumn, setTargetColumn] = useState(null);
+
   useEffect(() => {
     const Columns = columns?.filter((v) => v.enabled) || [];
     Columns.push({
       value: '__unknown__',
       label: 'Unknown',
       color: 'default',
-      cards: [],
+      cards: null,
     });
     setKanbanColumns(Columns);
   }, []);
+  if (!groupField) {
+    return null;
+  }
+  if (!Object.keys(params).includes('appends')) {
+    params['appends'] = appends;
+  }
 
   params['filter'] = props.params.filter;
 
@@ -158,34 +160,39 @@ export const KanbanV2BlockProvider = (props) => {
       async onClick() {
         await onClick();
         const targetKey = props.groupField.join('.');
-        const targetColumn = values[targetKey];
-        const index = kanbanColumns.findIndex((v) => {
-          return v.value === targetColumn;
-        });
-        const column = kanbanColumns.find((v) => {
-          return v.value === targetColumn;
-        });
-        const newColumns = [...kanbanColumns];
-        newColumns[index] = { ...column, update: true };
-        setKanbanColumns(newColumns);
+        const target = values[targetKey] || '__unknown__';
+        setTargetColumn(target);
+        // if (targetColumn) {
+        //   const index = kanbanColumns.findIndex((v) => {
+        //     return v.value === targetColumn;
+        //   });
+        //   const column = kanbanColumns.find((v) => {
+        //     return v.value === targetColumn;
+        //   });
+        //   const newColumns = [...kanbanColumns];
+        //   newColumns[index] = { ...column, update: true };
+        //   setKanbanColumns(newColumns);
+        // } else {
+        //   const column = kanbanColumns.find((v) => {
+        //     return v.value === '__unknown__';
+        //   });
+        //   const newColumns = [...kanbanColumns];
+        //   newColumns[0] = { ...column, update: true };
+        //   setKanbanColumns(newColumns);
+        // }
       },
     };
   };
   return (
     <SchemaComponentOptions scope={{ useCreateActionProps }}>
-      <BlockProvider
-        {...props}
-        params={params}
-        refresh={() => {
-          console.log('test');
-        }}
-      >
+      <BlockProvider {...props} params={params}>
         <InternalKanbanV2BlockProvider
           {...props}
           params={params}
           groupField={groupField}
           associateCollectionField={props.groupField}
           columns={kanbanColumns}
+          targetColumn={targetColumn}
         />
       </BlockProvider>
     </SchemaComponentOptions>
@@ -203,6 +210,7 @@ export const useKanbanV2BlockProps = () => {
   useEffect(() => {
     if (!ctx.service.loading) {
       field.value = ctx?.service?.data?.data;
+      // eslint-disable-next-line promise/catch-or-return
       ctx.form.reset().then(() => {
         ctx.form.setValues(ctx.service?.data?.data?.[0] || {});
       });

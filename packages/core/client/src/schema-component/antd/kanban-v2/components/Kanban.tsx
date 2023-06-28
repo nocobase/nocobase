@@ -1,16 +1,16 @@
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
-import { Tag, message } from 'antd';
+import { message, Tag } from 'antd';
 import { cloneDeep, isFunction } from 'lodash';
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { DragDropContext } from 'react-beautiful-dnd';
 import { useTranslation } from 'react-i18next';
-import { Column } from './Column';
-import { useKanbanV2BlockContext, useBlockRequestContext } from '../../../../';
-import { mergeFilter } from '../../../../block-provider/SharedFilterProvider';
 import { ActionContext } from '../../';
-import { RecordProvider } from '../../../../record-provider';
+import { useBlockRequestContext, useKanbanV2BlockContext } from '../../../../';
+import { mergeFilter } from '../../../../block-provider/SharedFilterProvider';
 import { isAssocField } from '../../../../filter-provider/utils';
+import { RecordProvider } from '../../../../record-provider';
 import { move, reorder } from '../utilt';
+import { Column } from './Column';
 const KanbanRecordViewer = (props) => {
   const { visible, setVisible, record } = props;
   const field = useField();
@@ -98,6 +98,7 @@ export const KanbanV2: any = (props) => {
     const newState: any = [...columnData];
     const newColumn = columnData.find((v) => v.value === el.value) || el;
     const page = currentPage || 1;
+    // eslint-disable-next-line promise/catch-or-return
     resource
       .list({
         ...params,
@@ -114,7 +115,7 @@ export const KanbanV2: any = (props) => {
             newState[index] = newColumn;
             setColumnData(newState);
           } else {
-            newColumn.cards = data.data;
+            newColumn.cards = data.data || [];
             newColumn.meta = data.meta;
             newState[index] = newColumn;
             setColumnData(newState);
@@ -184,7 +185,9 @@ export const KanbanV2: any = (props) => {
         values: values,
       });
       message.success(t('Saved successfully'));
-    } catch (error) {}
+    } catch (error) {
+      console.log(error);
+    }
   };
   const handleCardClick = React.useCallback((data) => {
     setVisible(true);

@@ -1,19 +1,19 @@
-import React, { memo, useState, useContext, useEffect } from 'react';
-import { FormLayout } from '@formily/antd';
-import { Spin, Skeleton, Divider } from 'antd';
 import { css } from '@emotion/css';
+import { FormLayout } from '@formily/antd';
+import { FieldContext, FormContext, RecursionField, useField, useFieldSchema } from '@formily/react';
+import { Divider, Skeleton, Spin } from 'antd';
+import React, { memo, useContext, useEffect, useState } from 'react';
+import { Draggable, Droppable } from 'react-beautiful-dnd';
 import { useTranslation } from 'react-i18next';
 import InfiniteScroll from 'react-infinite-scroll-component';
-import { Draggable, Droppable } from 'react-beautiful-dnd';
-import { FieldContext, FormContext, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { useProps } from '../../../hooks/useProps';
 import {
-  useBlockRequestContext,
-  useKanbanV2BlockContext,
+  BlockItem,
   KanbanCardBlockProvider,
   KanbanCardContext,
-  BlockItem,
+  useBlockRequestContext,
+  useKanbanV2BlockContext,
 } from '../../../../';
+import { useProps } from '../../../hooks/useProps';
 
 const grid = 8;
 const getItemStyle = (isDragging, draggableStyle) => ({
@@ -89,6 +89,7 @@ export const Column = memo((props: any) => {
     groupField,
     params: { appends },
     form,
+    targetColumn,
   } = useKanbanV2BlockContext();
   const params = service?.params?.[0] || {};
   const fieldSchema = useFieldSchema();
@@ -100,11 +101,13 @@ export const Column = memo((props: any) => {
     getColumnDatas(el, index, params, appends, el?.meta?.page + 1);
   };
   useEffect(() => {
-    setLoading(true);
-    getColumnDatas(data, ind, params, appends, 1, () => {
-      setLoading(false);
-    });
-  }, [appends.length, params, data?.update]);
+    if (!data?.cards || targetColumn === data.value) {
+      setLoading(true);
+      getColumnDatas(data, ind, params, appends, 1, () => {
+        setLoading(false);
+      });
+    }
+  }, [appends.length, params, targetColumn]);
   fieldSchema.properties.grid['x-component-props'] = {
     dndContext: {
       onDragStart: () => {
