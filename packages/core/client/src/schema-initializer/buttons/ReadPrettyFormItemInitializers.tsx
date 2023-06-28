@@ -39,7 +39,7 @@ export const ReadPrettyFormItemInitializers = (props: any) => {
     });
   }
   associationFields.length > 0 &&
-    fieldItems.push([
+    fieldItems.push(
       {
         type: 'divider',
       },
@@ -48,7 +48,7 @@ export const ReadPrettyFormItemInitializers = (props: any) => {
         title: t('Display association fields'),
         children: associationFields,
       },
-    ]);
+    );
 
   fieldItems.push(
     {
