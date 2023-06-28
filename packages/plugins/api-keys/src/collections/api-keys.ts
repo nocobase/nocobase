@@ -1,4 +1,4 @@
-import { CollectionOptions } from '@nocobase/database';
+import type { CollectionOptions } from '@nocobase/database';
 
 export default {
   namespace: 'api-keys',
@@ -18,7 +18,6 @@ export default {
       autoIncrement: true,
       primaryKey: true,
       allowNull: false,
-      uiSchema: { type: 'number', title: '{{t("ID")}}', 'x-component': 'InputNumber', 'x-read-pretty': true },
       interface: 'id',
     },
     {
