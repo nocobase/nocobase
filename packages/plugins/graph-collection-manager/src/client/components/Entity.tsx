@@ -243,7 +243,9 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
             Input,
             Form,
             ResourceActionProvider,
-            Select: (props) => <Select {...props} getPopupContainer={getPopupContainer} />,
+            Select: (props) => (
+              <Select dropdownMatchSelectWidth={false} {...props} getPopupContainer={getPopupContainer} />
+            ),
             Checkbox,
             Radio,
             InputNumber,

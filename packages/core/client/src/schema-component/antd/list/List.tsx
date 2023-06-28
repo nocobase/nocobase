@@ -1,19 +1,22 @@
-import { ListDesigner } from './List.Designer';
-import { ListBlockProvider, useListBlockContext, useListItemProps } from './List.Decorator';
-import React, { useCallback, useEffect, useState } from 'react';
-import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { css, cx } from '@emotion/css';
+import { ArrayField } from '@formily/core';
+import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { List as AntdList, PaginationProps } from 'antd';
-import { useListActionBarProps } from './hooks';
+import React, { useCallback, useState } from 'react';
 import { SortableItem } from '../../common';
 import { SchemaComponentOptions } from '../../core';
 import { useDesigner } from '../../hooks';
+import { useListActionBarProps } from './hooks';
+import { ListBlockProvider, useListBlockContext, useListItemProps } from './List.Decorator';
+import { ListDesigner } from './List.Designer';
 import { ListItem } from './List.Item';
-import { ArrayField } from '@formily/core';
 
 const designerCss = css`
   width: 100%;
   margin-bottom: var(--nb-spacing);
+  .nb-action-bar {
+    margin-top: 10px;
+  }
   &:hover {
     > .general-schema-designer {
       display: block;
