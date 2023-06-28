@@ -1,14 +1,12 @@
 import { CloseCircleFilled } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
 import { useForm } from '@formily/react';
-import { Input as AntInput, Cascader, DatePicker, InputNumber, Select, Tag } from 'antd';
-import moment from 'moment';
-import React, { useCallback, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-
 import { error } from '@nocobase/utils/client';
+import { Input as AntInput, Cascader, DatePicker, InputNumber, Select, Tag } from 'antd';
 import classNames from 'classnames';
-import { useMemo } from 'react';
+import moment from 'moment';
+import React, { useCallback, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCompile } from '../..';
 import { Option } from '../../../schema-settings/VariableInput/type';
 import { XButton } from './XButton';

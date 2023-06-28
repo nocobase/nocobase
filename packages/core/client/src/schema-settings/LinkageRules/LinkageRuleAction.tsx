@@ -72,6 +72,7 @@ export const FormFieldLinkageRuleAction = observer(
               placeholder={t('Select field')}
             />
             <Select
+              dropdownMatchSelectWidth={false}
               value={operator}
               className={css`
                 min-width: 120px;
@@ -121,6 +122,7 @@ export const FormButtonLinkageRuleAction = observer(
       <div style={{ marginBottom: 8 }}>
         <Space>
           <Select
+            dropdownMatchSelectWidth={false}
             value={operator}
             options={compile(operators)}
             onChange={(value) => {

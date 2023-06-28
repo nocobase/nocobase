@@ -27,6 +27,7 @@ export const useLanguageSettings = () => {
         >
           {t('Language')}{' '}
           <Select
+            dropdownMatchSelectWidth={false}
             style={{ minWidth: 100 }}
             bordered={false}
             open={open}

@@ -1,7 +1,7 @@
-import React from 'react';
-import { Select, SelectProps } from 'antd';
-import { useTopRecord } from '../interface';
 import { useCollectionManager, useCompile } from '@nocobase/client';
+import { Select, SelectProps } from 'antd';
+import React from 'react';
+import { useTopRecord } from '../interface';
 
 export type SnapshotOwnerCollectionFieldsSelectProps = Omit<SelectProps, 'options'>;
 
@@ -18,5 +18,5 @@ export const useSnapshotOwnerCollectionFields = () => {
 
 export const SnapshotOwnerCollectionFieldsSelect: React.FC<SnapshotOwnerCollectionFieldsSelectProps> = (props) => {
   const options = useSnapshotOwnerCollectionFields();
-  return <Select options={options} {...props} />;
+  return <Select dropdownMatchSelectWidth={false} options={options} {...props} />;
 };

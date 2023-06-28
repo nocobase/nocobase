@@ -84,6 +84,7 @@ export const StrategyActions = connect((props) => {
             render: (scope, action) =>
               !action.onNewRecord && (
                 <Select
+                  dropdownMatchSelectWidth={false}
                   size={'small'}
                   value={scope}
                   options={[
