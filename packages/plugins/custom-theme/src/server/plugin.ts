@@ -5,7 +5,21 @@ export class CustomThemePlugin extends Plugin {
 
   beforeLoad() {}
 
-  async load() {}
+  async load() {
+    this.db.collection({
+      name: 'theme',
+      fields: [
+        {
+          type: 'string',
+          name: 'config',
+        },
+        {
+          type: 'boolean',
+          name: 'enabled',
+        },
+      ],
+    });
+  }
 
   async install(options?: InstallOptions) {}
 
