@@ -6,9 +6,11 @@
   "displayName.zh-CN": "自定义主题",
   "description": "Support custom theme function",
   "description.zh-CN": "支持自定义主题功能",
+  "dependencies": {
+    "@nocobase/client": "0.10.0-alpha.4"
+  },
   "devDependencies": {
     "@nocobase/server": "0.10.0-alpha.4",
-    "@nocobase/test": "0.10.0-alpha.4",
-    "@nocobase/client": "0.10.0-alpha.4"
+    "@nocobase/test": "0.10.0-alpha.4"
   }
 }
