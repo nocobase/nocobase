@@ -1,4 +1,4 @@
-import { createRouterManager, Plugin, RouterManager } from '@nocobase/client';
+import { createRouterManager, Plugin, RouterManager, RouteSchemaComponent } from '@nocobase/client';
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { MobileClientProvider } from './MobileClientProvider';
@@ -24,7 +24,7 @@ export class MobileClientPlugin extends Plugin {
     });
     router.add('mobile.page', {
       path: '/mobile/:name',
-      element: 'RouteSchemaComponent',
+      element: <RouteSchemaComponent />,
     });
     this.mobileRouter = router;
   }
