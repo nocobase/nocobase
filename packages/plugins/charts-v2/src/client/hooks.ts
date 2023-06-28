@@ -1,3 +1,4 @@
+import { ArrayField } from '@formily/core';
 import { ISchema, Schema } from '@formily/react';
 import { useACLRoleContext, useCollectionManager } from '@nocobase/client';
 import { useContext } from 'react';
@@ -7,7 +8,7 @@ import formatters from './block/formatters';
 import transformers from './block/transformers';
 import { lang } from './locale';
 import { ChartRendererProps } from './renderer';
-import { getField, getSelectedFields } from './utils';
+import { getField, getSelectedFields, parseField } from './utils';
 
 export type FieldOption = {
   value: string;
@@ -201,4 +202,38 @@ export const useOrderFieldsOptions = (defaultOptions: any[], fields: FieldOption
   const selectedFields = getSelectedFields(fields, query);
   field.componentProps.fieldNames = {};
   field.dataSource = selectedFields;
+};
+
+export const useOrderReaction = (defaultOptions: any[], fields: FieldOption[]) => (field: ArrayField) => {
+  const query = field.query('query').get('value') || {};
+  const { measures = [] } = query;
+  const hasAgg = measures.some((measure: { aggregation?: string }) => measure.aggregation);
+  let dataSource = defaultOptions;
+  const allValues = [];
+  if (hasAgg) {
+    dataSource = getSelectedFields(fields, query);
+    dataSource.forEach((field) => {
+      allValues.push(field.value);
+    });
+  } else {
+    dataSource.forEach((field) => {
+      const children = field.children || [];
+      if (!children.length) {
+        allValues.push(field.value || field.name);
+      }
+      children.forEach((child: any) => {
+        allValues.push(`${field.name}.${child.name}`);
+      });
+    });
+  }
+
+  const orders = field.value || [];
+  const newOrders = orders.reduce((newOrders: any[], item: any) => {
+    const { alias } = parseField(item.field);
+    if (!item.field || allValues.includes(alias)) {
+      newOrders.push(item);
+    }
+    return newOrders;
+  }, []);
+  field.setValue(newOrders);
 };

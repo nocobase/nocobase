@@ -306,28 +306,33 @@ export const querySchema: ISchema = {
                     key: 'sort',
                   },
                   properties: {
-                    orders: getArraySchema({
-                      field: {
-                        type: 'string',
-                        'x-decorator': 'FormItem',
-                        'x-component': 'Cascader',
-                        'x-component-props': {
-                          placeholder: '{{t("Field")}}',
+                    orders: getArraySchema(
+                      {
+                        field: {
+                          type: 'string',
+                          'x-decorator': 'FormItem',
+                          'x-component': 'Cascader',
+                          'x-component-props': {
+                            placeholder: '{{t("Field")}}',
+                          },
+                          'x-reactions': '{{ useOrderOptions }}',
+                          required: true,
                         },
-                        'x-reactions': '{{ useOrderOptions }}',
-                        required: true,
-                      },
-                      order: {
-                        type: 'string',
-                        'x-decorator': 'FormItem',
-                        'x-component': 'Radio.Group',
-                        'x-component-props': {
-                          defaultValue: 'ASC',
-                          optionType: 'button',
+                        order: {
+                          type: 'string',
+                          'x-decorator': 'FormItem',
+                          'x-component': 'Radio.Group',
+                          'x-component-props': {
+                            defaultValue: 'ASC',
+                            optionType: 'button',
+                          },
+                          enum: ['ASC', 'DESC'],
                         },
-                        enum: ['ASC', 'DESC'],
                       },
-                    }),
+                      {
+                        'x-reactions': '{{ useOrderReaction }}',
+                      },
+                    ),
                   },
                 },
               },

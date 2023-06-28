@@ -28,6 +28,7 @@ import {
   useFieldTypes,
   useFormatters,
   useOrderFieldsOptions,
+  useOrderReaction,
   useTransformers,
 } from '../hooks';
 import { useChartsTranslation } from '../locale';
@@ -321,7 +322,7 @@ ChartConfigure.Query = function Query() {
   const fieldOptions = useCollectionFieldsOptions(collection, 1);
   const compiledFieldOptions = Schema.compile(fieldOptions, { t: lang });
   const filterOptions = useCollectionFilterOptions(collection);
-  const formCollapse = FormCollapse.createFormCollapse(['measures', 'dimensions']);
+  const formCollapse = FormCollapse.createFormCollapse(['measures', 'dimensions', 'filter', 'sort']);
   const onCollectionChange = (value: string) => {
     const { schema, field } = current;
     const newSchema = { ...schema };
@@ -351,6 +352,7 @@ ChartConfigure.Query = function Query() {
         useFormatterOptions,
         onCollectionChange,
         collection: current?.collection,
+        useOrderReaction: useOrderReaction(compiledFieldOptions, fields),
       }}
       components={{
         ArrayItems,
