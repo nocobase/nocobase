@@ -1,12 +1,12 @@
-import React from 'react';
 import { cx } from '@emotion/css';
-import { useRouteMatch } from 'react-router-dom';
 import { SchemaComponent } from '@nocobase/client';
-import { workflowPageClass } from './style';
+import React from 'react';
+import { useParams } from 'react-router-dom';
 import { ExecutionCanvas } from './ExecutionCanvas';
+import { workflowPageClass } from './style';
 
 export const ExecutionPage = () => {
-  const { params } = useRouteMatch<any>();
+  const params = useParams<any>();
 
   return (
     <div className={cx(workflowPageClass)}>

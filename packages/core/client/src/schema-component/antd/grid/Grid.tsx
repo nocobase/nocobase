@@ -1,6 +1,6 @@
 import { useDndContext, useDndMonitor, useDraggable, useDroppable } from '@dnd-kit/core';
 import { css } from '@emotion/css';
-import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
+import { RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import cls from 'classnames';
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -407,7 +407,6 @@ Grid.Row = observer(
           className={cls(
             'nb-grid-row',
             css`
-              overflow-x: hidden;
               display: flex;
               position: relative;
               /* z-index: 0; */

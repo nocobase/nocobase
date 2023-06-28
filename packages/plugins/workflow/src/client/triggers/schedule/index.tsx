@@ -3,10 +3,8 @@ import { useCollectionDataSource, SchemaInitializerItemOptions } from '@nocobase
 import { ScheduleConfig } from './ScheduleConfig';
 import { SCHEDULE_MODE } from './constants';
 import { NAMESPACE, useWorkflowTranslation } from '../../locale';
-import { CollectionFieldInitializers } from '../../components/CollectionFieldInitializers';
 import { CollectionBlockInitializer } from '../../components/CollectionBlockInitializer';
 import { useCollectionFieldOptions } from '../../variable';
-import { appends } from '../../schemas/collection';
 import { FieldsSelect } from '../../components/FieldsSelect';
 
 export default {
@@ -17,19 +15,6 @@ export default {
       type: 'void',
       'x-component': 'ScheduleConfig',
       'x-component-props': {},
-    },
-    appends: {
-      ...appends,
-      'x-reactions': [
-        {
-          dependencies: ['mode', 'collection'],
-          fulfill: {
-            state: {
-              visible: `{{$deps[0] === ${SCHEDULE_MODE.COLLECTION_FIELD} && $deps[1]}}`,
-            },
-          },
-        },
-      ],
     },
   },
   scope: {
@@ -72,7 +57,5 @@ export default {
       dataSource: '{{$context.data}}',
     };
   },
-  initializers: {
-    CollectionFieldInitializers,
-  },
+  initializers: {},
 };

@@ -1,15 +1,14 @@
-import path from 'path';
-import fs from 'fs/promises';
-
 import Application from '@nocobase/server';
+import fs from 'fs/promises';
 import serve from 'koa-static';
 import mkdirp from 'mkdirp';
 import multer from 'multer';
+import path from 'path';
 import { Transactionable } from 'sequelize/types';
 import { URL } from 'url';
+import { AttachmentModel } from '.';
 import { STORAGE_TYPE_LOCAL } from '../constants';
 import { getFilename } from '../utils';
-import { AttachmentModel } from '.';
 
 // use koa-mount match logic
 function match(basePath: string, pathname: string): boolean {
@@ -131,7 +130,7 @@ export default {
     const { LOCAL_STORAGE_DEST, LOCAL_STORAGE_BASE_URL, APP_PORT } = process.env;
     const documentRoot = LOCAL_STORAGE_DEST || 'storage/uploads';
     return {
-      title: '本地存储',
+      title: 'Local storage',
       type: STORAGE_TYPE_LOCAL,
       name: `local`,
       baseUrl: LOCAL_STORAGE_BASE_URL || `http://localhost:${APP_PORT || '13000'}/${documentRoot}`,

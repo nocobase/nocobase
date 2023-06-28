@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { onFormValuesChange } from '@formily/core';
+import React, { useState, useEffect } from 'react';
+import { onFormInputChange } from '@formily/core';
 import { toJS } from '@formily/reactive';
 import { useFieldSchema, useFormEffects, useForm } from '@formily/react';
 import {
@@ -17,13 +17,13 @@ import { Registry, toFixedByStep } from '@nocobase/utils/client';
 import { toDbType } from '../../../utils';
 
 const TypedComponents = {
-  boolean: Checkbox,
-  integer: InputNumber,
-  bigInt: InputNumber,
-  double: InputNumber,
-  decimal: InputNumber,
-  date: DatePicker,
-  string: InputString,
+  boolean: Checkbox.ReadPretty,
+  integer: InputNumber.ReadPretty,
+  bigInt: InputNumber.ReadPretty,
+  double: InputNumber.ReadPretty,
+  decimal: InputNumber.ReadPretty,
+  date: DatePicker.ReadPretty,
+  string: InputString.ReadPretty,
 };
 
 function useTargetCollectionField() {
@@ -46,8 +46,13 @@ export function Result(props) {
   const [editingValue, setEditingValue] = useState(value);
   const { evaluate } = (evaluators as Registry<Evaluator>).get(engine);
   const formBlockContext = useFormBlockContext();
+
+  useEffect(() => {
+    setEditingValue(value);
+  }, [value]);
+
   useFormEffects(() => {
-    onFormValuesChange((form) => {
+    onFormInputChange((form) => {
       if (
         (fieldSchema.name as string).indexOf('.') >= 0 ||
         !formBlockContext?.form ||
@@ -63,7 +68,7 @@ export function Result(props) {
       } catch (error) {
         v = null;
       }
-      if ((v == null && editingValue == null) || JSON.stringify(v) === JSON.stringify(editingValue)) {
+      if (v == null && editingValue == null) {
         return;
       }
       setEditingValue(v);

@@ -1,6 +1,6 @@
-import { ISchema, connect, mapProps, useField, useFieldSchema } from '@formily/react';
+import { connect, ISchema, mapProps, useField, useFieldSchema } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
-import { Tree as AntdTree, Menu } from 'antd';
+import { Tree as AntdTree } from 'antd';
 import { cloneDeep } from 'lodash';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -46,7 +46,11 @@ const MenuGroup = (props) => {
   ) {
     return <>{props.children}</>;
   }
-  return <Menu.ItemGroup title={`${t('Customize')} > ${actionTitles[actionType]}`}>{props.children}</Menu.ItemGroup>;
+  return (
+    <SchemaSettings.ItemGroup title={`${t('Customize')} > ${actionTitles[actionType]}`}>
+      {props.children}
+    </SchemaSettings.ItemGroup>
+  );
 };
 
 export const ActionDesigner = (props) => {
@@ -54,7 +58,7 @@ export const ActionDesigner = (props) => {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { name } = useCollection();
-  const { getChildrenCollections, getCollection, getCollectionField } = useCollectionManager();
+  const { getChildrenCollections } = useCollectionManager();
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const isAction = useLinkageAction();
@@ -252,8 +256,8 @@ export const ActionDesigner = (props) => {
                     title: t('Duplicate mode'),
                     default: fieldSchema['x-component-props']?.duplicateMode || 'quickDulicate',
                     enum: [
-                      { value: 'quickDulicate', label: '{{t("Quick duplicate")}}' },
-                      { value: 'continueduplicate', label: '{{t("Duplicate and continue")}}' },
+                      { value: 'quickDulicate', label: '{{t("Direct duplicate")}}' },
+                      { value: 'continueduplicate', label: '{{t("Copy into the form and continue to fill in")}}' },
                     ],
                   },
                   collection: {

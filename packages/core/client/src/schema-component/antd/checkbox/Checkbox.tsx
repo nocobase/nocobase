@@ -10,6 +10,14 @@ import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
 type ComposedCheckbox = React.FC<CheckboxProps> & {
   Group?: React.FC<CheckboxGroupProps>;
   __ANT_CHECKBOX?: boolean;
+  ReadPretty?: React.FC<CheckboxProps>;
+};
+
+const ReadPretty = (props) => {
+  if (props.value) {
+    return <CheckOutlined style={{ color: '#52c41a' }} />;
+  }
+  return props.showUnchecked ? <CloseOutlined style={{ color: '#ff4d4f' }} /> : null;
 };
 
 export const Checkbox: ComposedCheckbox = connect(
@@ -23,13 +31,10 @@ export const Checkbox: ComposedCheckbox = connect(
     value: 'checked',
     onInput: 'onChange',
   }),
-  mapReadPretty((props) => {
-    if (props.value) {
-      return <CheckOutlined style={{ color: '#52c41a' }} />;
-    }
-    return props.showUnchecked ? <CloseOutlined style={{ color: '#ff4d4f' }} /> : null;
-  }),
+  mapReadPretty(ReadPretty),
 );
+
+Checkbox.ReadPretty = ReadPretty;
 
 Checkbox.__ANT_CHECKBOX = true;
 

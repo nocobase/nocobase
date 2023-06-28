@@ -35,7 +35,7 @@ export const Cascader = connect(
     } = props;
     const fieldNames = { ...defaultFieldNames, ...props.fieldNames };
     const loadData = useLoadData(props);
-    const { loading } = useDataSource({
+    const { loading, run } = useDataSource({
       onSuccess(data) {
         field.dataSource = data?.data || [];
       },
@@ -62,6 +62,11 @@ export const Cascader = connect(
         </Space>
       );
     };
+    const handelDropDownVisible = (value) => {
+      if (value && !field.dataSource.length) {
+        run();
+      }
+    };
     return (
       <AntdCascader
         loading={loading}
@@ -72,6 +77,7 @@ export const Cascader = connect(
         value={toValue()}
         fieldNames={fieldNames}
         displayRender={displayRender}
+        onDropdownVisibleChange={handelDropDownVisible}
         onChange={(value, selectedOptions) => {
           if (value && labelInValue) {
             onChange(selectedOptions.map((option) => omit(option, [fieldNames.children])));

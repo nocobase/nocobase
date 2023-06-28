@@ -45,6 +45,7 @@ export * from './time-picker';
 export * from './tree-select';
 export * from './upload';
 export * from './variable';
+export * from './quick-edit'
 export * from './gantt';
 export * from './kanban-v2'
 import './index.less';

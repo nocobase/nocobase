@@ -12,16 +12,10 @@ export const url: IField = {
     type: 'string',
     uiSchema: {
       type: 'string',
-      title: '{{t("URL")}}',
       'x-component': 'Input.URL',
     },
   },
-  schemaInitialize(schema: ISchema, { block }) {
-    if (['Table', 'Kanban'].includes(block)) {
-      schema['x-component-props'] = schema['x-component-props'] || {};
-      schema['x-component-props']['size'] = 'small';
-    }
-  },
+  schemaInitialize(schema: ISchema, { block }) {},
   properties: {
     ...defaultProps,
   },

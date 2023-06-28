@@ -8,14 +8,18 @@ import {
   useInheritsTableColumnInitializerFields,
 } from '../utils';
 import { useCompile } from '../../schema-component';
+import { useField, useFieldSchema } from '@formily/react';
 
 // 表格列配置
 export const TableColumnInitializers = (props: any) => {
-  const { items = [] } = props;
+  const { items = [], action = true } = props;
   const { t } = useTranslation();
+  const field = useField();
+  const fieldSchema = useFieldSchema();
   const associatedFields = useAssociatedTableColumnInitializerFields();
   const inheritFields = useInheritsTableColumnInitializerFields();
   const compile = useCompile();
+  const isSubTable = fieldSchema['x-component'] === 'AssociationField.SubTable';
   const fieldItems: any[] = [
     {
       type: 'itemGroup',
@@ -33,12 +37,12 @@ export const TableColumnInitializers = (props: any) => {
           {
             type: 'itemGroup',
             title: t(`Parent collection fields`) + '(' + compile(`${Object.keys(inherit)[0]}`) + ')',
-            children: Object.values(inherit)[0].filter((v)=>!v?.field?.isForeignKey),
+            children: Object.values(inherit)[0].filter((v) => !v?.field?.isForeignKey),
           },
         );
     });
   }
-  if (associatedFields?.length > 0) {
+  if (associatedFields?.length > 0 && field.readPretty) {
     fieldItems.push(
       {
         type: 'divider',
@@ -50,16 +54,19 @@ export const TableColumnInitializers = (props: any) => {
       },
     );
   }
-  fieldItems.push(
-    {
-      type: 'divider',
-    },
-    {
-      type: 'item',
-      title: t('Action column'),
-      component: 'TableActionColumnInitializer',
-    },
-  );
+  if (action) {
+    fieldItems.push(
+      {
+        type: 'divider',
+      },
+      {
+        type: 'item',
+        title: t('Action column'),
+        component: 'TableActionColumnInitializer',
+      },
+    );
+  }
+
   return (
     <SchemaInitializer.Button
       insertPosition={'beforeEnd'}

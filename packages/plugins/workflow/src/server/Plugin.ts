@@ -161,7 +161,9 @@ export default class WorkflowPlugin extends Plugin {
       workflows.forEach((workflow: WorkflowModel) => {
         this.toggle(workflow);
       });
+    });
 
+    this.app.on('afterStart', () => {
       // check for not started executions
       this.dispatch();
     });
@@ -201,8 +203,9 @@ export default class WorkflowPlugin extends Plugin {
 
     this.events.push([workflow, context, options]);
 
-    this.getLogger(workflow.id).debug(`new event triggered, now events: ${this.events.length}`, {
-      data: workflow.config,
+    this.getLogger(workflow.id).info(`new event triggered, now events: ${this.events.length}`);
+    this.getLogger(workflow.id).debug(`event data:`, {
+      data: context,
     });
 
     if (this.events.length > 1) {

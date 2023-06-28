@@ -1,15 +1,16 @@
 import { DeleteOutlined, DownloadOutlined, InboxOutlined, LoadingOutlined, PlusOutlined } from '@ant-design/icons';
 import { usePrefixCls } from '@formily/antd/esm/__builtins__';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
-import { Upload as AntdUpload, Button, Progress, Space } from 'antd';
+import { Upload as AntdUpload, Button, Progress, Space, Modal } from 'antd';
 import cls from 'classnames';
+import { css } from '@emotion/css';
 import { saveAs } from 'file-saver';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Lightbox from 'react-image-lightbox';
 import 'react-image-lightbox/style.css'; // This only needs to be imported once in your app
 import { ReadPretty } from './ReadPretty';
-import { isImage, toArr, toFileList, toItem, toValue, useUploadProps } from './shared';
+import { isImage, isPdf, toArr, toFileList, toItem, toValue, useUploadProps } from './shared';
 import './style.less';
 import type { ComposedUpload, DraggerProps, DraggerV2Props, UploadProps } from './type';
 
@@ -28,9 +29,13 @@ Upload.Attachment = connect((props: UploadProps) => {
   const [fileList, setFileList] = useState([]);
   const [sync, setSync] = useState(true);
   const images = fileList;
-  const [photoIndex, setPhotoIndex] = useState(0);
+  const [fileIndex, setFileIndex] = useState(0);
   const [visible, setVisible] = useState(false);
+  const [fileType, setFileType] = useState<'image' | 'pdf'>();
   const { t } = useTranslation();
+  function closeIFrameModal() {
+    setVisible(false);
+  }
   useEffect(() => {
     if (sync) {
       setFileList(toFileList(value));
@@ -47,8 +52,13 @@ Upload.Attachment = connect((props: UploadProps) => {
               e.stopPropagation();
               const index = fileList.indexOf(file);
               if (isImage(file.extname)) {
+                setFileType('image');
                 setVisible(true);
-                setPhotoIndex(index);
+                setFileIndex(index);
+              } else if(isPdf(file.extname)) {
+                setVisible(true);
+                setFileIndex(index);
+                setFileType('pdf');
               } else {
                 saveAs(file.url, `${file.title}${file.extname}`);
               }
@@ -160,16 +170,16 @@ Upload.Attachment = connect((props: UploadProps) => {
         </div>
       </div>
       {/* 预览图片的弹框 */}
-      {visible && (
+      {visible && fileType === 'image' && (
         <Lightbox
           // discourageDownloads={true}
-          mainSrc={images[photoIndex]?.imageUrl}
-          nextSrc={images[(photoIndex + 1) % images.length]?.imageUrl}
-          prevSrc={images[(photoIndex + images.length - 1) % images.length]?.imageUrl}
+          mainSrc={images[fileIndex]?.imageUrl}
+          nextSrc={images[(fileIndex + 1) % images.length]?.imageUrl}
+          prevSrc={images[(fileIndex + images.length - 1) % images.length]?.imageUrl}
           onCloseRequest={() => setVisible(false)}
-          onMovePrevRequest={() => setPhotoIndex((photoIndex + images.length - 1) % images.length)}
-          onMoveNextRequest={() => setPhotoIndex((photoIndex + 1) % images.length)}
-          imageTitle={images[photoIndex]?.title}
+          onMovePrevRequest={() => setFileIndex((fileIndex + images.length - 1) % images.length)}
+          onMoveNextRequest={() => setFileIndex((fileIndex + 1) % images.length)}
+          imageTitle={images[fileIndex]?.title}
           toolbarButtons={[
             <button
               style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
@@ -179,7 +189,7 @@ Upload.Attachment = connect((props: UploadProps) => {
               className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
               onClick={(e) => {
                 e.preventDefault();
-                const file = images[photoIndex];
+                const file = images[fileIndex];
                 saveAs(file.url, `${file.title}${file.extname}`);
               }}
             >
@@ -187,6 +197,54 @@ Upload.Attachment = connect((props: UploadProps) => {
             </button>,
           ]}
         />
+      )}
+            
+      {visible && fileType === 'pdf' && (
+        <Modal
+          open={visible}
+          title={'PDF - ' + images[fileIndex].title}
+          onCancel={closeIFrameModal}
+          footer={[
+            <Button
+              style={{
+                textTransform: 'capitalize'
+              }}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const file = images[fileIndex];
+                saveAs(file.url, `${file.title}${file.extname}`);
+              }}
+            >
+              {t('download')}
+            </Button>,
+            <Button onClick={closeIFrameModal} style={{textTransform: 'capitalize'}}>
+              {t('close')}
+            </Button>
+          ]}
+          width={'85vw'}
+          centered={true}
+        >
+          <div style={{
+            padding: '8px',
+            maxWidth: '100%',
+            maxHeight: 'calc(100vh - 256px)',
+            height: '90vh',
+            width: '100%',
+            background: 'white',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            overflowY: 'auto'
+          }} >
+            <iframe src={images[fileIndex].url} style={{
+              width: '100%',
+              maxHeight: '90vh',
+              flex: '1 1 auto'
+            }}>
+            </iframe>
+          </div>
+        </Modal>
       )}
     </div>
   );
