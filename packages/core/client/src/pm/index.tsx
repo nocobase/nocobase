@@ -9,7 +9,7 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useACLRoleContext } from '../acl/ACLProvider';
 import { ACLPane } from '../acl/ACLShortcut';
 import { useRequest } from '../api-client';
-import { Plugin } from '../application-v2/Plugin';
+import { Plugin } from '../application/Plugin';
 import { CollectionManagerPane } from '../collection-manager';
 import { Icon } from '../icon';
 import { useCompile } from '../schema-component';
@@ -358,8 +358,6 @@ export const PMProvider = (props) => {
   return <SettingsCenterProvider settings={settings}>{props.children}</SettingsCenterProvider>;
 };
 export class PMPlugin extends Plugin {
-  static pluginName = 'pm';
-
   async load() {
     this.addComponents();
     this.addRoutes();

@@ -12,8 +12,6 @@ function getBasename() {
 }
 
 export class NocoBaseClientPresetPlugin extends Plugin {
-  static pluginName = 'nocobase-preset';
-
   async afterAdd() {
     this.router.setType('browser');
     this.router.setBasename(getBasename());
@@ -30,11 +28,13 @@ export class NocoBaseClientPresetPlugin extends Plugin {
   // 后面会改为直接加载远程组件，现在暂时先这样处理
   // 远程加载的逻辑后面会挪到内核 `@nocobase/client` 中
   async loadRemotePlugin() {
-    const res = await this.app.apiClient.request({ url: 'app:getPlugins' });
-    const pluginNames = res.data?.data || [];
-    for await (const pluginName of pluginNames) {
-      const ProviderComponent = await import(`./plugins/${pluginName}`);
-      this.app.pm.add(ProviderComponent.default, { name: pluginName });
+    if (this.app.dynamicImport) {
+      const res = await this.app.apiClient.request({ url: 'app:getPlugins' });
+      const pluginNames = res.data?.data || [];
+      for await (const pluginName of pluginNames) {
+        const ProviderComponent = await this.app.dynamicImport(pluginName);
+        this.app.pm.add(ProviderComponent.default, { name: pluginName });
+      }
     }
   }
 }

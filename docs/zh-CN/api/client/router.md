@@ -34,12 +34,12 @@ const Hello = () => {
 }
 
 // 第一个参数是名称, 第二个参数是 `RouteObject`
-app.add('root', {
+app.router.add('root', {
   path: '/',
   element: <Hello />
 })
 
-app.add('root', {
+app.router.add('root', {
   path: '/',
   Component: Hello
 })
@@ -54,7 +54,7 @@ app.addComponents({
 })
 
 // Component is `Hello` string
-app.add('root', {
+app.router.add('root', {
   path: '/',
   Component: 'Hello'
 })

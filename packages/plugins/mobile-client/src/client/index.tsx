@@ -5,8 +5,6 @@ import { MobileClientProvider } from './MobileClientProvider';
 import MApplication from './router/Application';
 
 export class MobileClientPlugin extends Plugin {
-  static pluginName = 'mobile-client';
-
   public mobileRouter: RouterManager;
   async load() {
     this.setMobileRouter();

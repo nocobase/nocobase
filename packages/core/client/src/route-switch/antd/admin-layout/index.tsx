@@ -20,7 +20,7 @@ import {
   useRequest,
   useSystemSettings,
 } from '../../../';
-import { Plugin } from '../../../application-v2';
+import { Plugin } from '../../../application';
 import { useCollectionManager } from '../../../collection-manager';
 
 const filterByACL = (schema, options) => {
@@ -312,8 +312,6 @@ export const AdminLayout = (props) => {
 };
 
 export class AdminLayoutPlugin extends Plugin {
-  static pluginName = 'admin-layout';
-
   async load() {
     this.app.pm.add(RemoteSchemaTemplateManagerPlugin);
     this.app.addComponents({ AdminLayout });

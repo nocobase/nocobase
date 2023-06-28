@@ -4,16 +4,14 @@ export * from './RemoteSchemaComponent';
 export * from './SchemaComponent';
 export * from './SchemaComponentOptions';
 export * from './SchemaComponentProvider';
-import { Plugin } from '../../application-v2/Plugin';
+import { Plugin } from '../../application/Plugin';
 import { DesignableSwitch } from './DesignableSwitch';
 import { SchemaComponentProvider } from './SchemaComponentProvider';
 
 export class SchemaComponentPlugin extends Plugin {
-  static pluginName = 'schema-component';
-
   async load() {
     this.addComponents();
-    this.app.use(SchemaComponentProvider);
+    this.app.use(SchemaComponentProvider, { components: this.app.components, scope: this.app.scopes });
   }
 
   addComponents() {

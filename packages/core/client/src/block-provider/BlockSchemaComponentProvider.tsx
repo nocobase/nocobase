@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plugin } from '../application-v2/Plugin';
+import { Plugin } from '../application/Plugin';
 import { SchemaComponentOptions } from '../schema-component';
 import { RecordLink, useParamsFromRecord, useSourceIdFromParentRecord, useSourceIdFromRecord } from './BlockProvider';
 import { CalendarBlockProvider, useCalendarBlockProps } from './CalendarBlockProvider';
@@ -53,8 +53,6 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
 };
 
 export class BlockSchemaComponentPlugin extends Plugin {
-  static pluginName = 'block-schema-component';
-
   async load() {
     this.addComponents();
     this.addScopes();

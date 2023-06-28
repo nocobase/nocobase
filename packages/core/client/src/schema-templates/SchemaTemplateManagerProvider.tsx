@@ -4,7 +4,7 @@ import { Spin } from 'antd';
 import { cloneDeep } from 'lodash';
 import React, { createContext, ReactNode, useContext, useMemo } from 'react';
 import { useAPIClient, useRequest } from '../api-client';
-import { Plugin } from '../application-v2/Plugin';
+import { Plugin } from '../application/Plugin';
 import { BlockTemplate } from './BlockTemplate';
 
 export const SchemaTemplateManagerContext = createContext<any>({});
@@ -138,7 +138,6 @@ export const RemoteSchemaTemplateManagerProvider: React.FC<{ children?: ReactNod
 };
 
 export class RemoteSchemaTemplateManagerPlugin extends Plugin {
-  static pluginName = 'remote-schema-template-manager';
   async load() {
     this.addRoutes();
     this.addComponents();

@@ -4,7 +4,7 @@ export * from './acl';
 export * from './antd-config-provider';
 export * from './api-client';
 export * from './appInfo';
-export * from './application-v2';
+export * from './application';
 export * from './async-data-provider';
 export * from './auth';
 export * from './block-provider';

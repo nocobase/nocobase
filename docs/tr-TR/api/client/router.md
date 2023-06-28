@@ -34,12 +34,12 @@ const Hello = () => {
 }
 
 // first argument is `name` of route, second argument is `RouteObject`
-app.add('root', {
+app.router.add('root', {
   path: '/',
   element: <Hello />
 })
 
-app.add('root', {
+app.router.add('root', {
   path: '/',
   Component: Hello
 })
@@ -51,7 +51,7 @@ app.add('root', {
 app.addComponents({
   Hello
 })
-app.add('root', {
+app.router.add('root', {
   path: '/',
   Component: 'Hello'
 })

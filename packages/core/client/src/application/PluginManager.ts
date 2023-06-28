@@ -5,8 +5,8 @@ export type PluginOptions<T = any> = { name?: string; config?: T };
 export type PluginType<Opts = any> = typeof Plugin | [typeof Plugin, PluginOptions<Opts>];
 
 export class PluginManager {
-  protected pluginInstances: Record<string, Plugin> = {};
-  protected plugins: Record<string, PluginType> = {};
+  protected pluginInstances: Map<typeof Plugin, Plugin> = new Map();
+  protected plugins: Record<string, Plugin> = {};
   private loadStaticPlugin: Promise<void>;
   constructor(protected _plugins: PluginType[], protected app: Application) {
     this.app = app;
@@ -23,21 +23,23 @@ export class PluginManager {
 
   async add<T = any>(plugin: typeof Plugin, opts: PluginOptions<T> = {}) {
     const name = opts.name || plugin.pluginName;
-    if (!name) {
-      throw new Error(`${plugin.name}'s name is required, you can set it in plugin \`static publicName\` or options`);
-    }
-
-    // add plugin class
-    this.plugins[name] = [plugin, opts];
     const instance = this.getInstance(plugin, opts);
 
-    // add plugin instance
-    this.pluginInstances[name] = instance;
+    this.pluginInstances.set(plugin, instance);
+
+    if (opts.name) {
+      this.plugins[name] = instance;
+    }
     await instance.afterAdd();
   }
 
-  get<T = any>(name: string): T {
-    return this.pluginInstances[name] as unknown as T;
+  get<T extends typeof Plugin>(PluginClass: T): InstanceType<T>;
+  get<T extends {}>(name: string): T;
+  get(name: any) {
+    if (typeof name === 'string') {
+      return this.plugins[name];
+    }
+    return this.pluginInstances.get(name);
   }
 
   private getInstance<T>(plugin: typeof Plugin, opts?: T) {
@@ -47,11 +49,11 @@ export class PluginManager {
   async load() {
     await this.loadStaticPlugin;
 
-    for (const plugin of Object.values(this.pluginInstances)) {
+    for (const plugin of this.pluginInstances.values()) {
       await plugin.beforeLoad();
     }
 
-    for (const plugin of Object.values(this.pluginInstances)) {
+    for (const plugin of this.pluginInstances.values()) {
       await plugin.load();
     }
   }

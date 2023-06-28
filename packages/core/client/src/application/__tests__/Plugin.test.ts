@@ -96,13 +96,4 @@ describe('PluginManager', () => {
     await app.load();
     expect(app.pm.get('demo')).toBeInstanceOf(DemoPlugin);
   });
-
-  it('static pluginName', async () => {
-    class DemoPlugin extends Plugin {
-      static pluginName = 'demo';
-    }
-    const app = new Application({ plugins: [DemoPlugin] });
-    await app.load();
-    expect(app.pm.get('demo')).toBeInstanceOf(DemoPlugin);
-  });
 });

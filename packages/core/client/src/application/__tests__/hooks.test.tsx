@@ -41,7 +41,6 @@ describe('Application Hooks', () => {
   describe('usePlugin', () => {
     it('should return the plugin instance', async () => {
       class DemoPlugin extends Plugin {
-        static pluginName = 'demo';
         test = 'test';
       }
       const Hello = () => {

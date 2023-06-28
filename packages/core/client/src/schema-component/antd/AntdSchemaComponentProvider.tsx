@@ -1,6 +1,6 @@
 import React from 'react';
 import * as components from '.';
-import { Plugin } from '../../application-v2/Plugin';
+import { Plugin } from '../../application/Plugin';
 import * as common from '../common';
 import { SchemaComponentOptions } from '../core';
 import { useFilterActionProps } from './filter/useFilterActionProps';
@@ -20,8 +20,6 @@ export const AntdSchemaComponentProvider = (props) => {
 };
 
 export class AntdSchemaComponentPlugin extends Plugin {
-  static pluginName = 'antd-schema-component';
-
   async load() {
     this.addComponents();
     this.addScopes();

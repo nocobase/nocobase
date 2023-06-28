@@ -23,6 +23,7 @@ export interface ApplicationOptions {
   components?: Record<string, ComponentType>;
   scopes?: Record<string, any>;
   router?: RouterOptions;
+  dynamicImport?: any;
 }
 
 export class Application {
@@ -60,6 +61,10 @@ export class Application {
       Navigate: Navigate as ComponentType,
       NavLink,
     });
+  }
+
+  get dynamicImport() {
+    return this.options.dynamicImport;
   }
 
   getComposeProviders() {
