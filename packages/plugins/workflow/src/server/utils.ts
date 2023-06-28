@@ -1,6 +1,9 @@
 import { Model } from '@nocobase/database';
 
 export function toJSON(data: Model | Model[]): object {
+  if (typeof data !== 'object' || !data) {
+    return data;
+  }
   if (Array.isArray(data)) {
     return data.map(toJSON);
   }

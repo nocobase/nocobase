@@ -1,4 +1,4 @@
-import { CollectionFieldOptions, useCollectionManager, useCompile } from '@nocobase/client';
+import { CollectionFieldOptions, useCollectionManager, useCompile } from '../../..';
 import { Tag, TreeSelect } from 'antd';
 import type { DefaultOptionType } from 'rc-tree-select/es/TreeSelect';
 import React, { useCallback } from 'react';
