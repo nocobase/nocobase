@@ -1,7 +1,8 @@
 import { SettingsCenterProvider } from '@nocobase/client';
 import React from 'react';
+import ThemeList from './components/ThemeList';
+import CustomTheme from './components/theme-editor';
 import { useTranslation } from './locale';
-import CustomTheme from './theme-editor';
 
 const CustomThemeProvider = React.memo((props) => {
   const { t } = useTranslation();
@@ -12,7 +13,7 @@ const CustomThemeProvider = React.memo((props) => {
       tabs: {
         themes: {
           title: t('Local'),
-          component: () => <div>Custom theme</div>,
+          component: ThemeList,
         },
       },
     },
