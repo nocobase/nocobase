@@ -705,6 +705,6 @@ export default {
   "Find by the following fields":"Find by the following fields",
   "Create":"Create",
   "Current form": "Current form",
-  "Current object":"Current object"
+  "Current object":"Current object",
   "All loaded, nothing more":"All loaded, nothing more",
 };
