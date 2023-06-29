@@ -29,7 +29,7 @@ const Overview = ({ theme }: { theme: ThemeConfig }) => {
           justifyContent: 'space-between',
           pointerEvents: 'none',
           width: 240,
-          height: 194,
+          height: 191,
           overflow: 'hidden',
         }}
       >
