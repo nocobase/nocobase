@@ -27,7 +27,7 @@ const CustomThemeProvider = React.memo((props) => {
     </div>
   );
 
-  return <SettingsCenterProvider settings={settings}>{editor}</SettingsCenterProvider>;
+  return <SettingsCenterProvider settings={settings}>{props.children}</SettingsCenterProvider>;
 });
 CustomThemeProvider.displayName = 'CustomThemeProvider';
 
