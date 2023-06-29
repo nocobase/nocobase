@@ -1,13 +1,15 @@
 import { css } from '@emotion/css';
-import { Button, ConfigProvider, Typography } from 'antd';
+import { Button, ConfigProvider, Space, Typography } from 'antd';
 import { ThemeEditor, enUS, zhCN } from 'antd-token-previewer';
 import type { ThemeConfig } from 'antd/es/config-provider/context';
 import React from 'react';
+import { useThemeEditorContext } from '../ThemeEditorProvider';
 
 const locales = {
   cn: {
     title: '主题编辑器',
     save: '保存',
+    close: '关闭',
     edit: '编辑',
     export: '导出',
     editModelTitle: '编辑主题配置',
@@ -19,6 +21,7 @@ const locales = {
   en: {
     title: 'Theme Editor',
     save: 'Save',
+    close: 'Close',
     edit: 'Edit',
     export: 'Export',
     editModelTitle: 'edit Theme Config',
@@ -50,12 +53,17 @@ const ANT_DESIGN_V5_THEME_EDITOR_THEME = 'ant-design-v5-theme-editor-theme';
 const CustomTheme = () => {
   const styles = useStyle();
   const [theme, setTheme] = React.useState<ThemeConfig>({});
+  const { setOpen } = useThemeEditorContext();
 
   const lang = 'cn';
   const locale = locales[lang];
 
   const handleSave = () => {
     localStorage.setItem(ANT_DESIGN_V5_THEME_EDITOR_THEME, JSON.stringify(theme));
+  };
+
+  const handleClose = () => {
+    setOpen(false);
   };
 
   return (
@@ -65,9 +73,14 @@ const CustomTheme = () => {
           <Typography.Title level={5} style={{ margin: 0 }}>
             {locale.title}
           </Typography.Title>
-          <Button type="primary" onClick={handleSave}>
-            {locale.save}
-          </Button>
+          <Space>
+            <Button type="default" onClick={handleClose}>
+              {locale.close}
+            </Button>
+            <Button type="primary" onClick={handleSave}>
+              {locale.save}
+            </Button>
+          </Space>
         </div>
         <ThemeEditor
           className={styles.editor}
