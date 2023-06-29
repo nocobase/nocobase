@@ -120,6 +120,7 @@ export const Templates = ({ style = {}, form }) => {
             forEach(data, (value, key) => {
               if (value) {
                 form.values[key] = value;
+                form.setInitialValuesIn(key, value);
               }
             });
           }
