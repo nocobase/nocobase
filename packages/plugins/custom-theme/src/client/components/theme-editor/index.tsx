@@ -50,7 +50,7 @@ const useStyle = () => ({
 
 const ANT_DESIGN_V5_THEME_EDITOR_THEME = 'ant-design-v5-theme-editor-theme';
 
-const CustomTheme = () => {
+const CustomTheme = ({ onThemeChange }: { onThemeChange?: (theme: ThemeConfig) => void }) => {
   const styles = useStyle();
   const [theme, setTheme] = React.useState<ThemeConfig>({});
   const { setOpen } = useThemeEditorContext();
@@ -88,6 +88,7 @@ const CustomTheme = () => {
           style={{ height: 'calc(100vh - 56px)', width: 540 }}
           onThemeChange={(newTheme) => {
             setTheme(newTheme.config);
+            onThemeChange?.(newTheme.config);
           }}
           locale={lang === 'cn' ? zhCN : enUS}
         />
