@@ -13,7 +13,7 @@ export const collection: IField = {
     type: 'string',
     uiSchema: {
       type: 'string',
-      'x-component': 'Select',
+      'x-component': 'CollectionSelect',
       enum: [],
     },
   },

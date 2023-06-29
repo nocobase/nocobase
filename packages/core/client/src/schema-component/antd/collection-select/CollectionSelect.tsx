@@ -1,9 +1,11 @@
 import { connect, mapReadPretty, observer } from '@formily/react';
 import { Select, SelectProps, Tag } from 'antd';
-import React from 'react';
+import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSelfAndChildrenCollections } from '../../../collection-manager/action-hooks';
 import { useCollectionManager } from '../../../collection-manager/hooks';
 import { useCompile } from '../../hooks';
+import { FilterContext } from '../filter/context';
 
 export type CollectionSelectProps = SelectProps<any, any> & {
   filter?: (item: any, index: number, array: any[]) => boolean;
@@ -11,8 +13,14 @@ export type CollectionSelectProps = SelectProps<any, any> & {
 
 function useOptions({ filter }: CollectionSelectProps) {
   const compile = useCompile();
+  const ctx = useContext(FilterContext);
+  const targetCollection = ctx?.collectionField?.target;
+  const inheritCollections = useSelfAndChildrenCollections(targetCollection);
   const { collections = [] } = useCollectionManager();
-  const filtered = typeof filter === 'function' ? collections.filter(filter) : collections;
+  const filtered =
+    typeof filter === 'function'
+      ? (inheritCollections || collections).filter(filter)
+      : inheritCollections || collections;
   return filtered
     .filter((item) => !item.hidden)
     .map((item) => ({
@@ -27,7 +35,6 @@ export const CollectionSelect = connect(
     const { filter, ...others } = props;
     const options = useOptions(props);
     const { t } = useTranslation();
-
     return (
       <Select
         placeholder={t('Select collection')}

@@ -8,6 +8,7 @@ export interface FilterContextProps {
   dynamicComponent?: any;
   options?: any[];
   disabled?: boolean;
+  collectionField?: any;
 }
 
 export const RemoveConditionContext = createContext(null);

@@ -124,7 +124,7 @@ export const tableoid = [
     label: '{{t("contains")}}',
     value: '$childIn',
     schema: {
-      'x-component': 'Select',
+      'x-component': 'CollectionSelect',
       'x-component-props': { mode: 'tags' },
     },
   },
@@ -132,7 +132,7 @@ export const tableoid = [
     label: '{{t("does not contain")}}',
     value: '$childNotIn',
     schema: {
-      'x-component': 'Select',
+      'x-component': 'CollectionSelect',
       'x-component-props': { mode: 'tags' },
     },
   },

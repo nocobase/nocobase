@@ -4,11 +4,11 @@ import React from 'react';
 import { useRequest } from '../../../api-client';
 import { useProps } from '../../hooks/useProps';
 import { DatePickerProvider } from '../date-picker';
+import { FilterContext } from './context';
 import { FilterActionDesigner } from './Filter.Action.Designer';
 import { FilterAction } from './FilterAction';
 import { FilterGroup } from './FilterGroup';
 import { SaveDefaultValue } from './SaveDefaultValue';
-import { FilterContext } from './context';
 
 const useDef = (options) => {
   const field = useField<ObjectFieldModel>();
@@ -18,7 +18,7 @@ const useDef = (options) => {
 export const Filter: any = observer(
   (props: any) => {
     const { useDataSource = useDef } = props;
-    const { options, dynamicComponent, className } = useProps(props);
+    const { options, dynamicComponent, className, collectionField } = useProps(props);
     const field = useField<ObjectFieldModel>();
     const fieldSchema = useFieldSchema();
     useDataSource({
@@ -36,6 +36,7 @@ export const Filter: any = observer(
               dynamicComponent,
               options: options || field.dataSource || [],
               disabled: props.disabled,
+              collectionField,
             }}
           >
             <FilterGroup {...props} bordered={false} />

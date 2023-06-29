@@ -14,7 +14,7 @@ export const tableoid: IField = {
     uiSchema: {
       type: 'string',
       title: '{{t("Table OID")}}',
-      'x-component': 'Input',
+      'x-component': 'CollectionSelect',
       'x-read-pretty': true,
     },
   },
