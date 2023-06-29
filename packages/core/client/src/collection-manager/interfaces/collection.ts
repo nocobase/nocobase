@@ -14,7 +14,7 @@ export const collection: IField = {
     uiSchema: {
       type: 'string',
       'x-component': 'CollectionSelect',
-      enum: [],
+      'x-component-props': { mode: 'tags' },
     },
   },
   availableTypes: ['string'],

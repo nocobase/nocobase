@@ -154,10 +154,17 @@ const InternalRemoteSelect = connect(
             str = str.replace('$iteration.', `$iteration.${path.join('.')}.`);
           }
           const parseValue = parseVariables(str, variablesCtx);
-          const filterObj = JSON.parse(
-            JSON.stringify(c).replace(jsonlogic.value, str.endsWith('id') ? parseValue ?? 0 : parseValue),
-          );
-          results.push(filterObj);
+          if (typeof parseValue === 'object') {
+            const filters = parseValue.map((v) => {
+              return JSON.parse(JSON.stringify(c).replace(jsonlogic.value, v));
+            });
+            results.push({ $or: filters });
+          } else {
+            const filterObj = JSON.parse(
+              JSON.stringify(c).replace(jsonlogic.value, str.endsWith('id') ? parseValue ?? 0 : parseValue),
+            );
+            results.push(filterObj);
+          }
         }
       });
       return { [type]: results };

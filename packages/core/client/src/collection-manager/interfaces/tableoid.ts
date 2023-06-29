@@ -15,6 +15,9 @@ export const tableoid: IField = {
       type: 'string',
       title: '{{t("Table OID")}}',
       'x-component': 'CollectionSelect',
+      'x-component-props': {
+        isTableOid: true,
+      },
       'x-read-pretty': true,
     },
   },
