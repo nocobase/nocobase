@@ -3,6 +3,7 @@ import { Space } from 'antd';
 import React, { useCallback } from 'react';
 import { ThemeItem } from '../../types';
 import ThemeCard from './ThemeCard';
+import ToEditTheme from './ToEditTheme';
 
 interface TData {
   data: ThemeItem[];
@@ -32,6 +33,7 @@ const ThemeList = () => {
       {data?.data.map((item) => {
         return <ThemeCard item={item} key={item.id} onChange={handleChange} />;
       })}
+      <ToEditTheme />
     </Space>
   );
 };
