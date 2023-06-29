@@ -232,12 +232,14 @@ function useNormalizedFields(collectionName) {
 }
 
 export function useCollectionFieldOptions(options): VariableOption[] {
-  const { fields, collection, types, depth = 1 } = options;
+  const { fields, collection, types, depth = 1, sourceKey } = options;
   const compile = useCompile();
   const normalizedFields = useNormalizedFields(collection);
   const computedFields = fields ?? normalizedFields;
   const result: VariableOption[] = filterTypedFields(computedFields, types, depth)
-    .filter((field) => !isAssociationField(field) || depth)
+    .filter((field) => {
+      return !isAssociationField(field) || (depth && (!sourceKey || field.reverseKey !== sourceKey));
+    })
     .map((field) => {
       const label = compile(field.uiSchema?.title || field.name);
       return {
@@ -246,7 +248,7 @@ export function useCollectionFieldOptions(options): VariableOption[] {
         value: field.name,
         children:
           isAssociationField(field) && depth
-            ? useCollectionFieldOptions({ collection: field.target, types, depth: depth - 1 })
+            ? useCollectionFieldOptions({ sourceKey: field.key, collection: field.target, types, depth: depth - 1 })
             : null,
         field,
       };
