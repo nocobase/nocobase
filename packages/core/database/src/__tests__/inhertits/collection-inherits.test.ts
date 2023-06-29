@@ -1,10 +1,9 @@
+import { BelongsToManyRepository } from '@nocobase/database';
 import Database from '../../database';
 import { InheritedCollection } from '../../inherited-collection';
 import { mockDatabase } from '../index';
-import { BelongsToManyRepository } from '@nocobase/database';
-import pgOnly from './helper';
 
-pgOnly()('collection inherits', () => {
+describe('collection inherits', () => {
   let db: Database;
 
   beforeEach(async () => {
@@ -215,7 +214,7 @@ pgOnly()('collection inherits', () => {
 
     const records = await rootCollection.repository.find({
       filter: {
-        'tableoid.$childIn': [child1Collection.name],
+        '__collection.$childIn': [child1Collection.name],
       },
     });
 
@@ -223,7 +222,7 @@ pgOnly()('collection inherits', () => {
 
     const records2 = await rootCollection.repository.find({
       filter: {
-        'tableoid.$childNotIn': [child1Collection.name],
+        '__collection.$childNotIn': [child1Collection.name],
       },
     });
     expect(records2.every((r) => r.get('__collection') !== child1Collection.name)).toBe(true);
