@@ -236,7 +236,9 @@ const InternalRemoteSelect = connect(
     const onDropdownVisibleChange = (visible) => {
       setOpen(visible);
       searchData.current = null;
-      run();
+      if (visible) {
+        run();
+      }
       firstRun.current = true;
     };
     return (

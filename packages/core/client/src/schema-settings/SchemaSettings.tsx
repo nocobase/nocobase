@@ -20,7 +20,16 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import _, { cloneDeep } from 'lodash';
-import React, { ReactNode, createContext, useCallback, useContext, useMemo, useState } from 'react';
+import React, {
+  ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  // @ts-ignore
+  useTransition as useReactTransition,
+  useState,
+} from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -74,6 +83,13 @@ interface SchemaSettingsContextProps {
 }
 
 const SchemaSettingsContext = createContext<SchemaSettingsContextProps>(null);
+
+/**
+ * 用于去除菜单的消失动画，优化操作体验
+ */
+const hidden = css`
+  display: none;
+`;
 
 export const useSchemaSettings = () => {
   return useContext(SchemaSettingsContext);
@@ -131,20 +147,15 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
   const { title, dn, ...others } = props;
   const [visible, setVisible] = useState(false);
   const { Component, getMenuItems } = useMenuItem();
-  const [shouldRender, setShouldRender] = useState(false);
+  const [isPending, startTransition] = useReactTransition();
 
-  if (!shouldRender) {
-    return (
-      <div
-        onMouseEnter={() => {
-          setShouldRender(true);
-          setVisible(true);
-        }}
-      >
-        {typeof title === 'string' ? <span>{title}</span> : title}
-      </div>
-    );
-  }
+  const changeMenu = (v: boolean) => {
+    startTransition(() => {
+      setVisible(v);
+    });
+  };
+
+  const items = getMenuItems(() => props.children);
 
   const dropdownMenu = () => (
     <>
@@ -152,10 +163,9 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
       <Dropdown
         open={visible}
         onOpenChange={() => {
-          setShouldRender(false);
-          setVisible(false);
+          changeMenu(!visible);
         }}
-        menu={{ items: getMenuItems(() => props.children) }}
+        menu={{ items, className: classNames({ [hidden]: !visible }) }}
         overlayClassName={overlayClassName}
       >
         {typeof title === 'string' ? <span>{title}</span> : title}

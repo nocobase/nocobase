@@ -280,7 +280,7 @@ export default {
     "Display field title": "Mostrar título de campo",
     "Field component": "Componente del campo",
     "Subtable": "Subtabla",
-    "Subform": "Subformulario",
+    "Sub-form": "Subformulario",
     "Record picker": "Selector de registros",
     "Toggles the subfield mode": "Alterna el modo de subcampo",
     "Selector mode": "Modo selector",

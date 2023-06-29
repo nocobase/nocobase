@@ -4,8 +4,8 @@ import { ArrayField, connect, useField } from '@formily/react';
 import { Select, Space } from 'antd';
 import React, { useContext } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { FilterLogicContext, RemoveConditionContext } from './context';
 import { FilterItems } from './FilterItems';
+import { FilterLogicContext, RemoveConditionContext } from './context';
 
 export const FilterGroup = connect((props) => {
   const { bordered = true, disabled } = props;

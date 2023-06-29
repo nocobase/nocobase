@@ -86,7 +86,7 @@ describe('my suite', () => {
 
 ## Example
 
-Let's write a test of the plugin using in previous chapter [Resources and Actions](development/server/resources-actions) as an example.
+Let's write a test of the plugin using in previous chapter [Resources and Actions](resources-actions) as an example.
 
 ```ts
 import { mockServer } from '@nocobase/test';

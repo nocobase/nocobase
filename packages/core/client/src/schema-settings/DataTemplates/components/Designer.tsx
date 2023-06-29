@@ -172,6 +172,7 @@ function SelectItem(props) {
       <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
         {title}
         <Select
+          dropdownMatchSelectWidth={false}
           bordered={false}
           value={value}
           onChange={onChange}

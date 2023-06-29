@@ -9,7 +9,7 @@ import 'jsdom-worker';
 import { vi } from 'vitest';
 import '../packages/core/client/src/i18n';
 
-// 解决 ypeError: window.matchMedia is not a function
+// 解决 TypeError: window.matchMedia is not a function
 // 参见： https://github.com/vitest-dev/vitest/issues/821#issuecomment-1046954558
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
