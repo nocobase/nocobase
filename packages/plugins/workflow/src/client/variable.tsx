@@ -142,7 +142,7 @@ function isAssociationField(field): boolean {
   return ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type);
 }
 
-export function filterTypedFields(fields, types, depth = 1) {
+export function filterTypedFields({ fields, types, depth = 1, compile, getCollectionFields }) {
   if (!types) {
     return fields;
   }
@@ -150,7 +150,13 @@ export function filterTypedFields(fields, types, depth = 1) {
     if (
       isAssociationField(field) &&
       depth &&
-      filterTypedFields(useNormalizedFields(field.target), types, depth - 1).length
+      filterTypedFields({
+        fields: getNormalizedFields(field.target, { compile, getCollectionFields }),
+        types,
+        depth: depth - 1,
+        compile,
+        getCollectionFields,
+      }).length
     ) {
       return true;
     }
@@ -174,9 +180,7 @@ export function useWorkflowVariableOptions(options = {}) {
   return result;
 }
 
-function useNormalizedFields(collectionName) {
-  const compile = useCompile();
-  const { getCollectionFields } = useCollectionManager();
+function getNormalizedFields(collectionName, { compile, getCollectionFields }) {
   const fields = getCollectionFields(collectionName);
   const foreignKeyFields: any[] = [];
   const otherFields: any[] = [];
@@ -231,24 +235,43 @@ function useNormalizedFields(collectionName) {
   return otherFields.filter((field) => field.interface && !field.hidden);
 }
 
-export function useCollectionFieldOptions(options): VariableOption[] {
-  const { fields, collection, types, depth = 1 } = options;
-  const compile = useCompile();
-  const normalizedFields = useNormalizedFields(collection);
+async function loadChildren(option) {
+  setTimeout(() => {
+    option.children = getCollectionFieldOptions({
+      collection: option.field.target,
+      types: option.types,
+      depth: option.depth - 1,
+      compile: this.compile,
+      getCollectionFields: this.getCollectionFields,
+    });
+  });
+}
+
+export function getCollectionFieldOptions(options): VariableOption[] {
+  const { fields, collection, types, depth = 1, compile, getCollectionFields } = options;
+  const normalizedFields = getNormalizedFields(collection, { compile, getCollectionFields });
   const computedFields = fields ?? normalizedFields;
-  const result: VariableOption[] = filterTypedFields(computedFields, types, depth)
+
+  const result: VariableOption[] = filterTypedFields({
+    fields: computedFields,
+    types,
+    depth,
+    compile,
+    getCollectionFields,
+  })
     .filter((field) => !isAssociationField(field) || depth)
     .map((field) => {
       const label = compile(field.uiSchema?.title || field.name);
+      const isLeaf = !isAssociationField(field) || !depth;
       return {
         label,
         key: field.name,
         value: field.name,
-        children:
-          isAssociationField(field) && depth
-            ? useCollectionFieldOptions({ collection: field.target, types, depth: depth - 1 })
-            : null,
+        isLeaf,
+        loadChildren: isLeaf ? null : loadChildren.bind({ compile, getCollectionFields }),
         field,
+        depth,
+        types,
       };
     });
 
