@@ -118,3 +118,22 @@ export const boolean = [
   { label: '{{t("Yes")}}', value: '$isTruly', selected: true, noValue: true },
   { label: '{{t("No")}}', value: '$isFalsy', noValue: true },
 ];
+
+export const tableoid = [
+  {
+    label: '{{t("contains")}}',
+    value: '$childIn',
+    schema: {
+      'x-component': 'Select',
+      'x-component-props': { mode: 'tags' },
+    },
+  },
+  {
+    label: '{{t("does not contain")}}',
+    value: '$childNotIn',
+    schema: {
+      'x-component': 'Select',
+      'x-component-props': { mode: 'tags' },
+    },
+  },
+];
