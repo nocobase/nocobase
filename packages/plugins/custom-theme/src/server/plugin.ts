@@ -22,6 +22,10 @@ export class CustomThemePlugin extends Plugin {
             type: 'boolean',
             name: 'optional',
           },
+          {
+            type: 'boolean',
+            name: 'isBuiltIn',
+          },
         ],
       }),
     );
