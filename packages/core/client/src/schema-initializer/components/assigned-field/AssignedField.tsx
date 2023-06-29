@@ -158,6 +158,10 @@ export const AssignedField = (props: any) => {
 
   const typeChangeHandler = (val) => {
     setType(val);
+    if (val === AssignedFieldValueType.DynamicValue) {
+      field.validator = null;
+      field.form.clearErrors();
+    }
   };
 
   const valueChangeHandler = (val) => {
