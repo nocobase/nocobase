@@ -7,14 +7,17 @@ import classNames from 'classnames';
 import moment from 'moment';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { DefaultOptionType } from 'antd/lib/cascader';
 import { useCompile } from '../..';
-import { Option } from '../../../schema-settings/VariableInput/type';
 import { XButton } from './XButton';
 
 const JT_VALUE_RE = /^\s*{{\s*([^{}]+)\s*}}\s*$/;
 const groupClass = css`
   width: auto;
-  display: flex !important;
+  display: flex;
+  &.ant-input-group-compact {
+    display: flex;
+  }
   .ant-input-disabled {
     .ant-tag {
       color: #bfbfbf;
@@ -127,33 +130,32 @@ function getTypedConstantOption(type: string, types?: true | string[]) {
   };
 }
 
-type VariableOptions = {
+interface VariableOptions extends DefaultOptionType {
   value: string;
-  label?: string;
+  label: string;
   children?: VariableOptions[];
-};
+}
 
 export function Input(props) {
-  const compile = useCompile();
-  const form = useForm();
+  const { value = '', scope, onChange, children, button, useTypedConstant, style, className, changeOnSelect } = props;
 
-  const { value = '', scope, onChange, children, button, useTypedConstant, style, className } = props;
+  const compile = useCompile();
+  const { t } = useTranslation();
+  const form = useForm();
+  const [options, setOptions] = React.useState<VariableOptions[]>([]);
+  const [variableText, setVariableText] = React.useState('');
+
   const parsed = useMemo(() => parseValue(value), [value]);
   const isConstant = typeof parsed === 'string';
   const type = isConstant ? parsed : '';
   const variable = isConstant ? null : parsed;
-
-  // 当 scope 是一个函数时，可能是一个 hook，所以不能使用 useMemo
-  const variableOptions = typeof scope === 'function' ? scope() : scope ?? [];
-
-  const [variableText, setVariableText] = React.useState('');
 
   const { component: ConstantComponent, ...constantOption }: VariableOptions & { component?: React.FC<any> } =
     useMemo(() => {
       if (children) {
         return {
           value: '',
-          label: '{{t("Constant")}}',
+          label: t('Constant'),
         };
       }
       if (useTypedConstant) {
@@ -161,23 +163,19 @@ export function Input(props) {
       }
       return {
         value: '',
-        label: '{{t("Null")}}',
+        label: t('Null'),
         component: ConstantTypes.null.component,
       };
     }, [type, useTypedConstant]);
 
-  const [options, setOptions] = React.useState<Option[]>(() => {
-    return compile([constantOption, ...variableOptions]);
-  });
-
   useEffect(() => {
-    const newOptions: Option[] = [constantOption, ...variableOptions];
-    setOptions(deepCompileLabel(newOptions, compile));
-  }, [variableOptions]);
+    const newOptions: VariableOptions[] = [constantOption, ...(scope ?? [])];
+    setOptions(compile(newOptions));
+  }, [scope]);
 
-  const loadData = async (selectedOptions: Option[]) => {
+  const loadData = async (selectedOptions: VariableOptions[]) => {
     const option = selectedOptions[selectedOptions.length - 1];
-    if (option.loadChildren) {
+    if (!option.children && !option.isLeaf && option.loadChildren) {
       await option.loadChildren(option);
       setOptions((prev) => [...prev]);
     }
@@ -204,10 +202,10 @@ export function Input(props) {
 
   useEffect(() => {
     const run = async () => {
-      if (!variable || options.length <= 1) {
+      if (!variable || !options.length) {
         return;
       }
-      let prevOption: Option = null;
+      let prevOption: VariableOptions = null;
       const labels = [];
 
       for (let i = 0; i < variable.length; i++) {
@@ -230,40 +228,42 @@ export function Input(props) {
       setVariableText(labels.join(' / '));
     };
 
-    // 如果没有这个延迟，会导致选择父节点时不展开子节点
-    setTimeout(run);
-  }, [variable, options.length]);
+    run();
+  }, [variable, options]);
 
   const disabled = props.disabled || form.disabled;
 
   return (
-    <AntInput.Group compact style={style} className={classNames(className, groupClass)}>
+    <AntInput.Group compact style={style} className={classNames(groupClass, className)}>
       {variable ? (
         <div
-          className={css`
-            position: relative;
-            line-height: 0;
+          className={cx(
+            'variable',
+            css`
+              position: relative;
+              line-height: 0;
 
-            &:hover {
-              .ant-select-clear {
-                opacity: 0.8;
+              &:hover {
+                .ant-select-clear {
+                  opacity: 0.8;
+                }
               }
-            }
 
-            .ant-input {
-              overflow: auto;
-              white-space: nowrap;
-              ${disabled ? '' : 'padding-right: 28px;'}
+              .ant-input {
+                overflow: auto;
+                white-space: nowrap;
+                ${disabled ? '' : 'padding-right: 28px;'}
 
-              .ant-tag {
-                display: inline;
-                line-height: 19px;
-                margin: 0;
-                padding: 2px 7px;
-                border-radius: 10px;
+                .ant-tag {
+                  display: inline;
+                  line-height: 19px;
+                  margin: 0;
+                  padding: 2px 7px;
+                  border-radius: 10px;
+                }
               }
-            }
-          `}
+            `,
+          )}
         >
           <div
             onInput={(e) => e.preventDefault()}
@@ -303,22 +303,11 @@ export function Input(props) {
           value={variable ?? ['', ...(children || !constantOption.children?.length ? [] : [type])]}
           onChange={onSwitch}
           loadData={loadData as any}
-          changeOnSelect
+          changeOnSelect={changeOnSelect}
         >
           {button ?? <XButton type={variable ? 'primary' : 'default'} />}
         </Cascader>
       ) : null}
     </AntInput.Group>
   );
-}
-
-function deepCompileLabel(list: Option[], compile) {
-  return list.map((item) => {
-    const children = item.children ? deepCompileLabel(item.children, compile) : null;
-    return {
-      ...item,
-      label: compile(item.label),
-      children,
-    };
-  });
 }

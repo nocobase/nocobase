@@ -66,7 +66,7 @@ export default {
                 'x-decorator': 'FormItem',
                 'x-component': 'Variable.Input',
                 'x-component-props': {
-                  scope: useWorkflowVariableOptions,
+                  scope: '{{useWorkflowVariableOptions()}}',
                   useTypedConstant: true,
                 },
               },
@@ -140,7 +140,7 @@ export default {
       'x-decorator-props': {},
       'x-component': 'Variable.JSON',
       'x-component-props': {
-        scope: useWorkflowVariableOptions,
+        scope: '{{useWorkflowVariableOptions()}}',
         autoSize: {
           minRows: 10,
         },
@@ -170,7 +170,9 @@ export default {
     },
   },
   view: {},
-  scope: {},
+  scope: {
+    useWorkflowVariableOptions,
+  },
   components: {
     ArrayItems,
   },

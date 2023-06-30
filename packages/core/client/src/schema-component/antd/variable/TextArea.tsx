@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Input } from 'antd';
 import { useForm } from '@formily/react';
 import { cx, css } from '@emotion/css';
-import { useTranslation } from 'react-i18next';
 import * as sanitizeHTML from 'sanitize-html';
+
+import { error } from '@nocobase/utils/client';
 
 import { EllipsisWithTooltip, useCompile } from '../..';
 import { VariableSelect } from './VariableSelect';
@@ -188,26 +189,29 @@ export function TextArea(props) {
   const { value = '', scope, onChange, multiline = true } = props;
   const compile = useCompile();
   const inputRef = useRef<HTMLDivElement>(null);
-  const options = compile((typeof scope === 'function' ? scope() : scope) ?? []);
+  const [options, setOptions] = useState([]);
   const form = useForm();
-  const keyLabelMap = useMemo(() => createOptionsValueLabelMap(options), [scope]);
+  const keyLabelMap = useMemo(() => createOptionsValueLabelMap(options), [options]);
   const [ime, setIME] = useState<boolean>(false);
   const [changed, setChanged] = useState(false);
   const [html, setHtml] = useState(() => renderHTML(value ?? '', keyLabelMap));
   // NOTE: e.g. [startElementIndex, startOffset, endElementIndex, endOffset]
   const [range, setRange] = useState<[number, number, number, number]>([-1, 0, -1, 0]);
-  const [selectedVar, setSelectedVar] = useState<string[]>([]);
 
   useEffect(() => {
-    setSelectedVar([]);
-  }, [scope]);
+    preloadOptions(scope ?? [], value ?? '')
+      .then((preloaded) => {
+        setOptions(compile(preloaded));
+      })
+      .catch((err) => console.error);
+  }, [scope, value, compile]);
 
   useEffect(() => {
     setHtml(renderHTML(value ?? '', keyLabelMap));
     if (!changed) {
       setRange([-1, 0, -1, 0]);
     }
-  }, [value]);
+  }, [value, keyLabelMap]);
 
   useEffect(() => {
     const { current } = inputRef;
@@ -375,16 +379,49 @@ export function TextArea(props) {
         contentEditable={!disabled}
         dangerouslySetInnerHTML={{ __html: html }}
       />
-      {!disabled ? <VariableSelect options={options} onInsert={onInsert} /> : null}
+      {!disabled ? <VariableSelect options={options} setOptions={setOptions} onInsert={onInsert} /> : null}
     </Input.Group>
   );
 }
 
+async function preloadOptions(options, value) {
+  for (let matcher; (matcher = VARIABLE_RE.exec(value ?? '')); ) {
+    const keys = matcher[1].split('.');
+
+    let prevOption = null;
+
+    for (let i = 0; i < keys.length; i++) {
+      const key = keys[i];
+      try {
+        if (i === 0) {
+          prevOption = options.find((item) => item.value === key);
+        } else {
+          if (prevOption.loadChildren && !prevOption.children?.length) {
+            await prevOption.loadChildren(prevOption);
+          }
+          prevOption = prevOption.children.find((item) => item.value === key);
+        }
+      } catch (err) {
+        error(err);
+      }
+    }
+  }
+  return [...options];
+}
+
 TextArea.ReadPretty = function ReadPretty(props): JSX.Element {
-  const { value, multiline = true, scope } = props;
+  const { value, scope } = props;
   const compile = useCompile();
-  const options = compile((typeof scope === 'function' ? scope() : scope) ?? []);
-  const keyLabelMap = useMemo(() => createOptionsValueLabelMap(options), [scope]);
+  const [options, setOptions] = useState([]);
+  const keyLabelMap = useMemo(() => createOptionsValueLabelMap(options), [options]);
+
+  useEffect(() => {
+    preloadOptions(scope ?? [], value ?? '')
+      .then((preloaded) => {
+        setOptions(compile(preloaded));
+      })
+      .catch((err) => console.error);
+  }, [scope, value]);
   const html = renderHTML(value ?? '', keyLabelMap);
 
   const content = (

@@ -1,16 +1,19 @@
 import { css, cx } from '@emotion/css';
 import { Button, Cascader } from 'antd';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-export function VariableSelect(props) {
-  const { options, onInsert } = props;
+export function VariableSelect({ options, setOptions, onInsert }): JSX.Element {
   const { t } = useTranslation();
   const [selectedVar, setSelectedVar] = useState<string[]>([]);
 
-  useEffect(() => {
-    setSelectedVar([]);
-  }, [options]);
+  async function loadData(selectedOptions) {
+    const option = selectedOptions[selectedOptions.length - 1];
+    if (!option.children && !option.isLeaf && option.loadChildren) {
+      await option.loadChildren(option);
+      setOptions((prev) => [...prev]);
+    }
+  }
 
   return (
     <Button
@@ -44,6 +47,7 @@ export function VariableSelect(props) {
         placeholder={t('Select a variable')}
         value={[]}
         options={options}
+        loadData={loadData}
         onChange={(keyPaths = [], selectedOptions = []) => {
           setSelectedVar(keyPaths as string[]);
           if (!keyPaths.length) {

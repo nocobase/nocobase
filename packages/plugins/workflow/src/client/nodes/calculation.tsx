@@ -14,18 +14,20 @@ import { BaseTypeSets, useWorkflowVariableOptions } from '../variable';
 import { ValueBlock } from '../components/ValueBlock';
 
 function useDynamicExpressionCollectionFieldMatcher(field): boolean {
-  const { getCollectionFields } = useCollectionManager();
   if (field.type !== 'belongsTo') {
     return false;
   }
 
-  const fields = getCollectionFields(field.target);
+  const fields = this.getCollectionFields(field.target);
   return fields.some((f) => f.interface === 'expression');
 }
 
 const DynamicConfig = ({ value, onChange }) => {
   const { t } = useTranslation();
-  const scope = useWorkflowVariableOptions({ types: [useDynamicExpressionCollectionFieldMatcher] });
+  const { getCollectionFields } = useCollectionManager();
+  const scope = useWorkflowVariableOptions({
+    types: [useDynamicExpressionCollectionFieldMatcher.bind({ getCollectionFields })],
+  });
 
   return (
     <FormLayout layout="vertical">
@@ -96,7 +98,7 @@ export default {
       'x-decorator': 'FormItem',
       'x-component': 'Variable.TextArea',
       'x-component-props': {
-        scope: '{{useWorkflowVariableOptions}}',
+        scope: '{{useWorkflowVariableOptions()}}',
       },
       ['x-validator'](value, rules, { form }) {
         const { values } = form;
@@ -135,13 +137,14 @@ export default {
       'x-decorator': 'FormItem',
       'x-component': 'Variable.Input',
       'x-component-props': {
-        scope: '{{useWorkflowVariableEntityOptions}}',
+        scope: '{{useWorkflowVariableEntityOptions()}}',
+        changeOnSelect: true,
       },
       'x-reactions': {
         dependencies: ['dynamic'],
         fulfill: {
           state: {
-            visible: '{{$deps[0] !== false}}',
+            visible: '{{$deps[0]}}',
           },
         },
       },
