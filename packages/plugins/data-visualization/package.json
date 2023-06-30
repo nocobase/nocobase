@@ -16,5 +16,7 @@
     "react-error-boundary": "^4.0.4"
   },
   "displayName": "Data Visualization",
-  "displayName.zh-CN": "数据可视化"
+  "displayName.zh-CN": "数据可视化",
+  "description": "Provides business intelligence and data visualization features",
+  "description.zh-CN": "提供BI面板和数据可视化功能"
 }
