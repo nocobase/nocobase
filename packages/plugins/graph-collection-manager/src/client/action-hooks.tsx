@@ -1,14 +1,14 @@
 import { observer, useForm } from '@formily/react';
 import { action } from '@formily/reactive';
 import {
-  useActionContext,
   useAPIClient,
+  useActionContext,
   useCollectionFieldFormValues,
   useCollectionManager,
   useCompile,
   useRequest,
 } from '@nocobase/client';
-import { message, Select } from 'antd';
+import { Select, message } from 'antd';
 import omit from 'lodash/omit';
 import React, { useContext, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -34,7 +34,12 @@ export const SourceCollection = observer(
     const compile = useCompile();
     return (
       <div>
-        <Select disabled value={record.name} options={[{ value: record.name, label: compile(record.title) }]} />
+        <Select
+          dropdownMatchSelectWidth={false}
+          disabled
+          value={record.name}
+          options={[{ value: record.name, label: compile(record.title) }]}
+        />
       </div>
     );
   },
