@@ -2,10 +2,7 @@
 
 NocoBase Client 的 Router 基于 [React Router](https://v5.reactrouter.com/web/guides/quick-start)，可以通过 `<RouteSwitch routes={[]} />` 来配置 ui routes，例子如下：
 
-```tsx
-/**
- * defaultShowCode: true
- */
+```tsx | pure
 import React from 'react';
 import { Link, MemoryRouter as Router } from 'react-router-dom';
 import { RouteRedirectProps, RouteSwitchProvider, RouteSwitch } from '@nocobase/client';

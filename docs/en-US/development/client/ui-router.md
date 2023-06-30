@@ -2,10 +2,7 @@
 
 NocoBase Client's Router is based on [React Router](https://v5.reactrouter.com/web/guides/quick-start) and can be configured via `<RouteSwitch routes={[]} />` to configure ui routes with the following example.
 
-```tsx
-/**
- * defaultShowCode: true
- */
+```tsx | pure
 import React from 'react';
 import { Link, MemoryRouter as Router } from 'react-router-dom';
 import { RouteRedirectProps, RouteSwitchProvider, RouteSwitch } from '@nocobase/client';
