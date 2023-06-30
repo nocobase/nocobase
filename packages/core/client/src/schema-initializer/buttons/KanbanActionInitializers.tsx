@@ -32,7 +32,7 @@ export const KanbanActionInitializers = {
           },
           visible: function useVisible() {
             const collection = useCollection();
-            return (collection as any).template !== 'view' || collection?.writeableView;
+            return (collection as any).template !== 'view' || collection?.writableView;
           },
         },
       ],

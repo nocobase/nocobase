@@ -29,7 +29,7 @@ export interface CollectionOptions {
   inherits?: string[];
   tree?: string;
   template?: string;
-  writeableView?: boolean;
+  writableView?: boolean;
 }
 
 export interface ICollectionProviderProps {

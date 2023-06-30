@@ -25,7 +25,7 @@ export const CalendarFormActionInitializers = {
           },
           visible: function useVisible() {
             const collection = useCollection();
-            return collection.template !== 'view' || collection?.writeableView;
+            return collection.template !== 'view' || collection?.writableView;
           },
         },
         {
@@ -38,7 +38,7 @@ export const CalendarFormActionInitializers = {
           },
           visible: function useVisible() {
             const collection = useCollection();
-            return collection.template !== 'view' || collection?.writeableView;
+            return collection.template !== 'view' || collection?.writableView;
           },
         },
         {
@@ -51,7 +51,7 @@ export const CalendarFormActionInitializers = {
           },
           visible: function useVisible() {
             const collection = useCollection();
-            return collection.template !== 'view' || collection?.writeableView;
+            return collection.template !== 'view' || collection?.writableView;
           },
         },
         {
@@ -146,7 +146,7 @@ export const CalendarFormActionInitializers = {
           },
           visible: function useVisible() {
             const collection = useCollection();
-            return collection.template !== 'view' || collection?.writeableView;
+            return collection.template !== 'view' || collection?.writableView;
           },
         },
         {
@@ -173,7 +173,7 @@ export const CalendarFormActionInitializers = {
           },
           visible: () => {
             const collection = useCollection();
-            return collection.template !== 'view' || collection?.writeableView;
+            return collection.template !== 'view' || collection?.writableView;
           },
         },
       ],

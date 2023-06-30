@@ -33,7 +33,7 @@ export const GridCardActionInitializers = {
           },
           visible: () => {
             const collection = useCollection();
-            return (collection.template !== 'view' && collection.template !== 'file') || collection?.writeableView;
+            return (collection.template !== 'view' && collection.template !== 'file') || collection?.writableView;
           },
         },
         {
@@ -165,7 +165,7 @@ export const GridCardItemActionInitializers = {
           },
           visible: () => {
             const collection = useCollection();
-            return (collection as any).template !== 'view' || collection?.writeableView;
+            return (collection as any).template !== 'view' || collection?.writableView;
           },
         },
         {
@@ -263,7 +263,7 @@ export const GridCardItemActionInitializers = {
           },
           visible: () => {
             const collection = useCollection();
-            return (collection as any).template !== 'view' || collection?.writeableView;
+            return (collection as any).template !== 'view' || collection?.writableView;
           },
         },
         {
@@ -289,7 +289,7 @@ export const GridCardItemActionInitializers = {
           },
           visible: () => {
             const collection = useCollection();
-            return (collection as any).template !== 'view' || collection?.writeableView;
+            return (collection as any).template !== 'view' || collection?.writableView;
           },
         },
       ],

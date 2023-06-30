@@ -47,18 +47,22 @@ describe('create view', () => {
     const dropViewSQL = `DROP VIEW IF EXISTS test_view`;
     await db.sequelize.query(dropViewSQL);
 
-    const viewSQL = `CREATE VIEW ${viewName} AS select users.id as user_id, users.name as user_name, groups.name as group_name from ${User.quotedTableName()} as users left join ${Group.quotedTableName()} as ${db.sequelize
-      .getQueryInterface()
-      .quoteIdentifier('groups')} on users.group_id = groups.id`;
+    const viewSQL = `
+    CREATE VIEW ${viewName}
+    AS SELECT users.id AS user_id, users.name AS user_name, groups.name AS group_name
+    FROM ${User.quotedTableName()} AS ${db.sequelize.getQueryInterface().quoteIdentifier('users')}
+    LEFT JOIN ${Group.quotedTableName()} AS ${db.sequelize.getQueryInterface().quoteIdentifier('groups')}
+    ON users.group_id = groups.id`;
+
     await db.sequelize.query(viewSQL);
 
     const viewCollection = db.collection({
       name: viewName,
       viewName,
-      writeableView: true,
+      writableView: true,
       timestamps: false,
       fields: [
-        { type: 'bigInt', name: 'user_id', primaryKey: true },
+        { type: 'bigInt', name: 'user_id' },
         { type: 'string', name: 'user_name' },
         { type: 'string', name: 'group_name' },
       ],
@@ -180,7 +184,6 @@ describe('create view', () => {
       },
     });
 
-    console.log(fooData);
     expect(fooData.get('name')).toBe('foo');
     expect(fooData.get('age')).toBe(18);
   });

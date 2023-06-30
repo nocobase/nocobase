@@ -76,7 +76,7 @@ export const CalendarActionInitializers = {
           },
           visible: function useVisible() {
             const collection = useCollection();
-            return collection.template !== 'view' || collection?.writeableView;
+            return collection.template !== 'view' || collection?.writableView;
           },
         },
       ],

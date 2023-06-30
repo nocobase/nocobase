@@ -3,9 +3,11 @@ import { ViewRepository } from './repositories/view-repository';
 
 export class ViewCollection extends Collection {
   constructor(options: CollectionOptions, context: CollectionContext) {
-    if (!options?.writeableView) {
+    if (!options?.writableView) {
       options.autoGenId = false;
       options.timestamps = false;
+    } else {
+      // writable view, set primaryKey, set timestamps
     }
 
     super(options, context);

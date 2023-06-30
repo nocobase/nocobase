@@ -128,7 +128,7 @@ export const view: ICollectionTemplate = {
         },
       },
     },
-    writeableView: {
+    writableView: {
       type: 'boolean',
       'x-content': '{{t("View collection can be edited")}}',
       'x-decorator': 'FormItem',

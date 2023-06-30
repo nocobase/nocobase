@@ -170,7 +170,7 @@ export const RecordBlockInitializers = (props: any) => {
   const hasFormChildCollection = formChildrenCollections?.length > 0;
   const detailChildrenCollections = getChildrenCollections(collection.name, true);
   const hasDetailChildCollection = detailChildrenCollections?.length > 0;
-  const modifyFlag = (collection as any).template !== 'view' || collection?.writeableView;
+  const modifyFlag = (collection as any).template !== 'view' || collection?.writableView;
   return (
     <SchemaInitializer.Button
       wrap={gridRowColWrap}

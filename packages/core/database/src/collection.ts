@@ -44,7 +44,7 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> 
   tableName?: string;
   inherits?: string[] | string;
   viewName?: string;
-  writeableView?: boolean;
+  writableView?: boolean;
 
   filterTargetKey?: string;
   fields?: FieldOptions[];
