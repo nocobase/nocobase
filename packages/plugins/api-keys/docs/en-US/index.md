@@ -6,4 +6,4 @@ This plugin allows you to create and manage APIs. The generated API keys can be 
 
 ## Access Control
 
-When creating an API Key, you can bind it to a role, and the role's permissions will be the same as the Key's permissions.
+When creating an API key, you can bind it to a role, and the role's permissions will be the same as the Key's permissions.
