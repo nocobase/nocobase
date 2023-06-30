@@ -83,6 +83,7 @@ export const Localization = () => {
         schema={localizationSchema}
         components={{ TranslationField }}
         scope={{
+          t,
           useModules,
           useDestroyTranslationAction,
           useDestroyTextAction,

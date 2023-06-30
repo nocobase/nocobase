@@ -2,6 +2,23 @@ import actions, { Context, Next } from '@nocobase/actions';
 import { Model } from '@nocobase/database';
 
 export default {
+  all: async (ctx: Context, next: Next) => {
+    const repo = ctx.db.getRepository('localizationTexts');
+    const records = await repo.find({
+      appends: ['translations'],
+      filter: {
+        'translations.locale': ctx.get('X-Locale') || 'en-US',
+      },
+    });
+    console.log(records);
+    ctx.body = records.reduce((modules: any, text: Model) => {
+      const module = text.module;
+      const record = { [text.text]: text.translations[0]?.translation };
+      modules[module] = modules[module] ? { ...modules[module], ...record } : record;
+      return modules;
+    }, {});
+    await next();
+  },
   list: async (ctx: Context, next: Next) => {
     ctx.action.resourceName = 'localizationTexts';
     ctx.action.mergeParams({

@@ -17,6 +17,7 @@ export class LocalizationManagementPlugin extends Plugin {
       actions: localization,
     });
 
+    this.app.acl.allow('localization', 'all', 'public');
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.localization`,
       actions: ['localization:*'],

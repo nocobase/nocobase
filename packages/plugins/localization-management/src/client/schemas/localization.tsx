@@ -72,12 +72,12 @@ export const localizationSchema: ISchema = {
       properties: {
         deleteTranslation: {
           type: 'void',
-          title: '{{t("Delete Translation")}}',
+          title: '{{t("Delete translation")}}',
           'x-component': 'Action',
           'x-component-props': {
             useAction: '{{ useBulkDestroyTranslationAction }}',
             confirm: {
-              title: "{{t('Delete Translation')}}",
+              title: "{{t('Delete translation')}}",
               content: "{{t('Are you sure you want to delete it?')}}",
             },
           },
@@ -271,7 +271,7 @@ export const localizationSchema: ISchema = {
                 },
                 deleteTranslation: {
                   type: 'void',
-                  title: '{{ t("Delete Translation") }}',
+                  title: '{{ t("Delete translation") }}',
                   'x-component': 'Action.Link',
                   'x-component-props': {
                     confirm: {

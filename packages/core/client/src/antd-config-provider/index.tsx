@@ -50,3 +50,5 @@ export function AntdConfigProvider(props) {
     </AppLangContext.Provider>
   );
 }
+
+export * from './loadConstrueLocale';
