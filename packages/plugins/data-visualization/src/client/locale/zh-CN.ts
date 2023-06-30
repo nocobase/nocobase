@@ -33,6 +33,7 @@ export default {
   'Please run query to retrive data.': '请执行查询来获取数据。',
   Type: '类型',
   'Add field': '添加字段',
+  'Add chart': '添加图表',
   xField: 'x轴字段',
   yField: 'y轴字段',
   seriesField: '分类字段',
