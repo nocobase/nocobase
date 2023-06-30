@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import { useCompile, useGetFilterOptions } from '../../../schema-component';
-import { Schema } from '@formily/react';
 import { FieldOption, Option } from '../type';
 
 interface GetOptionsParams {
@@ -50,18 +49,17 @@ export const useFormVariable = ({
   blockForm,
   rootCollection,
   operator,
-  schema,
   level,
 }: {
   blockForm?: any;
   rootCollection: string;
   operator?: any;
-  schema: Schema;
   level?: number;
 }) => {
   const compile = useCompile();
   const getFilterOptions = useGetFilterOptions();
   const loadChildren = (option: any): Promise<void> => {
+    console.log(option);
     if (!option.field?.target) {
       return new Promise((resolve) => {
         resolve(void 0);
@@ -76,6 +74,7 @@ export const useFormVariable = ({
             return Object.keys(blockForm.fields).some((name) => name.includes(`.${field.name}`));
           })
         : fields;
+    console.log(allowFields);
     return new Promise((resolve) => {
       setTimeout(() => {
         const children =
@@ -97,7 +96,6 @@ export const useFormVariable = ({
       }, 5);
     });
   };
-
   const result = useMemo(() => {
     return (
       blockForm && {
