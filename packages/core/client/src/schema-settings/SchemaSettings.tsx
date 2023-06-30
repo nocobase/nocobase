@@ -1176,7 +1176,6 @@ SchemaSettings.EnableChildCollections = function EnableChildCollectionsItem(prop
   const form = useForm();
   const { getCollectionJoinField } = useCollectionManager();
   const collectionField = getCollectionJoinField(fieldSchema?.parent?.['x-collection-field']) || {};
-  console.log(fieldSchema?.['x-linkage-from-form']);
   return (
     <SchemaSettings.ModalItem
       title={t('Enable child collections')}
@@ -1212,7 +1211,6 @@ SchemaSettings.EnableChildCollections = function EnableChildCollectionsItem(prop
               'x-component-props': {
                 collectionName: collectionField?.collectionName || collectionName,
                 form,
-                data: fieldSchema?.['x-linkage-from-form'],
               },
               default: fieldSchema?.['x-linkage-from-form'],
             },

@@ -154,7 +154,7 @@ const InternalRemoteSelect = connect(
             str = str.replace('$iteration.', `$iteration.${path.join('.')}.`);
           }
           const parseValue = parseVariables(str, variablesCtx);
-          if (typeof parseValue === 'object') {
+          if (Array.isArray(parseValue)) {
             const filters = parseValue.map((v) => {
               return JSON.parse(JSON.stringify(c).replace(jsonlogic.value, v));
             });

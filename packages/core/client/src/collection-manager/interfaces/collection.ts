@@ -4,7 +4,7 @@ import { IField } from './types';
 
 export const collection: IField = {
   name: 'collection',
-  type: 'object',
+  type: 'string',
   group: 'advanced',
   order: 5,
   title: '{{t("Collection")}}',
@@ -14,7 +14,6 @@ export const collection: IField = {
     uiSchema: {
       type: 'string',
       'x-component': 'CollectionSelect',
-      'x-component-props': { mode: 'tags' },
     },
   },
   availableTypes: ['string'],
