@@ -1,3 +1,3 @@
-// @ts-nocheck
-export * from './lib/server';
-export { default } from './lib/server';
+export * from './src/server';
+export { default } from './src/server';
+
