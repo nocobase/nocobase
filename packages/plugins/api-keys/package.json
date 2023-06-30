@@ -6,8 +6,15 @@
   "description.zh-CN": "允许用户使用 api 密钥来访问 nocobase api",
   "version": "0.10.0-alpha.5",
   "license": "AGPL-3.0",
-  "main": "./lib/index.js",
-  "types": "./lib/index.d.ts",
+  "main": "./lib/server/index.js",
+  "files": [
+    "lib",
+    "src",
+    "server.js",
+    "server.d.ts",
+    "client.js",
+    "client.d.ts"
+  ],
   "dependencies": {
     "@nocobase/actions": "0.10.0-alpha.5",
     "@nocobase/database": "0.10.0-alpha.5",

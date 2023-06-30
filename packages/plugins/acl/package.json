@@ -7,6 +7,14 @@
   "version": "0.10.0-alpha.5",
   "license": "AGPL-3.0",
   "main": "./lib/server/index.js",
+  "files": [
+    "lib",
+    "src",
+    "server.js",
+    "server.d.ts",
+    "client.js",
+    "client.d.ts"
+  ],
   "dependencies": {
     "@nocobase/acl": "0.10.0-alpha.5",
     "@nocobase/database": "0.10.0-alpha.5",

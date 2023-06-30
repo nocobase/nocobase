@@ -7,6 +7,14 @@
   "description.zh-CN": "文件管理。",
   "license": "AGPL-3.0",
   "main": "./lib/server/index.js",
+  "files": [
+    "lib",
+    "src",
+    "server.js",
+    "server.d.ts",
+    "client.js",
+    "client.d.ts"
+  ],
   "dependencies": {
     "@aws-sdk/client-s3": "^3.245.0",
     "@koa/multer": "^3.0.0",

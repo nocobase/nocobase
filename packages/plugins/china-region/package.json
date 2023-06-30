@@ -5,7 +5,15 @@
   "displayName.zh-CN": "中国行政区",
   "description": "Chinese Administrative Division Plugin, including all administrative regions of China.",
   "description.zh-CN": "中国行政区划插件，内含所有中国行政区域。",
-  "main": "lib/index.js",
+  "main": "./lib/server/index.js",
+  "files": [
+    "lib",
+    "src",
+    "server.js",
+    "server.d.ts",
+    "client.js",
+    "client.d.ts"
+  ],
   "license": "AGPL-3.0",
   "dependencies": {
     "@nocobase/client": "0.10.0-alpha.5",

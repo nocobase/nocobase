@@ -5,7 +5,15 @@
   "description": "client",
   "description.zh-CN": "客户端。",
   "version": "0.10.0-alpha.5",
-  "main": "lib/index.js",
+  "main": "./lib/server/index.js",
+  "files": [
+    "lib",
+    "src",
+    "server.js",
+    "server.d.ts",
+    "client.js",
+    "client.d.ts"
+  ],
   "license": "AGPL-3.0",
   "dependencies": {
     "@nocobase/server": "0.10.0-alpha.5"

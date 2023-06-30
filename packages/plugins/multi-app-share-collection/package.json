@@ -5,7 +5,15 @@
   "description": "multi app share collection",
   "description.zh-CN": "多应用数据共享",
   "version": "0.10.0-alpha.5",
-  "main": "lib/server/index.js",
+  "main": "./lib/server/index.js",
+  "files": [
+    "lib",
+    "src",
+    "server.js",
+    "server.d.ts",
+    "client.js",
+    "client.d.ts"
+  ],
   "devDependencies": {
     "@nocobase/client": "0.10.0-alpha.5",
     "@nocobase/plugin-multi-app-manager": "0.10.0-alpha.5",

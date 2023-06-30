@@ -1,7 +1,15 @@
 {
   "name": "@nocobase/plugin-sms-auth",
   "version": "0.10.0-alpha.5",
-  "main": "lib/server/index.js",
+  "main": "./lib/server/index.js",
+  "files": [
+    "lib",
+    "src",
+    "server.js",
+    "server.d.ts",
+    "client.js",
+    "client.d.ts"
+  ],
   "devDependencies": {
     "@nocobase/actions": "0.10.0-alpha.5",
     "@nocobase/auth": "0.10.0-alpha.5",

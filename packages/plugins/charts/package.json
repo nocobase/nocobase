@@ -5,7 +5,15 @@
   "description": "Out-of-the-box, feature-rich chart plugins.",
   "description.zh-CN": "开箱即用、丰富的报表。",
   "version": "0.10.0-alpha.5",
-  "main": "lib/server/index.js",
+  "main": "./lib/server/index.js",
+  "files": [
+    "lib",
+    "src",
+    "server.js",
+    "server.d.ts",
+    "client.js",
+    "client.d.ts"
+  ],
   "devDependencies": {
     "@nocobase/client": "0.10.0-alpha.5",
     "@nocobase/server": "0.10.0-alpha.5",

@@ -7,6 +7,14 @@
   "version": "0.10.0-alpha.5",
   "license": "AGPL-3.0",
   "main": "./lib/server/index.js",
+  "files": [
+    "lib",
+    "src",
+    "server.js",
+    "server.d.ts",
+    "client.js",
+    "client.d.ts"
+  ],
   "dependencies": {
     "@antv/x6": "^1.9.0",
     "@antv/x6-react-shape": "^1.6.2",

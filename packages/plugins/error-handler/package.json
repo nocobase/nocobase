@@ -7,6 +7,14 @@
   "version": "0.10.0-alpha.5",
   "license": "AGPL-3.0",
   "main": "./lib/server/index.js",
+  "files": [
+    "lib",
+    "src",
+    "server.js",
+    "server.d.ts",
+    "client.js",
+    "client.d.ts"
+  ],
   "devDependencies": {
     "@formily/json-schema": "2.2.26",
     "@nocobase/client": "0.10.0-alpha.5",
