@@ -2,7 +2,7 @@
   "name": "@nocobase/plugin-map",
   "displayName": "Map",
   "displayName.zh-CN": "地图",
-  "version": "0.10.0-alpha.4",
+  "version": "0.10.0-alpha.5",
   "description": "Provide map fields and blocks",
   "description.zh-CN": "提供地图字段和区块",
   "license": "AGPL-3.0",
@@ -21,10 +21,10 @@
     "@formily/react": "2.2.26",
     "@formily/shared": "2.2.26",
     "@formily/antd": "2.2.26",
-    "@nocobase/server": "0.10.0-alpha.4",
-    "@nocobase/test": "0.10.0-alpha.4",
-    "react": "17.x",
-    "react-dom": "17.x",
+    "@nocobase/server": "0.10.0-alpha.5",
+    "@nocobase/test": "0.10.0-alpha.5",
+    "react": "18.x",
+    "react-dom": "18.x",
     "antd": "^4.24.8"
   }
 }
