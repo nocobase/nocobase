@@ -6,7 +6,7 @@ import * as sanitizeHTML from 'sanitize-html';
 
 import { error } from '@nocobase/utils/client';
 
-import { EllipsisWithTooltip, useCompile } from '../..';
+import { EllipsisWithTooltip } from '../..';
 import { VariableSelect } from './VariableSelect';
 
 type RangeIndexes = [number, number, number, number];
@@ -113,9 +113,9 @@ function createOptionsValueLabelMap(options: any[]) {
 
 function createVariableTagHTML(variable, keyLabelMap) {
   const labels = keyLabelMap.get(variable);
-  return `<span class="ant-tag ant-tag-blue" contentEditable="false" data-variable="${variable}">${labels?.join(
-    ' / ',
-  )}</span>`;
+  return `<span class="ant-tag ant-tag-blue" contentEditable="false" data-variable="${variable}">${
+    labels ? labels.join(' / ') : '...'
+  }</span>`;
 }
 
 // [#, <>, #, #, <>]
@@ -187,7 +187,6 @@ function getCurrentRange(element: HTMLElement): RangeIndexes {
 
 export function TextArea(props) {
   const { value = '', scope, onChange, multiline = true } = props;
-  const compile = useCompile();
   const inputRef = useRef<HTMLDivElement>(null);
   const [options, setOptions] = useState([]);
   const form = useForm();
@@ -201,10 +200,10 @@ export function TextArea(props) {
   useEffect(() => {
     preloadOptions(scope ?? [], value ?? '')
       .then((preloaded) => {
-        setOptions(compile(preloaded));
+        setOptions(preloaded);
       })
       .catch((err) => console.error);
-  }, [scope, value, compile]);
+  }, [scope, value]);
 
   useEffect(() => {
     setHtml(renderHTML(value ?? '', keyLabelMap));
@@ -411,14 +410,13 @@ async function preloadOptions(options, value) {
 
 TextArea.ReadPretty = function ReadPretty(props): JSX.Element {
   const { value, scope } = props;
-  const compile = useCompile();
   const [options, setOptions] = useState([]);
   const keyLabelMap = useMemo(() => createOptionsValueLabelMap(options), [options]);
 
   useEffect(() => {
     preloadOptions(scope ?? [], value ?? '')
       .then((preloaded) => {
-        setOptions(compile(preloaded));
+        setOptions(preloaded);
       })
       .catch((err) => console.error);
   }, [scope, value]);

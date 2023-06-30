@@ -8,7 +8,6 @@ import moment from 'moment';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { DefaultOptionType } from 'antd/lib/cascader';
-import { useCompile } from '../..';
 import { XButton } from './XButton';
 
 const JT_VALUE_RE = /^\s*{{\s*([^{}]+)\s*}}\s*$/;
@@ -133,7 +132,6 @@ function getTypedConstantOption(type: string, types?: true | string[]) {
 export function Input(props) {
   const { value = '', scope, onChange, children, button, useTypedConstant, style, className, changeOnSelect } = props;
 
-  const compile = useCompile();
   const { t } = useTranslation();
   const form = useForm();
   const [options, setOptions] = React.useState<DefaultOptionType[]>([]);
@@ -163,8 +161,7 @@ export function Input(props) {
     }, [type, useTypedConstant]);
 
   useEffect(() => {
-    const newOptions: DefaultOptionType[] = [constantOption, ...(scope ?? [])];
-    setOptions(compile(newOptions));
+    setOptions([constantOption, ...(scope ?? [])]);
   }, [scope]);
 
   const loadData = async (selectedOptions: DefaultOptionType[]) => {
