@@ -70,7 +70,16 @@ export const AntdLibrary: Charts = {
         });
         return item;
       });
+      const pageSize = advanced?.pagination?.pageSize || 10;
       return {
+        bordered: true,
+        size: 'middle',
+        pagination:
+          dataSource.length < pageSize
+            ? false
+            : {
+                pageSize,
+              },
         dataSource,
         columns,
         ...general,

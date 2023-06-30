@@ -1,4 +1,4 @@
-import { PieChartOutlined } from '@ant-design/icons';
+import { LineChartOutlined } from '@ant-design/icons';
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { SchemaInitializer, useACLRoleContext, useCollectionDataSourceItems } from '@nocobase/client';
@@ -62,7 +62,7 @@ export const ChartV2BlockInitializer: React.FC<{
   return (
     <SchemaInitializer.Item
       {...props}
-      icon={<PieChartOutlined />}
+      icon={<LineChartOutlined />}
       onClick={() => {
         insert({
           type: 'void',

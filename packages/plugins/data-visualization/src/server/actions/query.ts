@@ -264,7 +264,7 @@ export const query = async (ctx: Context, next: Next) => {
     ctx.throw(403, 'No permissions');
   }
 
-  const plugin = ctx.app.getPlugin('charts-v2') as ChartsV2Plugin;
+  const plugin = ctx.app.getPlugin('data-visualization') as ChartsV2Plugin;
   const cache = plugin.cache;
   const useCache = cacheConfig?.enabled && uid;
 

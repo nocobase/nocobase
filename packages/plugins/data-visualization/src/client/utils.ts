@@ -13,6 +13,9 @@ export const createRendererSchema = (decoratorProps: any, componentProps = {}) =
     'x-acl-action': `${collection}:list`,
     'x-designer': 'ChartRenderer.Designer',
     'x-component': 'CardItem',
+    'x-component-props': {
+      size: 'small',
+    },
     'x-initializer': 'ChartInitializers',
     properties: {
       [uid()]: {

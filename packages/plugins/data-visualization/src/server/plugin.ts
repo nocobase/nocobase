@@ -1,7 +1,8 @@
 import { Cache, createCache } from '@nocobase/cache';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { query } from './actions/query';
-export class ChartsV2Plugin extends Plugin {
+
+export class DataVisualizationPlugin extends Plugin {
   cache: Cache;
 
   afterAdd() {}
@@ -33,4 +34,4 @@ export class ChartsV2Plugin extends Plugin {
   async remove() {}
 }
 
-export default ChartsV2Plugin;
+export default DataVisualizationPlugin;
