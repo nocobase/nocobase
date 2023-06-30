@@ -1170,6 +1170,7 @@ SchemaSettings.DataTemplates = function DataTemplates(props) {
 SchemaSettings.EnableChildCollections = function EnableChildCollectionsItem(props) {
   const { collectionName } = props;
   const fieldSchema = useFieldSchema();
+  const field = useField();
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const allowAddToCurrent = fieldSchema?.['x-allow-add-to-current'];
@@ -1212,7 +1213,7 @@ SchemaSettings.EnableChildCollections = function EnableChildCollectionsItem(prop
                 collectionName: collectionField?.collectionName || collectionName,
                 form,
               },
-              default: fieldSchema?.['x-linkage-from-form'],
+              default: fieldSchema?.['x-component-props']?.['linkageFromForm'],
             },
           },
         } as ISchema
@@ -1231,14 +1232,16 @@ SchemaSettings.EnableChildCollections = function EnableChildCollectionsItem(prop
         fieldSchema['x-component-props'] = {
           ...fieldSchema['x-component-props'],
           component: 'CreateRecordAction',
+          linkageFromForm: v?.linkageFromForm,
         };
         schema['x-enable-children'] = enableChildren;
         schema['x-allow-add-to-current'] = v.allowAddToCurrent;
-        schema['x-linkage-from-form'] = v?.linkageFromForm;
         schema['x-component-props'] = {
           ...fieldSchema['x-component-props'],
           component: 'CreateRecordAction',
+          linkageFromForm: v?.linkageFromForm,
         };
+        field.componentProps['linkageFromForm'] = v.linkageFromForm;
         dn.emit('patch', {
           schema,
         });

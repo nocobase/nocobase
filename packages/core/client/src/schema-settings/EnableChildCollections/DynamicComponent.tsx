@@ -1,3 +1,4 @@
+import { css } from '@emotion/css';
 import { observer, useFieldSchema } from '@formily/react';
 import React, { useEffect, useMemo } from 'react';
 import { useCompile } from '../../schema-component';
@@ -20,7 +21,12 @@ export const ChildDynamicComponent = observer(
         value={value}
         onChange={(v) => onChange(v)}
         scope={scope}
-        style={{ minWidth: 400, marginRight: 15 }}
+        style={{ minWidth: '400px', marginRight: 15 }}
+        className={css`
+          .ant-input {
+            width: 100% !important;
+          }
+        `}
       />
     );
   },

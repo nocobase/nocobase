@@ -130,11 +130,11 @@ export const CreateAction = observer(
     const { onClick } = props;
     const collection = useCollection();
     const fieldSchema = useFieldSchema();
+    const field: any = useField();
     const form = useForm();
     const enableChildren = fieldSchema['x-enable-children'] || [];
     const allowAddToCurrent = fieldSchema?.['x-allow-add-to-current'];
-    const isLinkageFromForm = fieldSchema?.['x-linkage-from-form'];
-    const field: any = useField();
+    const linkageFromForm = fieldSchema?.['x-component-props']?.['linkageFromForm'];
     const componentType = field.componentProps.type || 'primary';
     const { getChildrenCollections } = useCollectionManager();
     const totalChildCollections = getChildrenCollections(collection.name);
@@ -189,7 +189,7 @@ export const CreateAction = observer(
     return (
       <div className={actionDesignerCss}>
         {inheritsCollections?.length > 0 ? (
-          !isLinkageFromForm ? (
+          !linkageFromForm ? (
             allowAddToCurrent === undefined || allowAddToCurrent ? (
               <Dropdown.Button
                 type={componentType}
@@ -222,7 +222,7 @@ export const CreateAction = observer(
               danger={componentType === 'danger'}
               icon={icon}
               onClick={(info) => {
-                const collectionName = getLinkageCollection(isLinkageFromForm, form);
+                const collectionName = getLinkageCollection(linkageFromForm, form);
                 const targetCollection = inheritsCollections.find((v) => v.name === collectionName)
                   ? collectionName
                   : collection.name;
