@@ -236,21 +236,27 @@ function getNormalizedFields(collectionName, { compile, getCollectionFields }) {
 }
 
 async function loadChildren(option) {
-  setTimeout(() => {
-    option.children = getCollectionFieldOptions({
-      collection: option.field.target,
-      types: option.types,
-      depth: option.depth - 1,
-      compile: this.compile,
-      getCollectionFields: this.getCollectionFields,
-    });
+  const result = getCollectionFieldOptions({
+    collection: option.field.target,
+    types: option.types,
+    depth: option.depth - 1,
+    sourceKey: option.field.key,
+    compile: this.compile,
+    getCollectionFields: this.getCollectionFields,
   });
+  if (result.length) {
+    option.children = result;
+  } else {
+    option.isLeaf = true;
+    option.loadChildren = null;
+  }
 }
 
 export function getCollectionFieldOptions(options): VariableOption[] {
-  const { fields, collection, types, depth = 1, compile, getCollectionFields } = options;
+  const { fields, collection, types, depth = 1, sourceKey, compile, getCollectionFields } = options;
   const normalizedFields = getNormalizedFields(collection, { compile, getCollectionFields });
   const computedFields = fields ?? normalizedFields;
+  const boundLoadChildren = loadChildren.bind({ compile, getCollectionFields });
 
   const result: VariableOption[] = filterTypedFields({
     fields: computedFields,
@@ -259,7 +265,9 @@ export function getCollectionFieldOptions(options): VariableOption[] {
     compile,
     getCollectionFields,
   })
-    .filter((field) => !isAssociationField(field) || depth)
+    .filter((field) => {
+      return !isAssociationField(field) || (depth && (!sourceKey || field.reverseKey !== sourceKey));
+    })
     .map((field) => {
       const label = compile(field.uiSchema?.title || field.name);
       const isLeaf = !isAssociationField(field) || !depth;
@@ -268,7 +276,7 @@ export function getCollectionFieldOptions(options): VariableOption[] {
         key: field.name,
         value: field.name,
         isLeaf,
-        loadChildren: isLeaf ? null : loadChildren.bind({ compile, getCollectionFields }),
+        loadChildren: isLeaf ? null : boundLoadChildren,
         field,
         depth,
         types,
