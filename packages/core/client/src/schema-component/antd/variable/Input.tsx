@@ -9,6 +9,7 @@ import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { DefaultOptionType } from 'antd/lib/cascader';
 import { XButton } from './XButton';
+import { useCompile } from '../../hooks';
 
 const JT_VALUE_RE = /^\s*{{\s*([^{}]+)\s*}}\s*$/;
 const groupClass = css`
@@ -117,14 +118,17 @@ const ConstantTypes = {
   },
 };
 
-function getTypedConstantOption(type: string, types?: true | string[]) {
+function useTypedConstantOption(type: string, types?: true | string[]) {
+  const { t } = useTranslation();
+  const compile = useCompile();
   const allTypes = Object.values(ConstantTypes);
+  const children = types
+    ? allTypes.filter((item) => (Array.isArray(types) && types.includes(item.value)) || types === true)
+    : allTypes;
   return {
     value: '',
-    label: '{{t("Constant")}}',
-    children: types
-      ? allTypes.filter((item) => (Array.isArray(types) && types.includes(item.value)) || types === true)
-      : allTypes,
+    label: t('Constant'),
+    children: compile(children),
     component: ConstantTypes[type]?.component,
   };
 }
@@ -141,6 +145,7 @@ export function Input(props) {
   const isConstant = typeof parsed === 'string';
   const type = isConstant ? parsed : '';
   const variable = isConstant ? null : parsed;
+  const constantOptions = useTypedConstantOption(type, useTypedConstant);
 
   const { component: ConstantComponent, ...constantOption }: DefaultOptionType & { component?: React.FC<any> } =
     useMemo(() => {
@@ -151,7 +156,7 @@ export function Input(props) {
         };
       }
       if (useTypedConstant) {
-        return getTypedConstantOption(type, useTypedConstant);
+        return constantOptions;
       }
       return {
         value: '',
