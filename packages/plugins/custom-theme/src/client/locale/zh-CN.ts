@@ -16,6 +16,7 @@ const locale = {
   'Initializing Editor...': '正在初始化编辑器...',
   'Save theme': '保存主题',
   'Please set a name for this theme': '请为该主题设置一个名字',
+  'Please input the theme name': '请输入主题名字',
 };
 
 export default locale;

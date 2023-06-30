@@ -16,6 +16,7 @@ const locale = {
   'Initializing Editor...': 'Initializing Editor...',
   'Save theme': 'Save theme',
   'Please set a name for this theme': 'Please set a name for this theme',
+  'Please input the theme name': 'Please input the theme name',
 };
 
 export default locale;
