@@ -4,12 +4,12 @@
   "displayName.zh-CN": "导出",
   "description": "export data",
   "description.zh-CN": "导出数据。",
-  "version": "0.10.0-alpha.4",
+  "version": "0.10.0-alpha.5",
   "license": "AGPL-3.0",
   "main": "./lib/server/index.js",
   "dependencies": {
-    "@nocobase/client": "0.10.0-alpha.4",
-    "@nocobase/server": "0.10.0-alpha.4",
+    "@nocobase/client": "0.10.0-alpha.5",
+    "@nocobase/server": "0.10.0-alpha.5",
     "node-xlsx": "^0.16.1"
   },
   "devDependencies": {

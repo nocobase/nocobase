@@ -84,6 +84,6 @@ export default {
       type: 'set',
       name: 'snippets',
       defaultValue: ['!ui.*', '!pm', '!pm.*'],
-    },
+    }
   ],
 } as CollectionOptions;

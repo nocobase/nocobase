@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-excel-formula-field",
-  "version": "0.10.0-alpha.4",
+  "version": "0.10.0-alpha.5",
   "description": "",
   "license": "AGPL-3.0",
   "main": "./lib/server/index.js",
@@ -8,7 +8,7 @@
     "@formulajs/formulajs": "^4.2.0"
   },
   "devDependencies": {
-    "@nocobase/server": "0.10.0-alpha.4",
-    "@nocobase/test": "0.10.0-alpha.4"
+    "@nocobase/server": "0.10.0-alpha.5",
+    "@nocobase/test": "0.10.0-alpha.5"
   }
 }

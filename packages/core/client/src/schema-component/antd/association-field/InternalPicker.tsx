@@ -1,4 +1,4 @@
-import { RecursionField, observer, useField, useFieldSchema } from '@formily/react';
+import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Input, Select } from 'antd';
 import { differenceBy, unionBy } from 'lodash';
 import React, { useContext, useMemo, useState } from 'react';
@@ -133,6 +133,7 @@ export const InternalPicker = observer(
           <div style={{ width: '100%' }}>
             <Select
               style={{ width: '100%' }}
+              dropdownMatchSelectWidth={false}
               {...others}
               mode={multiple ? 'multiple' : props.mode}
               fieldNames={fieldNames}
