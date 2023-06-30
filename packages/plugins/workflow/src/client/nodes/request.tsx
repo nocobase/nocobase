@@ -112,7 +112,7 @@ export default {
                 'x-decorator': 'FormItem',
                 'x-component': 'Variable.Input',
                 'x-component-props': {
-                  scope: useWorkflowVariableOptions,
+                  scope: '{{useWorkflowVariableOptions()}}',
                   useTypedConstant: true,
                 },
               },
