@@ -5,6 +5,9 @@
   "files": [
     "lib",
     "src",
+    "README.md",
+    "README.zh-CN.md",
+    "CHANGELOG.md",
     "server.js",
     "server.d.ts",
     "client.js",
