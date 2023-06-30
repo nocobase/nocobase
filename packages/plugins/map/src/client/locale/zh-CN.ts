@@ -43,6 +43,8 @@ const locale = {
   'Edit description': '编辑描述',
   'Map field': '地图字段',
   'Marker field': '标记字段',
+  'Load google maps failed, Please check the Api key and refresh the page':
+    '加载谷歌地图失败，请检查 Api key 并刷新页面',
 };
 
 export default locale;

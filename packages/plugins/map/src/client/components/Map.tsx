@@ -1,9 +1,10 @@
+import { css } from '@emotion/css';
 import { connect, mapReadPretty } from '@formily/react';
 import React from 'react';
-import AMapComponent, { AMapComponentProps } from './AMap';
-import ReadPretty from './ReadPretty';
-import { css } from '@emotion/css';
+import { AMapComponentProps } from './AMap';
 import Designer from './Designer';
+import { MapComponent } from './MapComponent';
+import ReadPretty from './ReadPretty';
 
 type MapProps = AMapComponentProps;
 
@@ -18,7 +19,7 @@ const InternalMap = connect((props: MapProps) => {
         }
       `}
     >
-      {props.mapType ? <AMapComponent {...props} /> : null}
+      <MapComponent {...props} />
     </div>
   );
 }, mapReadPretty(ReadPretty));
@@ -29,4 +30,4 @@ const Map = InternalMap as typeof InternalMap & {
 
 Map.Designer = Designer;
 
-export default Map;
+export { Map };
