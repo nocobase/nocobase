@@ -130,19 +130,13 @@ function getTypedConstantOption(type: string, types?: true | string[]) {
   };
 }
 
-interface VariableOptions extends DefaultOptionType {
-  value: string;
-  label: string;
-  children?: VariableOptions[];
-}
-
 export function Input(props) {
   const { value = '', scope, onChange, children, button, useTypedConstant, style, className, changeOnSelect } = props;
 
   const compile = useCompile();
   const { t } = useTranslation();
   const form = useForm();
-  const [options, setOptions] = React.useState<VariableOptions[]>([]);
+  const [options, setOptions] = React.useState<DefaultOptionType[]>([]);
   const [variableText, setVariableText] = React.useState('');
 
   const parsed = useMemo(() => parseValue(value), [value]);
@@ -150,7 +144,7 @@ export function Input(props) {
   const type = isConstant ? parsed : '';
   const variable = isConstant ? null : parsed;
 
-  const { component: ConstantComponent, ...constantOption }: VariableOptions & { component?: React.FC<any> } =
+  const { component: ConstantComponent, ...constantOption }: DefaultOptionType & { component?: React.FC<any> } =
     useMemo(() => {
       if (children) {
         return {
@@ -169,11 +163,11 @@ export function Input(props) {
     }, [type, useTypedConstant]);
 
   useEffect(() => {
-    const newOptions: VariableOptions[] = [constantOption, ...(scope ?? [])];
+    const newOptions: DefaultOptionType[] = [constantOption, ...(scope ?? [])];
     setOptions(compile(newOptions));
   }, [scope]);
 
-  const loadData = async (selectedOptions: VariableOptions[]) => {
+  const loadData = async (selectedOptions: DefaultOptionType[]) => {
     const option = selectedOptions[selectedOptions.length - 1];
     if (!option.children && !option.isLeaf && option.loadChildren) {
       await option.loadChildren(option);
@@ -205,7 +199,7 @@ export function Input(props) {
       if (!variable || !options.length) {
         return;
       }
-      let prevOption: VariableOptions = null;
+      let prevOption: DefaultOptionType = null;
       const labels = [];
 
       for (let i = 0; i < variable.length; i++) {
