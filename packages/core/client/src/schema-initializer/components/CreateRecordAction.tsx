@@ -1,6 +1,6 @@
 import { DownOutlined, PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { RecursionField, observer, useField, useFieldSchema } from '@formily/react';
+import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Button, Dropdown, MenuProps } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useDesignable } from '../../';
@@ -49,7 +49,7 @@ export const actionDesignerCss = css`
   }
 `;
 
-const actionAclCheck = (actionPath) => {
+const actionAclCheck = function useAclCheck(actionPath) {
   const { data, inResources, getResourceActionParams, getStrategyActionParams } = useACLRolesCheck();
   const recordPkValue = useRecordPkValue();
   const collection = useCollection();
@@ -128,7 +128,8 @@ export const CreateAction = observer(
     const enableChildren = fieldSchema['x-enable-children'] || [];
     const allowAddToCurrent = fieldSchema?.['x-allow-add-to-current'];
     const field: any = useField();
-    const componentType = field.componentProps.type || 'primary';
+    const islinkBtn = props?.className.includes('nb-action-link');
+    const componentType = islinkBtn ? 'link' : field.componentProps.type || 'primary';
     const { getChildrenCollections } = useCollectionManager();
     const totalChildCollections = getChildrenCollections(collection.name);
     const inheritsCollections = useMemo(() => {
@@ -160,6 +161,7 @@ export const CreateAction = observer(
         key: option.name,
         label: compile(option.title),
         onClick: () => onClick?.(option.name),
+        color: 'primary',
       }));
     }, [inheritsCollections, onClick]);
 
