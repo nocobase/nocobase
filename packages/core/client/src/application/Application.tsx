@@ -7,6 +7,8 @@ import { Link, NavLink } from 'react-router-dom';
 import { ACLProvider } from '../acl';
 import { AntdConfigProvider } from '../antd-config-provider';
 import { APIClient, APIClientProvider } from '../api-client';
+import { SigninPage, SignupPage } from '../auth';
+import { SigninPageExtensionProvider } from '../auth/SigninPageExtension';
 import { BlockSchemaComponentProvider } from '../block-provider';
 import { RemoteDocumentTitleProvider } from '../document-title';
 import { i18n } from '../i18n';
@@ -30,8 +32,6 @@ import { ErrorFallback } from '../schema-component/antd/error-fallback';
 import { SchemaInitializerProvider } from '../schema-initializer';
 import { BlockTemplateDetails, BlockTemplatePage } from '../schema-templates';
 import { SystemSettingsProvider } from '../system-settings';
-import { SigninPage, SignupPage } from '../auth';
-import { SigninPageExtensionProvider } from '../auth/SigninPageExtension';
 import { compose } from './compose';
 
 export interface ApplicationOptions {
@@ -52,9 +52,7 @@ export type PluginCallback = () => Promise<any>;
 const App = React.memo((props: any) => {
   const C = compose(...props.providers)(() => {
     const routes = useRoutes();
-    return (
-      <RouteSwitch routes={routes} />
-    );
+    return <RouteSwitch routes={routes} />;
   });
   return <C />;
 });

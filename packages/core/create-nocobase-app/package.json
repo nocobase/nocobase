@@ -1,10 +1,10 @@
 {
   "name": "create-nocobase-app",
-  "version": "0.9.4-alpha.2",
+  "version": "0.10.0-alpha.5",
   "main": "src/index.js",
   "license": "Apache-2.0",
   "dependencies": {
-    "@umijs/utils": "^3.5.20",
+    "@umijs/utils": "3.5.20",
     "axios": "^0.26.1",
     "chalk": "^4.1.1",
     "commander": "^9.2.0",

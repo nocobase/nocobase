@@ -2,8 +2,9 @@ import { CloseOutlined, PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { ArrayField } from '@formily/core';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
-import { RecursionField, observer, useFieldSchema } from '@formily/react';
+import { observer, RecursionField, useFieldSchema } from '@formily/react';
 import { action } from '@formily/reactive';
+import { each } from '@formily/shared';
 import { Button, Card, Divider, Tooltip } from 'antd';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -46,7 +47,7 @@ const ToManyNester = observer(
             allowed = !value?.[options.targetKey];
           }
           return (
-            <>
+            <React.Fragment key={index}>
               <div style={{ textAlign: 'right' }}>
                 {field.editable && allowMultiple && (
                   <Tooltip key={'add'} title={t('Add new')}>
@@ -62,6 +63,12 @@ const ToManyNester = observer(
                             insertCount: 1,
                           });
                           field.value.splice(index + 1, 0, {});
+
+                          each(field.form.fields, (field, key) => {
+                            if (!field) {
+                              delete field.form.fields[key];
+                            }
+                          });
                           return field.onInput(field.value);
                         });
                       }}
@@ -88,7 +95,7 @@ const ToManyNester = observer(
               </div>
               <RecursionField onlyRenderProperties basePath={field.address.concat(index)} schema={fieldSchema} />
               <Divider />
-            </>
+            </React.Fragment>
           );
         })}
       </Card>

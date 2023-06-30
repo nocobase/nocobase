@@ -3,7 +3,6 @@ import { Button } from 'antd';
 import { css } from '@emotion/css';
 
 import { Input } from '../input';
-import { useTranslation } from 'react-i18next';
 import { VariableSelect } from './VariableSelect';
 
 // NOTE: https://stackoverflow.com/questions/23892547/what-is-the-best-way-to-trigger-onchange-event-in-react-js/46012210#46012210
@@ -19,24 +18,8 @@ function setNativeInputValue(input, value) {
 
 export function JSONInput(props) {
   const inputRef = useRef<any>(null);
-  const { value, space = 2, scope } = props;
-  const { t } = useTranslation();
+  const { scope } = props;
   const options = typeof scope === 'function' ? scope() : scope ?? [];
-
-  function onFormat() {
-    if (!inputRef.current) {
-      return;
-    }
-    if (!value) {
-      return;
-    }
-
-    const { textArea } = inputRef.current.resizableTextArea;
-    const nextValue = JSON.stringify(value, null, space);
-    setNativeInputValue(textArea, nextValue);
-    textArea.setSelectionRange(nextValue.length, nextValue.length);
-    textArea.focus();
-  }
 
   function onInsert(selected) {
     if (!inputRef.current) {
@@ -73,7 +56,6 @@ export function JSONInput(props) {
           }
         `}
       >
-        <Button onClick={onFormat}>{t('Prettify')}</Button>
         <VariableSelect options={options} onInsert={onInsert} />
       </Button.Group>
     </div>

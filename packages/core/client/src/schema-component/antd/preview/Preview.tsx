@@ -1,9 +1,9 @@
 import { DeleteOutlined, DownloadOutlined, PlusOutlined } from '@ant-design/icons';
 import { connect, mapReadPretty } from '@formily/react';
-import { Upload as AntdUpload, Button, Progress, Space } from 'antd';
+import { Upload as AntdUpload, Button, Progress, Space, UploadFile } from 'antd';
 import cls from 'classnames';
 import { saveAs } from 'file-saver';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Lightbox from 'react-image-lightbox';
 import 'react-image-lightbox/style.css'; // This only needs to be imported once in your app
@@ -32,19 +32,21 @@ export const FileSelector = (props: Props) => {
   const [photoIndex, setPhotoIndex] = useState(0);
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
+  const internalFileList = useRef([]);
 
   // 兼容旧版本
   const showSelectButton = selectFile === undefined && quickUpload === undefined;
 
   useEffect(() => {
-    setFileList(toFileList(value));
+    const fileList = toFileList(value);
+    setFileList(fileList);
+    internalFileList.current = fileList;
   }, [value]);
 
   const handleRemove = (file) => {
     onRemove?.(file);
     return true;
   };
-
   const handleSelect = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -70,7 +72,7 @@ export const FileSelector = (props: Props) => {
               }
             };
             return (
-              <div key={file.id} className={'ant-upload-list-picture-card-container'}>
+              <div key={file.uid || file.id} className={'ant-upload-list-picture-card-container'}>
                 <div className="ant-upload-list-item ant-upload-list-item-done ant-upload-list-item-list-type-picture-card">
                   <div className={'ant-upload-list-item-info'}>
                     <span className="ant-upload-span">
@@ -114,6 +116,7 @@ export const FileSelector = (props: Props) => {
                           icon={<DeleteOutlined />}
                           onClick={() => {
                             handleRemove(file);
+                            internalFileList.current = internalFileList.current.filter((item) => item.uid !== file.uid);
                           }}
                         />
                       )}
@@ -166,9 +169,14 @@ export const FileSelector = (props: Props) => {
                   showUploadList={false}
                   onRemove={handleRemove}
                   onChange={(info) => {
+                    // info.fileList 有 BUG，会导致上传状态一直是 uploading
+                    // 所以这里仿照 antd 源码，自己维护一个 fileList
+                    const list = updateFileList(info.file, internalFileList.current);
+                    internalFileList.current = list;
+
                     // 如果不在这里 setFileList 的话，会导致 onChange 只会执行一次
-                    setFileList([...info.fileList]);
-                    uploadProps.onChange?.(info);
+                    setFileList(toFileList(list));
+                    uploadProps.onChange?.({ fileList: list });
                   }}
                 >
                   <div
@@ -250,3 +258,14 @@ export const FileSelector = (props: Props) => {
 };
 
 export default Preview;
+
+function updateFileList(file: UploadFile, fileList: (UploadFile | Readonly<UploadFile>)[]) {
+  const nextFileList = [...fileList];
+  const fileIndex = nextFileList.findIndex(({ uid }) => uid === file.uid);
+  if (fileIndex === -1) {
+    nextFileList.push(file);
+  } else {
+    nextFileList[fileIndex] = file;
+  }
+  return nextFileList;
+}

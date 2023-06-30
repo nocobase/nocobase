@@ -1,9 +1,10 @@
 import { FormLayout } from '@formily/antd';
-import { Field, createForm, onFieldChange, onFieldInit, onFieldReact, onFormInputChange } from '@formily/core';
-import { FieldContext, FormContext, RecursionField, observer, useField, useFieldSchema } from '@formily/react';
+import { createForm, Field, onFieldChange, onFieldInit, onFieldReact, onFormInputChange } from '@formily/core';
+import { FieldContext, FormContext, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { ConfigProvider, Spin } from 'antd';
 import React, { useEffect, useMemo } from 'react';
+import { css } from '@emotion/css';
 import { useActionContext } from '..';
 import { useAttach, useComponent } from '../..';
 import { useProps } from '../../hooks/useProps';
@@ -140,7 +141,7 @@ const WithForm = (props) => {
       form.removeEffects(id);
     };
   }, [linkageRules]);
-  return fieldSchema['x-decorator'] === 'Form' ? <FormDecorator {...props} /> : <FormComponent {...props} />;
+  return fieldSchema['x-decorator'] === 'FormV2' ? <FormDecorator {...props} /> : <FormComponent {...props} />;
 };
 
 const WithoutForm = (props) => {
@@ -158,7 +159,7 @@ const WithoutForm = (props) => {
       }),
     [],
   );
-  return fieldSchema['x-decorator'] === 'Form' ? (
+  return fieldSchema['x-decorator'] === 'FormV2' ? (
     <FormDecorator form={form} {...props} />
   ) : (
     <FormComponent form={form} {...props} />
@@ -177,7 +178,13 @@ export const Form: React.FC<FormProps> & {
     const formDisabled = disabled || field.disabled;
     return (
       <ConfigProvider componentDisabled={formDisabled}>
-        <form>
+        <form
+          className={css`
+            .ant-formily-item-feedback-layout-loose {
+              margin-bottom: 12px;
+            }
+          `}
+        >
           <Spin spinning={field.loading || false}>
             {form ? (
               <WithForm form={form} {...others} disabled={formDisabled} />

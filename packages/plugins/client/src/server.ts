@@ -88,9 +88,38 @@ export class ClientPlugin extends Plugin {
         //
       }
     });
+
+    this.db.on('systemSettings.beforeCreate', async (instance, { transaction }) => {
+      const uiSchemas = this.db.getRepository<any>('uiSchemas');
+      const schema = await uiSchemas.insert(
+        {
+          type: 'void',
+          'x-component': 'Menu',
+          'x-designer': 'Menu.Designer',
+          'x-initializer': 'MenuItemInitializers',
+          'x-component-props': {
+            mode: 'mix',
+            theme: 'dark',
+            // defaultSelectedUid: 'u8',
+            onSelect: '{{ onSelect }}',
+            sideMenuRefScopeKey: 'sideMenuRef',
+          },
+          properties: {},
+        },
+        { transaction },
+      );
+      instance.set('options.adminSchemaUid', schema['x-uid']);
+    });
   }
 
   async load() {
+    this.db.addMigrations({
+      namespace: 'client',
+      directory: resolve(__dirname, './migrations'),
+      context: {
+        plugin: this,
+      },
+    });
     this.app.acl.allow('app', 'getLang');
     this.app.acl.allow('app', 'getInfo');
     this.app.acl.allow('app', 'getPlugins');
@@ -196,18 +225,6 @@ export class ClientPlugin extends Plugin {
     this.app.resource({
       name: 'plugins',
       actions: {
-        // TODO: 临时
-        async getPinned(ctx, next) {
-          ctx.body = [
-            { component: 'CollectionManagerShortcut' },
-            { component: 'ACLShortcut' },
-            { component: 'WorkflowShortcut' },
-            { component: 'SchemaTemplateShortcut' },
-            { component: 'SystemSettingsShortcut' },
-            { component: 'FileStorageShortcut' },
-          ];
-          await next();
-        },
         async getInfo(ctx, next) {
           const lang = await getLang(ctx);
           const { filterByTk } = ctx.action.params;

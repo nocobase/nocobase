@@ -280,7 +280,7 @@ export default {
     "Display field title": "Mostrar título de campo",
     "Field component": "Componente del campo",
     "Subtable": "Subtabla",
-    "Subform": "Subformulario",
+    "Sub-form": "Subformulario",
     "Record picker": "Selector de registros",
     "Toggles the subfield mode": "Alterna el modo de subcampo",
     "Selector mode": "Modo selector",
@@ -634,7 +634,7 @@ export default {
     "User": "Usuario",
     "Field": "Campo",
     "Select": "Seleccionar",
-    "Select Field": "Seleccionar campo",
+    "Select field": "Seleccionar campo",
     "Field value changes": "Cambios en el valor del campo",
     "One to one (has one)": "Uno a uno (tiene uno)",
     "One to one (belongs to)": "Uno a uno (pertenece a)",
@@ -688,4 +688,6 @@ export default {
     "Sortable": "Clasificable",
     "Enable link": "Activar enlace",
     "Data template": "Plantilla de datos",
+    "Not found":"No encontrado",
+    "Add":"Añadir"
  };

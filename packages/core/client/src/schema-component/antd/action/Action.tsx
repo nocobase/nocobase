@@ -83,7 +83,7 @@ export const Action: ComposedAction = observer(
     const [formValueChanged, setFormValueChanged] = useState(false);
     const Designer = useDesigner();
     const field = useField<any>();
-    const { run } = useAction();
+    const { run, element } = useAction();
     const fieldSchema = useFieldSchema();
     const compile = useCompile();
     const form = useForm();
@@ -162,7 +162,8 @@ export const Action: ComposedAction = observer(
       >
         {popover && <RecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
         {!popover && renderButton()}
-        {!popover && props.children}
+        {!popover && <div onClick={(e) => e.stopPropagation()}>{props.children}</div>}
+        {element}
       </ActionContextProvider>
     );
   },

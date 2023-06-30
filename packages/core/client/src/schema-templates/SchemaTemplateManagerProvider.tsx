@@ -2,7 +2,7 @@ import { ISchema, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Spin } from 'antd';
 import { cloneDeep } from 'lodash';
-import React, { createContext, useContext, useMemo } from 'react';
+import React, { ReactNode, createContext, useContext, useMemo } from 'react';
 import { useAPIClient, useRequest } from '../api-client';
 import { RouteSwitchContext } from '../route-switch';
 import { SchemaComponentOptions } from '../schema-component';
@@ -130,7 +130,7 @@ export const useSchemaTemplateManager = () => {
   };
 };
 
-export const RemoteSchemaTemplateManagerProvider: React.FC = (props) => {
+export const RemoteSchemaTemplateManagerProvider: React.FC<{ children?: ReactNode }> = (props) => {
   const api = useAPIClient();
   const options = {
     resource: 'uiSchemaTemplates',

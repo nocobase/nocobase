@@ -1,8 +1,8 @@
 import { message } from 'antd';
 import React, { useContext, createContext, FunctionComponent, createElement } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useHistory, useLocation, useParams } from 'react-router-dom';
-import { useAPIClient, useCurrentDocumentTitle } from '..';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useAPIClient, useCurrentDocumentTitle, useViewport } from '..';
 import { useForm } from '@formily/react';
 
 export const SignupPageContext = createContext<{
@@ -34,7 +34,7 @@ export interface UseSignupProps {
 }
 
 export const useSignup = (props?: UseSignupProps) => {
-  const history = useHistory();
+  const navigate = useNavigate();
   const form = useForm();
   const api = useAPIClient();
   const { t } = useTranslation();
@@ -44,24 +44,19 @@ export const useSignup = (props?: UseSignupProps) => {
       await api.auth.signUp(form.values, props?.authenticator);
       message.success(props?.message?.success || t('Sign up successfully, and automatically jump to the sign in page'));
       setTimeout(() => {
-        history.push('/signin');
+        navigate('/signin');
       }, 2000);
     },
   };
 };
 
-function useQuery() {
-  const { search } = useLocation();
-
-  return React.useMemo(() => new URLSearchParams(search), [search]);
-}
-
 export const SignupPage = () => {
   const { t } = useTranslation();
+  useViewport();
   useCurrentDocumentTitle('Signup');
-  const query = useQuery();
-  const authType = query.get('authType');
-  const name = query.get('name');
+  const [searchParams] = useSearchParams();
+  const authType = searchParams.get('authType');
+  const name = searchParams.get('name');
   const signUpPages = useContext(SignupPageContext);
   if (!signUpPages[authType]) {
     return (

@@ -13,9 +13,9 @@ import { ArrayField } from '@formily/core';
 import { defaultColumnCount, pageSizeOptions } from './options';
 
 const rowGutter = {
-  md: 16,
-  sm: 8,
-  xs: 8,
+  md: 12,
+  sm: 5,
+  xs: 5,
 };
 
 const designerCss = css`

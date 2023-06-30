@@ -2,18 +2,29 @@
   "name": "@nocobase/plugin-map",
   "displayName": "Map",
   "displayName.zh-CN": "地图",
-  "version": "0.9.4-alpha.2",
+  "version": "0.10.0-alpha.5",
   "description": "Provide map fields and blocks",
   "description.zh-CN": "提供地图字段和区块",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "devDependencies": {
-    "@nocobase/server": "0.9.4-alpha.2",
-    "@nocobase/test": "0.9.4-alpha.2"
+    "@types/google.maps": "^3.53.4",
+    "@types/react": "^17.0.0",
+    "@types/react-dom": "^17.0.0"
   },
   "dependencies": {
     "@amap/amap-jsapi-loader": "^1.0.1",
-    "@amap/amap-jsapi-types": "^0.0.10"
+    "@amap/amap-jsapi-types": "^0.0.10",
+    "@googlemaps/js-api-loader": "^1.16.1",
+    "@emotion/css": "^11.7.1",
+    "@formily/react": "2.2.26",
+    "@formily/shared": "2.2.26",
+    "@formily/antd": "2.2.26",
+    "@nocobase/server": "0.10.0-alpha.5",
+    "@nocobase/test": "0.10.0-alpha.5",
+    "react": "18.x",
+    "react-dom": "18.x",
+    "antd": "^4.24.8"
   }
 }

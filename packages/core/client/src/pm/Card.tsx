@@ -1,9 +1,8 @@
-import React, { useEffect, useMemo, useState, useCallback, MouseEventHandler } from 'react';
-import { useAPIClient, useRequest } from '../api-client';
+import { DeleteOutlined, SettingOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
 import {
   Avatar,
   Card,
-  message,
   Modal,
   Popconfirm,
   Spin,
@@ -13,14 +12,15 @@ import {
   Tag,
   Tooltip,
   Typography,
+  message,
 } from 'antd';
-import { css } from '@emotion/css';
 import cls from 'classnames';
-import { useHistory } from 'react-router-dom';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DeleteOutlined, SettingOutlined } from '@ant-design/icons';
-import { useParseMarkdown } from '../schema-component/antd/markdown/util';
+import { useNavigate } from 'react-router-dom';
 import type { IPluginData } from '.';
+import { useAPIClient, useRequest } from '../api-client';
+import { useParseMarkdown } from '../schema-component/antd/markdown/util';
 
 interface PluginDocumentProps {
   path: string;
@@ -163,7 +163,7 @@ function PluginDetail(props: IPluginDetail) {
       destroyOnClose
     >
       {plugin?.description && <div className={'plugin-desc'}>{plugin?.description}</div>}
-      <Tabs items={items}></Tabs>
+      <Tabs items={items} />
     </Modal>
   );
 }
@@ -232,7 +232,7 @@ function CommonCard(props: ICommonCard) {
 }
 
 export const PluginCard = (props: { data: IPluginData }) => {
-  const history = useHistory<any>();
+  const navigate = useNavigate();
   const { data } = props;
   const api = useAPIClient();
   const { t } = useTranslation();
@@ -266,7 +266,7 @@ export const PluginCard = (props: { data: IPluginData }) => {
           <SettingOutlined
             onClick={(e) => {
               e.stopPropagation();
-              history.push(`/admin/settings/${name}`);
+              navigate(`/admin/settings/${name}`);
             }}
           />
         ) : null,
@@ -310,7 +310,7 @@ export const PluginCard = (props: { data: IPluginData }) => {
           defaultChecked={enabled}
         ></Switch>,
       ].filter(Boolean),
-    [api, enabled, history, id, name, t],
+    [api, enabled, navigate, id, name, t],
   );
   return (
     <>
@@ -339,7 +339,7 @@ export const BuiltInPluginCard = (props: { data: IPluginData }) => {
     data: { description, name, version, displayName },
     data,
   } = props;
-  const history = useHistory();
+  const navigate = useNavigate();
   const [plugin, setPlugin] = useState<any>(null);
   const { data: tabsData, run } = useRequest(
     {
@@ -384,7 +384,7 @@ export const BuiltInPluginCard = (props: { data: IPluginData }) => {
             key="settings"
             onClick={(e) => {
               e.stopPropagation();
-              history.push(`/admin/settings/${name}`);
+              navigate(`/admin/settings/${name}`);
             }}
           />,
         ]}

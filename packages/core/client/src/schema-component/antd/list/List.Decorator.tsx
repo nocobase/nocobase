@@ -1,7 +1,8 @@
+import { css, cx } from '@emotion/css';
+import { FormLayout } from '@formily/antd';
 import { createForm } from '@formily/core';
 import { FormContext, useField } from '@formily/react';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
-import { FormLayout } from '@formily/antd';
 import { BlockProvider, useBlockRequestContext } from '../../../block-provider';
 
 export const ListBlockContext = createContext<any>({});
@@ -30,7 +31,22 @@ const InternalListBlockProvider = (props) => {
       }}
     >
       <FormContext.Provider value={form}>
-        <FormLayout layout={'vertical'}>{props.children}</FormLayout>
+        <FormLayout layout={'vertical'}>
+          <div
+            className={cx(
+              css`
+                .ant-description-input {
+                  line-height: 34px;
+                }
+                .ant-formily-item-feedback-layout-loose {
+                  display: inline;
+                }
+              `,
+            )}
+          >
+            {props.children}
+          </div>
+        </FormLayout>
       </FormContext.Provider>
     </ListBlockContext.Provider>
   );

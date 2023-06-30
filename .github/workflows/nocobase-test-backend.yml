@@ -40,6 +40,7 @@ jobs:
       - name: Test with Sqlite
         run: yarn nocobase install -f && yarn test
         env:
+          NODE_OPTIONS: "--max_old_space_size=4096"
           DB_DIALECT: sqlite
           DB_STORAGE: /tmp/db.sqlite
           DB_UNDERSCORED: ${{ matrix.underscored }}
@@ -81,6 +82,7 @@ jobs:
       - name: Test with postgres
         run: yarn nocobase install -f && yarn test
         env:
+          NODE_OPTIONS: "--max_old_space_size=4096"
           DB_DIALECT: postgres
           DB_HOST: postgres
           DB_PORT: 5432
@@ -118,6 +120,7 @@ jobs:
       - name: Test with MySQL
         run: yarn nocobase install -f && yarn test
         env:
+          NODE_OPTIONS: "--max_old_space_size=4096"
           DB_DIALECT: mysql
           DB_HOST: mysql
           DB_PORT: 3306

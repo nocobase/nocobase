@@ -1,19 +1,12 @@
 import { css, cx } from '@emotion/css';
 import { useField, useFieldSchema } from '@formily/react';
-import {
-  GeneralSchemaDesigner,
-  Icon,
-  SchemaSettings,
-  SortableItem,
-  useCompile,
-  useDesignable,
-  useDesigner,
-} from '@nocobase/client';
+import { GeneralSchemaDesigner, Icon, SchemaSettings, SortableItem, useCompile, useDesigner } from '@nocobase/client';
 import { List, ListItemProps } from 'antd-mobile';
 import React from 'react';
-import { useHistory, useParams, useRouteMatch } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from '../../../../locale';
 import { useSchemaPatch } from '../../hooks';
+import { menuItemSchema } from './schema';
 
 interface MMenuItemProps extends ListItemProps {
   name: string;
@@ -23,14 +16,15 @@ interface MMenuItemProps extends ListItemProps {
 const InternalMenuItem: React.FC<MMenuItemProps> = (props) => {
   const { icon, name } = props;
   const Designer = useDesigner();
-  const history = useHistory();
+  const navigate = useNavigate();
+  const location = useLocation();
   const fieldSchema = useFieldSchema();
   const compile = useCompile();
-  const match = useRouteMatch();
   const params = useParams<{ name: string }>();
 
   const onToPage = () => {
-    history.push(params.name ? fieldSchema['x-uid'] : `${match.url}/${fieldSchema['x-uid']}`);
+    const locationPath = location.pathname.endsWith('/') ? location.pathname.slice(0, -1) : location.pathname;
+    navigate(params.name ? `/mobile/${fieldSchema['x-uid']}` : `${locationPath}/${fieldSchema['x-uid']}`);
   };
   return (
     <SortableItem
@@ -63,24 +57,7 @@ const MenuItemDesigner: React.FC = () => {
       <SchemaSettings.ModalItem
         title={t('Edit menu info')}
         initialValues={field.componentProps}
-        schema={{
-          properties: {
-            name: {
-              type: 'string',
-              title: t('Menu name'),
-              required: true,
-              'x-component': 'Input',
-              'x-decorator': 'FormItem',
-            },
-            icon: {
-              required: true,
-              'x-decorator': 'FormItem',
-              'x-component': 'IconPicker',
-              title: t('Icon'),
-              'x-component-props': {},
-            },
-          },
-        }}
+        schema={menuItemSchema}
         onSubmit={onUpdateComponentProps}
       />
       <SchemaSettings.Remove

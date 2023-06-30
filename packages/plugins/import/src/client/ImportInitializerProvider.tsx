@@ -2,7 +2,7 @@ import { SchemaInitializerContext, useCollection } from '@nocobase/client';
 import { useContext } from 'react';
 
 export const ImportInitializerProvider = (props: any) => {
-  const initializes = useContext(SchemaInitializerContext);
+  const initializes = useContext<any>(SchemaInitializerContext);
   const hasImportAction = initializes.TableActionInitializers.items[0].children.some(
     (initialize) => initialize.component === 'ImportActionInitializer',
   );
@@ -18,7 +18,7 @@ export const ImportInitializerProvider = (props: any) => {
           skipScopeCheck: true,
         },
       },
-      visible: () => {
+      visible: function useVisible() {
         const collection = useCollection();
         return collection.template !== 'view' && collection.template !== 'file';
       },

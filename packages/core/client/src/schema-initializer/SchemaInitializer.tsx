@@ -1,8 +1,11 @@
 import { css } from '@emotion/css';
 import { ISchema, observer, useForm } from '@formily/react';
-import { Button, Dropdown, Menu, Switch } from 'antd';
+import { error, isString } from '@nocobase/utils/client';
+import { Button, Dropdown, MenuProps, Switch } from 'antd';
 import classNames from 'classnames';
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+// @ts-ignore
+import React, { createContext, useCallback, useContext, useMemo, useRef, useState, useTransition } from 'react';
+import { useCollectMenuItem, useMenuItem } from '../hooks/useMenuItem';
 import { Icon } from '../icon';
 import { SchemaComponent, useActionContext } from '../schema-component';
 import { useCompile, useDesignable } from '../schema-component/hooks';
@@ -14,10 +17,28 @@ import {
   SchemaInitializerItemProps,
 } from './types';
 
+const overlayClassName = css`
+  .ant-dropdown-menu-item-group-list {
+    max-height: 40vh;
+    overflow: auto;
+  }
+`;
+/**
+ * 用于去除菜单的消失动画，优化操作体验
+ */
+const hidden = css`
+  display: none;
+`;
+
 const defaultWrap = (s: ISchema) => s;
 
 export const SchemaInitializerItemContext = createContext(null);
-export const SchemaInitializerButtonContext = createContext<any>({});
+export const SchemaInitializerButtonContext = createContext<{
+  visible?: boolean;
+  setVisible?: (v: boolean) => void;
+  searchValue?: string;
+  setSearchValue?: (v: string) => void;
+}>({});
 
 export const SchemaInitializer = () => null;
 
@@ -41,27 +62,66 @@ SchemaInitializer.Button = observer(
     const compile = useCompile();
     const { insertAdjacent, findComponent, designable } = useDesignable();
     const [visible, setVisible] = useState(false);
+    const { Component: CollectionComponent, getMenuItem, clean } = useMenuItem();
+    const [searchValue, setSearchValue] = useState('');
+    const [isPending, startTransition] = useTransition();
+    const menuItems = useRef([]);
+
+    const changeMenu = (v: boolean) => {
+      startTransition(() => {
+        setVisible(v);
+      });
+    };
+
+    if (!designable && props.designable !== true) {
+      return null;
+    }
+
+    const buttonDom = component ? (
+      component
+    ) : (
+      <Button
+        type={'dashed'}
+        style={{
+          borderColor: '#f18b62',
+          color: '#f18b62',
+          ...style,
+        }}
+        {...others}
+        icon={typeof icon === 'string' ? <Icon type={icon as string} /> : icon}
+      >
+        {compile(props.children || props.title)}
+      </Button>
+    );
+
     const insertSchema = (schema) => {
-      if (props.insert) {
-        props.insert(wrap(schema));
+      if (insert) {
+        insert(wrap(schema));
       } else {
         insertAdjacent(insertPosition, wrap(schema), { onSuccess });
       }
     };
+
     const renderItems = (items: any) => {
       return items
-        .filter((v) => {
+        .filter((v: any) => {
           return v && (v?.visible ? v.visible() : true);
         })
-        ?.map((item, indexA) => {
+        ?.map((item: any, indexA: number) => {
           if (item.type === 'divider') {
-            return <Menu.Divider key={item.key || `item-${indexA}`} />;
+            return { type: 'divider', key: item.key || `item-${indexA}` };
           }
           if (item.type === 'item' && item.component) {
             const Component = findComponent(item.component);
-            item.key = `${item.key || item.title}-${indexA}`;
-            return (
-              Component && (
+            if (!Component) {
+              error(`SchemaInitializer: component "${item.component}" not found`);
+              return null;
+            }
+            if (!item.key) {
+              item.key = `${item.title}-${indexA}`;
+            }
+            return getMenuItem(() => {
+              return (
                 <SchemaInitializerItemContext.Provider
                   key={item.key}
                   value={{
@@ -80,75 +140,63 @@ SchemaInitializer.Button = observer(
                     insert={insertSchema}
                   />
                 </SchemaInitializerItemContext.Provider>
-              )
-            );
+              );
+            });
           }
           if (item.type === 'itemGroup') {
+            const label = compile(item.title);
             return (
-              !!item.children?.length && (
-                <Menu.ItemGroup key={item.key || `item-group-${indexA}`} title={compile(item.title)}>
-                  {renderItems(item.children)}
-                </Menu.ItemGroup>
-              )
+              !!item.children?.length && {
+                type: 'group',
+                key: item.key || `item-group-${indexA}`,
+                label,
+                title: label,
+                children: renderItems(item.children),
+              }
             );
           }
           if (item.type === 'subMenu') {
+            const label = compile(item.title);
             return (
-              !!item.children?.length && (
-                <Menu.SubMenu
-                  key={item.key || `item-group-${indexA}`}
-                  title={compile(item.title)}
-                  popupClassName={menuItemGroupCss}
-                >
-                  {renderItems(item.children)}
-                </Menu.SubMenu>
-              )
+              !!item.children?.length && {
+                key: item.key || `item-group-${indexA}`,
+                label,
+                title: label,
+                popupClassName: menuItemGroupCss,
+                children: renderItems(item.children),
+              }
             );
           }
         });
     };
 
-    const buttonDom = (
-      <Button
-        type={'dashed'}
-        style={{
-          borderColor: '#f18b62',
-          color: '#f18b62',
-          ...style,
-        }}
-        {...others}
-        icon={typeof icon === 'string' ? <Icon type={icon as string} /> : icon}
-      >
-        {compile(props.children || props.title)}
-      </Button>
-    );
-    if (!items.length) {
-      return buttonDom;
+    if (visible) {
+      clean();
+      menuItems.current = renderItems(items);
     }
-    const menu = <Menu style={{ maxHeight: '60vh', overflowY: 'auto' }}>{renderItems(items)}</Menu>;
-    if (!designable && props.designable !== true) {
-      return null;
-    }
+
     return (
-      <SchemaInitializerButtonContext.Provider value={{ visible, setVisible }}>
+      <SchemaInitializerButtonContext.Provider value={{ visible, setVisible, searchValue, setSearchValue }}>
+        {visible ? <CollectionComponent /> : null}
         <Dropdown
           className={classNames('nb-schema-initializer-button')}
           openClassName={`nb-schema-initializer-button-open`}
-          overlayClassName={classNames(
-            'nb-schema-initializer-button-overlay',
-            css`
-              .ant-dropdown-menu-item-group-list {
-                max-height: 40vh;
-                overflow: auto;
-              }
-            `,
-          )}
+          overlayClassName={classNames('nb-schema-initializer-button-overlay', overlayClassName)}
           open={visible}
-          onOpenChange={(visible) => {
-            setVisible(visible);
+          onOpenChange={() => {
+            // 如果不清空输入框的值，那么下次打开的时候会出现上次输入的值
+            setSearchValue('');
+            changeMenu(!visible);
+          }}
+          menu={{
+            style: {
+              maxHeight: '60vh',
+              overflowY: 'auto',
+            },
+            className: classNames({ [hidden]: !visible }),
+            items: menuItems.current,
           }}
           {...dropdown}
-          overlay={menu}
         >
           {component ? component : buttonDom}
         </Dropdown>
@@ -158,10 +206,17 @@ SchemaInitializer.Button = observer(
   { displayName: 'SchemaInitializer.Button' },
 );
 
-SchemaInitializer.Item = (props: SchemaInitializerItemProps) => {
-  const { index, info } = useContext(SchemaInitializerItemContext);
+SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
+  const { info } = useContext(SchemaInitializerItemContext);
   const compile = useCompile();
-  const { eventKey, items = [], children = info?.title, icon, onClick, ...others } = props;
+  const { items = [], children = info?.title, icon, onClick } = props;
+  const { collectMenuItem } = useCollectMenuItem();
+
+  if (!collectMenuItem) {
+    error('SchemaInitializer.Item: collectMenuItem is undefined, please check the context');
+    return null;
+  }
+
   if (items?.length > 0) {
     const renderMenuItem = (items: SchemaInitializerItemOptions[]) => {
       if (!items?.length) {
@@ -169,77 +224,70 @@ SchemaInitializer.Item = (props: SchemaInitializerItemProps) => {
       }
       return items.map((item, indexA) => {
         if (item.type === 'divider') {
-          return <Menu.Divider key={`divider-${indexA}`} />;
+          return { type: 'divider', key: `divider-${indexA}` };
         }
         if (item.type === 'itemGroup') {
-          return (
-            <Menu.ItemGroup
-              // @ts-ignore
-              eventKey={item.key || `item-group-${indexA}`}
-              key={item.key || `item-group-${indexA}`}
-              title={compile(item.title)}
-              className={menuItemGroupCss}
-            >
-              {renderMenuItem(item.children)}
-            </Menu.ItemGroup>
-          );
+          const label = compile(item.title);
+          return {
+            type: 'group',
+            key: item.key || `item-group-${indexA}`,
+            label,
+            title: label,
+            className: menuItemGroupCss,
+            children: renderMenuItem(item.children),
+          } as MenuProps['items'][0];
         }
         if (item.type === 'subMenu') {
-          return (
-            <Menu.SubMenu
-              // @ts-ignore
-              eventKey={item.key || `sub-menu-${indexA}`}
-              key={item.key || `sub-menu-${indexA}`}
-              title={compile(item.title)}
-            >
-              {renderMenuItem(item.children)}
-            </Menu.SubMenu>
-          );
+          const label = compile(item.title);
+          return {
+            key: item.key || `sub-menu-${indexA}`,
+            label,
+            title: label,
+            children: renderMenuItem(item.children),
+          };
         }
-        return (
-          <Menu.Item
-            eventKey={item.key}
-            key={item.key}
-            onClick={(info) => {
-              item?.clearKeywords?.();
-              if (item.onClick) {
-                item.onClick({ ...info, item });
-              } else {
-                onClick({ ...info, item });
-              }
-            }}
-          >
-            {compile(item.title)}
-          </Menu.Item>
-        );
+        const label = compile(item.title);
+        return {
+          key: item.key || `${info.key}-${item.title}-${indexA}`,
+          label,
+          title: label,
+          onClick: (info) => {
+            item?.clearKeywords?.();
+            if (item.onClick) {
+              item.onClick({ ...info, item });
+            } else {
+              onClick({ ...info, item });
+            }
+          },
+        };
       });
     };
-    return (
-      <Menu.SubMenu
-        // @ts-ignore
-        eventKey={eventKey ? `${eventKey}-${index}` : info.key}
-        key={info.key}
-        title={compile(children)}
-        icon={typeof icon === 'string' ? <Icon type={icon as string} /> : icon}
-      >
-        {renderMenuItem(items)}
-      </Menu.SubMenu>
-    );
+
+    const item = {
+      key: info.key,
+      label: isString(children) ? compile(children) : children,
+      icon: typeof icon === 'string' ? <Icon type={icon as string} /> : icon,
+      children: renderMenuItem(items),
+    };
+
+    collectMenuItem(item);
+    return null;
   }
-  return (
-    <Menu.Item
-      // {...others}
-      key={info.key}
-      eventKey={eventKey ? `${eventKey}-${index}` : info.key}
-      icon={typeof icon === 'string' ? <Icon type={icon as string} /> : icon}
-      onClick={(opts) => {
-        info?.clearKeywords?.();
-        onClick({ ...opts, item: info });
-      }}
-    >
-      {compile(children)}
-    </Menu.Item>
-  );
+
+  const label = isString(children) ? compile(children) : children;
+  const item = {
+    key: info.key,
+    label,
+    title: label,
+    icon: typeof icon === 'string' ? <Icon type={icon as string} /> : icon,
+    onClick: (opts) => {
+      info?.clearKeywords?.();
+      onClick({ ...opts, item: info });
+    },
+  };
+
+  collectMenuItem(item);
+  return null;
 };
 
 SchemaInitializer.itemWrap = (component?: SchemaInitializerItemComponent) => {
@@ -253,11 +301,13 @@ interface SchemaInitializerActionModalProps {
   onSubmit?: (values: any) => void;
   buttonText?: any;
 }
-SchemaInitializer.ActionModal = (props: SchemaInitializerActionModalProps) => {
+SchemaInitializer.ActionModal = function ActionModal(props: SchemaInitializerActionModalProps) {
   const { title, schema, buttonText, onCancel, onSubmit } = props;
 
   const useCancelAction = useCallback(() => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const form = useForm();
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const ctx = useActionContext();
     return {
       async run() {
@@ -269,7 +319,9 @@ SchemaInitializer.ActionModal = (props: SchemaInitializerActionModalProps) => {
   }, [onCancel]);
 
   const useSubmitAction = useCallback(() => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const form = useForm();
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const ctx = useActionContext();
     return {
       async run() {

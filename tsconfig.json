@@ -40,6 +40,9 @@
       ],
       "@nocobase/*": [
         "packages/core/*/src"
+      ],
+      "@@/*": [
+        ".dumi/tmp/*"
       ]
     }
   },
@@ -50,11 +53,15 @@
   },
   "include": [
     "packages/**/*",
+    ".dumi/**/*",
+    ".dumirc.ts",
     "scripts/setupVitest.ts"
   ],
   "exclude": [
     "packages/**/node_modules",
     "packages/**/dist",
+    "packages/**/public",
+    "packages/core/build/bin",
     "packages/**/lib",
     "packages/**/es"
   ]

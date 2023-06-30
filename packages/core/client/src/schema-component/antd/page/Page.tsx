@@ -1,13 +1,14 @@
 import { PlusOutlined } from '@ant-design/icons';
+import { PageHeader as AntdPageHeader } from '@ant-design/pro-layout';
 import { css } from '@emotion/css';
 import { FormDialog, FormLayout } from '@formily/antd';
 import { Schema, SchemaOptionsContext, useFieldSchema } from '@formily/react';
-import { PageHeader as AntdPageHeader, Button, Spin, Tabs } from 'antd';
+import { Button, Spin, Tabs } from 'antd';
 import classNames from 'classnames';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
-import { useLocation } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useDocumentTitle } from '../../../document-title';
 import { FilterBlockProvider } from '../../../filter-provider/FilterProvider';
 import { Icon } from '../../../icon';
@@ -119,12 +120,40 @@ const pageWithFixedBlockCss = classNames([
   `,
 ]);
 
+const pageHeaderCss = css`
+  background-color: white;
+  &.ant-page-header-has-footer {
+    padding-top: 12px;
+    padding-bottom: 0;
+    .ant-page-header-heading-left {
+      /* margin: 0; */
+    }
+    .ant-page-header-footer {
+      margin-top: 0;
+    }
+  }
+`;
+
+const height0 = css`
+  font-size: 0;
+  height: 0;
+`;
+
 export const Page = (props) => {
   const { children, ...others } = props;
   const compile = useCompile();
   const { title, setTitle } = useDocumentTitle();
   const fieldSchema = useFieldSchema();
   const dn = useDesignable();
+
+  // react18  tab 动画会卡顿，所以第一个 tab 时，动画禁用，后面的 tab 才启用
+  const [hasMounted, setHasMounted] = useState(false);
+  useEffect(() => {
+    setTimeout(() => {
+      setHasMounted(true);
+    });
+  }, []);
+
   useEffect(() => {
     if (!title) {
       setTitle(fieldSchema.title);
@@ -135,12 +164,12 @@ export const Page = (props) => {
   const hidePageTitle = fieldSchema['x-component-props']?.hidePageTitle;
   const { t } = useTranslation();
   const options = useContext(SchemaOptionsContext);
-  const location = useLocation<any>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
-  const [activeKey, setActiveKey] = useState(() => {
-    // @ts-ignore
-    return location?.query?.tab || Object.keys(fieldSchema.properties).shift();
-  });
+  const activeKey = useMemo(
+    () => searchParams.get('tab') || Object.keys(fieldSchema.properties || {}).shift(),
+    [fieldSchema.properties, searchParams],
+  );
 
   const [height, setHeight] = useState(0);
 
@@ -148,6 +177,7 @@ export const Page = (props) => {
     console.error(error);
   };
 
+  const pageHeaderTitle = hidePageTitle ? undefined : fieldSchema.title || compile(title);
   return (
     <FilterBlockProvider>
       <div className={pageDesignerCss}>
@@ -159,30 +189,21 @@ export const Page = (props) => {
         >
           {!disablePageHeader && (
             <AntdPageHeader
-              className={css`
-                &.has-footer {
-                  padding-top: 12px;
-                  .ant-page-header-heading-left {
-                    /* margin: 0; */
-                  }
-                  .ant-page-header-footer {
-                    margin-top: 0;
-                  }
-                }
-              `}
+              className={classNames(pageHeaderCss, pageHeaderTitle || enablePageTabs ? '' : height0)}
               ghost={false}
-              title={hidePageTitle ? undefined : fieldSchema.title || compile(title)}
+              // 如果标题为空的时候会导致 PageHeader 不渲染，所以这里设置一个空白字符，然后再设置高度为 0
+              title={pageHeaderTitle || ' '}
               {...others}
               footer={
                 enablePageTabs && (
                   <DndContext>
                     <Tabs
                       size={'small'}
+                      animated={hasMounted}
                       activeKey={activeKey}
                       onTabClick={(activeKey) => {
                         setLoading(true);
-                        setActiveKey(activeKey);
-                        window.history.pushState({}, '', window.location.pathname + `?tab=` + activeKey);
+                        setSearchParams([['tab', activeKey]]);
                         setTimeout(() => {
                           setLoading(false);
                         }, 50);
@@ -239,26 +260,23 @@ export const Page = (props) => {
                           </Button>
                         )
                       }
-                    >
-                      {fieldSchema.mapProperties((schema) => {
-                        return (
-                          <Tabs.TabPane
-                            tab={
-                              <SortableItem
-                                id={schema.name as string}
-                                schema={schema}
-                                className={classNames('nb-action-link', designerCss, props.className)}
-                              >
-                                {schema['x-icon'] && <Icon style={{ marginRight: 8 }} type={schema['x-icon']} />}
-                                <span>{schema.title || t('Unnamed')}</span>
-                                <PageTabDesigner schema={schema} />
-                              </SortableItem>
-                            }
-                            key={schema.name}
-                          />
-                        );
+                      items={fieldSchema.mapProperties((schema) => {
+                        return {
+                          label: (
+                            <SortableItem
+                              id={schema.name as string}
+                              schema={schema}
+                              className={classNames('nb-action-link', designerCss, props.className)}
+                            >
+                              {schema['x-icon'] && <Icon style={{ marginRight: 8 }} type={schema['x-icon']} />}
+                              <span>{schema.title || t('Unnamed')}</span>
+                              <PageTabDesigner schema={schema} />
+                            </SortableItem>
+                          ),
+                          key: schema.name as string,
+                        };
                       })}
-                    </Tabs>
+                    />
                   </DndContext>
                 )
               }

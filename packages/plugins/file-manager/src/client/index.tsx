@@ -12,12 +12,11 @@ import {
 import { forEach } from '@nocobase/utils/client';
 import React, { useContext } from 'react';
 import { FileStoragePane } from './FileStorage';
-import { FileStorageShortcut } from './FileStorageShortcut';
 import * as hooks from './hooks';
 import * as initializers from './initializers';
-import * as templates from './templates';
-import { NAMESPACE } from './locale';
 import { attachment } from './interfaces/attachment';
+import { NAMESPACE } from './locale';
+import * as templates from './templates';
 
 // 注册之后就可以在 Crete collection 按钮中选择创建了
 forEach(templates, (template, key: string) => {
@@ -27,7 +26,7 @@ forEach(templates, (template, key: string) => {
 registerField(attachment.group, 'attachment', attachment);
 
 export default function (props) {
-  const initializes = useContext(SchemaInitializerContext);
+  const initializes = useContext<any>(SchemaInitializerContext);
   const hasUploadAction = initializes.TableActionInitializers.items[0].children.some(
     (initialize) => initialize.component === 'UploadActionInitializer',
   );
@@ -71,7 +70,6 @@ export default function (props) {
         value={{
           components: {
             ...ctx?.components,
-            FileStorageShortcut,
           },
         }}
       >

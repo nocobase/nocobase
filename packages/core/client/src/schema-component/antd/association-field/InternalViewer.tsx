@@ -1,6 +1,7 @@
-import { RecursionField, observer, useField, useFieldSchema } from '@formily/react';
+import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { toArr } from '@formily/shared';
 import React, { Fragment, useRef, useState } from 'react';
+import { useDesignable } from '../../';
 import { BlockAssociationContext, WithoutTableFieldResource } from '../../../block-provider';
 import { CollectionProvider } from '../../../collection-manager';
 import { RecordProvider, useRecord } from '../../../record-provider';
@@ -35,6 +36,7 @@ export const ReadPrettyInternalViewer: React.FC = observer(
     const { options: collectionField } = useAssociationFieldContext();
     const [record, setRecord] = useState({});
     const compile = useCompile();
+    const { designable } = useDesignable();
     const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
     const { snapshot } = useActionContext();
     const ellipsisWithTooltipRef = useRef<IEllipsisWithTooltipRef>();
@@ -53,7 +55,9 @@ export const ReadPrettyInternalViewer: React.FC = observer(
                   onClick={(e) => {
                     e.stopPropagation();
                     e.preventDefault();
-                    insertViewer(schema.Viewer);
+                    if (designable) {
+                      insertViewer(schema.Viewer);
+                    }
                     setVisible(true);
                     setRecord(record);
                     ellipsisWithTooltipRef?.current?.setPopoverVisible(false);

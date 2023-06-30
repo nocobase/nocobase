@@ -67,13 +67,13 @@ export default class implements Instruction {
         });
       })
       .finally(() => {
-        this.plugin.app.logger.info(`[Workflow] request (#${node.id}) response received, status: ${job.get('status')}`);
+        processor.logger.info(`request (#${node.id}) response received, status: ${job.get('status')}`);
         this.plugin.resume(job);
       });
 
-    this.plugin.app.logger.info(`[Workflow] request (#${node.id}) sent to "${config.url}", waiting for response...`);
+    processor.logger.info(`request (#${node.id}) sent to "${config.url}", waiting for response...`);
 
-    return null;
+    return processor.exit();
   }
 
   async resume(node: FlowNodeModel, job, processor: Processor) {
