@@ -1,5 +1,8 @@
-export async function setCurrentRole(ctx, next) {
-  let currentRole = ctx.get('X-Role');
+import { Context } from '@nocobase/actions';
+import { Repository } from '@nocobase/database';
+
+export async function setCurrentRole(ctx: Context, next) {
+  const currentRole = ctx.get('X-Role');
 
   if (currentRole === 'anonymous') {
     ctx.state.currentRole = currentRole;
@@ -10,22 +13,22 @@ export async function setCurrentRole(ctx, next) {
     return next();
   }
 
-  const repository = ctx.db.getRepository('users.roles', ctx.state.currentUser.id);
+  const repository = ctx.db.getRepository('users.roles', ctx.state.currentUser.id) as unknown as Repository;
   const roles = await repository.find();
   ctx.state.currentUser.setDataValue('roles', roles);
 
-  if (roles.length == 1) {
-    currentRole = roles[0].name;
-  } else if (roles.length > 1) {
-    const role = roles.find((item) => item.name === currentRole);
-    if (!role) {
-      const defaultRole = roles.find((item) => item?.rolesUsers?.default);
-      currentRole = (defaultRole || roles[0])?.name;
-    }
+  // 1. If the X-Role is set, use the specified role
+  if (currentRole) {
+    ctx.state.currentRole = roles.find((role) => role.name === currentRole)?.name;
+  }
+  // 2. If the X-Role is not set, use the default role
+  else {
+    const defaultRole = roles.find((item) => item?.rolesUsers?.default);
+    ctx.state.currentRole = (defaultRole || roles[0])?.name;
   }
 
-  if (currentRole) {
-    ctx.state.currentRole = currentRole;
+  if (!ctx.state.currentRole) {
+    return ctx.throw(401, 'User role not found');
   }
 
   await next();

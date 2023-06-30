@@ -1,6 +1,6 @@
-import React from 'react';
-import { InputNumber, Select } from 'antd';
 import { css } from '@emotion/css';
+import { InputNumber, Select } from 'antd';
+import React from 'react';
 import { lang } from '../locale';
 
 const UnitOptions = [
@@ -29,7 +29,11 @@ export default function ({ value = 60000, onChange }) {
       `}
     >
       <InputNumber min={1} value={quantity} onChange={(v) => onChange(Math.round(v * option.value))} />
-      <Select value={option.value} onChange={(unit) => onChange(Math.round(quantity * unit))}>
+      <Select
+        dropdownMatchSelectWidth={false}
+        value={option.value}
+        onChange={(unit) => onChange(Math.round(quantity * unit))}
+      >
         {UnitOptions.map((item) => (
           <Select.Option key={item.value} value={item.value}>
             {lang(item.label)}

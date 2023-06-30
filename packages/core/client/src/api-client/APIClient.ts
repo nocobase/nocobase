@@ -14,6 +14,8 @@ const handleErrorMessage = (error) => {
     });
   };
 };
+
+const errorCache = new Map();
 export class APIClient extends APIClientSDK {
   services: Record<string, Result<any, any>> = {};
   silence = false;
@@ -49,9 +51,24 @@ export class APIClient extends APIClientSDK {
         if (error?.response?.data?.type === 'application/json') {
           handleErrorMessage(error);
         } else {
+          if (errorCache.size > 10) {
+            errorCache.clear();
+          }
+          let errs = error?.response?.data?.errors || [{ message: 'Server error' }];
+          errs = errs.filter((error) => {
+            const lastTime = errorCache.get(error.message);
+            if (lastTime && new Date().getTime() - lastTime < 500) {
+              return false;
+            }
+            errorCache.set(error.message, new Date().getTime());
+            return true;
+          });
+          if (errs.length === 0) {
+            throw error;
+          }
           notification.error({
-            message: error?.response?.data?.errors?.map?.((error: any) => {
-              return React.createElement('div', { children: error.message });
+            message: errs?.map?.((error: any) => {
+              return React.createElement('div', {}, error.message);
             }),
           });
         }

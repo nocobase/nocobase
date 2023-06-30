@@ -10,7 +10,8 @@ import { useBlockRequestContext } from '../../../block-provider/BlockProvider';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { getInnermostKeyAndValue } from '../../common/utils/uitls';
-import { defaultFieldNames, Select } from '../select';
+import { useCompile } from '../../hooks';
+import { Select, defaultFieldNames } from '../select';
 import { ReadPretty } from './ReadPretty';
 import { extractFilterfield, extractValuesByPattern, generatePattern, parseVariables } from './utils';
 const EMPTY = 'N/A';
@@ -64,13 +65,14 @@ const InternalRemoteSelect = connect(
       }
       return '$includes';
     }, [targetField]);
+    const compile = useCompile();
 
     const mapOptionsToTags = useCallback(
       (options) => {
         try {
           return options
             .map((option) => {
-              let label = option[fieldNames.label];
+              let label = compile(option[fieldNames.label]);
 
               if (targetField?.uiSchema?.enum) {
                 if (Array.isArray(label)) {
@@ -236,7 +238,9 @@ const InternalRemoteSelect = connect(
     const onDropdownVisibleChange = (visible) => {
       setOpen(visible);
       searchData.current = null;
-      run();
+      if (visible) {
+        run();
+      }
       firstRun.current = true;
     };
     return (

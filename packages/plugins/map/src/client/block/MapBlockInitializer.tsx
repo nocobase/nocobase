@@ -1,7 +1,7 @@
 import { TableOutlined } from '@ant-design/icons';
-import { DataBlockInitializer, SchemaComponent, SchemaComponentOptions, useCollectionManager } from '@nocobase/client';
-import { SchemaOptionsContext } from '@formily/react';
 import { FormDialog, FormLayout } from '@formily/antd';
+import { SchemaOptionsContext } from '@formily/react';
+import { DataBlockInitializer, SchemaComponent, SchemaComponentOptions, useCollectionManager } from '@nocobase/client';
 import React, { useContext } from 'react';
 import { useMapTranslation } from '../locale';
 import { createMapBlockSchema } from './utils';
@@ -9,6 +9,7 @@ import { createMapBlockSchema } from './utils';
 export const MapBlockInitializer = (props) => {
   const { insert } = props;
   const options = useContext(SchemaOptionsContext);
+  console.log('🚀 ~ file: MapBlockInitializer.tsx:12 ~ MapBlockInitializer ~ options:', options);
   const { getCollectionFieldsOptions } = useCollectionManager();
   const { t } = useMapTranslation();
 
