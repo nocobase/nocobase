@@ -7,6 +7,7 @@ import React, { ComponentType, FC, ReactElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
 import { Link, NavLink, Navigate } from 'react-router-dom';
+import { GlobalThemeProvider } from '..';
 import { APIClient, APIClientProvider } from '../api-client';
 import { i18n } from '../i18n';
 import { PluginManager, PluginType } from './PluginManager';
@@ -53,6 +54,7 @@ export class Application {
   private addDefaultProviders() {
     this.use(APIClientProvider, { apiClient: this.apiClient });
     this.use(I18nextProvider, { i18n: this.i18n });
+    this.use(GlobalThemeProvider);
   }
 
   private addReactRouterComponents() {
