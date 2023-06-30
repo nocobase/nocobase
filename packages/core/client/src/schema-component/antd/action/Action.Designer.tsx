@@ -5,7 +5,7 @@ import { cloneDeep } from 'lodash';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../..';
-import { useCollection, useCollectionFieldsOptions, useCollectionManager } from '../../../collection-manager';
+import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { OpenModeSchemaItems } from '../../../schema-items';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useCollectionState } from '../../../schema-settings/DataTemplates/hooks/useCollectionState';
@@ -15,7 +15,6 @@ import { requestSettingsSchema } from './utils';
 const Tree = connect(
   AntdTree,
   mapProps((props, field: any) => {
-    console.log(props, field);
     return {
       ...props,
       onCheck: (checkedKeys) => {
@@ -76,7 +75,7 @@ export const ActionDesigner = (props) => {
   const isDuplicateAction = fieldSchema['x-action'] === 'duplicate';
   const { collectionList, getEnableFieldTree, getOnLoadData, getOnCheck } = useCollectionState(name);
   const duplicateValues = cloneDeep(fieldSchema['x-component-props'].duplicateFields || []);
-  const options = useCollectionFieldsOptions(name, 1, ['id']);
+
   useEffect(() => {
     const schemaUid = uid();
     const schema: ISchema = {
@@ -87,7 +86,6 @@ export const ActionDesigner = (props) => {
     };
     setInitialSchema(schema);
   }, [field.address]);
-
   const tips = {
     'customize:update': t(
       'After clicking the custom button, the following fields of the current record will be saved according to the following form.',
@@ -170,6 +168,7 @@ export const ActionDesigner = (props) => {
             <SchemaSettings.ModalItem
               title={t('Save mode')}
               components={{ Tree }}
+              scope={{ getEnableFieldTree, name, getOnLoadData }}
               schema={
                 {
                   type: 'object',
@@ -194,8 +193,11 @@ export const ActionDesigner = (props) => {
                       'x-decorator': 'FormItem',
                       'x-component': 'Tree',
                       'x-component-props': {
-                        treeData: options,
+                        treeData: [],
                         checkable: true,
+                        checkStrictly: true,
+                        selectable: false,
+                        loadData: '{{ getOnLoadData($self) }}',
                         defaultCheckedKeys: field.componentProps.filterKeys,
                         rootStyle: {
                           padding: '8px 0',
@@ -212,6 +214,9 @@ export const ActionDesigner = (props) => {
                           fulfill: {
                             state: {
                               hidden: '{{ $deps[0]==="create"}}',
+                              componentProps: {
+                                treeData: '{{ getEnableFieldTree(name, $self) }}',
+                              },
                             },
                           },
                         },
@@ -221,7 +226,6 @@ export const ActionDesigner = (props) => {
                 } as ISchema
               }
               onSubmit={({ saveMode, filterKeys }) => {
-                console.log(saveMode, filterKeys);
                 field.componentProps.saveMode = saveMode;
                 field.componentProps.filterKeys = filterKeys;
                 fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
