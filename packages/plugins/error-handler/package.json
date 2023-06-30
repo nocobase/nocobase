@@ -8,8 +8,8 @@
   "license": "AGPL-3.0",
   "main": "./lib/server/index.js",
   "devDependencies": {
-    "@nocobase/client": "0.10.0-alpha.4",
     "@formily/json-schema": "2.2.26",
+    "@nocobase/client": "0.10.0-alpha.5",
     "@nocobase/server": "0.10.0-alpha.5"
   },
   "repository": {
