@@ -118,24 +118,22 @@ const ConstantTypes = {
   },
 };
 
-function useTypedConstantOption(type: string, types?: true | string[]) {
-  const { t } = useTranslation();
-  const compile = useCompile();
+function getTypedConstantOption(type: string, types?: true | string[]) {
   const allTypes = Object.values(ConstantTypes);
   const children = types
     ? allTypes.filter((item) => (Array.isArray(types) && types.includes(item.value)) || types === true)
     : allTypes;
   return {
     value: '',
-    label: t('Constant'),
-    children: compile(children),
+    label: '{{t("Constant")}}',
+    children,
     component: ConstantTypes[type]?.component,
   };
 }
 
 export function Input(props) {
   const { value = '', scope, onChange, children, button, useTypedConstant, style, className, changeOnSelect } = props;
-
+  const compile = useCompile();
   const { t } = useTranslation();
   const form = useForm();
   const [options, setOptions] = React.useState<DefaultOptionType[]>([]);
@@ -145,7 +143,6 @@ export function Input(props) {
   const isConstant = typeof parsed === 'string';
   const type = isConstant ? parsed : '';
   const variable = isConstant ? null : parsed;
-  const constantOptions = useTypedConstantOption(type, useTypedConstant);
 
   const { component: ConstantComponent, ...constantOption }: DefaultOptionType & { component?: React.FC<any> } =
     useMemo(() => {
@@ -156,7 +153,7 @@ export function Input(props) {
         };
       }
       if (useTypedConstant) {
-        return constantOptions;
+        return getTypedConstantOption(type, useTypedConstant);
       }
       return {
         value: '',
@@ -166,7 +163,7 @@ export function Input(props) {
     }, [type, useTypedConstant]);
 
   useEffect(() => {
-    setOptions([constantOption, ...(scope ?? [])]);
+    setOptions([compile(constantOption), ...(scope ?? [])]);
   }, [scope]);
 
   const loadData = async (selectedOptions: DefaultOptionType[]) => {
@@ -225,7 +222,8 @@ export function Input(props) {
     };
 
     run();
-  }, [variable, options]);
+    // NOTE: watch `options.length` and it only happens once
+  }, [variable, options.length]);
 
   const disabled = props.disabled || form.disabled;
 

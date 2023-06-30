@@ -418,7 +418,7 @@ TextArea.ReadPretty = function ReadPretty(props): JSX.Element {
       .then((preloaded) => {
         setOptions(preloaded);
       })
-      .catch((err) => console.error);
+      .catch(error);
   }, [scope, value]);
   const html = renderHTML(value ?? '', keyLabelMap);
 
