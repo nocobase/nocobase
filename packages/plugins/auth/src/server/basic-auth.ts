@@ -1,7 +1,7 @@
 import { AuthConfig, BaseAuth } from '@nocobase/auth';
-import { namespace } from '../preset';
 import { PasswordField } from '@nocobase/database';
 import crypto from 'crypto';
+import { namespace } from '../preset';
 
 export class BasicAuth extends BaseAuth {
   constructor(config: AuthConfig) {
@@ -16,7 +16,7 @@ export class BasicAuth extends BaseAuth {
     if (!values[uniqueField]) {
       ctx.throw(400, ctx.t('Please fill in your email address', { ns: namespace }));
     }
-    const user = await this.userCollection.repository.findOne({
+    const user = await this.userRepository.findOne({
       where: {
         [uniqueField]: values[uniqueField],
       },
@@ -54,7 +54,7 @@ export class BasicAuth extends BaseAuth {
     if (!email) {
       ctx.throw(400, ctx.t('Please fill in your email address', { ns: namespace }));
     }
-    const user = await this.userCollection.repository.findOne({
+    const user = await this.userRepository.findOne({
       where: {
         email,
       },
@@ -72,7 +72,7 @@ export class BasicAuth extends BaseAuth {
     const {
       values: { email, password, resetToken },
     } = ctx.action.params;
-    const user = await this.userCollection.repository.findOne({
+    const user = await this.userRepository.findOne({
       where: {
         email,
         resetToken,
@@ -91,7 +91,7 @@ export class BasicAuth extends BaseAuth {
   async getUserByResetToken() {
     const ctx = this.ctx;
     const { token } = ctx.action.params;
-    const user = await this.userCollection.repository.findOne({
+    const user = await this.userRepository.findOne({
       where: {
         resetToken: token,
       },
@@ -111,7 +111,7 @@ export class BasicAuth extends BaseAuth {
     if (!currentUser) {
       ctx.throw(401);
     }
-    const user = await this.userCollection.repository.findOne({
+    const user = await this.userRepository.findOne({
       where: {
         email: currentUser.email,
       },

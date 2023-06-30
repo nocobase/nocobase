@@ -6,6 +6,7 @@
   "types": "./lib/index.d.ts",
   "dependencies": {
     "@nocobase/plugin-acl": "0.10.0-alpha.5",
+    "@nocobase/plugin-api-keys": "0.10.0-alpha.5",
     "@nocobase/plugin-audit-logs": "0.10.0-alpha.5",
     "@nocobase/plugin-auth": "0.10.0-alpha.5",
     "@nocobase/plugin-charts": "0.10.0-alpha.5",

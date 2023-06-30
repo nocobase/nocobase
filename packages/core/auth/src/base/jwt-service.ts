@@ -1,15 +1,21 @@
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 
 export interface JwtOptions {
   secret: string;
   expiresIn?: string;
 }
 
+export type SignPayload = Parameters<typeof jwt.sign>[0];
+
 export class JwtService {
-  constructor(protected options: JwtOptions) {
-    const { secret, expiresIn } = options || {};
+  constructor(
+    protected options: JwtOptions = {
+      secret: process.env.APP_KEY,
+    },
+  ) {
+    const { secret, expiresIn } = options;
     this.options = {
-      secret: secret || process.env.APP_KEY,
+      secret: secret,
       expiresIn: expiresIn || process.env.JWT_EXPIRES_IN || '7d',
     };
   }
@@ -22,8 +28,8 @@ export class JwtService {
     return this.options.secret;
   }
 
-  sign(payload: any) {
-    return jwt.sign(payload, this.secret(), { expiresIn: this.expiresIn() });
+  sign(payload: SignPayload, options?: SignOptions) {
+    return jwt.sign(payload, this.secret(), { expiresIn: this.expiresIn(), ...options });
   }
 
   decode(token: string): Promise<any> {
