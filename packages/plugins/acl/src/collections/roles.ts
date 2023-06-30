@@ -84,19 +84,6 @@ export default {
       type: 'set',
       name: 'snippets',
       defaultValue: ['!ui.*', '!pm', '!pm.*'],
-    },
-    {
-      interface: 'm2m',
-      type: 'belongsToMany',
-      name: 'users',
-      target: 'users',
-      foreignKey: 'roleName',
-      otherKey: 'userId',
-      onDelete: 'CASCADE',
-      sourceKey: 'name',
-      targetKey: 'id',
-      through: 'rolesUsers',
-      uiSchema: {},
-    },
+    }
   ],
 } as CollectionOptions;
