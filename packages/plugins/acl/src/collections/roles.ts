@@ -85,5 +85,16 @@ export default {
       name: 'snippets',
       defaultValue: ['!ui.*', '!pm', '!pm.*'],
     },
+    {
+      type: 'belongsToMany',
+      name: 'users',
+      target: 'users',
+      foreignKey: 'roleName',
+      otherKey: 'userId',
+      onDelete: 'CASCADE',
+      sourceKey: 'name',
+      targetKey: 'id',
+      through: 'rolesUsers',
+    },
   ],
 } as CollectionOptions;
