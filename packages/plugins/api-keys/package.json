@@ -19,14 +19,14 @@
     "client.d.ts"
   ],
   "dependencies": {
+    "jsonwebtoken": "^8.5.1"
+  },
+  "devDependencies": {
     "@nocobase/actions": "0.10.0-alpha.5",
     "@nocobase/database": "0.10.0-alpha.5",
     "@nocobase/resourcer": "0.10.0-alpha.5",
     "@nocobase/server": "0.10.0-alpha.5",
     "@nocobase/utils": "0.10.0-alpha.5",
-    "jsonwebtoken": "^8.5.1"
-  },
-  "devDependencies": {
     "@nocobase/test": "0.10.0-alpha.5",
     "@types/jsonwebtoken": "^8.5.8"
   },

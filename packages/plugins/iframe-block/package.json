@@ -20,6 +20,7 @@
   ],
   "devDependencies": {
     "@nocobase/server": "0.10.0-alpha.5",
+    "@nocobase/client": "0.10.0-alpha.5",
     "@nocobase/test": "0.10.0-alpha.5"
   }
 }

@@ -16,11 +16,11 @@
     "client.d.ts"
   ],
   "dependencies": {
+    "@types/nodemailer": "6.4.4",
     "nodemailer": "^6.6.1"
   },
   "devDependencies": {
     "@nocobase/test": "0.10.0-alpha.5",
-    "@types/nodemailer": "6.4.4",
     "nodemailer-mock": "^1.5.11"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"

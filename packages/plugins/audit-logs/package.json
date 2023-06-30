@@ -19,10 +19,10 @@
   ],
   "license": "AGPL-3.0",
   "dependencies": {
-    "@nocobase/client": "0.10.0-alpha.5",
-    "@nocobase/server": "0.10.0-alpha.5"
   },
   "devDependencies": {
+    "@nocobase/client": "0.10.0-alpha.5",
+    "@nocobase/server": "0.10.0-alpha.5",
     "@nocobase/test": "0.10.0-alpha.5"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"

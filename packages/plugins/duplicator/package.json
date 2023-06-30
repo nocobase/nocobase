@@ -18,11 +18,14 @@
     "client.js",
     "client.d.ts"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nocobase/nocobase.git",
+    "directory": "packages/plugins/duplicator"
+  },
   "dependencies": {
     "@koa/multer": "^3.0.2",
-    "@nocobase/client": "0.10.0-alpha.5",
-    "@nocobase/database": "0.10.0-alpha.5",
-    "@nocobase/server": "0.10.0-alpha.5",
+    "@types/archiver": "^5.3.1",
     "archiver": "^5.3.1",
     "dayjs": "^1.11.7",
     "decompress": "^4.2.1",
@@ -32,12 +35,9 @@
     "mkdirp": "^1.0.4",
     "tar": "^6.1.13"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/nocobase/nocobase.git",
-    "directory": "packages/plugins/duplicator"
-  },
   "devDependencies": {
-    "@types/archiver": "^5.3.1"
+    "@nocobase/client": "0.10.0-alpha.5",
+    "@nocobase/database": "0.10.0-alpha.5",
+    "@nocobase/server": "0.10.0-alpha.5"
   }
 }

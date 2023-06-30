@@ -19,10 +19,10 @@
     "client.d.ts"
   ],
   "dependencies": {
-    "@nocobase/evaluators": "0.10.0-alpha.5",
-    "@nocobase/utils": "0.10.0-alpha.5"
   },
   "devDependencies": {
+    "@nocobase/evaluators": "0.10.0-alpha.5",
+    "@nocobase/utils": "0.10.0-alpha.5",
     "@nocobase/server": "0.10.0-alpha.5",
     "@nocobase/test": "0.10.0-alpha.5"
   }

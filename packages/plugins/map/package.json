@@ -19,22 +19,22 @@
     "client.d.ts"
   ],
   "devDependencies": {
-    "@types/google.maps": "^3.53.4",
-    "@types/react": "^17.0.0",
-    "@types/react-dom": "^17.0.0"
-  },
-  "dependencies": {
-    "@amap/amap-jsapi-loader": "^1.0.1",
-    "@amap/amap-jsapi-types": "^0.0.10",
-    "@googlemaps/js-api-loader": "^1.16.1",
-    "@emotion/css": "^11.7.1",
+    "react": "18.x",
+    "react-dom": "18.x",
+    "antd": "^4.24.8",
     "@formily/react": "2.2.26",
     "@formily/shared": "2.2.26",
     "@formily/antd": "2.2.26",
     "@nocobase/server": "0.10.0-alpha.5",
     "@nocobase/test": "0.10.0-alpha.5",
-    "react": "18.x",
-    "react-dom": "18.x",
-    "antd": "^4.24.8"
+    "@types/google.maps": "^3.53.4",
+    "@types/react": "^17.0.0",
+    "@types/react-dom": "^17.0.0"
+  },
+  "dependencies": {
+    "@emotion/css": "^11.7.1",
+    "@amap/amap-jsapi-loader": "^1.0.1",
+    "@amap/amap-jsapi-types": "^0.0.10",
+    "@googlemaps/js-api-loader": "^1.16.1"
   }
 }

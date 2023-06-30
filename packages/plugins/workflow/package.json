@@ -19,15 +19,6 @@
     "client.d.ts"
   ],
   "dependencies": {
-    "@nocobase/actions": "0.10.0-alpha.5",
-    "@nocobase/client": "0.10.0-alpha.5",
-    "@nocobase/database": "0.10.0-alpha.5",
-    "@nocobase/evaluators": "0.10.0-alpha.5",
-    "@nocobase/logger": "0.10.0-alpha.5",
-    "@nocobase/resourcer": "0.10.0-alpha.5",
-    "@nocobase/server": "0.10.0-alpha.5",
-    "@nocobase/utils": "0.10.0-alpha.5",
-    "antd": "^4.24.8",
     "axios": "^0.27.2",
     "classnames": "^2.3.1",
     "cron-parser": "4.4.0",
@@ -36,6 +27,15 @@
     "react-js-cron": "^3.1.0"
   },
   "devDependencies": {
+    "antd": "^4.24.8",
+    "@nocobase/actions": "0.10.0-alpha.5",
+    "@nocobase/client": "0.10.0-alpha.5",
+    "@nocobase/database": "0.10.0-alpha.5",
+    "@nocobase/evaluators": "0.10.0-alpha.5",
+    "@nocobase/logger": "0.10.0-alpha.5",
+    "@nocobase/resourcer": "0.10.0-alpha.5",
+    "@nocobase/server": "0.10.0-alpha.5",
+    "@nocobase/utils": "0.10.0-alpha.5",
     "@nocobase/plugin-formula-field": "0.10.0-alpha.5",
     "@nocobase/test": "0.10.0-alpha.5",
     "@types/ejs": "^3.1.1"
