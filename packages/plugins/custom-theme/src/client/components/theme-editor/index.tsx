@@ -1,36 +1,12 @@
 import { css } from '@emotion/css';
-import { Button, ConfigProvider, Space, Typography } from 'antd';
+import { Button, ConfigProvider, Input, Modal, Space, Typography } from 'antd';
 import { ThemeEditor, enUS, zhCN } from 'antd-token-previewer';
 import type { ThemeConfig } from 'antd/es/config-provider/context';
+import antdEnUs from 'antd/locale/en_US';
+import antdZhCN from 'antd/locale/zh_CN';
 import React from 'react';
+import { useTranslation } from '../../locale';
 import { useThemeEditorContext } from '../ThemeEditorProvider';
-
-const locales = {
-  cn: {
-    title: '主题编辑器',
-    save: '保存',
-    close: '关闭',
-    edit: '编辑',
-    export: '导出',
-    editModelTitle: '编辑主题配置',
-    editJsonContentTypeError: '主题 JSON 格式错误',
-    editSuccessfully: '编辑成功',
-    saveSuccessfully: '保存成功',
-    initialEditor: '正在初始化编辑器...',
-  },
-  en: {
-    title: 'Theme Editor',
-    save: 'Save',
-    close: 'Close',
-    edit: 'Edit',
-    export: 'Export',
-    editModelTitle: 'edit Theme Config',
-    editJsonContentTypeError: 'The theme of the JSON format is incorrect',
-    editSuccessfully: 'Edited successfully',
-    saveSuccessfully: 'Saved successfully',
-    initialEditor: 'Initializing Editor...',
-  },
-};
 
 const useStyle = () => ({
   editor: css({
@@ -48,18 +24,20 @@ const useStyle = () => ({
   }),
 });
 
-const ANT_DESIGN_V5_THEME_EDITOR_THEME = 'ant-design-v5-theme-editor-theme';
-
 const CustomTheme = ({ onThemeChange }: { onThemeChange?: (theme: ThemeConfig) => void }) => {
   const styles = useStyle();
   const [theme, setTheme] = React.useState<ThemeConfig>({});
   const { setOpen } = useThemeEditorContext();
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const { t, i18n } = useTranslation();
 
-  const lang = 'cn';
-  const locale = locales[lang];
+  const lang = i18n.language;
 
   const handleSave = () => {
-    localStorage.setItem(ANT_DESIGN_V5_THEME_EDITOR_THEME, JSON.stringify(theme));
+    setIsModalOpen(true);
+  };
+  const toSave = () => {
+    setIsModalOpen(false);
   };
 
   const handleClose = () => {
@@ -67,18 +45,18 @@ const CustomTheme = ({ onThemeChange }: { onThemeChange?: (theme: ThemeConfig) =
   };
 
   return (
-    <div>
-      <ConfigProvider theme={{ inherit: false }}>
+    <>
+      <ConfigProvider theme={{ inherit: false }} locale={lang === 'zh-CN' ? antdZhCN : antdEnUs}>
         <div className={styles.header}>
           <Typography.Title level={5} style={{ margin: 0 }}>
-            {locale.title}
+            {t('Theme Editor')}
           </Typography.Title>
           <Space>
             <Button type="default" onClick={handleClose}>
-              {locale.close}
+              {t('Close')}
             </Button>
             <Button type="primary" onClick={handleSave}>
-              {locale.save}
+              {t('Save')}
             </Button>
           </Space>
         </div>
@@ -90,10 +68,13 @@ const CustomTheme = ({ onThemeChange }: { onThemeChange?: (theme: ThemeConfig) =
             setTheme(newTheme.config);
             onThemeChange?.(newTheme.config);
           }}
-          locale={lang === 'cn' ? zhCN : enUS}
+          locale={lang === 'zh-CN' ? zhCN : enUS}
         />
       </ConfigProvider>
-    </div>
+      <Modal title={t('Save theme')} open={isModalOpen} onOk={toSave} onCancel={() => setIsModalOpen(false)}>
+        <Input placeholder={t('Please set a name for this theme')} />
+      </Modal>
+    </>
   );
 };
 
