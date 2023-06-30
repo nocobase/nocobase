@@ -9,6 +9,7 @@ describe('create view', () => {
     db = mockDatabase({
       tablePrefix: '',
     });
+
     await db.clean({ drop: true });
   });
 
@@ -17,32 +18,58 @@ describe('create view', () => {
   });
 
   it('should insert data into view collection', async () => {
-    const c1 = db.collection({
-      name: 'c1',
-      fields: [{ type: 'string', name: 'name' }],
+    const User = db.collection({
+      name: 'users',
+      fields: [
+        { type: 'string', name: 'name' },
+        {
+          type: 'belongsTo',
+          name: 'group',
+          foreignKey: 'group_id',
+          target: 'groups',
+        },
+      ],
+    });
+
+    const Group = db.collection({
+      name: 'groups',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+      ],
     });
 
     await db.sync();
 
-    const viewName = 'test_view';
+    const viewName = 'user_with_group';
     const dropViewSQL = `DROP VIEW IF EXISTS test_view`;
     await db.sequelize.query(dropViewSQL);
 
-    const viewSQL = `CREATE VIEW test_view AS select * from ${c1.quotedTableName()}`;
+    const viewSQL = `CREATE VIEW ${viewName} AS select users.id as user_id, users.name as user_name, groups.name as group_name from ${User.quotedTableName()} as users left join ${Group.quotedTableName()} as ${db.sequelize
+      .getQueryInterface()
+      .quoteIdentifier('groups')} on users.group_id = groups.id`;
     await db.sequelize.query(viewSQL);
 
     const viewCollection = db.collection({
       name: viewName,
       viewName,
       writeableView: true,
-      fields: [{ type: 'string', name: 'name' }],
+      timestamps: false,
+      fields: [
+        { type: 'bigInt', name: 'user_id', primaryKey: true },
+        { type: 'string', name: 'user_name' },
+        { type: 'string', name: 'group_name' },
+      ],
     });
 
     await db.sync();
 
     await viewCollection.repository.create({
       values: {
-        name: '123',
+        user_name: 'u1',
+        group_name: 'g1',
       },
     });
 
@@ -126,7 +153,7 @@ describe('create view', () => {
 
     const dropViewSQL = `DROP VIEW IF EXISTS ${appendSchema}${viewName}`;
     await db.sequelize.query(dropViewSQL);
-    const viewSql = `CREATE  VIEW ${appendSchema}${viewName} AS SELECT users.name, profiles.age FROM ${appendSchema}${UserCollection.model.tableName} as users LEFT JOIN ${appendSchema}${ProfileCollection.model.tableName} as profiles ON users.id = profiles.user_id;`;
+    const viewSql = `CREATE VIEW ${appendSchema}${viewName} AS SELECT users.name, profiles.age FROM ${appendSchema}${UserCollection.model.tableName} as users LEFT JOIN ${appendSchema}${ProfileCollection.model.tableName} as profiles ON users.id = profiles.user_id;`;
 
     await db.sequelize.query(viewSql);
 

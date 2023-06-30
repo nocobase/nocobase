@@ -12,8 +12,8 @@ import {
 import { Database } from './database';
 import { BelongsToField, Field, FieldOptions, HasManyField } from './fields';
 import { Model } from './model';
+import { AdjacencyListRepository } from './repositories/tree-repository/adjacency-list-repository';
 import { Repository } from './repository';
-import { AdjacencyListRepository } from './tree-repository/adjacency-list-repository';
 import { checkIdentifier, md5, snakeCase } from './utils';
 
 export type RepositoryType = typeof Repository;

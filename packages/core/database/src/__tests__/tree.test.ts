@@ -1,6 +1,6 @@
 import { Database } from '../database';
+import { AdjacencyListRepository } from '../repositories/tree-repository/adjacency-list-repository';
 import { mockDatabase } from './';
-import { AdjacencyListRepository } from '../tree-repository/adjacency-list-repository';
 
 describe('tree test', function () {
   let db: Database;
