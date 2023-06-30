@@ -8,9 +8,6 @@ const map2obj = (map: Map<string, string>) => {
 
 export async function checkAction(ctx, next) {
   const currentRole = ctx.state.currentRole;
-  if (!currentRole) {
-    throw new Error('User role not found');
-  }
 
   const roleInstance = await ctx.db.getRepository('roles').findOne({
     filter: {

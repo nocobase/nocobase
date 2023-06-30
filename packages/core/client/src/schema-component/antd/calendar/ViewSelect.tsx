@@ -15,7 +15,7 @@ export const ViewSelect = observer(
     } = useContext(CalendarToolbarContext);
     return (
       <div className="ant-btn-group">
-        <Select value={view} onChange={onView}>
+        <Select dropdownMatchSelectWidth={false} value={view} onChange={onView}>
           {views.map((name) => (
             <Select.Option key={name} value={name}>
               {messages[name]}

@@ -225,6 +225,7 @@ export const TableTransfer = connect((props) => {
             <strong style={{ fontSize: 16 }}>{t('Unshared collections')}</strong>
             <Input.Group compact style={{ width: 360 }}>
               <Select
+                dropdownMatchSelectWidth={false}
                 onChange={(value) => {
                   removedDataSource.setCategoryFilter(value);
                 }}
@@ -309,6 +310,7 @@ export const TableTransfer = connect((props) => {
             <strong style={{ fontSize: 16 }}>{t('Shared collections')}</strong>
             <Input.Group compact style={{ width: 360 }}>
               <Select
+                dropdownMatchSelectWidth={false}
                 onChange={(value) => {
                   addedDataSource.setCategoryFilter(value);
                 }}
