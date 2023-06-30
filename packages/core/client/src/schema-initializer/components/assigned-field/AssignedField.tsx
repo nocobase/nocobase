@@ -158,6 +158,10 @@ export const AssignedField = (props: any) => {
 
   const typeChangeHandler = (val) => {
     setType(val);
+    if (val === AssignedFieldValueType.DynamicValue) {
+      field.validator = null;
+      field.form.clearErrors();
+    }
   };
 
   const valueChangeHandler = (val) => {
@@ -181,7 +185,13 @@ export const AssignedField = (props: any) => {
       return <CollectionField {...props} value={value} onChange={valueChangeHandler} style={{ minWidth: 150 }} />;
     } else {
       return (
-        <Select defaultValue={fieldType} value={fieldType} style={{ minWidth: 150 }} onChange={fieldTypeChangeHandler}>
+        <Select
+          dropdownMatchSelectWidth={false}
+          defaultValue={fieldType}
+          value={fieldType}
+          style={{ minWidth: 150 }}
+          onChange={fieldTypeChangeHandler}
+        >
           {options?.map((opt) => {
             return (
               <Select.Option key={opt.name} value={opt.name}>

@@ -45,6 +45,7 @@ export const ThroughForeignKey = observer(
       <div>
         <Select
           allowClear
+          dropdownMatchSelectWidth={false}
           placeholder={'留空时，自动生成 FK 字段'}
           disabled={field.disabled}
           value={field.value}
@@ -72,6 +73,7 @@ export const TargetForeignKey = observer(
       <div>
         <Select
           allowClear
+          dropdownMatchSelectWidth={false}
           placeholder={'留空时，自动生成 FK 字段'}
           disabled={field.disabled}
           value={field.value}
@@ -100,6 +102,7 @@ export const SourceCollection = observer(
       <div>
         <Select
           disabled
+          dropdownMatchSelectWidth={false}
           value={collection.name}
           options={[{ value: collection.name, label: compile(collection.title) }]}
         />

@@ -45,6 +45,7 @@ export const useSwitchRole = () => {
           <Select
             style={{ minWidth: 100 }}
             bordered={false}
+            dropdownMatchSelectWidth={false}
             fieldNames={{
               label: 'title',
               value: 'name',
