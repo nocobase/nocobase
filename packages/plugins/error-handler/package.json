@@ -6,9 +6,9 @@
   "description.zh-CN": "管理和处理应用程序中的错误和异常。",
   "version": "0.10.0-alpha.4",
   "license": "AGPL-3.0",
-  "main": "./lib/index.js",
-  "types": "./lib/index.d.ts",
-  "dependencies": {
+  "main": "./lib/server/index.js",
+  "devDependencies": {
+    "@nocobase/client": "0.10.0-alpha.4",
     "@formily/json-schema": "2.2.26",
     "@nocobase/server": "0.10.0-alpha.4"
   },

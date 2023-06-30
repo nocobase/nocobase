@@ -6,8 +6,7 @@
   "description.zh-CN": "为数据库系统提供快速、可靠的数据库备份和恢复功能。。",
   "version": "0.10.0-alpha.4",
   "license": "AGPL-3.0",
-  "main": "./lib/index.js",
-  "types": "./lib/index.d.ts",
+  "main": "./lib/server/index.js",
   "devDependencies": {
     "@nocobase/server": "0.10.0-alpha.4",
     "@nocobase/test": "0.10.0-alpha.4"

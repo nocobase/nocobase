@@ -6,8 +6,7 @@
   "description.zh-CN": "验证码配置。",
   "version": "0.10.0-alpha.4",
   "license": "AGPL-3.0",
-  "main": "./lib/index.js",
-  "types": "./lib/index.d.ts",
+  "main": "./lib/server/index.js",
   "dependencies": {
     "@alicloud/dysmsapi20170525": "2.0.17",
     "@alicloud/openapi-client": "0.4.1",

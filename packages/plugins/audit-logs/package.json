@@ -6,7 +6,6 @@
   "description": "audit logs plugin",
   "description.zh-CN": "审计日志。",
   "main": "./lib/server/index.js",
-  "types": "./lib/server/index.d.ts",
   "license": "AGPL-3.0",
   "dependencies": {
     "@nocobase/client": "0.10.0-alpha.4",

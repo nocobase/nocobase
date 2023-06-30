@@ -3,21 +3,6 @@
   "version": "0.10.0-alpha.4",
   "license": "AGPL-3.0",
   "main": "./lib/server/index.js",
-  "exports": {
-    ".": {
-      "require": "./lib/server/index.js",
-      "import": "./lib/server/index.js"
-    },
-    "./client": {
-      "require": "./lib/client/index.js",
-      "import": "./lib/client/index.js"
-    },
-    "./server": {
-      "require": "./lib/server/index.js",
-      "import": "./lib/server/index.js"
-    },
-    "./package.json": "./package.json"
-  },
   "dependencies": {
     "@nocobase/plugin-acl": "0.10.0-alpha.4",
     "@nocobase/plugin-audit-logs": "0.10.0-alpha.4",

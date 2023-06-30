@@ -6,8 +6,7 @@
   "description.zh-CN": "工作流插件，为业务流程管理和自动化提供支持。",
   "version": "0.10.0-alpha.4",
   "license": "AGPL-3.0",
-  "main": "./lib/index.js",
-  "types": "./lib/index.d.ts",
+  "main": "./lib/server/index.js",
   "dependencies": {
     "@nocobase/actions": "0.10.0-alpha.4",
     "@nocobase/client": "0.10.0-alpha.4",

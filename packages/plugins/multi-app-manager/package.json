@@ -6,8 +6,7 @@
   "description.zh-CN": "管理应用",
   "version": "0.10.0-alpha.4",
   "license": "AGPL-3.0",
-  "main": "./lib/index.js",
-  "types": "./lib/index.d.ts",
+  "main": "./lib/server/index.js",
   "dependencies": {
     "@nocobase/server": "0.10.0-alpha.4",
     "async-mutex": "^0.3.2"

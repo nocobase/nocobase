@@ -6,8 +6,7 @@
   "description.zh-CN": "为数据库或数据管理系统提供自动生成唯一序列值的功能。",
   "version": "0.10.0-alpha.4",
   "license": "AGPL-3.0",
-  "main": "./lib/index.js",
-  "types": "./lib/index.d.ts",
+  "main": "./lib/server/index.js",
   "dependencies": {
     "@nocobase/actions": "0.10.0-alpha.4",
     "@nocobase/client": "0.10.0-alpha.4",

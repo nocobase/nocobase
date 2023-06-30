@@ -6,8 +6,7 @@
   "description.zh-CN": "数据库管理。",
   "version": "0.10.0-alpha.4",
   "license": "AGPL-3.0",
-  "main": "./lib/index.js",
-  "types": "./lib/index.d.ts",
+  "main": "./lib/server/index.js",
   "dependencies": {
     "@antv/x6": "^1.9.0",
     "@antv/x6-react-shape": "^1.6.2",

@@ -6,8 +6,7 @@
   "description.zh-CN": "导入数据。",
   "version": "0.10.0-alpha.4",
   "license": "AGPL-3.0",
-  "main": "./lib/index.js",
-  "types": "./lib/index.d.ts",
+  "main": "./lib/server/index.js",
   "dependencies": {
     "xlsx": "^0.18.5"
   },

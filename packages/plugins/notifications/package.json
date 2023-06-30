@@ -3,8 +3,7 @@
   "version": "0.10.0-alpha.4",
   "description": "",
   "license": "AGPL-3.0",
-  "main": "./lib/index.js",
-  "types": "./lib/index.d.ts",
+  "main": "./lib/server/index.js",
   "dependencies": {
     "nodemailer": "^6.6.1"
   },

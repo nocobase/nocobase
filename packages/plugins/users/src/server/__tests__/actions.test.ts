@@ -1,7 +1,7 @@
 import Database from '@nocobase/database';
 import AuthPlugin from '@nocobase/plugin-auth';
 import { mockServer, MockServer } from '@nocobase/test';
-import PluginUsers from '../server';
+import PluginUsers from '..';
 import { userPluginConfig } from './utils';
 
 describe('actions', () => {
