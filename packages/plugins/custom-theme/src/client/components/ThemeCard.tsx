@@ -90,7 +90,7 @@ const ThemeCard = (props: Props) => {
         ]
       : [
           <EditOutlined key="edit" />,
-          item.isBuiltIn ? null : <DeleteOutlined key="delete" onClick={handleDelete} />,
+          <DeleteOutlined key="delete" onClick={handleDelete} />,
           <Switch key="switch" checked={item.optional} size={'small'} onChange={handleSwitch} />,
         ];
   }, [handleDelete, handleSwitch, item.isBuiltIn, item.optional]);
