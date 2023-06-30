@@ -24,7 +24,7 @@ export class PresetNocoBase extends Plugin {
     'iframe-block',
     'formula-field',
     'charts',
-    'charts-v2',
+    'data-visualization',
     'auth',
     'sms-auth',
   ];

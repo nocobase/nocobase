@@ -45,8 +45,9 @@ type QueryParams = Partial<{
 }>;
 
 export const parseFieldAndAssociations = (ctx: Context, params: QueryParams) => {
-  const { collection, measures, dimensions, orders } = params;
-  const fields = ctx.db.getCollection(collection).fields;
+  const { collection: collectionName, measures, dimensions, orders, filter } = params;
+  const collection = ctx.db.getCollection(collectionName);
+  const fields = collection.fields;
   const underscored = ctx.db.options.underscored;
   const models: {
     [target: string]: {
@@ -73,7 +74,7 @@ export const parseFieldAndAssociations = (ctx: Context, params: QueryParams) => 
         models[target] = { type };
       }
     } else {
-      field = `${collection}.${field}`;
+      field = `${collectionName}.${field}`;
     }
     return {
       ...selected,
@@ -83,23 +84,40 @@ export const parseFieldAndAssociations = (ctx: Context, params: QueryParams) => 
       alias: selected.alias || name,
     };
   };
+
+  const parsedMeasures = measures?.map(parseField) || [];
+  const parsedDimensions = dimensions?.map(parseField) || [];
+  const parsedOrders = orders?.map(parseField) || [];
+  const include = Object.entries(models).map(([target, { type }]) => ({
+    association: target,
+    attributes: [],
+    ...(type === 'belongsToMany' ? { through: { attributes: [] } } : {}),
+  }));
+
+  const filterParser = new FilterParser(filter, {
+    collection,
+  });
+  const { where, include: filterInclude } = filterParser.toSequelizeParams();
+  const parsedFilterInclude = filterInclude?.map((item) => {
+    if (fields.get(item.association)?.type === 'belongsToMany') {
+      item.through = { attributes: [] };
+    }
+    return item;
+  });
+
   return {
-    measures: measures?.map(parseField) || [],
-    dimensions: dimensions?.map(parseField) || [],
-    orders: orders?.map(parseField) || [],
-    include: Object.entries(models).map(([target, { type }]) => ({
-      association: target,
-      attributes: [],
-      ...(type === 'belongsToMany' ? { through: { attributes: [] } } : {}),
-    })),
+    where,
+    measures: parsedMeasures,
+    dimensions: parsedDimensions,
+    orders: parsedOrders,
+    include: [...include, ...(parsedFilterInclude || [])],
   };
 };
 
 export const parseBuilder = (ctx: Context, builder: QueryParams) => {
   const { sequelize } = ctx.db;
-  const { collection, filter, limit } = builder;
-  const { measures, dimensions, orders, include } = parseFieldAndAssociations(ctx, builder);
-  const repository = ctx.db.getRepository(collection);
+  const { limit } = builder;
+  const { measures, dimensions, orders, include, where } = parseFieldAndAssociations(ctx, builder);
   const attributes = [];
   const group = [];
   const order = [];
@@ -147,15 +165,11 @@ export const parseBuilder = (ctx: Context, builder: QueryParams) => {
     order.push([name, item.order || 'ASC']);
   });
 
-  const filterParser = new FilterParser(filter, {
-    collection: repository.collection,
-  });
-  const { where, include: filterInclude } = filterParser.toSequelizeParams();
   return {
     queryParams: {
       where,
       attributes,
-      include: [...include, ...(filterInclude || [])],
+      include,
       group,
       order,
       limit: limit > 2000 ? 2000 : limit,

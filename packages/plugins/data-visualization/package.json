@@ -1,5 +1,5 @@
 {
-  "name": "@nocobase/plugin-charts-v2",
+  "name": "@nocobase/plugin-data-visualization",
   "version": "0.10.0-alpha.5",
   "main": "lib/server/index.js",
   "devDependencies": {
@@ -14,5 +14,7 @@
     "@ant-design/plots": "^1.2.5",
     "dayjs": "^1.11.7",
     "react-error-boundary": "^4.0.4"
-  }
+  },
+  "displayName": "Data Visualization",
+  "displayName.zh-CN": "数据可视化"
 }
