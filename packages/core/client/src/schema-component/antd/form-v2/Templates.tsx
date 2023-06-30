@@ -96,9 +96,6 @@ export const Templates = ({ style = {}, form }) => {
             forEach(data, (value, key) => {
               if (value) {
                 form.values[key] = value;
-                setTimeout(() => {
-                  form.setValuesIn(key, value);
-                });
               }
             });
           }
@@ -123,9 +120,6 @@ export const Templates = ({ style = {}, form }) => {
             forEach(data, (value, key) => {
               if (value) {
                 form.values[key] = value;
-                setTimeout(() => {
-                  form.setValuesIn(key, value);
-                });
               }
             });
           }
