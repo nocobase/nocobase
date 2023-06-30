@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { Button, ConfigProvider, Input, Modal, Space, Typography } from 'antd';
+import { Button, ConfigProvider, Space, Typography } from 'antd';
 import { ThemeEditor, enUS, zhCN } from 'antd-token-previewer';
 import type { ThemeConfig } from 'antd/es/config-provider/context';
 import antdEnUs from 'antd/locale/en_US';
@@ -7,6 +7,7 @@ import antdZhCN from 'antd/locale/zh_CN';
 import React from 'react';
 import { useTranslation } from '../../locale';
 import { useThemeEditorContext } from '../ThemeEditorProvider';
+import ThemeSettingModal from './ThemeSettingModal';
 
 const useStyle = () => ({
   editor: css({
@@ -28,15 +29,19 @@ const CustomTheme = ({ onThemeChange }: { onThemeChange?: (theme: ThemeConfig) =
   const styles = useStyle();
   const [theme, setTheme] = React.useState<ThemeConfig>({});
   const { setOpen } = useThemeEditorContext();
-  const [isModalOpen, setIsModalOpen] = React.useState(false);
   const { t, i18n } = useTranslation();
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
 
   const lang = i18n.language;
 
   const handleSave = () => {
     setIsModalOpen(true);
   };
-  const toSave = () => {
+  const handleModalOk = () => {
+    setIsModalOpen(false);
+    setOpen(false);
+  };
+  const handleModalCancel = () => {
     setIsModalOpen(false);
   };
 
@@ -71,9 +76,7 @@ const CustomTheme = ({ onThemeChange }: { onThemeChange?: (theme: ThemeConfig) =
           locale={lang === 'zh-CN' ? zhCN : enUS}
         />
       </ConfigProvider>
-      <Modal title={t('Save theme')} open={isModalOpen} onOk={toSave} onCancel={() => setIsModalOpen(false)}>
-        <Input placeholder={t('Please set a name for this theme')} />
-      </Modal>
+      <ThemeSettingModal open={isModalOpen} onOk={handleModalOk} onCancel={handleModalCancel} />
     </>
   );
 };
