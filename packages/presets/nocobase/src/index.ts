@@ -38,6 +38,7 @@ export class PresetNocoBase extends Plugin {
     'snapshot-field',
     'graph-collection-manager',
     'mobile-client',
+    'localization-management',
   ];
 
   splitNames(name: string) {
