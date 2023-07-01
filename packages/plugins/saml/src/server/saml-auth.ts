@@ -52,8 +52,7 @@ export class SAMLAuth extends BaseAuth {
     // When email is provided or nameID is email, use email to find user
     // If found, associate the user with the current authenticator
     if (email || nameID.match(/^.+@.+\..+$/)) {
-      const userRepo = this.userCollection.repository;
-      const user = await userRepo.findOne({
+      const user = await this.userRepository.findOne({
         filter: { email: email || nameID },
       });
       if (user) {

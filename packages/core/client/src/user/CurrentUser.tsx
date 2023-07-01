@@ -43,7 +43,6 @@ export const SettingsMenu: React.FC<{
           .resource('app')
           .getInfo()
           .then((res) => {
-            console.log(res);
             if (res?.status === 200) {
               resolve('ok');
               clearInterval(heartbeat);

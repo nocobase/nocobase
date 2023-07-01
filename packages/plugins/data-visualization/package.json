@@ -1,0 +1,22 @@
+{
+  "name": "@nocobase/plugin-data-visualization",
+  "version": "0.10.0-alpha.5",
+  "main": "lib/server/index.js",
+  "devDependencies": {
+    "@nocobase/actions": "0.10.0-alpha.5",
+    "@nocobase/cache": "0.10.0-alpha.5",
+    "@nocobase/server": "0.10.0-alpha.5",
+    "@nocobase/test": "0.10.0-alpha.5",
+    "@testing-library/react": "^14.0.0",
+    "lodash": "^4.17.21"
+  },
+  "dependencies": {
+    "@ant-design/plots": "^1.2.5",
+    "dayjs": "^1.11.7",
+    "react-error-boundary": "^4.0.4"
+  },
+  "displayName": "Data Visualization",
+  "displayName.zh-CN": "数据可视化",
+  "description": "Provides business intelligence and data visualization features",
+  "description.zh-CN": "提供BI面板和数据可视化功能"
+}

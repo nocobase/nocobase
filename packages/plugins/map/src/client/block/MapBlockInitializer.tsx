@@ -9,6 +9,7 @@ import { createMapBlockSchema } from './utils';
 export const MapBlockInitializer = (props) => {
   const { insert } = props;
   const options = useContext(SchemaOptionsContext);
+  console.log('🚀 ~ file: MapBlockInitializer.tsx:12 ~ MapBlockInitializer ~ options:', options);
   const { getCollectionFieldsOptions } = useCollectionManager();
   const { t } = useMapTranslation();
 

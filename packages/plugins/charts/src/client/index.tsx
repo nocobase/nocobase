@@ -50,7 +50,7 @@ const Charts = React.memo((props) => {
         key: 'chart',
         type: 'item',
         icon: 'PieChartOutlined',
-        title: '{{t("Chart",{ns:"charts"})}}',
+        title: '{{t("Chart (Old)",{ns:"charts"})}}',
         component: 'ChartBlockInitializer',
       });
     }
