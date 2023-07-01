@@ -1,6 +1,6 @@
 import { CheckOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { Form, FormItem } from '@formily/antd';
+import { Form, FormItem } from '@formily/antd-v5';
 import { Button, Card } from 'antd';
 import cls from 'classnames';
 import React, { useContext } from 'react';

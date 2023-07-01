@@ -2683,7 +2683,7 @@
   dependencies:
     regenerator-runtime "^0.13.2"
 
-"@babel/runtime@^7", "@babel/runtime@^7.1.5", "@babel/runtime@^7.10.1", "@babel/runtime@^7.10.4", "@babel/runtime@^7.11.1", "@babel/runtime@^7.11.2", "@babel/runtime@^7.12.5", "@babel/runtime@^7.13.8", "@babel/runtime@^7.14.5", "@babel/runtime@^7.14.6", "@babel/runtime@^7.15.4", "@babel/runtime@^7.16.7", "@babel/runtime@^7.18.0", "@babel/runtime@^7.18.3", "@babel/runtime@^7.18.6", "@babel/runtime@^7.2.0", "@babel/runtime@^7.20.0", "@babel/runtime@^7.20.6", "@babel/runtime@^7.20.7", "@babel/runtime@^7.21.0", "@babel/runtime@^7.22.3", "@babel/runtime@^7.3.0", "@babel/runtime@^7.4.2", "@babel/runtime@^7.6.3", "@babel/runtime@^7.7.6", "@babel/runtime@^7.7.7", "@babel/runtime@^7.8.4", "@babel/runtime@^7.8.7", "@babel/runtime@^7.9.2":
+"@babel/runtime@^7", "@babel/runtime@^7.10.1", "@babel/runtime@^7.10.4", "@babel/runtime@^7.11.1", "@babel/runtime@^7.11.2", "@babel/runtime@^7.12.5", "@babel/runtime@^7.13.8", "@babel/runtime@^7.14.5", "@babel/runtime@^7.14.6", "@babel/runtime@^7.15.4", "@babel/runtime@^7.16.7", "@babel/runtime@^7.18.0", "@babel/runtime@^7.18.3", "@babel/runtime@^7.18.6", "@babel/runtime@^7.20.0", "@babel/runtime@^7.20.6", "@babel/runtime@^7.20.7", "@babel/runtime@^7.21.0", "@babel/runtime@^7.22.3", "@babel/runtime@^7.3.0", "@babel/runtime@^7.4.2", "@babel/runtime@^7.6.3", "@babel/runtime@^7.7.6", "@babel/runtime@^7.7.7", "@babel/runtime@^7.8.4", "@babel/runtime@^7.8.7", "@babel/runtime@^7.9.2":
   version "7.22.5"
   resolved "https://registry.npmmirror.com/@babel/runtime/-/runtime-7.22.5.tgz#8564dd588182ce0047d55d7a75e93921107b57ec"
   integrity sha512-ecjvYlnAaZ/KVneE/OdKYBYfgXV3Ptu6zQWmgEF7vwKhQnvVS6bjMD2XYgj+SNvQ1GfK/pjgokfPkC/2CO8CuA==
@@ -3485,7 +3485,7 @@
     intl-messageformat "10.5.0"
     tslib "^2.4.0"
 
-"@formily/antd-v5@^1.1.0-beta.3":
+"@formily/antd-v5@^1.1.0-beta.4":
   version "1.1.0-beta.4"
   resolved "https://registry.npmmirror.com/@formily/antd-v5/-/antd-v5-1.1.0-beta.4.tgz#d1212502ad9da20417f1c75159af5c71d26c39c8"
   integrity sha512-ozvjfdAVClWF99+9AETERGN2fytgvmy0ymQvBm49eiXCgrhlwhBvvR5E2gQNOgV983hQFcj0PyNbjcdKuu35FQ==
@@ -3504,22 +3504,6 @@
     classnames "^2.2.6"
     react-sticky-box "^1.0.2"
 
-"@formily/antd@2.2.26":
-  version "2.2.26"
-  resolved "https://registry.npmmirror.com/@formily/antd/-/antd-2.2.26.tgz#abfe15523932fec8527f9b6fe6e81a0f3f2d1678"
-  integrity sha512-uoUBR4IgCAL05eYvRJxZG54s1gI50fzTjpbVSFRLc+fzzEVn32Xuxt5/ANQmEvhLZWqxTgZHbyjkJKa/uXXokg==
-  dependencies:
-    "@formily/core" "2.2.26"
-    "@formily/grid" "2.2.26"
-    "@formily/json-schema" "2.2.26"
-    "@formily/react" "2.2.26"
-    "@formily/reactive" "2.2.26"
-    "@formily/reactive-react" "2.2.26"
-    "@formily/shared" "2.2.26"
-    classnames "^2.2.6"
-    react-sortable-hoc "^1.11.0"
-    react-sticky-box "^0.9.3"
-
 "@formily/core@2.2.26", "@formily/core@^2.2.0":
   version "2.2.26"
   resolved "https://registry.npmmirror.com/@formily/core/-/core-2.2.26.tgz#4a80171ef5b38ff64b9308b5bd0174b0212fc949"
@@ -3529,7 +3513,7 @@
     "@formily/shared" "2.2.26"
     "@formily/validator" "2.2.26"
 
-"@formily/grid@2.2.26", "@formily/grid@^2.2.0":
+"@formily/grid@^2.2.0":
   version "2.2.26"
   resolved "https://registry.npmmirror.com/@formily/grid/-/grid-2.2.26.tgz#1bf523693f9d38fb2a9e0fd9e0e135b9c27fc136"
   integrity sha512-32SOe8yTxxN+ouVVVaYCnBDBPiNJ0z9AEyiO78ZgYqIU1IcV6eYLU+T2505+KLEDrWGd5pZdsSrn4dt+hfnfow==
@@ -23197,7 +23181,7 @@ prop-types-exact@^1.2.0:
     object.assign "^4.1.0"
     reflect.ownkeys "^0.2.0"
 
-prop-types@^15.5.7, prop-types@^15.5.8, prop-types@^15.6.2, prop-types@^15.7.2, prop-types@^15.8.1:
+prop-types@^15.5.8, prop-types@^15.6.2, prop-types@^15.7.2, prop-types@^15.8.1:
   version "15.8.1"
   resolved "https://registry.npmmirror.com/prop-types/-/prop-types-15.8.1.tgz#67d87bf1a694f48435cf332c24af10214a3140b5"
   integrity sha512-oj87CgZICdulUohogVAR7AjlC0327U4el4L6eAvOqCeudMDVU0NThNaV+b9Df4dXgSP1gXMTnPdhfe/2qDH5cg==
@@ -23964,7 +23948,7 @@ react-error-boundary@^3.1.4:
   dependencies:
     "@babel/runtime" "^7.12.5"
 
-react-error-boundary@^4.0.3, react-error-boundary@^4.0.4:
+react-error-boundary@^4.0.3:
   version "4.0.10"
   resolved "https://registry.npmmirror.com/react-error-boundary/-/react-error-boundary-4.0.10.tgz#975cc298e93ab7760d1460b7ea5a7855621e355a"
   integrity sha512-pvVKdi77j2OoPHo+p3rorgE43OjDWiqFkaqkJz8sJKK6uf/u8xtzuaVfj5qJ2JnDLIgF1De3zY5AJDijp+LVPA==
@@ -24147,23 +24131,6 @@ react-side-effect@^2.1.0:
   version "2.1.2"
   resolved "https://registry.npmmirror.com/react-side-effect/-/react-side-effect-2.1.2.tgz#dc6345b9e8f9906dc2eeb68700b615e0b4fe752a"
   integrity sha512-PVjOcvVOyIILrYoyGEpDN3vmYNLdy1CajSFNt4TDsVQC5KpTijDvWVoR+/7Rz2xT978D8/ZtFceXxzsPwZEDvw==
-
-react-sortable-hoc@^1.11.0:
-  version "1.11.0"
-  resolved "https://registry.npmmirror.com/react-sortable-hoc/-/react-sortable-hoc-1.11.0.tgz#fe4022362bbafc4b836f5104b9676608a40a278f"
-  integrity sha512-v1CDCvdfoR3zLGNp6qsBa4J1BWMEVH25+UKxF/RvQRh+mrB+emqtVHMgZ+WreUiKJoEaiwYoScaueIKhMVBHUg==
-  dependencies:
-    "@babel/runtime" "^7.2.0"
-    invariant "^2.2.4"
-    prop-types "^15.5.7"
-
-react-sticky-box@^0.9.3:
-  version "0.9.3"
-  resolved "https://registry.npmmirror.com/react-sticky-box/-/react-sticky-box-0.9.3.tgz#8450d4cef8e4fdd7b0351520365bc98c97da11af"
-  integrity sha512-Y/qO7vTqAvXuRR6G6ZCW4fX2Bz0GZRwiiLTVeZN5CVz9wzs37ev0Xj3KSKF/PzF0jifwATivI4t24qXG8rSz4Q==
-  dependencies:
-    "@babel/runtime" "^7.1.5"
-    resize-observer-polyfill "^1.5.1"
 
 react-sticky-box@^1.0.2:
   version "1.0.2"

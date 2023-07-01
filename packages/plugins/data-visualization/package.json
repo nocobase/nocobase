@@ -11,7 +11,11 @@
     "lodash": "^4.17.21"
   },
   "dependencies": {
-    "@ant-design/plots": "^1.2.5",
+    "@ant-design/plots": "^1.2.5"
+  },
+  "peerDependencies": {
+    "@formily/antd-v5": "1.x",
+    "antd": "5.x",
     "dayjs": "^1.11.7",
     "react-error-boundary": "^4.0.4"
   },

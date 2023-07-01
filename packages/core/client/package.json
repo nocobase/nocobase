@@ -11,7 +11,7 @@
     "@dnd-kit/core": "^5.0.1",
     "@dnd-kit/sortable": "^6.0.0",
     "@emotion/css": "^11.7.1",
-    "@formily/antd-v5": "^1.1.0-beta.3",
+    "@formily/antd-v5": "^1.1.0-beta.4",
     "@formily/core": "2.2.26",
     "@formily/react": "2.2.26",
     "@nocobase/evaluators": "0.10.0-alpha.5",
