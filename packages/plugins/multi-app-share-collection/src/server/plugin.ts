@@ -90,6 +90,7 @@ class SubAppPlugin extends Plugin {
     });
 
     this.app.on('rpc:afterEnablePlugin', async (pluginName) => {
+      console.log('enable plugin at sub app');
       await this.app.pm.enable(pluginName);
     });
 
@@ -196,12 +197,12 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       });
     });
 
-    this.app.db.on('afterEnablePlugin', async (pluginName) => {
+    this.app.on('afterEnablePlugin', async (pluginName) => {
       if (subAppFilteredPlugins.includes(pluginName)) return;
       await appSupervisor.rpcBroadcast(this.app, 'afterEnablePlugin', pluginName);
     });
 
-    this.app.db.on('afterDisablePlugin', async (pluginName) => {
+    this.app.on('afterDisablePlugin', async (pluginName) => {
       if (subAppFilteredPlugins.includes(pluginName)) return;
       await appSupervisor.rpcBroadcast(this.app, 'afterDisablePlugin', pluginName);
     });
