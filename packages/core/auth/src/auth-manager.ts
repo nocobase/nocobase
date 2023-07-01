@@ -2,6 +2,7 @@ import { Context, Next } from '@nocobase/actions';
 import { Model } from '@nocobase/database';
 import { Registry } from '@nocobase/utils';
 import { Auth, AuthExtend } from './auth';
+import { JwtOptions, JwtService } from './base/jwt-service';
 
 type Storer = {
   get: (name: string) => Promise<Model>;
@@ -10,6 +11,7 @@ type Storer = {
 type AuthManagerOptions = {
   authKey: string;
   default?: string;
+  jwt?: JwtOptions;
 };
 
 type AuthConfig = {
@@ -21,9 +23,11 @@ export class AuthManager {
   protected authTypes: Registry<AuthConfig> = new Registry();
   // authenticators collection manager.
   protected storer: Storer;
+  jwt: JwtService;
 
   constructor(options: AuthManagerOptions) {
     this.options = options;
+    this.jwt = new JwtService(options.jwt);
   }
 
   setStorer(storer: Storer) {
