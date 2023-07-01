@@ -18,7 +18,7 @@
     "@nocobase/sdk": "0.10.0-alpha.5",
     "@nocobase/utils": "0.10.0-alpha.5",
     "ahooks": "^3.7.2",
-    "antd": "^5.6.1",
+    "antd": "5.6.3",
     "antd-style": "^3.3.0",
     "axios": "^0.26.1",
     "classnames": "^2.3.1",
