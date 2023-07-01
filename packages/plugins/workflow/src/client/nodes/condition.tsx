@@ -452,7 +452,7 @@ export default {
                   top: calc(1.5em - 1px);
                   line-height: 1em;
                   color: #999;
-                  background-color: #f0f2f5;
+                  background-color: var(--nb-box-bg);
                   padding: 1px;
                 }
               `}

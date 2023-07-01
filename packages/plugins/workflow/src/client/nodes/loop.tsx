@@ -1,16 +1,13 @@
-import React from 'react';
-import { Alert } from 'antd';
 import { ArrowUpOutlined } from '@ant-design/icons';
-import { cx, css } from '@emotion/css';
-
+import { css, cx } from '@emotion/css';
 import { useCompile } from '@nocobase/client';
-
+import React from 'react';
 import { NodeDefaultView } from '.';
-import { useFlowContext } from '../FlowContext';
-import { lang, NAMESPACE } from '../locale';
-import { useWorkflowVariableOptions, VariableOption, nodesOptions, triggerOptions } from '../variable';
-import { addButtonClass, branchBlockClass, branchClass, nodeSubtreeClass } from '../style';
 import { Branch } from '../Branch';
+import { useFlowContext } from '../FlowContext';
+import { NAMESPACE, lang } from '../locale';
+import { addButtonClass, branchBlockClass, branchClass, nodeSubtreeClass } from '../style';
+import { VariableOption, nodesOptions, triggerOptions, useWorkflowVariableOptions } from '../variable';
 
 function findOption(options: VariableOption[], paths: string[]) {
   let current = options;
@@ -83,7 +80,7 @@ export default {
               >
                 <ArrowUpOutlined
                   className={css`
-                    background-color: #f0f2f5;
+                    background-color: var(--nb-box-bg);
                   `}
                 />
               </div>

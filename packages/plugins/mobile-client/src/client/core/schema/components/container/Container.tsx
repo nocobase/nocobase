@@ -49,9 +49,9 @@ const InternalContainer: React.FC = (props) => {
     return [
       !params.name
         ? {
-          type: 'redirect',
-          to: `${locationPath}/tab_${redirectToUid}`,
-          from: location.pathname,
+            type: 'redirect',
+            to: `${locationPath}/tab_${redirectToUid}`,
+            from: location.pathname,
           }
         : null,
       {
@@ -72,7 +72,7 @@ const InternalContainer: React.FC = (props) => {
             right: unset;
             left: 2px;
           }
-          background: #f0f2f5;
+          background: var(--nb-box-bg);
           display: flex;
           flex-direction: column;
           width: 100%;

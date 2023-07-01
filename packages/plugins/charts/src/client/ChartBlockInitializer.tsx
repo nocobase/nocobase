@@ -3,12 +3,12 @@ import { FormDialog, FormLayout } from '@formily/antd-v5';
 import { Field } from '@formily/core';
 import { RecursionField, Schema, SchemaOptionsContext, observer, useField, useForm } from '@formily/react';
 import {
-  APIClientProvider,
-  FormProvider,
-  SchemaComponent,
-  SchemaComponentOptions,
-  useAPIClient,
-  useCompile,
+    APIClientProvider,
+    FormProvider,
+    SchemaComponent,
+    SchemaComponentOptions,
+    useAPIClient,
+    useCompile,
 } from '@nocobase/client';
 import { Card } from 'antd';
 import JSON5 from 'json5';
@@ -74,7 +74,7 @@ export const ChartBlockInitializer = (props) => {
             okText: compile('{{t("Submit")}}'),
             title: lang('Create chart block'),
             width: 1200,
-            bodyStyle: { background: '#f0f2f5', maxHeight: '65vh', overflow: 'auto' },
+            bodyStyle: { background: 'var(--nb-box-bg)', maxHeight: '65vh', overflow: 'auto' },
           },
           () => {
             const form = useForm<ChartFormInterface>();

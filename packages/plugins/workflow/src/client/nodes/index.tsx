@@ -1,45 +1,39 @@
-import React, { useState, useContext } from 'react';
 import { CloseOutlined, DeleteOutlined } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
 import { ISchema, useForm } from '@formily/react';
-import { Button, message, Modal, Tag, Alert, Input, Dropdown } from 'antd';
-import { useTranslation } from 'react-i18next';
-
-import { Registry, parse, str2moment } from '@nocobase/utils/client';
 import {
-  ActionContextProvider,
-  SchemaComponent,
-  SchemaInitializerItemOptions,
-  useActionContext,
-  useAPIClient,
-  useCompile,
-  useRequest,
-  useResourceActionContext,
+    ActionContextProvider,
+    SchemaComponent,
+    SchemaInitializerItemOptions,
+    useAPIClient,
+    useActionContext,
+    useCompile,
+    useRequest,
+    useResourceActionContext,
 } from '@nocobase/client';
-
-import { nodeBlockClass, nodeCardClass, nodeClass, nodeJobButtonClass, nodeMetaClass } from '../style';
+import { Registry, parse, str2moment } from '@nocobase/utils/client';
+import { Alert, Button, Dropdown, Input, Modal, Tag, message } from 'antd';
+import React, { useContext, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AddButton } from '../AddButton';
 import { useFlowContext } from '../FlowContext';
-
-import calculation from './calculation';
-import condition from './condition';
-import parallel from './parallel';
-import loop from './loop';
-import delay from './delay';
-
-import manual from './manual';
-
-import query from './query';
-import create from './create';
-import update from './update';
-import destroy from './destroy';
-import aggregate from './aggregate';
-
+import { NodeDescription } from '../components/NodeDescription';
 import { JobStatusOptionsMap } from '../constants';
 import { NAMESPACE, lang } from '../locale';
-import request from './request';
+import { nodeBlockClass, nodeCardClass, nodeClass, nodeJobButtonClass, nodeMetaClass } from '../style';
 import { VariableOptions } from '../variable';
-import { NodeDescription } from '../components/NodeDescription';
+import aggregate from './aggregate';
+import calculation from './calculation';
+import condition from './condition';
+import create from './create';
+import delay from './delay';
+import destroy from './destroy';
+import loop from './loop';
+import manual from './manual';
+import parallel from './parallel';
+import query from './query';
+import request from './request';
+import update from './update';
 
 export interface Instruction {
   title: string;
@@ -156,7 +150,7 @@ export function Node({ data }) {
               width: 1px;
               height: 6em;
               padding: 2em 0;
-              background-color: #f0f2f5;
+              background-color: var(--nb-box-bg);
 
               .anticon {
                 font-size: 1.5em;

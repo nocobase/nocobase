@@ -57,7 +57,7 @@ export const ActionDrawer: ComposedActionDrawer = observer(
               }
 
               .ant-drawer-content {
-                background: #f0f2f5;
+                background: var(--nb-box-bg);
               }
             }
 

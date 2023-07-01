@@ -47,7 +47,7 @@ export const ActionModal: ComposedActionDrawer<ModalProps> = observer(
               }
 
               .ant-modal-content {
-                background: #f0f2f5;
+                background: var(--nb-box-bg);
               }
             }
           `,
