@@ -43,6 +43,14 @@ export class FieldModel extends MagicAttributeModel {
       transaction,
     });
 
+    if (transaction) {
+      transaction.afterCommit(() => {
+        this.db.emitAsync('field:loadedAfterCommit', {
+          fieldKey: this.get('key'),
+        });
+      });
+    }
+
     return field;
   }
 

@@ -50,6 +50,14 @@ export class CollectionModel extends MagicAttributeModel {
       transaction,
     });
 
+    if (transaction) {
+      transaction.afterCommit(() => {
+        this.db.emitAsync('collection:loadedAfterCommit', {
+          collection,
+        });
+      });
+    }
+
     return collection;
   }
 

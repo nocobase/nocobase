@@ -55,6 +55,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
   async bootStrapApp(appName: string, options = {}) {
     if (!this.hasApp(appName) && this.appBootstrapper) {
+      console.log(`bootStrapApp ${appName}`);
       await this.appBootstrapper({
         appSupervisor: this,
         appName,
@@ -152,7 +153,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     if (!app) {
       throw new Error(`rpc call failed, app ${appName} not exists`);
     }
-
+    
     return await app.handleEventPush(event, options);
   }
 

@@ -1,14 +1,20 @@
 import PluginMultiAppManager from '@nocobase/plugin-multi-app-manager';
-import { Application, AppSupervisor, Plugin } from '@nocobase/server';
+import { AppSupervisor, Plugin } from '@nocobase/server';
 import lodash from 'lodash';
 import { resolve } from 'path';
 
-const subAppFilteredPlugins = ['multi-app-share-collection', 'multi-app-manager'];
+const subAppFilteredPlugins = ['multi-app-manager'];
 
-class SubAppPlugin extends Plugin {
+export class MultiAppShareCollectionPlugin extends Plugin {
   appCollectionBlacklist = [];
 
-  async beforeLoad() {
+  async beforeEnable() {
+    if (!this.db.inDialect('postgres')) {
+      throw new Error('multi-app-share-collection plugin only support postgres');
+    }
+  }
+
+  async subAppBeforeLoad() {
     const sharedCollectionGroups = [
       'audit-logs',
       'workflow',
@@ -74,6 +80,33 @@ class SubAppPlugin extends Plugin {
       await next();
     });
 
+    this.app.on('beforeStart', async () => {
+      const mainAppPlugins = (
+        await AppSupervisor.getInstance().rpcCall('main', 'db.callToRepository', 'applicationPlugins', 'find')
+      ).result;
+
+      const subAppPlugins = JSON.parse(JSON.stringify(await this.app.db.getRepository('applicationPlugins').find()));
+      for (const mainPlugin of mainAppPlugins) {
+        if (subAppFilteredPlugins.includes(mainPlugin.name)) {
+          continue;
+        }
+
+        const subPlugin = subAppPlugins.find((item) => item.name === mainPlugin.name);
+
+        if (!subPlugin) {
+          // need install
+        }
+
+        if (subPlugin.enabled != mainPlugin.enabled) {
+          if (mainPlugin.enabled) {
+            await this.app.pm.enable(mainPlugin.name);
+          } else {
+            await this.app.pm.disable(mainPlugin.name);
+          }
+        }
+      }
+    });
+
     this.app.on('beforeInstall', async () => {
       const applicationPluginsCollection = this.app.db.getCollection('applicationPlugins');
       await this.app.db.sequelize.query(`TRUNCATE ${applicationPluginsCollection.quotedTableName()}`);
@@ -98,7 +131,7 @@ class SubAppPlugin extends Plugin {
       await this.app.pm.disable(pluginName);
     });
 
-    this.app.on('rcp:collection:loaded', async ({ collectionName }) => {
+    this.app.on('rpc:collection:loaded', async ({ collectionName }) => {
       const collectionRecord = await this.app.db.getRepository('collections').findOne({
         filter: {
           name: collectionName,
@@ -153,30 +186,12 @@ class SubAppPlugin extends Plugin {
       }
     });
   }
-}
 
-export class MultiAppShareCollectionPlugin extends Plugin {
-  async beforeEnable() {
-    if (!this.db.inDialect('postgres')) {
-      throw new Error('multi-app-share-collection plugin only support postgres');
-    }
-  }
-
-  async beforeLoad() {
-    if (!this.db.inDialect('postgres')) {
-      throw new Error('multi-app-share-collection plugin only support postgres');
-    }
-
+  async mainAppBeforeLoad() {
     const appSupervisor = AppSupervisor.getInstance();
 
-    const self = this;
-
-    AppSupervisor.getInstance().on('afterAppAdded', function AddSubAppPluginIntoSubApp(app: Application) {
-      if (app.name == 'main') {
-        return;
-      }
-
-      app.plugin(SubAppPlugin, { name: 'sub-app', mainApp: self.app });
+    this.app.on('rpc:afterSubAppAdded', async ({ appName }) => {
+      await AppSupervisor.getInstance().rpcCall(appName, 'pm.enable', 'multi-app-share-collection');
     });
 
     this.app.db.on('users.afterCreateOutTransaction', async (model) => {
@@ -185,13 +200,13 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       });
     });
 
-    this.app.db.on('collection:loaded', async ({ collection }) => {
+    this.app.db.on('collection:loadedAfterCommit', async ({ collection }) => {
       await appSupervisor.rpcBroadcast(this.app, 'collection:loaded', {
         collectionName: collection.name,
       });
     });
 
-    this.app.db.on('field:loaded', async ({ fieldKey }) => {
+    this.app.db.on('field:loadedAfterCommit', async ({ fieldKey }) => {
       await appSupervisor.rpcBroadcast(this.app, 'field:loaded', {
         fieldKey,
       });
@@ -219,7 +234,27 @@ export class MultiAppShareCollectionPlugin extends Plugin {
     });
   }
 
+  isMainApp() {
+    return this.app.name == 'main';
+  }
+
+  async beforeLoad() {
+    if (!this.db.inDialect('postgres')) {
+      throw new Error('multi-app-share-collection plugin only support postgres');
+    }
+
+    if (this.isMainApp()) {
+      await this.mainAppBeforeLoad();
+    } else {
+      await this.subAppBeforeLoad();
+    }
+  }
+
   async load() {
+    if (!this.isMainApp()) {
+      return;
+    }
+
     const multiAppManager = this.app.getPlugin<any>('multi-app-manager');
 
     if (!multiAppManager) {
@@ -250,9 +285,7 @@ export class MultiAppShareCollectionPlugin extends Plugin {
         schema: appName,
       };
 
-      const plugins = [...mainApp.pm.getPlugins().keys()].filter(
-        (name) => name !== 'multi-app-manager' && name !== 'multi-app-share-collection',
-      );
+      const plugins = [...mainApp.pm.getPlugins().keys()].filter((name) => !subAppFilteredPlugins.includes(name));
 
       return {
         database: lodash.merge(databaseOptions, {
@@ -287,7 +320,11 @@ export class MultiAppShareCollectionPlugin extends Plugin {
   }
 
   requiredPlugins(): any[] {
-    return ['multi-app-manager'];
+    if (this.app.name == 'main') {
+      return ['multi-app-manager'];
+    }
+
+    return [];
   }
 }
 

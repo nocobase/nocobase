@@ -1,23 +1,20 @@
-import path from 'path';
-
-import winston from 'winston';
-import LRUCache from 'lru-cache';
-
 import { Op } from '@nocobase/database';
+import { createLogger, getLoggerFilePath, getLoggerLevel, Logger, LoggerOptions } from '@nocobase/logger';
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
-
-import initFields from './fields';
+import LRUCache from 'lru-cache';
+import path from 'path';
+import winston from 'winston';
 import initActions from './actions';
 import { EXECUTION_STATUS } from './constants';
+import initFields from './fields';
+import initFunctions, { CustomFunction } from './functions';
 import initInstructions, { Instruction } from './instructions';
 import ExecutionModel from './models/Execution';
 import JobModel from './models/Job';
 import WorkflowModel from './models/Workflow';
 import Processor from './Processor';
 import initTriggers, { Trigger } from './triggers';
-import initFunctions, { CustomFunction } from './functions';
-import { createLogger, Logger, LoggerOptions, getLoggerLevel, getLoggerFilePath } from '@nocobase/logger';
 
 type Pending = [ExecutionModel, JobModel?];
 
@@ -153,7 +150,7 @@ export default class WorkflowPlugin extends Plugin {
     //   * add all hooks for enabled workflows
     //   * add hooks for create/update[enabled]/delete workflow to add/remove specific hooks
     this.app.on('beforeStart', async () => {
-      const collection = db.getCollection('workflows');
+      const collection = this.app.db.getCollection('workflows');
       const workflows = await collection.repository.find({
         filter: { enabled: true },
       });
@@ -214,6 +211,19 @@ export default class WorkflowPlugin extends Plugin {
 
     // NOTE: no await for quick return
     setTimeout(this.prepare);
+  }
+
+  public async resume(job) {
+    if (!job.execution) {
+      job.execution = await job.getExecution();
+    }
+
+    this.pending.push([job.execution, job]);
+    this.dispatch();
+  }
+
+  public createProcessor(execution: ExecutionModel, options = {}): Processor {
+    return new Processor(execution, { ...options, plugin: this });
   }
 
   private prepare = async () => {
@@ -287,15 +297,6 @@ export default class WorkflowPlugin extends Plugin {
     }
   };
 
-  public async resume(job) {
-    if (!job.execution) {
-      job.execution = await job.getExecution();
-    }
-
-    this.pending.push([job.execution, job]);
-    this.dispatch();
-  }
-
   private async dispatch() {
     if (this.executing) {
       return;
@@ -344,9 +345,5 @@ export default class WorkflowPlugin extends Plugin {
     this.executing = null;
 
     this.dispatch();
-  }
-
-  public createProcessor(execution: ExecutionModel, options = {}): Processor {
-    return new Processor(execution, { ...options, plugin: this });
   }
 }

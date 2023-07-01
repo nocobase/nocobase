@@ -3,6 +3,12 @@ import { AppSupervisor } from '@nocobase/server';
 import { MockServer, mockServer } from '@nocobase/test';
 import * as process from 'process';
 
+const sleep = (time) => {
+  return new Promise((resolve) => {
+    setTimeout(resolve, time);
+  });
+};
+
 describe('enable plugin', () => {
   let mainDb: Database;
   let mainApp: MockServer;
@@ -135,9 +141,6 @@ describe('collection sync', () => {
 
       const sub1 = await AppSupervisor.getInstance().getApp('sub1');
 
-      await sub1.reload();
-
-      console.log(sub1.pm.plugins);
       expect(sub1.pm.plugins.get('map').options.enabled).toBeTruthy();
 
       const sub1MapPlugin = await sub1.db.getRepository('applicationPlugins').findOne({
@@ -147,8 +150,11 @@ describe('collection sync', () => {
       });
 
       expect(sub1MapPlugin.get('enabled')).toBeTruthy();
+
+      console.log('test finished');
     });
   });
+
   describe('share collection', () => {
     it('should sync collections in sub apps', async () => {
       const subApp1Record = await mainDb.getRepository('applications').create({
@@ -171,6 +177,8 @@ describe('collection sync', () => {
         },
         context: {},
       });
+
+      await sleep(100);
 
       const subAppMainCollectionRecord = await subApp1.db.getRepository('collections').findOne({
         filter: {
@@ -289,6 +297,8 @@ describe('collection sync', () => {
         },
         context: {},
       });
+
+      await sleep(100);
 
       const postCollection = subApp1.db.getCollection('posts');
 

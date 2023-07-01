@@ -134,6 +134,9 @@ export class PluginMultiAppManager extends Plugin {
       await subApp.db.sync();
       await subApp.install();
       await subApp.reload();
+
+      await AppSupervisor.getInstance().rpcBroadcast(subApp, 'afterSubAppAdded', { appName: subApp.name });
+      await subApp.start();
     });
 
     this.db.on('applications.afterDestroy', async (model: ApplicationModel) => {
@@ -185,6 +188,11 @@ export class PluginMultiAppManager extends Plugin {
         // must skip load on upgrade
         if (!options?.upgrading) {
           await subApp.load();
+
+          await AppSupervisor.getInstance().rpcBroadcast(subApp, 'afterSubAppAdded', { appName: subApp.name });
+
+          // start sub app
+          await subApp.start();
         }
       });
     }

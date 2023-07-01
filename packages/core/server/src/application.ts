@@ -371,6 +371,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async stop(options: any = {}) {
+    this.log.debug('stop app...');
     if (this.stopped) {
       this.log.warn(`Application ${this.name} already stopped`);
       return;
@@ -388,7 +389,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       // close database connection
       // silent if database already closed
       if (!this.db.closed()) {
-        console.log(`close ${this.name} db`);
+        this.log.info(`close db`);
         await this.db.close();
       }
     } catch (e) {
