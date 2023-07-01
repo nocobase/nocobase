@@ -1,5 +1,5 @@
 import { DownOutlined, PlusOutlined } from '@ant-design/icons';
-import { css } from '@emotion/css';
+import { css, cx } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Button, Dropdown, MenuProps } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -189,7 +189,18 @@ export const CreateAction = observer(
               type={componentType}
               icon={<DownOutlined />}
               buttonsRender={([leftButton, rightButton]) => [
-                leftButton,
+                <div
+                  key=""
+                  className={cx({
+                    [css`
+                      .ant-btn {
+                        padding-right: 0px;
+                      }
+                    `]: islinkBtn,
+                  })}
+                >
+                  {leftButton}
+                </div>,
                 React.cloneElement(rightButton as React.ReactElement<any, string>, { loading: false }),
               ]}
               menu={menu}
