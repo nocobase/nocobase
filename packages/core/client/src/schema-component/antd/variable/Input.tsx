@@ -3,13 +3,13 @@ import { css, cx } from '@emotion/css';
 import { useForm } from '@formily/react';
 import { error } from '@nocobase/utils/client';
 import { Input as AntInput, Cascader, DatePicker, InputNumber, Select, Tag } from 'antd';
+import type { DefaultOptionType } from 'antd/lib/cascader';
 import classNames from 'classnames';
 import moment from 'moment';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { DefaultOptionType } from 'antd/lib/cascader';
-import { XButton } from './XButton';
 import { useCompile } from '../../hooks';
+import { XButton } from './XButton';
 
 const JT_VALUE_RE = /^\s*{{\s*([^{}]+)\s*}}\s*$/;
 const groupClass = css`
@@ -190,7 +190,7 @@ export function Input(props) {
       }
       onChange(`{{${next.join('.')}}}`);
     },
-    [type, variable],
+    [type, variable, onChange],
   );
 
   useEffect(() => {
