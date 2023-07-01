@@ -2,7 +2,7 @@ import { CloseCircleFilled } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
 import { useForm } from '@formily/react';
 import { error } from '@nocobase/utils/client';
-import { Input as AntInput, Cascader, DatePicker, InputNumber, Select, Tag } from 'antd';
+import { Cascader, DatePicker, Input as AntInput, InputNumber, Select, Tag } from 'antd';
 import type { DefaultOptionType } from 'antd/lib/cascader';
 import classNames from 'classnames';
 import moment from 'moment';
@@ -118,21 +118,45 @@ const ConstantTypes = {
   },
 };
 
-function getTypedConstantOption(type: string, types?: true | string[]) {
+function getTypedConstantOption(type: string, types?: true | string[], fieldNames) {
   const allTypes = Object.values(ConstantTypes);
-  const children = types
-    ? allTypes.filter((item) => (Array.isArray(types) && types.includes(item.value)) || types === true)
-    : allTypes;
+  const children = (
+    types ? allTypes.filter((item) => (Array.isArray(types) && types.includes(item.value)) || types === true) : allTypes
+  ).map((item) =>
+    Object.keys(item).reduce(
+      (result, key) =>
+        fieldNames[key] in item
+          ? result
+          : Object.assign(result, {
+              [fieldNames[key]]: item[key],
+            }),
+      item,
+    ),
+  );
   return {
     value: '',
     label: '{{t("Constant")}}',
     children,
+    [fieldNames.value]: '',
+    [fieldNames.label]: '{{t("Constant")}}',
+    [fieldNames.children]: children,
     component: ConstantTypes[type]?.component,
   };
 }
 
 export function Input(props) {
-  const { value = '', scope, onChange, children, button, useTypedConstant, style, className, changeOnSelect } = props;
+  const {
+    value = '',
+    scope,
+    onChange,
+    children,
+    button,
+    useTypedConstant,
+    style,
+    className,
+    changeOnSelect,
+    fieldNames,
+  } = props;
   const compile = useCompile();
   const { t } = useTranslation();
   const form = useForm();
@@ -143,6 +167,14 @@ export function Input(props) {
   const isConstant = typeof parsed === 'string';
   const type = isConstant ? parsed : '';
   const variable = isConstant ? null : parsed;
+  const names = Object.assign(
+    {
+      label: 'label',
+      value: 'value',
+      children: 'children',
+    },
+    fieldNames ?? {},
+  );
 
   const { component: ConstantComponent, ...constantOption }: DefaultOptionType & { component?: React.FC<any> } =
     useMemo(() => {
@@ -150,14 +182,18 @@ export function Input(props) {
         return {
           value: '',
           label: t('Constant'),
+          [names.value]: '',
+          [names.label]: t('Constant'),
         };
       }
       if (useTypedConstant) {
-        return getTypedConstantOption(type, useTypedConstant);
+        return getTypedConstantOption(type, useTypedConstant, names);
       }
       return {
         value: '',
         label: t('Null'),
+        [names.value]: '',
+        [names.label]: t('Null'),
         component: ConstantTypes.null.component,
       };
     }, [type, useTypedConstant]);
@@ -205,14 +241,14 @@ export function Input(props) {
         const key = variable[i];
         try {
           if (i === 0) {
-            prevOption = options.find((item) => item.value === key);
+            prevOption = options.find((item) => item[names.value] === key);
           } else {
             if (prevOption.loadChildren && !prevOption.children?.length) {
               await prevOption.loadChildren(prevOption);
             }
-            prevOption = prevOption.children.find((item) => item.value === key);
+            prevOption = prevOption.children.find((item) => item[names.value] === key);
           }
-          labels.push(prevOption.label);
+          labels.push(prevOption[names.label]);
         } catch (err) {
           error(err);
         }
@@ -291,13 +327,14 @@ export function Input(props) {
       ) : (
         children ?? <ConstantComponent value={value} onChange={onChange} />
       )}
-      {options.length > 1 ? (
+      {options.length > 1 && !disabled ? (
         <Cascader
           options={options}
           value={variable ?? ['', ...(children || !constantOption.children?.length ? [] : [type])]}
           onChange={onSwitch}
           loadData={loadData as any}
           changeOnSelect={changeOnSelect}
+          fieldNames={fieldNames}
         >
           {button ?? <XButton type={variable ? 'primary' : 'default'} />}
         </Cascader>
