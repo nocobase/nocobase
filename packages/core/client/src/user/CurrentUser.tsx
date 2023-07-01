@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { useACLRoleContext, useAPIClient, useCurrentUserContext } from '..';
 import { useCurrentAppInfo } from '../appInfo/CurrentAppInfoProvider';
 import { useChangePassword } from './ChangePassword';
+import { useCurrentUserSettingsMenu } from './CurrentUserSettingsMenuProvider';
 import { useEditProfile } from './EditProfile';
 import { useLanguageSettings } from './LanguageSettings';
 import { useSwitchRole } from './SwitchRole';
@@ -27,6 +28,7 @@ const useApplicationVersion = () => {
 export const SettingsMenu: React.FC<{
   redirectUrl?: string;
 }> = (props) => {
+  const { addMenuItem } = useCurrentUserSettingsMenu();
   const { redirectUrl = '' } = props;
   const { allowAll, snippets } = useACLRoleContext();
   const appAllowed = allowAll || snippets?.includes('app');
@@ -101,7 +103,7 @@ export const SettingsMenu: React.FC<{
     ];
   }, [appAllowed, check]);
   const items = useMemo<MenuProps['items']>(() => {
-    return [
+    const result = [
       appVersion,
       divider,
       editProfile,
@@ -120,6 +122,12 @@ export const SettingsMenu: React.FC<{
         },
       },
     ];
+
+    result.forEach((item) => {
+      addMenuItem(item);
+    });
+
+    return result;
   }, [appVersion, changePassword, controlApp, divider, editProfile, history, languageSettings, switchRole]);
 
   return <Menu items={items} />;
