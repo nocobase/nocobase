@@ -3,10 +3,11 @@ import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { isValid, toArr } from '@formily/shared';
 import { isPlainObject } from '@nocobase/utils/client';
 import type { SelectProps } from 'antd';
-import { Select as AntdSelect, Empty, Spin } from 'antd';
+import { Empty, Select as AntdSelect, Spin } from 'antd';
 import React from 'react';
+import { useProps } from '../../hooks';
 import { ReadPretty } from './ReadPretty';
-import { FieldNames, defaultFieldNames, getCurrentOptions } from './utils';
+import { defaultFieldNames, FieldNames, getCurrentOptions } from './utils';
 
 type Props = SelectProps<any, any> & {
   objectValue?: boolean;
@@ -78,8 +79,8 @@ const filterOption = (input, option) => (option?.label ?? '').toLowerCase().incl
 
 const InternalSelect = connect(
   (props: Props) => {
-    const { objectValue, loading, value, ...others } = props;
-    let mode: any = props.multiple ? 'multiple' : props.mode;
+    const { objectValue, loading, value, ...others } = useProps(props);
+    let mode: any = others.multiple ? 'multiple' : others.mode;
     if (mode && !['multiple', 'tags'].includes(mode)) {
       mode = undefined;
     }
@@ -87,7 +88,7 @@ const InternalSelect = connect(
       return <ObjectSelect {...others} value={value} mode={mode} loading={loading} />;
     }
     const toValue = (v) => {
-      if (['tags', 'multiple'].includes(props.mode) || props.multiple) {
+      if (['tags', 'multiple'].includes(mode) || others.multiple) {
         if (v) {
           return toArr(v);
         }
@@ -105,7 +106,7 @@ const InternalSelect = connect(
         value={toValue(value)}
         {...others}
         onChange={(changed) => {
-          props.onChange?.(changed === undefined ? null : changed);
+          others.onChange?.(changed === undefined ? null : changed);
         }}
         mode={mode}
       />
