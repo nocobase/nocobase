@@ -118,7 +118,7 @@ const ConstantTypes = {
   },
 };
 
-function getTypedConstantOption(type: string, types?: true | string[], fieldNames) {
+function getTypedConstantOption(type: string, types: true | string[], fieldNames) {
   const allTypes = Object.values(ConstantTypes);
   const children = (
     types ? allTypes.filter((item) => (Array.isArray(types) && types.includes(item.value)) || types === true) : allTypes
