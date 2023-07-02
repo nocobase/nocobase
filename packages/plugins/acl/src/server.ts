@@ -434,6 +434,35 @@ export class PluginACL extends Plugin {
       });
     });
 
+    this.app.on('beforeStart', async () => {
+      const defaultRole = await this.app.db.getRepository('roles').findOne({
+        filter: {
+          default: true,
+        },
+      });
+
+      if (!defaultRole) {
+        return;
+      }
+
+      const usersWithoutRoles = await this.db.getCollection('users').model.findAll({
+        include: [
+          {
+            model: this.db.getCollection('roles').model,
+            required: false,
+            as: 'roles',
+          },
+        ],
+        where: {
+          '$roles.name$': null,
+        },
+      });
+
+      for (const user of usersWithoutRoles) {
+        await user.addRole(defaultRole);
+      }
+    });
+
     this.app.resourcer.use(setCurrentRole, { tag: 'setCurrentRole', before: 'acl', after: 'auth' });
 
     this.app.acl.allow('users', 'setDefaultRole', 'loggedIn');

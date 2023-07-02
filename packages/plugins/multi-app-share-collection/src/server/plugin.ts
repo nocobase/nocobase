@@ -164,7 +164,7 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       this.db.removeCollection(collectionName);
     });
 
-    this.app.on('rpc:users.afterCreateOutTransaction', async ({ id }) => {
+    this.app.on('rpc:users.afterCreateAfterCommit', async ({ id }) => {
       const user = await this.app.db.getRepository('users').findOne({
         filter: {
           id,
@@ -194,8 +194,8 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       await AppSupervisor.getInstance().rpcCall(appName, 'pm.enable', 'multi-app-share-collection');
     });
 
-    this.app.db.on('users.afterCreateOutTransaction', async (model) => {
-      await appSupervisor.rpcBroadcast(this.app, 'users.afterCreateOutTransaction', {
+    this.app.db.on('users.afterCreateAfterCommit', async (model) => {
+      await appSupervisor.rpcBroadcast(this.app, 'users.afterCreateAfterCommit', {
         id: model.get('id'),
       });
     });

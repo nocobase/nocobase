@@ -153,7 +153,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     if (!app) {
       throw new Error(`rpc call failed, app ${appName} not exists`);
     }
-    
+
     return await app.handleEventPush(event, options);
   }
 
@@ -165,6 +165,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
         continue;
       }
 
+      console.log(`broadcast ${event} to ${appName}`);
       await this.rpcPush(appName, event, eventOptions);
     }
   }

@@ -528,6 +528,10 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
     const transaction = await this.getTransaction(options);
 
+    transaction.afterCommit(() => {
+      this.database.emit(`${this.collection.name}.afterCreateAfterCommit`, instance);
+    });
+
     const guard = UpdateGuard.fromOptions(this.model, {
       ...options,
       action: 'create',
@@ -563,8 +567,6 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
       instance.clearChangedWithAssociations();
     }
-
-    await this.database.emitAsync(`${this.collection.name}.afterCreateOutTransaction`, instance);
 
     return instance;
   }

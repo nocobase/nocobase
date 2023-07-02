@@ -1,6 +1,6 @@
 import { BelongsToManyRepository, Database } from '@nocobase/database';
 import { AppSupervisor } from '@nocobase/server';
-import { MockServer, mockServer } from '@nocobase/test';
+import { MockServer, mockServer, pgOnly } from '@nocobase/test';
 import * as process from 'process';
 
 const sleep = (time) => {
@@ -9,7 +9,7 @@ const sleep = (time) => {
   });
 };
 
-describe('enable plugin', () => {
+pgOnly()('enable plugin', () => {
   let mainDb: Database;
   let mainApp: MockServer;
 
@@ -46,7 +46,7 @@ describe('enable plugin', () => {
   });
 });
 
-describe('collection sync', () => {
+pgOnly()('collection sync', () => {
   let mainDb: Database;
   let mainApp: MockServer;
 
@@ -389,6 +389,9 @@ describe('collection sync', () => {
           password: 'test123',
         },
       });
+
+      // wait for sub app to set default role
+      await sleep(100);
 
       const defaultRole = await sub1.db.getRepository('roles').findOne({
         filter: {
