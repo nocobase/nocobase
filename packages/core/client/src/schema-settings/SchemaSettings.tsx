@@ -1177,10 +1177,12 @@ SchemaSettings.EnableChildCollections = function EnableChildCollectionsItem(prop
   const form = useForm();
   const { getCollectionJoinField } = useCollectionManager();
   const collectionField = getCollectionJoinField(fieldSchema?.parent?.['x-collection-field']) || {};
+  const isAssocationAdd = fieldSchema?.parent?.['x-component'] === 'CollectionField';
   return (
     <SchemaSettings.ModalItem
       title={t('Enable child collections')}
       components={{ ArrayItems, FormLayout }}
+      scope={{ isAssocationAdd }}
       schema={
         {
           type: 'object',
@@ -1207,6 +1209,7 @@ SchemaSettings.EnableChildCollections = function EnableChildCollectionsItem(prop
             linkageFromForm: {
               type: 'string',
               title: "{{t('Linkage form form')}}",
+              'x-visible': '{{isAssocationAdd}}',
               'x-decorator': 'FormItem',
               'x-component': ChildDynamicComponent,
               'x-component-props': {
