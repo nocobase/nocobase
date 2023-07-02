@@ -2,10 +2,10 @@ import { css } from '@emotion/css';
 import { useGlobalTheme } from '@nocobase/client';
 import { Button, ConfigProvider, Space, Typography } from 'antd';
 import { ThemeEditor, enUS, zhCN } from 'antd-token-previewer';
-import type { ThemeConfig } from 'antd/es/config-provider/context';
 import antdEnUs from 'antd/locale/en_US';
 import antdZhCN from 'antd/locale/zh_CN';
 import React from 'react';
+import { ThemeConfig } from '../../../types';
 import { useTranslation } from '../../locale';
 import { useThemeEditorContext } from '../ThemeEditorProvider';
 import ThemeSettingModal from './ThemeSettingModal';
@@ -28,7 +28,7 @@ const useStyle = () => ({
 
 const CustomTheme = ({ onThemeChange }: { onThemeChange?: (theme: ThemeConfig) => void }) => {
   const styles = useStyle();
-  const [theme, setTheme] = React.useState<ThemeConfig>({});
+  const [theme, setTheme] = React.useState<ThemeConfig>({ name: 'Custom Theme' });
   const { theme: globalTheme, setTheme: setGlobalTheme } = useGlobalTheme();
   const { setOpen } = useThemeEditorContext();
   const { t, i18n } = useTranslation();
@@ -80,7 +80,7 @@ const CustomTheme = ({ onThemeChange }: { onThemeChange?: (theme: ThemeConfig) =
           locale={lang === 'zh-CN' ? zhCN : enUS}
         />
       </ConfigProvider>
-      <ThemeSettingModal open={isModalOpen} onOk={handleModalOk} onCancel={handleModalCancel} />
+      <ThemeSettingModal open={isModalOpen} onOk={handleModalOk} onCancel={handleModalCancel} theme={theme} />
     </>
   );
 };

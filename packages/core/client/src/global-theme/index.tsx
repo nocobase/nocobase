@@ -2,7 +2,7 @@ import { ConfigProvider, type ThemeConfig } from 'antd';
 import React, { createContext } from 'react';
 
 const GlobalThemeContext = createContext<{
-  theme: ThemeConfig;
+  theme: ThemeConfig & { name: string };
   setTheme: React.Dispatch<React.SetStateAction<ThemeConfig>>;
 }>(null);
 

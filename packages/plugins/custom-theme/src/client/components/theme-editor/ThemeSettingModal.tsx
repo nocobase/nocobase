@@ -1,10 +1,12 @@
-import { useAPIClient, useGlobalTheme } from '@nocobase/client';
-import { Button, Form, Input, Modal, Space } from 'antd';
+import { useAPIClient } from '@nocobase/client';
+import { Button, Form, Input, Modal, Space, theme as antdTheme } from 'antd';
 import React from 'react';
+import { ThemeConfig } from '../../../types';
 import { useTranslation } from '../../locale';
 import { useThemeListContext } from '../ThemeListProvider';
 interface Props {
   open: boolean;
+  theme: ThemeConfig;
   onOk?(data: { name: string }): void;
   onCancel?(): void;
 }
@@ -12,29 +14,31 @@ interface Props {
 const ThemeSettingModal = (props: Props) => {
   const { t } = useTranslation();
   const api = useAPIClient();
-  const { theme } = useGlobalTheme();
-  const { open, onOk, onCancel } = props;
+  const { open, onOk, onCancel, theme } = props;
   const [loading, setLoading] = React.useState(false);
   const { refresh } = useThemeListContext();
 
-  const handleFormValue = React.useCallback(async (values) => {
-    setLoading(true);
-    await api.request({
-      url: 'themeConfig:create',
-      method: 'POST',
-      data: {
-        config: {
-          name: values.name,
-          ...theme,
+  const handleFormValue = React.useCallback(
+    async (values) => {
+      setLoading(true);
+      await api.request({
+        url: 'themeConfig:create',
+        method: 'POST',
+        data: {
+          config: {
+            ...parseTheme(theme),
+            name: values.name,
+          },
+          optional: true,
+          isBuiltIn: false,
         },
-        optional: true,
-        isBuiltIn: false,
-      },
-    });
-    setLoading(false);
-    onOk?.(values);
-    refresh?.();
-  }, []);
+      });
+      setLoading(false);
+      onOk?.(values);
+      refresh?.();
+    },
+    [theme],
+  );
 
   return (
     <Modal title={t('Save theme')} open={open} onCancel={onCancel} footer={null}>
@@ -58,3 +62,16 @@ const ThemeSettingModal = (props: Props) => {
 ThemeSettingModal.displayName = 'ThemeSettingModal';
 
 export default ThemeSettingModal;
+
+function parseTheme(themeConfig: ThemeConfig | { algorithm: string }) {
+  if (!themeConfig.algorithm) {
+    return themeConfig;
+  }
+  if (themeConfig.algorithm.toString() === antdTheme.darkAlgorithm.toString()) {
+    themeConfig.algorithm = 'darkAlgorithm';
+  }
+  if (themeConfig.algorithm.toString() === antdTheme.compactAlgorithm.toString()) {
+    themeConfig.algorithm = 'compactAlgorithm';
+  }
+  return themeConfig;
+}
