@@ -96,7 +96,9 @@ export const useImportStartAction = () => {
   const { setImportModalVisible, setImportStatus, setImportResult } = useImportContext();
   return {
     async run() {
-      const { importColumns, explain } = cloneDeep(importSchema?.['x-action-settings']?.['importSettings'] ?? {});
+      const { importColumns, explain } = lodash.cloneDeep(
+        importSchema?.['x-action-settings']?.['importSettings'] ?? {},
+      );
       const columns = toArr(importColumns)
         .map((column) => {
           const field = getCollectionField(`${name}.${column.dataIndex[0]}`);
