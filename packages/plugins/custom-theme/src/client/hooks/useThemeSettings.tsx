@@ -1,7 +1,7 @@
 import { useAPIClient, useCurrentUserContext, useGlobalTheme } from '@nocobase/client';
 import { error } from '@nocobase/utils/client';
 import { MenuProps, Select } from 'antd';
-import React, { useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { useThemeListContext } from '../components/ThemeListProvider';
 import { useTranslation } from '../locale';
 
@@ -17,10 +17,9 @@ export const useThemeSettings = () => {
 
 function Label() {
   const { t } = useTranslation();
-  const api = useAPIClient();
   const currentUser = useCurrentUserContext();
   const { run, error: err, data } = useThemeListContext();
-  const { setTheme } = useGlobalTheme();
+  const { updateThemeSettings } = useUpdateThemeSettings();
 
   useEffect(() => {
     if (!data) {
@@ -60,32 +59,76 @@ function Label() {
               value: item.id,
             };
           })}
-        onChange={async (value) => {
-          try {
-            await api.resource('users').update({
-              filterByTk: currentUser.data.data.id,
-              values: {
-                systemSettings: {
-                  ...currentUser.data.data.systemSettings,
-                  theme: value,
-                },
-              },
-            });
-            currentUser.mutate({
-              data: {
-                ...currentUser.data.data,
-                systemSettings: {
-                  ...currentUser.data.data.systemSettings,
-                  theme: value,
-                },
-              },
-            });
-            setTheme(data.find((item) => item.id === value)?.config);
-          } catch (err) {
-            error(err);
-          }
+        onChange={(value) => {
+          updateThemeSettings(value);
         }}
       />
     </div>
   );
+}
+
+export function useUpdateThemeSettings() {
+  const api = useAPIClient();
+  const currentUser = useCurrentUserContext();
+  const { data } = useThemeListContext();
+  const { setTheme } = useGlobalTheme();
+
+  const updateThemeSettings = useCallback(
+    async (themeId: number) => {
+      try {
+        await api.resource('users').update({
+          filterByTk: currentUser.data.data.id,
+          values: {
+            systemSettings: {
+              ...currentUser.data.data.systemSettings,
+              theme: themeId,
+            },
+          },
+        });
+        currentUser.mutate({
+          data: {
+            ...currentUser.data.data,
+            systemSettings: {
+              ...currentUser.data.data.systemSettings,
+              theme: themeId,
+            },
+          },
+        });
+        setTheme(data.find((item) => item.id === themeId)?.config);
+      } catch (err) {
+        error(err);
+      }
+    },
+    [api, currentUser, data, setTheme],
+  );
+
+  const updateThemeSettingsOnly = useCallback(
+    async (themeId: number) => {
+      try {
+        await api.resource('users').update({
+          filterByTk: currentUser.data.data.id,
+          values: {
+            systemSettings: {
+              ...currentUser.data.data.systemSettings,
+              theme: themeId,
+            },
+          },
+        });
+        currentUser.mutate({
+          data: {
+            ...currentUser.data.data,
+            systemSettings: {
+              ...currentUser.data.data.systemSettings,
+              theme: themeId,
+            },
+          },
+        });
+      } catch (err) {
+        error(err);
+      }
+    },
+    [api, currentUser, data, setTheme],
+  );
+
+  return { updateThemeSettings, updateThemeSettingsOnly };
 }

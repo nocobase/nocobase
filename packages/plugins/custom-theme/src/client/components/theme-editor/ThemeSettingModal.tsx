@@ -1,7 +1,9 @@
 import { useAPIClient } from '@nocobase/client';
+import { error } from '@nocobase/utils/client';
 import { Button, Form, Input, Modal, Space, theme as antdTheme } from 'antd';
 import React from 'react';
 import { ThemeConfig } from '../../../types';
+import { useUpdateThemeSettings } from '../../hooks/useThemeSettings';
 import { useTranslation } from '../../locale';
 import { useThemeListContext } from '../ThemeListProvider';
 interface Props {
@@ -17,25 +19,31 @@ const ThemeSettingModal = (props: Props) => {
   const { open, onOk, onCancel, theme } = props;
   const [loading, setLoading] = React.useState(false);
   const { refresh } = useThemeListContext();
+  const { updateThemeSettingsOnly } = useUpdateThemeSettings();
 
   const handleFormValue = React.useCallback(
     async (values) => {
       setLoading(true);
-      await api.request({
-        url: 'themeConfig:create',
-        method: 'POST',
-        data: {
-          config: {
-            ...parseTheme(theme),
-            name: values.name,
+      try {
+        const data = await api.request({
+          url: 'themeConfig:create',
+          method: 'POST',
+          data: {
+            config: {
+              ...parseTheme(theme),
+              name: values.name,
+            },
+            optional: true,
+            isBuiltIn: false,
           },
-          optional: true,
-          isBuiltIn: false,
-        },
-      });
+        });
+        await updateThemeSettingsOnly(data.data.data.id);
+        onOk?.(values);
+        refresh?.();
+      } catch (err) {
+        error(err);
+      }
       setLoading(false);
-      onOk?.(values);
-      refresh?.();
     },
     [theme],
   );
