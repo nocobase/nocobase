@@ -10,6 +10,7 @@ export {
   gridRowColWrap,
   itemsMerge,
   useAssociatedTableColumnInitializerFields,
+  useCollectionDataSourceItems,
   useInheritsTableColumnInitializerFields,
   useRecordCollectionDataSourceItems,
   useTableColumnInitializerFields,

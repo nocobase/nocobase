@@ -169,7 +169,7 @@ export const ACLCollectionProvider = (props) => {
   if (allowAll) {
     return props.children;
   }
-  const actionPath = schema['x-acl-action'];
+  const actionPath = schema?.['x-acl-action'];
   if (!actionPath) {
     return props.children;
   }
