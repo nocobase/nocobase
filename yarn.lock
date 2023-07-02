@@ -8739,23 +8739,6 @@ antd-style@^3.3.0:
     "@emotion/utils" "^1"
     use-merge-value "^1"
 
-antd-token-previewer@^1.1.0:
-  version "1.1.0"
-  resolved "https://registry.npmmirror.com/antd-token-previewer/-/antd-token-previewer-1.1.0.tgz#93f264889dfa1c2dc58908bf35ffbd6701d53a88"
-  integrity sha512-kXv0fps6YiSo2x6NCsa8IL7VQxMBoShIHeG6SUx9a8Nvjq8K0tzJvv3UYlZvS0kpGu987xlTw+/43yKjlI+q6A==
-  dependencies:
-    "@ant-design/colors" "^6"
-    "@ant-design/cssinjs" "^1"
-    "@ant-design/icons" "^4"
-    "@arvinxu/layout-kit" "^1"
-    "@babel/runtime" "^7"
-    antd "^5"
-    classnames "^2.3.1"
-    rc-util "^5.21.5"
-    react-colorful "^5.5.1"
-    tinycolor2 "^1.4.2"
-    use-debouncy "^4.3.0"
-
 antd-token-previewer@^2.0.0-alpha.6:
   version "2.0.0-alpha.8"
   resolved "https://registry.npmmirror.com/antd-token-previewer/-/antd-token-previewer-2.0.0-alpha.8.tgz#9f47bc531d8bf6907f0e7e5cfbacf50d15619d86"
@@ -8775,10 +8758,17 @@ antd-token-previewer@^2.0.0-alpha.6:
     use-debouncy "^4.3.0"
     vanilla-jsoneditor "^0.16.1"
 
+<<<<<<< HEAD
 antd@^5:
   version "5.6.3"
   resolved "https://registry.npmmirror.com/antd/-/antd-5.6.3.tgz#18ac8a7245949ff972a01fad7b841f9292c75597"
   integrity sha512-SbZ1rX/eNXiSerF0V048wmh3tdTJdJpP4OsQS2sNH5f+WjZHgC92M7Qqp5YKOM4Rs8GYq63aePpk7SITl85Jqg==
+=======
+antd@^5.4.2, antd@^5.5.1, antd@^5.6.1:
+  version "5.6.2"
+  resolved "https://registry.npmmirror.com/antd/-/antd-5.6.2.tgz#97c8b7e37747d7b8fca1bdaf15525332906a998c"
+  integrity sha512-h67gKgJRs07Qrf27AiKcJSEI3nCAmaCxxvEz6DSdRl1mHc03O8zAemRA6jPQQMPS5q4k7FxIphN+2ZnzdXlU2Q==
+>>>>>>> 33434b7e8 (refactor: loacl antd-token-previewer)
   dependencies:
     "@ant-design/colors" "^7.0.0"
     "@ant-design/cssinjs" "^1.10.1"
@@ -27858,7 +27848,7 @@ tinybench@^2.5.0:
   resolved "https://registry.npmmirror.com/tinybench/-/tinybench-2.5.0.tgz#4711c99bbf6f3e986f67eb722fed9cddb3a68ba5"
   integrity sha512-kRwSG8Zx4tjF9ZiyH4bhaebu+EDz1BOx9hOigYHlUW4xxI/wKIUQUqo018UlU4ar6ATPBsaMrdbKZ+tmPdohFA==
 
-tinycolor2@^1.4.2:
+tinycolor2@^1.6.0:
   version "1.6.0"
   resolved "https://registry.npmmirror.com/tinycolor2/-/tinycolor2-1.6.0.tgz#f98007460169b0263b97072c5ae92484ce02d09e"
   integrity sha512-XPaBkWQJdsf3pLKJV9p4qN/S+fm2Oj8AIPo1BTUhg5oxkvm9+SVEGFdhyOz7tTdUTfvxMiAs4sp6/eZO2Ew+pw==

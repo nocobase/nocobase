@@ -1,11 +1,11 @@
 import { css } from '@emotion/css';
 import { useGlobalTheme } from '@nocobase/client';
 import { Button, ConfigProvider, Space, Typography } from 'antd';
-import { ThemeEditor, enUS, zhCN } from 'antd-token-previewer';
 import antdEnUs from 'antd/locale/en_US';
 import antdZhCN from 'antd/locale/zh_CN';
 import React from 'react';
 import { ThemeConfig } from '../../../types';
+import { ThemeEditor, enUS, zhCN } from '../../antd-token-previewer';
 import { useTranslation } from '../../locale';
 import { useThemeEditorContext } from '../ThemeEditorProvider';
 import ThemeSettingModal from './ThemeSettingModal';

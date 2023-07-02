@@ -3,7 +3,7 @@ import { useAPIClient } from '@nocobase/client';
 import { Card, ConfigProvider, Modal, Space, Switch, message } from 'antd';
 import React, { useCallback, useMemo } from 'react';
 import { ThemeConfig, ThemeItem } from '../../types';
-import { ThemePreview } from './ThemePreview';
+import { Primary } from '../antd-token-previewer';
 
 interface TData {
   data: ThemeItem[];
@@ -34,7 +34,7 @@ const Overview = ({ theme }: { theme: ThemeConfig }) => {
         }}
       >
         <Space style={{ transform: 'scale(0.7) translate(0, 0)', transformOrigin: '0 0' }} size={0} align="start">
-          <ThemePreview />
+          <Primary />
         </Space>
       </div>
     </ConfigProvider>
