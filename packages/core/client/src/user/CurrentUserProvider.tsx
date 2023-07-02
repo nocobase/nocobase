@@ -29,17 +29,21 @@ export const useCurrentRoles = () => {
 };
 
 export const CurrentUserProvider = (props) => {
-  const location = useLocation();
   const result = useRequest<any>({
     url: 'auth:check',
   });
   if (result.loading) {
     return <Spin />;
   }
-  const { pathname, search } = location;
+  return <CurrentUserContext.Provider value={result}>{props.children}</CurrentUserContext.Provider>;
+};
+
+export const NavigateIfNotSignIn = ({ children }) => {
+  const result = useCurrentUserContext();
+  const { pathname, search } = useLocation();
   const redirect = `?redirect=${pathname}${search}`;
   if (!result?.data?.data?.id) {
     return <Navigate replace to={`/signin${redirect}`} />;
   }
-  return <CurrentUserContext.Provider value={result}>{props.children}</CurrentUserContext.Provider>;
+  return <>{children}</>;
 };

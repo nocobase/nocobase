@@ -10,6 +10,7 @@ import { Link, NavLink, Navigate } from 'react-router-dom';
 import { GlobalThemeProvider } from '..';
 import { APIClient, APIClientProvider } from '../api-client';
 import { i18n } from '../i18n';
+import { CurrentUserProvider } from '../user';
 import { CurrentUserSettingsMenuProvider } from '../user/CurrentUserSettingsMenuProvider';
 import { PluginManager, PluginType } from './PluginManager';
 import { ComponentTypeAndString, RouterManager, RouterOptions } from './RouterManager';
@@ -55,6 +56,7 @@ export class Application {
   private addDefaultProviders() {
     this.use(APIClientProvider, { apiClient: this.apiClient });
     this.use(I18nextProvider, { i18n: this.i18n });
+    this.use(CurrentUserProvider);
     this.use(GlobalThemeProvider);
     this.use(CurrentUserSettingsMenuProvider);
   }
