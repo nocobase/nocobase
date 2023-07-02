@@ -386,6 +386,7 @@ FormItem.Designer = function Designer() {
                       'x-component': 'VariableInput',
                       'x-component-props': {
                         ...(fieldSchema?.['x-component-props'] || {}),
+                        collectionField,
                         targetField,
                         collectionName: collectionField?.collectionName,
                         schema: collectionField?.uiSchema,
