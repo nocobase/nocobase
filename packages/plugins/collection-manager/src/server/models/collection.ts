@@ -1,5 +1,5 @@
 import Database, { Collection, MagicAttributeModel } from '@nocobase/database';
-import lodash from 'lodash';
+import { lodash } from '@nocobase/utils';
 import { SyncOptions, Transactionable } from 'sequelize';
 import { FieldModel } from './field';
 

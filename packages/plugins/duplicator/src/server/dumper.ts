@@ -2,7 +2,7 @@ import archiver from 'archiver';
 import dayjs from 'dayjs';
 import fs from 'fs';
 import fsPromises from 'fs/promises';
-import lodash from 'lodash';
+import { lodash } from '@nocobase/utils';
 import mkdirp from 'mkdirp';
 import path from 'path';
 import stream from 'stream';

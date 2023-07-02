@@ -21,6 +21,10 @@
   "dependencies": {
   },
   "devDependencies": {
+    "koa-send": "^5.0.1",
+    "koa-static": "^5.0.0",
+    "@nocobase/utils": "0.10.0-alpha.5",
+    "@nocobase/database": "0.10.0-alpha.5",
     "@nocobase/server": "0.10.0-alpha.5",
     "@nocobase/client": "0.10.0-alpha.5",
     "@nocobase/test": "0.10.0-alpha.5"

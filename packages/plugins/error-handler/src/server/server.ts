@@ -1,6 +1,6 @@
 import { Schema } from '@formily/json-schema';
 import { Plugin } from '@nocobase/server';
-import lodash from 'lodash';
+import { lodash } from '@nocobase/utils';
 import { BaseError } from 'sequelize';
 import { ErrorHandler } from './error-handler';
 import enUS from './locale/en_US';

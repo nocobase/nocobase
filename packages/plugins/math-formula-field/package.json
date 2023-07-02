@@ -19,9 +19,14 @@
     "client.d.ts"
   ],
   "dependencies": {
+    "react-i18next": "^11.15.1",
+    "sequelize": "^6.26.0",
     "mathjs": "^10.6.0"
   },
   "devDependencies": {
+    "react": "18.x",
+    "@formily/react": "2.2.26",
+    "@nocobase/database": "0.10.0-alpha.5",
     "@nocobase/server": "0.10.0-alpha.5",
     "@nocobase/client": "0.10.0-alpha.5",
     "@nocobase/test": "0.10.0-alpha.5"

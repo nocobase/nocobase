@@ -1,8 +1,8 @@
 import { Plugin, PluginManager } from '@nocobase/server';
+import { lodash } from '@nocobase/utils';
 import fs from 'fs';
 import send from 'koa-send';
 import serve from 'koa-static';
-import isEmpty from 'lodash/isEmpty';
 import { isAbsolute, resolve } from 'path';
 import { getAntdLocale } from './antd';
 import { getCronLocale } from './cron';
@@ -159,19 +159,19 @@ export class ClientPlugin extends Plugin {
         },
         async getLang(ctx, next) {
           const lang = await getLang(ctx);
-          if (isEmpty(locales[lang])) {
+          if (lodash.isEmpty(locales[lang])) {
             locales[lang] = {};
           }
-          if (isEmpty(locales[lang].resources)) {
+          if (lodash.isEmpty(locales[lang].resources)) {
             locales[lang].resources = await getResourceLocale(lang, ctx.db);
           }
-          if (isEmpty(locales[lang].antd)) {
+          if (lodash.isEmpty(locales[lang].antd)) {
             locales[lang].antd = getAntdLocale(lang);
           }
-          if (isEmpty(locales[lang].cronstrue)) {
+          if (lodash.isEmpty(locales[lang].cronstrue)) {
             locales[lang].cronstrue = getCronstrueLocale(lang);
           }
-          if (isEmpty(locales[lang].cron)) {
+          if (lodash.isEmpty(locales[lang].cron)) {
             locales[lang].cron = getCronLocale(lang);
           }
           ctx.body = {

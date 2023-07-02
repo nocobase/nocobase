@@ -18,8 +18,15 @@
     "client.js",
     "client.d.ts"
   ],
+  "dependencies": {
+    "sequelize": "^6.26.0"
+  },
   "devDependencies": {
+    "supertest": "^6.1.6",
     "@formily/json-schema": "2.2.26",
+    "@nocobase/utils": "0.10.0-alpha.5",
+    "@nocobase/database": "0.10.0-alpha.5",
+    "@nocobase/test": "0.10.0-alpha.5",
     "@nocobase/client": "0.10.0-alpha.5",
     "@nocobase/server": "0.10.0-alpha.5"
   },

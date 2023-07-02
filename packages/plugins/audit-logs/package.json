@@ -21,6 +21,13 @@
   "dependencies": {
   },
   "devDependencies": {
+    "@ant-design/icons": "^4.8.0",
+    "@formily/react": "2.2.26",
+    "react": "^18.2.0",
+    "react-i18next": "^11.15.1",
+    "@formily/antd": "2.2.26",
+    "@formily/shared": "2.2.26",
+    "@nocobase/database": "0.10.0-alpha.5",
     "@nocobase/client": "0.10.0-alpha.5",
     "@nocobase/server": "0.10.0-alpha.5",
     "@nocobase/test": "0.10.0-alpha.5"

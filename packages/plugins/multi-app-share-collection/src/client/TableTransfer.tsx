@@ -1,10 +1,8 @@
 import { css } from '@emotion/css';
 import { connect } from '@formily/react';
 import { useCollectionManager, useRecord, useRequest } from '@nocobase/client';
-import { CollectionsGraph } from '@nocobase/utils/client';
+import { CollectionsGraph, lodash } from '@nocobase/utils/client';
 import { Col, Input, Modal, Row, Select, Spin, Table, Tag } from 'antd';
-import debounce from 'lodash/debounce';
-import uniq from 'lodash/uniq';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -116,7 +114,7 @@ const useRemovedDataSource = ({ collections, removed }) => {
   }, [collections, removed, filter]);
   const setNameFilter = useMemo(
     () =>
-      debounce((name) => {
+      lodash.debounce((name) => {
         setFilter({
           ...filter,
           name,
@@ -151,7 +149,7 @@ const useAddedDataSource = ({ collections, removed }) => {
   });
   const setNameFilter = useMemo(
     () =>
-      debounce((name) => {
+      lodash.debounce((name) => {
         setFilter({
           ...filter,
           name,
@@ -336,7 +334,7 @@ export const TableTransfer = connect((props) => {
               type: 'checkbox',
               selectedRowKeys: selectedRowKeys2,
               onChange(selectedRowKeys) {
-                const values = uniq(removed.concat(selectedRowKeys));
+                const values = lodash.uniq(removed.concat(selectedRowKeys));
                 setSelected(values);
                 onChange(values);
                 setSelectedRowKeys2([]);
@@ -353,7 +351,7 @@ export const TableTransfer = connect((props) => {
                 const removing = findRemovable(name);
                 const change = () => {
                   removed.push(...removing);
-                  const values = uniq([...removed]);
+                  const values = lodash.uniq([...removed]);
                   setSelected(values);
                   onChange(values);
                 };

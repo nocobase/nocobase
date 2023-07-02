@@ -18,7 +18,18 @@
     "client.js",
     "client.d.ts"
   ],
+  "dependencies": {
+    "react-iframe": "~1.8.5"
+  },
   "devDependencies": {
+    "react": "^18.2.0",
+    "antd": "^4.24.8",
+    "@ant-design/icons": "^4.8.0",
+    "react-i18next": "^11.15.1",
+    "@formily/react": "2.2.26",
+    "@formily/shared": "2.2.26",
+    "@nocobase/database": "0.10.0-alpha.5",
+    "@nocobase/actions": "0.10.0-alpha.5",
     "@nocobase/server": "0.10.0-alpha.5",
     "@nocobase/client": "0.10.0-alpha.5",
     "@nocobase/test": "0.10.0-alpha.5"

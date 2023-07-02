@@ -25,6 +25,16 @@
     "tencentcloud-sdk-nodejs": "^4.0.525"
   },
   "devDependencies": {
+    "react": "18.x",
+    "antd": "^4.24.8",
+    "moment": "^2.29.1",
+    "react-i18next": "^11.15.1",
+    "@formily/core": "2.2.26",
+    "@formily/react": "2.2.26",
+    "@formily/shared": "2.2.26",
+    "@formily/antd": "2.2.26",
+    "@nocobase/client": "0.10.0-alpha.5",
+    "@nocobase/database": "0.10.0-alpha.5",
     "@nocobase/actions": "0.10.0-alpha.5",
     "@nocobase/resourcer": "0.10.0-alpha.5",
     "@nocobase/server": "0.10.0-alpha.5",

@@ -1,6 +1,6 @@
 import Database, { Model } from '@nocobase/database';
+import { lodash } from '@nocobase/utils';
 import { NotificationService } from './NotificationService';
-import _ from 'lodash';
 
 export class Notification extends Model {
   [key: string]: any;
@@ -78,7 +78,7 @@ export class Notification extends Model {
   }
 
   getBody(data) {
-    const compiled = _.template(this.body);
+    const compiled = lodash.template(this.body);
     const body = compiled(data);
     return body;
   }

@@ -1,5 +1,9 @@
 {
   "name": "@nocobase/plugin-sms-auth",
+  "displayName": "SMS Auth",
+  "displayName.zh-CN": "短信登录",
+  "description": "SMS authentication function",
+  "description.zh-CN": "提供短信登录认证功能。",
   "version": "0.10.0-alpha.5",
   "main": "./lib/server/index.js",
   "files": [
@@ -14,15 +18,18 @@
     "client.d.ts"
   ],
   "devDependencies": {
+    "react": "18.x",
+    "antd": "^4.24.8",
+    "react-i18next": "^11.15.1",
+    "@emotion/css": "^11.7.1",
+    "@formily/react": "2.2.26",
+    "@nocobase/database": "0.10.0-alpha.5",
     "@nocobase/actions": "0.10.0-alpha.5",
     "@nocobase/auth": "0.10.0-alpha.5",
+    "@nocobase/client": "0.10.0-alpha.5",
     "@nocobase/plugin-auth": "0.10.0-alpha.5",
     "@nocobase/plugin-verification": "0.10.0-alpha.5",
     "@nocobase/server": "0.10.0-alpha.5",
     "@nocobase/test": "0.10.0-alpha.5"
-  },
-  "displayName": "SMS Auth",
-  "displayName.zh-CN": "短信登录",
-  "description": "SMS authentication function",
-  "description.zh-CN": "提供短信登录认证功能。"
+  }
 }

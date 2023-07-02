@@ -5,6 +5,7 @@ import { uid } from '@formily/shared';
 import {
   Action,
   Checkbox,
+  collection,
   CollectionCategroriesContext,
   CollectionField,
   CollectionProvider,
@@ -19,14 +20,13 @@ import {
   SchemaComponent,
   SchemaComponentProvider,
   Select,
-  collection,
   useCollectionManager,
   useCompile,
   useCurrentAppInfo,
   useRecord,
 } from '@nocobase/client';
+import { lodash } from '@nocobase/utils/client';
 import { Badge, Dropdown, Popover, Tag } from 'antd';
-import { groupBy } from 'lodash';
 import React, { useContext, useRef, useState } from 'react';
 import {
   useAsyncDataSource,
@@ -190,7 +190,7 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
   const [collapse, setCollapse] = useState(false);
   const { t } = useGCMTranslation();
   const compile = useCompile();
-  const portsData = groupBy(ports.items, (v) => {
+  const portsData = lodash.groupBy(ports.items, (v) => {
     if (
       v.isForeignKey ||
       v.primaryKey ||

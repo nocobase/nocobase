@@ -1,8 +1,7 @@
 import Database from '@nocobase/database';
-import { Notification, NotificationService } from '../models';
-import nodemailerMock from 'nodemailer-mock';
 import { mockServer } from '@nocobase/test';
-import _ from 'lodash';
+import nodemailerMock from 'nodemailer-mock';
+import { Notification, NotificationService } from '../models';
 import plugin from '../server';
 
 jest.setTimeout(300000);

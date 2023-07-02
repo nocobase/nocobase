@@ -12,6 +12,7 @@ import { css, cx } from '@emotion/css';
 import { SchemaOptionsContext } from '@formily/react';
 import {
   APIClientProvider,
+  collection,
   CollectionCategroriesContext,
   CollectionCategroriesProvider,
   CollectionManagerContext,
@@ -20,16 +21,15 @@ import {
   SchemaComponent,
   SchemaComponentOptions,
   Select,
-  collection,
   useAPIClient,
   useCollectionManager,
   useCompile,
   useCurrentAppInfo,
 } from '@nocobase/client';
+import { lodash } from '@nocobase/utils/client';
 import { useFullscreen } from 'ahooks';
 import { Button, Input, Layout, Menu, Popover, Switch, Tooltip } from 'antd';
 import dagre from 'dagre';
-import { drop, groupBy, last, maxBy, minBy, take } from 'lodash';
 import React, { createContext, forwardRef, useContext, useEffect, useLayoutEffect, useState } from 'react';
 import { useAsyncDataSource, useCreateActionAndRefreshCM } from './action-hooks';
 import { AddCollectionAction } from './components/AddCollectionAction';
@@ -45,6 +45,8 @@ import {
   getPopupContainer,
   useGCMTranslation,
 } from './utils';
+
+const { drop, groupBy, last, maxBy, minBy, take } = lodash;
 
 const LINE_HEIGHT = 40;
 const NODE_WIDTH = 250;

@@ -19,6 +19,15 @@
     "client.d.ts"
   ],
   "devDependencies": {
+    "react": "18.x",
+    "antd": "^4.24.8",
+    "react-i18next": "^11.15.1",
+    "@formily/react": "2.2.26",
+    "@formily/shared": "2.2.26",
+    "react-router-dom": "^6.11.2",
+    "@nocobase/test": "0.10.0-alpha.5",
+    "@nocobase/utils": "0.10.0-alpha.5",
+    "@nocobase/database": "0.10.0-alpha.5",
     "@nocobase/client": "0.10.0-alpha.5",
     "@nocobase/server": "0.10.0-alpha.5"
   },

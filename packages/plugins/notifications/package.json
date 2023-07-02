@@ -20,6 +20,10 @@
     "nodemailer": "^6.6.1"
   },
   "devDependencies": {
+    "@nocobase/utils": "0.10.0-alpha.5",
+    "@nocobase/client": "0.10.0-alpha.5",
+    "@nocobase/server": "0.10.0-alpha.5",
+    "@nocobase/database": "0.10.0-alpha.5",
     "@nocobase/test": "0.10.0-alpha.5",
     "nodemailer-mock": "^1.5.11"
   },

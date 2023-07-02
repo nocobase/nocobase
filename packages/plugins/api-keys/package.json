@@ -22,6 +22,14 @@
     "jsonwebtoken": "^8.5.1"
   },
   "devDependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "antd": "^4.24.8",
+    "i18next": "^22.4.9",
+    "@nocobase/client": "0.10.0-alpha.5",
+    "react-i18next": "^11.15.1",
+    "@formily/react": "2.2.26",
+    "@formily/shared": "2.2.26",
     "@nocobase/actions": "0.10.0-alpha.5",
     "@nocobase/database": "0.10.0-alpha.5",
     "@nocobase/resourcer": "0.10.0-alpha.5",

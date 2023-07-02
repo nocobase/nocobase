@@ -19,11 +19,15 @@
   ],
   "license": "AGPL-3.0",
   "dependencies": {
+    "async-mutex": "^0.3.2",
     "@hapi/topo": "^6.0.0",
     "sequelize": "^6.26.0",
     "toposort": "^2.0.2"
   },
   "devDependencies": {
+    "@nocobase/utils": "0.10.0-alpha.5",
+    "@nocobase/plugin-collection-manager": "0.10.0-alpha.5",
+    "@nocobase/plugin-ui-schema-storage": "0.10.0-alpha.5",
     "@nocobase/database": "0.10.0-alpha.5",
     "@nocobase/plugin-error-handler": "0.10.0-alpha.5",
     "@nocobase/server": "0.10.0-alpha.5",

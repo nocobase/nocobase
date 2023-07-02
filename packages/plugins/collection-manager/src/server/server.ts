@@ -1,10 +1,11 @@
-import path from 'path';
-import { UniqueConstraintError } from 'sequelize';
-
+import { InheritedCollection } from '@nocobase/database';
 import PluginErrorHandler from '@nocobase/plugin-error-handler';
 import { Plugin } from '@nocobase/server';
+import { lodash } from '@nocobase/utils';
 import { Mutex } from 'async-mutex';
-
+import path from 'path';
+import * as process from 'process';
+import { UniqueConstraintError } from 'sequelize';
 import { CollectionRepository } from '.';
 import {
   afterCreateForForeignKeyField,
@@ -13,15 +14,10 @@ import {
   beforeDestroyForeignKey,
   beforeInitOptions,
 } from './hooks';
-
-import { InheritedCollection } from '@nocobase/database';
-import lodash, { castArray } from 'lodash';
-import * as process from 'process';
+import { beforeCreateForViewCollection } from './hooks/beforeCreateForViewCollection';
 import { CollectionModel, FieldModel } from './models';
 import collectionActions from './resourcers/collections';
 import viewResourcer from './resourcers/views';
-
-import { beforeCreateForViewCollection } from './hooks/beforeCreateForViewCollection';
 
 export class CollectionManagerPlugin extends Plugin {
   public schema: string;
@@ -279,7 +275,7 @@ export class CollectionManagerPlugin extends Plugin {
     this.app.actions(collectionActions);
 
     const handleFieldSource = (fields) => {
-      for (const field of castArray(fields)) {
+      for (const field of lodash.castArray(fields)) {
         if (field.get('source')) {
           const [collectionSource, fieldSource] = field.get('source').split('.');
           // find original field

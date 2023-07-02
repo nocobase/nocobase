@@ -1,10 +1,8 @@
+import { BaseColumnFieldOptions, Field, FieldContext, Model } from '@nocobase/database';
+import { lodash, Registry } from '@nocobase/utils';
 import parser from 'cron-parser';
-import { escapeRegExp } from 'lodash';
 import moment from 'moment';
 import { DataTypes, Transactionable, ValidationError, ValidationErrorItem } from 'sequelize';
-
-import { BaseColumnFieldOptions, Field, FieldContext, Model } from '@nocobase/database';
-import { Registry } from '@nocobase/utils';
 
 export interface Pattern {
   validate?(options): string | null;
@@ -53,7 +51,7 @@ sequencePatterns.register('string', {
     return options.value.length;
   },
   getMatcher(options) {
-    return escapeRegExp(options.value);
+    return lodash.escapeRegExp(options.value);
   },
 });
 

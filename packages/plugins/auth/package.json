@@ -14,6 +14,14 @@
     "client.d.ts"
   ],
   "devDependencies": {
+    "react": "^18.2.0",
+    "@formily/react": "2.2.26",
+    "@formily/shared": "2.2.26",
+    "react-i18next": "^11.15.1",
+    "antd": "^4.24.8",
+    "@ant-design/icons": "^4.8.0",
+    "@nocobase/auth": "0.10.0-alpha.5",
+    "@nocobase/plugin-users": "0.10.0-alpha.5",
     "@nocobase/actions": "0.10.0-alpha.5",
     "@nocobase/client": "0.10.0-alpha.5",
     "@nocobase/database": "0.10.0-alpha.5",
