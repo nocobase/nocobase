@@ -1,6 +1,6 @@
 import { SettingsCenterProvider, useCurrentUserSettingsMenu, useGlobalTheme } from '@nocobase/client';
 import { ConfigProvider } from 'antd';
-import React from 'react';
+import React, { useEffect } from 'react';
 import InitializeTheme from './components/InitializeTheme';
 import { ThemeEditorProvider } from './components/ThemeEditorProvider';
 import ThemeList from './components/ThemeList';
@@ -16,8 +16,10 @@ const CustomThemeProvider = React.memo((props) => {
   const [open, setOpen] = React.useState(false);
   const { theme, setTheme } = useGlobalTheme();
 
-  // 在页面右上角中添加一个 Theme 菜单项
-  addMenuItem(themeItem, { after: 'role' });
+  useEffect(() => {
+    // 在页面右上角中添加一个 Theme 菜单项
+    addMenuItem(themeItem, { after: 'role' });
+  }, [themeItem]);
 
   const settings = {
     theme: {
