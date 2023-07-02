@@ -46,7 +46,7 @@ export default {
             value: 'name',
           },
           objectValue: true,
-          useProps: '{{ useCurrentRolesProps }}',
+          options: '{{ currentRoles }}',
         },
       },
     },
