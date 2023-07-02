@@ -1,4 +1,5 @@
 import { css } from '@emotion/css';
+import { useGlobalTheme } from '@nocobase/client';
 import { Button, ConfigProvider, Space, Typography } from 'antd';
 import { ThemeEditor, enUS, zhCN } from 'antd-token-previewer';
 import type { ThemeConfig } from 'antd/es/config-provider/context';
@@ -28,9 +29,11 @@ const useStyle = () => ({
 const CustomTheme = ({ onThemeChange }: { onThemeChange?: (theme: ThemeConfig) => void }) => {
   const styles = useStyle();
   const [theme, setTheme] = React.useState<ThemeConfig>({});
+  const { theme: globalTheme, setTheme: setGlobalTheme } = useGlobalTheme();
   const { setOpen } = useThemeEditorContext();
   const { t, i18n } = useTranslation();
   const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const themeRef = React.useRef(globalTheme);
 
   const lang = i18n.language;
 
@@ -47,6 +50,7 @@ const CustomTheme = ({ onThemeChange }: { onThemeChange?: (theme: ThemeConfig) =
 
   const handleClose = () => {
     setOpen(false);
+    setGlobalTheme(themeRef.current);
   };
 
   return (
