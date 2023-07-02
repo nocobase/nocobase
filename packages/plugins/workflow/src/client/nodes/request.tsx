@@ -1,5 +1,7 @@
+import React from 'react';
 import { ArrayItems } from '@formily/antd';
 
+import { Variable } from '@nocobase/client';
 import { NAMESPACE } from '../locale';
 import { useWorkflowVariableOptions } from '../variable';
 
@@ -138,9 +140,8 @@ export default {
       title: `{{t("Body", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-decorator-props': {},
-      'x-component': 'Variable.JSON',
+      'x-component': 'RequestBody',
       'x-component-props': {
-        scope: '{{useWorkflowVariableOptions()}}',
         autoSize: {
           minRows: 10,
         },
@@ -175,5 +176,9 @@ export default {
   },
   components: {
     ArrayItems,
+    RequestBody(props) {
+      const scope = useWorkflowVariableOptions();
+      return <Variable.JSON scope={scope} {...props} />;
+    },
   },
 };

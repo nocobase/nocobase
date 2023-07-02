@@ -1,6 +1,6 @@
 import { useCollectionManager, useCompile } from '@nocobase/client';
 import { useFlowContext } from './FlowContext';
-import { NAMESPACE } from './locale';
+import { NAMESPACE, lang } from './locale';
 import { instructions, useAvailableUpstreams, useNodeContext, useUpstreamScopes } from './nodes';
 import { triggers } from './triggers';
 
@@ -79,7 +79,7 @@ export const systemOptions = {
             {
               key: 'now',
               value: 'now',
-              label: `{{t("System time")}}`,
+              label: lang('System time'),
             },
           ]
         : []),
@@ -167,12 +167,12 @@ export function filterTypedFields({ fields, types, depth = 1, compile, getCollec
 export function useWorkflowVariableOptions(options = {}) {
   const compile = useCompile();
   const result = [scopeOptions, nodesOptions, triggerOptions, systemOptions].map((item: any) => {
-    const opts = typeof item.useOptions === 'function' ? item.useOptions(options).filter(Boolean) : null;
+    const opts = item.useOptions(options).filter(Boolean);
     return {
       label: compile(item.label),
       value: item.value,
       key: item.value,
-      children: compile(opts),
+      children: opts,
       disabled: opts && !opts.length,
     };
   });

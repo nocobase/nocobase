@@ -371,10 +371,7 @@ export default {
       type: 'string',
       title: `{{t("Condition expression", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
-      'x-component': 'Variable.TextArea',
-      'x-component-props': {
-        scope: '{{useWorkflowVariableOptions}}',
-      },
+      'x-component': 'CalculationExpression',
       ['x-validator'](value, rules, { form }) {
         const { values } = form;
         const { evaluate } = evaluators.get(values.engine);
@@ -483,6 +480,11 @@ export default {
   },
   components: {
     CalculationConfig,
+    CalculationExpression(props) {
+      const scope = useWorkflowVariableOptions();
+
+      return <Variable.TextArea scope={scope} {...props} />;
+    },
     RadioWithTooltip,
   },
 };

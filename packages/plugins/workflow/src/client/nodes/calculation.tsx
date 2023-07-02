@@ -57,10 +57,6 @@ const DynamicConfig = ({ value, onChange }) => {
   );
 };
 
-function useWorkflowVariableEntityOptions() {
-  return useWorkflowVariableOptions({ types: [{ type: 'reference', options: { collection: '*', entity: true } }] });
-}
-
 export default {
   title: `{{t("Calculation", { ns: "${NAMESPACE}" })}}`,
   type: 'calculation',
@@ -96,10 +92,13 @@ export default {
       type: 'string',
       title: `{{t("Calculation expression", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
-      'x-component': 'Variable.TextArea',
-      'x-component-props': {
-        scope: '{{useWorkflowVariableOptions()}}',
-      },
+      'x-component': 'CalculationExpression',
+      // NOTE: can not use Variable.Input and scope directly as below,
+      //       because the scope will be cached.
+      // 'x-component': 'Variable.Input',
+      // 'x-component-props': {
+      //   scope: '{{useWorkflowVariableOptions()}}',
+      // },
       ['x-validator'](value, rules, { form }) {
         const { values } = form;
         const { evaluate } = evaluators.get(values.engine) as Evaluator;
@@ -135,9 +134,8 @@ export default {
       type: 'string',
       title: `{{t("Variable datasource", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
-      'x-component': 'Variable.Input',
+      'x-component': 'ScopeSelect',
       'x-component-props': {
-        scope: '{{useWorkflowVariableEntityOptions()}}',
         changeOnSelect: true,
       },
       'x-reactions': {
@@ -152,11 +150,20 @@ export default {
   },
   view: {},
   scope: {
-    useWorkflowVariableOptions,
-    useWorkflowVariableEntityOptions,
     renderEngineReference,
   },
   components: {
+    CalculationExpression(props) {
+      const scope = useWorkflowVariableOptions();
+
+      return <Variable.TextArea scope={scope} {...props} />;
+    },
+    ScopeSelect(props) {
+      const scope = useWorkflowVariableOptions({
+        types: [{ type: 'reference', options: { collection: '*', entity: true } }],
+      });
+      return <Variable.Input scope={scope} {...props} />;
+    },
     CalculationResult({ dataSource }) {
       const { execution } = useFlowContext();
       if (!execution) {
