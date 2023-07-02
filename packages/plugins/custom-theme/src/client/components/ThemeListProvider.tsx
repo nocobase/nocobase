@@ -2,7 +2,7 @@ import { ReturnTypeOfUseRequest, useRequest } from '@nocobase/client';
 import { isString } from '@nocobase/utils';
 import { error } from '@nocobase/utils/client';
 import { theme } from 'antd';
-import React, { createContext } from 'react';
+import React, { createContext, useMemo } from 'react';
 import { ThemeItem } from '../../types';
 
 interface TData extends Pick<ReturnTypeOfUseRequest, 'data' | 'error' | 'run' | 'refresh' | 'loading'> {
@@ -35,6 +35,10 @@ export const ThemeListProvider = ({ children }) => {
     },
   );
 
+  const items = useMemo(() => {
+    return ((data as any)?.data as ThemeItem[])?.map((item) => paseThemeConfig(item));
+  }, [data]);
+
   if (err) {
     error(err);
   }
@@ -42,7 +46,7 @@ export const ThemeListProvider = ({ children }) => {
   return (
     <ThemeListContext.Provider
       value={{
-        data: ((data as any)?.data as ThemeItem[])?.map((item) => paseThemeConfig(item)),
+        data: items,
         error: err,
         run,
         refresh,
