@@ -1,9 +1,10 @@
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
-import { useAPIClient } from '@nocobase/client';
+import { useAPIClient, useGlobalTheme } from '@nocobase/client';
 import { Card, ConfigProvider, Modal, Space, Switch, message } from 'antd';
 import React, { useCallback, useMemo } from 'react';
 import { ThemeConfig, ThemeItem } from '../../types';
 import { Primary } from '../antd-token-previewer';
+import { useThemeEditorContext } from './ThemeEditorProvider';
 
 interface TData {
   data: ThemeItem[];
@@ -42,6 +43,8 @@ const Overview = ({ theme }: { theme: ThemeConfig }) => {
 };
 
 const ThemeCard = (props: Props) => {
+  const { theme, setTheme, setCurrentSettingTheme, setCurrentEditingTheme } = useGlobalTheme();
+  const { setOpen } = useThemeEditorContext();
   const { item, style = {}, onChange } = props;
   const api = useAPIClient();
 
@@ -74,15 +77,21 @@ const ThemeCard = (props: Props) => {
     },
     [item],
   );
+  const handleEdit = useCallback(() => {
+    setCurrentSettingTheme(theme);
+    setCurrentEditingTheme(item);
+    setTheme(item.config);
+    setOpen(true);
+  }, [item]);
 
   const actions = useMemo(() => {
     return item.isBuiltIn
       ? [
-          <EditOutlined key="edit" />,
+          <EditOutlined key="edit" onClick={handleEdit} />,
           <Switch key="switch" checked={item.optional} size={'small'} onChange={handleSwitch} />,
         ]
       : [
-          <EditOutlined key="edit" />,
+          <EditOutlined key="edit" onClick={handleEdit} />,
           <DeleteOutlined key="delete" onClick={handleDelete} />,
           <Switch key="switch" checked={item.optional} size={'small'} onChange={handleSwitch} />,
         ];

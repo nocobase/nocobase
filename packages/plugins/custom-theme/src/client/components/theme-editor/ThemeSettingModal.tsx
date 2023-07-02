@@ -71,7 +71,7 @@ ThemeSettingModal.displayName = 'ThemeSettingModal';
 
 export default ThemeSettingModal;
 
-function parseTheme(themeConfig: ThemeConfig | { algorithm: string }) {
+export function parseTheme(themeConfig: ThemeConfig | { algorithm: string }) {
   if (!themeConfig.algorithm) {
     return themeConfig;
   }

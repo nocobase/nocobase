@@ -1,14 +1,16 @@
 import { PlusOutlined } from '@ant-design/icons';
-import { useToken } from '@nocobase/client';
+import { useGlobalTheme, useToken } from '@nocobase/client';
 import { Button } from 'antd';
 import React, { useCallback } from 'react';
 import { useThemeEditorContext } from './ThemeEditorProvider';
 
 const ToEditTheme = () => {
+  const { theme, setCurrentSettingTheme } = useGlobalTheme();
   const { token } = useToken();
   const { setOpen } = useThemeEditorContext();
 
   const handleClick = useCallback(() => {
+    setCurrentSettingTheme(theme);
     setOpen(true);
   }, [setOpen]);
 

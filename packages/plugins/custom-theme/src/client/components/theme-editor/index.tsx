@@ -1,6 +1,7 @@
 import { css } from '@emotion/css';
-import { useGlobalTheme } from '@nocobase/client';
-import { Button, ConfigProvider, Space, Typography } from 'antd';
+import { useAPIClient, useGlobalTheme } from '@nocobase/client';
+import { error } from '@nocobase/utils/client';
+import { Button, ConfigProvider, Space, Typography, message } from 'antd';
 import antdEnUs from 'antd/locale/en_US';
 import antdZhCN from 'antd/locale/zh_CN';
 import React from 'react';
@@ -8,7 +9,8 @@ import { ThemeConfig } from '../../../types';
 import { ThemeEditor, enUS, zhCN } from '../../antd-token-previewer';
 import { useTranslation } from '../../locale';
 import { useThemeEditorContext } from '../ThemeEditorProvider';
-import ThemeSettingModal from './ThemeSettingModal';
+import { useThemeListContext } from '../ThemeListProvider';
+import ThemeSettingModal, { parseTheme } from './ThemeSettingModal';
 
 const useStyle = () => ({
   editor: css({
@@ -28,16 +30,44 @@ const useStyle = () => ({
 
 const CustomTheme = ({ onThemeChange }: { onThemeChange?: (theme: ThemeConfig) => void }) => {
   const styles = useStyle();
-  const { theme: globalTheme, setTheme: setGlobalTheme } = useGlobalTheme();
+  const {
+    theme: globalTheme,
+    setTheme: setGlobalTheme,
+    getCurrentSettingTheme,
+    setCurrentEditingTheme,
+    getCurrentEditingTheme,
+  } = useGlobalTheme();
   const [theme, setTheme] = React.useState<ThemeConfig>(globalTheme);
   const { setOpen } = useThemeEditorContext();
   const { t, i18n } = useTranslation();
   const [isModalOpen, setIsModalOpen] = React.useState(false);
-  const themeRef = React.useRef(globalTheme);
+  const { refresh } = useThemeListContext();
+  const api = useAPIClient();
 
   const lang = i18n.language;
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (getCurrentEditingTheme()) {
+      const editingItem = getCurrentEditingTheme();
+      editingItem.config = parseTheme(theme) as any;
+      try {
+        await api.request({
+          url: `themeConfig:update/${editingItem.id}`,
+          method: 'POST',
+          data: {
+            ...editingItem,
+          },
+        });
+        refresh?.();
+        message.success('保存成功');
+      } catch (err) {
+        error(err);
+      }
+      setOpen(false);
+      setCurrentEditingTheme(null);
+      setTheme(getCurrentSettingTheme());
+      return;
+    }
     setIsModalOpen(true);
   };
   const handleModalOk = () => {
@@ -50,7 +80,8 @@ const CustomTheme = ({ onThemeChange }: { onThemeChange?: (theme: ThemeConfig) =
 
   const handleClose = () => {
     setOpen(false);
-    setGlobalTheme(themeRef.current);
+    setGlobalTheme(getCurrentSettingTheme());
+    setCurrentEditingTheme(null);
   };
 
   return (
