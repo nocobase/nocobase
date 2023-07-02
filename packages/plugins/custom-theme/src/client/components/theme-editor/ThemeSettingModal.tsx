@@ -2,7 +2,7 @@ import { useAPIClient, useGlobalTheme } from '@nocobase/client';
 import { Button, Form, Input, Modal, Space } from 'antd';
 import React from 'react';
 import { useTranslation } from '../../locale';
-import { useThemeEditorContext } from '../ThemeEditorProvider';
+import { useThemeListContext } from '../ThemeListProvider';
 interface Props {
   open: boolean;
   onOk?(data: { name: string }): void;
@@ -15,7 +15,7 @@ const ThemeSettingModal = (props: Props) => {
   const { theme } = useGlobalTheme();
   const { open, onOk, onCancel } = props;
   const [loading, setLoading] = React.useState(false);
-  const { refreshRef } = useThemeEditorContext();
+  const { refresh } = useThemeListContext();
 
   const handleFormValue = React.useCallback(async (values) => {
     setLoading(true);
@@ -33,7 +33,7 @@ const ThemeSettingModal = (props: Props) => {
     });
     setLoading(false);
     onOk?.(values);
-    refreshRef.current?.();
+    refresh?.();
   }, []);
 
   return (

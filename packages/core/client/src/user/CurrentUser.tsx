@@ -28,7 +28,7 @@ const useApplicationVersion = () => {
 export const SettingsMenu: React.FC<{
   redirectUrl?: string;
 }> = (props) => {
-  const { addMenuItem } = useCurrentUserSettingsMenu();
+  const { addMenuItem, getMenuItems } = useCurrentUserSettingsMenu();
   const { redirectUrl = '' } = props;
   const { allowAll, snippets } = useACLRoleContext();
   const appAllowed = allowAll || snippets?.includes('app');
@@ -56,11 +56,6 @@ export const SettingsMenu: React.FC<{
       }, 3000);
     });
   }, [silenceApi]);
-  const divider = useMemo<MenuProps['items'][0]>(() => {
-    return {
-      type: 'divider',
-    };
-  }, []);
   const appVersion = useApplicationVersion();
   const editProfile = useEditProfile();
   const changePassword = useChangePassword();
@@ -99,38 +94,49 @@ export const SettingsMenu: React.FC<{
           });
         },
       },
-      divider,
-    ];
-  }, [appAllowed, check]);
-  const items = useMemo<MenuProps['items']>(() => {
-    const result = [
-      appVersion,
-      divider,
-      editProfile,
-      changePassword,
-      divider,
-      switchRole,
-      languageSettings,
-      divider,
-      ...controlApp,
       {
-        key: 'signout',
-        label: t('Sign out'),
-        onClick: async () => {
-          await api.auth.signOut();
-          navigate(`/signin?redirect=${encodeURIComponent(redirectUrl)}`);
-        },
+        key: 'divider_4',
+        type: 'divider',
       },
     ];
+  }, [appAllowed, check]);
 
-    result.forEach((item) => {
+  const items = [
+    appVersion,
+    {
+      key: 'divider_1',
+      type: 'divider',
+    },
+    editProfile,
+    changePassword,
+    {
+      key: 'divider_2',
+      type: 'divider',
+    },
+    switchRole,
+    languageSettings,
+    {
+      key: 'divider_3',
+      type: 'divider',
+    },
+    ...controlApp,
+    {
+      key: 'signout',
+      label: t('Sign out'),
+      onClick: async () => {
+        await api.auth.signOut();
+        navigate(`/signin?redirect=${encodeURIComponent(redirectUrl)}`);
+      },
+    },
+  ];
+
+  items.forEach((item) => {
+    if (item) {
       addMenuItem(item);
-    });
+    }
+  });
 
-    return result;
-  }, [appVersion, changePassword, controlApp, divider, editProfile, history, languageSettings, switchRole]);
-
-  return <Menu items={items} />;
+  return <Menu items={getMenuItems()} />;
 };
 
 export const DropdownVisibleContext = createContext(null);
