@@ -1,4 +1,4 @@
-import { SettingsCenterProvider, useCurrentUserSettingsMenu, useGlobalTheme } from '@nocobase/client';
+import { SettingsCenterProvider, createStyles, useCurrentUserSettingsMenu, useGlobalTheme } from '@nocobase/client';
 import { ConfigProvider } from 'antd';
 import React, { useEffect } from 'react';
 import InitializeTheme from './components/InitializeTheme';
@@ -9,12 +9,29 @@ import CustomTheme from './components/theme-editor';
 import { useThemeSettings } from './hooks/useThemeSettings';
 import { useTranslation } from './locale';
 
+const useStyles = createStyles(({ css }) => {
+  return {
+    editor: css`
+      animation: 0.1s ease-out 0s 1 slideInFromRight;
+      @keyframes slideInFromRight {
+        0% {
+          transform: translateX(100%);
+        }
+        100% {
+          transform: translateX(0);
+        }
+      }
+    `,
+  };
+});
+
 const CustomThemeProvider = React.memo((props) => {
   const { addMenuItem } = useCurrentUserSettingsMenu();
   const themeItem = useThemeSettings();
   const { t } = useTranslation();
   const [open, setOpen] = React.useState(false);
   const { theme, setTheme } = useGlobalTheme();
+  const { styles } = useStyles();
 
   useEffect(() => {
     // 在页面右上角中添加一个 Theme 菜单项
@@ -34,10 +51,10 @@ const CustomThemeProvider = React.memo((props) => {
     },
   };
   const editor = (
-    <div style={{ display: 'flex' }}>
+    <div style={{ display: 'flex', overflow: 'hidden' }}>
       <div style={{ transform: 'rotate(0)', flexGrow: 1 }}>{props.children}</div>
       {open ? (
-        <div style={{ overflow: 'hidden', borderLeft: '1px solid #f0f0f0' }}>
+        <div className={styles.editor} style={{ overflow: 'hidden', borderLeft: '1px solid #f0f0f0' }}>
           <CustomTheme onThemeChange={setTheme} />
         </div>
       ) : null}
