@@ -1,9 +1,9 @@
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import { useAPIClient } from '@nocobase/client';
 import { Card, ConfigProvider, Modal, Space, Switch, message } from 'antd';
-import { Error, Primary, Success, Warning } from 'antd-token-previewer';
 import React, { useCallback, useMemo } from 'react';
 import { ThemeConfig, ThemeItem } from '../../types';
+import { ThemePreview } from './ThemePreview';
 
 interface TData {
   data: ThemeItem[];
@@ -33,15 +33,8 @@ const Overview = ({ theme }: { theme: ThemeConfig }) => {
           overflow: 'hidden',
         }}
       >
-        <Space style={{ transform: 'scale(0.123)', transformOrigin: '11px 10px' }} size={24} align="start">
-          <Space direction="vertical" size={24} style={{ width: 960 }}>
-            <Primary />
-            <Success />
-          </Space>
-          <Space direction="vertical" size={24} style={{ width: 960 }}>
-            <Error />
-            <Warning />
-          </Space>
+        <Space style={{ transform: 'scale(0.7) translate(0, 0)', transformOrigin: '0 0' }} size={0} align="start">
+          <ThemePreview />
         </Space>
       </div>
     </ConfigProvider>
