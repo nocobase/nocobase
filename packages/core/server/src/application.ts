@@ -353,7 +353,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   async start(options: StartOptions = {}) {
     this.setWorkingMessage('starting app...');
     this.fsm.interpret.send('START');
-
     if (this.db.closed()) {
       await this.db.reconnect();
     }

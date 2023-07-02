@@ -4,6 +4,7 @@ import { Mutex } from 'async-mutex';
 import lodash from 'lodash';
 import path, { resolve } from 'path';
 import { ApplicationModel } from '../server';
+import { sendAction } from './actions/send-action';
 
 export type AppDbCreator = (app: Application, transaction?: Transactionable) => Promise<void>;
 export type AppOptionsFactory = (appName: string, mainApp: Application) => any;
@@ -308,5 +309,25 @@ export class PluginMultiAppManager extends Plugin {
         applications`,
       actions: ['applications:*'],
     });
+
+    this.app.resourcer.use(async (ctx, next) => {
+      await next();
+      const { actionName, resourceName, params } = ctx.action;
+      if (actionName === 'list' && resourceName === 'applications') {
+        const applications = ctx.body.rows;
+        for (const application of applications) {
+          const app = await AppSupervisor.getInstance().getApp(application.name, {
+            withOutBootStrap: true,
+          });
+          if (app) {
+            application.status = app.fsm.currentState();
+          } else {
+            application.status = 'stopped';
+          }
+        }
+      }
+    });
+
+    this.app.resourcer.registerAction('applications:send', sendAction);
   }
 }

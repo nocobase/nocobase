@@ -4,6 +4,8 @@ import { mockServer, MockServer } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
 import { PluginMultiAppManager } from '../server';
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 describe('multiple apps', () => {
   let app: MockServer;
   let db: Database;
@@ -61,6 +63,48 @@ describe('multiple apps', () => {
     });
 
     expect(await AppSupervisor.getInstance().getApp(name)).toBeDefined();
+  });
+
+  it('should list application with status', async () => {
+    await db.getRepository('applications').create({
+      values: {
+        name: 'sub1',
+        options: {
+          plugins: [],
+        },
+      },
+    });
+
+    await AppSupervisor.getInstance().removeApp('sub1');
+
+    await sleep(1000);
+
+    const expectStatus = async (appName, status) => {
+      const { body } = await app.agent().resource('applications').list();
+      const { data } = body;
+
+      const subApp = data.find((item) => item.name === appName);
+      expect(subApp.status).toEqual(status);
+    };
+
+    await expectStatus('sub1', 'stopped');
+
+    // start sub1
+    const startResponse = await app.agent().resource('applications').send({
+      action: 'start',
+      appName: 'sub1',
+    });
+
+    expect(startResponse.statusCode).toEqual(200);
+
+    await expectStatus('sub1', 'started');
+
+    // const stopResponse = await app.agent().resource('applications').send({
+    //   action: 'stop',
+    //   appName: 'sub1',
+    // });
+    //
+    // await expectStatus('sub1', 'stopped');
   });
 
   it('should remove application', async () => {

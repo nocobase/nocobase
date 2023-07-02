@@ -1,6 +1,6 @@
 import { createMachine, interpret, StateMachine } from 'xstate';
-import Application from './application';
 import { Interpreter } from 'xstate/lib/interpreter';
+import Application from './application';
 
 export class ApplicationFsm {
   interpret: Interpreter<any, any, any, any, any>;
@@ -18,7 +18,10 @@ export class ApplicationFsm {
         starting: {
           on: { STARTED: 'started' },
         },
-        started: {},
+        started: {
+          on: { STOP: 'stopping' },
+        },
+        stopping: {},
       },
     });
 

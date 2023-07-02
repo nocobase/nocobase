@@ -64,8 +64,17 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     }
   }
 
-  async getApp(appName: string, options = {}) {
-    await this.bootStrapApp(appName, options);
+  async getApp(
+    appName: string,
+    options: {
+      withOutBootStrap?: boolean;
+      [key: string]: any;
+    } = {},
+  ) {
+    if (!options.withOutBootStrap) {
+      await this.bootStrapApp(appName, options);
+    }
+
     return this.apps[appName];
   }
 
