@@ -7,26 +7,37 @@ const mapVal = (values, db) =>
     return Sequelize.literal(`'${collection.tableNameAsString()}'::regclass`);
   });
 
-const joinValues = (values, db) => {
+const filterItems = (values, db) => {
   return lodash
     .castArray(values)
     .map((v) => {
       const collection = db.getCollection(v);
+      if (!collection) return null;
       return `'${collection.tableNameAsString()}'::regclass`;
     })
-    .join(', ');
+    .filter(Boolean);
 };
-
+const joinValues = (items) => items.join(', ');
 export default {
   $childIn(values, ctx: any) {
     const db = ctx.db;
+    const items = filterItems(values, db);
 
-    return Sequelize.literal(`"${ctx.model.name}"."tableoid" IN (${joinValues(values, db)})`);
+    if (items.length) {
+      return Sequelize.literal(`"${ctx.model.name}"."tableoid" IN (${joinValues(items)})`);
+    } else {
+      return Sequelize.literal(`1 = 2`);
+    }
   },
 
   $childNotIn(values, ctx: any) {
     const db = ctx.db;
+    const items = filterItems(values, db);
 
-    return Sequelize.literal(`"${ctx.model.name}"."tableoid" NOT IN (${joinValues(values, db)})`);
+    if (items.length) {
+      return Sequelize.literal(`"${ctx.model.name}"."tableoid" NOT IN (${joinValues(items)})`);
+    } else {
+      return Sequelize.literal(`1 = 1`);
+    }
   },
 } as Record<string, any>;

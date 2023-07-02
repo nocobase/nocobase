@@ -2,9 +2,8 @@ import { BelongsToManyRepository } from '@nocobase/database';
 import Database from '../../database';
 import { InheritedCollection } from '../../inherited-collection';
 import { mockDatabase } from '../index';
-import pgOnly from './helper';
 
-pgOnly()('collection inherits', () => {
+describe('collection inherits', () => {
   let db: Database;
 
   beforeEach(async () => {
@@ -265,6 +264,14 @@ pgOnly()('collection inherits', () => {
     });
 
     expect(recordsWithFilter.every((r) => r.get('__collection') == child1Collection.name)).toBe(true);
+
+    const filterWithUndefined = await rootCollection.repository.find({
+      filter: {
+        '__collection.$childIn': 'undefined',
+      },
+    });
+
+    expect(filterWithUndefined).toHaveLength(0);
   });
 
   it('should list collection name in relation repository', async () => {
