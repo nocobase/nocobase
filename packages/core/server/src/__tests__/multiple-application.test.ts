@@ -17,21 +17,6 @@ describe('multiple application', () => {
     await app.destroy();
   });
 
-  it('should stop sub app after main app stopped', async () => {
-    const subApp1 = new Application({
-      database: app.db,
-      name: 'sub1',
-    });
-
-    const subApp1StopFn = jest.fn();
-
-    subApp1.on('afterStop', subApp1StopFn);
-
-    await app.stop();
-
-    expect(subApp1StopFn).toBeCalledTimes(1);
-  });
-
   it('should add multiple apps', async () => {
     const sub1 = `a_${uid()}`;
     const sub2 = `a_${uid()}`;

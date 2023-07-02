@@ -2,6 +2,10 @@ import { AppSupervisor } from '../app-supervisor';
 import Application from '../application';
 
 describe('App Supervisor', () => {
+  afterEach(async () => {
+    await AppSupervisor.getInstance().destroy();
+  });
+
   it('should add app into supervisor', async () => {
     const appSupervisor = AppSupervisor.getInstance();
 
@@ -43,9 +47,9 @@ describe('App Supervisor', () => {
     });
 
     const results = await appSupervisor.rpcCall('main', 'db.collectionGroupManager.getGroups');
-    expect(results).toBeDefined();
+    expect(results.result).toBeDefined();
 
     const options = await appSupervisor.rpcCall('main', 'db.options.dialect');
-    expect(options).toEqual('sqlite');
+    expect(options.result).toEqual('sqlite');
   });
 });
