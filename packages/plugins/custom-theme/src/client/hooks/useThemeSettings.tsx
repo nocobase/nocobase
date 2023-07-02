@@ -52,12 +52,14 @@ function Label() {
         bordered={false}
         popupMatchSelectWidth={false}
         defaultValue={currentUser.data.data.systemSettings.theme}
-        options={data?.map((item) => {
-          return {
-            label: t(item.config.name),
-            value: item.id,
-          };
-        })}
+        options={data
+          ?.filter((item) => item.optional)
+          .map((item) => {
+            return {
+              label: t(item.config.name),
+              value: item.id,
+            };
+          })}
         onChange={async (value) => {
           try {
             await api.resource('users').update({
