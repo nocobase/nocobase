@@ -27,7 +27,13 @@ class CliHttpServer {
     this.server = http.createServer((req, res) => {
       if (!this.workerReady) {
         res.writeHead(503);
-        res.end(`worker not ready, doing ${this.cliDoingWork}`);
+
+        const data = {
+          status: 'not-ready',
+          doing: this.cliDoingWork,
+        };
+
+        res.end(JSON.stringify(data));
       }
     });
 
