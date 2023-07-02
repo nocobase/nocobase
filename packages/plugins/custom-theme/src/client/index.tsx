@@ -1,6 +1,7 @@
 import { SettingsCenterProvider, useCurrentUserSettingsMenu, useGlobalTheme } from '@nocobase/client';
 import { ConfigProvider } from 'antd';
 import React from 'react';
+import InitializeTheme from './components/InitializeTheme';
 import { ThemeEditorProvider } from './components/ThemeEditorProvider';
 import ThemeList from './components/ThemeList';
 import { ThemeListProvider } from './components/ThemeListProvider';
@@ -44,9 +45,11 @@ const CustomThemeProvider = React.memo((props) => {
   return (
     <ConfigProvider theme={theme}>
       <ThemeListProvider>
-        <ThemeEditorProvider open={open} setOpen={setOpen}>
-          <SettingsCenterProvider settings={settings}>{editor}</SettingsCenterProvider>
-        </ThemeEditorProvider>
+        <InitializeTheme>
+          <ThemeEditorProvider open={open} setOpen={setOpen}>
+            <SettingsCenterProvider settings={settings}>{editor}</SettingsCenterProvider>
+          </ThemeEditorProvider>
+        </InitializeTheme>
       </ThemeListProvider>
     </ConfigProvider>
   );

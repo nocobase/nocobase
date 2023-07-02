@@ -1,5 +1,6 @@
 import { ReturnTypeOfUseRequest, useRequest } from '@nocobase/client';
 import { isString } from '@nocobase/utils';
+import { error } from '@nocobase/utils/client';
 import { theme } from 'antd';
 import React, { createContext } from 'react';
 import { ThemeItem } from '../../types';
@@ -15,7 +16,13 @@ export const useThemeListContext = () => {
 };
 
 export const ThemeListProvider = ({ children }) => {
-  const { data, error, run, refresh, loading } = useRequest(
+  const {
+    data,
+    error: err,
+    run,
+    refresh,
+    loading,
+  } = useRequest(
     {
       url: 'themeConfig:list',
       params: {
@@ -28,11 +35,15 @@ export const ThemeListProvider = ({ children }) => {
     },
   );
 
+  if (err) {
+    error(err);
+  }
+
   return (
     <ThemeListContext.Provider
       value={{
         data: ((data as any)?.data as ThemeItem[])?.map((item) => paseThemeConfig(item)),
-        error,
+        error: err,
         run,
         refresh,
         loading,
