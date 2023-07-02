@@ -3,13 +3,11 @@ import { observer, useField } from '@formily/react';
 import { isValid } from '@formily/shared';
 import { Tag } from 'antd';
 import React from 'react';
-import { useProps } from '../../hooks';
 import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
 import { defaultFieldNames, getCurrentOptions } from './utils';
 
 export const ReadPretty = observer(
-  (_props: any) => {
-    const props = useProps(_props);
+  (props: any) => {
     const fieldNames = { ...defaultFieldNames, ...props.fieldNames };
     const field = useField<any>();
 
