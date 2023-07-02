@@ -28,8 +28,8 @@ const useStyle = () => ({
 
 const CustomTheme = ({ onThemeChange }: { onThemeChange?: (theme: ThemeConfig) => void }) => {
   const styles = useStyle();
-  const [theme, setTheme] = React.useState<ThemeConfig>({ name: 'Custom Theme' });
   const { theme: globalTheme, setTheme: setGlobalTheme } = useGlobalTheme();
+  const [theme, setTheme] = React.useState<ThemeConfig>(globalTheme);
   const { setOpen } = useThemeEditorContext();
   const { t, i18n } = useTranslation();
   const [isModalOpen, setIsModalOpen] = React.useState(false);
