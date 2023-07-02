@@ -23,8 +23,6 @@ module.exports = (cli) => {
         process.env.APP_PORT = opts.port;
       }
 
-      CliHttpServer.getInstance().listen(process.env.APP_PORT);
-
       if (process.argv.includes('-h') || process.argv.includes('--help')) {
         promptForTs();
         run('ts-node', [
@@ -37,6 +35,7 @@ module.exports = (cli) => {
         ]);
         return;
       }
+
       if (!existsSync(resolve(process.cwd(), `./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`))) {
         console.log('The code is not compiled, please execute it first');
         console.log(chalk.yellow('$ yarn build'));
@@ -44,19 +43,40 @@ module.exports = (cli) => {
         console.log(chalk.yellow('$ yarn dev'));
         return;
       }
+
       await postCheck(opts);
+
+      // start listen server
+      const cliHttpServer = CliHttpServer.getInstance();
+      cliHttpServer.listen(process.env.APP_PORT);
+
       const restartMark = resolve(process.cwd(), 'storage', 'restart');
+
       if (!existsSync(restartMark)) {
         if (opts.quickstart) {
+          cliHttpServer.setCliDoingWork('install');
           await run('node', [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, 'install', '--ignore-installed']);
+          cliHttpServer.setCliDoingWork('upgrade');
           await run('node', [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, 'upgrade']);
         }
+
         if (opts.dbSync) {
+          cliHttpServer.setCliDoingWork('db:sync');
           await run('node', [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, 'db:sync']);
         }
       }
+
+      cliHttpServer.setCliDoingWork('start server process');
+
+      const env = {
+        AS_WORKER_PROCESS: 'true',
+        MAIN_PROCESS_SOCKET_PATH: cliHttpServer.socketPath,
+      };
+
       if (opts.daemon) {
-        run('pm2', ['start', `packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, '--', ...process.argv.slice(2)]);
+        run('pm2', ['start', `packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, '--', ...process.argv.slice(2)], {
+          env,
+        });
       } else {
         run(
           'pm2-runtime',
@@ -67,6 +87,9 @@ module.exports = (cli) => {
             '--',
             ...process.argv.slice(2),
           ].filter(Boolean),
+          {
+            env,
+          },
         );
       }
     });
