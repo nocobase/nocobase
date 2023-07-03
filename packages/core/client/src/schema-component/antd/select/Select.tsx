@@ -3,10 +3,10 @@ import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { isValid, toArr } from '@formily/shared';
 import { isPlainObject } from '@nocobase/utils/client';
 import type { SelectProps } from 'antd';
-import { Select as AntdSelect, Empty, Spin } from 'antd';
+import { Empty, Select as AntdSelect, Spin } from 'antd';
 import React from 'react';
 import { ReadPretty } from './ReadPretty';
-import { FieldNames, defaultFieldNames, getCurrentOptions } from './utils';
+import { defaultFieldNames, FieldNames, getCurrentOptions } from './utils';
 
 type Props = SelectProps<any, any> & {
   objectValue?: boolean;

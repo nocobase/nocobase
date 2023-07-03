@@ -92,15 +92,20 @@ const parseString = (() => {
         return matches.reduce((result, match, i) => {
           const parameter = parameters[i];
           let value = objectPath.get(context, parameter.key);
-          if (value == null) {
+          const type = typeof value;
+
+          if (type === 'undefined') {
+            if (typeof parameter.defaultValue === 'undefined') {
+              return value;
+            }
             value = parameter.defaultValue;
           }
 
-          if (typeof value === 'function') {
+          if (type === 'function') {
             value = value();
           }
 
-          if (typeof value === 'object') {
+          if (type === 'object') {
             return value;
           }
 
