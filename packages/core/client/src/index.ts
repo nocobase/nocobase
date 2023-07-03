@@ -1,5 +1,6 @@
 import './global.less';
 
+export * from '@emotion/css';
 export * from './acl';
 export * from './antd-config-provider';
 export * from './api-client';

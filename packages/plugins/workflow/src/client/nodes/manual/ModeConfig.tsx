@@ -1,11 +1,8 @@
-import React from 'react';
-import { FormLayout } from '@formily/antd';
-import { Radio, Tooltip, Form } from 'antd';
 import { QuestionCircleOutlined } from '@ant-design/icons';
-import { css } from '@emotion/css';
-
-import { FormItem } from '@nocobase/client';
-
+import { FormLayout } from '@formily/antd';
+import { css, FormItem } from '@nocobase/client';
+import { Form, Radio, Tooltip } from 'antd';
+import React from 'react';
 import { lang } from '../../locale';
 
 function parseMode(v) {

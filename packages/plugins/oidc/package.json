@@ -23,7 +23,6 @@
     "antd": "^4.24.8",
     "ahooks": "^3.7.2",
     "@ant-design/icons": "^4.8.0",
-    "@emotion/css": "^11.7.1",
     "react-i18next": "^11.15.1",
     "@formily/react": "2.2.26",
     "@formily/antd": "2.2.26",

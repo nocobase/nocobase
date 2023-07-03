@@ -1,6 +1,5 @@
-import { css } from '@emotion/css';
 import { connect } from '@formily/react';
-import { useCollectionManager, useRecord, useRequest } from '@nocobase/client';
+import { css, useCollectionManager, useRecord, useRequest } from '@nocobase/client';
 import { CollectionsGraph, lodash } from '@nocobase/utils/client';
 import { Col, Input, Modal, Row, Select, Spin, Table, Tag } from 'antd';
 import React, { useCallback, useMemo, useState } from 'react';

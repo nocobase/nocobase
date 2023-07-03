@@ -1,10 +1,9 @@
 import { DeleteOutlined } from '@ant-design/icons';
-import { css } from '@emotion/css';
 import { uid } from '@formily/shared';
-import { SchemaComponent, useActionContext, useRequest } from '@nocobase/client';
+import { css, SchemaComponent, useActionContext, useRequest } from '@nocobase/client';
 import React, { useEffect } from 'react';
-import { GraphDrawPage } from './GraphDrawPage';
 import { useCreateActionAndRefreshCM } from './action-hooks';
+import { GraphDrawPage } from './GraphDrawPage';
 
 const useCollectionValues = (options) => {
   const { visible } = useActionContext();

@@ -1,6 +1,5 @@
 import { DeleteOutlined, DownOutlined, EditOutlined, UpOutlined } from '@ant-design/icons';
 import '@antv/x6-react-shape';
-import { css, cx } from '@emotion/css';
 import { uid } from '@formily/shared';
 import {
   Action,
@@ -9,6 +8,8 @@ import {
   CollectionCategroriesContext,
   CollectionField,
   CollectionProvider,
+  css,
+  cx,
   Form,
   FormItem,
   Formula,

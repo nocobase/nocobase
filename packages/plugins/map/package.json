@@ -33,7 +33,6 @@
     "react-router-dom": "^6.11.2",
     "@ant-design/icons": "^4.8.0",
     "react-i18next": "^11.15.1",
-    "@emotion/css": "^11.7.1",
     "@formily/core": "2.2.26",
     "@formily/react": "2.2.26",
     "@formily/shared": "2.2.26",

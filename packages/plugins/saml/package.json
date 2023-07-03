@@ -24,7 +24,6 @@
     "react-i18next": "^11.15.1",
     "@ant-design/icons": "^4.8.0",
     "@formily/react": "2.2.26",
-    "@emotion/css": "^11.7.1",
     "@nocobase/client": "0.10.0-alpha.5",
     "@nocobase/actions": "0.10.0-alpha.5",
     "@nocobase/database": "0.10.0-alpha.5",

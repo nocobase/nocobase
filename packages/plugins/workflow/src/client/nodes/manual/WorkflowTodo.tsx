@@ -1,11 +1,8 @@
-import React, { useContext, createContext, useEffect, useState } from 'react';
-import { observer, useForm, useField, useFieldSchema } from '@formily/react';
-import { Spin, Tag } from 'antd';
-import { css } from '@emotion/css';
-import moment from 'moment';
-
+import { observer, useField, useFieldSchema, useForm } from '@formily/react';
 import {
   CollectionManagerProvider,
+  css,
+  FormBlockContext,
   SchemaComponent,
   SchemaComponentContext,
   TableBlockProvider,
@@ -13,21 +10,22 @@ import {
   useAPIClient,
   useCollectionManager,
   useCurrentUserContext,
+  useFormBlockContext,
   useRecord,
   useTableBlockContext,
-  FormBlockContext,
-  useFormBlockContext,
 } from '@nocobase/client';
-import { uid, parse } from '@nocobase/utils/client';
-
-import { JobStatusOptions, JobStatusOptionsMap } from '../../constants';
-import { NAMESPACE } from '../../locale';
-import { FlowContext, useFlowContext } from '../../FlowContext';
+import { uid } from '@nocobase/utils/client';
+import { Spin, Tag } from 'antd';
+import moment from 'moment';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { instructions, useAvailableUpstreams } from '..';
+import { JobStatusOptions, JobStatusOptionsMap } from '../../constants';
+import { FlowContext, useFlowContext } from '../../FlowContext';
+import { NAMESPACE } from '../../locale';
 import { linkNodes } from '../../utils';
-import { manualFormTypes } from './SchemaConfig';
-import { FormBlockProvider } from './FormBlockProvider';
 import { DetailsBlockProvider } from './DetailsBlockProvider';
+import { FormBlockProvider } from './FormBlockProvider';
+import { manualFormTypes } from './SchemaConfig';
 
 const nodeCollection = {
   title: `{{t("Task", { ns: "${NAMESPACE}" })}}`,

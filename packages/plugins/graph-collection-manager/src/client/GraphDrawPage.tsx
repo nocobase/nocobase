@@ -8,7 +8,6 @@ import {
 } from '@ant-design/icons';
 import { Graph } from '@antv/x6';
 import '@antv/x6-react-shape';
-import { css, cx } from '@emotion/css';
 import { SchemaOptionsContext } from '@formily/react';
 import {
   APIClientProvider,
@@ -17,7 +16,9 @@ import {
   CollectionCategroriesProvider,
   CollectionManagerContext,
   CollectionManagerProvider,
+  css,
   CurrentAppInfoContext,
+  cx,
   SchemaComponent,
   SchemaComponentOptions,
   Select,
