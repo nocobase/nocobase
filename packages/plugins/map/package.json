@@ -20,6 +20,7 @@
   ],
   "dependencies": {
     "ahooks": "^3.7.2",
+    "@types/google.maps": "^3.53.4",
     "@amap/amap-jsapi-loader": "^1.0.1",
     "@amap/amap-jsapi-types": "^0.0.10",
     "@googlemaps/js-api-loader": "^1.16.1"
@@ -28,7 +29,6 @@
     "react": "18.x",
     "react-dom": "18.x",
     "antd": "^4.24.8",
-    "react-router": "^6.11.2",
     "react-router-dom": "^6.11.2",
     "@ant-design/icons": "^4.8.0",
     "react-i18next": "^11.15.1",
@@ -42,7 +42,6 @@
     "@nocobase/database": "0.10.0-alpha.5",
     "@nocobase/server": "0.10.0-alpha.5",
     "@nocobase/test": "0.10.0-alpha.5",
-    "@types/google.maps": "^3.53.4",
     "@types/react": "^17.0.0",
     "@types/react-dom": "^17.0.0"
   }
