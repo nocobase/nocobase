@@ -7,12 +7,13 @@ import { cloneDeep } from 'lodash';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
+import { useCurrentAppInfo } from '../../appInfo';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
-import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
 import { IField } from '../interfaces/types';
+import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import * as components from './components';
 import { getOptions } from './interfaces';
 
@@ -168,6 +169,9 @@ export const AddCollectionField = (props) => {
 
 export const AddFieldAction = (props) => {
   const { scope, getContainer, item: record, children, trigger, align } = props;
+  const {
+    data: { database },
+  } = useCurrentAppInfo();
   const { getInterface, getTemplate } = useCollectionManager();
   const [visible, setVisible] = useState(false);
   const [targetScope, setTargetScope] = useState();
@@ -185,6 +189,8 @@ export const AddFieldAction = (props) => {
           children: v.children.filter((v) => {
             if (v.value === 'id') {
               return typeof record['autoGenId'] === 'boolean' ? record['autoGenId'] : true;
+            } else if (v.value === 'tableoid') {
+              return database?.dialect === 'postgres';
             } else {
               return typeof record[v.value] === 'boolean' ? record[v.value] : true;
             }
@@ -241,7 +247,6 @@ export const AddFieldAction = (props) => {
       };
     });
   }, [getFieldOptions]);
-
   const menu = useMemo<MenuProps>(() => {
     return {
       style: {
