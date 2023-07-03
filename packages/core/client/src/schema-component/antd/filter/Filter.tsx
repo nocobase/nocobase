@@ -1,6 +1,6 @@
 import { ObjectField as ObjectFieldModel } from '@formily/core';
 import { observer, useField, useFieldSchema } from '@formily/react';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useRequest } from '../../../api-client';
 import { useProps } from '../../hooks/useProps';
 import { DatePickerProvider } from '../date-picker';
@@ -20,12 +20,15 @@ export const Filter: any = observer(
     const { useDataSource = useDef } = props;
     const { options, dynamicComponent, className, collectionField } = useProps(props);
     const field = useField<ObjectFieldModel>();
-    const fieldSchema = useFieldSchema();
+    const fieldSchema: any = useFieldSchema();
     useDataSource({
       onSuccess(data) {
         field.dataSource = data?.data || [];
       },
     });
+    useEffect(() => {
+      field.initialValue = fieldSchema.defaultValue;
+    }, []);
     return (
       <div className={className}>
         <DatePickerProvider value={{ utc: false }}>

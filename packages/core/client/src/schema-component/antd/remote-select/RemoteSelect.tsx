@@ -11,7 +11,7 @@ import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { getInnermostKeyAndValue } from '../../common/utils/uitls';
 import { useCompile } from '../../hooks';
-import { Select, defaultFieldNames } from '../select';
+import { defaultFieldNames, Select } from '../select';
 import { ReadPretty } from './ReadPretty';
 import { extractFilterfield, extractValuesByPattern, generatePattern, parseVariables } from './utils';
 const EMPTY = 'N/A';
@@ -180,7 +180,9 @@ const InternalRemoteSelect = connect(
           pageSize: 200,
           ...service?.params,
           // search needs
-          filter: mergeFilter([parseFilter(field.componentProps?.service?.params?.filter) || service?.params?.filter]),
+          filter: mergeFilter([
+            parseFilter(fieldSchema?.['x-component-props']?.service?.params?.filter) || service?.params?.filter,
+          ]),
         },
       },
       {
@@ -228,7 +230,7 @@ const InternalRemoteSelect = connect(
                 },
               }
             : {},
-          field.componentProps?.service?.params?.filter || service?.params?.filter,
+          fieldSchema?.['x-component-props']?.service?.params?.filter || service?.params?.filter,
         ]),
       });
       searchData.current = search;

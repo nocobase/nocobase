@@ -153,7 +153,7 @@ FormItem.Designer = function Designer() {
     readOnlyMode = 'read-pretty';
   }
   const dataSource = useCollectionFilterOptions(collectionField?.target);
-  const defaultFilter = field.componentProps?.service?.params?.filter || {};
+  const defaultFilter = fieldSchema?.['x-component-props']?.service?.params?.filter || {};
   const sortFields = useSortFields(collectionField?.target);
   const defaultSort = field.componentProps?.service?.params?.sort || [];
   const fieldMode = field?.componentProps?.['mode'] || (isFileField ? 'FileManager' : 'Select');
@@ -446,7 +446,7 @@ FormItem.Designer = function Designer() {
               title: t('Set the data scope'),
               properties: {
                 filter: {
-                  default: defaultFilter,
+                  defaultValue: defaultFilter,
                   enum: dataSource,
                   'x-component': 'Filter',
                   'x-component-props': {
