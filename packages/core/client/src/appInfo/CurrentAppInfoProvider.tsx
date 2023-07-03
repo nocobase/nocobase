@@ -8,7 +8,11 @@ export const useCurrentAppInfo = () => {
   return useContext(CurrentAppInfoContext);
 };
 export const CurrentAppInfoProvider = (props) => {
-  const result = useRequest(
+  const result = useRequest<{
+    data: {
+      theme: string;
+    };
+  }>(
     {
       url: 'app:getInfo',
     },

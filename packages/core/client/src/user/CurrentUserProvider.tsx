@@ -30,7 +30,12 @@ export const useCurrentRoles = () => {
 
 export const CurrentUserProvider = (props) => {
   const location = useLocation();
-  const result = useRequest({
+  const result = useRequest<{
+    data: {
+      id: number;
+      roles: any[];
+    };
+  }>({
     url: 'auth:check',
   });
   if (result.loading) {

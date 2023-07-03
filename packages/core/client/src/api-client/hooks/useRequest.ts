@@ -10,8 +10,6 @@ import { assign } from './assign';
 
 type FunctionService = (...args: any[]) => Promise<any>;
 
-export type ReturnTypeOfUseRequest<TData = any> = ReturnType<typeof useRequest<TData>>;
-
 export type ResourceActionOptions<P = any> = {
   resource?: string;
   resourceOf?: any;
