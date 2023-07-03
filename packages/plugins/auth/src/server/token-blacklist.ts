@@ -1,6 +1,7 @@
+import { TokenBlacklistService } from '@nocobase/auth';
 import { Repository } from '@nocobase/database';
 
-export const createTokenBlacklistService = (repo: Repository) => {
+export const createTokenBlacklistService = (repo: Repository): TokenBlacklistService => {
   return {
     async has(token: string) {
       return !!(await repo.findOne({
@@ -9,11 +10,9 @@ export const createTokenBlacklistService = (repo: Repository) => {
         },
       }));
     },
-    async set(values: { token: string; expiration: string }) {
+    async set(values) {
       return repo.create({
-        values: {
-          ...values,
-        },
+        values,
       });
     },
   };
