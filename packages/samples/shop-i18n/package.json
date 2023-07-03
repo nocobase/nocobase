@@ -17,6 +17,9 @@
     "nodejs-snowflake": "2.0.1"
   },
   "devDependencies": {
+    "react": "^18.2.0",
+    "antd": "^4.24.8",
+    "react-i18next": "^11.15.1",
     "@nocobase/client": "0.10.0-alpha.5",
     "@nocobase/server": "0.10.0-alpha.5",
     "@nocobase/test": "0.10.0-alpha.5"

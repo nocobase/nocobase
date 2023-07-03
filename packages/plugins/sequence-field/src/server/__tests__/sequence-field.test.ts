@@ -778,7 +778,7 @@ describe('sequence field', () => {
       await db.sync();
 
       const now = new Date();
-      const dateStr = moment(now).format('YYYYMMDD');
+      const dateStr = dayjs(now).format('YYYYMMDD');
 
       const tagsRepo = db.getRepository('tags');
       const tags = await tagsRepo.create({

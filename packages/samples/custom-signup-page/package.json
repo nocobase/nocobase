@@ -14,6 +14,8 @@
     "client.d.ts"
   ],
   "devDependencies": {
+    "react": "^18.2.0",
+    "@formily/react": "2.2.26",
     "@nocobase/client": "0.10.0-alpha.5",
     "@nocobase/server": "0.10.0-alpha.5",
     "@nocobase/test": "0.10.0-alpha.5"
