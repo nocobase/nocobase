@@ -1,6 +1,5 @@
 import { defineCollection } from '@nocobase/database';
 import { InstallOptions, Plugin } from '@nocobase/server';
-import { compactTheme, darkTheme, defaultTheme } from './builtInThemes';
 
 export class CustomThemePlugin extends Plugin {
   afterAdd() {}
@@ -8,7 +7,7 @@ export class CustomThemePlugin extends Plugin {
   beforeLoad() {}
 
   async load() {
-    const theme = this.db.collection(
+    this.db.collection(
       defineCollection({
         name: 'themeConfig',
         fields: [
@@ -31,13 +30,6 @@ export class CustomThemePlugin extends Plugin {
     );
 
     await this.db.sync();
-    await theme.repository.create({
-      values: [
-        { config: defaultTheme, optional: true, isBuiltIn: true },
-        { config: compactTheme, optional: true, isBuiltIn: true },
-        { config: darkTheme, optional: true, isBuiltIn: true },
-      ],
-    });
   }
 
   async install(options?: InstallOptions) {}
