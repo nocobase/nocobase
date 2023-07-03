@@ -55,7 +55,7 @@ describe('role', () => {
     expect(ctx.state.currentRole).toBe('root');
   });
 
-  it('should set role with default when x-role does not exist', async () => {
+  it('should throw 401', async () => {
     ctx.state.currentUser = await db.getRepository('users').findOne({
       appends: ['roles'],
     });
@@ -64,8 +64,11 @@ describe('role', () => {
         return 'abc';
       }
     };
+    const throwFn = jest.fn();
+    ctx.throw = throwFn;
     await setCurrentRole(ctx, () => {});
-    expect(ctx.state.currentRole).toBe('root');
+    expect(throwFn).lastCalledWith(401, 'User role not found');
+    expect(ctx.state.currentRole).not.toBeDefined();
   });
 
   it('should set role with anonymous', async () => {
