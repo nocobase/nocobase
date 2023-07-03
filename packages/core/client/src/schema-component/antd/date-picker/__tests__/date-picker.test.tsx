@@ -23,9 +23,8 @@ describe('DatePicker', () => {
     // Read pretty
     expect(screen.getByText('2023/05/01 00:00:00', { selector: '.ant-description-date-picker' })).toBeInTheDocument();
 
-    // TODO: 本地没有错，但是 CI 上会报错，暂时注释掉
     // Value
-    // expect(screen.getByText('2023-04-30T16:00:00.000Z')).toBeInTheDocument();
+    expect(screen.getByText('2023-04-30T16:00:00.000Z')).toBeInTheDocument();
   });
 
   it('GMT', async () => {
@@ -102,9 +101,8 @@ describe('RangePicker', () => {
     // Read pretty
     expect(screen.getByText('2023-05-01~2023-05-02', { selector: '.ant-description-text' })).toBeInTheDocument();
 
-    // TODO: 本地没有错，但是 CI 上会报错，暂时注释掉
     // Value
-    // expect(screen.getByText(/2023-04-30t16:00:00\.000z ~ 2023-05-02t15:59:59\.999z/i)).toBeInTheDocument();
+    expect(screen.getByText(/2023-04-30t16:00:00\.000z ~ 2023-05-02t15:59:59\.999z/i)).toBeInTheDocument();
   });
 
   it('non-UTC', async () => {
