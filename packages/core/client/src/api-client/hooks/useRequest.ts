@@ -10,6 +10,8 @@ import { assign } from './assign';
 
 type FunctionService = (...args: any[]) => Promise<any>;
 
+export type ReturnTypeOfUseRequest<TData = any> = ReturnType<typeof useRequest<TData>>;
+
 export type ResourceActionOptions<P = any> = {
   resource?: string;
   resourceOf?: any;
@@ -25,7 +27,7 @@ export function useRequest<P>(
   const [state, setState] = useSetState({});
   const api = useContext(APIClientContext);
 
-  let tempOptions, tempService;
+  let tempService;
 
   if (typeof service === 'function') {
     tempService = service;
@@ -44,7 +46,7 @@ export function useRequest<P>(
     };
   }
 
-  tempOptions = {
+  const tempOptions = {
     ...options,
     onSuccess(...args) {
       // @ts-ignore
@@ -55,7 +57,7 @@ export function useRequest<P>(
     },
   };
 
-  const result: any = useReq(tempService, tempOptions);
+  const result = useReq<P, any>(tempService, tempOptions);
 
   return { ...result, state, setState };
 }
