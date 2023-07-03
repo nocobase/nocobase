@@ -7,7 +7,6 @@ import { cloneDeep } from 'lodash';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
-import { useCurrentAppInfo } from '../../appInfo';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useCancelAction } from '../action-hooks';
@@ -168,10 +167,7 @@ export const AddCollectionField = (props) => {
 };
 
 export const AddFieldAction = (props) => {
-  const { scope, getContainer, item: record, children, trigger, align } = props;
-  const {
-    data: { database },
-  } = useCurrentAppInfo();
+  const { scope, getContainer, item: record, children, trigger, align, database } = props;
   const { getInterface, getTemplate } = useCollectionManager();
   const [visible, setVisible] = useState(false);
   const [targetScope, setTargetScope] = useState();

@@ -14,7 +14,7 @@ const useCreateCollectionField = (record) => {
   };
 };
 
-export const AddFieldAction = ({ item: record }) => {
+export const AddFieldAction = ({ item: record, database }) => {
   return (
     <AddCollectionFieldAction
       trigger={['click']}
@@ -24,6 +24,7 @@ export const AddFieldAction = ({ item: record }) => {
         },
       }}
       item={record}
+      database={database}
       scope={{
         useCancelAction,
         useCreateCollectionField: () => useCreateCollectionField(record),
