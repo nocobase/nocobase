@@ -40,8 +40,11 @@ export async function destroy(ctx: Context, next: Next) {
   const { filterByTk } = ctx.action.params;
 
   const data = await repo.findById(filterByTk);
-  const token = data.get('token');
 
-  await ctx.app.authManager.jwt.block(token);
+  const token = data?.get('token');
+  if (token) {
+    await ctx.app.authManager.jwt.block(token);
+  }
+
   return actions.destroy(ctx, next);
 }
