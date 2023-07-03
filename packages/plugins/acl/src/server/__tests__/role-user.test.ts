@@ -1,9 +1,9 @@
 import Database, { BelongsToManyRepository } from '@nocobase/database';
-import PluginACL from '@nocobase/plugin-acl';
+import AuthPlugin from '@nocobase/plugin-auth';
 import UsersPlugin from '@nocobase/plugin-users';
 import { MockServer, mockServer } from '@nocobase/test';
 import jwt from 'jsonwebtoken';
-import AuthPlugin from '@nocobase/plugin-auth';
+import PluginACL from '../index';
 
 describe('role', () => {
   let api: MockServer;

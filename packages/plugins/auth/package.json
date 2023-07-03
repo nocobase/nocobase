@@ -21,7 +21,6 @@
     "antd": "^4.24.8",
     "@ant-design/icons": "^4.8.0",
     "@nocobase/auth": "0.10.0-alpha.5",
-    "@nocobase/plugin-users": "0.10.0-alpha.5",
     "@nocobase/actions": "0.10.0-alpha.5",
     "@nocobase/client": "0.10.0-alpha.5",
     "@nocobase/database": "0.10.0-alpha.5",

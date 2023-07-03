@@ -12,6 +12,7 @@
     "react-error-boundary": "^4.0.4"
   },
   "devDependencies": {
+    "react": "^18.2.0",
     "antd": "^4.24.8",
     "vitest": "^0.32.0",
     "@ant-design/icons": "^4.8.0",
