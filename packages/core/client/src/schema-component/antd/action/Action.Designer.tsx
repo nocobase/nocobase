@@ -250,7 +250,13 @@ export const ActionDesigner = (props) => {
           <SchemaSettings.ModalItem
             title={t('Duplicate mode')}
             components={{ Tree }}
-            scope={{ getEnableFieldTree, collectionName: record?.__collection || name, getOnLoadData, getOnCheck }}
+            scope={{
+              getEnableFieldTree,
+              collectionName: fieldSchema['x-component-props']?.duplicateCollection || record?.__collection || name,
+              currentCollection: record?.__collection || name,
+              getOnLoadData,
+              getOnCheck,
+            }}
             schema={
               {
                 type: 'object',
@@ -278,6 +284,17 @@ export const ActionDesigner = (props) => {
                     'x-component-props': {
                       options: collectionList,
                     },
+                    'x-reactions': [
+                      {
+                        dependencies: ['.duplicateMode'],
+                        fulfill: {
+                          state: {
+                            disabled: `{{ $deps[0]==="quickDulicate" }}`,
+                            value: `{{ $deps[0]==="quickDulicate"? currentCollection:collectionName }}`,
+                          },
+                        },
+                      },
+                    ],
                   },
                   duplicateFields: {
                     type: 'array',
@@ -321,13 +338,14 @@ export const ActionDesigner = (props) => {
                 },
               } as ISchema
             }
-            onSubmit={({ duplicateMode, duplicateFields }) => {
+            onSubmit={({ duplicateMode, collection, duplicateFields }) => {
               const fields = Array.isArray(duplicateFields) ? duplicateFields : duplicateFields.checked || [];
               field.componentProps.duplicateMode = duplicateMode;
               field.componentProps.duplicateFields = fields;
               fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
               fieldSchema['x-component-props'].duplicateMode = duplicateMode;
               fieldSchema['x-component-props'].duplicateFields = fields;
+              fieldSchema['x-component-props'].duplicateCollection = collection;
               dn.emit('patch', {
                 schema: {
                   ['x-uid']: fieldSchema['x-uid'],
