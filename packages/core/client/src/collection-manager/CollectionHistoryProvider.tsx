@@ -33,7 +33,9 @@ export const CollectionHistoryProvider: React.FC = (props) => {
 
   // console.log('location', location);
 
-  const service = useRequest(options, {
+  const service = useRequest<{
+    data: any;
+  }>(options, {
     manual: true,
   });
 

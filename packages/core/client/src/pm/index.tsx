@@ -58,7 +58,7 @@ export const SettingsCenterContext = createContext<any>({});
 
 const LocalPlugins = () => {
   // TODO: useRequest types for data ts type
-  const { data, loading }: { data: TData; loading: boolean } = useRequest<TData>({
+  const { data, loading } = useRequest<TData>({
     url: 'applicationPlugins:list',
     params: {
       filter: {
@@ -83,7 +83,10 @@ const LocalPlugins = () => {
 };
 
 const BuiltinPlugins = () => {
-  const { data, loading } = useRequest({
+  const { data, loading } = useRequest<{
+    data: IPluginData[];
+    meta: IMetaData;
+  }>({
     url: 'applicationPlugins:list',
     params: {
       filter: {

@@ -9,7 +9,9 @@ import { roleSchema } from './schemas/roles';
 const AvailableActionsContext = createContext([]);
 
 const AvailableActionsProver: React.FC = (props) => {
-  const { data, loading } = useRequest({
+  const { data, loading } = useRequest<{
+    data: any[];
+  }>({
     resource: 'availableActions',
     action: 'list',
   });

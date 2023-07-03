@@ -26,13 +26,14 @@ const useScope = (key: any) => {
 };
 
 const useTableColumns = () => {
-  const start = Date.now();
   const field = useField<ArrayField>();
   const schema = useFieldSchema();
   const { exists, render } = useSchemaInitializer(schema['x-initializer']);
+  const scope = useContext(SchemaExpressionScopeContext);
+
   const columns = schema
     .reduceProperties((buf, s) => {
-      if (isColumnComponent(s) && useScope(s['x-visible'])) {
+      if (isColumnComponent(s) && scope[s['x-visible'] as unknown as string]) {
         return buf.concat([s]);
       }
       return buf;
@@ -174,22 +175,22 @@ export const TableArray: React.FC<any> = observer(
     const restProps = {
       rowSelection: props.rowSelection
         ? {
-          type: 'checkbox',
-          selectedRowKeys,
-          onChange(selectedRowKeys: any[]) {
-            setSelectedRowKeys(selectedRowKeys);
-          },
-          renderCell: (checked, record, index, originNode) => {
-            const current = props?.pagination?.current;
-            const pageSize = props?.pagination?.pageSize || 20;
-            if (current) {
-              index = index + (current - 1) * pageSize;
-            }
-            return (
-              <div
-                className={classNames(
-                  checked ? 'checked' : null,
-                  css`
+            type: 'checkbox',
+            selectedRowKeys,
+            onChange(selectedRowKeys: any[]) {
+              setSelectedRowKeys(selectedRowKeys);
+            },
+            renderCell: (checked, record, index, originNode) => {
+              const current = props?.pagination?.current;
+              const pageSize = props?.pagination?.pageSize || 20;
+              if (current) {
+                index = index + (current - 1) * pageSize;
+              }
+              return (
+                <div
+                  className={classNames(
+                    checked ? 'checked' : null,
+                    css`
                       position: relative;
                       display: flex;
                       align-items: center;
@@ -212,27 +213,27 @@ export const TableArray: React.FC<any> = observer(
                         }
                       }
                     `,
-                )}
-              >
-                <div
-                  className={classNames(
-                    checked ? 'checked' : null,
-                    css`
+                  )}
+                >
+                  <div
+                    className={classNames(
+                      checked ? 'checked' : null,
+                      css`
                         position: relative;
                         display: flex;
                         align-items: center;
                         justify-content: space-evenly;
                       `,
-                  )}
-                >
-                  {dragSort && <SortHandle />}
-                  {showIndex && <TableIndex index={index} />}
-                </div>
-                <div
-                  className={classNames(
-                    'nb-origin-node',
-                    checked ? 'checked' : null,
-                    css`
+                    )}
+                  >
+                    {dragSort && <SortHandle />}
+                    {showIndex && <TableIndex index={index} />}
+                  </div>
+                  <div
+                    className={classNames(
+                      'nb-origin-node',
+                      checked ? 'checked' : null,
+                      css`
                         position: absolute;
                         right: 50%;
                         transform: translateX(50%);
@@ -240,15 +241,15 @@ export const TableArray: React.FC<any> = observer(
                           display: none;
                         }
                       `,
-                  )}
-                >
-                  {originNode}
+                    )}
+                  >
+                    {originNode}
+                  </div>
                 </div>
-              </div>
-            );
-          },
-          ...props.rowSelection,
-        }
+              );
+            },
+            ...props.rowSelection,
+          }
         : undefined,
     };
 

@@ -27,7 +27,7 @@ export function useRequest<P>(
   const [state, setState] = useSetState({});
   const api = useContext(APIClientContext);
 
-  let tempOptions, tempService;
+  let tempService;
 
   if (typeof service === 'function') {
     tempService = service;
@@ -46,7 +46,7 @@ export function useRequest<P>(
     };
   }
 
-  tempOptions = {
+  const tempOptions = {
     ...options,
     onSuccess(...args) {
       // @ts-ignore

@@ -1,7 +1,7 @@
 import { css } from '@emotion/css';
 import { Layout, Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Outlet, useNavigate, useParams, useMatches, useMatch } from 'react-router-dom';
+import { Outlet, useMatch, useNavigate, useParams } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
   CurrentAppInfoProvider,
@@ -75,7 +75,9 @@ const MenuEditor = (props) => {
   };
 
   const adminSchemaUid = useAdminSchemaUid();
-  const { data, loading } = useRequest(
+  const { data, loading } = useRequest<{
+    data: any;
+  }>(
     {
       url: `/uiSchemas:getJsonSchema/${adminSchemaUid}`,
     },
