@@ -1,4 +1,5 @@
 import jwt, { SignOptions } from 'jsonwebtoken';
+import { TokenBlacklistService } from './token-blacklist-service';
 
 export interface JwtOptions {
   secret: string;
@@ -19,6 +20,8 @@ export class JwtService {
       expiresIn: expiresIn || process.env.JWT_EXPIRES_IN || '7d',
     };
   }
+
+  public blacklist: TokenBlacklistService;
 
   private expiresIn() {
     return this.options.expiresIn;
@@ -41,6 +44,21 @@ export class JwtService {
 
         resolve(decoded);
       });
+    });
+  }
+
+  /**
+   * @description Block a token so that this token can no longer be used
+   */
+  async block(token: string) {
+    if (!this.blacklist) {
+      return null;
+    }
+    const { exp } = await this.decode(token);
+
+    return this.blacklist.set({
+      token,
+      expiration: new Date(exp * 1000).toString(),
     });
   }
 }

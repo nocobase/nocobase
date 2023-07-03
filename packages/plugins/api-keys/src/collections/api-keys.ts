@@ -78,5 +78,9 @@ export default {
         ],
       },
     },
+    {
+      name: 'token',
+      type: 'string',
+    },
   ],
 } as CollectionOptions;

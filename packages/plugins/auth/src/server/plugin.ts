@@ -1,13 +1,13 @@
+import { Model } from '@nocobase/database';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
-import { BasicAuth } from './basic-auth';
-import { presetAuthType, presetAuthenticator } from '../preset';
+import { namespace, presetAuthenticator, presetAuthType } from '../preset';
 import authActions from './actions/auth';
 import authenticatorsActions from './actions/authenticators';
+import { BasicAuth } from './basic-auth';
 import { enUS, zhCN } from './locale';
-import { namespace } from '../preset';
 import { AuthModel } from './model/authenticator';
-import { Model } from '@nocobase/database';
+import { createTokenBlacklistService } from './token-blacklist';
 
 export class AuthPlugin extends Plugin {
   afterAdd() {}
@@ -40,6 +40,9 @@ export class AuthPlugin extends Plugin {
         return authenticator || authenticators[0];
       },
     });
+    this.app.authManager.setTokenBlacklistService(
+      createTokenBlacklistService(await this.db.getRepository('tokenBlacklist')),
+    );
     this.app.authManager.registerTypes(presetAuthType, {
       auth: BasicAuth,
     });
