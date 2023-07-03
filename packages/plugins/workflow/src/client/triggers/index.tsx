@@ -150,6 +150,7 @@ export const TriggerConfig = () => {
   const form = useMemo(
     () =>
       createForm({
+        initialValues: workflow?.config,
         values: workflow?.config,
         disabled: workflow?.executed,
       }),
