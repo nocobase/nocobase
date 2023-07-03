@@ -10796,6 +10796,11 @@ dayjs@1.x, dayjs@^1.11.1, dayjs@^1.11.4, dayjs@^1.11.7, dayjs@^1.9.1, dayjs@~1.1
   version "1.11.8"
   resolved "https://registry.npmmirror.com/dayjs/-/dayjs-1.11.8.tgz#4282f139c8c19dd6d0c7bd571e30c2d0ba7698ea"
 
+dayjs@^1.11.9:
+  version "1.11.9"
+  resolved "https://registry.yarnpkg.com/dayjs/-/dayjs-1.11.9.tgz#9ca491933fadd0a60a2c19f6c237c03517d71d1a"
+  integrity sha512-QvzAURSbQ0pKdIye2txOzNaHmxtUBXerpY0FJsFXUMKbIZeFm5ht1LS/jFsrncjnmtv8HsG0W2g6c0zUjZWmpA==
+
 dayjs@~1.8.24:
   version "1.8.36"
   resolved "https://registry.npmmirror.com/dayjs/-/dayjs-1.8.36.tgz#be36e248467afabf8f5a86bae0de0cdceecced50"

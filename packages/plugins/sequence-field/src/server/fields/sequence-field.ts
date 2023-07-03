@@ -8,9 +8,8 @@ import {
   ValidationError,
   ValidationErrorItem,
 } from '@nocobase/database';
-import { lodash, Registry } from '@nocobase/utils';
+import { dayjs, lodash, Registry } from '@nocobase/utils';
 import parser from 'cron-parser';
-import moment from 'moment';
 
 export interface Pattern {
   validate?(options): string | null;
@@ -267,7 +266,7 @@ sequencePatterns.register('integer', {
 
 sequencePatterns.register('date', {
   generate(this: SequenceField, instance, options) {
-    return moment(instance.get(options?.field ?? 'createdAt')).format(options?.format ?? 'YYYYMMDD');
+    return dayjs(instance.get(options?.field ?? 'createdAt')).format(options?.format ?? 'YYYYMMDD');
   },
   batchGenerate(instances, values, options) {
     const { field, inputable } = options;

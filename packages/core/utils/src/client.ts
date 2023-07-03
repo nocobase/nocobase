@@ -1,3 +1,4 @@
+import dayjs from 'dayjs';
 import lodash from 'lodash';
 
 export * from './collections-graph';
@@ -14,4 +15,4 @@ export * from './parse-filter';
 export * from './registry';
 // export * from './toposort';
 export * from './uid';
-export { lodash };
+export { lodash, dayjs };

@@ -27,7 +27,6 @@
   "devDependencies": {
     "react": "18.x",
     "antd": "^4.24.8",
-    "moment": "^2.29.1",
     "react-i18next": "^11.15.1",
     "@formily/core": "2.2.26",
     "@formily/react": "2.2.26",

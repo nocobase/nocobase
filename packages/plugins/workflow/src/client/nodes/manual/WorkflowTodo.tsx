@@ -14,9 +14,8 @@ import {
   useRecord,
   useTableBlockContext,
 } from '@nocobase/client';
-import { uid } from '@nocobase/utils/client';
+import { dayjs, uid } from '@nocobase/utils/client';
 import { Spin, Tag } from 'antd';
-import moment from 'moment';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { instructions, useAvailableUpstreams } from '..';
 import { JobStatusOptions, JobStatusOptionsMap } from '../../constants';
@@ -532,7 +531,7 @@ function Drawer() {
               margin-right: 0.5em;
             `,
           },
-          'x-content': moment(updatedAt).format('YYYY-MM-DD HH:mm:ss'),
+        'x-content': dayjs(updatedAt).format('YYYY-MM-DD HH:mm:ss'),
         },
         status: {
           type: 'void',

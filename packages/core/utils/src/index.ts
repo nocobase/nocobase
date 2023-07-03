@@ -1,3 +1,4 @@
+import dayjs from 'dayjs';
 import lodash from 'lodash';
 
 export * from './assign';
@@ -16,4 +17,4 @@ export * from './registry';
 export * from './requireModule';
 export * from './toposort';
 export * from './uid';
-export { lodash };
+export { lodash, dayjs };

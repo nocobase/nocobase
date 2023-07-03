@@ -1,10 +1,8 @@
-import moment from 'moment';
-
-import { Application } from '@nocobase/server';
 import { Database } from '@nocobase/database';
-import { mockServer, mockDatabase } from '@nocobase/test';
-
-import Plugin, { SequenceField, SequenceFieldOptions } from '..';
+import { Application } from '@nocobase/server';
+import { mockServer } from '@nocobase/test';
+import { dayjs } from '@nocobase/utils';
+import Plugin, { SequenceField } from '..';
 
 describe('sequence field', () => {
   let app: Application;
@@ -345,7 +343,7 @@ describe('sequence field', () => {
       await db.sync();
 
       const now = new Date();
-      const YYYYMMDD = moment(now).format('YYYYMMDD');
+      const YYYYMMDD = dayjs(now).format('YYYYMMDD');
 
       const TestModel = db.getModel('tests');
       const item1 = await TestModel.create();
@@ -370,7 +368,7 @@ describe('sequence field', () => {
       await db.sync();
 
       const date = new Date(2022, 7, 1);
-      const YYYYMMDD = moment(date).format('YYYYMMDD');
+      const YYYYMMDD = dayjs(date).format('YYYYMMDD');
 
       const TestModel = db.getModel('tests');
       const item1 = await TestModel.create({
@@ -393,7 +391,7 @@ describe('sequence field', () => {
       await db.sync();
 
       const now = new Date();
-      const YYYYMMDD = moment(now).format('YYYY-MM-DD');
+      const YYYYMMDD = dayjs(now).format('YYYY-MM-DD');
 
       const TestModel = db.getModel('tests');
       const item1 = await TestModel.create();
@@ -420,7 +418,7 @@ describe('sequence field', () => {
       await db.sync();
 
       const now = new Date();
-      const YYYYMMDD = moment(now).format('YYYYMMDD');
+      const YYYYMMDD = dayjs(now).format('YYYYMMDD');
 
       const TestModel = db.getModel('tests');
       const item1 = await TestModel.create();
@@ -448,7 +446,7 @@ describe('sequence field', () => {
       await db.sync();
 
       const now = new Date();
-      const YYYYMMDD = moment(now).format('YYYYMMDD');
+      const YYYYMMDD = dayjs(now).format('YYYYMMDD');
 
       const TestModel = db.getModel('tests');
       const item1 = await TestModel.create();
@@ -542,8 +540,8 @@ describe('sequence field', () => {
 
       const now = new Date();
       const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-      const NOW = moment(now).format('YYYYMMDD');
-      const YESTERDAY = moment(yesterday).format('YYYYMMDD');
+      const NOW = dayjs(now).format('YYYYMMDD');
+      const YESTERDAY = dayjs(yesterday).format('YYYYMMDD');
 
       const TestModel = db.getModel('tests');
       const item1 = await TestModel.create({ createdAt: yesterday });
@@ -589,7 +587,7 @@ describe('sequence field', () => {
       await db.sync();
 
       const now = new Date();
-      const YYYYMMDD = moment(now).format('YYYYMMDD');
+      const YYYYMMDD = dayjs(now).format('YYYYMMDD');
       const name = `BB${YYYYMMDD}11`;
 
       const TestModel = db.getModel('tests');
@@ -617,7 +615,7 @@ describe('sequence field', () => {
       await db.sync();
 
       const now = new Date();
-      const YYYYMMDD = moment(now).format('YYYYMMDD');
+      const YYYYMMDD = dayjs(now).format('YYYYMMDD');
       const name = `BB${YYYYMMDD}11`;
 
       const TestModel = db.getModel('tests');
@@ -645,7 +643,7 @@ describe('sequence field', () => {
       await db.sync();
 
       const now = new Date();
-      const YYYYMMDD = moment(now).format('YYYYMMDD');
+      const YYYYMMDD = dayjs(now).format('YYYYMMDD');
 
       const TestModel = db.getModel('tests');
       await expect(TestModel.create({ name: `BB${YYYYMMDD}11` })).rejects.toThrow();

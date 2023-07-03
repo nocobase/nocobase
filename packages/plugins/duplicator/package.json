@@ -27,7 +27,6 @@
     "@koa/multer": "^3.0.2",
     "@types/archiver": "^5.3.1",
     "archiver": "^5.3.1",
-    "dayjs": "^1.11.7",
     "decompress": "^4.2.1",
     "inquirer": "^8.0.0",
     "koa-send": "^5.0.1",

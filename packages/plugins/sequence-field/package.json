@@ -19,7 +19,6 @@
     "client.d.ts"
   ],
   "dependencies": {
-    "moment": "^2.29.1",
     "classnames": "^2.3.1",
     "cron-parser": "4.4.0",
     "react-js-cron": "^3.1.0"

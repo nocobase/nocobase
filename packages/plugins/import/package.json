@@ -19,7 +19,6 @@
     "client.d.ts"
   ],
   "dependencies": {
-    "moment": "^2.29.1",
     "mathjs": "^10.6.0",
     "@koa/multer": "^3.0.2",
     "file-saver": "^2.0.5",
