@@ -6,7 +6,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useDesignable } from '../../';
 import { useACLRolesCheck, useRecordPkValue } from '../../acl/ACLProvider';
 import { CollectionProvider, useCollection, useCollectionManager } from '../../collection-manager';
-import { useRecord } from '../../record-provider';
+import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, useActionContext, useCompile } from '../../schema-component';
 import { linkageAction } from '../../schema-component/antd/action/utils';
 
@@ -111,7 +111,9 @@ export const CreateRecordAction = observer(
             }}
           />
           <CollectionProvider name={currentCollection}>
-            <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
+            <RecordProvider record={{ ...values, __collection: currentCollection }}>
+              <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
+            </RecordProvider>
           </CollectionProvider>
         </ActionContextProvider>
       </div>
