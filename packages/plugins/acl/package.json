@@ -19,11 +19,12 @@
     "client.d.ts"
   ],
   "dependencies": {
-    "jsonwebtoken": "^8.5.1"
   },
   "devDependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "jsonwebtoken": "^8.5.1",
+    "@types/jsonwebtoken": "^8.5.8",
     "@nocobase/plugin-ui-schema-storage": "0.10.0-alpha.5",
     "@nocobase/test": "0.10.0-alpha.5",
     "@nocobase/plugin-collection-manager": "0.10.0-alpha.5",

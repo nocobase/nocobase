@@ -17,6 +17,9 @@
     "client.js",
     "client.d.ts"
   ],
+  "dependencies": {
+    "json5": "^2.2.3"
+  },
   "devDependencies": {
     "react": "^18.2.0",
     "antd": "^4.24.8",
@@ -32,8 +35,5 @@
     "@nocobase/client": "0.10.0-alpha.5",
     "@nocobase/server": "0.10.0-alpha.5",
     "@nocobase/test": "0.10.0-alpha.5"
-  },
-  "dependencies": {
-    "json5": "^2.2.3"
   }
 }
