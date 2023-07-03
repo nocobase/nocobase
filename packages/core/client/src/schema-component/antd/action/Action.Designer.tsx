@@ -6,6 +6,7 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../..';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { useRecord } from '../../../record-provider';
 import { OpenModeSchemaItems } from '../../../schema-items';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useCollectionState } from '../../../schema-settings/DataTemplates/hooks/useCollectionState';
@@ -61,6 +62,7 @@ export const ActionDesigner = (props) => {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const isAction = useLinkageAction();
+  const record = useRecord();
   const isPopupAction = ['create', 'update', 'view', 'customize:popup', 'duplicate'].includes(
     fieldSchema['x-action'] || '',
   );
@@ -248,7 +250,7 @@ export const ActionDesigner = (props) => {
           <SchemaSettings.ModalItem
             title={t('Duplicate mode')}
             components={{ Tree }}
-            scope={{ getEnableFieldTree, collectionName: name, getOnLoadData, getOnCheck }}
+            scope={{ getEnableFieldTree, collectionName: record?.__collection || name, getOnLoadData, getOnCheck }}
             schema={
               {
                 type: 'object',
