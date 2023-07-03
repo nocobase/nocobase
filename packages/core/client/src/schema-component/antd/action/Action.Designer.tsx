@@ -274,7 +274,7 @@ export const ActionDesigner = (props) => {
                   },
                   collection: {
                     type: 'string',
-                    title: '{{ t("Collection") }}',
+                    title: '{{ t("Target collection") }}',
                     required: true,
                     description: t('If collection inherits, choose inherited collections as templates'),
                     default: '{{ collectionName }}',

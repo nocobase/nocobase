@@ -10,6 +10,7 @@ import {
   useAPIClient,
   useBlockRequestContext,
   useCollection,
+  useCollectionManager,
   useDesignable,
   useRecord,
 } from '../../';
@@ -36,13 +37,18 @@ export const DuplicateAction = observer((props: any) => {
   const { id, __collection } = useRecord();
   const ctx = useActionContext();
   const { name } = useCollection();
+  const { getCollectionFields } = useCollectionManager();
   const { t } = useTranslation();
+  const collectionFields = getCollectionFields(__collection);
   const template = {
     key: 'duplicate',
     dataId: id,
     default: true,
-    fields: duplicateFields || [],
-    collection: duplicateCollection || name,
+    fields:
+      duplicateFields.filter((v) => {
+        return collectionFields.find((k) => k.name === v);
+      }) || [],
+    collection: __collection,
   };
   const isLinkBtn = fieldSchema['x-component'] === 'Action.Link';
   const handelQuickDuplicate = async () => {
@@ -66,7 +72,6 @@ export const DuplicateAction = observer((props: any) => {
       console.error(error); // Handle or log the error appropriately
     }
   };
-  console.log(duplicateCollection || name);
   const handelDuplicate = () => {
     if (!disabled && !loading) {
       if (duplicateFields?.length > 0) {
