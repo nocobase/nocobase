@@ -116,6 +116,7 @@ const useUpdateCollectionField = () => {
       await form.submit();
       const values = cloneDeep(form.values);
       if (values.autoCreateReverseField) {
+        /* empty */
       } else {
         delete values.reverseField;
       }

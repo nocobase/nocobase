@@ -42,7 +42,9 @@ const providers = [
 ];
 
 const App = compose(...providers)(() => {
-  const { data, loading } = useRequest({
+  const { data, loading } = useRequest<{
+    data: any;
+  }>({
     url: 'routes:getAccessible',
   });
   if (loading) {

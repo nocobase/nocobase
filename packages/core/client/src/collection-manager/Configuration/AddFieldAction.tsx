@@ -120,6 +120,7 @@ export const useCollectionFieldFormValues = () => {
     getValues() {
       const values = cloneDeep(form.values);
       if (values.autoCreateReverseField) {
+        /* empty */
       } else {
         delete values.reverseField;
       }
@@ -143,6 +144,7 @@ const useCreateCollectionField = () => {
       field.data.loading = true;
       const values = cloneDeep(form.values);
       if (values.autoCreateReverseField) {
+        /* empty */
       } else {
         delete values.reverseField;
       }

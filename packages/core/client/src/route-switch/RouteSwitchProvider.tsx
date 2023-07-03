@@ -10,7 +10,9 @@ export function RouteSwitchProvider(props: RouteSwitchProviderProps) {
 }
 
 export function RemoteRouteSwitchProvider(props: RouteSwitchProviderProps) {
-  const { data, loading } = useRequest({
+  const { data, loading } = useRequest<{
+    data: any[];
+  }>({
     url: 'uiRoutes:getAccessible',
   });
   if (loading) {

@@ -115,7 +115,7 @@ export const Form: React.FC<FormProps> & { Designer?: any } = observer(
   { displayName: 'Form' },
 );
 
-Form.Designer = () => {
+Form.Designer = function Designer() {
   const { name, title } = useCollection();
   const template = useSchemaTemplate();
   return (

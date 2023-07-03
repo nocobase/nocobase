@@ -72,7 +72,9 @@ const MenuEditor = (props) => {
 
   const adminSchemaUid = useAdminSchemaUid();
 
-  const { data, loading } = useRequest(
+  const { data, loading } = useRequest<{
+    data: any;
+  }>(
     {
       url: `/uiSchemas:getJsonSchema/${adminSchemaUid}`,
     },

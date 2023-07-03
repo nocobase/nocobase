@@ -1,6 +1,7 @@
 import { ArrayField } from '@formily/core';
 import { useField } from '@formily/react';
 import { SchemaComponentOptions, useAPIClient, useRequest } from '@nocobase/client';
+import { error } from '@nocobase/utils/client';
 import React from 'react';
 
 const useChinaRegionDataSource = (options) => {
@@ -65,6 +66,9 @@ const useChinaRegionLoadData = () => {
             return item;
           }) || [];
         field.dataSource = [...field.dataSource];
+      })
+      .catch((err) => {
+        error(err);
       });
   };
 };

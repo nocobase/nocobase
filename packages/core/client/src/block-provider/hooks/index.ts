@@ -891,7 +891,9 @@ export const useAssociationFilterProps = () => {
   const labelKey = fieldSchema['x-component-props']?.fieldNames?.label || valueKey;
   const field = useField();
   const collectionFieldName = collectionField.name;
-  const { data, params, run } = useRequest(
+  const { data, params, run } = useRequest<{
+    data: { [key: string]: any }[];
+  }>(
     {
       resource: collectionField.target,
       action: 'list',
@@ -960,21 +962,21 @@ const isOptionalField = (field) => {
 
 export const useAssociationFilterBlockProps = () => {
   const collectionField = AssociationFilter.useAssociationField();
-  if (!collectionField) {
-    return {};
-  }
   const fieldSchema = useFieldSchema();
   const optionalFieldList = useOptionalFieldList();
   const { getDataBlocks } = useFilterBlock();
   const collectionFieldName = collectionField.name;
   const field = useField();
 
-  let list, onSelected, handleSearchInput, params, run, data, valueKey, labelKey, filterKey;
+  let list, handleSearchInput, params, run, data, valueKey, labelKey, filterKey;
 
   valueKey = collectionField?.targetKey || 'id';
   labelKey = fieldSchema['x-component-props']?.fieldNames?.label || valueKey;
 
-  ({ data, params, run } = useRequest(
+  // eslint-disable-next-line prefer-const
+  ({ data, params, run } = useRequest<{
+    data: { [key: string]: any }[];
+  }>(
     {
       resource: collectionField?.target,
       action: 'list',
@@ -998,6 +1000,10 @@ export const useAssociationFilterBlockProps = () => {
       run();
     }
   }, [labelKey, valueKey, JSON.stringify(field.componentProps?.params || {}), isOptionalField(fieldSchema)]);
+
+  if (!collectionField) {
+    return {};
+  }
 
   if (isOptionalField(fieldSchema)) {
     const field = optionalFieldList.find((field) => field.name === fieldSchema.name);
@@ -1036,7 +1042,7 @@ export const useAssociationFilterBlockProps = () => {
     };
   }
 
-  onSelected = (value) => {
+  const onSelected = (value) => {
     const { targets, uid } = findFilterTargets(fieldSchema);
 
     getDataBlocks().forEach((block) => {

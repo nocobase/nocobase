@@ -63,7 +63,7 @@ const stringToColor = function (str: string) {
 const PluginDocument: React.FC<PluginDocumentProps> = (props) => {
   const [docLang, setDocLang] = useState('');
   const { name, path } = props;
-  const { data, loading, error } = useRequest(
+  const { data, loading, error } = useRequest<any>(
     {
       url: '/plugins:getTabInfo',
       params: {
@@ -238,7 +238,7 @@ export const PluginCard = (props: { data: IPluginData }) => {
   const { t } = useTranslation();
   const { enabled, name, displayName, id, description, version } = data;
   const [plugin, setPlugin] = useState<any>(null);
-  const { data: tabsData, run } = useRequest(
+  const { data: tabsData, run } = useRequest<any>(
     {
       url: '/plugins:getTabs',
     },
@@ -341,7 +341,15 @@ export const BuiltInPluginCard = (props: { data: IPluginData }) => {
   } = props;
   const navigate = useNavigate();
   const [plugin, setPlugin] = useState<any>(null);
-  const { data: tabsData, run } = useRequest(
+  const { data: tabsData, run } = useRequest<{
+    data: {
+      tabs: {
+        title: string;
+        path: string;
+      }[];
+      filterByTk: string;
+    };
+  }>(
     {
       url: '/plugins:getTabs',
     },
@@ -392,6 +400,3 @@ export const BuiltInPluginCard = (props: { data: IPluginData }) => {
     </>
   );
 };
-function useCallabck(arg0: () => void, arg1: undefined[]) {
-  throw new Error('Function not implemented.');
-}

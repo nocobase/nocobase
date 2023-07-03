@@ -15,7 +15,15 @@ export function AntdConfigProvider(props) {
   const { remoteLocale, ...others } = props;
   const api = useAPIClient();
   const { i18n } = useTranslation();
-  const { data, loading } = useRequest(
+  const { data, loading } = useRequest<{
+    data: {
+      lang: string;
+      resources: any;
+      moment: string;
+      antd: any;
+      cron: any;
+    };
+  }>(
     {
       url: 'app:getLang',
       params: {

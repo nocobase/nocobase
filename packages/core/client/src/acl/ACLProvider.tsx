@@ -33,7 +33,17 @@ export const ACLRolesCheckProvider = (props) => {
   const route = getRouteUrl(props.children.props);
   const { setDesignable } = useDesignable();
   const api = useAPIClient();
-  const result = useRequest(
+  const result = useRequest<{
+    data: {
+      snippets: string[];
+      role: string;
+      resources: string[];
+      actions: any;
+      actionAlias: any;
+      strategy: any;
+      allowAll: boolean;
+    };
+  }>(
     {
       url: 'roles:check',
     },
@@ -122,12 +132,14 @@ const getIgnoreScope = (options: any = {}) => {
 };
 
 const useAllowedActions = () => {
-  const result = useBlockRequestContext() || { service: useResourceActionContext() };
+  const service = useResourceActionContext();
+  const result = useBlockRequestContext() || { service };
   return result?.allowedActions ?? result?.service?.data?.meta?.allowedActions;
 };
 
 const useResourceName = () => {
-  const result = useBlockRequestContext() || { service: useResourceActionContext() };
+  const service = useResourceActionContext();
+  const result = useBlockRequestContext() || { service };
   return result?.props?.resource || result?.service?.defaultRequest?.resource;
 };
 
@@ -240,20 +252,24 @@ export const ACLCollectionFieldProvider = (props) => {
   const fieldSchema = useFieldSchema();
   const field = useField<Field>();
   const { allowAll } = useACLRoleContext();
-  if (allowAll) {
-    return <>{props.children}</>;
-  }
-  if (!fieldSchema['x-collection-field']) {
-    return <>{props.children}</>;
-  }
   const { whitelist } = useACLFieldWhitelist();
   const allowed = whitelist.length > 0 ? whitelist.includes(fieldSchema.name) : true;
+
   useEffect(() => {
     if (!allowed) {
       field.required = false;
       field.display = 'hidden';
     }
   }, [allowed]);
+
+  if (allowAll) {
+    return <>{props.children}</>;
+  }
+
+  if (!fieldSchema['x-collection-field']) {
+    return <>{props.children}</>;
+  }
+
   if (!allowed) {
     return null;
   }
