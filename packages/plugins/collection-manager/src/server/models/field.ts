@@ -1,5 +1,4 @@
-import Database, { Collection, MagicAttributeModel } from '@nocobase/database';
-import { SyncOptions, Transactionable } from 'sequelize';
+import Database, { Collection, MagicAttributeModel, SyncOptions, Transactionable } from '@nocobase/database';
 
 interface LoadOptions extends Transactionable {
   // TODO

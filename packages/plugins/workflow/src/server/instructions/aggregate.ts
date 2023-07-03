@@ -1,9 +1,7 @@
-import { DataTypes } from 'sequelize';
-
+import { BelongsToManyRepository, DataTypes, HasManyRepository } from '@nocobase/database';
+import { JOB_STATUS } from '../constants';
 import FlowNodeModel from '../models/FlowNode';
 import Processor from '../Processor';
-import { JOB_STATUS } from '../constants';
-import { BelongsToManyRepository, HasManyRepository } from '@nocobase/database';
 
 const aggregators = {
   count: 'count',

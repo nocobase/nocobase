@@ -19,7 +19,6 @@
     "client.d.ts"
   ],
   "dependencies": {
-    "sequelize": "^6.26.0"
   },
   "devDependencies": {
     "supertest": "^6.1.6",

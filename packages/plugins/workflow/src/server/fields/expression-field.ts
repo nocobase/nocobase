@@ -1,6 +1,4 @@
-import { DataTypes } from 'sequelize';
-
-import { BaseFieldOptions, Field } from '@nocobase/database';
+import { BaseFieldOptions, DataTypes, Field } from '@nocobase/database';
 
 export interface ExpressionFieldOptions extends BaseFieldOptions {
   type: 'expression';

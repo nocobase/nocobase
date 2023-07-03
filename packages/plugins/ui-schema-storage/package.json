@@ -19,7 +19,6 @@
     "client.d.ts"
   ],
   "dependencies": {
-    "sequelize": "^6.26.0"
   },
   "devDependencies": {
     "@nocobase/actions": "0.10.0-alpha.5",

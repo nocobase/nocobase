@@ -1,8 +1,16 @@
-import { BaseColumnFieldOptions, Field, FieldContext, Model } from '@nocobase/database';
+import {
+  BaseColumnFieldOptions,
+  DataTypes,
+  Field,
+  FieldContext,
+  Model,
+  Transactionable,
+  ValidationError,
+  ValidationErrorItem,
+} from '@nocobase/database';
 import { lodash, Registry } from '@nocobase/utils';
 import parser from 'cron-parser';
 import moment from 'moment';
-import { DataTypes, Transactionable, ValidationError, ValidationErrorItem } from 'sequelize';
 
 export interface Pattern {
   validate?(options): string | null;

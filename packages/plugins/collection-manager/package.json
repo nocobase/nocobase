@@ -21,7 +21,6 @@
   "dependencies": {
     "async-mutex": "^0.3.2",
     "@hapi/topo": "^6.0.0",
-    "sequelize": "^6.26.0",
     "toposort": "^2.0.2"
   },
   "devDependencies": {

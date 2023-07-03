@@ -1,6 +1,5 @@
-import Database from '@nocobase/database';
+import Database, { Model } from '@nocobase/database';
 import { uid } from '@nocobase/utils';
-import { Model } from 'sequelize';
 
 const setTargetKey = (db: Database, model: Model) => {
   if (model.get('targetKey')) {

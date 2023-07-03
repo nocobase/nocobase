@@ -19,7 +19,6 @@
     "client.d.ts"
   ],
   "dependencies": {
-    "sequelize": "^6.26.0",
     "@aws-sdk/client-s3": "^3.245.0",
     "@koa/multer": "^3.0.0",
     "cos-nodejs-sdk-v5": "^2.11.14",

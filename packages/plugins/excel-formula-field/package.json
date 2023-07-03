@@ -16,7 +16,6 @@
     "client.d.ts"
   ],
   "dependencies": {
-    "sequelize": "^6.26.0",
     "@formulajs/formulajs": "^4.2.0"
   },
   "devDependencies": {
