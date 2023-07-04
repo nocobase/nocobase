@@ -32,19 +32,19 @@ export const GlobalThemeProvider = ({ children }) => {
   const currentEditingThemeRef = useRef<ThemeItem>(null);
 
   const setCurrentEditingTheme = useCallback((themeItem: ThemeItem) => {
-    currentEditingThemeRef.current = _.cloneDeep(themeItem);
+    currentEditingThemeRef.current = themeItem ? _.cloneDeep(themeItem) : themeItem;
   }, []);
 
   const getCurrentEditingTheme = useCallback(() => {
-    return _.cloneDeep(currentEditingThemeRef.current);
+    return currentEditingThemeRef.current;
   }, []);
 
   const setCurrentSettingTheme = useCallback((theme: ThemeConfig) => {
-    currentSettingThemeRef.current = _.cloneDeep(theme);
+    currentSettingThemeRef.current = theme ? _.cloneDeep(theme) : theme;
   }, []);
 
   const getCurrentSettingTheme = useCallback(() => {
-    return _.cloneDeep(currentSettingThemeRef.current);
+    return currentSettingThemeRef.current;
   }, []);
 
   const value = useMemo(() => {

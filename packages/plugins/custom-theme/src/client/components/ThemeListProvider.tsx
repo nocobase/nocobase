@@ -2,6 +2,7 @@ import { ReturnTypeOfUseRequest, useRequest } from '@nocobase/client';
 import { isString } from '@nocobase/utils';
 import { error } from '@nocobase/utils/client';
 import { theme } from 'antd';
+import _ from 'lodash';
 import React, { createContext, useMemo } from 'react';
 import { ThemeItem } from '../../types';
 
@@ -65,6 +66,7 @@ ThemeListProvider.displayName = 'ThemeListProvider';
  * 注: 之所以要保存为字符串, 是因为 JSON 无法保存函数
  */
 function paseThemeConfig(themeConfig: ThemeItem) {
+  themeConfig = _.cloneDeep(themeConfig);
   if (isString(themeConfig.config.algorithm)) {
     themeConfig.config.algorithm = theme[themeConfig.config.algorithm];
   }

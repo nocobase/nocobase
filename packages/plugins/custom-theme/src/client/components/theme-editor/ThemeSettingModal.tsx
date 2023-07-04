@@ -1,6 +1,7 @@
 import { useAPIClient } from '@nocobase/client';
 import { error } from '@nocobase/utils/client';
 import { Button, Form, Input, Modal, Space, theme as antdTheme } from 'antd';
+import _ from 'lodash';
 import React from 'react';
 import { ThemeConfig } from '../../../types';
 import { useUpdateThemeSettings } from '../../hooks/useThemeSettings';
@@ -72,6 +73,8 @@ ThemeSettingModal.displayName = 'ThemeSettingModal';
 export default ThemeSettingModal;
 
 export function parseTheme(themeConfig: any) {
+  themeConfig = _.cloneDeep(themeConfig);
+
   if (!themeConfig.algorithm) {
     return themeConfig;
   }
