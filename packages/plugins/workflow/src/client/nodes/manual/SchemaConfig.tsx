@@ -1,4 +1,4 @@
-import React, { useContext, useMemo, useState } from 'react';
+import { default as React, default as React, useContext, useMemo, useState } from 'react';
 
 import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 
@@ -138,7 +138,7 @@ function AddBlockButton(props: any) {
     {
       type: 'itemGroup',
       title: '{{t("Form")}}',
-      children: Array.from(manualFormTypes.getValues()).map((item) => {
+      children: Array.from(manualFormTypes.getValues()).map((item: ManualFormType) => {
         const { useInitializer: getInitializer } = item.config;
         return getInitializer();
       }),
@@ -301,7 +301,7 @@ export function SchemaConfig({ value, onChange }) {
           ctx.refresh?.();
           const { tabs } = lodash.get(schema.toJSON(), 'properties.drawer.properties') as { tabs: ISchema };
           const forms = Array.from(manualFormTypes.getValues()).reduce(
-            (result, item) => Object.assign(result, item.config.parseFormOptions(tabs)),
+            (result, item: ManualFormType) => Object.assign(result, item.config.parseFormOptions(tabs)),
             {},
           );
           form.setValuesIn('forms', forms);
@@ -316,8 +316,9 @@ export function SchemaConfig({ value, onChange }) {
           AddActionButton,
           ...trigger.initializers,
           ...nodeInitializers,
+          // @ts-ignore
           ...Array.from(manualFormTypes.getValues()).reduce(
-            (result, item) => Object.assign(result, item.config.initializers),
+            (result, item: ManualFormType) => Object.assign(result, item.config.initializers),
             {},
           ),
         }}
@@ -326,8 +327,9 @@ export function SchemaConfig({ value, onChange }) {
           schema={schema}
           components={{
             ...nodeComponents,
+            // @ts-ignore
             ...Array.from(manualFormTypes.getValues()).reduce(
-              (result, item) => Object.assign(result, item.config.components),
+              (result, item: ManualFormType) => Object.assign(result, item.config.components),
               {},
             ),
             FormBlockProvider,
