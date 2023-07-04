@@ -17,6 +17,9 @@ export const createTokenBlacklistService = (
     async add(values) {
       return repo.model.findOrCreate({
         defaults: values,
+        where: {
+          token: values.token,
+        },
       });
     },
     async deleteExpiredToken() {
