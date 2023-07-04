@@ -1,3 +1,4 @@
+import lodash from 'lodash';
 import {
   Association,
   BelongsTo,
@@ -10,7 +11,6 @@ import {
 } from 'sequelize';
 import { Model } from './model';
 import { UpdateGuard } from './update-guard';
-import lodash from 'lodash';
 
 function isUndefinedOrNull(value: any) {
   return typeof value === 'undefined' || value === null;
@@ -374,6 +374,11 @@ export async function updateMultipleAssociation(
   const association = <BelongsToMany | HasMany>modelAssociationByKey(model, key);
 
   if (!association) {
+    return false;
+  }
+
+  // @ts-ignore skip update association if through model is a view
+  if (association.through && association.through.model.options.view) {
     return false;
   }
 

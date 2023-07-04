@@ -2,7 +2,7 @@
 
 ## 简介
 
-该插件允许你创建和管理 API，生成的 API keys 可以用于访问 `NocoBase` 所有 API。
+该插件允许你创建和管理 API keys，生成的 API key 可以用于访问 `NocoBase` 所有 API。
 
 
 ## 权限控制

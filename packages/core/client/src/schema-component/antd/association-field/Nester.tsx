@@ -63,9 +63,8 @@ const ToManyNester = observer(
                             insertCount: 1,
                           });
                           field.value.splice(index + 1, 0, {});
-
-                          each(field.form.fields, (field, key) => {
-                            if (!field) {
+                          each(field.form.fields, (targetField, key) => {
+                            if (!targetField) {
                               delete field.form.fields[key];
                             }
                           });

@@ -16,6 +16,16 @@ group:
 
 <code src="./demos/demo2.tsx"></code>
 
+### DatePicker (showTime=false,gmt=true,utc=true)
+
+<code src="./demos/demo7.tsx"></code>
+
+
+### DatePicker (showTime=false,gmt=false,utc=true)
+
+<code src="./demos/demo8.tsx"></code>
+
+
 ### DatePicker (non-UTC)
 
 <code src="./demos/demo3.tsx"></code>
@@ -31,6 +41,7 @@ group:
 ### RangePicker (non-UTC)
 
 <code src="./demos/demo6.tsx"></code>
+
 
 ## API
 

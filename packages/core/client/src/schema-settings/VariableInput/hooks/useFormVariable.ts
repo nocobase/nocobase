@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import { useCompile, useGetFilterOptions } from '../../../schema-component';
-import { Schema } from '@formily/react';
 import { FieldOption, Option } from '../type';
 import { useTranslation } from 'react-i18next';
 
@@ -50,13 +49,11 @@ export const useFormVariable = ({
   blockForm,
   rootCollection,
   operator,
-  schema,
   level,
 }: {
   blockForm?: any;
   rootCollection: string;
   operator?: any;
-  schema: Schema;
   level?: number;
 }) => {
   const compile = useCompile();

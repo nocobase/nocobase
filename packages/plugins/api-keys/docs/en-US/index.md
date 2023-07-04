@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This plugin allows you to create and manage APIs. The generated API keys can be used to access all `NocoBase` APIs.
+This plugin allows you to create and manage API keys. The generated API key can be used to access all `NocoBase` APIs.
 
 ## Access Control
 

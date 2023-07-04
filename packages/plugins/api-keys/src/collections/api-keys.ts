@@ -39,23 +39,14 @@ export default {
       uiSchema: {
         type: 'object',
         title: '{{t("Roles")}}',
-        'x-component': 'AssociationField',
+        'x-component': 'Select',
         'x-component-props': {
           fieldNames: {
             label: 'title',
             value: 'name',
           },
-          service: {
-            params: {
-              filter: {
-                $and: [
-                  {
-                    users: { id: { $eq: '{{$user.id}}' } },
-                  },
-                ],
-              },
-            },
-          },
+          objectValue: true,
+          options: '{{ currentRoles }}',
         },
       },
     },
