@@ -13,8 +13,8 @@ interface EagerLoadingNode {
   parent?: EagerLoadingNode;
   instances?: Array<Model>;
   order?: any;
-  inspectInheritAttribute?: boolean;
   where?: any;
+  inspectInheritAttribute?: boolean;
 }
 
 const pushAttribute = (node, attribute) => {
@@ -354,6 +354,11 @@ export class EagerLoadingTree {
           data: node.instances,
           dataCollection: this.db.modelCollection.get(node.model),
         });
+      }
+
+      // skip pivot attributes
+      if (node.association?.as == '_pivot_') {
+        return;
       }
 
       // if no attributes are specified, return empty fields
