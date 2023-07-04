@@ -1,7 +1,7 @@
-import Database, { HasManyRepository, Repository } from '@nocobase/database';
+import Database, { BelongsToManyRepository, HasManyRepository, Repository } from '@nocobase/database';
 import Application from '@nocobase/server';
-import { createApp } from '..';
 import { pgOnly } from '@nocobase/test';
+import { createApp } from '..';
 
 pgOnly()('Inherited Collection', () => {
   let db: Database;
@@ -28,7 +28,70 @@ pgOnly()('Inherited Collection', () => {
     await app.destroy();
   });
 
-  it('should return child model at get action', async () => {
+  it('should return child model at get action in belongsToMany', async () => {
+    await collectionRepository.create({
+      values: {
+        name: 'parent',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await collectionRepository.create({
+      values: {
+        name: 'child',
+        fields: [{ type: 'string', name: 'childName' }],
+        inherits: ['parent'],
+      },
+      context: {},
+    });
+
+    await collectionRepository.create({
+      values: {
+        name: 'object',
+        fields: [
+          { type: 'string', name: 'name' },
+          { type: 'belongsToMany', name: 'assocs', target: 'parent' },
+        ],
+      },
+
+      context: {},
+    });
+
+    const child1 = await db.getRepository('child').create({
+      values: {
+        name: 'child1',
+        childName: 'child1',
+      },
+    });
+
+    const parent1 = await db.getRepository('parent').create({
+      values: {
+        name: 'parent1',
+      },
+    });
+
+    const object1 = await db.getRepository('object').create({
+      values: {
+        name: 'object1',
+        assocs: [{ id: parent1.id }, { id: child1.id }],
+      },
+    });
+
+    const child1ViaObject1 = await db.getRepository<BelongsToManyRepository>('object.assocs', object1.id).findOne({
+      filterByTk: child1.get('id'),
+      targetCollection: 'child',
+    });
+
+    expect(child1ViaObject1.get('childName')).toBe('child1');
+  });
+
+  it('should return child model at get action in hasMany', async () => {
     await collectionRepository.create({
       values: {
         name: 'parent',
