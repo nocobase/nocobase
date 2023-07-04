@@ -37,6 +37,7 @@ import {
   APIClientProvider,
   CollectionFieldOptions,
   CollectionManagerContext,
+  CollectionProvider,
   createDesignable,
   Designable,
   findFormBlock,
@@ -871,6 +872,7 @@ SchemaSettings.ModalItem = function ModalItem(props) {
   } = props;
   const options = useContext(SchemaOptionsContext);
   const cm = useContext(CollectionManagerContext);
+  const collection = useCollection();
   const apiClient = useAPIClient();
   if (hidden) {
     return null;
@@ -883,13 +885,15 @@ SchemaSettings.ModalItem = function ModalItem(props) {
         FormDialog({ title: schema.title || title, width }, () => {
           return (
             <CollectionManagerContext.Provider value={cm}>
-              <SchemaComponentOptions scope={options.scope} components={options.components}>
-                <FormLayout layout={'vertical'} style={{ minWidth: 520 }}>
-                  <APIClientProvider apiClient={apiClient}>
-                    <SchemaComponent components={components} scope={scope} schema={schema} />
-                  </APIClientProvider>
-                </FormLayout>
-              </SchemaComponentOptions>
+              <CollectionProvider collection={collection}>
+                <SchemaComponentOptions scope={options.scope} components={options.components}>
+                  <FormLayout layout={'vertical'} style={{ minWidth: 520 }}>
+                    <APIClientProvider apiClient={apiClient}>
+                      <SchemaComponent components={components} scope={scope} schema={schema} />
+                    </APIClientProvider>
+                  </FormLayout>
+                </SchemaComponentOptions>
+              </CollectionProvider>
             </CollectionManagerContext.Provider>
           );
         })

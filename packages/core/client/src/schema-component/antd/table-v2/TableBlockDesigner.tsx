@@ -58,7 +58,6 @@ export const TableBlockDesigner = () => {
           'x-component': 'Filter',
           'x-component-props': {
             dynamicComponent: (props) => FilterDynamicComponent({ ...props }),
-            collectionName: collection?.name,
           },
         },
       },
