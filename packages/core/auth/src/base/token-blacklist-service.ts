@@ -1,4 +1,4 @@
 export interface TokenBlacklistService {
   has(token: string): Promise<boolean>;
-  add(values: { token: string; expiration: string }): Promise<any>;
+  add(values: { token: string; expiration: string | Date }): Promise<any>;
 }
