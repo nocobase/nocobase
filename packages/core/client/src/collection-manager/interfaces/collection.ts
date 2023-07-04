@@ -21,7 +21,7 @@ export const collection: IField = {
   properties: {
     ...defaultProps,
   },
-  filterable: { operators: operators.enumType },
+  filterable: { operators: operators.collection },
   schemaInitialize(schema: ISchema, { block }) {
     const props = (schema['x-component-props'] = schema['x-component-props'] || {});
     props.style = {

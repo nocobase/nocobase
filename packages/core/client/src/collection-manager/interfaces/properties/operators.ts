@@ -137,3 +137,35 @@ export const tableoid = [
     },
   },
 ];
+
+export const collection = [
+  {
+    label: '{{t("is")}}',
+    value: '$eq',
+    selected: true,
+    schema: { 'x-component': 'CollectionSelect' },
+  },
+  {
+    label: '{{t("is not")}}',
+    value: '$ne',
+    schema: { 'x-component': 'CollectionSelect' },
+  },
+  {
+    label: '{{t("contains")}}',
+    value: '$in',
+    schema: {
+      'x-component': 'CollectionSelect',
+      'x-component-props': { mode: 'tags' },
+    },
+  },
+  {
+    label: '{{t("does not contain")}}',
+    value: '$notIn',
+    schema: {
+      'x-component': 'CollectionSelect',
+      'x-component-props': { mode: 'tags' },
+    },
+  },
+  { label: '{{t("is empty")}}', value: '$empty', noValue: true },
+  { label: '{{t("is not empty")}}', value: '$notEmpty', noValue: true },
+];
