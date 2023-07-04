@@ -15,7 +15,6 @@ describe('actions', () => {
       plugins: ['users', 'auth', 'api-keys', 'acl'],
     });
 
-    // app.plugin(ApiKeysPlugin);
     await app.loadAndInstall({ clean: true });
     db = app.db;
     repo = db.getRepository('apiKeys');

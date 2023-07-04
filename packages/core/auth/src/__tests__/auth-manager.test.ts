@@ -1,6 +1,6 @@
 import { Context } from '@nocobase/actions';
 import { Auth, AuthManager } from '@nocobase/auth';
-import Database, { Model, Repository } from '@nocobase/database';
+import Database, { Model } from '@nocobase/database';
 import { MockServer, mockServer } from '@nocobase/test';
 
 class MockStorer {
@@ -52,27 +52,21 @@ describe('auth-manager', () => {
   describe('middleware', () => {
     let app: MockServer;
     let db: Database;
-    let repo: Repository;
     let agent;
 
     beforeEach(async () => {
       app = mockServer({
         registerActions: true,
         acl: true,
-        plugins: ['users', 'auth', 'api-keys', 'acl'],
+        plugins: ['auth'],
       });
 
-      // app.plugin(ApiKeysPlugin);
       await app.loadAndInstall({ clean: true });
       db = app.db;
-      repo = db.getRepository('apiKeys');
       agent = app.agent();
     });
 
     afterEach(async () => {
-      await repo.destroy({
-        truncate: true,
-      });
       await db.close();
     });
 
