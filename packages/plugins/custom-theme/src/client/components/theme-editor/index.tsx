@@ -54,9 +54,7 @@ const CustomTheme = ({ onThemeChange }: { onThemeChange?: (theme: ThemeConfig) =
         await api.request({
           url: `themeConfig:update/${editingItem.id}`,
           method: 'POST',
-          data: {
-            ...editingItem,
-          },
+          data: editingItem,
         });
         refresh?.();
         message.success('保存成功');

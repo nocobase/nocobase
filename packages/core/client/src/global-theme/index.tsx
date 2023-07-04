@@ -36,7 +36,7 @@ export const GlobalThemeProvider = ({ children }) => {
   }, []);
 
   const getCurrentEditingTheme = useCallback(() => {
-    return currentEditingThemeRef.current;
+    return _.cloneDeep(currentEditingThemeRef.current);
   }, []);
 
   const setCurrentSettingTheme = useCallback((theme: ThemeConfig) => {
@@ -44,7 +44,7 @@ export const GlobalThemeProvider = ({ children }) => {
   }, []);
 
   const getCurrentSettingTheme = useCallback(() => {
-    return currentSettingThemeRef.current;
+    return _.cloneDeep(currentSettingThemeRef.current);
   }, []);
 
   const value = useMemo(() => {

@@ -71,15 +71,27 @@ ThemeSettingModal.displayName = 'ThemeSettingModal';
 
 export default ThemeSettingModal;
 
-export function parseTheme(themeConfig: ThemeConfig | { algorithm: string }) {
+export function parseTheme(themeConfig: any) {
   if (!themeConfig.algorithm) {
     return themeConfig;
   }
-  if (themeConfig.algorithm.toString() === antdTheme.darkAlgorithm.toString()) {
-    themeConfig.algorithm = 'darkAlgorithm';
-  }
-  if (themeConfig.algorithm.toString() === antdTheme.compactAlgorithm.toString()) {
-    themeConfig.algorithm = 'compactAlgorithm';
+  if (Array.isArray(themeConfig.algorithm)) {
+    themeConfig.algorithm = themeConfig.algorithm.map((algorithm) => parseAlgorithm(algorithm));
+  } else {
+    themeConfig.algorithm = parseAlgorithm(themeConfig.algorithm);
   }
   return themeConfig;
+}
+
+function parseAlgorithm(algorithm: ThemeConfig['algorithm']): string {
+  if (typeof algorithm === 'string') {
+    return algorithm;
+  }
+  if (algorithm.toString() === antdTheme.darkAlgorithm.toString()) {
+    return 'darkAlgorithm';
+  }
+  if (algorithm.toString() === antdTheme.compactAlgorithm.toString()) {
+    return 'compactAlgorithm';
+  }
+  return algorithm.toString();
 }

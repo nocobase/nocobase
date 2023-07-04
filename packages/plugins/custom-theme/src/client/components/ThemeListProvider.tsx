@@ -68,5 +68,13 @@ function paseThemeConfig(themeConfig: ThemeItem) {
   if (isString(themeConfig.config.algorithm)) {
     themeConfig.config.algorithm = theme[themeConfig.config.algorithm];
   }
+  if (Array.isArray(themeConfig.config.algorithm)) {
+    themeConfig.config.algorithm = themeConfig.config.algorithm.map((item) => {
+      if (isString(item)) {
+        return theme[item];
+      }
+      return item;
+    });
+  }
   return themeConfig;
 }
