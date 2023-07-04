@@ -22,6 +22,7 @@ describe('token-blacklist', () => {
     await repo.destroy({
       truncate: true,
     });
+    await db.close();
   });
 
   it('add and has correctly', async () => {

@@ -1,6 +1,7 @@
 import { Context } from '@nocobase/actions';
 import { Auth, AuthManager } from '@nocobase/auth';
-import { Model } from '@nocobase/database';
+import Database, { Model, Repository } from '@nocobase/database';
+import { MockServer, mockServer } from '@nocobase/test';
 
 class MockStorer {
   elements: Map<string, any> = new Map();
@@ -46,5 +47,66 @@ describe('auth-manager', () => {
     authManager.registerTypes('basic', { auth: BasicAuth });
     const authenticator = await authManager.get('basic-test', {} as Context);
     expect(authenticator).toBeInstanceOf(BasicAuth);
+  });
+
+  describe('middleware', () => {
+    let app: MockServer;
+    let db: Database;
+    let repo: Repository;
+    let agent;
+
+    beforeEach(async () => {
+      app = mockServer({
+        registerActions: true,
+        acl: true,
+        plugins: ['users', 'auth', 'api-keys', 'acl'],
+      });
+
+      // app.plugin(ApiKeysPlugin);
+      await app.loadAndInstall({ clean: true });
+      db = app.db;
+      repo = db.getRepository('apiKeys');
+      agent = app.agent();
+    });
+
+    afterEach(async () => {
+      await repo.destroy({
+        truncate: true,
+      });
+      await db.close();
+    });
+
+    describe('blacklist', () => {
+      it('basic', async () => {
+        const hasFn = jest.fn();
+        const addFn = jest.fn();
+        app.authManager.setTokenBlacklistService({
+          has: hasFn,
+          add: addFn,
+        });
+        await agent.login(1);
+        const res = await agent.resource('auth').check();
+        expect(res.status).toBe(200);
+        expect(hasFn).toHaveBeenCalledTimes(1);
+        await agent.resource('auth').signOut();
+        expect(addFn).toHaveBeenCalledWith({
+          token: res.request.header['Authorization'].replace('Bearer ', ''),
+          // Date or String is ok
+          expiration: expect.any(String),
+        });
+      });
+
+      it('should throw 401 when token in blacklist', async () => {
+        const hasFn = jest.fn().mockImplementation(() => true);
+        app.authManager.setTokenBlacklistService({
+          has: hasFn,
+          add: jest.fn(),
+        });
+        await agent.login(1);
+        const res = await agent.resource('auth').check();
+        expect(res.status).toBe(401);
+        expect(res.text).toContain('token is not available');
+      });
+    });
   });
 });
