@@ -5,6 +5,7 @@ import { error } from '@nocobase/utils/client';
 import { Cascader, DatePicker, Input as AntInput, InputNumber, Select, Tag } from 'antd';
 import type { DefaultOptionType } from 'antd/lib/cascader';
 import classNames from 'classnames';
+import { cloneDeep } from 'lodash';
 import moment from 'moment';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -199,7 +200,7 @@ export function Input(props) {
     }, [type, useTypedConstant]);
 
   useEffect(() => {
-    setOptions([compile(constantOption), ...(scope ?? [])]);
+    setOptions([compile(constantOption), ...(scope ? cloneDeep(scope) : [])]);
   }, [scope]);
 
   const loadData = async (selectedOptions: DefaultOptionType[]) => {

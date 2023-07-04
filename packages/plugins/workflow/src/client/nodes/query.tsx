@@ -46,13 +46,14 @@ export default {
   useVariables({ config }, options) {
     const compile = useCompile();
     const { getCollectionFields } = useCollectionManager();
-    const depth = config?.params?.appends?.length
-      ? config?.params?.appends.reduce((max, item) => Math.max(max, item.split('.').length), 1)
-      : 0;
+    // const depth = config?.params?.appends?.length
+    //   ? config?.params?.appends.reduce((max, item) => Math.max(max, item.split('.').length), 1)
+    //   : 0;
     const result = getCollectionFieldOptions({
-      collection: config?.collection,
+      collection: config.collection,
       ...options,
-      depth: options?.depth ?? depth,
+      // depth: options?.depth ?? depth,
+      appends: config.params?.appends,
       compile,
       getCollectionFields,
     });

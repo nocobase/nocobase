@@ -143,9 +143,6 @@ function getGroupCalculators(group) {
 function Calculation({ calculator, operands = [], onChange }) {
   const compile = useCompile();
   const options = useWorkflowVariableOptions();
-  // NOTE: should not share the options in different Variable.Input.
-  //       the preloading will cause error (T-815).
-  const options2 = cloneDeep(options);
   return (
     <fieldset
       className={css`
@@ -182,7 +179,7 @@ function Calculation({ calculator, operands = [], onChange }) {
       <Variable.Input
         value={operands[1]}
         onChange={(v) => onChange({ calculator, operands: [operands[0], v] })}
-        scope={options2}
+        scope={options}
         useTypedConstant
       />
     </fieldset>

@@ -146,11 +146,11 @@ export default {
         },
       },
     ];
-    const depth = config.appends?.length
-      ? config.appends.reduce((max, item) => Math.max(max, item.split('.').length), 1) + 1
-      : 1;
+    // const depth = config.appends?.length
+    //   ? config.appends.reduce((max, item) => Math.max(max, item.split('.').length), 1) + 1
+    //   : 1;
     const result = getCollectionFieldOptions({
-      depth,
+      // depth,
       ...options,
       fields: rootFields,
       appends: config.appends?.map((item) => `data.${item}`),

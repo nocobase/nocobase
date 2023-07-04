@@ -110,7 +110,7 @@ export const BaseTypeSets = {
 // { type: 'reference', options: { collection: 'attachments', multiple: false } }
 // { type: 'reference', options: { collection: 'myExpressions', entity: false } }
 
-function matchFieldType(field, type, depth): boolean {
+function matchFieldType(field, type, appends): boolean {
   const inputType = typeof type;
   if (inputType === 'string') {
     return BaseTypeSets[type]?.has(field.interface);
@@ -132,7 +132,7 @@ function matchFieldType(field, type, depth): boolean {
   }
 
   if (inputType === 'function') {
-    return type(field, depth);
+    return type(field, appends);
   }
 
   return false;
@@ -142,25 +142,34 @@ function isAssociationField(field): boolean {
   return ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type);
 }
 
-export function filterTypedFields({ fields, types, depth = 0, compile, getCollectionFields }) {
+function getNextAppends(field, appends: string[]) {
+  const fieldPrefix = `${field.name}.`;
+  return appends.filter((item) => item.startsWith(fieldPrefix)).map((item) => item.replace(fieldPrefix, ''));
+}
+
+export function filterTypedFields({ fields, types, appends, compile, getCollectionFields }) {
   if (!types) {
     return fields;
   }
   return fields.filter((field) => {
-    if (
-      isAssociationField(field) &&
-      depth &&
-      filterTypedFields({
-        fields: getNormalizedFields(field.target, { compile, getCollectionFields }),
-        types,
-        depth: depth - 1,
-        compile,
-        getCollectionFields,
-      }).length
-    ) {
-      return true;
+    if (isAssociationField(field)) {
+      const nextAppends = getNextAppends(field, appends);
+      if (
+        (nextAppends.length || appends.includes(field.name)) &&
+        // depth &&
+        filterTypedFields({
+          fields: getNormalizedFields(field.target, { compile, getCollectionFields }),
+          types,
+          // depth: depth - 1,
+          appends: nextAppends,
+          compile,
+          getCollectionFields,
+        }).length
+      ) {
+        return true;
+      }
     }
-    return types.some((type) => matchFieldType(field, type, depth));
+    return types.some((type) => matchFieldType(field, type, appends));
   });
 }
 
@@ -239,7 +248,7 @@ async function loadChildren(option) {
   const result = getCollectionFieldOptions({
     collection: option.field.target,
     types: option.types,
-    depth: option.depth - 1,
+    appends: getNextAppends(option.field, option.appends),
     sourceKey: option.field.key,
     compile: this.compile,
     getCollectionFields: this.getCollectionFields,
@@ -257,7 +266,7 @@ async function loadChildren(option) {
 }
 
 export function getCollectionFieldOptions(options): VariableOption[] {
-  const { fields, collection, types, depth = 0, sourceKey, compile, getCollectionFields } = options;
+  const { fields, collection, types, depth = 0, sourceKey, appends = [], compile, getCollectionFields } = options;
   const normalizedFields = getNormalizedFields(collection, { compile, getCollectionFields });
   const computedFields = fields ?? normalizedFields;
   const boundLoadChildren = loadChildren.bind({ compile, getCollectionFields });
@@ -265,16 +274,18 @@ export function getCollectionFieldOptions(options): VariableOption[] {
   const result: VariableOption[] = filterTypedFields({
     fields: computedFields,
     types,
-    depth,
+    // depth,
+    appends,
     compile,
     getCollectionFields,
   })
-    .filter((field) => {
-      return !isAssociationField(field) || (depth && (!sourceKey || field.reverseKey !== sourceKey));
-    })
+    // .filter((field) => {
+    //   return !isAssociationField(field) || (depth && (!sourceKey || field.reverseKey !== sourceKey));
+    // })
     .map((field) => {
       const label = compile(field.uiSchema?.title || field.name);
-      const isLeaf = !isAssociationField(field) || !depth;
+      const nextAppends = getNextAppends(field, appends);
+      const isLeaf = !isAssociationField(field) || !nextAppends.length;
       return {
         label,
         key: field.name,
@@ -282,7 +293,8 @@ export function getCollectionFieldOptions(options): VariableOption[] {
         isLeaf,
         loadChildren: isLeaf ? null : boundLoadChildren,
         field,
-        depth,
+        // depth,
+        appends,
         types,
       };
     });

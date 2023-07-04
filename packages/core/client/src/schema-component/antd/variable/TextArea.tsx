@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Input } from 'antd';
 import { useForm } from '@formily/react';
 import { cx, css } from '@emotion/css';
 import * as sanitizeHTML from 'sanitize-html';
+import { cloneDeep } from 'lodash';
 
 import { error } from '@nocobase/utils/client';
 
@@ -198,7 +199,7 @@ export function TextArea(props) {
   const [range, setRange] = useState<[number, number, number, number]>([-1, 0, -1, 0]);
 
   useEffect(() => {
-    preloadOptions(scope ?? [], value ?? '')
+    preloadOptions(scope, value)
       .then((preloaded) => {
         setOptions(preloaded);
       })
@@ -383,7 +384,8 @@ export function TextArea(props) {
   );
 }
 
-async function preloadOptions(options, value) {
+async function preloadOptions(scope, value) {
+  const options = cloneDeep(scope ?? []);
   for (let matcher; (matcher = VARIABLE_RE.exec(value ?? '')); ) {
     const keys = matcher[1].split('.');
 
@@ -405,7 +407,7 @@ async function preloadOptions(options, value) {
       }
     }
   }
-  return [...options];
+  return options;
 }
 
 TextArea.ReadPretty = function ReadPretty(props): JSX.Element {
@@ -414,7 +416,7 @@ TextArea.ReadPretty = function ReadPretty(props): JSX.Element {
   const keyLabelMap = useMemo(() => createOptionsValueLabelMap(options), [options]);
 
   useEffect(() => {
-    preloadOptions(scope ?? [], value ?? '')
+    preloadOptions(scope, value)
       .then((preloaded) => {
         setOptions(preloaded);
       })
