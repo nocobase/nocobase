@@ -56,7 +56,7 @@ export class JwtService {
     }
     const { exp } = await this.decode(token);
 
-    return this.blacklist.set({
+    return this.blacklist.add({
       token,
       expiration: new Date(exp * 1000).toString(),
     });

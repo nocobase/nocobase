@@ -1,7 +1,11 @@
 import { TokenBlacklistService } from '@nocobase/auth';
 import { Repository } from '@nocobase/database';
 
-export const createTokenBlacklistService = (repo: Repository): TokenBlacklistService => {
+export const createTokenBlacklistService = (
+  repo: Repository,
+): TokenBlacklistService & {
+  deleteExpiredToken(): Promise<any>;
+} => {
   return {
     async has(token: string) {
       return !!(await repo.findOne({
@@ -15,6 +19,13 @@ export const createTokenBlacklistService = (repo: Repository): TokenBlacklistSer
         defaults: values,
       });
     },
+    async deleteExpiredToken() {
+      return repo.destroy({
+        filter: {
+          expiration: {
+            $dateNotAfter: new Date(),
+          },
+        },
       });
     },
   };

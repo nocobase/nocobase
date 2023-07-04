@@ -1,5 +1,6 @@
 import { Model } from '@nocobase/database';
 import { InstallOptions, Plugin } from '@nocobase/server';
+import { CronJob } from 'cron';
 import { resolve } from 'path';
 import { namespace, presetAuthenticator, presetAuthType } from '../preset';
 import authActions from './actions/auth';
@@ -12,11 +13,35 @@ import { createTokenBlacklistService } from './token-blacklist';
 export class AuthPlugin extends Plugin {
   afterAdd() {}
 
+  private deleteExpiredTokenJob: CronJob;
+
   async beforeLoad() {
     this.app.i18n.addResources('zh-CN', namespace, zhCN);
     this.app.i18n.addResources('en-US', namespace, enUS);
 
     this.app.db.registerModels({ AuthModel });
+  }
+
+  configureDefaultTokenBlacklistService() {
+    if (this.app.authManager.jwt.blacklist) {
+      // If blacklist service is set, should not configure default blacklist service
+      return;
+    }
+
+    const blacklistService = createTokenBlacklistService(this.db.getRepository('tokenBlacklist'));
+    this.app.authManager.setTokenBlacklistService(blacklistService);
+
+    this.deleteExpiredTokenJob = new CronJob(
+      // every day at 03:00
+      '0 3 * * *', //
+      async () => {
+        this.app.logger.info(`${this.name}: Start delete expired blacklist token`);
+        await blacklistService.deleteExpiredToken();
+        this.app.logger.info(`${this.name}: End delete expired blacklist token`);
+      },
+      null,
+      this.enabled,
+    );
   }
 
   async load() {
@@ -41,8 +66,7 @@ export class AuthPlugin extends Plugin {
       },
     });
 
-    const blacklistService = createTokenBlacklistService(this.db.getRepository('tokenBlacklist'));
-    this.app.authManager.setTokenBlacklistService(blacklistService);
+    this.configureDefaultTokenBlacklistService();
 
     this.app.authManager.registerTypes(presetAuthType, {
       auth: BasicAuth,
@@ -86,9 +110,13 @@ export class AuthPlugin extends Plugin {
     });
   }
 
-  async afterEnable() {}
+  async afterEnable() {
+    this.deleteExpiredTokenJob.start();
+  }
 
-  async afterDisable() {}
+  async afterDisable() {
+    this.deleteExpiredTokenJob.stop();
+  }
 
   async remove() {}
 }
