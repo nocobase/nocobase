@@ -163,7 +163,7 @@ export const FormDataTemplates = observer(
                     fields: {
                       type: 'array',
                       title: '{{ t("Data fields") }}',
-                      required: true,
+                      // required: true,
                       description: t('Only the selected fields will be used as the initialization data for the form'),
                       'x-decorator': 'FormItem',
                       'x-component': Tree,

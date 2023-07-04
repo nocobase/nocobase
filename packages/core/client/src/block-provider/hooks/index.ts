@@ -1,6 +1,6 @@
 import { SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { parse } from '@nocobase/utils/client';
-import { Modal, message } from 'antd';
+import { message, Modal } from 'antd';
 import { cloneDeep } from 'lodash';
 import get from 'lodash/get';
 import omit from 'lodash/omit';
@@ -1129,4 +1129,49 @@ export const useAssociationNames = () => {
   };
   getAssociationAppends(fieldSchema, '');
   return { appends: [...appends], updateAssociationValues: [...updateAssociationValues] };
+};
+
+export const useFormFieldsNames = (isTemplate) => {
+  const { getCollectionJoinField } = useCollectionManager();
+  const fieldSchema = useFieldSchema();
+  const fields = new Set([]);
+
+  if (!isTemplate) {
+    return fields;
+  }
+  const getFormFieldsNames = (schema, str) => {
+    schema.reduceProperties((pre, s) => {
+      const prefix = pre || str;
+      const collectionfield = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
+      const isAssociationSubfield = s.name.includes('.');
+      const isAssociationField =
+        collectionfield && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionfield?.type);
+      if (collectionfield || ((isAssociationField || isAssociationSubfield) && s['x-component'] !== 'TableField')) {
+        const fieldPath = !isAssociationField && isAssociationSubfield ? getAssociationPath(s.name) : s.name;
+        const path = prefix === '' || !prefix ? fieldPath : prefix + '.' + fieldPath;
+        fields.add(path);
+        if (['Nester', 'SubTable'].includes(s['x-component-props']?.mode)) {
+          const bufPrefix = prefix && prefix !== '' ? prefix + '.' + s.name : s.name;
+          getFormFieldsNames(s, bufPrefix);
+        }
+      } else if (
+        ![
+          'ActionBar',
+          'Action',
+          'Action.Link',
+          'Action.Modal',
+          'Selector',
+          'Viewer',
+          'AddNewer',
+          'AssociationField.Selector',
+          'AssociationField.AddNewer',
+          'TableField',
+        ].includes(s['x-component'])
+      ) {
+        getFormFieldsNames(s, str);
+      }
+    }, str);
+  };
+  getFormFieldsNames(fieldSchema, '');
+  return fields;
 };

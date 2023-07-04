@@ -1,14 +1,14 @@
 import { useFieldSchema } from '@formily/react';
-import { error, forEach } from '@nocobase/utils/client';
+import { forEach } from '@nocobase/utils/client';
 import { Select } from 'antd';
 import _ from 'lodash';
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { findFormBlock } from '../../../block-provider';
+import { useFormFieldsNames } from '../../../block-provider/hooks';
 import { useCollectionManager } from '../../../collection-manager';
 import { useDuplicatefieldsContext } from '../../../schema-initializer/components';
-
 export interface ITemplate {
   config?: {
     [key: string]: {
@@ -36,7 +36,7 @@ const useDataTemplates = () => {
   const data = useDuplicatefieldsContext();
   const { getCollectionJoinField } = useCollectionManager();
   if (data) {
-    return data;
+    return { ...data };
   }
   const { items = [], display = true } = findDataTemplates(fieldSchema);
   // 过滤掉已经被删除的字段
@@ -52,7 +52,7 @@ const useDataTemplates = () => {
         })
         .filter(Boolean);
     } catch (err) {
-      error(err);
+      console.error(err);
       item.fields = [];
     }
   });
@@ -72,66 +72,51 @@ const useDataTemplates = () => {
     enabled: items.length > 0 && items.every((item) => item.dataId !== undefined),
   };
 };
-function filterReferences(obj) {
-  const filteredObj = {};
-  for (const key in obj) {
-    if (typeof obj[key] !== 'object') {
-      filteredObj[key] = obj[key];
-    }
-  }
 
-  return filteredObj;
-}
 export const Templates = ({ style = {}, form }) => {
   const { templates, display, enabled, defaultTemplate } = useDataTemplates();
   const [value, setValue] = React.useState(defaultTemplate?.key || 'none');
   const api = useAPIClient();
   const { t } = useTranslation();
+  const formFields = useFormFieldsNames(defaultTemplate || templates);
+  const previousFormFields = useRef(null);
   useEffect(() => {
-    if (enabled && defaultTemplate) {
+    if (
+      enabled &&
+      formFields &&
+      (previousFormFields.current === null || !_.isEqual(formFields, previousFormFields.current))
+    ) {
+      previousFormFields.current = formFields;
       form.__template = true;
-      fetchTemplateData(api, defaultTemplate, t)
-        .then((data) => {
-          if (form && data) {
-            forEach(data, (value, key) => {
-              if (value) {
-                form.values[key] = value;
-              }
-            });
-          }
-          return data;
-        })
-        .catch((err) => {
-          console.error(err);
-        });
+      getTemplateData(defaultTemplate || templates?.find((v) => v.key === value));
     }
-  }, []);
+  }, [formFields]);
 
   const handleChange = useCallback(async (value, option) => {
     setValue(value);
     if (option.key !== 'none') {
-      fetchTemplateData(api, option, t)
-        .then((data) => {
-          if (form && data) {
-            // 切换之前先把之前的数据清空
-            form.reset();
-            form.__template = true;
-
-            forEach(data, (value, key) => {
-              if (value) {
-                form.values[key] = value;
-              }
-            });
-          }
-          return data;
-        })
-        .catch((err) => {
-          console.error(err);
-        });
+      getTemplateData(option);
     } else {
       form?.reset();
     }
   }, []);
+
+  const getTemplateData = (option) => {
+    fetchTemplateData(api, { ...option, formFields: [...formFields] })
+      .then((data) => {
+        if (form && data) {
+          forEach(data, (value, key) => {
+            if (value) {
+              form.values[key] = value;
+            }
+          });
+        }
+        return data;
+      })
+      .catch((err) => {
+        console.error(err);
+      });
+  };
 
   if (!enabled || !display) {
     return null;
@@ -144,7 +129,6 @@ export const Templates = ({ style = {}, form }) => {
       </label>
       <Select
         dropdownMatchSelectWidth={false}
-        // style={{ width: '8em' }}
         options={templates}
         fieldNames={{ label: 'title', value: 'key' }}
         value={value}
@@ -162,15 +146,19 @@ function findDataTemplates(fieldSchema): ITemplate {
   return {} as ITemplate;
 }
 
-export async function fetchTemplateData(api, template: { collection: string; dataId: number; fields: string[] }, t) {
-  if (template.fields.length === 0) {
+export async function fetchTemplateData(
+  api,
+  template: { collection: string; dataId: number; fields: string[]; formFields: string[] },
+) {
+  const targertFields = [...new Set(template.formFields.concat(template.fields))];
+  if (targertFields.length === 0) {
     return;
   }
   return api
     .resource(template.collection)
     .get({
       filterByTk: template.dataId,
-      fields: template.fields,
+      fields: targertFields,
       isTemplate: true,
     })
     .then((data) => {
