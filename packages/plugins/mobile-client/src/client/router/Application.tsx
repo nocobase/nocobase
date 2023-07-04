@@ -68,7 +68,7 @@ const modalProps = {
     position: 'absolute',
   },
   wrapClassName: css`
-    position: absolute;
+    position: absolute !important;
   `,
 };
 
