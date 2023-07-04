@@ -10,9 +10,11 @@ export const createTokenBlacklistService = (repo: Repository): TokenBlacklistSer
         },
       }));
     },
-    async set(values) {
-      return repo.create({
-        values,
+    async add(values) {
+      return repo.model.findOrCreate({
+        defaults: values,
+      });
+    },
       });
     },
   };

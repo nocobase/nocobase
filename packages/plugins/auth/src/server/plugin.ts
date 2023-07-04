@@ -40,9 +40,10 @@ export class AuthPlugin extends Plugin {
         return authenticator || authenticators[0];
       },
     });
-    this.app.authManager.setTokenBlacklistService(
-      createTokenBlacklistService(await this.db.getRepository('tokenBlacklist')),
-    );
+
+    const blacklistService = createTokenBlacklistService(this.db.getRepository('tokenBlacklist'));
+    this.app.authManager.setTokenBlacklistService(blacklistService);
+
     this.app.authManager.registerTypes(presetAuthType, {
       auth: BasicAuth,
     });
