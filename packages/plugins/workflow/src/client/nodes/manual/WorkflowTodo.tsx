@@ -580,7 +580,7 @@ function Drawer() {
   );
 }
 
-function Decorator({ children }) {
+function Decorator({ params = {}, children }) {
   const { collections, ...cm } = useCollectionManager();
   const blockProps = {
     collection: 'users_jobs',
@@ -589,6 +589,7 @@ function Decorator({ children }) {
     params: {
       pageSize: 20,
       sort: ['-createdAt'],
+      ...params,
       appends: ['user', 'node', 'workflow'],
       except: ['node.config', 'workflow.config'],
     },
