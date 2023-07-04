@@ -42,6 +42,10 @@ export class AuthPlugin extends Plugin {
       null,
       this.enabled,
     );
+
+    this.app.once('beforeStop', () => {
+      this.deleteExpiredTokenJob.stop();
+    });
   }
 
   async load() {
@@ -111,11 +115,11 @@ export class AuthPlugin extends Plugin {
   }
 
   async afterEnable() {
-    this.deleteExpiredTokenJob.start();
+    this.deleteExpiredTokenJob?.start();
   }
 
   async afterDisable() {
-    this.deleteExpiredTokenJob.stop();
+    this.deleteExpiredTokenJob?.stop();
   }
 
   async remove() {}
