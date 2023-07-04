@@ -168,12 +168,20 @@ export const AddCollectionField = (props) => {
 
 export const AddFieldAction = (props) => {
   const { scope, getContainer, item: record, children, trigger, align, database } = props;
-  const { getInterface, getTemplate } = useCollectionManager();
+  const { getInterface, getTemplate, collections } = useCollectionManager();
   const [visible, setVisible] = useState(false);
   const [targetScope, setTargetScope] = useState();
   const [schema, setSchema] = useState({});
   const compile = useCompile();
   const { t } = useTranslation();
+  const currentCollections = useMemo(() => {
+    return collections.map((v) => {
+      return {
+        label: compile(v.title),
+        value: v.name,
+      };
+    });
+  }, []);
   const getFieldOptions = useCallback(() => {
     const { availableFieldInterfaces } = getTemplate(record.template) || {};
     const { exclude, include } = availableFieldInterfaces || {};
@@ -287,6 +295,7 @@ export const AddFieldAction = (props) => {
               record,
               showReverseFieldConfig: true,
               targetScope,
+              collections: currentCollections,
               ...scope,
             }}
           />

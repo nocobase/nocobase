@@ -1,5 +1,5 @@
 import { ISchema } from '@formily/react';
-import { defaultProps, operators } from './properties';
+import { collectionDataSource, defaultProps, operators } from './properties';
 import { IField } from './types';
 
 export const collection: IField = {
@@ -20,6 +20,7 @@ export const collection: IField = {
   hasDefaultValue: false,
   properties: {
     ...defaultProps,
+    'uiSchema.enum': collectionDataSource,
   },
   filterable: { operators: operators.collection },
   schemaInitialize(schema: ISchema, { block }) {

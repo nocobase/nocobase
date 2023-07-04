@@ -1,4 +1,4 @@
-import { connect, mapReadPretty, observer } from '@formily/react';
+import { connect, mapReadPretty, observer, useField } from '@formily/react';
 import { Select, SelectProps, Tag } from 'antd';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -14,15 +14,21 @@ export type CollectionSelectProps = SelectProps<any, any> & {
 
 function useOptions({ filter, isTableOid }: CollectionSelectProps) {
   const compile = useCompile();
+  const field: any = useField();
   const ctx = useContext(FilterContext);
   const collection = useCollection();
   const targetCollection = isTableOid && (ctx?.collectionName || collection.name);
   const inheritCollections = useSelfAndChildrenCollections(targetCollection);
   const { collections = [] } = useCollectionManager();
+  const currentCollections = field?.dataSource
+    ? collections.filter((v) => {
+        return field?.dataSource.includes(v.name);
+      })
+    : collections;
   const filtered =
     typeof filter === 'function'
-      ? (inheritCollections || collections).filter(filter)
-      : inheritCollections || collections;
+      ? (inheritCollections || currentCollections).filter(filter)
+      : inheritCollections || currentCollections;
   return filtered
     .filter((item) => !item.hidden)
     .map((item) => ({
