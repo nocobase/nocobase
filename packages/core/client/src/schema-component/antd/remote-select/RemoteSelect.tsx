@@ -11,7 +11,7 @@ import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { getInnermostKeyAndValue } from '../../common/utils/uitls';
 import { useCompile } from '../../hooks';
-import { Select, defaultFieldNames } from '../select';
+import { defaultFieldNames, Select } from '../select';
 import { ReadPretty } from './ReadPretty';
 import { extractFilterfield, extractValuesByPattern, generatePattern, parseVariables } from './utils';
 const EMPTY = 'N/A';
@@ -156,10 +156,17 @@ const InternalRemoteSelect = connect(
             str = str.replace('$iteration.', `$iteration.${path.join('.')}.`);
           }
           const parseValue = parseVariables(str, variablesCtx);
-          const filterObj = JSON.parse(
-            JSON.stringify(c).replace(jsonlogic.value, str.endsWith('id') ? parseValue ?? 0 : parseValue),
-          );
-          results.push(filterObj);
+          if (Array.isArray(parseValue)) {
+            const filters = parseValue.map((v) => {
+              return JSON.parse(JSON.stringify(c).replace(jsonlogic.value, v));
+            });
+            results.push({ $or: filters });
+          } else {
+            const filterObj = JSON.parse(
+              JSON.stringify(c).replace(jsonlogic.value, str.endsWith('id') ? parseValue ?? 0 : parseValue),
+            );
+            results.push(filterObj);
+          }
         }
       });
       return { [type]: results };
@@ -173,7 +180,9 @@ const InternalRemoteSelect = connect(
           pageSize: 200,
           ...service?.params,
           // search needs
-          filter: mergeFilter([parseFilter(field.componentProps?.service?.params?.filter) || service?.params?.filter]),
+          filter: mergeFilter([
+            parseFilter(fieldSchema?.['x-component-props']?.service?.params?.filter) || service?.params?.filter,
+          ]),
         },
       },
       {
@@ -221,7 +230,7 @@ const InternalRemoteSelect = connect(
                 },
               }
             : {},
-          field.componentProps?.service?.params?.filter || service?.params?.filter,
+          fieldSchema?.['x-component-props']?.service?.params?.filter || service?.params?.filter,
         ]),
       });
       searchData.current = search;
