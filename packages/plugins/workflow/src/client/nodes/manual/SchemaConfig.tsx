@@ -1,34 +1,35 @@
-import React, { useState, useContext, useMemo } from 'react';
+import React, { useContext, useMemo, useState } from 'react';
 
-import { useForm, ISchema, Schema, useFieldSchema } from '@formily/react';
+import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 import { get } from 'lodash';
 
 import {
+  ActionContextProvider,
+  GeneralSchemaDesigner,
+  InitializerWithSwitch,
   SchemaComponent,
   SchemaComponentContext,
   SchemaInitializer,
   SchemaInitializerItemOptions,
-  InitializerWithSwitch,
   SchemaInitializerProvider,
-  gridRowColWrap,
-  ActionContextProvider,
-  GeneralSchemaDesigner,
   SchemaSettings,
+  gridRowColWrap,
   useCompile,
   useFormBlockContext,
 } from '@nocobase/client';
 import { Registry } from '@nocobase/utils/client';
 
-import { useTrigger } from '../../triggers';
+import { Button } from 'antd';
 import { instructions, useAvailableUpstreams, useNodeContext } from '..';
 import { useFlowContext } from '../../FlowContext';
-import { lang, NAMESPACE } from '../../locale';
 import { JOB_STATUS } from '../../constants';
-import customForm from './forms/custom';
-import createForm from './forms/create';
-import updateForm from './forms/update';
-import { FormBlockProvider } from './FormBlockProvider';
+import { NAMESPACE, lang } from '../../locale';
+import { useTrigger } from '../../triggers';
 import { DetailsBlockProvider } from './DetailsBlockProvider';
+import { FormBlockProvider } from './FormBlockProvider';
+import createForm from './forms/create';
+import customForm from './forms/custom';
+import updateForm from './forms/update';
 
 type ValueOf<T> = T[keyof T];
 
@@ -206,7 +207,8 @@ function AddActionButton(props) {
           component: ActionInitializer,
           action: JOB_STATUS.REJECTED,
           actionProps: {
-            type: 'danger',
+            type: 'primary',
+            danger: true,
           },
         },
         {
@@ -356,9 +358,9 @@ export function SchemaConfigButton(props) {
   const [visible, setVisible] = useState(false);
   return (
     <>
-      <div className="ant-btn ant-btn-primary" onClick={() => setVisible(true)}>
+      <Button type="primary" onClick={() => setVisible(true)}>
         {workflow.executed ? lang('View user interface') : lang('Configure user interface')}
-      </div>
+      </Button>
       <ActionContextProvider value={{ visible, setVisible }}>{props.children}</ActionContextProvider>
     </>
   );
