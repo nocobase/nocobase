@@ -1,4 +1,4 @@
-import { default as React, default as React, useContext, useMemo, useState } from 'react';
+import { default as React, useContext, useMemo, useState } from 'react';
 
 import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 
