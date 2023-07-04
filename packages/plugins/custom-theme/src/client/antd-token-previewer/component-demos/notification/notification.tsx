@@ -5,6 +5,7 @@ import type { ComponentDemo } from '../../interface';
 const { _InternalPanelDoNotUseOrYouWillBeFired } = notification;
 
 const Demo = () => (
+  // @ts-ignore
   <_InternalPanelDoNotUseOrYouWillBeFired
     message={'Notification Title'}
     description={

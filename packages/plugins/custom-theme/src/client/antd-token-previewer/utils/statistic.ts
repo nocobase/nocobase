@@ -1,4 +1,4 @@
-import tokenStatistic from 'antd/es/version/token';
+import tokenStatistic from 'antd/es/version/token.json';
 
 const tokenRelatedComponents: {
   [key in string]?: string[];
