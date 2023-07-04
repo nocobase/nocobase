@@ -10,9 +10,9 @@ export default class extends Migration {
     let names = [];
     const items = await repository.find();
     for (const item of items) {
-      if (Array.isArray(item.inherits) && item.inherits.length) {
+      if (Array.isArray(item.options?.inherits) && item.options.inherits.length) {
         names.push(item.name);
-        names.push(...item.inherits);
+        names.push(...item.options.inherits);
       }
     }
     names = _.uniq(names);
