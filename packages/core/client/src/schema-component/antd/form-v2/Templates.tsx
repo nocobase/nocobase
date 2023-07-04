@@ -80,6 +80,7 @@ export const Templates = ({ style = {}, form }) => {
   const { t } = useTranslation();
   const formFields = useFormFieldsNames(defaultTemplate || templates);
   const previousFormFields = useRef(null);
+  const { getCollectionFields } = useCollectionManager();
   useEffect(() => {
     if (
       enabled &&
@@ -92,17 +93,25 @@ export const Templates = ({ style = {}, form }) => {
     }
   }, [formFields]);
 
-  const handleChange = useCallback(async (value, option) => {
-    setValue(value);
-    if (option.key !== 'none') {
-      getTemplateData(option);
-    } else {
-      form?.reset();
-    }
-  }, []);
+  const handleChange = useCallback(
+    async (value, option) => {
+      setValue(value);
+      if (option.key !== 'none') {
+        getTemplateData(option);
+      } else {
+        form?.reset();
+      }
+    },
+    [formFields],
+  );
 
   const getTemplateData = (option) => {
-    fetchTemplateData(api, { ...option, formFields: [...formFields] })
+    const collectionFields = getCollectionFields(option.collection);
+    const combineFields = [...new Set([...formFields].concat(option.fields))];
+    const targetFields = combineFields.filter((v) => {
+      return collectionFields.find((k) => v.includes(k.name));
+    });
+    fetchTemplateData(api, { ...option, targetFields })
       .then((data) => {
         if (form && data) {
           forEach(data, (value, key) => {
@@ -148,17 +157,16 @@ function findDataTemplates(fieldSchema): ITemplate {
 
 export async function fetchTemplateData(
   api,
-  template: { collection: string; dataId: number; fields: string[]; formFields: string[] },
+  template: { collection: string; dataId: number; fields: string[]; targetFields: string[] },
 ) {
-  const targertFields = [...new Set(template.formFields.concat(template.fields))];
-  if (targertFields.length === 0) {
+  if (template.targetFields.length === 0 || !template.dataId) {
     return;
   }
   return api
     .resource(template.collection)
     .get({
       filterByTk: template.dataId,
-      fields: targertFields,
+      fields: template.targetFields,
       isTemplate: true,
     })
     .then((data) => {
