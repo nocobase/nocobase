@@ -58,9 +58,10 @@ describe('auth-manager', () => {
       app = mockServer({
         registerActions: true,
         acl: true,
-        plugins: ['auth'],
+        plugins: ['users', 'auth', 'acl'],
       });
 
+      // app.plugin(ApiKeysPlugin);
       await app.loadAndInstall({ clean: true });
       db = app.db;
       agent = app.agent();
