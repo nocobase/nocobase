@@ -1,9 +1,10 @@
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
-import { useAPIClient, useGlobalTheme } from '@nocobase/client';
+import { useAPIClient, useCurrentUserContext, useGlobalTheme } from '@nocobase/client';
 import { Card, ConfigProvider, Modal, Space, Switch, message } from 'antd';
 import React, { useCallback, useMemo } from 'react';
 import { ThemeConfig, ThemeItem } from '../../types';
 import { Primary } from '../antd-token-previewer';
+import { useUpdateThemeSettings } from '../hooks/useThemeSettings';
 import { useThemeEditorContext } from './ThemeEditorProvider';
 
 interface TData {
@@ -45,8 +46,10 @@ const Overview = ({ theme }: { theme: ThemeConfig }) => {
 const ThemeCard = (props: Props) => {
   const { theme, setTheme, setCurrentSettingTheme, setCurrentEditingTheme } = useGlobalTheme();
   const { setOpen } = useThemeEditorContext();
+  const currentUser = useCurrentUserContext();
   const { item, style = {}, onChange } = props;
   const api = useAPIClient();
+  const { updateThemeSettings } = useUpdateThemeSettings();
 
   const handleDelete = useCallback(() => {
     Modal.confirm({
@@ -57,6 +60,9 @@ const ThemeCard = (props: Props) => {
           url: `themeConfig:destroy/${item.id}`,
         });
 
+        if (item.id === currentUser?.data?.data?.systemSettings?.theme) {
+          updateThemeSettings(null);
+        }
         message.success('删除成功');
         onChange?.({ type: HandleTypes.delete, item });
       },

@@ -50,7 +50,7 @@ function Label() {
         style={{ minWidth: 100 }}
         bordered={false}
         popupMatchSelectWidth={false}
-        defaultValue={currentUser.data.data.systemSettings.theme}
+        value={currentUser.data.data.systemSettings.theme}
         options={data
           ?.filter((item) => item.optional)
           .map((item) => {
@@ -74,7 +74,7 @@ export function useUpdateThemeSettings() {
   const { setTheme } = useGlobalTheme();
 
   const updateThemeSettings = useCallback(
-    async (themeId: number) => {
+    async (themeId: number | null) => {
       try {
         await api.resource('users').update({
           filterByTk: currentUser.data.data.id,
@@ -94,7 +94,7 @@ export function useUpdateThemeSettings() {
             },
           },
         });
-        setTheme(data.find((item) => item.id === themeId)?.config);
+        setTheme(data.find((item) => item.id === themeId)?.config || {});
       } catch (err) {
         error(err);
       }
