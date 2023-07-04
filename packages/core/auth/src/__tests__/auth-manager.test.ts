@@ -77,32 +77,41 @@ describe('auth-manager', () => {
     });
 
     describe('blacklist', () => {
-      it('basic', async () => {
-        const hasFn = jest.fn();
-        const addFn = jest.fn();
+      const hasFn = jest.fn();
+      const addFn = jest.fn();
+      beforeEach(async () => {
+        await agent.login(1);
         app.authManager.setTokenBlacklistService({
           has: hasFn,
           add: addFn,
         });
-        await agent.login(1);
+      });
+
+      afterEach(() => {
+        hasFn.mockReset();
+        addFn.mockReset();
+      });
+
+      it('basic', async () => {
         const res = await agent.resource('auth').check();
+        const token = res.request.header['Authorization'].replace('Bearer ', '');
         expect(res.status).toBe(200);
-        expect(hasFn).toHaveBeenCalledTimes(1);
-        await agent.resource('auth').signOut();
+        expect(hasFn).toHaveBeenCalledWith(token);
+      });
+
+      it('signOut should add token to blacklist', async () => {
+        // signOut will add token
+        const res = await agent.resource('auth').signOut();
+        const token = res.request.header['Authorization'].replace('Bearer ', '');
         expect(addFn).toHaveBeenCalledWith({
-          token: res.request.header['Authorization'].replace('Bearer ', ''),
+          token,
           // Date or String is ok
           expiration: expect.any(String),
         });
       });
 
       it('should throw 401 when token in blacklist', async () => {
-        const hasFn = jest.fn().mockImplementation(() => true);
-        app.authManager.setTokenBlacklistService({
-          has: hasFn,
-          add: jest.fn(),
-        });
-        await agent.login(1);
+        hasFn.mockImplementation(() => true);
         const res = await agent.resource('auth').check();
         expect(res.status).toBe(401);
         expect(res.text).toContain('token is not available');

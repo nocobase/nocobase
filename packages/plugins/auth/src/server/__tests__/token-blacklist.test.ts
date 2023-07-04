@@ -18,11 +18,14 @@ describe('token-blacklist', () => {
     tokenBlacklist = createTokenBlacklistService(repo);
   });
 
+  afterAll(async () => {
+    await db.close();
+  });
+
   afterEach(async () => {
     await repo.destroy({
       truncate: true,
     });
-    await db.close();
   });
 
   it('add and has correctly', async () => {
