@@ -67,7 +67,7 @@ const ThemeCard = (props: Props) => {
         onChange?.({ type: HandleTypes.delete, item });
       },
     });
-  }, [item]);
+  }, [api, currentUser?.data?.data?.systemSettings?.theme, item, onChange, updateThemeSettings]);
   const handleSwitch = useCallback(
     async (checked: boolean) => {
       await api.request({
