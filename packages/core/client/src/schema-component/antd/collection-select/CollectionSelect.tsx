@@ -16,7 +16,7 @@ function useOptions({ filter, isTableOid }: CollectionSelectProps) {
   const compile = useCompile();
   const ctx = useContext(FilterContext);
   const collection = useCollection();
-  const targetCollection = isTableOid && (ctx?.collectionField?.target || collection.name);
+  const targetCollection = isTableOid && (ctx?.collectionName || collection.name);
   const inheritCollections = useSelfAndChildrenCollections(targetCollection);
   const { collections = [] } = useCollectionManager();
   const filtered =

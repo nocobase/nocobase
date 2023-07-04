@@ -18,7 +18,7 @@ const useDef = (options) => {
 export const Filter: any = observer(
   (props: any) => {
     const { useDataSource = useDef } = props;
-    const { options, dynamicComponent, className, collectionField } = useProps(props);
+    const { options, dynamicComponent, className, collectionName } = useProps(props);
     const field = useField<ObjectFieldModel>();
     const fieldSchema: any = useFieldSchema();
     useDataSource({
@@ -39,7 +39,7 @@ export const Filter: any = observer(
               dynamicComponent,
               options: options || field.dataSource || [],
               disabled: props.disabled,
-              collectionField,
+              collectionName,
             }}
           >
             <FilterGroup {...props} bordered={false} />
