@@ -60,4 +60,5 @@ export default {
   '1 「Time」 or 「Order Noun」 field, 1 「Value」 field': '1 个「时间」或「有序名词」字段,1 个「数值」字段',
   '1~ 2 「Unordered Noun」 fields, 1 「Numeric」 field': '1 ~ 2 个「无序名词」字段,1 个「数值」字段',
   '1 「Numeric」 field, 0~ 1 「Unordered Noun」 field': '1 个「数值」字段,0 ~ 1 个「无序名词」字段',
+  'Chart (Old)': '图表 (旧)',
 };

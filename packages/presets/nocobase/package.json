@@ -14,6 +14,7 @@
     "@nocobase/plugin-client": "0.10.0-alpha.5",
     "@nocobase/plugin-collection-manager": "0.10.0-alpha.5",
     "@nocobase/plugin-duplicator": "0.10.0-alpha.5",
+    "@nocobase/plugin-data-visualization": "0.10.0-alpha.5",
     "@nocobase/plugin-error-handler": "0.10.0-alpha.5",
     "@nocobase/plugin-excel-formula-field": "0.10.0-alpha.5",
     "@nocobase/plugin-export": "0.10.0-alpha.5",

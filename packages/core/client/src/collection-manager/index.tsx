@@ -16,3 +16,4 @@ export { getConfigurableProperties } from './templates/properties';
 export * from './templates/types';
 export * from './types';
 export * from './CollectionHistoryProvider';
+export * from './interfaces/properties';
