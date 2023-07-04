@@ -77,6 +77,7 @@ describe('update belongs to many with view as through table', () => {
     const OrderItemView = db.collection({
       name: viewName,
       view: true,
+      schema: db.inDialect('postgres') ? 'public' : undefined,
       fields: [
         {
           type: 'bigInt',
