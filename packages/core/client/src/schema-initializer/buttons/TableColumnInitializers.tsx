@@ -1,19 +1,20 @@
+import { useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { useCompile } from '../../schema-component';
 import { SchemaInitializer } from '../SchemaInitializer';
 import {
   itemsMerge,
   useAssociatedTableColumnInitializerFields,
-  useTableColumnInitializerFields,
   useInheritsTableColumnInitializerFields,
+  useTableColumnInitializerFields,
 } from '../utils';
-import { useCompile } from '../../schema-component';
-import { useFieldSchema } from '@formily/react';
 
 // 表格列配置
 export const TableColumnInitializers = (props: any) => {
   const { items = [], action = true } = props;
   const { t } = useTranslation();
+  const field = useField();
   const fieldSchema = useFieldSchema();
   const associatedFields = useAssociatedTableColumnInitializerFields();
   const inheritFields = useInheritsTableColumnInitializerFields();
@@ -41,7 +42,7 @@ export const TableColumnInitializers = (props: any) => {
         );
     });
   }
-  if (associatedFields?.length > 0 && !isSubTable) {
+  if (associatedFields?.length > 0 && (!isSubTable || field.readPretty)) {
     fieldItems.push(
       {
         type: 'divider',

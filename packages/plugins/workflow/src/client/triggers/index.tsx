@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { css, cx } from '@emotion/css';
+import { createForm } from '@formily/core';
 import { ISchema, useForm } from '@formily/react';
 import { Registry } from '@nocobase/utils/client';
 import { message, Tag, Alert, Button, Input } from 'antd';
-import { useTranslation } from 'react-i18next';
 import { InfoOutlined } from '@ant-design/icons';
 
 import {
@@ -13,7 +13,6 @@ import {
   useActionContext,
   useAPIClient,
   useCompile,
-  useRequest,
   useResourceActionContext,
 } from '@nocobase/client';
 
@@ -141,17 +140,30 @@ export const TriggerConfig = () => {
   const { workflow, refresh } = useFlowContext();
   const [editingTitle, setEditingTitle] = useState<string>('');
   const [editingConfig, setEditingConfig] = useState(false);
+  let typeTitle = '';
   useEffect(() => {
     if (workflow) {
       setEditingTitle(workflow.title ?? typeTitle);
     }
   }, [workflow]);
 
+  const form = useMemo(
+    () =>
+      createForm({
+        initialValues: workflow?.config,
+        values: workflow?.config,
+        disabled: workflow?.executed,
+      }),
+    [workflow],
+  );
+
   if (!workflow || !workflow.type) {
     return null;
   }
-  const { title, type, config, executed } = workflow;
-  const { title: typeTitle, fieldset, scope, components } = triggers.get(type);
+  const { title, type, executed } = workflow;
+  const trigger = triggers.get(type);
+  const { fieldset, scope, components } = trigger;
+  typeTitle = trigger.title;
   const detailText = executed ? '{{t("View")}}' : '{{t("Configure")}}';
   const titleText = `${lang('Trigger')}: ${compile(typeTitle)}`;
 
@@ -202,6 +214,7 @@ export const TriggerConfig = () => {
       <ActionContextProvider value={{ visible: editingConfig, setVisible: setEditingConfig }}>
         <SchemaComponent
           schema={{
+            name: `workflow-trigger-${workflow.id}`,
             type: 'void',
             properties: {
               config: {
@@ -217,18 +230,9 @@ export const TriggerConfig = () => {
                 type: 'void',
                 title: titleText,
                 'x-component': 'Action.Drawer',
-                'x-decorator': 'Form',
+                'x-decorator': 'FormV2',
                 'x-decorator-props': {
-                  disabled: workflow.executed,
-                  useValues(options) {
-                    return useRequest(
-                      () =>
-                        Promise.resolve({
-                          data: config,
-                        }),
-                      options,
-                    );
-                  },
+                  form,
                 },
                 properties: {
                   ...(executed

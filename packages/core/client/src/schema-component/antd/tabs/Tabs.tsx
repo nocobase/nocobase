@@ -1,47 +1,51 @@
 import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { TabPaneProps, Tabs as AntdTabs, TabsProps } from 'antd';
+import { Tabs as AntdTabs, TabPaneProps, TabsProps } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import { Icon } from '../../../icon';
 import { useSchemaInitializer } from '../../../schema-initializer';
 import { DndContext, SortableItem } from '../../common';
+import { useDesignable } from '../../hooks';
 import { useDesigner } from '../../hooks/useDesigner';
-import { TabsContextProvider, useTabsContext } from './context';
+import { useTabsContext } from './context';
 import { TabsDesigner } from './Tabs.Designer';
 
 export const Tabs: any = observer(
   (props: TabsProps) => {
     const fieldSchema = useFieldSchema();
     const { render } = useSchemaInitializer(fieldSchema['x-initializer']);
+    const { designable } = useDesignable();
     const contextProps = useTabsContext();
+    const { PaneRoot = React.Fragment as React.FC<any> } = contextProps;
 
-    const PaneProvider = useMemo(() => {
-      if (contextProps.deep === false) {
-        return TabsContextProvider;
+    const items = useMemo(() => {
+      const result = fieldSchema.mapProperties((schema, key: string) => {
+        return {
+          key,
+          label: <RecursionField name={key} schema={schema} onlyRenderSelf />,
+          children: (
+            <PaneRoot active={key === contextProps.activeKey}>
+              <RecursionField name={key} schema={schema} onlyRenderProperties />
+            </PaneRoot>
+          ),
+        };
+      });
+
+      if (designable) {
+        result.push({
+          key: 'designer',
+          label: render(),
+          children: null,
+        });
       }
-      return React.Fragment;
-    }, [contextProps.deep]);
+
+      return result;
+    }, [fieldSchema.mapProperties((s, key) => key).join()]);
 
     return (
       <DndContext>
-        <AntdTabs
-          {...contextProps}
-          style={props.style}
-          tabBarExtraContent={{
-            right: render(),
-          }}
-        >
-          {fieldSchema.mapProperties((schema, key) => {
-            return (
-              <AntdTabs.TabPane tab={<RecursionField name={key} schema={schema} onlyRenderSelf />} key={key}>
-                <PaneProvider>
-                  <RecursionField name={key} schema={schema} onlyRenderProperties />
-                </PaneProvider>
-              </AntdTabs.TabPane>
-            );
-          })}
-        </AntdTabs>
+        <AntdTabs {...contextProps} style={props.style} items={items} />
       </DndContext>
     );
   },

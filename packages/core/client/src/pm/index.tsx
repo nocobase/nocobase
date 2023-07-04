@@ -1,14 +1,14 @@
-import { css, cx } from '@emotion/css';
-import { Layout, Menu, PageHeader, Result, Spin, Tabs } from 'antd';
-import { sortBy } from 'lodash';
+import { PageHeader } from '@ant-design/pro-layout';
+import { css } from '@emotion/css';
+import { Layout, Menu, Result, Spin, Tabs } from 'antd';
+import _, { sortBy } from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Redirect, useHistory, useRouteMatch } from 'react-router-dom';
-import { ACLPane } from '../acl';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useACLRoleContext } from '../acl/ACLProvider';
+import { ACLPane } from '../acl/ACLShortcut';
 import { useRequest } from '../api-client';
 import { CollectionManagerPane } from '../collection-manager';
-import { useDocumentTitle } from '../document-title';
 import { Icon } from '../icon';
 import { RouteSwitchContext } from '../route-switch';
 import { useCompile } from '../schema-component';
@@ -109,36 +109,49 @@ const MarketplacePlugins = () => {
 };
 
 const PluginList = (props) => {
-  const match = useRouteMatch<any>();
-  const history = useHistory<any>();
-  const { tabName = 'local' } = match.params || {};
-  const { setTitle } = useDocumentTitle();
+  const params = useParams<any>();
+  const navigate = useNavigate();
+  const { tabName = 'local' } = params;
   const { t } = useTranslation();
   const { snippets = [] } = useACLRoleContext();
 
   useEffect(() => {
-    const { tabName } = match.params;
+    const { tabName } = params;
     if (!tabName) {
-      history.replace(`/admin/pm/list/local/`);
+      navigate(`/admin/pm/list/local/`, { replace: true });
     }
   }, []);
 
   return snippets.includes('pm') ? (
     <div>
       <PageHeader
+        style={{
+          backgroundColor: 'white',
+          paddingBottom: 0,
+        }}
         ghost={false}
         title={t('Plugin manager')}
         footer={
           <Tabs
             activeKey={tabName}
             onChange={(activeKey) => {
-              history.push(`/admin/pm/list/${activeKey}/`);
+              navigate(`/admin/pm/list/${activeKey}`);
             }}
-          >
-            <Tabs.TabPane tab={t('Local')} key={'local'} />
-            <Tabs.TabPane tab={t('Built-in')} key={'built-in'} />
-            <Tabs.TabPane tab={t('Marketplace')} key={'marketplace'} />
-          </Tabs>
+            items={[
+              {
+                key: 'local',
+                label: t('Local'),
+              },
+              {
+                key: 'built-in',
+                label: t('Built-in'),
+              },
+              {
+                key: 'marketplace',
+                label: t('Marketplace'),
+              },
+            ]}
+          />
         }
       />
       <div className={'m24'} style={{ margin: 24, display: 'flex', flexFlow: 'row wrap' }}>
@@ -202,7 +215,7 @@ const settings = {
   },
 };
 
-export const getPluginsTabs = (items, snippets) => {
+export const getPluginsTabs = _.memoize((items, snippets) => {
   const pluginsTabs = Object.keys(items).map((plugin) => {
     const tabsObj = items[plugin].tabs;
     const tabs = sortBy(
@@ -223,12 +236,12 @@ export const getPluginsTabs = (items, snippets) => {
     };
   });
   return sortBy(pluginsTabs, (o) => !o.isAllow);
-};
+});
 
 const SettingsCenter = (props) => {
   const { snippets = [] } = useACLRoleContext();
-  const match = useRouteMatch<any>();
-  const history = useHistory<any>();
+  const params = useParams<any>();
+  const navigate = useNavigate();
   const items = useContext(SettingsCenterContext);
   const pluginsTabs = getPluginsTabs(items, snippets);
   const compile = useCompile();
@@ -237,18 +250,18 @@ const SettingsCenter = (props) => {
     const tabName = pluginsTabs[0].tabs[0].key;
     return `/admin/settings/${pluginName}/${tabName}`;
   }, [pluginsTabs]);
-  const { pluginName, tabName } = match.params || {};
+  const { pluginName, tabName } = params;
   const activePlugin = pluginsTabs.find((v) => v.key === pluginName);
   const aclPluginTabCheck = activePlugin?.isAllow && activePlugin.tabs.find((v) => v.key === tabName)?.isAllow;
   if (!pluginName) {
-    return <Redirect to={firstUri} />;
+    return <Navigate replace to={firstUri} />;
   }
   if (!items[pluginName]) {
-    return <Redirect to={firstUri} />;
+    return <Navigate replace to={firstUri} />;
   }
   if (!tabName) {
     const firstTabName = Object.keys(items[pluginName]?.tabs).shift();
-    return <Redirect to={`/admin/settings/${pluginName}/${firstTabName}`} />;
+    return <Navigate replace to={`/admin/settings/${pluginName}/${firstTabName}`} />;
   }
   const component = items[pluginName]?.tabs?.[tabName]?.component;
   const plugin: any = pluginsTabs.find((v) => v.key === pluginName);
@@ -262,45 +275,23 @@ const SettingsCenter = (props) => {
       };
     });
   return (
-    <div
-      className={cx(
-        'nb-setting-center',
-        css`
-          &.nb-setting-center {
-            flex: 1;
-          }
-        `,
-      )}
-    >
-      <Layout
-        className={css`
-          height: 100%;
-        `}
-      >
-        <div
-          style={
-            {
-              '--side-menu-width': '200px',
-            } as Record<string, string>
-          }
-          className={css`
-            width: var(--side-menu-width);
-            overflow: hidden;
-            flex: 0 0 var(--side-menu-width);
-            max-width: var(--side-menu-width);
-            min-width: var(--side-menu-width);
-            pointer-events: none;
-          `}
-        ></div>
+    <div>
+      <Layout>
         <Layout.Sider
           className={css`
             height: 100%;
-            position: fixed;
-            padding-top: 46px;
+            /* position: fixed;
+            padding-top: 46px; */
             left: 0;
             top: 0;
             background: rgba(0, 0, 0, 0);
             z-index: 100;
+            .ant-layout-sider-children {
+              top: 46px;
+              position: fixed;
+              width: 200px;
+              height: calc(100vh - 46px);
+            }
           `}
           theme={'light'}
         >
@@ -310,36 +301,37 @@ const SettingsCenter = (props) => {
             onClick={(e) => {
               const item = items[e.key];
               const tabKey = Object.keys(item.tabs).shift();
-              history.push(`/admin/settings/${e.key}/${tabKey}`);
+              navigate(`/admin/settings/${e.key}/${tabKey}`);
             }}
             items={menuItems as any}
           />
         </Layout.Sider>
-        <Layout.Content
-          className={css`
-            display: flex;
-            flex-direction: column;
-          `}
-        >
+        <Layout.Content>
           {aclPluginTabCheck && (
             <PageHeader
+              style={{ backgroundColor: 'white', paddingBottom: 0 }}
               ghost={false}
               title={compile(items[pluginName]?.title)}
               footer={
                 <Tabs
                   activeKey={tabName}
                   onChange={(activeKey) => {
-                    history.push(`/admin/settings/${pluginName}/${activeKey}`);
+                    navigate(`/admin/settings/${pluginName}/${activeKey}`);
                   }}
-                >
-                  {plugin.tabs?.map((tab) => {
-                    return tab.isAllow && <Tabs.TabPane tab={compile(tab?.title)} key={tab.key} />;
+                  items={plugin.tabs?.map((tab) => {
+                    if (!tab.isAllow) {
+                      return null;
+                    }
+                    return {
+                      label: compile(tab?.title),
+                      key: tab.key,
+                    };
                   })}
-                </Tabs>
+                />
               }
             />
           )}
-          <div className={'m24'} style={{ margin: 24, flex: 1 }}>
+          <div className={'m24'} style={{ margin: 24 }}>
             {aclPluginTabCheck ? (
               component && React.createElement(component)
             ) : (

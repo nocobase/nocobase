@@ -171,6 +171,13 @@ export default {
   'Update record': '更新数据',
   'Update records of a collection. You can use variables from upstream nodes as query conditions and field values.':
     '更新一个数据表中的数据。可以使用上游节点里的变量作为查询条件和数据值。',
+  'Update mode': '更新模式',
+  'Update in a batch': '批量更新',
+  'Update one by one': '逐条更新',
+  'Update all eligible data at one time, which has better performance when the amount of data is large. But the updated data will not trigger other workflows, and will not record audit logs.':
+    '一次性更新所有符合条件的数据，在数据量较大时有比较好的性能；但被更新的数据不会触发其他工作流，也不会记录更新日志。',
+  'The updated data can trigger other workflows, and the audit log will also be recorded. But it is usually only applicable to several or dozens of pieces of data, otherwise there will be performance problems.':
+    '被更新的数据可以再次触发其他工作流，也会记录更新日志；但通常只适用于数条或数十条数据，否则会有性能问题。',
   'Query record': '查询数据',
   'Query records from a collection. You can use variables from upstream nodes as query conditions.':
     '查询一个数据表中的数据。可以使用上游节点里的变量作为查询条件。',

@@ -2,10 +2,9 @@ import { LoadingOutlined } from '@ant-design/icons';
 import { ArrayField } from '@formily/core';
 import { connect, mapProps, mapReadPretty, useField } from '@formily/react';
 import { toArr } from '@formily/shared';
-import { action } from '@formily/reactive';
 import { Cascader as AntdCascader, Space } from 'antd';
 import { isBoolean, omit } from 'lodash';
-import React, { useState } from 'react';
+import React from 'react';
 import { useRequest } from '../../../api-client';
 import { defaultFieldNames } from './defaultFieldNames';
 import { ReadPretty } from './ReadPretty';
@@ -64,7 +63,7 @@ export const Cascader = connect(
       );
     };
     const handelDropDownVisible = (value) => {
-      if (value && !field.dataSource) {
+      if (value && !field.dataSource.length) {
         run();
       }
     };

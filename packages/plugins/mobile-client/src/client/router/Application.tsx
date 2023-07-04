@@ -1,10 +1,16 @@
-import React, { useMemo } from 'react';
-import { useParams } from 'react-router-dom';
-import { ActionContextProvider, AdminProvider, RemoteSchemaComponent, useRoute, useViewport } from '@nocobase/client';
 import { css, cx } from '@emotion/css';
-import { useInterfaceContext } from './InterfaceProvider';
+import {
+  ActionContextProvider,
+  AdminProvider,
+  RemoteSchemaComponent,
+  useSystemSettings,
+  useViewport,
+} from '@nocobase/client';
 import { DrawerProps, ModalProps } from 'antd';
+import React, { useMemo } from 'react';
+import { Outlet, useParams } from 'react-router-dom';
 import { MobileCore } from '../core';
+import { useInterfaceContext } from './InterfaceProvider';
 
 const commonCSSVariables = css`
   --nb-spacing: 14px;
@@ -66,8 +72,14 @@ const modalProps = {
   `,
 };
 
+const useMobileSchemaUid = () => {
+  const ctx = useSystemSettings();
+  return ctx?.data?.data?.options?.mobileSchemaUid;
+};
+
 const MApplication: React.FC = (props) => {
-  const route = useRoute();
+  const mobileSchemaUid = useMobileSchemaUid();
+  console.log('mobileSchemaUid', mobileSchemaUid);
   const params = useParams<{ name: string }>();
   const interfaceContext = useInterfaceContext();
   const Provider = useMemo(() => {
@@ -97,12 +109,13 @@ const MApplication: React.FC = (props) => {
             )}
           >
             {params.name && !params.name.startsWith('tab_') ? (
-              props.children
+              <Outlet />
             ) : (
-              <RemoteSchemaComponent key={route.uiSchemaUid} uid={route.uiSchemaUid}>
+              <RemoteSchemaComponent key={mobileSchemaUid} uid={mobileSchemaUid}>
                 {props.children}
               </RemoteSchemaComponent>
             )}
+            {/* Global action will insert here */}
             <div id="nb-position-container"></div>
           </div>
         </ActionContextProvider>

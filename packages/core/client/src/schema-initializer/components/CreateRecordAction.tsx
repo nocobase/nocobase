@@ -1,8 +1,8 @@
 import { DownOutlined, PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { RecursionField, observer, useField, useFieldSchema } from '@formily/react';
-import { Button, Dropdown, Menu } from 'antd';
-import React, { useEffect, useState } from 'react';
+import { Button, Dropdown, MenuProps } from 'antd';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useDesignable } from '../../';
 import { useACLRolesCheck, useRecordPkValue } from '../../acl/ACLProvider';
 import { CollectionProvider, useCollection, useCollectionManager } from '../../collection-manager';
@@ -131,44 +131,44 @@ export const CreateAction = observer(
     const componentType = field.componentProps.type || 'primary';
     const { getChildrenCollections } = useCollectionManager();
     const totalChildCollections = getChildrenCollections(collection.name);
-    const inheritsCollections = enableChildren
-      .map((k) => {
-        if (!k) {
-          return;
-        }
-        const childCollection = totalChildCollections.find((j) => j.name === k.collection);
-        if (!childCollection) {
-          return;
-        }
-        return {
-          ...childCollection,
-          title: k.title || childCollection.title,
-        };
-      })
-      .filter((v) => {
-        return v && actionAclCheck(`${v.name}:create`);
-      });
+    const inheritsCollections = useMemo(() => {
+      return enableChildren
+        .map((k) => {
+          if (!k) {
+            return;
+          }
+          const childCollection = totalChildCollections.find((j) => j.name === k.collection);
+          if (!childCollection) {
+            return;
+          }
+          return {
+            ...childCollection,
+            title: k.title || childCollection.title,
+          };
+        })
+        .filter((v) => {
+          return v && actionAclCheck(`${v.name}:create`);
+        });
+    }, [enableChildren, totalChildCollections]);
     const linkageRules = fieldSchema?.['x-linkage-rules'] || [];
     const values = useRecord();
     const compile = useCompile();
     const { designable } = useDesignable();
     const icon = props.icon || <PlusOutlined />;
-    const menu = (
-      <Menu>
-        {inheritsCollections.map((option) => {
-          return (
-            <Menu.Item
-              key={option.name}
-              onClick={(info) => {
-                onClick?.(option.name);
-              }}
-            >
-              {compile(option.title)}
-            </Menu.Item>
-          );
-        })}
-      </Menu>
-    );
+    const menuItems = useMemo<MenuProps['items']>(() => {
+      return inheritsCollections.map((option) => ({
+        key: option.name,
+        label: compile(option.title),
+        onClick: () => onClick?.(option.name),
+      }));
+    }, [inheritsCollections, onClick]);
+
+    const menu = useMemo<MenuProps>(() => {
+      return {
+        items: menuItems,
+      };
+    }, [menuItems]);
+
     useEffect(() => {
       field.linkageProperty = {};
       linkageRules
@@ -190,7 +190,7 @@ export const CreateAction = observer(
                 leftButton,
                 React.cloneElement(rightButton as React.ReactElement<any, string>, { loading: false }),
               ]}
-              overlay={menu}
+              menu={menu}
               onClick={(info) => {
                 onClick?.(collection.name);
               }}
@@ -199,7 +199,7 @@ export const CreateAction = observer(
               {props.children}
             </Dropdown.Button>
           ) : (
-            <Dropdown overlay={menu}>
+            <Dropdown menu={menu}>
               {
                 <Button icon={icon} type={componentType}>
                   {props.children} <DownOutlined />

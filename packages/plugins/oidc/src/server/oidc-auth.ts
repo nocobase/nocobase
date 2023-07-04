@@ -71,8 +71,7 @@ export class OIDCAuth extends BaseAuth {
     // When email is provided, use email to find user
     // If found, associate the user with the current authenticator
     if (email) {
-      const userRepo = this.userCollection.repository;
-      const user = await userRepo.findOne({
+      const user = await this.userRepository.findOne({
         filter: { email },
       });
       if (user) {

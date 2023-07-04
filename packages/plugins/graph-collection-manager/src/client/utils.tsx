@@ -532,3 +532,15 @@ export const getDiffEdge = (newEdges, oldEdges) => {
   }
   return edges;
 };
+
+let graphContainer;
+/**
+ * 所有的 getPopupContainer 都需要保证返回的是唯一的 div。React 18 concurrent 下会反复调用该方法
+ * 参考：https://ant.design/docs/react/migration-v5-cn#%E5%8D%87%E7%BA%A7%E5%87%86%E5%A4%87
+ */
+export const getPopupContainer = () => {
+  if (graphContainer) {
+    return graphContainer;
+  }
+  return (graphContainer = document.getElementById('graph_container'));
+};

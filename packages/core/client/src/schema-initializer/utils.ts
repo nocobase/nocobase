@@ -1,8 +1,10 @@
 import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import React, { useContext, useMemo, useState } from 'react';
+import { error } from '@nocobase/utils/client';
+import _ from 'lodash';
+import React, { useCallback, useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BlockRequestContext, SchemaInitializerItemOptions } from '../';
+import { BlockRequestContext, SchemaInitializerButtonContext, SchemaInitializerItemOptions } from '../';
 import { FieldOptions, useCollection, useCollectionManager } from '../collection-manager';
 import { isAssocField } from '../filter-provider/utils';
 import { useActionContext, useDesignable } from '../schema-component';
@@ -91,6 +93,7 @@ export const useTableColumnInitializerFields = () => {
   const isSubTable = fieldSchema['x-component'] === 'AssociationField.SubTable';
   const form = useForm();
   const isReadPretty = isSubTable ? form.readPretty : true;
+
   return currentFields
     .filter(
       (field) => field?.interface && field?.interface !== 'subTable' && !field?.isForeignKey && !field?.treeChildren,
@@ -102,8 +105,15 @@ export const useTableColumnInitializerFields = () => {
         name: field.name,
         'x-collection-field': `${name}.${field.name}`,
         'x-component': 'CollectionField',
+        'x-component-props': isFileCollection
+          ? {
+              fieldNames: {
+                label: 'preview',
+                value: 'id',
+              },
+            }
+          : {},
         'x-read-pretty': isReadPretty || field.uiSchema?.['x-read-pretty'],
-        'x-component-props': {},
         'x-decorator': isSubTable
           ? quickEditField.includes(field.interface) || isFileCollection
             ? 'QuickEdit'
@@ -194,6 +204,10 @@ export const useAssociatedTableColumnInitializerFields = () => {
 export const useInheritsTableColumnInitializerFields = () => {
   const { name } = useCollection();
   const { getInterface, getInheritCollections, getCollection, getParentCollectionFields } = useCollectionManager();
+  const fieldSchema = useFieldSchema();
+  const isSubTable = fieldSchema['x-component'] === 'AssociationField.SubTable';
+  const form = useForm();
+  const isReadPretty = isSubTable ? form.readPretty : true;
   const inherits = getInheritCollections(name);
   return inherits?.map((v) => {
     const fields = getParentCollectionFields(v, name);
@@ -205,12 +219,30 @@ export const useInheritsTableColumnInitializerFields = () => {
         })
         .map((k) => {
           const interfaceConfig = getInterface(k.interface);
+          const isFileCollection = k?.target && getCollection(k?.target)?.template === 'file';
           const schema = {
             name: `${k.name}`,
             'x-component': 'CollectionField',
-            'x-read-pretty': true,
+            'x-read-pretty': isReadPretty || k.uiSchema?.['x-read-pretty'],
             'x-collection-field': `${name}.${k.name}`,
-            'x-component-props': {},
+            'x-component-props': isFileCollection
+              ? {
+                  fieldNames: {
+                    label: 'preview',
+                    value: 'id',
+                  },
+                }
+              : {},
+            'x-decorator': isSubTable
+              ? quickEditField.includes(k.interface) || isFileCollection
+                ? 'QuickEdit'
+                : 'FormItem'
+              : null,
+            'x-decorator-props': {
+              labelStyle: {
+                display: 'none',
+              },
+            },
           };
           return {
             type: 'item',
@@ -800,24 +832,28 @@ export const useCollectionDataSourceItems = (componentName) => {
   const { t } = useTranslation();
   const { collections, getCollectionFields } = useCollectionManager();
   const { getTemplatesByCollection } = useSchemaTemplateManager();
-  const [selected, setSelected] = useState([]);
-  const [value, onChange] = useState(null);
+  const { searchValue, setSearchValue } = useContext(SchemaInitializerButtonContext);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const onChange = useCallback(_.debounce(setSearchValue, 300), [setSearchValue]);
+
+  if (!setSearchValue) {
+    error('useCollectionDataSourceItems: please use in SchemaInitializerButtonContext and provide setSearchValue');
+    return [];
+  }
+
   const clearKeywords = () => {
-    setSelected([]);
-    onChange(null);
+    setSearchValue('');
   };
   return [
     {
       key: 'tableBlock',
       type: 'itemGroup',
       title: React.createElement(SelectCollection, {
-        value,
+        value: searchValue,
         onChange,
-        setSelected,
       }),
       children: collections
         ?.filter((item) => {
-          const b = !value || selected.includes(item.name);
           if (item.inherit) {
             return false;
           }
@@ -829,7 +865,12 @@ export const useCollectionDataSourceItems = (componentName) => {
           } else if (item.template === 'file' && ['Kanban', 'FormItem', 'Calendar'].includes(componentName)) {
             return false;
           } else {
-            return b && !(item?.isThrough && item?.autoCreate);
+            if (!item.title) {
+              return false;
+            }
+            return (
+              item.title.toUpperCase().includes(searchValue.toUpperCase()) && !(item?.isThrough && item?.autoCreate)
+            );
           }
         })
         ?.map((item, index) => {

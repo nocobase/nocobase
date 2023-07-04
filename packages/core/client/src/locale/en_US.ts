@@ -294,7 +294,7 @@ export default {
   "Quick upload": "Quick upload",
   "Select file": "Select file",
   "Subtable": "Sub-table",
-  "Subform": "Sub-form",
+  "Sub-form": "Sub-form",
   "Field mode":"Field mode",
   "Allow add new data":"Allow add new data",
   "Record picker": "Record picker",
@@ -631,7 +631,7 @@ export default {
   "User": "User",
   "Field": "Field",
   "Select": "Select",
-  "Select Field": "Select Field",
+  "Select field": "Select field",
   "Field value changes": "Field value changes",
   "One to one (has one)": "One to one (has one)",
   "One to one (belongs to)": "One to one (belongs to)",
@@ -703,5 +703,7 @@ export default {
   "First or create":"First or create",
   "Update or create":"Update or create",
   "Find by the following fields":"Find by the following fields",
-  "Create":"Create"
+  "Create":"Create",
+  "Current form": "Current form",
+  "Current object":"Current object"
 };

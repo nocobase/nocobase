@@ -18,7 +18,7 @@ export const number: IField = {
       'x-component': 'InputNumber',
       'x-component-props': {
         stringMode: true,
-        step: '0',
+        step: '1',
       },
     },
   },
@@ -32,9 +32,9 @@ export const number: IField = {
       title: '{{t("Precision")}}',
       'x-component': 'Select',
       'x-decorator': 'FormItem',
-      default: '0',
+      default: '1',
       enum: [
-        { value: '0', label: '1' },
+        { value: '1', label: '1' },
         { value: '0.1', label: '1.0' },
         { value: '0.01', label: '1.00' },
         { value: '0.001', label: '1.000' },

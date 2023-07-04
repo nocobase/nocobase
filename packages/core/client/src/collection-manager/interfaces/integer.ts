@@ -24,7 +24,7 @@ export const integer: IField = {
       'x-component': 'InputNumber',
       'x-component-props': {
         stringMode: true,
-        step: '0',
+        step: '1',
       },
       'x-validator': 'integer',
     },

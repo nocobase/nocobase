@@ -65,7 +65,7 @@ export function VariableSelect(props) {
             }
           }
         }}
-        dropdownClassName={css`
+        popupClassName={css`
           .ant-cascader-menu {
             margin-bottom: 0;
           }

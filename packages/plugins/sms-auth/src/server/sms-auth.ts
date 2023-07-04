@@ -1,7 +1,7 @@
 import { AuthConfig, BaseAuth } from '@nocobase/auth';
 import { Model } from '@nocobase/database';
-import VerificationPlugin from '@nocobase/plugin-verification';
 import { AuthModel } from '@nocobase/plugin-auth';
+import VerificationPlugin from '@nocobase/plugin-verification';
 import { namespace } from '../constants';
 
 export class SMSAuth extends BaseAuth {
@@ -26,8 +26,7 @@ export class SMSAuth extends BaseAuth {
       } = ctx.action.params;
       try {
         // History data compatible processing
-        const userRepo = this.userCollection.repository;
-        user = await userRepo.findOne({
+        user = await this.userRepository.findOne({
           filter: { phone },
         });
         if (user) {

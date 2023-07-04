@@ -1,8 +1,9 @@
 import { EditOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
 import { EditCollection } from '@nocobase/client';
 import React from 'react';
-import { css } from '@emotion/css';
 import { useCancelAction, useUpdateCollectionActionAndRefreshCM } from '../action-hooks';
+import { getPopupContainer } from '../utils';
 
 export const EditCollectionAction = ({ item: record }) => {
   return (
@@ -13,7 +14,7 @@ export const EditCollectionAction = ({ item: record }) => {
         useUpdateCollectionActionAndRefreshCM,
         createOnly: false,
       }}
-      getContainer={() => document.getElementById('graph_container')}
+      getContainer={getPopupContainer}
     >
       <EditOutlined
         className={css`
