@@ -153,6 +153,7 @@ export default {
       depth,
       ...options,
       fields: rootFields,
+      appends: config.appends?.map((item) => `data.${item}`),
       compile,
       getCollectionFields,
     });

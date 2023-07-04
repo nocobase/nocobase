@@ -142,7 +142,7 @@ function isAssociationField(field): boolean {
   return ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type);
 }
 
-export function filterTypedFields({ fields, types, depth = 1, compile, getCollectionFields }) {
+export function filterTypedFields({ fields, types, depth = 0, compile, getCollectionFields }) {
   if (!types) {
     return fields;
   }
@@ -249,11 +249,15 @@ async function loadChildren(option) {
   } else {
     option.isLeaf = true;
     option.loadChildren = null;
+    const matchingType = option.types.some((type) => matchFieldType(option.field, type, 0));
+    if (!matchingType) {
+      option.disabled = true;
+    }
   }
 }
 
 export function getCollectionFieldOptions(options): VariableOption[] {
-  const { fields, collection, types, depth = 1, sourceKey, compile, getCollectionFields } = options;
+  const { fields, collection, types, depth = 0, sourceKey, compile, getCollectionFields } = options;
   const normalizedFields = getNormalizedFields(collection, { compile, getCollectionFields });
   const computedFields = fields ?? normalizedFields;
   const boundLoadChildren = loadChildren.bind({ compile, getCollectionFields });

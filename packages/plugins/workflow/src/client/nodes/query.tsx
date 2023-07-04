@@ -47,8 +47,8 @@ export default {
     const compile = useCompile();
     const { getCollectionFields } = useCollectionManager();
     const depth = config?.params?.appends?.length
-      ? config?.params?.appends.reduce((max, item) => Math.max(max, item.split('.').length), 1) + 1
-      : 1;
+      ? config?.params?.appends.reduce((max, item) => Math.max(max, item.split('.').length), 1)
+      : 0;
     const result = getCollectionFieldOptions({
       collection: config?.collection,
       ...options,
