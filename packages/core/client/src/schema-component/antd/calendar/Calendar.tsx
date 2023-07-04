@@ -15,6 +15,7 @@ import { useProps } from '../../hooks/useProps';
 import { ActionContextProvider } from '../action';
 import Header from './components/Header';
 import { CalendarToolbarContext } from './context';
+import GlobalStyle from './global.style';
 import useStyle from './style';
 import type { ToolbarProps } from './types';
 import { formatDate } from './utils';
@@ -215,6 +216,7 @@ export const Calendar: any = observer(
 
     return wrapSSR(
       <div className={`${hashId} ${containerClassName}`} style={{ height: fixedBlock ? '100%' : 700 }}>
+        <GlobalStyle />
         <CalendarRecordViewer visible={visible} setVisible={setVisible} record={record} />
         <BigCalendar
           popup
@@ -245,9 +247,9 @@ export const Calendar: any = observer(
             setVisible(true);
           }}
           formats={{
-            monthHeaderFormat: 'Y-M',
+            monthHeaderFormat: 'YYYY-M',
             agendaDateFormat: 'M-DD',
-            dayHeaderFormat: 'Y-M-DD',
+            dayHeaderFormat: 'YYYY-M-DD',
             dayRangeHeaderFormat: ({ start, end }, culture, local) => {
               if (eq(start, end, 'month')) {
                 return local.format(start, 'Y-M', culture);

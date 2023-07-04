@@ -266,24 +266,6 @@ export default genStyleHook('nb-calendar', (token) => {
         margin: '0 4px',
         '&:hover': { background: '#f5f5f5' },
       },
-      '.rbc-overlay': {
-        position: 'absolute',
-        zIndex: 50,
-        marginTop: '5px',
-        borderRadius: '2px',
-        backgroundColor: '#fff',
-        boxShadow:
-          '0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 9px 28px 8px rgba(0, 0, 0, 0.05)',
-        padding: '12px 16px',
-      },
-      '.rbc-overlay > * + *': { marginTop: '1px' },
-      '.rbc-overlay-header': {
-        fontWeight: 500,
-        minHeight: '32px',
-        borderBottom: '1px solid #f0f0f0',
-        margin: '-12px -16px 12px -16px',
-        padding: '5px 16px 4px',
-      },
       '.rbc-agenda-view': {
         display: 'flex',
         flexDirection: 'column',
