@@ -1,12 +1,12 @@
 import { DownOutlined, PlusOutlined } from '@ant-design/icons';
-import { css } from '@emotion/css';
-import { RecursionField, observer, useField, useFieldSchema } from '@formily/react';
+import { css, cx } from '@emotion/css';
+import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Button, Dropdown, MenuProps } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useDesignable } from '../../';
 import { useACLRolesCheck, useRecordPkValue } from '../../acl/ACLProvider';
 import { CollectionProvider, useCollection, useCollectionManager } from '../../collection-manager';
-import { useRecord } from '../../record-provider';
+import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, useActionContext, useCompile } from '../../schema-component';
 import { linkageAction } from '../../schema-component/antd/action/utils';
 
@@ -49,7 +49,7 @@ export const actionDesignerCss = css`
   }
 `;
 
-const actionAclCheck = (actionPath) => {
+const actionAclCheck = function useAclCheck(actionPath) {
   const { data, inResources, getResourceActionParams, getStrategyActionParams } = useACLRolesCheck();
   const recordPkValue = useRecordPkValue();
   const collection = useCollection();
@@ -111,7 +111,9 @@ export const CreateRecordAction = observer(
             }}
           />
           <CollectionProvider name={currentCollection}>
-            <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
+            <RecordProvider record={{ ...values, __collection: currentCollection }}>
+              <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
+            </RecordProvider>
           </CollectionProvider>
         </ActionContextProvider>
       </div>
@@ -128,7 +130,8 @@ export const CreateAction = observer(
     const enableChildren = fieldSchema['x-enable-children'] || [];
     const allowAddToCurrent = fieldSchema?.['x-allow-add-to-current'];
     const field: any = useField();
-    const componentType = field.componentProps.type || 'primary';
+    const islinkBtn = props?.className.includes('nb-action-link');
+    const componentType = islinkBtn ? 'link' : field.componentProps.type || 'primary';
     const { getChildrenCollections } = useCollectionManager();
     const totalChildCollections = getChildrenCollections(collection.name);
     const inheritsCollections = useMemo(() => {
@@ -160,6 +163,7 @@ export const CreateAction = observer(
         key: option.name,
         label: compile(option.title),
         onClick: () => onClick?.(option.name),
+        color: 'primary',
       }));
     }, [inheritsCollections, onClick]);
 
@@ -187,7 +191,18 @@ export const CreateAction = observer(
               type={componentType}
               icon={<DownOutlined />}
               buttonsRender={([leftButton, rightButton]) => [
-                leftButton,
+                <div
+                  key=""
+                  className={cx({
+                    [css`
+                      .ant-btn {
+                        padding-right: 0px;
+                      }
+                    `]: islinkBtn,
+                  })}
+                >
+                  {leftButton}
+                </div>,
                 React.cloneElement(rightButton as React.ReactElement<any, string>, { loading: false }),
               ]}
               menu={menu}
