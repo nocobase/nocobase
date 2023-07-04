@@ -22,7 +22,7 @@ function useOptions({ filter, isTableOid }: CollectionSelectProps) {
   const { collections = [] } = useCollectionManager();
   const currentCollections = field?.dataSource
     ? collections.filter((v) => {
-        return field?.dataSource.includes(v.name);
+        return field?.dataSource.find((i) => i.value === v.name) || field?.dataSource.includes(v.name);
       })
     : collections;
   const filtered =
