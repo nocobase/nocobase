@@ -136,7 +136,7 @@ export const CreateAction = observer(
     const allowAddToCurrent = fieldSchema?.['x-allow-add-to-current'];
     const linkageFromForm = fieldSchema?.['x-component-props']?.['linkageFromForm'];
     // antd v5 danger type is deprecated
-    const componentType = field.componentProps.type === 'danger' ? 'primary' : field.componentProps.type || 'primary';
+    const componentType = field.componentProps.type === 'danger' ? undefined : field.componentProps.type || 'primary';
     const { getChildrenCollections } = useCollectionManager();
     const totalChildCollections = getChildrenCollections(collection.name);
     const inheritsCollections = useMemo(() => {
