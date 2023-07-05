@@ -26,23 +26,14 @@ export class TokenBlacklistService implements ITokenBlacklistService {
         this.app.logger.info(`${this.plugin.name}: End delete expired blacklist token`);
       },
       null,
-      this.plugin.enabled,
     );
+
+    this.app.once('beforeStart', () => {
+      cornJob.start();
+    });
 
     this.app.once('beforeStop', () => {
       cornJob.stop();
-    });
-
-    this.app.on('afterEnablePlugin', (pluginName) => {
-      if (pluginName === 'auth') {
-        cornJob.start();
-      }
-    });
-
-    this.app.on('afterDisablePlugin', (pluginName) => {
-      if (pluginName === 'auth') {
-        cornJob.stop();
-      }
     });
 
     return cornJob;

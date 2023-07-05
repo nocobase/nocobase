@@ -71,22 +71,6 @@ describe('token-blacklist', () => {
     expect(await tokenBlacklist.has('should not be deleted')).toBeTruthy();
   });
 
-  it('should stop corn job when plugin disabled', async () => {
-    const cornJob = tokenBlacklist.cornJob;
-    expect(cornJob.running).toBeTruthy();
-    // pm.enable
-    await app.emitAsync('afterDisablePlugin', 'auth');
-    expect(cornJob.running).toBeFalsy();
-  });
-
-  it('should start corn job when plugin enabled', async () => {
-    const cornJob = tokenBlacklist.cornJob;
-    expect(cornJob.running).toBeFalsy();
-    // pm.disable
-    await app.emitAsync('afterEnablePlugin', 'auth');
-    expect(cornJob.running).toBeTruthy();
-  });
-
   it('should stop corn job when server is stop', async () => {
     const cornJob = tokenBlacklist.cornJob;
     expect(cornJob.running).toBeTruthy();
