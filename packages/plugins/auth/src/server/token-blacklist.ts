@@ -5,11 +5,11 @@ import AuthPlugin from './plugin';
 
 export class TokenBlacklistService implements ITokenBlacklistService {
   repo: Repository;
-  cornJob: CronJob;
+  cronJob: CronJob;
 
   constructor(protected plugin: AuthPlugin) {
     this.repo = plugin.db.getRepository('tokenBlacklist');
-    this.cornJob = this.createCronJob();
+    this.cronJob = this.createCronJob();
   }
 
   get app() {
@@ -17,7 +17,7 @@ export class TokenBlacklistService implements ITokenBlacklistService {
   }
 
   createCronJob() {
-    const cornJob = new CronJob(
+    const cronJob = new CronJob(
       // every day at 03:00
       '0 3 * * *', //
       async () => {
@@ -29,14 +29,14 @@ export class TokenBlacklistService implements ITokenBlacklistService {
     );
 
     this.app.once('beforeStart', () => {
-      cornJob.start();
+      cronJob.start();
     });
 
     this.app.once('beforeStop', () => {
-      cornJob.stop();
+      cronJob.stop();
     });
 
-    return cornJob;
+    return cronJob;
   }
 
   async has(token: string) {
