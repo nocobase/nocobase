@@ -3,7 +3,7 @@
 exports[`Upload > basic 1`] = `
 <div>
   <div
-    class="ant-formily-item ant-formily-item-layout-horizontal ant-formily-item-feedback-layout-loose ant-formily-item-label-align-right ant-formily-item-control-align-left css-dev-only-do-not-override-1wazalj"
+    class="ant-formily-item ant-formily-item-layout-horizontal ant-formily-item-feedback-layout-loose ant-formily-item-label-align-right ant-formily-item-control-align-left css-dev-only-do-not-override-12upa3x"
   >
     <div
       class="ant-formily-item-label"
@@ -34,7 +34,7 @@ exports[`Upload > basic 1`] = `
         >
           <div>
             <div
-              class="ant-upload-wrapper ant-upload-picture-card-wrapper nb-upload css-dev-only-do-not-override-1wazalj"
+              class="ant-upload-wrapper ant-upload-picture-card-wrapper nb-upload css-dev-only-do-not-override-12upa3x"
             >
               <div
                 class="ant-upload-list ant-upload-list-picture-card"
@@ -43,7 +43,7 @@ exports[`Upload > basic 1`] = `
                   class="ant-upload-list-picture-card-container ant-upload-list-item-container"
                 >
                   <span
-                    class="ant-upload-wrapper ant-upload-picture-card-wrapper css-dev-only-do-not-override-1wazalj"
+                    class="ant-upload-wrapper ant-upload-picture-card-wrapper css-dev-only-do-not-override-12upa3x"
                   >
                     <div
                       class="ant-upload ant-upload-select"
@@ -100,7 +100,7 @@ exports[`Upload > basic 1`] = `
     </div>
   </div>
   <div
-    class="ant-formily-item ant-formily-item-layout-horizontal ant-formily-item-feedback-layout-loose ant-formily-item-label-align-right ant-formily-item-control-align-left css-dev-only-do-not-override-1wazalj"
+    class="ant-formily-item ant-formily-item-layout-horizontal ant-formily-item-feedback-layout-loose ant-formily-item-label-align-right ant-formily-item-control-align-left css-dev-only-do-not-override-12upa3x"
   >
     <div
       class="ant-formily-item-label"
@@ -131,7 +131,7 @@ exports[`Upload > basic 1`] = `
         >
           <div>
             <div
-              class="ant-upload-wrapper ant-upload-picture-card-wrapper nb-upload css-dev-only-do-not-override-1wazalj"
+              class="ant-upload-wrapper ant-upload-picture-card-wrapper nb-upload css-dev-only-do-not-override-12upa3x"
             >
               <div
                 class="ant-upload-list ant-upload-list-picture-card"
@@ -148,7 +148,7 @@ exports[`Upload > basic 1`] = `
 exports[`Upload > uploading 1`] = `
 <div>
   <div
-    class="ant-formily-item ant-formily-item-layout-horizontal ant-formily-item-feedback-layout-loose ant-formily-item-label-align-right ant-formily-item-control-align-left css-dev-only-do-not-override-1wazalj"
+    class="ant-formily-item ant-formily-item-layout-horizontal ant-formily-item-feedback-layout-loose ant-formily-item-label-align-right ant-formily-item-control-align-left css-dev-only-do-not-override-12upa3x"
   >
     <div
       class="ant-formily-item-label"
@@ -179,7 +179,7 @@ exports[`Upload > uploading 1`] = `
         >
           <div>
             <div
-              class="ant-upload-wrapper ant-upload-picture-card-wrapper nb-upload css-dev-only-do-not-override-1wazalj"
+              class="ant-upload-wrapper ant-upload-picture-card-wrapper nb-upload css-dev-only-do-not-override-12upa3x"
             >
               <div
                 class="ant-upload-list ant-upload-list-picture-card"
@@ -223,14 +223,14 @@ exports[`Upload > uploading 1`] = `
                       class="ant-upload-list-item-actions"
                     >
                       <div
-                        class="ant-space css-dev-only-do-not-override-1wazalj ant-space-horizontal ant-space-align-center"
+                        class="ant-space css-dev-only-do-not-override-12upa3x ant-space-horizontal ant-space-align-center"
                       >
                         <div
                           class="ant-space-item"
                           style="margin-right: 3px;"
                         >
                           <button
-                            class="ant-btn css-dev-only-do-not-override-1wazalj ant-btn-text ant-btn-sm ant-btn-icon-only"
+                            class="ant-btn css-dev-only-do-not-override-12upa3x ant-btn-text ant-btn-sm ant-btn-icon-only"
                             type="button"
                           >
                             <span
@@ -262,7 +262,7 @@ exports[`Upload > uploading 1`] = `
                           class="ant-space-item"
                         >
                           <button
-                            class="ant-btn css-dev-only-do-not-override-1wazalj ant-btn-text ant-btn-sm ant-btn-icon-only"
+                            class="ant-btn css-dev-only-do-not-override-12upa3x ant-btn-text ant-btn-sm ant-btn-icon-only"
                             type="button"
                           >
                             <span
@@ -297,7 +297,7 @@ exports[`Upload > uploading 1`] = `
                     >
                       <div
                         aria-valuenow="60"
-                        class="ant-progress ant-progress-line ant-progress-status-normal ant-progress-default css-dev-only-do-not-override-1wazalj"
+                        class="ant-progress ant-progress-line ant-progress-status-normal ant-progress-default css-dev-only-do-not-override-12upa3x"
                         role="progressbar"
                       >
                         <div
@@ -356,14 +356,14 @@ exports[`Upload > uploading 1`] = `
                       class="ant-upload-list-item-actions"
                     >
                       <div
-                        class="ant-space css-dev-only-do-not-override-1wazalj ant-space-horizontal ant-space-align-center"
+                        class="ant-space css-dev-only-do-not-override-12upa3x ant-space-horizontal ant-space-align-center"
                       >
                         <div
                           class="ant-space-item"
                           style="margin-right: 3px;"
                         >
                           <button
-                            class="ant-btn css-dev-only-do-not-override-1wazalj ant-btn-text ant-btn-sm ant-btn-icon-only"
+                            class="ant-btn css-dev-only-do-not-override-12upa3x ant-btn-text ant-btn-sm ant-btn-icon-only"
                             type="button"
                           >
                             <span
@@ -395,7 +395,7 @@ exports[`Upload > uploading 1`] = `
                           class="ant-space-item"
                         >
                           <button
-                            class="ant-btn css-dev-only-do-not-override-1wazalj ant-btn-text ant-btn-sm ant-btn-icon-only"
+                            class="ant-btn css-dev-only-do-not-override-12upa3x ant-btn-text ant-btn-sm ant-btn-icon-only"
                             type="button"
                           >
                             <span
@@ -431,7 +431,7 @@ exports[`Upload > uploading 1`] = `
                   class="ant-upload-list-picture-card-container ant-upload-list-item-container"
                 >
                   <span
-                    class="ant-upload-wrapper ant-upload-picture-card-wrapper css-dev-only-do-not-override-1wazalj"
+                    class="ant-upload-wrapper ant-upload-picture-card-wrapper css-dev-only-do-not-override-12upa3x"
                   >
                     <div
                       class="ant-upload ant-upload-select"
@@ -489,7 +489,7 @@ exports[`Upload > uploading 1`] = `
     </div>
   </div>
   <div
-    class="ant-formily-item ant-formily-item-layout-horizontal ant-formily-item-feedback-layout-loose ant-formily-item-label-align-right ant-formily-item-control-align-left css-dev-only-do-not-override-1wazalj"
+    class="ant-formily-item ant-formily-item-layout-horizontal ant-formily-item-feedback-layout-loose ant-formily-item-label-align-right ant-formily-item-control-align-left css-dev-only-do-not-override-12upa3x"
   >
     <div
       class="ant-formily-item-label"
@@ -520,7 +520,7 @@ exports[`Upload > uploading 1`] = `
         >
           <div>
             <div
-              class="ant-upload-wrapper ant-upload-picture-card-wrapper nb-upload css-dev-only-do-not-override-1wazalj"
+              class="ant-upload-wrapper ant-upload-picture-card-wrapper nb-upload css-dev-only-do-not-override-12upa3x"
             >
               <div
                 class="ant-upload-list ant-upload-list-picture-card"
@@ -564,13 +564,13 @@ exports[`Upload > uploading 1`] = `
                       class="ant-upload-list-item-actions"
                     >
                       <div
-                        class="ant-space css-dev-only-do-not-override-1wazalj ant-space-horizontal ant-space-align-center"
+                        class="ant-space css-dev-only-do-not-override-12upa3x ant-space-horizontal ant-space-align-center"
                       >
                         <div
                           class="ant-space-item"
                         >
                           <button
-                            class="ant-btn css-dev-only-do-not-override-1wazalj ant-btn-text ant-btn-sm ant-btn-icon-only"
+                            class="ant-btn css-dev-only-do-not-override-12upa3x ant-btn-text ant-btn-sm ant-btn-icon-only"
                             type="button"
                           >
                             <span
@@ -641,13 +641,13 @@ exports[`Upload > uploading 1`] = `
                       class="ant-upload-list-item-actions"
                     >
                       <div
-                        class="ant-space css-dev-only-do-not-override-1wazalj ant-space-horizontal ant-space-align-center"
+                        class="ant-space css-dev-only-do-not-override-12upa3x ant-space-horizontal ant-space-align-center"
                       >
                         <div
                           class="ant-space-item"
                         >
                           <button
-                            class="ant-btn css-dev-only-do-not-override-1wazalj ant-btn-text ant-btn-sm ant-btn-icon-only"
+                            class="ant-btn css-dev-only-do-not-override-12upa3x ant-btn-text ant-btn-sm ant-btn-icon-only"
                             type="button"
                           >
                             <span
@@ -687,7 +687,7 @@ exports[`Upload > uploading 1`] = `
     </div>
   </div>
   <div
-    class="ant-formily-item ant-formily-item-layout-horizontal ant-formily-item-feedback-layout-loose ant-formily-item-label-align-right ant-formily-item-control-align-left css-dev-only-do-not-override-1wazalj"
+    class="ant-formily-item ant-formily-item-layout-horizontal ant-formily-item-feedback-layout-loose ant-formily-item-label-align-right ant-formily-item-control-align-left css-dev-only-do-not-override-12upa3x"
   >
     <div
       class="ant-formily-item-label"
@@ -718,7 +718,7 @@ exports[`Upload > uploading 1`] = `
         >
           <div>
             <div
-              class="ant-upload-wrapper ant-upload-picture-card-wrapper nb-upload ant-upload-small css-dev-only-do-not-override-1wazalj"
+              class="ant-upload-wrapper ant-upload-picture-card-wrapper nb-upload ant-upload-small css-dev-only-do-not-override-12upa3x"
             >
               <div
                 class="ant-upload-list ant-upload-list-picture-card"
