@@ -1,6 +1,6 @@
 import { SettingsCenterProvider, createStyles, useCurrentUserSettingsMenu, useGlobalTheme } from '@nocobase/client';
 import { ConfigProvider } from 'antd';
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import InitializeTheme from './components/InitializeTheme';
 import { ThemeEditorProvider } from './components/ThemeEditorProvider';
 import ThemeList from './components/ThemeList';
@@ -38,21 +38,28 @@ const CustomThemeProvider = React.memo((props) => {
     addMenuItem(themeItem, { after: 'role' });
   }, [themeItem]);
 
-  const settings = {
-    theme: {
-      title: t('Theme'),
-      icon: 'BgColorsOutlined',
-      tabs: {
-        themes: {
-          title: t('Local'),
-          component: ThemeList,
+  const settings = useMemo(() => {
+    return {
+      theme: {
+        title: t('Theme'),
+        icon: 'BgColorsOutlined',
+        tabs: {
+          themes: {
+            title: t('Local'),
+            component: ThemeList,
+          },
         },
       },
-    },
-  };
+    };
+  }, []);
+
+  const contentStyle = useMemo(() => {
+    return open ? { transform: 'rotate(0)', flexGrow: 1 } : { flexGrow: 1 };
+  }, [open]);
+
   const editor = (
     <div style={{ display: 'flex', overflow: 'hidden' }}>
-      <div style={{ transform: 'rotate(0)', flexGrow: 1 }}>{props.children}</div>
+      <div style={contentStyle}>{props.children}</div>
       {open ? (
         <div className={styles.editor} style={{ overflow: 'hidden', borderLeft: '1px solid #f0f0f0' }}>
           <CustomTheme onThemeChange={setTheme} />
