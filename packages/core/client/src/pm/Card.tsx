@@ -20,6 +20,7 @@ import { useNavigate } from 'react-router-dom';
 import type { IPluginData } from '.';
 import { useAPIClient, useRequest } from '../api-client';
 import { useParseMarkdown } from '../schema-component/antd/markdown/util';
+import { useStyles } from './style';
 
 interface PluginDocumentProps {
   path: string;
@@ -60,9 +61,14 @@ const stringToColor = function (str: string) {
 };
 
 const PluginDocument: React.FC<PluginDocumentProps> = (props) => {
+  const { styles } = useStyles();
   const [docLang, setDocLang] = useState('');
   const { name, path } = props;
-  const { data, loading, error } = useRequest<any>(
+  const { data, loading, error } = useRequest<{
+    data: {
+      content: string;
+    };
+  }>(
     {
       url: '/plugins:getTabInfo',
       params: {
@@ -102,15 +108,7 @@ const PluginDocument: React.FC<PluginDocumentProps> = (props) => {
   }, [handleSwitchDocLang]);
 
   return (
-    <div
-      className={css`
-        background: #ffffff;
-        padding: var(--nb-spacing); // if the antd can upgrade to v5.0, theme token will be better
-        height: 60vh;
-        overflow-y: auto;
-      `}
-      id="pm-md-preview"
-    >
+    <div className={styles.PluginDocument} id="pm-md-preview">
       {loading || parseLoading ? (
         <Spin />
       ) : (
@@ -122,39 +120,17 @@ const PluginDocument: React.FC<PluginDocumentProps> = (props) => {
 
 function PluginDetail(props: IPluginDetail) {
   const { plugin, onCancel, items } = props;
+  const { styles } = useStyles();
+
   return (
     <Modal
       footer={false}
-      className={css`
-        .ant-modal-header {
-          background: var(--nb-box-bg);
-          padding-bottom: 8px;
-        }
-
-        .ant-modal-body {
-          padding-top: 0;
-        }
-
-        .ant-modal-content {
-          background: var(--nb-box-bg);
-          .plugin-desc {
-            padding-bottom: 8px;
-          }
-        }
-      `}
+      className={styles.PluginDetail}
       width="70%"
       title={
         <Typography.Title level={2} style={{ margin: 0 }}>
           {plugin?.displayName || plugin?.name}
-          <Tag
-            className={css`
-              vertical-align: middle;
-              margin-top: -3px;
-              margin-left: 8px;
-            `}
-          >
-            v{plugin?.version}
-          </Tag>
+          <Tag className={'version-tag'}>v{plugin?.version}</Tag>
         </Typography.Title>
       }
       open={!!plugin}
