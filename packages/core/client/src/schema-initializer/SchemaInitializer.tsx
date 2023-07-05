@@ -17,19 +17,11 @@ import {
   SchemaInitializerItemProps,
 } from './types';
 
-const mouseEnterDelay = 150;
-
 const overlayClassName = css`
   .ant-dropdown-menu-item-group-list {
     max-height: 40vh;
     overflow: auto;
   }
-`;
-/**
- * 用于去除菜单的消失动画，优化操作体验
- */
-const hidden = css`
-  display: none;
 `;
 
 const defaultWrap = (s: ISchema) => s;
@@ -68,6 +60,7 @@ SchemaInitializer.Button = observer(
     const menuItems = useRef([]);
 
     const changeMenu = (v: boolean) => {
+      // 这里是为了防止当鼠标快速滑过时，终止菜单的渲染，防止卡顿
       startTransition(() => {
         setVisible(v);
       });
@@ -192,7 +185,6 @@ SchemaInitializer.Button = observer(
               maxHeight: '60vh',
               overflowY: 'auto',
             },
-            className: classNames({ [hidden]: !visible }),
             items: menuItems.current,
           }}
           {...dropdown}
