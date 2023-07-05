@@ -1,11 +1,12 @@
 import { createStyles } from 'antd-style';
 
-export const useStyles = createStyles(() => {
+export const useStyles = createStyles(({ token }) => {
   return {
     pageHeader: {
-      backgroundColor: 'white',
+      backgroundColor: token.colorBgContainer,
       paddingBottom: 0,
-      paddingTop: 12,
+      paddingTop: token.paddingSM,
+      paddingInline: token.paddingLG,
       '& .ant-tabs-nav': {
         marginBottom: 0,
       },
