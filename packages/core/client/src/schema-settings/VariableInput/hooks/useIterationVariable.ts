@@ -11,11 +11,12 @@ interface GetOptionsParams {
   loadChildren?: (option: Option) => Promise<void>;
   getFilterOptions?: (collectionName: string) => any[];
   compile: (value: string) => any;
+  schema: any;
 }
 
 const getChildren = (
   options: FieldOption[],
-  { depth, maxDepth, loadChildren, compile }: GetOptionsParams,
+  { depth, maxDepth, loadChildren, compile, schema }: GetOptionsParams,
 ): Option[] => {
   const result = options
     .map((option): Option => {
@@ -25,6 +26,8 @@ const getChildren = (
           value: option.name,
           label: compile(option.title),
           depth,
+          // TODO: 现在是通过组件的名称来过滤能够被选择的选项，这样的坏处是不够精确，后续可以优化
+          disabled: schema?.['x-component'] !== option.schema?.['x-component'],
         };
       }
 
@@ -86,6 +89,7 @@ export const useIterationVariable = ({
             maxDepth: 4,
             loadChildren,
             compile,
+            schema,
           }) || [];
         if (children.length === 0) {
           option.disabled = true;
