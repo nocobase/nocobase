@@ -175,10 +175,10 @@ SchemaInitializer.Button = observer(
           openClassName={`nb-schema-initializer-button-open`}
           overlayClassName={classNames('nb-schema-initializer-button-overlay', overlayClassName)}
           open={visible}
-          onOpenChange={() => {
+          onOpenChange={(open) => {
             // 如果不清空输入框的值，那么下次打开的时候会出现上次输入的值
             setSearchValue('');
-            changeMenu(!visible);
+            changeMenu(open);
           }}
           menu={{
             style: {

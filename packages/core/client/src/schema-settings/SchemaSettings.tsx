@@ -160,8 +160,8 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
       <Component />
       <Dropdown
         open={visible}
-        onOpenChange={() => {
-          changeMenu(!visible);
+        onOpenChange={(open) => {
+          changeMenu(open);
         }}
         menu={{ items }}
         overlayClassName={overlayClassName}
