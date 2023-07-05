@@ -44,7 +44,7 @@ export const DuplicateAction = observer((props: any) => {
     key: 'duplicate',
     dataId: id,
     default: true,
-    fields:
+    targetFields:
       duplicateFields?.filter((v) => {
         return collectionFields.find((k) => k.name === v);
       }) || [],
@@ -54,7 +54,7 @@ export const DuplicateAction = observer((props: any) => {
   const handelQuickDuplicate = async () => {
     setLoading(true);
     try {
-      const data = await fetchTemplateData(api, template, t);
+      const data = await fetchTemplateData(api, template);
       await api.resource(__collection || name).create({
         values: {
           ...data,
