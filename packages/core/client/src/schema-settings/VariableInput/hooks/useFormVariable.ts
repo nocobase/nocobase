@@ -10,7 +10,7 @@ interface GetOptionsParams {
   loadChildren?: (option: Option) => Promise<void>;
   getFilterOptions?: (collectionName: string) => any[];
   compile: (value: string) => any;
-  schema: any;
+  schema?: any;
 }
 
 const getChildren = (
@@ -59,7 +59,7 @@ export const useFormVariable = ({
   rootCollection: string;
   operator?: any;
   level?: number;
-  schema: any;
+  schema?: any;
 }) => {
   const compile = useCompile();
   const getFilterOptions = useGetFilterOptions();
