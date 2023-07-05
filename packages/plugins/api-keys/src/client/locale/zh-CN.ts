@@ -9,6 +9,10 @@ const locale = {
   'Keys manager': '密钥管理',
   'Created at': '创建时间',
   'Add API key': '添加 API key',
+  '1 Day': '1 天',
+  '7 Days': '7 天',
+  '30 Days': '30 天',
+  '90 Days': '90 天',
 };
 
 export default locale;

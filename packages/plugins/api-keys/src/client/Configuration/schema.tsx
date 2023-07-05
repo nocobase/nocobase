@@ -3,7 +3,8 @@ import { uid } from '@formily/shared';
 import { useActionContext, useBlockRequestContext, useRecord } from '@nocobase/client';
 import { Alert, Modal, Space, Typography } from 'antd';
 import React from 'react';
-import { generateNTemplate, useTranslation } from '../locale';
+import { generateNTemplate } from '../../locale';
+import { useTranslation } from '../locale';
 const { useModal } = Modal;
 
 const useCreateAction = () => {
