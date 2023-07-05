@@ -259,7 +259,7 @@ async function loadChildren(option) {
   } else {
     option.isLeaf = true;
     option.loadChildren = null;
-    const matchingType = option.types.some((type) => matchFieldType(option.field, type, 0));
+    const matchingType = option.types?.some((type) => matchFieldType(option.field, type, 0));
     if (!matchingType) {
       option.disabled = true;
     }
