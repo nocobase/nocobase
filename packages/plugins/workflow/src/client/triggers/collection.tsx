@@ -45,6 +45,15 @@ export default {
             },
           },
         },
+        {
+          target: 'appends',
+          effects: ['onFieldValueChange'],
+          fulfill: {
+            state: {
+              value: [],
+            },
+          },
+        },
       ],
     },
     mode: {
@@ -153,7 +162,7 @@ export default {
       // depth,
       ...options,
       fields: rootFields,
-      appends: config.appends?.map((item) => `data.${item}`),
+      appends: ['data', ...(config.appends?.map((item) => `data.${item}`) || [])],
       compile,
       getCollectionFields,
     });

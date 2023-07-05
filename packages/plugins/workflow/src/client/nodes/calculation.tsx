@@ -14,7 +14,7 @@ import { BaseTypeSets, useWorkflowVariableOptions } from '../variable';
 import { ValueBlock } from '../components/ValueBlock';
 
 function useDynamicExpressionCollectionFieldMatcher(field): boolean {
-  if (field.type !== 'belongsTo') {
+  if (!['belongsTo', 'hasOne'].includes(field.type)) {
     return false;
   }
 

@@ -147,29 +147,30 @@ function getNextAppends(field, appends: string[]) {
   return appends.filter((item) => item.startsWith(fieldPrefix)).map((item) => item.replace(fieldPrefix, ''));
 }
 
-export function filterTypedFields({ fields, types, appends, compile, getCollectionFields }) {
-  if (!types) {
-    return fields;
-  }
+function filterTypedFields({ fields, types, appends, compile, getCollectionFields }) {
   return fields.filter((field) => {
+    const match = types?.length ? types.some((type) => matchFieldType(field, type, appends)) : true;
     if (isAssociationField(field)) {
       const nextAppends = getNextAppends(field, appends);
-      if (
-        (nextAppends.length || appends.includes(field.name)) &&
-        // depth &&
-        filterTypedFields({
-          fields: getNormalizedFields(field.target, { compile, getCollectionFields }),
-          types,
-          // depth: depth - 1,
-          appends: nextAppends,
-          compile,
-          getCollectionFields,
-        }).length
-      ) {
-        return true;
+      const included = appends.includes(field.name);
+      if (match) {
+        return included;
+      } else {
+        return (
+          (nextAppends.length || included) &&
+          filterTypedFields({
+            fields: getNormalizedFields(field.target, { compile, getCollectionFields }),
+            types,
+            // depth: depth - 1,
+            appends: nextAppends,
+            compile,
+            getCollectionFields,
+          }).length
+        );
       }
+    } else {
+      return match;
     }
-    return types.some((type) => matchFieldType(field, type, appends));
   });
 }
 
@@ -266,7 +267,7 @@ async function loadChildren(option) {
 }
 
 export function getCollectionFieldOptions(options): VariableOption[] {
-  const { fields, collection, types, depth = 0, sourceKey, appends = [], compile, getCollectionFields } = options;
+  const { fields, collection, types, appends = [], compile, getCollectionFields } = options;
   const normalizedFields = getNormalizedFields(collection, { compile, getCollectionFields });
   const computedFields = fields ?? normalizedFields;
   const boundLoadChildren = loadChildren.bind({ compile, getCollectionFields });
@@ -278,26 +279,23 @@ export function getCollectionFieldOptions(options): VariableOption[] {
     appends,
     compile,
     getCollectionFields,
-  })
-    // .filter((field) => {
-    //   return !isAssociationField(field) || (depth && (!sourceKey || field.reverseKey !== sourceKey));
-    // })
-    .map((field) => {
-      const label = compile(field.uiSchema?.title || field.name);
-      const nextAppends = getNextAppends(field, appends);
-      const isLeaf = !isAssociationField(field) || !nextAppends.length;
-      return {
-        label,
-        key: field.name,
-        value: field.name,
-        isLeaf,
-        loadChildren: isLeaf ? null : boundLoadChildren,
-        field,
-        // depth,
-        appends,
-        types,
-      };
-    });
+  }).map((field) => {
+    const label = compile(field.uiSchema?.title || field.name);
+    const nextAppends = getNextAppends(field, appends);
+    // TODO: no matching fields in next appends should consider isLeaf as true
+    const isLeaf = !isAssociationField(field) || (!nextAppends.length && !appends.includes(field.name));
+    return {
+      label,
+      key: field.name,
+      value: field.name,
+      isLeaf,
+      loadChildren: isLeaf ? null : boundLoadChildren,
+      field,
+      // depth,
+      appends,
+      types,
+    };
+  });
 
   return result;
 }
