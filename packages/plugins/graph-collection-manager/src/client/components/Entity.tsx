@@ -191,6 +191,7 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
   const [collapse, setCollapse] = useState(false);
   const { t } = useGCMTranslation();
   const compile = useCompile();
+  const database = useCurrentAppInfo();
   const portsData = lodash.groupBy(ports.items, (v) => {
     if (
       v.isForeignKey ||
@@ -293,6 +294,7 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
                         ...property,
                         title,
                       },
+                      database,
                     },
                   },
                   update: {
