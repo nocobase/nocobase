@@ -74,14 +74,14 @@ export const DuplicateAction = observer((props: any) => {
   };
   const handelDuplicate = () => {
     if (!disabled && !loading) {
-      if (duplicateFields?.length > 0) {
-        if (duplicateMode === 'quickDulicate') {
+      if (duplicateMode === 'quickDulicate') {
+        if (duplicateFields?.length > 0) {
           handelQuickDuplicate();
         } else {
-          setVisible(true);
+          message.error(t('Please configure the duplicate fields'));
         }
       } else {
-        message.error(t('Please configure the duplicate fields'));
+        setVisible(true);
       }
     }
   };

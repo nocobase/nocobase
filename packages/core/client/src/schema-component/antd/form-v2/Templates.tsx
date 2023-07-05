@@ -109,7 +109,7 @@ export const Templates = ({ style = {}, form }) => {
     const collectionFields = getCollectionFields(option.collection);
     const combineFields = [...new Set([...formFields].concat(option.fields))];
     const targetFields = combineFields.filter((v) => {
-      return collectionFields.find((k) => v.includes(k.name));
+      return collectionFields.find((k) => v?.includes(k.name));
     });
     fetchTemplateData(api, { ...option, targetFields })
       .then((data) => {
