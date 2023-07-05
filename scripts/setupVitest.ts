@@ -9,7 +9,10 @@ import 'jsdom-worker';
 import { vi } from 'vitest';
 import '../packages/core/client/src/i18n';
 
-// 解决 ypeError: window.matchMedia is not a function
+// 设置 node 环境下的默认时区为中国标准时间, 即东八区
+process.env.TZ = 'Asia/Shanghai';
+
+// 解决 TypeError: window.matchMedia is not a function
 // 参见： https://github.com/vitest-dev/vitest/issues/821#issuecomment-1046954558
 Object.defineProperty(window, 'matchMedia', {
   writable: true,

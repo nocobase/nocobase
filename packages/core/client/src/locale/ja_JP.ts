@@ -540,7 +540,7 @@ export default {
   "Quick upload": "クイックアップロード",
   "Select file": "ファイルを選択",
   "Subtable": "サブテーブル",
-  "Subform": "サブフォーム",
+  "Sub-form": "サブフォーム",
   "Sub-details":"サブリスト",
   "Field mode":"フィールドコンポーネント",
   "Allow add new data":"データの追加を許可",
@@ -616,5 +616,6 @@ export default {
   "Find by the following fields":"次のフィールドで検索",
   "Create":"新規のみ"  ,
   "Current form":"現在のフォーム",
-  "Current object":"現在のオブジェクト"
+  "Current object":"現在のオブジェクト",
+  "Linkage form form data":"フォームデータから連動",
 }

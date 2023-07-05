@@ -123,6 +123,7 @@ const PreviewCom = (props) => {
         ) : (
           <Select
             defaultValue={text}
+            dropdownMatchSelectWidth={false}
             style={{ width: '100%' }}
             options={
               item?.possibleTypes.map((v) => {
@@ -148,6 +149,7 @@ const PreviewCom = (props) => {
           <Select
             defaultValue={text}
             style={{ width: '100%' }}
+            dropdownMatchSelectWidth={false}
             onChange={(value) => {
               const interfaceConfig = getInterface(value);
               handleFieldChange({ ...item, interface: value, uiSchema: interfaceConfig?.default?.uiSchema }, index);

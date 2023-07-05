@@ -3,10 +3,10 @@ import { observer, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { SchemaComponent } from '../../schema-component';
 import { FilterContext } from '../../schema-component/antd/filter/context';
+import { EnableLinkage } from './components/EnableLinkage';
+import { ArrayCollapse } from './components/LinkageHeader';
 import { FilterDynamicComponent } from './FilterDynamicComponent';
 import { LinkageRuleActionGroup } from './LinkageRuleActionGroup';
-import { ArrayCollapse } from './components/LinkageHeader';
-import { EnableLinkage } from './components/EnableLinkage';
 
 export const FormLinkageRules = observer(
   (props: any) => {
@@ -32,7 +32,7 @@ export const FormLinkageRules = observer(
                   type: 'object',
                   'x-component': 'ArrayCollapse.CollapsePanel',
                   'x-component-props': {
-                    extra: [<EnableLinkage />],
+                    extra: <EnableLinkage />,
                   },
                   properties: {
                     layout: {
@@ -53,6 +53,7 @@ export const FormLinkageRules = observer(
                         condition: {
                           'x-component': 'Filter',
                           'x-component-props': {
+                            collectionName,
                             useProps() {
                               return {
                                 options,

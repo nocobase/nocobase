@@ -10,6 +10,7 @@ import { useBlockRequestContext } from '../../../block-provider/BlockProvider';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { getInnermostKeyAndValue } from '../../common/utils/uitls';
+import { useCompile } from '../../hooks';
 import { defaultFieldNames, Select } from '../select';
 import { ReadPretty } from './ReadPretty';
 import { extractFilterfield, extractValuesByPattern, generatePattern, parseVariables } from './utils';
@@ -64,13 +65,14 @@ const InternalRemoteSelect = connect(
       }
       return '$includes';
     }, [targetField]);
+    const compile = useCompile();
 
     const mapOptionsToTags = useCallback(
       (options) => {
         try {
           return options
             .map((option) => {
-              let label = option[fieldNames.label];
+              let label = compile(option[fieldNames.label]);
 
               if (targetField?.uiSchema?.enum) {
                 if (Array.isArray(label)) {
@@ -124,6 +126,9 @@ const InternalRemoteSelect = connect(
       if (!rules) {
         return undefined;
       }
+      if (typeof rules === 'string') {
+        return rules;
+      }
       const type = Object.keys(rules)[0] || '$and';
       const conditions = rules[type];
       const results = [];
@@ -154,10 +159,17 @@ const InternalRemoteSelect = connect(
             str = str.replace('$iteration.', `$iteration.${path.join('.')}.`);
           }
           const parseValue = parseVariables(str, variablesCtx);
-          const filterObj = JSON.parse(
-            JSON.stringify(c).replace(jsonlogic.value, str.endsWith('id') ? parseValue ?? 0 : parseValue),
-          );
-          results.push(filterObj);
+          if (Array.isArray(parseValue)) {
+            const filters = parseValue.map((v) => {
+              return JSON.parse(JSON.stringify(c).replace(jsonlogic.value, v));
+            });
+            results.push({ $or: filters });
+          } else {
+            const filterObj = JSON.parse(
+              JSON.stringify(c).replace(jsonlogic.value, str.endsWith('id') ? parseValue ?? 0 : parseValue),
+            );
+            results.push(filterObj);
+          }
         }
       });
       return { [type]: results };
@@ -171,7 +183,9 @@ const InternalRemoteSelect = connect(
           pageSize: 200,
           ...service?.params,
           // search needs
-          filter: mergeFilter([parseFilter(field.componentProps?.service?.params?.filter) || service?.params?.filter]),
+          filter: mergeFilter([
+            parseFilter(fieldSchema?.['x-component-props']?.service?.params?.filter) || service?.params?.filter,
+          ]),
         },
       },
       {
@@ -219,7 +233,7 @@ const InternalRemoteSelect = connect(
                 },
               }
             : {},
-          field.componentProps?.service?.params?.filter || service?.params?.filter,
+          fieldSchema?.['x-component-props']?.service?.params?.filter || service?.params?.filter,
         ]),
       });
       searchData.current = search;
@@ -236,7 +250,9 @@ const InternalRemoteSelect = connect(
     const onDropdownVisibleChange = (visible) => {
       setOpen(visible);
       searchData.current = null;
-      run();
+      if (visible) {
+        run();
+      }
       firstRun.current = true;
     };
     return (

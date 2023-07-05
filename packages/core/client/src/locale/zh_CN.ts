@@ -316,7 +316,7 @@ export default {
   "Quick upload": "快速上传",
   "Select file": "选择文件",
   "Subtable": "子表格",
-  "Subform": "子表单",
+  "Sub-form": "子表单",
   "Sub-details":"子详情",
   "Record picker": "数据选择器",
   "Toggles the subfield mode": "切换子字段模式",
@@ -790,4 +790,5 @@ export default {
   "File manager": "文件管理器",
   "Direct duplicate": "直接复制",
   "Copy into the form and continue to fill in": "复制到表单并继续填写",
+  "Linkage form form data":"从表单数据里联动",
 }

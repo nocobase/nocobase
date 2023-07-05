@@ -5,7 +5,7 @@ import { css } from '@emotion/css';
 
 import { SchemaComponent } from '@nocobase/client';
 
-import { collection } from '../../schemas/collection';
+import { appends, collection } from '../../schemas/collection';
 import { OnField } from './OnField';
 import { EndsByField } from './EndsByField';
 import { RepeatField } from './RepeatField';
@@ -140,6 +140,19 @@ const ModeFieldsets = {
         placeholder: `{{t("No limit", { ns: "${NAMESPACE}" })}}`,
         min: 0,
       },
+    },
+    appends: {
+      ...appends,
+      'x-reactions': [
+        {
+          dependencies: ['mode', 'collection'],
+          fulfill: {
+            state: {
+              visible: `{{$deps[0] === ${SCHEDULE_MODE.COLLECTION_FIELD} && $deps[1]}}`,
+            },
+          },
+        },
+      ],
     },
   },
 };

@@ -24,6 +24,7 @@ export class PresetNocoBase extends Plugin {
     'iframe-block',
     'formula-field',
     'charts',
+    'data-visualization',
     'auth',
     'sms-auth',
   ];
@@ -38,6 +39,7 @@ export class PresetNocoBase extends Plugin {
     'snapshot-field',
     'graph-collection-manager',
     'mobile-client',
+    'api-keys',
   ];
 
   splitNames(name: string) {
