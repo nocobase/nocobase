@@ -1,6 +1,6 @@
 import { css } from '@emotion/css';
 import { ArrayCollapse, ArrayItems, FormDialog, FormItem, FormLayout, Input } from '@formily/antd';
-import { Field, GeneralField, createForm } from '@formily/core';
+import { createForm, Field, GeneralField } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { error } from '@nocobase/utils/client';
@@ -21,30 +21,31 @@ import {
 import classNames from 'classnames';
 import _, { cloneDeep } from 'lodash';
 import React, {
-  ReactNode,
   createContext,
+  ReactNode,
   useCallback,
   useContext,
   useMemo,
+  useState,
   // @ts-ignore
   useTransition as useReactTransition,
-  useState,
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  APIClientProvider,
   ActionContextProvider,
+  APIClientProvider,
   CollectionFieldOptions,
   CollectionManagerContext,
+  CollectionProvider,
+  createDesignable,
   Designable,
+  findFormBlock,
   FormProvider,
   RemoteSchemaComponent,
   SchemaComponent,
   SchemaComponentContext,
   SchemaComponentOptions,
-  createDesignable,
-  findFormBlock,
   useAPIClient,
   useCollection,
   useCollectionManager,
@@ -61,6 +62,7 @@ import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
 import { FormDataTemplates } from './DataTemplates';
 import { EnableChildCollections } from './EnableChildCollections';
+import { ChildDynamicComponent } from './EnableChildCollections/DynamicComponent';
 import { FormLinkageRules } from './LinkageRules';
 import { useLinkageCollectionFieldOptions } from './LinkageRules/action-hooks';
 
@@ -870,6 +872,7 @@ SchemaSettings.ModalItem = function ModalItem(props) {
   } = props;
   const options = useContext(SchemaOptionsContext);
   const cm = useContext(CollectionManagerContext);
+  const collection = useCollection();
   const apiClient = useAPIClient();
   if (hidden) {
     return null;
@@ -882,13 +885,15 @@ SchemaSettings.ModalItem = function ModalItem(props) {
         FormDialog({ title: schema.title || title, width }, () => {
           return (
             <CollectionManagerContext.Provider value={cm}>
-              <SchemaComponentOptions scope={options.scope} components={options.components}>
-                <FormLayout layout={'vertical'} style={{ minWidth: 520 }}>
-                  <APIClientProvider apiClient={apiClient}>
-                    <SchemaComponent components={components} scope={scope} schema={schema} />
-                  </APIClientProvider>
-                </FormLayout>
-              </SchemaComponentOptions>
+              <CollectionProvider collection={collection}>
+                <SchemaComponentOptions scope={options.scope} components={options.components}>
+                  <FormLayout layout={'vertical'} style={{ minWidth: 520 }}>
+                    <APIClientProvider apiClient={apiClient}>
+                      <SchemaComponent components={components} scope={scope} schema={schema} />
+                    </APIClientProvider>
+                  </FormLayout>
+                </SchemaComponentOptions>
+              </CollectionProvider>
             </CollectionManagerContext.Provider>
           );
         })
@@ -1169,13 +1174,19 @@ SchemaSettings.DataTemplates = function DataTemplates(props) {
 SchemaSettings.EnableChildCollections = function EnableChildCollectionsItem(props) {
   const { collectionName } = props;
   const fieldSchema = useFieldSchema();
+  const field = useField();
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const allowAddToCurrent = fieldSchema?.['x-allow-add-to-current'];
+  const form = useForm();
+  const { getCollectionJoinField } = useCollectionManager();
+  const collectionField = getCollectionJoinField(fieldSchema?.parent?.['x-collection-field']) || {};
+  const isAssocationAdd = fieldSchema?.parent?.['x-component'] === 'CollectionField';
   return (
     <SchemaSettings.ModalItem
       title={t('Enable child collections')}
       components={{ ArrayItems, FormLayout }}
+      scope={{ isAssocationAdd }}
       schema={
         {
           type: 'object',
@@ -1199,6 +1210,18 @@ SchemaSettings.EnableChildCollections = function EnableChildCollectionsItem(prop
               'x-component': 'Checkbox',
               default: allowAddToCurrent === undefined ? true : allowAddToCurrent,
             },
+            linkageFromForm: {
+              type: 'string',
+              title: "{{t('Linkage form form')}}",
+              'x-visible': '{{isAssocationAdd}}',
+              'x-decorator': 'FormItem',
+              'x-component': ChildDynamicComponent,
+              'x-component-props': {
+                collectionName: collectionField?.collectionName || collectionName,
+                form,
+              },
+              default: fieldSchema?.['x-component-props']?.['linkageFromForm'],
+            },
           },
         } as ISchema
       }
@@ -1216,13 +1239,16 @@ SchemaSettings.EnableChildCollections = function EnableChildCollectionsItem(prop
         fieldSchema['x-component-props'] = {
           ...fieldSchema['x-component-props'],
           component: 'CreateRecordAction',
+          linkageFromForm: v?.linkageFromForm,
         };
         schema['x-enable-children'] = enableChildren;
         schema['x-allow-add-to-current'] = v.allowAddToCurrent;
         schema['x-component-props'] = {
           ...fieldSchema['x-component-props'],
           component: 'CreateRecordAction',
+          linkageFromForm: v?.linkageFromForm,
         };
+        field.componentProps['linkageFromForm'] = v.linkageFromForm;
         dn.emit('patch', {
           schema,
         });
