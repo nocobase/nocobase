@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import {
   ActionContextProvider,
   CollectionProvider,
+  RecordProvider,
   useActionContext,
   useAPIClient,
   useBlockRequestContext,
@@ -34,7 +35,8 @@ export const DuplicateAction = observer((props: any) => {
   const [loading, setLoading] = useState(false);
   const { service, __parent, block } = useBlockRequestContext();
   const { duplicateFields, duplicateMode = 'quickDulicate', duplicateCollection } = fieldSchema['x-component-props'];
-  const { id, __collection } = useRecord();
+  const record = useRecord();
+  const { id, __collection } = record;
   const ctx = useActionContext();
   const { name } = useCollection();
   const { getCollectionFields } = useCollectionManager();
@@ -131,9 +133,11 @@ export const DuplicateAction = observer((props: any) => {
             </Button>
           )}
           <CollectionProvider name={duplicateCollection || name}>
-            <ActionContextProvider value={{ ...ctx, visible, setVisible }}>
-              <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
-            </ActionContextProvider>
+            <RecordProvider record={{ ...record, __collection: duplicateCollection || __collection }}>
+              <ActionContextProvider value={{ ...ctx, visible, setVisible }}>
+                <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
+              </ActionContextProvider>
+            </RecordProvider>
           </CollectionProvider>
         </div>
       </DuplicatefieldsContext.Provider>
