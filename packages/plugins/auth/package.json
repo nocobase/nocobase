@@ -3,11 +3,15 @@
   "version": "0.10.0-alpha.5",
   "main": "lib/server/index.js",
   "devDependencies": {
+    "@nocobase/test": "0.10.0-alpha.5",
+    "@types/cron": "^2.0.1"
+  },
+  "dependencies": {
     "@nocobase/actions": "0.10.0-alpha.5",
     "@nocobase/client": "0.10.0-alpha.5",
     "@nocobase/database": "0.10.0-alpha.5",
     "@nocobase/server": "0.10.0-alpha.5",
-    "@nocobase/test": "0.10.0-alpha.5"
+    "cron": "^2.3.1"
   },
   "displayName": "Authentication",
   "displayName.zh-CN": "用户认证",
