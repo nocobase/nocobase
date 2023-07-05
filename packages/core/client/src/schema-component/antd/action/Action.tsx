@@ -5,7 +5,6 @@ import classnames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useActionContext } from '../..';
 import { useDesignable } from '../../';
-import { CollectionProvider, useCollection } from '../../../collection-manager';
 import { Icon } from '../../../icon';
 import { useRecord } from '../../../record-provider';
 import { SortableItem } from '../../common';
@@ -89,7 +88,6 @@ export const Action: ComposedAction = observer(
     const compile = useCompile();
     const form = useForm();
     const values = useRecord();
-    const collection = useCollection();
     const designerProps = fieldSchema['x-designer-props'];
     const openMode = fieldSchema?.['x-component-props']?.['openMode'];
     const disabled = form.disabled || field.disabled || props.disabled;
@@ -151,24 +149,22 @@ export const Action: ComposedAction = observer(
     };
 
     return (
-      <CollectionProvider name={values?.__collection || collection.name}>
-        <ActionContextProvider
-          button={renderButton()}
-          visible={visible}
-          setVisible={setVisible}
-          formValueChanged={formValueChanged}
-          setFormValueChanged={setFormValueChanged}
-          openMode={openMode}
-          openSize={openSize}
-          containerRefKey={containerRefKey}
-          fieldSchema={fieldSchema}
-        >
-          {popover && <RecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
-          {!popover && renderButton()}
-          {!popover && <div onClick={(e) => e.stopPropagation()}>{props.children}</div>}
-          {element}
-        </ActionContextProvider>
-      </CollectionProvider>
+      <ActionContextProvider
+        button={renderButton()}
+        visible={visible}
+        setVisible={setVisible}
+        formValueChanged={formValueChanged}
+        setFormValueChanged={setFormValueChanged}
+        openMode={openMode}
+        openSize={openSize}
+        containerRefKey={containerRefKey}
+        fieldSchema={fieldSchema}
+      >
+        {popover && <RecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
+        {!popover && renderButton()}
+        {!popover && <div onClick={(e) => e.stopPropagation()}>{props.children}</div>}
+        {element}
+      </ActionContextProvider>
     );
   },
   { displayName: 'Action' },

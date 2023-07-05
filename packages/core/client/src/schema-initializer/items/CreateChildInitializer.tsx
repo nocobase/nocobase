@@ -13,6 +13,7 @@ export const CreateChildInitializer = (props) => {
       openMode: 'drawer',
       type: 'primary',
       addChild: true,
+      component: 'AddChildAction',
     },
     properties: {
       drawer: {
