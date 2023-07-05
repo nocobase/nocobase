@@ -36,7 +36,7 @@ const useDataTemplates = () => {
   const data = useDuplicatefieldsContext();
   const { getCollectionJoinField } = useCollectionManager();
   if (data) {
-    return { ...data };
+    return data;
   }
   const { items = [], display = true } = findDataTemplates(fieldSchema);
   // 过滤掉已经被删除的字段
