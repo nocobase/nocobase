@@ -1,7 +1,7 @@
+import { BelongsToManyRepository } from '@nocobase/database';
 import Database from '../../database';
 import { InheritedCollection } from '../../inherited-collection';
 import { mockDatabase } from '../index';
-import { BelongsToManyRepository } from '@nocobase/database';
 import pgOnly from './helper';
 
 pgOnly()('collection inherits', () => {
@@ -182,9 +182,17 @@ pgOnly()('collection inherits', () => {
   });
 
   it('should list data filtered by child type', async () => {
+    const assocs = db.collection({
+      name: 'assocs',
+      fields: [{ name: 'name', type: 'string' }],
+    });
+
     const rootCollection = db.collection({
       name: 'root',
-      fields: [{ name: 'name', type: 'string' }],
+      fields: [
+        { name: 'name', type: 'string' },
+        { name: 'assocs', type: 'hasMany', target: 'assocs' },
+      ],
     });
 
     const child1Collection = db.collection({
@@ -202,11 +210,29 @@ pgOnly()('collection inherits', () => {
     await rootCollection.repository.create({
       values: {
         name: 'root1',
+        assocs: [
+          {
+            name: 'assoc1',
+          },
+        ],
       },
     });
 
     await child1Collection.repository.create({
-      values: [{ name: 'child1-1' }, { name: 'child1-2' }],
+      values: [
+        {
+          name: 'child1-1',
+          assocs: [
+            {
+              name: 'child-assoc1-1',
+            },
+          ],
+        },
+        {
+          name: 'child1-2',
+          assocs: [{ name: 'child-assoc1-2' }],
+        },
+      ],
     });
 
     await child2Collection.repository.create({
@@ -215,18 +241,38 @@ pgOnly()('collection inherits', () => {
 
     const records = await rootCollection.repository.find({
       filter: {
-        'tableoid.$childIn': [child1Collection.name],
+        '__collection.$childIn': [child1Collection.name],
       },
+      appends: ['assocs'],
     });
 
     expect(records.every((r) => r.get('__collection') === child1Collection.name)).toBe(true);
 
     const records2 = await rootCollection.repository.find({
       filter: {
-        'tableoid.$childNotIn': [child1Collection.name],
+        '__collection.$childNotIn': [child1Collection.name],
       },
     });
     expect(records2.every((r) => r.get('__collection') !== child1Collection.name)).toBe(true);
+
+    const recordsWithFilter = await rootCollection.repository.find({
+      filter: {
+        '__collection.$childIn': [child1Collection.name],
+        assocs: {
+          name: 'child-assoc1-1',
+        },
+      },
+    });
+
+    expect(recordsWithFilter.every((r) => r.get('__collection') == child1Collection.name)).toBe(true);
+
+    const filterWithUndefined = await rootCollection.repository.find({
+      filter: {
+        '__collection.$childIn': 'undefined',
+      },
+    });
+
+    expect(filterWithUndefined).toHaveLength(0);
   });
 
   it('should list collection name in relation repository', async () => {

@@ -1,9 +1,10 @@
 import { Schema } from '@formily/react';
+import type { DefaultOptionType } from 'antd/lib/cascader';
 
-export interface Option {
+export interface Option extends DefaultOptionType {
   key?: string | number;
   value?: string | number;
-  label?: React.ReactNode;
+  label: React.ReactNode;
   disabled?: boolean;
   children?: Option[];
   // 标记是否为叶子节点，设置了 `loadData` 时有效

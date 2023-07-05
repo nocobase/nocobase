@@ -4,6 +4,7 @@ export * from './types';
 export * from './items';
 export {
   gridRowColWrap,
+  useCollectionDataSourceItems,
   useRecordCollectionDataSourceItems,
   createTableBlockSchema,
   createFilterFormBlockSchema,

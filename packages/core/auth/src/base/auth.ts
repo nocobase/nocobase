@@ -1,13 +1,12 @@
-import { Auth, AuthConfig } from '../auth';
-import { JwtOptions, JwtService } from './jwt-service';
 import { Collection, Model } from '@nocobase/database';
+import { Auth, AuthConfig } from '../auth';
+import { JwtService } from './jwt-service';
 
 /**
  * BaseAuth
  * @description A base class with jwt provide some common methods.
  */
 export class BaseAuth extends Auth {
-  protected jwt: JwtService;
   protected userCollection: Collection;
 
   constructor(
@@ -15,10 +14,17 @@ export class BaseAuth extends Auth {
       userCollection: Collection;
     },
   ) {
-    const { options, userCollection } = config;
+    const { userCollection } = config;
     super(config);
     this.userCollection = userCollection;
-    this.jwt = new JwtService(options.jwt as JwtOptions);
+  }
+
+  get userRepository() {
+    return this.userCollection.repository;
+  }
+
+  get jwt(): JwtService {
+    return this.ctx.app.authManager.jwt;
   }
 
   set user(user: Model) {
@@ -35,13 +41,17 @@ export class BaseAuth extends Auth {
       return null;
     }
     try {
-      const { userId } = await this.jwt.decode(token);
-      const user = await this.userCollection.repository.findOne({
+      const { userId, roleName } = await this.jwt.decode(token);
+
+      if (roleName) {
+        this.ctx.headers['x-role'] = roleName;
+      }
+
+      return await this.userRepository.findOne({
         filter: {
           id: userId,
         },
       });
-      return user;
     } catch (err) {
       this.ctx.logger.error(err);
       return null;
@@ -70,5 +80,13 @@ export class BaseAuth extends Auth {
       user,
       token,
     };
+  }
+
+  async signOut(): Promise<any> {
+    const token = this.ctx.getBearerToken();
+    if (!token) {
+      return;
+    }
+    return await this.jwt.block(token);
   }
 }
