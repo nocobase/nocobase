@@ -126,6 +126,9 @@ const InternalRemoteSelect = connect(
       if (!rules) {
         return undefined;
       }
+      if (typeof rules === 'string') {
+        return rules;
+      }
       const type = Object.keys(rules)[0] || '$and';
       const conditions = rules[type];
       const results = [];
