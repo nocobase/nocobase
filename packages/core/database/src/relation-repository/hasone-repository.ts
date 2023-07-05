@@ -20,10 +20,8 @@ interface IHasOneRepository<M extends Model> {
 }
 
 export class HasOneRepository extends SingleRelationRepository implements IHasOneRepository<any> {
-  async filterOptions(transaction) {
+  filterOptions(sourceModel) {
     const association = this.association as HasOne;
-
-    const sourceModel = await this.getSourceModel(transaction);
 
     return {
       // @ts-ignore

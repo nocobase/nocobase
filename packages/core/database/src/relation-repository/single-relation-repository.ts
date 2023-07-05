@@ -1,5 +1,5 @@
 import lodash from 'lodash';
-import { SingleAssociationAccessors, Transaction, Transactionable } from 'sequelize';
+import { SingleAssociationAccessors, Transactionable } from 'sequelize';
 import { Model } from '../model';
 import { Appends, Except, Fields, Filter, TargetKey, UpdateOptions } from '../repository';
 import { updateModelByValues } from '../update-associations';
@@ -18,7 +18,7 @@ interface SetOption extends Transactionable {
 }
 
 export abstract class SingleRelationRepository extends RelationRepository {
-  abstract filterOptions(transaction: Transaction);
+  abstract filterOptions(sourceModel);
 
   @transaction()
   async remove(options?: Transactionable): Promise<void> {
@@ -48,6 +48,10 @@ export abstract class SingleRelationRepository extends RelationRepository {
 
   async find(options?: SingleRelationFindOption): Promise<any> {
     const targetRepository = this.targetCollection.repository;
+
+    const sourceModel = await this.getSourceModel(await this.getTransaction(options));
+
+    if (!sourceModel) return null;
 
     const addFilter = await this.filterOptions(await this.getTransaction(options));
 
