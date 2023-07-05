@@ -68,7 +68,10 @@ export const ActionDesigner = (props) => {
   const [initialSchema, setInitialSchema] = useState<ISchema>();
   const actionType = fieldSchema['x-action'] ?? '';
   const isLinkageAction = linkageAction || isAction;
-  const isChildCollectionAction = getChildrenCollections(name).length > 0 && fieldSchema['x-action'] === 'create';
+  const isChildCollectionAction =
+    getChildrenCollections(name).length > 0 &&
+    fieldSchema['x-action'] === 'create' &&
+    fieldSchema['x-component'] === 'Action';
   const isLink = fieldSchema['x-component'] === 'Action.Link';
   const isDelete = fieldSchema?.parent['x-component'] === 'CollectionField';
   const isDraggable = fieldSchema?.parent['x-component'] !== 'CollectionField';
