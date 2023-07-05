@@ -92,6 +92,20 @@ pgOnly()('Inherited Collection', () => {
     });
 
     expect(child1ViaObject1.get('childName')).toBe('child1');
+    expect(child1ViaObject1.get('__collection')).toBe('child');
+
+    await db.getRepository<BelongsToRepository>('users.assoc', user1.get('id')).update({
+      targetCollection: 'child',
+      values: {
+        childName: 'child2',
+      },
+    });
+
+    const child2 = await db.getRepository<BelongsToRepository>('users.assoc', user1.get('id')).findOne({
+      targetCollection: 'child',
+    });
+
+    expect(child2.get('childName')).toBe('child2');
   });
 
   it('should return child model at get action in belongsToMany', async () => {
@@ -218,6 +232,21 @@ pgOnly()('Inherited Collection', () => {
     });
 
     expect(child1ViaObject1.get('childName')).toBe('child1');
+
+    await db.getRepository<HasManyRepository>('object.assocs', object1.id).update({
+      filterByTk: child1.get('id'),
+      targetCollection: 'child',
+      values: {
+        childName: 'child2',
+      },
+    });
+
+    const child2 = await db.getRepository<HasManyRepository>('object.assocs', object1.id).findOne({
+      filterByTk: child1.get('id'),
+      targetCollection: 'child',
+    });
+
+    expect(child2.get('childName')).toBe('child2');
   });
 
   it('should update overridden multiple select field', async () => {

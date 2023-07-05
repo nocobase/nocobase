@@ -90,6 +90,7 @@ export abstract class SingleRelationRepository extends RelationRepository {
 
     const target = await this.find({
       transaction,
+      targetCollection: options.targetCollection,
     });
 
     if (!target) {

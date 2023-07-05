@@ -140,6 +140,7 @@ export interface UpdateOptions extends Omit<SequelizeUpdateOptions, 'where'> {
   whitelist?: WhiteList;
   blacklist?: BlackList;
   updateAssociationValues?: AssociationKeysToBeUpdate;
+  targetCollection?: string;
   context?: any;
 }
 
