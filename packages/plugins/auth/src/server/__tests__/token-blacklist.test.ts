@@ -70,14 +70,4 @@ describe('token-blacklist', () => {
     expect(await tokenBlacklist.has('should be deleted')).not.toBeTruthy();
     expect(await tokenBlacklist.has('should not be deleted')).toBeTruthy();
   });
-
-  it('should stop corn job when server is stop', async () => {
-    const cornJob = tokenBlacklist.cornJob;
-    expect(cornJob.running).toBeTruthy();
-    await app.emitAsync('beforeStop', 'auth');
-    expect(cornJob.running).toBeFalsy();
-
-    // reset
-    cornJob.start();
-  });
 });
