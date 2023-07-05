@@ -1,7 +1,7 @@
 import { createForm } from '@formily/core';
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
-import { isEmpty } from 'lodash';
 import { Spin } from 'antd';
+import { isEmpty } from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import { useCollection } from '../collection-manager';
 import { RecordProvider, useRecord } from '../record-provider';
@@ -82,8 +82,8 @@ export const FormBlockProvider = (props) => {
     (currentCollection.name === (collection?.name || collection) && !isEmptyRecord) || !currentCollection.name;
   return (
     (detailFlag || createFlag) && (
-      <BlockProvider {...props} block={'form'} params={{ ...props?.params, targetCollection: __collection }}>
-        <InternalFormBlockProvider {...props} params={{ ...props?.params, targetCollection: __collection }} />
+      <BlockProvider {...props} block={'form'} params={{ ...props?.params, targetCollection: collection }}>
+        <InternalFormBlockProvider {...props} params={{ ...props?.params, targetCollection: collection }} />
       </BlockProvider>
     )
   );
@@ -122,7 +122,6 @@ const RenderChildrenWithDataTemplates = ({ form }) => {
   const { findComponent } = useDesignable();
   const field = useField();
   const Component = findComponent(field.component?.[0]) || React.Fragment;
-
   return (
     <Component {...field.componentProps}>
       <DataTemplateSelect style={{ marginBottom: 18 }} form={form} />
