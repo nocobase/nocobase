@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { ArrayCollapse, ArrayItems, FormDialog, FormItem, FormLayout, Input } from '@formily/antd-v5';
+import { ArrayCollapse, ArrayItems, FormItem, FormLayout, Input } from '@formily/antd-v5';
 import { Field, GeneralField, createForm } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
@@ -39,6 +39,7 @@ import {
   CollectionManagerContext,
   CollectionProvider,
   Designable,
+  FormDialog,
   FormProvider,
   RemoteSchemaComponent,
   SchemaComponent,
@@ -53,6 +54,7 @@ import {
   useCompile,
   useDesignable,
   useFilterBlock,
+  useGlobalTheme,
   useLinkageCollectionFilterOptions,
 } from '..';
 import { findFilterTargets, updateFilterTargets } from '../block-provider/hooks';
@@ -871,6 +873,8 @@ SchemaSettings.ModalItem = function ModalItem(props) {
   const cm = useContext(CollectionManagerContext);
   const collection = useCollection();
   const apiClient = useAPIClient();
+  const { theme } = useGlobalTheme();
+
   if (hidden) {
     return null;
   }
@@ -879,21 +883,25 @@ SchemaSettings.ModalItem = function ModalItem(props) {
       {...others}
       onClick={async () => {
         const values = asyncGetInitialValues ? await asyncGetInitialValues() : initialValues;
-        FormDialog({ title: schema.title || title, width }, () => {
-          return (
-            <CollectionManagerContext.Provider value={cm}>
-              <CollectionProvider collection={collection}>
-                <SchemaComponentOptions scope={options.scope} components={options.components}>
-                  <FormLayout layout={'vertical'} style={{ minWidth: 520 }}>
-                    <APIClientProvider apiClient={apiClient}>
-                      <SchemaComponent components={components} scope={scope} schema={schema} />
-                    </APIClientProvider>
-                  </FormLayout>
-                </SchemaComponentOptions>
-              </CollectionProvider>
-            </CollectionManagerContext.Provider>
-          );
-        })
+        FormDialog(
+          { title: schema.title || title, width },
+          () => {
+            return (
+              <CollectionManagerContext.Provider value={cm}>
+                <CollectionProvider collection={collection}>
+                  <SchemaComponentOptions scope={options.scope} components={options.components}>
+                    <FormLayout layout={'vertical'} style={{ minWidth: 520 }}>
+                      <APIClientProvider apiClient={apiClient}>
+                        <SchemaComponent components={components} scope={scope} schema={schema} />
+                      </APIClientProvider>
+                    </FormLayout>
+                  </SchemaComponentOptions>
+                </CollectionProvider>
+              </CollectionManagerContext.Provider>
+            );
+          },
+          theme,
+        )
           .open({
             initialValues: values,
             effects,
