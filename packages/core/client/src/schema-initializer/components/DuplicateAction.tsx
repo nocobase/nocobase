@@ -44,7 +44,7 @@ export const DuplicateAction = observer((props: any) => {
     key: 'duplicate',
     dataId: id,
     default: true,
-    targetFields:
+    fields:
       duplicateFields?.filter((v) => {
         return collectionFields.find((k) => k.name === v);
       }) || [],
