@@ -142,6 +142,7 @@ export default {
       'x-decorator-props': {},
       'x-component': 'RequestBody',
       'x-component-props': {
+        changeOnSelect: true,
         autoSize: {
           minRows: 10,
         },

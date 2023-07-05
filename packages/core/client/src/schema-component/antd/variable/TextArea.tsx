@@ -187,7 +187,7 @@ function getCurrentRange(element: HTMLElement): RangeIndexes {
 }
 
 export function TextArea(props) {
-  const { value = '', scope, onChange, multiline = true } = props;
+  const { value = '', scope, onChange, multiline = true, changeOnSelect } = props;
   const inputRef = useRef<HTMLDivElement>(null);
   const [options, setOptions] = useState([]);
   const form = useForm();
@@ -379,7 +379,9 @@ export function TextArea(props) {
         contentEditable={!disabled}
         dangerouslySetInnerHTML={{ __html: html }}
       />
-      {!disabled ? <VariableSelect options={options} setOptions={setOptions} onInsert={onInsert} /> : null}
+      {!disabled ? (
+        <VariableSelect options={options} setOptions={setOptions} onInsert={onInsert} changeOnSelect={changeOnSelect} />
+      ) : null}
     </Input.Group>
   );
 }

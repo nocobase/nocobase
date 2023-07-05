@@ -19,7 +19,7 @@ function setNativeInputValue(input, value) {
 
 export function JSONInput(props) {
   const inputRef = useRef<any>(null);
-  const { scope, ...others } = props;
+  const { scope, changeOnSelect, ...others } = props;
   const [options, setOptions] = useState(scope ? cloneDeep(scope) : []);
 
   function onInsert(selected) {
@@ -57,7 +57,7 @@ export function JSONInput(props) {
           }
         `}
       >
-        <VariableSelect options={options} setOptions={setOptions} onInsert={onInsert} />
+        <VariableSelect options={options} setOptions={setOptions} onInsert={onInsert} changeOnSelect={changeOnSelect} />
       </Button.Group>
     </div>
   );

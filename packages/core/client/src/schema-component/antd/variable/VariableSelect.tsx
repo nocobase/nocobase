@@ -3,7 +3,7 @@ import { Button, Cascader } from 'antd';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-export function VariableSelect({ options, setOptions, onInsert }): JSX.Element {
+export function VariableSelect({ options, setOptions, onInsert, changeOnSelect = false }): JSX.Element {
   const { t } = useTranslation();
   const [selectedVar, setSelectedVar] = useState<string[]>([]);
 
@@ -58,9 +58,9 @@ export function VariableSelect({ options, setOptions, onInsert }): JSX.Element {
             onInsert(keyPaths);
           }
         }}
-        changeOnSelect
+        changeOnSelect={changeOnSelect}
         onClick={(e: any) => {
-          if (e.detail !== 2) {
+          if (e.detail !== 2 || !changeOnSelect) {
             return;
           }
           for (let n = e.target; n && n !== e.currentTarget; n = n.parentNode) {
@@ -74,20 +74,24 @@ export function VariableSelect({ options, setOptions, onInsert }): JSX.Element {
             margin-bottom: 0;
           }
         `}
-        dropdownRender={(menu) => (
-          <>
-            {menu}
-            <div
-              className={css`
-                padding: 0.5em;
-                border-top: 1px solid rgba(0, 0, 0, 0.06);
-                color: rgba(0, 0, 0, 0.45);
-              `}
-            >
-              {t('Double click to choose entire object')}
-            </div>
-          </>
-        )}
+        dropdownRender={
+          changeOnSelect
+            ? (menu) => (
+                <>
+                  {menu}
+                  <div
+                    className={css`
+                      padding: 0.5em;
+                      border-top: 1px solid rgba(0, 0, 0, 0.06);
+                      color: rgba(0, 0, 0, 0.45);
+                    `}
+                  >
+                    {t('Double click to choose entire object')}
+                  </div>
+                </>
+              )
+            : null
+        }
       />
     </Button>
   );
