@@ -6,6 +6,7 @@ import { Registry } from '@nocobase/utils/client';
 import { Button, Select } from 'antd';
 import React from 'react';
 import { Trans, useTranslation } from 'react-i18next';
+import { cloneDeep } from 'lodash';
 import { NodeDefaultView } from '.';
 import { Branch } from '../Branch';
 import { useFlowContext } from '../FlowContext';
@@ -371,10 +372,7 @@ export default {
       type: 'string',
       title: `{{t("Condition expression", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
-      'x-component': 'Variable.TextArea',
-      'x-component-props': {
-        scope: '{{useWorkflowVariableOptions}}',
-      },
+      'x-component': 'CalculationExpression',
       ['x-validator'](value, rules, { form }) {
         const { values } = form;
         const { evaluate } = evaluators.get(values.engine);
@@ -483,6 +481,11 @@ export default {
   },
   components: {
     CalculationConfig,
+    CalculationExpression(props) {
+      const scope = useWorkflowVariableOptions();
+
+      return <Variable.TextArea scope={scope} {...props} />;
+    },
     RadioWithTooltip,
   },
 };
