@@ -1,10 +1,10 @@
-import { SchemaInitializerItemOptions, useCollectionDataSource } from '@nocobase/client';
+import { SchemaInitializerItemOptions, useCollectionDataSource, useCollectionManager, useCompile } from '@nocobase/client';
 
 import { appends, collection, values } from '../schemas/collection';
 import CollectionFieldset from '../components/CollectionFieldset';
 import { NAMESPACE } from '../locale';
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
-import { useCollectionFieldOptions } from '../variable';
+import { getCollectionFieldOptions } from '../variable';
 import { FieldsSelect } from '../components/FieldsSelect';
 
 export default {
@@ -41,10 +41,18 @@ export default {
     FieldsSelect,
   },
   useVariables({ config }, options) {
-    const result = useCollectionFieldOptions({
-      collection: config?.collection,
+    const compile = useCompile();
+    const { getCollectionFields } = useCollectionManager();
+    // const depth = config?.params?.appends?.length
+    //   ? config?.params?.appends.reduce((max, item) => Math.max(max, item.split('.').length), 1)
+    //   : 0;
+    const result = getCollectionFieldOptions({
+      collection: config.collection,
       ...options,
-      depth: options?.depth ?? config?.params?.appends?.length ? 1 : 0,
+      // depth: options?.depth ?? depth,
+      appends: config.params?.appends,
+      compile,
+      getCollectionFields,
     });
 
     return result?.length ? result : null;

@@ -2,19 +2,23 @@ import { CloseCircleFilled } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
 import { useForm } from '@formily/react';
 import { error } from '@nocobase/utils/client';
-import { Input as AntInput, Cascader, DatePicker, InputNumber, Select, Tag } from 'antd';
+import { Cascader, DatePicker, Input as AntInput, InputNumber, Select, Tag } from 'antd';
+import type { DefaultOptionType } from 'antd/lib/cascader';
 import classNames from 'classnames';
+import { cloneDeep } from 'lodash';
 import moment from 'moment';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCompile } from '../..';
-import { Option } from '../../../schema-settings/VariableInput/type';
+import { useCompile } from '../../hooks';
 import { XButton } from './XButton';
 
 const JT_VALUE_RE = /^\s*{{\s*([^{}]+)\s*}}\s*$/;
 const groupClass = css`
   width: auto;
-  display: flex !important;
+  display: flex;
+  &.ant-input-group-compact {
+    display: flex;
+  }
   .ant-input-disabled {
     .ant-tag {
       color: #bfbfbf;
@@ -115,69 +119,93 @@ const ConstantTypes = {
   },
 };
 
-function getTypedConstantOption(type: string, types?: true | string[]) {
+function getTypedConstantOption(type: string, types: true | string[], fieldNames) {
   const allTypes = Object.values(ConstantTypes);
+  const children = (
+    types ? allTypes.filter((item) => (Array.isArray(types) && types.includes(item.value)) || types === true) : allTypes
+  ).map((item) =>
+    Object.keys(item).reduce(
+      (result, key) =>
+        fieldNames[key] in item
+          ? result
+          : Object.assign(result, {
+              [fieldNames[key]]: item[key],
+            }),
+      item,
+    ),
+  );
   return {
     value: '',
     label: '{{t("Constant")}}',
-    children: types
-      ? allTypes.filter((item) => (Array.isArray(types) && types.includes(item.value)) || types === true)
-      : allTypes,
+    children,
+    [fieldNames.value]: '',
+    [fieldNames.label]: '{{t("Constant")}}',
+    [fieldNames.children]: children,
     component: ConstantTypes[type]?.component,
   };
 }
 
-type VariableOptions = {
-  value: string;
-  label?: string;
-  children?: VariableOptions[];
-};
-
 export function Input(props) {
+  const {
+    value = '',
+    scope,
+    onChange,
+    children,
+    button,
+    useTypedConstant,
+    style,
+    className,
+    changeOnSelect,
+    fieldNames,
+  } = props;
   const compile = useCompile();
+  const { t } = useTranslation();
   const form = useForm();
+  const [options, setOptions] = React.useState<DefaultOptionType[]>([]);
+  const [variableText, setVariableText] = React.useState('');
 
-  const { value = '', scope, onChange, children, button, useTypedConstant, style, className } = props;
   const parsed = useMemo(() => parseValue(value), [value]);
   const isConstant = typeof parsed === 'string';
   const type = isConstant ? parsed : '';
   const variable = isConstant ? null : parsed;
+  const names = Object.assign(
+    {
+      label: 'label',
+      value: 'value',
+      children: 'children',
+    },
+    fieldNames ?? {},
+  );
 
-  // 当 scope 是一个函数时，可能是一个 hook，所以不能使用 useMemo
-  const variableOptions = typeof scope === 'function' ? scope() : scope ?? [];
-
-  const [variableText, setVariableText] = React.useState('');
-
-  const { component: ConstantComponent, ...constantOption }: VariableOptions & { component?: React.FC<any> } =
+  const { component: ConstantComponent, ...constantOption }: DefaultOptionType & { component?: React.FC<any> } =
     useMemo(() => {
       if (children) {
         return {
           value: '',
-          label: '{{t("Constant")}}',
+          label: t('Constant'),
+          [names.value]: '',
+          [names.label]: t('Constant'),
         };
       }
       if (useTypedConstant) {
-        return getTypedConstantOption(type, useTypedConstant);
+        return getTypedConstantOption(type, useTypedConstant, names);
       }
       return {
         value: '',
-        label: '{{t("Null")}}',
+        label: t('Null'),
+        [names.value]: '',
+        [names.label]: t('Null'),
         component: ConstantTypes.null.component,
       };
     }, [type, useTypedConstant]);
 
-  const [options, setOptions] = React.useState<Option[]>(() => {
-    return compile([constantOption, ...variableOptions]);
-  });
-
   useEffect(() => {
-    const newOptions: Option[] = [constantOption, ...variableOptions];
-    setOptions(deepCompileLabel(newOptions, compile));
-  }, [variableOptions]);
+    setOptions([compile(constantOption), ...(scope ? cloneDeep(scope) : [])]);
+  }, [scope]);
 
-  const loadData = async (selectedOptions: Option[]) => {
+  const loadData = async (selectedOptions: DefaultOptionType[]) => {
     const option = selectedOptions[selectedOptions.length - 1];
-    if (option.loadChildren) {
+    if (!option.children && !option.isLeaf && option.loadChildren) {
       await option.loadChildren(option);
       setOptions((prev) => [...prev]);
     }
@@ -199,29 +227,29 @@ export function Input(props) {
       }
       onChange(`{{${next.join('.')}}}`);
     },
-    [type, variable],
+    [type, variable, onChange],
   );
 
   useEffect(() => {
     const run = async () => {
-      if (!variable || options.length <= 1) {
+      if (!variable || !options.length) {
         return;
       }
-      let prevOption: Option = null;
+      let prevOption: DefaultOptionType = null;
       const labels = [];
 
       for (let i = 0; i < variable.length; i++) {
         const key = variable[i];
         try {
           if (i === 0) {
-            prevOption = options.find((item) => item.value === key);
+            prevOption = options.find((item) => item[names.value] === key);
           } else {
             if (prevOption.loadChildren && !prevOption.children?.length) {
               await prevOption.loadChildren(prevOption);
             }
-            prevOption = prevOption.children.find((item) => item.value === key);
+            prevOption = prevOption.children.find((item) => item[names.value] === key);
           }
-          labels.push(prevOption.label);
+          labels.push(prevOption[names.label]);
         } catch (err) {
           error(err);
         }
@@ -230,40 +258,43 @@ export function Input(props) {
       setVariableText(labels.join(' / '));
     };
 
-    // 如果没有这个延迟，会导致选择父节点时不展开子节点
-    setTimeout(run);
+    run();
+    // NOTE: watch `options.length` and it only happens once
   }, [variable, options.length]);
 
   const disabled = props.disabled || form.disabled;
 
   return (
-    <AntInput.Group compact style={style} className={classNames(className, groupClass)}>
+    <AntInput.Group compact style={style} className={classNames(groupClass, className)}>
       {variable ? (
         <div
-          className={css`
-            position: relative;
-            line-height: 0;
+          className={cx(
+            'variable',
+            css`
+              position: relative;
+              line-height: 0;
 
-            &:hover {
-              .ant-select-clear {
-                opacity: 0.8;
+              &:hover {
+                .ant-select-clear {
+                  opacity: 0.8;
+                }
               }
-            }
 
-            .ant-input {
-              overflow: auto;
-              white-space: nowrap;
-              ${disabled ? '' : 'padding-right: 28px;'}
+              .ant-input {
+                overflow: auto;
+                white-space: nowrap;
+                ${disabled ? '' : 'padding-right: 28px;'}
 
-              .ant-tag {
-                display: inline;
-                line-height: 19px;
-                margin: 0;
-                padding: 2px 7px;
-                border-radius: 10px;
+                .ant-tag {
+                  display: inline;
+                  line-height: 19px;
+                  margin: 0;
+                  padding: 2px 7px;
+                  border-radius: 10px;
+                }
               }
-            }
-          `}
+            `,
+          )}
         >
           <div
             onInput={(e) => e.preventDefault()}
@@ -297,28 +328,18 @@ export function Input(props) {
       ) : (
         children ?? <ConstantComponent value={value} onChange={onChange} />
       )}
-      {options.length > 1 ? (
+      {options.length > 1 && !disabled ? (
         <Cascader
           options={options}
           value={variable ?? ['', ...(children || !constantOption.children?.length ? [] : [type])]}
           onChange={onSwitch}
           loadData={loadData as any}
-          changeOnSelect
+          changeOnSelect={changeOnSelect}
+          fieldNames={fieldNames}
         >
           {button ?? <XButton type={variable ? 'primary' : 'default'} />}
         </Cascader>
       ) : null}
     </AntInput.Group>
   );
-}
-
-function deepCompileLabel(list: Option[], compile) {
-  return list.map((item) => {
-    const children = item.children ? deepCompileLabel(item.children, compile) : null;
-    return {
-      ...item,
-      label: compile(item.label),
-      children,
-    };
-  });
 }
