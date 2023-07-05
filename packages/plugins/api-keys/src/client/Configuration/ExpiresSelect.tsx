@@ -5,6 +5,7 @@ import { useBoolean } from 'ahooks';
 import { DatePicker, Select, Space, Typography } from 'antd';
 import moment from 'moment';
 import React, { useMemo } from 'react';
+import { useTranslation } from '../locale';
 
 const InternalExpiresSelect = (props) => {
   const { onChange } = props;
@@ -57,7 +58,9 @@ const InternalExpiresSelect = (props) => {
 
 const ReadPretty = () => {
   const record = useRecord();
+  const { t } = useTranslation();
   const expiresDate = useMemo(() => {
+    if (record?.expiresIn === 'never') return t('Never expires');
     return moment(record?.createdAt)
       .add(record?.expiresIn?.replace('d', '') || 0, 'days')
       .format('YYYY-MM-DD HH:mm:ss');

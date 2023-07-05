@@ -9,6 +9,8 @@ const locale = {
   'Keys manager': '密钥管理',
   'Created at': '创建时间',
   'Add API key': '添加 API key',
+  Never: '永不',
+  'Never expires': '永不过期',
   '1 Day': '1 天',
   '7 Days': '7 天',
   '30 Days': '30 天',

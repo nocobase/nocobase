@@ -60,6 +60,10 @@ export default {
         'x-component': 'ExpiresSelect',
         enum: [
           {
+            label: generateNTemplate('Never'),
+            value: 'never',
+          },
+          {
             label: generateNTemplate('1 Day'),
             value: '1d',
           },
