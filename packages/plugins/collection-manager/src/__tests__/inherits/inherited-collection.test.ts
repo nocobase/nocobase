@@ -1,4 +1,9 @@
-import Database, { BelongsToManyRepository, HasManyRepository, Repository } from '@nocobase/database';
+import Database, {
+  BelongsToManyRepository,
+  BelongsToRepository,
+  HasManyRepository,
+  Repository,
+} from '@nocobase/database';
 import Application from '@nocobase/server';
 import { pgOnly } from '@nocobase/test';
 import { createApp } from '..';
@@ -26,6 +31,67 @@ pgOnly()('Inherited Collection', () => {
 
   afterEach(async () => {
     await app.destroy();
+  });
+
+  it('should return child model at get action in belongsTo', async () => {
+    await collectionRepository.create({
+      values: {
+        name: 'parent',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await collectionRepository.create({
+      values: {
+        name: 'child',
+        fields: [{ type: 'string', name: 'childName' }],
+        inherits: ['parent'],
+      },
+      context: {},
+    });
+
+    await collectionRepository.create({
+      values: {
+        name: 'users',
+        fields: [
+          { type: 'string', name: 'name' },
+          { type: 'belongsTo', name: 'assoc', target: 'parent' },
+        ],
+      },
+      context: {},
+    });
+
+    const child1 = await db.getRepository('child').create({
+      values: {
+        name: 'child1',
+        childName: 'child1',
+      },
+    });
+
+    const parent1 = await db.getRepository('parent').create({
+      values: {
+        name: 'parent1',
+      },
+    });
+
+    const user1 = await db.getRepository('users').create({
+      values: {
+        name: 'user1',
+        assoc: { id: child1.id },
+      },
+    });
+
+    const child1ViaObject1 = await db.getRepository<BelongsToRepository>('users.assoc', user1.get('id')).findOne({
+      targetCollection: 'child',
+    });
+
+    expect(child1ViaObject1.get('childName')).toBe('child1');
   });
 
   it('should return child model at get action in belongsToMany', async () => {

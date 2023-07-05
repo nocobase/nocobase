@@ -1,16 +1,17 @@
 import lodash from 'lodash';
 import { SingleAssociationAccessors, Transactionable } from 'sequelize';
+import { EagerLoadingTree } from '../eager-loading/eager-loading-tree';
 import { Model } from '../model';
 import { Appends, Except, Fields, Filter, TargetKey, UpdateOptions } from '../repository';
 import { updateModelByValues } from '../update-associations';
 import { RelationRepository, transaction } from './relation-repository';
-import { EagerLoadingTree } from '../eager-loading/eager-loading-tree';
 
 export interface SingleRelationFindOption extends Transactionable {
   fields?: Fields;
   except?: Except;
   appends?: Appends;
   filter?: Filter;
+  targetCollection?: string;
 }
 
 interface SetOption extends Transactionable {
