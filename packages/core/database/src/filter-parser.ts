@@ -226,6 +226,7 @@ export default class FilterParser {
       if (values && typeof values === 'object' && value && typeof value === 'object') {
         value = { ...value, ...values };
       }
+
       _.set(where, paths, value);
     }
 

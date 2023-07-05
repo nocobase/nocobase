@@ -368,3 +368,14 @@ export const recordPickerViewer = {
     },
   },
 };
+
+export const collectionDataSource: ISchema = {
+  type: 'string',
+  title: '{{t("Options")}}',
+  'x-decorator': 'FormItem',
+  'x-component': 'Select',
+  'x-component-props': {
+    multiple: true,
+  },
+  enum: '{{collections}}',
+};
