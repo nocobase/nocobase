@@ -1,6 +1,6 @@
 import { DownOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { RecursionField, observer, useField, useFieldSchema } from '@formily/react';
+import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
 import { Button, Dropdown, MenuProps } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useDesignable } from '../../';
@@ -9,6 +9,7 @@ import { CollectionProvider, useCollection, useCollectionManager } from '../../c
 import { useRecord } from '../../record-provider';
 import { ActionContextProvider, useActionContext, useCompile } from '../../schema-component';
 import { linkageAction } from '../../schema-component/antd/action/utils';
+import { parseVariables } from '../../schema-component/common/utils/uitls';
 
 export const actionDesignerCss = css`
   position: relative;
@@ -49,7 +50,7 @@ export const actionDesignerCss = css`
   }
 `;
 
-const actionAclCheck = (actionPath) => {
+const actionAclCheck = function useAclCheck(actionPath) {
   const { data, inResources, getResourceActionParams, getStrategyActionParams } = useACLRolesCheck();
   const recordPkValue = useRecordPkValue();
   const collection = useCollection();
@@ -120,14 +121,20 @@ export const CreateRecordAction = observer(
   { displayName: 'CreateRecordAction' },
 );
 
+function getLinkageCollection(str, form) {
+  const data = parseVariables(str, { $form: form.values });
+  return data;
+}
 export const CreateAction = observer(
   (props: any) => {
     const { onClick } = props;
     const collection = useCollection();
     const fieldSchema = useFieldSchema();
+    const field: any = useField();
+    const form = useForm();
     const enableChildren = fieldSchema['x-enable-children'] || [];
     const allowAddToCurrent = fieldSchema?.['x-allow-add-to-current'];
-    const field: any = useField();
+    const linkageFromForm = fieldSchema?.['x-component-props']?.['linkageFromForm'];
     const componentType = field.componentProps.type || 'primary';
     const { getChildrenCollections } = useCollectionManager();
     const totalChildCollections = getChildrenCollections(collection.name);
@@ -182,30 +189,52 @@ export const CreateAction = observer(
     return (
       <div className={actionDesignerCss}>
         {inheritsCollections?.length > 0 ? (
-          allowAddToCurrent === undefined || allowAddToCurrent ? (
-            <Dropdown.Button
+          !linkageFromForm ? (
+            allowAddToCurrent === undefined || allowAddToCurrent ? (
+              <Dropdown.Button
+                type={componentType}
+                icon={<DownOutlined />}
+                buttonsRender={([leftButton, rightButton]) => [
+                  leftButton,
+                  React.cloneElement(rightButton as React.ReactElement<any, string>, { loading: false }),
+                ]}
+                menu={menu}
+                onClick={(info) => {
+                  onClick?.(collection.name);
+                }}
+              >
+                {icon}
+                {props.children}
+              </Dropdown.Button>
+            ) : (
+              <Dropdown menu={menu}>
+                {
+                  <Button icon={icon} type={componentType}>
+                    {props.children} <DownOutlined />
+                  </Button>
+                }
+              </Dropdown>
+            )
+          ) : (
+            <Button
               type={componentType}
-              icon={<DownOutlined />}
-              buttonsRender={([leftButton, rightButton]) => [
-                leftButton,
-                React.cloneElement(rightButton as React.ReactElement<any, string>, { loading: false }),
-              ]}
-              menu={menu}
+              disabled={field.disabled}
+              danger={componentType === 'danger'}
+              icon={icon}
               onClick={(info) => {
-                onClick?.(collection.name);
+                const collectionName = getLinkageCollection(linkageFromForm, form);
+                const targetCollection = inheritsCollections.find((v) => v.name === collectionName)
+                  ? collectionName
+                  : collection.name;
+                onClick?.(targetCollection);
+              }}
+              style={{
+                display: !designable && field?.data?.hidden && 'none',
+                opacity: designable && field?.data?.hidden && 0.1,
               }}
             >
-              {icon}
               {props.children}
-            </Dropdown.Button>
-          ) : (
-            <Dropdown menu={menu}>
-              {
-                <Button icon={icon} type={componentType}>
-                  {props.children} <DownOutlined />
-                </Button>
-              }
-            </Dropdown>
+            </Button>
           )
         ) : (
           <Button

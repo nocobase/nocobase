@@ -7,8 +7,9 @@ import jsonLogic from '../../common/utils/logic';
 
 type VariablesCtx = {
   /** 当前登录的用户 */
-  $user: Record<string, any>;
-  $date: Record<string, any>;
+  $user?: Record<string, any>;
+  $date?: Record<string, any>;
+  $form?: Record<string, any>;
 };
 
 export const useVariablesCtx = (): VariablesCtx => {

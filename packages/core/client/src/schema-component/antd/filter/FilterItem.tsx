@@ -5,8 +5,8 @@ import { Cascader, Select, Space } from 'antd';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../..';
-import { DynamicComponent } from './DynamicComponent';
 import { RemoveConditionContext } from './context';
+import { DynamicComponent } from './DynamicComponent';
 import { useValues } from './useValues';
 
 export const FilterItem = observer(

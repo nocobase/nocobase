@@ -92,20 +92,21 @@ const parseString = (() => {
         return matches.reduce((result, match, i) => {
           const parameter = parameters[i];
           let value = objectPath.get(context, parameter.key);
-          const type = typeof value;
 
-          if (type === 'undefined') {
-            if (typeof parameter.defaultValue === 'undefined') {
-              return value;
-            }
+          if (typeof value === 'undefined') {
             value = parameter.defaultValue;
           }
 
-          if (type === 'function') {
+          if (typeof value === 'function') {
             value = value();
           }
 
-          if (type === 'object') {
+          if (typeof value === 'object' && value !== null) {
+            return value;
+          }
+
+          // Accommodate numbers as values.
+          if (matches.length === 1 && str.startsWith('{{') && str.endsWith('}}')) {
             return value;
           }
 
