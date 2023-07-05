@@ -53,7 +53,7 @@ export abstract class SingleRelationRepository extends RelationRepository {
 
     if (!sourceModel) return null;
 
-    const addFilter = await this.filterOptions(await this.getTransaction(options));
+    const addFilter = await this.filterOptions(sourceModel);
 
     const findOptions = {
       ...options,
