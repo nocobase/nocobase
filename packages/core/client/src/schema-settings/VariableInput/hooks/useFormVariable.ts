@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCompile, useGetFilterOptions } from '../../../schema-component';
 import { FieldOption, Option } from '../type';
 
@@ -35,7 +36,6 @@ const getChildren = (
         key: option.name,
         value: option.name,
         label: compile(option.title),
-        children: [],
         isLeaf: false,
         field: option,
         depth,
@@ -57,6 +57,7 @@ export const useFormVariable = ({
   level?: number;
 }) => {
   const compile = useCompile();
+  const { t } = useTranslation();
   const getFilterOptions = useGetFilterOptions();
   const loadChildren = (option: any): Promise<void> => {
     if (!option.field?.target) {
@@ -94,13 +95,15 @@ export const useFormVariable = ({
       }, 5);
     });
   };
+
+  const label = t('Current form');
+
   const result = useMemo(() => {
     return (
       blockForm && {
-        label: `{{t("Current form")}}`,
+        label,
         value: '$form',
         key: '$form',
-        children: [],
         isLeaf: false,
         field: {
           target: rootCollection,

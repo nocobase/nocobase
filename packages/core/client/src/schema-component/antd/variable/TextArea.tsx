@@ -2,10 +2,12 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Input } from 'antd';
 import { useForm } from '@formily/react';
 import { cx, css } from '@emotion/css';
-import { useTranslation } from 'react-i18next';
 import * as sanitizeHTML from 'sanitize-html';
+import { cloneDeep } from 'lodash';
 
-import { EllipsisWithTooltip, useCompile } from '../..';
+import { error } from '@nocobase/utils/client';
+
+import { EllipsisWithTooltip } from '../..';
 import { VariableSelect } from './VariableSelect';
 
 type RangeIndexes = [number, number, number, number];
@@ -112,9 +114,9 @@ function createOptionsValueLabelMap(options: any[]) {
 
 function createVariableTagHTML(variable, keyLabelMap) {
   const labels = keyLabelMap.get(variable);
-  return `<span class="ant-tag ant-tag-blue" contentEditable="false" data-variable="${variable}">${labels?.join(
-    ' / ',
-  )}</span>`;
+  return `<span class="ant-tag ant-tag-blue" contentEditable="false" data-variable="${variable}">${
+    labels ? labels.join(' / ') : '...'
+  }</span>`;
 }
 
 // [#, <>, #, #, <>]
@@ -185,29 +187,31 @@ function getCurrentRange(element: HTMLElement): RangeIndexes {
 }
 
 export function TextArea(props) {
-  const { value = '', scope, onChange, multiline = true } = props;
-  const compile = useCompile();
+  const { value = '', scope, onChange, multiline = true, changeOnSelect } = props;
   const inputRef = useRef<HTMLDivElement>(null);
-  const options = compile((typeof scope === 'function' ? scope() : scope) ?? []);
+  const [options, setOptions] = useState([]);
   const form = useForm();
-  const keyLabelMap = useMemo(() => createOptionsValueLabelMap(options), [scope]);
+  const keyLabelMap = useMemo(() => createOptionsValueLabelMap(options), [options]);
   const [ime, setIME] = useState<boolean>(false);
   const [changed, setChanged] = useState(false);
   const [html, setHtml] = useState(() => renderHTML(value ?? '', keyLabelMap));
   // NOTE: e.g. [startElementIndex, startOffset, endElementIndex, endOffset]
   const [range, setRange] = useState<[number, number, number, number]>([-1, 0, -1, 0]);
-  const [selectedVar, setSelectedVar] = useState<string[]>([]);
 
   useEffect(() => {
-    setSelectedVar([]);
-  }, [scope]);
+    preloadOptions(scope, value)
+      .then((preloaded) => {
+        setOptions(preloaded);
+      })
+      .catch((err) => console.error);
+  }, [scope, value]);
 
   useEffect(() => {
     setHtml(renderHTML(value ?? '', keyLabelMap));
     if (!changed) {
       setRange([-1, 0, -1, 0]);
     }
-  }, [value]);
+  }, [value, keyLabelMap]);
 
   useEffect(() => {
     const { current } = inputRef;
@@ -375,16 +379,51 @@ export function TextArea(props) {
         contentEditable={!disabled}
         dangerouslySetInnerHTML={{ __html: html }}
       />
-      {!disabled ? <VariableSelect options={options} onInsert={onInsert} /> : null}
+      {!disabled ? (
+        <VariableSelect options={options} setOptions={setOptions} onInsert={onInsert} changeOnSelect={changeOnSelect} />
+      ) : null}
     </Input.Group>
   );
 }
 
+async function preloadOptions(scope, value) {
+  const options = cloneDeep(scope ?? []);
+  for (let matcher; (matcher = VARIABLE_RE.exec(value ?? '')); ) {
+    const keys = matcher[1].split('.');
+
+    let prevOption = null;
+
+    for (let i = 0; i < keys.length; i++) {
+      const key = keys[i];
+      try {
+        if (i === 0) {
+          prevOption = options.find((item) => item.value === key);
+        } else {
+          if (prevOption.loadChildren && !prevOption.children?.length) {
+            await prevOption.loadChildren(prevOption);
+          }
+          prevOption = prevOption.children.find((item) => item.value === key);
+        }
+      } catch (err) {
+        error(err);
+      }
+    }
+  }
+  return options;
+}
+
 TextArea.ReadPretty = function ReadPretty(props): JSX.Element {
-  const { value, multiline = true, scope } = props;
-  const compile = useCompile();
-  const options = compile((typeof scope === 'function' ? scope() : scope) ?? []);
-  const keyLabelMap = useMemo(() => createOptionsValueLabelMap(options), [scope]);
+  const { value, scope } = props;
+  const [options, setOptions] = useState([]);
+  const keyLabelMap = useMemo(() => createOptionsValueLabelMap(options), [options]);
+
+  useEffect(() => {
+    preloadOptions(scope, value)
+      .then((preloaded) => {
+        setOptions(preloaded);
+      })
+      .catch(error);
+  }, [scope, value]);
   const html = renderHTML(value ?? '', keyLabelMap);
 
   const content = (
