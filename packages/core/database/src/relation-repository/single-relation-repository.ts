@@ -54,7 +54,7 @@ export abstract class SingleRelationRepository extends RelationRepository {
     const findOptions = {
       ...options,
       filter: {
-        $and: [options.filter || {}, addFilter],
+        $and: [options?.filter || {}, addFilter],
       },
     };
 
