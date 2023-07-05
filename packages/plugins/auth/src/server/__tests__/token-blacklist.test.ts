@@ -1,12 +1,12 @@
 import Database, { Repository } from '@nocobase/database';
 import { MockServer, mockServer } from '@nocobase/test';
-import { createTokenBlacklistService } from '../token-blacklist';
+import { TokenBlacklistService } from '../token-blacklist';
 
 describe('token-blacklist', () => {
   let app: MockServer;
   let db: Database;
   let repo: Repository;
-  let tokenBlacklist: ReturnType<typeof createTokenBlacklistService>;
+  let tokenBlacklist: TokenBlacklistService;
 
   beforeAll(async () => {
     app = mockServer({
@@ -15,7 +15,7 @@ describe('token-blacklist', () => {
     await app.loadAndInstall({ clean: true });
     db = app.db;
     repo = db.getRepository('tokenBlacklist');
-    tokenBlacklist = createTokenBlacklistService(repo);
+    tokenBlacklist = new TokenBlacklistService(app.getPlugin('auth'));
   });
 
   afterAll(async () => {
@@ -66,8 +66,34 @@ describe('token-blacklist', () => {
       token: 'should not be deleted',
       expiration: new Date('2100-01-01'),
     });
-    await tokenBlacklist.deleteExpiredToken();
+    await tokenBlacklist.deleteByExpiration();
     expect(await tokenBlacklist.has('should be deleted')).not.toBeTruthy();
     expect(await tokenBlacklist.has('should not be deleted')).toBeTruthy();
+  });
+
+  it('should stop corn job when plugin disabled', async () => {
+    const cornJob = tokenBlacklist.cornJob;
+    expect(cornJob.running).toBeTruthy();
+    // pm.enable
+    await app.emitAsync('afterDisablePlugin', 'auth');
+    expect(cornJob.running).toBeFalsy();
+  });
+
+  it('should start corn job when plugin enabled', async () => {
+    const cornJob = tokenBlacklist.cornJob;
+    expect(cornJob.running).toBeFalsy();
+    // pm.disable
+    await app.emitAsync('afterEnablePlugin', 'auth');
+    expect(cornJob.running).toBeTruthy();
+  });
+
+  it('should stop corn job when server is stop', async () => {
+    const cornJob = tokenBlacklist.cornJob;
+    expect(cornJob.running).toBeTruthy();
+    await app.emitAsync('beforeStop', 'auth');
+    expect(cornJob.running).toBeFalsy();
+
+    // reset
+    cornJob.start();
   });
 });

@@ -3,7 +3,7 @@ import { Model } from '@nocobase/database';
 import { Registry } from '@nocobase/utils';
 import { Auth, AuthExtend } from './auth';
 import { JwtOptions, JwtService } from './base/jwt-service';
-import { TokenBlacklistService } from './base/token-blacklist-service';
+import { ITokenBlacklistService } from './base/token-blacklist-service';
 
 type Storer = {
   get: (name: string) => Promise<Model>;
@@ -35,7 +35,7 @@ export class AuthManager {
     this.storer = storer;
   }
 
-  setTokenBlacklistService(service: TokenBlacklistService) {
+  setTokenBlacklistService(service: ITokenBlacklistService) {
     this.jwt.blacklist = service;
   }
 

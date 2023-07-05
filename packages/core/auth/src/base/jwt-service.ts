@@ -1,5 +1,5 @@
 import jwt, { SignOptions } from 'jsonwebtoken';
-import { TokenBlacklistService } from './token-blacklist-service';
+import { ITokenBlacklistService } from './token-blacklist-service';
 
 export interface JwtOptions {
   secret: string;
@@ -21,7 +21,7 @@ export class JwtService {
     };
   }
 
-  public blacklist: TokenBlacklistService;
+  public blacklist: ITokenBlacklistService;
 
   private expiresIn() {
     return this.options.expiresIn;
