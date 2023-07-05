@@ -1,3 +1,4 @@
+import { HasOne } from 'sequelize';
 import { Model } from '../model';
 import { CreateOptions } from '../repository';
 import { SingleRelationFindOption, SingleRelationRepository } from './single-relation-repository';
@@ -18,4 +19,15 @@ interface IHasOneRepository<M extends Model> {
   remove(): Promise<void>;
 }
 
-export class HasOneRepository extends SingleRelationRepository implements IHasOneRepository<any> {}
+export class HasOneRepository extends SingleRelationRepository implements IHasOneRepository<any> {
+  async filterOptions(transaction) {
+    const association = this.association as HasOne;
+
+    const sourceModel = await this.getSourceModel(transaction);
+
+    return {
+      // @ts-ignore
+      [association.foreignKey]: sourceModel.get(association.sourceKey),
+    };
+  }
+}

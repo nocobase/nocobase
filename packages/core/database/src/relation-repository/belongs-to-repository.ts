@@ -1,3 +1,4 @@
+import { BelongsTo } from 'sequelize';
 import { Model } from '../model';
 import { CreateOptions, UpdateOptions } from '../repository';
 import { SingleRelationFindOption, SingleRelationRepository } from './single-relation-repository';
@@ -20,4 +21,15 @@ interface IBelongsToRepository<M extends Model> {
   remove(): Promise<void>;
 }
 
-export class BelongsToRepository extends SingleRelationRepository implements IBelongsToRepository<any> {}
+export class BelongsToRepository extends SingleRelationRepository implements IBelongsToRepository<any> {
+  async filterOptions(transaction) {
+    const association = this.association as BelongsTo;
+
+    const sourceModel = await this.getSourceModel(transaction);
+
+    return {
+      // @ts-ignore
+      [association.targetKey]: sourceModel.get(association.foreignKey),
+    };
+  }
+}

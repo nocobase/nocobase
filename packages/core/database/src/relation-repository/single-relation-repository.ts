@@ -1,6 +1,5 @@
 import lodash from 'lodash';
-import { SingleAssociationAccessors, Transactionable } from 'sequelize';
-import { EagerLoadingTree } from '../eager-loading/eager-loading-tree';
+import { SingleAssociationAccessors, Transaction, Transactionable } from 'sequelize';
 import { Model } from '../model';
 import { Appends, Except, Fields, Filter, TargetKey, UpdateOptions } from '../repository';
 import { updateModelByValues } from '../update-associations';
@@ -19,6 +18,8 @@ interface SetOption extends Transactionable {
 }
 
 export abstract class SingleRelationRepository extends RelationRepository {
+  abstract filterOptions(transaction: Transaction);
+
   @transaction()
   async remove(options?: Transactionable): Promise<void> {
     const transaction = await this.getTransaction(options);
@@ -46,44 +47,18 @@ export abstract class SingleRelationRepository extends RelationRepository {
   }
 
   async find(options?: SingleRelationFindOption): Promise<any> {
-    const transaction = await this.getTransaction(options);
+    const targetRepository = this.targetCollection.repository;
 
-    const findOptions = this.buildQueryOptions({
+    const addFilter = await this.filterOptions(await this.getTransaction(options));
+
+    const findOptions = {
       ...options,
-    });
+      filter: {
+        $and: [options.filter || {}, addFilter],
+      },
+    };
 
-    const getAccessor = this.accessors().get;
-    const sourceModel = await this.getSourceModel(transaction);
-
-    if (!sourceModel) return null;
-
-    if (findOptions?.include?.length > 0) {
-      const templateModel = await sourceModel[getAccessor]({
-        ...findOptions,
-        includeIgnoreAttributes: false,
-        transaction,
-        attributes: [this.targetModel.primaryKeyAttribute],
-        group: `${this.targetModel.name}.${this.targetModel.primaryKeyAttribute}`,
-      });
-
-      if (!templateModel) return null;
-
-      const eagerLoadingTree = EagerLoadingTree.buildFromSequelizeOptions({
-        model: this.targetModel,
-        rootAttributes: findOptions.attributes,
-        includeOption: findOptions.include,
-        db: this.db,
-      });
-
-      await eagerLoadingTree.load([templateModel.get(this.targetModel.primaryKeyAttribute)], transaction);
-
-      return eagerLoadingTree.root.instances[0];
-    }
-
-    return await sourceModel[getAccessor]({
-      ...findOptions,
-      transaction,
-    });
+    return await targetRepository.findOne(findOptions);
   }
 
   async findOne(options?: SingleRelationFindOption): Promise<Model<any>> {
