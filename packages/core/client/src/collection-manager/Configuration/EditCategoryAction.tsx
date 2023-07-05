@@ -1,6 +1,7 @@
 import { useForm } from '@formily/react';
 import { cloneDeep } from 'lodash';
 import React, { useContext, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
@@ -38,7 +39,8 @@ const useEditCategry = () => {
 
 const useValuesFromRecord = (options) => {
   const record = useRecord();
-  const result = useRequest(() => Promise.resolve({ data: { ...record } }), {
+  const { t } = useTranslation();
+  const result = useRequest(() => Promise.resolve({ data: { ...record, name: t(record.name || '') } }), {
     ...options,
     manual: true,
   });

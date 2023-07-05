@@ -9,15 +9,16 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import { RecursionField, observer } from '@formily/react';
+import { observer, RecursionField } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Badge, Card, Dropdown, Modal, Tabs } from 'antd';
 import _ from 'lodash';
 import React, { useContext, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../api-client';
 import { SchemaComponent, SchemaComponentOptions, useCompile } from '../../schema-component';
-import { useResourceActionContext } from '../ResourceActionProvider';
 import { CollectionCategroriesContext } from '../context';
+import { useResourceActionContext } from '../ResourceActionProvider';
 import { CollectionFields } from './CollectionFields';
 import { collectionTableSchema } from './schemas/collections';
 
@@ -67,11 +68,12 @@ const TabTitle = observer(
 );
 
 const TabBar = ({ item }) => {
+  const { t } = useTranslation();
   const compile = useCompile();
   return (
     <span>
       <Badge color={item.color} />
-      {compile(item.name)}
+      {t(compile(item.name))}
     </span>
   );
 };

@@ -8,4 +8,6 @@ export default {
   Module: '模块',
   Text: '原文',
   Translation: '译文',
+  Sync: '同步',
+  'Current language': '当前语言',
 };

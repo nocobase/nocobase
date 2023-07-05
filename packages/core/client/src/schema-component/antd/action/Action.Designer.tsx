@@ -109,7 +109,7 @@ export const ActionDesigner = (props) => {
                   'x-decorator': 'FormItem',
                   'x-component': 'Input',
                   title: t('Button title'),
-                  default: fieldSchema.title,
+                  default: t(fieldSchema.title),
                   'x-component-props': {},
                   // description: `原字段标题：${collectionField?.uiSchema?.title}`,
                 },

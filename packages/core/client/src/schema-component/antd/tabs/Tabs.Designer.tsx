@@ -35,7 +35,7 @@ export const TabsDesigner = () => {
             },
           } as ISchema
         }
-        initialValues={{ title: field.title, icon: field.componentProps.icon }}
+        initialValues={{ title: t(field.title), icon: field.componentProps.icon }}
         onSubmit={({ title, icon }) => {
           const props = fieldSchema['x-component-props'] || {};
           fieldSchema.title = title;

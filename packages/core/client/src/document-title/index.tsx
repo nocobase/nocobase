@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet';
+import { useTranslation } from 'react-i18next';
 import { useSystemSettings } from '../system-settings';
 
 interface DocumentTitleContextProps {
@@ -14,9 +15,10 @@ export const DocumentTitleContext = createContext<DocumentTitleContextProps>({
 
 export const DocumentTitleProvider: React.FC<{ addonBefore?: string; addonAfter?: string }> = (props) => {
   const { addonBefore, addonAfter } = props;
+  const { t } = useTranslation();
   const [title, setTitle] = useState('');
-  const documentTitle = `${addonBefore ? ` - ${addonBefore}` : ''}${title || ''}${
-    addonAfter ? ` - ${addonAfter}` : ''
+  const documentTitle = `${addonBefore ? ` - ${t(addonBefore)}` : ''}${t(title || '')}${
+    addonAfter ? ` - ${t(addonAfter)}` : ''
   }`;
   return (
     <DocumentTitleContext.Provider

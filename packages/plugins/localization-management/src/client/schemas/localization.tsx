@@ -1,6 +1,4 @@
 import { ISchema } from '@formily/react';
-import { uid } from '@formily/shared';
-import { useActionContext, useRequest } from '@nocobase/client';
 
 const collection = {
   name: 'localization',
@@ -70,11 +68,26 @@ export const localizationSchema: ISchema = {
         },
       },
       properties: {
+        currentLang: {
+          type: 'void',
+          'x-align': 'left',
+          'x-component': 'CurrentLang',
+        },
+        filter: {
+          type: 'void',
+          title: '{{t("Filter")}}',
+          'x-align': 'left',
+          'x-component': 'Action',
+          'x-component-props': {
+            icon: 'FilterOutlined',
+          },
+        },
         deleteTranslation: {
           type: 'void',
           title: '{{t("Delete translation")}}',
           'x-component': 'Action',
           'x-component-props': {
+            icon: 'DeleteOutlined',
             useAction: '{{ useBulkDestroyTranslationAction }}',
             confirm: {
               title: "{{t('Delete translation')}}",
@@ -82,71 +95,10 @@ export const localizationSchema: ISchema = {
             },
           },
         },
-        create: {
+        sync: {
           type: 'void',
-          title: '{{t("Add new")}}',
-          'x-component': 'Action',
-          'x-component-props': {
-            type: 'primary',
-          },
-          properties: {
-            drawer: {
-              type: 'void',
-              'x-component': 'Action.Drawer',
-              'x-decorator': 'Form',
-              'x-decorator-props': {
-                useValues(options) {
-                  const ctx = useActionContext();
-                  return useRequest(
-                    () =>
-                      Promise.resolve({
-                        data: {
-                          name: `s_${uid()}`,
-                        },
-                      }),
-                    { ...options, refreshDeps: [ctx.visible] },
-                  );
-                },
-              },
-              title: '{{t("Add new")}}',
-              properties: {
-                module: {
-                  'x-component': 'CollectionField',
-                  'x-decorator': 'FormItem',
-                  default: 'resources.client',
-                },
-                text: {
-                  'x-component': 'CollectionField',
-                  'x-decorator': 'FormItem',
-                },
-                translation: {
-                  'x-component': 'CollectionField',
-                  'x-decorator': 'FormItem',
-                },
-                footer: {
-                  type: 'void',
-                  'x-component': 'Action.Drawer.Footer',
-                  properties: {
-                    cancel: {
-                      title: '{{t("Cancel")}}',
-                      'x-component': 'Action',
-                      'x-component-props': {
-                        useAction: '{{ cm.useCancelAction }}',
-                      },
-                    },
-                    submit: {
-                      title: '{{t("Submit")}}',
-                      'x-component': 'Action',
-                      'x-component-props': {
-                        type: 'primary',
-                        useAction: '{{ cm.useCreateAction }}',
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
+          title: '{{t("Sync")}}',
+          'x-component': 'Sync',
         },
       },
     },
@@ -162,18 +114,18 @@ export const localizationSchema: ISchema = {
         useDataSource: '{{ cm.useDataSourceFromRAC }}',
       },
       properties: {
-        module: {
-          type: 'void',
-          'x-decorator': 'Table.Column.Decorator',
-          'x-component': 'Table.Column',
-          properties: {
-            module: {
-              type: 'string',
-              'x-component': 'CollectionField',
-              'x-read-pretty': true,
-            },
-          },
-        },
+        // module: {
+        //   type: 'void',
+        //   'x-decorator': 'Table.Column.Decorator',
+        //   'x-component': 'Table.Column',
+        //   properties: {
+        //     module: {
+        //       type: 'string',
+        //       'x-component': 'CollectionField',
+        //       'x-read-pretty': true,
+        //     },
+        //   },
+        // },
         text: {
           type: 'void',
           'x-decorator': 'Table.Column.Decorator',
@@ -230,11 +182,11 @@ export const localizationSchema: ISchema = {
                       },
                       title: '{{t("Edit")}}',
                       properties: {
-                        module: {
-                          'x-component': 'CollectionField',
-                          'x-decorator': 'FormItem',
-                          'x-read-pretty': true,
-                        },
+                        // module: {
+                        //   'x-component': 'CollectionField',
+                        //   'x-decorator': 'FormItem',
+                        //   'x-read-pretty': true,
+                        // },
                         text: {
                           'x-component': 'CollectionField',
                           'x-decorator': 'FormItem',
@@ -243,6 +195,7 @@ export const localizationSchema: ISchema = {
                         translation: {
                           'x-component': 'CollectionField',
                           'x-decorator': 'FormItem',
+                          required: true,
                         },
                         footer: {
                           type: 'void',

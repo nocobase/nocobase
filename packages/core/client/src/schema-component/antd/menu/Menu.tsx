@@ -460,6 +460,7 @@ export const Menu: ComposedMenu = observer(
 
 Menu.Item = observer(
   (props) => {
+    const { t } = useTranslation();
     const { pushMenuItem } = useCollectMenuItems();
     const { icon, children, ...others } = props;
     const schema = useFieldSchema();
@@ -486,7 +487,7 @@ Menu.Item = observer(
                     verticalAlign: 'middle',
                   }}
                 >
-                  {field.title}
+                  {t(field.title)}
                 </span>
                 <Designer />
               </SortableItem>

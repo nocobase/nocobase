@@ -3,6 +3,7 @@ import { observer, RecursionField, useField, useFieldSchema, useForm } from '@fo
 import { Button, Modal, Popover } from 'antd';
 import classnames from 'classnames';
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useActionContext } from '../..';
 import { useDesignable } from '../../';
 import { Icon } from '../../../icon';
@@ -78,6 +79,7 @@ export const Action: ComposedAction = observer(
       title,
       ...others
     } = props;
+    const { t } = useTranslation();
     const { onClick } = useProps(props);
     const [visible, setVisible] = useState(false);
     const [formValueChanged, setFormValueChanged] = useState(false);
@@ -142,7 +144,7 @@ export const Action: ComposedAction = observer(
           component={tarComponent || Button}
           className={classnames(actionDesignerCss, className)}
         >
-          {title || compile(fieldSchema.title)}
+          {t(title || compile(fieldSchema.title))}
           <Designer {...designerProps} />
         </SortableItem>
       );

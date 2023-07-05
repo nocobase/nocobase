@@ -17,6 +17,7 @@ export * from './formula';
 export * from './hooks';
 export * from './i18n';
 export * from './icon';
+export { default as locale } from './locale';
 export * from './plugin-manager';
 export * from './pm';
 export * from './powered-by';
@@ -29,4 +30,3 @@ export * from './schema-settings';
 export * from './schema-templates';
 export * from './system-settings';
 export * from './user';
-

@@ -1,8 +1,9 @@
 import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { Tabs as AntdTabs, TabPaneProps, TabsProps } from 'antd';
+import { TabPaneProps, Tabs as AntdTabs, TabsProps } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Icon } from '../../../icon';
 import { useSchemaInitializer } from '../../../schema-initializer';
 import { DndContext, SortableItem } from '../../common';
@@ -103,9 +104,10 @@ Tabs.TabPane = observer(
   (props: TabPaneProps & { icon?: any }) => {
     const Designer = useDesigner();
     const field = useField();
+    const { t } = useTranslation();
     return (
       <SortableItem className={classNames('nb-action-link', designerCss, props.className)}>
-        {props.icon && <Icon style={{ marginRight: 2 }} type={props.icon} />} {props.tab || field.title}
+        {props.icon && <Icon style={{ marginRight: 2 }} type={props.icon} />} {t(props.tab || field.title)}
         <Designer />
       </SortableItem>
     );

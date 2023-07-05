@@ -35,12 +35,17 @@ export default {
       type: 'string',
       name: 'text',
       allowNull: false,
+      unique: true,
       uiSchema: {
         type: 'string',
         title: '{{t("Text")}}',
         'x-component': 'Input',
         required: true,
       },
+    },
+    {
+      name: 'batch',
+      type: 'string',
     },
     {
       interface: 'o2m',
@@ -50,6 +55,11 @@ export default {
       sourceKey: 'id',
       foreignKey: 'textId',
       onDelete: 'CASCADE',
+    },
+  ],
+  indexes: [
+    {
+      fields: ['batch'],
     },
   ],
 } as CollectionOptions;

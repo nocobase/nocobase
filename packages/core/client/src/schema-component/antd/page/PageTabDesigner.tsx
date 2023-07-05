@@ -147,7 +147,7 @@ export const PageTabDesigner = ({ schema }) => {
                   },
                 } as ISchema
               }
-              initialValues={{ title: schema.title, icon: schema['x-icon'] }}
+              initialValues={{ title: t(schema.title), icon: schema['x-icon'] }}
               onSubmit={({ title, icon }) => {
                 schema.title = title;
                 schema['x-icon'] = icon;

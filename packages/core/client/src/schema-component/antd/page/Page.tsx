@@ -141,6 +141,7 @@ const height0 = css`
 
 export const Page = (props) => {
   const { children, ...others } = props;
+  const { t } = useTranslation();
   const compile = useCompile();
   const { title, setTitle } = useDocumentTitle();
   const fieldSchema = useFieldSchema();
@@ -156,13 +157,12 @@ export const Page = (props) => {
 
   useEffect(() => {
     if (!title) {
-      setTitle(fieldSchema.title);
+      setTitle(t(fieldSchema.title));
     }
   }, [fieldSchema.title, title]);
   const disablePageHeader = fieldSchema['x-component-props']?.disablePageHeader;
   const enablePageTabs = fieldSchema['x-component-props']?.enablePageTabs;
   const hidePageTitle = fieldSchema['x-component-props']?.hidePageTitle;
-  const { t } = useTranslation();
   const options = useContext(SchemaOptionsContext);
   const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
@@ -177,11 +177,12 @@ export const Page = (props) => {
     console.error(error);
   };
 
-  const pageHeaderTitle = hidePageTitle ? undefined : fieldSchema.title || compile(title);
+  const pageTitle = t(fieldSchema.title || compile(title));
+  const pageHeaderTitle = hidePageTitle ? undefined : pageTitle;
   return (
     <FilterBlockProvider>
       <div className={pageDesignerCss}>
-        <PageDesigner title={fieldSchema.title || title} />
+        <PageDesigner title={pageTitle} />
         <div
           ref={(ref) => {
             setHeight(Math.floor(ref?.getBoundingClientRect().height || 0) + 1);
@@ -269,7 +270,7 @@ export const Page = (props) => {
                               className={classNames('nb-action-link', designerCss, props.className)}
                             >
                               {schema['x-icon'] && <Icon style={{ marginRight: 8 }} type={schema['x-icon']} />}
-                              <span>{schema.title || t('Unnamed')}</span>
+                              <span>{t(schema.title || 'Unnamed')}</span>
                               <PageTabDesigner schema={schema} />
                             </SortableItem>
                           ),

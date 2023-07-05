@@ -1,25 +1,18 @@
+import { SyncOutlined } from '@ant-design/icons';
 import {
   Input,
+  locale,
   SchemaComponent,
   useAPIClient,
-  useAppLangContext,
   useRecord,
   useResourceActionContext,
   useResourceContext,
 } from '@nocobase/client';
-import { Card, message } from 'antd';
+import { Button, Card, message, Tag, Typography } from 'antd';
 import React from 'react';
 import { useLocalTranslation } from './locale';
 import { localizationSchema } from './schemas/localization';
-
-const useModules = () => {
-  const appLang = useAppLangContext();
-  const resourceModuels = Object.keys(appLang?.resources || {}).map((module) => `resources.${module}`);
-  return ['antd', 'cron', 'cronstrue', ...resourceModuels].map((module) => ({
-    label: module,
-    value: module,
-  }));
-};
+const { Text } = Typography;
 
 const useDestroyTranslationAction = () => {
   const { refresh } = useResourceActionContext();
@@ -28,18 +21,6 @@ const useDestroyTranslationAction = () => {
   return {
     async run() {
       await resource.destroyTranslation({ values: { id } });
-      refresh();
-    },
-  };
-};
-
-const useDestroyTextAction = () => {
-  const { refresh } = useResourceActionContext();
-  const { resource } = useResourceContext();
-  const { id } = useRecord();
-  return {
-    async run() {
-      await resource.destroyText({ values: { id } });
       refresh();
     },
   };
@@ -65,30 +46,71 @@ const useBulkDestroyTranslationAction = () => {
   };
 };
 
+const useSyncAction = () => {
+  const { refresh } = useResourceActionContext();
+  const { resource } = useResourceContext();
+  return {
+    async run() {
+      await resource.sync();
+      refresh();
+    },
+  };
+};
+
 const useHasTranslation = () => {
   const { translationId } = useRecord();
   // return !!translationId;
   return true;
 };
 
+const Sync = () => {
+  const { t } = useLocalTranslation();
+  const { refresh } = useResourceActionContext();
+  const { resource } = useResourceContext();
+  const [loading, setLoading] = React.useState(false);
+  return (
+    <Button
+      icon={<SyncOutlined />}
+      type="primary"
+      loading={loading}
+      onClick={async () => {
+        setLoading(true);
+        await resource.sync();
+        setLoading(false);
+        refresh();
+      }}
+    >
+      {t('Sync')}
+    </Button>
+  );
+};
+
 export const Localization = () => {
   const { t } = useLocalTranslation();
   const api = useAPIClient();
-  const locale = api.auth.getLocale();
+  const curLocale = api.auth.getLocale();
+  const localeLabel = locale[curLocale]?.label || curLocale;
 
-  const TranslationField = (props) => (props.value ? <Input.TextArea {...props} /> : <div>{t('No data')}</div>);
+  const CurrentLang = () => (
+    <Typography>
+      <Text strong>{t('Current language')}</Text>
+      <Tag style={{ marginLeft: '10px' }}>{localeLabel}</Tag>
+    </Typography>
+  );
+
+  const TranslationField = (props) =>
+    props.value !== undefined ? <Input.TextArea {...props} /> : <div>{t('No data')}</div>;
   return (
     <Card bordered={false}>
       <SchemaComponent
         schema={localizationSchema}
-        components={{ TranslationField }}
+        components={{ TranslationField, CurrentLang, Sync }}
         scope={{
           t,
-          useModules,
           useDestroyTranslationAction,
-          useDestroyTextAction,
           useHasTranslation,
           useBulkDestroyTranslationAction,
+          useSyncAction,
         }}
       />
     </Card>

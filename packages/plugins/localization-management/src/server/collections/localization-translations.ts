@@ -44,4 +44,10 @@ export default {
       },
     },
   ],
+  indexes: [
+    {
+      fields: ['locale', 'textId'],
+      unique: true,
+    },
+  ],
 } as CollectionOptions;

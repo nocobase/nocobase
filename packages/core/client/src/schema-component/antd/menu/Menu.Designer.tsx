@@ -242,7 +242,7 @@ export const MenuDesigner = () => {
     },
   };
   const initialValues = {
-    title: field.title,
+    title: t(field.title),
     icon: field.componentProps.icon,
   };
   if (fieldSchema['x-component'] === 'Menu.URL') {
