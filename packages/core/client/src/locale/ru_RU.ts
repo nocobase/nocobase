@@ -497,7 +497,7 @@ export default {
 
   'If collection inherits, choose inherited collections as templates': "Если коллекция наследуется, выберите наследуемые коллекции в качестве шаблонов",
   'Select an existing piece of data as the initialization data for the form': "Выберите существующие данные в качестве исходных данных для формы",
-  'Only the selected fields will be used as the initialization data for the form': "Только выбранные поля будут использоваться в качестве исходных данных для формы",
+  'The selected fields will be used as the initialization data for the form': "Только выбранные поля будут использоваться в качестве исходных данных для формы",
   'Template Data': "Шаблон данных",
   'Data fields': "Поля данных",
   'Add template': "Добавить шаблон",

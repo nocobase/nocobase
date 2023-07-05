@@ -661,7 +661,7 @@ export default {
 
   'If collection inherits, choose inherited collections as templates': 'Se a coleção herda, escolha as coleções herdadas como modelos',
   'Select an existing piece of data as the initialization data for the form': 'Selecione um pedaço de dados existente como os dados de inicialização para o formulário',
-  'Only the selected fields will be used as the initialization data for the form': 'Somente os campos selecionados serão usados como dados de inicialização para o formulário',
+  'The selected fields will be used as the initialization data for the form': 'Somente os campos selecionados serão usados como dados de inicialização para o formulário',
   'Template Data': 'Dados do modelo',
   'Data fields': 'Campos de dados',
   'Add template': 'Adicionar modelo',

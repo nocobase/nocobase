@@ -497,7 +497,7 @@ export default {
 
   'If collection inherits, choose inherited collections as templates': "Koleksiyon miras alırsa, kalıtılan koleksiyonları şablon olarak seçin",
   'Select an existing piece of data as the initialization data for the form': 'Formun başlangıç ​​verileri olarak mevcut bir veri parçasını seçin',
-  'Only the selected fields will be used as the initialization data for the form': 'Yalnızca seçilen alanlar, formun başlangıç ​​verileri olarak kullanılacaktır',
+  'The selected fields will be used as the initialization data for the form': 'Yalnızca seçilen alanlar, formun başlangıç ​​verileri olarak kullanılacaktır',
   'Template Data': 'Şablon Verisi',
   'Data fields': 'Veri alanları',
   'Add template': 'Şablon ekle',

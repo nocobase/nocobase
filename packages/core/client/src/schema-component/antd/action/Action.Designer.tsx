@@ -300,7 +300,7 @@ export const ActionDesigner = (props) => {
                     type: 'array',
                     title: '{{ t("Data fields") }}',
                     default: duplicateValues,
-                    description: t('Only the selected fields will be used as the initialization data for the form'),
+                    description: t('The selected fields will be used as the initialization data for the form'),
                     'x-decorator': 'FormItem',
                     'x-component': Tree,
                     'x-component-props': {
