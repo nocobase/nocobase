@@ -1,3 +1,4 @@
+import { BelongsTo } from 'sequelize';
 import { Model } from '../model';
 import { CreateOptions, UpdateOptions } from '../repository';
 import { SingleRelationFindOption, SingleRelationRepository } from './single-relation-repository';
@@ -22,6 +23,8 @@ interface IBelongsToRepository<M extends Model> {
 
 export class BelongsToRepository extends SingleRelationRepository implements IBelongsToRepository<any> {
   async filterOptions(sourceModel) {
+    const association = this.association as BelongsTo;
+
     return {
       // @ts-ignore
       [association.targetKey]: sourceModel.get(association.foreignKey),
