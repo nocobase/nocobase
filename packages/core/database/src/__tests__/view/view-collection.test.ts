@@ -1,5 +1,5 @@
-import { Database, mockDatabase } from '@nocobase/database';
 import { uid } from '@nocobase/utils';
+import { Database, mockDatabase, ViewFieldInference } from '../../index';
 import { ViewCollection } from '../../view-collection';
 
 describe('create view', () => {
@@ -15,6 +15,49 @@ describe('create view', () => {
 
   afterEach(async () => {
     await db.close();
+  });
+
+  it('should update view collection', async () => {
+    const UserCollection = db.collection({
+      name: 'users',
+      fields: [
+        {
+          name: 'name',
+          type: 'string',
+        },
+        {
+          name: 'group',
+          type: 'belongsTo',
+          foreignKey: 'group_id',
+        },
+      ],
+    });
+
+    const GroupCollection = db.collection({
+      name: 'groups',
+      fields: [
+        {
+          name: 'name',
+          type: 'string',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    const viewName = `users_with_group`;
+    const dropSQL = `DROP VIEW IF EXISTS ${viewName}`;
+    await db.sequelize.query(dropSQL);
+    const viewSQL = `CREATE VIEW ${viewName} AS SELECT users.id AS user_id, users.name AS user_name, groups.id AS group_id, groups.name AS group_name FROM ${UserCollection.quotedTableName()} AS users INNER JOIN ${GroupCollection.quotedTableName()} AS groups ON users.group_id = groups.id`;
+    await db.sequelize.query(viewSQL);
+
+    const inferredFields = await ViewFieldInference.inferFields({
+      db,
+      viewName,
+      viewSchema: 'public',
+    });
+
+    console.log(inferredFields);
   });
 
   it('should insert data into view collection', async () => {

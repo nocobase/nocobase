@@ -1,6 +1,7 @@
-import QueryInterface from './query-interface';
+import lodash from 'lodash';
 import { Collection } from '../collection';
 import sqlParser from '../sql-parser/postgres';
+import QueryInterface from './query-interface';
 
 export default class PostgresQueryInterface extends QueryInterface {
   constructor(db) {
@@ -61,7 +62,8 @@ export default class PostgresQueryInterface extends QueryInterface {
       { type: 'SELECT' },
     );
 
-    const def = viewDefQuery[0]['definition'];
+    const def = lodash.trim(viewDefQuery[0]['definition']);
+    console.log(def);
     try {
       const { ast } = sqlParser.parse(def);
       const columns = ast[0].columns;
@@ -96,7 +98,7 @@ export default class PostgresQueryInterface extends QueryInterface {
 
       return Object.fromEntries(usages);
     } catch (e) {
-      this.db.logger.warn(e);
+      console.log(e);
       return {};
     }
   }

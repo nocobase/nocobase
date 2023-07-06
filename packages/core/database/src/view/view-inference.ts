@@ -1,6 +1,6 @@
+import { isArray } from 'mathjs';
 import Database from '../database';
 import FieldTypeMap from './field-type-map';
-import { isArray } from 'mathjs';
 
 type InferredField = {
   name: string;
