@@ -5,6 +5,7 @@ import { uid } from '@formily/shared';
 import {
   Action,
   Checkbox,
+  collection,
   CollectionCategroriesContext,
   CollectionField,
   CollectionProvider,
@@ -19,7 +20,6 @@ import {
   SchemaComponent,
   SchemaComponentProvider,
   Select,
-  collection,
   useCollectionManager,
   useCompile,
   useCurrentAppInfo,
@@ -190,6 +190,7 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
   const [collapse, setCollapse] = useState(false);
   const { t } = useGCMTranslation();
   const compile = useCompile();
+  const database = useCurrentAppInfo();
   const portsData = groupBy(ports.items, (v) => {
     if (
       v.isForeignKey ||
@@ -292,6 +293,7 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
                         ...property,
                         title,
                       },
+                      database,
                     },
                   },
                   update: {

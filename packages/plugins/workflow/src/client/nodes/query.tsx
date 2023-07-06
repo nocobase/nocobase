@@ -1,10 +1,10 @@
-import { SchemaInitializerItemOptions, useCollectionDataSource } from '@nocobase/client';
+import { SchemaInitializerItemOptions, useCollectionDataSource, useCollectionManager, useCompile } from '@nocobase/client';
 
 import { appends, collection, filter } from '../schemas/collection';
 import { NAMESPACE } from '../locale';
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
 import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
-import { useCollectionFieldOptions } from '../variable';
+import { getCollectionFieldOptions } from '../variable';
 import { FieldsSelect } from '../components/FieldsSelect';
 
 export default {
@@ -43,14 +43,34 @@ export default {
     FilterDynamicComponent,
     FieldsSelect,
   },
-  useVariables({ config }, options) {
-    const result = useCollectionFieldOptions({
-      collection: config?.collection,
+  useVariables({ id, title, config }, options) {
+    const compile = useCompile();
+    const { getCollectionFields } = useCollectionManager();
+    // const depth = config?.params?.appends?.length
+    //   ? config?.params?.appends.reduce((max, item) => Math.max(max, item.split('.').length), 1)
+    //   : 0;
+    const name = `${id}`;
+    const [result] = getCollectionFieldOptions({
+      // collection: config.collection,
       ...options,
-      depth: options?.depth ?? config?.params?.appends?.length ? 1 : 0,
+      fields: [
+        {
+          collectionName: config.collection,
+          name,
+          type: 'hasOne',
+          target: config.collection,
+          uiSchema: {
+            title,
+          },
+        },
+      ],
+      // depth: options?.depth ?? depth,
+      appends: [name, ...(config.params?.appends?.map((item) => `${name}.${item}`) || [])],
+      compile,
+      getCollectionFields,
     });
 
-    return result?.length ? result : null;
+    return result;
   },
   useInitializers(node): SchemaInitializerItemOptions | null {
     if (!node.config.collection || node.config.multiple) {

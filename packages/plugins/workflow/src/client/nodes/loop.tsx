@@ -40,8 +40,20 @@ export default {
       'x-decorator': 'FormItem',
       'x-component': 'Variable.Input',
       'x-component-props': {
-        scope: '{{useWorkflowVariableOptions}}',
+        scope: '{{useWorkflowVariableOptions()}}',
+        changeOnSelect: true,
         useTypedConstant: ['string', 'number', 'null'],
+        className: css`
+          width: 100%;
+
+          .variable {
+            flex: 1;
+          }
+
+          .ant-input.null-value {
+            width: 100%;
+          }
+        `,
       },
       required: true,
     },

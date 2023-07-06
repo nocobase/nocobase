@@ -1,6 +1,7 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Button } from 'antd';
 import { css } from '@emotion/css';
+import { cloneDeep } from 'lodash';
 
 import { Input } from '../input';
 import { VariableSelect } from './VariableSelect';
@@ -18,8 +19,8 @@ function setNativeInputValue(input, value) {
 
 export function JSONInput(props) {
   const inputRef = useRef<any>(null);
-  const { scope } = props;
-  const options = typeof scope === 'function' ? scope() : scope ?? [];
+  const { scope, changeOnSelect, ...others } = props;
+  const [options, setOptions] = useState(scope ? cloneDeep(scope) : []);
 
   function onInsert(selected) {
     if (!inputRef.current) {
@@ -45,7 +46,7 @@ export function JSONInput(props) {
         }
       `}
     >
-      <Input.JSON {...props} ref={inputRef} />
+      <Input.JSON {...others} ref={inputRef} />
       <Button.Group
         className={css`
           position: absolute;
@@ -56,7 +57,7 @@ export function JSONInput(props) {
           }
         `}
       >
-        <VariableSelect options={options} onInsert={onInsert} />
+        <VariableSelect options={options} setOptions={setOptions} onInsert={onInsert} changeOnSelect={changeOnSelect} />
       </Button.Group>
     </div>
   );

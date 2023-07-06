@@ -1,10 +1,10 @@
-import { useCollectionDataSource, SchemaInitializerItemOptions } from '@nocobase/client';
+import { useCollectionDataSource, SchemaInitializerItemOptions, useCompile, useCollectionManager } from '@nocobase/client';
 
 import { ScheduleConfig } from './ScheduleConfig';
 import { SCHEDULE_MODE } from './constants';
-import { NAMESPACE, useWorkflowTranslation } from '../../locale';
+import { NAMESPACE, lang } from '../../locale';
 import { CollectionBlockInitializer } from '../../components/CollectionBlockInitializer';
-import { useCollectionFieldOptions } from '../../variable';
+import { getCollectionFieldOptions } from '../../variable';
 import { FieldsSelect } from '../../components/FieldsSelect';
 
 export default {
@@ -24,20 +24,31 @@ export default {
     ScheduleConfig,
     FieldsSelect,
   },
-  useVariables(config, { types }) {
-    const { t } = useWorkflowTranslation();
+  useVariables(config, opts) {
+    const compile = useCompile();
+    const { getCollectionFields } = useCollectionManager();
     const options: any[] = [];
-    if (!types || types.includes('date')) {
-      options.push({ key: 'date', value: 'date', label: t('Trigger time') });
+    if (!opts?.types || opts.types.includes('date')) {
+      options.push({ key: 'date', value: 'date', label: lang('Trigger time') });
     }
 
-    const fieldOptions = useCollectionFieldOptions({ collection: config.collection });
+    const depth = config.appends?.length
+      ? config.appends.reduce((max, item) => Math.max(max, item.split('.').length), 1) + 1
+      : 1;
+
+    const fieldOptions = getCollectionFieldOptions({
+      depth,
+      ...opts,
+      collection: config.collection,
+      compile,
+      getCollectionFields,
+    });
     if (config.mode === SCHEDULE_MODE.COLLECTION_FIELD) {
       if (fieldOptions.length) {
         options.push({
           key: 'data',
           value: 'data',
-          label: t('Trigger data'),
+          label: lang('Trigger data'),
           children: fieldOptions,
         });
       }
