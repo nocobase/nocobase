@@ -43,22 +43,34 @@ export default {
     FilterDynamicComponent,
     FieldsSelect,
   },
-  useVariables({ config }, options) {
+  useVariables({ id, title, config }, options) {
     const compile = useCompile();
     const { getCollectionFields } = useCollectionManager();
     // const depth = config?.params?.appends?.length
     //   ? config?.params?.appends.reduce((max, item) => Math.max(max, item.split('.').length), 1)
     //   : 0;
-    const result = getCollectionFieldOptions({
-      collection: config.collection,
+    const name = `${id}`;
+    const [result] = getCollectionFieldOptions({
+      // collection: config.collection,
       ...options,
+      fields: [
+        {
+          collectionName: config.collection,
+          name,
+          type: 'hasOne',
+          target: config.collection,
+          uiSchema: {
+            title,
+          },
+        },
+      ],
       // depth: options?.depth ?? depth,
-      appends: config.params?.appends,
+      appends: [name, ...(config.params?.appends?.map((item) => `${name}.${item}`) || [])],
       compile,
       getCollectionFields,
     });
 
-    return result?.length ? result : null;
+    return result;
   },
   useInitializers(node): SchemaInitializerItemOptions | null {
     if (!node.config.collection || node.config.multiple) {
