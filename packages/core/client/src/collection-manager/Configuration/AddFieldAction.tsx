@@ -9,10 +9,10 @@ import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
-import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
 import { IField } from '../interfaces/types';
+import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import * as components from './components';
 import { getOptions } from './interfaces';
 
@@ -169,13 +169,21 @@ export const AddCollectionField = (props) => {
 };
 
 export const AddFieldAction = (props) => {
-  const { scope, getContainer, item: record, children, trigger, align } = props;
-  const { getInterface, getTemplate } = useCollectionManager();
+  const { scope, getContainer, item: record, children, trigger, align, database } = props;
+  const { getInterface, getTemplate, collections } = useCollectionManager();
   const [visible, setVisible] = useState(false);
   const [targetScope, setTargetScope] = useState();
   const [schema, setSchema] = useState({});
   const compile = useCompile();
   const { t } = useTranslation();
+  const currentCollections = useMemo(() => {
+    return collections.map((v) => {
+      return {
+        label: compile(v.title),
+        value: v.name,
+      };
+    });
+  }, []);
   const getFieldOptions = useCallback(() => {
     const { availableFieldInterfaces } = getTemplate(record.template) || {};
     const { exclude, include } = availableFieldInterfaces || {};
@@ -187,6 +195,8 @@ export const AddFieldAction = (props) => {
           children: v.children.filter((v) => {
             if (v.value === 'id') {
               return typeof record['autoGenId'] === 'boolean' ? record['autoGenId'] : true;
+            } else if (v.value === 'tableoid') {
+              return database?.dialect === 'postgres';
             } else {
               return typeof record[v.value] === 'boolean' ? record[v.value] : true;
             }
@@ -243,7 +253,6 @@ export const AddFieldAction = (props) => {
       };
     });
   }, [getFieldOptions]);
-
   const menu = useMemo<MenuProps>(() => {
     return {
       style: {
@@ -288,6 +297,7 @@ export const AddFieldAction = (props) => {
               record,
               showReverseFieldConfig: true,
               targetScope,
+              collections: currentCollections,
               ...scope,
             }}
           />

@@ -99,6 +99,9 @@ export class MockServer extends Application {
                     userId: typeof userOrId === 'number' ? userOrId : userOrId?.id,
                   },
                   process.env.APP_KEY,
+                  {
+                    expiresIn: '1d',
+                  },
                 ),
                 { type: 'bearer' },
               )

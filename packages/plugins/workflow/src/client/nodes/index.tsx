@@ -38,7 +38,7 @@ import update from './update';
 import { NodeDescription } from '../components/NodeDescription';
 import { JobStatusOptionsMap } from '../constants';
 import { NAMESPACE, lang } from '../locale';
-import { VariableOptions } from '../variable';
+import { VariableOption, VariableOptions } from '../variable';
 import request from './request';
 
 export interface Instruction {
@@ -53,7 +53,7 @@ export interface Instruction {
   components?: { [key: string]: any };
   component?(props): JSX.Element;
   endding?: boolean;
-  useVariables?(node, options?): VariableOptions;
+  useVariables?(node, options?): VariableOption;
   useScopeVariables?(node, options?): VariableOptions;
   useInitializers?(node): SchemaInitializerItemOptions | null;
   initializers?: { [key: string]: any };
