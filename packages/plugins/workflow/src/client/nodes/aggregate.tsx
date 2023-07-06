@@ -18,8 +18,12 @@ import { FieldsSelect } from '../components/FieldsSelect';
 import { ValueBlock } from '../components/ValueBlock';
 import { useNodeContext } from '.';
 
-function matchToManyField(field, depth): boolean {
-  return ['hasMany', 'belongsToMany'].includes(field.type) && depth;
+function matchToManyField(field, appends): boolean {
+  const fieldPrefix = `${field.name}.`;
+  return (
+    ['hasMany', 'belongsToMany'].includes(field.type) &&
+    (appends.includes(field.name) || appends.some((item) => item.startsWith(fieldPrefix)))
+  );
 }
 
 function AssociatedConfig({ value, onChange, ...props }): JSX.Element {

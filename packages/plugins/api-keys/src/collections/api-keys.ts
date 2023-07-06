@@ -86,5 +86,10 @@ export default {
         ],
       },
     },
+    {
+      name: 'token',
+      type: 'string',
+      hidden: true,
+    },
   ],
 } as CollectionOptions;

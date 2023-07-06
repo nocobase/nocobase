@@ -1,7 +1,7 @@
-import { BlockInitializers, SchemaInitializerItemOptions, useCollectionManager } from '@nocobase/client';
+import { BlockInitializers, SchemaInitializerItemOptions, useCollectionManager, useCompile } from '@nocobase/client';
 
 import { CollectionBlockInitializer } from '../../components/CollectionBlockInitializer';
-import { useCollectionFieldOptions } from '../../variable';
+import { getCollectionFieldOptions } from '../../variable';
 import { NAMESPACE } from '../../locale';
 import { SchemaConfig, SchemaConfigButton } from './SchemaConfig';
 import { ModeConfig } from './ModeConfig';
@@ -86,6 +86,8 @@ export default {
     AssigneesSelect,
   },
   useVariables({ config }, { types }) {
+    const compile = useCompile();
+    const { getCollectionFields } = useCollectionManager();
     const formKeys = Object.keys(config.forms ?? {});
     if (!formKeys.length) {
       return null;
@@ -96,10 +98,12 @@ export default {
         const form = config.forms[formKey];
 
         // eslint-disable-next-line react-hooks/rules-of-hooks
-        const options = useCollectionFieldOptions({
+        const options = getCollectionFieldOptions({
           fields: form.collection?.fields,
           collection: form.collection,
           types,
+          compile,
+          getCollectionFields,
         });
         return options.length
           ? {
