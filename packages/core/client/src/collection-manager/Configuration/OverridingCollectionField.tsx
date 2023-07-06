@@ -3,15 +3,15 @@ import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { omit, set } from 'lodash';
 import cloneDeep from 'lodash/cloneDeep';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
-import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
 import { IField } from '../interfaces/types';
+import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import * as components from './components';
 
 const getSchema = (schema: IField, record: any, compile, getContainer): ISchema => {
@@ -129,7 +129,7 @@ const getIsOverriding = (currentFields, record) => {
 export const OverridingFieldAction = (props) => {
   const { scope, getContainer, item: record, children, currentCollection } = props;
   const { target, through } = record;
-  const { getInterface, getCurrentCollectionFields, getChildrenCollections } = useCollectionManager();
+  const { getInterface, getCurrentCollectionFields, getChildrenCollections, collections } = useCollectionManager();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
   const api = useAPIClient();
@@ -146,6 +146,14 @@ export const OverridingFieldAction = (props) => {
   const [data, setData] = useState<any>({});
   const currentFields = getCurrentCollectionFields(currentCollection);
   const disabled = getIsOverriding(currentFields, record);
+  const currentCollections = useMemo(() => {
+    return collections.map((v) => {
+      return {
+        label: compile(v.title),
+        value: v.name,
+      };
+    });
+  }, []);
   return (
     <RecordProvider record={{ ...record, collectionName: record.__parent.name }}>
       <ActionContextProvider value={{ visible, setVisible }}>
@@ -195,6 +203,8 @@ export const OverridingFieldAction = (props) => {
             override: true,
             isOverride: true,
             targetScope: { target: getFilterCollections(target), through: getFilterCollections(through) },
+            collections: currentCollections,
+
             ...scope,
           }}
         />
