@@ -309,7 +309,7 @@ export default class WorkflowPlugin extends Plugin {
         filter: {
           status: EXECUTION_STATUS.QUEUEING,
         },
-        appends: ['workflow.enabled'],
+        appends: ['workflow'],
         sort: 'createdAt',
       })) as ExecutionModel;
       if (execution && execution.workflow.enabled) {
