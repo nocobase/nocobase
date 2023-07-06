@@ -18,15 +18,18 @@ import { FieldsSelect } from '../components/FieldsSelect';
 import { ValueBlock } from '../components/ValueBlock';
 import { useNodeContext } from '.';
 
-function matchToManyField(field, depth): boolean {
-  return ['hasMany', 'belongsToMany'].includes(field.type) && depth;
+function matchToManyField(field, appends): boolean {
+  const fieldPrefix = `${field.name}.`;
+  return (
+    ['hasMany', 'belongsToMany'].includes(field.type) &&
+    (appends.includes(field.name) || appends.some((item) => item.startsWith(fieldPrefix)))
+  );
 }
 
 function AssociatedConfig({ value, onChange, ...props }): JSX.Element {
   const { setValuesIn } = useForm();
   const compile = useCompile();
   const { getCollection } = useCollectionManager();
-  const current = useNodeContext();
   const options = [nodesOptions, triggerOptions].map((item) => {
     const children = item.useOptions({ types: [matchToManyField] })?.filter(Boolean);
     return {
@@ -296,16 +299,17 @@ export default {
     ValueBlock,
     AssociatedConfig,
   },
-  useVariables(current, { types }) {
+  useVariables({ id, title }, { types }) {
     if (
       types &&
       !types.some((type) => type in BaseTypeSets || Object.values(BaseTypeSets).some((set) => set.has(type)))
     ) {
       return null;
     }
-    return [
-      // { key: '', value: '', label: lang('Calculation result') }
-    ];
+    return {
+      value: `${id}`,
+      label: title,
+    };
   },
   useInitializers(node): SchemaInitializerItemOptions | null {
     if (!node.config.collection) {

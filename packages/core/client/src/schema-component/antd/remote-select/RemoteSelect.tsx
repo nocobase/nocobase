@@ -2,7 +2,7 @@ import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty, useField, useFieldSchema, useForm } from '@formily/react';
 import { Divider, SelectProps, Tag } from 'antd';
 import flat from 'flat';
-import { uniqBy } from 'lodash';
+import _, { uniqBy } from 'lodash';
 import moment from 'moment';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
@@ -11,7 +11,7 @@ import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { getInnermostKeyAndValue } from '../../common/utils/uitls';
 import { useCompile } from '../../hooks';
-import { defaultFieldNames, Select } from '../select';
+import { Select, defaultFieldNames } from '../select';
 import { ReadPretty } from './ReadPretty';
 import { extractFilterfield, extractValuesByPattern, generatePattern, parseVariables } from './utils';
 const EMPTY = 'N/A';
@@ -122,58 +122,69 @@ const InternalRemoteSelect = connect(
       },
       [targetField?.uiSchema, fieldNames],
     );
-    const parseFilter = (rules) => {
-      if (!rules) {
-        return undefined;
-      }
-      if (typeof rules === 'string') {
-        return rules;
-      }
-      const type = Object.keys(rules)[0] || '$and';
-      const conditions = rules[type];
-      const results = [];
-      conditions?.forEach((c) => {
-        const jsonlogic = getInnermostKeyAndValue(c);
-        const regex = /{{(.*?)}}/;
-        const matches = jsonlogic.value?.match?.(regex);
-        if (!matches || (!matches[1].includes('$form') && !matches[1].includes('$iteration'))) {
-          results.push(c);
-          return;
+    const parseFilter = useCallback(
+      (rules) => {
+        if (!rules) {
+          return undefined;
         }
-        const associationfield = extractFilterfield(matches[1]);
-        const filterCollectionField = getCollectionJoinField(`${ctx.props.collection}.${associationfield}`);
-        if (['o2m', 'm2m'].includes(filterCollectionField?.interface)) {
-          // 对多子表单
-          const pattern = generatePattern(matches?.[1], associationfield);
-          const parseValue: any = extractValuesByPattern(flat(form.values), pattern);
-          const filters = parseValue.map((v) => {
-            return JSON.parse(JSON.stringify(c).replace(jsonlogic.value, v));
-          });
-          results.push({ $or: filters });
-        } else {
-          const variablesCtx = { $form: form.values, $iteration: form.values };
-          let str = matches?.[1];
-          if (str.includes('$iteration')) {
-            const path = field.path.segments.concat([]);
-            path.pop();
-            str = str.replace('$iteration.', `$iteration.${path.join('.')}.`);
+        if (typeof rules === 'string') {
+          return rules;
+        }
+        const type = Object.keys(rules)[0] || '$and';
+        const conditions = rules[type];
+        const results = [];
+        conditions?.forEach((c) => {
+          const jsonlogic = getInnermostKeyAndValue(c);
+          const regex = /{{(.*?)}}/;
+          const matches = jsonlogic.value?.match?.(regex);
+          if (!matches || (!matches[1].includes('$form') && !matches[1].includes('$iteration'))) {
+            results.push(c);
+            return;
           }
-          const parseValue = parseVariables(str, variablesCtx);
-          if (Array.isArray(parseValue)) {
+          const associationfield = extractFilterfield(matches[1]);
+          const filterCollectionField = getCollectionJoinField(`${ctx.props.collection}.${associationfield}`);
+          if (['o2m', 'm2m'].includes(filterCollectionField?.interface)) {
+            // 对多子表单
+            const pattern = generatePattern(matches?.[1], associationfield);
+            const parseValue: any = extractValuesByPattern(flat(form.values), pattern);
             const filters = parseValue.map((v) => {
               return JSON.parse(JSON.stringify(c).replace(jsonlogic.value, v));
             });
             results.push({ $or: filters });
           } else {
-            const filterObj = JSON.parse(
-              JSON.stringify(c).replace(jsonlogic.value, str.endsWith('id') ? parseValue ?? 0 : parseValue),
-            );
-            results.push(filterObj);
+            const variablesCtx = { $form: form.values, $iteration: form.values };
+            let str = matches?.[1];
+            if (str.includes('$iteration')) {
+              const path = field.path.segments.concat([]);
+              path.pop();
+              str = str.replace('$iteration.', `$iteration.${path.join('.')}.`);
+            }
+            const parseValue = parseVariables(str, variablesCtx);
+            if (Array.isArray(parseValue)) {
+              const filters = parseValue.map((v) => {
+                return JSON.parse(JSON.stringify(c).replace(jsonlogic.value, v));
+              });
+              results.push({ $or: filters });
+            } else {
+              const filterObj = JSON.parse(
+                JSON.stringify(c).replace(jsonlogic.value, str.endsWith('id') ? parseValue ?? 0 : parseValue),
+              );
+              results.push(filterObj);
+            }
           }
-        }
-      });
-      return { [type]: results };
-    };
+        });
+        return { [type]: results };
+      },
+      [ctx.props?.collection, field.path.segments, form.values, getCollectionJoinField],
+    );
+
+    const filter = useMemo(() => {
+      const filterFromSchema = _.isString(fieldSchema?.['x-component-props']?.service?.params?.filter)
+        ? field.componentProps?.service?.params?.filter
+        : fieldSchema?.['x-component-props']?.service?.params?.filter;
+
+      return mergeFilter([parseFilter(filterFromSchema) || service?.params?.filter]);
+    }, [field.componentProps?.service?.params?.filter, fieldSchema, parseFilter, service?.params?.filter]);
 
     const { data, run, loading } = useRequest(
       {
@@ -183,9 +194,7 @@ const InternalRemoteSelect = connect(
           pageSize: 200,
           ...service?.params,
           // search needs
-          filter: mergeFilter([
-            parseFilter(fieldSchema?.['x-component-props']?.service?.params?.filter) || service?.params?.filter,
-          ]),
+          filter,
         },
       },
       {
@@ -233,7 +242,7 @@ const InternalRemoteSelect = connect(
                 },
               }
             : {},
-          fieldSchema?.['x-component-props']?.service?.params?.filter || service?.params?.filter,
+          filter,
         ]),
       });
       searchData.current = search;

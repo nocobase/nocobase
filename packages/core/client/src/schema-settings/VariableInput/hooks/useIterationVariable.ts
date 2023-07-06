@@ -61,7 +61,7 @@ export const useIterationVariable = ({
   currentCollection: string;
   rootCollection: string;
   operator?: any;
-  schema: Schema;
+  schema?: any;
   level?: number;
 }) => {
   const compile = useCompile();

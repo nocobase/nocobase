@@ -6,6 +6,7 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../..';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { useRecord } from '../../../record-provider';
 import { OpenModeSchemaItems } from '../../../schema-items';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useCollectionState } from '../../../schema-settings/DataTemplates/hooks/useCollectionState';
@@ -61,6 +62,7 @@ export const ActionDesigner = (props) => {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const isAction = useLinkageAction();
+  const record = useRecord();
   const isPopupAction = ['create', 'update', 'view', 'customize:popup', 'duplicate'].includes(
     fieldSchema['x-action'] || '',
   );
@@ -248,7 +250,13 @@ export const ActionDesigner = (props) => {
           <SchemaSettings.ModalItem
             title={t('Duplicate mode')}
             components={{ Tree }}
-            scope={{ getEnableFieldTree, collectionName: name, getOnLoadData, getOnCheck }}
+            scope={{
+              getEnableFieldTree,
+              collectionName: fieldSchema['x-component-props']?.duplicateCollection || record?.__collection || name,
+              currentCollection: record?.__collection || name,
+              getOnLoadData,
+              getOnCheck,
+            }}
             schema={
               {
                 type: 'object',
@@ -266,7 +274,7 @@ export const ActionDesigner = (props) => {
                   },
                   collection: {
                     type: 'string',
-                    title: '{{ t("Collection") }}',
+                    title: '{{ t("Target collection") }}',
                     required: true,
                     description: t('If collection inherits, choose inherited collections as templates'),
                     default: '{{ collectionName }}',
@@ -276,6 +284,17 @@ export const ActionDesigner = (props) => {
                     'x-component-props': {
                       options: collectionList,
                     },
+                    'x-reactions': [
+                      {
+                        dependencies: ['.duplicateMode'],
+                        fulfill: {
+                          state: {
+                            disabled: `{{ $deps[0]==="quickDulicate" }}`,
+                            value: `{{ $deps[0]==="quickDulicate"? currentCollection:collectionName }}`,
+                          },
+                        },
+                      },
+                    ],
                   },
                   duplicateFields: {
                     type: 'array',
@@ -319,13 +338,14 @@ export const ActionDesigner = (props) => {
                 },
               } as ISchema
             }
-            onSubmit={({ duplicateMode, duplicateFields }) => {
+            onSubmit={({ duplicateMode, collection, duplicateFields }) => {
               const fields = Array.isArray(duplicateFields) ? duplicateFields : duplicateFields.checked || [];
               field.componentProps.duplicateMode = duplicateMode;
               field.componentProps.duplicateFields = fields;
               fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
               fieldSchema['x-component-props'].duplicateMode = duplicateMode;
               fieldSchema['x-component-props'].duplicateFields = fields;
+              fieldSchema['x-component-props'].duplicateCollection = collection;
               dn.emit('patch', {
                 schema: {
                   ['x-uid']: fieldSchema['x-uid'],
