@@ -14,6 +14,7 @@ import { CollectionManagerPane } from '../collection-manager';
 import { Icon } from '../icon';
 import { useCompile } from '../schema-component';
 import { BlockTemplatesPane } from '../schema-templates';
+import { useToken } from '../style';
 import { SystemSettingsPane } from '../system-settings';
 import { BuiltInPluginCard, PluginCard } from './Card';
 import { PluginManagerLink, SettingsCenterDropdown } from './PluginManagerLink';
@@ -110,8 +111,9 @@ const BuiltinPlugins = () => {
 };
 
 const MarketplacePlugins = () => {
+  const { token } = useToken();
   const { t } = useTranslation();
-  return <div style={{ fontSize: 18 }}>{t('Coming soon...')}</div>;
+  return <div style={{ fontSize: token.fontSizeXL, color: token.colorText }}>{t('Coming soon...')}</div>;
 };
 
 const PluginList = () => {
