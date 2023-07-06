@@ -1214,7 +1214,7 @@ SchemaSettings.EnableChildCollections = function EnableChildCollectionsItem(prop
             },
             linkageFromForm: {
               type: 'string',
-              title: "{{t('Linkage form form')}}",
+              title: "{{t('Linkage with form fields')}}",
               'x-visible': '{{isAssocationAdd}}',
               'x-decorator': 'FormItem',
               'x-component': ChildDynamicComponent,
