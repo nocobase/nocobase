@@ -31,9 +31,10 @@ const InternalExpiresSelect = (props) => {
   };
 
   const onDatePickerChange = (v: moment.Moment) => {
-    v = v.milliseconds(0).seconds(0);
-    const now = moment().milliseconds(0).seconds(0);
-    onChange(v === null ? undefined : v.diff(now, 'd') + 'd');
+    v = v.milliseconds(0).second(0);
+    const NOW = moment().milliseconds(0).seconds(0);
+    const value = `${v.diff(NOW, 'd')}d`;
+    onChange(value);
   };
 
   return (
@@ -47,6 +48,7 @@ const InternalExpiresSelect = (props) => {
           defaultValue={TOMORROW}
           onChange={onDatePickerChange}
           showToday={false}
+          allowClear={false}
         />
       ) : null}
     </Space>
