@@ -38,7 +38,6 @@ const getChildren = (
         key: option.name,
         value: option.name,
         label: compile(option.title),
-        children: [],
         isLeaf: false,
         field: option,
         depth,
@@ -93,7 +92,6 @@ export const useUserVariable = ({ schema, maxDepth = 3 }: { schema: any; maxDept
       label: t('Current user'),
       value: '$user',
       key: '$user',
-      children: [],
       isLeaf: false,
       field: {
         target: 'users',

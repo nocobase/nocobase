@@ -1,29 +1,30 @@
 import { css } from '@emotion/css';
-import { Field, createForm } from '@formily/core';
+import { createForm, Field } from '@formily/core';
 import { FieldContext, FormContext, useField } from '@formily/react';
 import { Space, Switch, Table, TableColumnProps, Tag, Tooltip } from 'antd';
 import React, { useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useCurrentAppInfo } from '../../appInfo';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { Action, useAttach, useCompile } from '../../schema-component';
-import {
-  ResourceActionContext,
-  ResourceActionProvider,
-  useResourceActionContext,
-  useResourceContext,
-} from '../ResourceActionProvider';
 import {
   isDeleteButtonDisabled,
   useBulkDestroyActionAndRefreshCM,
   useDestroyActionAndRefreshCM,
 } from '../action-hooks';
 import { useCollectionManager } from '../hooks/useCollectionManager';
+import {
+  ResourceActionContext,
+  ResourceActionProvider,
+  useResourceActionContext,
+  useResourceContext,
+} from '../ResourceActionProvider';
 import { AddCollectionField } from './AddFieldAction';
 import { EditCollectionField } from './EditFieldAction';
 import { OverridingCollectionField } from './OverridingCollectionField';
+import { collection } from './schemas/collectionFields';
 import { SyncFieldsAction } from './SyncFieldsAction';
 import { ViewCollectionField } from './ViewInheritedField';
-import { collection } from './schemas/collectionFields';
 
 const indentStyle = css`
   .ant-table {
@@ -269,6 +270,9 @@ export const CollectionFields = () => {
   const compile = useCompile();
   const field = useField<Field>();
   const { name } = useRecord();
+  const {
+    data: { database },
+  } = useCurrentAppInfo();
   const { getInterface, getInheritCollections, getCollection, getCurrentCollectionFields } = useCollectionManager();
   const form = useMemo(() => createForm(), []);
   const f = useAttach(form.createArrayField({ ...field.props, basePath: '' }));
@@ -403,7 +407,7 @@ export const CollectionFields = () => {
     }),
     [t],
   );
-  const addProps = { type: 'primary' };
+  const addProps = { type: 'primary', database };
   const syncProps = { type: 'primary' };
   return (
     <ResourceActionProvider {...resourceActionProps}>
