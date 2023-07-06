@@ -1,4 +1,5 @@
 import type { CollectionOptions } from '@nocobase/database';
+import { generateNTemplate } from '../locale';
 
 export default {
   namespace: 'api-keys',
@@ -53,27 +54,34 @@ export default {
     {
       name: 'expiresIn',
       type: 'string',
-      interface: 'select',
       uiSchema: {
         type: 'string',
-        title: '{{t("Expires")}}',
-        'x-component': 'Select',
+        title: generateNTemplate('Expires'),
+        'x-component': 'ExpiresSelect',
         enum: [
           {
-            label: '{{t("1 day")}}',
+            label: generateNTemplate('1 Day'),
             value: '1d',
           },
           {
-            label: '{{t("7 days")}}',
+            label: generateNTemplate('7 Days'),
             value: '7d',
           },
           {
-            label: '{{t("30 days")}}',
+            label: generateNTemplate('30 Days'),
             value: '30d',
           },
           {
-            label: '{{t("90 days")}}',
+            label: generateNTemplate('90 Days'),
             value: '90d',
+          },
+          {
+            label: generateNTemplate('Custom'),
+            value: 'custom',
+          },
+          {
+            label: generateNTemplate('Never'),
+            value: 'never',
           },
         ],
       },
