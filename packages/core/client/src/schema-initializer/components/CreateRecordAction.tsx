@@ -121,9 +121,18 @@ export const CreateRecordAction = observer(
   { displayName: 'CreateRecordAction' },
 );
 
-function getLinkageCollection(str, form) {
-  const data = parseVariables(str, { $form: form.values });
-  return data;
+function getLinkageCollection(str, form, field) {
+  const variablesCtx = { $form: form.values, $iteration: form.values };
+  if (str.includes('$iteration')) {
+    const path = field.path.segments.concat([]);
+    path.splice(-2);
+    str = str.replace('$iteration.', `$iteration.${path.join('.')}.`);
+    const data = parseVariables(str, variablesCtx);
+    return data;
+  } else {
+    const data = parseVariables(str, { $form: form.values });
+    return data;
+  }
 }
 export const CreateAction = observer(
   (props: any) => {
@@ -222,7 +231,7 @@ export const CreateAction = observer(
               danger={componentType === 'danger'}
               icon={icon}
               onClick={(info) => {
-                const collectionName = getLinkageCollection(linkageFromForm, form);
+                const collectionName = getLinkageCollection(linkageFromForm, form, field);
                 const targetCollection = inheritsCollections.find((v) => v.name === collectionName)
                   ? collectionName
                   : collection.name;

@@ -59,7 +59,7 @@ export const useIterationVariable = ({
   blockForm?: any;
   collectionField: any;
   operator?: any;
-  schema: any;
+  schema?: any;
   level?: number;
   rootCollection?: string;
 }) => {
