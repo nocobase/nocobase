@@ -10,4 +10,11 @@ export default {
   Translation: '译文',
   Sync: '同步',
   'Current language': '当前语言',
+  Keyword: '关键字',
+  All: '全部',
+  'No translation': '待翻译',
+  'Built-in files': '本地内置文件',
+  'User interfaces': '用户界面配置',
+  'Collections & fields': '数据表和字段',
+  'Please select the resources you want to synchronize': '请选择需要同步的资源',
 };

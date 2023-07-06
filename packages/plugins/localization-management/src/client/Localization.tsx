@@ -1,5 +1,7 @@
-import { SyncOutlined } from '@ant-design/icons';
+import { FilterOutlined, SyncOutlined } from '@ant-design/icons';
+import { createForm, Form } from '@formily/core';
 import {
+  FormProvider,
   Input,
   locale,
   SchemaComponent,
@@ -8,10 +10,10 @@ import {
   useResourceActionContext,
   useResourceContext,
 } from '@nocobase/client';
-import { Button, Card, message, Tag, Typography } from 'antd';
-import React from 'react';
+import { Button, Card, Checkbox, Divider, message, Popover, Tag, Typography } from 'antd';
+import React, { useMemo, useState } from 'react';
 import { useLocalTranslation } from './locale';
-import { localizationSchema } from './schemas/localization';
+import { filterSchema, localizationSchema } from './schemas/localization';
 const { Text } = Typography;
 
 const useDestroyTranslationAction = () => {
@@ -67,21 +69,105 @@ const Sync = () => {
   const { t } = useLocalTranslation();
   const { refresh } = useResourceActionContext();
   const { resource } = useResourceContext();
-  const [loading, setLoading] = React.useState(false);
+  const [loading, setLoading] = useState(false);
+  const plainOptions = ['local', 'ui', 'db'];
+  const [checkedList, setCheckedList] = useState<any[]>(plainOptions);
+  const [indeterminate, setIndeterminate] = useState(false);
+  const [checkAll, setCheckAll] = useState(true);
+  const onChange = (list: any[]) => {
+    setCheckedList(list);
+    setIndeterminate(!!list.length && list.length < plainOptions.length);
+    setCheckAll(list.length === plainOptions.length);
+  };
+
+  const onCheckAllChange = (e) => {
+    setCheckedList(e.target.checked ? plainOptions : []);
+    setIndeterminate(false);
+    setCheckAll(e.target.checked);
+  };
+
   return (
-    <Button
-      icon={<SyncOutlined />}
-      type="primary"
-      loading={loading}
-      onClick={async () => {
-        setLoading(true);
-        await resource.sync();
-        setLoading(false);
-        refresh();
-      }}
+    <Popover
+      placement="bottomRight"
+      content={
+        <>
+          <Checkbox indeterminate={indeterminate} onChange={onCheckAllChange} checked={checkAll}>
+            {t('All')}
+          </Checkbox>
+          <Divider style={{ margin: '5px 0' }} />
+          <Checkbox.Group onChange={onChange} value={checkedList}>
+            <Checkbox value="local">{t('Built-in files')}</Checkbox>
+            <br />
+            <Checkbox value="ui">{t('User interfaces')}</Checkbox>
+            <br />
+            <Checkbox value="db">{t('Collections & fields')}</Checkbox>
+          </Checkbox.Group>
+        </>
+      }
     >
-      {t('Sync')}
-    </Button>
+      <Button
+        icon={<SyncOutlined />}
+        type="primary"
+        loading={loading}
+        onClick={async () => {
+          if (!checkedList.length) {
+            return message.error(t('Please select the resources you want to synchronize'));
+          }
+          setLoading(true);
+          await resource.sync({
+            values: {
+              type: checkedList,
+            },
+          });
+          setLoading(false);
+          refresh();
+        }}
+      >
+        {t('Sync')}
+      </Button>
+    </Popover>
+  );
+};
+
+const Filter = () => {
+  const { t } = useLocalTranslation();
+  const { run, refresh } = useResourceActionContext();
+  const form = useMemo<Form>(
+    () =>
+      createForm({
+        initialValues: {
+          hasTranslation: true,
+        },
+      }),
+    [],
+  );
+  const useSearch = () => {
+    return {
+      run: () =>
+        run({
+          ...form.values,
+        }),
+    };
+  };
+  const useReset = () => {
+    return {
+      run: () => {
+        form.reset();
+        run();
+      },
+    };
+  };
+  return (
+    <Popover
+      placement="right"
+      content={
+        <FormProvider form={form}>
+          <SchemaComponent schema={filterSchema} scope={{ t, useSearch, useReset }} />
+        </FormProvider>
+      }
+    >
+      <Button icon={<FilterOutlined />}>{t('Filter')}</Button>
+    </Popover>
   );
 };
 
@@ -104,7 +190,7 @@ export const Localization = () => {
     <Card bordered={false}>
       <SchemaComponent
         schema={localizationSchema}
-        components={{ TranslationField, CurrentLang, Sync }}
+        components={{ TranslationField, CurrentLang, Sync, Filter }}
         scope={{
           t,
           useDestroyTranslationAction,

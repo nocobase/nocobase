@@ -77,10 +77,7 @@ export const localizationSchema: ISchema = {
           type: 'void',
           title: '{{t("Filter")}}',
           'x-align': 'left',
-          'x-component': 'Action',
-          'x-component-props': {
-            icon: 'FilterOutlined',
-          },
+          'x-component': 'Filter',
         },
         deleteTranslation: {
           type: 'void',
@@ -249,6 +246,95 @@ export const localizationSchema: ISchema = {
                 // },
               },
             },
+          },
+        },
+      },
+    },
+  },
+};
+
+export const filterSchema: ISchema = {
+  type: 'object',
+  properties: {
+    search: {
+      type: 'void',
+      'x-decorator': 'FormItem',
+      'x-component': 'Input.Group',
+      'x-component-props': {
+        compact: true,
+      },
+      properties: {
+        searchType: {
+          type: 'string',
+          'x-component': 'Select',
+          'x-component-props': {
+            showSearch: false,
+            style: {
+              width: '30%',
+            },
+          },
+          default: 'text',
+          enum: [
+            { label: "{{t('Text')}}", value: 'text' },
+            { label: "{{t('Translation')}}", value: 'translation' },
+          ],
+        },
+        keyword: {
+          type: 'string',
+          'x-component': 'Input',
+          'x-component-props': {
+            placeholder: "{{t('Keyword')}}",
+            allowClear: true,
+            style: {
+              width: '70%',
+            },
+          },
+        },
+      },
+    },
+    action: {
+      type: 'void',
+      'x-decorator': 'FormItem',
+      'x-component': 'Space',
+      properties: {
+        hasTranslation: {
+          type: 'boolean',
+          'x-component': 'Radio.Group',
+          'x-component-props': {
+            optionType: 'button',
+            defaultValue: true,
+          },
+          enum: [
+            { label: "{{t('All')}}", value: true },
+            { label: "{{t('No translation')}}", value: false },
+          ],
+          'x-reactions': {
+            dependencies: ['.searchType'],
+            fulfill: {
+              state: {
+                disabled: '{{$deps[0] === "translation"}}',
+              },
+            },
+          },
+        },
+        reset: {
+          type: 'void',
+          title: '{{t("Reset")}}',
+          'x-component': 'Action',
+          'x-component-props': {
+            style: {
+              marginLeft: 20,
+            },
+            useAction: '{{ useReset }}',
+          },
+        },
+        submit: {
+          type: 'void',
+          title: '{{t("Submit")}}',
+          'x-component': 'Action',
+          'x-component-props': {
+            type: 'primary',
+            useAction: '{{ useSearch }}',
           },
         },
       },

@@ -43,6 +43,14 @@ export default {
         required: true,
       },
     },
+    {
+      interface: 'm2o',
+      type: 'belongsTo',
+      name: 'text',
+      target: 'localizationTexts',
+      targetKey: 'id',
+      foreignKey: 'textId',
+    },
   ],
   indexes: [
     {

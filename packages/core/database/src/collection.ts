@@ -13,8 +13,8 @@ import { Database } from './database';
 import { BelongsToField, Field, FieldOptions, HasManyField } from './fields';
 import { Model } from './model';
 import { Repository } from './repository';
-import { checkIdentifier, md5, snakeCase } from './utils';
 import { AdjacencyListRepository } from './tree-repository/adjacency-list-repository';
+import { checkIdentifier, md5, snakeCase } from './utils';
 
 export type RepositoryType = typeof Repository;
 
@@ -398,7 +398,6 @@ export class Collection<
   updateOptions(options: CollectionOptions, mergeOptions?: any) {
     let newOptions = lodash.cloneDeep(options);
     newOptions = merge(this.options, newOptions, mergeOptions);
-
     this.context.database.emit('beforeUpdateCollection', this, newOptions);
     this.options = newOptions;
 
@@ -408,7 +407,6 @@ export class Collection<
     }
 
     this.context.database.emit('afterUpdateCollection', this);
-
     return this;
   }
 

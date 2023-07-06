@@ -794,8 +794,8 @@ export const useRecordCollectionDataSourceItems = (
       title: t('Duplicate template'),
       children: templates.map((template) => {
         const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
-          ? `${template?.name} ${t('(Fields only)')}`
-          : template?.name;
+          ? `${t(template?.name)} ${t('(Fields only)')}`
+          : t(template?.name);
         return {
           type: 'item',
           mode: 'copy',

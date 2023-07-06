@@ -36,6 +36,7 @@ export default {
         title: '{{t("Role name")}}',
         'x-component': 'Input',
       },
+      translation: true,
     },
     {
       type: 'boolean',
