@@ -1,7 +1,7 @@
 import { DownOutlined, PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
-import { Button, Dropdown, MenuProps } from 'antd';
+import { Button, Dropdown, MenuProps, message } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useDesignable } from '../../';
 import { useACLRolesCheck, useRecordPkValue } from '../../acl/ACLProvider';
@@ -234,8 +234,12 @@ export const CreateAction = observer(
                 const collectionName = getLinkageCollection(linkageFromForm, form, field);
                 const targetCollection = inheritsCollections.find((v) => v.name === collectionName)
                   ? collectionName
-                  : collection.name;
-                onClick?.(targetCollection);
+                  : null;
+                if (targetCollection) {
+                  onClick?.(targetCollection);
+                } else {
+                  message.error(compile('Incorrect usage'));
+                }
               }}
               style={{
                 display: !designable && field?.data?.hidden && 'none',

@@ -618,4 +618,5 @@ export default {
   "Current form":"現在のフォーム",
   "Current object":"現在のオブジェクト",
   "Linkage with form fields":"フォームデータから連動",
+  "Incorrect usage":"使い方が間違っている"
 }
