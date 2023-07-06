@@ -33,9 +33,7 @@ export class JwtService {
     if (opt.expiresIn === 'never') {
       opt.expiresIn = '1000y';
     }
-    return jwt.sign(payload, this.secret(), {
-      ...opt,
-    });
+    return jwt.sign(payload, this.secret(), opt);
   }
 
   decode(token: string): Promise<any> {
