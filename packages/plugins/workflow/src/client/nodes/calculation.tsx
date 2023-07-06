@@ -13,18 +13,24 @@ import { lang, NAMESPACE } from '../locale';
 import { BaseTypeSets, useWorkflowVariableOptions } from '../variable';
 
 function useDynamicExpressionCollectionFieldMatcher(field): boolean {
-  const { getCollectionFields } = useCollectionManager();
-  if (field.type !== 'belongsTo') {
+  if (!['belongsTo', 'hasOne'].includes(field.type)) {
     return false;
   }
 
-  const fields = getCollectionFields(field.target);
+  if (this.getCollection(field.collectionName)?.template === 'expression') {
+    return true;
+  }
+
+  const fields = this.getCollectionFields(field.target);
   return fields.some((f) => f.interface === 'expression');
 }
 
 const DynamicConfig = ({ value, onChange }) => {
   const { t } = useTranslation();
-  const scope = useWorkflowVariableOptions({ types: [useDynamicExpressionCollectionFieldMatcher] });
+  const { getCollectionFields, getCollection } = useCollectionManager();
+  const scope = useWorkflowVariableOptions({
+    types: [useDynamicExpressionCollectionFieldMatcher.bind({ getCollectionFields, getCollection })],
+  });
 
   return (
     <FormLayout layout="vertical">
@@ -53,10 +59,6 @@ const DynamicConfig = ({ value, onChange }) => {
     </FormLayout>
   );
 };
-
-function useWorkflowVariableEntityOptions() {
-  return useWorkflowVariableOptions({ types: [{ type: 'reference', options: { collection: '*', entity: true } }] });
-}
 
 export default {
   title: `{{t("Calculation", { ns: "${NAMESPACE}" })}}`,
@@ -93,10 +95,13 @@ export default {
       type: 'string',
       title: `{{t("Calculation expression", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
-      'x-component': 'Variable.TextArea',
-      'x-component-props': {
-        scope: '{{useWorkflowVariableOptions}}',
-      },
+      'x-component': 'CalculationExpression',
+      // NOTE: can not use Variable.Input and scope directly as below,
+      //       because the scope will be cached.
+      // 'x-component': 'Variable.Input',
+      // 'x-component-props': {
+      //   scope: '{{useWorkflowVariableOptions()}}',
+      // },
       ['x-validator'](value, rules, { form }) {
         const { values } = form;
         const { evaluate } = evaluators.get(values.engine) as Evaluator;
@@ -132,15 +137,15 @@ export default {
       type: 'string',
       title: `{{t("Variable datasource", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
-      'x-component': 'Variable.Input',
+      'x-component': 'ScopeSelect',
       'x-component-props': {
-        scope: '{{useWorkflowVariableEntityOptions}}',
+        changeOnSelect: true,
       },
       'x-reactions': {
         dependencies: ['dynamic'],
         fulfill: {
           state: {
-            visible: '{{$deps[0] !== false}}',
+            visible: '{{$deps[0]}}',
           },
         },
       },
@@ -148,11 +153,20 @@ export default {
   },
   view: {},
   scope: {
-    useWorkflowVariableOptions,
-    useWorkflowVariableEntityOptions,
     renderEngineReference,
   },
   components: {
+    CalculationExpression(props) {
+      const scope = useWorkflowVariableOptions();
+
+      return <Variable.TextArea scope={scope} {...props} />;
+    },
+    ScopeSelect(props) {
+      const scope = useWorkflowVariableOptions({
+        types: [{ type: 'reference', options: { collection: '*', entity: true } }],
+      });
+      return <Variable.Input scope={scope} {...props} />;
+    },
     CalculationResult({ dataSource }) {
       const { execution } = useFlowContext();
       if (!execution) {
@@ -178,7 +192,7 @@ export default {
     RadioWithTooltip,
     DynamicConfig,
   },
-  useVariables(current, options) {
+  useVariables({ id, title }, options) {
     const { types } = options ?? {};
     if (
       types &&
@@ -186,9 +200,10 @@ export default {
     ) {
       return null;
     }
-    return [
-      // { key: '', value: '', label: lang('Calculation result') }
-    ];
+    return {
+      value: id,
+      label: title,
+    };
   },
   useInitializers(node): SchemaInitializerItemOptions {
     return {

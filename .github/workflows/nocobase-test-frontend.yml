@@ -39,4 +39,4 @@ jobs:
           cache: 'yarn'
       - run: yarn install
       - run: yarn test:client
-    timeout-minutes: 15
+    timeout-minutes: 30

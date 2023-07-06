@@ -21,11 +21,15 @@
     "antd": "^4.24.8",
     "@ant-design/icons": "^4.8.0",
     "@nocobase/auth": "0.10.0-alpha.5",
+    "@nocobase/test": "0.10.0-alpha.5",
+    "@types/cron": "^2.0.1"
+  },
+  "dependencies": {
     "@nocobase/actions": "0.10.0-alpha.5",
     "@nocobase/client": "0.10.0-alpha.5",
     "@nocobase/database": "0.10.0-alpha.5",
     "@nocobase/server": "0.10.0-alpha.5",
-    "@nocobase/test": "0.10.0-alpha.5"
+    "cron": "^2.3.1"
   },
   "displayName": "Authentication",
   "displayName.zh-CN": "用户认证",

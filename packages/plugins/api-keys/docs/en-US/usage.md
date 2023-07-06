@@ -16,4 +16,4 @@ curl '{domain}/api/roles:check' -H 'Authorization: Bearer {API key}'
 
 ## Deleting an API key
 
-Currently, deleting an API key does not make it invalid. Please keep your API key safe.
+After deleting the API key, it will no longer be usable.
