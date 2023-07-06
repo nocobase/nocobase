@@ -58,11 +58,14 @@ export class JwtService {
     if (!this.blacklist) {
       return null;
     }
-    const { exp } = await this.decode(token);
-
-    return this.blacklist.add({
-      token,
-      expiration: new Date(exp * 1000).toString(),
-    });
+    try {
+      const { exp } = await this.decode(token);
+      return this.blacklist.add({
+        token,
+        expiration: new Date(exp * 1000).toString(),
+      });
+    } catch {
+      return null;
+    }
   }
 }
