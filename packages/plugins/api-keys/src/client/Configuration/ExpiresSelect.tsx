@@ -1,24 +1,28 @@
 import { css } from '@emotion/css';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
-import { useCompile, useRecord } from '@nocobase/client';
+import { useRecord } from '@nocobase/client';
 import { useBoolean } from 'ahooks';
 import { DatePicker, Select, Space, Typography } from 'antd';
 import moment from 'moment';
 import React, { useMemo } from 'react';
 import { useTranslation } from '../locale';
 
+const TOMORROW = moment().add(1, 'days');
+
+const spaceCSS = css`
+  width: 100%;
+  & > .ant-space-item {
+    flex: 1;
+  }
+`;
+
 const InternalExpiresSelect = (props) => {
   const { onChange } = props;
   const [isCustom, { toggle: toggleShowDatePicker, setFalse }] = useBoolean();
-  const compile = useCompile();
-
-  const options = useMemo(() => {
-    return compile(props.options);
-  }, [props.options]);
 
   const onSelectChange = (v) => {
     if (v === 'custom') {
-      onChange(undefined);
+      onChange('1d');
       return toggleShowDatePicker();
     } else {
       setFalse();
@@ -33,21 +37,14 @@ const InternalExpiresSelect = (props) => {
   };
 
   return (
-    <Space
-      align="center"
-      className={css`
-        width: 100%;
-        & > .ant-space-item {
-          flex: 1;
-        }
-      `}
-    >
-      <Select {...props} value={isCustom ? 'custom' : props.value} options={options} onChange={onSelectChange}></Select>
+    <Space className={spaceCSS}>
+      <Select {...props} value={isCustom ? 'custom' : props.value} onChange={onSelectChange}></Select>
       {isCustom ? (
         <DatePicker
           disabledDate={(time) => {
             return time.isSameOrBefore();
           }}
+          defaultValue={TOMORROW}
           onChange={onDatePickerChange}
           showToday={false}
         />
@@ -57,14 +54,15 @@ const InternalExpiresSelect = (props) => {
 };
 
 const ReadPretty = () => {
-  const record = useRecord();
+  const { expiresIn, createdAt } = useRecord();
   const { t } = useTranslation();
   const expiresDate = useMemo(() => {
-    if (record?.expiresIn === 'never') return t('Never expires');
-    return moment(record?.createdAt)
-      .add(record?.expiresIn?.replace('d', '') || 0, 'days')
+    if (expiresIn === 'never') return t('Never expires');
+
+    return moment(createdAt)
+      .add(expiresIn?.replace('d', '') || 0, 'days')
       .format('YYYY-MM-DD HH:mm:ss');
-  }, [record?.createdAt, record?.expiresIn]);
+  }, [createdAt, expiresIn]);
 
   return <Typography.Text>{expiresDate}</Typography.Text>;
 };
