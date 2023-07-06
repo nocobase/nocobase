@@ -22,14 +22,9 @@ export const nodesOptions = {
     const result: VariableOption[] = [];
     upstreams.forEach((node) => {
       const instruction = instructions.get(node.type);
-      const subOptions = instruction.useVariables?.(node, options);
-      if (subOptions) {
-        result.push({
-          key: node.id.toString(),
-          value: node.id.toString(),
-          label: node.title ?? `#${node.id}`,
-          children: subOptions,
-        });
+      const subOption = instruction.useVariables?.(node, options);
+      if (subOption) {
+        result.push(subOption);
       }
     });
     return result;

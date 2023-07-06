@@ -2,14 +2,14 @@ import { CloseOutlined, DeleteOutlined } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
 import { ISchema, useForm } from '@formily/react';
 import {
-    ActionContextProvider,
-    SchemaComponent,
-    SchemaInitializerItemOptions,
-    useAPIClient,
-    useActionContext,
-    useCompile,
-    useRequest,
-    useResourceActionContext,
+  ActionContextProvider,
+  SchemaComponent,
+  SchemaInitializerItemOptions,
+  useAPIClient,
+  useActionContext,
+  useCompile,
+  useRequest,
+  useResourceActionContext,
 } from '@nocobase/client';
 import { Registry, parse, str2moment } from '@nocobase/utils/client';
 import { Alert, Button, Dropdown, Input, Modal, Tag, message } from 'antd';
@@ -21,7 +21,7 @@ import { NodeDescription } from '../components/NodeDescription';
 import { JobStatusOptionsMap } from '../constants';
 import { NAMESPACE, lang } from '../locale';
 import { nodeBlockClass, nodeCardClass, nodeClass, nodeJobButtonClass, nodeMetaClass } from '../style';
-import { VariableOptions } from '../variable';
+import { VariableOption, VariableOptions } from '../variable';
 import aggregate from './aggregate';
 import calculation from './calculation';
 import condition from './condition';
@@ -47,7 +47,7 @@ export interface Instruction {
   components?: { [key: string]: any };
   component?(props): JSX.Element;
   endding?: boolean;
-  useVariables?(node, options?): VariableOptions;
+  useVariables?(node, options?): VariableOption;
   useScopeVariables?(node, options?): VariableOptions;
   useInitializers?(node): SchemaInitializerItemOptions | null;
   initializers?: { [key: string]: any };
