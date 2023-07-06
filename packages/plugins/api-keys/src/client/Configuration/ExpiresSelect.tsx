@@ -9,7 +9,7 @@ import { useTranslation } from '../locale';
 
 const InternalExpiresSelect = (props) => {
   const { onChange } = props;
-  const [isCustom, { toggle: toggleShowDatePicker }] = useBoolean();
+  const [isCustom, { toggle: toggleShowDatePicker, setFalse }] = useBoolean();
   const compile = useCompile();
 
   const options = useMemo(() => {
@@ -21,7 +21,7 @@ const InternalExpiresSelect = (props) => {
       onChange(undefined);
       return toggleShowDatePicker();
     } else {
-      toggleShowDatePicker();
+      setFalse();
       onChange(v);
     }
   };
@@ -65,6 +65,7 @@ const ReadPretty = () => {
       .add(record?.expiresIn?.replace('d', '') || 0, 'days')
       .format('YYYY-MM-DD HH:mm:ss');
   }, [record?.createdAt, record?.expiresIn]);
+
   return <Typography.Text>{expiresDate}</Typography.Text>;
 };
 
