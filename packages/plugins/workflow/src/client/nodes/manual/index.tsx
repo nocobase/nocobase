@@ -85,7 +85,7 @@ export default {
     ModeConfig,
     AssigneesSelect,
   },
-  useVariables({ config }, { types }) {
+  useVariables({ id, title, config }, { types }) {
     const compile = useCompile();
     const { getCollectionFields } = useCollectionManager();
     const formKeys = Object.keys(config.forms ?? {});
@@ -97,27 +97,33 @@ export default {
       .map((formKey) => {
         const form = config.forms[formKey];
 
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        const options = getCollectionFieldOptions({
+        const fieldsOptions = getCollectionFieldOptions({
           fields: form.collection?.fields,
           collection: form.collection,
           types,
           compile,
           getCollectionFields,
         });
-        return options.length
+        const label = compile(form.title) || formKey;
+        return fieldsOptions.length
           ? {
               key: formKey,
               value: formKey,
-              label: form.title || formKey,
-              title: form.title || formKey,
-              children: options,
+              label,
+              title: label,
+              children: fieldsOptions,
             }
           : null;
       })
       .filter(Boolean);
 
-    return options.length ? options : null;
+    return options.length
+      ? {
+          value: `${id}`,
+          label: title,
+          children: options,
+        }
+      : null;
   },
   useInitializers(node): SchemaInitializerItemOptions | null {
     const { getCollection } = useCollectionManager();
