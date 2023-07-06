@@ -100,6 +100,7 @@ export const configurationSchema: ISchema = {
                   'x-decorator': 'Form',
                   'x-component': 'Action.Modal',
                   'x-component-props': {
+                    maskClosable: false,
                     style: {
                       maxWidth: '520px',
                       width: '100%',
