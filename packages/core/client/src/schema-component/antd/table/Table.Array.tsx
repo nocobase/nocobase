@@ -20,11 +20,6 @@ const isColumnComponent = (schema: Schema) => {
   return schema['x-component']?.endsWith('.Column') > -1;
 };
 
-const useScope = (key: any) => {
-  const scope = useContext(SchemaExpressionScopeContext);
-  return scope[key] !== false;
-};
-
 const useTableColumns = () => {
   const field = useField<ArrayField>();
   const schema = useFieldSchema();
@@ -33,7 +28,7 @@ const useTableColumns = () => {
 
   const columns = schema
     .reduceProperties((buf, s) => {
-      if (isColumnComponent(s) && scope[s['x-visible'] as unknown as string]) {
+      if (isColumnComponent(s) && scope[s['x-visible'] as unknown as string] !== false) {
         return buf.concat([s]);
       }
       return buf;
