@@ -32,7 +32,7 @@ describe('workflow > instructions > request', () => {
         ctx.withoutDataWrapping = true;
         ctx.body = {
           meta: { title: ctx.query.title },
-          data: { title: ctx.request.body.title },
+          data: { title: ctx.request.body['title'] },
         };
       }
       next();
