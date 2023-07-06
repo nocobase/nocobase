@@ -18,6 +18,7 @@ import {
 import { Collection } from './collection';
 import { Database } from './database';
 import mustHaveFilter from './decorators/must-have-filter-decorator';
+import injectTargetCollection from './decorators/target-collection-decorator';
 import { transactionWrapperBuilder } from './decorators/transaction-decorator';
 import { EagerLoadingTree } from './eager-loading/eager-loading-tree';
 import { ArrayFieldRepository } from './field-repository/array-field-repository';
@@ -601,6 +602,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
    */
   @transaction()
   @mustHaveFilter()
+  @injectTargetCollection
   async update(options: UpdateOptions & { forceUpdate?: boolean }) {
     if (Array.isArray(options.values)) {
       return this.updateMany({

@@ -95,9 +95,9 @@ pgOnly()('Inherited Collection', () => {
     expect(child1ViaObject1.get('__collection')).toBe('child');
 
     await db.getRepository<BelongsToRepository>('users.assoc', user1.get('id')).update({
-      targetCollection: 'child',
       values: {
         childName: 'child2',
+        __collection: 'child',
       },
     });
 
@@ -247,6 +247,21 @@ pgOnly()('Inherited Collection', () => {
     });
 
     expect(child2.get('childName')).toBe('child2');
+
+    await db.getRepository<HasManyRepository>('object.assocs', object1.id).update({
+      filterByTk: child1.get('id'),
+      values: {
+        __collection: 'child',
+        childName: 'child3',
+      },
+    });
+
+    const child3 = await db.getRepository<HasManyRepository>('object.assocs', object1.id).findOne({
+      filterByTk: child1.get('id'),
+      targetCollection: 'child',
+    });
+
+    expect(child3.get('childName')).toBe('child3');
   });
 
   it('should update overridden multiple select field', async () => {

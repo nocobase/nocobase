@@ -1,5 +1,6 @@
 import lodash from 'lodash';
 import { SingleAssociationAccessors, Transactionable } from 'sequelize';
+import injectTargetCollection from '../decorators/target-collection-decorator';
 import { Model } from '../model';
 import { Appends, Except, Fields, Filter, TargetKey, UpdateOptions } from '../repository';
 import { updateModelByValues } from '../update-associations';
@@ -85,6 +86,7 @@ export abstract class SingleRelationRepository extends RelationRepository {
   }
 
   @transaction()
+  @injectTargetCollection
   async update(options: UpdateOptions): Promise<any> {
     const transaction = await this.getTransaction(options);
 

@@ -1,4 +1,5 @@
 import { HasOne, MultiAssociationAccessors, Sequelize, Transaction, Transactionable } from 'sequelize';
+import injectTargetCollection from '../decorators/target-collection-decorator';
 import {
   CommonFindOptions,
   CountOptions,
@@ -125,6 +126,7 @@ export abstract class MultipleRelationRepository extends RelationRepository {
   }
 
   @transaction()
+  @injectTargetCollection
   async update(options?: UpdateOptions): Promise<any> {
     const transaction = await this.getTransaction(options);
 
