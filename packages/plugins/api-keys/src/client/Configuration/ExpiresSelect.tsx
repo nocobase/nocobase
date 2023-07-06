@@ -42,8 +42,8 @@ const InternalExpiresSelect = (props) => {
       <Select {...props} value={isCustom ? 'custom' : props.value} onChange={onSelectChange}></Select>
       {isCustom ? (
         <DatePicker
-          disabledDate={(time) => {
-            return time.isSameOrBefore();
+          disabledDate={(date: any) => {
+            return date.isSameOrBefore();
           }}
           defaultValue={TOMORROW}
           onChange={onDatePickerChange}
