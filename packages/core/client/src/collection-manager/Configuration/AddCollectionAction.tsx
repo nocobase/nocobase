@@ -13,7 +13,7 @@ import { useResourceActionContext, useResourceContext } from '../ResourceActionP
 import { useCancelAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
 import * as components from './components';
-import { TemplateSummay } from './components/TemplateSummay';
+import { TemplateSummary } from './components/TemplateSummary';
 import { templateOptions } from './templates';
 
 const getSchema = (schema, category, compile): ISchema => {
@@ -290,7 +290,7 @@ export const AddCollectionAction = (props) => {
         </Dropdown>
         <SchemaComponent
           schema={schema}
-          components={{ ...components, ArrayTable, TemplateSummay }}
+          components={{ ...components, ArrayTable, TemplateSummay: TemplateSummary }}
           scope={{
             getContainer,
             useCancelAction,

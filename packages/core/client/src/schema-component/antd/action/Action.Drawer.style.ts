@@ -12,7 +12,7 @@ export const useStyles = genStyleHook('nb-action-drawer', (token) => {
       '&.reset': {
         '&.nb-action-popup': {
           '.ant-drawer-header': { display: 'none' },
-          '.ant-drawer-body': { paddingTop: token.paddingSM },
+          '.ant-drawer-body': { paddingTop: token.paddingContentVerticalLG },
         },
         '&.nb-record-picker-selector': {
           '.nb-block-item': {
