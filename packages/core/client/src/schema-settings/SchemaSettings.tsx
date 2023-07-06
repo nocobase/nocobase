@@ -47,6 +47,7 @@ import {
   SchemaComponentContext,
   SchemaComponentOptions,
   useAPIClient,
+  useBlockRequestContext,
   useCollection,
   useCollectionManager,
   useCompile,
@@ -1180,6 +1181,7 @@ SchemaSettings.EnableChildCollections = function EnableChildCollectionsItem(prop
   const allowAddToCurrent = fieldSchema?.['x-allow-add-to-current'];
   const form = useForm();
   const { getCollectionJoinField } = useCollectionManager();
+  const ctx = useBlockRequestContext();
   const collectionField = getCollectionJoinField(fieldSchema?.parent?.['x-collection-field']) || {};
   const isAssocationAdd = fieldSchema?.parent?.['x-component'] === 'CollectionField';
   return (
@@ -1212,13 +1214,14 @@ SchemaSettings.EnableChildCollections = function EnableChildCollectionsItem(prop
             },
             linkageFromForm: {
               type: 'string',
-              title: "{{t('Linkage form form')}}",
+              title: "{{t('Linkage with form fields')}}",
               'x-visible': '{{isAssocationAdd}}',
               'x-decorator': 'FormItem',
               'x-component': ChildDynamicComponent,
               'x-component-props': {
-                collectionName: collectionField?.collectionName || collectionName,
+                rootCollection: ctx.props.collection || ctx.props.resource,
                 form,
+                collectionField,
               },
               default: fieldSchema?.['x-component-props']?.['linkageFromForm'],
             },
