@@ -1,16 +1,16 @@
 {
   "name": "@nocobase/plugin-auth",
-  "version": "0.10.0-alpha.5",
+  "version": "0.10.1-alpha.1",
   "main": "lib/server/index.js",
   "devDependencies": {
-    "@nocobase/test": "0.10.0-alpha.5",
+    "@nocobase/test": "0.10.1-alpha.1",
     "@types/cron": "^2.0.1"
   },
   "dependencies": {
-    "@nocobase/actions": "0.10.0-alpha.5",
-    "@nocobase/client": "0.10.0-alpha.5",
-    "@nocobase/database": "0.10.0-alpha.5",
-    "@nocobase/server": "0.10.0-alpha.5",
+    "@nocobase/actions": "0.10.1-alpha.1",
+    "@nocobase/client": "0.10.1-alpha.1",
+    "@nocobase/database": "0.10.1-alpha.1",
+    "@nocobase/server": "0.10.1-alpha.1",
     "cron": "^2.3.1"
   },
   "displayName": "Authentication",
