@@ -14,7 +14,9 @@
     "react",
     "react-hooks",
     "prettier",
-    "promise"
+    "promise",
+    "jest-dom",
+    "testing-library"
     //"import"
   ],
   "globals": {
