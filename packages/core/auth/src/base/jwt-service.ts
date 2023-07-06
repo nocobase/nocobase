@@ -32,7 +32,13 @@ export class JwtService {
   }
 
   sign(payload: SignPayload, options?: SignOptions) {
-    return jwt.sign(payload, this.secret(), { expiresIn: this.expiresIn(), ...options });
+    const opt = { expiresIn: this.expiresIn(), ...options };
+    if (opt.expiresIn === 'never') {
+      opt.expiresIn = '1000y';
+    }
+    return jwt.sign(payload, this.secret(), {
+      ...opt,
+    });
   }
 
   decode(token: string): Promise<any> {
