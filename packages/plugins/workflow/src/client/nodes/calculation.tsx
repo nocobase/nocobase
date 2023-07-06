@@ -18,15 +18,19 @@ function useDynamicExpressionCollectionFieldMatcher(field): boolean {
     return false;
   }
 
+  if (this.getCollection(field.collectionName)?.template === 'expression') {
+    return true;
+  }
+
   const fields = this.getCollectionFields(field.target);
   return fields.some((f) => f.interface === 'expression');
 }
 
 const DynamicConfig = ({ value, onChange }) => {
   const { t } = useTranslation();
-  const { getCollectionFields } = useCollectionManager();
+  const { getCollectionFields, getCollection } = useCollectionManager();
   const scope = useWorkflowVariableOptions({
-    types: [useDynamicExpressionCollectionFieldMatcher.bind({ getCollectionFields })],
+    types: [useDynamicExpressionCollectionFieldMatcher.bind({ getCollectionFields, getCollection })],
   });
 
   return (
@@ -189,7 +193,7 @@ export default {
     RadioWithTooltip,
     DynamicConfig,
   },
-  useVariables(current, options) {
+  useVariables({ id, title }, options) {
     const { types } = options ?? {};
     if (
       types &&
@@ -197,9 +201,10 @@ export default {
     ) {
       return null;
     }
-    return [
-      // { key: '', value: '', label: lang('Calculation result') }
-    ];
+    return {
+      value: id,
+      label: title,
+    };
   },
   useInitializers(node): SchemaInitializerItemOptions {
     return {
