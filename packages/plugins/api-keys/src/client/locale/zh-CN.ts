@@ -10,6 +10,7 @@ const locale = {
   'Created at': '创建时间',
   'Add API key': '添加 API key',
   Never: '永不',
+  Custom: '自定义',
   'Never expires': '永不过期',
   '1 Day': '1 天',
   '7 Days': '7 天',
