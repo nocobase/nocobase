@@ -26,7 +26,7 @@ export default class WorkflowPlugin extends Plugin {
   instructions: Registry<Instruction> = new Registry();
   triggers: Registry<Trigger> = new Registry();
   functions: Registry<CustomFunction> = new Registry();
-  private executing: ExecutionModel | null = null;
+  private executing = false;
   private pending: Pending[] = [];
   private events: [WorkflowModel, any, { context?: any }][] = [];
 
@@ -253,9 +253,6 @@ export default class WorkflowPlugin extends Plugin {
           { transaction },
         );
 
-        const executed = await workflow.countExecutions({ transaction });
-
-        // NOTE: not to trigger afterUpdate hook here
         await workflow.increment('executed', { transaction });
 
         await (<typeof WorkflowModel>workflow.constructor).increment('allExecuted', {
@@ -301,6 +298,8 @@ export default class WorkflowPlugin extends Plugin {
       return;
     }
 
+    this.executing = true;
+
     let next: Pending | null = null;
     // resuming has high priority
     if (this.pending.length) {
@@ -310,20 +309,21 @@ export default class WorkflowPlugin extends Plugin {
         filter: {
           status: EXECUTION_STATUS.QUEUEING,
         },
+        appends: ['workflow.enabled'],
         sort: 'createdAt',
       })) as ExecutionModel;
-      if (execution) {
+      if (execution && execution.workflow.enabled) {
         next = [execution];
       }
     }
     if (next) {
       this.process(...next);
+    } else {
+      this.executing = false;
     }
   }
 
   private async process(execution: ExecutionModel, job?: JobModel) {
-    this.executing = execution;
-
     if (execution.status === EXECUTION_STATUS.QUEUEING) {
       await execution.update({ status: EXECUTION_STATUS.STARTED });
     }
@@ -341,7 +341,7 @@ export default class WorkflowPlugin extends Plugin {
       this.getLogger(execution.workflowId).error(`execution (${execution.id}) error: ${err.message}`, err);
     }
 
-    this.executing = null;
+    this.executing = false;
 
     this.dispatch();
   }
