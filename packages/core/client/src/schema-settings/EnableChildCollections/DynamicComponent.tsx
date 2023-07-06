@@ -13,7 +13,7 @@ export const ChildDynamicComponent = observer(
     const formVariabele = useFormVariable({ blockForm: form, rootCollection });
     const iterationVariabele = useIterationVariable({
       blockForm: form,
-      collectionField,
+      currentCollection: collectionField.collectionName,
       rootCollection,
     });
 
