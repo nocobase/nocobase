@@ -3,9 +3,11 @@ import { Registry } from '@nocobase/utils';
 import { Instruction } from '.';
 import { Processor } from '..';
 import { JOB_STATUS } from '../constants';
-import FlowNodeModel from '../models/FlowNode';
+import type { FlowNodeModel } from '../types';
 
-export const calculators = new Registry<Function>();
+type Comparer = (a: any, b: any) => boolean;
+
+export const calculators = new Registry<Comparer>();
 
 // built-in functions
 function equal(a, b) {
@@ -92,7 +94,9 @@ type CalculationGroup = {
 type Calculation = CalculationItem | CalculationGroup;
 
 function calculate(calculation: CalculationItem = {}) {
-  let fn: Function;
+  type NewType = Comparer;
+
+  let fn: NewType;
   if (!(calculation.calculator && (fn = calculators.get(calculation.calculator)))) {
     throw new Error(`no calculator function registered for "${calculation.calculator}"`);
   }

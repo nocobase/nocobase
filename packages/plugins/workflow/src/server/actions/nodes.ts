@@ -1,6 +1,6 @@
 import { Context, utils } from '@nocobase/actions';
 import { MultipleRelationRepository, Op } from '@nocobase/database';
-import WorkflowModel from '../models/Workflow';
+import type { WorkflowModel } from '../types';
 
 export async function create(context: Context, next) {
   const { db } = context;
