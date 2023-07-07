@@ -3,7 +3,7 @@ import { parse } from '@nocobase/utils';
 import { Instruction } from '.';
 import { Processor } from '..';
 import { JOB_STATUS } from '../constants';
-import FlowNodeModel from '../models/FlowNode';
+import type { FlowNodeModel } from '../types';
 
 interface CalculationConfig {
   dynamic?: boolean | string;

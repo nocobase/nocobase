@@ -1,8 +1,8 @@
 {
   "name": "@nocobase/plugin-workflow",
-  "displayName": "workflow",
+  "displayName": "Workflow",
   "displayName.zh-CN": "工作流",
-  "description": " a powerful workflow plugin designed to support business process management and automation. .",
+  "description": "A powerful workflow plugin designed to support business process management and automation.",
   "description.zh-CN": "工作流插件，为业务流程管理和自动化提供支持。",
   "version": "0.10.1-alpha.1",
   "license": "AGPL-3.0",
@@ -24,7 +24,9 @@
     "classnames": "^2.3.1",
     "cron-parser": "4.4.0",
     "lru-cache": "8.0.5",
-    "react-js-cron": "^3.1.0"
+    "moment": "^2.29.2",
+    "react-js-cron": "^3.1.0",
+    "sequelize": "^6.26.0"
   },
   "devDependencies": {
     "dayjs": "^1.11.8",
