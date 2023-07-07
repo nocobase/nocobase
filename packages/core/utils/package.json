@@ -10,6 +10,7 @@
     "deepmerge": "^4.2.2",
     "flat-to-nested": "^1.1.1",
     "graphlib": "^2.1.8",
+    "inflection": "^2.0.1",
     "object-path": "^0.11.8"
   },
   "peerDependencies": {

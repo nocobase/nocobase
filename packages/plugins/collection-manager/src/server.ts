@@ -22,6 +22,8 @@ import collectionActions from './resourcers/collections';
 import viewResourcer from './resourcers/views';
 
 import { beforeCreateForViewCollection } from './hooks/beforeCreateForViewCollection';
+import { afterUpdateForCollection } from './hooks/afterUpdateForCollection';
+import { afterUpdateForRenameCollection } from './hooks/afterUpdateForRenameCollection';
 
 export class CollectionManagerPlugin extends Plugin {
   public schema: string;
@@ -60,6 +62,19 @@ export class CollectionManagerPlugin extends Plugin {
     });
 
     this.app.db.on('collections.beforeCreate', beforeCreateForViewCollection(this.db));
+    this.app.db.on('collections.afterUpdate', afterUpdateForCollection(this.db));
+    this.app.db.on('collections.afterUpdate', afterUpdateForRenameCollection(this.db));
+
+    this.app.db.on('collections.afterSave', async (model, options) => {
+      if (options.reload) {
+        this.app.log.info('reload collections');
+
+        await this.db.getRepository<CollectionRepository>('collections').load({
+          transaction: options.transaction,
+          replaceCollection: true,
+        });
+      }
+    });
 
     this.app.db.on(
       'collections.afterCreateWithAssociations',

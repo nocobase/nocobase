@@ -403,6 +403,7 @@ export class Collection<
     this.options = newOptions;
 
     this.setFields(options.fields, false);
+
     if (options.repository) {
       this.setRepository(options.repository);
     }
@@ -576,7 +577,11 @@ export class Collection<
     });
 
     for (const model of models) {
-      await model.sync(syncOptions);
+      if (model === this.model) {
+        await model.sync(syncOptions);
+      } else {
+        await model.sync(lodash.omit(syncOptions, ['renameTable']));
+      }
     }
   }
 

@@ -44,9 +44,9 @@ export function getConfigByEnv() {
 }
 
 function customLogger(queryString, queryObject) {
-  console.log(queryString); // outputs a string
+  console.log(queryString);
   if (queryObject.bind) {
-    console.log(queryObject.bind); // outputs an array
+    console.log(queryObject.bind);
   }
 }
 

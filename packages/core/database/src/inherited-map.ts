@@ -1,97 +1,60 @@
 import lodash from 'lodash';
-import Database from './database';
-
-class TableNode {
-  name: string;
-  parents: Set<TableNode>;
-  children: Set<TableNode>;
-  constructor(name: string) {
-    this.name = name;
-    this.parents = new Set();
-    this.children = new Set();
-  }
-}
+import { DAG } from './directed-graph';
 
 export default class InheritanceMap {
-  nodes: Map<string, TableNode> = new Map<string, TableNode>();
+  dag = new DAG();
 
   removeNode(name: string) {
-    const node = this.nodes.get(name);
+    const node = this.getNode(name);
     if (!node) return;
-
-    for (const parent of node.parents) {
-      parent.children.delete(node);
-    }
-
-    for (const child of node.children) {
-      child.parents.delete(node);
-    }
-
-    this.nodes.delete(name);
+    this.dag.removeNode(node);
   }
 
   getOrCreateNode(name: string) {
-    if (!this.nodes.has(name)) {
-      this.nodes.set(name, new TableNode(name));
+    if (!this.dag.nodes.has(name)) {
+      this.dag.addNode(name);
     }
+
     return this.getNode(name);
   }
 
   getNode(name: string) {
-    return this.nodes.get(name);
+    if (!this.dag.nodes.has(name)) return null;
+    return name;
   }
 
   setInheritance(name: string, inherits: string | string[]) {
     const node = this.getOrCreateNode(name);
-    const parents = lodash.castArray(inherits).map((name) => this.getOrCreateNode(name));
-
-    node.parents = new Set(parents);
-
-    for (const parent of parents) {
-      parent.children.add(node);
+    for (const parent of lodash.castArray(inherits)) {
+      const parentNode = this.getOrCreateNode(parent);
+      this.dag.addEdge(parentNode, node);
     }
   }
 
   isParentNode(name: string) {
     const node = this.getNode(name);
-    return node && node.children.size > 0;
+    if (!node) return false;
+
+    return this.dag.getChildren(node).size > 0;
   }
 
   getChildren(name: string, options: { deep: boolean } = { deep: true }): Set<string> {
-    const results = new Set<string>();
     const node = this.getNode(name);
-    if (!node) return results;
+    if (!node) return new Set();
 
-    for (const child of node.children) {
-      results.add(child.name);
-      if (!options.deep) {
-        continue;
-      }
-
-      for (const grandchild of this.getChildren(child.name)) {
-        results.add(grandchild);
-      }
-    }
-
-    return results;
+    return new Set(options.deep ? this.dag.getDescendants(node) : this.dag.getChildren(node));
   }
 
   getParents(name: string, options: { deep: boolean } = { deep: true }): Set<string> {
-    const results = new Set<string>();
     const node = this.getNode(name);
-    if (!node) return results;
+    if (!node) return new Set();
+    return new Set(options.deep ? this.dag.getAncestors(node) : this.dag.getParents(node));
+  }
 
-    for (const parent of node.parents) {
-      results.add(parent.name);
-      if (!options.deep) {
-        continue;
-      }
+  getConnectedNodes(name: string): Set<string> {
+    const node = this.getNode(name);
+    if (!node) return new Set();
 
-      for (const grandparent of this.getParents(parent.name)) {
-        results.add(grandparent);
-      }
-    }
-
-    return results;
+    return new Set([...this.dag.getConnectedNodes(node)]);
   }
 }

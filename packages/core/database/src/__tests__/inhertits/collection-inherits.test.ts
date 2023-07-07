@@ -16,6 +16,190 @@ pgOnly()('collection inherits', () => {
     await db.close();
   });
 
+  it('should modify inherited collection parents', async () => {
+    const A = db.collection({
+      name: 'a',
+      timestamps: false,
+      fields: [{ name: 'a_name', type: 'string' }],
+    });
+
+    const B = db.collection({
+      name: 'b',
+      timestamps: false,
+      inherits: ['a'],
+      fields: [{ name: 'b_name', type: 'string' }],
+    });
+
+    await db.sync({
+      force: false,
+      alter: {
+        drop: false,
+      },
+    });
+
+    // inert 10 data into B
+    await B.repository.create({
+      values: Array.from({ length: 10 }).map((_, i) => ({
+        b_name: `b-${i}`,
+      })),
+    });
+
+    const C = db.collection({
+      name: 'c',
+      timestamps: false,
+      fields: [{ name: 'c_name', type: 'string' }],
+    });
+  });
+
+  it('should reset id sequence of connected nodes', async () => {
+    const createCollection = async (name: string, options: {} = {}) => {
+      if (db.hasCollection(name)) {
+        db.removeCollection(name);
+      }
+
+      const collection = db.collection({
+        name,
+        timestamps: false,
+        fields: [
+          {
+            name: `${name}_name`,
+            type: 'string',
+          },
+        ],
+        ...options,
+      });
+
+      await collection.sync({
+        force: false,
+        alter: {
+          drop: false,
+        },
+      });
+
+      return collection;
+    };
+
+    const findSequence = async (collectionName) => {
+      const collection = db.getCollection(collectionName);
+
+      const sequenceNameResult = await db.sequelize.query(
+        `SELECT column_default
+         FROM information_schema.columns
+         WHERE table_name = '${collection.model.tableName}'
+           and table_schema = '${collection.collectionSchema()}'
+           and "column_name" = 'id';`,
+      );
+
+      if (!sequenceNameResult[0].length) {
+        throw new Error(`Can't find sequence name of ${parent}`);
+      }
+
+      const columnDefault = sequenceNameResult[0][0]['column_default'];
+
+      if (!columnDefault) {
+        throw new Error(`Can't find sequence name of ${parent}`);
+      }
+
+      const regex = new RegExp(/nextval\('(.*)'::regclass\)/);
+      const match = regex.exec(columnDefault);
+
+      const sequenceName = match[1];
+      return sequenceName;
+    };
+
+    await createCollection('a');
+    await createCollection('b');
+
+    const C = await createCollection('c');
+
+    for (let i = 0; i < 10; i++) {
+      await C.repository.create({
+        values: {
+          c_name: `c_${i}`,
+        },
+      });
+    }
+
+    await createCollection('c', {
+      inherits: ['b'],
+    });
+
+    // collection b should use the same id sequence with collection c
+    const bSequenceName = await findSequence('b');
+    const cSequenceName = await findSequence('c');
+    expect(bSequenceName === cSequenceName).toBeTruthy();
+
+    await createCollection('x', {
+      inherits: ['a', 'b'],
+    });
+
+    expect((await findSequence('x')) === (await findSequence('a'))).toBeTruthy();
+    expect((await findSequence('b')) === (await findSequence('a'))).toBeTruthy();
+
+    await createCollection('d');
+
+    await createCollection('x', {
+      inherits: ['d'],
+    });
+
+    expect((await findSequence('x')) === (await findSequence('d'))).toBeTruthy();
+    expect((await findSequence('b')) === (await findSequence('c'))).toBeTruthy();
+  });
+
+  it('should set inherited map when inherits changed', async () => {
+    const A = db.collection({
+      name: 'a',
+      timestamps: false,
+      fields: [{ name: 'a_name', type: 'string' }],
+    });
+
+    const B = db.collection({
+      name: 'b',
+      timestamps: false,
+      fields: [{ name: 'b_name', type: 'string' }],
+    });
+
+    const C = db.collection({
+      name: 'c',
+      timestamps: false,
+      fields: [{ name: 'c_name', type: 'string' }],
+    });
+
+    await db.sync({
+      force: false,
+      alter: {
+        drop: false,
+      },
+    });
+
+    db.collection({
+      name: 'x',
+      timestamps: false,
+      inherits: ['a'],
+    });
+
+    expect(Array.from(db.inheritanceMap.getParents('x'))).toEqual(['a']);
+    db.removeCollection('x');
+
+    db.collection({
+      name: 'x',
+      timestamps: false,
+      inherits: [],
+    });
+
+    expect(Array.from(db.inheritanceMap.getParents('x'))).toEqual([]);
+
+    db.removeCollection('x');
+
+    db.collection({
+      name: 'x',
+      timestamps: false,
+      inherits: ['c'],
+    });
+
+    expect(Array.from(db.inheritanceMap.getParents('x'))).toEqual(['c']);
+  });
+
   it('should append __collection with eager load', async () => {
     const Root = db.collection({
       name: 'root',
@@ -440,34 +624,9 @@ pgOnly()('collection inherits', () => {
         inherits: ['parent'],
         fields: [{ name: 'field1', type: 'integer' }],
       });
-    }).toThrowError();
+    }).toThrow(/Field type conflict:/);
 
     await db.sync();
-  });
-
-  it.skip('should not conflict when fields have same DateType', async () => {
-    db.collection({
-      name: 'parent',
-      fields: [{ name: 'field1', type: 'string' }],
-    });
-
-    expect(() => {
-      db.collection({
-        name: 'child',
-        inherits: ['parent'],
-        fields: [
-          {
-            name: 'field1',
-            type: 'sequence',
-            patterns: [
-              {
-                type: 'integer',
-              },
-            ],
-          },
-        ],
-      });
-    }).not.toThrowError();
   });
 
   it('should create inherits with lazy parents', async () => {
@@ -564,7 +723,7 @@ pgOnly()('collection inherits', () => {
       inherits: [],
     });
 
-    expect(table2).not.toBeInstanceOf(InheritedCollection);
+    expect(table2).toBeInstanceOf(InheritedCollection);
   });
 
   it('should remove Node after collection destroy', async () => {
@@ -585,7 +744,7 @@ pgOnly()('collection inherits', () => {
 
     await db.removeCollection(collection3.name);
 
-    expect(db.inheritanceMap.getNode('table3')).toBeUndefined();
+    expect(db.inheritanceMap.getNode('table3')).toBeFalsy();
     expect(table1.isParent()).toBeFalsy();
   });
 

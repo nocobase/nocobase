@@ -436,7 +436,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     this.emit('beforeDefineCollection', options);
 
     const hasValidInheritsOptions = (() => {
-      return options.inherits && lodash.castArray(options.inherits).length > 0;
+      return options.inherits;
     })();
 
     const hasViewOptions = options.viewName || options.view;
@@ -517,6 +517,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   removeCollection(name: string) {
     const collection = this.collections.get(name);
+    if (!collection) return;
+
     this.emit('beforeRemoveCollection', collection);
 
     collection.resetFields();

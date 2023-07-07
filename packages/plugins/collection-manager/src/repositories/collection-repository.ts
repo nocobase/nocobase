@@ -1,17 +1,24 @@
-import { Repository } from '@nocobase/database';
-import { CollectionsGraph } from '@nocobase/utils';
+import { Repository, Transactionable } from '@nocobase/database';
 import { CollectionModel } from '../models/collection';
+import { CollectionsGraph } from '@nocobase/utils';
 import lodash from 'lodash';
 
-interface LoadOptions {
+interface LoadOptions extends Transactionable {
   filter?: any;
   skipExist?: boolean;
+  replaceCollection?: boolean;
 }
 
 export class CollectionRepository extends Repository {
   async load(options: LoadOptions = {}) {
-    const { filter, skipExist } = options;
-    const instances = (await this.find({ filter, appends: ['fields'] })) as CollectionModel[];
+    const { filter, skipExist, transaction, replaceCollection } = options;
+    const instances = (await this.find({ filter, appends: ['fields'], transaction })) as CollectionModel[];
+
+    if (replaceCollection) {
+      instances.forEach((instance) => {
+        this.database.removeCollection(instance.get('name'));
+      });
+    }
 
     const graphlib = CollectionsGraph.graphlib();
 
@@ -66,6 +73,7 @@ export class CollectionRepository extends Repository {
     const lazyCollectionFields: {
       [key: string]: Array<string>;
     } = {};
+
     for (const instanceName of sortedNames) {
       if (!nameMap[instanceName]) continue;
 
@@ -85,17 +93,24 @@ export class CollectionRepository extends Repository {
         lazyCollectionFields[instanceName] = skipField;
       }
 
-      await nameMap[instanceName].load({ skipField });
+      await nameMap[instanceName].load({
+        skipExist,
+        transaction,
+        skipField,
+        replaceCollection: options.replaceCollection,
+      });
     }
 
     // load view fields
     for (const viewCollectionName of viewCollections) {
-      await nameMap[viewCollectionName].loadFields({});
+      await nameMap[viewCollectionName].loadFields({
+        transaction,
+      });
     }
 
     // load lazy collection field
     for (const [collectionName, skipField] of Object.entries(lazyCollectionFields)) {
-      await nameMap[collectionName].loadFields({ includeFields: skipField });
+      await nameMap[collectionName].loadFields({ includeFields: skipField, transaction });
     }
   }
 

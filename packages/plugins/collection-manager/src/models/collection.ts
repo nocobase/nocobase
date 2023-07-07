@@ -7,6 +7,7 @@ interface LoadOptions extends Transactionable {
   // TODO
   skipField?: boolean | Array<string>;
   skipExist?: boolean;
+  replaceCollection?: string | boolean;
 }
 
 export class CollectionModel extends MagicAttributeModel {
@@ -24,6 +25,10 @@ export class CollectionModel extends MagicAttributeModel {
       ...this.get(),
       fields: [],
     };
+
+    if (loadOptions?.replaceCollection) {
+      this.db.removeCollection(lodash.isString(loadOptions.replaceCollection) ? loadOptions.replaceCollection : name);
+    }
 
     if (this.db.hasCollection(name)) {
       collection = this.db.getCollection(name);
@@ -110,15 +115,32 @@ export class CollectionModel extends MagicAttributeModel {
     });
   }
 
-  async migrate(options?: SyncOptions & Transactionable) {
+  async migrate(
+    options?: SyncOptions &
+      Transactionable & {
+        replaceCollection?: string | boolean;
+        renameTable?: {
+          from: any;
+          to?: any;
+        };
+      },
+  ) {
     const collection = await this.load({
       transaction: options?.transaction,
+      replaceCollection: options?.replaceCollection,
     });
 
     // postgres support zero column table, other database should not sync it to database
     // @ts-ignore
     if (Object.keys(collection.model.tableAttributes).length == 0 && !this.db.inDialect('postgres')) {
       return;
+    }
+
+    if (options?.renameTable) {
+      options.renameTable = {
+        ...options.renameTable,
+        to: collection.model.tableName,
+      };
     }
 
     try {

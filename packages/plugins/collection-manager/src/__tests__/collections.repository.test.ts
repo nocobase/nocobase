@@ -20,6 +20,281 @@ describe('collections repository', () => {
     await app.destroy();
   });
 
+  it('should rename through collection', async () => {
+    await db.getRepository('collections').create({
+      values: {
+        name: 'posts_tags',
+        fields: [
+          {
+            type: 'bigInt',
+            name: 'id',
+            primaryKey: true,
+            autoIncrement: true,
+          },
+          {
+            type: 'string',
+            name: 'title',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await db.getRepository('collections').create({
+      values: {
+        name: 'posts',
+        fields: [
+          {
+            type: 'string',
+            name: 'title',
+          },
+          {
+            type: 'belongsToMany',
+            name: 'tags',
+            through: 'posts_tags',
+            targetKey: 'id',
+            sourceKey: 'id',
+            foreignKey: 'post_id',
+            otherKey: 'tag_id',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await db.getRepository('collections').create({
+      values: {
+        name: 'tags',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+          {
+            type: 'belongsToMany',
+            name: 'posts',
+            through: 'posts_tags',
+            targetKey: 'id',
+            sourceKey: 'id',
+            otherKey: 'post_id',
+            foreignKey: 'tag_id',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await db.getCollection('posts').repository.create({
+      values: {
+        title: 'post1',
+        tags: [
+          {
+            name: 'tag1',
+          },
+          {
+            name: 'tag2',
+          },
+        ],
+      },
+    });
+
+    // update through collection
+    await db.getRepository('collections').update({
+      filter: {
+        name: 'posts_tags',
+      },
+      values: {
+        name: 'posts_tags_2012',
+      },
+      context: {},
+    });
+
+    const post = await db.getCollection('posts').repository.findOne({
+      appends: ['tags'],
+    });
+
+    expect(post.get('tags').length).toBe(2);
+  });
+
+  it('should rename collection ', async () => {
+    await db.getRepository('collections').create({
+      values: {
+        name: 'users',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+          {
+            type: 'hasMany',
+            name: 'posts',
+            interface: 'o2m',
+            target: 'posts',
+            foreignKey: 'user_id',
+          },
+          {
+            type: 'hasOne',
+            name: 'profile',
+            target: 'profiles',
+            foreignKey: 'target_id',
+          },
+          {
+            type: 'belongsToMany',
+            name: 'tags',
+            target: 'tags',
+            through: 'users_tags',
+            foreignKey: 'user_id',
+            otherKey: 'tag_id',
+            sourceKey: 'id',
+            targetKey: 'id',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await db.getRepository('collections').create({
+      values: {
+        name: 'profiles',
+        fields: [
+          {
+            type: 'integer',
+            name: 'age',
+          },
+          {
+            type: 'belongsTo',
+            name: 'user',
+            target: 'users',
+            foreignKey: 'target_id',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await db.getRepository('collections').create({
+      values: {
+        name: 'tags',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+          {
+            type: 'belongsToMany',
+            name: 'users',
+            target: 'users',
+            through: 'users_tags',
+            foreignKey: 'tag_id',
+            otherKey: 'user_id',
+            sourceKey: 'id',
+            targetKey: 'id',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    const userTableName = db.getCollection('users').model.tableName;
+
+    await db.getRepository('collections').create({
+      values: {
+        name: 'posts',
+        fields: [
+          {
+            type: 'string',
+            name: 'title',
+          },
+          {
+            type: 'belongsTo',
+            name: 'user',
+            target: 'users',
+            interface: 'm2o',
+            foreignKey: 'user_id',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await db.getRepository('users').create({
+      values: {
+        name: 'u1',
+        posts: [
+          {
+            title: 'p1',
+          },
+        ],
+        profile: {
+          age: 18,
+        },
+        tags: [
+          { name: 't1' },
+          {
+            name: 't2',
+          },
+        ],
+      },
+    });
+
+    const user1 = await db.getRepository('users').findOne({
+      appends: ['posts'],
+    });
+
+    expect(user1.get('posts')).toHaveLength(1);
+
+    // rename collection
+    await db.getCollection('collections').repository.update({
+      filter: {
+        name: 'users',
+      },
+      values: {
+        name: 'students',
+      },
+      context: {},
+    });
+
+    expect(db.getCollection('users')).toBeUndefined();
+    expect(db.getCollection('students')).toBeTruthy();
+
+    const tables = await db.sequelize.getQueryInterface().showAllTables();
+
+    // expect users table not exists
+    expect(tables).not.toContain(userTableName);
+
+    const studentCollection = db.getCollection('students');
+
+    expect(await studentCollection.repository.count()).toEqual(1);
+
+    // students hasMany posts
+    const student1 = await studentCollection.repository.findOne({
+      appends: ['posts', 'profile', 'tags'],
+    });
+
+    expect(student1.get('name')).toEqual('u1');
+    expect(student1.get('posts')).toHaveLength(1);
+    expect(student1.get('tags')).toHaveLength(2);
+    expect(student1.get('profile').age).toEqual(18);
+
+    // posts belongsTo student
+    const postCollection = db.getCollection('posts');
+    const post1 = await postCollection.repository.findOne({
+      appends: ['student'],
+    });
+
+    expect(post1.get('student').name).toEqual('u1');
+
+    // should rename through table foreignKey
+    const throughCollection = db.getCollection('users_tags');
+    const throughTableName = throughCollection.getTableNameWithSchema();
+
+    // sqlite not support rename through table foreignKey
+    if (!db.inDialect('sqlite')) {
+      const throughTable = await db.sequelize.getQueryInterface().describeTable(throughTableName);
+      expect(throughTable.student_id).toBeDefined();
+    }
+  });
+
   it('should extend collections collection', async () => {
     expect(db.getRepository<CollectionRepository>('collections')).toBeTruthy();
 
