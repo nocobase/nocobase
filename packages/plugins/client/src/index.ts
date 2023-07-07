@@ -1,2 +1,2 @@
-export * from './resource';
 export { default } from './server';
+export * from './server/resource';
