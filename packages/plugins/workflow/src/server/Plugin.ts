@@ -11,13 +11,12 @@ import initFields from './fields';
 import initActions from './actions';
 import { EXECUTION_STATUS } from './constants';
 import initInstructions, { Instruction } from './instructions';
-import ExecutionModel from './models/Execution';
-import JobModel from './models/Job';
-import WorkflowModel from './models/Workflow';
 import Processor from './Processor';
 import initTriggers, { Trigger } from './triggers';
 import initFunctions, { CustomFunction } from './functions';
 import { createLogger, Logger, LoggerOptions, getLoggerLevel, getLoggerFilePath } from '@nocobase/logger';
+
+import type { WorkflowModel, ExecutionModel, JobModel } from './types';
 
 type Pending = [ExecutionModel, JobModel?];
 
