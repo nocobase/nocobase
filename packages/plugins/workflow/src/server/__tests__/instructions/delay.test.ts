@@ -171,7 +171,7 @@ describe('workflow > instructions > delay', () => {
       await sleep(2000);
 
       await app.start();
-      await sleep(1000);
+      await sleep(500);
 
       const [e2] = await workflow.getExecutions();
       expect(e2.status).toEqual(EXECUTION_STATUS.RESOLVED);
