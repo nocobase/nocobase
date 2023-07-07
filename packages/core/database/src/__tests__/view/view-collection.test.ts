@@ -75,10 +75,10 @@ DECLARE
   new_group_id BIGINT;
 BEGIN
   -- 插入一个新的 groups 行，并获取新插入的行的 ID
-  INSERT INTO groups (name) VALUES (NEW.group_name) RETURNING id INTO new_group_id;
+  INSERT INTO ${GroupCollection.quotedTableName()} (name) VALUES (NEW.group_name) RETURNING id INTO new_group_id;
 
   -- 插入一个新的 users 行，使用新插入的 groups 行的 ID 作为 group_id
-  INSERT INTO users (name, group_id) VALUES (NEW.user_name, new_group_id) RETURNING id INTO NEW.user_id;
+  INSERT INTO ${UserCollection.quotedTableName()} (name, group_id) VALUES (NEW.user_name, new_group_id) RETURNING id INTO NEW.user_id;
 
   RETURN NEW;
 END;
