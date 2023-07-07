@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-sample-shop-i18n",
-  "version": "0.10.0-alpha.5",
+  "version": "0.10.1-alpha.1",
   "main": "./lib/server/index.js",
   "files": [
     "lib",
@@ -20,9 +20,9 @@
     "react": "^18.2.0",
     "antd": "^4.24.8",
     "react-i18next": "^11.15.1",
-    "@nocobase/client": "0.10.0-alpha.5",
-    "@nocobase/server": "0.10.0-alpha.5",
-    "@nocobase/test": "0.10.0-alpha.5"
+    "@nocobase/client": "0.10.1-alpha.1",
+    "@nocobase/server": "0.10.1-alpha.1",
+    "@nocobase/test": "0.10.1-alpha.1"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
 }

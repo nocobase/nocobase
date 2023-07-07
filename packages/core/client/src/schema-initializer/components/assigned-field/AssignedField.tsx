@@ -45,9 +45,9 @@ const InternalField: React.FC = (props) => {
     setFieldProps('title', uiSchema.title);
     setFieldProps('description', uiSchema.description);
     setFieldProps('initialValue', uiSchema.default);
-    if (!field.validator && uiSchema['x-validator']) {
-      field.validator = uiSchema['x-validator'];
-    }
+    // if (!field.validator && uiSchema['x-validator']) {
+    //   field.validator = uiSchema['x-validator'];
+    // }
     if (fieldSchema['x-disabled'] === true) {
       field.disabled = true;
     }

@@ -4,7 +4,7 @@
   "displayName.zh-CN": "短信登录",
   "description": "SMS authentication function",
   "description.zh-CN": "提供短信登录认证功能。",
-  "version": "0.10.0-alpha.5",
+  "version": "0.10.1-alpha.1",
   "main": "./lib/server/index.js",
   "files": [
     "lib",
@@ -22,13 +22,13 @@
     "antd": "^4.24.8",
     "react-i18next": "^11.15.1",
     "@formily/react": "2.2.26",
-    "@nocobase/database": "0.10.0-alpha.5",
-    "@nocobase/actions": "0.10.0-alpha.5",
-    "@nocobase/auth": "0.10.0-alpha.5",
-    "@nocobase/client": "0.10.0-alpha.5",
-    "@nocobase/plugin-auth": "0.10.0-alpha.5",
-    "@nocobase/plugin-verification": "0.10.0-alpha.5",
-    "@nocobase/server": "0.10.0-alpha.5",
-    "@nocobase/test": "0.10.0-alpha.5"
+    "@nocobase/database": "0.10.1-alpha.1",
+    "@nocobase/actions": "0.10.1-alpha.1",
+    "@nocobase/auth": "0.10.1-alpha.1",
+    "@nocobase/client": "0.10.1-alpha.1",
+    "@nocobase/plugin-auth": "0.10.1-alpha.1",
+    "@nocobase/plugin-verification": "0.10.1-alpha.1",
+    "@nocobase/server": "0.10.1-alpha.1",
+    "@nocobase/test": "0.10.1-alpha.1"
   }
 }

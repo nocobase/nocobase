@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-file-manager",
-  "version": "0.10.0-alpha.5",
+  "version": "0.10.1-alpha.1",
   "displayName": "file manager",
   "displayName.zh-CN": "文件管理",
   "description": "file management plugin.",
@@ -41,12 +41,12 @@
     "@formily/antd": "2.2.26",
     "@formily/core": "2.2.26",
     "supertest": "^6.1.6",
-    "@nocobase/actions": "0.10.0-alpha.5",
-    "@nocobase/database": "0.10.0-alpha.5",
-    "@nocobase/utils": "0.10.0-alpha.5",
-    "@nocobase/client": "0.10.0-alpha.5",
-    "@nocobase/server": "0.10.0-alpha.5",
-    "@nocobase/test": "0.10.0-alpha.5"
+    "@nocobase/actions": "0.10.1-alpha.1",
+    "@nocobase/database": "0.10.1-alpha.1",
+    "@nocobase/utils": "0.10.1-alpha.1",
+    "@nocobase/client": "0.10.1-alpha.1",
+    "@nocobase/server": "0.10.1-alpha.1",
+    "@nocobase/test": "0.10.1-alpha.1"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
 }
