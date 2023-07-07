@@ -32,7 +32,7 @@ export default {
     },
     {
       interface: 'input',
-      type: 'string',
+      type: 'text',
       name: 'translation',
       allowNull: false,
       defaultValue: '',
