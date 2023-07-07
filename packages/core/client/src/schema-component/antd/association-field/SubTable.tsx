@@ -105,6 +105,7 @@ export const SubTable: any = observer(
               </Button>
             )
           }
+          isSubTable={true}
         />
       </div>
     );
