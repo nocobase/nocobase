@@ -1,5 +1,5 @@
-import { Schema } from '@formily/react';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCompile, useGetFilterOptions } from '../../../schema-component';
 import { FieldOption, Option } from '../type';
 
@@ -27,7 +27,7 @@ const getChildren = (
           label: compile(option.title),
           depth,
           // TODO: 现在是通过组件的名称来过滤能够被选择的选项，这样的坏处是不够精确，后续可以优化
-          disabled: schema?.['x-component'] !== option.schema?.['x-component'],
+          disabled: schema && schema?.['x-component'] !== option.schema?.['x-component'],
         };
       }
 
@@ -64,6 +64,7 @@ export const useIterationVariable = ({
   schema?: any;
   level?: number;
 }) => {
+  const { t } = useTranslation();
   const compile = useCompile();
   const getFilterOptions = useGetFilterOptions();
   const loadChildren = (option: any): Promise<void> => {
@@ -103,15 +104,14 @@ export const useIterationVariable = ({
       }, 5);
     });
   };
-
+  const label = t('Current object');
   const result = useMemo(() => {
     return (
       blockForm &&
       currentCollection !== rootCollection && {
-        label: `{{t("Current object")}}`,
+        label: label,
         value: '$iteration',
         key: '$iteration',
-        children: [],
         isLeaf: false,
         field: {
           target: currentCollection,
