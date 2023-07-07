@@ -1,4 +1,10 @@
-import { SettingsCenterProvider, createStyles, useCurrentUserSettingsMenu, useGlobalTheme } from '@nocobase/client';
+import {
+  Plugin,
+  SettingsCenterProvider,
+  createStyles,
+  useCurrentUserSettingsMenu,
+  useGlobalTheme,
+} from '@nocobase/client';
 import { ConfigProvider } from 'antd';
 import React, { useEffect, useMemo } from 'react';
 import InitializeTheme from './components/InitializeTheme';
@@ -82,4 +88,10 @@ const CustomThemeProvider = React.memo((props) => {
 });
 CustomThemeProvider.displayName = 'CustomThemeProvider';
 
-export default CustomThemeProvider;
+export class CustomThemePlugin extends Plugin {
+  async load() {
+    this.app.use(CustomThemeProvider);
+  }
+}
+
+export default CustomThemePlugin;
