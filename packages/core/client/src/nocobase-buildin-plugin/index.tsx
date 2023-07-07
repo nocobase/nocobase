@@ -1,5 +1,6 @@
-import { Spin } from 'antd';
-import React from 'react';
+import { css } from '@emotion/css';
+import { Button, Result, Spin } from 'antd';
+import React, { FC } from 'react';
 import { Navigate } from 'react-router-dom';
 import { ACLPlugin } from '../acl';
 import { AntdConfigPlugin } from '../antd-config-provider';
@@ -22,11 +23,33 @@ const AppSpin = () => (
   </div>
 );
 
+const AppError: FC<{ error: Error }> = ({ error }) => (
+  <div>
+    <Result
+      className={css`
+        top: 50%;
+        position: absolute;
+        width: 100%;
+        transform: translate(0, -50%);
+      `}
+      status="error"
+      title="Failed to load plugin"
+      subTitle={error?.message}
+      extra={[
+        <Button type="primary" key="try" onClick={() => window.location.reload()}>
+          Try again
+        </Button>,
+      ]}
+    />
+  </div>
+);
+
 export class NocoBaseBuildInPlugin extends Plugin {
   async afterAdd(): Promise<void> {
     this.addPlugins();
   }
   async load() {
+    console.log('useAppPluginLoad');
     this.addComponents();
     this.addRoutes();
   }
@@ -61,6 +84,7 @@ export class NocoBaseBuildInPlugin extends Plugin {
   addComponents() {
     this.app.addComponents({
       AppSpin,
+      AppError,
       AuthLayout,
       SigninPage,
       SignupPage,
