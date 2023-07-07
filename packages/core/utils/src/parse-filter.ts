@@ -267,6 +267,7 @@ const toDays = (offset: number) => {
 
 export function getDateVars() {
   return {
+    now: new Date().toISOString(),
     today: toUnit('day'),
     yesterday: toUnit('day', -1),
     tomorrow: toUnit('day', 1),
