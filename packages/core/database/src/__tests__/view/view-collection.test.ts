@@ -1,8 +1,9 @@
 import { uid } from '@nocobase/utils';
-import { Database, mockDatabase, ViewFieldInference } from '../../index';
+import { Database, mockDatabase } from '../../index';
 import { ViewCollection } from '../../view-collection';
+import pgOnly from '../inhertits/helper';
 
-describe('create view', () => {
+pgOnly()('', () => {
   let db: Database;
 
   beforeEach(async () => {
@@ -20,6 +21,7 @@ describe('create view', () => {
   it('should update view collection', async () => {
     const UserCollection = db.collection({
       name: 'users',
+      timestamps: false,
       fields: [
         {
           name: 'name',
@@ -36,6 +38,7 @@ describe('create view', () => {
 
     const GroupCollection = db.collection({
       name: 'groups',
+      timestamps: false,
       fields: [
         {
           name: 'name',
@@ -53,28 +56,68 @@ describe('create view', () => {
     const viewSQL = `CREATE VIEW ${viewName} AS SELECT users.id AS user_id, users.name AS user_name, groups.name AS group_name FROM ${UserCollection.quotedTableName()} AS users INNER JOIN ${GroupCollection.quotedTableName()} AS groups ON users.group_id = groups.id`;
     await db.sequelize.query(viewSQL);
 
-    const inferredFields = await ViewFieldInference.inferFields({
-      db,
-      viewName,
-      viewSchema: 'public',
-    });
-
     const UsersWithGroup = db.collection({
       name: viewName,
       view: true,
-      fields: Object.values(inferredFields),
       schema: db.inDialect('postgres') ? 'public' : undefined,
       writableView: true,
+      fields: [
+        { name: 'user_id', type: 'bigInt' },
+        { name: 'user_name', type: 'string', source: 'users.name' },
+        { name: 'group_name', type: 'string', source: 'groups.name' },
+      ],
     });
 
-    const u1WithG1 = await UsersWithGroup.repository.create({
+    // create INSTEAD OF INSERT trigger
+    await db.sequelize.query(`    
+CREATE OR REPLACE FUNCTION insert_users_with_group() RETURNS TRIGGER AS $$
+DECLARE
+  new_group_id BIGINT;
+BEGIN
+  -- 插入一个新的 groups 行，并获取新插入的行的 ID
+  INSERT INTO groups (name) VALUES (NEW.group_name) RETURNING id INTO new_group_id;
+
+  -- 插入一个新的 users 行，使用新插入的 groups 行的 ID 作为 group_id
+  INSERT INTO users (name, group_id) VALUES (NEW.user_name, new_group_id);
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+    `);
+
+    await db.sequelize.query(`
+CREATE TRIGGER insert_users_with_group_trigger
+INSTEAD OF INSERT ON ${UsersWithGroup.quotedTableName()}
+FOR EACH ROW EXECUTE FUNCTION insert_users_with_group();
+`);
+
+    await UsersWithGroup.repository.create({
       values: {
         user_name: 'u1',
         group_name: 'g1',
       },
     });
 
-    console.log(u1WithG1);
+    const records = await UsersWithGroup.repository.find();
+    const firstRecord = records[0].toJSON();
+    expect(firstRecord.user_name).toBe('u1');
+    expect(firstRecord.group_name).toBe('g1');
+  });
+});
+
+describe('create view', () => {
+  let db: Database;
+
+  beforeEach(async () => {
+    db = mockDatabase({
+      tablePrefix: '',
+    });
+
+    await db.clean({ drop: true });
+  });
+
+  afterEach(async () => {
+    await db.close();
   });
 
   it('should insert data into view collection', async () => {

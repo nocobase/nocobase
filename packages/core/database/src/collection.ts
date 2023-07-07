@@ -273,7 +273,7 @@ export class Collection<
           `source field "${sourceFieldName}" not found for field "${name}" at collection "${this.name}"`,
         );
       } else {
-        options = { ...sourceField.options, ...options };
+        options = { ...lodash.omit(sourceField.options, 'name'), ...options };
       }
     }
 

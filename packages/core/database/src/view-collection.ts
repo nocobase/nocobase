@@ -1,5 +1,4 @@
-import { Collection, CollectionContext, CollectionOptions, RepositoryType } from './collection';
-import { ViewRepository } from './repositories/view-repository';
+import { Collection, CollectionContext, CollectionOptions } from './collection';
 
 export class ViewCollection extends Collection {
   constructor(options: CollectionOptions, context: CollectionContext) {
@@ -11,10 +10,6 @@ export class ViewCollection extends Collection {
 
   isView() {
     return true;
-  }
-
-  setRepository(repository?: RepositoryType | string) {
-    this.repository = new ViewRepository(this);
   }
 
   protected sequelizeModelOptions(): any {
