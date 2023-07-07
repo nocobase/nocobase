@@ -15,7 +15,7 @@ describe('Variable', () => {
     await waitFor(() => {
       expect(screen.getByText('v1', { selector: '.ant-tag' })).toMatchInlineSnapshot(`
         <span
-          class="ant-tag ant-tag-blue css-dev-only-do-not-override-12upa3x"
+          class="ant-tag ant-tag-blue css-dev-only-do-not-override-14wwjjs"
           contenteditable="false"
         >
           v1
@@ -37,7 +37,7 @@ describe('Variable', () => {
     await waitFor(() => {
       expect(input).toMatchInlineSnapshot(`
         <div
-          class="css-dev-only-do-not-override-12upa3x ant-input css-1p5yrh5"
+          class="css-dev-only-do-not-override-14wwjjs ant-input css-1p5yrh5"
           contenteditable="true"
         >
           <span
