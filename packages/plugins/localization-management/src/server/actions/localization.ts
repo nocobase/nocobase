@@ -1,6 +1,7 @@
 import { Context, Next } from '@nocobase/actions';
 import { Database, Model, Op } from '@nocobase/database';
 import { getResourceLocale } from '@nocobase/plugin-client';
+import { getTextsFromDBRecord, getTextsFromUISchema } from '../utils';
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_PER_PAGE = 20;
@@ -265,32 +266,12 @@ export const resourcesToRecords = (
   return records;
 };
 
-const compile = (title: string) => (title || '').replace(/{{\s*t\(["|'|`](.*)["|'|`]\)\s*}}/g, '$1');
-
-const getTextsFromUISchema = async (db: Database) => {
+const getTextsFromUISchemas = async (db: Database) => {
   const result = {};
   const schemas = await getUISchemas(db);
   schemas.forEach((schema: Model) => {
-    const title = compile(schema.schema.title);
-    const componentPropsTitle = compile(schema.schema['x-component-props']?.title);
-    const decoratorPropsTitle = compile(schema.schema['x-decorator-props']?.title);
-    if (title) {
-      result[title] = '';
-    }
-    if (componentPropsTitle) {
-      result[componentPropsTitle] = '';
-    }
-    if (decoratorPropsTitle) {
-      result[decoratorPropsTitle] = '';
-    }
-    if (schema.schema['x-data-templates']?.items?.length) {
-      schema.schema['x-data-templates'].items.forEach((item: any) => {
-        const title = compile(item.title);
-        if (title) {
-          result[title] = '';
-        }
-      });
-    }
+    const texts = getTextsFromUISchema(schema.schema);
+    texts.forEach((text) => (result[text] = ''));
   });
   return result;
 };
@@ -308,24 +289,8 @@ const getTextsFromDB = async (db: Database) => {
     const repo = db.getRepository(collection.name);
     const records = await repo.find({ fields });
     records.forEach((record) => {
-      fields.forEach((field) => {
-        const value = record[field];
-        if (typeof value === 'string') {
-          result[compile(value)] = '';
-        }
-        if (typeof value === 'object') {
-          if (value?.uiSchema?.title) {
-            result[compile(value.uiSchema.title)] = '';
-          }
-          if (value?.uiSchema?.enum) {
-            value.uiSchema.enum.forEach((item) => {
-              if (item?.label) {
-                result[compile(item.label)] = '';
-              }
-            });
-          }
-        }
-      });
+      const texts = getTextsFromDBRecord(fields, record);
+      texts.forEach((text) => (result[text] = ''));
     });
   }
   return result;
@@ -345,7 +310,7 @@ const sync = async (ctx: Context, next: Next) => {
     resources = await getResources(locale, ctx.db);
   }
   if (type.includes('ui')) {
-    const uiTexts = await getTextsFromUISchema(ctx.db);
+    const uiTexts = await getTextsFromUISchemas(ctx.db);
     resources['client'] = {
       ...uiTexts,
       ...resources['client'],
@@ -364,7 +329,7 @@ const sync = async (ctx: Context, next: Next) => {
   const textValues = Object.values(records).map((record) => ({
     module: `resources.${record.module}`,
     text: record.text,
-    batch,
+    batch: record.translation ? batch : '',
   }));
   await ctx.db.sequelize.transaction(async (t) => {
     await ctx.db.getModel('localizationTexts').bulkCreate(textValues, {
