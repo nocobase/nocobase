@@ -18,7 +18,6 @@ import {
   useRecord,
 } from '@nocobase/client';
 import { lodash, merge, uid } from '@nocobase/utils/client';
-import React from 'react';
 import { JOB_STATUS } from '../../../constants';
 import { NAMESPACE, lang } from '../../../locale';
 import { ManualFormType } from '../SchemaConfig';

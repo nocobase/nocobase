@@ -17,7 +17,7 @@ import {
   useFormBlockContext,
 } from '@nocobase/client';
 import { Registry, lodash } from '@nocobase/utils/client';
-import React from 'react';
+import { Button } from 'antd';
 import { instructions, useAvailableUpstreams, useNodeContext } from '..';
 import { useFlowContext } from '../../FlowContext';
 import { JOB_STATUS } from '../../constants';

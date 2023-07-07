@@ -19,7 +19,6 @@ import {
   useTableBlockContext,
 } from '@nocobase/client';
 import { uid } from '@nocobase/utils/client';
-import React from 'react';
 import { instructions, useAvailableUpstreams } from '..';
 import { FlowContext, useFlowContext } from '../../FlowContext';
 import { JobStatusOptions, JobStatusOptionsMap } from '../../constants';
