@@ -14,6 +14,7 @@ import { DndContext, useDesignable, useTableSize } from '../..';
 import {
   RecordIndexProvider,
   RecordProvider,
+  useCollectionManager,
   useSchemaInitializer,
   useTableBlockContext,
   useTableSelectorContext,
@@ -32,6 +33,7 @@ const useTableColumns = (props) => {
   const { schemaInWhitelist } = useACLFieldWhitelist();
   const { designable } = useDesignable();
   const { exists, render } = useSchemaInitializer(schema['x-initializer']);
+  const { getCollectionJoinField } = useCollectionManager();
   const columns = schema
     .reduceProperties((buf, s) => {
       if (isColumnComponent(s) && schemaInWhitelist(Object.values(s.properties || {}).pop())) {
@@ -55,6 +57,17 @@ const useTableColumns = (props) => {
         ...s['x-component-props'],
         render: (v, record) => {
           const index = field.value?.indexOf(record);
+          const fieldSchemas = s.reduceProperties((buf, k) => {
+            if (k['x-component'] === 'CollectionField') {
+              return k;
+            }
+            return buf;
+          }, null);
+          if (fieldSchemas) {
+            fieldSchemas['x-component-props']['field'] = getCollectionJoinField(
+              `${record.__collection}.${fieldSchemas.name}`,
+            );
+          }
           return (
             <RecordIndexProvider index={record.__index || index}>
               <RecordProvider record={record}>
