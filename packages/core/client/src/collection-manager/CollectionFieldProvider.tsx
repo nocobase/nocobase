@@ -15,9 +15,11 @@ export const CollectionFieldProvider: React.FC<{
   const { getField } = useCollection();
   const { __collection } = useRecord();
   const { getCollectionJoinField } = useCollectionManager();
-  const value = __collection
-    ? getCollectionJoinField(`${__collection}.${name}`)
-    : field || getField(field?.name || name) || getCollectionJoinField(fieldSchema?.['x-collection-field']);
+  const isTableFeild = fieldSchema?.parent?.['x-component'] === 'TableV2.Column';
+  const value =
+    __collection && isTableFeild
+      ? getCollectionJoinField(`${__collection}.${name}`)
+      : field || getField(field?.name || name) || getCollectionJoinField(fieldSchema?.['x-collection-field']);
   if (!value) {
     return fallback;
   }
