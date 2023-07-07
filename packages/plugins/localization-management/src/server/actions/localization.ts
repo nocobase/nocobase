@@ -325,7 +325,7 @@ const sync = async (ctx: Context, next: Next) => {
   }
 
   const records = resourcesToRecords(locale, resources);
-  const batch = Date.now();
+  const batch = Date.now().toString();
   const textValues = Object.values(records).map((record) => ({
     module: `resources.${record.module}`,
     text: record.text,
