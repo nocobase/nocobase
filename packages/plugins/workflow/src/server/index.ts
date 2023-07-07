@@ -3,4 +3,4 @@ export * from './constants';
 export { Trigger } from './triggers';
 export { default as Processor } from './Processor';
 export { default } from './Plugin';
-export type * from './types';
+export * from './types';

@@ -1,6 +1,6 @@
 import Processor from '../Processor';
 import { JOB_STATUS } from '../constants';
-import type { FlowNodeModel, JobModel } from '../types/FlowNode';
+import type { FlowNodeModel, JobModel } from '../types';
 
 function getTargetLength(target) {
   let length = 0;
