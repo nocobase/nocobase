@@ -13,7 +13,6 @@ interface GetOptionsParams {
   compile: (value: string) => any;
   schema?: any;
 }
-
 const getChildren = (
   options: FieldOption[],
   { depth, maxDepth, loadChildren, compile, schema }: GetOptionsParams,
