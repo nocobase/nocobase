@@ -1,7 +1,8 @@
 import { BelongsToManyRepository, DataTypes, HasManyRepository } from '@nocobase/database';
-import { JOB_STATUS } from '../constants';
-import FlowNodeModel from '../models/FlowNode';
+
 import Processor from '../Processor';
+import { JOB_STATUS } from '../constants';
+import type { FlowNodeModel } from '../types';
 
 const aggregators = {
   count: 'count',
