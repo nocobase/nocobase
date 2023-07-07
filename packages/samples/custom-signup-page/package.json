@@ -2,10 +2,6 @@
   "name": "@nocobase/plugin-sample-custom-signup-page",
   "version": "0.10.1-alpha.1",
   "main": "./lib/server/index.js",
-  "scripts": {
-    "build": "father build",
-    "watch": "father dev"
-  },
   "files": [
     "lib",
     "src",
@@ -17,10 +13,8 @@
     "client.js",
     "client.d.ts"
   ],
-  "dependencies": {},
   "devDependencies": {
     "react": "^18.2.0",
-    "father": "^4.2.3",
     "@formily/react": "2.2.26",
     "@nocobase/client": "0.10.1-alpha.1",
     "@nocobase/server": "0.10.1-alpha.1",
