@@ -1,5 +1,4 @@
 import React from 'react';
-import { onFieldInputValueChange } from '@formily/core';
 import { useForm, useField } from '@formily/react';
 
 import { useCollectionDataSource } from '@nocobase/client';
@@ -8,7 +7,7 @@ import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
 import CollectionFieldset, { useCollectionUIFields } from '../components/CollectionFieldset';
 
 import { isValidFilter } from '../utils';
-import { NAMESPACE } from '../locale';
+import { NAMESPACE, lang } from '../locale';
 import { collection, filter, values } from '../schemas/collection';
 import { RadioWithTooltip } from '../components/RadioWithTooltip';
 
@@ -74,7 +73,7 @@ export default {
           ...filter,
           title: `{{t("Only update records matching conditions", { ns: "${NAMESPACE}" })}}`,
           ['x-validator'](value) {
-            return isValidFilter(value) ? '' : `{{t("Please add at least one condition", { ns: "${NAMESPACE}" })}}`;
+            return isValidFilter(value) ? '' : lang('Please add at least one condition');
           },
         },
         values: {

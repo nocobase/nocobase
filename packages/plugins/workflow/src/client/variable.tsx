@@ -1,4 +1,4 @@
-import { useCollectionManager, useCompile } from '@nocobase/client';
+import { useCompile } from '@nocobase/client';
 import { useFlowContext } from './FlowContext';
 import { NAMESPACE, lang } from './locale';
 import { instructions, useAvailableUpstreams, useNodeContext, useUpstreamScopes } from './nodes';
@@ -84,7 +84,7 @@ export const systemOptions = {
 
 export const BaseTypeSets = {
   boolean: new Set(['checkbox']),
-  number: new Set(['number', 'percent']),
+  number: new Set(['integer', 'number', 'percent']),
   string: new Set([
     'input',
     'password',
