@@ -1,5 +1,4 @@
-import { cx } from '@emotion/css';
-import { SchemaComponent } from '@nocobase/client';
+import { cx, SchemaComponent } from '@nocobase/client';
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { workflowPageClass } from './style';

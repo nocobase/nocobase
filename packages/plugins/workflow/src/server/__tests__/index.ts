@@ -1,9 +1,7 @@
-import path from 'path';
-import { get } from 'lodash';
-
 import { ApplicationOptions } from '@nocobase/server';
 import { MockServer, mockServer } from '@nocobase/test';
-
+import { lodash } from '@nocobase/utils';
+import path from 'path';
 import Plugin from '..';
 import { JOB_STATUS } from '../constants';
 import FlowNodeModel from '../models/FlowNode';
@@ -28,7 +26,7 @@ export async function getApp({ manual, ...options }: MockAppOptions = {}): Promi
         run({ config = {} }: FlowNodeModel, { result }, processor) {
           return {
             status: JOB_STATUS.RESOLVED,
-            result: config.path == null ? result : get(result, config.path),
+            result: config.path == null ? result : lodash.get(result, config.path),
           };
         },
       },

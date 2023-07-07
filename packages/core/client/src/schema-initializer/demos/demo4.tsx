@@ -1,6 +1,6 @@
+import { ArrayTable } from '@formily/antd';
 import { uid } from '@formily/shared';
 import {
-  ArrayTable,
   Input,
   SchemaComponent,
   SchemaComponentProvider,

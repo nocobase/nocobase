@@ -6,14 +6,21 @@
   "description": "file management plugin.",
   "description.zh-CN": "文件管理。",
   "license": "AGPL-3.0",
-  "main": "./lib/index.js",
-  "types": "./lib/index.d.ts",
+  "main": "./lib/server/index.js",
+  "files": [
+    "lib",
+    "src",
+    "README.md",
+    "README.zh-CN.md",
+    "CHANGELOG.md",
+    "server.js",
+    "server.d.ts",
+    "client.js",
+    "client.d.ts"
+  ],
   "dependencies": {
     "@aws-sdk/client-s3": "^3.245.0",
     "@koa/multer": "^3.0.0",
-    "@nocobase/actions": "0.10.1-alpha.1",
-    "@nocobase/client": "0.10.1-alpha.1",
-    "@nocobase/server": "0.10.1-alpha.1",
     "cos-nodejs-sdk-v5": "^2.11.14",
     "koa-static": "^5.0.0",
     "mime-match": "^1.0.2",
@@ -21,12 +28,25 @@
     "multer": "^1.4.2",
     "multer-aliyun-oss": "2.1.1",
     "multer-cos": "^1.0.3",
-    "multer-s3": "^3.0.1"
-  },
-  "devDependencies": {
-    "@nocobase/test": "0.10.1-alpha.1",
+    "multer-s3": "^3.0.1",
     "@types/koa-multer": "^1.0.1",
     "@types/multer": "^1.4.5"
+  },
+  "devDependencies": {
+    "react": "^18.2.0",
+    "antd": "^4.24.8",
+    "react-i18next": "^11.15.1",
+    "@formily/react": "2.2.26",
+    "@formily/shared": "2.2.26",
+    "@formily/antd": "2.2.26",
+    "@formily/core": "2.2.26",
+    "supertest": "^6.1.6",
+    "@nocobase/actions": "0.10.1-alpha.1",
+    "@nocobase/database": "0.10.1-alpha.1",
+    "@nocobase/utils": "0.10.1-alpha.1",
+    "@nocobase/client": "0.10.1-alpha.1",
+    "@nocobase/server": "0.10.1-alpha.1",
+    "@nocobase/test": "0.10.1-alpha.1"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
 }

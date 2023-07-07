@@ -1,17 +1,16 @@
-import { css } from '@emotion/css';
-import { FormLayout, FormItem } from '@formily/antd';
-import { SchemaInitializerItemOptions, Variable, useCollectionManager } from '@nocobase/client';
+import { FormItem, FormLayout } from '@formily/antd';
+import { css, SchemaInitializerItemOptions, useCollectionManager, Variable } from '@nocobase/client';
 import { Evaluator, evaluators, getOptions } from '@nocobase/evaluators/client';
 import { parse } from '@nocobase/utils/client';
 import { Radio } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useFlowContext } from '../FlowContext';
 import { RadioWithTooltip } from '../components/RadioWithTooltip';
 import { renderEngineReference } from '../components/renderEngineReference';
-import { NAMESPACE, lang } from '../locale';
-import { BaseTypeSets, useWorkflowVariableOptions } from '../variable';
 import { ValueBlock } from '../components/ValueBlock';
+import { useFlowContext } from '../FlowContext';
+import { lang, NAMESPACE } from '../locale';
+import { BaseTypeSets, useWorkflowVariableOptions } from '../variable';
 
 function useDynamicExpressionCollectionFieldMatcher(field): boolean {
   if (!['belongsTo', 'hasOne'].includes(field.type)) {

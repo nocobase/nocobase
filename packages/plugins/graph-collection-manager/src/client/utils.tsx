@@ -1,5 +1,7 @@
-import { groupBy, reduce, uniq, uniqBy } from 'lodash';
+import { lodash } from '@nocobase/utils/client';
 import { useTranslation } from 'react-i18next';
+
+const { groupBy, reduce, uniq, uniqBy } = lodash;
 
 const shape = {
   ER: 'er-rect',

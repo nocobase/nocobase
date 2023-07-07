@@ -1,16 +1,13 @@
-import React, { useState } from 'react';
 import { onFieldValueChange } from '@formily/core';
 import { useForm, useFormEffects } from '@formily/react';
-import { css } from '@emotion/css';
-
-import { SchemaComponent } from '@nocobase/client';
-
-import { appends, collection } from '../../schemas/collection';
-import { OnField } from './OnField';
-import { EndsByField } from './EndsByField';
-import { RepeatField } from './RepeatField';
-import { SCHEDULE_MODE } from './constants';
+import { css, SchemaComponent } from '@nocobase/client';
+import React, { useState } from 'react';
 import { NAMESPACE } from '../../locale';
+import { appends, collection } from '../../schemas/collection';
+import { SCHEDULE_MODE } from './constants';
+import { EndsByField } from './EndsByField';
+import { OnField } from './OnField';
+import { RepeatField } from './RepeatField';
 
 const ModeFieldsets = {
   [SCHEDULE_MODE.STATIC]: {

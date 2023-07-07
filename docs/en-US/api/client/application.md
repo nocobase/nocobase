@@ -32,7 +32,6 @@ Add Providers, build-in Providers are:
 - APIClientProvider
 - I18nextProvider
 - AntdConfigProvider
-- RemoteRouteSwitchProvider
 - SystemSettingsProvider
 - PluginManagerProvider
 - SchemaComponentProvider
