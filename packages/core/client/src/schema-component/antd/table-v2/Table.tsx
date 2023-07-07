@@ -57,15 +57,15 @@ const useTableColumns = (props) => {
         ...s['x-component-props'],
         render: (v, record) => {
           const index = field.value?.indexOf(record);
-          const fieldSchemas = s.reduceProperties((buf, k) => {
+          const fieldSchema = s.reduceProperties((buf, k) => {
             if (k['x-component'] === 'CollectionField') {
               return k;
             }
             return buf;
           }, null);
-          if (fieldSchemas) {
-            fieldSchemas['x-component-props']['field'] = getCollectionJoinField(
-              `${record.__collection}.${fieldSchemas.name}`,
+          if (fieldSchema) {
+            fieldSchema['x-component-props']['field'] = getCollectionJoinField(
+              `${record.__collection}.${fieldSchema.name}`,
             );
           }
           return (
