@@ -5,7 +5,6 @@ import { Registry } from '@nocobase/utils/client';
 import { Button, Select } from 'antd';
 import React from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { cloneDeep } from 'lodash';
 import { NodeDefaultView } from '.';
 import { Branch } from '../Branch';
 import { RadioWithTooltip, RadioWithTooltipOption } from '../components/RadioWithTooltip';
