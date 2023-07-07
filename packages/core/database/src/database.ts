@@ -70,6 +70,7 @@ import QueryInterface from './query-interface/query-interface';
 import buildQueryInterface from './query-interface/query-interface-builder';
 import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
 import { ViewCollection } from './view-collection';
+import { updateAssociations } from './update-associations';
 
 export type MergeOptions = merge.Options;
 
@@ -351,6 +352,18 @@ export class Database extends EventEmitter implements AsyncEmitter {
           model.refreshAttributes();
         }
       }
+    });
+
+    this.on('afterDefineCollection', (collection) => {
+      collection.model.afterCreate(async (model, options) => {
+        if (!options.values) {
+          return;
+        }
+
+        await updateAssociations(model, options.values, {
+          ...options,
+        });
+      });
     });
 
     this.on('afterUpdateCollection', (collection, options) => {

@@ -781,12 +781,7 @@ describe('acl', () => {
           },
         ],
       },
-      hooks: false,
     });
-
-    expect(app.acl.getRole('new')).toBeUndefined();
-
-    await app.reload();
 
     expect(app.acl.getRole('new')).toBeDefined();
 

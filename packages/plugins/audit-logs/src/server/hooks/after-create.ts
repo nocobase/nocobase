@@ -17,6 +17,7 @@ export function afterCreate(app: Application) {
     try {
       const changes = [];
       const changed = model.changed();
+
       if (changed) {
         changed.forEach((key: string) => {
           const field = collection.findField((field) => {
@@ -30,6 +31,7 @@ export function afterCreate(app: Application) {
           }
         });
       }
+
       await AuditLog.repository.create({
         values: {
           type: LOG_TYPE_CREATE,
@@ -40,7 +42,6 @@ export function afterCreate(app: Application) {
           changes,
         },
         transaction,
-        hooks: false,
       });
     } catch (error) {}
   };

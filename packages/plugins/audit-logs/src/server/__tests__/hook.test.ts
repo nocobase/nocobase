@@ -25,6 +25,10 @@ describe('hook', () => {
           name: 'status',
           defaultValue: 'draft',
         },
+        {
+          type: 'belongsToMany',
+          name: 'tags',
+        },
       ],
     });
     db.collection({
@@ -35,11 +39,43 @@ describe('hook', () => {
         { type: 'string', name: 'token' },
       ],
     });
+
+    db.collection({
+      name: 'tags',
+      fields: [{ type: 'string', name: 'name' }],
+    });
+
     await db.sync();
   });
 
   afterEach(async () => {
     await api.destroy();
+  });
+
+  it('should log association changes', async () => {
+    const t1 = await db.getRepository('tags').create({
+      values: {
+        name: 't1',
+      },
+    });
+
+    const post = await db.getRepository('posts').create({
+      values: {
+        title: 't1',
+        tags: [
+          {
+            id: t1.get('id'),
+          },
+        ],
+      },
+    });
+
+    const log = await db.getRepository('auditLogs').findOne({
+      appends: ['changes'],
+    });
+
+    const changes = log.changes;
+    expect(changes).toHaveLength(2);
   });
 
   it('model', async () => {
@@ -50,6 +86,7 @@ describe('hook', () => {
     const auditLogs = await db.getCollection('auditLogs').repository.find({
       appends: ['changes'],
     });
+
     expect(auditLogs.length).toBe(3);
 
     const titleChange = (changes) => {

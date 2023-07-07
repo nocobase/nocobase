@@ -226,7 +226,7 @@ describe('workflow > instructions > aggregate', () => {
 
     it('sum', async () => {
       const PostModel = db.getCollection('posts').model;
-      const p1 = await PostModel.create({ title: 't1', read: 1 });
+      const p1 = await PostModel.create({ title: 't1', read: 1 }, { hooks: false });
 
       const n1 = await workflow.createNode({
         type: 'create',
@@ -239,6 +239,7 @@ describe('workflow > instructions > aggregate', () => {
           },
         },
       });
+
       const n2 = await workflow.createNode({
         upstreamId: n1.id,
         type: 'aggregate',
@@ -256,13 +257,15 @@ describe('workflow > instructions > aggregate', () => {
           },
         },
       });
+
       await n1.setDownstream(n2);
+
       const n3 = await workflow.createNode({
         upstreamId: n2.id,
         type: 'aggregate',
         config: {
           aggregator: 'sum',
-          collection: 'posts',
+          // collection: 'posts',
           associated: true,
           association: {
             name: 'posts',
