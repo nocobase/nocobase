@@ -56,7 +56,7 @@
   "devDependencies": {
     "dumi": "^2.2.0",
     "dumi-theme-nocobase": "^0.2.14",
-    "@testing-library/react": "^14.0.0",
+    "@testing-library/react": "^12.1.5",
     "@types/markdown-it": "12.2.3",
     "@types/markdown-it-highlightjs": "3.3.1",
     "@types/react-big-calendar": "^1.6.4",
