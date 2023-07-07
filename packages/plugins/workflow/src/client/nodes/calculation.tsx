@@ -36,13 +36,13 @@ const DynamicConfig = ({ value, onChange }) => {
     <FormLayout layout="vertical">
       <FormItem colon label={t('Expression type', { ns: NAMESPACE })}>
         <Radio.Group
-          value={value === false ? false : value || null}
+          value={value === false ? false : value || ''}
           onChange={(ev) => {
             onChange(ev.target.value);
           }}
         >
           <Radio value={false}>{t('Static', { ns: NAMESPACE })}</Radio>
-          <Radio value={value || null}>{t('Dynamic', { ns: NAMESPACE })}</Radio>
+          <Radio value={value || ''}>{t('Dynamic', { ns: NAMESPACE })}</Radio>
         </Radio.Group>
       </FormItem>
       {value !== false ? (
@@ -53,7 +53,7 @@ const DynamicConfig = ({ value, onChange }) => {
             { ns: NAMESPACE },
           )}
         >
-          <Variable.Input value={value || null} onChange={(v) => onChange(v)} scope={scope} />
+          <Variable.Input value={value || ''} onChange={(v) => onChange(v)} scope={scope} />
         </FormItem>
       ) : null}
     </FormLayout>
