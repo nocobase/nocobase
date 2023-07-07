@@ -1,5 +1,4 @@
-import { Model } from '@nocobase/database';
-import { BelongsToGetAssociationMixin } from 'sequelize';
+import { BelongsToGetAssociationMixin, Model } from '@nocobase/database';
 import FlowNodeModel from './FlowNode';
 
 export default class JobModel extends Model {

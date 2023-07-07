@@ -1,11 +1,10 @@
-import { Database, Model, Op } from '@nocobase/database';
 import {
+  Database,
   HasManyCountAssociationsMixin,
   HasManyCreateAssociationMixin,
   HasManyGetAssociationsMixin,
-  Transactionable,
-} from 'sequelize';
-
+  Model,
+} from '@nocobase/database';
 import ExecutionModel from './Execution';
 import FlowNodeModel from './FlowNode';
 

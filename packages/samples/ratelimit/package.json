@@ -1,7 +1,18 @@
 {
   "name": "@nocobase/plugin-sample-ratelimit",
   "version": "0.10.1-alpha.1",
-  "main": "lib/server/index.js",
+  "main": "./lib/server/index.js",
+  "files": [
+    "lib",
+    "src",
+    "README.md",
+    "README.zh-CN.md",
+    "CHANGELOG.md",
+    "server.js",
+    "server.d.ts",
+    "client.js",
+    "client.d.ts"
+  ],
   "dependencies": {
     "koa-ratelimit": "^5.0.1"
   },

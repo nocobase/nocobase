@@ -1,5 +1,4 @@
-import { Database, Model } from '@nocobase/database';
-import { BelongsToGetAssociationMixin } from 'sequelize';
+import { BelongsToGetAssociationMixin, Database, Model } from '@nocobase/database';
 import WorkflowModel from './Workflow';
 
 export default class FlowNodeModel extends Model {

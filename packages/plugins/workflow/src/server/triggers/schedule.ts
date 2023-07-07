@@ -1,5 +1,5 @@
+import { fn, literal, Op, where } from '@nocobase/database';
 import parser from 'cron-parser';
-import { Op, fn, literal, where } from 'sequelize';
 import Plugin, { Trigger } from '..';
 import WorkflowModel from '../models/Workflow';
 
