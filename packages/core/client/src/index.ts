@@ -1,5 +1,6 @@
 import './global.less';
 
+export * from '@emotion/css';
 export * from './acl';
 export * from './antd-config-provider';
 export * from './api-client';
@@ -18,6 +19,7 @@ export * from './hooks';
 export * from './i18n';
 export * from './icon';
 export { default as locale } from './locale';
+export * from './nocobase-buildin-plugin';
 export * from './plugin-manager';
 export * from './pm';
 export * from './powered-by';

@@ -1,15 +1,14 @@
+import { CollectionGroup } from '@nocobase/database';
+import { dayjs, lodash } from '@nocobase/utils';
 import archiver from 'archiver';
-import dayjs from 'dayjs';
 import fs from 'fs';
 import fsPromises from 'fs/promises';
-import lodash from 'lodash';
 import mkdirp from 'mkdirp';
 import path from 'path';
 import stream from 'stream';
 import util from 'util';
 import { AppMigrator } from './app-migrator';
 import { CollectionGroupManager } from './collection-group-manager';
-import { CollectionGroup } from '@nocobase/database';
 import { FieldValueWriter } from './field-value-writer';
 import { DUMPED_EXTENSION, humanFileSize, sqlAdapter } from './utils';
 

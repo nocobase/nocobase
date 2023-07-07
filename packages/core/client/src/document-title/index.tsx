@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { useTranslation } from 'react-i18next';
+import { Plugin } from '../application/Plugin';
 import { useSystemSettings } from '../system-settings';
 
 interface DocumentTitleContextProps {
@@ -50,3 +51,9 @@ export const useCurrentDocumentTitle = (title: string) => {
     setTitle(title);
   }, []);
 };
+
+export class RemoteDocumentTitlePlugin extends Plugin {
+  async load() {
+    this.app.use(RemoteDocumentTitleProvider, this.options);
+  }
+}

@@ -1,34 +1,30 @@
-import React, { useState, useContext, useMemo } from 'react';
-
-import { useForm, ISchema, Schema, useFieldSchema } from '@formily/react';
-import { get } from 'lodash';
-
+import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 import {
+  ActionContextProvider,
+  GeneralSchemaDesigner,
+  gridRowColWrap,
+  InitializerWithSwitch,
   SchemaComponent,
   SchemaComponentContext,
   SchemaInitializer,
   SchemaInitializerItemOptions,
-  InitializerWithSwitch,
   SchemaInitializerProvider,
-  gridRowColWrap,
-  ActionContextProvider,
-  GeneralSchemaDesigner,
   SchemaSettings,
   useCompile,
   useFormBlockContext,
 } from '@nocobase/client';
-import { Registry } from '@nocobase/utils/client';
-
-import { useTrigger } from '../../triggers';
+import { lodash, Registry } from '@nocobase/utils/client';
+import React, { useContext, useMemo, useState } from 'react';
 import { instructions, useAvailableUpstreams, useNodeContext } from '..';
+import { JOB_STATUS } from '../../constants';
 import { useFlowContext } from '../../FlowContext';
 import { lang, NAMESPACE } from '../../locale';
-import { JOB_STATUS } from '../../constants';
-import customForm from './forms/custom';
-import createForm from './forms/create';
-import updateForm from './forms/update';
-import { FormBlockProvider } from './FormBlockProvider';
+import { useTrigger } from '../../triggers';
 import { DetailsBlockProvider } from './DetailsBlockProvider';
+import { FormBlockProvider } from './FormBlockProvider';
+import createForm from './forms/create';
+import customForm from './forms/custom';
+import updateForm from './forms/update';
 
 type ValueOf<T> = T[keyof T];
 
@@ -299,7 +295,7 @@ export function SchemaConfig({ value, onChange }) {
         designable: !workflow.executed,
         refresh() {
           ctx.refresh?.();
-          const { tabs } = get(schema.toJSON(), 'properties.drawer.properties') as { tabs: ISchema };
+          const { tabs } = lodash.get(schema.toJSON(), 'properties.drawer.properties') as { tabs: ISchema };
           const forms = Array.from(manualFormTypes.getValues()).reduce(
             (result, item) => Object.assign(result, item.config.parseFormOptions(tabs)),
             {},

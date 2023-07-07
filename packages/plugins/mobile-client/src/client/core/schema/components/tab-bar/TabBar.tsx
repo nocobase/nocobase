@@ -1,8 +1,8 @@
-import { TabBar } from 'antd-mobile';
-import { TabBarItem } from './TabBar.Item';
-import React, { useCallback } from 'react';
 import { useFieldSchema } from '@formily/react';
+import { uid } from '@formily/shared';
 import {
+  css,
+  cx,
   DndContext,
   Icon,
   SchemaComponent,
@@ -11,12 +11,13 @@ import {
   useCompile,
   useDesignable,
 } from '@nocobase/client';
-import { useTranslation } from '../../../../locale';
-import { css, cx } from '@emotion/css';
-import { uid } from '@formily/shared';
+import { TabBar } from 'antd-mobile';
+import React, { useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { tabItemSchema } from './schema';
+import { useTranslation } from '../../../../locale';
 import { PageSchema } from '../../common';
+import { tabItemSchema } from './schema';
+import { TabBarItem } from './TabBar.Item';
 
 export const InternalTabBar: React.FC = (props) => {
   const fieldSchema = useFieldSchema();

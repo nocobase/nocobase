@@ -1,4 +1,4 @@
-import { css } from '@emotion/css';
+import { css } from '@nocobase/client';
 import { InputNumber, Select } from 'antd';
 import React from 'react';
 import { lang } from '../locale';

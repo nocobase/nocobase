@@ -44,6 +44,7 @@
     }
   },
   "devDependencies": {
+    "commander": "^9.2.0",
     "@types/react": "^17.0.0",
     "@types/react-dom": "^17.0.0",
     "react": "^18.0.0",
@@ -57,7 +58,7 @@
     "@vitejs/plugin-react": "^4.0.0",
     "auto-changelog": "^2.4.0",
     "dumi": "^2.2.0",
-    "dumi-theme-nocobase": "^0.2.12",
+    "dumi-theme-nocobase": "^0.2.14",
     "ghooks": "^2.0.4",
     "jsdom-worker": "^0.3.0",
     "prettier": "^2.2.1",

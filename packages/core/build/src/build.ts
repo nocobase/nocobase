@@ -11,13 +11,24 @@ import randomColor from './randomColor';
 import registerBabel from './registerBabel';
 import rollup from './rollup';
 import { Dispose, IBundleOptions, IBundleTypeOutput, ICjs, IEsm, IOpts } from './types';
-import { getExistFile, getLernaPackages } from './utils';
+import { getExistFiles, getLernaPackages } from './utils';
 
 export function getBundleOpts(opts: IOpts): IBundleOptions[] {
   const { cwd, buildArgs = {}, rootConfig = {} } = opts;
-  const entry = getExistFile({
+  const entry = getExistFiles({
     cwd,
-    files: ['src/index.tsx', 'src/index.ts', 'src/index.jsx', 'src/index.js'],
+    files: [
+      'src/index.tsx',
+      'src/index.ts',
+      'src/index.jsx',
+      'src/index.js',
+      'src/server/index.ts',
+      'src/server/index.js',
+      'src/client/index.js',
+      'src/client/index.ts',
+      'src/client/index.tsx'
+    ],
+    onlyOne: false,
     returnRelative: true,
   });
   const userConfig = getUserConfig({ cwd, customPath: buildArgs.config });

@@ -1,5 +1,4 @@
-import { css } from '@emotion/css';
-import { i18n } from '@nocobase/client';
+import { css, i18n } from '@nocobase/client';
 import { evaluators } from '@nocobase/evaluators/client';
 import React from 'react';
 

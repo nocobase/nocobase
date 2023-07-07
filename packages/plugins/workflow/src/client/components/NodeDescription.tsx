@@ -1,6 +1,6 @@
-import React from 'react';
-import { css, cx } from '@emotion/css';
+import { css, cx } from '@nocobase/client';
 import { Tag } from 'antd';
+import React from 'react';
 import { lang } from '../locale';
 
 export function NodeDescription(props) {

@@ -1,8 +1,7 @@
-import React from 'react';
+import { Plugin } from '@nocobase/client';
 
-const RateLimit = React.memo((props) => {
-  return <>{props.children}</>;
-});
-RateLimit.displayName = 'RateLimit';
+class RateLimitPlugin extends Plugin {
+  async load() { }
+}
 
-export default RateLimit;
+export default RateLimitPlugin;

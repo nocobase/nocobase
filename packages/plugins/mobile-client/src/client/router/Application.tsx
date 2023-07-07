@@ -1,7 +1,8 @@
-import { css, cx } from '@emotion/css';
 import {
   ActionContextProvider,
   AdminProvider,
+  css,
+  cx,
   RemoteSchemaComponent,
   useSystemSettings,
   useViewport,
@@ -79,7 +80,6 @@ const useMobileSchemaUid = () => {
 
 const MApplication: React.FC = (props) => {
   const mobileSchemaUid = useMobileSchemaUid();
-  console.log('mobileSchemaUid', mobileSchemaUid);
   const params = useParams<{ name: string }>();
   const interfaceContext = useInterfaceContext();
   const Provider = useMemo(() => {

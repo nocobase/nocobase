@@ -1,9 +1,0 @@
-// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
-
-exports[`route-switch > case 1 1`] = `
-<div>
-  <h1>
-    Home
-  </h1>
-</div>
-`;
