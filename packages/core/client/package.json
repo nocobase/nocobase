@@ -4,7 +4,7 @@
   "license": "Apache-2.0",
   "main": "lib",
   "module": "es/index.js",
-  "typings": "es/index.d.ts",
+  "types": "es/index.d.ts",
   "dependencies": {
     "@ant-design/pro-layout": "^7.14.3",
     "@antv/g2plot": "^2.4.18",
