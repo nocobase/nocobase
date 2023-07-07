@@ -78,7 +78,7 @@ BEGIN
   INSERT INTO groups (name) VALUES (NEW.group_name) RETURNING id INTO new_group_id;
 
   -- 插入一个新的 users 行，使用新插入的 groups 行的 ID 作为 group_id
-  INSERT INTO users (name, group_id) VALUES (NEW.user_name, new_group_id);
+  INSERT INTO users (name, group_id) VALUES (NEW.user_name, new_group_id) RETURNING id INTO NEW.user_id;
 
   RETURN NEW;
 END;
@@ -91,12 +91,15 @@ INSTEAD OF INSERT ON ${UsersWithGroup.quotedTableName()}
 FOR EACH ROW EXECUTE FUNCTION insert_users_with_group();
 `);
 
-    await UsersWithGroup.repository.create({
+    const returned = await UsersWithGroup.repository.create({
       values: {
         user_name: 'u1',
         group_name: 'g1',
       },
     });
+
+    expect(returned.get('user_name')).toBe('u1');
+    expect(returned.get('group_name')).toBe('g1');
 
     const records = await UsersWithGroup.repository.find();
     const firstRecord = records[0].toJSON();
