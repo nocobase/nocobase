@@ -1,7 +1,3 @@
-import { CreateOptions, Repository } from '../repository';
+import { Repository } from '../repository';
 
-export class ViewRepository extends Repository {
-  async create(options: CreateOptions): Promise<any> {
-    console.log('create view repository');
-  }
-}
+export class ViewRepository extends Repository {}

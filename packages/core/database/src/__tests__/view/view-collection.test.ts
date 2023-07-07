@@ -67,8 +67,6 @@ describe('create view', () => {
       writableView: true,
     });
 
-    console.log(UsersWithGroup.fields);
-
     const u1WithG1 = await UsersWithGroup.repository.create({
       values: {
         user_name: 'u1',
