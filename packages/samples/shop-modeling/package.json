@@ -2,6 +2,10 @@
   "name": "@nocobase/plugin-sample-shop-modeling",
   "version": "0.10.0-alpha.5",
   "main": "./lib/server/index.js",
+  "scripts": {
+    "build": "father build",
+    "watch": "father dev"
+  },
   "files": [
     "lib",
     "src",
@@ -17,6 +21,7 @@
     "nodejs-snowflake": "2.0.1"
   },
   "devDependencies": {
+    "father": "^4.2.3",
     "@nocobase/database": "0.10.0-alpha.5",
     "@nocobase/client": "0.10.0-alpha.5",
     "@nocobase/server": "0.10.0-alpha.5",

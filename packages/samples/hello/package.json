@@ -2,6 +2,10 @@
   "name": "@nocobase/plugin-sample-hello",
   "version": "0.10.0-alpha.5",
   "main": "./lib/server/index.js",
+  "scripts": {
+    "build": "father build",
+    "watch": "father dev"
+  },
   "files": [
     "lib",
     "src",
@@ -13,6 +17,7 @@
     "client.js",
     "client.d.ts"
   ],
+  "dependencies": {},
   "displayName": "Sample-Hello",
   "displayName.zh-CN": "插件demo-hello",
   "description": "simple plugin demo",
@@ -20,6 +25,7 @@
   "devDependencies": {
     "react": "^18.2.0",
     "antd": "^4.24.8",
+    "father": "^4.2.3",
     "react-i18next": "^11.15.1",
     "@formily/react": "2.2.26",
     "@ant-design/icons": "^4.8.0",

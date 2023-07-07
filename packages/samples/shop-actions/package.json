@@ -2,6 +2,10 @@
   "name": "@nocobase/plugin-sample-shop-actions",
   "version": "0.10.0-alpha.5",
   "main": "./lib/server/index.js",
+  "scripts": {
+    "build": "father build",
+    "watch": "father dev"
+  },
   "files": [
     "lib",
     "src",
@@ -13,7 +17,9 @@
     "client.js",
     "client.d.ts"
   ],
+  "dependencies": {},
   "devDependencies": {
+    "father": "^4.2.3",
     "@nocobase/client": "0.10.0-alpha.5",
     "@nocobase/server": "0.10.0-alpha.5",
     "@nocobase/test": "0.10.0-alpha.5"

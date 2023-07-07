@@ -27,7 +27,7 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> 
   namespace?: string;
   /**
    * Used for @nocobase/plugin-duplicator
-   * @see packages/core/database/src/collection-group-manager.tss
+   * @see packages/core/database/src/collection-group-manager.ts
    *
    * @prop {'required' | 'optional' | 'skip'} dumpable - Determine whether the collection is dumped
    * @prop {string[] | string} [with] - Collections dumped with this collection

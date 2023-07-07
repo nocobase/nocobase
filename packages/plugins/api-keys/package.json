@@ -19,6 +19,8 @@
     "client.d.ts"
   ],
   "dependencies": {
+    "ahooks": "^3.7.2",
+    "moment": "^2.29.1"
   },
   "devDependencies": {
     "react": "^18.2.0",
