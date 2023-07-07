@@ -13,6 +13,8 @@ export default abstract class QueryInterface {
 
   abstract listViews();
 
+  abstract viewDef(viewName: string): Promise<string>;
+
   abstract viewColumnUsage(options: { viewName: string; schema?: string }): Promise<{
     [view_column_name: string]: {
       column_name: string;
@@ -20,6 +22,8 @@ export default abstract class QueryInterface {
       table_schema?: string;
     };
   }>;
+
+  abstract parseSQL(sql: string): any;
 
   async dropAll(options) {
     if (options.drop !== true) return;

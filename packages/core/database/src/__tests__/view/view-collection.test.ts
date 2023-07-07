@@ -24,6 +24,7 @@ describe('create view', () => {
         {
           name: 'name',
           type: 'string',
+          interface: { type: 'string', title: '姓名' },
         },
         {
           name: 'group',
@@ -39,6 +40,7 @@ describe('create view', () => {
         {
           name: 'name',
           type: 'string',
+          interface: { type: 'string', title: '分组名' },
         },
       ],
     });
@@ -48,7 +50,7 @@ describe('create view', () => {
     const viewName = `users_with_group`;
     const dropSQL = `DROP VIEW IF EXISTS ${viewName}`;
     await db.sequelize.query(dropSQL);
-    const viewSQL = `CREATE VIEW ${viewName} AS SELECT users.id AS user_id, users.name AS user_name, groups.id AS group_id, groups.name AS group_name FROM ${UserCollection.quotedTableName()} AS users INNER JOIN ${GroupCollection.quotedTableName()} AS groups ON users.group_id = groups.id`;
+    const viewSQL = `CREATE VIEW ${viewName} AS SELECT users.id AS user_id, users.name AS user_name, groups.name AS group_name FROM ${UserCollection.quotedTableName()} AS users INNER JOIN ${GroupCollection.quotedTableName()} AS groups ON users.group_id = groups.id`;
     await db.sequelize.query(viewSQL);
 
     const inferredFields = await ViewFieldInference.inferFields({
@@ -57,7 +59,24 @@ describe('create view', () => {
       viewSchema: 'public',
     });
 
-    console.log(inferredFields);
+    const UsersWithGroup = db.collection({
+      name: viewName,
+      view: true,
+      fields: Object.values(inferredFields),
+      schema: db.inDialect('postgres') ? 'public' : undefined,
+      writableView: true,
+    });
+
+    console.log(UsersWithGroup.fields);
+
+    const u1WithG1 = await UsersWithGroup.repository.create({
+      values: {
+        user_name: 'u1',
+        group_name: 'g1',
+      },
+    });
+
+    console.log(u1WithG1);
   });
 
   it('should insert data into view collection', async () => {

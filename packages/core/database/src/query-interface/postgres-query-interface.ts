@@ -34,6 +34,23 @@ export default class PostgresQueryInterface extends QueryInterface {
     return await this.db.sequelize.query(sql, { type: 'SELECT' });
   }
 
+  async viewDef(viewName: string) {
+    const [schema, name] = viewName.split('.');
+
+    const viewDefQuery = await this.db.sequelize.query(
+      `
+    select pg_get_viewdef(format('%I.%I', '${schema}', '${name}')::regclass, true) as definition
+    `,
+      { type: 'SELECT' },
+    );
+
+    return lodash.trim(viewDefQuery[0]['definition']);
+  }
+
+  parseSQL(sql: string): any {
+    return sqlParser.parse(sql);
+  }
+
   async viewColumnUsage(options): Promise<{
     [view_column_name: string]: {
       column_name: string;
@@ -55,17 +72,10 @@ export default class PostgresQueryInterface extends QueryInterface {
       table_schema: string;
     }>;
 
-    const viewDefQuery = await this.db.sequelize.query(
-      `
-    select pg_get_viewdef(format('%I.%I', '${schema}', '${viewName}')::regclass, true) as definition
-    `,
-      { type: 'SELECT' },
-    );
+    const def = await this.viewDef(`${schema}.${viewName}`);
 
-    const def = lodash.trim(viewDefQuery[0]['definition']);
-    console.log(def);
     try {
-      const { ast } = sqlParser.parse(def);
+      const { ast } = this.parseSQL(def);
       const columns = ast[0].columns;
 
       const usages = columns

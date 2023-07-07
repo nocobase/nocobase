@@ -31,6 +31,7 @@ export class ViewFieldInference {
     });
 
     const rawFields = [];
+
     for (const [name, column] of Object.entries(columns)) {
       const inferResult: any = { name };
 
