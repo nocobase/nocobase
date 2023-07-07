@@ -23,3 +23,4 @@ packages/core/database/src/sql-parser/index.js
 **/.dumi/tmp
 **/.dumi/tmp-test
 **/.dumi/tmp-production
+packages/core/cli/templates/plugin/src/client/*.tpl

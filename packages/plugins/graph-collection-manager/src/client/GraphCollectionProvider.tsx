@@ -1,16 +1,10 @@
-import {
-  PluginManagerContext,
-  RouteSwitchContext,
-  SettingsCenterContext,
-  SettingsCenterProvider,
-} from '@nocobase/client';
+import { PluginManagerContext, SettingsCenterContext, SettingsCenterProvider } from '@nocobase/client';
 import React, { useContext } from 'react';
 import { GraphCollectionPane } from './GraphCollectionShortcut';
 import { useGCMTranslation } from './utils';
 
 export const GraphCollectionProvider = React.memo((props) => {
   const ctx = useContext(PluginManagerContext);
-  const { routes, components, ...others } = useContext(RouteSwitchContext);
   // i18n.addResources('en-US', 'graphPositions', enUS);
   // i18n.addResources('ja-JP', 'graphPositions', jaJP);
   // i18n.addResources('zh-CN', 'graphPositions', zhCN);
@@ -31,9 +25,7 @@ export const GraphCollectionProvider = React.memo((props) => {
           },
         }}
       >
-        <RouteSwitchContext.Provider value={{ components: { ...components }, ...others, routes }}>
-          {props.children}
-        </RouteSwitchContext.Provider>
+        {props.children}
       </PluginManagerContext.Provider>
     </SettingsCenterProvider>
   );

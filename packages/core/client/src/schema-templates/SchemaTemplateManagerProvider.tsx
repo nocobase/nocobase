@@ -2,38 +2,18 @@ import { ISchema, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Spin } from 'antd';
 import { cloneDeep } from 'lodash';
-import React, { ReactNode, createContext, useContext, useMemo } from 'react';
+import React, { createContext, ReactNode, useContext, useMemo } from 'react';
 import { useAPIClient, useRequest } from '../api-client';
-import { RouteSwitchContext } from '../route-switch';
-import { SchemaComponentOptions } from '../schema-component';
+import { Plugin } from '../application/Plugin';
 import { BlockTemplate } from './BlockTemplate';
 
 export const SchemaTemplateManagerContext = createContext<any>({});
-
-const SchemaTemplateRouteProvider = (props) => {
-  const { routes, ...others } = useContext(RouteSwitchContext);
-  routes[1].routes.unshift(
-    {
-      type: 'route',
-      path: '/admin/plugins/block-templates/:key',
-      component: 'BlockTemplateDetails',
-    },
-    {
-      type: 'route',
-      path: '/admin/plugins/block-templates',
-      component: 'BlockTemplatePage',
-    },
-  );
-  return <RouteSwitchContext.Provider value={{ ...others, routes }}>{props.children}</RouteSwitchContext.Provider>;
-};
 
 export const SchemaTemplateManagerProvider: React.FC<any> = (props) => {
   const { templates, refresh } = props;
   return (
     <SchemaTemplateManagerContext.Provider value={{ templates, refresh }}>
-      <SchemaTemplateRouteProvider>
-        <SchemaComponentOptions components={{ BlockTemplate }}>{props.children}</SchemaComponentOptions>
-      </SchemaTemplateRouteProvider>
+      {props.children}
     </SchemaTemplateManagerContext.Provider>
   );
 };
@@ -156,3 +136,28 @@ export const RemoteSchemaTemplateManagerProvider: React.FC<{ children?: ReactNod
     </SchemaTemplateManagerProvider>
   );
 };
+
+export class RemoteSchemaTemplateManagerPlugin extends Plugin {
+  async load() {
+    this.addRoutes();
+    this.addComponents();
+    this.app.use(RemoteSchemaTemplateManagerProvider);
+  }
+
+  addComponents() {
+    this.app.addComponents({
+      BlockTemplate,
+    });
+  }
+
+  addRoutes() {
+    this.app.router.add('admin.plugins.block-templates', {
+      path: '/admin/plugins/block-templates',
+      Component: 'BlockTemplatePage',
+    });
+    this.app.router.add('admin.plugins.block-templates-key', {
+      path: '/admin/plugins/block-templates/:key',
+      Component: 'BlockTemplateDetails',
+    });
+  }
+}

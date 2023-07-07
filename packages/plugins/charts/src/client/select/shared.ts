@@ -1,4 +1,4 @@
-import { castArray } from 'lodash';
+import { lodash } from '@nocobase/utils/client';
 
 export const defaultFieldNames = {
   label: 'label',
@@ -20,7 +20,8 @@ export const getCurrentOptions = (values, dataSource, fieldNames) => {
     return newArr;
   }
   const result = flatData(dataSource);
-  values = castArray(values)
+  values = lodash
+    .castArray(values)
     .filter((item) => item != null)
     .map((val) => (typeof val === 'object' ? val[fieldNames.value] : val));
   const findOptions = (options: any[]) => {

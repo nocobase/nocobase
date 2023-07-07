@@ -32,7 +32,6 @@ const app = new Application({
 - APIClientProvider
 - I18nextProvider
 - AntdConfigProvider
-- RemoteRouteSwitchProvider
 - SystemSettingsProvider
 - PluginManagerProvider
 - SchemaComponentProvider

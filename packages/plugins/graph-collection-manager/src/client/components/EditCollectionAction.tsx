@@ -1,6 +1,5 @@
 import { EditOutlined } from '@ant-design/icons';
-import { css } from '@emotion/css';
-import { EditCollection } from '@nocobase/client';
+import { css, EditCollection } from '@nocobase/client';
 import React from 'react';
 import { useCancelAction, useUpdateCollectionActionAndRefreshCM } from '../action-hooks';
 import { getPopupContainer } from '../utils';

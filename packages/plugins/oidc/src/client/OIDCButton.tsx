@@ -1,6 +1,5 @@
 import { LoginOutlined } from '@ant-design/icons';
-import { css } from '@emotion/css';
-import { Authenticator, useAPIClient, useRedirect } from '@nocobase/client';
+import { Authenticator, css, useAPIClient, useRedirect } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
 import { Button, Space } from 'antd';
 import React, { useEffect, useState } from 'react';

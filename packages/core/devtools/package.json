@@ -1,11 +1,11 @@
 {
   "name": "@nocobase/devtools",
-  "version": "0.10.0-alpha.5",
+  "version": "0.10.1-alpha.1",
   "description": "",
   "license": "Apache-2.0",
   "main": "./src/index.js",
   "dependencies": {
-    "@nocobase/build": "0.10.0-alpha.5",
+    "@nocobase/build": "0.10.1-alpha.1",
     "@testing-library/react": "^12.1.2",
     "@types/jest": "^26.0.0",
     "@types/koa": "^2.13.4",
@@ -27,6 +27,7 @@
     "eslint-plugin-promise": "^6.1.1",
     "eslint-plugin-react": "^7.32.2",
     "eslint-plugin-react-hooks": "^4.6.0",
+    "jsdom": "^16.0.0",
     "jest": "^26.0.0",
     "jest-codemods": "^0.19.1",
     "jest-dom": "^3.1.2",

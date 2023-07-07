@@ -20,8 +20,7 @@ export default defineConfig({
     { rel: 'stylesheet', href: '/global.css' },
   ],
   headScripts: [
-    '/browser-checker.js',
-    '/set-router.js',
+    '/browser-checker.js'
   ],
   hash: true,
   alias: {

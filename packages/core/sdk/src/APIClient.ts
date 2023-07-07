@@ -223,12 +223,14 @@ interface ExtendedOptions {
   storageClass?: any;
 }
 
+export type APIClientOptions = AxiosInstance | (AxiosRequestConfig & ExtendedOptions);
+
 export class APIClient {
   axios: AxiosInstance;
   auth: Auth;
   storage: Storage;
 
-  constructor(instance?: AxiosInstance | (AxiosRequestConfig & ExtendedOptions)) {
+  constructor(instance?: APIClientOptions) {
     if (typeof instance === 'function') {
       this.axios = instance;
     } else {

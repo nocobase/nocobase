@@ -1,4 +1,4 @@
-import { css } from '@emotion/css';
+import { css } from '@nocobase/client';
 import { useInterfaceContext } from '../../../router/InterfaceProvider';
 import { PaginationProps } from 'antd';
 

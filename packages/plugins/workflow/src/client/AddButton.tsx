@@ -1,6 +1,5 @@
 import { PlusOutlined } from '@ant-design/icons';
-import { cx } from '@emotion/css';
-import { useAPIClient, useCompile } from '@nocobase/client';
+import { cx, useAPIClient, useCompile } from '@nocobase/client';
 import { Button, Dropdown, MenuProps } from 'antd';
 import React, { useCallback, useMemo } from 'react';
 import { useFlowContext } from './FlowContext';

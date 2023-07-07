@@ -1,12 +1,13 @@
 {
   "name": "@nocobase/utils",
-  "version": "0.10.0-alpha.5",
+  "version": "0.10.1-alpha.1",
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",
   "license": "Apache-2.0",
   "dependencies": {
     "@hapi/topo": "^6.0.0",
     "dedupe": "^3.0.2",
+    "dayjs": "^1.11.9",
     "deepmerge": "^4.2.2",
     "flat-to-nested": "^1.1.1",
     "graphlib": "^2.1.8",

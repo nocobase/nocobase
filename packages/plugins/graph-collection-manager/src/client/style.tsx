@@ -1,4 +1,4 @@
-import { css } from '@emotion/css';
+import { css } from '@nocobase/client';
 
 export const nodeSubtreeClass = css`
   display: flex;

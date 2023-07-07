@@ -7,7 +7,6 @@ NocoBase 客户端的扩展大多以 Provider 的形式提供。
 - APIClientProvider
 - I18nextProvider
 - AntdConfigProvider
-- RemoteRouteSwitchProvider
 - SystemSettingsProvider
 - PluginManagerProvider
 - SchemaComponentProvider

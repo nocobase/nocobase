@@ -56,7 +56,7 @@ export const DuplicateAction = observer((props: any) => {
   const handelQuickDuplicate = async () => {
     setLoading(true);
     try {
-      const data = await fetchTemplateData(api, template);
+      const data = await fetchTemplateData(api, template, t);
       await api.resource(__collection || name).create({
         values: {
           ...data,

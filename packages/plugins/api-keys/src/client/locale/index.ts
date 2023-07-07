@@ -6,10 +6,6 @@ export function lang(key: string) {
   return i18n.t(key, { ns: NAMESPACE });
 }
 
-export function generateNTemplate(key: string) {
-  return `{{t('${key}', { ns: '${NAMESPACE}', nsMode: 'fallback' })}}`;
-}
-
 export function useTranslation() {
   return useT([NAMESPACE, 'client'], {
     nsMode: 'fallback',
