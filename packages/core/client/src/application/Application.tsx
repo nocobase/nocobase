@@ -1,4 +1,5 @@
-import { App as AntdApp, APIClientOptions } from '@nocobase/sdk';
+import { APIClientOptions } from '@nocobase/sdk';
+import { App as AntdApp } from 'antd';
 import { i18n as i18next } from 'i18next';
 import get from 'lodash/get';
 import merge from 'lodash/merge';
@@ -6,15 +7,15 @@ import set from 'lodash/set';
 import React, { ComponentType, FC, ReactElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
-import { Link, Navigate, NavLink } from 'react-router-dom';
+import { Link, NavLink, Navigate } from 'react-router-dom';
 import { GlobalThemeProvider } from '..';
 import { APIClient, APIClientProvider } from '../api-client';
 import { i18n } from '../i18n';
 import { CurrentUserProvider } from '../user';
 import { CurrentUserSettingsMenuProvider } from '../user/CurrentUserSettingsMenuProvider';
-import { AppComponent, BlankComponent, defaultAppComponents } from './components';
 import { PluginManager, PluginType } from './PluginManager';
 import { ComponentTypeAndString, RouterManager, RouterOptions } from './RouterManager';
+import { AppComponent, BlankComponent, defaultAppComponents } from './components';
 import { compose, normalizeContainer } from './utils';
 
 export type ComponentAndProps<T = any> = [ComponentType, T];
