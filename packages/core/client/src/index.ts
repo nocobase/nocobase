@@ -11,6 +11,7 @@ import 'dayjs/plugin/weekday';
 // 重置浏览器样式
 import 'antd/dist/reset.css';
 
+export * from '@emotion/css';
 export * from './acl';
 export * from './antd-config-provider';
 export * from './api-client';
@@ -28,6 +29,7 @@ export * from './formula';
 export * from './hooks';
 export * from './i18n';
 export * from './icon';
+export * from './nocobase-buildin-plugin';
 export * from './plugin-manager';
 export * from './pm';
 export * from './powered-by';

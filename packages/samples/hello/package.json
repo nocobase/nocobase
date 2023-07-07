@@ -1,20 +1,31 @@
 {
   "name": "@nocobase/plugin-sample-hello",
   "version": "0.10.1-alpha.1",
-  "main": "lib/server/index.js",
+  "main": "./lib/server/index.js",
+  "files": [
+    "lib",
+    "src",
+    "README.md",
+    "README.zh-CN.md",
+    "CHANGELOG.md",
+    "server.js",
+    "server.d.ts",
+    "client.js",
+    "client.d.ts"
+  ],
   "displayName": "Sample-Hello",
   "displayName.zh-CN": "插件demo-hello",
   "description": "simple plugin demo",
   "description.zh-CN": "这就是一个简单的插件demo",
   "devDependencies": {
+    "react": "^18.2.0",
+    "antd": "^4.24.8",
+    "react-i18next": "^11.15.1",
+    "@formily/react": "2.2.26",
+    "@ant-design/icons": "^4.8.0",
     "@nocobase/client": "0.10.1-alpha.1",
     "@nocobase/server": "0.10.1-alpha.1",
     "@nocobase/test": "0.10.1-alpha.1"
-  },
-  "peerDependencies": {
-    "@nocobase/client": "*",
-    "@nocobase/server": "*",
-    "@nocobase/test": "*"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
 }

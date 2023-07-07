@@ -1,4 +1,4 @@
-import { css } from '@emotion/css';
+import { css } from '@nocobase/client';
 
 export const workflowPageClass = css`
   flex-grow: 1;

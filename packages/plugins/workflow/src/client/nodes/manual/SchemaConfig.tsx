@@ -1,7 +1,6 @@
 import React, { useContext, useMemo, useState } from 'react';
 
 import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
-import { get } from 'lodash';
 
 import {
   ActionContextProvider,
@@ -17,9 +16,8 @@ import {
   useCompile,
   useFormBlockContext,
 } from '@nocobase/client';
-import { Registry } from '@nocobase/utils/client';
-
-import { Button } from 'antd';
+import { Registry, lodash } from '@nocobase/utils/client';
+import React from 'react';
 import { instructions, useAvailableUpstreams, useNodeContext } from '..';
 import { useFlowContext } from '../../FlowContext';
 import { JOB_STATUS } from '../../constants';
@@ -301,7 +299,7 @@ export function SchemaConfig({ value, onChange }) {
         designable: !workflow.executed,
         refresh() {
           ctx.refresh?.();
-          const { tabs } = get(schema.toJSON(), 'properties.drawer.properties') as { tabs: ISchema };
+          const { tabs } = lodash.get(schema.toJSON(), 'properties.drawer.properties') as { tabs: ISchema };
           const forms = Array.from(manualFormTypes.getValues()).reduce(
             (result, item) => Object.assign(result, item.config.parseFormOptions(tabs)),
             {},

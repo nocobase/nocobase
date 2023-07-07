@@ -1,8 +1,7 @@
 import { LoginOutlined } from '@ant-design/icons';
-import { css } from '@emotion/css';
-import { Authenticator, useAPIClient, useRedirect } from '@nocobase/client';
+import { Authenticator, css, useAPIClient, useRedirect } from '@nocobase/client';
 import { Button, Space } from 'antd';
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 export const SAMLButton = (props: { authenticator: Authenticator }) => {
   const [windowHandler, setWindowHandler] = useState<Window | undefined>();

@@ -1,11 +1,9 @@
 import { QuestionCircleOutlined } from '@ant-design/icons';
-import { css } from '@emotion/css';
 import { FormLayout } from '@formily/antd-v5';
 import { Form, Radio, Tooltip } from 'antd';
 import React from 'react';
 
-import { FormItem } from '@nocobase/client';
-
+import { css, FormItem } from '@nocobase/client';
 import { lang } from '../../locale';
 
 function parseMode(v) {

@@ -1,4 +1,4 @@
-import { DataTypes } from 'sequelize';
+import { DataTypes } from '@nocobase/database';
 
 import { Migration } from '@nocobase/server';
 

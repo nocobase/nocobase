@@ -16,11 +16,11 @@ export default class implements Instruction {
   timers: Map<number, NodeJS.Timeout> = new Map();
 
   constructor(protected plugin: Plugin) {
-    plugin.app.on('beforeStart', () => this.load());
-    plugin.app.on('beforeStop', () => this.unload());
+    plugin.app.on('beforeStart', this.load);
+    plugin.app.on('beforeStop', this.unload);
   }
 
-  async load() {
+  load = async () => {
     const { model } = this.plugin.db.getCollection('jobs');
     const jobs = (await model.findAll({
       where: {
@@ -47,31 +47,36 @@ export default class implements Instruction {
     })) as JobModel[];
 
     jobs.forEach((job) => {
-      this.schedule(job, job.node!.config.duration);
+      this.schedule(job);
     });
-  }
+  };
 
-  unload() {
+  unload = () => {
     for (const timer of this.timers.values()) {
       clearTimeout(timer);
     }
 
     this.timers = new Map();
-  }
+  };
 
-  schedule(job, duration: number) {
+  schedule(job) {
     const now = new Date();
     const createdAt = Date.parse(job.createdAt);
-    const delay = createdAt + duration - now.getTime();
-    const trigger = this.trigger.bind(this, job);
-    this.timers.set(job.id, setTimeout(trigger, Math.max(0, delay)));
+    const delay = createdAt + job.node.config.duration - now.getTime();
+    if (delay > 0) {
+      const trigger = this.trigger.bind(this, job);
+      this.timers.set(job.id, setTimeout(trigger, delay));
+    } else {
+      this.trigger(job);
+    }
   }
 
   async trigger(job) {
-    const execution = (await job.getExecution()) as ExecutionModel;
-    if (execution.status === EXECUTION_STATUS.STARTED) {
-      job.execution = execution;
-      await this.plugin.resume(job);
+    if (!job.execution) {
+      job.execution = await job.getExecution();
+    }
+    if (job.execution.status === EXECUTION_STATUS.STARTED) {
+      this.plugin.resume(job);
     }
     if (this.timers.get(job.id)) {
       this.timers.delete(job.id);
@@ -85,10 +90,10 @@ export default class implements Instruction {
       nodeId: node.id,
       upstreamId: prevJob?.id ?? null,
     });
+    job.node = node;
 
-    const { duration } = node.config as DelayConfig;
     // add to schedule
-    this.schedule(job, duration);
+    this.schedule(job);
 
     return processor.exit();
   };

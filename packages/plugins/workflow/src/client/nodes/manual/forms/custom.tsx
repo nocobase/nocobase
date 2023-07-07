@@ -3,7 +3,6 @@ import React, { useContext, useMemo, useState } from 'react';
 import { ArrayTable } from '@formily/antd-v5';
 import { Field, createForm } from '@formily/core';
 import { useField, useFieldSchema, useForm } from '@formily/react';
-import { cloneDeep, set } from 'lodash';
 
 import {
   ActionContextProvider,
@@ -18,8 +17,8 @@ import {
   useCollectionManager,
   useRecord,
 } from '@nocobase/client';
-import { merge, uid } from '@nocobase/utils/client';
-
+import { lodash, merge, uid } from '@nocobase/utils/client';
+import React from 'react';
 import { JOB_STATUS } from '../../../constants';
 import { NAMESPACE, lang } from '../../../locale';
 import { ManualFormType } from '../SchemaConfig';
@@ -155,7 +154,7 @@ function getOptions(interfaces) {
     const schema = interfaces[type];
     const { group = 'others' } = schema;
     fields[group] = fields[group] || {};
-    set(fields, [group, type], schema);
+    lodash.set(fields, [group, type], schema);
   });
 
   return Object.keys(GroupLabels)
@@ -211,7 +210,7 @@ function AddCustomFormField(props) {
           const {
             properties: { unique, type, ...properties },
             ...options
-          } = cloneDeep(item);
+          } = lodash.cloneDeep(item);
           delete properties.name['x-disabled'];
           setInterface({
             ...options,

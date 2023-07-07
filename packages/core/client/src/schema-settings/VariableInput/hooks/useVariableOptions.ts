@@ -12,7 +12,7 @@ export const useVariableOptions = ({ form, collectionField, rootCollection }: an
   const formVariabele = useFormVariable({ blockForm: form, schema, rootCollection });
   const iterationVariabele = useIterationVariable({
     blockForm: form,
-    currentCollection: collectionField.collectionName,
+    currentCollection: collectionField?.collectionName,
     schema,
     rootCollection,
   });

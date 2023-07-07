@@ -1,10 +1,7 @@
-import React from 'react';
 import { useFieldSchema } from '@formily/react';
-import { css } from '@emotion/css';
-
+import { css, SchemaInitializer } from '@nocobase/client';
 import { parse } from '@nocobase/utils/client';
-import { SchemaInitializer } from '@nocobase/client';
-
+import React from 'react';
 import { useFlowContext } from '../FlowContext';
 
 export const ValueBlock: (() => JSX.Element) & {

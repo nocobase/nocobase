@@ -1,4 +1,5 @@
 import { Application } from '@nocobase/client';
+import { NocoBaseClientPresetPlugin } from '@nocobase/preset-nocobase/client';
 
 export const app = new Application({
   apiClient: {
@@ -7,6 +8,7 @@ export const app = new Application({
   dynamicImport: (name: string) => {
     return import(`../plugins/${name}`);
   },
+  plugins: [NocoBaseClientPresetPlugin],
 });
 
-export default app.render();
+export default app.getRootComponent();

@@ -7,6 +7,7 @@
   "dependencies": {
     "@hapi/topo": "^6.0.0",
     "dedupe": "^3.0.2",
+    "dayjs": "^1.11.9",
     "deepmerge": "^4.2.2",
     "flat-to-nested": "^1.1.1",
     "graphlib": "^2.1.8",

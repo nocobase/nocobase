@@ -18,7 +18,10 @@ export const ChildDynamicComponent = observer(
     });
 
     const compile = useCompile();
-    const result = useMemo(() => [formVariabele, iterationVariabele].filter(Boolean), [formVariabele]);
+    const result = useMemo(
+      () => [formVariabele, iterationVariabele].filter(Boolean),
+      [formVariabele, iterationVariabele],
+    );
     const scope = compile(result);
     useEffect(() => {
       onChange(fieldSchema.default);

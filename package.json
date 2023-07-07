@@ -44,6 +44,7 @@
     }
   },
   "devDependencies": {
+    "commander": "^9.2.0",
     "@commitlint/cli": "^16.1.0",
     "@commitlint/config-conventional": "^16.0.0",
     "@commitlint/prompt-cli": "^16.1.0",
@@ -55,7 +56,7 @@
     "@vitejs/plugin-react": "^4.0.0",
     "auto-changelog": "^2.4.0",
     "dumi": "^2.2.0",
-    "dumi-theme-nocobase": "^0.2.12",
+    "dumi-theme-nocobase": "^0.2.14",
     "eslint-plugin-jest-dom": "^5.0.1",
     "eslint-plugin-testing-library": "^5.11.0",
     "ghooks": "^2.0.4",

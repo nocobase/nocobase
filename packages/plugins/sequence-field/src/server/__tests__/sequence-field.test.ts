@@ -1,9 +1,7 @@
-import dayjs from 'dayjs';
-
 import { Database } from '@nocobase/database';
 import { Application } from '@nocobase/server';
 import { mockServer } from '@nocobase/test';
-
+import { dayjs } from '@nocobase/utils';
 import Plugin, { SequenceField } from '..';
 
 describe('sequence field', () => {

@@ -1,18 +1,17 @@
 import { CloseCircleOutlined, PlusOutlined } from '@ant-design/icons';
-import { css } from '@emotion/css';
 import { observer, useField, useForm } from '@formily/react';
-import { Button, Dropdown, Form, Input, MenuProps } from 'antd';
-import React, { useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
-
 import {
   CollectionField,
   CollectionProvider,
+  css,
   SchemaComponent,
-  Variable,
   useCollectionManager,
   useCompile,
+  Variable,
 } from '@nocobase/client';
+import { Button, Dropdown, Form, Input, MenuProps } from 'antd';
+import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { lang } from '../locale';
 import { useWorkflowVariableOptions } from '../variable';
 

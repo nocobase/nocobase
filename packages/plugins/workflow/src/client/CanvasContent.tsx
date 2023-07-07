@@ -1,7 +1,6 @@
-import React from 'react';
+import { cx } from '@nocobase/client';
 import { Tag } from 'antd';
-import { cx } from '@emotion/css';
-
+import React from 'react';
 import { Branch } from './Branch';
 import { lang } from './locale';
 import { branchBlockClass, nodeCardClass, nodeMetaClass } from './style';

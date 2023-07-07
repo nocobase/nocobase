@@ -1,6 +1,5 @@
 import { ArrowUpOutlined } from '@ant-design/icons';
-import { css, cx } from '@emotion/css';
-import { useCompile } from '@nocobase/client';
+import { css, cx, useCompile } from '@nocobase/client';
 import React from 'react';
 import { NodeDefaultView } from '.';
 import { Branch } from '../Branch';
