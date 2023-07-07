@@ -230,7 +230,7 @@ export function Input(props) {
 
   useEffect(() => {
     const run = async () => {
-      if (!variable || !options.length) {
+      if (!variable || options.length <= 1) {
         return;
       }
       let prevOption: DefaultOptionType = null;
