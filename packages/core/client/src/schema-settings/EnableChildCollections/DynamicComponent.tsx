@@ -13,12 +13,15 @@ export const ChildDynamicComponent = observer(
     const formVariabele = useFormVariable({ blockForm: form, rootCollection });
     const iterationVariabele = useIterationVariable({
       blockForm: form,
-      collectionField,
+      currentCollection: collectionField.collectionName,
       rootCollection,
     });
 
     const compile = useCompile();
-    const result = useMemo(() => [formVariabele, iterationVariabele].filter(Boolean), [formVariabele]);
+    const result = useMemo(
+      () => [formVariabele, iterationVariabele].filter(Boolean),
+      [formVariabele, iterationVariabele],
+    );
     const scope = compile(result);
     useEffect(() => {
       onChange(fieldSchema.default);

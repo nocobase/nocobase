@@ -1,62 +1,66 @@
 # UI Routing
 
-NocoBase Client's Router is based on [React Router](https://v5.reactrouter.com/web/guides/quick-start) and can be configured via `<RouteSwitch routes={[]} />` to configure ui routes with the following example.
+NocoBase Client's Router is based on [React Router](https://v5.reactrouter.com/web/guides/quick-start) and can be configured via `app.router` to configure ui routes with the following example.
 
 ```tsx
 /**
  * defaultShowCode: true
  */
 import React from 'react';
-import { Link, MemoryRouter as Router } from 'react-router-dom';
-import { RouteRedirectProps, RouteSwitchProvider, RouteSwitch } from '@nocobase/client';
+import { Link, Outlet } from 'react-router-dom';
+import { Application } from '@nocobase/client';
 
 const Home = () => <h1>Home</h1>;
 const About = () => <h1>About</h1>;
 
-const routes: RouteRedirectProps[] = [
-  {
-    type: 'route',
-    path: '/',
-    component: 'Home',
-  },
-  {
-    type: 'route',
-    path: '/about',
-    component: 'About',
-  },
-];
+const Layout = () => {
+  return <div>
+    <div><Link to={'/'}>Home</Link>, <Link to={'/about'}>About</Link></div>
+    <Outlet />
+  </div>
+}
 
-export default () => {
-  return (
-    <RouteSwitchProvider components={{ Home, About }}>
-      <Router initialEntries={['/']}>
-        <Link to={'/'}>Home</Link>, <Link to={'/about'}>About</Link>
-        <RouteSwitch routes={routes} />
-      </Router>
-    </RouteSwitchProvider>
-  );
-};
+const app = new Application({
+  router: {
+    type: 'memory',
+    initialEntries: ['/']
+  }
+})
+
+app.router.add('root', {
+  element: <Layout />
+})
+
+app.router.add('root.home', {
+  path: '/',
+  element: <Home />
+})
+
+app.router.add('root.about', {
+  path: '/about',
+  element: <About />
+})
+
+export default app.getRootComponent();
 ```
 
 In a full NocoBase application, the Route can be extended in a similar way as follows.
 
 ```tsx | pure
-import { RouteSwitchContext } from '@nocobase/client';
-import React, { useContext } from 'react';
+import { Plugin } from '@nocobase/client';
 
-const HelloWorld = () => {
-  return <div>Hello ui router</div>;
-};
+class MyPlugin extends Plugin {
+  async load() {
+    // add
+    this.app.router.add('hello', {
+      path: '/hello',
+      element: <div>hello</div>,
+    })
 
-export default React.memo((props) => {
-  const ctx = useContext(RouteSwitchContext);
-  ctx.routes.push({
-    type: 'route',
-    path: '/hello-world',
-    component: HelloWorld,
-  });
-  return <RouteSwitchContext.Provider value={ctx}>{props.children}</RouteSwitchContext.Provider>;
-});
+    // remove
+    this.app.router.remove('hello');
+  }
+}
 ```
 
 See [packages/samples/custom-page](https://github.com/nocobase/nocobase/tree/develop/packages/samples/custom-page) for the full example

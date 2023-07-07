@@ -1,15 +1,30 @@
 {
   "name": "@nocobase/plugin-excel-formula-field",
-  "version": "0.10.0-alpha.5",
+  "version": "0.10.1-alpha.1",
   "description": "",
   "license": "AGPL-3.0",
-  "main": "./lib/index.js",
-  "types": "./lib/index.d.ts",
+  "main": "./lib/server/index.js",
+  "files": [
+    "lib",
+    "src",
+    "README.md",
+    "README.zh-CN.md",
+    "CHANGELOG.md",
+    "server.js",
+    "server.d.ts",
+    "client.js",
+    "client.d.ts"
+  ],
   "dependencies": {
     "@formulajs/formulajs": "^4.2.0"
   },
   "devDependencies": {
-    "@nocobase/server": "0.10.0-alpha.5",
-    "@nocobase/test": "0.10.0-alpha.5"
+    "react": "^18.2.0",
+    "react-i18next": "^11.15.1",
+    "@formily/react": "2.2.26",
+    "@nocobase/database": "0.10.1-alpha.1",
+    "@nocobase/client": "0.10.1-alpha.1",
+    "@nocobase/server": "0.10.1-alpha.1",
+    "@nocobase/test": "0.10.1-alpha.1"
   }
 }

@@ -1,6 +1,5 @@
 import { CloseCircleOutlined } from '@ant-design/icons';
-import { css, cx } from '@emotion/css';
-import { Variable, useCompile } from '@nocobase/client';
+import { css, cx, useCompile, Variable } from '@nocobase/client';
 import { evaluators } from '@nocobase/evaluators/client';
 import { Registry } from '@nocobase/utils/client';
 import { Button, Select } from 'antd';
@@ -9,10 +8,10 @@ import { Trans, useTranslation } from 'react-i18next';
 import { cloneDeep } from 'lodash';
 import { NodeDefaultView } from '.';
 import { Branch } from '../Branch';
-import { useFlowContext } from '../FlowContext';
 import { RadioWithTooltip, RadioWithTooltipOption } from '../components/RadioWithTooltip';
 import { renderEngineReference } from '../components/renderEngineReference';
-import { NAMESPACE, lang } from '../locale';
+import { useFlowContext } from '../FlowContext';
+import { lang, NAMESPACE } from '../locale';
 import { branchBlockClass, nodeSubtreeClass } from '../style';
 import { useWorkflowVariableOptions } from '../variable';
 

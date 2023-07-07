@@ -1,7 +1,7 @@
 import { DownOutlined, EllipsisOutlined, RightOutlined } from '@ant-design/icons';
-import { cx } from '@emotion/css';
 import {
   ActionContextProvider,
+  cx,
   ResourceActionProvider,
   SchemaComponent,
   useDocumentTitle,

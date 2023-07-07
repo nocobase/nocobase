@@ -1,6 +1,6 @@
+import { css, cx } from '@nocobase/client';
 import React from 'react';
 import Device from './iOS6';
-import { css, cx } from '@emotion/css';
 
 export const MobileDevice: React.FC = (props) => {
   return (

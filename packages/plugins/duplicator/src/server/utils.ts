@@ -1,4 +1,4 @@
-import lodash from 'lodash';
+import { lodash } from '@nocobase/utils';
 import { Database } from '@nocobase/database';
 import fs from 'fs';
 import readline from 'readline';

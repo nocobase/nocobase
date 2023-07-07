@@ -1,5 +1,4 @@
-import { getConfigurableProperties, ICollectionTemplate, registerTemplate } from '@nocobase/client';
-import React from 'react';
+import { getConfigurableProperties, ICollectionTemplate, Plugin, registerTemplate } from '@nocobase/client';
 
 const myCollectionTemplate: ICollectionTemplate = {
   name: 'myCollection',
@@ -47,9 +46,8 @@ const myCollectionTemplate: ICollectionTemplate = {
 
 registerTemplate('myCollection', myCollectionTemplate);
 
-const CustomCollectionTemplateMemo = React.memo((props) => {
-  return <>{props.children}</>;
-});
-CustomCollectionTemplateMemo.displayName = 'CustomCollectionTemplateMemo';
+class CustomCollectionPlugin extends Plugin {
+  async load() { }
+}
 
-export default CustomCollectionTemplateMemo;
+export default CustomCollectionPlugin;

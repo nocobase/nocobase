@@ -1,5 +1,7 @@
 import { registerValidateRules } from '@formily/core';
 import {
+  BlockSchemaComponentPlugin,
+  Plugin,
   SchemaComponentOptions,
   SchemaInitializerContext,
   SettingsCenterProvider,
@@ -39,7 +41,7 @@ registerValidateRules({
   },
 });
 
-const Charts = React.memo((props) => {
+const ChartsProvider = React.memo((props) => {
   const api = useAPIClient();
   const items = useContext<any>(SchemaInitializerContext);
   const children = items.BlockInitializers.items[0].children;
@@ -99,6 +101,15 @@ const Charts = React.memo((props) => {
     </ChartQueryMetadataProvider>
   );
 });
-Charts.displayName = 'Charts';
+ChartsProvider.displayName = 'ChartsProvider';
 
-export default Charts;
+export class ChartsPlugin extends Plugin {
+  async load() {
+    this.app.use(ChartsProvider);
+
+    // TODO: 主应用应该会有这个插件，按道理不需要再注册
+    this.app.pm.add(BlockSchemaComponentPlugin);
+  }
+}
+
+export default ChartsPlugin;

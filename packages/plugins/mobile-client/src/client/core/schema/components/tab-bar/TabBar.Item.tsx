@@ -1,10 +1,9 @@
-import React, { useEffect, useMemo } from 'react';
-import { TabBar, TabBarItemProps } from 'antd-mobile';
-import { GeneralSchemaDesigner, SchemaSettings, SortableItem, useDesigner } from '@nocobase/client';
+import { useField, useFieldSchema } from '@formily/react';
+import { css, cx, GeneralSchemaDesigner, SchemaSettings, SortableItem, useDesigner } from '@nocobase/client';
+import { TabBarItemProps } from 'antd-mobile';
+import React from 'react';
 import { useTranslation } from '../../../../locale';
-import { Schema, useField, useFieldSchema } from '@formily/react';
 import { useSchemaPatch } from '../../hooks';
-import { css, cx } from '@emotion/css';
 import { tabItemSchema } from './schema';
 
 const InternalItem: React.FC<TabBarItemProps> = () => {

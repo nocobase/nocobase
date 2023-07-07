@@ -1,94 +1,125 @@
 import { useMemo } from 'react';
-import { useCollectionManager } from '../../../collection-manager';
+import { useTranslation } from 'react-i18next';
 import { useCompile, useGetFilterOptions } from '../../../schema-component';
+import { FieldOption, Option } from '../type';
 
 interface GetOptionsParams {
-  schema: any;
+  depth: number;
   operator?: string;
   maxDepth: number;
   count?: number;
-  getFilterOptions: (collectionName: string) => any[];
+  loadChildren?: (option: Option) => Promise<void>;
+  getFilterOptions?: (collectionName: string) => any[];
+  compile: (value: string) => any;
+  schema: any;
 }
 
-const getChildren = (options: any[], { schema, operator, maxDepth, count = 1, getFilterOptions }: GetOptionsParams) => {
-  if (count > maxDepth) {
-    return [];
-  }
+const getChildren = (
+  options: FieldOption[],
+  { depth, maxDepth, loadChildren, compile, schema }: GetOptionsParams,
+): Option[] => {
+  const result = options
+    .map((option): Option => {
+      if (!option.target) {
+        return {
+          key: option.name,
+          value: option.name,
+          label: compile(option.title),
+          depth,
+          // TODO: 现在是通过组件的名称来过滤能够被选择的选项，这样的坏处是不够精确，后续可以优化
+          disabled: schema && schema?.['x-component'] !== option.schema?.['x-component'],
+        };
+      }
 
-  const result = options.map((option) => {
-    if ((option.type !== 'belongsTo' && option.type !== 'hasOne') || !option.target) {
+      if (depth >= maxDepth) {
+        return null;
+      }
+
       return {
         key: option.name,
         value: option.name,
-        label: option.title,
-        // TODO: 现在是通过组件的名称来过滤能够被选择的选项，这样的坏处是不够精确，后续可以优化
-        // disabled: schema?.['x-component'] !== option.schema?.['x-component'],
-        disabled: false,
+        label: compile(option.title),
+        children: [],
+        isLeaf: false,
+        field: option,
+        depth,
+        loadChildren,
       };
-    }
-
-    const children =
-      getChildren(getFilterOptions(option.target), {
-        schema,
-        operator,
-        maxDepth,
-        count: count + 1,
-        getFilterOptions,
-      }) || [];
-
-    return {
-      key: option.name,
-      value: option.name,
-      label: option.title,
-      children,
-      disabled: children.every((child) => child.disabled),
-    };
-  });
-
+    })
+    .filter(Boolean);
   return result;
 };
-
 export const useIterationVariable = ({
   blockForm,
-  collectionField,
+  currentCollection,
   operator,
   schema,
   level,
   rootCollection,
 }: {
   blockForm?: any;
-  collectionField: any;
+  currentCollection: string;
+  rootCollection: string;
   operator?: any;
   schema?: any;
   level?: number;
-  rootCollection?: string;
 }) => {
+  const { t } = useTranslation();
   const compile = useCompile();
   const getFilterOptions = useGetFilterOptions();
-  const fields = getFilterOptions(collectionField?.collectionName);
-  const children = useMemo(() => {
-    const allowFields = fields.filter((field) => {
-      return Object.keys(blockForm.fields).some((name) => name.includes(field.name));
-    });
-    return (
-      getChildren(allowFields, {
-        schema,
-        operator,
-        maxDepth: level || 3,
-        getFilterOptions,
-      }) || []
-    );
-  }, [operator, schema, blockForm]);
+  const loadChildren = (option: any): Promise<void> => {
+    if (!option.field?.target) {
+      return new Promise((resolve) => {
+        resolve(void 0);
+      });
+    }
 
-  return useMemo(() => {
-    return rootCollection !== collectionField?.collectionName && children.length > 0
-      ? compile({
-          label: `{{t("Current object")}}`,
-          value: '$iteration',
-          key: '$iteration',
-          disabled: children.every((option) => option.disabled),
-          children: children,
-        })
-      : null;
-  }, [children]);
+    const collectionName = option.field.target;
+    const fields = getFilterOptions(collectionName);
+    const allowFields =
+      option.depth === 0
+        ? fields.filter((field) => {
+            return Object.keys(blockForm.fields).some((name) => name.includes(`.${field.name}`));
+          })
+        : fields;
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const children =
+          getChildren(allowFields, {
+            depth: option.depth + 1,
+            maxDepth: 4,
+            loadChildren,
+            compile,
+            schema,
+          }) || [];
+        if (children.length === 0) {
+          option.disabled = true;
+          resolve();
+          return;
+        }
+        option.children = children;
+        resolve();
+
+        // 延迟 5 毫秒，防止阻塞主线程，导致 UI 卡顿
+      }, 5);
+    });
+  };
+  const label = t('Current object');
+  const result = useMemo(() => {
+    return (
+      blockForm &&
+      currentCollection !== rootCollection && {
+        label: label,
+        value: '$iteration',
+        key: '$iteration',
+        isLeaf: false,
+        field: {
+          target: currentCollection,
+        },
+        depth: 0,
+        loadChildren,
+      }
+    );
+  }, [currentCollection]);
+  return result;
 };
