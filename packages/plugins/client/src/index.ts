@@ -1,2 +1,1 @@
-export { default } from './server';
-export * from './server/resource';
+export { default, getResourceLocale } from './server';
