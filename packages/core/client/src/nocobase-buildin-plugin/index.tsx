@@ -4,6 +4,7 @@ import React, { FC } from 'react';
 import { Navigate } from 'react-router-dom';
 import { ACLPlugin } from '../acl';
 import { AntdConfigPlugin } from '../antd-config-provider';
+import { Application } from '../application';
 import { Plugin } from '../application/Plugin';
 import { SigninPage, SigninPageExtensionPlugin, SignupPage } from '../auth';
 import { BlockSchemaComponentPlugin } from '../block-provider';
@@ -17,13 +18,9 @@ import { SchemaInitializerPlugin } from '../schema-initializer';
 import { BlockTemplateDetails, BlockTemplatePage } from '../schema-templates';
 import { SystemSettingsPlugin } from '../system-settings';
 
-const AppSpin = () => (
-  <div style={{ textAlign: 'center', margin: 50 }}>
-    <Spin />
-  </div>
-);
+const AppSpin = Spin;
 
-const AppError: FC<{ error: Error }> = ({ error }) => (
+const AppError: FC<{ app: Application; error: Error }> = ({ app, error }) => (
   <div>
     <Result
       className={css`
@@ -33,11 +30,11 @@ const AppError: FC<{ error: Error }> = ({ error }) => (
         transform: translate(0, -50%);
       `}
       status="error"
-      title="Failed to load plugin"
-      subTitle={error?.message}
+      title={app.i18n.t('Failed to load plugin')}
+      subTitle={app.i18n.t(error?.message)}
       extra={[
         <Button type="primary" key="try" onClick={() => window.location.reload()}>
-          Try again
+          {app.i18n.t('Try again')}
         </Button>,
       ]}
     />
@@ -46,10 +43,13 @@ const AppError: FC<{ error: Error }> = ({ error }) => (
 
 export class NocoBaseBuildInPlugin extends Plugin {
   async afterAdd(): Promise<void> {
+    this.app.addComponents({
+      AppSpin,
+      AppError,
+    });
     this.addPlugins();
   }
   async load() {
-    console.log('useAppPluginLoad');
     this.addComponents();
     this.addRoutes();
   }
@@ -83,8 +83,6 @@ export class NocoBaseBuildInPlugin extends Plugin {
 
   addComponents() {
     this.app.addComponents({
-      AppSpin,
-      AppError,
       AuthLayout,
       SigninPage,
       SignupPage,
