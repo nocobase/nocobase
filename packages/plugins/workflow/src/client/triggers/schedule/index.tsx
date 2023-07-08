@@ -4,7 +4,7 @@ import { ScheduleConfig } from './ScheduleConfig';
 import { SCHEDULE_MODE } from './constants';
 import { NAMESPACE, lang } from '../../locale';
 import { CollectionBlockInitializer } from '../../components/CollectionBlockInitializer';
-import { getCollectionFieldOptions } from '../../variable';
+import { defaultFieldNames, getCollectionFieldOptions } from '../../variable';
 import { FieldsSelect } from '../../components/FieldsSelect';
 
 export default {
@@ -27,6 +27,7 @@ export default {
   useVariables(config, opts) {
     const compile = useCompile();
     const { getCollectionFields } = useCollectionManager();
+    const { fieldNames = defaultFieldNames } = opts;
     const options: any[] = [];
     if (!opts?.types || opts.types.includes('date')) {
       options.push({ key: 'date', value: 'date', label: lang('Trigger time') });
@@ -47,9 +48,9 @@ export default {
       if (fieldOptions.length) {
         options.push({
           key: 'data',
-          value: 'data',
-          label: lang('Trigger data'),
-          children: fieldOptions,
+          [fieldNames.value]: 'data',
+          [fieldNames.label]: lang('Trigger data'),
+          [fieldNames.children]: fieldOptions,
         });
       }
     }

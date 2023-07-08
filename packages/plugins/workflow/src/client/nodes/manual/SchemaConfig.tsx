@@ -1,33 +1,38 @@
-import React, { useContext, useMemo, useState } from 'react';
-
-import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
+import { createForm } from '@formily/core';
+import { FormProvider, ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
+import { FormLayout } from '@formily/antd-v5';
+import { Button, Modal, Space } from 'antd';
+import { useTranslation } from 'react-i18next';
 
 import {
+  Action,
   ActionContextProvider,
   GeneralSchemaDesigner,
-  InitializerWithSwitch,
   SchemaComponent,
   SchemaComponentContext,
   SchemaInitializer,
   SchemaInitializerItemOptions,
   SchemaInitializerProvider,
   SchemaSettings,
+  VariableScopeProvider,
   gridRowColWrap,
   useCompile,
   useFormBlockContext,
+  useSchemaOptionsContext,
 } from '@nocobase/client';
 import { Registry, lodash } from '@nocobase/utils/client';
-import { Button } from 'antd';
 import { instructions, useAvailableUpstreams, useNodeContext } from '..';
-import { useFlowContext } from '../../FlowContext';
 import { JOB_STATUS } from '../../constants';
+import { useFlowContext } from '../../FlowContext';
 import { NAMESPACE, lang } from '../../locale';
 import { useTrigger } from '../../triggers';
 import { DetailsBlockProvider } from './DetailsBlockProvider';
 import { FormBlockProvider } from './FormBlockProvider';
-import createForm from './forms/create';
-import customForm from './forms/custom';
-import updateForm from './forms/update';
+import createRecordForm from './forms/create';
+import customRecordForm from './forms/custom';
+import updateRecordForm from './forms/update';
+import { useWorkflowVariableOptions } from '../../variable';
 
 type ValueOf<T> = T[keyof T];
 
@@ -68,9 +73,9 @@ export type ManualFormType = {
 
 export const manualFormTypes = new Registry<ManualFormType>();
 
-manualFormTypes.register('customForm', customForm);
-manualFormTypes.register('createForm', createForm);
-manualFormTypes.register('updateForm', updateForm);
+manualFormTypes.register('customForm', customRecordForm);
+manualFormTypes.register('createForm', createRecordForm);
+manualFormTypes.register('updateForm', updateRecordForm);
 
 function useTriggerInitializers(): SchemaInitializerItemOptions | null {
   const { workflow } = useFlowContext();
@@ -79,7 +84,7 @@ function useTriggerInitializers(): SchemaInitializerItemOptions | null {
 }
 
 const blockTypeNames = {
-  customForm: customForm.title,
+  customForm: customRecordForm.title,
   record: `{{t("Data record", { ns: "${NAMESPACE}" })}}`,
 };
 
@@ -159,26 +164,136 @@ function AddBlockButton(props: any) {
   return <SchemaInitializer.Button {...props} wrap={gridRowColWrap} items={items} title="{{t('Add block')}}" />;
 }
 
-function ActionInitializer({ action, actionProps, ...props }) {
+function AssignedFieldValues() {
+  const ctx = useContext(SchemaComponentContext);
+  const { t } = useTranslation();
+  const fieldSchema = useFieldSchema();
+  const scope = useWorkflowVariableOptions({ fieldNames: { label: 'title', value: 'name' } });
+  const [open, setOpen] = useState(false);
+  const [initialSchema, setInitialSchema] = useState(fieldSchema?.['x-action-settings']?.assignedValues?.schema ?? {
+    type: 'void',
+    'x-component': 'Grid',
+    'x-initializer': 'CustomFormItemInitializers',
+    properties: {},
+  });
+  const [schema, setSchema] = useState<Schema>(null);
+  const { components } = useSchemaOptionsContext();
+  useEffect(() => {
+    setSchema(new Schema({
+      properties: {
+        grid: initialSchema
+      },
+    }));
+  }, [initialSchema]);
+  const form = useMemo(
+    () => {
+      const initialValues = fieldSchema?.['x-action-settings']?.assignedValues?.values;
+      return createForm({
+        initialValues: lodash.cloneDeep(initialValues),
+        values: lodash.cloneDeep(initialValues),
+      });
+    },
+    [],
+  );
+
+  const title = t('Assign field values');
+
+  function onCancel() {
+    setOpen(false);
+  }
+
+  function onSubmit() {
+    if (!fieldSchema['x-action-settings']) {
+      fieldSchema['x-action-settings'] = {};
+    }
+    if (!fieldSchema['x-action-settings'].assignedValues) {
+      fieldSchema['x-action-settings'].assignedValues = {};
+    }
+    fieldSchema['x-action-settings'].assignedValues.schema = initialSchema;
+    fieldSchema['x-action-settings'].assignedValues.values = form.values;
+    setOpen(false);
+    setTimeout(() => {
+      ctx.refresh?.();
+    }, 300);
+  }
+
   return (
-    <InitializerWithSwitch
+    <>
+      <SchemaSettings.Item onClick={() => setOpen(true)}>
+        {title}
+      </SchemaSettings.Item>
+      <Modal
+        width={'50%'}
+        title={title}
+        open={open}
+        onCancel={onCancel}
+        footer={
+          <Space>
+            <Button onClick={onCancel}>{t('Cancel')}</Button>
+            <Button type="primary" onClick={onSubmit}>{t('Submit')}</Button>
+          </Space>
+        }
+      >
+        <VariableScopeProvider scope={scope}>
+          <FormProvider form={form}>
+            <FormLayout layout={'vertical'}>
+              {open && schema && (
+                <SchemaComponentContext.Provider
+                  value={{
+                    ...ctx,
+                    refresh() {
+                      setInitialSchema(lodash.get(schema.toJSON(), 'properties.grid'));
+                    }
+                  }}
+                >
+                  <SchemaComponent schema={schema} components={components} />
+                </SchemaComponentContext.Provider>
+              )}
+            </FormLayout>
+          </FormProvider>
+        </VariableScopeProvider>
+      </Modal>
+    </>
+  );
+}
+
+function ManualActionDesigner(props) {
+  return (
+    <GeneralSchemaDesigner {...props} disableInitializer>
+      <Action.Designer.ButtonEditor />
+      <AssignedFieldValues />
+      <SchemaSettings.Divider />
+      <SchemaSettings.Remove
+        removeParentsIfNoChildren
+        breakRemoveOn={{
+          'x-component': 'ActionBar',
+        }}
+      />
+    </GeneralSchemaDesigner>
+  );
+}
+
+function ActionInitializer({ action, actionProps, insert, ...props }) {
+  return (
+    <SchemaInitializer.Item
       {...props}
-      schema={{
-        type: 'void',
-        title: props.title,
-        'x-decorator': 'ManualActionStatusProvider',
-        'x-decorator-props': {
-          value: action,
-        },
-        'x-component': 'Action',
-        'x-component-props': {
-          ...actionProps,
-          useAction: '{{ useSubmit }}',
-        },
-        'x-designer': 'Action.Designer',
-        'x-action': `${action}`,
+      onClick={() => {
+        insert({
+          type: 'void',
+          title: props.title,
+          'x-decorator': 'ManualActionStatusProvider',
+          'x-decorator-props': {
+            value: action,
+          },
+          'x-component': 'Action',
+          'x-component-props': {
+            ...actionProps,
+            useAction: '{{ useSubmit }}',
+          },
+          'x-designer': 'ManualActionDesigner',
+          'x-action-settings': {},
+        });
       }}
-      type="x-action"
     />
   );
 }
@@ -340,6 +455,7 @@ export function SchemaConfig({ value, onChange }) {
               return props.children;
             },
             SimpleDesigner,
+            ManualActionDesigner,
           }}
           scope={{
             useSubmit,

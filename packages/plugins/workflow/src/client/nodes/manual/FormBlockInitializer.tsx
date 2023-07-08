@@ -34,11 +34,8 @@ function InternalFormBlockInitializer({ insert, schema, ...others }) {
             type: 'primary',
             useAction: '{{ useSubmit }}',
           },
-          'x-designer': 'Action.Designer',
-          'x-designer-props': {
-            type: 'record',
-          },
-          'x-action': `${JOB_STATUS.RESOLVED}`,
+          'x-designer': 'ManualActionDesigner',
+          'x-designer-props': {},
         },
       },
       ...schema,

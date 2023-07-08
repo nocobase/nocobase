@@ -6,7 +6,7 @@ import ManualInstruction from '.';
 
 export async function submit(context: Context, next) {
   const repository = utils.getRepositoryFromParams(context);
-  const { filterByTk, values } = context.action.params;
+  const { filterByTk, values, actionKey } = context.action.params;
   const { currentUser } = context.state;
 
   if (!currentUser) {
@@ -32,13 +32,14 @@ export async function submit(context: Context, next) {
   const { forms = {} } = userJob.node.config;
   const [formKey] = Object.keys(values.result ?? {});
 
+  const actionItem = forms[formKey]?.actions?.find((item) => item.key === actionKey);
   // NOTE: validate status
   if (
     userJob.status !== JOB_STATUS.PENDING ||
     userJob.job.status !== JOB_STATUS.PENDING ||
     userJob.execution.status !== EXECUTION_STATUS.STARTED ||
     !userJob.workflow.enabled ||
-    !forms[formKey]?.actions?.includes(values.status)
+    !actionKey || actionItem?.status == null
   ) {
     return context.throw(400);
   }
@@ -52,10 +53,16 @@ export async function submit(context: Context, next) {
   if (!assignees.includes(currentUser.id) || userJob.userId !== currentUser.id) {
     return context.throw(403);
   }
+  const presetValues = processor.getParsedValue(actionItem.values ?? {}, null, {
+    currentUser,
+    currentRecord: values.result[formKey],
+    currentTime: new Date(),
+  });
+  const finalResult = { [formKey]: Object.assign(values.result[formKey], presetValues) };
 
   userJob.set({
-    status: values.status,
-    result: values.status ? values.result : Object.assign(userJob.result ?? {}, values.result),
+    status: actionItem.status,
+    result: actionItem.status ? finalResult : Object.assign(userJob.result ?? {}, values.result),
   });
 
   const handler = instruction.formTypes.get(forms[formKey].type);

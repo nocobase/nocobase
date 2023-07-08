@@ -1,5 +1,5 @@
 import { FormItem, FormLayout } from '@formily/antd-v5';
-import { SchemaInitializerItemOptions, Variable, css, useCollectionManager } from '@nocobase/client';
+import { SchemaInitializerItemOptions, Variable, css, defaultFieldNames, useCollectionManager } from '@nocobase/client';
 import { Evaluator, evaluators, getOptions } from '@nocobase/evaluators/client';
 import { parse } from '@nocobase/utils/client';
 import { Radio } from 'antd';
@@ -192,8 +192,7 @@ export default {
     RadioWithTooltip,
     DynamicConfig,
   },
-  useVariables({ id, title }, options) {
-    const { types } = options ?? {};
+  useVariables({ id, title }, { types, fieldNames = defaultFieldNames }) {
     if (
       types &&
       !types.some((type) => type in BaseTypeSets || Object.values(BaseTypeSets).some((set) => set.has(type)))
@@ -201,8 +200,8 @@ export default {
       return null;
     }
     return {
-      value: id,
-      label: title,
+      [fieldNames.value]: `${id}`,
+      [fieldNames.label]: title,
     };
   },
   useInitializers(node): SchemaInitializerItemOptions {

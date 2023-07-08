@@ -398,21 +398,19 @@ function useSubmit() {
   const { setVisible } = useActionContext();
   const { values, submit } = useForm();
   const buttonSchema = useFieldSchema();
-  const nextStatus = useContext(ManualActionStatusContext);
   const { service } = useTableBlockContext();
   const { userJob } = useFlowContext();
-  const { updateAssociationValues } = useContext(FormBlockContext);
+  const { name: actionKey } = buttonSchema;
+  const { name: formKey } = buttonSchema.parent.parent;
   return {
     async run() {
       await submit();
-      const { name } = buttonSchema.parent.parent.toJSON();
       await api.resource('users_jobs').submit({
         filterByTk: userJob.id,
         values: {
-          status: nextStatus,
-          result: { [name]: values },
+          result: { [formKey]: values },
         },
-        updateAssociationValues,
+        actionKey,
       });
       setVisible(false);
       service.refresh();

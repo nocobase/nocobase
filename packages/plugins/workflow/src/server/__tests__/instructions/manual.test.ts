@@ -59,7 +59,9 @@ describe('workflow > instructions > manual', () => {
           assignees: [users[0].id],
           forms: {
             f1: {
-              actions: [JOB_STATUS.RESOLVED],
+              actions: [
+                { status: JOB_STATUS.RESOLVED, key: 'resolve' },
+              ],
             },
           },
         },
@@ -82,16 +84,16 @@ describe('workflow > instructions > manual', () => {
 
       const res1 = await agent.resource('users_jobs').submit({
         filterByTk: usersJobs[0].id,
-        values: { status: JOB_STATUS.RESOLVED },
+        actionKey: 'resolve',
       });
       expect(res1.status).toBe(401);
 
       const res2 = await userAgents[1].resource('users_jobs').submit({
         filterByTk: usersJobs[0].id,
         values: {
-          status: JOB_STATUS.RESOLVED,
           result: { f1: {} },
         },
+        actionKey: 'resolve',
       });
       expect(res2.status).toBe(403);
 
@@ -101,6 +103,7 @@ describe('workflow > instructions > manual', () => {
           status: JOB_STATUS.RESOLVED,
           result: { f1: { a: 1 } },
         },
+        actionKey: 'resolve',
       });
       expect(res3.status).toBe(202);
 
@@ -118,9 +121,9 @@ describe('workflow > instructions > manual', () => {
       const res4 = await userAgents[0].resource('users_jobs').submit({
         filterByTk: usersJobs[0].id,
         values: {
-          status: JOB_STATUS.RESOLVED,
           result: { f1: { a: 2 } },
         },
+        actionKey: 'resolve',
       });
       expect(res4.status).toBe(400);
     });
@@ -131,7 +134,11 @@ describe('workflow > instructions > manual', () => {
         config: {
           assignees: [users[0].id, users[1].id],
           forms: {
-            f1: { actions: [JOB_STATUS.RESOLVED] },
+            f1: {
+              actions: [
+                { status: JOB_STATUS.RESOLVED, key: 'resolve' },
+              ]
+            },
           },
         },
       });
@@ -150,9 +157,9 @@ describe('workflow > instructions > manual', () => {
       const res1 = await userAgents[1].resource('users_jobs').submit({
         filterByTk: usersJobs.find((item) => item.userId === users[1].id).id,
         values: {
-          status: JOB_STATUS.RESOLVED,
           result: { f1: { a: 1 } },
         },
+        actionKey: 'resolve',
       });
       expect(res1.status).toBe(202);
 
@@ -165,9 +172,9 @@ describe('workflow > instructions > manual', () => {
       const res2 = await userAgents[0].resource('users_jobs').submit({
         filterByTk: usersJobs.find((item) => item.userId === users[0].id).id,
         values: {
-          status: JOB_STATUS.RESOLVED,
           result: { f1: { a: 1 } },
         },
+        actionKey: 'resolve',
       });
       expect(res2.status).toBe(400);
     });
@@ -178,7 +185,11 @@ describe('workflow > instructions > manual', () => {
         config: {
           assignees: [users[0].id],
           forms: {
-            f1: { actions: [JOB_STATUS.RESOLVED] },
+            f1: {
+              actions: [
+                { status: JOB_STATUS.RESOLVED, key: 'resolve' },
+              ],
+            },
           },
         },
       });
@@ -196,9 +207,9 @@ describe('workflow > instructions > manual', () => {
       const res = await userAgents[0].resource('users_jobs').submit({
         filterByTk: usersJobs[0].get('id'),
         values: {
-          status: JOB_STATUS.RESOLVED,
           result: { f1: { a: 1 } },
         },
+        actionKey: 'resolve',
       });
       expect(res.status).toBe(202);
 
@@ -220,7 +231,11 @@ describe('workflow > instructions > manual', () => {
           assignees: [users[0].id, users[1].id],
           mode: 1,
           forms: {
-            f1: { actions: [JOB_STATUS.RESOLVED] },
+            f1: {
+              actions: [
+                { status: JOB_STATUS.RESOLVED, key: 'resolve' },
+              ],
+            },
           },
         },
       });
@@ -238,9 +253,9 @@ describe('workflow > instructions > manual', () => {
       const res1 = await userAgents[0].resource('users_jobs').submit({
         filterByTk: pendingJobs[0].get('id'),
         values: {
-          status: JOB_STATUS.RESOLVED,
           result: { f1: { a: 1 } },
         },
+        actionKey: 'resolve',
       });
       expect(res1.status).toBe(202);
 
@@ -259,9 +274,9 @@ describe('workflow > instructions > manual', () => {
       const res2 = await userAgents[1].resource('users_jobs').submit({
         filterByTk: pendingJobs[1].get('id'),
         values: {
-          status: JOB_STATUS.RESOLVED,
           result: { f1: { a: 2 } },
         },
+        actionKey: 'resolve',
       });
       expect(res2.status).toBe(202);
 
@@ -281,7 +296,11 @@ describe('workflow > instructions > manual', () => {
           assignees: [users[0].id, users[1].id],
           mode: 1,
           forms: {
-            f1: { actions: [JOB_STATUS.REJECTED] },
+            f1: {
+              actions: [
+                { status: JOB_STATUS.REJECTED, key: 'reject' },
+              ],
+            },
           },
         },
       });
@@ -299,9 +318,9 @@ describe('workflow > instructions > manual', () => {
       const res1 = await userAgents[0].resource('users_jobs').submit({
         filterByTk: pendingJobs[0].get('id'),
         values: {
-          status: JOB_STATUS.REJECTED,
           result: { f1: { a: 0 } },
         },
+        actionKey: 'reject',
       });
       expect(res1.status).toBe(202);
 
@@ -320,9 +339,9 @@ describe('workflow > instructions > manual', () => {
       const res2 = await userAgents[1].resource('users_jobs').submit({
         filterByTk: pendingJobs[1].get('id'),
         values: {
-          status: JOB_STATUS.REJECTED,
           result: { f1: { a: 0 } },
         },
+        actionKey: 'reject',
       });
       expect(res2.status).toBe(400);
     });
@@ -334,7 +353,12 @@ describe('workflow > instructions > manual', () => {
           assignees: [users[0].id, users[1].id],
           mode: 1,
           forms: {
-            f1: { actions: [JOB_STATUS.RESOLVED, JOB_STATUS.REJECTED] },
+            f1: {
+              actions: [
+                { status: JOB_STATUS.RESOLVED, key: 'resolve' },
+                { status: JOB_STATUS.REJECTED, key: 'reject' },
+              ],
+            },
           },
         },
       });
@@ -352,9 +376,9 @@ describe('workflow > instructions > manual', () => {
       const res1 = await userAgents[0].resource('users_jobs').submit({
         filterByTk: pendingJobs[0].get('id'),
         values: {
-          status: JOB_STATUS.RESOLVED,
           result: { f1: { a: 1 } },
         },
+        actionKey: 'resolve',
       });
       expect(res1.status).toBe(202);
 
@@ -373,9 +397,9 @@ describe('workflow > instructions > manual', () => {
       const res2 = await userAgents[1].resource('users_jobs').submit({
         filterByTk: pendingJobs[1].get('id'),
         values: {
-          status: JOB_STATUS.REJECTED,
           result: { f1: { a: 0 } },
         },
+        actionKey: 'reject',
       });
       expect(res2.status).toBe(202);
 
@@ -397,7 +421,12 @@ describe('workflow > instructions > manual', () => {
           assignees: [users[0].id, users[1].id],
           mode: -1,
           forms: {
-            f1: { actions: [JOB_STATUS.RESOLVED, JOB_STATUS.REJECTED] },
+            f1: {
+              actions: [
+                { status: JOB_STATUS.RESOLVED, key: 'resolve' },
+                { status: JOB_STATUS.REJECTED, key: 'reject' },
+              ],
+            },
           },
         },
       });
@@ -415,9 +444,9 @@ describe('workflow > instructions > manual', () => {
       const res1 = await userAgents[0].resource('users_jobs').submit({
         filterByTk: pendingJobs[0].get('id'),
         values: {
-          status: JOB_STATUS.RESOLVED,
           result: { f1: { a: 1 } },
         },
+        actionKey: 'resolve',
       });
       expect(res1.status).toBe(202);
 
@@ -432,9 +461,9 @@ describe('workflow > instructions > manual', () => {
       const res2 = await userAgents[1].resource('users_jobs').submit({
         filterByTk: pendingJobs[1].get('id'),
         values: {
-          status: JOB_STATUS.REJECTED,
           result: { f1: { a: 0 } },
         },
+        actionKey: 'reject',
       });
       expect(res2.status).toBe(400);
     });
@@ -446,7 +475,12 @@ describe('workflow > instructions > manual', () => {
           assignees: [users[0].id, users[1].id],
           mode: -1,
           forms: {
-            f1: { actions: [JOB_STATUS.RESOLVED, JOB_STATUS.REJECTED] },
+            f1: {
+              actions: [
+                { status: JOB_STATUS.RESOLVED, key: 'resolve' },
+                { status: JOB_STATUS.REJECTED, key: 'reject' },
+              ],
+            },
           },
         },
       });
@@ -464,9 +498,9 @@ describe('workflow > instructions > manual', () => {
       const res1 = await userAgents[0].resource('users_jobs').submit({
         filterByTk: pendingJobs[0].get('id'),
         values: {
-          status: JOB_STATUS.REJECTED,
           result: { f1: { a: 0 } },
         },
+        actionKey: 'reject',
       });
       expect(res1.status).toBe(202);
 
@@ -481,9 +515,9 @@ describe('workflow > instructions > manual', () => {
       const res2 = await userAgents[1].resource('users_jobs').submit({
         filterByTk: pendingJobs[1].get('id'),
         values: {
-          status: JOB_STATUS.RESOLVED,
           result: { f1: { a: 1 } },
         },
+        actionKey: 'resolve',
       });
       expect(res2.status).toBe(202);
 
@@ -503,7 +537,11 @@ describe('workflow > instructions > manual', () => {
           assignees: [users[0].id, users[1].id],
           mode: -1,
           forms: {
-            f1: { actions: [JOB_STATUS.REJECTED] },
+            f1: {
+              actions: [
+                { status: JOB_STATUS.REJECTED, key: 'reject' },
+              ],
+            },
           },
         },
       });
@@ -521,9 +559,9 @@ describe('workflow > instructions > manual', () => {
       const res1 = await userAgents[0].resource('users_jobs').submit({
         filterByTk: pendingJobs[0].get('id'),
         values: {
-          status: JOB_STATUS.REJECTED,
           result: { f1: { a: 0 } },
         },
+        actionKey: 'reject',
       });
       expect(res1.status).toBe(202);
 
@@ -538,9 +576,9 @@ describe('workflow > instructions > manual', () => {
       const res2 = await userAgents[1].resource('users_jobs').submit({
         filterByTk: pendingJobs[1].get('id'),
         values: {
-          status: JOB_STATUS.REJECTED,
           result: { f1: { a: 0 } },
         },
+        actionKey: 'reject',
       });
       expect(res2.status).toBe(202);
 
@@ -565,7 +603,11 @@ describe('workflow > instructions > manual', () => {
         config: {
           assignees: [users[0].id, users[1].id],
           forms: {
-            f1: { actions: [JOB_STATUS.RESOLVED] },
+            f1: {
+              actions: [
+                { status: JOB_STATUS.RESOLVED, key: 'resolve' },
+              ],
+            },
           },
         },
       });
@@ -594,9 +636,9 @@ describe('workflow > instructions > manual', () => {
       const res1 = await userAgents[0].resource('users_jobs').submit({
         filterByTk: pendingJobs[0].get('id'),
         values: {
-          status: JOB_STATUS.RESOLVED,
           result: { f1: { number: 1 } },
         },
+        actionKey: 'resolve',
       });
       expect(res1.status).toBe(202);
 
@@ -615,8 +657,18 @@ describe('workflow > instructions > manual', () => {
         config: {
           assignees: [users[0].id, users[1].id],
           forms: {
-            f1: { actions: [JOB_STATUS.RESOLVED, JOB_STATUS.PENDING] },
-            f2: { actions: [JOB_STATUS.RESOLVED, JOB_STATUS.PENDING] },
+            f1: {
+              actions: [
+                { status: JOB_STATUS.RESOLVED, key: 'resolve' },
+                { status: JOB_STATUS.PENDING, key: 'pending' },
+              ],
+            },
+            f2: {
+              actions: [
+                { status: JOB_STATUS.RESOLVED, key: 'resolve' },
+                { status: JOB_STATUS.PENDING, key: 'pending' },
+              ],
+            },
           },
         },
       });
@@ -634,9 +686,9 @@ describe('workflow > instructions > manual', () => {
       const res1 = await userAgents[0].resource('users_jobs').submit({
         filterByTk: pendingJobs[0].get('id'),
         values: {
-          status: JOB_STATUS.PENDING,
           result: { f1: { number: 1 } },
         },
+        actionKey: 'pending',
       });
       expect(res1.status).toBe(202);
 
@@ -651,9 +703,9 @@ describe('workflow > instructions > manual', () => {
       const res2 = await userAgents[0].resource('users_jobs').submit({
         filterByTk: pendingJobs[0].get('id'),
         values: {
-          status: JOB_STATUS.PENDING,
           result: { f2: { number: 2 } },
         },
+        actionKey: 'pending',
       });
       expect(res2.status).toBe(202);
 
@@ -671,9 +723,9 @@ describe('workflow > instructions > manual', () => {
       const res3 = await userAgents[0].resource('users_jobs').submit({
         filterByTk: pendingJobs[0].get('id'),
         values: {
-          status: JOB_STATUS.RESOLVED,
           result: { f2: { number: 3 } },
         },
+        actionKey: 'resolve',
       });
       expect(res3.status).toBe(202);
 
@@ -697,7 +749,9 @@ describe('workflow > instructions > manual', () => {
             forms: {
               f1: {
                 type: 'create',
-                actions: [JOB_STATUS.RESOLVED],
+                actions: [
+                  { status: JOB_STATUS.RESOLVED, key: 'resolve' },
+                ],
                 collection: 'comments',
               },
             },
@@ -717,9 +771,9 @@ describe('workflow > instructions > manual', () => {
         const res1 = await userAgents[0].resource('users_jobs').submit({
           filterByTk: pendingJobs[0].get('id'),
           values: {
-            status: JOB_STATUS.RESOLVED,
             result: { f1: { status: 1 } },
           },
+          actionKey: 'resolve',
         });
         expect(res1.status).toBe(202);
 
@@ -744,7 +798,10 @@ describe('workflow > instructions > manual', () => {
             forms: {
               f1: {
                 type: 'create',
-                actions: [JOB_STATUS.RESOLVED, JOB_STATUS.PENDING],
+                actions: [
+                  { status: JOB_STATUS.RESOLVED, key: 'resolve' },
+                  { status: JOB_STATUS.PENDING, key: 'pending' },
+                ],
                 collection: 'comments',
               },
             },
@@ -764,9 +821,9 @@ describe('workflow > instructions > manual', () => {
         const res1 = await userAgents[0].resource('users_jobs').submit({
           filterByTk: pendingJobs[0].get('id'),
           values: {
-            status: JOB_STATUS.PENDING,
             result: { f1: { status: 1 } },
           },
+          actionKey: 'pending',
         });
         expect(res1.status).toBe(202);
 
@@ -784,9 +841,9 @@ describe('workflow > instructions > manual', () => {
         const res2 = await userAgents[0].resource('users_jobs').submit({
           filterByTk: pendingJobs[0].get('id'),
           values: {
-            status: JOB_STATUS.RESOLVED,
             result: { f1: { status: 1 } },
           },
+          actionKey: 'resolve',
         });
 
         await sleep(500);
@@ -811,7 +868,9 @@ describe('workflow > instructions > manual', () => {
             forms: {
               f1: {
                 type: 'update',
-                actions: [JOB_STATUS.RESOLVED],
+                actions: [
+                  { status: JOB_STATUS.RESOLVED, key: 'resolve' },
+                ],
                 collection: 'posts',
               },
             },
@@ -831,9 +890,9 @@ describe('workflow > instructions > manual', () => {
         const res1 = await userAgents[0].resource('users_jobs').submit({
           filterByTk: pendingJobs[0].get('id'),
           values: {
-            status: JOB_STATUS.RESOLVED,
             result: { f1: { title: 't2' } },
           },
+          actionKey: 'resolve',
         });
         expect(res1.status).toBe(202);
 

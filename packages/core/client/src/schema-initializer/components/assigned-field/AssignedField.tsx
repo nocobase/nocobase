@@ -11,7 +11,7 @@ import {
   useCollectionField,
   useCollectionFilterOptions,
 } from '../../../collection-manager';
-import { Variable, useCompile, useComponent } from '../../../schema-component';
+import { Variable, useCompile, useComponent, useVariableScope } from '../../../schema-component';
 import { DeletedField } from '../DeletedField';
 
 const InternalField: React.FC = (props) => {
@@ -93,6 +93,7 @@ export const AssignedField = (props: any) => {
   const collection = useCollection();
   const fields = compile(useCollectionFilterOptions(collection?.name));
   const userFields = compile(useCollectionFilterOptions('users'));
+  const scope = useVariableScope();
   useEffect(() => {
     const opt = [
       {
@@ -113,8 +114,9 @@ export const AssignedField = (props: any) => {
         children: null,
       });
     }
-    setOptions(opt);
-  }, [fields, userFields]);
+    const next = opt.concat(scope);
+    setOptions(next);
+  }, [fields, userFields, scope]);
 
   return (
     <Variable.Input
