@@ -1,14 +1,15 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Input } from 'antd';
+import { css, cx } from '@emotion/css';
 import { useForm } from '@formily/react';
-import { cx, css } from '@emotion/css';
-import * as sanitizeHTML from 'sanitize-html';
+import { Input } from 'antd';
 import { cloneDeep } from 'lodash';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import * as sanitizeHTML from 'sanitize-html';
 
 import { error } from '@nocobase/utils/client';
 
 import { EllipsisWithTooltip } from '../..';
 import { VariableSelect } from './VariableSelect';
+import { useStyles } from './style';
 
 type RangeIndexes = [number, number, number, number];
 
@@ -187,6 +188,7 @@ function getCurrentRange(element: HTMLElement): RangeIndexes {
 }
 
 export function TextArea(props) {
+  const { wrapSSR, hashId, componentCls } = useStyles();
   const { value = '', scope, onChange, multiline = true, changeOnSelect } = props;
   const inputRef = useRef<HTMLDivElement>(null);
   const [options, setOptions] = useState([]);
@@ -335,24 +337,28 @@ export function TextArea(props) {
 
   const disabled = props.disabled || form.disabled;
 
-  return (
+  return wrapSSR(
     <Input.Group
       compact
-      className={css`
-        &.ant-input-group.ant-input-group-compact {
-          display: flex;
-          .ant-input {
-            flex-grow: 1;
-            min-width: 200px;
-          }
-          .ant-input-disabled {
-            .ant-tag {
-              color: #bfbfbf;
-              border-color: #d9d9d9;
+      className={cx(
+        componentCls,
+        hashId,
+        css`
+          &.ant-input-group.ant-input-group-compact {
+            display: flex;
+            .ant-input {
+              flex-grow: 1;
+              min-width: 200px;
+            }
+            .ant-input-disabled {
+              .ant-tag {
+                color: #bfbfbf;
+                border-color: #d9d9d9;
+              }
             }
           }
-        }
-      `}
+        `,
+      )}
     >
       <div
         onInput={onInput}
@@ -360,6 +366,7 @@ export function TextArea(props) {
         onKeyDown={onKeyDown}
         onPaste={onPaste}
         className={cx(
+          hashId,
           'ant-input',
           { 'ant-input-disabled': disabled },
           css`
@@ -382,7 +389,7 @@ export function TextArea(props) {
       {!disabled ? (
         <VariableSelect options={options} setOptions={setOptions} onInsert={onInsert} changeOnSelect={changeOnSelect} />
       ) : null}
-    </Input.Group>
+    </Input.Group>,
   );
 }
 

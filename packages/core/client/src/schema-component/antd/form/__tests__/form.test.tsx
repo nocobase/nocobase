@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, sleep, userEvent } from 'testUtils';
+import { render, screen, sleep, userEvent, waitFor } from 'testUtils';
 import App1 from '../demos/demo1';
 import App2 from '../demos/demo2';
 import App3 from '../demos/demo3';
@@ -22,7 +22,8 @@ describe('Form', () => {
     expect(screen.getByText('T1')).toBeInTheDocument();
     expect(screen.getByText(/\{\}/i)).toBeInTheDocument();
 
-    await userEvent.type(input, '123');
+    // 使用 waitFor 防止报错，参见：https://github.com/testing-library/user-event/issues/662#issuecomment-904365493
+    await waitFor(() => userEvent.type(input, '123'));
     expect(screen.getByText(/\{ "field1": "123" \}/i)).toBeInTheDocument();
   });
 

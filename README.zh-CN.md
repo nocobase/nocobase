@@ -6,7 +6,10 @@
 
 NocoBase 正处在早期开发阶段，可能变动频繁，请谨慎用于生产环境。
 
-NocoBase v0.10 已发布，详情查看 [v0.10 更新说明](http://docs-cn.nocobase.com/welcome/release/v10-changelog)。
+## 最近重要更新
+
+- [v0.11: New client application, plugin and router - 2023/07/08](http://docs-cn.nocobase.com/welcome/release/v11-changelog)
+- [v0.10: Update instructions - 2023/06/23](http://docs-cn.nocobase.com/welcome/release/v10-changelog)
 
 ## 我们在招聘
 

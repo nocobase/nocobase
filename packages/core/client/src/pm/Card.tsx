@@ -14,7 +14,6 @@ import {
   Typography,
   message,
 } from 'antd';
-import cls from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -128,7 +127,7 @@ function PluginDetail(props: IPluginDetail) {
       footer={false}
       className={css`
         .ant-modal-header {
-          background: #f0f2f5;
+          background: var(--nb-box-bg);
           padding-bottom: 8px;
         }
 
@@ -136,8 +135,8 @@ function PluginDetail(props: IPluginDetail) {
           padding-top: 0;
         }
 
-        .ant-modal-body {
-          background: #f0f2f5;
+        .ant-modal-content {
+          background: var(--nb-box-bg);
           .plugin-desc {
             padding-bottom: 8px;
           }
@@ -175,14 +174,15 @@ function CommonCard(props: ICommonCard) {
       bordered={false}
       style={{ width: 'calc(20% - 24px)', marginRight: 24, marginBottom: 24, transition: 'all 0.35s ease-in-out' }}
       onClick={onClick}
-      className={cls(css`
-        &:hover {
-          border: 1px solid var(--antd-wave-shadow-color);
-          cursor: pointer;
-        }
+      hoverable
+      // className={cls(css`
+      //   &:hover {
+      //     border: 1px solid var(--antd-wave-shadow-color);
+      //     cursor: pointer;
+      //   }
 
-        border: 1px solid transparent;
-      `)}
+      //   border: 1px solid transparent;
+      // `)}
       actions={actions}
       // actions={[<a>Settings</a>, <a>Remove</a>, <Switch size={'small'} defaultChecked={true}></Switch>]}
     >

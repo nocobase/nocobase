@@ -1,15 +1,15 @@
-import { FormItem, FormLayout } from '@formily/antd';
-import { css, SchemaInitializerItemOptions, useCollectionManager, Variable } from '@nocobase/client';
+import { FormItem, FormLayout } from '@formily/antd-v5';
+import { SchemaInitializerItemOptions, Variable, css, useCollectionManager } from '@nocobase/client';
 import { Evaluator, evaluators, getOptions } from '@nocobase/evaluators/client';
 import { parse } from '@nocobase/utils/client';
 import { Radio } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { RadioWithTooltip } from '../components/RadioWithTooltip';
-import { renderEngineReference } from '../components/renderEngineReference';
-import { ValueBlock } from '../components/ValueBlock';
 import { useFlowContext } from '../FlowContext';
-import { lang, NAMESPACE } from '../locale';
+import { RadioWithTooltip } from '../components/RadioWithTooltip';
+import { ValueBlock } from '../components/ValueBlock';
+import { renderEngineReference } from '../components/renderEngineReference';
+import { NAMESPACE, lang } from '../locale';
 import { BaseTypeSets, useWorkflowVariableOptions } from '../variable';
 
 function useDynamicExpressionCollectionFieldMatcher(field): boolean {
@@ -36,13 +36,13 @@ const DynamicConfig = ({ value, onChange }) => {
     <FormLayout layout="vertical">
       <FormItem colon label={t('Expression type', { ns: NAMESPACE })}>
         <Radio.Group
-          value={value === false ? false : value || null}
+          value={value === false ? false : value || ''}
           onChange={(ev) => {
             onChange(ev.target.value);
           }}
         >
           <Radio value={false}>{t('Static', { ns: NAMESPACE })}</Radio>
-          <Radio value={value || null}>{t('Dynamic', { ns: NAMESPACE })}</Radio>
+          <Radio value={value || ''}>{t('Dynamic', { ns: NAMESPACE })}</Radio>
         </Radio.Group>
       </FormItem>
       {value !== false ? (
@@ -53,7 +53,7 @@ const DynamicConfig = ({ value, onChange }) => {
             { ns: NAMESPACE },
           )}
         >
-          <Variable.Input value={value || null} onChange={(v) => onChange(v)} scope={scope} />
+          <Variable.Input value={value || ''} onChange={(v) => onChange(v)} scope={scope} />
         </FormItem>
       ) : null}
     </FormLayout>

@@ -1,13 +1,13 @@
-import { FormDialog, FormLayout } from '@formily/antd';
+import { FormDialog, FormLayout } from '@formily/antd-v5';
 import { SchemaOptionsContext, useField, useFieldSchema } from '@formily/react';
 import {
   APIClientProvider,
-  css,
   GeneralSchemaDesigner,
-  i18n,
   SchemaComponent,
   SchemaComponentOptions,
   SchemaSettings,
+  css,
+  i18n,
   useAPIClient,
   useCompile,
   useDesignable,
@@ -95,7 +95,7 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
             okText: compile('{{t("Submit")}}'),
             title: lang('Edit chart block'),
             width: 1200,
-            bodyStyle: { background: '#f0f2f5', maxHeight: '65vh', overflow: 'auto' },
+            bodyStyle: { background: 'var(--nb-box-bg)', maxHeight: '65vh', overflow: 'auto' },
           },
           (form) => {
             const [chartBlockEngineMetaData, setChartBlockEngineMetaData] = useState<ChartBlockEngineMetaData>(null);

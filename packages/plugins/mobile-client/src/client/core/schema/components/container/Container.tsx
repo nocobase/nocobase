@@ -56,7 +56,7 @@ const InternalContainer: React.FC = (props) => {
             right: unset;
             left: 2px;
           }
-          background: #f0f2f5;
+          background: var(--nb-box-bg);
           display: flex;
           flex-direction: column;
           width: 100%;

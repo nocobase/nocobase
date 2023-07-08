@@ -35,7 +35,7 @@ export const SourceCollection = observer(
     return (
       <div>
         <Select
-          dropdownMatchSelectWidth={false}
+          popupMatchSelectWidth={false}
           disabled
           value={record.name}
           options={[{ value: record.name, label: compile(record.title) }]}

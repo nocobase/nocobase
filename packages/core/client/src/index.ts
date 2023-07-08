@@ -1,4 +1,15 @@
-import './global.less';
+// 解决 build 报 dayjs 相关类型错误的问题
+import 'dayjs/plugin/isBetween';
+import 'dayjs/plugin/isSameOrAfter';
+import 'dayjs/plugin/isSameOrBefore';
+import 'dayjs/plugin/isoWeek';
+import 'dayjs/plugin/localeData';
+import 'dayjs/plugin/quarterOfYear';
+import 'dayjs/plugin/utc';
+import 'dayjs/plugin/weekday';
+
+// 重置浏览器样式
+import 'antd/dist/reset.css';
 
 export * from '@emotion/css';
 export * from './acl';

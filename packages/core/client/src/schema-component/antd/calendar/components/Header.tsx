@@ -1,7 +1,4 @@
-import React from 'react';
-import moment from 'moment';
-import { useMemo } from 'react';
-import solarLunar from 'solarlunar-es';
+import React, { useMemo } from 'react';
 import { getLunarDay } from '../utils';
 
 const Header = ({ date, label, drilldownView, onDrillDown, showLunar = false, type, localizer }) => {

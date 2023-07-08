@@ -1,5 +1,5 @@
+import { dayjs } from '@nocobase/utils/client';
 import { ConfigProvider, Spin } from 'antd';
-import moment from 'moment';
 import React, { createContext, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../api-client';
@@ -34,7 +34,7 @@ export function AntdConfigProvider(props) {
           i18n.addResources(data?.data?.lang, key, data?.data?.resources[key] || {});
         });
         loadConstrueLocale(data?.data);
-        moment.locale(data?.data?.moment);
+        dayjs.locale(data?.data?.moment);
         window['cronLocale'] = data?.data?.cron;
       },
       manual: !remoteLocale,
@@ -45,7 +45,7 @@ export function AntdConfigProvider(props) {
   }
   return (
     <AppLangContext.Provider value={data?.data}>
-      <ConfigProvider dropdownMatchSelectWidth={false} {...others} locale={data?.data?.antd || {}}>
+      <ConfigProvider popupMatchSelectWidth={false} {...others} locale={data?.data?.antd || {}}>
         {props.children}
       </ConfigProvider>
     </AppLangContext.Provider>

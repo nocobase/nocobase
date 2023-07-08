@@ -4,7 +4,7 @@ import { lodash } from '@nocobase/utils';
 import path from 'path';
 import Plugin from '..';
 import { JOB_STATUS } from '../constants';
-import FlowNodeModel from '../models/FlowNode';
+import type { FlowNodeModel } from '../types';
 
 export function sleep(ms: number) {
   return new Promise((resolve) => {

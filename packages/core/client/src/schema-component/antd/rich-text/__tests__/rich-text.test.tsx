@@ -8,7 +8,7 @@ describe('RichText', () => {
     const editor = container.querySelector('.ql-editor') as HTMLElement;
 
     editor.focus();
-    await userEvent.type(editor, 'Hello World');
+    await userEvent.type(editor, `Hello World`);
     expect(screen.queryAllByText('Hello World')).toHaveLength(2);
   });
 });

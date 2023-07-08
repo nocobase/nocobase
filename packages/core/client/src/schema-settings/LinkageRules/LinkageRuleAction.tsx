@@ -1,6 +1,6 @@
 import { CloseCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { TreeSelect } from '@formily/antd';
+import { TreeSelect } from '@formily/antd-v5';
 import { observer } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Select, Space } from 'antd';
@@ -72,7 +72,7 @@ export const FormFieldLinkageRuleAction = observer(
               placeholder={t('Select field')}
             />
             <Select
-              dropdownMatchSelectWidth={false}
+              popupMatchSelectWidth={false}
               value={operator}
               className={css`
                 min-width: 120px;
@@ -122,7 +122,7 @@ export const FormButtonLinkageRuleAction = observer(
       <div style={{ marginBottom: 8 }}>
         <Space>
           <Select
-            dropdownMatchSelectWidth={false}
+            popupMatchSelectWidth={false}
             value={operator}
             options={compile(operators)}
             onChange={(value) => {
