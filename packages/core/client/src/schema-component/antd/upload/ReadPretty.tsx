@@ -3,6 +3,7 @@ import { Field } from '@formily/core';
 import { useField } from '@formily/react';
 import { isString } from '@nocobase/utils/client';
 import { Button, Modal, Space } from 'antd';
+import useUploadStyle from 'antd/es/upload/style';
 import cls from 'classnames';
 import { saveAs } from 'file-saver';
 import React, { useState } from 'react';
@@ -31,6 +32,8 @@ ReadPretty.File = function File(props: UploadProps) {
   const [fileType, setFileType] = useState<'image' | 'pdf'>();
   const { size } = props;
   const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
+  // 加载 antd 的样式
+  useUploadStyle(prefixCls);
 
   function closeIFrameModal() {
     setVisible(false);
@@ -43,7 +46,7 @@ ReadPretty.File = function File(props: UploadProps) {
           `${prefixCls}-wrapper`,
           `${prefixCls}-picture-card-wrapper`,
           `nb-upload`,
-          size ? `${prefixCls}-${size}` : null,
+          size ? `nb-upload-${size}` : null,
           hashId,
         )}
       >
@@ -174,6 +177,7 @@ ReadPretty.File = function File(props: UploadProps) {
           onCancel={closeIFrameModal}
           footer={[
             <Button
+              key={'download'}
               style={{
                 textTransform: 'capitalize',
               }}
@@ -186,7 +190,7 @@ ReadPretty.File = function File(props: UploadProps) {
             >
               {t('download')}
             </Button>,
-            <Button onClick={closeIFrameModal} style={{ textTransform: 'capitalize' }}>
+            <Button key={'close'} onClick={closeIFrameModal} style={{ textTransform: 'capitalize' }}>
               {t('close')}
             </Button>,
           ]}
