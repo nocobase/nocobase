@@ -1,206 +1,227 @@
-import { css } from '@nocobase/client';
+import { createStyles } from '@nocobase/client';
 
-export const nodeSubtreeClass = css`
-  display: flex;
-  flex-direction: column-reverse;
-  align-items: center;
-`;
+const useStyles = createStyles(({ token, css }) => {
+  return {
+    // 右下角的小画布
+    graphMinimap: css`
+      .x6-widget-minimap {
+        background-color: ${token.colorBgContainer};
+      }
+    `,
 
-export const addButtonClass = css`
-  flex-shrink: 0;
-  padding: 2em 0;
-`;
+    addButtonClass: css`
+      flex-shrink: 0;
+      padding: 2em 0;
+    `,
 
-export const entityContainer = css`
-  width: 250px;
-  height: 100%;
-  border-radius: 2px;
-  background-color: #fff;
-  border: 0;
-  &:hover {
-    box-shadow: 0 1px 2px -2px rgb(0 0 0 / 16%), 0 3px 6px 0 rgb(0 0 0 / 12%), 0 5px 12px 4px rgb(0 0 0 / 9%);
-  }
-  .body {
-    width: 100%;
-    height: 100%;
-    background-color: #fff;
-    cursor: pointer;
-    .morePorts {
-      max-height: 300px;
-      overflow: auto;
-    }
-    .body-item {
-      display: inline-table;
-      width: 100%;
-      max-width: 250px;
-      height: 40px;
+    entityContainer: css`
+      .btn-del {
+        border-color: transparent;
+        background-color: ${token.colorErrorBg};
+        color: ${token.colorErrorText};
+        height: 20px;
+        width: 20px;
+        &:hover {
+          background-color: ${token.colorErrorBgHover};
+        }
+      }
+      .btn-add {
+        background: ${token.colorSuccessBg};
+        border-color: transparent;
+        color: ${token.colorSuccessText};
+        width: 20px;
+        &:hover {
+          background-color: ${token.colorSuccessBgHover};
+        }
+      }
+      .btn-edit {
+        color: ${token.colorText};
+        display: flex;
+        &:hover {
+          background: ${token.colorBgTextHover};
+        }
+      }
+      .btn-edit-in-head {
+        border-color: transparent;
+        color: ${token.colorText};
+        height: 20px;
+        width: 22px;
+        margin: 0px 5px 4px;
+        line-height: 25px;
+        &:hover {
+          background: ${token.colorBgTextHover};
+        }
+      }
+      width: 250px;
+      height: 100%;
+      border-radius: ${token.borderRadiusLG}px;
+      background-color: ${token.colorBgContainer};
+      border: 0;
+      overflow: hidden;
+      &:hover {
+        box-shadow: ${token.boxShadowTertiary};
+      }
+      .body {
+        width: 100%;
+        height: 100%;
+        background-color: ${token.colorBgContainer};
+        cursor: pointer;
+        .morePorts {
+          max-height: 300px;
+          overflow: auto;
+        }
+        .body-item {
+          display: inline-table;
+          width: 100%;
+          max-width: 250px;
+          height: 40px;
+          font-size: 14px;
+          color: ${token.colorText};
+          border-top: 1px solid ${token.colorBorderSecondary};
+          text-overflow: ellipsis;
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          justify-content: space-between;
+
+          .field-operator {
+            display: none;
+          }
+          &:hover {
+            .field-operator {
+              display: flex;
+              flex-direction: row-reverse;
+              height: 32px;
+              line-height: 32px;
+              z-index: 999;
+              cursor: pointer;
+              text-align: right;
+              background: ${token.colorBgContainer};
+              padding-right: 3px;
+              span {
+                margin: 3px;
+                margin-left: 4px;
+                padding: 3px;
+                height: 20px;
+                width: 20px;
+              }
+              .btn-override {
+                border-color: transparent;
+                width: 20px;
+                color: ${token.colorText};
+                &:hover {
+                  background-color: ${token.colorBgTextHover};
+                }
+              }
+              .btn-view {
+                border-color: transparent;
+                color: ${token.colorText};
+                width: 20px;
+              }
+              .btn-view:hover {
+                background: ${token.colorBgTextHover};
+              }
+            }
+            .field_type {
+              display: none;
+            }
+          }
+
+          .name {
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            overflow: hidden;
+            margin-left: 8px;
+          }
+
+          .type {
+            color: ${token.colorTextTertiary};
+            margin-right: 8px;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            overflow: hidden;
+          }
+        }
+      }
+    `,
+
+    headClass: css`
+      height: 50px;
       font-size: 14px;
-      color: rgba(0, 0, 0, 0.85);
-      height: 40px;
-      border-top: 1px solid #f0f0f0;
-      text-overflow: ellipsis;
+      font-weight: 500;
       display: flex;
       flex-direction: row;
-      align-items: center;
       justify-content: space-between;
+      align-items: center;
+      background: ${token.colorFillAlter};
+      color: ${token.colorTextHeading};
+      padding: 0 8px;
+    `,
 
-      .field-operator {
-        display: none;
+    tableNameClass: css`
+      max-width: 80%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 500;
+    `,
+
+    tableBtnClass: css`
+      display: flex;
+      span {
+        cursor: pointer;
       }
-      &:hover {
-        .field-operator {
-          display: flex;
-          flex-direction: row-reverse;
-          height: 32px;
-          line-height: 32px;
-          z-index: 999;
-          cursor: pointer;
-          text-align: right;
-          background: #fff;
-          padding-right: 3px;
-          span {
-            margin: 3px;
-            margin-left: 4px;
-            padding: 3px;
-            height: 20px;
-            width: 20px;
-          }
-          .btn-del {
-            border-color: transparent;
-            color: rgb(78 89 105);
-            height: 20px;
-            width: 20px;
-            &:hover {
-              background-color: rgb(229 230 235);
-            }
-          }
-          .btn-add {
-            background: rgb(232 255 234);
-            border-color: transparent;
-            color: rgb(0, 180, 42);
-            width: 20px;
-          }
-          .btn-edit {
-            color: rgba(0, 0, 0, 0.85);
-            display: flex;
-          }
-          .btn-edit:hover {
-            background: rgb(229 230 235);
-          }
-          .btn-override {
-            border-color: transparent;
-            width: 20px;
-            color: rgba(0, 0, 0, 0.85);
-            &:hover {
-              background-color: rgb(229 230 235);
-            }
-          }
-          .btn-view {
-            border-color: transparent;
-            color: rgba(0, 0, 0, 0.85);
-            width: 20px;
-          }
-          .btn-view:hover {
-            background: rgb(229 230 235);
-          }
-        }
-        .field_type {
-          display: none;
+    `,
+
+    collectionPopoverClass: css`
+      div.field-content {
+        font-size: 14px;
+        color: ${token.colorTextSecondary};
+        opacity: 0.8;
+        display: block;
+        .field-type {
+          color: ${token.colorText};
+          float: right;
         }
       }
+    `,
 
-      .name {
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        overflow: hidden;
-        margin-left: 8px;
-      }
-
-      .type {
-        color: rgba(0, 0, 0, 0.45);
-        margin-right: 8px;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        overflow: hidden;
-      }
-    }
-  }
-`;
-
-export const headClass = css`
-  height: 50px;
-  font-size: 14px;
-  font-weight: 500;
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-  background: #fafafa;
-  color: rgb(29 33 41);
-  padding: 0 8px;
-  border-radius: 3px;
-`;
-
-export const tableNameClass = css`
-  max-width: 80%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-weight: 500;
-`;
-
-export const tableBtnClass = css`
-  display: flex;
-  span {
-    cursor: pointer;
-  }
-`;
-
-export const collectiionPopoverClass = css`
-  div.field-content {
-    font-size: 14px;
-    color: rgb(134 144 156);
-    opacity: 0.8;
-    display: block;
-    .field-type {
-      color: #333;
+    collectionListClass: css`
       float: right;
-    }
-  }
-`;
+      position: fixed;
+      margin-top: 24px;
+      right: 24px;
+      z-index: 1000;
+      .trigger {
+        float: right;
+        margin: 2px 4px;
+        font-size: 16px;
+      }
+      .ant-input {
+        margin: 4px;
+      }
+      .ant-menu-inline {
+        border-top: 1px solid ${token.colorBorderSecondary};
+      }
+      .ant-layout-sider {
+        margin-top: 24px;
+      }
+      .ant-menu-item {
+        height: 32px;
+      }
+      .ant-btn {
+        border: 0;
+      }
+    `,
 
-export const collectionListClass = css`
-  float: right;
-  position: fixed;
-  margin-top: 24px;
-  right: 24px;
-  z-index: 1000;
-  .trigger {
-    float: right;
-    margin: 2px 4px;
-    font-size: 16px;
-  }
-  .ant-input {
-    margin: 4px;
-  }
-  .ant-menu-inline {
-    border-top: 1px solid #f0f0f0;
-  }
-  .ant-layout-sider {
-    margin-top: 24px;
-  }
-  .ant-menu-item {
-    height: 32px;
-  }
-  .ant-btn {
-    border: 0;
-  }
-`;
+    graphCollectionContainerClass: css`
+      overflow: hidden;
+      .x6-graph-scroller {
+        height: calc(100vh) !important;
+        width: calc(100vw) !important;
+      }
+    `,
+  };
+});
 
-export const graphCollectionContainerClass = css`
-  overflow: hidden;
-  .x6-graph-scroller {
-    height: calc(100vh) !important;
-    width: calc(100vw) !important;
-  }
-`;
+export default useStyles;
