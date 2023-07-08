@@ -1,6 +1,19 @@
 # v0.11: Update instructions
 
-## Plugin registration and use
+## New features
+
+- New client application, plugin and router
+- Ant design upgrade to v5
+- New plugin
+  - Data visualization
+  - API keys
+  - Google map
+
+## Incompatible changes
+
+### New client application, plugin and router
+
+#### Plugin changes
 
 before you had to pass a component and the component needed to pass `props.children`, for example:
 
@@ -44,6 +57,8 @@ plugins are very powerful and can do a lot of things in the `load` phase:
 - add Providers
 - add Scopes
 - load other plugins
+
+#### Routing changes
 
 if you used `RouteSwitchContext` to modify the route before, you now need to replace it with a plugin:
 
@@ -97,4 +112,9 @@ const HelloProvider = (props) => {
 + export default HelloPlugin;
 ```
 
-more details can be found in [plugin development](/development/client).
+more details can be found in [packages/core/client/src/application/index.md](https://github.com/nocobase/nocobase/blob/main/packages/core/client/src/application/index.md)
+
+### antd upgrade to v5
+
+- antd related details view the official website [V4 to V5](https://ant.design/docs/react/migration-v5)
+- `@formily/antd` replace with `@formily/antd-v5`
