@@ -4,7 +4,7 @@
   "displayName.zh-CN": "错误处理",
   "description": "Managing and handling errors and exceptions in an application.",
   "description.zh-CN": "管理和处理应用程序中的错误和异常。",
-  "version": "0.10.1-alpha.1",
+  "version": "0.11.0-alpha.1",
   "license": "AGPL-3.0",
   "main": "./lib/server/index.js",
   "files": [
@@ -18,16 +18,14 @@
     "client.js",
     "client.d.ts"
   ],
-  "dependencies": {
-  },
   "devDependencies": {
-    "supertest": "^6.1.6",
     "@formily/json-schema": "2.2.26",
-    "@nocobase/utils": "0.10.1-alpha.1",
-    "@nocobase/database": "0.10.1-alpha.1",
-    "@nocobase/test": "0.10.1-alpha.1",
-    "@nocobase/client": "0.10.1-alpha.1",
-    "@nocobase/server": "0.10.1-alpha.1"
+    "@nocobase/client": "0.11.0-alpha.1",
+    "@nocobase/database": "0.11.0-alpha.1",
+    "@nocobase/server": "0.11.0-alpha.1",
+    "@nocobase/test": "0.11.0-alpha.1",
+    "@nocobase/utils": "0.11.0-alpha.1",
+    "supertest": "^6.1.6"
   },
   "repository": {
     "type": "git",
