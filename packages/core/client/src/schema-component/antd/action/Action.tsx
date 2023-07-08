@@ -114,7 +114,7 @@ export const Action: ComposedAction = observer(
         <SortableItem
           {...others}
           loading={field?.data?.loading}
-          icon={<Icon type={icon} />}
+          icon={icon ? <Icon type={icon} /> : null}
           disabled={disabled}
           style={{
             ...others.style,
@@ -141,6 +141,7 @@ export const Action: ComposedAction = observer(
           }}
           component={tarComponent || Button}
           className={classnames(actionDesignerCss, className)}
+          type={props.type === 'danger' ? undefined : props.type}
         >
           {title || compile(fieldSchema.title)}
           <Designer {...designerProps} />

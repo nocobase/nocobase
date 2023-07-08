@@ -1022,7 +1022,7 @@ export const GraphDrawPage = React.memo(() => {
               <SchemaComponent
                 components={{
                   Select: (props) => (
-                    <Select dropdownMatchSelectWidth={false} {...props} getPopupContainer={getPopupContainer} />
+                    <Select popupMatchSelectWidth={false} {...props} getPopupContainer={getPopupContainer} />
                   ),
                   AddCollectionAction,
                 }}

@@ -46,7 +46,7 @@ export const CollectionSelect = connect(
     return (
       <Select
         placeholder={t('Select collection')}
-        dropdownMatchSelectWidth={false}
+        popupMatchSelectWidth={false}
         {...others}
         showSearch
         filterOption={(input, option) => (option?.label ?? '').includes(input)}

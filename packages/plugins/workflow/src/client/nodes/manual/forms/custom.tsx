@@ -1,23 +1,25 @@
-import { ArrayTable } from '@formily/antd';
-import { createForm, Field } from '@formily/core';
+import React, { useContext, useMemo, useState } from 'react';
+
+import { ArrayTable } from '@formily/antd-v5';
+import { Field, createForm } from '@formily/core';
 import { useField, useFieldSchema, useForm } from '@formily/react';
+
 import {
   ActionContextProvider,
   CollectionContext,
   CollectionProvider,
   FormBlockContext,
-  gridRowColWrap,
   RecordProvider,
   SchemaComponent,
   SchemaInitializer,
   SchemaInitializerItemOptions,
+  gridRowColWrap,
   useCollectionManager,
   useRecord,
 } from '@nocobase/client';
 import { lodash, merge, uid } from '@nocobase/utils/client';
-import React, { useContext, useMemo, useState } from 'react';
 import { JOB_STATUS } from '../../../constants';
-import { lang, NAMESPACE } from '../../../locale';
+import { NAMESPACE, lang } from '../../../locale';
 import { ManualFormType } from '../SchemaConfig';
 import { findSchema } from '../utils';
 

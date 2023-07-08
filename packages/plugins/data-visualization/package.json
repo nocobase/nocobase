@@ -9,15 +9,16 @@
   "dependencies": {
     "classnames": "^2.3.1",
     "@ant-design/plots": "^1.2.5",
-    "react-error-boundary": "^4.0.4"
+    "react-error-boundary": "^4.0.10"
   },
   "devDependencies": {
     "react": "^18.2.0",
-    "antd": "^4.24.8",
-    "vitest": "^0.32.0",
-    "@ant-design/icons": "^4.8.0",
+    "antd": "^5.6.4",
+    "@formily/antd-v5": "^1.1.0-beta.4",
+    "vitest": "^0.33.0",
+    "@ant-design/icons": "^5.1.4",
     "react-i18next": "^11.15.1",
-    "@formily/antd": "2.2.26",
+    "@formily/antd-v5": "1.1.0-beta.4",
     "@formily/core": "2.2.26",
     "@formily/react": "2.2.26",
     "@formily/shared": "2.2.26",
@@ -28,7 +29,7 @@
     "@nocobase/server": "0.10.1-alpha.1",
     "@nocobase/test": "0.10.1-alpha.1",
     "@nocobase/utils": "0.10.1-alpha.1",
-    "@testing-library/react": "^14.0.0",
+    "@testing-library/react": "^12.1.5",
     "lodash": "^4.17.21"
   }
 }

@@ -24,7 +24,7 @@ export const useSwitchRole = () => {
           <Select
             style={{ minWidth: 100 }}
             bordered={false}
-            dropdownMatchSelectWidth={false}
+            popupMatchSelectWidth={false}
             fieldNames={{
               label: 'title',
               value: 'name',

@@ -1,13 +1,13 @@
 import { css } from '@emotion/css';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { useRecord } from '@nocobase/client';
+import { dayjs } from '@nocobase/utils/client';
 import { useBoolean } from 'ahooks';
 import { DatePicker, Select, Space, Typography } from 'antd';
-import moment from 'moment';
 import React, { useMemo } from 'react';
 import { useTranslation } from '../locale';
 
-const TOMORROW = moment().add(1, 'days');
+const TOMORROW = dayjs().add(1, 'days');
 
 const spaceCSS = css`
   width: 100%;
@@ -30,9 +30,9 @@ const InternalExpiresSelect = (props) => {
     }
   };
 
-  const onDatePickerChange = (v: moment.Moment) => {
-    v = v.milliseconds(0).second(0);
-    const NOW = moment().milliseconds(0).seconds(0);
+  const onDatePickerChange = (v: dayjs.Dayjs) => {
+    v = v.millisecond(0).second(0);
+    const NOW = dayjs().millisecond(0).second(0);
     const value = `${v.diff(NOW, 'd')}d`;
     onChange(value);
   };
@@ -42,8 +42,8 @@ const InternalExpiresSelect = (props) => {
       <Select {...props} value={isCustom ? 'custom' : props.value} onChange={onSelectChange}></Select>
       {isCustom ? (
         <DatePicker
-          disabledDate={(time) => {
-            return time.isSameOrBefore();
+          disabledDate={(date) => {
+            return date.isSameOrBefore();
           }}
           defaultValue={TOMORROW}
           onChange={onDatePickerChange}
@@ -61,7 +61,7 @@ const ReadPretty = () => {
   const expiresDate = useMemo(() => {
     if (expiresIn === 'never') return t('Never expires');
 
-    return moment(createdAt)
+    return dayjs(createdAt)
       .add(expiresIn?.replace('d', '') || 0, 'days')
       .format('YYYY-MM-DD HH:mm:ss');
   }, [createdAt, expiresIn]);

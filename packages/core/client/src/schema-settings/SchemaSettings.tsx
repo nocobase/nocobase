@@ -1,6 +1,6 @@
 import { css } from '@emotion/css';
-import { ArrayCollapse, ArrayItems, FormDialog, FormItem, FormLayout, Input } from '@formily/antd';
-import { createForm, Field, GeneralField } from '@formily/core';
+import { ArrayCollapse, ArrayItems, FormDialog, FormItem, FormLayout, Input } from '@formily/antd-v5';
+import { Field, GeneralField, createForm } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { error } from '@nocobase/utils/client';
@@ -21,31 +21,31 @@ import {
 import classNames from 'classnames';
 import _, { cloneDeep } from 'lodash';
 import React, {
-  createContext,
   ReactNode,
+  createContext,
   useCallback,
   useContext,
   useMemo,
-  useState,
   // @ts-ignore
   useTransition as useReactTransition,
+  useState,
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  ActionContextProvider,
   APIClientProvider,
+  ActionContextProvider,
   CollectionFieldOptions,
   CollectionManagerContext,
   CollectionProvider,
-  createDesignable,
   Designable,
-  findFormBlock,
   FormProvider,
   RemoteSchemaComponent,
   SchemaComponent,
   SchemaComponentContext,
   SchemaComponentOptions,
+  createDesignable,
+  findFormBlock,
   useAPIClient,
   useBlockRequestContext,
   useCollection,
@@ -85,14 +85,9 @@ interface SchemaSettingsContextProps {
   collectionName?: any;
 }
 
-const SchemaSettingsContext = createContext<SchemaSettingsContextProps>(null);
+const mouseEnterDelay = 150;
 
-/**
- * 用于去除菜单的消失动画，优化操作体验
- */
-const hidden = css`
-  display: none;
-`;
+const SchemaSettingsContext = createContext<SchemaSettingsContextProps>(null);
 
 export const useSchemaSettings = () => {
   return useContext(SchemaSettingsContext);
@@ -153,6 +148,7 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
   const [isPending, startTransition] = useReactTransition();
 
   const changeMenu = (v: boolean) => {
+    // 这里是为了防止当鼠标快速滑过时，终止菜单的渲染，防止卡顿
     startTransition(() => {
       setVisible(v);
     });
@@ -165,10 +161,10 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
       <Component />
       <Dropdown
         open={visible}
-        onOpenChange={() => {
-          changeMenu(!visible);
+        onOpenChange={(open) => {
+          changeMenu(open);
         }}
-        menu={{ items, className: classNames({ [hidden]: !visible }) }}
+        menu={{ items }}
         overlayClassName={overlayClassName}
       >
         {typeof title === 'string' ? <span>{title}</span> : title}
@@ -685,7 +681,7 @@ SchemaSettings.SelectItem = function SelectItem(props) {
       <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
         {title}
         <Select
-          dropdownMatchSelectWidth={false}
+          popupMatchSelectWidth={false}
           bordered={false}
           defaultValue={value}
           onChange={(...arg) => (setOpen(false), onChange(...arg))}

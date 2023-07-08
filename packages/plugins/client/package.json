@@ -20,7 +20,7 @@
   "license": "AGPL-3.0",
   "dependencies": {
     "cronstrue": "^2.11.0",
-    "antd": "^4.24.8",
+    "antd": "^5.6.4",
     "koa-send": "^5.0.1",
     "koa-static": "^5.0.0"
   },

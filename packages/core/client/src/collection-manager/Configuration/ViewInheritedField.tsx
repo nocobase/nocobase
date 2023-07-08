@@ -1,4 +1,4 @@
-import { ArrayTable } from '@formily/antd';
+import { ArrayTable } from '@formily/antd-v5';
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import cloneDeep from 'lodash/cloneDeep';

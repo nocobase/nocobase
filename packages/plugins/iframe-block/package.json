@@ -23,8 +23,8 @@
   },
   "devDependencies": {
     "react": "^18.2.0",
-    "antd": "^4.24.8",
-    "@ant-design/icons": "^4.8.0",
+    "antd": "^5.6.4",
+    "@ant-design/icons": "^5.1.4",
     "react-i18next": "^11.15.1",
     "@formily/react": "2.2.26",
     "@formily/shared": "2.2.26",

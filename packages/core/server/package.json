@@ -23,7 +23,7 @@
     "koa-bodyparser": "^4.3.0",
     "koa-static": "^5.0.0",
     "lodash": "^4.17.21",
-    "moment": "^2.29.1",
+    "dayjs": "^1.11.8",
     "semver": "^7.3.7",
     "xpipe": "^1.0.5"
   },

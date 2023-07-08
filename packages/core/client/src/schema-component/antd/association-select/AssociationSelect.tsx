@@ -1,5 +1,5 @@
 import { LoadingOutlined } from '@ant-design/icons';
-import { ArrayCollapse, ArrayItems, FormLayout } from '@formily/antd';
+import { ArrayCollapse, ArrayItems, FormLayout } from '@formily/antd-v5';
 import { Field } from '@formily/core';
 import { ISchema, connect, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
