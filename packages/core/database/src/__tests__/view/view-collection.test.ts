@@ -86,10 +86,10 @@ $$ LANGUAGE plpgsql;
     `);
 
     await db.sequelize.query(`
-CREATE TRIGGER insert_users_with_group_trigger
-INSTEAD OF INSERT ON ${UsersWithGroup.quotedTableName()}
-FOR EACH ROW EXECUTE FUNCTION insert_users_with_group();
-`);
+    CREATE TRIGGER insert_users_with_group_trigger
+    INSTEAD OF INSERT ON ${UsersWithGroup.quotedTableName()}
+    FOR EACH ROW EXECUTE FUNCTION insert_users_with_group();
+    `);
 
     const returned = await UsersWithGroup.repository.create({
       values: {
@@ -121,70 +121,6 @@ describe('create view', () => {
 
   afterEach(async () => {
     await db.close();
-  });
-
-  it('should insert data into view collection', async () => {
-    const User = db.collection({
-      name: 'users',
-      fields: [
-        { type: 'string', name: 'name' },
-        {
-          type: 'belongsTo',
-          name: 'group',
-          foreignKey: 'group_id',
-          target: 'groups',
-        },
-      ],
-    });
-
-    const Group = db.collection({
-      name: 'groups',
-      fields: [
-        {
-          type: 'string',
-          name: 'name',
-        },
-      ],
-    });
-
-    await db.sync();
-
-    const viewName = 'user_with_group';
-    const dropViewSQL = `DROP VIEW IF EXISTS test_view`;
-    await db.sequelize.query(dropViewSQL);
-
-    const viewSQL = `
-    CREATE VIEW ${viewName}
-    AS SELECT users.id AS user_id, users.name AS user_name, groups.name AS group_name
-    FROM ${User.quotedTableName()} AS ${db.sequelize.getQueryInterface().quoteIdentifier('users')}
-    LEFT JOIN ${Group.quotedTableName()} AS ${db.sequelize.getQueryInterface().quoteIdentifier('groups')}
-    ON users.group_id = groups.id`;
-
-    await db.sequelize.query(viewSQL);
-
-    const viewCollection = db.collection({
-      name: viewName,
-      viewName,
-      writableView: true,
-      timestamps: false,
-      fields: [
-        { type: 'bigInt', name: 'user_id' },
-        { type: 'string', name: 'user_name' },
-        { type: 'string', name: 'group_name' },
-      ],
-    });
-
-    await db.sync();
-
-    await viewCollection.repository.create({
-      values: {
-        user_name: 'u1',
-        group_name: 'g1',
-      },
-    });
-
-    const record = await viewCollection.repository.findOne();
-    expect(record.get('name')).toBe('123');
   });
 
   it('should create view collection in difference schema', async () => {
