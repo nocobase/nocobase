@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/devtools",
-  "version": "0.10.1-alpha.1",
+  "version": "0.11.0-alpha.1",
   "description": "",
   "license": "Apache-2.0",
   "main": "./src/index.js",
@@ -27,7 +27,6 @@
     "eslint-plugin-promise": "^6.1.1",
     "eslint-plugin-react": "^7.32.2",
     "eslint-plugin-react-hooks": "^4.6.0",
-    "jsdom": "^16.0.0",
     "jest": "^26.0.0",
     "jest-codemods": "^0.19.1",
     "jest-dom": "^3.1.2",

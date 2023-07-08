@@ -4,7 +4,7 @@
   "displayName.zh-CN": "NocoBase应用备份与还原",
   "description": "Backup and Restore Plugin for NocoBase applications, used for scenarios such as application replication, migration, and upgrade.",
   "description.zh-CN": "NocoBase 应用的备份与还原插件，可用于应用的复制、迁移、升级等场景。",
-  "version": "0.10.1-alpha.1",
+  "version": "0.11.0-alpha.1",
   "license": "AGPL-3.0",
   "main": "./lib/server/index.js",
   "files": [
@@ -35,12 +35,12 @@
     "tar": "^6.1.13"
   },
   "devDependencies": {
-    "react": "^18.2.0",
+    "@nocobase/client": "0.11.0-alpha.1",
+    "@nocobase/database": "0.11.0-alpha.1",
+    "@nocobase/server": "0.11.0-alpha.1",
+    "@nocobase/test": "0.11.0-alpha.1",
+    "@nocobase/utils": "0.11.0-alpha.1",
     "antd": "^5.6.4",
-    "@nocobase/utils": "0.10.1-alpha.1",
-    "@nocobase/test": "0.10.1-alpha.1",
-    "@nocobase/client": "0.10.1-alpha.1",
-    "@nocobase/database": "0.10.1-alpha.1",
-    "@nocobase/server": "0.10.1-alpha.1"
+    "react": "^18.2.0"
   }
 }

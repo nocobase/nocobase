@@ -4,7 +4,7 @@
   "displayName.zh-CN": "导出",
   "description": "export data",
   "description.zh-CN": "导出数据。",
-  "version": "0.10.1-alpha.1",
+  "version": "0.11.0-alpha.1",
   "license": "AGPL-3.0",
   "main": "./lib/server/index.js",
   "files": [
@@ -19,22 +19,22 @@
     "client.d.ts"
   ],
   "dependencies": {
-    "file-saver": "^2.0.5",
     "@types/node-xlsx": "^0.15.1",
+    "file-saver": "^2.0.5",
     "node-xlsx": "^0.16.1"
   },
   "devDependencies": {
-    "react": "^18.2.0",
-    "react-i18next": "^11.15.1",
+    "@formily/antd-v5": "1.1.0-beta.4",
     "@formily/react": "2.2.26",
     "@formily/shared": "2.2.26",
-    "@formily/antd-v5": "1.1.0-beta.4",
-    "@nocobase/actions": "0.10.1-alpha.1",
-    "@nocobase/utils": "0.10.1-alpha.1",
-    "@nocobase/database": "0.10.1-alpha.1",
-    "@nocobase/client": "0.10.1-alpha.1",
-    "@nocobase/test": "0.10.1-alpha.1",
-    "@nocobase/server": "0.10.1-alpha.1"
+    "@nocobase/actions": "0.11.0-alpha.1",
+    "@nocobase/client": "0.11.0-alpha.1",
+    "@nocobase/database": "0.11.0-alpha.1",
+    "@nocobase/server": "0.11.0-alpha.1",
+    "@nocobase/test": "0.11.0-alpha.1",
+    "@nocobase/utils": "0.11.0-alpha.1",
+    "react": "^18.2.0",
+    "react-i18next": "^11.15.1"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
 }
