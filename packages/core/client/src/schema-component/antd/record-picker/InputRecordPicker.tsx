@@ -178,7 +178,7 @@ export const InputRecordPicker: React.FC<any> = (props: IRecordPickerProps) => {
           {...others}
           mode={multiple ? 'multiple' : props.mode}
           fieldNames={fieldNames}
-          dropdownMatchSelectWidth={false}
+          popupMatchSelectWidth={false}
           onDropdownVisibleChange={(open) => {
             setVisible(true);
           }}

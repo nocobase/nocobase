@@ -1,7 +1,7 @@
 /**
  * title: Markdown.Void
  */
-import { FormItem } from '@formily/antd';
+import { FormItem } from '@formily/antd-v5';
 import { observer, useField } from '@formily/react';
 import { Markdown, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
 import { Button } from 'antd';

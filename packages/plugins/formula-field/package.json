@@ -25,7 +25,7 @@
     "react-i18next": "^11.15.1",
     "@formily/react": "2.2.26",
     "@formily/core": "2.2.26",
-    "@formily/antd": "2.2.26",
+    "@formily/antd-v5": "1.1.0-beta.4",
     "@formily/reactive": "2.2.26",
     "@nocobase/evaluators": "0.10.1-alpha.1",
     "@nocobase/database": "0.10.1-alpha.1",

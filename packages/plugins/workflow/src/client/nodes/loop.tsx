@@ -4,9 +4,9 @@ import React from 'react';
 import { NodeDefaultView } from '.';
 import { Branch } from '../Branch';
 import { useFlowContext } from '../FlowContext';
-import { lang, NAMESPACE } from '../locale';
+import { NAMESPACE, lang } from '../locale';
 import { addButtonClass, branchBlockClass, branchClass, nodeSubtreeClass } from '../style';
-import { nodesOptions, triggerOptions, useWorkflowVariableOptions, VariableOption } from '../variable';
+import { VariableOption, nodesOptions, triggerOptions, useWorkflowVariableOptions } from '../variable';
 
 function findOption(options: VariableOption[], paths: string[]) {
   let opts = options;
@@ -93,7 +93,7 @@ export default {
               >
                 <ArrowUpOutlined
                   className={css`
-                    background-color: #f0f2f5;
+                    background-color: var(--nb-box-bg);
                   `}
                 />
               </div>

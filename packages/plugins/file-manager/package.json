@@ -34,11 +34,11 @@
   },
   "devDependencies": {
     "react": "^18.2.0",
-    "antd": "^4.24.8",
+    "antd": "^5.6.4",
     "react-i18next": "^11.15.1",
     "@formily/react": "2.2.26",
     "@formily/shared": "2.2.26",
-    "@formily/antd": "2.2.26",
+    "@formily/antd-v5": "1.1.0-beta.4",
     "@formily/core": "2.2.26",
     "supertest": "^6.1.6",
     "@nocobase/actions": "0.10.1-alpha.1",

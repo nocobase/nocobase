@@ -1,16 +1,14 @@
 import { ArrayField } from '@formily/core';
 import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
-import { css } from '@emotion/css';
 import { Spin, Tag } from 'antd';
 import React, { useContext, useMemo, useState } from 'react';
 import { SchemaComponentOptions } from '../..';
 import { RecordProvider } from '../../../';
 import { useCreateActionProps as useCAP } from '../../../block-provider/hooks';
 import { Board } from '../../../board';
-import '../../../board/style.less';
 import { useProps } from '../../hooks/useProps';
 import { KanbanCardContext, KanbanColumnContext } from './context';
-import './index.less';
+import { useStyles } from './style';
 
 const useCreateActionProps = () => {
   const form = useForm();
@@ -57,6 +55,7 @@ export const toColumns = (groupField: any, dataSource: Array<any> = []) => {
 
 export const Kanban: any = observer(
   (props: any) => {
+    const { wrapSSR, hashId, componentCls: className } = useStyles();
     const { groupField, onCardDragEnd, ...restProps } = useProps(props);
     const field = useField<ArrayField>();
     const fieldSchema = useFieldSchema();
@@ -88,17 +87,8 @@ export const Kanban: any = observer(
       field.value = updatedBoard.columns;
     };
 
-    return (
-      <Spin
-        wrapperClassName={css`
-          overflow: hidden;
-          height: 100%;
-          > .ant-spin-container {
-            height: 100%;
-          }
-        `}
-        spinning={field.loading || false}
-      >
+    return wrapSSR(
+      <Spin wrapperClassName={`${className} ${hashId}`} spinning={field.loading || false}>
         <Board
           {...restProps}
           allowAddCard={!!schemas.cardAdder}
@@ -153,7 +143,7 @@ export const Kanban: any = observer(
             columns: field.value || [],
           }}
         </Board>
-      </Spin>
+      </Spin>,
     );
   },
   { displayName: 'Kanban' },

@@ -9,7 +9,7 @@ import { useCollectMenuItem, useMenuItem } from '../hooks/useMenuItem';
 import { Icon } from '../icon';
 import { SchemaComponent, useActionContext } from '../schema-component';
 import { useCompile, useDesignable } from '../schema-component/hooks';
-import './style.less';
+import { useStyles } from './style';
 import {
   SchemaInitializerButtonProps,
   SchemaInitializerItemComponent,
@@ -23,12 +23,6 @@ const overlayClassName = css`
     overflow: auto;
   }
 `;
-/**
- * 用于去除菜单的消失动画，优化操作体验
- */
-const hidden = css`
-  display: none;
-`;
 
 const defaultWrap = (s: ISchema) => s;
 
@@ -41,8 +35,6 @@ export const SchemaInitializerButtonContext = createContext<{
 }>({});
 
 export const SchemaInitializer = () => null;
-
-const menuItemGroupCss = 'nb-menu-item-group';
 
 SchemaInitializer.Button = observer(
   (props: SchemaInitializerButtonProps) => {
@@ -68,6 +60,7 @@ SchemaInitializer.Button = observer(
     const menuItems = useRef([]);
 
     const changeMenu = (v: boolean) => {
+      // 这里是为了防止当鼠标快速滑过时，终止菜单的渲染，防止卡顿
       startTransition(() => {
         setVisible(v);
       });
@@ -162,7 +155,6 @@ SchemaInitializer.Button = observer(
                 key: item.key || `item-group-${indexA}`,
                 label,
                 title: label,
-                popupClassName: menuItemGroupCss,
                 children: renderItems(item.children),
               }
             );
@@ -183,17 +175,16 @@ SchemaInitializer.Button = observer(
           openClassName={`nb-schema-initializer-button-open`}
           overlayClassName={classNames('nb-schema-initializer-button-overlay', overlayClassName)}
           open={visible}
-          onOpenChange={() => {
+          onOpenChange={(open) => {
             // 如果不清空输入框的值，那么下次打开的时候会出现上次输入的值
             setSearchValue('');
-            changeMenu(!visible);
+            changeMenu(open);
           }}
           menu={{
             style: {
               maxHeight: '60vh',
               overflowY: 'auto',
             },
-            className: classNames({ [hidden]: !visible }),
             items: menuItems.current,
           }}
           {...dropdown}
@@ -207,6 +198,7 @@ SchemaInitializer.Button = observer(
 );
 
 SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
+  const { styles } = useStyles();
   const { info } = useContext(SchemaInitializerItemContext);
   const compile = useCompile();
   const { items = [], children = info?.title, icon, onClick } = props;
@@ -233,7 +225,7 @@ SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
             key: item.key || `item-group-${indexA}`,
             label,
             title: label,
-            className: menuItemGroupCss,
+            className: styles.nbMenuItemGroup,
             children: renderMenuItem(item.children),
           } as MenuProps['items'][0];
         }

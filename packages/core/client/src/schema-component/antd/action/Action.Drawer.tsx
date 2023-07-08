@@ -43,7 +43,7 @@ export const ActionDrawer: ComposedActionDrawer = observer(
         destroyOnClose
         open={visible}
         onClose={() => setVisible(false, true)}
-        className={classNames(
+        rootClassName={classNames(
           drawerProps?.className,
           others.className,
           css`
@@ -57,7 +57,7 @@ export const ActionDrawer: ComposedActionDrawer = observer(
               }
 
               .ant-drawer-content {
-                background: #f0f2f5;
+                background: var(--nb-box-bg);
               }
             }
 

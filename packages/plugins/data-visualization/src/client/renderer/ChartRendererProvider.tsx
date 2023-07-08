@@ -1,3 +1,4 @@
+import { css } from '@emotion/css';
 import { MaybeCollectionProvider } from '@nocobase/client';
 import React, { createContext } from 'react';
 
@@ -52,7 +53,18 @@ export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
   const { collection } = props;
   return (
     <MaybeCollectionProvider collection={collection}>
-      <ChartRendererContext.Provider value={{ ...props }}>{props.children}</ChartRendererContext.Provider>
+      <div
+        className={css`
+          .ant-card {
+            box-shadow: none;
+          }
+          .ant-card-body {
+            padding: 0;
+          }
+        `}
+      >
+        <ChartRendererContext.Provider value={{ ...props }}>{props.children}</ChartRendererContext.Provider>
+      </div>
     </MaybeCollectionProvider>
   );
 };
