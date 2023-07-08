@@ -4,12 +4,11 @@ import { SchemaOptionsContext } from '@formily/react';
 import { DataBlockInitializer, SchemaComponent, SchemaComponentOptions, useCollectionManager } from '@nocobase/client';
 import React, { useContext } from 'react';
 import { useMapTranslation } from '../locale';
-import { createMapBlockSchema } from './utils';
+import { createMapBlockSchema, findNestedOption } from './utils';
 
 export const MapBlockInitializer = (props) => {
   const { insert } = props;
   const options = useContext(SchemaOptionsContext);
-  console.log('🚀 ~ file: MapBlockInitializer.tsx:12 ~ MapBlockInitializer ~ options:', options);
   const { getCollectionFieldsOptions } = useCollectionManager();
   const { t } = useMapTranslation();
 
@@ -19,7 +18,9 @@ export const MapBlockInitializer = (props) => {
       componentType={'Map'}
       icon={<TableOutlined />}
       onCreateBlockSchema={async ({ item }) => {
-        const mapFieldOptions = getCollectionFieldsOptions(item.name, ['point', 'lineString', 'polygon']);
+        const mapFieldOptions = getCollectionFieldsOptions(item.name, ['point', 'lineString', 'polygon'], {
+          association: ['o2o', 'obo', 'oho', 'm2o'],
+        });
         const markerFieldOptions = getCollectionFieldsOptions(item.name, 'string');
         const values = await FormDialog(t('Create map block'), () => {
           return (
@@ -32,9 +33,9 @@ export const MapBlockInitializer = (props) => {
                         title: t('Map field'),
                         enum: mapFieldOptions,
                         required: true,
-                        'x-component': 'Select',
+                        'x-component': 'Cascader',
                         'x-decorator': 'FormItem',
-                        default: mapFieldOptions[0]?.value,
+                        default: [mapFieldOptions[0]?.value],
                       },
                       marker: {
                         title: t('Marker field'),
@@ -43,17 +44,14 @@ export const MapBlockInitializer = (props) => {
                         'x-decorator': 'FormItem',
                         'x-reactions': (field) => {
                           const value = field.form.values.field;
-                          console.log('🚀 ~ file: MapBlockInitializer.tsx:45 ~ values ~ value:', value);
-                          console.log(
-                            '🚀 ~ file: MapBlockInitializer.tsx:50 ~ values ~ mapFieldOptions:',
-                            mapFieldOptions,
-                          );
-
-                          if (!value) {
+                          if (!value?.length) {
                             return;
                           }
-                          const item = mapFieldOptions.find((item) => item.value === value).type;
-                          field.hidden = item !== 'point';
+                          const item = findNestedOption(value, mapFieldOptions);
+
+                          if (item) {
+                            field.hidden = item.type !== 'point';
+                          }
                         },
                       },
                     },

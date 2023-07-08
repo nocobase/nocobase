@@ -2,8 +2,8 @@ import { CheckOutlined, EnvironmentOutlined, ExpandOutlined } from '@ant-design/
 import { RecursionField, Schema, useFieldSchema } from '@formily/react';
 import {
   ActionContextProvider,
-  css,
   RecordProvider,
+  css,
   useCollection,
   useCompile,
   useFilterAPI,
@@ -11,6 +11,7 @@ import {
 } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
 import { Button, Space } from 'antd';
+import { get } from 'lodash';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { defaultImage, selectedImage } from '../../constants';
 import { useMapTranslation } from '../../locale';
@@ -28,13 +29,9 @@ const labelClass = css`
 `;
 
 export const GoogleMapsBlock = (props) => {
-  const { fieldNames, dataSource = [], fixedBlock, zoom, setSelectedRecordKeys } = useProps(props);
-  const { getField, getPrimaryKey } = useCollection();
-  const { marker: markerName, field: fieldName } = fieldNames || {
-    marker: 'id',
-    field: 'id',
-  };
-  const field = getField(fieldName);
+  const { collectionField, fieldNames, dataSource = [], fixedBlock, zoom, setSelectedRecordKeys } = useProps(props);
+  const { getPrimaryKey } = useCollection();
+  const { marker: markerName = 'id' } = fieldNames;
   const [isMapInitialization, setIsMapInitialization] = useState(false);
   const mapRef = useRef<GoogleMapForwardedRefProps>();
   const [record, setRecord] = useState();
@@ -143,12 +140,12 @@ export const GoogleMapsBlock = (props) => {
   });
 
   useEffect(() => {
-    if (!field || !mapRef.current?.map) return;
+    if (!collectionField || !mapRef.current?.map) return;
     const overlays: google.maps.Polygon[] = dataSource
       .map((item) => {
-        const data = item[fieldNames?.field];
+        const data = get(item, fieldNames.field);
         if (!data) return;
-        const overlay = mapRef.current.setOverlay(field.type, data, {
+        const overlay = mapRef.current.setOverlay(collectionField.type, data, {
           strokeColor: '#4e9bff',
           fillColor: '#4e9bff',
           cursor: 'pointer',
@@ -213,7 +210,7 @@ export const GoogleMapsBlock = (props) => {
       });
       events.forEach((e) => e());
     };
-  }, [dataSource, isMapInitialization, markerName, field.type, isConnected]);
+  }, [dataSource, isMapInitialization, markerName, collectionField.type, isConnected]);
 
   useEffect(() => {
     setTimeout(() => {

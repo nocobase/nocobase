@@ -33,8 +33,14 @@ const InternalMapBlockProvider = (props) => {
 };
 
 export const MapBlockProvider = (props) => {
+  const { params, fieldNames } = props;
+  const appends = params.appends || [];
+  const { field } = fieldNames || {};
+  if (Array.isArray(field)) {
+    appends.push(field[0]);
+  }
   return (
-    <BlockProvider {...props} params={{ ...props.params, paginate: false }}>
+    <BlockProvider {...props} params={{ ...params, appends, paginate: false }}>
       <InternalMapBlockProvider {...props} />
     </BlockProvider>
   );
