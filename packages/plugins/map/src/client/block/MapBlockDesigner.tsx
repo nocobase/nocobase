@@ -80,6 +80,13 @@ export const MapBlockDesigner = () => {
           dn.refresh();
         }}
       />
+      <SchemaSettings.DefaultSortingRules
+        path="x-decorator-props.params.sort"
+        onSubmitAfter={() => {
+          service.refresh();
+        }}
+        title={t('Concatenation order field')}
+      />
       <SchemaSettings.ModalItem
         title={mapT('The default zoom level of the map')}
         schema={

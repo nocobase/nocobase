@@ -2,12 +2,7 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  useCollection,
-  useCollectionFilterOptions,
-  useCollectionManager,
-  useSortFields,
-} from '../../../collection-manager';
+import { useCollection, useCollectionFilterOptions, useCollectionManager } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useCompile, useDesignable } from '../../hooks';
 
@@ -54,20 +49,6 @@ export const AssociationFilterItemDesigner = (props) => {
     });
     dn.refresh();
   };
-
-  const sortFields = useSortFields(collectionField?.target);
-  const defaultSort = fieldSchema?.['x-component-props']?.params?.sort || [];
-  const sort = defaultSort?.map((item: string) => {
-    return item.startsWith('-')
-      ? {
-          field: item.substring(1),
-          direction: 'desc',
-        }
-      : {
-          field: item,
-          direction: 'asc',
-        };
-  });
 
   return (
     <GeneralSchemaDesigner {...props} disableInitializer={true}>
@@ -147,22 +128,7 @@ export const AssociationFilterItemDesigner = (props) => {
           });
         }}
       />
-      <SchemaSettings.DefaultSortingRules
-        sort={sort}
-        sortFields={sortFields}
-        onSubmit={({ sort }) => {
-          _.set(field.componentProps, 'params', {
-            ...field.componentProps?.params,
-            sort: sort.map((item) => {
-              return item.direction === 'desc' ? `-${item.field}` : item.field;
-            }),
-          });
-          fieldSchema['x-component-props']['params'] = field.componentProps.params;
-          dn.emit('patch', {
-            schema: fieldSchema,
-          });
-        }}
-      />
+      <SchemaSettings.DefaultSortingRules name={collectionField?.target} />
       <SchemaSettings.SelectItem
         key="title-field"
         title={t('Title field')}

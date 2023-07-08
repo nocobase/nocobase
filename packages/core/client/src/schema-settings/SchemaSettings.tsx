@@ -19,7 +19,7 @@ import {
   Switch,
 } from 'antd';
 import classNames from 'classnames';
-import _, { cloneDeep } from 'lodash';
+import _, { cloneDeep, get, set } from 'lodash';
 import React, {
   ReactNode,
   createContext,
@@ -54,6 +54,7 @@ import {
   useDesignable,
   useFilterBlock,
   useLinkageCollectionFilterOptions,
+  useSortFields,
 } from '..';
 import { findFilterTargets, updateFilterTargets } from '../block-provider/hooks';
 import { FilterBlockType, isSameCollection, useSupportedBlocks } from '../filter-provider/utils';
@@ -954,17 +955,56 @@ SchemaSettings.BlockTitleItem = function BlockTitleItem() {
 };
 
 SchemaSettings.DefaultSortingRules = function DefaultSortingRules(props) {
-  const { sort, sortFields, onSubmit } = props;
+  const { path = 'x-component-props.params.sort' } = props;
   const { t } = useTranslation();
+  const { dn } = useDesignable();
+
+  const fieldSchema = useFieldSchema();
+  const field = useField();
+  const title = props.title || t('Set default sorting rules');
+  const { name } = useCollection();
+  const defaultSort = get(fieldSchema, path) || [];
+  const sort = defaultSort?.map((item: string) => {
+    return item.startsWith('-')
+      ? {
+          field: item.substring(1),
+          direction: 'desc',
+        }
+      : {
+          field: item,
+          direction: 'asc',
+        };
+  });
+  const sortFields = useSortFields(props.name || name);
+
+  const onSubmit = async ({ sort }) => {
+    if (props?.onSubmit) {
+      return props.onSubmit({ sort });
+    }
+    const value = sort.map((item) => {
+      return item.direction === 'desc' ? `-${item.field}` : item.field;
+    });
+    set(
+      field,
+      path.replace('x-component-props', 'componentProps').replace('x-decorator-props', 'decoratorProps'),
+      value,
+    );
+
+    set(fieldSchema, path, value);
+    await dn.emit('patch', {
+      schema: fieldSchema,
+    });
+    return props.onSubmitAfter?.();
+  };
 
   return (
     <SchemaSettings.ModalItem
-      title={t('Set default sorting rules')}
+      title={title}
       components={{ ArrayItems }}
       schema={
         {
           type: 'object',
-          title: t('Set default sorting rules'),
+          title,
           properties: {
             sort: {
               type: 'array',
