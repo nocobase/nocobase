@@ -170,8 +170,8 @@ export const InternalAdminLayout = (props: any) => {
           position: fixed;
           left: 0;
           right: 0;
-          height: 46px;
-          line-height: 46px;
+          height: var(--nb-header-height);
+          line-height: var(--nb-header-height);
           padding: 0;
           z-index: 100;
         `}
@@ -246,10 +246,10 @@ export const InternalAdminLayout = (props: any) => {
             background: rgba(0, 0, 0, 0);
             z-index: 100;
             .ant-layout-sider-children {
-              top: 46px;
+              top: var(--nb-header-height);
               position: fixed;
               width: 200px;
-              height: calc(100vh - 46px);
+              height: calc(100vh - var(--nb-header-height));
             }
           `}
           theme={'light'}
@@ -266,7 +266,6 @@ export const InternalAdminLayout = (props: any) => {
           max-height: 100vh;
           > div {
             position: relative;
-            // z-index: 1;
           }
           .ant-layout-footer {
             position: absolute;
@@ -281,8 +280,8 @@ export const InternalAdminLayout = (props: any) => {
         <header
           className={css`
             flex-shrink: 0;
-            height: 46px;
-            line-height: 46px;
+            height: var(--nb-header-height);
+            line-height: var(--nb-header-height);
             background: transparent;
             pointer-events: none;
           `}
