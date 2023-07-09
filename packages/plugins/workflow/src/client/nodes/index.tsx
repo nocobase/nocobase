@@ -13,7 +13,7 @@ import {
   useResourceActionContext,
 } from '@nocobase/client';
 import { Registry, parse, str2moment } from '@nocobase/utils/client';
-import { Alert, Button, Dropdown, Input, Modal, Tag, message } from 'antd';
+import { Alert, App, Button, Dropdown, Input, Tag, message } from 'antd';
 import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AddButton } from '../AddButton';
@@ -173,6 +173,8 @@ export function RemoveButton() {
   const api = useAPIClient();
   const { workflow, nodes, refresh } = useFlowContext() ?? {};
   const current = useNodeContext();
+  const { modal } = App.useApp();
+
   if (!workflow) {
     return null;
   }
@@ -199,7 +201,7 @@ export function RemoveButton() {
     });
 
     if (usingNodes.length) {
-      Modal.error({
+      modal.error({
         title: lang('Can not delete'),
         content: lang(
           'The result of this node has been referenced by other nodes ({{nodes}}), please remove the usage before deleting.',
@@ -214,7 +216,7 @@ export function RemoveButton() {
       ? t('Are you sure you want to delete it?')
       : lang('This node contains branches, deleting will also be preformed to them, are you sure?');
 
-    Modal.confirm({
+    modal.confirm({
       title: t('Delete'),
       content: message,
       onOk,

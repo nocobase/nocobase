@@ -77,26 +77,8 @@ export default {
 
             <div className={cx(styles.branchClass)}>
               <div className="workflow-branch-lines" />
-              <div
-                className={cx(
-                  styles.addButtonClass,
-                  css`
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    position: absolute;
-                    top: 50%;
-                    transform: translateY(-50%);
-                    width: 2em;
-                    height: 6em;
-                  `,
-                )}
-              >
-                <ArrowUpOutlined
-                  className={css`
-                    background-color: var(--nb-box-bg);
-                  `}
-                />
+              <div className={cx(styles.addButtonClass, styles.loopLineClass)}>
+                <ArrowUpOutlined />
               </div>
             </div>
           </div>

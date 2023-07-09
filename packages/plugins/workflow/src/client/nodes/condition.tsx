@@ -438,36 +438,9 @@ export default {
               <Branch from={data} entry={falseEntry} branchIndex={0} />
               <Branch from={data} entry={trueEntry} branchIndex={1} />
             </div>
-            <div
-              className={css`
-                position: relative;
-                height: 2em;
-                overflow: visible;
-
-                > span {
-                  position: absolute;
-                  top: calc(1.5em - 1px);
-                  line-height: 1em;
-                  color: #999;
-                  background-color: var(--nb-box-bg);
-                  padding: 1px;
-                }
-              `}
-            >
-              <span
-                className={css`
-                  right: 4em;
-                `}
-              >
-                {t('No')}
-              </span>
-              <span
-                className={css`
-                  left: 4em;
-                `}
-              >
-                {t('Yes')}
-              </span>
+            <div className={styles.conditionClass}>
+              <span style={{ right: '4em' }}>{t('No')}</span>
+              <span style={{ left: '4em' }}>{t('Yes')}</span>
             </div>
           </div>
         )}

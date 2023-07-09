@@ -21,7 +21,7 @@ const Summary = observer(
         },
         description: {
           marginTop: token.marginXS,
-          color: token.colorTextTertiary,
+          color: token.colorTextDescription,
         },
         tag: {
           background: 'none',
@@ -30,7 +30,7 @@ const Summary = observer(
     }, [
       token.colorFillAlter,
       token.colorText,
-      token.colorTextTertiary,
+      token.colorTextDescription,
       token.marginLG,
       token.marginXS,
       token.paddingSM,

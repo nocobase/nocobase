@@ -8,7 +8,7 @@ import {
   useResourceActionContext,
   useResourceContext,
 } from '@nocobase/client';
-import { Breadcrumb, Button, Dropdown, Modal, Switch, message } from 'antd';
+import { App, Breadcrumb, Button, Dropdown, Switch, message } from 'antd';
 import classnames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -48,6 +48,7 @@ export function WorkflowCanvas() {
   const { setTitle } = useDocumentTitle();
   const [visible, setVisible] = useState(false);
   const { styles } = useStyles();
+  const { modal } = App.useApp();
 
   useEffect(() => {
     const { title } = data?.data ?? {};
@@ -97,7 +98,7 @@ export function WorkflowCanvas() {
     const content = workflow.current
       ? lang('Delete a main version will cause all other revisions to be deleted too.')
       : '';
-    Modal.confirm({
+    modal.confirm({
       title: t('Are you sure you want to delete it?'),
       content,
       async onOk() {

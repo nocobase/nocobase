@@ -1,6 +1,6 @@
 import { createStyles } from '@nocobase/client';
 
-const useStyles = createStyles(({ css }) => {
+const useStyles = createStyles(({ css, token }) => {
   return {
     workflowPageClass: css`
       flex-grow: 1;
@@ -14,8 +14,8 @@ const useStyles = createStyles(({ css }) => {
         justify-content: space-between;
         position: relative;
         padding: 0.5rem 1rem;
-        background: #fff;
-        border-bottom: 1px solid #e7e7e7;
+        background: ${token.colorBgContainer};
+        border-bottom: 1px solid ${token.colorBorder};
 
         header {
           display: flex;
@@ -62,7 +62,7 @@ const useStyles = createStyles(({ css }) => {
 
           time {
             margin-left: 0.5rem;
-            color: #999;
+            color: ${token.colorText};
             font-size: 80%;
           }
 
@@ -96,7 +96,7 @@ const useStyles = createStyles(({ css }) => {
         bottom: 0;
         left: calc(50% - 0.5px);
         width: 1px;
-        background-color: var(--nb-box-bg);
+        background-color: ${token.colorBorder};
       }
     `,
 
@@ -117,7 +117,7 @@ const useStyles = createStyles(({ css }) => {
         top: 0;
         bottom: 0;
         width: 1px;
-        background-color: #ddd;
+        background-color: ${token.colorBorder};
       }
 
       :before,
@@ -125,7 +125,7 @@ const useStyles = createStyles(({ css }) => {
         content: '';
         position: absolute;
         height: 1px;
-        background-color: #ddd;
+        background-color: ${token.colorBorder};
       }
 
       :before {
@@ -180,22 +180,30 @@ const useStyles = createStyles(({ css }) => {
     nodeCardClass: css`
       position: relative;
       width: 20em;
-      background: #fff;
+      background: ${token.colorBgContainer};
       padding: 1em;
-      box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.1);
-      border-radius: 0.5em;
+      box-shadow: ${token.boxShadowTertiary};
+      border-radius: ${token.borderRadiusLG}px;
       cursor: pointer;
       transition: box-shadow 0.3s ease;
 
+      &:hover {
+        box-shadow: ${token.boxShadow};
+
+        .workflow-node-remove-button {
+          opacity: 1;
+        }
+      }
+
       &.configuring {
-        box-shadow: 0 0.25em 1em rgba(0, 100, 200, 0.25);
+        box-shadow: ${token.boxShadow};
       }
 
       .workflow-node-remove-button {
         position: absolute;
         right: 0.5em;
         top: 0.5em;
-        color: #999;
+        color: ${token.colorText};
         opacity: 0;
         transition: opacity 0.3s ease;
 
@@ -204,7 +212,7 @@ const useStyles = createStyles(({ css }) => {
         }
 
         &:hover {
-          color: red;
+          color: ${token.colorErrorHover};
         }
       }
 
@@ -213,30 +221,21 @@ const useStyles = createStyles(({ css }) => {
 
         &:not(:focus) {
           transition: background-color 0.3s ease, border-color 0.3s ease;
-          border-color: #f7f7f7;
-          background-color: #f7f7f7;
+          border-color: ${token.colorBorderBg};
+          background-color: ${token.colorBgContainerDisabled};
 
           &:not(:disabled):hover {
-            border-color: #eee;
-            background-color: #eee;
+            border-color: ${token.colorPrimaryBorderHover};
           }
 
           &:disabled:hover {
-            border-color: #f7f7f7;
+            border-color: ${token.colorBorderBg};
           }
         }
       }
 
       .workflow-node-config-button {
         padding: 0;
-      }
-
-      &:hover {
-        box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.25);
-
-        .workflow-node-remove-button {
-          opacity: 1;
-        }
       }
     `,
 
@@ -251,7 +250,7 @@ const useStyles = createStyles(({ css }) => {
       justify-content: center;
       align-items: center;
       font-size: 0.8em;
-      color: #fff;
+      color: ${token.colorText};
 
       &[type='button'] {
         border: none;
@@ -279,7 +278,7 @@ const useStyles = createStyles(({ css }) => {
       margin-bottom: 0.5em;
 
       .workflow-node-id {
-        color: #999;
+        color: ${token.colorTextDescription};
 
         &:before {
           content: '#';
@@ -292,7 +291,7 @@ const useStyles = createStyles(({ css }) => {
       align-items: center;
       font-weight: normal;
       .workflow-node-id {
-        color: #999;
+        color: ${token.colorTextDescription};
       }
     `,
 
@@ -311,6 +310,31 @@ const useStyles = createStyles(({ css }) => {
           visibility: hidden;
         }
       }
+    `,
+
+    conditionClass: css`
+      position: relative;
+      height: 2em;
+      overflow: visible;
+
+      > span {
+        position: absolute;
+        top: calc(1.5em - 1px);
+        line-height: 1em;
+        color: ${token.colorTextSecondary};
+        padding: 1px;
+      }
+    `,
+
+    loopLineClass: css`
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 2em;
+      height: 6em;
     `,
   };
 });
