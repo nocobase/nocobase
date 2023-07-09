@@ -193,6 +193,8 @@ SchemaSettings.Template = function Template(props) {
   const api = useAPIClient();
   const { dn: tdn } = useBlockTemplateContext();
   const { saveAsTemplate, copyTemplateSchema } = useSchemaTemplateManager();
+  const { theme } = useGlobalTheme();
+
   if (!collectionName && !needRender) {
     return null;
   }
@@ -220,27 +222,31 @@ SchemaSettings.Template = function Template(props) {
       onClick={async () => {
         setVisible(false);
         const { title } = collectionName ? getCollection(collectionName) : { title: '' };
-        const values = await FormDialog(t('Save as template'), () => {
-          return (
-            <FormLayout layout={'vertical'}>
-              <SchemaComponent
-                components={{ Input, FormItem }}
-                schema={{
-                  type: 'object',
-                  properties: {
-                    name: {
-                      title: t('Template name'),
-                      required: true,
-                      default: title ? `${compile(title)}_${t(componentName)}` : t(componentName),
-                      'x-decorator': 'FormItem',
-                      'x-component': 'Input',
+        const values = await FormDialog(
+          t('Save as template'),
+          () => {
+            return (
+              <FormLayout layout={'vertical'}>
+                <SchemaComponent
+                  components={{ Input, FormItem }}
+                  schema={{
+                    type: 'object',
+                    properties: {
+                      name: {
+                        title: t('Template name'),
+                        required: true,
+                        default: title ? `${compile(title)}_${t(componentName)}` : t(componentName),
+                        'x-decorator': 'FormItem',
+                        'x-component': 'Input',
+                      },
                     },
-                  },
-                }}
-              />
-            </FormLayout>
-          );
-        }).open({});
+                  }}
+                />
+              </FormLayout>
+            );
+          },
+          theme,
+        ).open({});
         const sdn = createDesignable({
           t,
           api,
@@ -312,6 +318,8 @@ SchemaSettings.FormItemTemplate = function FormItemTemplate(props) {
   const { dn, setVisible, template, fieldSchema } = useSchemaSettings();
   const api = useAPIClient();
   const { saveAsTemplate, copyTemplateSchema } = useSchemaTemplateManager();
+  const { theme } = useGlobalTheme();
+
   if (!collectionName) {
     return null;
   }
@@ -358,31 +366,35 @@ SchemaSettings.FormItemTemplate = function FormItemTemplate(props) {
         setVisible(false);
         const { title } = getCollection(collectionName);
         const gridSchema = findGridSchema(fieldSchema);
-        const values = await FormDialog(t('Save as template'), () => {
-          const componentTitle = {
-            FormItem: t('Form'),
-            ReadPrettyFormItem: t('Details'),
-          };
-          return (
-            <FormLayout layout={'vertical'}>
-              <SchemaComponent
-                components={{ Input, FormItem }}
-                schema={{
-                  type: 'object',
-                  properties: {
-                    name: {
-                      title: t('Template name'),
-                      required: true,
-                      default: `${compile(title)}_${componentTitle[componentName] || componentName}`,
-                      'x-decorator': 'FormItem',
-                      'x-component': 'Input',
+        const values = await FormDialog(
+          t('Save as template'),
+          () => {
+            const componentTitle = {
+              FormItem: t('Form'),
+              ReadPrettyFormItem: t('Details'),
+            };
+            return (
+              <FormLayout layout={'vertical'}>
+                <SchemaComponent
+                  components={{ Input, FormItem }}
+                  schema={{
+                    type: 'object',
+                    properties: {
+                      name: {
+                        title: t('Template name'),
+                        required: true,
+                        default: `${compile(title)}_${componentTitle[componentName] || componentName}`,
+                        'x-decorator': 'FormItem',
+                        'x-component': 'Input',
+                      },
                     },
-                  },
-                }}
-              />
-            </FormLayout>
-          );
-        }).open({});
+                  }}
+                />
+              </FormLayout>
+            );
+          },
+          theme,
+        ).open({});
         const sdn = createDesignable({
           t,
           api,

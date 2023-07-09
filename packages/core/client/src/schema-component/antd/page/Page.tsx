@@ -1,6 +1,6 @@
 import { PlusOutlined } from '@ant-design/icons';
 import { PageHeader as AntdPageHeader } from '@ant-design/pro-layout';
-import { FormDialog, FormLayout } from '@formily/antd-v5';
+import { FormLayout } from '@formily/antd-v5';
 import { Schema, SchemaOptionsContext, useFieldSchema } from '@formily/react';
 import { Button, Spin, Tabs } from 'antd';
 import classNames from 'classnames';
@@ -8,8 +8,10 @@ import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
+import { FormDialog } from '..';
 import { useDocumentTitle } from '../../../document-title';
 import { FilterBlockProvider } from '../../../filter-provider/FilterProvider';
+import { useGlobalTheme } from '../../../global-theme';
 import { Icon } from '../../../icon';
 import { DndContext } from '../../common';
 import { SortableItem } from '../../common/sortable-item';
@@ -26,6 +28,7 @@ export const Page = (props) => {
   const { title, setTitle } = useDocumentTitle();
   const fieldSchema = useFieldSchema();
   const dn = useDesignable();
+  const { theme } = useGlobalTheme();
 
   // react18  tab 动画会卡顿，所以第一个 tab 时，动画禁用，后面的 tab 才启用
   const [hasMounted, setHasMounted] = useState(false);
@@ -96,31 +99,38 @@ export const Page = (props) => {
                             className={'addTabBtn'}
                             type={'dashed'}
                             onClick={async () => {
-                              const values = await FormDialog(t('Add tab'), () => {
-                                return (
-                                  <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
-                                    <FormLayout layout={'vertical'}>
-                                      <SchemaComponent
-                                        schema={{
-                                          properties: {
-                                            title: {
-                                              title: t('Tab name'),
-                                              'x-component': 'Input',
-                                              'x-decorator': 'FormItem',
-                                              required: true,
+                              const values = await FormDialog(
+                                t('Add tab'),
+                                () => {
+                                  return (
+                                    <SchemaComponentOptions
+                                      scope={options.scope}
+                                      components={{ ...options.components }}
+                                    >
+                                      <FormLayout layout={'vertical'}>
+                                        <SchemaComponent
+                                          schema={{
+                                            properties: {
+                                              title: {
+                                                title: t('Tab name'),
+                                                'x-component': 'Input',
+                                                'x-decorator': 'FormItem',
+                                                required: true,
+                                              },
+                                              icon: {
+                                                title: t('Icon'),
+                                                'x-component': 'IconPicker',
+                                                'x-decorator': 'FormItem',
+                                              },
                                             },
-                                            icon: {
-                                              title: t('Icon'),
-                                              'x-component': 'IconPicker',
-                                              'x-decorator': 'FormItem',
-                                            },
-                                          },
-                                        }}
-                                      />
-                                    </FormLayout>
-                                  </SchemaComponentOptions>
-                                );
-                              }).open({
+                                          }}
+                                        />
+                                      </FormLayout>
+                                    </SchemaComponentOptions>
+                                  );
+                                },
+                                theme,
+                              ).open({
                                 initialValues: {},
                               });
                               const { title, icon } = values;
