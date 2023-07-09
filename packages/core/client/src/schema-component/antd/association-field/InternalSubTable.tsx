@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { FormItem, FormLayout } from '@formily/antd';
+import { FormItem, FormLayout } from '@formily/antd-v5';
 import { RecursionField, observer, useField, useFieldSchema } from '@formily/react';
 import React, { useEffect } from 'react';
 import { CollectionProvider } from '../../../collection-manager';

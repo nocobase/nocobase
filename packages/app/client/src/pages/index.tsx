@@ -1,4 +1,3 @@
-import '@/theme';
 import { Application } from '@nocobase/client';
 import { NocoBaseClientPresetPlugin } from '@nocobase/preset-nocobase/client';
 

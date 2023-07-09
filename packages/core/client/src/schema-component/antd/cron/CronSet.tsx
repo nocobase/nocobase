@@ -64,7 +64,7 @@ const CronSetInternal = (props: CronSetProps) => {
   return (
     <fieldset>
       <Select
-        dropdownMatchSelectWidth={false}
+        popupMatchSelectWidth={false}
         allowClear
         {...props}
         value={value}

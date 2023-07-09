@@ -1,25 +1,27 @@
+import { css } from '@emotion/css';
 import { observer, useField, useFieldSchema, useForm } from '@formily/react';
+import { dayjs } from '@nocobase/utils/client';
+import { Spin, Tag } from 'antd';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+
 import {
   CollectionManagerProvider,
-  css,
   FormBlockContext,
   SchemaComponent,
   SchemaComponentContext,
   TableBlockProvider,
-  useActionContext,
   useAPIClient,
+  useActionContext,
   useCollectionManager,
   useCurrentUserContext,
   useFormBlockContext,
   useRecord,
   useTableBlockContext,
 } from '@nocobase/client';
-import { dayjs, uid } from '@nocobase/utils/client';
-import { Spin, Tag } from 'antd';
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import { uid } from '@nocobase/utils/client';
 import { instructions, useAvailableUpstreams } from '..';
-import { JobStatusOptions, JobStatusOptionsMap } from '../../constants';
 import { FlowContext, useFlowContext } from '../../FlowContext';
+import { JobStatusOptions, JobStatusOptionsMap } from '../../constants';
 import { NAMESPACE } from '../../locale';
 import { linkNodes } from '../../utils';
 import { DetailsBlockProvider } from './DetailsBlockProvider';
@@ -531,7 +533,7 @@ function Drawer() {
               margin-right: 0.5em;
             `,
           },
-        'x-content': dayjs(updatedAt).format('YYYY-MM-DD HH:mm:ss'),
+          'x-content': dayjs(updatedAt).format('YYYY-MM-DD HH:mm:ss'),
         },
         status: {
           type: 'void',

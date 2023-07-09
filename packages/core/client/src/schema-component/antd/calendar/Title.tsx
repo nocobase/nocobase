@@ -1,4 +1,5 @@
 import { observer } from '@formily/react';
+import { Button } from 'antd';
 import React, { useContext, useMemo } from 'react';
 import { useDesignable } from '../../hooks';
 import { CalendarToolbarContext } from './context';
@@ -17,11 +18,11 @@ export const Title = observer(
     }, [view, date, showLunar]);
 
     return (
-      <div className="ant-btn-group" style={{ fontSize: '1.75em', fontWeight: 300 }}>
+      <Button.Group style={{ fontSize: '1.75em', fontWeight: 300 }}>
         <span>{label}</span>
         <span style={{ marginLeft: '4px' }}>{lunarElement}</span>
         <DesignableBar />
-      </div>
+      </Button.Group>
     );
   },
   { displayName: 'Title' },

@@ -151,7 +151,7 @@ export function Node({ data }) {
               width: 1px;
               height: 6em;
               padding: 2em 0;
-              background-color: #f0f2f5;
+              background-color: var(--nb-box-bg);
 
               .anticon {
                 font-size: 1.5em;

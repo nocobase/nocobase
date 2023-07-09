@@ -1,6 +1,6 @@
 import { css } from '@nocobase/client';
+import { dayjs } from '@nocobase/utils/client';
 import { DatePicker, Select } from 'antd';
-import moment from 'moment';
 import React from 'react';
 import { useWorkflowTranslation } from '../../locale';
 import { OnField } from './OnField';
@@ -29,7 +29,7 @@ export function EndsByField({ value, onChange }) {
       {type === 'date' ? (
         <DatePicker
           showTime
-          value={moment(value)}
+          value={dayjs(value)}
           onChange={(v) => {
             onChange(v ? v.toDate() : null);
           }}

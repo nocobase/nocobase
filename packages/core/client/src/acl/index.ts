@@ -8,7 +8,6 @@ import {
   ACLCollectionProvider,
   ACLMenuItemProvider,
 } from './ACLProvider';
-import './style.less';
 
 export class ACLPlugin extends Plugin {
   async load() {

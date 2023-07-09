@@ -1,8 +1,7 @@
-import { useFieldSchema, useField, ISchema } from '@formily/react';
-import React from 'react';
-import { ArrayItems } from '@formily/antd';
-import { useListBlockContext } from './List.Decorator';
+import { ArrayItems } from '@formily/antd-v5';
+import { ISchema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollection, useCollectionFilterOptions, useSortFields } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
@@ -10,6 +9,7 @@ import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
 import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
+import { useListBlockContext } from './List.Decorator';
 
 export const ListDesigner = () => {
   const { name, title } = useCollection();
