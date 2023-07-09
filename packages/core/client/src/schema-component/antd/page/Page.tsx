@@ -17,6 +17,7 @@ import { DndContext } from '../../common';
 import { SortableItem } from '../../common/sortable-item';
 import { SchemaComponent, SchemaComponentOptions } from '../../core';
 import { useCompile, useDesignable } from '../../hooks';
+import { useToken } from '../__builtins__';
 import { ErrorFallback } from '../error-fallback';
 import FixedBlock from './FixedBlock';
 import { PageDesigner, PageTabDesigner } from './PageTabDesigner';
@@ -171,7 +172,7 @@ export const Page = (props) => {
             />
           )}
         </div>
-        <div className="nb-page-wrapper" style={{ margin: 'var(--nb-spacing)', flex: 1 }}>
+        <div className="nb-page-wrapper">
           <ErrorBoundary FallbackComponent={ErrorFallback} onError={handleErrors}>
             {PageContent(loading, disablePageHeader, enablePageTabs, fieldSchema, activeKey, height, props)}
           </ErrorBoundary>
@@ -192,6 +193,8 @@ function PageContent(
   height: number,
   props: any,
 ): React.ReactNode {
+  const { token } = useToken();
+
   if (loading) {
     return <Spin />;
   }
@@ -201,13 +204,7 @@ function PageContent(
       if (schema.name !== activeKey) return null;
 
       return (
-        <FixedBlock
-          key={schema.name}
-          height={
-            // header 46 margin --nb-spacing * 2
-            `calc(${height}px + 46px + var(--nb-spacing) * 2)`
-          }
-        >
+        <FixedBlock key={schema.name} height={`calc(${height}px + 46px + ${token.marginLG}px * 2)`}>
           <SchemaComponent
             schema={
               new Schema({
@@ -221,12 +218,7 @@ function PageContent(
       );
     })
   ) : (
-    <FixedBlock
-      height={
-        // header 46 margin --nb-spacing * 2
-        `calc(${height}px + 46px + var(--nb-spacing) * 2)`
-      }
-    >
+    <FixedBlock height={`calc(${height}px + 46px + ${token.marginLG}px * 2)`}>
       <div className={`pageWithFixedBlockCss nb-page-content`}>{props.children}</div>
     </FixedBlock>
   );

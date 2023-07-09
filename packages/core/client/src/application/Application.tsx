@@ -10,6 +10,7 @@ import { I18nextProvider } from 'react-i18next';
 import { Link, NavLink, Navigate } from 'react-router-dom';
 import { GlobalThemeProvider } from '..';
 import { APIClient, APIClientProvider } from '../api-client';
+import { CSSVariableProvider } from '../css-variable';
 import { i18n } from '../i18n';
 import { CurrentUserProvider } from '../user';
 import { CurrentUserSettingsMenuProvider } from '../user/CurrentUserSettingsMenuProvider';
@@ -60,6 +61,7 @@ export class Application {
     this.use(CurrentUserProvider);
     this.use(GlobalThemeProvider);
     this.use(AntdApp);
+    this.use(CSSVariableProvider);
     this.use(CurrentUserSettingsMenuProvider);
   }
 

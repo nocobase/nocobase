@@ -160,7 +160,7 @@ const PluginList = () => {
           />
         }
       />
-      <div className={'m24'} style={{ margin: 24, display: 'flex', flexFlow: 'row wrap' }}>
+      <div className={styles.pageContent} style={{ display: 'flex', flexFlow: 'row wrap' }}>
         {React.createElement(
           {
             local: LocalPlugins,
@@ -338,7 +338,7 @@ const SettingsCenter = () => {
               }
             />
           )}
-          <div className={'m24'} style={{ margin: 24 }}>
+          <div className={styles.pageContent}>
             {aclPluginTabCheck ? (
               component && React.createElement(component)
             ) : (

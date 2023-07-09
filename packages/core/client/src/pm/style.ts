@@ -12,6 +12,10 @@ export const useStyles = createStyles(({ token }) => {
       },
     },
 
+    pageContent: {
+      margin: token.marginLG,
+    },
+
     PluginDetail: {
       '.ant-modal-header': { paddingBottom: token.paddingXS },
       '.ant-modal-body': { paddingTop: 0 },

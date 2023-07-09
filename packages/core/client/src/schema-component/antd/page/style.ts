@@ -105,6 +105,11 @@ export const useStyles = genStyleHook('nb-page', (token) => {
           '> .nb-schema-initializer-button': { display: 'none' },
         },
       },
+
+      '.nb-page-wrapper': {
+        margin: token.marginLG,
+        flex: 1,
+      },
     },
   };
 });
