@@ -1,15 +1,11 @@
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import { useAPIClient, useCurrentUserContext, useGlobalTheme } from '@nocobase/client';
-import { Card, ConfigProvider, Modal, Space, Switch, message } from 'antd';
+import { App, Card, ConfigProvider, Space, Switch, message } from 'antd';
 import React, { useCallback, useMemo } from 'react';
 import { ThemeConfig, ThemeItem } from '../../types';
 import { Primary } from '../antd-token-previewer';
 import { useUpdateThemeSettings } from '../hooks/useThemeSettings';
 import { useThemeEditorContext } from './ThemeEditorProvider';
-
-interface TData {
-  data: ThemeItem[];
-}
 
 enum HandleTypes {
   delete = 'delete',
@@ -50,9 +46,10 @@ const ThemeCard = (props: Props) => {
   const { item, style = {}, onChange } = props;
   const api = useAPIClient();
   const { updateThemeSettings } = useUpdateThemeSettings();
+  const { modal } = App.useApp();
 
   const handleDelete = useCallback(() => {
-    Modal.confirm({
+    modal.confirm({
       title: '确认删除',
       content: '删除后不可恢复，确认删除？',
       onOk: async () => {
