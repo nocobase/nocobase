@@ -1,14 +1,14 @@
 import { DownOutlined, EllipsisOutlined, RightOutlined } from '@ant-design/icons';
 import {
   ActionContextProvider,
-  cx,
   ResourceActionProvider,
   SchemaComponent,
+  cx,
   useDocumentTitle,
   useResourceActionContext,
   useResourceContext,
 } from '@nocobase/client';
-import { Breadcrumb, Button, Dropdown, message, Modal, Switch } from 'antd';
+import { Breadcrumb, Button, Dropdown, Modal, Switch, message } from 'antd';
 import classnames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -18,7 +18,7 @@ import { ExecutionLink } from './ExecutionLink';
 import { FlowContext, useFlowContext } from './FlowContext';
 import { lang } from './locale';
 import { executionSchema } from './schemas/executions';
-import { workflowVersionDropdownClass } from './style';
+import useStyles from './style';
 import { linkNodes } from './utils';
 
 function ExecutionResourceProvider({ request, filter = {}, ...others }) {
@@ -47,6 +47,8 @@ export function WorkflowCanvas() {
   const { resource } = useResourceContext();
   const { setTitle } = useDocumentTitle();
   const [visible, setVisible] = useState(false);
+  const { styles } = useStyles();
+
   useEffect(() => {
     const { title } = data?.data ?? {};
     setTitle?.(`${lang('Workflow')}${title ? `: ${title}` : ''}`);
@@ -157,7 +159,7 @@ export function WorkflowCanvas() {
               menu={{
                 onClick: onSwitchVersion,
                 defaultSelectedKeys: [`${workflow.id}`],
-                className: cx(workflowVersionDropdownClass),
+                className: cx(styles.workflowVersionDropdownClass),
                 items: revisions
                   .sort((a, b) => b.id - a.id)
                   .map((item, index) => ({

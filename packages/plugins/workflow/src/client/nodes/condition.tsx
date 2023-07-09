@@ -5,14 +5,13 @@ import { Registry } from '@nocobase/utils/client';
 import { Button, Select } from 'antd';
 import React from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { cloneDeep } from 'lodash';
 import { NodeDefaultView } from '.';
 import { Branch } from '../Branch';
 import { RadioWithTooltip, RadioWithTooltipOption } from '../components/RadioWithTooltip';
 import { renderEngineReference } from '../components/renderEngineReference';
 import { useFlowContext } from '../FlowContext';
 import { lang, NAMESPACE } from '../locale';
-import { branchBlockClass, nodeSubtreeClass } from '../style';
+import useStyles from '../style';
 import { useWorkflowVariableOptions } from '../variable';
 
 interface Calculator {
@@ -413,6 +412,7 @@ export default {
   component: function Component({ data }) {
     const { t } = useTranslation();
     const { nodes } = useFlowContext();
+    const { styles } = useStyles();
     const {
       id,
       config: { rejectOnFalse },
@@ -422,10 +422,10 @@ export default {
     return (
       <NodeDefaultView data={data}>
         {rejectOnFalse ? null : (
-          <div className={cx(nodeSubtreeClass)}>
+          <div className={cx(styles.nodeSubtreeClass)}>
             <div
               className={cx(
-                branchBlockClass,
+                styles.branchBlockClass,
                 css`
                   > * > .workflow-branch-lines {
                     > button {
