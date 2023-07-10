@@ -8,9 +8,10 @@ import React from 'react';
 import { ThemeConfig } from '../../../types';
 import { ThemeEditor, enUS, zhCN } from '../../antd-token-previewer';
 import { useTranslation } from '../../locale';
+import { changeAlgorithmFromFunctionToString } from '../../utils/changeAlgorithmFromFunctionToString';
 import { useThemeEditorContext } from '../ThemeEditorProvider';
 import { useThemeListContext } from '../ThemeListProvider';
-import ThemeSettingModal, { parseTheme } from './ThemeSettingModal';
+import ThemeSettingModal from './ThemeSettingModal';
 
 const useStyle = () => ({
   editor: css({
@@ -49,7 +50,7 @@ const CustomTheme = ({ onThemeChange }: { onThemeChange?: (theme: ThemeConfig) =
   const handleSave = async () => {
     if (getCurrentEditingTheme()) {
       const editingItem = getCurrentEditingTheme();
-      editingItem.config = parseTheme(theme) as any;
+      editingItem.config = changeAlgorithmFromFunctionToString(theme) as any;
       try {
         await api.request({
           url: `themeConfig:update/${editingItem.id}`,

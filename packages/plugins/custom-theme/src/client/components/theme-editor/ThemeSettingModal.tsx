@@ -1,11 +1,11 @@
 import { useAPIClient } from '@nocobase/client';
 import { error } from '@nocobase/utils/client';
-import { Button, Form, Input, Modal, Space, theme as antdTheme } from 'antd';
-import _ from 'lodash';
+import { Button, Form, Input, Modal, Space } from 'antd';
 import React from 'react';
 import { ThemeConfig } from '../../../types';
 import { useUpdateThemeSettings } from '../../hooks/useUpdateThemeSettings';
 import { useTranslation } from '../../locale';
+import { changeAlgorithmFromFunctionToString } from '../../utils/changeAlgorithmFromFunctionToString';
 import { useThemeListContext } from '../ThemeListProvider';
 interface Props {
   open: boolean;
@@ -31,7 +31,7 @@ const ThemeSettingModal = (props: Props) => {
           method: 'POST',
           data: {
             config: {
-              ...parseTheme(theme),
+              ...changeAlgorithmFromFunctionToString(theme),
               name: values.name,
             },
             optional: true,
@@ -71,30 +71,3 @@ const ThemeSettingModal = (props: Props) => {
 ThemeSettingModal.displayName = 'ThemeSettingModal';
 
 export default ThemeSettingModal;
-
-export function parseTheme(themeConfig: any) {
-  themeConfig = _.cloneDeep(themeConfig);
-
-  if (!themeConfig.algorithm) {
-    return themeConfig;
-  }
-  if (Array.isArray(themeConfig.algorithm)) {
-    themeConfig.algorithm = themeConfig.algorithm.map((algorithm) => parseAlgorithm(algorithm));
-  } else {
-    themeConfig.algorithm = parseAlgorithm(themeConfig.algorithm);
-  }
-  return themeConfig;
-}
-
-function parseAlgorithm(algorithm: ThemeConfig['algorithm']): string {
-  if (typeof algorithm === 'string') {
-    return algorithm;
-  }
-  if (algorithm.toString() === antdTheme.darkAlgorithm.toString()) {
-    return 'darkAlgorithm';
-  }
-  if (algorithm.toString() === antdTheme.compactAlgorithm.toString()) {
-    return 'compactAlgorithm';
-  }
-  return algorithm.toString();
-}

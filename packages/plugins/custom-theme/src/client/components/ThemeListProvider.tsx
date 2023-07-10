@@ -1,10 +1,8 @@
 import { ReturnTypeOfUseRequest, useRequest } from '@nocobase/client';
-import { isString } from '@nocobase/utils';
 import { error } from '@nocobase/utils/client';
-import { theme } from 'antd';
-import _ from 'lodash';
 import React, { createContext, useMemo } from 'react';
 import { ThemeItem } from '../../types';
+import { changeAlgorithmFromStringToFunction } from '../utils/changeAlgorithmFromStringToFunction';
 
 interface TData extends Pick<ReturnTypeOfUseRequest, 'data' | 'error' | 'run' | 'refresh' | 'loading'> {
   data?: ThemeItem[];
@@ -37,7 +35,7 @@ export const ThemeListProvider = ({ children }) => {
   );
 
   const items = useMemo(() => {
-    return ((data as any)?.data as ThemeItem[])?.map((item) => paseThemeConfig(item));
+    return ((data as any)?.data as ThemeItem[])?.map((item) => changeAlgorithmFromStringToFunction(item));
   }, [data]);
 
   if (err) {
@@ -60,23 +58,3 @@ export const ThemeListProvider = ({ children }) => {
 };
 
 ThemeListProvider.displayName = 'ThemeListProvider';
-
-/**
- * 把算法函数由字符串转换为函数
- * 注: 之所以要保存为字符串, 是因为 JSON 无法保存函数
- */
-function paseThemeConfig(themeConfig: ThemeItem) {
-  themeConfig = _.cloneDeep(themeConfig);
-  if (isString(themeConfig.config.algorithm)) {
-    themeConfig.config.algorithm = theme[themeConfig.config.algorithm];
-  }
-  if (Array.isArray(themeConfig.config.algorithm)) {
-    themeConfig.config.algorithm = themeConfig.config.algorithm.map((item) => {
-      if (isString(item)) {
-        return theme[item];
-      }
-      return item;
-    });
-  }
-  return themeConfig;
-}
