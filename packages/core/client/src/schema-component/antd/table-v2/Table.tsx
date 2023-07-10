@@ -19,7 +19,7 @@ import {
   useTableSelectorContext,
 } from '../../../';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
-import { InheritedFieldProvider } from './components/InheritedfieldProvider';
+import { ColumnFieldProvider } from './components/ColumnFieldProvider';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
 
 const useArrayField = (props) => {
@@ -59,7 +59,7 @@ const useTableColumns = (props) => {
           return (
             <RecordIndexProvider index={record.__index || index}>
               <RecordProvider record={record}>
-                <InheritedFieldProvider
+                <ColumnFieldProvider
                   schema={s}
                   basePath={field.address.concat(record.__index || index)}
                 >
@@ -68,7 +68,7 @@ const useTableColumns = (props) => {
                     schema={s}
                     onlyRenderProperties
                   />
-                </InheritedFieldProvider>
+                </ColumnFieldProvider>
               </RecordProvider>
             </RecordIndexProvider>
           );
