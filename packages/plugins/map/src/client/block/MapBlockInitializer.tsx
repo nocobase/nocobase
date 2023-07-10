@@ -35,7 +35,9 @@ export const MapBlockInitializer = (props) => {
                         required: true,
                         'x-component': 'Cascader',
                         'x-decorator': 'FormItem',
-                        default: [mapFieldOptions[0]?.value],
+                        default: mapFieldOptions.length
+                          ? [mapFieldOptions[0].value, mapFieldOptions[0].children?.[0].value]
+                          : [],
                       },
                       marker: {
                         title: t('Marker field'),
