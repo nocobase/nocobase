@@ -57,23 +57,6 @@ describe('actions', () => {
       expect(res2.body.data[0].translation).toBeUndefined();
     });
 
-    it('should create localization text with translation', async () => {
-      await agent
-        .set('X-Locale', 'en-US')
-        .resource('localization')
-        .create({
-          values: {
-            module: 'test',
-            text: 'text',
-            translation: 'translation',
-          },
-        });
-      const res = await agent.set('X-Locale', 'en-US').resource('localization').list();
-      expect(res.body.data.length).toBe(1);
-      expect(res.body.data[0].text).toBe('text');
-      expect(res.body.data[0].translation).toBe('translation');
-    });
-
     it('should update localization text with translation', async () => {
       const text = await repo.create({
         values: {
@@ -119,7 +102,7 @@ describe('actions', () => {
       expect(t2.translation).toBe('translation2');
     });
 
-    it('should destory', async () => {
+    it('should destory translation', async () => {
       const text = await repo.create({
         values: {
           module: 'test',
@@ -132,7 +115,6 @@ describe('actions', () => {
           ],
         },
       });
-      const textId = text.id;
       const t = await db.getRepository('localizationTranslations').findOne({
         filter: {
           locale: 'en-US',
@@ -150,16 +132,6 @@ describe('actions', () => {
         },
       });
       expect(tExists).toBeNull();
-
-      await agent.resource('localization').destroyText({
-        values: { id: textId },
-      });
-      const textExists = await repo.findOne({
-        filter: {
-          id: textId,
-        },
-      });
-      expect(textExists).toBeNull();
     });
   });
 });

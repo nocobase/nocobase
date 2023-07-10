@@ -1,10 +1,15 @@
 import { Context, Next } from '@nocobase/actions';
 import { Database, Model, Op } from '@nocobase/database';
 import { getResourceLocale } from '@nocobase/plugin-client';
+import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
+import { DEFAULT_PAGE, DEFAULT_PER_PAGE } from '../constans';
+import LocalizationManagementPlugin from '../plugin';
 import { getTextsFromDBRecord, getTextsFromUISchema } from '../utils';
 
-const DEFAULT_PAGE = 1;
-const DEFAULT_PER_PAGE = 20;
+const updateCacheTexts = async (ctx: Context, texts: string[]) => {
+  const plugin = ctx.app.getPlugin('localization-management') as LocalizationManagementPlugin;
+  await plugin.setCacheTexts(texts);
+};
 
 const all = async (ctx: Context, next: Next) => {
   const model = ctx.db.getModel('localizationTexts');
@@ -18,6 +23,7 @@ const all = async (ctx: Context, next: Next) => {
       },
     ],
   });
+
   ctx.body = records.reduce((modules: any, text: Model) => {
     const module = text.module;
     const record = { [text.text]: text.translations[0]?.translation };
@@ -243,17 +249,28 @@ export const getUISchemas = async (db: Database) => {
   return uiSchemas;
 };
 
-export const resourcesToRecords = (
+export const resourcesToRecords = async (
+  ctx: Context,
   locale: string,
   resources: any,
-): {
-  [key: string]: { module: string; text: string; locale: string; translation: string };
-} => {
+): Promise<{
+  records: {
+    [key: string]: { module: string; text: string; locale: string; translation: string };
+  };
+  newTexts: string[];
+}> => {
+  const plugin = ctx.app.getPlugin('localization-management') as LocalizationManagementPlugin;
+  const texts = await plugin.getCacheTexts();
+  const newTexts = [];
   const records = {};
   for (const module in resources) {
     const resource = resources[module];
     for (const text in resource) {
+      if (texts.includes(text)) {
+        continue;
+      }
       if (resource[text] || module === 'client') {
+        newTexts.push(text);
         records[text] = {
           module,
           text,
@@ -263,7 +280,7 @@ export const resourcesToRecords = (
       }
     }
   }
-  return records;
+  return { records, newTexts };
 };
 
 const getTextsFromUISchemas = async (db: Database) => {
@@ -296,6 +313,25 @@ const getTextsFromDB = async (db: Database) => {
   return result;
 };
 
+const getAdminSchemaUid = async (db: Database) => {
+  const systemSettings = await db.getRepository('systemSettings').findOne();
+  const options = systemSettings?.options || {};
+  return options.adminSchemaUid;
+};
+
+const getTextsFromMenu = async (db: Database) => {
+  const result = {};
+  const uid = await getAdminSchemaUid(db);
+  const repo = db.getRepository('uiSchemas') as UiSchemaRepository;
+  const schema = await repo.getProperties(uid);
+  Object.values(schema['properties'] || {}).forEach((item: { title?: string }) => {
+    if (item.title) {
+      result[item.title] = '';
+    }
+  });
+  return result;
+};
+
 const sync = async (ctx: Context, next: Next) => {
   const startTime = Date.now();
   ctx.app.logger.info('Start sync localization resources');
@@ -309,10 +345,10 @@ const sync = async (ctx: Context, next: Next) => {
   if (type.includes('local')) {
     resources = await getResources(locale, ctx.db);
   }
-  if (type.includes('ui')) {
-    const uiTexts = await getTextsFromUISchemas(ctx.db);
+  if (type.includes('menu')) {
+    const menuTexts = await getTextsFromMenu(ctx.db);
     resources['client'] = {
-      ...uiTexts,
+      ...menuTexts,
       ...resources['client'],
     };
   }
@@ -324,23 +360,13 @@ const sync = async (ctx: Context, next: Next) => {
     };
   }
 
-  const records = resourcesToRecords(locale, resources);
-  const batch = Date.now().toString();
+  const { records, newTexts } = await resourcesToRecords(ctx, locale, resources);
   const textValues = Object.values(records).map((record) => ({
     module: `resources.${record.module}`,
     text: record.text,
-    batch: record.translation ? batch : '',
   }));
   await ctx.db.sequelize.transaction(async (t) => {
-    await ctx.db.getModel('localizationTexts').bulkCreate(textValues, {
-      updateOnDuplicate: ['module', 'batch'],
-      transaction: t,
-    });
-    const texts = await ctx.db.getModel('localizationTexts').findAll({
-      attributes: ['id', 'text'],
-      where: {
-        batch,
-      },
+    const texts = await ctx.db.getModel('localizationTexts').bulkCreate(textValues, {
       transaction: t,
     });
     const translationValues = texts
@@ -353,10 +379,10 @@ const sync = async (ctx: Context, next: Next) => {
       })
       .filter((translation) => translation.translation);
     await ctx.db.getModel('localizationTranslations').bulkCreate(translationValues, {
-      updateOnDuplicate: ['translation'],
       transaction: t,
     });
   });
+  await updateCacheTexts(ctx, newTexts);
   ctx.app.logger.info(`Sync localization resources done, ${Date.now() - startTime}ms`);
   await next();
 };

@@ -8,6 +8,7 @@ export type HookType =
   | 'onCollectionFieldDestroy'
   | 'onAnyCollectionFieldDestroy'
   | 'onSelfCreate'
+  | 'onSelfSave'
   | 'onSelfMove';
 
 export class ServerHooks {
@@ -38,6 +39,11 @@ export class ServerHooks {
 
     this.db.on('uiSchemaMove', async (model, options) => {
       await this.onUiSchemaMove(model, options);
+    });
+
+    this.db.on('uiSchemas.afterSave', async (model, options) => {
+      console.log('uiSchemas.afterSave');
+      await this.onUiSchemaSave(model, options);
     });
   }
 
@@ -115,6 +121,10 @@ export class ServerHooks {
 
   protected async onUiSchemaCreate(schemaInstance, options) {
     await this.callSchemaInstanceHooksByType(schemaInstance, options, 'onSelfCreate');
+  }
+
+  protected async onUiSchemaSave(schemaInstance, options) {
+    await this.callSchemaInstanceHooksByType(schemaInstance, options, 'onSelfSave');
   }
 
   protected async findHooksAndCall(hooksFilter, hooksArgs, transaction) {

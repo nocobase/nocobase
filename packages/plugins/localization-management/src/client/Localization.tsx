@@ -1,16 +1,16 @@
 import { FilterOutlined, SyncOutlined } from '@ant-design/icons';
-import { createForm, Form } from '@formily/core';
+import { Form, createForm } from '@formily/core';
 import {
   FormProvider,
   Input,
-  locale,
   SchemaComponent,
+  locale,
   useAPIClient,
   useRecord,
   useResourceActionContext,
   useResourceContext,
 } from '@nocobase/client';
-import { Button, Card, Checkbox, Divider, message, Popover, Tag, Typography } from 'antd';
+import { Button, Card, Checkbox, Col, Divider, Popover, Row, Tag, Typography, message } from 'antd';
 import React, { useMemo, useState } from 'react';
 import { useLocalTranslation } from './locale';
 import { filterSchema, localizationSchema } from './schemas/localization';
@@ -70,7 +70,7 @@ const Sync = () => {
   const { refresh } = useResourceActionContext();
   const { resource } = useResourceContext();
   const [loading, setLoading] = useState(false);
-  const plainOptions = ['local', 'ui', 'db'];
+  const plainOptions = ['local', 'menu', 'db'];
   const [checkedList, setCheckedList] = useState<any[]>(plainOptions);
   const [indeterminate, setIndeterminate] = useState(false);
   const [checkAll, setCheckAll] = useState(true);
@@ -96,11 +96,17 @@ const Sync = () => {
           </Checkbox>
           <Divider style={{ margin: '5px 0' }} />
           <Checkbox.Group onChange={onChange} value={checkedList}>
-            <Checkbox value="local">{t('Built-in files')}</Checkbox>
-            <br />
-            <Checkbox value="ui">{t('User interfaces')}</Checkbox>
-            <br />
-            <Checkbox value="db">{t('Collections & fields')}</Checkbox>
+            <Col>
+              <Row>
+                <Checkbox value="local">{t('Built-in files')}</Checkbox>
+              </Row>
+              <Row>
+                <Checkbox value="db">{t('Collections & fields')}</Checkbox>
+              </Row>
+              <Row>
+                <Checkbox value="menu">{t('Menu')}</Checkbox>
+              </Row>
+            </Col>
           </Checkbox.Group>
         </>
       }
