@@ -17,7 +17,7 @@ export function useUpdateThemeSettings() {
           values: {
             systemSettings: {
               ...currentUser.data.data.systemSettings,
-              theme: themeId,
+              themeId,
             },
           },
         });
@@ -26,7 +26,7 @@ export function useUpdateThemeSettings() {
             ...currentUser.data.data,
             systemSettings: {
               ...currentUser.data.data.systemSettings,
-              theme: themeId,
+              themeId,
             },
           },
         });
@@ -46,7 +46,7 @@ export function useUpdateThemeSettings() {
           values: {
             systemSettings: {
               ...currentUser.data.data.systemSettings,
-              theme: themeId,
+              themeId,
             },
           },
         });
@@ -55,7 +55,7 @@ export function useUpdateThemeSettings() {
             ...currentUser.data.data,
             systemSettings: {
               ...currentUser.data.data.systemSettings,
-              theme: themeId,
+              themeId,
             },
           },
         });

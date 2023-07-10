@@ -51,7 +51,7 @@ function Label() {
         style={{ minWidth: 100 }}
         bordered={false}
         popupMatchSelectWidth={false}
-        value={currentUser.data.data.systemSettings.theme}
+        value={currentUser.data.data.systemSettings.themeId}
         options={data
           ?.filter((item) => item.optional)
           .map((item) => {
