@@ -2,7 +2,7 @@ import { observer, RecursionField } from '@formily/react';
 import React from 'react';
 import { useRecord } from '../../../../record-provider';
 export const InheritedFieldProvider = observer(
-  (props) => {
+  (props: { schema: any; basePath: string; children: any }) => {
     const { schema, basePath } = props;
     const record = useRecord();
     const fieldSchema = schema.reduceProperties((buf, s) => {

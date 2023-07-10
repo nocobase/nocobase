@@ -60,7 +60,6 @@ const useTableColumns = (props) => {
             <RecordIndexProvider index={record.__index || index}>
               <RecordProvider record={record}>
                 <InheritedFieldProvider
-                  record={record}
                   schema={s}
                   basePath={field.address.concat(record.__index || index)}
                 >
