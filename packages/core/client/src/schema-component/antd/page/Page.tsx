@@ -180,7 +180,7 @@ export const Page = (props) => {
     console.error(error);
   };
 
-  const pageTitle = t(fieldSchema.title || compile(title));
+  const pageTitle = fieldSchema.title || compile(title);
   const pageHeaderTitle = hidePageTitle ? undefined : pageTitle;
   return (
     <FilterBlockProvider>
@@ -196,7 +196,7 @@ export const Page = (props) => {
               className={classNames(pageHeaderCss, pageHeaderTitle || enablePageTabs ? '' : height0)}
               ghost={false}
               // 如果标题为空的时候会导致 PageHeader 不渲染，所以这里设置一个空白字符，然后再设置高度为 0
-              title={pageHeaderTitle || ' '}
+              title={t(pageHeaderTitle || ' ')}
               {...others}
               footer={
                 enablePageTabs && (
@@ -273,7 +273,7 @@ export const Page = (props) => {
                               className={classNames('nb-action-link', designerCss, props.className)}
                             >
                               {schema['x-icon'] && <Icon style={{ marginRight: 8 }} type={schema['x-icon']} />}
-                              <span>{t(schema.title || 'Unnamed')}</span>
+                              <span>{schema.title || t('Unnamed')}</span>
                               <PageTabDesigner schema={schema} />
                             </SortableItem>
                           ),

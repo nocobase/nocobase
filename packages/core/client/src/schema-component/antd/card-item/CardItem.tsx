@@ -9,9 +9,8 @@ export const CardItem: React.FC = (props) => {
   const { children, ...restProps } = props;
   const template = useSchemaTemplate();
   const fieldSchema = useFieldSchema();
-  const { t } = useTranslation();
   const templateKey = fieldSchema['x-template-key'];
-  const title = t(fieldSchema['x-component-props']?.title || '');
+  const title = fieldSchema['x-component-props']?.title || '';
 
   return templateKey && !template ? null : (
     <BlockItem className={'noco-card-item'}>

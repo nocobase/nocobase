@@ -96,10 +96,9 @@ Tabs.TabPane = observer(
   (props: TabPaneProps & { icon?: any }) => {
     const Designer = useDesigner();
     const field = useField();
-    const { t } = useTranslation();
     return (
       <SortableItem className={classNames('nb-action-link', designerCss, props.className)}>
-        {props.icon && <Icon style={{ marginRight: 2 }} type={props.icon} />} {t(props.tab || field.title)}
+        {props.icon && <Icon style={{ marginRight: 2 }} type={props.icon} />} {props.tab || field.title}
         <Designer />
       </SortableItem>
     );

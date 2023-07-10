@@ -929,7 +929,7 @@ SchemaSettings.BlockTitleItem = function BlockTitleItem() {
             title: {
               title: t('Block title'),
               type: 'string',
-              default: t(fieldSchema?.['x-component-props']?.['title']),
+              default: fieldSchema?.['x-component-props']?.['title'],
               'x-decorator': 'FormItem',
               'x-component': 'Input',
             },
