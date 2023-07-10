@@ -1,13 +1,13 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
-import React from 'react';
 import { set } from 'lodash';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCollectionManager, useCollectionFilterOptions } from '../../../collection-manager';
-import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled } from '../../../schema-settings';
+import { useCollectionFilterOptions, useCollectionManager } from '../../../collection-manager';
+import { GeneralSchemaDesigner, isPatternDisabled, SchemaSettings } from '../../../schema-settings';
 import { useCompile, useDesignable } from '../../hooks';
 import { useAssociationFieldContext } from '../association-field/hooks';
-import { FilterDynamicComponent } from './FilterDynamicComponent';
 import { removeNullCondition } from '../filter';
+import { FilterDynamicComponent } from './FilterDynamicComponent';
 
 const useLabelFields = (collectionName?: any) => {
   // 需要在组件顶层调用
@@ -44,6 +44,7 @@ export const TableColumnDesigner = (props) => {
   const { currentMode, field: tableField } = useAssociationFieldContext();
   const defaultFilter = fieldSchema?.['x-component-props']?.service?.params?.filter || {};
   const dataSource = useCollectionFilterOptions(collectionField?.target);
+  const isDateField = collectionField.interface === 'datetime';
   let readOnlyMode = 'editable';
   if (fieldSchema['x-disabled'] === true) {
     readOnlyMode = 'readonly';
@@ -323,6 +324,91 @@ export const TableColumnDesigner = (props) => {
             }}
           />
         )}
+      {isDateField && (
+        <SchemaSettings.ModalItem
+          title={t('Date format')}
+          schema={
+            {
+              type: 'object',
+              properties: {
+                dateFormat: {
+                  type: 'string',
+                  'x-component': 'Radio.Group',
+                  'x-decorator': 'FormItem',
+                  default:
+                    fieldSchema['x-component-props']?.dateFormat ||
+                    collectionField?.uiSchema['x-component-props']?.dateFormat,
+                  enum: [
+                    {
+                      label: '{{t("Year/Month/Day")}}',
+                      value: 'YYYY/MM/DD',
+                    },
+                    {
+                      label: '{{t("Year-Month-Day")}}',
+                      value: 'YYYY-MM-DD',
+                    },
+                    {
+                      label: '{{t("Day/Month/Year")}}',
+                      value: 'DD/MM/YYYY',
+                    },
+                  ],
+                },
+                showTime: {
+                  default: fieldSchema['x-component-props']?.showTime,
+                  type: 'boolean',
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Checkbox',
+                  'x-content': '{{t("Show time")}}',
+                  'x-reactions': [
+                    `{{(field) => {
+                      field.query('..[].timeFormat').take(f => {
+                        f.display = field.value ? 'visible' : 'none';
+                      });
+                    }}}`,
+                  ],
+                },
+                timeFormat: {
+                  type: 'string',
+                  title: '{{t("Time format")}}',
+                  'x-component': 'Radio.Group',
+                  'x-decorator': 'FormItem',
+                  default:
+                    fieldSchema['x-component-props']?.timeFormat ||
+                    collectionField?.uiSchema['x-component-props']?.timeFormat,
+                  enum: [
+                    {
+                      label: '{{t("12 hour")}}',
+                      value: 'hh:mm:ss a',
+                    },
+                    {
+                      label: '{{t("24 hour")}}',
+                      value: 'HH:mm:ss',
+                    },
+                  ],
+                },
+              },
+            } as ISchema
+          }
+          onSubmit={(data) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            schema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props'] = {
+              ...(fieldSchema['x-component-props'] || {}),
+              ...data,
+            };
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            field.query(`.*.${fieldSchema.name}`).forEach((f) => {
+              f.componentProps = fieldSchema['x-component-props'];
+            });
+            dn.emit('patch', {
+              schema,
+            });
+            dn.refresh();
+          }}
+        />
+      )}
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren={!isSubTableColumn}
