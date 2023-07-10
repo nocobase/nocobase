@@ -1,8 +1,10 @@
 import { RecursionField } from '@formily/react';
 import React from 'react';
-import { CollectionFieldContext, useCollectionManager } from '../../../../collection-manager';
+import { useCollectionManager } from '../../../../collection-manager';
+import { useRecord } from '../../../../record-provider';
 export const InheritedFieldProvider = (props) => {
-  const { record, schema, basePath } = props;
+  const { schema, basePath } = props;
+  const record = useRecord();
   const { getCollectionJoinField } = useCollectionManager();
   const fieldSchema = schema.reduceProperties((buf, s) => {
     if (s['x-component'] === 'CollectionField') {
@@ -12,21 +14,20 @@ export const InheritedFieldProvider = (props) => {
   }, null);
   if (fieldSchema && record?.__collection) {
     const fieldName = `${record.__collection}.${fieldSchema.name}`;
-    const tw = getCollectionJoinField(fieldName);
-    const nreSchema = {
+    const collectionField = getCollectionJoinField(fieldName);
+    const newSchema = {
       ...schema.toJSON(),
       properties: {
         [fieldSchema.name]: {
           ...fieldSchema.toJSON(),
           'x-collection-field': fieldName,
+          'x-component-props': {
+            ...fieldSchema['x-component-props'],
+          },
         },
       },
     };
-    return (
-      <CollectionFieldContext.Provider value={{ uiSchema: tw.uiSchema }}>
-        <RecursionField basePath={basePath} schema={nreSchema} onlyRenderProperties />
-      </CollectionFieldContext.Provider>
-    );
+    return <RecursionField basePath={basePath} schema={newSchema} onlyRenderProperties />;
   }
   return props.children;
 };
