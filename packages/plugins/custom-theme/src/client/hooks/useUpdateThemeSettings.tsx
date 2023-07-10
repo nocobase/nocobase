@@ -1,14 +1,11 @@
-import { useAPIClient, useCurrentUserContext, useGlobalTheme, useSystemSettings } from '@nocobase/client';
+import { useAPIClient, useCurrentUserContext, useSystemSettings } from '@nocobase/client';
 import { error } from '@nocobase/utils/client';
 import { useCallback } from 'react';
-import { useThemeListContext } from '../components/ThemeListProvider';
 
 export function useUpdateThemeSettings() {
   const api = useAPIClient();
   const currentUser = useCurrentUserContext();
   const systemSettings = useSystemSettings();
-  const { data } = useThemeListContext();
-  const { setTheme } = useGlobalTheme();
 
   const updateUserThemeSettings = useCallback(
     async (themeId: number | null) => {
@@ -31,12 +28,11 @@ export function useUpdateThemeSettings() {
             },
           },
         });
-        setTheme(data.find((item) => item.id === themeId)?.config || {});
       } catch (err) {
         error(err);
       }
     },
-    [api, currentUser, data, setTheme],
+    [api, currentUser],
   );
 
   const updateUserThemeSettingsOnly = useCallback(
@@ -64,7 +60,7 @@ export function useUpdateThemeSettings() {
         error(err);
       }
     },
-    [api, currentUser, data, setTheme],
+    [api, currentUser],
   );
 
   const updateSystemThemeSettings = useCallback(
