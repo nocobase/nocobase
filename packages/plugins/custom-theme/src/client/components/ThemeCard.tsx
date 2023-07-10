@@ -4,7 +4,7 @@ import { App, Card, ConfigProvider, Space, Switch, message } from 'antd';
 import React, { useCallback, useMemo } from 'react';
 import { ThemeConfig, ThemeItem } from '../../types';
 import { Primary } from '../antd-token-previewer';
-import { useUpdateThemeSettings } from '../hooks/useThemeSettings';
+import { useUpdateThemeSettings } from '../hooks/useUpdateThemeSettings';
 import { useThemeEditorContext } from './ThemeEditorProvider';
 
 enum HandleTypes {
@@ -45,7 +45,7 @@ const ThemeCard = (props: Props) => {
   const currentUser = useCurrentUserContext();
   const { item, style = {}, onChange } = props;
   const api = useAPIClient();
-  const { updateThemeSettings } = useUpdateThemeSettings();
+  const { updateUserThemeSettings } = useUpdateThemeSettings();
   const { modal } = App.useApp();
 
   const handleDelete = useCallback(() => {
@@ -58,13 +58,13 @@ const ThemeCard = (props: Props) => {
         });
 
         if (item.id === currentUser?.data?.data?.systemSettings?.theme) {
-          updateThemeSettings(null);
+          updateUserThemeSettings(null);
         }
         message.success('删除成功');
         onChange?.({ type: HandleTypes.delete, item });
       },
     });
-  }, [api, currentUser?.data?.data?.systemSettings?.theme, item, onChange, updateThemeSettings]);
+  }, [api, currentUser?.data?.data?.systemSettings?.theme, item, onChange, updateUserThemeSettings]);
   const handleSwitch = useCallback(
     async (checked: boolean) => {
       await api.request({

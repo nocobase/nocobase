@@ -4,7 +4,7 @@ import { Button, Form, Input, Modal, Space, theme as antdTheme } from 'antd';
 import _ from 'lodash';
 import React from 'react';
 import { ThemeConfig } from '../../../types';
-import { useUpdateThemeSettings } from '../../hooks/useThemeSettings';
+import { useUpdateThemeSettings } from '../../hooks/useUpdateThemeSettings';
 import { useTranslation } from '../../locale';
 import { useThemeListContext } from '../ThemeListProvider';
 interface Props {
@@ -20,7 +20,7 @@ const ThemeSettingModal = (props: Props) => {
   const { open, onOk, onCancel, theme } = props;
   const [loading, setLoading] = React.useState(false);
   const { refresh } = useThemeListContext();
-  const { updateThemeSettingsOnly } = useUpdateThemeSettings();
+  const { updateUserThemeSettingsOnly } = useUpdateThemeSettings();
 
   const handleFormValue = React.useCallback(
     async (values) => {
@@ -38,7 +38,7 @@ const ThemeSettingModal = (props: Props) => {
             isBuiltIn: false,
           },
         });
-        await updateThemeSettingsOnly(data.data.data.id);
+        await updateUserThemeSettingsOnly(data.data.data.id);
         onOk?.(values);
         refresh?.();
       } catch (err) {
