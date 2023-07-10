@@ -1,16 +1,16 @@
 import { CloseCircleFilled } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
 import { useForm } from '@formily/react';
-import { error } from '@nocobase/utils/client';
-import { Cascader, DatePicker, Input as AntInput, InputNumber, Select, Tag } from 'antd';
+import { dayjs, error } from '@nocobase/utils/client';
+import { Input as AntInput, Cascader, DatePicker, InputNumber, Select, Tag } from 'antd';
 import type { DefaultOptionType } from 'antd/lib/cascader';
 import classNames from 'classnames';
 import { cloneDeep } from 'lodash';
-import moment from 'moment';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../../hooks';
 import { XButton } from './XButton';
+import { useStyles } from './style';
 
 const JT_VALUE_RE = /^\s*{{\s*([^{}]+)\s*}}\s*$/;
 const groupClass = css`
@@ -29,9 +29,6 @@ const groupClass = css`
     width: 4em;
     min-width: 4em;
   }
-`;
-const userSelectNone = css`
-  user-select: 'none';
 `;
 
 function parseValue(value: any): string | string[] {
@@ -96,7 +93,7 @@ const ConstantTypes = {
     component: function DateComponent({ onChange, value }) {
       return (
         <DatePicker
-          value={moment(value)}
+          value={dayjs(value)}
           onChange={(d) => (d ? onChange(d.toDate()) : null)}
           allowClear={false}
           showTime
@@ -158,6 +155,7 @@ export function Input(props) {
     changeOnSelect,
     fieldNames,
   } = props;
+  const { wrapSSR, hashId, componentCls } = useStyles();
   const compile = useCompile();
   const { t } = useTranslation();
   const form = useForm();
@@ -264,8 +262,8 @@ export function Input(props) {
 
   const disabled = props.disabled || form.disabled;
 
-  return (
-    <AntInput.Group compact style={style} className={classNames(groupClass, className)}>
+  return wrapSSR(
+    <AntInput.Group compact style={style} className={classNames(groupClass, componentCls, hashId, className)}>
       {variable ? (
         <div
           className={cx(
@@ -275,7 +273,7 @@ export function Input(props) {
               line-height: 0;
 
               &:hover {
-                .ant-select-clear {
+                .clear-button {
                   opacity: 0.8;
                 }
               }
@@ -305,7 +303,7 @@ export function Input(props) {
               }
               onChange(null);
             }}
-            className={cx('ant-input', { 'ant-input-disabled': disabled })}
+            className={cx('ant-input', { 'ant-input-disabled': disabled }, hashId)}
             contentEditable={!disabled}
             suppressContentEditableWarning
           >
@@ -315,7 +313,7 @@ export function Input(props) {
           </div>
           {!disabled ? (
             <span
-              className={cx('ant-select-clear', userSelectNone)}
+              className={cx('clear-button')}
               // eslint-disable-next-line react/no-unknown-property
               unselectable="on"
               aria-hidden
@@ -340,6 +338,6 @@ export function Input(props) {
           {button ?? <XButton type={variable ? 'primary' : 'default'} />}
         </Cascader>
       ) : null}
-    </AntInput.Group>
+    </AntInput.Group>,
   );
 }

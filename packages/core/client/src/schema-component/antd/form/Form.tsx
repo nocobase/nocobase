@@ -1,4 +1,4 @@
-import { FormLayout } from '@formily/antd';
+import { FormLayout } from '@formily/antd-v5';
 import { createForm } from '@formily/core';
 import { FieldContext, FormContext, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Options, Result } from 'ahooks/es/useRequest/src/types';

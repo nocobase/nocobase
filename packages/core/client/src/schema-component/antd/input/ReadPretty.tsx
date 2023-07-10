@@ -1,5 +1,5 @@
 import { css, cx } from '@emotion/css';
-import { usePrefixCls } from '@formily/antd/esm/__builtins__';
+import { usePrefixCls } from '@formily/antd-v5/esm/__builtins__';
 import { Typography } from 'antd';
 import { InputProps, TextAreaProps } from 'antd/es/input';
 import cls from 'classnames';

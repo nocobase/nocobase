@@ -1,7 +1,7 @@
-import { Schema, useField, useFieldSchema } from '@formily/react';
-import { GeneralSchemaDesigner, SchemaSettings, useDesignable } from '@nocobase/client';
+import { Switch } from '@formily/antd-v5';
+import { useField } from '@formily/react';
+import { GeneralSchemaDesigner, SchemaSettings } from '@nocobase/client';
 import React from 'react';
-import { Switch } from '@formily/antd';
 import { useTranslation } from '../../../../locale';
 import { useSchemaPatch } from '../../hooks';
 

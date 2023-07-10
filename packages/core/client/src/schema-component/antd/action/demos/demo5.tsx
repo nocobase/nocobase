@@ -9,7 +9,7 @@ import {
   Input,
   NumberPicker,
   Submit,
-} from '@formily/antd';
+} from '@formily/antd-v5';
 import { Field, createForm, onFieldValueChange } from '@formily/core';
 import { connect, createSchemaField, observer, useField, useForm, useFormEffects } from '@formily/react';
 import { Select } from 'antd';

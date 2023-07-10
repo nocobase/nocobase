@@ -1,5 +1,5 @@
 import { CloseOutlined, LoadingOutlined } from '@ant-design/icons';
-import { useFormLayout } from '@formily/antd';
+import { useFormLayout } from '@formily/antd-v5';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { isValid } from '@formily/shared';
 import { Button, Input, Popover } from 'antd';

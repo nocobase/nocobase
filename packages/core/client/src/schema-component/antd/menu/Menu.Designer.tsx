@@ -1,4 +1,4 @@
-import { TreeSelect } from '@formily/antd';
+import { TreeSelect } from '@formily/antd-v5';
 import { Field, onFieldChange } from '@formily/core';
 import { ISchema, Schema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';

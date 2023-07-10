@@ -1,7 +1,7 @@
 /**
  * title: 组
  */
-import { FormItem } from '@formily/antd';
+import { FormItem } from '@formily/antd-v5';
 import { Checkbox, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
 import React from 'react';
 

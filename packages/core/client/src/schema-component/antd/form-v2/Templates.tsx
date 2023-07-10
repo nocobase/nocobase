@@ -143,7 +143,7 @@ export const Templates = ({ style = {}, form }) => {
         {t('Data template')}:{' '}
       </label>
       <Select
-        dropdownMatchSelectWidth={false}
+        popupMatchSelectWidth={false}
         // style={{ width: '8em' }}
         options={templates}
         fieldNames={{ label: 'title', value: 'key' }}

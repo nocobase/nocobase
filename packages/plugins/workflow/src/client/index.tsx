@@ -2,6 +2,7 @@ export * from './Branch';
 export * from './FlowContext';
 export * from './nodes';
 export { triggers } from './triggers';
+export { useWorkflowVariableOptions } from './variable';
 
 import { Plugin, useCollectionDataSource } from '@nocobase/client';
 import React from 'react';

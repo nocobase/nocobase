@@ -1,10 +1,10 @@
 import { css, cx } from '@emotion/css';
-import { ArrayCollapse, ArrayItems, FormItem as Item, FormLayout } from '@formily/antd';
+import { ArrayCollapse, ArrayItems, FormLayout, FormItem as Item } from '@formily/antd-v5';
 import { Field } from '@formily/core';
-import { ISchema, observer, Schema, useField, useFieldSchema } from '@formily/react';
+import { ISchema, Schema, observer, useField, useFieldSchema } from '@formily/react';
+import { dayjs } from '@nocobase/utils/client';
 import { Select } from 'antd';
 import _ from 'lodash';
-import moment from 'moment';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ACLCollectionFieldProvider } from '../../../acl/ACLProvider';
@@ -20,9 +20,9 @@ import {
 } from '../../../collection-manager';
 import { isTitleField } from '../../../collection-manager/Configuration/CollectionFields';
 import { GeneralSchemaItems } from '../../../schema-items/GeneralSchemaItems';
-import { GeneralSchemaDesigner, isPatternDisabled, isShowDefaultValue, SchemaSettings } from '../../../schema-settings';
-import { useIsShowMultipleSwitch } from '../../../schema-settings/hooks/useIsShowMultipleSwitch';
+import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isShowDefaultValue } from '../../../schema-settings';
 import { VariableInput } from '../../../schema-settings/VariableInput/VariableInput';
+import { useIsShowMultipleSwitch } from '../../../schema-settings/hooks/useIsShowMultipleSwitch';
 import { isVariable, parseVariables, useVariablesCtx } from '../../common/utils/uitls';
 import { SchemaComponent } from '../../core';
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
@@ -895,7 +895,7 @@ FormItem.FilterFormDesigner = FilterFormDesigner;
 export function getFieldDefaultValue(fieldSchema: ISchema, collectionField: CollectionFieldOptions) {
   const result = fieldSchema?.default ?? collectionField?.defaultValue;
   if (collectionField?.uiSchema?.['x-component'] === 'DatePicker' && result) {
-    return moment(result);
+    return dayjs(result);
   }
   return result;
 }

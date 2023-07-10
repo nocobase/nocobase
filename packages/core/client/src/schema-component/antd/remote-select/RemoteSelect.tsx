@@ -1,9 +1,9 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty, useField, useFieldSchema, useForm } from '@formily/react';
+import { dayjs } from '@nocobase/utils/client';
 import { Divider, SelectProps, Tag } from 'antd';
 import flat from 'flat';
 import _, { uniqBy } from 'lodash';
-import moment from 'moment';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
 import { useBlockRequestContext } from '../../../block-provider/BlockProvider';
@@ -99,7 +99,7 @@ const InternalRemoteSelect = connect(
               }
 
               if (targetField?.type === 'date') {
-                label = moment(label).format('YYYY-MM-DD');
+                label = dayjs(label).format('YYYY-MM-DD');
               }
 
               if (mapOptions) {
@@ -267,7 +267,7 @@ const InternalRemoteSelect = connect(
     return (
       <Select
         open={open}
-        dropdownMatchSelectWidth={false}
+        popupMatchSelectWidth={false}
         autoClearSearchValue
         filterOption={false}
         filterSort={null}

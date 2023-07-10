@@ -14,6 +14,7 @@ const SnippetCheckboxGroup = connect((props) => {
     <Checkbox.Group
       style={{
         width: '100%',
+        display: 'block',
       }}
       value={props.value}
       onChange={(values) => {

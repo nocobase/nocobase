@@ -1,10 +1,9 @@
-import DeleteEvent from './DeleteEvent';
 import { ActionBar } from '../action';
 import { Calendar } from './Calendar';
 import { CalendarDesigner } from './Calendar.Designer';
+import DeleteEvent from './DeleteEvent';
 import { Event } from './Event';
 import { Nav } from './Nav';
-import './style.less';
 import { Title } from './Title';
 import { Today } from './Today';
 import { ViewSelect } from './ViewSelect';

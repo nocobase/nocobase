@@ -33,20 +33,12 @@ export const Tabs: any = observer(
         };
       });
 
-      if (designable) {
-        result.push({
-          key: 'designer',
-          label: render(),
-          children: null,
-        });
-      }
-
       return result;
     }, [fieldSchema.mapProperties((s, key) => key).join()]);
 
     return (
       <DndContext>
-        <AntdTabs {...contextProps} style={props.style} items={items} />
+        <AntdTabs {...contextProps} tabBarExtraContent={render()} style={props.style} items={items} />
       </DndContext>
     );
   },

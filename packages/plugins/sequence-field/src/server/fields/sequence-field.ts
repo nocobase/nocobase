@@ -8,7 +8,7 @@ import {
   ValidationError,
   ValidationErrorItem,
 } from '@nocobase/database';
-import { dayjs, lodash, Registry } from '@nocobase/utils';
+import { Registry, dayjs, lodash } from '@nocobase/utils';
 import parser from 'cron-parser';
 
 export interface Pattern {

@@ -4,7 +4,7 @@
   "displayName.zh-CN": "图表",
   "description": "Out-of-the-box, feature-rich chart plugins.",
   "description.zh-CN": "开箱即用、丰富的报表。",
-  "version": "0.10.1-alpha.1",
+  "version": "0.11.0-alpha.1",
   "main": "./lib/server/index.js",
   "files": [
     "lib",
@@ -21,19 +21,19 @@
     "json5": "^2.2.3"
   },
   "devDependencies": {
-    "react": "^18.2.0",
-    "antd": "^4.24.8",
-    "react-router-dom": "^6.11.2",
-    "@ant-design/icons": "^4.8.0",
-    "react-i18next": "^11.15.1",
+    "@ant-design/icons": "^5.1.4",
+    "@formily/antd-v5": "1.1.0-beta.4",
     "@formily/core": "2.2.26",
     "@formily/react": "2.2.26",
-    "@formily/antd": "2.2.26",
     "@formily/shared": "2.2.26",
-    "@nocobase/database": "0.10.1-alpha.1",
-    "@nocobase/utils": "0.10.1-alpha.1",
-    "@nocobase/client": "0.10.1-alpha.1",
-    "@nocobase/server": "0.10.1-alpha.1",
-    "@nocobase/test": "0.10.1-alpha.1"
+    "@nocobase/client": "0.11.0-alpha.1",
+    "@nocobase/database": "0.11.0-alpha.1",
+    "@nocobase/server": "0.11.0-alpha.1",
+    "@nocobase/test": "0.11.0-alpha.1",
+    "@nocobase/utils": "0.11.0-alpha.1",
+    "antd": "^5.6.4",
+    "react": "^18.2.0",
+    "react-i18next": "^11.15.1",
+    "react-router-dom": "^6.11.2"
   }
 }

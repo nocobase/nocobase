@@ -171,7 +171,7 @@ export class Dumper extends AppMigrator {
     }
   }
 
-  async dumpMeta(additionalMeta: Object = {}) {
+  async dumpMeta(additionalMeta: object = {}) {
     const metaPath = path.resolve(this.workDir, 'meta');
 
     await fsPromises.writeFile(
