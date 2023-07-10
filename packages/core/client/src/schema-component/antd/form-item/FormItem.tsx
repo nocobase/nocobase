@@ -1,7 +1,7 @@
 import { css, cx } from '@emotion/css';
-import { ArrayCollapse, ArrayItems, FormLayout, FormItem as Item } from '@formily/antd-v5';
+import { ArrayCollapse, ArrayItems, FormItem as Item, FormLayout } from '@formily/antd-v5';
 import { Field } from '@formily/core';
-import { ISchema, Schema, observer, useField, useFieldSchema } from '@formily/react';
+import { ISchema, observer, Schema, useField, useFieldSchema } from '@formily/react';
 import { dayjs } from '@nocobase/utils/client';
 import { Select } from 'antd';
 import _ from 'lodash';
@@ -20,9 +20,9 @@ import {
 } from '../../../collection-manager';
 import { isTitleField } from '../../../collection-manager/Configuration/CollectionFields';
 import { GeneralSchemaItems } from '../../../schema-items/GeneralSchemaItems';
-import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isShowDefaultValue } from '../../../schema-settings';
-import { VariableInput } from '../../../schema-settings/VariableInput/VariableInput';
+import { GeneralSchemaDesigner, isPatternDisabled, isShowDefaultValue, SchemaSettings } from '../../../schema-settings';
 import { useIsShowMultipleSwitch } from '../../../schema-settings/hooks/useIsShowMultipleSwitch';
+import { VariableInput } from '../../../schema-settings/VariableInput/VariableInput';
 import { isVariable, parseVariables, useVariablesCtx } from '../../common/utils/uitls';
 import { SchemaComponent } from '../../core';
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
@@ -175,6 +175,7 @@ FormItem.Designer = function Designer() {
   const isPickerMode = fieldSchema['x-component-props']?.mode === 'Picker';
   const showFieldMode = isAssociationField && fieldModeOptions && !isTableField;
   const showModeSelect = showFieldMode && isPickerMode;
+  const isDateField = collectionField.interface === 'datetime';
   return (
     <GeneralSchemaDesigner>
       <GeneralSchemaItems />
@@ -859,6 +860,89 @@ FormItem.Designer = function Designer() {
             fieldSchema['x-component-props']['fieldNames'] = fieldNames;
             schema['x-component-props'] = fieldSchema['x-component-props'];
             field.componentProps.fieldNames = fieldSchema['x-component-props'].fieldNames;
+            dn.emit('patch', {
+              schema,
+            });
+            dn.refresh();
+          }}
+        />
+      )}
+      {isDateField && (
+        <SchemaSettings.ModalItem
+          title={t('Date format')}
+          schema={
+            {
+              type: 'object',
+              properties: {
+                dateFormat: {
+                  type: 'string',
+                  'x-component': 'Radio.Group',
+                  'x-decorator': 'FormItem',
+                  default:
+                    fieldSchema['x-component-props']?.dateFormat ||
+                    collectionField?.uiSchema['x-component-props']?.dateFormat,
+                  enum: [
+                    {
+                      label: '{{t("Year/Month/Day")}}',
+                      value: 'YYYY/MM/DD',
+                    },
+                    {
+                      label: '{{t("Year-Month-Day")}}',
+                      value: 'YYYY-MM-DD',
+                    },
+                    {
+                      label: '{{t("Day/Month/Year")}}',
+                      value: 'DD/MM/YYYY',
+                    },
+                  ],
+                },
+                showTime: {
+                  default: fieldSchema['x-component-props']?.showTime,
+                  type: 'boolean',
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Checkbox',
+                  'x-content': '{{t("Show time")}}',
+                  'x-reactions': [
+                    `{{(field) => {
+                      field.query('..[].timeFormat').take(f => {
+                        f.display = field.value ? 'visible' : 'none';
+                      });
+                    }}}`,
+                  ],
+                },
+                timeFormat: {
+                  type: 'string',
+                  title: '{{t("Time format")}}',
+                  'x-component': 'Radio.Group',
+                  'x-decorator': 'FormItem',
+                  default:
+                    fieldSchema['x-component-props']?.timeFormat ||
+                    collectionField?.uiSchema['x-component-props']?.timeFormat,
+                  enum: [
+                    {
+                      label: '{{t("12 hour")}}',
+                      value: 'hh:mm:ss a',
+                    },
+                    {
+                      label: '{{t("24 hour")}}',
+                      value: 'HH:mm:ss',
+                    },
+                  ],
+                },
+              },
+            } as ISchema
+          }
+          onSubmit={(data) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            schema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props'] = {
+              ...(fieldSchema['x-component-props'] || {}),
+              ...data,
+            };
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            field.componentProps = fieldSchema['x-component-props'];
             dn.emit('patch', {
               schema,
             });
