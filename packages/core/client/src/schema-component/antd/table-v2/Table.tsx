@@ -19,7 +19,7 @@ import {
   useTableSelectorContext,
 } from '../../../';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
-import { InheritedFieldProvider } from './components/InheritedFieldProvider';
+import { InheritedFieldProvider } from './components/InheritedfieldProvider';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
 
 const useArrayField = (props) => {
