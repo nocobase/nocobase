@@ -9,34 +9,9 @@ export function useUpdateThemeSettings() {
 
   const updateUserThemeSettings = useCallback(
     async (themeId: number | null) => {
-      try {
-        await api.resource('users').update({
-          filterByTk: currentUser.data.data.id,
-          values: {
-            systemSettings: {
-              ...currentUser.data.data.systemSettings,
-              themeId,
-            },
-          },
-        });
-        currentUser.mutate({
-          data: {
-            ...currentUser.data.data,
-            systemSettings: {
-              ...currentUser.data.data.systemSettings,
-              themeId,
-            },
-          },
-        });
-      } catch (err) {
-        error(err);
+      if (themeId === currentUser.data.data.systemSettings.themeId) {
+        return;
       }
-    },
-    [api, currentUser],
-  );
-
-  const updateUserThemeSettingsOnly = useCallback(
-    async (themeId: number) => {
       try {
         await api.resource('users').update({
           filterByTk: currentUser.data.data.id,
@@ -64,13 +39,16 @@ export function useUpdateThemeSettings() {
   );
 
   const updateSystemThemeSettings = useCallback(
-    async (themeId: number) => {
+    async (themeId: number | null) => {
+      if (themeId === systemSettings.data.data.options.themeId) {
+        return;
+      }
       await api.request({
         url: 'systemSettings:update/1',
         method: 'post',
         data: {
           options: {
-            ...currentUser.data.data.systemSettings.options,
+            ...systemSettings.data.data.options,
             themeId,
           },
         },
@@ -85,8 +63,8 @@ export function useUpdateThemeSettings() {
         },
       });
     },
-    [api, currentUser?.data?.data?.systemSettings?.options, systemSettings],
+    [api, systemSettings],
   );
 
-  return { updateUserThemeSettings, updateUserThemeSettingsOnly, updateSystemThemeSettings };
+  return { updateUserThemeSettings, updateSystemThemeSettings };
 }

@@ -2,6 +2,10 @@ const locale = {
   Theme: '主题',
   Local: '本地',
   'Dark theme': '暗黑主题',
+  Optional: '可选',
+  'Non-optional': '不可选',
+  Current: '当前主题',
+  Default: '默认',
 
   // 主题编辑器
   'Theme Editor': '主题编辑器',

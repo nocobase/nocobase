@@ -1,10 +1,13 @@
-import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
-import { useAPIClient, useCurrentUserContext, useGlobalTheme } from '@nocobase/client';
-import { App, Card, ConfigProvider, Space, Switch, message } from 'antd';
+import { DeleteOutlined, EditOutlined, EllipsisOutlined } from '@ant-design/icons';
+import { useAPIClient, useCurrentUserContext, useGlobalTheme, useSystemSettings, useToken } from '@nocobase/client';
+import { error } from '@nocobase/utils/client';
+import { App, Card, ConfigProvider, Dropdown, Space, Switch, Tag, message } from 'antd';
 import React, { useCallback, useMemo } from 'react';
 import { ThemeConfig, ThemeItem } from '../../types';
 import { Primary } from '../antd-token-previewer';
 import { useUpdateThemeSettings } from '../hooks/useUpdateThemeSettings';
+import { useTranslation } from '../locale';
+import { useCurrentThemeId } from './InitializeTheme';
 import { useThemeEditorContext } from './ThemeEditorProvider';
 
 enum HandleTypes {
@@ -19,6 +22,8 @@ interface Props {
 }
 
 const Overview = ({ theme }: { theme: ThemeConfig }) => {
+  const { token } = useToken();
+
   return (
     <ConfigProvider theme={{ ...theme, inherit: false }}>
       <div
@@ -26,12 +31,20 @@ const Overview = ({ theme }: { theme: ThemeConfig }) => {
           display: 'flex',
           justifyContent: 'space-between',
           pointerEvents: 'none',
-          width: 240,
-          height: 191,
+          width: '100%',
+          height: 129,
+          borderRadius: token.borderRadiusLG,
           overflow: 'hidden',
         }}
       >
-        <Space style={{ transform: 'scale(0.7) translate(0, 0)', transformOrigin: '0 0' }} size={0} align="start">
+        <Space
+          style={{
+            transform: 'scale(0.7) translate(0, 0)',
+            transformOrigin: '0 0',
+          }}
+          size={0}
+          align="start"
+        >
           <Primary />
         </Space>
       </div>
@@ -40,13 +53,17 @@ const Overview = ({ theme }: { theme: ThemeConfig }) => {
 };
 
 const ThemeCard = (props: Props) => {
-  const { theme, setTheme, setCurrentSettingTheme, setCurrentEditingTheme } = useGlobalTheme();
+  const { theme: currentTheme, setTheme, setCurrentSettingTheme, setCurrentEditingTheme } = useGlobalTheme();
   const { setOpen } = useThemeEditorContext();
   const currentUser = useCurrentUserContext();
+  const systemSettings = useSystemSettings();
   const { item, style = {}, onChange } = props;
   const api = useAPIClient();
-  const { updateUserThemeSettings } = useUpdateThemeSettings();
+  const { updateUserThemeSettings, updateSystemThemeSettings } = useUpdateThemeSettings();
   const { modal } = App.useApp();
+  const [loading, setLoading] = React.useState(false);
+  const currentThemeId = useCurrentThemeId();
+  const { t } = useTranslation();
 
   const handleDelete = useCallback(() => {
     modal.confirm({
@@ -57,57 +74,186 @@ const ThemeCard = (props: Props) => {
           url: `themeConfig:destroy/${item.id}`,
         });
 
-        if (item.id === currentUser?.data?.data?.systemSettings?.theme) {
+        if (item.id === currentUser?.data?.data?.systemSettings?.themeId) {
           updateUserThemeSettings(null);
+        }
+        if (item.id === systemSettings?.data?.data?.options?.themeId) {
+          updateSystemThemeSettings(null);
         }
         message.success('删除成功');
         onChange?.({ type: HandleTypes.delete, item });
       },
     });
   }, [api, currentUser?.data?.data?.systemSettings?.theme, item, onChange, updateUserThemeSettings]);
-  const handleSwitch = useCallback(
+  const handleSwitchOptional = useCallback(
     async (checked: boolean) => {
-      await api.request({
-        url: `themeConfig:update/${item.id}`,
-        method: 'post',
-        data: {
-          optional: checked,
-        },
-      });
-
+      setLoading(true);
+      try {
+        if (!checked) {
+          await Promise.all([
+            api.request({
+              url: `themeConfig:update/${item.id}`,
+              method: 'post',
+              data: {
+                optional: checked,
+              },
+            }),
+            // 如果用户把当前设置的主题设置为不可选，那么就需要把当前设置的主题设置为默认主题
+            item.id === currentThemeId && updateUserThemeSettings(null),
+            // 系统默认主题应该始终是可选的，所以当用户设置为不可选时，应该也同时把系统默认主题设置为空
+            item.id === systemSettings?.data?.data?.options?.themeId && updateSystemThemeSettings(null),
+          ]);
+        } else {
+          await api.request({
+            url: `themeConfig:update/${item.id}`,
+            method: 'post',
+            data: {
+              optional: checked,
+            },
+          });
+        }
+      } catch (err) {
+        error(err);
+      }
+      setLoading(false);
       message.success('更改成功');
       onChange?.({ type: HandleTypes.optional, item });
     },
     [item],
   );
+  const handleSwitchDefault = useCallback(
+    async (checked: boolean) => {
+      setLoading(true);
+      try {
+        if (checked) {
+          await Promise.all([
+            updateSystemThemeSettings(item.id),
+            // 用户在设置该主题为默认主题时，肯定也希望该主题可被用户选择
+            api.request({
+              url: `themeConfig:update/${item.id}`,
+              method: 'post',
+              data: {
+                optional: true,
+              },
+            }),
+          ]);
+        } else {
+          await updateSystemThemeSettings(null);
+        }
+      } catch (err) {
+        error(err);
+      }
+      setLoading(false);
+      message.success('更改成功');
+      onChange?.({ type: HandleTypes.optional, item });
+    },
+    [item],
+  );
+
   const handleEdit = useCallback(() => {
-    setCurrentSettingTheme(theme);
+    setCurrentSettingTheme(currentTheme);
     setCurrentEditingTheme(item);
     setTheme(item.config);
     setOpen(true);
-  }, [item]);
+  }, [item, setCurrentEditingTheme, setCurrentSettingTheme, setOpen, setTheme, currentTheme]);
+
+  const menu = useMemo(() => {
+    return {
+      items: [
+        {
+          key: 'optional',
+          label: (
+            <Space
+              style={{ width: '100%', justifyContent: 'space-between' }}
+              align="center"
+              size="middle"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <span>可被用户选择</span>
+              <Switch
+                style={{ transform: 'translateY(-2px)' }}
+                checked={item.optional}
+                size={'small'}
+                loading={loading}
+                onChange={handleSwitchOptional}
+              ></Switch>
+            </Space>
+          ),
+        },
+        {
+          key: 'system',
+          label: (
+            <Space
+              style={{ width: '100%', justifyContent: 'space-between' }}
+              align="center"
+              size="middle"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <span>设置为默认主题</span>
+              <Switch
+                style={{ transform: 'translateY(-2px)' }}
+                checked={item.id === systemSettings?.data?.data?.options?.themeId}
+                size={'small'}
+                loading={loading}
+                onChange={handleSwitchDefault}
+              />
+            </Space>
+          ),
+        },
+      ],
+    };
+  }, [handleSwitchOptional, item.optional]);
 
   const actions = useMemo(() => {
-    return item.isBuiltIn
-      ? [
-          <EditOutlined key="edit" onClick={handleEdit} />,
-          <Switch key="switch" checked={item.optional} size={'small'} onChange={handleSwitch} />,
-        ]
-      : [
-          <EditOutlined key="edit" onClick={handleEdit} />,
-          <DeleteOutlined key="delete" onClick={handleDelete} />,
-          <Switch key="switch" checked={item.optional} size={'small'} onChange={handleSwitch} />,
-        ];
-  }, [handleDelete, handleSwitch, item.isBuiltIn, item.optional]);
+    return [
+      <EditOutlined key="edit" onClick={handleEdit} />,
+      <DeleteOutlined key="delete" onClick={handleDelete} />,
+      <Dropdown key="ellipsis" menu={menu}>
+        <EllipsisOutlined />
+      </Dropdown>,
+    ];
+  }, [handleDelete, handleEdit, menu]);
+
+  const extra = useMemo(() => {
+    if (item.id !== systemSettings?.data?.data?.options?.themeId && !item.optional) {
+      return null;
+    }
+    const text =
+      item.id === currentThemeId
+        ? t('Current')
+        : item.id === systemSettings?.data?.data?.options?.themeId
+        ? t('Default')
+        : item.optional
+        ? t('Optional')
+        : t('Non-optional');
+    const color =
+      item.id === currentThemeId
+        ? 'processing'
+        : item.id === systemSettings?.data?.data?.options?.themeId
+        ? 'default'
+        : item.optional
+        ? 'success'
+        : 'error';
+
+    return (
+      <Tag style={{ marginRight: 0 }} color={color}>
+        {text}
+      </Tag>
+    );
+  }, [currentThemeId, item.id, item.optional, systemSettings?.data?.data?.options?.themeId]);
 
   return (
     <Card
       hoverable
-      style={{ width: 240, overflow: 'hidden', ...style }}
-      bodyStyle={{ display: 'none' }}
-      cover={<Overview theme={item.config} />}
+      extra={extra}
+      title={item.config.name}
+      size="small"
+      style={{ width: 240, height: 240, overflow: 'hidden', ...style }}
+      headStyle={{ minHeight: 38 }}
       actions={actions}
-    ></Card>
+    >
+      <Overview theme={item.config} />
+    </Card>
   );
 };
 

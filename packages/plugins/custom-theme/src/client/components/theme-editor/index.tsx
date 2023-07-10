@@ -26,6 +26,7 @@ const useStyle = () => ({
     padding: '0 24px',
     justifyContent: 'space-between',
     borderBottom: '1px solid #F0F0F0',
+    backgroundColor: '#fff',
   }),
 });
 

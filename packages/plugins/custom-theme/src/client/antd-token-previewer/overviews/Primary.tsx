@@ -11,7 +11,7 @@ import Tabs from '../component-demos/tabs/tabs';
 
 export const Primary = ({ id }: { id?: string }) => {
   return (
-    <Card size={'small'} id={id}>
+    <Card size={'small'} bordered={false} id={id}>
       <Space direction={'vertical'}>
         <Space align={'start'} size={'large'}>
           {Menu.demo}

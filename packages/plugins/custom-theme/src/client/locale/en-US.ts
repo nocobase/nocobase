@@ -2,6 +2,10 @@ const locale = {
   Theme: 'Theme',
   Local: 'Local',
   'Dark theme': 'Dark theme',
+  Optional: 'Optional',
+  'Non-optional': 'Non-optional',
+  Current: 'Current',
+  Default: 'Default',
 
   // 主题编辑器
   'Theme Editor': 'Theme Editor',

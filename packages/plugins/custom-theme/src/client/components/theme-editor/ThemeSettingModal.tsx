@@ -20,7 +20,7 @@ const ThemeSettingModal = (props: Props) => {
   const { open, onOk, onCancel, theme } = props;
   const [loading, setLoading] = React.useState(false);
   const { refresh } = useThemeListContext();
-  const { updateUserThemeSettingsOnly } = useUpdateThemeSettings();
+  const { updateUserThemeSettings } = useUpdateThemeSettings();
 
   const handleFormValue = React.useCallback(
     async (values) => {
@@ -38,7 +38,7 @@ const ThemeSettingModal = (props: Props) => {
             isBuiltIn: false,
           },
         });
-        await updateUserThemeSettingsOnly(data.data.data.id);
+        await updateUserThemeSettings(data.data.data.id);
         onOk?.(values);
         refresh?.();
       } catch (err) {
