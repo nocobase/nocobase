@@ -1,6 +1,5 @@
-import { str2moment } from '@nocobase/utils';
+import { dayjs, str2moment } from '@nocobase/utils';
 import * as math from 'mathjs';
-import moment from 'moment';
 import { namespace } from '../../';
 
 export async function _({ value, field }) {
@@ -105,7 +104,7 @@ export async function datetime({ value, field, ctx }) {
 export async function time({ value, field, ctx }) {
   const { format } = field.options?.uiSchema?.['x-component-props'] ?? {};
   if (format) {
-    const m = moment(value, format);
+    const m = dayjs(value, format);
     if (!m.isValid()) {
       throw new Error(ctx.t('Incorrect time format', { ns: namespace }));
     }

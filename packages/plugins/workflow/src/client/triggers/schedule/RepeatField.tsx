@@ -1,7 +1,6 @@
-import { css } from '@emotion/css';
+import { css } from '@nocobase/client';
 import { InputNumber, Select } from 'antd';
 import React from 'react';
-import { useTranslation } from 'react-i18next';
 import { Cron } from 'react-js-cron';
 import { useWorkflowTranslation } from '../../locale';
 import CronZhCN from './locale/Cron.zh-CN';

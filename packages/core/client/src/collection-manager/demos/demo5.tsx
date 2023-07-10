@@ -1,4 +1,4 @@
-import { FormDrawer, FormLayout } from '@formily/antd';
+import { FormDrawer, FormLayout } from '@formily/antd-v5';
 import { createForm } from '@formily/core';
 import { FormContext, ISchema, SchemaOptionsContext } from '@formily/react';
 import { uid } from '@formily/shared';

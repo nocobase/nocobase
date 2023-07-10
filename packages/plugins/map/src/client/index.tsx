@@ -1,6 +1,7 @@
 import {
   CollectionManagerContext,
   CurrentAppInfoProvider,
+  Plugin,
   SchemaComponentOptions,
   SettingsCenterProvider,
 } from '@nocobase/client';
@@ -46,4 +47,10 @@ const MapProvider = React.memo((props) => {
 });
 MapProvider.displayName = 'MapProvider';
 
-export default MapProvider;
+export class MapPlugin extends Plugin {
+  async load() {
+    this.app.use(MapProvider);
+  }
+}
+
+export default MapPlugin;

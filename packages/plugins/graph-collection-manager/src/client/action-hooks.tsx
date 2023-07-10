@@ -9,7 +9,7 @@ import {
   useRequest,
 } from '@nocobase/client';
 import { Select, message } from 'antd';
-import omit from 'lodash/omit';
+import { lodash } from '@nocobase/utils/client'
 import React, { useContext, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { GraphCollectionContext } from './components/CollectionNodeProvder';
@@ -35,7 +35,7 @@ export const SourceCollection = observer(
     return (
       <div>
         <Select
-          dropdownMatchSelectWidth={false}
+          popupMatchSelectWidth={false}
           disabled
           value={record.name}
           options={[{ value: record.name, label: compile(record.title) }]}
@@ -87,7 +87,7 @@ export const useCreateAction = (collectionName, targetId?) => {
     async run() {
       await form.submit();
       const values = getValues();
-      const formValues = omit(values, [
+      const formValues = lodash.omit(values, [
         'key',
         'uiSchemaUid',
         'collectionName',
@@ -155,7 +155,7 @@ export const useUpdateCollectionActionAndRefreshCM = () => {
       await form.submit();
       await api.resource('collections').update({
         filterByTk: name,
-        values: { ...omit(form.values, ['fields']) },
+        values: { ...lodash.omit(form.values, ['fields']) },
       });
       ctx.setVisible(false);
       message.success(t('Saved successfully'));

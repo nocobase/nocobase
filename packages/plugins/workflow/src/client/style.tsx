@@ -1,4 +1,4 @@
-import { css } from '@emotion/css';
+import { css } from '@nocobase/client';
 
 export const workflowPageClass = css`
   flex-grow: 1;
@@ -94,7 +94,7 @@ export const branchBlockClass = css`
     bottom: 0;
     left: calc(50% - 0.5px);
     width: 1px;
-    background-color: #f0f2f5;
+    background-color: var(--nb-box-bg);
   }
 `;
 
@@ -255,7 +255,7 @@ export const nodeJobButtonClass = css`
     border: none;
   }
 
-  &.inner{
+  &.inner {
     position: static;
   }
 

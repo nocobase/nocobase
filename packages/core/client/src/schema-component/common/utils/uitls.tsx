@@ -1,15 +1,15 @@
-
+import { dayjs } from '@nocobase/utils/client';
 import flat from 'flat';
 import _, { every, findIndex, isArray, some } from 'lodash';
-import moment from 'moment';
 import { useMemo } from 'react';
 import { useCurrentUserContext } from '../../../user';
 import jsonLogic from '../../common/utils/logic';
 
 type VariablesCtx = {
   /** 当前登录的用户 */
-  $user: Record<string, any>;
-  $date: Record<string, any>;
+  $user?: Record<string, any>;
+  $date?: Record<string, any>;
+  $form?: Record<string, any>;
 };
 
 export const useVariablesCtx = (): VariablesCtx => {
@@ -18,7 +18,7 @@ export const useVariablesCtx = (): VariablesCtx => {
     return {
       $user: data?.data || {},
       $date: {
-        now: () => moment().toISOString(),
+        now: () => dayjs().toISOString(),
       },
     };
   }, [data]);

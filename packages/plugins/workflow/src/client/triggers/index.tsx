@@ -1,13 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { css, cx } from '@emotion/css';
+import { InfoOutlined } from '@ant-design/icons';
 import { createForm } from '@formily/core';
 import { ISchema, useForm } from '@formily/react';
-import { Registry } from '@nocobase/utils/client';
-import { message, Tag, Alert, Button, Input } from 'antd';
-import { InfoOutlined } from '@ant-design/icons';
-
 import {
   ActionContextProvider,
+  css,
+  cx,
   SchemaComponent,
   SchemaInitializerItemOptions,
   useActionContext,
@@ -15,13 +12,15 @@ import {
   useCompile,
   useResourceActionContext,
 } from '@nocobase/client';
-
-import { nodeCardClass, nodeJobButtonClass, nodeMetaClass, nodeTitleClass } from '../style';
+import { Registry } from '@nocobase/utils/client';
+import { Alert, Button, Input, message, Tag } from 'antd';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useFlowContext } from '../FlowContext';
+import { lang, NAMESPACE } from '../locale';
+import { nodeCardClass, nodeJobButtonClass, nodeMetaClass, nodeTitleClass } from '../style';
+import { VariableOptions } from '../variable';
 import collection from './collection';
 import schedule from './schedule/';
-import { lang, NAMESPACE } from '../locale';
-import { VariableOptions } from '../variable';
 
 function useUpdateConfigAction() {
   const form = useForm();
@@ -150,6 +149,7 @@ export const TriggerConfig = () => {
   const form = useMemo(
     () =>
       createForm({
+        initialValues: workflow?.config,
         values: workflow?.config,
         disabled: workflow?.executed,
       }),

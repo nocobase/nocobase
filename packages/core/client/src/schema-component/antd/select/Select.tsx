@@ -3,10 +3,10 @@ import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { isValid, toArr } from '@formily/shared';
 import { isPlainObject } from '@nocobase/utils/client';
 import type { SelectProps } from 'antd';
-import { Select as AntdSelect, Empty, Spin } from 'antd';
+import { Empty, Select as AntdSelect, Spin } from 'antd';
 import React from 'react';
 import { ReadPretty } from './ReadPretty';
-import { FieldNames, defaultFieldNames, getCurrentOptions } from './utils';
+import { defaultFieldNames, FieldNames, getCurrentOptions } from './utils';
 
 type Props = SelectProps<any, any> & {
   objectValue?: boolean;
@@ -49,7 +49,7 @@ const ObjectSelect = (props: Props) => {
       options={options}
       fieldNames={fieldNames}
       showSearch
-      dropdownMatchSelectWidth={false}
+      popupMatchSelectWidth={false}
       filterOption={(input, option) => (option?.[fieldNames.label || 'label'] ?? '').includes(input)}
       filterSort={(optionA, optionB) =>
         (optionA?.[fieldNames.label || 'label'] ?? '')
@@ -100,7 +100,7 @@ const InternalSelect = connect(
         showSearch
         filterOption={filterOption}
         allowClear
-        dropdownMatchSelectWidth={false}
+        popupMatchSelectWidth={false}
         notFoundContent={loading ? <Spin /> : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />}
         value={toValue(value)}
         {...others}

@@ -1,10 +1,10 @@
 import { css, cx } from '@emotion/css';
-import { ArrayCollapse, ArrayItems, FormLayout, FormItem as Item } from '@formily/antd';
+import { ArrayCollapse, ArrayItems, FormLayout, FormItem as Item } from '@formily/antd-v5';
 import { Field } from '@formily/core';
 import { ISchema, Schema, observer, useField, useFieldSchema } from '@formily/react';
+import { dayjs } from '@nocobase/utils/client';
 import { Select } from 'antd';
 import _ from 'lodash';
-import moment from 'moment';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ACLCollectionFieldProvider } from '../../../acl/ACLProvider';
@@ -30,7 +30,6 @@ import { BlockItem } from '../block-item';
 import { removeNullCondition } from '../filter';
 import { HTMLEncode } from '../input/shared';
 import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
-import { isInvariable } from '../variable';
 import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
 import { useEnsureOperatorsValid } from './SchemaSettingOptions';
 
@@ -153,7 +152,7 @@ FormItem.Designer = function Designer() {
     readOnlyMode = 'read-pretty';
   }
   const dataSource = useCollectionFilterOptions(collectionField?.target);
-  const defaultFilter = field.componentProps?.service?.params?.filter || {};
+  const defaultFilter = fieldSchema?.['x-component-props']?.service?.params?.filter || {};
   const sortFields = useSortFields(collectionField?.target);
   const defaultSort = field.componentProps?.service?.params?.sort || [];
   const fieldMode = field?.componentProps?.['mode'] || (isFileField ? 'FileManager' : 'Select');
@@ -354,70 +353,73 @@ FormItem.Designer = function Designer() {
                 type: 'object',
                 title: t('Set default value'),
                 properties: {
-                  default: isInvariable(interfaceConfig)
-                    ? {
-                        ...(fieldSchemaWithoutRequired || {}),
-                        'x-decorator': 'FormItem',
-                        'x-component-props': {
-                          ...fieldSchema['x-component-props'],
-                          targetField,
-                          component:
-                            collectionField?.target && collectionField?.interface !== 'chinaRegion'
-                              ? 'AssociationSelect'
-                              : undefined,
-                          service: {
-                            resource: collectionField?.target,
-                          },
-                          style: {
-                            width: '100%',
-                            verticalAlign: 'top',
-                          },
-                        },
-                        name: 'default',
-                        title: t('Default value'),
-                        default: getFieldDefaultValue(fieldSchema, collectionField),
-                        'x-read-pretty': false,
-                        'x-disabled': false,
-                      }
-                    : {
-                        ...(fieldSchemaWithoutRequired || {}),
-                        'x-decorator': 'FormItem',
-                        'x-component': 'VariableInput',
-                        'x-component-props': {
-                          ...(fieldSchema?.['x-component-props'] || {}),
-                          targetField,
-                          collectionName: collectionField?.collectionName,
-                          schema: collectionField?.uiSchema,
-                          className: defaultInputStyle,
-                          renderSchemaComponent: function Com(props) {
-                            const s = _.cloneDeep(fieldSchemaWithoutRequired) || ({} as Schema);
-                            s.title = '';
-                            s['x-read-pretty'] = false;
-                            s['x-disabled'] = false;
+                  default:
+                    //  isInvariable(interfaceConfig)
+                    // ? {
+                    //     ...(fieldSchemaWithoutRequired || {}),
+                    //     'x-decorator': 'FormItem',
+                    //     'x-component-props': {
+                    //       ...fieldSchema['x-component-props'],
+                    //       targetField,
+                    //       component:
+                    //         collectionField?.target && collectionField?.interface !== 'chinaRegion'
+                    //           ? 'AssociationSelect'
+                    //           : undefined,
+                    //       service: {
+                    //         resource: collectionField?.target,
+                    //       },
+                    //       style: {
+                    //         width: '100%',
+                    //         verticalAlign: 'top',
+                    //       },
+                    //     },
+                    //     name: 'default',
+                    //     title: t('Default value'),
+                    //     default: getFieldDefaultValue(fieldSchema, collectionField),
+                    //     'x-read-pretty': false,
+                    //     'x-disabled': false,
+                    //   }
+                    // :
+                    {
+                      ...(fieldSchemaWithoutRequired || {}),
+                      'x-decorator': 'FormItem',
+                      'x-component': 'VariableInput',
+                      'x-component-props': {
+                        ...(fieldSchema?.['x-component-props'] || {}),
+                        collectionField,
+                        targetField,
+                        collectionName: collectionField?.collectionName,
+                        schema: collectionField?.uiSchema,
+                        className: defaultInputStyle,
+                        renderSchemaComponent: function Com(props) {
+                          const s = _.cloneDeep(fieldSchemaWithoutRequired) || ({} as Schema);
+                          s.title = '';
+                          s['x-read-pretty'] = false;
+                          s['x-disabled'] = false;
 
-                            return (
-                              <SchemaComponent
-                                schema={{
-                                  ...(s || {}),
-                                  'x-component-props': {
-                                    ...s['x-component-props'],
-                                    onChange: props.onChange,
-                                    value: props.value,
-                                    defaultValue: getFieldDefaultValue(s, collectionField),
-                                    style: {
-                                      width: '100%',
-                                      verticalAlign: 'top',
-                                    },
+                          return (
+                            <SchemaComponent
+                              schema={{
+                                ...(s || {}),
+                                'x-component-props': {
+                                  ...s['x-component-props'],
+                                  onChange: props.onChange,
+                                  value: props.value,
+                                  defaultValue: getFieldDefaultValue(s, collectionField),
+                                  style: {
+                                    width: '100%',
+                                    verticalAlign: 'top',
                                   },
-                                }}
-                              />
-                            );
-                          },
+                                },
+                              }}
+                            />
+                          );
                         },
-                        name: 'default',
-                        title: t('Default value'),
-                        default: getFieldDefaultValue(fieldSchema, collectionField),
                       },
+                      name: 'default',
+                      title: t('Default value'),
+                      default: getFieldDefaultValue(fieldSchema, collectionField),
+                    },
                 },
               } as ISchema
             }
@@ -446,10 +448,11 @@ FormItem.Designer = function Designer() {
               title: t('Set the data scope'),
               properties: {
                 filter: {
-                  default: defaultFilter,
+                  defaultValue: defaultFilter,
                   enum: dataSource,
                   'x-component': 'Filter',
                   'x-component-props': {
+                    collectionName: collectionField?.target,
                     dynamicComponent: (props) =>
                       FilterDynamicComponent({
                         ...props,
@@ -892,7 +895,7 @@ FormItem.FilterFormDesigner = FilterFormDesigner;
 export function getFieldDefaultValue(fieldSchema: ISchema, collectionField: CollectionFieldOptions) {
   const result = fieldSchema?.default ?? collectionField?.defaultValue;
   if (collectionField?.uiSchema?.['x-component'] === 'DatePicker' && result) {
-    return moment(result);
+    return dayjs(result);
   }
   return result;
 }

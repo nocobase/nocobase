@@ -1,8 +1,7 @@
-import React from 'react';
+import { Plugin } from '@nocobase/client';
 
-const CommandMemo = React.memo((props) => {
-  return <>{props.children}</>;
-});
-CommandMemo.displayName = 'CommandMemo';
+class DemoPlugin extends Plugin {
+  async load() { }
+}
 
-export default CommandMemo;
+export default DemoPlugin;

@@ -10,7 +10,6 @@ import { useChangePassword } from './ChangePassword';
 import { useEditProfile } from './EditProfile';
 import { useLanguageSettings } from './LanguageSettings';
 import { useSwitchRole } from './SwitchRole';
-import { useThemeSettings } from './ThemeSettings';
 const useApplicationVersion = () => {
   const data = useCurrentAppInfo();
   return useMemo(() => {
@@ -65,7 +64,6 @@ export const SettingsMenu: React.FC<{
   const changePassword = useChangePassword();
   const switchRole = useSwitchRole();
   const languageSettings = useLanguageSettings();
-  const themeSettings = useThemeSettings();
   const controlApp = useMemo<MenuProps['items']>(() => {
     if (!appAllowed) {
       return [];
@@ -111,7 +109,6 @@ export const SettingsMenu: React.FC<{
       divider,
       switchRole,
       languageSettings,
-      themeSettings,
       divider,
       ...controlApp,
       {
@@ -123,17 +120,7 @@ export const SettingsMenu: React.FC<{
         },
       },
     ];
-  }, [
-    appVersion,
-    changePassword,
-    controlApp,
-    divider,
-    editProfile,
-    history,
-    languageSettings,
-    switchRole,
-    themeSettings,
-  ]);
+  }, [appVersion, changePassword, controlApp, divider, editProfile, history, languageSettings, switchRole]);
 
   return <Menu items={items} />;
 };

@@ -6,7 +6,10 @@ English | [中文](./README.zh-CN.md) | [Türkçe](./README.tr-TR.md)
 
 NocoBase is in early stage of development and is subject to frequent changes, please use caution in production environments.
 
-NocoBase v0.10 has been released, see [v0.10: update instructions](http://docs.nocobase.com/welcome/release/v10-changelog) for details.
+## Recent major updates
+
+- [v0.11: New client application, plugin and router - 2023/07/08](http://docs.nocobase.com/welcome/release/v11-changelog)
+- [v0.10: Update instructions - 2023/06/23](http://docs.nocobase.com/welcome/release/v10-changelog)
 
 ## We are hiring
 

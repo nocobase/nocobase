@@ -1,4 +1,4 @@
-import { ArrayCollapse, FormLayout } from '@formily/antd';
+import { ArrayCollapse, FormLayout } from '@formily/antd-v5';
 import { Field } from '@formily/core';
 import { ISchema, Schema, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';

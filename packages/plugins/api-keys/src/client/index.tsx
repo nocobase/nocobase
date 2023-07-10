@@ -1,4 +1,4 @@
-import { SchemaComponentOptions, SettingsCenterProvider } from '@nocobase/client';
+import { Plugin, SchemaComponentOptions, SettingsCenterProvider } from '@nocobase/client';
 import React from 'react';
 import { Configuration } from './Configuration';
 import { useTranslation } from './locale';
@@ -26,4 +26,10 @@ const ApiKeysProvider = React.memo((props) => {
 });
 ApiKeysProvider.displayName = 'ApiKeysProvider';
 
-export default ApiKeysProvider;
+class APIKeysPlugin extends Plugin {
+  async load() {
+    this.app.addProvider(ApiKeysProvider);
+  }
+}
+
+export default APIKeysPlugin;

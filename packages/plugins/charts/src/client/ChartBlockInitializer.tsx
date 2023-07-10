@@ -1,12 +1,12 @@
-import { css } from '@emotion/css';
-import { FormDialog, FormLayout } from '@formily/antd';
+import { FormDialog, FormLayout } from '@formily/antd-v5';
 import { Field } from '@formily/core';
-import { observer, RecursionField, Schema, SchemaOptionsContext, useField, useForm } from '@formily/react';
+import { RecursionField, Schema, SchemaOptionsContext, observer, useField, useForm } from '@formily/react';
 import {
   APIClientProvider,
   FormProvider,
   SchemaComponent,
   SchemaComponentOptions,
+  css,
   useAPIClient,
   useCompile,
 } from '@nocobase/client';
@@ -74,7 +74,7 @@ export const ChartBlockInitializer = (props) => {
             okText: compile('{{t("Submit")}}'),
             title: lang('Create chart block'),
             width: 1200,
-            bodyStyle: { background: '#f0f2f5', maxHeight: '65vh', overflow: 'auto' },
+            bodyStyle: { background: 'var(--nb-box-bg)', maxHeight: '65vh', overflow: 'auto' },
           },
           () => {
             const form = useForm<ChartFormInterface>();

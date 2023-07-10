@@ -7,15 +7,15 @@ import { useDesignable } from '../../hooks';
 import { CalendarToolbarContext } from './context';
 
 export const Nav = observer(
-  (props) => {
+  () => {
     const { DesignableBar } = useDesignable();
     const { onNavigate } = useContext(CalendarToolbarContext);
     return (
-      <div className="ant-btn-group">
+      <Button.Group>
         <Button icon={<LeftOutlined />} onClick={() => onNavigate(Navigate.PREVIOUS)}></Button>
         <Button icon={<RightOutlined />} onClick={() => onNavigate(Navigate.NEXT)}></Button>
         <DesignableBar />
-      </div>
+      </Button.Group>
     );
   },
   { displayName: 'Nav' },

@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import { Variable, useCompile } from '../../schema-component';
+import { CollectionFieldOptions } from '../../collection-manager';
+import { useCompile, Variable } from '../../schema-component';
 import { useUserVariable } from './hooks/useUserVariable';
 
 type Props = {
@@ -12,15 +13,23 @@ type Props = {
   children?: any;
   className?: string;
   style?: React.CSSProperties;
+  collectionField?: CollectionFieldOptions;
 };
 
 export const VariableInput = (props: Props) => {
-  const { value, onChange, renderSchemaComponent: RenderSchemaComponent, style, schema, className } = props;
+  const {
+    value,
+    onChange,
+    renderSchemaComponent: RenderSchemaComponent,
+    style,
+    schema,
+    className,
+    collectionField,
+  } = props;
   const compile = useCompile();
   const userVariable = useUserVariable({ schema, maxDepth: 1 });
   const scope = useMemo(() => {
-    return [
-      userVariable,
+    const data = [
       compile({
         label: `{{t("Date variables")}}`,
         value: '$date',
@@ -35,6 +44,10 @@ export const VariableInput = (props: Props) => {
         ],
       }),
     ];
+    if (collectionField?.target === 'users') {
+      data.unshift(userVariable);
+    }
+    return data;
   }, []);
 
   return (

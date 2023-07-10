@@ -1,5 +1,6 @@
 import { ISchema } from '@formily/react';
-import cloneDeep from 'lodash/cloneDeep';
+import { lodash } from '@nocobase/utils/client';
+
 export const json: ISchema = {
   type: 'object',
   properties: {
@@ -60,5 +61,5 @@ const types = {
 };
 
 export const getQueryTypeSchema = (type) => {
-  return cloneDeep(types[type]);
+  return lodash.cloneDeep(types[type]);
 };

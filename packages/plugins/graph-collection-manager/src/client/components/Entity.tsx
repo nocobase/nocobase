@@ -1,13 +1,15 @@
 import { DeleteOutlined, DownOutlined, EditOutlined, UpOutlined } from '@ant-design/icons';
 import '@antv/x6-react-shape';
-import { css, cx } from '@emotion/css';
 import { uid } from '@formily/shared';
 import {
   Action,
   Checkbox,
+  collection,
   CollectionCategroriesContext,
   CollectionField,
   CollectionProvider,
+  css,
+  cx,
   Form,
   FormItem,
   Formula,
@@ -19,14 +21,13 @@ import {
   SchemaComponent,
   SchemaComponentProvider,
   Select,
-  collection,
   useCollectionManager,
   useCompile,
   useCurrentAppInfo,
   useRecord,
 } from '@nocobase/client';
+import { lodash } from '@nocobase/utils/client';
 import { Badge, Dropdown, Popover, Tag } from 'antd';
-import { groupBy } from 'lodash';
 import React, { useContext, useRef, useState } from 'react';
 import {
   useAsyncDataSource,
@@ -190,7 +191,8 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
   const [collapse, setCollapse] = useState(false);
   const { t } = useGCMTranslation();
   const compile = useCompile();
-  const portsData = groupBy(ports.items, (v) => {
+  const database = useCurrentAppInfo();
+  const portsData = lodash.groupBy(ports.items, (v) => {
     if (
       v.isForeignKey ||
       v.primaryKey ||
@@ -244,7 +246,7 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
             Form,
             ResourceActionProvider,
             Select: (props) => (
-              <Select dropdownMatchSelectWidth={false} {...props} getPopupContainer={getPopupContainer} />
+              <Select popupMatchSelectWidth={false} {...props} getPopupContainer={getPopupContainer} />
             ),
             Checkbox,
             Radio,
@@ -292,6 +294,7 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
                         ...property,
                         title,
                       },
+                      database,
                     },
                   },
                   update: {
