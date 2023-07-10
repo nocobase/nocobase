@@ -1,14 +1,11 @@
-import { Model } from '@nocobase/database';
+import { Model, Transaction, Transactionable } from '@nocobase/database';
 import { appendArrayColumn } from '@nocobase/evaluators';
 import { Logger } from '@nocobase/logger';
 import { parse } from '@nocobase/utils';
-import { Transaction, Transactionable } from 'sequelize';
 import Plugin from '.';
 import { EXECUTION_STATUS, JOB_STATUS } from './constants';
 import { Runner } from './instructions';
-import ExecutionModel from './models/Execution';
-import FlowNodeModel from './models/FlowNode';
-import JobModel from './models/Job';
+import type { ExecutionModel, FlowNodeModel, JobModel } from './types';
 
 export interface ProcessorOptions extends Transactionable {
   plugin: Plugin;

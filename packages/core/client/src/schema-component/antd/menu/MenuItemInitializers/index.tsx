@@ -1,4 +1,4 @@
-import { FormDialog, FormLayout } from '@formily/antd';
+import { FormDialog, FormLayout } from '@formily/antd-v5';
 import { SchemaOptionsContext } from '@formily/react';
 import { uid } from '@formily/shared';
 import React, { useContext } from 'react';

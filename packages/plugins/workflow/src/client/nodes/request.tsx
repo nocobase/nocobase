@@ -1,5 +1,5 @@
+import { ArrayItems } from '@formily/antd-v5';
 import React from 'react';
-import { ArrayItems } from '@formily/antd';
 
 import { Variable } from '@nocobase/client';
 import { NAMESPACE } from '../locale';

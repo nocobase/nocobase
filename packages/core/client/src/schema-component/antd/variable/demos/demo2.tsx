@@ -1,7 +1,7 @@
 /**
  * title: Variable.Input
  */
-import { FormItem } from '@formily/antd';
+import { FormItem } from '@formily/antd-v5';
 import { SchemaComponent, SchemaComponentProvider, Variable } from '@nocobase/client';
 import React from 'react';
 

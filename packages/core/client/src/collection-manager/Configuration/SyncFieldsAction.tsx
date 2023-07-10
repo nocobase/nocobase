@@ -1,22 +1,21 @@
 import { PlusOutlined } from '@ant-design/icons';
-import { ArrayTable } from '@formily/antd';
-import { useForm, useField } from '@formily/react';
+import { ArrayTable } from '@formily/antd-v5';
+import { useField, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Button } from 'antd';
 import { cloneDeep } from 'lodash';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useRequest } from '../../api-client';
+import { useAPIClient, useRequest } from '../../api-client';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
+import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
 import { IField } from '../interfaces/types';
-import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
-import * as components from './components';
-import { useAPIClient } from '../../api-client';
 import { PreviewFields } from '../templates/components/PreviewFields';
 import { PreviewTable } from '../templates/components/PreviewTable';
+import * as components from './components';
 
 const getSchema = (schema: IField, record: any, compile) => {
   if (!schema) {

@@ -1,24 +1,22 @@
-import React, { useEffect, useState } from 'react';
-import { Tag, Breadcrumb } from 'antd';
-import { css } from '@emotion/css';
-import { Link } from 'react-router-dom';
-
 import {
   ActionContextProvider,
+  css,
   SchemaComponent,
   useCompile,
   useDocumentTitle,
   useResourceActionContext,
 } from '@nocobase/client';
 import { str2moment } from '@nocobase/utils/client';
-
-import { FlowContext, useFlowContext } from './FlowContext';
-import { nodeTitleClass } from './style';
-import { ExecutionStatusOptionsMap, JobStatusOptions } from './constants';
-import { lang, NAMESPACE } from './locale';
-import { linkNodes } from './utils';
-import { instructions } from './nodes';
+import { Breadcrumb, Tag } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { CanvasContent } from './CanvasContent';
+import { ExecutionStatusOptionsMap, JobStatusOptions } from './constants';
+import { FlowContext, useFlowContext } from './FlowContext';
+import { lang, NAMESPACE } from './locale';
+import { instructions } from './nodes';
+import { nodeTitleClass } from './style';
+import { linkNodes } from './utils';
 
 function attachJobs(nodes, jobs: any[] = []): void {
   const nodesMap = new Map();

@@ -8,10 +8,10 @@ import {
   SchemaComponentProvider,
   useCollection,
   useCollectionManager,
-  useFilterOptions,
 } from '@nocobase/client';
 import { Select } from 'antd';
 import React, { useState } from 'react';
+import { useFilterOptions } from '../useFilterActionProps';
 
 const collections = [
   {

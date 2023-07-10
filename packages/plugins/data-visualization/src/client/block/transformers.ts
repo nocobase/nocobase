@@ -1,4 +1,4 @@
-import dayjs from 'dayjs';
+import { dayjs } from '@nocobase/utils/client';
 
 const transformers: {
   [key: string]: {

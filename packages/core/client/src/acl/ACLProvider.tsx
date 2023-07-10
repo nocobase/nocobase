@@ -12,6 +12,7 @@ import { SchemaComponentOptions, useDesignable } from '../schema-component';
 
 export const ACLContext = createContext<any>({});
 
+// TODO: delete this，replace by `ACLPlugin`
 export const ACLProvider = (props) => {
   return (
     <SchemaComponentOptions

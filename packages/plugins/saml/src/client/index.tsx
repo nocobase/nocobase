@@ -1,15 +1,10 @@
-import { AuthenticatorsContext, OptionsComponentProvider, SigninPageExtensionProvider } from '@nocobase/client';
-import React, { useContext } from 'react';
-import { SAMLButton } from './SAMLButton';
-import { Options } from './Options';
-import { authType } from '../constants';
+import { Plugin } from '@nocobase/client';
+import { SamlProvider } from './SamlProvider';
 
-export default function (props) {
-  return (
-    <SigninPageExtensionProvider component={SAMLButton} authType={authType}>
-      <OptionsComponentProvider authType={authType} component={Options}>
-        {props.children}
-      </OptionsComponentProvider>
-    </SigninPageExtensionProvider>
-  );
+export class SamlPlugin extends Plugin {
+  async load() {
+    this.app.use(SamlProvider);
+  }
 }
+
+export default SamlPlugin;

@@ -1,8 +1,13 @@
+import lodash from 'lodash';
+import { dayjs } from './dayjs';
+
 export * from './assign';
 export * from './collections-graph';
 export * from './common';
 export * from './date';
+export * from './dayjs';
 export * from './forEach';
+export * from './json-templates';
 export * from './merge';
 export * from './mixin';
 export * from './mixin/AsyncEmitter';
@@ -13,4 +18,5 @@ export * from './registry';
 export * from './requireModule';
 export * from './toposort';
 export * from './uid';
-export * from './json-templates';
+export { dayjs, lodash };
+

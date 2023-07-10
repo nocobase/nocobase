@@ -3,7 +3,7 @@ import axios, { AxiosRequestConfig } from 'axios';
 import { Instruction } from './index';
 import { JOB_STATUS } from '../constants';
 import Processor from '../Processor';
-import FlowNodeModel from '../models/FlowNode';
+import type { FlowNodeModel } from '../types';
 
 export interface Header {
   name: string;
@@ -53,6 +53,7 @@ export default class implements Instruction {
 
     const config = processor.getParsedValue(node.config, node) as RequestConfig;
 
+    // eslint-disable-next-line promise/catch-or-return
     request(config)
       .then((response) => {
         job.set({

@@ -1,33 +1,48 @@
-import { SettingsCenterProvider } from '@nocobase/client';
+import { createRouterManager, Plugin, RouterManager, RouteSchemaComponent } from '@nocobase/client';
 import React from 'react';
-import { useTranslation } from './locale';
-import { AppConfiguration, InterfaceConfiguration } from './configuration';
-import { RouterSwitchProvider } from './router';
-import { MobileCore } from './core';
+import { Navigate } from 'react-router-dom';
+import { MobileClientProvider } from './MobileClientProvider';
+import MApplication from './router/Application';
 
-export default React.memo((props) => {
-  const { t } = useTranslation();
+export class MobileClientPlugin extends Plugin {
+  public mobileRouter: RouterManager;
+  async load() {
+    this.setMobileRouter();
+    this.addRoutes();
+    this.app.use(MobileClientProvider);
+  }
 
-  return (
-    <SettingsCenterProvider
-      settings={{
-        ['mobile-client']: {
-          title: t('Mobile Client-side'),
-          icon: 'MobileOutlined',
-          tabs: {
-            interface: {
-              title: t('Interface Configuration'),
-              component: InterfaceConfiguration,
-            },
-            app: {
-              title: t('App Configuration'),
-              component: AppConfiguration,
-            },
-          },
-        },
-      }}
-    >
-      <RouterSwitchProvider>{props.children}</RouterSwitchProvider>
-    </SettingsCenterProvider>
-  );
-});
+  setMobileRouter() {
+    const router = createRouterManager({ type: 'hash' });
+    router.add('root', {
+      path: '/',
+      element: <Navigate replace to="/mobile" />,
+    });
+    router.add('mobile', {
+      path: '/mobile',
+      element: <MApplication />,
+    });
+    router.add('mobile.page', {
+      path: '/mobile/:name',
+      element: <RouteSchemaComponent />,
+    });
+    this.mobileRouter = router;
+  }
+
+  getMobileRouterComponent() {
+    return this.mobileRouter.getRouterComponent();
+  }
+
+  addRoutes() {
+    this.app.router.add('mobile', {
+      path: '/mobile',
+      element: <MApplication />,
+    });
+    this.app.router.add('mobile.page', {
+      path: '/mobile/:name',
+      Component: 'RouteSchemaComponent',
+    });
+  }
+}
+
+export default MobileClientPlugin;

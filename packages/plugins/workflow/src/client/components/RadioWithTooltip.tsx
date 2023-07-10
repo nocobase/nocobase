@@ -1,9 +1,7 @@
-import React from 'react';
-import { Radio, Tooltip } from 'antd';
 import { QuestionCircleOutlined } from '@ant-design/icons';
-import { css } from '@emotion/css';
-
-import { useCompile } from '@nocobase/client';
+import { css, useCompile } from '@nocobase/client';
+import { Radio, Tooltip } from 'antd';
+import React from 'react';
 
 export interface RadioWithTooltipOption {
   value: any;

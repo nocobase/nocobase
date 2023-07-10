@@ -1,29 +1,27 @@
-import React, { useState, useContext, useMemo } from 'react';
+import React, { useContext, useMemo, useState } from 'react';
 
-import { cloneDeep, set } from 'lodash';
+import { ArrayTable } from '@formily/antd-v5';
 import { Field, createForm } from '@formily/core';
-import { useForm, useField, useFieldSchema } from '@formily/react';
-import { ArrayTable } from '@formily/antd';
+import { useField, useFieldSchema, useForm } from '@formily/react';
 
 import {
   ActionContextProvider,
   CollectionContext,
   CollectionProvider,
   FormBlockContext,
-  gridRowColWrap,
   RecordProvider,
   SchemaComponent,
   SchemaInitializer,
   SchemaInitializerItemOptions,
+  gridRowColWrap,
   useCollectionManager,
   useRecord,
 } from '@nocobase/client';
-import { merge, uid } from '@nocobase/utils/client';
-
+import { lodash, merge, uid } from '@nocobase/utils/client';
 import { JOB_STATUS } from '../../../constants';
-import { lang, NAMESPACE } from '../../../locale';
-import { findSchema } from '../utils';
+import { NAMESPACE, lang } from '../../../locale';
 import { ManualFormType } from '../SchemaConfig';
+import { findSchema } from '../utils';
 
 function CustomFormBlockProvider(props) {
   const [fields, setCollectionFields] = useState(props.collection?.fields ?? []);
@@ -155,7 +153,7 @@ function getOptions(interfaces) {
     const schema = interfaces[type];
     const { group = 'others' } = schema;
     fields[group] = fields[group] || {};
-    set(fields, [group, type], schema);
+    lodash.set(fields, [group, type], schema);
   });
 
   return Object.keys(GroupLabels)
@@ -211,7 +209,7 @@ function AddCustomFormField(props) {
           const {
             properties: { unique, type, ...properties },
             ...options
-          } = cloneDeep(item);
+          } = lodash.cloneDeep(item);
           delete properties.name['x-disabled'];
           setInterface({
             ...options,

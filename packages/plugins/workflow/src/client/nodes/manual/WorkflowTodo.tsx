@@ -1,33 +1,32 @@
-import React, { useContext, createContext, useEffect, useState } from 'react';
-import { observer, useForm, useField, useFieldSchema } from '@formily/react';
-import { Spin, Tag } from 'antd';
 import { css } from '@emotion/css';
-import moment from 'moment';
+import { observer, useField, useFieldSchema, useForm } from '@formily/react';
+import { dayjs } from '@nocobase/utils/client';
+import { Spin, Tag } from 'antd';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 
 import {
   CollectionManagerProvider,
+  FormBlockContext,
   SchemaComponent,
   SchemaComponentContext,
   TableBlockProvider,
-  useActionContext,
   useAPIClient,
+  useActionContext,
   useCollectionManager,
   useCurrentUserContext,
+  useFormBlockContext,
   useRecord,
   useTableBlockContext,
-  FormBlockContext,
-  useFormBlockContext,
 } from '@nocobase/client';
-import { uid, parse } from '@nocobase/utils/client';
-
+import { uid } from '@nocobase/utils/client';
+import { instructions, useAvailableUpstreams } from '..';
+import { FlowContext, useFlowContext } from '../../FlowContext';
 import { JobStatusOptions, JobStatusOptionsMap } from '../../constants';
 import { NAMESPACE } from '../../locale';
-import { FlowContext, useFlowContext } from '../../FlowContext';
-import { instructions, useAvailableUpstreams } from '..';
 import { linkNodes } from '../../utils';
-import { manualFormTypes } from './SchemaConfig';
-import { FormBlockProvider } from './FormBlockProvider';
 import { DetailsBlockProvider } from './DetailsBlockProvider';
+import { FormBlockProvider } from './FormBlockProvider';
+import { manualFormTypes } from './SchemaConfig';
 
 const nodeCollection = {
   title: `{{t("Task", { ns: "${NAMESPACE}" })}}`,
@@ -534,7 +533,7 @@ function Drawer() {
               margin-right: 0.5em;
             `,
           },
-          'x-content': moment(updatedAt).format('YYYY-MM-DD HH:mm:ss'),
+          'x-content': dayjs(updatedAt).format('YYYY-MM-DD HH:mm:ss'),
         },
         status: {
           type: 'void',

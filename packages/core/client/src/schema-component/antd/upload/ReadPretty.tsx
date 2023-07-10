@@ -2,7 +2,8 @@ import DownloadOutlined from '@ant-design/icons/DownloadOutlined';
 import { Field } from '@formily/core';
 import { useField } from '@formily/react';
 import { isString } from '@nocobase/utils/client';
-import { Button, Space, Modal } from 'antd';
+import { Button, Modal, Space } from 'antd';
+import useUploadStyle from 'antd/es/upload/style';
 import cls from 'classnames';
 import { saveAs } from 'file-saver';
 import React, { useState } from 'react';
@@ -10,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import Lightbox from 'react-image-lightbox';
 import { useRecord } from '../../../record-provider';
 import { isImage, isPdf, toArr, toImages } from './shared';
+import { useStyles } from './style';
 import type { UploadProps } from './type';
 
 type Composed = React.FC<UploadProps> & {
@@ -29,15 +31,26 @@ ReadPretty.File = function File(props: UploadProps) {
   const [visible, setVisible] = useState(false);
   const [fileType, setFileType] = useState<'image' | 'pdf'>();
   const { size } = props;
+  const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
+  // 加载 antd 的样式
+  useUploadStyle(prefixCls);
 
   function closeIFrameModal() {
     setVisible(false);
   }
 
-  return (
+  return wrapSSR(
     <div>
-      <div className={cls('ant-upload-picture-card-wrapper nb-upload', size ? `nb-upload-${size}` : null)}>
-        <div className={'ant-upload-list ant-upload-list-picture-card'}>
+      <div
+        className={cls(
+          `${prefixCls}-wrapper`,
+          `${prefixCls}-picture-card-wrapper`,
+          `nb-upload`,
+          size ? `nb-upload-${size}` : null,
+          hashId,
+        )}
+      >
+        <div className={cls(`${prefixCls}-list`, `${prefixCls}-list-picture-card`)}>
           {images.map((file) => {
             const handleClick = (e) => {
               const index = images.indexOf(file);
@@ -47,7 +60,7 @@ ReadPretty.File = function File(props: UploadProps) {
                 setVisible(true);
                 setFileIndex(index);
                 setFileType('image');
-              } else if(isPdf(file.extname)) {
+              } else if (isPdf(file.extname)) {
                 e.preventDefault();
                 e.stopPropagation();
                 setVisible(true);
@@ -59,12 +72,21 @@ ReadPretty.File = function File(props: UploadProps) {
               // }
             };
             return (
-              <div key={file.name} className={'ant-upload-list-picture-card-container'}>
-                <div className="ant-upload-list-item ant-upload-list-item-done ant-upload-list-item-list-type-picture-card">
-                  <div className={'ant-upload-list-item-info'}>
-                    <span className="ant-upload-span">
+              <div
+                key={file.name}
+                className={cls(`${prefixCls}-list-picture-card-container`, `${prefixCls}-list-item-container`)}
+              >
+                <div
+                  className={cls(
+                    `${prefixCls}-list-item`,
+                    `${prefixCls}-list-item-done`,
+                    `${prefixCls}-list-item-list-type-picture-card`,
+                  )}
+                >
+                  <div className={`${prefixCls}-list-item-info`}>
+                    <span className={`${prefixCls}-span`}>
                       <a
-                        className="ant-upload-list-item-thumbnail"
+                        className={`${prefixCls}-list-item-thumbnail`}
                         href={file.url}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -74,14 +96,14 @@ ReadPretty.File = function File(props: UploadProps) {
                           <img
                             src={`${file.imageUrl}?x-oss-process=style/thumbnail`}
                             alt={file.title}
-                            className="ant-upload-list-item-image"
+                            className={`${prefixCls}-list-item-image`}
                           />
                         )}
                       </a>
                       <a
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="ant-upload-list-item-name"
+                        className={`${prefixCls}-list-item-name`}
                         title={file.title}
                         href={file.url}
                         onClick={handleClick}
@@ -91,7 +113,7 @@ ReadPretty.File = function File(props: UploadProps) {
                     </span>
                   </div>
                   {size !== 'small' && (
-                    <span className={'ant-upload-list-item-actions'}>
+                    <span className={`${prefixCls}-list-item-actions`}>
                       <Space size={3}>
                         <Button
                           size={'small'}
@@ -147,7 +169,7 @@ ReadPretty.File = function File(props: UploadProps) {
           ]}
         />
       )}
-      
+
       {visible && fileType === 'pdf' && (
         <Modal
           open={visible}
@@ -155,8 +177,9 @@ ReadPretty.File = function File(props: UploadProps) {
           onCancel={closeIFrameModal}
           footer={[
             <Button
+              key={'download'}
               style={{
-                textTransform: 'capitalize'
+                textTransform: 'capitalize',
               }}
               onClick={(e) => {
                 e.preventDefault();
@@ -167,40 +190,43 @@ ReadPretty.File = function File(props: UploadProps) {
             >
               {t('download')}
             </Button>,
-            <Button onClick={closeIFrameModal} style={{textTransform: 'capitalize'}}>
+            <Button key={'close'} onClick={closeIFrameModal} style={{ textTransform: 'capitalize' }}>
               {t('close')}
-            </Button>
+            </Button>,
           ]}
           width={'85vw'}
           centered={true}
         >
-          <div style={{
-            padding: '8px',
-            maxWidth: '100%',
-            maxHeight: 'calc(100vh - 256px)',
-            height: '90vh',
-            width: '100%',
-            background: 'white',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            overflowY: 'auto'
-          }} >
-            <iframe src={images[fileIndex].url} style={{
+          <div
+            style={{
+              padding: '8px',
+              maxWidth: '100%',
+              maxHeight: 'calc(100vh - 256px)',
+              height: '90vh',
               width: '100%',
-              maxHeight: '90vh',
-              flex: '1 1 auto'
-            }}>
-            </iframe>
+              background: 'white',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              overflowY: 'auto',
+            }}
+          >
+            <iframe
+              src={images[fileIndex].url}
+              style={{
+                width: '100%',
+                maxHeight: '90vh',
+                flex: '1 1 auto',
+              }}
+            ></iframe>
           </div>
         </Modal>
       )}
-
-    </div>
+    </div>,
   );
 };
 
-ReadPretty.Upload = function Upload(props) {
+ReadPretty.Upload = function Upload() {
   const field = useField<Field>();
   return (field.value || []).map((item) => (
     <div key={item.name}>
