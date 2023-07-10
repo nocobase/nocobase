@@ -1,4 +1,4 @@
-import { useAPIClient, useCurrentUserContext, useGlobalTheme } from '@nocobase/client';
+import { useAPIClient, useCurrentUserContext, useGlobalTheme, useSystemSettings } from '@nocobase/client';
 import { error } from '@nocobase/utils/client';
 import { useCallback } from 'react';
 import { useThemeListContext } from '../components/ThemeListProvider';
@@ -6,6 +6,7 @@ import { useThemeListContext } from '../components/ThemeListProvider';
 export function useUpdateThemeSettings() {
   const api = useAPIClient();
   const currentUser = useCurrentUserContext();
+  const systemSettings = useSystemSettings();
   const { data } = useThemeListContext();
   const { setTheme } = useGlobalTheme();
 
@@ -66,5 +67,30 @@ export function useUpdateThemeSettings() {
     [api, currentUser, data, setTheme],
   );
 
-  return { updateUserThemeSettings, updateUserThemeSettingsOnly };
+  const updateSystemThemeSettings = useCallback(
+    async (themeId: number) => {
+      await api.request({
+        url: 'systemSettings:update/1',
+        method: 'post',
+        data: {
+          options: {
+            ...currentUser.data.data.systemSettings.options,
+            themeId,
+          },
+        },
+      });
+      systemSettings.mutate({
+        data: {
+          ...systemSettings.data.data,
+          options: {
+            ...systemSettings.data.data.options,
+            themeId,
+          },
+        },
+      });
+    },
+    [api, currentUser?.data?.data?.systemSettings?.options, systemSettings],
+  );
+
+  return { updateUserThemeSettings, updateUserThemeSettingsOnly, updateSystemThemeSettings };
 }
