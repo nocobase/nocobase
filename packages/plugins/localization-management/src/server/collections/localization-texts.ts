@@ -35,7 +35,6 @@ export default {
       type: 'text',
       name: 'text',
       allowNull: false,
-      unique: true,
       uiSchema: {
         type: 'string',
         title: '{{t("Text")}}',
