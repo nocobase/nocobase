@@ -6,7 +6,7 @@ export default {
       ctx.body = await pm.list();
       await next();
     },
-    async pluginsClient(ctx, next) {
+    async clientPlugins(ctx, next) {
       const pm = ctx.app.pm;
       ctx.body = await pm.getPluginsClientFiles();
       await next();

@@ -7518,6 +7518,11 @@
   dependencies:
     "@types/node" "*"
 
+"@types/requirejs@^2.1.34":
+  version "2.1.34"
+  resolved "https://registry.yarnpkg.com/@types/requirejs/-/requirejs-2.1.34.tgz#819e69701fbadefa53376c4f6f9da726b781e143"
+  integrity sha512-iQLGNE1DyIRYih60B47l/hI5X7J0wAnnRBL6Yn85GUYQg8Fm3wl8kvT6NRwncKroUOSx7/lbAagIFNV7y02DiQ==
+
 "@types/resolve@1.17.1":
   version "1.17.1"
   resolved "https://registry.npmmirror.com/@types/resolve/-/resolve-1.17.1.tgz#3afd6ad8967c77e4376c598a82ddd58f46ec45d6"
@@ -25805,6 +25810,11 @@ requireindex@^1.2.0:
   version "1.2.0"
   resolved "https://registry.npmmirror.com/requireindex/-/requireindex-1.2.0.tgz#3463cdb22ee151902635aa6c9535d4de9c2ef1ef"
   integrity sha512-L9jEkOi3ASd9PYit2cwRfyppc9NoABujTP8/5gFcbERmo5jUoAKovIC3fsF17pkTnGsrByysqX+Kxd2OTNI1ww==
+
+requirejs@^2.3.6:
+  version "2.3.6"
+  resolved "https://registry.yarnpkg.com/requirejs/-/requirejs-2.3.6.tgz#e5093d9601c2829251258c0b9445d4d19fa9e7c9"
+  integrity sha512-ipEzlWQe6RK3jkzikgCupiTbTvm4S0/CAU5GlgptkN5SO6F3u0UD0K18wy6ErDqiCyP4J4YYe1HuAShvsxePLg==
 
 requires-port@^1.0.0:
   version "1.0.0"

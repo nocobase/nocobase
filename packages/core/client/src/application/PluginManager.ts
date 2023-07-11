@@ -1,5 +1,6 @@
 import type { Application } from './Application';
 import type { Plugin } from './Plugin';
+import { getPlugins, initDeps } from './utils/remotePlugins';
 
 export type PluginOptions<T = any> = { name?: string; config?: T };
 export type PluginType<Opts = any> = typeof Plugin | [typeof Plugin, PluginOptions<Opts>];
@@ -7,10 +8,13 @@ export type PluginType<Opts = any> = typeof Plugin | [typeof Plugin, PluginOptio
 export class PluginManager {
   protected pluginInstances: Map<typeof Plugin, Plugin> = new Map();
   protected pluginsAliases: Record<string, Plugin> = {};
-  private loadStaticPlugin: Promise<void>;
+  private initStaticPluginsPromise: Promise<void>;
+  private initRemotePluginPromise: Promise<void>;
+
   constructor(protected _plugins: PluginType[], protected app: Application) {
     this.app = app;
-    this.loadStaticPlugin = this.initStaticPlugins(_plugins);
+    this.initStaticPluginsPromise = this.initStaticPlugins(_plugins);
+    this.initRemotePluginPromise = this.initRemotePlugins();
   }
 
   private async initStaticPlugins(_plugins: PluginType[] = []) {
@@ -18,6 +22,16 @@ export class PluginManager {
       const pluginClass = Array.isArray(plugin) ? plugin[0] : plugin;
       const opts = Array.isArray(plugin) ? plugin[1] : undefined;
       await this.add(pluginClass, opts);
+    }
+  }
+
+  private async initRemotePlugins() {
+    initDeps();
+    const res = await this.app.apiClient.request({ url: 'pm:clientPlugins' });
+    const pluginsUrls: Record<string, string> = res.data?.data || {};
+    const plugins = await getPlugins(pluginsUrls);
+    for await (const plugin of plugins) {
+      await this.add(plugin);
     }
   }
 
@@ -46,7 +60,8 @@ export class PluginManager {
   }
 
   async load() {
-    await this.loadStaticPlugin;
+    await this.initStaticPluginsPromise;
+    await this.initRemotePluginPromise;
 
     for (const plugin of this.pluginInstances.values()) {
       await plugin.beforeLoad();
