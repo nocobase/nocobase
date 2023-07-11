@@ -1,7 +1,7 @@
 import { Collection, Model } from '@nocobase/database';
 import { Trigger } from '..';
-import WorkflowModel from '../models/Workflow';
 import { toJSON } from '../utils';
+import type { WorkflowModel } from '../types';
 
 export interface CollectionChangeTriggerConfig {
   collection: string;

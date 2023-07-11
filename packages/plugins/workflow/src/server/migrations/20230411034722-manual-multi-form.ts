@@ -1,7 +1,5 @@
-import { cloneDeep } from 'lodash';
-
 import { Migration } from '@nocobase/server';
-import { uid } from '@nocobase/utils';
+import { lodash, uid } from '@nocobase/utils';
 
 function findSchema(root, filter, onlyLeaf = false) {
   const result = [];
@@ -269,7 +267,7 @@ export default class extends Migration {
           promise.then(async () => {
             await node.update(
               {
-                config: migrateUsedConfig(cloneDeep(node.config ?? {}), nodeForms),
+                config: migrateUsedConfig(lodash.cloneDeep(node.config ?? {}), nodeForms),
               },
               {
                 silent: true,

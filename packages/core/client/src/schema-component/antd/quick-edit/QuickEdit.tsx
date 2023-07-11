@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { FormItem } from '@formily/antd';
+import { FormItem } from '@formily/antd-v5';
 import { Field, createForm } from '@formily/core';
 import { FormContext, RecursionField, observer, useField, useFieldSchema } from '@formily/react';
 import { Popover } from 'antd';

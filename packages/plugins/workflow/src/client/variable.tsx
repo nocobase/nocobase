@@ -1,4 +1,4 @@
-import { useCollectionManager, useCompile } from '@nocobase/client';
+import { useCompile } from '@nocobase/client';
 import { useFlowContext } from './FlowContext';
 import { NAMESPACE, lang } from './locale';
 import { instructions, useAvailableUpstreams, useNodeContext, useUpstreamScopes } from './nodes';
@@ -22,14 +22,9 @@ export const nodesOptions = {
     const result: VariableOption[] = [];
     upstreams.forEach((node) => {
       const instruction = instructions.get(node.type);
-      const subOptions = instruction.useVariables?.(node, options);
-      if (subOptions) {
-        result.push({
-          key: node.id.toString(),
-          value: node.id.toString(),
-          label: node.title ?? `#${node.id}`,
-          children: subOptions,
-        });
+      const subOption = instruction.useVariables?.(node, options);
+      if (subOption) {
+        result.push(subOption);
       }
     });
     return result;
@@ -89,7 +84,7 @@ export const systemOptions = {
 
 export const BaseTypeSets = {
   boolean: new Set(['checkbox']),
-  number: new Set(['number', 'percent']),
+  number: new Set(['integer', 'number', 'percent']),
   string: new Set([
     'input',
     'password',

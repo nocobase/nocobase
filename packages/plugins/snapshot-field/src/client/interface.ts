@@ -1,7 +1,7 @@
 import type { Field } from '@formily/core';
 import { ISchema, useForm } from '@formily/react';
 import { IField, interfacesProperties, useCollectionManager, useRecord } from '@nocobase/client';
-import { cloneDeep } from 'lodash';
+import { lodash } from '@nocobase/utils/client';
 import { NAMESPACE } from './locale';
 
 const { defaultProps } = interfacesProperties;
@@ -118,7 +118,7 @@ export const snapshot: IField = {
   },
   schemaInitialize(schema: ISchema, { field, readPretty, action, block }) {
     schema['properties'] = {
-      viewer: cloneDeep(recordPickerViewer),
+      viewer: lodash.cloneDeep(recordPickerViewer),
     };
   },
   initialize: (values: any) => {},

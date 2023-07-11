@@ -1,8 +1,8 @@
+import { cx } from '@nocobase/client';
 import React from 'react';
-import { cx } from '@emotion/css';
-import { branchClass } from './style';
 import { AddButton } from './AddButton';
 import { Node } from './nodes';
+import { branchClass } from './style';
 
 export function Branch({
   from = null,

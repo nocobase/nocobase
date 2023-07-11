@@ -1,10 +1,10 @@
 import { useAPIClient, useCompile } from '@nocobase/client';
 import { useBoolean } from 'ahooks';
-import { Button, Card, Form, Input, message, Tabs } from 'antd';
+import { Button, Card, Form, Input, Tabs, message } from 'antd';
 import React, { useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { MapTypes } from '../constants';
-import { getSSKey, MapConfigurationResourceKey, useMapConfiguration } from '../hooks';
+import { MapConfigurationResourceKey, getSSKey, useMapConfiguration } from '../hooks';
 import { useMapTranslation } from '../locale';
 
 interface BaseConfigurationProps {
@@ -46,7 +46,7 @@ const BaseConfiguration: React.FC<BaseConfigurationProps> = ({ type, children })
     <Form disabled={isDisabled} form={form} layout="vertical" onFinish={onSubmit}>
       {children}
       {isDisabled ? (
-        <Button disabled={false} onClick={disableAction.toggle} type="ghost">
+        <Button disabled={false} onClick={disableAction.toggle}>
           {t('Edit')}
         </Button>
       ) : (

@@ -1,6 +1,5 @@
-import { css, cx } from '@emotion/css';
 import { RecursionField, useFieldSchema } from '@formily/react';
-import { ActionBarProvider, SortableItem, TabsContextProvider, useDesigner } from '@nocobase/client';
+import { ActionBarProvider, css, cx, SortableItem, TabsContextProvider, useDesigner } from '@nocobase/client';
 import { TabsProps } from 'antd';
 import React, { useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -10,7 +9,7 @@ import { PageDesigner } from './Page.Designer';
 const globalActionCSS = css`
   #nb-position-container > & {
     height: 49px;
-    border-top: 1px solid #f0f2f5;
+    border-top: 1px solid var(--nb-box-bg);
     margin-bottom: 0px !important;
     padding: 0 var(--nb-spacing);
     align-items: center;
@@ -84,7 +83,7 @@ const InternalPage: React.FC = (props) => {
       className={cx(
         'nb-mobile-page',
         css`
-          background: #f0f2f5;
+          background: var(--nb-box-bg);
           display: flex;
           flex-direction: column;
           width: 100%;

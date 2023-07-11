@@ -1,3 +1,4 @@
+import { css } from '@emotion/css';
 import { Field } from '@formily/core';
 import { connect, useField, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
@@ -12,7 +13,6 @@ import {
 } from '../../../collection-manager';
 import { Variable, useCompile, useComponent } from '../../../schema-component';
 import { DeletedField } from '../DeletedField';
-import { css } from '@emotion/css';
 
 const InternalField: React.FC = (props) => {
   const field = useField<Field>();
@@ -45,9 +45,9 @@ const InternalField: React.FC = (props) => {
     setFieldProps('title', uiSchema.title);
     setFieldProps('description', uiSchema.description);
     setFieldProps('initialValue', uiSchema.default);
-    if (!field.validator && uiSchema['x-validator']) {
-      field.validator = uiSchema['x-validator'];
-    }
+    // if (!field.validator && uiSchema['x-validator']) {
+    //   field.validator = uiSchema['x-validator'];
+    // }
     if (fieldSchema['x-disabled'] === true) {
       field.disabled = true;
     }

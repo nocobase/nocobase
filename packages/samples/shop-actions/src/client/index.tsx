@@ -1,8 +1,7 @@
-import React from 'react';
+import { Plugin } from '@nocobase/client';
 
-const ShopActions = React.memo((props) => {
-  return <>{props.children}</>;
-});
-ShopActions.displayName = 'ShopActions';
+class ShopActionsPlugin extends Plugin {
+  async load() { }
+}
 
-export default ShopActions;
+export default ShopActionsPlugin;

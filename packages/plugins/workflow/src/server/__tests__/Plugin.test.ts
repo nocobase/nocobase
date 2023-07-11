@@ -318,6 +318,27 @@ describe('workflow > Plugin', () => {
       expect(e3.status).toBe(EXECUTION_STATUS.RESOLVED);
     });
 
+    it('multiple events on same workflow', async () => {
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      const p1 = await PostRepo.create({ values: { title: 't1' } });
+      const p2 = await PostRepo.create({ values: { title: 't2' } });
+      const p3 = await PostRepo.create({ values: { title: 't3' } });
+
+      await sleep(1000);
+
+      const executions = await w1.getExecutions();
+      expect(executions.length).toBe(3);
+      expect(executions.map((item) => item.status)).toEqual(Array(3).fill(EXECUTION_STATUS.RESOLVED));
+    });
+
     it('when server starts, process all created executions', async () => {
       const w1 = await WorkflowModel.create({
         enabled: true,
@@ -348,8 +369,30 @@ describe('workflow > Plugin', () => {
 
       await sleep(500);
 
-      const [e2] = await w1.getExecutions();
-      expect(e2.status).toBe(EXECUTION_STATUS.RESOLVED);
+      await e1.reload();
+      expect(e1.status).toBe(EXECUTION_STATUS.RESOLVED);
+
+      await w1.update({ enabled: false });
+
+      await app.stop();
+
+      await db.reconnect();
+
+      const e2 = await ExecutionModel.create({
+        workflowId: w1.id,
+        key: w1.key,
+        useTransaction: w1.useTransaction,
+        context: {
+          data: p1.get(),
+        },
+      });
+
+      await app.start();
+
+      await sleep(500);
+
+      await e2.reload();
+      expect(e2.status).toBe(EXECUTION_STATUS.QUEUEING);
     });
   });
 });

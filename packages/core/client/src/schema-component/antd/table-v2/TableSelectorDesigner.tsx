@@ -1,4 +1,4 @@
-import { ArrayItems } from '@formily/antd';
+import { ArrayItems } from '@formily/antd-v5';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { cloneDeep } from 'lodash';
 import React from 'react';
@@ -133,7 +133,7 @@ export const TableSelectorDesigner = () => {
                           field: {
                             type: 'string',
                             enum: sortFields,
-                            required:true,
+                            required: true,
                             'x-decorator': 'FormItem',
                             'x-component': 'Select',
                             'x-component-props': {

@@ -1,6 +1,6 @@
-import React from 'react';
-import { Select } from 'antd';
 import { observer, useForm } from '@formily/react';
+import { Select } from 'antd';
+import React from 'react';
 
 import { useCollectionManager, useCompile } from '@nocobase/client';
 
@@ -18,7 +18,8 @@ export const FieldsSelect = observer(
 
     return (
       <Select
-        dropdownMatchSelectWidth={false}
+        className="full-width"
+        popupMatchSelectWidth={false}
         {...others}
         options={fields.filter(filter).map((field) => ({
           label: compile(field.uiSchema?.title),

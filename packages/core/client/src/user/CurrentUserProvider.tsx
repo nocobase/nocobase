@@ -16,14 +16,14 @@ export const useCurrentRoles = () => {
   const { data } = useCurrentUserContext();
   const compile = useCompile();
   const options = useMemo(() => {
-    const roles = data?.data?.roles || [];
+    const roles = (data?.data?.roles || []).map(({ name, title }) => ({ name, title: compile(title) }));
     if (allowAnonymous) {
       roles.push({
         title: 'Anonymous',
         name: 'anonymous',
       });
     }
-    return compile(roles);
+    return roles;
   }, [allowAnonymous, data?.data?.roles]);
   return options;
 };

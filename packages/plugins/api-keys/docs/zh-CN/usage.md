@@ -16,4 +16,4 @@ curl '{domain}/api/roles:check' -H 'Authorization: Bearer {API key}'
 
 ## 删除 API key
 
-目前删除 API key 并不能使 Key 失效，请注意保管好你的 API key。
+删除 API key 后，该 Key 将无法继续使用。

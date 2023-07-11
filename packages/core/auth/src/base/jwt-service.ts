@@ -32,7 +32,11 @@ export class JwtService {
   }
 
   sign(payload: SignPayload, options?: SignOptions) {
-    return jwt.sign(payload, this.secret(), { expiresIn: this.expiresIn(), ...options });
+    const opt = { expiresIn: this.expiresIn(), ...options };
+    if (opt.expiresIn === 'never') {
+      opt.expiresIn = '1000y';
+    }
+    return jwt.sign(payload, this.secret(), opt);
   }
 
   decode(token: string): Promise<any> {
@@ -54,11 +58,14 @@ export class JwtService {
     if (!this.blacklist) {
       return null;
     }
-    const { exp } = await this.decode(token);
-
-    return this.blacklist.add({
-      token,
-      expiration: new Date(exp * 1000).toString(),
-    });
+    try {
+      const { exp } = await this.decode(token);
+      return this.blacklist.add({
+        token,
+        expiration: new Date(exp * 1000).toString(),
+      });
+    } catch {
+      return null;
+    }
   }
 }

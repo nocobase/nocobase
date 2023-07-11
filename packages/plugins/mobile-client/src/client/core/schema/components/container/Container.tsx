@@ -1,8 +1,7 @@
-import { css, cx } from '@emotion/css';
 import { useFieldSchema } from '@formily/react';
-import { RouteSwitch, SchemaComponent, SortableItem, useDesigner } from '@nocobase/client';
-import React, { useMemo } from 'react';
-import { Navigate, RouteProps, useLocation, useParams } from 'react-router-dom';
+import { css, cx, SchemaComponent, SortableItem, useDesigner } from '@nocobase/client';
+import React, { useEffect } from 'react';
+import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ContainerDesigner } from './Container.Designer';
 
 const findGrid = (schema, uid) => {
@@ -31,6 +30,7 @@ const TabContentComponent = () => {
 const InternalContainer: React.FC = (props) => {
   const Designer = useDesigner();
   const fieldSchema = useFieldSchema();
+  const navigate = useNavigate();
   const params = useParams<{ name: string }>();
   const location = useLocation();
   const tabBarSchema = fieldSchema?.properties?.['tabBar'];
@@ -39,28 +39,12 @@ const InternalContainer: React.FC = (props) => {
   if (tabBarCurrentFirstKey) {
     redirectToUid = tabBarSchema?.properties[tabBarCurrentFirstKey]?.['x-uid'];
   }
-
-  const tabRoutes = useMemo<RouteProps[]>(() => {
-    if (!redirectToUid) {
-      return [];
+  useEffect(() => {
+    if (redirectToUid && !params.name) {
+      const locationPath = location.pathname.endsWith('/') ? location.pathname.slice(0, -1) : location.pathname;
+      navigate(`${locationPath}/tab_${redirectToUid}`, { replace: true });
     }
-    const locationPath = location.pathname.endsWith('/') ? location.pathname.slice(0, -1) : location.pathname;
-
-    return [
-      !params.name
-        ? {
-          type: 'redirect',
-          to: `${locationPath}/tab_${redirectToUid}`,
-          from: location.pathname,
-          }
-        : null,
-      {
-        type: 'route',
-        path: location.pathname,
-        component: TabContentComponent,
-      },
-    ].filter(Boolean) as any[];
-  }, [redirectToUid, params.name, location.pathname]);
+  }, [location.pathname, navigate, params.name, redirectToUid]);
 
   return (
     <SortableItem
@@ -72,7 +56,7 @@ const InternalContainer: React.FC = (props) => {
             right: unset;
             left: 2px;
           }
-          background: #f0f2f5;
+          background: var(--nb-box-bg);
           display: flex;
           flex-direction: column;
           width: 100%;
@@ -85,12 +69,12 @@ const InternalContainer: React.FC = (props) => {
       <Designer></Designer>
       <div
         style={{
-          paddingBottom: tabRoutes.length ? '50px' : '0px',
+          paddingBottom: redirectToUid ? '50px' : '0px',
         }}
         className={cx('nb-mobile-container-content')}
       >
-        {tabRoutes.length ? (
-          <RouteSwitch routes={tabRoutes as any} />
+        {redirectToUid ? (
+          <TabContentComponent />
         ) : (
           <SchemaComponent
             filterProperties={(schema) => {

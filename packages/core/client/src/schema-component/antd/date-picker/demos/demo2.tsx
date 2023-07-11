@@ -1,7 +1,7 @@
 /**
  * title: DatePicker (GMT)
  */
-import { FormItem } from '@formily/antd';
+import { FormItem } from '@formily/antd-v5';
 import { DatePicker, Input, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
 import React from 'react';
 

@@ -1,5 +1,5 @@
 import { DataTypes, Field } from '@nocobase/database';
-import lodash from 'lodash';
+import { lodash } from '@nocobase/utils';
 
 type WriterFunc = (val: any) => any;
 

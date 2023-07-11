@@ -10,25 +10,9 @@ export const useSystemSettings = () => {
 };
 
 export const SystemSettingsProvider: React.FC<{ children?: ReactNode }> = (props) => {
-  const result = useRequest(
-    {
-      url: 'systemSettings:get/1?appends=logo',
-    },
-    {
-      onSuccess(data) {
-        const localTheme = localStorage.getItem('NOCOBASE_THEME');
-        if (!localTheme) {
-          const theme = data?.data?.options?.theme;
-          localStorage.setItem('NOCOBASE_THEME', theme || 'default');
-          window.location.reload();
-        }
-      },
-    },
-  );
-  const localTheme = localStorage.getItem('NOCOBASE_THEME');
-  if (!localTheme) {
-    return <Spin />;
-  }
+  const result = useRequest({
+    url: 'systemSettings:get/1?appends=logo',
+  });
   if (result.loading) {
     return <Spin />;
   }

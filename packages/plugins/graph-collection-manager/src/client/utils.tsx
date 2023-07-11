@@ -1,5 +1,7 @@
-import { groupBy, reduce, uniq, uniqBy } from 'lodash';
+import { lodash } from '@nocobase/utils/client';
 import { useTranslation } from 'react-i18next';
+
+const { groupBy, reduce, uniq, uniqBy } = lodash;
 
 const shape = {
   ER: 'er-rect',
@@ -155,7 +157,7 @@ export const formatInheritEdgeData = (collections) => {
             ref: 'labelText',
             refWidth: '100%',
             refHeight: '100%',
-            fill: '#f0f2f5',
+            fill: 'var(--nb-box-bg)',
           },
         },
         position: {
@@ -254,7 +256,7 @@ const formatEdgeData = (data, targetTables, tableData) => {
                 refWidth: '100%',
                 refHeight: '100%',
                 stroke: '#ddd',
-                fill: '#f0f2f5',
+                fill: 'var(--nb-box-bg)',
                 strokeWidth: 1,
                 rx: 10,
                 ry: 10,
@@ -297,7 +299,7 @@ const formatEdgeData = (data, targetTables, tableData) => {
                 refWidth: '100%',
                 refHeight: '100%',
                 stroke: '#ddd',
-                fill: '#f0f2f5',
+                fill: 'var(--nb-box-bg)',
                 rx: 10,
                 ry: 10,
                 strokeWidth: 1,

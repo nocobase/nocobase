@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { css } from '@emotion/css';
+import { css } from '@nocobase/client';
 import { InputNumber, Select } from 'antd';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { FieldsSelect } from '../../components/FieldsSelect';

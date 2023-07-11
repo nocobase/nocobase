@@ -1,10 +1,10 @@
+import { Transactionable } from '@nocobase/database';
 import Application from '@nocobase/server';
 import fs from 'fs/promises';
 import serve from 'koa-static';
 import mkdirp from 'mkdirp';
 import multer from 'multer';
 import path from 'path';
-import { Transactionable } from 'sequelize/types';
 import { URL } from 'url';
 import { AttachmentModel } from '.';
 import { STORAGE_TYPE_LOCAL } from '../constants';

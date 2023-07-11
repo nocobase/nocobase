@@ -1,10 +1,8 @@
-import { useTranslation } from 'react-i18next';
-import { css } from '@emotion/css';
 import { useForm } from '@formily/react';
-import { useEffect, useRef, useState } from 'react';
+import { css, useAPIClient } from '@nocobase/client';
 import { Button, Input, message } from 'antd';
-import React from 'react';
-import { useAPIClient } from '@nocobase/client';
+import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export default function VerificationCode({ targetFieldName = 'phone', actionType, value, onChange }) {
   const { t } = useTranslation();

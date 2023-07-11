@@ -790,5 +790,6 @@ export default {
   "File manager": "文件管理器",
   "Direct duplicate": "直接复制",
   "Copy into the form and continue to fill in": "复制到表单并继续填写",
-  "Linkage form form data":"从表单数据里联动",
+  "Linkage with form fields":"从表单字段联动",
+  "Failed to load plugin": "插件加载失败",
 }

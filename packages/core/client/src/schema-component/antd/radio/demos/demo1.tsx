@@ -2,7 +2,7 @@
  * title: Basic
  * desc: The simplest use.
  */
-import { FormItem } from '@formily/antd';
+import { FormItem } from '@formily/antd-v5';
 import { Radio, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
 import React from 'react';
 
