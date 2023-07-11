@@ -4,6 +4,7 @@ import fs from 'fs-extra';
 import { builtinModules } from 'module';
 import os from 'os';
 import path from 'path';
+// @ts-ignore
 import { version } from '../../package.json';
 import { APP_NAME, DEFAULT_PLUGIN_PATH, DEFAULT_PLUGIN_STORAGE_PATH, NODE_MODULES_PATH } from './constants';
 import { PluginData } from './types';
@@ -24,13 +25,17 @@ export function getPluginStoragePath() {
   return path.isAbsolute(pluginStoragePath) ? pluginStoragePath : path.join(process.cwd(), pluginStoragePath);
 }
 
-export function getPluginPackagesPath() {
+export function getLocalPluginPackagesPath() {
   const pluginPackagesPath = process.env.PLUGIN_PATH || DEFAULT_PLUGIN_PATH;
   return path.isAbsolute(pluginPackagesPath) ? pluginPackagesPath : path.join(process.cwd(), pluginPackagesPath);
 }
 
 export function getStoragePluginDir(packageName: string) {
   return path.join(getPluginStoragePath(), packageName);
+}
+
+export function getLocalPluginDir(packageName: string) {
+  return path.join(getLocalPluginPackagesPath(), packageName);
 }
 
 export function getNodeModulesPluginDir(packageName: string) {
@@ -84,13 +89,8 @@ export async function downloadAndUnzipToNodeModules(fileUrl: string) {
   };
 }
 
-export async function addByLocalPackage(packageDir: string) {
+export async function linkLocalPackageToNodeModules(packageDir: string) {
   const { name } = getPackageJsonByLocalPath(packageDir);
-  // symlink to storage dir
-  const packageStorageDir = getStoragePluginDir(name);
-  if (!(await fs.pathExists(packageStorageDir))) {
-    await fs.symlink(packageDir, packageStorageDir);
-  }
 
   // symlink to node_modules
   const nodeModulesPluginDir = getNodeModulesPluginDir(name);
@@ -239,19 +239,25 @@ export function removePluginPackage(packageName: string) {
   return Promise.all([fs.remove(packageDir), fs.remove(nodeModulesPluginDir)]);
 }
 
-export async function checkPluginExist(packageName: string) {
-  const packageDir = getStoragePluginDir(packageName);
-  const nodeModulesPluginDir = getNodeModulesPluginDir(packageName);
+export async function checkPluginExist(pluginData: PluginData) {
+  const { name, type } = pluginData;
 
-  const packageDirExists = await fs.exists(packageDir);
+  const storagePackageDir = getStoragePluginDir(name);
+  const localPluginPackageDir = getLocalPluginDir(name);
+
+  const packageDir = type === 'local' ? localPluginPackageDir : storagePackageDir;
+
+  const nodeModulesPluginDir = getNodeModulesPluginDir(name);
+
+  const exists = await fs.exists(packageDir);
   const nodeModulesPluginDirExists = await fs.exists(nodeModulesPluginDir);
 
   // if packageDir exists and nodeModulesPluginDir not exists, create symlink
-  if (packageDirExists && !nodeModulesPluginDirExists) {
+  if (exists && !nodeModulesPluginDirExists) {
     fs.symlink(packageDir, nodeModulesPluginDir);
   }
 
-  return packageDirExists;
+  return exists;
 }
 
 export function getClientStaticUrl(packageName: string) {
@@ -333,7 +339,7 @@ export async function addOrUpdatePluginByNpm(
   options: Pick<PluginData, 'name' | 'registry' | 'version'>,
   update?: boolean,
 ) {
-  const exists = await checkPluginExist(options.name);
+  const exists = await checkPluginExist(options);
   if (exists && !update) {
     return getPackageJson(options.name);
   }
@@ -364,9 +370,8 @@ export async function addOrUpdatePluginByZip(options: Partial<Pick<PluginData, '
  */
 export async function checkPluginPackage(plugin: PluginData) {
   // 1. check plugin exist
-  if (!(await checkPluginExist(plugin.name))) {
-    if (plugin.registry) {
-      // 2. update plugin by npm
+  if (!(await checkPluginExist(plugin))) {
+    if (plugin.type === 'npm') {
       return addOrUpdatePluginByNpm(
         {
           name: plugin.name,
@@ -375,8 +380,7 @@ export async function checkPluginPackage(plugin: PluginData) {
         },
         true,
       );
-    } else if (plugin.zipUrl) {
-      // 3. update plugin by zip
+    } else if (plugin.type === 'upload') {
       return addOrUpdatePluginByZip(plugin);
     }
   }

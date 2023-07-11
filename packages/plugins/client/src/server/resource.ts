@@ -1,5 +1,3 @@
-import { PluginManager } from '@nocobase/server';
-
 const arr2obj = (items: any[]) => {
   const obj = {};
   for (const item of items) {
@@ -47,11 +45,11 @@ export const getResourceLocale = async (lang: string, db: any) => {
   }
   const plugins = await db.getRepository('applicationPlugins').find({
     filter: {
-      'name.$ne': 'client',
+      'name.$ne': '@nocobase/client',
     },
   });
   for (const plugin of plugins) {
-    const packageName = PluginManager.getPackageName(plugin.get('name'));
+    const packageName = plugin.get('name');
     const res = getResource(packageName, lang);
     const defaults = getResource(packageName, 'zh-CN');
     for (const key in defaults) {

@@ -11,15 +11,15 @@ import { PluginManagerRepository } from './plugin-manager-repository';
 import { pluginStatic } from './pluginStatic';
 import { PluginData } from './types';
 import {
-  addByLocalPackage,
   addOrUpdatePluginByNpm,
   addOrUpdatePluginByZip,
   checkPluginPackage,
   getClientStaticUrl,
   getExtraPluginInfo,
+  getLocalPluginPackagesPath,
   getNewVersion,
   getPackageJsonByLocalPath,
-  getPluginPackagesPath,
+  linkLocalPackageToNodeModules,
   removePluginPackage,
 } from './utils';
 
@@ -118,8 +118,8 @@ export class PluginManager {
 
     // TODO: 并发执行还是循序执行，现在的做法是顺序一个一个执行？
     for await (const pluginData of pluginList) {
-      this.setDatabasePlugin(pluginData);
       await checkPluginPackage(pluginData);
+      this.setDatabasePlugin(pluginData);
     }
   }
 
@@ -160,7 +160,7 @@ export class PluginManager {
   }
 
   async setDatabasePlugin(pluginData: PluginData) {
-    const PluginClass = require(pluginData.name);
+    const PluginClass = require(pluginData.type === 'local' ? `${pluginData.name}/src/server` : pluginData.name);
     const pluginInstance = this.setPluginInstance(PluginClass, pluginData);
     return pluginInstance;
   }
@@ -185,7 +185,7 @@ export class PluginManager {
     return instance;
   }
 
-  async addByNpm(data: any) {
+  async addByNpm(data: Pick<PluginData, 'name' | 'builtIn' | 'registry' | 'isOfficial'>) {
     // 1. add plugin to database
     const { name, registry, builtIn, isOfficial } = data;
 
@@ -202,6 +202,7 @@ export class PluginManager {
         version: undefined,
         enabled: false,
         isOfficial,
+        type: 'npm',
         installed: false,
         builtIn,
         options: {},
@@ -225,6 +226,61 @@ export class PluginManager {
     await this.setDatabasePlugin({ name, enabled: false, builtIn });
 
     return res;
+  }
+
+  async addByUpload(data: PluginData = {}) {
+    // download and unzip plugin
+    const { packageDir } = await addOrUpdatePluginByZip({ zipUrl: data.zipUrl });
+
+    return this.addByLocalPath(packageDir, { ...data, type: 'upload' });
+  }
+
+  async addByLocalPath(localPath: string, data: PluginData = {}) {
+    const { zipUrl, builtIn = false, isOfficial = false, type } = data;
+    const { name, version } = getPackageJsonByLocalPath(localPath);
+    if (this.plugins.has(name)) {
+      throw new Error(`plugin [${name}] already exists`);
+    }
+
+    // 1. add plugin to database
+    const res = await this.repository.create({
+      values: {
+        name,
+        zipUrl,
+        builtIn,
+        type,
+        isOfficial,
+        clientUrl: getClientStaticUrl(name),
+        version,
+        registry: undefined,
+        enabled: false,
+        installed: true,
+        options: {},
+      },
+    });
+
+    // 2. set plugin instance
+    const instance = await this.setDatabasePlugin({ name, enabled: false, builtIn });
+
+    // 3. run `afterAdd` hook
+    await instance.afterAdd();
+
+    return res;
+  }
+
+  async addByLocalPackage(name: string, data: PluginData = {}) {
+    const localPackage = path.join(getLocalPluginPackagesPath(), name);
+    if (!fs.existsSync(localPackage)) {
+      throw new Error(`plugin [${name}] not exists, Please use 'yarn nocobase pm create ${name}' to create first.`);
+    }
+
+    await linkLocalPackageToNodeModules(localPackage);
+
+    return this.addByLocalPath(localPackage, { ...data, type: 'local' });
+  }
+
+  get add() {
+    return this.addByLocalPackage;
   }
 
   async upgradeByNpm(name: string) {
@@ -274,45 +330,6 @@ export class PluginManager {
     if (pluginData.enabled) {
       await instance.load();
     }
-  }
-
-  async addByUpload(data: { zipUrl: string; builtIn?: boolean; isOfficial?: boolean }) {
-    // download and unzip plugin
-    const { packageDir } = await addOrUpdatePluginByZip({ zipUrl: data.zipUrl });
-
-    return this.addByLocalPath(packageDir, data);
-  }
-
-  async addByLocalPath(localPath: string, data: { zipUrl?: string; builtIn?: boolean; isOfficial?: boolean } = {}) {
-    const { zipUrl, builtIn = false, isOfficial = false } = data;
-    const { name, version } = getPackageJsonByLocalPath(localPath);
-    if (this.plugins.has(name)) {
-      throw new Error(`plugin [${name}] already exists`);
-    }
-
-    // 1. add plugin to database
-    const res = await this.repository.create({
-      values: {
-        name,
-        zipUrl,
-        builtIn,
-        isOfficial,
-        clientUrl: getClientStaticUrl(name),
-        version,
-        registry: undefined,
-        enabled: false,
-        installed: true,
-        options: {},
-      },
-    });
-
-    // 2. set plugin instance
-    const instance = await this.setDatabasePlugin({ name, enabled: false, builtIn });
-
-    // 3. run `afterAdd` hook
-    await instance.afterAdd();
-
-    return res;
   }
 
   async enable(name: string) {
@@ -460,7 +477,7 @@ export class PluginManager {
     const { run } = require('@nocobase/cli/src/util');
     const { PluginGenerator } = require('@nocobase/cli/src/plugin-generator');
     const generator = new PluginGenerator({
-      cwd: getPluginPackagesPath(),
+      cwd: getLocalPluginPackagesPath(),
       args: {},
       context: {
         name,
@@ -473,14 +490,7 @@ export class PluginManager {
   // by cli: `yarn nocobase pm add xxx`
   async addByCli(name: string) {
     console.log(`adding ${name} plugin...`);
-    const localPackage = path.join(getPluginPackagesPath(), name);
-    if (!fs.existsSync(localPackage)) {
-      throw new Error(`plugin [${name}] not exists, Please use 'yarn nocobase pm create ${name}' to create first.`);
-    }
-
-    await addByLocalPackage(localPackage);
-
-    return this.addByLocalPath(localPackage);
+    return this.addByLocalPackage(name);
   }
 
   // by cli: `yarn nocobase pm remove xxx`

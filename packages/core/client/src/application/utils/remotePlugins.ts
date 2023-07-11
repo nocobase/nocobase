@@ -5,7 +5,6 @@ import * as formilyJsonSchema from '@formily/json-schema';
 import * as formilyReact from '@formily/react';
 import * as formilyJsonReactive from '@formily/reactive';
 import * as formilyShared from '@formily/shared';
-import * as nocobaseClient from '@nocobase/client';
 import * as nocobaseClientUtils from '@nocobase/utils/client';
 import * as antd from 'antd';
 import * as antdStyle from 'antd-style';
@@ -14,6 +13,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import * as reactI18next from 'react-i18next';
 import * as ReactRouterDom from 'react-router-dom';
+import * as nocobaseClient from '../../index';
 
 import 'requirejs';
 

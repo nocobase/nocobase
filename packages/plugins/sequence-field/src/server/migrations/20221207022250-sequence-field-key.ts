@@ -17,14 +17,14 @@ export default class extends Migration {
     await db.sequelize.transaction(async (transaction) => {
       const seqPlugin = await pluginRepo.findOne({
         filter: {
-          name: 'sequence-field',
+          name: '@nocobase/sequence-field',
         },
         transaction,
       });
       if (!seqPlugin) {
         await pluginRepo.create({
           values: {
-            name: 'sequence-field',
+            name: '@nocobase/sequence-field',
             version: '0.8.0-alpha.13',
             enabled: true,
             installed: true,

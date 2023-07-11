@@ -6,6 +6,7 @@ export interface PluginData {
   clientUrl?: string;
   zipUrl?: string;
   enabled?: boolean;
+  type?: 'upload' | 'npm' | 'local';
   isOfficial?: boolean;
   installed?: boolean;
   builtIn?: boolean;

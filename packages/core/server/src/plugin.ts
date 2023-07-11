@@ -68,9 +68,9 @@ export class Plugin<O = any> implements PluginInterface {
     return (this.options as any).name;
   }
 
-  async afterAdd() { }
+  afterAdd() { }
 
-  async beforeLoad() { }
+  beforeLoad() { }
 
   async install(options?: InstallOptions) { }
 

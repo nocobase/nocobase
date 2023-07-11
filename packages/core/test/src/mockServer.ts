@@ -174,12 +174,6 @@ export function mockServer(options: ApplicationOptions = {}) {
 
   // @ts-ignore
   if (!PluginManager.findPackagePatched) {
-    PluginManager.getPackageJson = () => {
-      return {
-        version: '0.0.0',
-      };
-    };
-
     // @ts-ignore
     PluginManager.findPackagePatched = true;
   }
@@ -196,8 +190,6 @@ export function mockServer(options: ApplicationOptions = {}) {
     ...options,
     database,
   });
-
-  app.pm.generateClientFile = async () => {};
 
   return app;
 }

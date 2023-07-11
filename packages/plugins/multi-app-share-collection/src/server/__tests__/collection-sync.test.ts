@@ -161,7 +161,7 @@ pgOnly()('collection sync', () => {
 
     const sub1MapPlugin = await sub1.db.getRepository('applicationPlugins').findOne({
       filter: {
-        name: 'map',
+        name: '@nocobase/map',
       },
     });
 
@@ -180,13 +180,13 @@ pgOnly()('collection sync', () => {
     const getSubAppMapRecord = async (app) => {
       return await app.db.getRepository('applicationPlugins').findOne({
         filter: {
-          name: 'map',
+          name: '@nocobase/map',
         },
       });
     };
 
     expect((await getSubAppMapRecord(sub1)).get('enabled')).toBeFalsy();
-    await mainApp.pm.enable('map');
+    await mainApp.pm.enable('@nocobase/map');
     expect((await getSubAppMapRecord(sub1)).get('enabled')).toBeTruthy();
 
     // create new app sub2
