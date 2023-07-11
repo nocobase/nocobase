@@ -114,12 +114,15 @@ export class LocalizationManagementPlugin extends Plugin {
 
     // ui-schema-storage loaded before localization-management
     this.registerUISchemahook();
-    // ui-schema-storage loaded after localization-management
-    this.app.on('afterLoadPlugin', (plugin) => {
-      if (plugin.name !== 'ui-schema-storage') {
-        return;
+
+    this.app.on('afterLoadPlugin', async (plugin) => {
+      if (plugin.name === 'ui-schema-storage') {
+        // ui-schema-storage loaded after localization-management
+        this.registerUISchemahook(plugin);
       }
-      this.registerUISchemahook(plugin);
+      if (plugin.name === 'localization-management') {
+        await this.loadTexts();
+      }
     });
   }
 

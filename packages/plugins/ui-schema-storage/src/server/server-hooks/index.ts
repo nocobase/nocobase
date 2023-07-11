@@ -42,7 +42,6 @@ export class ServerHooks {
     });
 
     this.db.on('uiSchemas.afterSave', async (model, options) => {
-      console.log('uiSchemas.afterSave');
       await this.onUiSchemaSave(model, options);
     });
   }
