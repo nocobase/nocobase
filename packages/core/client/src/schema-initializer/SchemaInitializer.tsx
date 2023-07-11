@@ -130,7 +130,7 @@ SchemaInitializer.Button = observer(
             });
           }
           if (item.type === 'itemGroup') {
-            const label = compile(item.title);
+            const label = isString(item.title) ? compile(item.title) : item.title;
             return (
               !!item.children?.length && {
                 type: 'group',
@@ -212,7 +212,7 @@ SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
           return { type: 'divider', key: `divider-${indexA}` };
         }
         if (item.type === 'itemGroup') {
-          const label = compile(item.title);
+          const label = isString(item.title) ? compile(item.title) : item.title;
           return {
             type: 'group',
             key: item.key || `item-group-${indexA}`,
