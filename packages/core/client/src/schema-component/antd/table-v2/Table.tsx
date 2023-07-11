@@ -19,6 +19,7 @@ import {
   useTableSelectorContext,
 } from '../../../';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
+import { ColumnFieldProvider } from './components/ColumnFieldProvider';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
 
 const useArrayField = (props) => {
@@ -58,11 +59,16 @@ const useTableColumns = (props) => {
           return (
             <RecordIndexProvider index={record.__index || index}>
               <RecordProvider record={record}>
-                <RecursionField
-                  basePath={field.address.concat(record.__index || index)}
+                <ColumnFieldProvider
                   schema={s}
-                  onlyRenderProperties
-                />
+                  basePath={field.address.concat(record.__index || index)}
+                >
+                  <RecursionField
+                    basePath={field.address.concat(record.__index || index)}
+                    schema={s}
+                    onlyRenderProperties
+                  />
+                </ColumnFieldProvider>
               </RecordProvider>
             </RecordIndexProvider>
           );
