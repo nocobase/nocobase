@@ -1,9 +1,8 @@
-import Application from '../application';
-
-interface RemoteServiceInfo {
+export interface RemoteServiceInfo {
   type: 'remote';
   host: 'string';
   port: number;
+  name: string;
 }
 
 interface LocalServiceInfo {
@@ -13,9 +12,12 @@ interface LocalServiceInfo {
 export type ServiceInfo = RemoteServiceInfo | LocalServiceInfo;
 
 export abstract class ServiceDiscoveryClient {
-  abstract registerAppService(service: string, app: Application): Promise<boolean>;
+  // register service to service discovery server
+  // service name must contain namespace, form: namespace:service
+  // e.g. apps:main, apps:admin
+  abstract registerService(serviceInfo: RemoteServiceInfo): Promise<boolean>;
 
-  abstract unregisterService(service: string): Promise<void>;
+  abstract unregisterService(serviceInfo: RemoteServiceInfo): Promise<void>;
 
-  abstract getServices(): Promise<ServiceInfo[]>;
+  abstract getServices(namespace: string): Promise<RemoteServiceInfo[]>;
 }
