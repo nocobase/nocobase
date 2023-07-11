@@ -1,9 +1,10 @@
 import { useFieldSchema } from '@formily/react';
-import { error, forEach } from '@nocobase/utils/client';
-import { Cascader } from 'antd';
+import { dayjs, error, forEach } from '@nocobase/utils/client';
+import { Cascader, Tag } from 'antd';
 import _ from 'lodash';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useCompile } from '../../';
 import { useAPIClient } from '../../../api-client';
 import { findFormBlock, useTableBlockContext } from '../../../block-provider';
 import { useCollectionManager } from '../../../collection-manager';
@@ -26,6 +27,7 @@ export interface ITemplate {
     fields: string[];
     default?: boolean;
     dataScope?: object;
+    titleField?: string;
   }[];
   /** 是否在 Form 区块显示模板选择器 */
   display: boolean;
@@ -63,7 +65,14 @@ const useDataTemplates = () => {
       key: 'none',
       title: t('None'),
     },
-  ].concat(items.map<any>((t, i) => ({ key: i, ...t, isLeaf: t.dataId !== undefined })));
+  ].concat(
+    items.map<any>((t, i) => ({
+      key: i,
+      ...t,
+      isLeaf: t.dataId !== null,
+      titleCollectionField: t?.titleField && getCollectionJoinField(`${t.collection}.${t.titleField}`),
+    })),
+  );
 
   const defaultTemplate = items.find((item) => item.default);
   return {
@@ -83,6 +92,55 @@ function filterReferences(obj) {
 
   return filteredObj;
 }
+
+export const mapOptionsToTags = (options, fieldNames, titleCollectionfield, compile) => {
+  try {
+    return options
+      .map((option) => {
+        let label = compile(option[fieldNames.label]);
+        console.log(label, option, fieldNames);
+
+        if (titleCollectionfield?.uiSchema?.enum) {
+          if (Array.isArray(label)) {
+            label = label
+              .map((item, index) => {
+                const option = titleCollectionfield.uiSchema.enum.find((i) => i.value === item);
+                if (option) {
+                  return (
+                    <Tag key={index} color={option.color} style={{ marginRight: 3 }}>
+                      {option?.label || item}
+                    </Tag>
+                  );
+                } else {
+                  return <Tag key={item}>{item}</Tag>;
+                }
+              })
+              .reverse();
+          } else {
+            const item = titleCollectionfield.uiSchema.enum.find((i) => i.value === label);
+            if (item) {
+              label = <Tag color={item.color}>{item.label}</Tag>;
+            }
+          }
+        }
+
+        if (titleCollectionfield?.type === 'date') {
+          label = dayjs(label).format('YYYY-MM-DD');
+        }
+
+        return {
+          ...option,
+          title: label,
+          key: option.id,
+        };
+      })
+      .filter(Boolean);
+  } catch (err) {
+    console.error(err);
+    return options;
+  }
+};
+
 export const Templates = ({ style = {}, form }) => {
   const { templates, display, enabled, defaultTemplate } = useDataTemplates();
   const [options, setOptions] = useState<any>(templates);
@@ -90,6 +148,7 @@ export const Templates = ({ style = {}, form }) => {
   const { resource } = useTableBlockContext();
   const api = useAPIClient();
   const { t } = useTranslation();
+  const compile = useCompile();
   useEffect(() => {
     if (enabled && defaultTemplate) {
       form.__template = true;
@@ -113,7 +172,7 @@ export const Templates = ({ style = {}, form }) => {
   const handleChange = useCallback(async (value, option) => {
     const key = value?.[0];
     const template = { ...option?.[0], dataId: option?.[1]?.key || option?.[0]?.dataId };
-    setValue(key);
+    setValue(value);
     if (key !== 'none') {
       fetchTemplateData(api, template, t)
         .then((data) => {
@@ -148,7 +207,6 @@ export const Templates = ({ style = {}, form }) => {
         resolve(void 0);
       });
     }
-
     return new Promise(async (resolve) => {
       const { data } = (await resource.list({ filter: option.dataScope })) || {};
       if (data?.data.length === 0) {
@@ -156,12 +214,12 @@ export const Templates = ({ style = {}, form }) => {
         resolve();
         return;
       }
-      option.children = data?.data.map((v) => {
-        return {
-          title: v[option?.titleField || 'id'],
-          key: v?.id,
-        };
-      });
+      option.children = mapOptionsToTags(
+        data?.data,
+        { label: option?.titleField, value: 'id', children: 'children' },
+        option?.titleCollectionField,
+        compile,
+      );
       resolve();
     });
   };
