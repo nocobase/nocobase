@@ -9,6 +9,7 @@ const CSSVariableProvider = ({ children }) => {
     document.body.style.setProperty('--nb-designer-offset', `${token.marginXS}px`);
     document.body.style.setProperty('--nb-header-height', `${token.sizeXXL - 2}px`);
     document.body.style.setProperty('--nb-box-bg', token.colorBgLayout);
+    document.body.style.setProperty('background-color', token.colorBgContainer);
   }, [token.marginLG, token.colorBgLayout, token.sizeXXL]);
 
   return children;
