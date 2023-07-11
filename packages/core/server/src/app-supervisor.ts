@@ -1,6 +1,8 @@
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import { EventEmitter } from 'events';
 import type Application from './application';
+import { RpcBrokerBuilder } from './rpc-broker/builder';
+import { RpcBrokerInterface } from './rpc-broker/interface';
 
 type BootOptions = {
   appName: string;
@@ -19,6 +21,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     [key: string]: Application;
   } = {};
 
+  private rpcBroker: RpcBrokerInterface;
   private appBootstrapper: AppBootstrapper = null;
 
   private constructor() {
@@ -28,6 +31,8 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
       this.runningMode = 'single';
       this.singleAppName = process.env.STARTUP_SUBAPP;
     }
+
+    this.rpcBroker = RpcBrokerBuilder.build(this);
   }
 
   public static getInstance(): AppSupervisor {
@@ -86,6 +91,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return !!this.apps[appName];
   }
 
+  // add app into supervisor
   addApp(app: Application) {
     // if there is already an app with the same name, throw error
     if (this.apps[app.name]) {
@@ -148,35 +154,17 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
   // call rpc method of other app
   async rpcCall(appName: string, method: string, ...args: any[]): Promise<{ result: any }> {
-    const app = this.apps[appName];
-    if (!app) {
-      throw new Error(`rpc call failed, app ${appName} not exists`);
-    }
-
-    return await app.handleDynamicCall(method, ...args);
+    return this.rpcBroker.callApp(appName, method, ...args);
   }
 
   // push event to other app
   async rpcPush(appName: string, event: string, options?: any) {
-    const app = this.apps[appName];
-    if (!app) {
-      throw new Error(`rpc call failed, app ${appName} not exists`);
-    }
-
-    return await app.handleEventPush(event, options);
+    return this.rpcBroker.pushToApp(appName, event, options);
   }
 
   // broadcast event to all other apps
   async rpcBroadcast(caller: Application, event: string, eventOptions?: any) {
-    const appNames = Object.keys(this.apps);
-    for (const appName of appNames) {
-      if (appName === caller.name) {
-        continue;
-      }
-
-      console.log(`broadcast ${event} to ${appName}`);
-      await this.rpcPush(appName, event, eventOptions);
-    }
+    return this.rpcBroker.broadcast(caller, event, eventOptions);
   }
 }
 
