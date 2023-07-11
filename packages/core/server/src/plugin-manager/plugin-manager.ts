@@ -221,10 +221,8 @@ export class PluginManager {
       },
     });
 
-    // 4.run plugin
-    const instance = await this.setDatabasePlugin({ name, enabled: false, builtIn });
-
-    await instance.afterAdd();
+    // 4.init plugin
+    await this.setDatabasePlugin({ name, enabled: false, builtIn });
 
     return res;
   }
@@ -250,9 +248,7 @@ export class PluginManager {
     const instance = await this.setDatabasePlugin(pluginData);
 
     // TODO: 升级后应该执行哪些 hooks？
-    // 这里执行了 `afterAdd` 和 `load`
-    await instance.afterAdd();
-
+    // 这里只执行了 `load`
     if (pluginData.enabled) {
       await instance.load();
     }
@@ -274,9 +270,7 @@ export class PluginManager {
     const instance = await this.setDatabasePlugin(pluginData);
 
     // TODO: 升级后应该执行哪些 hooks？
-    // 这里执行了 `afterAdd` 和 `load`
-    await instance.afterAdd();
-
+    // 这里只执行了 `load`
     if (pluginData.enabled) {
       await instance.load();
     }

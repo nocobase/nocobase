@@ -329,7 +329,14 @@ export function getPluginNameByClientStaticUrl(pathname: string) {
   return pathArr[0];
 }
 
-export async function addOrUpdatePluginByNpm(options: Pick<PluginData, 'name' | 'registry' | 'version'>) {
+export async function addOrUpdatePluginByNpm(
+  options: Pick<PluginData, 'name' | 'registry' | 'version'>,
+  update?: boolean,
+) {
+  const exists = await checkPluginExist(options.name);
+  if (exists && !update) {
+    return getPackageJson(options.name);
+  }
   const { fileUrl, version } = await getPluginInfoByNpm(options.name, options.registry, options.version);
   await downloadAndUnzipToNodeModules(fileUrl);
 
@@ -338,7 +345,7 @@ export async function addOrUpdatePluginByNpm(options: Pick<PluginData, 'name' | 
   };
 }
 
-export async function addOrUpdatePluginByZip(options: Partial<Pick<PluginData, 'zipUrl' | 'name'>>) {
+export async function addOrUpdatePluginByZip(options: Partial<Pick<PluginData, 'zipUrl' | 'name'>>, update?: boolean) {
   const { name, version, packageDir } = await downloadAndUnzipToNodeModules(options.zipUrl);
 
   if (options.name && options.name !== name) {
@@ -360,11 +367,14 @@ export async function checkPluginPackage(plugin: PluginData) {
   if (!(await checkPluginExist(plugin.name))) {
     if (plugin.registry) {
       // 2. update plugin by npm
-      return addOrUpdatePluginByNpm({
-        name: plugin.name,
-        registry: plugin.registry,
-        version: plugin.version,
-      });
+      return addOrUpdatePluginByNpm(
+        {
+          name: plugin.name,
+          registry: plugin.registry,
+          version: plugin.version,
+        },
+        true,
+      );
     } else if (plugin.zipUrl) {
       // 3. update plugin by zip
       return addOrUpdatePluginByZip(plugin);
