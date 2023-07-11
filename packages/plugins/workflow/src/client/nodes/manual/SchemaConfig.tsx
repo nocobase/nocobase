@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { createForm } from '@formily/core';
 import { FormProvider, ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 import { FormLayout } from '@formily/antd-v5';
-import { Button, Modal, Space } from 'antd';
+import { Alert, Button, Modal, Space } from 'antd';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -237,6 +237,8 @@ function AssignedFieldValues() {
         <VariableScopeProvider scope={scope}>
           <FormProvider form={form}>
             <FormLayout layout={'vertical'}>
+              <Alert message={lang('Values preset in this form will override user submitted ones when continue or reject.')} />
+              <br />
               {open && schema && (
                 <SchemaComponentContext.Provider
                   value={{
