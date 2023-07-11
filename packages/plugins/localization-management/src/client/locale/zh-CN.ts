@@ -18,5 +18,4 @@ export default {
   'Collections & fields': '数据表和字段',
   'Please select the resources you want to synchronize': '请选择需要同步的资源',
   Menu: '菜单',
-  'Test test': 'test',
 };
