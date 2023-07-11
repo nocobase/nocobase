@@ -707,4 +707,6 @@ export default {
   "Current form": "Current form",
   "Current object":"Current object",
   "Linkage with form fields":"Linkage with form fields",
+  "Assign  data scope for the template":"Assign  data scope for the template",
+  "Assign target data for the template":"Assign target data for the template"
 };

@@ -132,7 +132,7 @@ export const FormDataTemplates = observer(
 
                     dataId: {
                       type: 'number',
-                      title: '{{ t("Assign unique template data") }}',
+                      title: '{{ t("Assign target data for the template") }}',
                       description: t('Select an existing piece of data as the initialization data for the form'),
                       'x-designer': Designer,
                       'x-designer-props': {
@@ -175,7 +175,7 @@ export const FormDataTemplates = observer(
                     dataScope: {
                       type: 'object',
                       enum: dataSource,
-                      title: '{{ t("Assign specific data scope template data") }}',
+                      title: '{{ t("Assign  data scope for the template") }}',
                       'x-decorator': 'FormItem',
                       'x-component': 'Filter',
                       'x-decorator-props': {
