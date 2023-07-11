@@ -6,12 +6,14 @@ import _ from 'lodash';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { mergeFilter } from '../../block-provider';
-import { useCollectionManager } from '../../collection-manager';
+import { useCollectionFilterOptions, useCollectionManager } from '../../collection-manager';
+import { isTitleField } from '../../collection-manager/Configuration/CollectionFields';
 import {
   AssociationSelect,
+  removeNullCondition,
   SchemaComponent,
   SchemaComponentContext,
-  removeNullCondition,
+  useCompile,
 } from '../../schema-component';
 import { ITemplate } from '../../schema-component/antd/form-v2/Templates';
 import { AsDefaultTemplate } from './components/AsDefaultTemplate';
@@ -32,7 +34,7 @@ export const FormDataTemplates = observer(
     const { useProps, formSchema, designerCtx } = props;
     const { defaultValues, collectionName } = useProps();
     const { collectionList, getEnableFieldTree, getOnLoadData, getOnCheck } = useCollectionState(collectionName);
-    const { getCollection, getCollectionField } = useCollectionManager();
+    const { getCollection, getCollectionField, getCollectionFields } = useCollectionManager();
     const { t } = useTranslation();
 
     // 不要在后面的数组中依赖 defaultValues，否则会因为 defaultValues 的变化导致 activeData 响应性丢失
@@ -63,7 +65,7 @@ export const FormDataTemplates = observer(
       const filter = activeData.config?.[collectionName]?.filter;
       return _.isEmpty(filter) ? {} : removeNullCondition(mergeFilter([filter, getSelectedIdFilter(value)], '$or'));
     };
-
+    const dataSource = useCollectionFilterOptions(collectionName);
     const components = useMemo(() => ({ ArrayCollapse }), []);
     const scope = useMemo(
       () => ({
@@ -78,6 +80,16 @@ export const FormDataTemplates = observer(
       }),
       [],
     );
+    const compile = useCompile();
+    const targetFields = getCollectionFields(collectionName);
+    const options = targetFields
+      .filter((field) => {
+        return isTitleField(field);
+      })
+      .map((field) => ({
+        value: field?.name,
+        label: compile(field?.uiSchema?.title) || field?.name,
+      }));
     const schema = useMemo(
       () => ({
         type: 'object',
@@ -117,10 +129,10 @@ export const FormDataTemplates = observer(
                         options: collectionList,
                       },
                     },
+
                     dataId: {
                       type: 'number',
-                      title: '{{ t("Template Data") }}',
-                      required: true,
+                      title: '{{ t("Assign unique template data") }}',
                       description: t('Select an existing piece of data as the initialization data for the form'),
                       'x-designer': Designer,
                       'x-designer-props': {
@@ -155,6 +167,46 @@ export const FormDataTemplates = observer(
                                   resource: '{{ getResource($deps[0], $self) }}',
                                 },
                               },
+                            },
+                          },
+                        },
+                      ],
+                    },
+                    dataScope: {
+                      type: 'object',
+                      enum: dataSource,
+                      title: '{{ t("Assign specific data scope template data") }}',
+                      'x-decorator': 'FormItem',
+                      'x-component': 'Filter',
+                      'x-decorator-props': {
+                        style: {
+                          marginBottom: '0px',
+                        },
+                      },
+                      'x-reactions': [
+                        {
+                          dependencies: ['.dataId'],
+                          fulfill: {
+                            state: {
+                              required: '{{ !$deps[0] }}',
+                            },
+                          },
+                        },
+                      ],
+                    },
+                    titleField: {
+                      type: 'string',
+                      'x-decorator': 'FormItem',
+                      title: '{{ t("Title field") }}',
+                      'x-component': 'Select',
+                      enum: options,
+                      'x-reactions': [
+                        {
+                          dependencies: ['.dataId'],
+                          fulfill: {
+                            state: {
+                              required: '{{ !$deps[0] }}',
+                              visible: '{{ !$deps[0] }}',
                             },
                           },
                         },
