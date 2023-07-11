@@ -58,7 +58,7 @@ const InitializeTheme: React.FC = ({ children }) => {
         );
       }
     } else {
-      setTheme(null);
+      setTheme({});
       localStorage.setItem(CURRENT_THEME, null);
     }
   }, [
