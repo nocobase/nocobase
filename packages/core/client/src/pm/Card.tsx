@@ -1,6 +1,7 @@
 import { DeleteOutlined, SettingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import {
+  App,
   Avatar,
   Card,
   Modal,
@@ -214,6 +215,7 @@ export const PluginCard = (props: { data: IPluginData }) => {
   const { t } = useTranslation();
   const { enabled, name, displayName, id, description, version } = data;
   const [plugin, setPlugin] = useState<any>(null);
+  const { modal } = App.useApp();
   const { data: tabsData, run } = useRequest<any>(
     {
       url: '/plugins:getTabs',
@@ -268,7 +270,7 @@ export const PluginCard = (props: { data: IPluginData }) => {
           size={'small'}
           onChange={async (checked, e) => {
             e.stopPropagation();
-            Modal.warn({
+            modal.warn({
               title: checked ? t('Plugin starting') : t('Plugin stopping'),
               content: t('The application is reloading, please do not close the page.'),
               okButtonProps: {

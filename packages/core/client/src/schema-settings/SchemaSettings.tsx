@@ -6,6 +6,7 @@ import { uid } from '@formily/shared';
 import { error } from '@nocobase/utils/client';
 import {
   Alert,
+  App,
   Button,
   Cascader,
   CascaderProps,
@@ -508,11 +509,13 @@ SchemaSettings.Remove = function Remove(props: any) {
   const fieldSchema = useFieldSchema();
   const ctx = useBlockTemplateContext();
   const form = useForm();
+  const { modal } = App.useApp();
+
   return (
     <SchemaSettings.Item
       eventKey="remove"
       onClick={() => {
-        Modal.confirm({
+        modal.confirm({
           title: t('Delete block'),
           content: t('Are you sure you want to delete it?'),
           ...confirm,

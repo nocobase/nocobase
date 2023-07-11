@@ -1,6 +1,6 @@
 import { css } from '@emotion/css';
 import { error } from '@nocobase/utils/client';
-import { Dropdown, Menu, MenuProps, Modal } from 'antd';
+import { App, Dropdown, Menu, MenuProps } from 'antd';
 import React, { createContext, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -61,6 +61,7 @@ export const SettingsMenu: React.FC<{
   const changePassword = useChangePassword();
   const switchRole = useSwitchRole();
   const languageSettings = useLanguageSettings();
+  const { modal } = App.useApp();
   const controlApp = useMemo<MenuProps['items']>(() => {
     if (!appAllowed) {
       return [];
@@ -79,7 +80,7 @@ export const SettingsMenu: React.FC<{
         key: 'reboot',
         label: t('Reboot application'),
         onClick: async () => {
-          Modal.confirm({
+          modal.confirm({
             title: t('Reboot application'),
             content: t('The will interrupt service, it may take a few seconds to restart. Are you sure to continue?'),
             okText: t('Reboot'),
@@ -99,7 +100,7 @@ export const SettingsMenu: React.FC<{
         type: 'divider',
       },
     ];
-  }, [appAllowed, check]);
+  }, [api, appAllowed, check, modal, t]);
 
   const items = [
     appVersion,
