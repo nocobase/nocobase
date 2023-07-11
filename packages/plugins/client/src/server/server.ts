@@ -1,4 +1,4 @@
-import { Plugin, PluginManager } from '@nocobase/server';
+import { Plugin } from '@nocobase/server';
 import { lodash } from '@nocobase/utils';
 import fs from 'fs';
 import send from 'koa-send';
@@ -9,56 +9,6 @@ import { getCronLocale } from './cron';
 import { getCronstrueLocale } from './cronstrue';
 import { getMomentLocale } from './moment-locale';
 import { getResourceLocale } from './resource';
-
-async function getReadMe(name: string, locale: string) {
-  const packageName = PluginManager.getPackageName(name);
-  const dir = resolve(process.cwd(), 'node_modules', packageName);
-  const files = [resolve(dir, `README.${locale}.md`), resolve(dir, `README.md`)];
-  const file = files.find((file) => {
-    return fs.existsSync(file);
-  });
-  return file ? (await fs.promises.readFile(file)).toString() : '';
-}
-
-async function getTabs(name: string, locale: string) {
-  const packageName = PluginManager.getPackageName(name);
-  const dir = resolve(process.cwd(), 'node_modules', packageName);
-  const file = resolve(dir, 'docs', locale, 'tabs.json');
-  if (!fs.existsSync(file)) {
-    // TODO: compatible README, remove it in all plugin has tabs.json
-    return [
-      {
-        title: 'README',
-        path: '__README__',
-      },
-    ];
-  }
-  return JSON.parse((await fs.promises.readFile(file)).toString());
-}
-
-interface TabInfoParams {
-  filterByTk: string;
-  path: string;
-  locale: string;
-}
-
-async function getTabInfo({ filterByTk, path, locale }: TabInfoParams) {
-  const packageName = PluginManager.getPackageName(filterByTk);
-  const dir = resolve(process.cwd(), 'node_modules', packageName);
-  if (path === '__README__') {
-    return await getReadMe(filterByTk, locale);
-  }
-  const files = [
-    resolve(dir, 'docs', locale, `${path}.md`),
-    // default
-    resolve(dir, 'docs', 'en-US', `${path}.md`),
-    resolve(dir, 'docs', 'zh-CN', `${path}.md`),
-  ];
-  const file = files.find((file) => {
-    return fs.existsSync(file);
-  });
-  return file ? (await fs.promises.readFile(file)).toString() : '';
-}
 
 async function getLang(ctx) {
   const SystemSetting = ctx.db.getRepository('systemSettings');
@@ -197,38 +147,6 @@ export class ClientPlugin extends Plugin {
             process.exit(RESTART_CODE);
           });
           ctx.app.stop();
-        },
-      },
-    });
-    this.app.resource({
-      name: 'plugins',
-      actions: {
-        async getInfo(ctx, next) {
-          const lang = await getLang(ctx);
-          const { filterByTk } = ctx.action.params;
-          ctx.body = {
-            filterByTk,
-            readMe: await getReadMe(filterByTk, lang),
-          };
-          await next();
-        },
-        async getTabs(ctx, next) {
-          const lang = await getLang(ctx);
-          const { filterByTk } = ctx.action.params;
-          ctx.body = {
-            filterByTk,
-            tabs: await getTabs(filterByTk, lang),
-          };
-          await next();
-        },
-        async getTabInfo(ctx, next) {
-          const locale = await getLang(ctx);
-          const { filterByTk } = ctx.action.params;
-          ctx.body = {
-            filterByTk,
-            content: await getTabInfo({ ...(ctx.action.params as any), locale }),
-          };
-          await next();
         },
       },
     });
