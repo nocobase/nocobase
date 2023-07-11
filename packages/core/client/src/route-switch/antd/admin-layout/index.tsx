@@ -20,7 +20,7 @@ import {
   useRequest,
   useSystemSettings,
 } from '../../../';
-import { Plugin } from '../../../application';
+import { Plugin } from '../../../application/Plugin';
 import { useCollectionManager } from '../../../collection-manager';
 
 const filterByACL = (schema, options) => {
