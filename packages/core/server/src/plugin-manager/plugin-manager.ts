@@ -197,7 +197,6 @@ export class PluginManager {
       values: {
         name,
         registry,
-        appName: this.app.name,
         zipUrl: undefined,
         clientUrl: undefined,
         version: undefined,
@@ -214,7 +213,7 @@ export class PluginManager {
 
     // 3. update database
     await this.repository.update({
-      filter: { name, appName: this.app.name },
+      filter: { name },
       values: {
         version,
         clientUrl: getClientStaticUrl(name),
@@ -241,7 +240,7 @@ export class PluginManager {
 
     // 2. update database
     await this.repository.update({
-      filter: { name, appName: this.app.name },
+      filter: { name },
       values: {
         version: latestVersion,
       },
@@ -265,7 +264,7 @@ export class PluginManager {
 
     // 2. update database
     const pluginData = await this.repository.update({
-      filter: { name, appName: this.app.name },
+      filter: { name },
       values: {
         version,
       },
@@ -301,7 +300,6 @@ export class PluginManager {
     const res = await this.repository.create({
       values: {
         name,
-        appName: this.app.name,
         zipUrl,
         builtIn,
         isOfficial,
@@ -339,7 +337,6 @@ export class PluginManager {
     await this.repository.update({
       filter: {
         name,
-        appName: this.app.name,
       },
       values: {
         enabled: true,
@@ -371,7 +368,6 @@ export class PluginManager {
       filter: {
         name,
         builtIn: false,
-        appName: this.app.name,
       },
       values: {
         enabled: false,
@@ -400,7 +396,6 @@ export class PluginManager {
       filter: {
         name,
         builtIn: false,
-        appName: this.app.name,
       },
     });
 
@@ -428,7 +423,7 @@ export class PluginManager {
 
   async getPluginData(name: string) {
     const pluginData: PluginData = await this.repository.findOne({
-      filter: { name, appName: this.app.name },
+      filter: { name },
     });
 
     if (!pluginData) {

@@ -7,7 +7,6 @@ export default defineCollection({
   repository: 'PluginManagerRepository',
   fields: [
     { type: 'string', name: 'name', unique: true },
-    { type: 'string', name: 'appName' },
     { type: 'string', name: 'version' },
     { type: 'string', name: 'registry' },
     { type: 'string', name: 'clientUrl' },
