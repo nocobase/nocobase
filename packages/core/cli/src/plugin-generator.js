@@ -47,7 +47,7 @@ class PluginGenerator extends Generator {
 
   async writing() {
     const { name } = this.context;
-    const target = resolve(process.cwd(), 'packages/plugins/', name);
+    const target = join(this.cwd, name);
     if (existsSync(target)) {
       console.log(chalk.red(`[${name}] plugin already exists.`));
       return;
@@ -59,7 +59,7 @@ class PluginGenerator extends Generator {
       path: join(__dirname, '../templates/plugin'),
     });
     console.log('');
-    console.log(`The plugin folder is in ${chalk.green(`packages/plugins/${name}`)}`);
+    console.log(`The plugin folder is in ${chalk.green(target)}`);
   }
 }
 

@@ -121,7 +121,6 @@ export class ClientPlugin extends Plugin {
     });
     this.app.acl.allow('app', 'getLang');
     this.app.acl.allow('app', 'getInfo');
-    this.app.acl.allow('app', 'getPlugins');
     this.app.acl.allow('plugins', '*', 'public');
     this.app.acl.registerSnippet({
       name: 'app',
@@ -179,25 +178,6 @@ export class ClientPlugin extends Plugin {
             moment: getMomentLocale(lang),
             ...locales[lang],
           };
-          await next();
-        },
-        async getPlugins(ctx, next) {
-          const pm = ctx.db.getRepository('applicationPlugins');
-          const items = await pm.find({
-            filter: {
-              enabled: true,
-            },
-          });
-          ctx.body = items
-            .filter((item) => {
-              try {
-                const packageName = PluginManager.getPackageName(item.name);
-                require.resolve(`${packageName}/client`);
-                return true;
-              } catch (error) {}
-              return false;
-            })
-            .map((item) => item.name);
           await next();
         },
         async clearCache(ctx, next) {

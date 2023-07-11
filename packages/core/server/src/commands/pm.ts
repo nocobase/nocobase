@@ -9,10 +9,18 @@ export default (app: Application) => {
     .action(async (method, plugins, options, ...args) => {
       if (method === 'add' && !options.skipYarnInstall) {
         const { run } = require('@nocobase/cli/src/util');
-        console.log('Install dependencies and rebuild workspaces');
+        console.log('Install dependencies');
         await run('yarn', ['install']);
       }
 
-      app.pm.clientWrite({ method, plugins });
+      await app.pm.clientWrite({ method, plugins });
+
+      if (method === 'create') {
+        console.log(`You can use \`yarn nocobase pm add ${plugins.join(' ')}\` to add plugins.`);
+      }
+
+      if (method === 'add') {
+        console.log(`You can use \`yarn nocobase pm enable ${plugins.join(' ')}\` to enable plugins.`);
+      }
     });
 };

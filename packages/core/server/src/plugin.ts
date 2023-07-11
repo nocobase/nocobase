@@ -24,7 +24,7 @@ export interface PluginOptions {
 
 export type PluginType = typeof Plugin;
 
-export abstract class Plugin<O = any> implements PluginInterface {
+export class Plugin<O = any> implements PluginInterface {
   options: any;
   app: Application;
 
@@ -52,6 +52,14 @@ export abstract class Plugin<O = any> implements PluginInterface {
     this.options.enabled = value;
   }
 
+  get builtIn() {
+    return this.options.builtIn;
+  }
+
+  set builtIn(value) {
+    this.options.builtIn = value;
+  }
+
   setOptions(options: any) {
     this.options = options || {};
   }
@@ -60,21 +68,19 @@ export abstract class Plugin<O = any> implements PluginInterface {
     return (this.options as any).name;
   }
 
-  afterAdd() {}
+  async afterAdd() { }
 
-  beforeLoad() {}
+  async beforeLoad() { }
+
+  async install(options?: InstallOptions) { }
 
   async load() {}
-
-  async install(options?: InstallOptions) {}
-
-  async beforeEnable() {}
 
   async afterEnable() {}
 
   async afterDisable() {}
 
-  async remove() {}
+  async remove() { }
 
   async importCollections(collectionsPath: string) {
     await this.db.import({

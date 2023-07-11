@@ -23,7 +23,7 @@ import { InstallOptions, PluginManager } from './plugin-manager';
 
 const packageJson = require('../package.json');
 
-export type PluginConfiguration = string | [string, any];
+export type PluginConfiguration = typeof Plugin | [typeof Plugin, any];
 
 export interface ResourcerOptions {
   prefix?: string;
@@ -326,8 +326,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return packageJson.version;
   }
 
-  plugin<O = any>(pluginClass: any, options?: O): Plugin {
-    return this.pm.addStatic(pluginClass, options);
+  plugin<O = any>(pluginClass: typeof Plugin, options?: O): Plugin {
+    return this.pm.setPluginInstance(pluginClass, options);
   }
 
   // @ts-ignore
@@ -396,8 +396,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.emitAsync('afterReload', this, options);
   }
 
-  getPlugin<P extends Plugin>(name: string) {
-    return this.pm.get(name) as P;
+  getPlugin<P extends Plugin>(name: string | typeof Plugin) {
+    return this.pm.plugins.get(name) as P;
   }
 
   async parse(argv = process.argv) {

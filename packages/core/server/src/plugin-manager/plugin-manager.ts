@@ -1,19 +1,31 @@
 import { CleanOptions, Collection, SyncOptions } from '@nocobase/database';
-import { requireModule } from '@nocobase/utils';
-import execa from 'execa';
 import fs from 'fs';
 import net from 'net';
-import { resolve } from 'path';
+import path from 'path';
 import xpipe from 'xpipe';
 import Application from '../application';
 import { Plugin } from '../plugin';
 import collectionOptions from './options/collection';
 import resourceOptions from './options/resource';
 import { PluginManagerRepository } from './plugin-manager-repository';
+import { pluginStatic } from './pluginStatic';
+import { PluginData } from './types';
+import {
+  addByLocalPackage,
+  addOrUpdatePluginByNpm,
+  addOrUpdatePluginByZip,
+  checkPluginPackage,
+  getClientStaticUrl,
+  getExtraPluginInfo,
+  getNewVersion,
+  getPackageJsonByLocalPath,
+  getPluginPackagesPath,
+  removePluginPackage,
+} from './utils';
 
 export interface PluginManagerOptions {
   app: Application;
-  plugins?: any[];
+  plugins?: (typeof Plugin | [typeof Plugin, any])[];
 }
 
 export interface InstallOptions {
@@ -24,51 +36,35 @@ export interface InstallOptions {
 
 export class PluginManager {
   app: Application;
-  collection: Collection;
-  repository: PluginManagerRepository;
-  plugins = new Map<string, Plugin>();
-  server: net.Server;
   pmSock: string;
-  _tmpPluginArgs = [];
+  server: net.Server;
+  collection: Collection;
+  initDatabasePluginsPromise: Promise<void>;
+  repository: PluginManagerRepository;
+  plugins = new Map<string | typeof Plugin, Plugin>();
 
   constructor(options: PluginManagerOptions) {
     this.app = options.app;
-    const f = resolve(process.cwd(), 'storage', 'pm.sock');
-    this.pmSock = xpipe.eq(this.app.options.pmSock || f);
     this.app.db.registerRepositories({
       PluginManagerRepository,
     });
 
+    this.initCommandCliSocket();
     this.collection = this.app.db.collection(collectionOptions);
-
     this.repository = this.collection.repository as PluginManagerRepository;
     this.repository.setPluginManager(this);
     this.app.resourcer.define(resourceOptions);
 
-    this.app.resourcer.use(async (ctx, next) => {
-      await next();
-      const { resourceName, actionName } = ctx.action;
-      if (resourceName === 'applicationPlugins' && actionName === 'list') {
-        const lng = ctx.getCurrentLocale();
-        if (Array.isArray(ctx.body)) {
-          ctx.body = ctx.body.map((plugin) => {
-            const json = plugin.toJSON();
-            const packageName = PluginManager.getPackageName(json.name);
-            const packageJson = PluginManager.getPackageJson(packageName);
-            return {
-              displayName: packageJson[`displayName.${lng}`] || packageJson.displayName,
-              description: packageJson[`description.${lng}`] || packageJson.description,
-              ...json,
-            };
-          });
-        }
-      }
-    });
-
     this.app.acl.registerSnippet({
       name: 'pm',
-      actions: ['pm:*', 'applicationPlugins:list'],
+      actions: ['pm:*'],
     });
+
+    // plugin static files
+    this.app.use(pluginStatic);
+
+    // init static plugins
+    this.initStaticPlugins(options.plugins);
 
     this.app.on('beforeLoad', async (app, options) => {
       if (options?.method && ['install', 'upgrade'].includes(options.method)) {
@@ -83,45 +79,448 @@ export class PluginManager {
       }
 
       if (options?.method !== 'install' || options.reload) {
-        await this.repository.load();
+        // await all database plugins init
+        this.initDatabasePluginsPromise = this.initDatabasePlugins();
+
+        // run all plugins' beforeLoad
+        for await (const plugin of this.plugins.values()) {
+          await plugin.beforeLoad();
+        }
       }
     });
 
     this.app.on('beforeUpgrade', async () => {
       await this.collection.sync();
     });
-
-    this.addStaticMultiple(options.plugins);
   }
 
-  addStaticMultiple(plugins: any) {
-    for (const plugin of plugins || []) {
-      if (typeof plugin == 'string') {
-        this.addStatic(plugin);
+  initCommandCliSocket() {
+    const f = path.resolve(process.cwd(), 'storage', 'pm.sock');
+    this.pmSock = xpipe.eq(this.app.options.pmSock || f);
+    this.app.db.registerRepositories({
+      PluginManagerRepository,
+    });
+  }
+
+  async initStaticPlugins(plugins: PluginManagerOptions['plugins'] = []) {
+    for (const plugin of plugins) {
+      if (Array.isArray(plugin)) {
+        const [PluginClass, options] = plugin;
+        this.setPluginInstance(PluginClass, options);
       } else {
-        this.addStatic(...plugin);
+        this.setPluginInstance(plugin, {});
       }
     }
   }
 
-  getPlugins() {
-    return this.plugins;
+  async initDatabasePlugins() {
+    const pluginList: PluginData[] = await this.repository.list(this.app.name);
+
+    // TODO: 并发执行还是循序执行，现在的做法是顺序一个一个执行？
+    for await (const pluginData of pluginList) {
+      this.setDatabasePlugin(pluginData);
+      await checkPluginPackage(pluginData);
+    }
   }
 
-  get(name: string) {
-    return this.plugins.get(name);
+  /**
+   * get plugins static files
+   *
+   * @example
+   * getPluginsClientFiles() =>
+   *  {
+   *    '@nocobase/acl': '/api/@nocobase/acl/index.js',
+   *    'foo': '/api/foo/index.js'
+   *  }
+   */
+  async getPluginsClientFiles(): Promise<Record<string, string>> {
+    // await all plugins init
+    await this.initDatabasePluginsPromise;
+
+    const pluginList: PluginData[] = await this.repository.list(this.app.name, { enable: true, installed: true });
+    return pluginList.reduce<Record<string, string>>((memo, item) => {
+      const { name, clientUrl } = item;
+      memo[name] = clientUrl;
+      return memo;
+    }, {});
   }
 
-  has(name: string) {
-    return this.plugins.has(name);
+  async list() {
+    const pluginData: PluginData[] = await this.repository.list(this.app.name);
+
+    return Promise.all(
+      pluginData.map(async (item) => {
+        const extraInfo = await getExtraPluginInfo(item);
+        return {
+          ...item,
+          ...extraInfo,
+        };
+      }),
+    );
   }
 
-  clientWrite(data: any) {
+  async setDatabasePlugin(pluginData: PluginData) {
+    const PluginClass = require(pluginData.name);
+    const pluginInstance = this.setPluginInstance(PluginClass, pluginData);
+    return pluginInstance;
+  }
+
+  setPluginInstance(PluginClass: typeof Plugin, options: Pick<PluginData, 'name' | 'builtIn' | 'enabled'>) {
+    const { name, enabled, builtIn } = options;
+
+    if (typeof PluginClass !== 'function') {
+      throw new Error(`plugin [${name}] must export a class`);
+    }
+
+    // 2. new plugin instance
+    const instance: Plugin = new PluginClass(this.app, {
+      name,
+      enabled,
+      builtIn,
+    });
+
+    // 3. add instance to plugins
+    this.plugins.set(name || PluginClass, instance);
+
+    return instance;
+  }
+
+  async addByNpm(data: any) {
+    // 1. add plugin to database
+    const { name, registry, builtIn, isOfficial } = data;
+
+    if (this.plugins.has(name)) {
+      throw new Error(`plugin name [${name}] already exists`);
+    }
+
+    const res = await this.repository.create({
+      values: {
+        name,
+        registry,
+        appName: this.app.name,
+        zipUrl: undefined,
+        clientUrl: undefined,
+        version: undefined,
+        enabled: false,
+        isOfficial,
+        installed: false,
+        builtIn,
+        options: {},
+      },
+    });
+
+    // 2. download and unzip plugin
+    const { version } = await addOrUpdatePluginByNpm({ name, registry });
+
+    // 3. update database
+    await this.repository.update({
+      filter: { name, appName: this.app.name },
+      values: {
+        version,
+        clientUrl: getClientStaticUrl(name),
+        installed: true,
+      },
+    });
+
+    // 4.run plugin
+    const instance = await this.setDatabasePlugin({ name, enabled: false, builtIn });
+
+    await instance.afterAdd();
+
+    return res;
+  }
+
+  async upgradeByNpm(name: string) {
+    const pluginData = await this.getPluginData(name);
+
+    // 1. download and unzip package
+    const latestVersion = await getNewVersion(pluginData);
+    if (latestVersion) {
+      await addOrUpdatePluginByNpm({ name, registry: pluginData.registry, version: latestVersion });
+    }
+
+    // 2. update database
+    await this.repository.update({
+      filter: { name, appName: this.app.name },
+      values: {
+        version: latestVersion,
+      },
+    });
+
+    // 3. run plugin
+    const instance = await this.setDatabasePlugin(pluginData);
+
+    // TODO: 升级后应该执行哪些 hooks？
+    // 这里执行了 `afterAdd` 和 `load`
+    await instance.afterAdd();
+
+    if (pluginData.enabled) {
+      await instance.load();
+    }
+  }
+
+  async upgradeByZip(name: string, zipUrl: string) {
+    // 1. download and unzip package
+    const { version } = await addOrUpdatePluginByZip({ name, zipUrl });
+
+    // 2. update database
+    const pluginData = await this.repository.update({
+      filter: { name, appName: this.app.name },
+      values: {
+        version,
+      },
+    });
+
+    // 3. run plugin
+    const instance = await this.setDatabasePlugin(pluginData);
+
+    // TODO: 升级后应该执行哪些 hooks？
+    // 这里执行了 `afterAdd` 和 `load`
+    await instance.afterAdd();
+
+    if (pluginData.enabled) {
+      await instance.load();
+    }
+  }
+
+  async addByUpload(data: { zipUrl: string; builtIn?: boolean; isOfficial?: boolean }) {
+    // download and unzip plugin
+    const { packageDir } = await addOrUpdatePluginByZip({ zipUrl: data.zipUrl });
+
+    return this.addByLocalPath(packageDir, data);
+  }
+
+  async addByLocalPath(localPath: string, data: { zipUrl?: string; builtIn?: boolean; isOfficial?: boolean } = {}) {
+    const { zipUrl, builtIn = false, isOfficial = false } = data;
+    const { name, version } = getPackageJsonByLocalPath(localPath);
+    if (this.plugins.has(name)) {
+      throw new Error(`plugin [${name}] already exists`);
+    }
+
+    // 1. add plugin to database
+    const res = await this.repository.create({
+      values: {
+        name,
+        appName: this.app.name,
+        zipUrl,
+        builtIn,
+        isOfficial,
+        clientUrl: getClientStaticUrl(name),
+        version,
+        registry: undefined,
+        enabled: false,
+        installed: true,
+        options: {},
+      },
+    });
+
+    // 2. set plugin instance
+    const instance = await this.setDatabasePlugin({ name, enabled: false, builtIn });
+
+    // 3. run `afterAdd` hook
+    await instance.afterAdd();
+
+    return res;
+  }
+
+  async enable(name: string) {
+    const pluginInstance = this.getPluginInstance(name);
+
+    // 1. check required plugins
+    const requiredPlugins = pluginInstance.requiredPlugins();
+    for (const requiredPluginName of requiredPlugins) {
+      const requiredPlugin = this.plugins.get(requiredPluginName);
+      if (!requiredPlugin.enabled) {
+        throw new Error(`${name} plugin need ${requiredPluginName} plugin enabled`);
+      }
+    }
+
+    // 2. update database
+    await this.repository.update({
+      filter: {
+        name,
+        appName: this.app.name,
+      },
+      values: {
+        enabled: true,
+      },
+    });
+
+    // 3. run `install` hook
+    await pluginInstance.install();
+
+    // 4. run `afterEnable` hook
+    await pluginInstance.afterEnable();
+
+    // 5. emit app hook
+    await this.app.emitAsync('afterEnablePlugin', name);
+
+    // 6. load plugin
+    await this.load(pluginInstance);
+  }
+
+  async disable(name: string) {
+    const pluginInstance = this.getPluginInstance(name);
+
+    if (pluginInstance.builtIn) {
+      throw new Error(`${name} plugin is builtIn, can not disable`);
+    }
+
+    // 1. update database
+    await this.repository.update({
+      filter: {
+        name,
+        builtIn: false,
+        appName: this.app.name,
+      },
+      values: {
+        enabled: false,
+      },
+    });
+
+    // 2. run `afterDisable` hook
+    await pluginInstance.afterDisable();
+
+    // 3. emit app hook
+    await this.app.emitAsync('afterDisablePlugin', name);
+  }
+
+  async remove(name: string) {
+    const pluginInstance = this.getPluginInstance(name);
+
+    if (pluginInstance.builtIn) {
+      throw new Error(`${name} plugin is builtIn, can not remove`);
+    }
+
+    // 1. run `remove` hook
+    await pluginInstance.remove();
+
+    // 2. remove plugin from database
+    await this.repository.destroy({
+      filter: {
+        name,
+        builtIn: false,
+        appName: this.app.name,
+      },
+    });
+
+    // 3. remove instance
+    this.plugins.delete(name);
+
+    // 4. remove plugin package
+    await removePluginPackage(name);
+  }
+
+  async loadAll(options: any) {
+    // TODO: 是否改为并行加载？
+    for await (const pluginInstance of this.plugins.values()) {
+      await this.load(pluginInstance, options);
+    }
+  }
+
+  async load(pluginInstance: Plugin, options: any = {}) {
+    if (!pluginInstance.enabled) return;
+
+    await this.app.emitAsync('beforeLoadPlugin', pluginInstance, options);
+    await pluginInstance.load();
+    await this.app.emitAsync('afterLoadPlugin', pluginInstance, options);
+  }
+
+  async getPluginData(name: string) {
+    const pluginData: PluginData = await this.repository.findOne({
+      filter: { name, appName: this.app.name },
+    });
+
+    if (!pluginData) {
+      throw new Error(`plugin [${name}] not exists`);
+    }
+
+    return pluginData;
+  }
+
+  getPluginInstance(name: string) {
+    const pluginInstance: Plugin = this.plugins.get(name);
+    if (!pluginInstance) {
+      throw new Error(`${name} plugin does not exist`);
+    }
+
+    return pluginInstance;
+  }
+
+  clone() {
+    const pm = new PluginManager({
+      app: this.app,
+    });
+    return pm;
+  }
+
+  async install(options: InstallOptions = {}) {
+    for (const [name, plugin] of this.plugins) {
+      if (!plugin.enabled) {
+        continue;
+      }
+      await this.app.emitAsync('beforeInstallPlugin', plugin, options);
+      await plugin.install(options);
+      await this.app.emitAsync('afterInstallPlugin', plugin, options);
+    }
+  }
+
+  // by cli: `yarn nocobase pm create xxx`
+  async createByCli(name: string) {
+    console.log(`creating ${name} plugin...`);
+    const { run } = require('@nocobase/cli/src/util');
+    const { PluginGenerator } = require('@nocobase/cli/src/plugin-generator');
+    const generator = new PluginGenerator({
+      cwd: getPluginPackagesPath(),
+      args: {},
+      context: {
+        name,
+      },
+    });
+    await generator.run();
+    await run('yarn', ['install']);
+  }
+
+  // by cli: `yarn nocobase pm add xxx`
+  async addByCli(name: string) {
+    console.log(`adding ${name} plugin...`);
+    const localPackage = path.join(getPluginPackagesPath(), name);
+    if (!fs.existsSync(localPackage)) {
+      throw new Error(`plugin [${name}] not exists, Please use 'yarn nocobase pm create ${name}' to create first.`);
+    }
+
+    await addByLocalPackage(localPackage);
+
+    return this.addByLocalPath(localPackage);
+  }
+
+  // by cli: `yarn nocobase pm remove xxx`
+  get removeByCli() {
+    return this.remove;
+  }
+
+  // by cli: `yarn nocobase pm enable xxx`
+  get enableByCli() {
+    return this.enable;
+  }
+
+  // by cli: `yarn nocobase pm disable xxx`
+  get disableByCli() {
+    return this.disable;
+  }
+
+  doCliCommand(method: string, name: string | string[]) {
+    const pluginNames = Array.isArray(name) ? name : [name];
+    return Promise.all(pluginNames.map((name) => this[`${method}ByCli`](name)));
+  }
+
+  // for cli: `yarn nocobase pm create/add/enable/disable/remove xxx`
+  async clientWrite(data: { method: string; plugins: string | string[] }) {
     const { method, plugins } = data;
     if (method === 'create') {
       try {
         console.log(method, plugins);
-        this[method](plugins);
+        await this.doCliCommand(method, plugins);
       } catch (error) {
         console.error(error.message);
       }
@@ -135,7 +534,7 @@ export class PluginManager {
     client.on('error', async () => {
       try {
         console.log(method, plugins);
-        await this[method](plugins);
+        await this.doCliCommand(method, plugins);
       } catch (error) {
         console.error(error.message);
       }
@@ -148,7 +547,7 @@ export class PluginManager {
         const { method, plugins } = JSON.parse(data.toString());
         try {
           console.log(method, plugins);
-          await this[method](plugins);
+          await this.doCliCommand(method, plugins);
         } catch (error) {
           console.error(error.message);
         }
@@ -164,271 +563,6 @@ export class PluginManager {
         resolve(this.server);
       });
     });
-  }
-
-  async create(name: string | string[]) {
-    console.log('creating...');
-    const pluginNames = Array.isArray(name) ? name : [name];
-    const { run } = require('@nocobase/cli/src/util');
-    const createPlugin = async (name) => {
-      const { PluginGenerator } = require('@nocobase/cli/src/plugin-generator');
-      const generator = new PluginGenerator({
-        cwd: resolve(process.cwd(), name),
-        args: {},
-        context: {
-          name,
-        },
-      });
-      await generator.run();
-    };
-    await Promise.all(pluginNames.map((pluginName) => createPlugin(pluginName)));
-    await run('yarn', ['install']);
-  }
-
-  clone() {
-    const pm = new PluginManager({
-      app: this.app,
-    });
-    for (const arg of this._tmpPluginArgs) {
-      pm.addStatic(...arg);
-    }
-    return pm;
-  }
-
-  addStatic(plugin?: any, options?: any) {
-    if (!options?.async) {
-      this._tmpPluginArgs.push([plugin, options]);
-    }
-
-    let name: string;
-    if (typeof plugin === 'string') {
-      name = plugin;
-      plugin = PluginManager.resolvePlugin(plugin);
-    } else {
-      name = plugin.name;
-      if (!name) {
-        throw new Error(`plugin name invalid`);
-      }
-    }
-
-    const instance = new plugin(this.app, {
-      name,
-      enabled: true,
-      ...options,
-    });
-
-    const pluginName = instance.getName();
-
-    if (this.plugins.has(pluginName)) {
-      throw new Error(`plugin name [${pluginName}] already exists`);
-    }
-
-    this.plugins.set(pluginName, instance);
-    return instance;
-  }
-
-  async generateClientFile(plugin: string, packageName: string) {
-    const file = resolve(
-      process.cwd(),
-      'packages',
-      process.env.APP_PACKAGE_ROOT || 'app',
-      'client/src/plugins',
-      `${plugin}.ts`,
-    );
-    if (!fs.existsSync(file)) {
-      try {
-        require.resolve(`${packageName}/client`);
-        await fs.promises.writeFile(file, `export { default } from '${packageName}/client';`);
-        const { run } = require('@nocobase/cli/src/util');
-        await run('yarn', ['nocobase', 'postinstall']);
-      } catch (error) {}
-    }
-  }
-
-  async add(plugin: any, options: any = {}, transaction?: any) {
-    if (Array.isArray(plugin)) {
-      const t = transaction || (await this.app.db.sequelize.transaction());
-      try {
-        const items = [];
-
-        for (const p of plugin) {
-          items.push(await this.add(p, options, t));
-        }
-
-        await t.commit();
-        return items;
-      } catch (error) {
-        await t.rollback();
-        throw error;
-      }
-    }
-
-    const packageName = await PluginManager.findPackage(plugin);
-
-    await this.generateClientFile(plugin, packageName);
-
-    const instance = this.addStatic(plugin, {
-      ...options,
-      async: true,
-    });
-
-    const model = await this.repository.findOne({
-      transaction,
-      filter: { name: plugin },
-    });
-
-    const packageJson = PluginManager.getPackageJson(packageName);
-
-    if (!model) {
-      const { enabled, builtIn, installed, ...others } = options;
-      await this.repository.create({
-        transaction,
-        values: {
-          name: plugin,
-          version: packageJson.version,
-          enabled: !!enabled,
-          builtIn: !!builtIn,
-          installed: !!installed,
-          options: {
-            ...others,
-          },
-        },
-      });
-    }
-    return instance;
-  }
-
-  async load(options: any = {}) {
-    for (const [name, plugin] of this.plugins) {
-      if (!plugin.enabled) {
-        continue;
-      }
-      await plugin.beforeLoad();
-    }
-
-    for (const [name, plugin] of this.plugins) {
-      if (!plugin.enabled) {
-        continue;
-      }
-      await this.app.emitAsync('beforeLoadPlugin', plugin, options);
-      await plugin.load();
-      await this.app.emitAsync('afterLoadPlugin', plugin, options);
-    }
-  }
-
-  async install(options: InstallOptions = {}) {
-    for (const [name, plugin] of this.plugins) {
-      if (!plugin.enabled) {
-        continue;
-      }
-      await this.app.emitAsync('beforeInstallPlugin', plugin, options);
-      await plugin.install(options);
-      await this.app.emitAsync('afterInstallPlugin', plugin, options);
-    }
-  }
-
-  async enable(name: string | string[]) {
-    try {
-      const pluginNames = await this.repository.enable(name);
-      await this.app.reload();
-
-      await this.app.db.sync();
-      for (const pluginName of pluginNames) {
-        const plugin = this.app.getPlugin(pluginName);
-        if (!plugin) {
-          throw new Error(`${name} plugin does not exist`);
-        }
-        await plugin.install();
-        await plugin.afterEnable();
-      }
-
-      await this.app.emitAsync('afterEnablePlugin', name);
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  async disable(name: string | string[]) {
-    try {
-      const pluginNames = await this.repository.disable(name);
-      await this.app.reload();
-      for (const pluginName of pluginNames) {
-        const plugin = this.app.getPlugin(pluginName);
-        if (!plugin) {
-          throw new Error(`${name} plugin does not exist`);
-        }
-        await plugin.afterDisable();
-      }
-
-      await this.app.emitAsync('afterDisablePlugin', name);
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  async remove(name: string | string[]) {
-    const pluginNames = typeof name === 'string' ? [name] : name;
-    for (const pluginName of pluginNames) {
-      const plugin = this.app.getPlugin(pluginName);
-      if (!plugin) {
-        throw new Error(`${name} plugin does not exist`);
-      }
-      await plugin.remove();
-    }
-    await this.repository.remove(name);
-    this.app.reload();
-  }
-
-  static getPackageJson(packageName: string) {
-    return require(`${packageName}/package.json`);
-  }
-
-  static getPackageName(name: string) {
-    const prefixes = this.getPluginPkgPrefix();
-    for (const prefix of prefixes) {
-      try {
-        require.resolve(`${prefix}${name}`);
-        return `${prefix}${name}`;
-      } catch (error) {
-        continue;
-      }
-    }
-    throw new Error(`${name} plugin does not exist`);
-  }
-
-  static getPluginPkgPrefix() {
-    return (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro-').split(
-      ',',
-    );
-  }
-
-  static async findPackage(name: string) {
-    try {
-      const packageName = this.getPackageName(name);
-      return packageName;
-    } catch (error) {
-      console.log(`\`${name}\` plugin not found locally`);
-      const prefixes = this.getPluginPkgPrefix();
-      for (const prefix of prefixes) {
-        try {
-          const packageName = `${prefix}${name}`;
-          console.log(`Try to find ${packageName}`);
-          await execa('npm', ['v', packageName, 'versions']);
-          console.log(`${packageName} downloading`);
-          await execa('yarn', ['add', packageName, '-W']);
-          console.log(`${packageName} downloaded`);
-          return packageName;
-        } catch (error) {
-          continue;
-        }
-      }
-    }
-    throw new Error(`No available packages found, ${name} plugin does not exist`);
-  }
-
-  static resolvePlugin(pluginName: string) {
-    const packageName = this.getPackageName(pluginName);
-    return requireModule(packageName);
   }
 }
 
