@@ -5,6 +5,11 @@ export const useStyles = createStyles(({ token }) => {
     nbMenuItemGroup: {
       maxHeight: '50vh',
       overflowY: 'auto',
+    },
+
+    nbMenuItemSubMenu: {
+      maxHeight: '50vh',
+      overflowY: 'auto',
       boxShadow: token.boxShadowSecondary,
       borderRadius: token.borderRadiusLG,
     },
