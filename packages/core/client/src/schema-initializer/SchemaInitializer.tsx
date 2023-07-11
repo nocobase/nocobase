@@ -58,6 +58,7 @@ SchemaInitializer.Button = observer(
     const [searchValue, setSearchValue] = useState('');
     const [isPending, startTransition] = useTransition();
     const menuItems = useRef([]);
+    const { styles } = useStyles();
 
     const changeMenu = (v: boolean) => {
       // 这里是为了防止当鼠标快速滑过时，终止菜单的渲染，防止卡顿
@@ -155,6 +156,7 @@ SchemaInitializer.Button = observer(
                 key: item.key || `item-group-${indexA}`,
                 label,
                 title: label,
+                popupClassName: styles.nbMenuItemGroup,
                 children: renderItems(item.children),
               }
             );
