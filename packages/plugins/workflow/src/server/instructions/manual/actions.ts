@@ -58,11 +58,12 @@ export async function submit(context: Context, next) {
     currentRecord: values.result[formKey],
     currentTime: new Date(),
   });
-  const finalResult = { [formKey]: Object.assign(values.result[formKey], presetValues) };
 
   userJob.set({
     status: actionItem.status,
-    result: actionItem.status ? finalResult : Object.assign(userJob.result ?? {}, values.result),
+    result: actionItem.status
+      ? { [formKey]: Object.assign(values.result[formKey], presetValues) }
+      : Object.assign(userJob.result ?? {}, values.result),
   });
 
   const handler = instruction.formTypes.get(forms[formKey].type);
