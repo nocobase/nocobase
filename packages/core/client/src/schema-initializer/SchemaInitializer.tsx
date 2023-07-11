@@ -1,4 +1,3 @@
-import { css } from '@emotion/css';
 import { ISchema, observer, useForm } from '@formily/react';
 import { error, isString } from '@nocobase/utils/client';
 import { Button, Dropdown, MenuProps, Switch } from 'antd';
@@ -16,13 +15,6 @@ import {
   SchemaInitializerItemOptions,
   SchemaInitializerItemProps,
 } from './types';
-
-const overlayClassName = css`
-  .ant-dropdown-menu-item-group-list {
-    max-height: 40vh;
-    overflow: auto;
-  }
-`;
 
 const defaultWrap = (s: ISchema) => s;
 
@@ -156,7 +148,7 @@ SchemaInitializer.Button = observer(
                 key: item.key || `item-group-${indexA}`,
                 label,
                 title: label,
-                popupClassName: styles.nbMenuItemGroup,
+                popupClassName: styles.nbMenuItemSubMenu,
                 children: renderItems(item.children),
               }
             );
@@ -175,7 +167,6 @@ SchemaInitializer.Button = observer(
         <Dropdown
           className={classNames('nb-schema-initializer-button')}
           openClassName={`nb-schema-initializer-button-open`}
-          overlayClassName={classNames('nb-schema-initializer-button-overlay', overlayClassName)}
           open={visible}
           onOpenChange={(open) => {
             // 如果不清空输入框的值，那么下次打开的时候会出现上次输入的值
@@ -184,7 +175,7 @@ SchemaInitializer.Button = observer(
           }}
           menu={{
             style: {
-              maxHeight: '60vh',
+              maxHeight: '50vh',
               overflowY: 'auto',
             },
             items: menuItems.current,
