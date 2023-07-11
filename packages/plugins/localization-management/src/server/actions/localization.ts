@@ -324,11 +324,17 @@ const getTextsFromMenu = async (db: Database) => {
   const uid = await getAdminSchemaUid(db);
   const repo = db.getRepository('uiSchemas') as UiSchemaRepository;
   const schema = await repo.getProperties(uid);
-  Object.values(schema['properties'] || {}).forEach((item: { title?: string }) => {
-    if (item.title) {
-      result[item.title] = '';
+  const extractTitle = (schema: any) => {
+    if (schema.properties) {
+      Object.values(schema.properties).forEach((item: any) => {
+        if (item.title) {
+          result[item.title] = '';
+        }
+        extractTitle(item);
+      });
     }
-  });
+  };
+  extractTitle(schema);
   return result;
 };
 
