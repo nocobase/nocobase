@@ -66,6 +66,9 @@ export class LocalizationManagementPlugin extends Plugin {
     });
 
     this.db.on('afterSave', async (instance: Model) => {
+      if (!this.enabled) {
+        return;
+      }
       const model = instance.constructor as typeof Model;
       const collection = model.collection;
       let texts = [];
@@ -104,7 +107,13 @@ export class LocalizationManagementPlugin extends Plugin {
 
   async afterEnable() {}
 
-  async afterDisable() {}
+  async afterDisable() {
+    const uiSchemaStoragePlugin = this.app.getPlugin<UiSchemaStoragePlugin>('ui-schema-storage');
+    if (!uiSchemaStoragePlugin) {
+      return;
+    }
+    uiSchemaStoragePlugin.serverHooks.remove('onSelfSave', 'extractTextToLocale');
+  }
 
   async remove() {}
 }

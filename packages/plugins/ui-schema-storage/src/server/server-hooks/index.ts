@@ -53,7 +53,7 @@ export class ServerHooks {
 
     for (const hook of hooks) {
       const hookFunc = this.hooks.get(type)?.get(hook['method']);
-      await hookFunc({
+      await hookFunc?.({
         schemaInstance,
         options,
         db: this.db,
@@ -161,5 +161,14 @@ export class ServerHooks {
 
     const hookTypeMap = this.hooks.get(type);
     hookTypeMap.set(name, hookFunc);
+  }
+
+  remove(type: HookType, name: string) {
+    if (!this.hooks.has(type)) {
+      return;
+    }
+
+    const hookTypeMap = this.hooks.get(type);
+    hookTypeMap.delete(name);
   }
 }
