@@ -1,5 +1,5 @@
 import { observer, useField, useFieldSchema } from '@formily/react';
-import { Button, Input as AntdInput, Space, Spin } from 'antd';
+import { Input as AntdInput, Button, Space, Spin } from 'antd';
 import cls from 'classnames';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -78,7 +78,7 @@ export const MarkdownVoid: any = observer(
         }}
       />
     ) : (
-      <div className={cls(['nb-markdown', className])} dangerouslySetInnerHTML={{ __html: html }} />
+      <div className={cls(['nb-markdown', className])} style={props.style} dangerouslySetInnerHTML={{ __html: html }} />
     );
   },
   { displayName: 'MarkdownVoid' },
