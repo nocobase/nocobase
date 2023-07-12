@@ -83,12 +83,15 @@ export class PluginManager {
 
       if (options?.method !== 'install' || options.reload) {
         // await all database plugins init
-        this.initDatabasePluginsPromise = this.initDatabasePlugins();
-
-        // run all plugins' beforeLoad
-        for await (const plugin of this.plugins.values()) {
-          await plugin.beforeLoad();
-        }
+        this.initDatabasePluginsPromise = this.initDatabasePlugins().then(async () => {
+          // run all plugins' beforeLoad
+          for await (const plugin of this.plugins.values()) {
+            if (plugin.enabled) {
+              await plugin.beforeLoad();
+            }
+          }
+        });
+        await this.initDatabasePluginsPromise;
       }
     });
 
@@ -112,19 +115,10 @@ export class PluginManager {
       // 1. get plugin instance
       if (Array.isArray(plugin)) {
         const [PluginClass, options] = plugin;
-        instance = this.setPluginInstance(PluginClass, options);
+        instance = this.setPluginInstance(PluginClass, { ...options, enabled: true });
       } else {
-        instance = this.setPluginInstance(plugin, {});
+        instance = this.setPluginInstance(plugin, { enabled: true });
       }
-
-      // 2. run `load` hook
-      await instance.load();
-
-      // 3. run `install` hook
-      await this.install(instance);
-
-      // 4. run `afterEnable` hook
-      await instance.afterEnable();
     }
   }
 
@@ -268,12 +262,15 @@ export class PluginManager {
 
     if (enabled) {
       // 2. run `load` hook
+      await instance.beforeLoad();
+
+      // 3. run `load` hook
       await this.load(instance);
 
-      // 3. run `install` hook
+      // 4. run `install` hook
       await this.install(instance);
 
-      // 4. run `afterEnable` hook
+      // 5. run `afterEnable` hook
       await instance.afterEnable();
     }
 
@@ -495,9 +492,9 @@ export class PluginManager {
   }
 
   async installAll(options: InstallOptions = {}) {
-    for (const [name, plugin] of this.plugins) {
-      await this.install(plugin, options);
-    }
+    // for (const [name, plugin] of this.plugins) {
+    // await this.install(plugin, options);
+    // }
   }
 
   // by cli: `yarn nocobase pm create xxx`
