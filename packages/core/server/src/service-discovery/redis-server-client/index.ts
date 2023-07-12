@@ -1,6 +1,16 @@
 import { RemoteServiceInfo, ServiceDiscoveryClient } from '../client';
 
-export class RedisServerClient extends ServiceDiscoveryClient {
+export class RedisDiscoveryServerClient extends ServiceDiscoveryClient {
+  serverURI: string;
+
+  setServerURI(serverURI: string) {
+    this.serverURI = serverURI;
+  }
+
+  getRedisClient() {
+    return null;
+  }
+
   getServices(namespace: string): Promise<RemoteServiceInfo[]> {
     return Promise.resolve([]);
   }
