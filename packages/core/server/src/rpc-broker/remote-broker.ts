@@ -14,16 +14,20 @@ export class RemoteBroker extends RpcBrokerInterface {
 
     appSupervisor.on('afterAppAdded', (app: Application) => {
       app.on('afterStart', async () => {
-        await this.serviceDiscoverClient.registerService(this.getAppServiceInfo(app));
+        await this.serviceDiscoverClient.registerService(await this.getAppServiceInfo(app));
+      });
+
+      app.on('afterStop', async () => {
+        await this.serviceDiscoverClient.unregisterService(await this.getAppServiceInfo(app));
       });
     });
   }
 
-  getAppServiceInfo(app: Application): RemoteServiceInfo {
+  async getAppServiceInfo(app: Application): Promise<RemoteServiceInfo> {
     return {
       type: 'remote',
-      host: 'localhost',
-      port: 123,
+      host: '127.0.0.1',
+      port: parseInt(process.env['RPC_PORT']) || 23000,
       name: app.name,
     };
   }

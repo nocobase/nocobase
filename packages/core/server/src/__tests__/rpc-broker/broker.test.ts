@@ -6,16 +6,35 @@ import { RemoteServiceInfo, ServiceDiscoveryClient } from '../../service-discove
 import { ServiceDiscoveryClientFactory } from '../../service-discovery/factory';
 
 class MockServiceDiscoveryClient extends ServiceDiscoveryClient {
-  getServices(namespace: string): Promise<RemoteServiceInfo[]> {
-    return Promise.resolve([]);
+  services = new Map<string, Set<string>>();
+
+  async getServices(namespace: string): Promise<RemoteServiceInfo[]> {
+    return [...this.services.values()]
+      .map((info) => [...info])
+      .flat()
+      .map((info) => JSON.parse(info) as RemoteServiceInfo);
   }
 
-  registerService(serviceInfo: RemoteServiceInfo): Promise<boolean> {
-    return Promise.resolve(false);
+  async registerService(serviceInfo: RemoteServiceInfo): Promise<boolean> {
+    const info = JSON.stringify(serviceInfo);
+    const exists = this.services.get(serviceInfo.name);
+    if (!exists) {
+      this.services.set(serviceInfo.name, new Set());
+    }
+
+    this.services.get(serviceInfo.name).add(info);
+
+    return true;
   }
 
   unregisterService(serviceInfo: RemoteServiceInfo): Promise<void> {
-    return Promise.resolve(undefined);
+    const info = JSON.stringify(serviceInfo);
+    const exists = this.services.get(serviceInfo.name);
+    if (!exists) {
+      return;
+    }
+
+    this.services.get(serviceInfo.name).delete(info);
   }
 }
 
@@ -57,6 +76,10 @@ describe('rpc broker', function () {
     await app.start();
 
     expect(registerService).toHaveBeenCalled();
+    const services = await mockServiceDiscoveryClient.getServices('apps');
+    expect(services.length).toBe(1);
     await app.destroy();
+    const services2 = await mockServiceDiscoveryClient.getServices('apps');
+    expect(services2.length).toBe(0);
   });
 });
