@@ -130,7 +130,7 @@ SchemaInitializer.Button = observer(
             });
           }
           if (item.type === 'itemGroup') {
-            const label = compile(item.title);
+            const label = isString(item.title) ? compile(item.title) : item.title;
             return (
               !!item.children?.length && {
                 type: 'group',
@@ -203,7 +203,7 @@ SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
   }
 
   if (items?.length > 0) {
-    const renderMenuItem = (items: SchemaInitializerItemOptions[]) => {
+    const renderMenuItem = (items: SchemaInitializerItemOptions[], parentKey: string) => {
       if (!items?.length) {
         return null;
       }
@@ -212,28 +212,30 @@ SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
           return { type: 'divider', key: `divider-${indexA}` };
         }
         if (item.type === 'itemGroup') {
-          const label = compile(item.title);
+          const label = isString(item.title) ? compile(item.title) : item.title;
+          const key = `${parentKey}-item-group-${indexA}`;
           return {
             type: 'group',
-            key: item.key || `item-group-${indexA}`,
+            key,
             label,
             title: label,
             className: styles.nbMenuItemGroup,
-            children: renderMenuItem(item.children),
+            children: renderMenuItem(item.children, key),
           } as MenuProps['items'][0];
         }
         if (item.type === 'subMenu') {
           const label = compile(item.title);
+          const key = `${parentKey}-sub-menu-${indexA}`;
           return {
-            key: item.key || `sub-menu-${indexA}`,
+            key,
             label,
             title: label,
-            children: renderMenuItem(item.children),
+            children: renderMenuItem(item.children, key),
           };
         }
         const label = compile(item.title);
         return {
-          key: item.key || `${info.key}-${item.title}-${indexA}`,
+          key: `${parentKey}-${item.title}-${indexA}`,
           label,
           title: label,
           onClick: (info) => {
@@ -252,7 +254,7 @@ SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
       key: info.key,
       label: isString(children) ? compile(children) : children,
       icon: typeof icon === 'string' ? <Icon type={icon as string} /> : icon,
-      children: renderMenuItem(items),
+      children: renderMenuItem(items, info.key),
     };
 
     collectMenuItem(item);
