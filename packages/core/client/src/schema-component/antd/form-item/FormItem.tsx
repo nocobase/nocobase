@@ -31,7 +31,7 @@ import { removeNullCondition } from '../filter';
 import { HTMLEncode } from '../input/shared';
 import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
 import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
-import { useEnsureOperatorsValid } from './SchemaSettingOptions';
+import { DateFormatCom, useEnsureOperatorsValid } from './SchemaSettingOptions';
 
 const defaultInputStyle = css`
   & > .nb-form-item {
@@ -878,20 +878,37 @@ FormItem.Designer = function Designer() {
                   type: 'string',
                   'x-component': 'Radio.Group',
                   'x-decorator': 'FormItem',
+                  'x-component-props': {
+                    className: css`
+                      color: red;
+                      .ant-radio-wrapper {
+                        display: flex;
+                        margin: 5px 0px;
+                      }
+                    `,
+                  },
                   default:
                     fieldSchema['x-component-props']?.dateFormat ||
                     collectionField?.uiSchema['x-component-props']?.dateFormat,
                   enum: [
                     {
-                      label: '{{t("Year/Month/Day")}}',
-                      value: 'YYYY/MM/DD',
+                      label: DateFormatCom({ format: 'MMMMM Do YYYY' }),
+                      value: 'MMMMM Do YYYY',
                     },
                     {
-                      label: '{{t("Year-Month-Day")}}',
+                      label: DateFormatCom({ format: 'YYYY-MM-DD' }),
                       value: 'YYYY-MM-DD',
                     },
                     {
-                      label: '{{t("Day/Month/Year")}}',
+                      label: DateFormatCom({ format: 'MM/DD/YY' }),
+                      value: 'MM/DD/YY',
+                    },
+                    {
+                      label: DateFormatCom({ format: 'YYYY/MM/DD' }),
+                      value: 'YYYY/MM/DD',
+                    },
+                    {
+                      label: DateFormatCom({ format: 'DD/MM/YYYY' }),
                       value: 'DD/MM/YYYY',
                     },
                   ],
@@ -915,16 +932,25 @@ FormItem.Designer = function Designer() {
                   title: '{{t("Time format")}}',
                   'x-component': 'Radio.Group',
                   'x-decorator': 'FormItem',
+                  'x-component-props': {
+                    className: css`
+                      color: red;
+                      .ant-radio-wrapper {
+                        display: flex;
+                        margin: 5px 0px;
+                      }
+                    `,
+                  },
                   default:
                     fieldSchema['x-component-props']?.timeFormat ||
                     collectionField?.uiSchema['x-component-props']?.timeFormat,
                   enum: [
                     {
-                      label: '{{t("12 hour")}}',
+                      label: DateFormatCom({ format: 'hh:mm:ss a' }),
                       value: 'hh:mm:ss a',
                     },
                     {
-                      label: '{{t("24 hour")}}',
+                      label: DateFormatCom({ format: 'HH:mm:ss' }),
                       value: 'HH:mm:ss',
                     },
                   ],

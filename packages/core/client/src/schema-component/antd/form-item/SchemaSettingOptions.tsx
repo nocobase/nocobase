@@ -3,11 +3,12 @@ import { Field } from '@formily/core';
 import { ISchema, Schema, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import _ from 'lodash';
+import moment from 'moment';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../../block-provider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
-import { SchemaSettings, isPatternDisabled } from '../../../schema-settings';
+import { isPatternDisabled, SchemaSettings } from '../../../schema-settings';
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
 import { useOperatorList } from '../filter/useOperators';
 import { isFileCollection } from './FormItem';
@@ -571,4 +572,16 @@ export const EditTitleField = () => {
       }}
     />
   ) : null;
+};
+
+export const DateFormatCom = (props) => {
+  const date = moment();
+  return (
+    <div style={{ display: 'inline-flex' }}>
+      <span>{props.format}</span>
+      <span style={{ display: 'inline-block', background: '#f2f2f2', marginLeft: '20px' }}>
+        {date.format(props.format)}
+      </span>
+    </div>
+  );
 };
