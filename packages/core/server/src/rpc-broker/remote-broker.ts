@@ -37,7 +37,7 @@ export class RemoteBroker extends RpcBrokerInterface {
 
   async getAppServiceInfo(app: Application): Promise<RemoteServiceInfo> {
     return {
-      type: 'remote',
+      type: 'apps',
       host: '127.0.0.1',
       port: parseInt(process.env['RPC_PORT']) || 23000,
       name: app.name,

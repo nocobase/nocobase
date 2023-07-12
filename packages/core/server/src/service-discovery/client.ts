@@ -1,15 +1,14 @@
-export interface RemoteServiceInfo {
-  type: 'remote';
-  host: string;
+export interface ConnectionInfo {
   port: number;
+  host: string;
+}
+
+export interface RemoteServiceInfo extends ConnectionInfo {
+  type: 'apps';
   name: string;
 }
 
-interface LocalServiceInfo {
-  type: 'local';
-}
-
-export type ServiceInfo = RemoteServiceInfo | LocalServiceInfo;
+export type ServiceInfo = RemoteServiceInfo;
 
 export abstract class ServiceDiscoveryClient {
   // register service to service discovery server
@@ -17,7 +16,9 @@ export abstract class ServiceDiscoveryClient {
   // e.g. apps:main, apps:admin
   abstract registerService(serviceInfo: RemoteServiceInfo): Promise<boolean>;
 
-  abstract unregisterService(serviceInfo: RemoteServiceInfo): Promise<void>;
+  abstract unregisterService(serviceInfo: RemoteServiceInfo): Promise<boolean>;
 
   abstract getServices(namespace: string): Promise<RemoteServiceInfo[]>;
+
+  abstract clientConnectionInfo(): Promise<ConnectionInfo>;
 }
