@@ -44,7 +44,7 @@ export interface Moment2strOptions {
   picker?: 'year' | 'month' | 'week' | 'quarter';
 }
 
-export const moment2str = (value?: Dayjs, options: Moment2strOptions = {}) => {
+export const moment2str = (value?: Dayjs | null, options: Moment2strOptions = {}) => {
   const { showTime, gmt, picker, utc = true } = options;
   if (!value) {
     return value;
@@ -71,7 +71,7 @@ export const mapDatePicker = function () {
       ...props,
       format: format,
       value: str2moment(props.value, props),
-      onChange: (value: Dayjs) => {
+      onChange: (value: Dayjs | null) => {
         if (onChange) {
           if (!props.showTime && value) {
             value = value.startOf('day');
