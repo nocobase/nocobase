@@ -714,7 +714,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     const authenticate = async () => {
       try {
         await this.sequelize.authenticate(others);
-        console.log('Connection has been established successfully.');
+        this.logger.info('Connection has been established successfully.');
         return true;
       } catch (error) {
         if (count >= (retry as number)) {

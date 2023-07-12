@@ -440,6 +440,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       }
     }
 
+    this.logger.info('Database version check passed');
     return true;
   }
 
