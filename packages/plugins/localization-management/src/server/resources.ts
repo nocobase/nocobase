@@ -24,6 +24,7 @@ export default class Resources {
     return await this.cache.wrap(`${this.CACHE_KEY_PREFIX}translations:${locale}`, async () => {
       return await this.db.getRepository('localizationTranslations').find({
         fields: ['textId', 'translation'],
+        filter: { locale },
         raw: true,
       });
     });
