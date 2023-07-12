@@ -596,6 +596,37 @@ describe('repository.update', () => {
     });
     expect(p1Updated2.userId).toBe(u1.id);
   });
+
+  it('update in batch filtered by belongsTo field as deep association field', async () => {
+    const u1 = await User.repository.create({ values: { name: 'u1' } });
+    const u2 = await User.repository.create({ values: { name: 'u2' } });
+    const p1 = await Post.repository.create({ values: { name: 'p1', userId: u1.id } });
+    const p2 = await Post.repository.create({ values: { name: 'p2', userId: u1.id } });
+    const p3 = await Post.repository.create({ values: { name: 'p3', userId: u2.id } });
+
+    const r1 = await Post.repository.update({
+      filter: {
+        user: {
+          id: {
+            $eq: u1.id
+          },
+        },
+      },
+      values: {
+        name: 'p1_1',
+      },
+      individualHooks: false,
+    });
+
+    expect(r1).toEqual(2);
+
+    const updated = await Post.repository.find({
+      filter: {
+        id: [p1.id, p2.id],
+      }
+    });
+    expect(updated.map(item => item.name)).toEqual(['p1_1', 'p1_1']);
+  });
 });
 
 describe('repository.destroy', () => {

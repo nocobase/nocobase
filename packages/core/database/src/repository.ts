@@ -607,8 +607,6 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
     const values = guard.sanitize(options.values);
 
-    const queryOptions = this.buildQueryOptions(options);
-
     // NOTE:
     // 1. better to be moved to separated API like bulkUpdate/updateMany
     // 2. strictly `false` comparing for compatibility of legacy api invoking
@@ -620,16 +618,12 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       // 1. find ids first for reusing `queryOptions` logic
       // 2. estimation memory usage will be N * M bytes (N = rows, M = model object memory)
       // 3. would be more efficient up to 100000 ~ 1000000 rows
-      const rows = await Model.findAll({
+      const queryOptions = this.buildQueryOptions({
+        ...options,
+        fields: [primaryKeyField],
+      });
+      const rows = await this.find({
         ...queryOptions,
-        attributes: [primaryKeyField],
-        group: `${Model.name}.${primaryKeyField}`,
-        include: queryOptions.include.filter((include) => {
-          return (
-            Object.keys(include.where || {}).length > 0 ||
-            JSON.stringify(queryOptions?.filter)?.includes(include.association)
-          );
-        }),
         transaction,
       });
       const [result] = await Model.update(values, {
@@ -647,6 +641,8 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       // TODO: not support association fields except belongsTo
       return result;
     }
+
+    const queryOptions = this.buildQueryOptions(options);
 
     const instances = await this.find({
       ...queryOptions,
