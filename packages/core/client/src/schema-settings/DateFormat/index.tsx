@@ -18,7 +18,7 @@ export const DateFormatCom = (props?) => {
 export const CustomFormatCom = observer((props: any) => {
   const { value, formatField, customFormatField } = props;
   const date = moment();
-  const [customFormatPreview, setCustomFormatPreview] = useState(date.format(props.value));
+  const [customFormatPreview, setCustomFormatPreview] = useState(props.value ? date.format(props.value) : null);
   const [state, setState] = React.useState(props.value);
   const form = useForm();
   const [checked, setChecked] = useState(value);
@@ -32,6 +32,7 @@ export const CustomFormatCom = observer((props: any) => {
     <Radio
       value={[customFormatField]}
       checked={checked}
+      disabled={customFormatPreview === null}
       onChange={(e) => {
         if (e.target.checked) {
           form.setValuesIn([formatField], null);
@@ -46,7 +47,9 @@ export const CustomFormatCom = observer((props: any) => {
           defaultValue={state}
           onChange={(e) => {
             setState(e.target.value);
-            setCustomFormatPreview(date.format(e.target.value));
+            if (moment(date.toLocaleString(), e.target.value).isValid()) {
+              setCustomFormatPreview(date.format(e.target.value));
+            }
           }}
         />
         <span style={{ display: 'inline-block', background: '#f2f2f2', marginLeft: '20px', lineHeight: '30px' }}>

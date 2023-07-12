@@ -867,7 +867,7 @@ FormItem.Designer = function Designer() {
           }}
         />
       )}
-      {isDateField && <SchemaSettings.DataFormat />}
+      {isDateField && <SchemaSettings.DataFormat fieldSchema={fieldSchema} />}
       {collectionField && <SchemaSettings.Divider />}
       <SchemaSettings.Remove
         key="remove"

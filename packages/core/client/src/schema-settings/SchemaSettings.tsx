@@ -1258,14 +1258,13 @@ SchemaSettings.EnableChildCollections = function EnableChildCollectionsItem(prop
   );
 };
 
-SchemaSettings.DataFormat = function DateFormatConfig(props) {
-  const fieldSchema = useFieldSchema();
+SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Schema }) {
+  const { fieldSchema } = props;
   const field = useField();
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const { getCollectionJoinField } = useCollectionManager();
   const collectionField = getCollectionJoinField(fieldSchema?.parent?.['x-collection-field']) || {};
-  console.log(fieldSchema);
   return (
     <SchemaSettings.ModalItem
       title={t('Date format')}
@@ -1395,6 +1394,10 @@ SchemaSettings.DataFormat = function DateFormatConfig(props) {
         };
         schema['x-component-props'] = fieldSchema['x-component-props'];
         field.componentProps = fieldSchema['x-component-props'];
+        field.query(`.*.${fieldSchema.name}`).forEach((f) => {
+          console.log(f);
+          f.componentProps = fieldSchema['x-component-props'];
+        });
         dn.emit('patch', {
           schema,
         });
