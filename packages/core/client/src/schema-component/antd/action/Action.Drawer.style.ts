@@ -6,9 +6,6 @@ export const useStyles = genStyleHook('nb-action-drawer', (token) => {
   return {
     [componentCls]: {
       overflow: 'hidden',
-      '.ant-drawer-body': {
-        overflow: 'hidden !important',
-      },
       '&.reset': {
         '&.nb-action-popup': {
           '.ant-drawer-header': { display: 'none' },
