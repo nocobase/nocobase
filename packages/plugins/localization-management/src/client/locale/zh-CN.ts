@@ -13,9 +13,9 @@ export default {
   Keyword: '关键字',
   All: '全部',
   'No translation': '待翻译',
-  'Built-in files': '本地内置文件',
+  'System & Plugins': '系统和插件',
   'User interfaces': '用户界面配置',
-  'Collections & fields': '数据表和字段',
+  'Collections & Fields': '数据表和字段',
   'Please select the resources you want to synchronize': '请选择需要同步的资源',
   Menu: '菜单',
 };

@@ -59,6 +59,16 @@ const useSyncAction = () => {
   };
 };
 
+const usePublishAction = () => {
+  const { resource } = useResourceContext();
+  return {
+    async run() {
+      await resource.publish();
+      window.location.reload();
+    },
+  };
+};
+
 const useHasTranslation = () => {
   const { translationId } = useRecord();
   // return !!translationId;
@@ -98,10 +108,10 @@ const Sync = () => {
           <Checkbox.Group onChange={onChange} value={checkedList}>
             <Col>
               <Row>
-                <Checkbox value="local">{t('Built-in files')}</Checkbox>
+                <Checkbox value="local">{t('System & Plugins')}</Checkbox>
               </Row>
               <Row>
-                <Checkbox value="db">{t('Collections & fields')}</Checkbox>
+                <Checkbox value="db">{t('Collections & Fields')}</Checkbox>
               </Row>
               <Row>
                 <Checkbox value="menu">{t('Menu')}</Checkbox>
@@ -203,6 +213,7 @@ export const Localization = () => {
           useHasTranslation,
           useBulkDestroyTranslationAction,
           useSyncAction,
+          usePublishAction,
         }}
       />
     </Card>

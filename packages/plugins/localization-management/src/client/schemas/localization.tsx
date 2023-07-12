@@ -92,6 +92,15 @@ export const localizationSchema: ISchema = {
             },
           },
         },
+        publish: {
+          type: 'void',
+          title: '{{t("Publish")}}',
+          'x-component': 'Action',
+          'x-component-props': {
+            icon: 'UploadOutlined',
+            useAction: '{{ usePublishAction }}',
+          },
+        },
         sync: {
           type: 'void',
           title: '{{t("Sync")}}',

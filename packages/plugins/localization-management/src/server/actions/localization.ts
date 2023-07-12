@@ -6,30 +6,14 @@ import { DEFAULT_PAGE, DEFAULT_PER_PAGE } from '../constans';
 import LocalizationManagementPlugin from '../plugin';
 import { getTextsFromDBRecord, getTextsFromUISchema } from '../utils';
 
-const updateCacheTexts = async (ctx: Context, texts: string[]) => {
+const getResourcesInstance = async (ctx: Context) => {
   const plugin = ctx.app.getPlugin('localization-management') as LocalizationManagementPlugin;
-  await plugin.setCacheTexts(texts);
+  return plugin.resources;
 };
 
 const all = async (ctx: Context, next: Next) => {
-  const model = ctx.db.getModel('localizationTexts');
-  const records = await model.findAll({
-    include: [
-      {
-        association: 'translations',
-        where: {
-          locale: ctx.get('X-Locale') || 'en-US',
-        },
-      },
-    ],
-  });
-
-  ctx.body = records.reduce((modules: any, text: Model) => {
-    const module = text.module;
-    const record = { [text.text]: text.translations[0]?.translation };
-    modules[module] = modules[module] ? { ...modules[module], ...record } : record;
-    return modules;
-  }, {});
+  const resources = await getResourcesInstance(ctx);
+  ctx.body = await resources.getResources(ctx.get('X-Locale') || 'en-US');
   await next();
 };
 
@@ -254,23 +238,13 @@ export const resourcesToRecords = async (
   locale: string,
   resources: any,
 ): Promise<{
-  records: {
-    [key: string]: { module: string; text: string; locale: string; translation: string };
-  };
-  newTexts: string[];
+  [key: string]: { module: string; text: string; locale: string; translation: string };
 }> => {
-  const plugin = ctx.app.getPlugin('localization-management') as LocalizationManagementPlugin;
-  const texts = await plugin.getCacheTexts();
-  const newTexts = [];
   const records = {};
   for (const module in resources) {
     const resource = resources[module];
     for (const text in resource) {
-      if (texts.includes(text)) {
-        continue;
-      }
       if (resource[text] || module === 'client') {
-        newTexts.push(text);
         records[text] = {
           module,
           text,
@@ -280,7 +254,7 @@ export const resourcesToRecords = async (
       }
     }
   }
-  return { records, newTexts };
+  return records;
 };
 
 const getTextsFromUISchemas = async (db: Database) => {
@@ -341,6 +315,7 @@ const getTextsFromMenu = async (db: Database) => {
 const sync = async (ctx: Context, next: Next) => {
   const startTime = Date.now();
   ctx.app.logger.info('Start sync localization resources');
+  const resourcesInstance = await getResourcesInstance(ctx);
   const locale = ctx.get('X-Locale') || 'en-US';
   const { type = [] } = ctx.action.params.values || {};
   if (!type.length) {
@@ -366,11 +341,12 @@ const sync = async (ctx: Context, next: Next) => {
     };
   }
 
-  const { records, newTexts } = await resourcesToRecords(ctx, locale, resources);
-  const textValues = Object.values(records).map((record) => ({
+  const records = await resourcesToRecords(ctx, locale, resources);
+  let textValues = Object.values(records).map((record) => ({
     module: `resources.${record.module}`,
     text: record.text,
   }));
+  textValues = (await resourcesInstance.filterExists(textValues)) as any[];
   await ctx.db.sequelize.transaction(async (t) => {
     const texts = await ctx.db.getModel('localizationTexts').bulkCreate(textValues, {
       transaction: t,
@@ -387,10 +363,16 @@ const sync = async (ctx: Context, next: Next) => {
     await ctx.db.getModel('localizationTranslations').bulkCreate(translationValues, {
       transaction: t,
     });
+    await resourcesInstance.updateCacheTexts(texts);
   });
-  await updateCacheTexts(ctx, newTexts);
   ctx.app.logger.info(`Sync localization resources done, ${Date.now() - startTime}ms`);
   await next();
 };
 
-export default { all, list, update, destroyTranslation, sync };
+const publish = async (ctx: Context, next: Next) => {
+  const resources = await getResourcesInstance(ctx);
+  ctx.body = await resources.resetCache(ctx.get('X-Locale') || 'en-US');
+  await next();
+};
+
+export default { all, list, update, destroyTranslation, sync, publish };
