@@ -61,7 +61,7 @@ export function getPlugins(pluginsUrls: Record<string, string>): Promise<(typeof
   });
 
   return new Promise((resolve) => {
-    requirejs(Object.keys(pluginsUrls), (...plugins: (typeof Plugin)[]) => {
+    requirejsVars.requirejs(Object.keys(pluginsUrls), (...plugins: (typeof Plugin)[]) => {
       resolve(plugins);
     });
   });

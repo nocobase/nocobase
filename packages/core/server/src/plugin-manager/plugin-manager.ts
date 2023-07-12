@@ -54,11 +54,11 @@ export class PluginManager {
     this.repository = this.collection.repository as PluginManagerRepository;
     this.repository.setPluginManager(this);
     this.app.resourcer.define(resourceOptions);
-
     this.app.acl.registerSnippet({
       name: 'pm',
       actions: ['pm:*'],
     });
+    this.app.acl.allow('pm', 'clientPlugins');
 
     // plugin static files
     this.app.use(pluginStatic);
@@ -114,7 +114,7 @@ export class PluginManager {
   }
 
   async initDatabasePlugins() {
-    const pluginList: PluginData[] = await this.repository.list(this.app.name);
+    const pluginList: PluginData[] = await this.repository.list();
 
     // TODO: 并发执行还是循序执行，现在的做法是顺序一个一个执行？
     for await (const pluginData of pluginList) {
@@ -127,17 +127,17 @@ export class PluginManager {
    * get plugins static files
    *
    * @example
-   * getPluginsClientFiles() =>
+   * getClientPlugins() =>
    *  {
    *    '@nocobase/acl': '/api/@nocobase/acl/index.js',
    *    'foo': '/api/foo/index.js'
    *  }
    */
-  async getPluginsClientFiles(): Promise<Record<string, string>> {
+  async getClientPlugins(): Promise<Record<string, string>> {
     // await all plugins init
     await this.initDatabasePluginsPromise;
 
-    const pluginList: PluginData[] = await this.repository.list(this.app.name, { enable: true, installed: true });
+    const pluginList: PluginData[] = await this.repository.list({ enabled: true, installed: true });
     return pluginList.reduce<Record<string, string>>((memo, item) => {
       const { name, clientUrl } = item;
       memo[name] = clientUrl;
@@ -146,7 +146,7 @@ export class PluginManager {
   }
 
   async list() {
-    const pluginData: PluginData[] = await this.repository.list(this.app.name);
+    const pluginData: PluginData[] = await this.repository.list();
 
     return Promise.all(
       pluginData.map(async (item) => {

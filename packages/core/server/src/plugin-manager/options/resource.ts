@@ -8,7 +8,7 @@ export default {
     },
     async clientPlugins(ctx, next) {
       const pm = ctx.app.pm;
-      ctx.body = await pm.getPluginsClientFiles();
+      ctx.body = await pm.getClientPlugins();
       await next();
     },
     async addByNpm(ctx, next) {
