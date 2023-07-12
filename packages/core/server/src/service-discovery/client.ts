@@ -1,6 +1,6 @@
 export interface RemoteServiceInfo {
   type: 'remote';
-  host: 'string';
+  host: string;
   port: number;
   name: string;
 }

@@ -30,6 +30,8 @@ describe('rpc broker', function () {
 
     const mockServiceDiscoveryClient = new MockServiceDiscoveryClient();
 
+    const registerService = jest.spyOn(mockServiceDiscoveryClient, 'registerService');
+
     // always use mock service discovery client
     jest.spyOn(ServiceDiscoveryClientFactory, 'build').mockReturnValue(mockServiceDiscoveryClient);
 
@@ -53,8 +55,8 @@ describe('rpc broker', function () {
     });
 
     await app.start();
-    
-    expect(mockServiceDiscoveryClient.registerService).toHaveBeenCalled();
+
+    expect(registerService).toHaveBeenCalled();
     await app.destroy();
   });
 });
