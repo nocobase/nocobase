@@ -6,8 +6,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../../';
 import { useAPIClient } from '../../../api-client';
-import { findFormBlock, useTableBlockContext } from '../../../block-provider';
-import { useCollectionManager } from '../../../collection-manager';
+import { findFormBlock } from '../../../block-provider';
+import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { useDuplicatefieldsContext } from '../../../schema-initializer/components';
 
 export interface ITemplate {
@@ -69,11 +69,10 @@ const useDataTemplates = () => {
     items.map<any>((t, i) => ({
       key: i,
       ...t,
-      isLeaf: t.dataId !== null,
+      isLeaf: t.dataId !== null && t.dataId !== undefined,
       titleCollectionField: t?.titleField && getCollectionJoinField(`${t.collection}.${t.titleField}`),
     })),
   );
-
   const defaultTemplate = items.find((item) => item.default);
   return {
     templates,
@@ -98,8 +97,6 @@ export const mapOptionsToTags = (options, fieldNames, titleCollectionfield, comp
     return options
       .map((option) => {
         let label = compile(option[fieldNames.label]);
-        console.log(label, option, fieldNames);
-
         if (titleCollectionfield?.uiSchema?.enum) {
           if (Array.isArray(label)) {
             label = label
@@ -145,10 +142,11 @@ export const Templates = ({ style = {}, form }) => {
   const { templates, display, enabled, defaultTemplate } = useDataTemplates();
   const [options, setOptions] = useState<any>(templates);
   const [value, setValue] = useState(defaultTemplate?.key || 'none');
-  const { resource } = useTableBlockContext();
   const api = useAPIClient();
   const { t } = useTranslation();
   const compile = useCompile();
+  const { name } = useCollection();
+  const resource = api.resource(name);
   useEffect(() => {
     if (enabled && defaultTemplate) {
       form.__template = true;
@@ -210,6 +208,7 @@ export const Templates = ({ style = {}, form }) => {
     return new Promise(async (resolve) => {
       const { data } = (await resource.list({ filter: option.dataScope })) || {};
       if (data?.data.length === 0) {
+        option.children=[]
         option.disabled = true;
         resolve();
         return;
