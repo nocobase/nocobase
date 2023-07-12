@@ -51,7 +51,7 @@ describe('actions', () => {
               text: 'text1',
               translations: [
                 {
-                  locale: 'en-US',
+                  locale: 'zh-CN',
                   translation: 'translation1',
                 },
               ],
@@ -65,130 +65,38 @@ describe('actions', () => {
       });
 
       it('should list localization texts', async () => {
-        const res = await agent.set('X-Locale', 'en-US').resource('localization').list();
+        const res = await agent.set('X-Locale', 'en-US').resource('localizationTexts').list();
         expect(res.body.data.length).toBe(2);
         expect(res.body.data[0].text).toBe('text');
         expect(res.body.data[0].translation).toBe('translation');
         expect(res.body.data[0].translationId).toBe(1);
 
-        const res2 = await agent.set('X-Locale', 'zh-CN').resource('localization').list();
+        const res2 = await agent.set('X-Locale', 'zh-CN').resource('localizationTexts').list();
         expect(res2.body.data.length).toBe(2);
         expect(res2.body.data[0].text).toBe('text');
         expect(res2.body.data[0].translation).toBeUndefined();
       });
 
-      it('should search by text', async () => {
-        const res = await agent.set('X-Locale', 'zh-CN').resource('localization').list({
-          searchType: 'text',
-          keyword: 'text1',
+      it('should search by keyword', async () => {
+        let res = await agent.set('X-Locale', 'zh-CN').resource('localizationTexts').list({
+          keyword: 'text',
         });
-        expect(res.body.data.length).toBe(1);
-        expect(res.body.data[0].text).toBe('text1');
-        expect(res.body.data[0].translation).toBeUndefined();
-      });
+        expect(res.body.data.length).toBe(2);
 
-      it('shouold search by translation', async () => {
-        const res = await agent.set('X-Locale', 'en-US').resource('localization').list({
-          searchType: 'translation',
-          keyword: 'translation1',
+        res = await agent.set('X-Locale', 'en-US').resource('localizationTexts').list({
+          keyword: 'translation',
         });
         expect(res.body.data.length).toBe(1);
-        expect(res.body.data[0].text).toBe('text1');
-        expect(res.body.data[0].translation).toBe('translation1');
       });
 
       it('should filter no translation', async () => {
-        const res = await agent.set('X-Locale', 'zh-CN').resource('localization').list({
-          searchType: 'text',
-          keyword: 'text1',
+        const res = await agent.set('X-Locale', 'zh-CN').resource('localizationTexts').list({
+          keyword: 'text',
           hasTranslation: 'false',
         });
         expect(res.body.data.length).toBe(1);
-        expect(res.body.data[0].text).toBe('text1');
+        expect(res.body.data[0].text).toBe('text');
         expect(res.body.data[0].translation).toBeUndefined();
-      });
-    });
-
-    describe('update & destroy', () => {
-      afterEach(async () => {
-        await clear();
-      });
-
-      it('should update localization text with translation', async () => {
-        const text = await repo.create({
-          values: {
-            module: 'test',
-            text: 'text',
-          },
-        });
-        const res = await agent.set('X-Locale', '').resource('localization').update();
-        expect(res.status).toBe(400);
-
-        await agent
-          .set('X-Locale', 'en-US')
-          .resource('localization')
-          .update({
-            values: {
-              id: text.id,
-              translation: 'translation1',
-            },
-          });
-        const t1 = await db.getRepository('localizationTranslations').findOne({
-          filter: {
-            locale: 'en-US',
-            textId: text.id,
-          },
-        });
-        expect(t1.translation).toBe('translation1');
-
-        await agent
-          .set('X-Locale', 'en-US')
-          .resource('localization')
-          .update({
-            values: {
-              id: text.id,
-              translation: 'translation2',
-            },
-          });
-        const t2 = await db.getRepository('localizationTranslations').findOne({
-          filter: {
-            locale: 'en-US',
-            textId: text.id,
-          },
-        });
-        expect(t2.translation).toBe('translation2');
-      });
-
-      it('should destory translation', async () => {
-        const text = await repo.create({
-          values: {
-            module: 'test',
-            text: 'text',
-            translations: [
-              {
-                locale: 'en-US',
-                translation: 'translation',
-              },
-            ],
-          },
-        });
-        const t = await db.getRepository('localizationTranslations').findOne({
-          filter: {
-            locale: 'en-US',
-            textId: text.id,
-          },
-        });
-        const translationId = t.id;
-
-        await agent.resource('localization').destroyTranslation({
-          values: { id: translationId },
-        });
-        const tExists = await db.getRepository('localizationTranslations').findOne({
-          filter: {
-            id: translationId,
-          },
-        });
-        expect(tExists).toBeNull();
       });
     });
   });

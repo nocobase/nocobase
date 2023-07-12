@@ -3,6 +3,7 @@ import { UiSchemaStoragePlugin } from '@nocobase/plugin-ui-schema-storage';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import localization from './actions/localization';
+import localizationTexts from './actions/localizationTexts';
 import Resources from './resources';
 import { getTextsFromDBRecord } from './utils';
 
@@ -52,6 +53,11 @@ export class LocalizationManagementPlugin extends Plugin {
       context: {
         plugin: this,
       },
+    });
+
+    this.app.resource({
+      name: 'localizationTexts',
+      actions: localizationTexts,
     });
 
     this.app.resource({

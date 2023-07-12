@@ -45,9 +45,9 @@ export const localizationSchema: ISchema = {
   'x-decorator': 'ResourceActionProvider',
   'x-decorator-props': {
     collection,
-    resourceName: 'localization',
+    resourceName: 'localizationTexts',
     request: {
-      resource: 'localization',
+      resource: 'localizationTexts',
       action: 'list',
       params: {
         pageSize: 50,
@@ -219,7 +219,7 @@ export const localizationSchema: ISchema = {
                               'x-component': 'Action',
                               'x-component-props': {
                                 type: 'primary',
-                                useAction: '{{ cm.useUpdateAction }}',
+                                useAction: '{{ useUpdateTranslationAction }}',
                               },
                             },
                           },
@@ -255,95 +255,6 @@ export const localizationSchema: ISchema = {
                 // },
               },
             },
-          },
-        },
-      },
-    },
-  },
-};
-
-export const filterSchema: ISchema = {
-  type: 'object',
-  properties: {
-    search: {
-      type: 'void',
-      'x-decorator': 'FormItem',
-      'x-component': 'Input.Group',
-      'x-component-props': {
-        compact: true,
-      },
-      properties: {
-        searchType: {
-          type: 'string',
-          'x-component': 'Select',
-          'x-component-props': {
-            showSearch: false,
-            style: {
-              width: '30%',
-            },
-          },
-          default: 'text',
-          enum: [
-            { label: "{{t('Text')}}", value: 'text' },
-            { label: "{{t('Translation')}}", value: 'translation' },
-          ],
-        },
-        keyword: {
-          type: 'string',
-          'x-component': 'Input',
-          'x-component-props': {
-            placeholder: "{{t('Keyword')}}",
-            allowClear: true,
-            style: {
-              width: '70%',
-            },
-          },
-        },
-      },
-    },
-    action: {
-      type: 'void',
-      'x-decorator': 'FormItem',
-      'x-component': 'Space',
-      properties: {
-        hasTranslation: {
-          type: 'boolean',
-          'x-component': 'Radio.Group',
-          'x-component-props': {
-            optionType: 'button',
-            defaultValue: true,
-          },
-          enum: [
-            { label: "{{t('All')}}", value: true },
-            { label: "{{t('No translation')}}", value: false },
-          ],
-          'x-reactions': {
-            dependencies: ['.searchType'],
-            fulfill: {
-              state: {
-                disabled: '{{$deps[0] === "translation"}}',
-              },
-            },
-          },
-        },
-        reset: {
-          type: 'void',
-          title: '{{t("Reset")}}',
-          'x-component': 'Action',
-          'x-component-props': {
-            style: {
-              marginLeft: 20,
-            },
-            useAction: '{{ useReset }}',
-          },
-        },
-        submit: {
-          type: 'void',
-          title: '{{t("Submit")}}',
-          'x-component': 'Action',
-          'x-component-props': {
-            type: 'primary',
-            useAction: '{{ useSearch }}',
           },
         },
       },

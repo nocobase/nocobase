@@ -1,28 +1,66 @@
-import { FilterOutlined, SyncOutlined } from '@ant-design/icons';
+import { SyncOutlined } from '@ant-design/icons';
 import { Form, createForm } from '@formily/core';
+import { Field, useField, useForm } from '@formily/react';
 import {
   FormProvider,
   Input,
+  Radio,
   SchemaComponent,
   locale,
   useAPIClient,
+  useActionContext,
   useRecord,
   useResourceActionContext,
   useResourceContext,
 } from '@nocobase/client';
-import { Button, Card, Checkbox, Col, Divider, Popover, Row, Tag, Typography, message } from 'antd';
+import { Input as AntdInput, Button, Card, Checkbox, Col, Divider, Popover, Row, Tag, Typography, message } from 'antd';
 import React, { useMemo, useState } from 'react';
 import { useLocalTranslation } from './locale';
-import { filterSchema, localizationSchema } from './schemas/localization';
+import { localizationSchema } from './schemas/localization';
 const { Text } = Typography;
+
+const useUpdateTranslationAction = () => {
+  const field = useField();
+  const form = useForm();
+  const ctx = useActionContext();
+  const { refresh } = useResourceActionContext();
+  const { targetKey } = useResourceContext();
+  const { [targetKey]: textId } = useRecord();
+  const api = useAPIClient();
+  const locale = api.auth.getLocale();
+  return {
+    async run() {
+      await form.submit();
+      field.data = field.data || {};
+      field.data.loading = true;
+      try {
+        await api.resource('localizationTranslations').updateOrCreate({
+          filterKeys: ['textId', 'locale'],
+          values: {
+            textId,
+            locale,
+            translation: form.values.translation,
+          },
+        });
+        ctx.setVisible(false);
+        await form.reset();
+        refresh();
+      } catch (e) {
+        console.log(e);
+      } finally {
+        field.data.loading = false;
+      }
+    },
+  };
+};
 
 const useDestroyTranslationAction = () => {
   const { refresh } = useResourceActionContext();
-  const { resource } = useResourceContext();
-  const { translationId: id } = useRecord();
+  const api = useAPIClient();
+  const { translationId: filterByTk } = useRecord();
   return {
     async run() {
-      await resource.destroyTranslation({ values: { id } });
+      await api.resource('localizationTranslations').destroy({ filterByTk });
       refresh();
     },
   };
@@ -30,55 +68,34 @@ const useDestroyTranslationAction = () => {
 
 const useBulkDestroyTranslationAction = () => {
   const { state, setState, refresh } = useResourceActionContext();
-  const { resource } = useResourceContext();
+  const api = useAPIClient();
   const { t } = useLocalTranslation();
   return {
     async run() {
       if (!state?.selectedRowKeys?.length) {
         return message.error(t('Please select the records you want to delete'));
       }
-      await resource.destroyTranslation({
-        values: {
-          id: state?.selectedRowKeys || [],
-        },
-      });
+      await api.resource('localizationTranslations').destroy({ filterByTk: state?.selectedRowKeys });
       setState?.({ selectedRowKeys: [] });
       refresh();
     },
   };
 };
 
-const useSyncAction = () => {
-  const { refresh } = useResourceActionContext();
-  const { resource } = useResourceContext();
-  return {
-    async run() {
-      await resource.sync();
-      refresh();
-    },
-  };
-};
-
 const usePublishAction = () => {
-  const { resource } = useResourceContext();
+  const api = useAPIClient();
   return {
     async run() {
-      await resource.publish();
+      await api.resource('localization').publish();
       window.location.reload();
     },
   };
 };
 
-const useHasTranslation = () => {
-  const { translationId } = useRecord();
-  // return !!translationId;
-  return true;
-};
-
 const Sync = () => {
   const { t } = useLocalTranslation();
   const { refresh } = useResourceActionContext();
-  const { resource } = useResourceContext();
+  const api = useAPIClient();
   const [loading, setLoading] = useState(false);
   const plainOptions = ['local', 'menu', 'db'];
   const [checkedList, setCheckedList] = useState<any[]>(plainOptions);
@@ -130,7 +147,7 @@ const Sync = () => {
             return message.error(t('Please select the resources you want to synchronize'));
           }
           setLoading(true);
-          await resource.sync({
+          await api.resource('localization').sync({
             values: {
               type: checkedList,
             },
@@ -148,6 +165,8 @@ const Sync = () => {
 const Filter = () => {
   const { t } = useLocalTranslation();
   const { run, refresh } = useResourceActionContext();
+  const api = useAPIClient();
+  const locale = api.auth.getLocale();
   const form = useMemo<Form>(
     () =>
       createForm({
@@ -157,33 +176,49 @@ const Filter = () => {
       }),
     [],
   );
-  const useSearch = () => {
-    return {
-      run: () =>
-        run({
-          ...form.values,
-        }),
-    };
-  };
-  const useReset = () => {
-    return {
-      run: () => {
-        form.reset();
-        run();
-      },
-    };
+  const filter = (values?: any) => {
+    run({
+      ...(values || form.values),
+    });
   };
   return (
-    <Popover
-      placement="right"
-      content={
-        <FormProvider form={form}>
-          <SchemaComponent schema={filterSchema} scope={{ t, useSearch, useReset }} />
-        </FormProvider>
-      }
-    >
-      <Button icon={<FilterOutlined />}>{t('Filter')}</Button>
-    </Popover>
+    <FormProvider form={form}>
+      <div style={{ display: 'flex' }}>
+        <Field
+          name="keyword"
+          component={[
+            AntdInput.Search,
+            {
+              placeholder: t('Keyword'),
+              allowClear: true,
+              style: {
+                width: '50%',
+              },
+              onSearch: (keyword) => filter({ ...form.values, keyword }),
+            },
+          ]}
+        />
+        <Field
+          name="hasTranslation"
+          dataSource={[
+            { label: t('All'), value: true },
+            { label: t('No translation'), value: false },
+          ]}
+          component={[
+            Radio.Group,
+            {
+              defaultValue: true,
+              style: {
+                marginLeft: '8px',
+                width: '50%',
+              },
+              optionType: 'button',
+              onChange: () => filter(),
+            },
+          ]}
+        />
+      </div>
+    </FormProvider>
   );
 };
 
@@ -210,9 +245,8 @@ export const Localization = () => {
         scope={{
           t,
           useDestroyTranslationAction,
-          useHasTranslation,
           useBulkDestroyTranslationAction,
-          useSyncAction,
+          useUpdateTranslationAction,
           usePublishAction,
         }}
       />
