@@ -31,7 +31,7 @@ import { removeNullCondition } from '../filter';
 import { HTMLEncode } from '../input/shared';
 import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
 import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
-import { DateFormatCom, useEnsureOperatorsValid } from './SchemaSettingOptions';
+import { useEnsureOperatorsValid } from './SchemaSettingOptions';
 
 const defaultInputStyle = css`
   & > .nb-form-item {
@@ -867,115 +867,7 @@ FormItem.Designer = function Designer() {
           }}
         />
       )}
-      {isDateField && (
-        <SchemaSettings.ModalItem
-          title={t('Date format')}
-          schema={
-            {
-              type: 'object',
-              properties: {
-                dateFormat: {
-                  type: 'string',
-                  'x-component': 'Radio.Group',
-                  'x-decorator': 'FormItem',
-                  'x-component-props': {
-                    className: css`
-                      color: red;
-                      .ant-radio-wrapper {
-                        display: flex;
-                        margin: 5px 0px;
-                      }
-                    `,
-                  },
-                  default:
-                    fieldSchema['x-component-props']?.dateFormat ||
-                    collectionField?.uiSchema['x-component-props']?.dateFormat,
-                  enum: [
-                    {
-                      label: DateFormatCom({ format: 'MMMMM Do YYYY' }),
-                      value: 'MMMMM Do YYYY',
-                    },
-                    {
-                      label: DateFormatCom({ format: 'YYYY-MM-DD' }),
-                      value: 'YYYY-MM-DD',
-                    },
-                    {
-                      label: DateFormatCom({ format: 'MM/DD/YY' }),
-                      value: 'MM/DD/YY',
-                    },
-                    {
-                      label: DateFormatCom({ format: 'YYYY/MM/DD' }),
-                      value: 'YYYY/MM/DD',
-                    },
-                    {
-                      label: DateFormatCom({ format: 'DD/MM/YYYY' }),
-                      value: 'DD/MM/YYYY',
-                    },
-                  ],
-                },
-                showTime: {
-                  default: fieldSchema['x-component-props']?.showTime,
-                  type: 'boolean',
-                  'x-decorator': 'FormItem',
-                  'x-component': 'Checkbox',
-                  'x-content': '{{t("Show time")}}',
-                  'x-reactions': [
-                    `{{(field) => {
-                      field.query('..[].timeFormat').take(f => {
-                        f.display = field.value ? 'visible' : 'none';
-                      });
-                    }}}`,
-                  ],
-                },
-                timeFormat: {
-                  type: 'string',
-                  title: '{{t("Time format")}}',
-                  'x-component': 'Radio.Group',
-                  'x-decorator': 'FormItem',
-                  'x-component-props': {
-                    className: css`
-                      color: red;
-                      .ant-radio-wrapper {
-                        display: flex;
-                        margin: 5px 0px;
-                      }
-                    `,
-                  },
-                  default:
-                    fieldSchema['x-component-props']?.timeFormat ||
-                    collectionField?.uiSchema['x-component-props']?.timeFormat,
-                  enum: [
-                    {
-                      label: DateFormatCom({ format: 'hh:mm:ss a' }),
-                      value: 'hh:mm:ss a',
-                    },
-                    {
-                      label: DateFormatCom({ format: 'HH:mm:ss' }),
-                      value: 'HH:mm:ss',
-                    },
-                  ],
-                },
-              },
-            } as ISchema
-          }
-          onSubmit={(data) => {
-            const schema = {
-              ['x-uid']: fieldSchema['x-uid'],
-            };
-            schema['x-component-props'] = fieldSchema['x-component-props'] || {};
-            fieldSchema['x-component-props'] = {
-              ...(fieldSchema['x-component-props'] || {}),
-              ...data,
-            };
-            schema['x-component-props'] = fieldSchema['x-component-props'];
-            field.componentProps = fieldSchema['x-component-props'];
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          }}
-        />
-      )}
+      {isDateField && <SchemaSettings.DataFormat />}
       {collectionField && <SchemaSettings.Divider />}
       <SchemaSettings.Remove
         key="remove"

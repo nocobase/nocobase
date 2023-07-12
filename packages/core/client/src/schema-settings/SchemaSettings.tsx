@@ -1,6 +1,6 @@
 import { css } from '@emotion/css';
 import { ArrayCollapse, ArrayItems, FormDialog, FormItem, FormLayout, Input } from '@formily/antd-v5';
-import { Field, GeneralField, createForm } from '@formily/core';
+import { createForm, Field, GeneralField } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { error } from '@nocobase/utils/client';
@@ -21,31 +21,31 @@ import {
 import classNames from 'classnames';
 import _, { cloneDeep } from 'lodash';
 import React, {
-  ReactNode,
   createContext,
+  ReactNode,
   useCallback,
   useContext,
   useMemo,
+  useState,
   // @ts-ignore
   useTransition as useReactTransition,
-  useState,
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  APIClientProvider,
   ActionContextProvider,
+  APIClientProvider,
   CollectionFieldOptions,
   CollectionManagerContext,
   CollectionProvider,
+  createDesignable,
   Designable,
+  findFormBlock,
   FormProvider,
   RemoteSchemaComponent,
   SchemaComponent,
   SchemaComponentContext,
   SchemaComponentOptions,
-  createDesignable,
-  findFormBlock,
   useAPIClient,
   useBlockRequestContext,
   useCollection,
@@ -62,6 +62,7 @@ import { getTargetKey } from '../schema-component/antd/association-filter/utilts
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
 import { FormDataTemplates } from './DataTemplates';
+import { CustomFormatCom, DateFormatCom } from './DateFormat';
 import { EnableChildCollections } from './EnableChildCollections';
 import { ChildDynamicComponent } from './EnableChildCollections/DynamicComponent';
 import { FormLinkageRules } from './LinkageRules';
@@ -1248,6 +1249,152 @@ SchemaSettings.EnableChildCollections = function EnableChildCollectionsItem(prop
           linkageFromForm: v?.linkageFromForm,
         };
         field.componentProps['linkageFromForm'] = v.linkageFromForm;
+        dn.emit('patch', {
+          schema,
+        });
+        dn.refresh();
+      }}
+    />
+  );
+};
+
+SchemaSettings.DataFormat = function DateFormatConfig(props) {
+  const fieldSchema = useFieldSchema();
+  const field = useField();
+  const { dn } = useDesignable();
+  const { t } = useTranslation();
+  const { getCollectionJoinField } = useCollectionManager();
+  const collectionField = getCollectionJoinField(fieldSchema?.parent?.['x-collection-field']) || {};
+  console.log(fieldSchema);
+  return (
+    <SchemaSettings.ModalItem
+      title={t('Date format')}
+      schema={
+        {
+          type: 'object',
+          properties: {
+            dateFormat: {
+              type: 'string',
+              'x-component': 'Radio.Group',
+              'x-decorator': 'FormItem',
+              'x-decorator-props': {
+                className: css`
+                  margin-bottom: 0px;
+                `,
+              },
+              'x-component-props': {
+                className: css`
+                  .ant-radio-wrapper {
+                    display: flex;
+                    margin: 5px 0px;
+                  }
+                `,
+              },
+              default:
+                fieldSchema?.['x-component-props']?.dateFormat ||
+                collectionField?.uiSchema?.['x-component-props']?.dateFormat,
+              enum: [
+                {
+                  label: DateFormatCom({ format: 'MMMMM Do YYYY' }),
+                  value: 'MMMMM Do YYYY',
+                },
+                {
+                  label: DateFormatCom({ format: 'YYYY-MM-DD' }),
+                  value: 'YYYY-MM-DD',
+                },
+                {
+                  label: DateFormatCom({ format: 'MM/DD/YY' }),
+                  value: 'MM/DD/YY',
+                },
+                {
+                  label: DateFormatCom({ format: 'YYYY/MM/DD' }),
+                  value: 'YYYY/MM/DD',
+                },
+                {
+                  label: DateFormatCom({ format: 'DD/MM/YYYY' }),
+                  value: 'DD/MM/YYYY',
+                },
+              ],
+            },
+            customDateFormat: {
+              type: 'string',
+              'x-component': CustomFormatCom,
+              default: fieldSchema?.['x-component-props']?.customDateFormat,
+              'x-component-props': {
+                formatField: 'dateFormat',
+                customFormatField: 'customDateFormat',
+              },
+            },
+            showTime: {
+              default: fieldSchema?.['x-component-props']?.showTime,
+              type: 'boolean',
+              'x-decorator': 'FormItem',
+              'x-component': 'Checkbox',
+              'x-content': '{{t("Show time")}}',
+              'x-reactions': [
+                `{{(field) => {
+              field.query('..[].timeFormat').take(f => {
+                f.display = field.value ? 'visible' : 'none';
+              });
+            }}}`,
+              ],
+            },
+            timeFormat: {
+              type: 'string',
+              title: '{{t("Time format")}}',
+              'x-component': 'Radio.Group',
+              'x-decorator': 'FormItem',
+              'x-decorator-props': {
+                className: css`
+                  margin-bottom: 0px;
+                `,
+              },
+              'x-component-props': {
+                className: css`
+                  color: red;
+                  .ant-radio-wrapper {
+                    display: flex;
+                    margin: 5px 0px;
+                  }
+                `,
+              },
+              default:
+                fieldSchema?.['x-component-props']?.timeFormat ||
+                collectionField?.uiSchema?.['x-component-props']?.timeFormat,
+              enum: [
+                {
+                  label: DateFormatCom({ format: 'hh:mm:ss a' }),
+                  value: 'hh:mm:ss a',
+                },
+                {
+                  label: DateFormatCom({ format: 'HH:mm:ss' }),
+                  value: 'HH:mm:ss',
+                },
+              ],
+            },
+            customTimeFormat: {
+              type: 'string',
+              'x-component': CustomFormatCom,
+              default: fieldSchema?.['x-component-props']?.customTimeFormat,
+              'x-component-props': {
+                formatField: 'timeFormat',
+                customFormatField: 'customTimeFormat',
+              },
+            },
+          },
+        } as ISchema
+      }
+      onSubmit={(data) => {
+        const schema = {
+          ['x-uid']: fieldSchema['x-uid'],
+        };
+        schema['x-component-props'] = fieldSchema['x-component-props'] || {};
+        fieldSchema['x-component-props'] = {
+          ...(fieldSchema['x-component-props'] || {}),
+          ...data,
+        };
+        schema['x-component-props'] = fieldSchema['x-component-props'];
+        field.componentProps = fieldSchema['x-component-props'];
         dn.emit('patch', {
           schema,
         });

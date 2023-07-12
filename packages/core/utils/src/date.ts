@@ -18,6 +18,12 @@ export const getDefaultFormat = (props: any) => {
     }
     return props.dateFormat;
   }
+  if (props.customDateFormat) {
+    if (props['showTime']) {
+      return `${props.customDateFormat} ${props.timeFormat || props.customTimeFormat || 'HH:mm:ss'}`;
+    }
+    return props.customDateFormat;
+  }
   if (props['picker'] === 'month') {
     return 'YYYY-MM';
   } else if (props['picker'] === 'quarter') {
