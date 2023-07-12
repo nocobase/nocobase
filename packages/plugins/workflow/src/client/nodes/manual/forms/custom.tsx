@@ -105,6 +105,7 @@ function CustomFormBlockInitializer({ insert, ...props }) {
                     layout: 'one-column',
                     style: {
                       marginTop: '1.5em',
+                      flexWrap: 'wrap',
                     },
                   },
                   'x-initializer': 'AddActionButton',
@@ -370,7 +371,11 @@ export default {
           type: 'custom',
           title: formBlock['x-component-props']?.title || formKey,
           actions: findSchema(formSchema.properties.actions, (item) => item['x-component'] === 'Action').map(
-            (item) => item['x-decorator-props'].value,
+            (item) => ({
+              status: item['x-decorator-props'].value,
+              values: item['x-action-settings']?.assignedValues?.values,
+              key: item.name,
+            }),
           ),
           collection: formBlock['x-decorator-props'].collection,
         };

@@ -127,10 +127,10 @@ export const useSelfAndChildrenCollections = (collectionName: string) => {
   return options;
 };
 
-export const useCollectionFilterOptions = (collectionName: string) => {
+export const useCollectionFilterOptions = (collection: any) => {
   const { getCollectionFields, getInterface } = useCollectionManager();
   return useMemo(() => {
-    const fields = getCollectionFields(collectionName);
+    const fields = getCollectionFields(collection);
     const field2option = (field, depth) => {
       if (!field.interface) {
         return;
@@ -179,7 +179,7 @@ export const useCollectionFilterOptions = (collectionName: string) => {
     };
     const options = getOptions(fields, 1);
     return options;
-  }, [collectionName]);
+  }, [collection]);
 };
 
 export const useLinkageCollectionFilterOptions = (collectionName: string) => {

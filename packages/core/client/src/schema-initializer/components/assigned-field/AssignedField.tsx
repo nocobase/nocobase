@@ -91,7 +91,7 @@ export const AssignedField = (props: any) => {
   const collectionField = getField(fieldSchema.name);
   const [options, setOptions] = useState<any[]>([]);
   const collection = useCollection();
-  const fields = compile(useCollectionFilterOptions(collection?.name));
+  const fields = compile(useCollectionFilterOptions(collection));
   const userFields = compile(useCollectionFilterOptions('users'));
   const scope = useVariableScope();
   useEffect(() => {

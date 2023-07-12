@@ -45,6 +45,10 @@ function InternalFormBlockInitializer({ insert, schema, ...others }) {
     delete result['x-acl-action'];
     const [formKey] = Object.keys(result.properties);
     result.properties[formKey].properties.actions['x-decorator'] = 'ActionBarProvider';
+    result.properties[formKey].properties.actions['x-component-props'].style = {
+      marginTop: '1.5em',
+      flexWrap: 'wrap',
+    };
     traverseSchema(result, (node) => {
       if (node['x-uid']) {
         delete node['x-uid'];
