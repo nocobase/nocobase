@@ -60,7 +60,7 @@ const CustomThemeProvider = React.memo((props) => {
   }, []);
 
   const contentStyle = useMemo(() => {
-    return open ? { transform: 'rotate(0)', flexGrow: 1 } : { flexGrow: 1 };
+    return open ? { transform: 'rotate(0)', flexGrow: 1, width: 0 } : { flexGrow: 1, width: 0 };
   }, [open]);
 
   const editor = (
