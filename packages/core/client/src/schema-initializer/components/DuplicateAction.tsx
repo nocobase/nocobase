@@ -48,7 +48,7 @@ export const DuplicateAction = observer((props: any) => {
     default: true,
     fields:
       duplicateFields?.filter((v) => {
-        return collectionFields.find((k) => k.name === v);
+        return collectionFields.find((k) => v.includes(k.name));
       }) || [],
     collection: __collection || name,
   };
