@@ -270,7 +270,7 @@ export const PluginCard = (props: { data: IPluginData }) => {
           size={'small'}
           onChange={async (checked, e) => {
             e.stopPropagation();
-            modal.warn({
+            modal.warning({
               title: checked ? t('Plugin starting') : t('Plugin stopping'),
               content: t('The application is reloading, please do not close the page.'),
               okButtonProps: {
