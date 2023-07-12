@@ -16,7 +16,8 @@ import {
   checkPluginPackage,
   getClientStaticUrl,
   getExtraPluginInfo,
-  getLocalPluginPackagesPath,
+  getLocalPluginDir,
+  getLocalPluginPackagesPathArr,
   getNewVersion,
   getPackageJsonByLocalPath,
   linkLocalPackageToNodeModules,
@@ -35,6 +36,7 @@ export interface InstallOptions {
 }
 
 export class PluginManager {
+  options: PluginManagerOptions;
   app: Application;
   pmSock: string;
   server: net.Server;
@@ -44,6 +46,7 @@ export class PluginManager {
   plugins = new Map<string | typeof Plugin, Plugin>();
 
   constructor(options: PluginManagerOptions) {
+    this.options = options;
     this.app = options.app;
     this.app.db.registerRepositories({
       PluginManagerRepository,
@@ -103,13 +106,25 @@ export class PluginManager {
   }
 
   async initStaticPlugins(plugins: PluginManagerOptions['plugins'] = []) {
-    for (const plugin of plugins) {
+    for await (const plugin of plugins) {
+      let instance: Plugin;
+
+      // 1. get plugin instance
       if (Array.isArray(plugin)) {
         const [PluginClass, options] = plugin;
-        this.setPluginInstance(PluginClass, options);
+        instance = this.setPluginInstance(PluginClass, options);
       } else {
-        this.setPluginInstance(plugin, {});
+        instance = this.setPluginInstance(plugin, {});
       }
+
+      // 2. run `load` hook
+      await instance.load();
+
+      // 3. run `install` hook
+      await this.install(instance);
+
+      // 4. run `afterEnable` hook
+      await instance.afterEnable();
     }
   }
 
@@ -160,27 +175,33 @@ export class PluginManager {
   }
 
   async setDatabasePlugin(pluginData: PluginData) {
-    const PluginClass = require(pluginData.type === 'local' ? `${pluginData.name}/src/server` : pluginData.name);
+    const shouldRequireSource = pluginData.type === 'local' && process.env.NODE_ENV === 'development';
+    const PluginClass = require(shouldRequireSource ? `${pluginData.name}/src/server` : pluginData.name);
     const pluginInstance = this.setPluginInstance(PluginClass, pluginData);
     return pluginInstance;
   }
 
-  setPluginInstance(PluginClass: typeof Plugin, options: Pick<PluginData, 'name' | 'builtIn' | 'enabled'>) {
+  setPluginInstance(
+    PluginClass: typeof Plugin & { default?: typeof Plugin },
+    options: Pick<PluginData, 'name' | 'builtIn' | 'enabled'>,
+  ) {
     const { name, enabled, builtIn } = options;
 
-    if (typeof PluginClass !== 'function') {
-      throw new Error(`plugin [${name}] must export a class`);
+    const PluginCls: typeof Plugin = PluginClass.default || PluginClass;
+
+    if (!(typeof PluginCls === 'function' && PluginCls.prototype instanceof Plugin)) {
+      throw new Error(`plugin [${name || PluginCls?.name}] must export a class`);
     }
 
     // 2. new plugin instance
-    const instance: Plugin = new PluginClass(this.app, {
+    const instance: Plugin = new PluginCls(this.app, {
       name,
       enabled,
       builtIn,
     });
 
     // 3. add instance to plugins
-    this.plugins.set(name || PluginClass, instance);
+    this.plugins.set(name || PluginCls, instance);
 
     return instance;
   }
@@ -223,7 +244,7 @@ export class PluginManager {
     });
 
     // 4.init plugin
-    await this.setDatabasePlugin({ name, enabled: false, builtIn });
+    await this.setDatabasePlugin(data);
 
     return res;
   }
@@ -232,17 +253,31 @@ export class PluginManager {
     // download and unzip plugin
     const { packageDir } = await addOrUpdatePluginByZip({ zipUrl: data.zipUrl });
 
-    return this.addByLocalPath(packageDir, { ...data, type: 'upload' });
+    return this.addLocalPath(packageDir, { ...data, type: 'upload' });
   }
 
-  async addByLocalPath(localPath: string, data: PluginData = {}) {
-    const { zipUrl, builtIn = false, isOfficial = false, type } = data;
+  async addLocalPath(localPath: string, data: PluginData = {}) {
+    const { zipUrl, builtIn = false, isOfficial = false, type, enabled } = data;
     const { name, version } = getPackageJsonByLocalPath(localPath);
     if (this.plugins.has(name)) {
       throw new Error(`plugin [${name}] already exists`);
     }
 
-    // 1. add plugin to database
+    // 1. set plugin instance
+    const instance = await this.setDatabasePlugin({ ...data, name });
+
+    if (enabled) {
+      // 2. run `load` hook
+      await this.load(instance);
+
+      // 3. run `install` hook
+      await this.install(instance);
+
+      // 4. run `afterEnable` hook
+      await instance.afterEnable();
+    }
+
+    // 5. add plugin to database
     const res = await this.repository.create({
       values: {
         name,
@@ -253,34 +288,25 @@ export class PluginManager {
         clientUrl: getClientStaticUrl(name),
         version,
         registry: undefined,
-        enabled: false,
+        enabled,
         installed: true,
         options: {},
       },
     });
 
-    // 2. set plugin instance
-    const instance = await this.setDatabasePlugin({ name, enabled: false, builtIn });
-
-    // 3. run `afterAdd` hook
-    await instance.afterAdd();
-
     return res;
   }
 
-  async addByLocalPackage(name: string, data: PluginData = {}) {
-    const localPackage = path.join(getLocalPluginPackagesPath(), name);
-    if (!fs.existsSync(localPackage)) {
-      throw new Error(`plugin [${name}] not exists, Please use 'yarn nocobase pm create ${name}' to create first.`);
-    }
+  async addLocalPackage(packageDirBasename: string, data: PluginData = {}) {
+    const localPackage = getLocalPluginDir(packageDirBasename);
 
     await linkLocalPackageToNodeModules(localPackage);
 
-    return this.addByLocalPath(localPackage, { ...data, type: 'local' });
+    return this.addLocalPath(localPackage, { ...data, zipUrl: packageDirBasename, type: 'local' });
   }
 
   get add() {
-    return this.addByLocalPackage;
+    return this.addLocalPackage;
   }
 
   async upgradeByNpm(name: string) {
@@ -306,7 +332,7 @@ export class PluginManager {
     // TODO: 升级后应该执行哪些 hooks？
     // 这里只执行了 `load`
     if (pluginData.enabled) {
-      await instance.load();
+      await this.load(instance);
     }
   }
 
@@ -328,7 +354,7 @@ export class PluginManager {
     // TODO: 升级后应该执行哪些 hooks？
     // 这里只执行了 `load`
     if (pluginData.enabled) {
-      await instance.load();
+      await this.load(instance);
     }
   }
 
@@ -354,17 +380,17 @@ export class PluginManager {
       },
     });
 
-    // 3. run `install` hook
-    await pluginInstance.install();
+    // 3. load plugin
+    await this.load(pluginInstance);
 
-    // 4. run `afterEnable` hook
+    // 4. run `install` hook
+    await this.install(pluginInstance);
+
+    // 6. run `afterEnable` hook
     await pluginInstance.afterEnable();
 
-    // 5. emit app hook
+    // 6. emit app hook
     await this.app.emitAsync('afterEnablePlugin', name);
-
-    // 6. load plugin
-    await this.load(pluginInstance);
   }
 
   async disable(name: string) {
@@ -418,8 +444,7 @@ export class PluginManager {
   }
 
   async loadAll(options: any) {
-    // TODO: 是否改为并行加载？
-    for await (const pluginInstance of this.plugins.values()) {
+    for await (const [name, pluginInstance] of this.plugins.entries()) {
       await this.load(pluginInstance, options);
     }
   }
@@ -429,6 +454,7 @@ export class PluginManager {
 
     await this.app.emitAsync('beforeLoadPlugin', pluginInstance, options);
     await pluginInstance.load();
+    await this.app.db.sync();
     await this.app.emitAsync('afterLoadPlugin', pluginInstance, options);
   }
 
@@ -456,18 +482,21 @@ export class PluginManager {
   clone() {
     const pm = new PluginManager({
       app: this.app,
+      plugins: this.options.plugins,
     });
     return pm;
   }
 
-  async install(options: InstallOptions = {}) {
+  async install(pluginInstance: Plugin, options: any = {}) {
+    if (!pluginInstance.enabled) return;
+    await this.app.emitAsync('beforeInstallPlugin', pluginInstance, options);
+    await pluginInstance.install({});
+    await this.app.emitAsync('afterInstallPlugin', pluginInstance, options);
+  }
+
+  async installAll(options: InstallOptions = {}) {
     for (const [name, plugin] of this.plugins) {
-      if (!plugin.enabled) {
-        continue;
-      }
-      await this.app.emitAsync('beforeInstallPlugin', plugin, options);
-      await plugin.install(options);
-      await this.app.emitAsync('afterInstallPlugin', plugin, options);
+      await this.install(plugin, options);
     }
   }
 
@@ -477,7 +506,7 @@ export class PluginManager {
     const { run } = require('@nocobase/cli/src/util');
     const { PluginGenerator } = require('@nocobase/cli/src/plugin-generator');
     const generator = new PluginGenerator({
-      cwd: getLocalPluginPackagesPath(),
+      cwd: getLocalPluginPackagesPathArr()[0],
       args: {},
       context: {
         name,
@@ -490,7 +519,7 @@ export class PluginManager {
   // by cli: `yarn nocobase pm add xxx`
   async addByCli(name: string) {
     console.log(`adding ${name} plugin...`);
-    return this.addByLocalPackage(name);
+    return this.addLocalPath(name);
   }
 
   // by cli: `yarn nocobase pm remove xxx`

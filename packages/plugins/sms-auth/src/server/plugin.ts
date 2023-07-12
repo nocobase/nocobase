@@ -13,9 +13,9 @@ export class SmsAuthPlugin extends Plugin {
     this.app.i18n.addResources('en-US', namespace, enUS);
 
     this.app.on('afterLoad', () => {
-      const verificationPlugin: VerificationPlugin = this.app.getPlugin('verification');
+      const verificationPlugin: VerificationPlugin = this.app.getPlugin('@nocobase/plugin-verification');
       if (!verificationPlugin) {
-        this.app.logger.warn('sms-auth: @nocobase/plugin-verification is required');
+        this.app.logger.warn('@nocobase/plugin-sms-auth: @nocobase/plugin-verification is required');
         return;
       }
       verificationPlugin.interceptors.register('auth:signIn', {

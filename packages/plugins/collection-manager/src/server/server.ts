@@ -251,7 +251,7 @@ export class CollectionManagerPlugin extends Plugin {
   async load() {
     await this.importCollections(path.resolve(__dirname, './collections'));
 
-    const errorHandlerPlugin = <PluginErrorHandler>this.app.getPlugin('error-handler');
+    const errorHandlerPlugin = <PluginErrorHandler>this.app.getPlugin('@nocobase/plugin-error-handler');
     errorHandlerPlugin.errorHandler.register(
       (err) => {
         return err instanceof UniqueConstraintError;

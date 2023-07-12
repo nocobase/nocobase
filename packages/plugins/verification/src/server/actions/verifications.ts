@@ -9,7 +9,7 @@ import { CODE_STATUS_UNUSED } from '../constants';
 const asyncRandomInt = promisify(randomInt);
 
 export async function create(context: Context, next: Next) {
-  const plugin = context.app.getPlugin('verification') as Plugin;
+  const plugin = context.app.getPlugin('@nocobase/plugin-verification') as Plugin;
 
   const { values } = context.action.params;
   const interceptor = plugin.interceptors.get(values?.type);

@@ -250,10 +250,12 @@ export class MultiAppShareCollectionPlugin extends Plugin {
   }
 
   async load() {
-    const multiAppManager = this.app.getPlugin<any>('multi-app-manager');
+    const multiAppManager = this.app.getPlugin<any>('@nocobase/plugin-multi-app-manager');
 
     if (!multiAppManager) {
-      this.app.log.warn('multi-app-share-collection plugin need multi-app-manager plugin enabled');
+      this.app.log.warn(
+        '@nocobase/plugin-multi-app-share-collection plugin need @nocobase/plugin-multi-app-manager plugin enabled',
+      );
       return;
     }
 

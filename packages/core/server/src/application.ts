@@ -383,7 +383,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
 
     await this.emitAsync('beforeLoad', this, options);
-    await this.pm.load(options);
+    await this.pm.loadAll(options);
     await this.emitAsync('afterLoad', this, options);
   }
 
@@ -555,7 +555,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     await this.emitAsync('beforeInstall', this, options);
     await this.db.sync();
-    await this.pm.install(options);
+    await this.pm.installAll(options);
     await this.version.update();
     await this.emitAsync('afterInstall', this, options);
   }

@@ -87,7 +87,7 @@ export class Application {
   }
 
   async load() {
-    return this.pm.load();
+    return this.pm.loadAll();
   }
 
   getComponent<T = any>(Component: ComponentTypeAndString<T>, isShowError = true): ComponentType<T> | undefined {

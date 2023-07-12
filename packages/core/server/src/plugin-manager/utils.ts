@@ -25,17 +25,28 @@ export function getPluginStoragePath() {
   return path.isAbsolute(pluginStoragePath) ? pluginStoragePath : path.join(process.cwd(), pluginStoragePath);
 }
 
-export function getLocalPluginPackagesPath() {
-  const pluginPackagesPath = process.env.PLUGIN_PATH || DEFAULT_PLUGIN_PATH;
-  return path.isAbsolute(pluginPackagesPath) ? pluginPackagesPath : path.join(process.cwd(), pluginPackagesPath);
+export function getLocalPluginPackagesPathArr(): string[] {
+  const pluginPackagesPathArr = process.env.PLUGIN_PATH || DEFAULT_PLUGIN_PATH;
+  return pluginPackagesPathArr.split(',').map((pluginPackagesPath) => {
+    pluginPackagesPath = pluginPackagesPath.trim();
+    return path.isAbsolute(pluginPackagesPath) ? pluginPackagesPath : path.join(process.cwd(), pluginPackagesPath);
+  });
 }
 
 export function getStoragePluginDir(packageName: string) {
   return path.join(getPluginStoragePath(), packageName);
 }
 
-export function getLocalPluginDir(packageName: string) {
-  return path.join(getLocalPluginPackagesPath(), packageName);
+export function getLocalPluginDir(packageDirBasename: string) {
+  const localPluginDir = getLocalPluginPackagesPathArr()
+    .map((pluginPackagesPath) => path.join(pluginPackagesPath, packageDirBasename))
+    .find((pluginDir) => fs.existsSync(pluginDir));
+
+  if (!localPluginDir) {
+    throw new Error(`local plugin "${packageDirBasename}" not found`);
+  }
+
+  return localPluginDir;
 }
 
 export function getNodeModulesPluginDir(packageName: string) {
@@ -74,10 +85,7 @@ export async function downloadAndUnzipToNodeModules(fileUrl: string) {
   await fs.move(path.join(tempDir, 'package'), packageDir, { overwrite: true });
 
   // symlink to node_modules
-  const nodeModulesPluginDir = getNodeModulesPluginDir(packageJson.name);
-  if (!(await fs.pathExists(nodeModulesPluginDir))) {
-    await fs.symlink(packageDir, nodeModulesPluginDir);
-  }
+  await linkToNodeModules(packageJson.name, packageDir);
 
   // remove temp dir
   await fs.remove(tempDir);
@@ -89,14 +97,21 @@ export async function downloadAndUnzipToNodeModules(fileUrl: string) {
   };
 }
 
+export async function linkToNodeModules(packageName: string, from: string) {
+  const nodeModulesPluginDir = getNodeModulesPluginDir(packageName);
+  if (!(await fs.pathExists(nodeModulesPluginDir))) {
+    if (!(await fs.pathExists(path.dirname(nodeModulesPluginDir)))) {
+      await fs.mkdirp(path.dirname(nodeModulesPluginDir));
+    }
+    await fs.symlink(from, nodeModulesPluginDir, 'dir');
+  }
+}
+
 export async function linkLocalPackageToNodeModules(packageDir: string) {
   const { name } = getPackageJsonByLocalPath(packageDir);
 
   // symlink to node_modules
-  const nodeModulesPluginDir = getNodeModulesPluginDir(name);
-  if (!(await fs.pathExists(nodeModulesPluginDir))) {
-    await fs.symlink(packageDir, nodeModulesPluginDir);
-  }
+  await linkToNodeModules(name, packageDir);
 }
 
 /**
@@ -240,21 +255,14 @@ export function removePluginPackage(packageName: string) {
 }
 
 export async function checkPluginExist(pluginData: PluginData) {
-  const { name, type } = pluginData;
+  const { name, type, zipUrl } = pluginData;
 
-  const storagePackageDir = getStoragePluginDir(name);
-  const localPluginPackageDir = getLocalPluginDir(name);
-
-  const packageDir = type === 'local' ? localPluginPackageDir : storagePackageDir;
-
-  const nodeModulesPluginDir = getNodeModulesPluginDir(name);
-
+  const packageDir = type === 'local' ? getStoragePluginDir(name) : getLocalPluginDir(zipUrl);
   const exists = await fs.exists(packageDir);
-  const nodeModulesPluginDirExists = await fs.exists(nodeModulesPluginDir);
 
-  // if packageDir exists and nodeModulesPluginDir not exists, create symlink
-  if (exists && !nodeModulesPluginDirExists) {
-    fs.symlink(packageDir, nodeModulesPluginDir);
+  // if packageDir exists create symlink
+  if (exists) {
+    await linkToNodeModules(name, packageDir);
   }
 
   return exists;

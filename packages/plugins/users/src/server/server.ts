@@ -173,7 +173,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
 
   // TODO(module): should move to preset or dynamic configuration panel
   async initVerification() {
-    const verificationPlugin = this.app.getPlugin('verification') as any;
+    const verificationPlugin = this.app.getPlugin('@nocobase/plugin-verification') as any;
     if (!verificationPlugin) {
       return;
     }

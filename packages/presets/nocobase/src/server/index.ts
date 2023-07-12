@@ -5,7 +5,7 @@ export class PresetNocoBase extends Plugin {
     'error-handler',
     'collection-manager',
     'ui-schema-storage',
-    'ui-routes-storage',
+    // 'ui-routes-storage',
     'file-manager',
     'system-settings',
     'sequence-field',
@@ -25,7 +25,7 @@ export class PresetNocoBase extends Plugin {
     'data-visualization',
     'auth',
     'sms-auth',
-  ].map((name) => `@nocobase/plugin-${name}`);
+  ];
 
   customPlugins = [
     'sample-hello',
@@ -38,21 +38,19 @@ export class PresetNocoBase extends Plugin {
     'graph-collection-manager',
     'mobile-client',
     'api-keys',
-  ].map((name) => `@nocobase/plugin-${name}`);
+  ];
 
   async addBuiltInPlugins(options?: any) {
-    const builtInPlugins = this.builtInPlugins.map((name) =>
-      this.app.pm.add(name, {
+    for await (const plugin of this.builtInPlugins) {
+      await this.app.pm.add(plugin, {
         enabled: true,
         builtIn: true,
         installed: true,
-      }),
-    );
-
-    const customPlugins = this.customPlugins.map((name) => this.app.pm.add(name, {}));
-
-    await Promise.all(builtInPlugins);
-    await Promise.all(customPlugins);
+      });
+    }
+    for await (const plugin of this.customPlugins) {
+      await this.app.pm.add(plugin, {});
+    }
     await this.app.reload({ method: options.method });
   }
 
