@@ -1,5 +1,5 @@
 import { connect } from '@formily/react';
-import { css, useCollectionManager, useRecord, useRequest } from '@nocobase/client';
+import { css, useCollectionManager, useRecord, useRequest, useToken } from '@nocobase/client';
 import { CollectionsGraph, lodash } from '@nocobase/utils/client';
 import { App, Col, Input, Row, Select, Spin, Table, Tag } from 'antd';
 import React, { useCallback, useMemo, useState } from 'react';
@@ -182,6 +182,7 @@ export const TableTransfer = connect((props) => {
   const removedDataSource = useRemovedDataSource({ collections, removed });
   const { t } = useTranslation('multi-app-share-collection');
   const { modal } = App.useApp();
+  const { token } = useToken();
   const columns = useMemo(
     () => [
       {
@@ -229,7 +230,7 @@ export const TableTransfer = connect((props) => {
               margin-bottom: 8px;
             `}
           >
-            <strong style={{ fontSize: 16 }}>{t('Unshared collections')}</strong>
+            <strong style={{ fontSize: token.fontSizeLG, color: token.colorText }}>{t('Unshared collections')}</strong>
             <Input.Group compact style={{ width: 360 }}>
               <Select
                 popupMatchSelectWidth={false}
@@ -314,7 +315,7 @@ export const TableTransfer = connect((props) => {
               margin-bottom: 8px;
             `}
           >
-            <strong style={{ fontSize: 16 }}>{t('Shared collections')}</strong>
+            <strong style={{ fontSize: token.fontSizeLG, color: token.colorText }}>{t('Shared collections')}</strong>
             <Input.Group compact style={{ width: 360 }}>
               <Select
                 popupMatchSelectWidth={false}
