@@ -120,12 +120,12 @@ export class LocalizationManagementPlugin extends Plugin {
           resources[key] = resource ? deepmerge(appLang.resources[key], resource) : appLang.resources[key];
         });
         // For duplicate texts, use translations from client to override translations in other modules
-        const client = appLang.resources.client || {};
-        Object.keys(appLang.resources).forEach((key) => {
+        const client = resources['client'] || {};
+        Object.keys(resources).forEach((key) => {
           if (key === 'client') {
             return;
           }
-          Object.keys(appLang.resources[key]).forEach((text) => {
+          Object.keys(resources[key]).forEach((text) => {
             if (client[text]) {
               resources[key][text] = client[text];
             }
