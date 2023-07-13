@@ -192,7 +192,7 @@ const Filter = () => {
               placeholder: t('Keyword'),
               allowClear: true,
               style: {
-                width: '50%',
+                width: 'fit-content',
               },
               onSearch: (keyword) => filter({ ...form.values, keyword }),
             },
@@ -210,7 +210,7 @@ const Filter = () => {
               defaultValue: true,
               style: {
                 marginLeft: '8px',
-                width: '50%',
+                width: 'fit-content',
               },
               optionType: 'button',
               onChange: () => filter(),

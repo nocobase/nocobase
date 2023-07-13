@@ -89,8 +89,9 @@ export const RemoteCollectionManagerProvider = (props: any) => {
     rawTitle: rawTitle || title,
     fields: fields.map(({ uiSchema, ...field }) => {
       if (uiSchema?.title) {
-        uiSchema.title = uiSchema.rawTitle ? uiSchema.title : t(uiSchema.title);
-        uiSchema.rawTitle = uiSchema.rawTitle || uiSchema.title;
+        const title = uiSchema.title;
+        uiSchema.title = uiSchema.rawTitle ? title : t(title);
+        uiSchema.rawTitle = uiSchema.rawTitle || title;
       }
       if (uiSchema?.enum) {
         uiSchema.enum = uiSchema.enum.map((item) => ({
@@ -102,7 +103,7 @@ export const RemoteCollectionManagerProvider = (props: any) => {
       return { uiSchema, ...field };
     }),
   }));
-
+  console.log(collections);
   return (
     <CollectionCategroriesProvider service={{ ...result }} refreshCategory={refreshCategory}>
       <CollectionManagerProvider
