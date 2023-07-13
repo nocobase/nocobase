@@ -50,7 +50,13 @@ describe('rpc http server', () => {
   it('should handle rpc client request', async () => {
     const rpcClient = createRpcClient();
 
-    const response = await rpcClient.call(`http://localhost:${serverPort}`, 'get', []);
-    console.log({ response });
+    const response = await rpcClient.call({
+      remoteAddr: `http://localhost:${serverPort}`,
+      appName: app.name,
+      method: 'name',
+      args: [],
+    });
+
+    expect(response.result).toEqual(app.name);
   });
 });
