@@ -1,12 +1,10 @@
 import { Plugin, SchemaComponentOptions, SchemaInitializerContext, SchemaInitializerProvider } from '@nocobase/client';
 import React, { useContext } from 'react';
 import { ChartInitializers, ChartV2Block, ChartV2BlockDesigner, ChartV2BlockInitializer } from './block';
-import { useChartsTranslation } from './locale';
 import { ChartRenderer, ChartRendererProvider, InternalLibrary } from './renderer';
 import { ChartLibraryProvider } from './renderer/ChartLibrary';
 
 const Chart: React.FC = (props) => {
-  const { t } = useChartsTranslation();
   const initializers = useContext<any>(SchemaInitializerContext);
   const children = initializers.BlockInitializers.items[0].children;
   const has = children.some((initializer) => initializer.component === 'ChartV2BlockInitializer');
@@ -14,7 +12,7 @@ const Chart: React.FC = (props) => {
     children.push({
       key: 'chart-v2',
       type: 'item',
-      title: t('Chart'),
+      title: '{{t("Charts", {ns: "data-visualization"})}}',
       component: 'ChartV2BlockInitializer',
     });
   }

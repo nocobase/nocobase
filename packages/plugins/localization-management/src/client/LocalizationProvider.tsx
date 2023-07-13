@@ -21,8 +21,20 @@ export const LocalizationProvider = (props) => {
           Object.keys(appLang.resources).forEach((key) => {
             if (custom[`resources.${key}`]) {
               appLang.resources[key] = deepmerge(appLang.resources[key], custom[`resources.${key}`]);
-              i18n.addResources(appLang.lang, key, appLang.resources[key]);
             }
+          });
+          // For duplicate texts, use translations from client to override translations in other modules
+          const client = appLang.resources.client || {};
+          Object.keys(appLang.resources).forEach((key) => {
+            if (key === 'client') {
+              return;
+            }
+            Object.keys(appLang.resources[key]).forEach((text) => {
+              if (client[text]) {
+                appLang.resources[key][text] = client[text];
+              }
+            });
+            i18n.addResources(appLang.lang, key, appLang.resources[key]);
           });
         }
         i18n.changeLanguage(appLang.lang);
@@ -34,7 +46,7 @@ export const LocalizationProvider = (props) => {
   }
   return (
     <AppLangContext.Provider value={appLang}>
-      <ConfigProvider dropdownMatchSelectWidth={false} {...props} locale={appLang.antd}>
+      <ConfigProvider popupMatchSelectWidth={false} {...props} locale={appLang.antd}>
         {props.children}
       </ConfigProvider>
     </AppLangContext.Provider>

@@ -77,7 +77,6 @@ export const getUISchemas = async (db: Database) => {
 };
 
 export const resourcesToRecords = async (
-  ctx: Context,
   locale: string,
   resources: any,
 ): Promise<{
@@ -88,6 +87,11 @@ export const resourcesToRecords = async (
     const resource = resources[module];
     for (const text in resource) {
       if (resource[text] || module === 'client') {
+        if (records[text]) {
+          // If the text already exists, put it in the client module
+          records[text].module = `client`;
+          continue;
+        }
         records[text] = {
           module,
           text,
@@ -184,7 +188,7 @@ const sync = async (ctx: Context, next: Next) => {
     };
   }
 
-  const records = await resourcesToRecords(ctx, locale, resources);
+  const records = await resourcesToRecords(locale, resources);
   let textValues = Object.values(records).map((record) => ({
     module: `resources.${record.module}`,
     text: record.text,

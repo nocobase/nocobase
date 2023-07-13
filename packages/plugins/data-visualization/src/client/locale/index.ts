@@ -2,7 +2,7 @@ import { i18n } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
 import zhCN from './zh-CN';
 
-export const NAMESPACE = 'charts-v2';
+export const NAMESPACE = 'data-visualization';
 
 i18n.addResources('zh-CN', NAMESPACE, zhCN);
 // i18n.addResources('en-US', NAMESPACE, enUS);
