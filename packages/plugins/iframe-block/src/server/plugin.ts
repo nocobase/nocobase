@@ -5,7 +5,7 @@ import { getHtml } from './actions';
 export class IframeBlockPlugin extends Plugin {
   afterAdd() {}
 
-  beforeLoad() {}
+  async beforeLoad() { }
 
   async load() {
     await this.db.import({

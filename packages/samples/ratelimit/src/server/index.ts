@@ -2,7 +2,7 @@ import { InstallOptions, Plugin } from '@nocobase/server';
 import ratelimit from 'koa-ratelimit';
 
 export class CustomPagePlugin extends Plugin {
-  beforeLoad() {
+  async beforeLoad() {
     const db = new Map();
     this.app.use(
       ratelimit({

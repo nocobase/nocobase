@@ -10,7 +10,7 @@ export class PluginErrorHandler extends Plugin {
   errorHandler: ErrorHandler = new ErrorHandler();
   i18nNs = 'error-handler';
 
-  beforeLoad() {
+  async beforeLoad() {
     this.registerSequelizeValidationErrorHandler();
   }
 

@@ -2,7 +2,7 @@ import { InstallOptions, Plugin } from '@nocobase/server';
 import { exportXlsx } from './actions';
 
 export class ExportPlugin extends Plugin {
-  beforeLoad() {}
+  async beforeLoad() { }
 
   async load() {
     this.app.resourcer.registerActionHandler('export', exportXlsx);

@@ -8,7 +8,7 @@ import { authType } from '../constants';
 export class SAMLPlugin extends Plugin {
   afterAdd() {}
 
-  beforeLoad() {}
+  async beforeLoad() { }
 
   async load() {
     this.app.authManager.registerTypes(authType, {

@@ -6,7 +6,7 @@ import { resolve } from 'path';
 const subAppFilteredPlugins = ['multi-app-share-collection', 'multi-app-manager'];
 
 class SubAppPlugin extends Plugin {
-  beforeLoad() {
+  async beforeLoad() {
     const mainApp = this.options.mainApp;
     const subApp = this.app;
 

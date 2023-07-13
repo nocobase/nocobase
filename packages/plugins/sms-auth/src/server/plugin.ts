@@ -8,7 +8,7 @@ import { resolve } from 'path';
 export class SmsAuthPlugin extends Plugin {
   afterAdd() {}
 
-  beforeLoad() {
+  async beforeLoad() {
     this.app.i18n.addResources('zh-CN', namespace, zhCN);
     this.app.i18n.addResources('en-US', namespace, enUS);
 

@@ -16,8 +16,8 @@ import { InstallOptions, Plugin } from '@nocobase/server';
 export class MyPlugin extends Plugin {
   afterAdd() {
     // After the plugin pm.add is registered. Mainly used to place the app.beforeLoad event.
-  beforeLoad() { }
-  beforeLoad() {
+  async beforeLoad() { }
+  async beforeLoad() {
     // Before all plugins are loaded. Generally used for registering classes and event listeners
   }
   async load() {

@@ -7,7 +7,7 @@ import { OIDCAuth } from './oidc-auth';
 export class OidcPlugin extends Plugin {
   afterAdd() {}
 
-  beforeLoad() {}
+  async beforeLoad() { }
 
   async load() {
     this.app.authManager.registerTypes(authType, {

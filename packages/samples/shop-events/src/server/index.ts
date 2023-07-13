@@ -40,7 +40,7 @@ export class ShopPlugin extends Plugin {
     console.log('%d orders expired', updated);
   };
 
-  beforeLoad() {
+  async beforeLoad() {
     // TODO
   }
 

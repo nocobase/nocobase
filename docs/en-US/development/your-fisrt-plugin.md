@@ -57,7 +57,7 @@ import { InstallOptions, Plugin } from '@nocobase/server';
 export class HelloPlugin extends Plugin {
   afterAdd() {}
 
-  beforeLoad() {}
+  async beforeLoad() {}
 
   async load() {
     this.db.collection({

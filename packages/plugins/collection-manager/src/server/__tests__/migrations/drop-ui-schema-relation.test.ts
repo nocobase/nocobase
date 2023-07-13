@@ -5,7 +5,7 @@ import Migrator from '../../migrations/20230225111112-drop-ui-schema-relation';
 import { createApp } from '../index';
 
 class AddBelongsToPlugin extends Plugin {
-  beforeLoad() {
+  async beforeLoad() {
     this.app.db.on('beforeDefineCollection', (options) => {
       if (options.name == 'fields') {
         options.fields.push({

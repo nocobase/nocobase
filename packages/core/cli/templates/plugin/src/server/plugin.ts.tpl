@@ -3,7 +3,7 @@ import { InstallOptions, Plugin } from '@nocobase/server';
 export class {{{pascalCaseName}}}Plugin extends Plugin {
   afterAdd() {}
 
-  beforeLoad() {}
+  async beforeLoad() {}
 
   async load() {}
 

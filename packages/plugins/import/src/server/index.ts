@@ -5,7 +5,7 @@ import { enUS, zhCN } from './locale';
 import { importMiddleware } from './middleware';
 
 export class ImportPlugin extends Plugin {
-  beforeLoad() {
+  async beforeLoad() {
     this.app.i18n.addResources('zh-CN', namespace, zhCN);
     this.app.i18n.addResources('en-US', namespace, enUS);
   }

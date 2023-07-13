@@ -11,7 +11,7 @@ import multer from '@koa/multer';
 import * as os from 'os';
 
 export default class Duplicator extends Plugin {
-  beforeLoad() {
+  async beforeLoad() {
     this.app.i18n.addResources('zh-CN', 'duplicator', zhCN);
 
     addDumpCommand(this.app);

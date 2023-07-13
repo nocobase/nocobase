@@ -105,7 +105,7 @@ export class HelloPlugin extends Plugin {
     // After the plugin has been added via pm.add
   }
 
-  beforeLoad() {
+  async beforeLoad() {
     // Before all plugins are loaded, generally used to register classes and event listeners
   }
 
@@ -147,7 +147,7 @@ const app = new Application({
 
 class MyPlugin extends Plugin {
   afterAdd() {}
-  beforeLoad() {}
+  async beforeLoad() {}
   load() {}
   install() {}
   afterEnable() {}

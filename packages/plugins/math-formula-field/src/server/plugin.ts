@@ -5,7 +5,7 @@ import { MathFormulaField } from './math-formula-field';
 export class MathFormulaFieldPlugin extends Plugin {
   afterAdd() {}
 
-  beforeLoad() {
+  async beforeLoad() {
     this.db.registerFieldTypes({
       formula: MathFormulaField,
       mathFormula: MathFormulaField,

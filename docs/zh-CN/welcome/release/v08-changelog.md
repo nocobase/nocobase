@@ -101,7 +101,7 @@ export class HelloPlugin extends Plugin {
     // 插件通过 pm.add 添加之后
   }
 
-  beforeLoad() {
+  async beforeLoad() {
     // 所有插件执行 load 之前，一般用于注册类和事件监听
   }
 
@@ -142,7 +142,7 @@ const app = new Application({
 
 class MyPlugin extends Plugin {
   afterAdd() {}
-  beforeLoad() {}
+  async beforeLoad() {}
   load() {}
   install() {}
   afterEnable() {}

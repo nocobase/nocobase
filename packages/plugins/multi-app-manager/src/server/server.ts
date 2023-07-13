@@ -89,7 +89,7 @@ export class PluginMultiAppManager extends Plugin {
     return lodash.cloneDeep(lodash.omit(oldConfig, ['migrator']));
   }
 
-  beforeLoad() {
+  async beforeLoad() {
     this.db.registerModels({
       ApplicationModel,
     });

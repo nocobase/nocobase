@@ -11,7 +11,7 @@ export class ShopPlugin extends Plugin {
     });
   }
 
-  beforeLoad() {
+  async beforeLoad() {
     // TODO
   }
 

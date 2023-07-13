@@ -10,7 +10,7 @@
 
 ```ts
 export class MyPlugin extends Plugin {
-  beforeLoad() {
+  async beforeLoad() {
     this.db.registerFieldTypes({
       password: PasswordField
     });
@@ -25,7 +25,7 @@ export class PasswordField extends Field {
 ```
 
 - [更多内置 field types 的实现点此查看](https://github.com/nocobase/nocobase/tree/main/packages/core/database/src/fields)
-- 也可以查看完整的 samples 插件 [packages/samples/shop-modeling](https://github.com/nocobase/nocobase/tree/main/packages/samples/shop-modeling) 
+- 也可以查看完整的 samples 插件 [packages/samples/shop-modeling](https://github.com/nocobase/nocobase/tree/main/packages/samples/shop-modeling)
 
 ## Field Component 扩展
 

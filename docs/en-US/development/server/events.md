@@ -15,7 +15,7 @@ export class MyPlugin extends Plugin {
   }
 
   // beforeLoad() will only be executed after the plugin is activated
-  beforeLoad() {
+  async beforeLoad() {
     this.app.on();
     this.db.on();
   }
@@ -64,7 +64,7 @@ Usually we have different collections for products and orders. The problem of ov
 
 ```ts
 class ShopPlugin extends Plugin {
-  beforeLoad() {
+  async beforeLoad() {
     this.db.on('orders.afterCreate', async (order, options) => {
       const product = await order.getProduct({
         transaction: options.transaction

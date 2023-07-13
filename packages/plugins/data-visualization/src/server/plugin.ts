@@ -7,7 +7,7 @@ export class DataVisualizationPlugin extends Plugin {
 
   afterAdd() {}
 
-  beforeLoad() {
+  async beforeLoad() {
     this.app.resource({
       name: 'charts',
       actions: {

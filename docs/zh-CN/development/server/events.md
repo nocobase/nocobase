@@ -15,7 +15,7 @@ export class MyPlugin extends Plugin {
   }
 
   // 只有插件激活之后才会执行 beforeLoad()
-  beforeLoad() {
+  async beforeLoad() {
     this.app.on();
     this.db.on();
   }
@@ -64,7 +64,7 @@ app 的事件与应用的生命周期相关，相关事件有：
 
 ```ts
 class ShopPlugin extends Plugin {
-  beforeLoad() {
+  async beforeLoad() {
     this.db.on('orders.afterCreate', async (order, options) => {
       const product = await order.getProduct({
         transaction: options.transaction

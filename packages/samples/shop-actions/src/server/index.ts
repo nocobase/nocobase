@@ -3,7 +3,7 @@ import path from 'path';
 import { InstallOptions, Plugin } from '@nocobase/server';
 
 export class ShopPlugin extends Plugin {
-  beforeLoad() {
+  async beforeLoad() {
     // TODO
   }
 

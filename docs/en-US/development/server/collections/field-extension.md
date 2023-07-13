@@ -10,7 +10,7 @@ For example, to extend the password type field ``type: 'password'`
 
 ```ts
 export class MyPlugin extends Plugin {
-  beforeLoad() {
+  async beforeLoad() {
     this.db.registerFieldTypes({
       password: PasswordField
     });
@@ -25,7 +25,7 @@ export class PasswordField extends Field {
 ```
 
 - [More implementations of the built-in field types can be found here](https://github.com/nocobase/nocobase/tree/main/packages/core/database/src/fields)
-- Also see the full samples plugin [packages/samples/shop-modeling](https://github.com/nocobase/nocobase/tree/main/packages/samples/shop-modeling) 
+- Also see the full samples plugin [packages/samples/shop-modeling](https://github.com/nocobase/nocobase/tree/main/packages/samples/shop-modeling)
 
 ## Extend Field Component
 

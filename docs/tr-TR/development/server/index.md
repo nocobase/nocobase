@@ -22,7 +22,7 @@ export class MyPlugin extends Plugin {
     // After the plugin pm.add is registered. This is mainly used to place a listener for the app beforeLoad event
     this.app.on('beforeLoad');
   }
-  beforeLoad() {
+  async beforeLoad() {
     // Custom classes or methods
     this.db.registerFieldTypes()
     this.db.registerModels()

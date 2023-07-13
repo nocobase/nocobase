@@ -71,7 +71,7 @@ Veya bir eklenti için：
 
 ```ts
 class MyPlugin extends Plugin {
-  beforeLoad() {
+  async beforeLoad() {
     this.app.command('hello').action(() => {});
   }
 }
@@ -178,7 +178,7 @@ yarn nocobase install -c -l tr-TR -e admin@nocobase.com -p admin123
 
 <Alert>
 
-`-f/--force` ve `-c/--clean` 
+`-f/--force` ve `-c/--clean`
 - `-f/--force` NocoBase verileri silin
 - `-c/--clean` Veritabanını boşaltın, tüm veri tabloları silinecek
 

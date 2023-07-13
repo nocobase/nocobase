@@ -22,7 +22,7 @@ export class MyPlugin extends Plugin {
     // 插件 pm.add 注册进来之后。主要用于放置 app beforeLoad 事件的监听
     this.app.on('beforeLoad');
   }
-  beforeLoad() {
+  async beforeLoad() {
     // 自定义类或方法
     this.db.registerFieldTypes()
     this.db.registerModels()

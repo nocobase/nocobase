@@ -1,7 +1,7 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
 
 export class CustomSchemaScopePlugin extends Plugin {
-  beforeLoad() {
+  async beforeLoad() {
     // TODO
   }
 

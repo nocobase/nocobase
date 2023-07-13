@@ -15,7 +15,7 @@ describe('application life cycle', () => {
 
     // register plugin
     class TestPlugin extends Plugin {
-      beforeLoad() {}
+      async beforeLoad() { }
 
       getName() {
         return 'Test';

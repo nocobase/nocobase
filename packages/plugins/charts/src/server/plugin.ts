@@ -24,7 +24,7 @@ export class ChartsPlugin extends Plugin {
 
   afterAdd() {}
 
-  beforeLoad() {
+  async beforeLoad() {
     this.app.db.on('chartsQueries.beforeCreate', this.syncFields);
     this.app.db.on('chartsQueries.beforeUpdate', this.syncFields);
   }

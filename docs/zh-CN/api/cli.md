@@ -71,7 +71,7 @@ app.command('hello').action(() => {});
 
 ```ts
 class MyPlugin extends Plugin {
-  beforeLoad() {
+  async beforeLoad() {
     this.app.command('hello').action(() => {});
   }
 }

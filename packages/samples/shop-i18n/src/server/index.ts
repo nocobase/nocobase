@@ -7,7 +7,7 @@ import zhCN from './locales/zh-CN';
 const ns = '@nocobase/plugin-sample-shop-i18n';
 
 export class ShopPlugin extends Plugin {
-  beforeLoad() {
+  async beforeLoad() {
     // TODO
   }
 

@@ -4,7 +4,7 @@ import { ExcelFormulaField } from './excel-formula-field';
 export class ExcelFormulaFieldPlugin extends Plugin {
   afterAdd() {}
 
-  beforeLoad() {
+  async beforeLoad() {
     this.db.registerFieldTypes({
       excelFormula: ExcelFormulaField,
     });

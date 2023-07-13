@@ -23,7 +23,7 @@ export class SystemSettingsPlugin extends Plugin {
     });
   }
 
-  beforeLoad() {
+  async beforeLoad() {
     const cmd = this.app.findCommand('install');
     if (cmd) {
       cmd.option('-l, --lang [lang]');
