@@ -1,6 +1,7 @@
 import { Model } from '@nocobase/database';
 import { UiSchemaStoragePlugin } from '@nocobase/plugin-ui-schema-storage';
 import { InstallOptions, Plugin } from '@nocobase/server';
+import deepmerge from 'deepmerge';
 import { resolve } from 'path';
 import localization from './actions/localization';
 import localizationTexts from './actions/localizationTexts';
@@ -65,10 +66,9 @@ export class LocalizationManagementPlugin extends Plugin {
       actions: localization,
     });
 
-    this.app.acl.allow('localization', 'all', 'public');
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.localization`,
-      actions: ['localization:*'],
+      actions: ['localization:*', 'localizationTexts:*'],
     });
 
     this.db.on('afterSave', async (instance: Model) => {
@@ -105,6 +105,33 @@ export class LocalizationManagementPlugin extends Plugin {
       if (plugin.name === 'ui-schema-storage') {
         // ui-schema-storage loaded after localization-management
         this.registerUISchemahook(plugin);
+      }
+    });
+
+    this.app.resourcer.use(async (ctx, next) => {
+      await next();
+      const { resourceName, actionName } = ctx.action.params;
+      if (resourceName === 'app' && actionName === 'getLang') {
+        const custom = await this.resources.getResources(ctx.get('X-Locale') || 'en-US');
+        const appLang = ctx.body;
+        Object.keys(appLang.resources).forEach((key) => {
+          if (custom[`resources.${key}`]) {
+            appLang.resources[key] = deepmerge(appLang.resources[key], custom[`resources.${key}`]);
+          }
+        });
+        // For duplicate texts, use translations from client to override translations in other modules
+        const client = appLang.resources.client || {};
+        Object.keys(appLang.resources).forEach((key) => {
+          if (key === 'client') {
+            return;
+          }
+          Object.keys(appLang.resources[key]).forEach((text) => {
+            if (client[text]) {
+              appLang.resources[key][text] = client[text];
+            }
+          });
+        });
+        ctx.body = appLang;
       }
     });
   }

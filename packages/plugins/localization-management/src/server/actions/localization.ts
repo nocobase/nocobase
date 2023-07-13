@@ -10,12 +10,6 @@ const getResourcesInstance = async (ctx: Context) => {
   return plugin.resources;
 };
 
-const all = async (ctx: Context, next: Next) => {
-  const resources = await getResourcesInstance(ctx);
-  ctx.body = await resources.getResources(ctx.get('X-Locale') || 'en-US');
-  await next();
-};
-
 export const getResources = async (locale: string, db: Database) => {
   const resources = await getResourceLocale(locale, db);
   const client = resources['client'];
@@ -222,4 +216,4 @@ const publish = async (ctx: Context, next: Next) => {
   await next();
 };
 
-export default { all, publish, sync };
+export default { publish, sync };

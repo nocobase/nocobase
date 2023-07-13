@@ -154,7 +154,7 @@ export const querySchema: ISchema = {
           'x-component-props': {
             options: '{{ collectionOptions }}',
             onChange: '{{ onCollectionChange }}',
-            placeholder: lang('Collection'),
+            placeholder: '{{t("Collection")}}',
           },
         },
       },
@@ -206,11 +206,11 @@ export const querySchema: ISchema = {
                             placeholder: '{{t("Aggregation")}}',
                           },
                           enum: [
-                            { label: lang('Sum'), value: 'sum' },
-                            { label: lang('Count'), value: 'count' },
-                            { label: lang('Avg'), value: 'avg' },
-                            { label: lang('Max'), value: 'max' },
-                            { label: lang('Min'), value: 'min' },
+                            { label: '{{t("Sum")}}', value: 'sum' },
+                            { label: '{{t("Count")}}', value: 'count' },
+                            { label: '{{t("Avg")}}', value: 'avg' },
+                            { label: '{{t("Max")}}', value: 'max' },
+                            { label: '{{t("Min")}}', value: 'min' },
                           ],
                         },
                         alias: {

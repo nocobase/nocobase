@@ -5,9 +5,9 @@ import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
+import { useResourceActionContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
 import { CollectionCategroriesContext } from '../context';
-import { useResourceActionContext } from '../ResourceActionProvider';
 import * as components from './components';
 import { collectionCategoryEditSchema } from './schemas/collections';
 
@@ -40,7 +40,7 @@ const useEditCategry = () => {
 const useValuesFromRecord = (options) => {
   const record = useRecord();
   const { t } = useTranslation();
-  const result = useRequest(() => Promise.resolve({ data: { ...record, name: t(record.name || '') } }), {
+  const result = useRequest(() => Promise.resolve({ data: { ...record } }), {
     ...options,
     manual: true,
   });
