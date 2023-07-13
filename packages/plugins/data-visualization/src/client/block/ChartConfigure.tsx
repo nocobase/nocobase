@@ -34,7 +34,7 @@ import {
 import { useChartsTranslation } from '../locale';
 import { ChartRenderer, ChartRendererProvider, useChartTypes, useCharts } from '../renderer';
 import { createRendererSchema, getField, getSelectedFields } from '../utils';
-import { getConfigSchema, querySchema, transformSchema } from './schemas/configure';
+import { getConfigSchema, getQuerySchema, transformSchema } from './schemas/configure';
 const { Paragraph, Text } = Typography;
 
 export type ChartConfigCurrent = {
@@ -339,6 +339,7 @@ ChartConfigure.Query = function Query() {
       From <span style={{ color: '#1890ff' }}>{current?.collection}</span>
     </Text>
   );
+  const querySchema = getQuerySchema();
   return (
     <SchemaComponent
       schema={querySchema}

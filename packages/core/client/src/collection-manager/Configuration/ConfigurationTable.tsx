@@ -2,6 +2,7 @@ import { useForm } from '@formily/react';
 import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import React, { useContext, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CollectionFieldsTable } from '.';
 import { useAPIClient } from '../../api-client';
 import { useCurrentAppInfo } from '../../appInfo';
@@ -81,6 +82,7 @@ const useNewId = (prefix) => {
 };
 
 export const ConfigurationTable = () => {
+  const { t } = useTranslation();
   const { collections = [], interfaces } = useCollectionManager();
   const {
     data: { database },
@@ -125,7 +127,7 @@ export const ConfigurationTable = () => {
   };
   const loadCategories = async () => {
     return data.data.map((item: any) => ({
-      label: compile(item.name),
+      label: t(compile(item.name)),
       value: item.id,
     }));
   };

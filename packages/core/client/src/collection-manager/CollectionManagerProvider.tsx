@@ -103,7 +103,7 @@ export const RemoteCollectionManagerProvider = (props: any) => {
       return { uiSchema, ...field };
     }),
   }));
-  console.log(collections);
+
   return (
     <CollectionCategroriesProvider service={{ ...result }} refreshCategory={refreshCategory}>
       <CollectionManagerProvider

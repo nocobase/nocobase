@@ -95,7 +95,7 @@ export const getConfigSchema = (general: any): ISchema => ({
   },
 });
 
-export const querySchema: ISchema = {
+export const getQuerySchema = (): ISchema => ({
   type: 'void',
   properties: {
     settings: {
@@ -423,7 +423,7 @@ export const querySchema: ISchema = {
       },
     },
   },
-};
+});
 
 export const transformSchema: ISchema = {
   type: 'void',
