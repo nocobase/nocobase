@@ -17,28 +17,27 @@
   <script src="./swagger-ui-bundle.js" charset="UTF-8"> </script>
   <script src="./swagger-ui-standalone-preset.js" charset="UTF-8"> </script>
   <script charset="UTF-8">
-    window.onload = function () {
-      //<editor-fold desc="Changeable Configuration Block">
+      window.onload = function() {
+        //<editor-fold desc="Changeable Configuration Block">
 
-      // the following lines will be replaced by docker/configurator, when it runs in a docker-container
-      window.ui = SwaggerUIBundle({
-        url: "/api/swagger.json",
-        dom_id: '#swagger-ui',
-        deepLinking: true,
-        presets: [
-          SwaggerUIBundle.presets.apis,
-          SwaggerUIStandalonePreset
-        ],
-        plugins: [
-          SwaggerUIBundle.plugins.DownloadUrl
-        ],
-        layout: "StandaloneLayout"
-      });
+        // the following lines will be replaced by docker/configurator, when it runs in a docker-container
+        window.ui = SwaggerUIBundle({
+          url: "/api/swagger.json",
+          dom_id: '#swagger-ui',
+          deepLinking: true,
+          presets: [
+            SwaggerUIBundle.presets.apis,
+            SwaggerUIStandalonePreset
+          ],
+          plugins: [
+            SwaggerUIBundle.plugins.DownloadUrl
+          ],
+          layout: "StandaloneLayout"
+        });
 
       //</editor-fold>
     };
 
   </script>
 </body>
-
 </html>
