@@ -166,7 +166,7 @@ describe('workflow > instructions > manual', () => {
       const res1 = await userAgents[0].resource('users_jobs').submit({
         filterByTk: usersJobs[0].id,
         values: {
-          result: { f1: { a: 1 }, _: 'resovle' },
+          result: { f1: { a: 1 }, _: 'resolve' },
         },
       });
 
@@ -176,7 +176,7 @@ describe('workflow > instructions > manual', () => {
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
       const [job] = await execution.getJobs();
       expect(job.status).toBe(JOB_STATUS.RESOLVED);
-      expect(job.result).toEqual({ f1: { a: 2 } });
+      expect(job.result).toEqual({ f1: { a: 2 }, _: 'resolve' });
     });
 
     it('values rejected will be overrided by action assigned', async () => {
@@ -226,7 +226,7 @@ describe('workflow > instructions > manual', () => {
       expect(execution.status).toBe(EXECUTION_STATUS.REJECTED);
       const [job] = await execution.getJobs();
       expect(job.status).toBe(JOB_STATUS.REJECTED);
-      expect(job.result).toEqual({ f1: { a: 2 } });
+      expect(job.result).toEqual({ f1: { a: 2 }, _: 'reject' });
     });
 
     it('values saved as pending will not be overrided by action assigned', async () => {
@@ -276,7 +276,7 @@ describe('workflow > instructions > manual', () => {
       expect(execution.status).toBe(EXECUTION_STATUS.STARTED);
       const [job] = await execution.getJobs();
       expect(job.status).toBe(JOB_STATUS.PENDING);
-      expect(job.result).toEqual({ f1: { a: 1 } });
+      expect(job.result).toEqual({ f1: { a: 1 }, _: 'save' });
     });
   });
 
@@ -337,17 +337,17 @@ describe('workflow > instructions > manual', () => {
 
       const [j2] = await pending.getJobs();
       expect(j2.status).toBe(JOB_STATUS.RESOLVED);
-      expect(j2.result).toEqual({ f1: { a: 1 } });
+      expect(j2.result).toEqual({ f1: { a: 1 }, _: 'resolve' });
 
       const usersJobsAfter = await UserJobModel.findAll();
       expect(usersJobsAfter.length).toBe(1);
       expect(usersJobsAfter[0].status).toBe(JOB_STATUS.RESOLVED);
-      expect(usersJobsAfter[0].result).toEqual({ f1: { a: 1 } });
+      expect(usersJobsAfter[0].result).toEqual({ f1: { a: 1 }, _: 'resolve' });
 
       const res4 = await userAgents[0].resource('users_jobs').submit({
         filterByTk: usersJobs[0].id,
         values: {
-          result: { f1: { a: 2 }, _: 'resovle' },
+          result: { f1: { a: 2 }, _: 'resolve' },
         },
       });
       expect(res4.status).toBe(400);
@@ -391,7 +391,7 @@ describe('workflow > instructions > manual', () => {
 
       const [j2] = await pending.getJobs();
       expect(j2.status).toBe(JOB_STATUS.RESOLVED);
-      expect(j2.result).toEqual({ f1: { a: 1 } });
+      expect(j2.result).toEqual({ f1: { a: 1 }, _: 'resolve' });
 
       const res2 = await userAgents[0].resource('users_jobs').submit({
         filterByTk: usersJobs.find((item) => item.userId === users[0].id).id,
@@ -441,7 +441,7 @@ describe('workflow > instructions > manual', () => {
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
       const [job] = await execution.getJobs();
       expect(job.status).toBe(JOB_STATUS.RESOLVED);
-      expect(job.result).toEqual({ f1: { a: 1 } });
+      expect(job.result).toEqual({ f1: { a: 1 }, _: 'resolve' });
     });
   });
 
