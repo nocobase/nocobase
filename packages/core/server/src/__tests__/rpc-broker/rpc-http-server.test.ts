@@ -50,13 +50,30 @@ describe('rpc http server', () => {
   it('should handle rpc client request', async () => {
     const rpcClient = createRpcClient();
 
-    const response = await rpcClient.call({
+    const callResponse = await rpcClient.call({
       remoteAddr: `http://localhost:${serverPort}`,
       appName: app.name,
       method: 'name',
       args: [],
     });
 
-    expect(response.result).toEqual(app.name);
+    expect(callResponse.result).toEqual(app.name);
+
+    const appTestHandler = jest.fn();
+
+    app.on('rpc:test', () => {
+      appTestHandler();
+    });
+
+    const pushResponse = await rpcClient.push({
+      remoteAddr: `http://localhost:${serverPort}`,
+      appName: app.name,
+      event: 'test',
+      options: {},
+    });
+
+    expect(pushResponse).toEqual(true);
+
+    expect(appTestHandler).toBeCalled();
   });
 });

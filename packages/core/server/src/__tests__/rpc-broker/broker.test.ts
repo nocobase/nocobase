@@ -1,5 +1,5 @@
-import Application from '@nocobase/server';
 import { AppSupervisor } from '../../app-supervisor';
+import Application from '../../application';
 import { RpcBrokerFactory } from '../../rpc-broker/factory';
 import { RemoteBroker } from '../../rpc-broker/remote-broker';
 import { ConnectionInfo, RemoteServiceInfo, ServiceDiscoveryClient } from '../../service-discovery/client';

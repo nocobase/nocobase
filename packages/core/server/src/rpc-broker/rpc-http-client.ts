@@ -7,16 +7,27 @@ interface RemoteCallOptions {
   args: any;
 }
 
-export class RpcHttpClient {
-  async call(options: RemoteCallOptions): Promise<{ result: any }> {
-    let { remoteAddr } = options;
-    const { appName, method, args } = options;
+interface RemotePushOptions {
+  remoteAddr: string;
+  appName: string;
+  event: string;
+  options: any;
+}
 
+export class RpcHttpClient {
+  remoteUrl(remoteAddr: string) {
     if (!remoteAddr.startsWith('http://')) {
-      remoteAddr = `http://${remoteAddr}`;
+      return `http://${remoteAddr}`;
     }
 
-    const url = `${remoteAddr}/call`;
+    return remoteAddr;
+  }
+
+  async call(options: RemoteCallOptions): Promise<{ result: any }> {
+    const { remoteAddr, appName, method, args } = options;
+
+    const url = `${this.remoteUrl(remoteAddr)}/call`;
+
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -34,6 +45,28 @@ export class RpcHttpClient {
     return {
       result: data.result,
     };
+  }
+
+  async push(options: RemotePushOptions): Promise<boolean> {
+    const { remoteAddr, appName, event, options: eventOptions } = options;
+
+    const url = `${this.remoteUrl(remoteAddr)}/push`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        event,
+        options: eventOptions
+        appName,
+      }),
+    });
+
+    const data = await response.json();
+
+    return data;
   }
 }
 
