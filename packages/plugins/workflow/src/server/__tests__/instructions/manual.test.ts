@@ -82,9 +82,8 @@ describe('workflow > instructions > manual', () => {
       const res1 = await userAgents[0].resource('users_jobs').submit({
         filterByTk: usersJobs[0].id,
         values: {
-          result: { f1: { a: 1 } },
+          result: { f1: { a: 1 }, _: 'resolve' },
         },
-        actionKey: 'resolve',
       });
 
       expect(res1.status).toBe(400);
@@ -167,9 +166,8 @@ describe('workflow > instructions > manual', () => {
       const res1 = await userAgents[0].resource('users_jobs').submit({
         filterByTk: usersJobs[0].id,
         values: {
-          result: { f1: { a: 1 } },
+          result: { f1: { a: 1 }, _: 'resovle' },
         },
-        actionKey: 'resolve',
       });
 
       await sleep(500);
@@ -218,9 +216,8 @@ describe('workflow > instructions > manual', () => {
       const res1 = await userAgents[0].resource('users_jobs').submit({
         filterByTk: usersJobs[0].id,
         values: {
-          result: { f1: { a: 1 } },
+          result: { f1: { a: 1 }, _: 'reject' },
         },
-        actionKey: 'reject',
       });
 
       await sleep(500);
@@ -269,9 +266,8 @@ describe('workflow > instructions > manual', () => {
       const res1 = await userAgents[0].resource('users_jobs').submit({
         filterByTk: usersJobs[0].id,
         values: {
-          result: { f1: { a: 1 } },
+          result: { f1: { a: 1 }, _: 'save' },
         },
-        actionKey: 'save',
       });
 
       await sleep(500);
@@ -317,25 +313,23 @@ describe('workflow > instructions > manual', () => {
 
       const res1 = await agent.resource('users_jobs').submit({
         filterByTk: usersJobs[0].id,
-        actionKey: 'resolve',
+        values: { result: { f1: {}, _: 'resolve' } },
       });
       expect(res1.status).toBe(401);
 
       const res2 = await userAgents[1].resource('users_jobs').submit({
         filterByTk: usersJobs[0].id,
         values: {
-          result: { f1: {} },
+          result: { f1: {}, _: 'resolve' },
         },
-        actionKey: 'resolve',
       });
       expect(res2.status).toBe(403);
 
       const res3 = await userAgents[0].resource('users_jobs').submit({
         filterByTk: usersJobs[0].id,
         values: {
-          result: { f1: { a: 1 } },
+          result: { f1: { a: 1 }, _: 'resolve' },
         },
-        actionKey: 'resolve',
       });
       expect(res3.status).toBe(202);
 
@@ -353,9 +347,8 @@ describe('workflow > instructions > manual', () => {
       const res4 = await userAgents[0].resource('users_jobs').submit({
         filterByTk: usersJobs[0].id,
         values: {
-          result: { f1: { a: 2 } },
+          result: { f1: { a: 2 }, _: 'resovle' },
         },
-        actionKey: 'resolve',
       });
       expect(res4.status).toBe(400);
     });
@@ -389,9 +382,8 @@ describe('workflow > instructions > manual', () => {
       const res1 = await userAgents[1].resource('users_jobs').submit({
         filterByTk: usersJobs.find((item) => item.userId === users[1].id).id,
         values: {
-          result: { f1: { a: 1 } },
+          result: { f1: { a: 1 }, _: 'resolve' },
         },
-        actionKey: 'resolve',
       });
       expect(res1.status).toBe(202);
 
@@ -404,9 +396,8 @@ describe('workflow > instructions > manual', () => {
       const res2 = await userAgents[0].resource('users_jobs').submit({
         filterByTk: usersJobs.find((item) => item.userId === users[0].id).id,
         values: {
-          result: { f1: { a: 1 } },
+          result: { f1: { a: 1 }, _: 'resolve' },
         },
-        actionKey: 'resolve',
       });
       expect(res2.status).toBe(400);
     });
@@ -439,9 +430,8 @@ describe('workflow > instructions > manual', () => {
       const res = await userAgents[0].resource('users_jobs').submit({
         filterByTk: usersJobs[0].get('id'),
         values: {
-          result: { f1: { a: 1 } },
+          result: { f1: { a: 1 }, _: 'resolve' },
         },
-        actionKey: 'resolve',
       });
       expect(res.status).toBe(202);
 
@@ -485,9 +475,8 @@ describe('workflow > instructions > manual', () => {
       const res1 = await userAgents[0].resource('users_jobs').submit({
         filterByTk: pendingJobs[0].get('id'),
         values: {
-          result: { f1: { a: 1 } },
+          result: { f1: { a: 1 }, _: 'resolve' },
         },
-        actionKey: 'resolve',
       });
       expect(res1.status).toBe(202);
 
@@ -506,9 +495,8 @@ describe('workflow > instructions > manual', () => {
       const res2 = await userAgents[1].resource('users_jobs').submit({
         filterByTk: pendingJobs[1].get('id'),
         values: {
-          result: { f1: { a: 2 } },
+          result: { f1: { a: 2 }, _: 'resolve' },
         },
-        actionKey: 'resolve',
       });
       expect(res2.status).toBe(202);
 
@@ -550,9 +538,8 @@ describe('workflow > instructions > manual', () => {
       const res1 = await userAgents[0].resource('users_jobs').submit({
         filterByTk: pendingJobs[0].get('id'),
         values: {
-          result: { f1: { a: 0 } },
+          result: { f1: { a: 0 }, _: 'reject' },
         },
-        actionKey: 'reject',
       });
       expect(res1.status).toBe(202);
 
@@ -571,9 +558,8 @@ describe('workflow > instructions > manual', () => {
       const res2 = await userAgents[1].resource('users_jobs').submit({
         filterByTk: pendingJobs[1].get('id'),
         values: {
-          result: { f1: { a: 0 } },
+          result: { f1: { a: 0 }, _: 'reject' },
         },
-        actionKey: 'reject',
       });
       expect(res2.status).toBe(400);
     });
@@ -608,9 +594,8 @@ describe('workflow > instructions > manual', () => {
       const res1 = await userAgents[0].resource('users_jobs').submit({
         filterByTk: pendingJobs[0].get('id'),
         values: {
-          result: { f1: { a: 1 } },
+          result: { f1: { a: 1 }, _: 'resolve' },
         },
-        actionKey: 'resolve',
       });
       expect(res1.status).toBe(202);
 
@@ -629,9 +614,8 @@ describe('workflow > instructions > manual', () => {
       const res2 = await userAgents[1].resource('users_jobs').submit({
         filterByTk: pendingJobs[1].get('id'),
         values: {
-          result: { f1: { a: 0 } },
+          result: { f1: { a: 0 }, _: 'reject' },
         },
-        actionKey: 'reject',
       });
       expect(res2.status).toBe(202);
 
@@ -676,9 +660,8 @@ describe('workflow > instructions > manual', () => {
       const res1 = await userAgents[0].resource('users_jobs').submit({
         filterByTk: pendingJobs[0].get('id'),
         values: {
-          result: { f1: { a: 1 } },
+          result: { f1: { a: 1 }, _: 'resolve' },
         },
-        actionKey: 'resolve',
       });
       expect(res1.status).toBe(202);
 
@@ -693,9 +676,8 @@ describe('workflow > instructions > manual', () => {
       const res2 = await userAgents[1].resource('users_jobs').submit({
         filterByTk: pendingJobs[1].get('id'),
         values: {
-          result: { f1: { a: 0 } },
+          result: { f1: { a: 0 }, _: 'reject' },
         },
-        actionKey: 'reject',
       });
       expect(res2.status).toBe(400);
     });
@@ -730,9 +712,8 @@ describe('workflow > instructions > manual', () => {
       const res1 = await userAgents[0].resource('users_jobs').submit({
         filterByTk: pendingJobs[0].get('id'),
         values: {
-          result: { f1: { a: 0 } },
+          result: { f1: { a: 0 }, _: 'reject' },
         },
-        actionKey: 'reject',
       });
       expect(res1.status).toBe(202);
 
@@ -747,9 +728,8 @@ describe('workflow > instructions > manual', () => {
       const res2 = await userAgents[1].resource('users_jobs').submit({
         filterByTk: pendingJobs[1].get('id'),
         values: {
-          result: { f1: { a: 1 } },
+          result: { f1: { a: 1 }, _: 'resolve' },
         },
-        actionKey: 'resolve',
       });
       expect(res2.status).toBe(202);
 
@@ -791,9 +771,8 @@ describe('workflow > instructions > manual', () => {
       const res1 = await userAgents[0].resource('users_jobs').submit({
         filterByTk: pendingJobs[0].get('id'),
         values: {
-          result: { f1: { a: 0 } },
+          result: { f1: { a: 0 }, _: 'reject' },
         },
-        actionKey: 'reject',
       });
       expect(res1.status).toBe(202);
 
@@ -808,9 +787,8 @@ describe('workflow > instructions > manual', () => {
       const res2 = await userAgents[1].resource('users_jobs').submit({
         filterByTk: pendingJobs[1].get('id'),
         values: {
-          result: { f1: { a: 0 } },
+          result: { f1: { a: 0 }, _: 'reject' },
         },
-        actionKey: 'reject',
       });
       expect(res2.status).toBe(202);
 
@@ -868,9 +846,8 @@ describe('workflow > instructions > manual', () => {
       const res1 = await userAgents[0].resource('users_jobs').submit({
         filterByTk: pendingJobs[0].get('id'),
         values: {
-          result: { f1: { number: 1 } },
+          result: { f1: { number: 1 }, _: 'resolve' },
         },
-        actionKey: 'resolve',
       });
       expect(res1.status).toBe(202);
 
@@ -918,9 +895,8 @@ describe('workflow > instructions > manual', () => {
       const res1 = await userAgents[0].resource('users_jobs').submit({
         filterByTk: pendingJobs[0].get('id'),
         values: {
-          result: { f1: { number: 1 } },
+          result: { f1: { number: 1 }, _: 'pending' },
         },
-        actionKey: 'pending',
       });
       expect(res1.status).toBe(202);
 
@@ -935,9 +911,8 @@ describe('workflow > instructions > manual', () => {
       const res2 = await userAgents[0].resource('users_jobs').submit({
         filterByTk: pendingJobs[0].get('id'),
         values: {
-          result: { f2: { number: 2 } },
+          result: { f2: { number: 2 }, _: 'pending' },
         },
-        actionKey: 'pending',
       });
       expect(res2.status).toBe(202);
 
@@ -955,9 +930,8 @@ describe('workflow > instructions > manual', () => {
       const res3 = await userAgents[0].resource('users_jobs').submit({
         filterByTk: pendingJobs[0].get('id'),
         values: {
-          result: { f2: { number: 3 } },
+          result: { f2: { number: 3 }, _: 'resolve' },
         },
-        actionKey: 'resolve',
       });
       expect(res3.status).toBe(202);
 
@@ -1003,9 +977,8 @@ describe('workflow > instructions > manual', () => {
         const res1 = await userAgents[0].resource('users_jobs').submit({
           filterByTk: pendingJobs[0].get('id'),
           values: {
-            result: { f1: { status: 1 } },
+            result: { f1: { status: 1 }, _: 'resolve' },
           },
-          actionKey: 'resolve',
         });
         expect(res1.status).toBe(202);
 
@@ -1053,9 +1026,8 @@ describe('workflow > instructions > manual', () => {
         const res1 = await userAgents[0].resource('users_jobs').submit({
           filterByTk: pendingJobs[0].get('id'),
           values: {
-            result: { f1: { status: 1 } },
+            result: { f1: { status: 1 }, _: 'pending' },
           },
-          actionKey: 'pending',
         });
         expect(res1.status).toBe(202);
 
@@ -1073,9 +1045,8 @@ describe('workflow > instructions > manual', () => {
         const res2 = await userAgents[0].resource('users_jobs').submit({
           filterByTk: pendingJobs[0].get('id'),
           values: {
-            result: { f1: { status: 1 } },
+            result: { f1: { status: 1 }, _: 'resolve' },
           },
-          actionKey: 'resolve',
         });
 
         await sleep(500);
@@ -1122,9 +1093,8 @@ describe('workflow > instructions > manual', () => {
         const res1 = await userAgents[0].resource('users_jobs').submit({
           filterByTk: pendingJobs[0].get('id'),
           values: {
-            result: { f1: { title: 't2' } },
+            result: { f1: { title: 't2' }, _: 'resolve' },
           },
-          actionKey: 'resolve',
         });
         expect(res1.status).toBe(202);
 
