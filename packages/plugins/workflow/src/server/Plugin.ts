@@ -216,7 +216,7 @@ export default class WorkflowPlugin extends Plugin {
   }
 
   private prepare = async () => {
-    const event = this.events.shift();
+    const [event] = this.events;
     if (!event) {
       return;
     }
@@ -276,6 +276,8 @@ export default class WorkflowPlugin extends Plugin {
       }
     }
 
+    this.events.shift();
+
     if (this.events.length) {
       await this.prepare();
     } else {
@@ -303,6 +305,7 @@ export default class WorkflowPlugin extends Plugin {
     // resuming has high priority
     if (this.pending.length) {
       next = this.pending.shift() as Pending;
+      this.getLogger(next[0].workflowId).info(`pending execution (${next[0].id}) ready to process`);
     } else {
       const execution = (await this.db.getRepository('executions').findOne({
         filter: {
@@ -312,13 +315,18 @@ export default class WorkflowPlugin extends Plugin {
         sort: 'createdAt',
       })) as ExecutionModel;
       if (execution && execution.workflow.enabled) {
+        this.getLogger(execution.workflowId).info(`execution (${execution.id}) fetched from db`);
         next = [execution];
       }
     }
     if (next) {
-      this.process(...next);
-    } else {
-      this.executing = false;
+      await this.process(...next);
+    }
+
+    this.executing = false;
+
+    if (next) {
+      this.dispatch();
     }
   }
 
@@ -339,10 +347,6 @@ export default class WorkflowPlugin extends Plugin {
     } catch (err) {
       this.getLogger(execution.workflowId).error(`execution (${execution.id}) error: ${err.message}`, err);
     }
-
-    this.executing = false;
-
-    this.dispatch();
   }
 
   public createProcessor(execution: ExecutionModel, options = {}): Processor {
