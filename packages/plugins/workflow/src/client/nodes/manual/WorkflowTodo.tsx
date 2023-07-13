@@ -1,7 +1,7 @@
 import { css } from '@emotion/css';
 import { observer, useField, useFieldSchema, useForm } from '@formily/react';
 import { dayjs } from '@nocobase/utils/client';
-import { Spin, Tag } from 'antd';
+import { Space, Spin, Tag } from 'antd';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 import {
@@ -12,6 +12,7 @@ import {
   useAPIClient,
   useActionContext,
   useCollectionManager,
+  useCompile,
   useCurrentUserContext,
   useFormBlockContext,
   useRecord,
@@ -176,7 +177,6 @@ const todoCollection = {
         'x-component-props': {
           showTime: true,
         },
-        'x-read-pretty': true,
       },
     },
   ],
@@ -292,7 +292,7 @@ export const WorkflowTodo: React.FC & { Drawer: React.FC; Decorator: React.FC } 
                 'x-component': 'TableV2.Column',
                 properties: {
                   createdAt: {
-                    type: 'number',
+                    type: 'string',
                     'x-component': 'CollectionField',
                     'x-read-pretty': true,
                   },
@@ -316,7 +316,6 @@ export const WorkflowTodo: React.FC & { Drawer: React.FC; Decorator: React.FC } 
                 'x-component': 'TableV2.Column',
                 properties: {
                   status: {
-                    type: 'number',
                     'x-component': 'CollectionField',
                     'x-read-pretty': true,
                   },
@@ -518,40 +517,33 @@ function useDetailsBlockProps() {
   return { form };
 }
 
+function FooterStatus() {
+  const compile = useCompile();
+  const { status, updatedAt } = useRecord();
+  const statusOption = JobStatusOptionsMap[status];
+  return status ? (
+    <Space>
+      <time
+        className={css`
+          margin-right: 0.5em;
+        `}
+      >
+        {dayjs(updatedAt).format('YYYY-MM-DD HH:mm:ss')}
+      </time>
+      <Tag icon={statusOption.icon} color={statusOption.color}>{compile(statusOption.label)}</Tag>
+    </Space>
+  ) : null;
+}
+
 function Drawer() {
   const ctx = useContext(SchemaComponentContext);
-  const { id, node, workflow, status, updatedAt } = useRecord();
-
-  const statusOption = JobStatusOptionsMap[status];
-  const footerSchema = status
-    ? {
-        date: {
-          type: 'void',
-          'x-component': 'time',
-          'x-component-props': {
-            className: css`
-              margin-right: 0.5em;
-            `,
-          },
-          'x-content': dayjs(updatedAt).format('YYYY-MM-DD HH:mm:ss'),
-        },
-        status: {
-          type: 'void',
-          'x-component': 'Tag',
-          'x-component-props': {
-            icon: statusOption.icon,
-            color: statusOption.color,
-          },
-          'x-content': statusOption.label,
-        },
-      }
-    : null;
+  const { id, node, workflow, status } = useRecord();
 
   return (
     <SchemaComponentContext.Provider value={{ ...ctx, reset() {}, designable: false }}>
       <SchemaComponent
         components={{
-          Tag,
+          FooterStatus,
           FlowContextProvider,
         }}
         schema={{
@@ -570,7 +562,12 @@ function Drawer() {
             footer: {
               type: 'void',
               'x-component': 'Action.Drawer.Footer',
-              properties: footerSchema,
+              properties: {
+                content: {
+                  type: 'void',
+                  'x-component': 'FooterStatus',
+                }
+              },
             },
           },
         }}
@@ -597,10 +594,16 @@ function Decorator({ params = {}, children }) {
     dragSort: false,
   };
 
+  [nodeCollection, workflowCollection, todoCollection].forEach((collection) => {
+    if (!collections.find((item) => item.name === collection.name)) {
+      collections.push(collection);
+    }
+  });
+
   return (
     <CollectionManagerProvider
       {...cm}
-      collections={[...collections, nodeCollection, workflowCollection, todoCollection]}
+      collections={[...collections]}
     >
       <TableBlockProvider {...blockProps}>{children}</TableBlockProvider>
     </CollectionManagerProvider>

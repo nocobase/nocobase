@@ -1,5 +1,5 @@
 import { PlusOutlined } from '@ant-design/icons';
-import { cx, useAPIClient, useCompile } from '@nocobase/client';
+import { cx, css, useAPIClient, useCompile } from '@nocobase/client';
 import { Button, Dropdown, MenuProps } from 'antd';
 import React, { useCallback, useMemo } from 'react';
 import { useFlowContext } from './FlowContext';
@@ -80,7 +80,7 @@ export function AddButton({ upstream, branchIndex = null }: AddButtonProps) {
 
   const menu = useMemo<MenuProps>(() => {
     return {
-      onClick: (ev) => onCreate(ev),
+      onClick: onCreate,
       items: compile(groups),
     };
   }, [groups, onCreate]);
@@ -91,7 +91,17 @@ export function AddButton({ upstream, branchIndex = null }: AddButtonProps) {
 
   return (
     <div className={cx(addButtonClass)}>
-      <Dropdown trigger={['click']} menu={menu} disabled={workflow.executed}>
+      <Dropdown
+        trigger={['click']}
+        menu={menu}
+        disabled={workflow.executed}
+        overlayClassName={css`
+          .ant-dropdown-menu-root{
+            max-height: 30em;
+            overflow-y: auto;
+          }
+        `}
+      >
         <Button shape="circle" icon={<PlusOutlined />} />
       </Dropdown>
     </div>
