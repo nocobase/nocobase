@@ -241,14 +241,10 @@ export const nodeCardClass = css`
 export const nodeJobButtonClass = css`
   display: flex;
   position: absolute;
-  top: 1.25em;
-  right: 1.25em;
-  width: 1.25rem;
-  height: 1.25rem;
-  min-width: 1.25rem;
+  top: calc(1em - 1px);
+  right: 1em;
   justify-content: center;
   align-items: center;
-  font-size: 0.8em;
   color: #fff;
 
   &[type='button'] {
@@ -261,8 +257,9 @@ export const nodeJobButtonClass = css`
 
   .ant-tag {
     padding: 0;
-    width: 100%;
-    line-height: 18px;
+    width: 24px;
+    height: 24px;
+    line-height: 22px;
     margin-right: 0;
     border-radius: 50%;
     text-align: center;
