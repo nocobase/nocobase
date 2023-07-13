@@ -6,14 +6,12 @@ import _ from 'lodash';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { mergeFilter } from '../../block-provider';
-import { useCollectionFilterOptions, useCollectionManager } from '../../collection-manager';
-import { isTitleField } from '../../collection-manager/Configuration/CollectionFields';
+import { useCollectionManager } from '../../collection-manager';
 import {
   AssociationSelect,
   removeNullCondition,
   SchemaComponent,
   SchemaComponentContext,
-  useCompile,
 } from '../../schema-component';
 import { ITemplate } from '../../schema-component/antd/form-v2/Templates';
 import { AsDefaultTemplate } from './components/AsDefaultTemplate';
@@ -33,8 +31,15 @@ export const FormDataTemplates = observer(
   (props: any) => {
     const { useProps, formSchema, designerCtx } = props;
     const { defaultValues, collectionName } = useProps();
-    const { collectionList, getEnableFieldTree, getOnLoadData, getOnCheck } = useCollectionState(collectionName);
-    const { getCollection, getCollectionField, getCollectionFields } = useCollectionManager();
+    const {
+      collectionList,
+      getEnableFieldTree,
+      getOnLoadData,
+      getOnCheck,
+      getScopeDataSource,
+      getTitleFieldDataSource,
+    } = useCollectionState(collectionName);
+    const { getCollection, getCollectionField } = useCollectionManager();
     const { t } = useTranslation();
 
     // 不要在后面的数组中依赖 defaultValues，否则会因为 defaultValues 的变化导致 activeData 响应性丢失
@@ -65,8 +70,8 @@ export const FormDataTemplates = observer(
       const filter = activeData.config?.[collectionName]?.filter;
       return _.isEmpty(filter) ? {} : removeNullCondition(mergeFilter([filter, getSelectedIdFilter(value)], '$or'));
     };
-    const dataSource = useCollectionFilterOptions(collectionName);
     const components = useMemo(() => ({ ArrayCollapse }), []);
+
     const scope = useMemo(
       () => ({
         getEnableFieldTree,
@@ -77,19 +82,12 @@ export const FormDataTemplates = observer(
         getOnLoadData,
         getOnCheck,
         collectionName,
+        getScopeDataSource,
+        getTitleFieldDataSource,
       }),
       [],
     );
-    const compile = useCompile();
-    const targetFields = getCollectionFields(collectionName);
-    const options = targetFields
-      .filter((field) => {
-        return isTitleField(field);
-      })
-      .map((field) => ({
-        value: field?.name,
-        label: compile(field?.uiSchema?.title) || field?.name,
-      }));
+
     const schema = useMemo(
       () => ({
         type: 'object',
@@ -174,7 +172,6 @@ export const FormDataTemplates = observer(
                     },
                     dataScope: {
                       type: 'object',
-                      enum: dataSource,
                       title: '{{ t("Assign  data scope for the template") }}',
                       'x-decorator': 'FormItem',
                       'x-component': 'Filter',
@@ -192,6 +189,22 @@ export const FormDataTemplates = observer(
                             },
                           },
                         },
+                        {
+                          dependencies: ['.collection'],
+                          fulfill: {
+                            state: {
+                              disabled: '{{ !$deps[0] }}',
+                              componentProps: {
+                                service: {
+                                  resource: '{{ getResource($deps[0], $self) }}',
+                                },
+                              },
+                            },
+                            schema: {
+                              enum: '{{ getScopeDataSource($deps[0]) }}',
+                            },
+                          },
+                        },
                       ],
                     },
                     titleField: {
@@ -199,7 +212,6 @@ export const FormDataTemplates = observer(
                       'x-decorator': 'FormItem',
                       title: '{{ t("Title field") }}',
                       'x-component': 'Select',
-                      enum: options,
                       'x-reactions': [
                         {
                           dependencies: ['.dataId'],
@@ -207,6 +219,22 @@ export const FormDataTemplates = observer(
                             state: {
                               required: '{{ !$deps[0] }}',
                               visible: '{{ !$deps[0] }}',
+                            },
+                          },
+                        },
+                        {
+                          dependencies: ['.collection'],
+                          fulfill: {
+                            state: {
+                              disabled: '{{ !$deps[0] }}',
+                              componentProps: {
+                                service: {
+                                  resource: '{{ getResource($deps[0], $self) }}',
+                                },
+                              },
+                            },
+                            schema: {
+                              enum: '{{ getTitleFieldDataSource($deps[0]) }}',
                             },
                           },
                         },
