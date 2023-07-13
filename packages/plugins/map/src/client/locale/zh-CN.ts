@@ -1,4 +1,5 @@
 const locale = {
+  Map: '地图',
   'Map-based geometry': '基于地图的几何图形',
   'Map type': '地图类型',
   Point: '点',
