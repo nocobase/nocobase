@@ -1,4 +1,3 @@
-import { css } from '@emotion/css';
 import { ArrayCollapse, ArrayItems, FormDialog, FormItem, FormLayout, Input } from '@formily/antd-v5';
 import { Field, GeneralField, createForm } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema, useForm } from '@formily/react';
@@ -18,7 +17,6 @@ import {
   Space,
   Switch,
 } from 'antd';
-import classNames from 'classnames';
 import _, { cloneDeep } from 'lodash';
 import React, {
   ReactNode,
@@ -131,16 +129,6 @@ export const SchemaSettingsProvider: React.FC<SchemaSettingsProviderProps> = (pr
   );
 };
 
-const overlayClassName = classNames(
-  'nb-schema-initializer-button-overlay',
-  css`
-    .ant-dropdown-menu-item-group-list {
-      max-height: 40vh;
-      overflow: auto;
-    }
-  `,
-);
-
 export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNested = (props) => {
   const { title, dn, ...others } = props;
   const [visible, setVisible] = useState(false);
@@ -165,7 +153,6 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
           changeMenu(open);
         }}
         menu={{ items }}
-        overlayClassName={overlayClassName}
       >
         {typeof title === 'string' ? <span>{title}</span> : title}
       </Dropdown>
