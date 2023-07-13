@@ -21,4 +21,13 @@ export abstract class ServiceDiscoveryClient {
   abstract getServices(namespace: string): Promise<RemoteServiceInfo[]>;
 
   abstract clientConnectionInfo(): Promise<ConnectionInfo>;
+
+  async fetchSingleService(namespace: string, name: string): Promise<RemoteServiceInfo> {
+    const services = await this.getServices(namespace);
+    return this.randomSelectArrayItem(services);
+  }
+
+  protected randomSelectArrayItem<T>(array: T[]): T {
+    return array[Math.floor(Math.random() * array.length)];
+  }
 }

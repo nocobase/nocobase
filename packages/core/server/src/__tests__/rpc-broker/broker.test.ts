@@ -2,7 +2,7 @@ import Application from '@nocobase/server';
 import { AppSupervisor } from '../../app-supervisor';
 import { RpcBrokerFactory } from '../../rpc-broker/factory';
 import { RemoteBroker } from '../../rpc-broker/remote-broker';
-import { RemoteServiceInfo, ServiceDiscoveryClient } from '../../service-discovery/client';
+import { ConnectionInfo, RemoteServiceInfo, ServiceDiscoveryClient } from '../../service-discovery/client';
 import { ServiceDiscoveryClientFactory } from '../../service-discovery/factory';
 
 class MockServiceDiscoveryClient extends ServiceDiscoveryClient {
@@ -27,7 +27,7 @@ class MockServiceDiscoveryClient extends ServiceDiscoveryClient {
     return true;
   }
 
-  unregisterService(serviceInfo: RemoteServiceInfo): Promise<void> {
+  unregisterService(serviceInfo: RemoteServiceInfo): Promise<boolean> {
     const info = JSON.stringify(serviceInfo);
     const exists = this.services.get(serviceInfo.name);
     if (!exists) {
@@ -35,6 +35,10 @@ class MockServiceDiscoveryClient extends ServiceDiscoveryClient {
     }
 
     this.services.get(serviceInfo.name).delete(info);
+  }
+
+  clientConnectionInfo(): Promise<ConnectionInfo> {
+    return Promise.resolve(undefined);
   }
 }
 

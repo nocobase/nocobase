@@ -1,14 +1,16 @@
-import { AppSupervisor } from '@nocobase/server';
 import http from 'http';
+import { AppSupervisor } from '../app-supervisor';
 import Application from '../application';
 import { RemoteServiceInfo, ServiceDiscoveryClient } from '../service-discovery/client';
 import { ServiceDiscoveryClientFactory } from '../service-discovery/factory';
 import { RpcBrokerInterface } from './interface';
+import { RpcHttpClient, createRpcClient } from './rpc-http-client';
 import { createRpcHttpServer } from './rpc-http-server';
 
 export class RemoteBroker extends RpcBrokerInterface {
   serviceDiscoverClient: ServiceDiscoveryClient;
   rpcServer: http.Server;
+  rpcClient: RpcHttpClient;
 
   constructor(appSupervisor: AppSupervisor) {
     super(appSupervisor);
@@ -33,6 +35,7 @@ export class RemoteBroker extends RpcBrokerInterface {
         await this.serviceDiscoverClient.unregisterService(await this.getAppServiceInfo(app));
       });
     });
+    this.rpcClient = createRpcClient();
   }
 
   async getAppServiceInfo(app: Application): Promise<RemoteServiceInfo> {
@@ -46,8 +49,9 @@ export class RemoteBroker extends RpcBrokerInterface {
 
   broadcast(caller: Application, event: string, eventOptions?: any) {}
 
-  callApp(appName: string, method: string, ...args: any[]): Promise<{ result: any }> {
-    return Promise.resolve({ result: undefined });
+  async callApp(appName: string, method: string, ...args: any[]): Promise<{ result: any }> {
+    const remoteAddr = await this.serviceDiscoverClient.fetchSingleService('apps', appName);
+    return await this.rpcClient.call(`${remoteAddr.host}:${remoteAddr.port}`, method, ...args);
   }
 
   pushToApp(appName: string, event: string, options?: any): Promise<boolean> {
