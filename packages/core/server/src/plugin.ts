@@ -25,7 +25,7 @@ export interface PluginOptions {
 
 export type PluginType = typeof Plugin;
 
-export class Plugin implements PluginInterface {
+export class Plugin<O = any> implements PluginInterface {
   options: PluginOptions;
   app: Application;
 

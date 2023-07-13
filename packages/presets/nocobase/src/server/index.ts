@@ -51,7 +51,7 @@ export class PresetNocoBase extends Plugin {
     for await (const plugin of this.customPlugins) {
       await this.app.pm.add(plugin, { enabled: false, installed: true, builtIn: false, isOfficial: true });
     }
-    await this.app.reload({ method: options.method });
+    // await this.app.reload({ method: options.method });
   }
 
   async afterAdd() {

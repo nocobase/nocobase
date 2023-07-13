@@ -69,13 +69,16 @@ export class PluginManager {
     this.app.use(pluginStatic);
 
     this.initStaticPluginsPromise = this.initStaticPlugins(options.plugins);
+
+    this.app.on('beforeInstall', async (app, options) => {
+      await this.collection.sync();
+    });
+    this.app.on('beforeUpgrade', async (app, options) => {
+      await this.collection.sync();
+    });
+
     this.app.on('beforeLoad', async (app, options) => {
-      if (options?.method && ['install', 'upgrade'].includes(options.method)) {
-        await this.collection.sync();
-      }
-
       const exists = await this.app.db.collectionExistsInDb('applicationPlugins');
-
       if (!exists) {
         this.app.log.warn(`applicationPlugins collection not exists in ${this.app.name}`);
         return;
@@ -112,8 +115,10 @@ export class PluginManager {
     const pluginsWithOptions: [typeof Plugin, any][] = plugins.map((item) => (Array.isArray(item) ? item : [item, {}]));
 
     for await (const [PluginClass, options] of pluginsWithOptions) {
+      console.log(`static plugin [${PluginClass.name}]: init`);
       const pluginInstance = this.setPluginInstance(PluginClass, options);
 
+      console.log(`database plugin [${PluginClass.name}]: afterAdd`);
       await this.app.emitAsync('beforeAddPlugin', pluginInstance, options);
       await pluginInstance.afterAdd();
       await this.app.emitAsync('beforeAddPlugin', pluginInstance, options);
@@ -125,8 +130,10 @@ export class PluginManager {
 
     for await (const pluginData of pluginList) {
       await checkPluginPackage(pluginData);
+      console.log(`database plugin [${pluginData.name}]: init`);
       const pluginInstance = await this.setDatabasePlugin(pluginData);
 
+      console.log(`database plugin [${pluginData.name}]: afterAdd`);
       await this.app.emitAsync('beforeAddPlugin', pluginInstance, pluginData);
       await pluginInstance.afterAdd();
       await this.app.emitAsync('beforeAddPlugin', pluginInstance, pluginData);
@@ -205,6 +212,7 @@ export class PluginManager {
     if (this.plugins.has(name)) {
       throw new Error(`plugin name [${name}] already exists`);
     }
+    console.log(`plugin [${name}]: add`);
 
     // 1. emit event: beforeAddPlugin
     await this.app.emitAsync('beforeAddPlugin', name, data);
@@ -253,6 +261,7 @@ export class PluginManager {
     if (this.plugins.has(name)) {
       throw new Error(`plugin [${name}] already exists`);
     }
+    console.log(`plugin [${name}]: add`);
 
     // 1. run `beforeAddPlugin` hook
     await this.app.emitAsync('beforeAddPlugin', name, data);
@@ -304,6 +313,7 @@ export class PluginManager {
   }
 
   async enable(name: string) {
+    console.log(`plugin [${name}]: enable`);
     const pluginInstance = this.getPluginInstance(name);
     const pluginData = await this.getPluginData(name);
 
@@ -330,7 +340,7 @@ export class PluginManager {
       },
     });
 
-    // 3. run app action: `reload`
+    // 3. run app: `reload`
     await this.app.reload({ reload: true });
 
     // 4. sync database
@@ -483,11 +493,13 @@ export class PluginManager {
   }
 
   async doAllPluginsLifecycle(lifecycle: string, options?: any) {
-    console.log('Do all plugins lifecycle: ', lifecycle);
     for await (const pluginInstance of this.plugins.values()) {
-      await pluginInstance[lifecycle](options);
-      if (lifecycle === 'install') {
-        await this.app.db.sync();
+      if (pluginInstance.enabled) {
+        console.log(`plugin [${pluginInstance.name}]: ${lifecycle}`);
+        await pluginInstance[lifecycle](options);
+        if (lifecycle === 'install') {
+          await this.app.db.sync();
+        }
       }
     }
   }
