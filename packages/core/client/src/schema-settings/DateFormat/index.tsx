@@ -47,8 +47,10 @@ export const CustomFormatCom = observer((props: any) => {
           defaultValue={state}
           onChange={(e) => {
             setState(e.target.value);
-            if (moment(date.toLocaleString(), e.target.value).isValid()) {
+            if (e.target.value && moment(date.toLocaleString(), e.target.value).isValid()) {
               setCustomFormatPreview(date.format(e.target.value));
+            } else {
+              setCustomFormatPreview(null);
             }
           }}
         />

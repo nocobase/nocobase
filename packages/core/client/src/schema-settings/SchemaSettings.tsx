@@ -1264,7 +1264,9 @@ SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Sche
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const { getCollectionJoinField } = useCollectionManager();
-  const collectionField = getCollectionJoinField(fieldSchema?.parent?.['x-collection-field']) || {};
+  const collectionField = getCollectionJoinField(fieldSchema?.['x-collection-field']) || {};
+  const isShowTime = fieldSchema?.['x-component-props']?.showTime;
+  console.log(fieldSchema?.['x-component-props']?.dateFormat);
   return (
     <SchemaSettings.ModalItem
       title={t('Date format')}
@@ -1290,8 +1292,10 @@ SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Sche
                 `,
               },
               default:
-                fieldSchema?.['x-component-props']?.dateFormat ||
-                collectionField?.uiSchema?.['x-component-props']?.dateFormat,
+                fieldSchema?.['x-component-props']?.customDateFormat === null
+                  ? fieldSchema?.['x-component-props']?.dateFormat ||
+                    collectionField?.uiSchema?.['x-component-props']?.dateFormat
+                  : null,
               enum: [
                 {
                   label: DateFormatCom({ format: 'MMMMM Do YYYY' }),
@@ -1325,7 +1329,8 @@ SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Sche
               },
             },
             showTime: {
-              default: fieldSchema?.['x-component-props']?.showTime,
+              default:
+                isShowTime === undefined ? collectionField?.uiSchema?.['x-component-props']?.showTime : isShowTime,
               type: 'boolean',
               'x-decorator': 'FormItem',
               'x-component': 'Checkbox',
@@ -1395,7 +1400,6 @@ SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Sche
         schema['x-component-props'] = fieldSchema['x-component-props'];
         field.componentProps = fieldSchema['x-component-props'];
         field.query(`.*.${fieldSchema.name}`).forEach((f) => {
-          console.log(f);
           f.componentProps = fieldSchema['x-component-props'];
         });
         dn.emit('patch', {
