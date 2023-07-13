@@ -1,112 +1,180 @@
 export default {
-  openapi: '3.0.1',
+  openapi: '3.0.3',
   info: {
-    title: 'Swagger Generator',
+    title: 'Swagger Petstore - OpenAPI 3.0',
     description:
-      'This is an online swagger codegen server.  You can find out more at https://github.com/swagger-api/swagger-codegen or on [irc.freenode.net, #swagger](http://swagger.io/irc/).',
+      "This is a sample Pet Store Server based on the OpenAPI 3.0 specification.  You can find out more about\nSwagger at [https://swagger.io](https://swagger.io). In the third iteration of the pet store, we've switched to the design first approach!\nYou can now help us improve the API whether it's by making changes to the definition itself or to the code.\nThat way, with time, we can improve the API in general, and expose some of the new features in OAS3.\n\n_If you're looking for the Swagger 2.0/OAS 2.0 version of Petstore, then click [here](https://editor.swagger.io/?url=https://petstore.swagger.io/v2/swagger.yaml). Alternatively, you can load via the `Edit > Load Petstore OAS 2.0` menu option!_\n\nSome useful links:\n- [The Pet Store repository](https://github.com/swagger-api/swagger-petstore)\n- [The source API definition for the Pet Store](https://github.com/swagger-api/swagger-petstore/blob/master/src/main/resources/openapi.yaml)",
+    termsOfService: 'http://swagger.io/terms/',
+    contact: {
+      email: 'apiteam@swagger.io',
+    },
     license: {
       name: 'Apache 2.0',
       url: 'http://www.apache.org/licenses/LICENSE-2.0.html',
     },
-    version: '3.0.46',
+    version: '1.0.11',
+  },
+  externalDocs: {
+    description: 'Find out more about Swagger',
+    url: 'http://swagger.io',
   },
   servers: [
     {
-      url: '/api',
+      url: 'https://petstore3.swagger.io/api/v3',
     },
   ],
-  tags: [
-    {
-      name: 'clients',
-    },
-    {
-      name: 'servers',
-    },
-    {
-      name: 'documentation',
-    },
-    {
-      name: 'config',
-    },
-  ],
+  // tags: [
+  //   {
+  //     name: 'pet',
+  //     description: 'Everything about your Pets',
+  //     externalDocs: {
+  //       description: 'Find out more',
+  //       url: 'http://swagger.io',
+  //     },
+  //   },
+  //   {
+  //     name: 'store',
+  //     description: 'Access to Petstore orders',
+  //     externalDocs: {
+  //       description: 'Find out more about our store',
+  //       url: 'http://swagger.io',
+  //     },
+  //   },
+  //   {
+  //     name: 'user',
+  //     description: 'Operations about user',
+  //   },
+  // ],
   paths: {
-    '/generate': {
-      get: {
-        tags: ['clients', 'servers', 'documentation', 'config'],
-        summary:
-          'Generates and download code. GenerationRequest input provided as JSON available at URL specified in parameter codegenOptionsURL.',
-        operationId: 'generateFromURL',
-        parameters: [
-          {
-            name: 'codegenOptionsURL',
-            in: 'query',
-            required: true,
-            schema: {
-              type: 'string',
-            },
-          },
-        ],
-        responses: {
-          '200': {
-            description: 'successful operation',
-            content: {
-              'application/octet-stream': {
-                schema: {
-                  type: 'string',
-                  format: 'binary',
-                },
-              },
-            },
-          },
-        },
-        'x-swagger-router-controller': 'io.swagger.v3.generator.online.GeneratorController',
-      },
-      post: {
-        tags: ['clients', 'servers', 'documentation', 'config'],
-        summary: 'Generates and download code. GenerationRequest input provided as request body.',
-        operationId: 'generate',
+    '/pet': {
+      put: {
+        tags: ['pet'],
+        summary: 'Update an existing pet',
+        description: 'Update an existing pet by Id',
+        operationId: 'updatePet',
         requestBody: {
+          description: 'Update an existent pet in the store',
           content: {
             'application/json': {
               schema: {
-                $ref: '#/components/schemas/GenerationRequest',
+                $ref: '#/components/schemas/Pet',
+              },
+            },
+            'application/xml': {
+              schema: {
+                $ref: '#/components/schemas/Pet',
+              },
+            },
+            'application/x-www-form-urlencoded': {
+              schema: {
+                $ref: '#/components/schemas/Pet',
               },
             },
           },
+          required: true,
         },
         responses: {
           '200': {
-            description: 'successful operation',
+            description: 'Successful operation',
             content: {
-              'application/octet-stream': {
+              'application/json': {
                 schema: {
-                  type: 'string',
-                  format: 'binary',
+                  $ref: '#/components/schemas/Pet',
+                },
+              },
+              'application/xml': {
+                schema: {
+                  $ref: '#/components/schemas/Pet',
                 },
               },
             },
           },
+          '400': {
+            description: 'Invalid ID supplied',
+          },
+          '404': {
+            description: 'Pet not found',
+          },
+          '405': {
+            description: 'Validation exception',
+          },
         },
-        'x-swagger-router-controller': 'io.swagger.v3.generator.online.GeneratorController',
+        security: [
+          {
+            petstore_auth: ['write:pets', 'read:pets'],
+          },
+        ],
+      },
+      post: {
+        tags: ['pet'],
+        summary: 'Add a new pet to the store',
+        description: 'Add a new pet to the store',
+        operationId: 'addPet',
+        requestBody: {
+          description: 'Create a new pet in the store',
+          content: {
+            'application/json': {
+              schema: {
+                $ref: '#/components/schemas/Pet',
+              },
+            },
+            'application/xml': {
+              schema: {
+                $ref: '#/components/schemas/Pet',
+              },
+            },
+            'application/x-www-form-urlencoded': {
+              schema: {
+                $ref: '#/components/schemas/Pet',
+              },
+            },
+          },
+          required: true,
+        },
+        responses: {
+          '200': {
+            description: 'Successful operation',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/Pet',
+                },
+              },
+              'application/xml': {
+                schema: {
+                  $ref: '#/components/schemas/Pet',
+                },
+              },
+            },
+          },
+          '405': {
+            description: 'Invalid input',
+          },
+        },
+        security: [
+          {
+            petstore_auth: ['write:pets', 'read:pets'],
+          },
+        ],
       },
     },
-    '/clients': {
+    '/pet/findByStatus': {
       get: {
-        tags: ['clients', 'documentation'],
-        summary:
-          "Deprecated, use '/{type}/{version}' instead. List generator languages of type 'client' or 'documentation' for given codegen version (defaults to V3)",
-        operationId: 'clientLanguages',
+        tags: ['pet'],
+        summary: 'Finds Pets by status',
+        description: 'Multiple status values can be provided with comma separated strings',
+        operationId: 'findPetsByStatus',
         parameters: [
           {
-            $ref: '#/components/parameters/version',
-          },
-          {
-            name: 'clientOnly',
+            name: 'status',
             in: 'query',
-            description: 'flag to only return languages of type `client`',
+            description: 'Status values that need to be considered for filter',
+            required: false,
+            explode: true,
             schema: {
-              type: 'boolean',
-              default: false,
+              type: 'string',
+              default: 'available',
+              enum: ['available', 'pending', 'sold'],
             },
           },
         ],
@@ -118,26 +186,50 @@ export default {
                 schema: {
                   type: 'array',
                   items: {
-                    type: 'string',
+                    $ref: '#/components/schemas/Pet',
+                  },
+                },
+              },
+              'application/xml': {
+                schema: {
+                  type: 'array',
+                  items: {
+                    $ref: '#/components/schemas/Pet',
                   },
                 },
               },
             },
           },
+          '400': {
+            description: 'Invalid status value',
+          },
         },
-        deprecated: true,
-        'x-swagger-router-controller': 'io.swagger.v3.generator.online.GeneratorController',
+        security: [
+          {
+            petstore_auth: ['write:pets', 'read:pets'],
+          },
+        ],
       },
     },
-    '/servers': {
+    '/pet/findByTags': {
       get: {
-        tags: ['servers'],
-        summary:
-          "Deprecated, use '/{type}/{version}' instead. List generator languages of type 'server' for given codegen version (defaults to V3)",
-        operationId: 'serverLanguages',
+        tags: ['pet'],
+        summary: 'Finds Pets by tags',
+        description: 'Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.',
+        operationId: 'findPetsByTags',
         parameters: [
           {
-            $ref: '#/components/parameters/version',
+            name: 'tags',
+            in: 'query',
+            description: 'Tags to filter by',
+            required: false,
+            explode: true,
+            schema: {
+              type: 'array',
+              items: {
+                type: 'string',
+              },
+            },
           },
         ],
         responses: {
@@ -148,64 +240,46 @@ export default {
                 schema: {
                   type: 'array',
                   items: {
-                    type: 'string',
+                    $ref: '#/components/schemas/Pet',
                   },
                 },
               },
-            },
-          },
-        },
-        deprecated: true,
-        'x-swagger-router-controller': 'io.swagger.v3.generator.online.GeneratorController',
-      },
-    },
-    '/documentation': {
-      get: {
-        tags: ['documentation'],
-        summary:
-          "Deprecated, use '/{type}/{version}' instead. List generator languages of type 'documentation' for given codegen version (defaults to V3)",
-        operationId: 'documentationLanguages',
-        parameters: [
-          {
-            $ref: '#/components/parameters/version',
-          },
-        ],
-        responses: {
-          '200': {
-            description: 'successful operation',
-            content: {
-              'application/json': {
+              'application/xml': {
                 schema: {
                   type: 'array',
                   items: {
-                    type: 'string',
+                    $ref: '#/components/schemas/Pet',
                   },
                 },
               },
             },
           },
+          '400': {
+            description: 'Invalid tag value',
+          },
         },
-        deprecated: true,
-        'x-swagger-router-controller': 'io.swagger.v3.generator.online.GeneratorController',
+        security: [
+          {
+            petstore_auth: ['write:pets', 'read:pets'],
+          },
+        ],
       },
     },
-    '/{type}/{version}': {
+    '/pet/{petId}': {
       get: {
-        tags: ['clients', 'servers', 'documentation', 'config'],
-        summary: 'List generator languages of the given type and version',
-        operationId: 'languages',
+        tags: ['pet'],
+        summary: 'Find pet by ID',
+        description: 'Returns a single pet',
+        operationId: 'getPetById',
         parameters: [
           {
-            $ref: '#/components/parameters/type',
-          },
-          {
-            name: 'version',
+            name: 'petId',
             in: 'path',
-            description: 'generator version used by codegen engine',
+            description: 'ID of pet to return',
             required: true,
             schema: {
-              type: 'string',
-              enum: ['V2', 'V3'],
+              type: 'integer',
+              format: 'int64',
             },
           },
         ],
@@ -215,68 +289,176 @@ export default {
             content: {
               'application/json': {
                 schema: {
-                  type: 'array',
-                  items: {
-                    type: 'string',
-                  },
+                  $ref: '#/components/schemas/Pet',
+                },
+              },
+              'application/xml': {
+                schema: {
+                  $ref: '#/components/schemas/Pet',
                 },
               },
             },
           },
+          '400': {
+            description: 'Invalid ID supplied',
+          },
+          '404': {
+            description: 'Pet not found',
+          },
         },
-        'x-swagger-router-controller': 'io.swagger.v3.generator.online.GeneratorController',
-      },
-    },
-    '/types': {
-      get: {
-        tags: ['clients', 'servers', 'documentation', 'config'],
-        summary:
-          "List generator languages of version defined in 'version parameter (defaults to V3) and type included in 'types' parameter; all languages",
-        operationId: 'languagesMulti',
-        parameters: [
+        security: [
           {
-            $ref: '#/components/parameters/types',
+            api_key: [],
           },
           {
-            $ref: '#/components/parameters/version',
+            petstore_auth: ['write:pets', 'read:pets'],
           },
         ],
-        responses: {
-          '200': {
-            description: 'successful operation',
-            content: {
-              'application/json': {
-                schema: {
-                  type: 'array',
-                  items: {
-                    type: 'string',
-                  },
-                },
-              },
-            },
-          },
-        },
-        'x-swagger-router-controller': 'io.swagger.v3.generator.online.GeneratorController',
       },
-    },
-    '/options': {
-      get: {
-        tags: ['clients', 'servers', 'documentation', 'config'],
-        summary: 'Returns options for a given language and version (defaults to V3)',
-        operationId: 'listOptions',
+      post: {
+        tags: ['pet'],
+        summary: 'Updates a pet in the store with form data',
+        description: '',
+        operationId: 'updatePetWithForm',
         parameters: [
           {
-            name: 'language',
+            name: 'petId',
+            in: 'path',
+            description: 'ID of pet that needs to be updated',
+            required: true,
+            schema: {
+              type: 'integer',
+              format: 'int64',
+            },
+          },
+          {
+            name: 'name',
             in: 'query',
-            description: 'language',
+            description: 'Name of pet that needs to be updated',
             schema: {
               type: 'string',
             },
           },
           {
-            $ref: '#/components/parameters/version',
+            name: 'status',
+            in: 'query',
+            description: 'Status of pet that needs to be updated',
+            schema: {
+              type: 'string',
+            },
           },
         ],
+        responses: {
+          '405': {
+            description: 'Invalid input',
+          },
+        },
+        security: [
+          {
+            petstore_auth: ['write:pets', 'read:pets'],
+          },
+        ],
+      },
+      delete: {
+        tags: ['pet'],
+        summary: 'Deletes a pet',
+        description: 'delete a pet',
+        operationId: 'deletePet',
+        parameters: [
+          {
+            name: 'api_key',
+            in: 'header',
+            description: '',
+            required: false,
+            schema: {
+              type: 'string',
+            },
+          },
+          {
+            name: 'petId',
+            in: 'path',
+            description: 'Pet id to delete',
+            required: true,
+            schema: {
+              type: 'integer',
+              format: 'int64',
+            },
+          },
+        ],
+        responses: {
+          '400': {
+            description: 'Invalid pet value',
+          },
+        },
+        security: [
+          {
+            petstore_auth: ['write:pets', 'read:pets'],
+          },
+        ],
+      },
+    },
+    '/pet/{petId}/uploadImage': {
+      post: {
+        tags: ['pet'],
+        summary: 'uploads an image',
+        description: '',
+        operationId: 'uploadFile',
+        parameters: [
+          {
+            name: 'petId',
+            in: 'path',
+            description: 'ID of pet to update',
+            required: true,
+            schema: {
+              type: 'integer',
+              format: 'int64',
+            },
+          },
+          {
+            name: 'additionalMetadata',
+            in: 'query',
+            description: 'Additional Metadata',
+            required: false,
+            schema: {
+              type: 'string',
+            },
+          },
+        ],
+        requestBody: {
+          content: {
+            'application/octet-stream': {
+              schema: {
+                type: 'string',
+                format: 'binary',
+              },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'successful operation',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/ApiResponse',
+                },
+              },
+            },
+          },
+        },
+        security: [
+          {
+            petstore_auth: ['write:pets', 'read:pets'],
+          },
+        ],
+      },
+    },
+    '/store/inventory': {
+      get: {
+        tags: ['store'],
+        summary: 'Returns pet inventories by status',
+        description: 'Returns a map of status codes to quantities',
+        operationId: 'getInventory',
         responses: {
           '200': {
             description: 'successful operation',
@@ -285,295 +467,684 @@ export default {
                 schema: {
                   type: 'object',
                   additionalProperties: {
-                    $ref: '#/components/schemas/CliOption',
+                    type: 'integer',
+                    format: 'int32',
                   },
                 },
               },
             },
           },
         },
-        'x-swagger-router-controller': 'io.swagger.v3.generator.online.GeneratorController',
+        security: [
+          {
+            api_key: [],
+          },
+        ],
+      },
+    },
+    '/store/order': {
+      post: {
+        tags: ['store'],
+        summary: 'Place an order for a pet',
+        description: 'Place a new order in the store',
+        operationId: 'placeOrder',
+        requestBody: {
+          content: {
+            'application/json': {
+              schema: {
+                $ref: '#/components/schemas/Order',
+              },
+            },
+            'application/xml': {
+              schema: {
+                $ref: '#/components/schemas/Order',
+              },
+            },
+            'application/x-www-form-urlencoded': {
+              schema: {
+                $ref: '#/components/schemas/Order',
+              },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'successful operation',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/Order',
+                },
+              },
+            },
+          },
+          '405': {
+            description: 'Invalid input',
+          },
+        },
+      },
+    },
+    '/store/order/{orderId}': {
+      get: {
+        tags: ['store'],
+        summary: 'Find purchase order by ID',
+        description:
+          'For valid response try integer IDs with value <= 5 or > 10. Other values will generate exceptions.',
+        operationId: 'getOrderById',
+        parameters: [
+          {
+            name: 'orderId',
+            in: 'path',
+            description: 'ID of order that needs to be fetched',
+            required: true,
+            schema: {
+              type: 'integer',
+              format: 'int64',
+            },
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'successful operation',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/Order',
+                },
+              },
+              'application/xml': {
+                schema: {
+                  $ref: '#/components/schemas/Order',
+                },
+              },
+            },
+          },
+          '400': {
+            description: 'Invalid ID supplied',
+          },
+          '404': {
+            description: 'Order not found',
+          },
+        },
+      },
+      delete: {
+        tags: ['store'],
+        summary: 'Delete purchase order by ID',
+        description:
+          'For valid response try integer IDs with value < 1000. Anything above 1000 or nonintegers will generate API errors',
+        operationId: 'deleteOrder',
+        parameters: [
+          {
+            name: 'orderId',
+            in: 'path',
+            description: 'ID of the order that needs to be deleted',
+            required: true,
+            schema: {
+              type: 'integer',
+              format: 'int64',
+            },
+          },
+        ],
+        responses: {
+          '400': {
+            description: 'Invalid ID supplied',
+          },
+          '404': {
+            description: 'Order not found',
+          },
+        },
+      },
+    },
+    '/user': {
+      post: {
+        tags: ['user'],
+        summary: 'Create user',
+        description: 'This can only be done by the logged in user.',
+        operationId: 'createUser',
+        requestBody: {
+          description: 'Created user object',
+          content: {
+            'application/json': {
+              schema: {
+                $ref: '#/components/schemas/User',
+              },
+            },
+            'application/xml': {
+              schema: {
+                $ref: '#/components/schemas/User',
+              },
+            },
+            'application/x-www-form-urlencoded': {
+              schema: {
+                $ref: '#/components/schemas/User',
+              },
+            },
+          },
+        },
+        responses: {
+          default: {
+            description: 'successful operation',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/User',
+                },
+              },
+              'application/xml': {
+                schema: {
+                  $ref: '#/components/schemas/User',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/user/createWithList': {
+      post: {
+        tags: ['user'],
+        summary: 'Creates list of users with given input array',
+        description: 'Creates list of users with given input array',
+        operationId: 'createUsersWithListInput',
+        requestBody: {
+          content: {
+            'application/json': {
+              schema: {
+                type: 'array',
+                items: {
+                  $ref: '#/components/schemas/User',
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Successful operation',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/User',
+                },
+              },
+              'application/xml': {
+                schema: {
+                  $ref: '#/components/schemas/User',
+                },
+              },
+            },
+          },
+          default: {
+            description: 'successful operation',
+          },
+        },
+      },
+    },
+    '/user/login': {
+      get: {
+        tags: ['user'],
+        summary: 'Logs user into the system',
+        description: '',
+        operationId: 'loginUser',
+        parameters: [
+          {
+            name: 'username',
+            in: 'query',
+            description: 'The user name for login',
+            required: false,
+            schema: {
+              type: 'string',
+            },
+          },
+          {
+            name: 'password',
+            in: 'query',
+            description: 'The password for login in clear text',
+            required: false,
+            schema: {
+              type: 'string',
+            },
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'successful operation',
+            headers: {
+              'X-Rate-Limit': {
+                description: 'calls per hour allowed by the user',
+                schema: {
+                  type: 'integer',
+                  format: 'int32',
+                },
+              },
+              'X-Expires-After': {
+                description: 'date in UTC when token expires',
+                schema: {
+                  type: 'string',
+                  format: 'date-time',
+                },
+              },
+            },
+            content: {
+              'application/xml': {
+                schema: {
+                  type: 'string',
+                },
+              },
+              'application/json': {
+                schema: {
+                  type: 'string',
+                },
+              },
+            },
+          },
+          '400': {
+            description: 'Invalid username/password supplied',
+          },
+        },
+      },
+    },
+    '/user/logout': {
+      get: {
+        tags: ['user'],
+        summary: 'Logs out current logged in user session',
+        description: '',
+        operationId: 'logoutUser',
+        parameters: [],
+        responses: {
+          default: {
+            description: 'successful operation',
+          },
+        },
+      },
+    },
+    '/user/{username}': {
+      get: {
+        tags: ['user'],
+        summary: 'Get user by user name',
+        description: '',
+        operationId: 'getUserByName',
+        parameters: [
+          {
+            name: 'username',
+            in: 'path',
+            description: 'The name that needs to be fetched. Use user1 for testing. ',
+            required: true,
+            schema: {
+              type: 'string',
+            },
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'successful operation',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/User',
+                },
+              },
+              'application/xml': {
+                schema: {
+                  $ref: '#/components/schemas/User',
+                },
+              },
+            },
+          },
+          '400': {
+            description: 'Invalid username supplied',
+          },
+          '404': {
+            description: 'User not found',
+          },
+        },
+      },
+      put: {
+        tags: ['user'],
+        summary: 'Update user',
+        description: 'This can only be done by the logged in user.',
+        operationId: 'updateUser',
+        parameters: [
+          {
+            name: 'username',
+            in: 'path',
+            description: 'name that need to be deleted',
+            required: true,
+            schema: {
+              type: 'string',
+            },
+          },
+        ],
+        requestBody: {
+          description: 'Update an existent user in the store',
+          content: {
+            'application/json': {
+              schema: {
+                $ref: '#/components/schemas/User',
+              },
+            },
+            'application/xml': {
+              schema: {
+                $ref: '#/components/schemas/User',
+              },
+            },
+            'application/x-www-form-urlencoded': {
+              schema: {
+                $ref: '#/components/schemas/User',
+              },
+            },
+          },
+        },
+        responses: {
+          default: {
+            description: 'successful operation',
+          },
+        },
+      },
+      delete: {
+        tags: ['user'],
+        summary: 'Delete user',
+        description: 'This can only be done by the logged in user.',
+        operationId: 'deleteUser',
+        parameters: [
+          {
+            name: 'username',
+            in: 'path',
+            description: 'The name that needs to be deleted',
+            required: true,
+            schema: {
+              type: 'string',
+            },
+          },
+        ],
+        responses: {
+          '400': {
+            description: 'Invalid username supplied',
+          },
+          '404': {
+            description: 'User not found',
+          },
+        },
       },
     },
   },
   components: {
     schemas: {
-      GenerationRequest: {
-        required: ['lang'],
+      Order: {
         type: 'object',
         properties: {
-          lang: {
-            title: 'language',
+          id: {
+            type: 'integer',
+            format: 'int64',
+            example: 10,
+          },
+          petId: {
+            type: 'integer',
+            format: 'int64',
+            example: 198772,
+          },
+          quantity: {
+            type: 'integer',
+            format: 'int32',
+            example: 7,
+          },
+          shipDate: {
             type: 'string',
-            description: 'language to generate (required)',
-            example: 'java',
+            format: 'date-time',
           },
-          spec: {
-            type: 'object',
-            description: 'spec in json format. . Alternative to `specURL`',
-          },
-          specURL: {
+          status: {
             type: 'string',
-            description: 'URL of the spec in json format. Alternative to `spec`',
+            description: 'Order Status',
+            example: 'approved',
+            enum: ['placed', 'approved', 'delivered'],
           },
-          type: {
-            type: 'string',
-            description: 'type of the spec',
-            enum: ['CLIENT', 'SERVER', 'DOCUMENTATION', 'CONFIG'],
-          },
-          codegenVersion: {
-            type: 'string',
-            description: 'codegen version to use',
-            enum: ['V2', 'V3'],
-          },
-          options: {
-            $ref: '#/components/schemas/Options',
+          complete: {
+            type: 'boolean',
           },
         },
-        'x-swagger-router-model': 'io.swagger.codegen.v3.service.GenerationRequest',
-      },
-      AuthorizationValue: {
-        title: 'authorization',
-        type: 'object',
-        properties: {
-          value: {
-            type: 'string',
-            description: 'Authorization value',
-          },
-          keyName: {
-            type: 'string',
-            description: 'Authorization key',
-          },
-          type: {
-            type: 'string',
-            description: 'Authorization type',
-          },
+        xml: {
+          name: 'order',
         },
-        description:
-          'adds authorization headers when fetching the open api definitions remotely. Pass in an authorizationValue object',
-        'x-swagger-router-model': 'io.swagger.v3.parser.core.models.AuthorizationValue',
       },
-      Options: {
+      Customer: {
         type: 'object',
         properties: {
-          auth: {
-            title: 'authorization',
+          id: {
+            type: 'integer',
+            format: 'int64',
+            example: 100000,
+          },
+          username: {
             type: 'string',
-            description:
-              'adds authorization headers when fetching the open api definitions remotely. Pass in a URL-encoded string of name:header with a comma separating multiple values',
+            example: 'fehguy',
           },
-          authorizationValue: {
-            $ref: '#/components/schemas/AuthorizationValue',
-          },
-          apiPackage: {
-            title: 'api package',
-            type: 'string',
-            description: 'package for generated api classes',
-          },
-          templateVersion: {
-            title: 'Template Version',
-            type: 'string',
-            description: 'template version for generation',
-          },
-          modelPackage: {
-            title: 'model package',
-            type: 'string',
-            description: 'package for generated models',
-          },
-          modelNamePrefix: {
-            title: 'model name prefix',
-            type: 'string',
-            description: 'Prefix that will be prepended to all model names. Default is the empty string.',
-          },
-          modelNameSuffix: {
-            title: 'model name suffix',
-            type: 'string',
-            description: 'PrefixSuffix that will be appended to all model names. Default is the empty string.',
-          },
-          systemProperties: {
-            title: 'System Properties',
-            type: 'object',
-            additionalProperties: {
-              type: 'string',
-            },
-            description: 'sets specified system properties in key/value format',
-          },
-          instantiationTypes: {
-            title: 'instantiation types',
-            type: 'object',
-            additionalProperties: {
-              type: 'string',
-            },
-            description:
-              'sets instantiation type mappings in key/value format. For example (in Java): array=ArrayList,map=HashMap. In other words array types will get instantiated as ArrayList in generated code.',
-          },
-          typeMappings: {
-            title: 'type mappings',
-            type: 'object',
-            additionalProperties: {
-              type: 'string',
-            },
-            description:
-              'sets mappings between swagger spec types and generated code types in key/value format. For example: array=List,map=Map,string=String.',
-          },
-          additionalProperties: {
-            title: 'additional properties',
-            type: 'object',
-            additionalProperties: {
-              type: 'object',
-            },
-            description:
-              'sets additional properties that can be referenced by the mustache templates in key/value format.',
-          },
-          languageSpecificPrimitives: {
-            title: 'language specific primitives',
+          address: {
             type: 'array',
-            description:
-              'specifies additional language specific primitive types in the format of type1,type2,type3,type3. For example: String,boolean,Boolean,Double. You can also have multiple occurrences of this option.',
+            xml: {
+              name: 'addresses',
+              wrapped: true,
+            },
+            items: {
+              $ref: '#/components/schemas/Address',
+            },
+          },
+        },
+        xml: {
+          name: 'customer',
+        },
+      },
+      Address: {
+        type: 'object',
+        properties: {
+          street: {
+            type: 'string',
+            example: '437 Lytton',
+          },
+          city: {
+            type: 'string',
+            example: 'Palo Alto',
+          },
+          state: {
+            type: 'string',
+            example: 'CA',
+          },
+          zip: {
+            type: 'string',
+            example: '94301',
+          },
+        },
+        xml: {
+          name: 'address',
+        },
+      },
+      Category: {
+        type: 'object',
+        properties: {
+          id: {
+            type: 'integer',
+            format: 'int64',
+            example: 1,
+          },
+          name: {
+            type: 'string',
+            example: 'Dogs',
+          },
+        },
+        xml: {
+          name: 'category',
+        },
+      },
+      User: {
+        type: 'object',
+        properties: {
+          id: {
+            type: 'integer',
+            format: 'int64',
+            example: 10,
+          },
+          username: {
+            type: 'string',
+            example: 'theUser',
+          },
+          firstName: {
+            type: 'string',
+            example: 'John',
+          },
+          lastName: {
+            type: 'string',
+            example: 'James',
+          },
+          email: {
+            type: 'string',
+            example: 'john@email.com',
+          },
+          password: {
+            type: 'string',
+            example: '12345',
+          },
+          phone: {
+            type: 'string',
+            example: '12345',
+          },
+          userStatus: {
+            type: 'integer',
+            description: 'User Status',
+            format: 'int32',
+            example: 1,
+          },
+        },
+        xml: {
+          name: 'user',
+        },
+      },
+      Tag: {
+        type: 'object',
+        properties: {
+          id: {
+            type: 'integer',
+            format: 'int64',
+          },
+          name: {
+            type: 'string',
+          },
+        },
+        xml: {
+          name: 'tag',
+        },
+      },
+      Pet: {
+        required: ['name', 'photoUrls'],
+        type: 'object',
+        properties: {
+          id: {
+            type: 'integer',
+            format: 'int64',
+            example: 10,
+          },
+          name: {
+            type: 'string',
+            example: 'doggie',
+          },
+          category: {
+            $ref: '#/components/schemas/Category',
+          },
+          photoUrls: {
+            type: 'array',
+            xml: {
+              wrapped: true,
+            },
             items: {
               type: 'string',
+              xml: {
+                name: 'photoUrl',
+              },
             },
           },
-          importMappings: {
-            title: 'import mappings',
-            type: 'object',
-            additionalProperties: {
-              type: 'string',
+          tags: {
+            type: 'array',
+            xml: {
+              wrapped: true,
             },
-            description:
-              'specifies mappings between a given class and the import that should be used for that class in key/value format.',
-          },
-          invokerPackage: {
-            title: 'invoker package',
-            type: 'string',
-            description: 'root package for generated code',
-          },
-          groupId: {
-            title: 'group id',
-            type: 'string',
-            description: 'groupId in generated pom.xml',
-          },
-          artifactId: {
-            title: 'artifact id',
-            type: 'string',
-            description: 'artifactId in generated pom.xml',
-          },
-          artifactVersion: {
-            title: 'artifact version',
-            type: 'string',
-            description: 'artifact version generated in pom.xml',
-          },
-          library: {
-            title: 'library',
-            type: 'string',
-            description: 'library template (sub-template)',
-          },
-          gitUserId: {
-            title: 'git user id',
-            type: 'string',
-            description: 'Git user ID, e.g. swagger-api.',
-          },
-          gitRepoId: {
-            title: 'git repo id',
-            type: 'string',
-            description: 'Git repo ID, e.g. swagger-codegen.',
-          },
-          releaseNote: {
-            title: 'release note',
-            type: 'string',
-            description: "Release note, default to 'Minor update'.",
-          },
-          httpUserAgent: {
-            title: 'http user agent',
-            type: 'string',
-            description:
-              "HTTP user agent, e.g. codegen_csharp_api_client, default to 'Swagger-Codegen/{packageVersion}}/{language}'",
-          },
-          reservedWordsMappings: {
-            title: 'reserved words mappings',
-            type: 'object',
-            additionalProperties: {
-              type: 'string',
+            items: {
+              $ref: '#/components/schemas/Tag',
             },
-            description:
-              'pecifies how a reserved name should be escaped to. Otherwise, the default _<name> is used. For example id=identifier.',
           },
-          ignoreFileOverride: {
-            title: 'ignore file override location',
+          status: {
             type: 'string',
-            description:
-              'Specifies an override location for the .swagger-codegen-ignore file. Most useful on initial generation.',
-          },
-          removeOperationIdPrefix: {
-            title: 'remove prefix of the operationId',
-            type: 'boolean',
-            description: 'Remove prefix of operationId, e.g. config_getId => getId',
-          },
-          skipOverride: {
-            type: 'boolean',
+            description: 'pet status in the store',
+            enum: ['available', 'pending', 'sold'],
           },
         },
-        'x-swagger-router-model': 'io.swagger.codegen.v3.service.Options',
+        xml: {
+          name: 'pet',
+        },
       },
-      CliOption: {
+      ApiResponse: {
         type: 'object',
         properties: {
-          optionName: {
-            type: 'string',
-          },
-          description: {
-            type: 'string',
+          code: {
+            type: 'integer',
+            format: 'int32',
           },
           type: {
             type: 'string',
-            description: 'Data type is based on the types supported by the JSON-Schema',
           },
-          enum: {
-            type: 'object',
-            additionalProperties: {
-              type: 'string',
+          message: {
+            type: 'string',
+          },
+        },
+        xml: {
+          name: '##default',
+        },
+      },
+    },
+    requestBodies: {
+      Pet: {
+        description: 'Pet object that needs to be added to the store',
+        content: {
+          'application/json': {
+            schema: {
+              $ref: '#/components/schemas/Pet',
             },
           },
-          default: {
-            type: 'string',
+          'application/xml': {
+            schema: {
+              $ref: '#/components/schemas/Pet',
+            },
+          },
+        },
+      },
+      UserArray: {
+        description: 'List of user object',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'array',
+              items: {
+                $ref: '#/components/schemas/User',
+              },
+            },
           },
         },
       },
     },
-    parameters: {
-      version: {
-        name: 'version',
-        in: 'query',
-        description: 'generator version used by codegen engine',
-        schema: {
-          type: 'string',
-          enum: ['V2', 'V3'],
-        },
-      },
-      type: {
-        name: 'type',
-        in: 'path',
-        description: 'generator type',
-        required: true,
-        schema: {
-          type: 'string',
-          enum: ['client', 'server', 'documentation', 'config'],
-        },
-      },
-      types: {
-        name: 'types',
-        in: 'query',
-        description: 'comma-separated list of generator types',
-        required: true,
-        style: 'form',
-        explode: false,
-        schema: {
-          type: 'array',
-          items: {
-            type: 'string',
-            enum: ['client', 'server', 'documentation', 'config'],
+    securitySchemes: {
+      petstore_auth: {
+        type: 'oauth2',
+        flows: {
+          implicit: {
+            authorizationUrl: 'https://petstore3.swagger.io/oauth/authorize',
+            scopes: {
+              'write:pets': 'modify pets in your account',
+              'read:pets': 'read your pets',
+            },
           },
         },
+      },
+      api_key: {
+        type: 'apiKey',
+        name: 'api_key',
+        in: 'header',
       },
     },
   },
