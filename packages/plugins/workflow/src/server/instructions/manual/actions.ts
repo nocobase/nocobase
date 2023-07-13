@@ -81,8 +81,11 @@ export async function submit(context: Context, next) {
 
   await next();
 
+  userJob.job.execution = userJob.execution;
   userJob.job.latestUserJob = userJob;
 
   // NOTE: resume the process and no `await` for quick returning
+  processor.logger.info(`manual node (${userJob.nodeId}) action trigger execution (${userJob.execution.id}) to resume`);
+
   plugin.resume(userJob.job);
 }
