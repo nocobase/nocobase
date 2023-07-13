@@ -83,6 +83,7 @@ function TriggerExecution() {
         'x-component-props': {
           title: <InfoOutlined />,
           shape: 'circle',
+          size: 'small',
           className: nodeJobButtonClass,
           type: 'primary',
         },
