@@ -1266,7 +1266,6 @@ SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Sche
   const { getCollectionJoinField } = useCollectionManager();
   const collectionField = getCollectionJoinField(fieldSchema?.['x-collection-field']) || {};
   const isShowTime = fieldSchema?.['x-component-props']?.showTime;
-  console.log(fieldSchema?.['x-component-props']?.dateFormat);
   return (
     <SchemaSettings.ModalItem
       title={t('Date format')}
