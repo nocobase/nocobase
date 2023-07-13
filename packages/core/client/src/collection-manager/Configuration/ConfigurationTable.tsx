@@ -127,7 +127,7 @@ export const ConfigurationTable = () => {
   };
   const loadCategories = async () => {
     return data.data.map((item: any) => ({
-      label: t(compile(item.name)),
+      label: compile(item.name),
       value: item.id,
     }));
   };

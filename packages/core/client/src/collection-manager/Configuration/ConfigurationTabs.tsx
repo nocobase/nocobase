@@ -9,7 +9,7 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import { observer, RecursionField } from '@formily/react';
+import { RecursionField, observer } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Badge, Card, Dropdown, Modal, Tabs } from 'antd';
 import _ from 'lodash';
@@ -17,8 +17,8 @@ import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../api-client';
 import { SchemaComponent, SchemaComponentOptions, useCompile } from '../../schema-component';
-import { CollectionCategroriesContext } from '../context';
 import { useResourceActionContext } from '../ResourceActionProvider';
+import { CollectionCategroriesContext } from '../context';
 import { CollectionFields } from './CollectionFields';
 import { collectionTableSchema } from './schemas/collections';
 
@@ -120,6 +120,7 @@ const DndProvider = observer(
   { displayName: 'DndProvider' },
 );
 export const ConfigurationTabs = () => {
+  const { t } = useTranslation();
   const { data, refresh } = useContext(CollectionCategroriesContext);
   const { refresh: refreshCM, run, defaultRequest, setState } = useResourceActionContext();
   const [key, setKey] = useState('all');
@@ -180,7 +181,7 @@ export const ConfigurationTabs = () => {
 
   const loadCategories = async () => {
     return data.map((item: any) => ({
-      label: compile(item.name),
+      label: t(compile(item.name)),
       value: item.id,
     }));
   };

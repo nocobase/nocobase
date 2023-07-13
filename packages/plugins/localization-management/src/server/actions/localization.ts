@@ -81,13 +81,8 @@ export const resourcesToRecords = async (
     const resource = resources[module];
     for (const text in resource) {
       if (resource[text] || module === 'client') {
-        if (records[text]) {
-          // If the text already exists, put it in the client module
-          records[text].module = `client`;
-          continue;
-        }
         records[text] = {
-          module,
+          module: 'client',
           text,
           locale,
           translation: resource[text],
