@@ -13,4 +13,14 @@ packages/element
 esm
 doc-site
 public
-package
+packages/*/*/client.d.ts
+packages/*/*/server.d.ts
+packages/*/*/client.js
+packages/*/*/server.js
+packages/core/build
+packages/core/devtools
+packages/core/database/src/sql-parser/index.js
+**/.dumi/tmp
+**/.dumi/tmp-test
+**/.dumi/tmp-production
+packages/core/cli/templates/plugin/src/client/*.tpl

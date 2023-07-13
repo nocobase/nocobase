@@ -1,3 +1,4 @@
+import { Context } from '@nocobase/actions';
 import { ACL } from '..';
 
 describe('acl', () => {
@@ -353,5 +354,27 @@ describe('acl', () => {
         'posts:create': {},
       },
     });
+  });
+
+  it('should clone can result deeply', () => {
+    jest.spyOn(acl, 'can').mockReturnValue({
+      role: 'root',
+      resource: 'Test',
+      action: 'test',
+      params: {
+        fields: [],
+      },
+    });
+    const newConext = () => ({
+      state: {},
+      action: {},
+      throw: () => {},
+    });
+    const ctx1 = newConext() as Context;
+    const ctx2 = newConext() as Context;
+    acl.getActionParams(ctx1);
+    acl.getActionParams(ctx2);
+    ctx1.permission.can.params.fields.push('createdById');
+    expect(ctx2.permission.can.params.fields).toEqual([]);
   });
 });

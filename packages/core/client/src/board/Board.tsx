@@ -1,4 +1,3 @@
-import { useField } from '@formily/react';
 import React, { forwardRef, useState } from 'react';
 import { DragDropContext } from 'react-beautiful-dnd';
 import Column from './Column';
@@ -14,17 +13,24 @@ import {
   isMovingACardToAnotherPosition,
   isMovingAColumnToAnotherPosition,
 } from './services';
+import { useStyles } from './style';
 import { partialRight, when } from './utils';
 import withDroppable from './withDroppable';
 
 const Columns = forwardRef((props, ref: any) => (
-  <div ref={ref} style={{ whiteSpace: 'nowrap', height: '100%', overflowY: 'hidden' }} {...props} />
+  <div ref={ref} style={{ whiteSpace: 'nowrap', height: '100%', overflowY: 'clip' }} {...props} />
 ));
 
 const DroppableBoard = withDroppable(Columns);
 
 const Board: any = (props) => {
-  return props.initialBoard ? <UncontrolledBoard {...props} /> : <ControlledBoard {...props} />;
+  const { styles } = useStyles();
+
+  return (
+    <div className={styles}>
+      {props.initialBoard ? <UncontrolledBoard {...props} /> : <ControlledBoard {...props} />}
+    </div>
+  );
 };
 
 Object.keys(helpers).forEach((key) => {

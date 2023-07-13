@@ -1,9 +1,11 @@
 import { Checkbox, message, Table } from 'antd';
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
+import { SettingsCenterContext } from '../../pm';
 import { useRecord } from '../../record-provider';
 import { useCompile } from '../../schema-component';
+import { useStyles } from '../style';
 
 const getParentKeys = (tree, func, path = []) => {
   if (!tree) return [];
@@ -19,7 +21,7 @@ const getParentKeys = (tree, func, path = []) => {
   return [];
 };
 const getChildrenKeys = (data = [], arr = []) => {
-  for (let item of data) {
+  for (const item of data) {
     arr.push(item.key);
     if (item.children && item.children.length) getChildrenKeys(item.children, arr);
   }
@@ -28,19 +30,8 @@ const getChildrenKeys = (data = [], arr = []) => {
 
 const SettingMenuContext = createContext(null);
 
-function useGetContext() {
-  const [context, setContext] = useState(null);
-  import('../../pm').then(({ SettingsCenterContext }) => {
-    setContext(SettingsCenterContext);
-  });
-
-  return context;
-}
-
 export const SettingCenterProvider = (props) => {
-  const context = useGetContext();
-  const configureItems = context && useContext(context);
-
+  const configureItems = useContext(SettingsCenterContext);
   return <SettingMenuContext.Provider value={configureItems}>{props.children}</SettingMenuContext.Provider>;
 };
 
@@ -79,6 +70,7 @@ const formatPluginTabs = (data) => {
 };
 
 export const SettingsCenterConfigure = () => {
+  const { styles } = useStyles();
   const record = useRecord();
   const api = useAPIClient();
   const pluginTags = useContext(SettingMenuContext);
@@ -114,6 +106,7 @@ export const SettingsCenterConfigure = () => {
   return (
     items?.length && (
       <Table
+        className={styles}
         loading={loading}
         rowKey={'key'}
         pagination={false}

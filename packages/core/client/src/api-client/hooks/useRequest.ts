@@ -1,7 +1,7 @@
 import { merge } from '@formily/shared';
 import { useSetState } from 'ahooks';
-import { default as useReq } from 'ahooks/lib/useRequest';
-import { Options } from 'ahooks/lib/useRequest/src/types';
+import { default as useReq } from 'ahooks/es/useRequest';
+import { Options } from 'ahooks/es/useRequest/src/types';
 import { AxiosRequestConfig } from 'axios';
 import cloneDeep from 'lodash/cloneDeep';
 import { useContext } from 'react';
@@ -24,20 +24,13 @@ export function useRequest<P>(
   // 缓存用途
   const [state, setState] = useSetState({});
   const api = useContext(APIClientContext);
+
+  let tempOptions, tempService;
+
   if (typeof service === 'function') {
-    const result = useReq(service, {
-      ...options,
-      onSuccess(...args) {
-        options.onSuccess?.(...args);
-        if (options.uid) {
-          api.services[options.uid] = result;
-        }
-      },
-    });
-    return { ...result, state, setState };
-  }
-  const result = useReq(
-    async (params = {}) => {
+    tempService = service;
+  } else {
+    tempService = async (params = {}) => {
       const { resource } = service as ResourceActionOptions;
       let args = cloneDeep(service);
       if (resource) {
@@ -48,16 +41,21 @@ export function useRequest<P>(
       }
       const response = await api.request(args);
       return response?.data;
+    };
+  }
+
+  tempOptions = {
+    ...options,
+    onSuccess(...args) {
+      // @ts-ignore
+      options.onSuccess?.(...args);
+      if (options.uid) {
+        api.services[options.uid] = result;
+      }
     },
-    {
-      ...options,
-      onSuccess(...args) {
-        options.onSuccess?.(...args);
-        if (options.uid) {
-          api.services[options.uid] = result;
-        }
-      },
-    },
-  );
+  };
+
+  const result: any = useReq(tempService, tempOptions);
+
   return { ...result, state, setState };
 }

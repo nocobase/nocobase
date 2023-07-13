@@ -1,4 +1,4 @@
-import { ArrayTable } from '@formily/antd';
+import { ArrayTable } from '@formily/antd-v5';
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import cloneDeep from 'lodash/cloneDeep';
@@ -7,7 +7,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
 import { RecordProvider, useRecord } from '../../record-provider';
-import { ActionContext, SchemaComponent, useCompile } from '../../schema-component';
+import { ActionContextProvider, SchemaComponent, useCompile } from '../../schema-component';
 import { useCollectionManager } from '../hooks';
 import { IField } from '../interfaces/types';
 import * as components from './components';
@@ -58,8 +58,6 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
   };
 };
 
-
-
 export const ViewCollectionField = (props) => {
   const record = useRecord();
   return <ViewFieldAction item={record} {...props} />;
@@ -77,7 +75,7 @@ export const ViewFieldAction = (props) => {
 
   return (
     <RecordProvider record={record}>
-      <ActionContext.Provider value={{ visible, setVisible }}>
+      <ActionContextProvider value={{ visible, setVisible }}>
         <a
           onClick={async () => {
             const { data } = await api.resource('collections.fields', record.collectionName).get({
@@ -118,7 +116,7 @@ export const ViewFieldAction = (props) => {
             ...scope,
           }}
         />
-      </ActionContext.Provider>
+      </ActionContextProvider>
     </RecordProvider>
   );
 };

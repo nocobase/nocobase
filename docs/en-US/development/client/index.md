@@ -7,7 +7,6 @@ Most of the extensions for the NocoBase client are provided as Providers.
 - APIClientProvider
 - I18nextProvider
 - AntdConfigProvider
-- RemoteRouteSwitchProvider
 - SystemSettingsProvider
 - PluginManagerProvider
 - SchemaComponentProvider
@@ -42,6 +41,7 @@ const HelloProvider = React.memo((props) => {
   }
   return <>{props.children}</>
 });
+HelloProvider.displayName = 'HelloProvider'
 
 app.use(HelloProvider);
 ```

@@ -45,7 +45,7 @@ export class SortAbleCollection {
   field: SortField;
   scopeKey: string;
 
-  constructor(collection: Collection, fieldName: string = 'sort') {
+  constructor(collection: Collection, fieldName = 'sort') {
     this.collection = collection;
     this.field = collection.getField(fieldName);
 
@@ -112,7 +112,7 @@ export class SortAbleCollection {
       targetSort = targetSort + 1;
     }
 
-    let scopeValue = this.scopeKey ? sourceInstance.get(this.scopeKey) : null;
+    const scopeValue = this.scopeKey ? sourceInstance.get(this.scopeKey) : null;
     let updateCondition;
     let change;
 

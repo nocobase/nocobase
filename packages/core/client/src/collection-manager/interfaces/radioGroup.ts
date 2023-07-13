@@ -17,6 +17,7 @@ export const radioGroup: IField = {
       'x-component': 'Radio.Group',
     },
   },
+  availableTypes: ['string'],
   hasDefaultValue: true,
   properties: {
     ...defaultProps,

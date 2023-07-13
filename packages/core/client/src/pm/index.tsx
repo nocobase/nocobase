@@ -1,166 +1,82 @@
-import { DeleteOutlined, SettingOutlined } from '@ant-design/icons';
+export * from './PluginManagerLink';
+import { PageHeader } from '@ant-design/pro-layout';
 import { css } from '@emotion/css';
-import { Avatar, Card, Layout, Menu, message, Modal, PageHeader, Popconfirm, Result, Spin, Switch, Tabs } from 'antd';
-import { sortBy } from 'lodash';
-import React, { createContext, useContext, useMemo } from 'react';
+import { Layout, Menu, Result, Spin, Tabs } from 'antd';
+import _, { sortBy } from 'lodash';
+import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Redirect, useHistory, useRouteMatch } from 'react-router-dom';
-import { ACLPane } from '../acl';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useACLRoleContext } from '../acl/ACLProvider';
-import { useAPIClient, useRequest } from '../api-client';
+import { ACLPane } from '../acl/ACLShortcut';
+import { useRequest } from '../api-client';
+import { Plugin } from '../application/Plugin';
 import { CollectionManagerPane } from '../collection-manager';
-import { useDocumentTitle } from '../document-title';
 import { Icon } from '../icon';
-import { RouteSwitchContext } from '../route-switch';
 import { useCompile } from '../schema-component';
 import { BlockTemplatesPane } from '../schema-templates';
 import { SystemSettingsPane } from '../system-settings';
+import { BuiltInPluginCard, PluginCard } from './Card';
+import { PluginManagerLink, SettingsCenterDropdown } from './PluginManagerLink';
+import { useStyles } from './style';
+
+export interface TData {
+  data: IPluginData[];
+  meta: IMetaData;
+}
+
+export interface IPluginData {
+  id: number;
+  createdAt: Date;
+  updatedAt: Date;
+  name: string;
+  displayName: string;
+  version: string;
+  enabled: boolean;
+  installed: boolean;
+  builtIn: boolean;
+  options: Record<string, unknown>;
+  description?: string;
+}
+
+export interface IMetaData {
+  count: number;
+  page: number;
+  pageSize: number;
+  totalPage: number;
+  allowedActions: AllowedActions;
+}
+
+export interface AllowedActions {
+  view: number[];
+  update: number[];
+  destroy: number[];
+}
+
+// TODO: refactor card/built-int card
 
 export const SettingsCenterContext = createContext<any>({});
 
-const PluginCard = (props) => {
-  const history = useHistory<any>();
-  const { data = {} } = props;
-  const api = useAPIClient();
-  const { t } = useTranslation();
-  return (
-    <Card
-      bordered={false}
-      style={{ width: 'calc(20% - 24px)', marginRight: 24, marginBottom: 24 }}
-      actions={[
-        data.enabled ? (
-          <SettingOutlined
-            onClick={() => {
-              history.push(`/admin/settings/${data.name}`);
-            }}
-          />
-        ) : null,
-        <Popconfirm
-          title={t('Are you sure to delete this plugin?')}
-          onConfirm={async () => {
-            await api.request({
-              url: `pm:remove/${data.name}`,
-            });
-            message.success(t('插件删除成功'));
-            window.location.reload();
-          }}
-          onCancel={() => {}}
-          okText={t('Yes')}
-          cancelText={t('No')}
-        >
-          <DeleteOutlined />
-        </Popconfirm>,
-        <Switch
-          size={'small'}
-          onChange={async (checked) => {
-            Modal.warn({
-              title: checked ? t('Plugin staring') : t('Plugin stopping'),
-              content: t('The application is reloading, please do not close the page.'),
-              okButtonProps: {
-                style: {
-                  display: 'none',
-                },
-              },
-            });
-            await api.request({
-              url: `pm:${checked ? 'enable' : 'disable'}/${data.name}`,
-            });
-            window.location.reload();
-            // message.success(checked ? t('插件激活成功') : t('插件禁用成功'));
-          }}
-          defaultChecked={data.enabled}
-        ></Switch>,
-      ].filter(Boolean)}
-    >
-      <Card.Meta
-        className={css`
-          .ant-card-meta-avatar {
-            margin-top: 8px;
-            .ant-avatar {
-              border-radius: 2px;
-            }
-          }
-        `}
-        avatar={<Avatar />}
-        description={data.description}
-        title={
-          <span>
-            {data.name}
-            <span
-              className={css`
-                display: block;
-                color: rgba(0, 0, 0, 0.45);
-                font-weight: normal;
-                font-size: 13px;
-                // margin-left: 8px;
-              `}
-            >
-              {data.version}
-            </span>
-          </span>
-        }
-      />
-    </Card>
-  );
-};
-
-const BuiltInPluginCard = (props) => {
-  const { data } = props;
-  return (
-    <Card
-      bordered={false}
-      style={{ width: 'calc(20% - 24px)', marginRight: 24, marginBottom: 24 }}
-      // actions={[<a>Settings</a>, <a>Remove</a>, <Switch size={'small'} defaultChecked={true}></Switch>]}
-    >
-      <Card.Meta
-        className={css`
-          .ant-card-meta-avatar {
-            margin-top: 8px;
-            .ant-avatar {
-              border-radius: 2px;
-            }
-          }
-        `}
-        avatar={<Avatar />}
-        description={data.description}
-        title={
-          <span>
-            {data.name}
-            <span
-              className={css`
-                display: block;
-                color: rgba(0, 0, 0, 0.45);
-                font-weight: normal;
-                font-size: 13px;
-                // margin-left: 8px;
-              `}
-            >
-              {data.version}
-            </span>
-          </span>
-        }
-      />
-    </Card>
-  );
-};
-
 const LocalPlugins = () => {
-  const { data, loading } = useRequest({
+  // TODO: useRequest types for data ts type
+  const { data, loading }: { data: TData; loading: boolean } = useRequest<TData>({
     url: 'applicationPlugins:list',
     params: {
       filter: {
         'builtIn.$isFalsy': true,
       },
       sort: 'name',
+      paginate: false,
     },
   });
   if (loading) {
     return <Spin />;
   }
+
   return (
     <>
       {data?.data?.map((item) => {
-        return <PluginCard data={item} />;
+        const { id } = item;
+        return <PluginCard data={item} key={id} />;
       })}
     </>
   );
@@ -174,6 +90,7 @@ const BuiltinPlugins = () => {
         'builtIn.$isTruly': true,
       },
       sort: 'name',
+      paginate: false,
     },
   });
   if (loading) {
@@ -182,7 +99,8 @@ const BuiltinPlugins = () => {
   return (
     <>
       {data?.data?.map((item) => {
-        return <BuiltInPluginCard data={item} />;
+        const { id } = item;
+        return <BuiltInPluginCard data={item} key={id} />;
       })}
     </>
   );
@@ -193,33 +111,51 @@ const MarketplacePlugins = () => {
   return <div style={{ fontSize: 18 }}>{t('Coming soon...')}</div>;
 };
 
-const PluginList = (props) => {
-  const match = useRouteMatch<any>();
-  const history = useHistory<any>();
-  const { tabName = 'local' } = match.params || {};
-  const { setTitle } = useDocumentTitle();
+const PluginList = () => {
+  const params = useParams<any>();
+  const navigate = useNavigate();
+  const { tabName = 'local' } = params;
   const { t } = useTranslation();
   const { snippets = [] } = useACLRoleContext();
+  const { styles } = useStyles();
+
+  useEffect(() => {
+    const { tabName } = params;
+    if (!tabName) {
+      navigate(`/admin/pm/list/local/`, { replace: true });
+    }
+  }, []);
 
   return snippets.includes('pm') ? (
     <div>
       <PageHeader
+        className={styles.pageHeader}
         ghost={false}
         title={t('Plugin manager')}
         footer={
           <Tabs
             activeKey={tabName}
             onChange={(activeKey) => {
-              history.push(`/admin/pm/list/${activeKey}`);
+              navigate(`/admin/pm/list/${activeKey}`);
             }}
-          >
-            <Tabs.TabPane tab={t('Local')} key={'local'} />
-            <Tabs.TabPane tab={t('Built-in')} key={'built-in'} />
-            <Tabs.TabPane tab={t('Marketplace')} key={'marketplace'} />
-          </Tabs>
+            items={[
+              {
+                key: 'local',
+                label: t('Local'),
+              },
+              {
+                key: 'built-in',
+                label: t('Built-in'),
+              },
+              {
+                key: 'marketplace',
+                label: t('Marketplace'),
+              },
+            ]}
+          />
         }
       />
-      <div style={{ margin: 24, display: 'flex', flexFlow: 'row wrap' }}>
+      <div className={'m24'} style={{ margin: 24, display: 'flex', flexFlow: 'row wrap' }}>
         {React.createElement(
           {
             local: LocalPlugins,
@@ -242,7 +178,7 @@ const settings = {
       roles: {
         isBookmark: true,
         title: '{{t("Roles & Permissions")}}',
-        component: ACLPane,
+        component: () => <ACLPane />,
       },
     },
   },
@@ -280,7 +216,7 @@ const settings = {
   },
 };
 
-export const getPluginsTabs = (items, snippets) => {
+export const getPluginsTabs = _.memoize((items, snippets) => {
   const pluginsTabs = Object.keys(items).map((plugin) => {
     const tabsObj = items[plugin].tabs;
     const tabs = sortBy(
@@ -301,12 +237,13 @@ export const getPluginsTabs = (items, snippets) => {
     };
   });
   return sortBy(pluginsTabs, (o) => !o.isAllow);
-};
+});
 
-const SettingsCenter = (props) => {
+const SettingsCenter = () => {
+  const { styles } = useStyles();
   const { snippets = [] } = useACLRoleContext();
-  const match = useRouteMatch<any>();
-  const history = useHistory<any>();
+  const params = useParams<any>();
+  const navigate = useNavigate();
   const items = useContext(SettingsCenterContext);
   const pluginsTabs = getPluginsTabs(items, snippets);
   const compile = useCompile();
@@ -315,18 +252,18 @@ const SettingsCenter = (props) => {
     const tabName = pluginsTabs[0].tabs[0].key;
     return `/admin/settings/${pluginName}/${tabName}`;
   }, [pluginsTabs]);
-  const { pluginName, tabName } = match.params || {};
+  const { pluginName, tabName } = params;
   const activePlugin = pluginsTabs.find((v) => v.key === pluginName);
   const aclPluginTabCheck = activePlugin?.isAllow && activePlugin.tabs.find((v) => v.key === tabName)?.isAllow;
   if (!pluginName) {
-    return <Redirect to={firstUri} />;
+    return <Navigate replace to={firstUri} />;
   }
   if (!items[pluginName]) {
-    return <Redirect to={firstUri} />;
+    return <Navigate replace to={firstUri} />;
   }
   if (!tabName) {
     const firstTabName = Object.keys(items[pluginName]?.tabs).shift();
-    return <Redirect to={`/admin/settings/${pluginName}/${firstTabName}`} />;
+    return <Navigate replace to={`/admin/settings/${pluginName}/${firstTabName}`} />;
   }
   const component = items[pluginName]?.tabs?.[tabName]?.component;
   const plugin: any = pluginsTabs.find((v) => v.key === pluginName);
@@ -342,30 +279,21 @@ const SettingsCenter = (props) => {
   return (
     <div>
       <Layout>
-        <div
-          style={
-            {
-              '--side-menu-width': '200px',
-            } as Record<string, string>
-          }
-          className={css`
-            width: var(--side-menu-width);
-            overflow: hidden;
-            flex: 0 0 var(--side-menu-width);
-            max-width: var(--side-menu-width);
-            min-width: var(--side-menu-width);
-            pointer-events: none;
-          `}
-        ></div>
         <Layout.Sider
           className={css`
             height: 100%;
-            position: fixed;
-            padding-top: 46px;
+            /* position: fixed;
+            padding-top: 46px; */
             left: 0;
             top: 0;
             background: rgba(0, 0, 0, 0);
             z-index: 100;
+            .ant-layout-sider-children {
+              top: 46px;
+              position: fixed;
+              width: 200px;
+              height: calc(100vh - 46px);
+            }
           `}
           theme={'light'}
         >
@@ -375,7 +303,7 @@ const SettingsCenter = (props) => {
             onClick={(e) => {
               const item = items[e.key];
               const tabKey = Object.keys(item.tabs).shift();
-              history.push(`/admin/settings/${e.key}/${tabKey}`);
+              navigate(`/admin/settings/${e.key}/${tabKey}`);
             }}
             items={menuItems as any}
           />
@@ -383,23 +311,29 @@ const SettingsCenter = (props) => {
         <Layout.Content>
           {aclPluginTabCheck && (
             <PageHeader
+              className={styles.pageHeader}
               ghost={false}
               title={compile(items[pluginName]?.title)}
               footer={
                 <Tabs
                   activeKey={tabName}
                   onChange={(activeKey) => {
-                    history.push(`/admin/settings/${pluginName}/${activeKey}`);
+                    navigate(`/admin/settings/${pluginName}/${activeKey}`);
                   }}
-                >
-                  {plugin.tabs?.map((tab) => {
-                    return tab.isAllow && <Tabs.TabPane tab={compile(tab?.title)} key={tab.key} />;
+                  items={plugin.tabs?.map((tab) => {
+                    if (!tab.isAllow) {
+                      return null;
+                    }
+                    return {
+                      label: compile(tab?.title),
+                      key: tab.key,
+                    };
                   })}
-                </Tabs>
+                />
               }
             />
           )}
-          <div style={{ margin: 24 }}>
+          <div className={'m24'} style={{ margin: 24 }}>
             {aclPluginTabCheck ? (
               component && React.createElement(component)
             ) : (
@@ -421,27 +355,49 @@ export const SettingsCenterProvider = (props) => {
 };
 
 export const PMProvider = (props) => {
-  const { routes, ...others } = useContext(RouteSwitchContext);
-  routes[1].routes.unshift(
-    {
-      type: 'route',
-      path: '/admin/pm/list/:tabName?',
-      component: PluginList,
-    },
-    {
-      type: 'route',
-      path: '/admin/settings/:pluginName?/:tabName?',
-      component: SettingsCenter,
-      uiSchemaUid: routes[1].uiSchemaUid,
-    },
-  );
-  return (
-    <SettingsCenterProvider settings={settings}>
-      <RouteSwitchContext.Provider value={{ ...others, routes }}>{props.children}</RouteSwitchContext.Provider>
-    </SettingsCenterProvider>
-  );
+  return <SettingsCenterProvider settings={settings}>{props.children}</SettingsCenterProvider>;
 };
+export class PMPlugin extends Plugin {
+  async load() {
+    this.addComponents();
+    this.addRoutes();
+    this.app.use(PMProvider);
+  }
 
-export default PMProvider;
+  addComponents() {
+    this.app.addComponents({
+      PluginManagerLink,
+      SettingsCenterDropdown,
+    });
+  }
 
-export * from './PluginManagerLink';
+  addRoutes() {
+    this.app.router.add('admin.pm.list', {
+      path: '/admin/pm/list',
+      element: <PluginList />,
+    });
+    this.app.router.add('admin.pm.list-tab', {
+      path: '/admin/pm/list/:tabName',
+      element: <PluginList />,
+    });
+    this.app.router.add('admin.pm.list-tab-mdfile', {
+      path: '/admin/pm/list/:tabName/:mdfile',
+      element: <PluginList />,
+    });
+
+    this.app.router.add('admin.settings.list', {
+      path: '/admin/settings',
+      element: <SettingsCenter />,
+    });
+    this.app.router.add('admin.settings.pluginName', {
+      path: '/admin/settings/:pluginName',
+      element: <SettingsCenter />,
+    });
+    this.app.router.add('admin.settings.pluginName-tabName', {
+      path: '/admin/settings/:pluginName/:tabName',
+      element: <SettingsCenter />,
+    });
+  }
+}
+
+export default PMPlugin;

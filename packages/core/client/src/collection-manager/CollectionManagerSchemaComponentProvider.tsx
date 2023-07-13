@@ -5,7 +5,7 @@ import {
   CollectionFieldProvider,
   CollectionProvider,
   ResourceActionProvider,
-  useDataSourceFromRAC
+  useDataSourceFromRAC,
 } from './';
 import * as hooks from './action-hooks';
 import { DataSourceProvider, ds, SubFieldDataSourceProvider } from './sub-table';

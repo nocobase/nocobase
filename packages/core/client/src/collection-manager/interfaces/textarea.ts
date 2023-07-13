@@ -18,6 +18,7 @@ export const textarea: IField = {
       'x-component': 'Input.TextArea',
     },
   },
+  availableTypes: ['text'],
   hasDefaultValue: true,
   properties: {
     ...defaultProps,
@@ -37,12 +38,14 @@ export const textarea: IField = {
         'x-decorator': 'FormItem',
         'x-component': 'InputNumber',
         'x-component-props': {
-          precision: 0
+          precision: 0,
         },
         'x-reactions': `{{(field) => {
           const targetValue = field.query('.min').value();
           field.selfErrors =
-            !!targetValue && !!field.value && targetValue > field.value ? '${i18n.t('Max length must greater than min length')}' : ''
+            !!targetValue && !!field.value && targetValue > field.value ? '${i18n.t(
+              'Max length must greater than min length',
+            )}' : ''
         }}}`,
       },
       min: {
@@ -52,17 +55,19 @@ export const textarea: IField = {
         'x-decorator': 'FormItem',
         'x-component': 'InputNumber',
         'x-component-props': {
-          precision: 0
+          precision: 0,
         },
         'x-reactions': {
           dependencies: ['.max'],
           fulfill: {
             state: {
-              selfErrors: `{{!!$deps[0] && !!$self.value && $deps[0] < $self.value ? '${i18n.t('Min length must less than max length')}' : ''}}`,
+              selfErrors: `{{!!$deps[0] && !!$self.value && $deps[0] < $self.value ? '${i18n.t(
+                'Min length must less than max length',
+              )}' : ''}}`,
             },
           },
         },
       },
     };
-  }
+  },
 };

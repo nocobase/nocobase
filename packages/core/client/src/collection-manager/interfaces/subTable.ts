@@ -20,6 +20,7 @@ export const subTable: IField = {
       'x-component-props': {},
     },
   },
+  availableTypes: ['hasMany'],
   schemaInitialize(schema: ISchema, { field, readPretty }) {
     const association = `${field.collectionName}.${field.name}`;
     schema['type'] = 'void';

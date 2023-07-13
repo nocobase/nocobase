@@ -8,3 +8,5 @@ export * from './set';
 export * from './remove';
 export * from './toggle';
 export * from './move';
+export * from './first-or-create';
+export * from './update-or-create';

@@ -3,21 +3,24 @@ import { Field } from '@formily/core';
 import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import { useRequest } from 'ahooks';
 import { Col, Row } from 'antd';
+import merge from 'deepmerge';
 import template from 'lodash/template';
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ACLCollectionProvider,
   TableFieldResource,
-  useActionContext,
+  WithoutTableFieldResource,
   useAPIClient,
+  useActionContext,
   useDesignable,
   useRecord,
-  WithoutTableFieldResource,
 } from '../';
+import { ACLCollectionProvider } from '../acl/ACLProvider';
 import { CollectionProvider, useCollection, useCollectionManager } from '../collection-manager';
+import { FilterBlockRecord } from '../filter-provider/FilterProvider';
 import { useRecordIndex } from '../record-provider';
 import { SharedFilterProvider } from './SharedFilterProvider';
+import { useAssociationNames } from './hooks';
 
 export const BlockResourceContext = createContext(null);
 export const BlockAssociationContext = createContext(null);
@@ -34,7 +37,7 @@ interface UseResourceProps {
   block?: any;
 }
 
-const useAssociation = (props) => {
+export const useAssociation = (props) => {
   const { association } = props;
   const { getCollectionField } = useCollectionManager();
   if (typeof association === 'string') {
@@ -48,19 +51,23 @@ const useResource = (props: UseResourceProps) => {
   const { block, resource, useSourceId } = props;
   const record = useRecord();
   const api = useAPIClient();
+  const { fieldSchema } = useActionContext();
+  const isCreateAction = fieldSchema?.['x-action'] === 'create';
   const association = useAssociation(props);
   const sourceId = useSourceId?.();
-
   const field = useField<Field>();
   if (block === 'TableField') {
     const options = {
       field,
       api,
       resource,
-      sourceId: sourceId || record[association?.sourceKey || 'id'],
+      sourceId: !isCreateAction
+        ? sourceId || record[association?.sourceKey || 'id'] || record?.__parent?.[association?.sourceKey || 'id']
+        : undefined,
     };
     return new TableFieldResource(options);
   }
+
   const withoutTableFieldResource = useContext(WithoutTableFieldResource);
   const __parent = useContext(BlockRequestContext);
   if (
@@ -90,17 +97,19 @@ export const useResourceAction = (props, opts = {}) => {
   /**
    * fieldName: 来自 TableFieldProvider
    */
-  const { resource, action, fieldName: tableFieldName } = props;
+  const { resource, action, fieldName: tableFieldName, runWhenParamsChanged = false } = props;
   const { fields } = useCollection();
-  const appends = fields?.filter((field) => field.target).map((field) => field.name);
   const params = useActionParams(props);
   const api = useAPIClient();
   const fieldSchema = useFieldSchema();
   const { snapshot } = useActionContext();
   const record = useRecord();
 
-  if (!Object.keys(params).includes('appends') && appends?.length) {
-    params['appends'] = appends;
+  if (!Reflect.has(params, 'appends')) {
+    const appends = fields?.filter((field) => field.target).map((field) => field.name);
+    if (appends?.length) {
+      params['appends'] = appends;
+    }
   }
   const result = useRequest(
     snapshot
@@ -111,8 +120,8 @@ export const useResourceAction = (props, opts = {}) => {
           if (!action) {
             return Promise.resolve({});
           }
-          const actionParams = { ...opts };
-          if (params.appends) {
+          const actionParams = { ...params, ...opts };
+          if (params?.appends) {
             actionParams.appends = params.appends;
           }
           return resource[action](actionParams).then((res) => res.data);
@@ -126,9 +135,21 @@ export const useResourceAction = (props, opts = {}) => {
         }
       },
       defaultParams: [params],
-      refreshDeps: [JSON.stringify(params.appends)],
+      refreshDeps: [runWhenParamsChanged ? null : JSON.stringify(params.appends)],
     },
   );
+  // automatic run service when params has changed
+  const firstRun = useRef(false);
+  useEffect(() => {
+    if (!runWhenParamsChanged) {
+      return;
+    }
+    if (firstRun.current) {
+      result?.run({ ...result?.params?.[0], ...params });
+    }
+    firstRun.current = true;
+  }, [JSON.stringify(params), runWhenParamsChanged]);
+
   return result;
 };
 
@@ -139,22 +160,45 @@ export const MaybeCollectionProvider = (props) => {
       <ACLCollectionProvider>{props.children}</ACLCollectionProvider>
     </CollectionProvider>
   ) : (
-    <>{props.children}</>
+    props.children
   );
 };
 
-const BlockRequestProvider = (props) => {
+export const BlockRequestProvider = (props) => {
   const field = useField();
   const resource = useBlockResource();
+  const [allowedActions, setAllowedActions] = useState({});
+
   const service = useResourceAction(
     { ...props, resource },
     {
       ...props.requestOptions,
     },
   );
+
+  // Infinite scroll support
+  const serviceAllowedActions = (service?.data as any)?.meta?.allowedActions;
+  useEffect(() => {
+    if (!serviceAllowedActions) return;
+    setAllowedActions((last) => {
+      return merge(last, serviceAllowedActions ?? {});
+    });
+  }, [serviceAllowedActions]);
+
   const __parent = useContext(BlockRequestContext);
   return (
-    <BlockRequestContext.Provider value={{ block: props.block, props, field, service, resource, __parent }}>
+    <BlockRequestContext.Provider
+      value={{
+        allowedActions,
+        block: props.block,
+        props,
+        field,
+        service,
+        resource,
+        __parent,
+        updateAssociationValues: props?.updateAssociationValues || [],
+      }}
+    >
       {props.children}
     </BlockRequestContext.Provider>
   );
@@ -191,6 +235,7 @@ export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
               width: 200px;
               flex: 0 0 auto;
             `}
+            style={props.associationFilterStyle}
           >
             <RecursionField
               schema={fieldSchema}
@@ -228,12 +273,22 @@ export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
 export const BlockProvider = (props) => {
   const { collection, association } = props;
   const resource = useResource(props);
+  const params = { ...props.params };
+  const { appends, updateAssociationValues } = useAssociationNames();
+  if (!Object.keys(params).includes('appends')) {
+    params['appends'] = appends;
+  }
+
   return (
     <MaybeCollectionProvider collection={collection}>
       <BlockAssociationContext.Provider value={association}>
         <BlockResourceContext.Provider value={resource}>
-          <BlockRequestProvider {...props}>
-            <SharedFilterProvider {...props} />
+          <BlockRequestProvider {...props} updateAssociationValues={updateAssociationValues} params={params}>
+            <SharedFilterProvider {...props} params={params}>
+              <FilterBlockRecord {...props} params={params}>
+                {props.children}
+              </FilterBlockRecord>
+            </SharedFilterProvider>
           </BlockRequestProvider>
         </BlockResourceContext.Provider>
       </BlockAssociationContext.Provider>
@@ -288,9 +343,27 @@ export const useSourceIdFromParentRecord = () => {
 
 export const useParamsFromRecord = () => {
   const filterByTk = useFilterByTk();
-  return {
+  const record = useRecord();
+  const { fields } = useCollection();
+  const filterFields = fields
+    .filter((v) => {
+      return ['boolean', 'date', 'integer', 'radio', 'sort', 'string', 'time', 'uid', 'uuid'].includes(v.type);
+    })
+    .map((v) => v.name);
+  const filter = Object.keys(record)
+    .filter((key) => filterFields.includes(key))
+    .reduce((result, key) => {
+      result[key] = record[key];
+      return result;
+    }, {});
+
+  const obj = {
     filterByTk: filterByTk,
   };
+  if (!filterByTk) {
+    obj['filter'] = filter;
+  }
+  return obj;
 };
 
 export const RecordLink = (props) => {

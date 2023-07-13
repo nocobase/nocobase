@@ -9,6 +9,7 @@ describe('create action', () => {
 
   beforeEach(async () => {
     app = mockServer();
+    await app.db.clean({ drop: true });
     registerActions(app);
 
     Post = app.collection({

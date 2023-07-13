@@ -1,4 +1,4 @@
-export { useCollectionFilterOptions, useSortFields } from './action-hooks';
+export { useCollectionFilterOptions, useSortFields, useLinkageCollectionFilterOptions ,useCollectionFieldsOptions} from './action-hooks';
 export * from './CollectionField';
 export * from './CollectionFieldProvider';
 export * from './CollectionManagerProvider';
@@ -16,3 +16,4 @@ export { getConfigurableProperties } from './templates/properties';
 export * from './templates/types';
 export * from './types';
 export * from './CollectionHistoryProvider';
+export * from './interfaces/properties';

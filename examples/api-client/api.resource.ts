@@ -17,7 +17,7 @@ const api = new APIClient({
 
 (async () => {
   const response = await api.resource('test').list();
-  // 等价于 
+  // 等价于
   // const response = await api.request({
   //   url: 'test:list',
   // });

@@ -7,7 +7,6 @@ Most of the extensions for the NocoBase client are provided as Providers.
 - APIClientProvider
 - I18nextProvider
 - AntdConfigProvider
-- RemoteRouteSwitchProvider
 - SystemSettingsProvider
 - PluginManagerProvider
 - SchemaComponentProvider

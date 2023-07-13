@@ -1,6 +1,8 @@
 import { useField, useForm } from '@formily/react';
 import { message } from 'antd';
-import { useEffect } from 'react';
+import omit from 'lodash/omit';
+import { useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCollection, useCollectionManager } from '.';
 import { useRequest } from '../api-client';
 import { useRecord } from '../record-provider';
@@ -21,7 +23,7 @@ export const useCancelAction = () => {
 
 export const useValuesFromRecord = (options) => {
   const record = useRecord();
-  const result = useRequest(() => Promise.resolve({ data: record }), {
+  const result = useRequest(() => Promise.resolve({ data: omit(record, ['__parent']) }), {
     ...options,
     manual: true,
   });
@@ -81,7 +83,7 @@ export const useSortFields = (collectionName: string) => {
         return false;
       }
       const fieldInterface = getInterface(field.interface);
-      if (fieldInterface.sortable) {
+      if (fieldInterface?.sortable) {
         return true;
       }
       return false;
@@ -105,7 +107,82 @@ export const useChildrenCollections = (collectionName: string) => {
   });
 };
 
+export const useSelfAndChildrenCollections = (collectionName: string) => {
+  const { getChildrenCollections, getCollection } = useCollectionManager();
+  const childrenCollections = getChildrenCollections(collectionName);
+  const self = getCollection(collectionName);
+  if (!collectionName) {
+    return null;
+  }
+  const options = childrenCollections.map((collection: any) => {
+    return {
+      value: collection.name,
+      label: collection?.title || collection.name,
+    };
+  });
+  options.unshift({
+    value: self.name,
+    label: self?.title || self.name,
+  });
+  return options;
+};
+
 export const useCollectionFilterOptions = (collectionName: string) => {
+  const { getCollectionFields, getInterface } = useCollectionManager();
+  return useMemo(() => {
+    const fields = getCollectionFields(collectionName);
+    const field2option = (field, depth) => {
+      if (!field.interface) {
+        return;
+      }
+      const fieldInterface = getInterface(field.interface);
+      if (!fieldInterface?.filterable) {
+        return;
+      }
+      const { nested, children, operators } = fieldInterface.filterable;
+      const option = {
+        name: field.name,
+        title: field?.uiSchema?.title || field.name,
+        schema: field?.uiSchema,
+        operators:
+          operators?.filter?.((operator) => {
+            return !operator?.visible || operator.visible(field);
+          }) || [],
+        interface: field.interface,
+      };
+      if (field.target && depth > 2) {
+        return;
+      }
+      if (depth > 2) {
+        return option;
+      }
+      if (children?.length) {
+        option['children'] = children;
+      }
+      if (nested) {
+        const targetFields = getCollectionFields(field.target);
+        const options = getOptions(targetFields, depth + 1).filter(Boolean);
+        option['children'] = option['children'] || [];
+        option['children'].push(...options);
+      }
+      return option;
+    };
+    const getOptions = (fields, depth) => {
+      const options = [];
+      fields.forEach((field) => {
+        const option = field2option(field, depth);
+        if (option) {
+          options.push(option);
+        }
+      });
+      return options;
+    };
+    const options = getOptions(fields, 1);
+    return options;
+  }, [collectionName]);
+};
+
+export const useLinkageCollectionFilterOptions = (collectionName: string) => {
   const { getCollectionFields, getInterface } = useCollectionManager();
   const fields = getCollectionFields(collectionName);
   const field2option = (field, depth) => {
@@ -113,7 +190,7 @@ export const useCollectionFilterOptions = (collectionName: string) => {
       return;
     }
     const fieldInterface = getInterface(field.interface);
-    if (!fieldInterface.filterable) {
+    if (!fieldInterface?.filterable) {
       return;
     }
     const { nested, children, operators } = fieldInterface.filterable;
@@ -125,6 +202,7 @@ export const useCollectionFilterOptions = (collectionName: string) => {
         operators?.filter?.((operator) => {
           return !operator?.visible || operator.visible(field);
         }) || [],
+      interface: field.interface,
     };
     if (field.target && depth > 2) {
       return;
@@ -136,7 +214,12 @@ export const useCollectionFilterOptions = (collectionName: string) => {
       option['children'] = children;
     }
     if (nested) {
-      const targetFields = getCollectionFields(field.target);
+      const targetFields = getCollectionFields(field.target).filter((v) => {
+        if (['hasMany', 'belongsToMany'].includes(field.type)) {
+          return !['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(v.type);
+        }
+        return !['hasMany', 'belongsToMany'].includes(v.type);
+      });
       const options = getOptions(targetFields, depth + 1).filter(Boolean);
       option['children'] = option['children'] || [];
       option['children'].push(...options);
@@ -153,7 +236,65 @@ export const useCollectionFilterOptions = (collectionName: string) => {
     });
     return options;
   };
-  return getOptions(fields, 1);
+  const options = getOptions(fields, 1);
+  return options;
+};
+// 通用
+export const useCollectionFieldsOptions = (collectionName: string, maxDepth = 2, excludes = []) => {
+  const { getCollectionFields, getInterface } = useCollectionManager();
+  const fields = getCollectionFields(collectionName).filter((v) => !excludes.includes(v.interface));
+
+  const field2option = (field, depth, prefix?) => {
+    if (!field.interface) {
+      return;
+    }
+    const fieldInterface = getInterface(field.interface);
+    if (!fieldInterface?.filterable) {
+      return;
+    }
+    const { nested, children } = fieldInterface.filterable;
+    const value = prefix ? `${prefix}.${field.name}` : field.name;
+    const option = {
+      ...field,
+      name: field.name,
+      title: field?.uiSchema?.title || field.name,
+      schema: field?.uiSchema,
+      key: value,
+    };
+    if (field.target && depth > maxDepth) {
+      return;
+    }
+    if (depth > maxDepth) {
+      return option;
+    }
+    if (children?.length) {
+      option['children'] = children.map((v) => {
+        return {
+          ...v,
+          key: `${field.name}.${v.name}`,
+        };
+      });
+    }
+    if (nested) {
+      const targetFields = getCollectionFields(field.target).filter((v) => !excludes.includes(v.interface));
+      const options = getOptions(targetFields, depth + 1, field.name).filter(Boolean);
+      option['children'] = option['children'] || [];
+      option['children'].push(...options);
+    }
+    return option;
+  };
+  const getOptions = (fields, depth, prefix?) => {
+    const options = [];
+    fields.forEach((field) => {
+      const option = field2option(field, depth, prefix);
+      if (option) {
+        options.push(option);
+      }
+    });
+    return options;
+  };
+  const options = getOptions(fields, 1);
+  return options;
 };
 
 export const useFilterDataSource = (options) => {
@@ -257,11 +398,16 @@ export const useUpdateAction = () => {
       await form.submit();
       field.data = field.data || {};
       field.data.loading = true;
-      await resource.update({ filterByTk, values: form.values });
-      ctx.setVisible(false);
-      await form.reset();
-      field.data.loading = false;
-      refresh();
+      try {
+        await resource.update({ filterByTk, values: form.values });
+        ctx.setVisible(false);
+        await form.reset();
+        refresh();
+      } catch (e) {
+        console.log(e);
+      } finally {
+        field.data.loading = false;
+      }
     },
   };
 };
@@ -280,9 +426,13 @@ export const useDestroyAction = () => {
 
 export const useBulkDestroyAction = () => {
   const { state, setState, refresh } = useResourceActionContext();
-  const { resource, targetKey } = useResourceContext();
+  const { resource } = useResourceContext();
+  const { t } = useTranslation();
   return {
     async run() {
+      if (!state?.selectedRowKeys?.length) {
+        return message.error(t('Please select the records you want to delete'));
+      }
       await resource.destroy({
         filterByTk: state?.selectedRowKeys || [],
       });
@@ -331,6 +481,17 @@ export const useDestroyActionAndRefreshCM = () => {
       await refreshCM();
     },
   };
+};
+
+export const useDeleteButtonDisabled = (record?: any) => {
+  const recordFromProvider = useRecord();
+  return isDeleteButtonDisabled(record || recordFromProvider);
+};
+
+export const isDeleteButtonDisabled = (record?: any) => {
+  const { interface: i, deletable = true } = record || {};
+
+  return !deletable || i === 'id';
 };
 
 export const useBulkDestroyActionAndRefreshCM = () => {

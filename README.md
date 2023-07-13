@@ -6,6 +6,11 @@ English | [中文](./README.zh-CN.md) | [Türkçe](./README.tr-TR.md)
 
 NocoBase is in early stage of development and is subject to frequent changes, please use caution in production environments.
 
+## Recent major updates
+
+- [v0.11: New client application, plugin and router - 2023/07/08](http://docs.nocobase.com/welcome/release/v11-changelog)
+- [v0.10: Update instructions - 2023/06/23](http://docs.nocobase.com/welcome/release/v10-changelog)
+
 ## We are hiring
 
 We are looking for full-time, remote product design and development colleagues to join the team. If you have a strong interest in NocoBase, please feel free to email us at hello@nocobase.com.

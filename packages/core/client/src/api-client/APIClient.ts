@@ -1,5 +1,5 @@
 import { APIClient as APIClientSDK } from '@nocobase/sdk';
-import { Result } from 'ahooks/lib/useRequest/src/types';
+import { Result } from 'ahooks/es/useRequest/src/types';
 import { notification } from 'antd';
 import React from 'react';
 
@@ -14,8 +14,11 @@ const handleErrorMessage = (error) => {
     });
   };
 };
+
+const errorCache = new Map();
 export class APIClient extends APIClientSDK {
   services: Record<string, Result<any, any>> = {};
+  silence = false;
 
   service(uid: string) {
     return this.services[uid];
@@ -38,21 +41,44 @@ export class APIClient extends APIClientSDK {
     this.axios.interceptors.response.use(
       (response) => response,
       (error) => {
+        if (this.silence) {
+          throw error;
+        }
         const redirectTo = error?.response?.data?.redirectTo;
         if (redirectTo) {
           return (window.location.href = redirectTo);
         }
-        if (error.response.data.type === 'application/json') {
+        if (error?.response?.data?.type === 'application/json') {
           handleErrorMessage(error);
         } else {
+          if (errorCache.size > 10) {
+            errorCache.clear();
+          }
+          let errs = error?.response?.data?.errors || [{ message: 'Server error' }];
+          errs = errs.filter((error) => {
+            const lastTime = errorCache.get(error.message);
+            if (lastTime && new Date().getTime() - lastTime < 500) {
+              return false;
+            }
+            errorCache.set(error.message, new Date().getTime());
+            return true;
+          });
+          if (errs.length === 0) {
+            throw error;
+          }
           notification.error({
-            message: error?.response?.data?.errors?.map?.((error: any) => {
-              return React.createElement('div', { children: error.message });
+            message: errs?.map?.((error: any) => {
+              return React.createElement('div', {}, error.message);
             }),
           });
         }
         throw error;
       },
     );
+  }
+
+  silent() {
+    this.silence = true;
+    return this;
   }
 }

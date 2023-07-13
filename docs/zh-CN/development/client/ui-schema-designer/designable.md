@@ -183,11 +183,11 @@ const Hello = observer((props) => {
       <div style={{ margin: 50 }}>{props.children}</div>
     </div>
   );
-});
+}, { displayName: 'Hello' });
 
 const Page = observer((props) => {
   return <div>{props.children}</div>;
-});
+}, { displayName: 'Page' });
 
 export default () => {
   return (
@@ -243,7 +243,7 @@ const useDragEnd = () => {
 
 const Page = observer((props) => {
   return <DndContext onDragEnd={useDragEnd()}>{props.children}</DndContext>;
-});
+}, { displayName: 'Page' });
 
 function Draggable(props) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
@@ -292,7 +292,7 @@ const Block = observer((props) => {
       </div>
     </Droppable>
   );
-});
+}, { displayName: 'Block' });
 
 export default function App() {
   return (

@@ -1,18 +1,19 @@
 import { DownOutlined, PlusOutlined } from '@ant-design/icons';
-import { ArrayTable } from '@formily/antd';
-import { ISchema, useForm } from '@formily/react';
+import { ArrayTable } from '@formily/antd-v5';
+import { ISchema, useField, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import { Button, Dropdown, Menu } from 'antd';
+import { Button, Dropdown, MenuProps } from 'antd';
 import { cloneDeep } from 'lodash';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
 import { RecordProvider, useRecord } from '../../record-provider';
-import { ActionContext, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
+import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
+import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
-import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import * as components from './components';
+import { TemplateSummay } from './components/TemplateSummay';
 import { templateOptions } from './templates';
 
 const getSchema = (schema, category, compile): ISchema => {
@@ -30,6 +31,7 @@ const getSchema = (schema, category, compile): ISchema => {
   const initialValue: any = {
     name: `t_${uid()}`,
     template: schema.name,
+    view: schema.name === 'view',
     category,
     ...cloneDeep(schema.default),
   };
@@ -61,7 +63,7 @@ const getSchema = (schema, category, compile): ISchema => {
         properties: {
           summary: {
             type: 'void',
-            'x-component': 'FieldSummary',
+            'x-component': 'TemplateSummay',
             'x-component-props': {
               schemaKey: schema.name,
             },
@@ -84,7 +86,7 @@ const getSchema = (schema, category, compile): ISchema => {
                 'x-component': 'Action',
                 'x-component-props': {
                   type: 'primary',
-                  useAction: () => useCreateCollection(),
+                  useAction: () => useCreateCollection(schema),
                 },
               },
             },
@@ -96,7 +98,7 @@ const getSchema = (schema, category, compile): ISchema => {
 };
 
 const useDefaultCollectionFields = (values) => {
-  let defaults = values.fields ? [...values.fields] : [];
+  const defaults = values.fields ? [...values.fields] : [];
   const { autoGenId = true, createdAt = true, createdBy = true, updatedAt = true, updatedBy = true } = values;
   if (autoGenId) {
     const pk = values.fields.find((f) => f.primaryKey);
@@ -188,34 +190,46 @@ const useDefaultCollectionFields = (values) => {
   return defaults;
 };
 
-const useCreateCollection = () => {
+const useCreateCollection = (schema?: any) => {
   const form = useForm();
   const { refreshCM } = useCollectionManager();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   const { resource } = useResourceContext();
+  const field = useField();
   return {
     async run() {
-      await form.submit();
-      const values = cloneDeep(form.values);
-      const fields = useDefaultCollectionFields(values);
-      if (values.autoCreateReverseField) {
-      } else {
-        delete values.reverseField;
+      field.data = field.data || {};
+      field.data.loading = true;
+      try {
+        await form.submit();
+        const values = cloneDeep(form.values);
+        if (schema?.events?.beforeSubmit) {
+          schema.events.beforeSubmit(values);
+        }
+        const fields = values?.template !== 'view' ? useDefaultCollectionFields(values) : values.fields;
+        if (values.autoCreateReverseField) {
+        } else {
+          delete values.reverseField;
+        }
+        delete values.id;
+        delete values.autoCreateReverseField;
+
+        await resource.create({
+          values: {
+            logging: true,
+            ...values,
+            fields,
+          },
+        });
+        ctx.setVisible(false);
+        await form.reset();
+        field.data.loading = false;
+        refresh();
+        await refreshCM();
+      } catch (error) {
+        field.data.loading = false;
       }
-      delete values.id;
-      delete values.autoCreateReverseField;
-      await resource.create({
-        values: {
-          logging: true,
-          ...values,
-          fields,
-        },
-      });
-      ctx.setVisible(false);
-      await form.reset();
-      refresh();
-      await refreshCM();
     },
   };
 };
@@ -232,34 +246,41 @@ export const AddCollectionAction = (props) => {
   const [schema, setSchema] = useState({});
   const compile = useCompile();
   const { t } = useTranslation();
-  const items = templateOptions().map((option) => {
-    return { label: compile(option.title), key: option.name };
-  });
+  const collectionTemplates = useMemo(templateOptions, []);
+  const items = useMemo(() => {
+    const result = [];
+    collectionTemplates.forEach((item) => {
+      if (item.divider) {
+        result.push({
+          type: 'divider',
+        });
+      }
+      result.push({ label: compile(item.title), key: item.name });
+    });
+    return result;
+  }, [collectionTemplates]);
   const {
     state: { category },
   } = useResourceActionContext();
+  const menu = useMemo<MenuProps>(() => {
+    return {
+      style: {
+        maxHeight: '60vh',
+        overflow: 'auto',
+      },
+      onClick: (info) => {
+        const schema = getSchema(getTemplate(info.key), category, compile);
+        setSchema(schema);
+        setVisible(true);
+      },
+      items,
+    };
+  }, [category, items]);
+
   return (
     <RecordProvider record={record}>
-      <ActionContext.Provider value={{ visible, setVisible }}>
-        <Dropdown
-          getPopupContainer={getContainer}
-          trigger={trigger}
-          align={align}
-          overlay={
-            <Menu
-              style={{
-                maxHeight: '60vh',
-                overflow: 'auto',
-              }}
-              onClick={(info) => {
-                const schema = getSchema(getTemplate(info.key), category, compile);
-                setSchema(schema);
-                setVisible(true);
-              }}
-              items={items}
-            />
-          }
-        >
+      <ActionContextProvider value={{ visible, setVisible }}>
+        <Dropdown getPopupContainer={getContainer} trigger={trigger} align={align} menu={menu}>
           {children || (
             <Button icon={<PlusOutlined />} type={'primary'}>
               {t('Create collection')} <DownOutlined />
@@ -268,7 +289,7 @@ export const AddCollectionAction = (props) => {
         </Dropdown>
         <SchemaComponent
           schema={schema}
-          components={{ ...components, ArrayTable }}
+          components={{ ...components, ArrayTable, TemplateSummay }}
           scope={{
             getContainer,
             useCancelAction,
@@ -279,7 +300,7 @@ export const AddCollectionAction = (props) => {
             ...scope,
           }}
         />
-      </ActionContext.Provider>
+      </ActionContextProvider>
     </RecordProvider>
   );
 };

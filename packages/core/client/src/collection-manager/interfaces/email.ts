@@ -1,3 +1,4 @@
+import { ISchema } from '@formily/react';
 import { defaultProps, operators, unique } from './properties';
 import { IField } from './types';
 
@@ -18,6 +19,7 @@ export const email: IField = {
       'x-validator': 'email',
     },
   },
+  availableTypes: ['string'],
   hasDefaultValue: true,
   properties: {
     ...defaultProps,
@@ -25,5 +27,11 @@ export const email: IField = {
   },
   filterable: {
     operators: operators.string,
+  },
+  schemaInitialize(schema: ISchema, { block }) {
+    if (['Table', 'Kanban'].includes(block)) {
+      schema['x-component-props'] = schema['x-component-props'] || {};
+      schema['x-component-props']['ellipsis'] = true;
+    }
   },
 };

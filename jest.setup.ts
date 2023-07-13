@@ -1,13 +1,8 @@
-import prettyFormat from 'pretty-format';
+import dotenv from 'dotenv';
+import path from 'path';
 
-global['prettyFormat'] = prettyFormat;
+dotenv.config({ path: path.resolve(process.cwd(), '.env.test') });
 
-jest.setTimeout(300000);
-
-// 把 console.error 转换成 error，方便断言
-(() => {
-  const spy = jest.spyOn(console, 'error');
-  afterAll(() => {
-    spy.mockRestore();
-  });
-})();
+// 当前jest版本低，polyfill
+import { TextEncoder, TextDecoder } from 'util';
+Object.assign(global, { TextDecoder, TextEncoder });

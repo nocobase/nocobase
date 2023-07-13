@@ -1,4 +1,5 @@
 import { ISchema } from '@formily/react';
+import { ReactNode } from 'react';
 
 export interface CollectionManagerOptions {
   service?: any;
@@ -6,6 +7,8 @@ export interface CollectionManagerOptions {
   collections?: any[];
   templates?: any;
   refreshCM?: () => Promise<void>;
+  children?: ReactNode;
+  updateCollection?: (collection: any) => void;
 }
 
 export interface FieldOptions {
@@ -24,6 +27,8 @@ export interface CollectionOptions {
   sortable?: any;
   fields?: FieldOptions[];
   inherits?: string[];
+  tree?: string;
+  template?: string;
 }
 
 export interface ICollectionProviderProps {

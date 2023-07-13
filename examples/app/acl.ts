@@ -32,7 +32,7 @@ app.acl.define({
   role: 'admin',
   actions: {
     'test:export': {
-      fields: ['a1', 'b1']
+      fields: ['a1', 'b1'],
     },
   },
 });

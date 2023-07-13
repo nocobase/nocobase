@@ -16,11 +16,12 @@ export const phone: IField = {
       // title,
       'x-component': 'Input',
       'x-component-props': {
-        type: 'tel'
+        type: 'tel',
       },
       // 'x-validator': 'phone',
     },
   },
+  availableTypes: ['string'],
   hasDefaultValue: true,
   properties: {
     ...defaultProps,

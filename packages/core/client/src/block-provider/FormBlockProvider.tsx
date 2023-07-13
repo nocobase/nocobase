@@ -1,17 +1,18 @@
 import { createForm } from '@formily/core';
-import { useField } from '@formily/react';
+import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
+import { isEmpty } from 'lodash';
 import { Spin } from 'antd';
-import isEmpty from 'lodash/isEmpty';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import { useCollection } from '../collection-manager';
 import { RecordProvider, useRecord } from '../record-provider';
-import { useDesignable } from '../schema-component';
+import { useActionContext, useDesignable } from '../schema-component';
+import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v2/Templates';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 
 export const FormBlockContext = createContext<any>({});
 
 const InternalFormBlockProvider = (props) => {
-  const { action, readPretty } = props;
+  const { action, readPretty, params } = props;
   const field = useField();
   const form = useMemo(
     () =>
@@ -20,33 +21,47 @@ const InternalFormBlockProvider = (props) => {
       }),
     [],
   );
-  const { resource, service } = useBlockRequestContext();
+  const { resource, service, updateAssociationValues } = useBlockRequestContext();
   const formBlockRef = useRef();
   const record = useRecord();
-  if (service.loading) {
+  if (service.loading && Object.keys(form?.initialValues)?.length === 0 && action) {
     return <Spin />;
   }
   return (
     <FormBlockContext.Provider
       value={{
+        params,
         action,
         form,
         field,
         service,
         resource,
-        updateAssociationValues: [],
+        updateAssociationValues,
         formBlockRef,
       }}
     >
       {readPretty ? (
         <RecordProvider parent={isEmpty(record?.__parent) ? record : record?.__parent} record={service?.data?.data}>
-          <div ref={formBlockRef}>{props.children}</div>
+          <div ref={formBlockRef}>
+            <RenderChildrenWithDataTemplates form={form} />
+          </div>
         </RecordProvider>
       ) : (
-        <div ref={formBlockRef}>{props.children}</div>
+        <div ref={formBlockRef}>
+          <RenderChildrenWithDataTemplates form={form} />
+        </div>
       )}
     </FormBlockContext.Provider>
   );
+};
+
+export const useIsEmptyRecord = () => {
+  const record = useRecord();
+  const keys = Object.keys(record);
+  if (keys.includes('__parent')) {
+    return keys.length > 1;
+  }
+  return keys.length > 0;
 };
 
 export const FormBlockProvider = (props) => {
@@ -55,14 +70,16 @@ export const FormBlockProvider = (props) => {
   const { __collection } = record;
   const currentCollection = useCollection();
   const { designable } = useDesignable();
+  const isEmptyRecord = useIsEmptyRecord();
   let detailFlag = false;
-  if (Object.keys(record).length > 0) {
+  if (isEmptyRecord) {
     detailFlag = true;
     if (!designable && __collection) {
       detailFlag = __collection === collection;
     }
   }
-  const createFlag = (currentCollection.name === collection && !Object.keys(record).length) || !currentCollection.name;
+  const createFlag =
+    (currentCollection.name === (collection?.name || collection) && !isEmptyRecord) || !currentCollection.name;
   return (
     (detailFlag || createFlag) && (
       <BlockProvider {...props} block={'form'}>
@@ -78,10 +95,48 @@ export const useFormBlockContext = () => {
 
 export const useFormBlockProps = () => {
   const ctx = useFormBlockContext();
+  const record = useRecord();
+  const { fieldSchema } = useActionContext();
+  const addChild = fieldSchema?.['x-component-props']?.addChild;
   useEffect(() => {
-    ctx.form.setInitialValues(ctx.service?.data?.data);
-  }, []);
+    if (addChild) {
+      ctx.form?.query('parent').take((field) => {
+        field.disabled = true;
+        field.value = new Proxy({ ...record }, {});
+      });
+    }
+  });
+
+  useEffect(() => {
+    if (!ctx?.service?.loading) {
+      ctx.form?.setInitialValues(ctx.service?.data?.data);
+    }
+  }, [ctx?.service?.loading]);
   return {
     form: ctx.form,
   };
+};
+
+const RenderChildrenWithDataTemplates = ({ form }) => {
+  const FieldSchema = useFieldSchema();
+  const { findComponent } = useDesignable();
+  const field = useField();
+  const Component = findComponent(field.component?.[0]) || React.Fragment;
+
+  return (
+    <Component {...field.componentProps}>
+      <DataTemplateSelect style={{ marginBottom: 18 }} form={form} />
+      <RecursionField schema={FieldSchema} onlyRenderProperties />
+    </Component>
+  );
+};
+
+export const findFormBlock = (schema: Schema) => {
+  while (schema) {
+    if (schema['x-decorator'] === 'FormBlockProvider') {
+      return schema;
+    }
+    schema = schema.parent;
+  }
+  return null;
 };

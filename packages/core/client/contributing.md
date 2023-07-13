@@ -57,5 +57,5 @@ export default () => <h1>Hello NocoBase!</h1>;
 也可以引用 demo 文件
 
 ```markdown
-<code src="./demos/dmeo1.tsx"/>
+<code src="./demos/dmeo1.tsx"></code>
 ```

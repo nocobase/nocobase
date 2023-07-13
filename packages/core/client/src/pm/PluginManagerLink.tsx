@@ -1,27 +1,30 @@
 import { ApiOutlined, SettingOutlined } from '@ant-design/icons';
-import { Button, Dropdown, Menu } from 'antd';
-import React, { useContext, useState } from 'react';
+import { Button, Dropdown, MenuProps, Tooltip } from 'antd';
+import _ from 'lodash';
+import React, { useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useACLRoleContext } from '../acl/ACLProvider';
-import { ActionContext, useCompile } from '../schema-component';
-import { getPluginsTabs, SettingsCenterContext } from './index';
+import { ActionContextProvider, useCompile } from '../schema-component';
+import { SettingsCenterContext, getPluginsTabs } from './index';
 
 export const PluginManagerLink = () => {
   const { t } = useTranslation();
-  const history = useHistory();
+  const navigate = useNavigate();
   return (
-    <Button
-      icon={<ApiOutlined />}
-      title={t('Plugin manager')}
-      onClick={() => {
-        history.push('/admin/pm/list');
-      }}
-    />
+    <Tooltip title={t('Plugin manager')}>
+      <Button
+        icon={<ApiOutlined />}
+        title={t('Plugin manager')}
+        onClick={() => {
+          navigate('/admin/pm/list');
+        }}
+      />
+    </Tooltip>
   );
 };
 
-const getBookmarkTabs = (data) => {
+const getBookmarkTabs = _.memoize((data) => {
   const bookmarkTabs = [];
   data.forEach((plugin) => {
     const tabs = plugin.tabs;
@@ -30,51 +33,43 @@ const getBookmarkTabs = (data) => {
     });
   });
   return bookmarkTabs;
-};
+});
 export const SettingsCenterDropdown = () => {
   const { snippets = [] } = useACLRoleContext();
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
   const compile = useCompile();
-  const history = useHistory();
+  const navigate = useNavigate();
   const itemData = useContext(SettingsCenterContext);
   const pluginsTabs = getPluginsTabs(itemData, snippets);
   const bookmarkTabs = getBookmarkTabs(pluginsTabs);
+  const menu = useMemo<MenuProps>(() => {
+    return {
+      items: [
+        ...bookmarkTabs.map((tab) => ({
+          key: `/admin/settings/${tab.path}`,
+          label: compile(tab.title),
+        })),
+        { type: 'divider' },
+        {
+          key: '/admin/settings',
+          label: t('All plugin settings'),
+        },
+      ],
+      onClick({ key }) {
+        navigate(key);
+      },
+    };
+  }, [bookmarkTabs]);
+
   return (
-    <ActionContext.Provider value={{ visible, setVisible }}>
-      <Dropdown
-        placement="bottom"
-        overlay={
-          <Menu>
-            {bookmarkTabs.map((tab) => {
-              return (
-                <Menu.Item
-                  onClick={() => {
-                    history.push('/admin/settings/' + tab.path);
-                  }}
-                  key={tab.path}
-                >
-                  {compile(tab.title)}
-                </Menu.Item>
-              );
-            })}
-            <Menu.Divider></Menu.Divider>
-            <Menu.Item
-              onClick={() => {
-                history.push('/admin/settings');
-              }}
-              key="/admin/settings"
-            >
-              {t('All plugin settings')}
-            </Menu.Item>
-          </Menu>
-        }
-      >
+    <ActionContextProvider value={{ visible, setVisible }}>
+      <Dropdown placement="bottom" menu={menu}>
         <Button
           icon={<SettingOutlined />}
           // title={t('All plugin settings')}
         />
       </Dropdown>
-    </ActionContext.Provider>
+    </ActionContextProvider>
   );
 };

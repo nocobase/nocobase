@@ -1,9 +1,0 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
-
-exports[`route-switch case 1 1`] = `
-<div>
-  <h1>
-    Home
-  </h1>
-</div>
-`;

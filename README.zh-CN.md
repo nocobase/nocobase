@@ -6,6 +6,11 @@
 
 NocoBase 正处在早期开发阶段，可能变动频繁，请谨慎用于生产环境。
 
+## 最近重要更新
+
+- [v0.11: New client application, plugin and router - 2023/07/08](http://docs-cn.nocobase.com/welcome/release/v11-changelog)
+- [v0.10: Update instructions - 2023/06/23](http://docs-cn.nocobase.com/welcome/release/v10-changelog)
+
 ## 我们在招聘
 
 我们在寻找全职、远程的产品设计、开发、测试的新同事加入团队，如果你对 NocoBase 有强烈的兴趣，欢迎给我们发邮件：hello@nocobase.com

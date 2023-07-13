@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet';
+import { Plugin } from '../application/Plugin';
 import { useSystemSettings } from '../system-settings';
 
 interface DocumentTitleContextProps {
@@ -35,11 +36,7 @@ export const DocumentTitleProvider: React.FC<{ addonBefore?: string; addonAfter?
 
 export const RemoteDocumentTitleProvider: React.FC = (props) => {
   const ctx = useSystemSettings();
-  return (
-    <DocumentTitleProvider addonAfter={ctx?.data?.data?.title}>
-      {props.children}
-    </DocumentTitleProvider>
-  );
+  return <DocumentTitleProvider addonAfter={ctx?.data?.data?.title}>{props.children}</DocumentTitleProvider>;
 };
 
 export const useDocumentTitle = () => {
@@ -52,3 +49,9 @@ export const useCurrentDocumentTitle = (title: string) => {
     setTitle(title);
   }, []);
 };
+
+export class RemoteDocumentTitlePlugin extends Plugin {
+  async load() {
+    this.app.use(RemoteDocumentTitleProvider, this.options);
+  }
+}

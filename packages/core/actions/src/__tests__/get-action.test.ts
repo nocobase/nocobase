@@ -1,5 +1,5 @@
-import { MockServer, mockServer } from '@nocobase/test';
 import { registerActions } from '@nocobase/actions';
+import { MockServer, mockServer } from './';
 
 describe('get action', () => {
   let app: MockServer;
@@ -10,9 +10,7 @@ describe('get action', () => {
   let Profile;
 
   beforeEach(async () => {
-    app = mockServer({
-      dataWrapping: false,
-    });
+    app = mockServer();
     registerActions(app);
 
     PostTag = app.collection({
@@ -83,6 +81,7 @@ describe('get action', () => {
       });
 
     const body = response.body;
+
     expect(body['id']).toEqual(p1.get('id'));
   });
 

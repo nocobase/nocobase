@@ -1,18 +1,51 @@
 import { ArrayField } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import uniq from 'lodash/uniq';
-import React, { createContext, useContext, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useCollectionManager } from '../collection-manager';
+import { isInFilterFormBlock } from '../filter-provider';
 import { RecordProvider, useRecord } from '../record-provider';
+import { SchemaComponentOptions } from '../schema-component';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
-import { useFormBlockContext } from './FormBlockProvider';
+import { mergeFilter } from './SharedFilterProvider';
+
+type Params = {
+  filter?: any;
+  pageSize?: number;
+  page?: number;
+  sort?: any;
+};
 
 export const TableSelectorContext = createContext<any>({});
+const TableSelectorParamsContext = createContext<Params>({}); // 用于传递参数
+
+type TableSelectorProviderProps = {
+  params: Record<string, any>;
+  collection?: string;
+  dragSort?: boolean;
+  children?: any;
+};
+
+const useTableSelectorParams = () => {
+  return useContext(TableSelectorParamsContext);
+};
+
+export const TableSelectorParamsProvider = ({ params, children }: { params: Params; children: any }) => {
+  const parentParams = useTableSelectorParams();
+  try {
+    params.filter = mergeFilter([parentParams.filter, params.filter]);
+    params = { ...parentParams, ...params };
+  } catch (err) {
+    console.error(err);
+  }
+  return <TableSelectorParamsContext.Provider value={params}>{children}</TableSelectorParamsContext.Provider>;
+};
 
 const InternalTableSelectorProvider = (props) => {
   const { params, rowKey, extraFilter } = props;
   const field = useField();
   const { resource, service } = useBlockRequestContext();
+  const [expandFlag, setExpandFlag] = useState(false);
   // if (service.loading) {
   //   return <Spin />;
   // }
@@ -26,6 +59,10 @@ const InternalTableSelectorProvider = (props) => {
           params,
           extraFilter,
           rowKey,
+          expandFlag,
+          setExpandFlag: () => {
+            setExpandFlag(!expandFlag);
+          },
         }}
       >
         <RenderChildrenWithAssociationFilter {...props} />
@@ -97,27 +134,38 @@ const useAssociationNames = (collection) => {
   );
 };
 
-export const TableSelectorProvider = (props) => {
+export const TableSelectorProvider = (props: TableSelectorProviderProps) => {
+  const parentParams = useTableSelectorParams();
   const fieldSchema = useFieldSchema();
-  const ctx = useFormBlockContext();
   const { getCollectionJoinField, getCollectionFields } = useCollectionManager();
   const record = useRecord();
-
+  const { getCollection } = useCollectionManager();
+  const collection = getCollection(props.collection);
+  const { treeTable } = fieldSchema?.['x-decorator-props'] || {};
   const collectionFieldSchema = recursiveParent(fieldSchema, 'CollectionField');
-  // const value = ctx.form.query(collectionFieldSchema?.name).value();
   const collectionField = getCollectionJoinField(collectionFieldSchema?.['x-collection-field']);
-
-  const params = { ...props.params };
   const appends = useAssociationNames(props.collection);
+  let params = { ...props.params };
   if (props.dragSort) {
     params['sort'] = ['sort'];
+  }
+  if (collection?.tree && treeTable !== false) {
+    params['tree'] = true;
+    if (collectionFieldSchema.name === 'parent') {
+      params.filter = {
+        ...(params.filter ?? {}),
+        id: record.id && {
+          $ne: record.id,
+        },
+      };
+    }
   }
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
   }
   let extraFilter;
   if (collectionField) {
-    if (['oho', 'o2m'].includes(collectionField.interface)) {
+    if (['oho', 'o2m'].includes(collectionField.interface) && !isInFilterFormBlock(fieldSchema)) {
       if (record?.[collectionField.sourceKey]) {
         extraFilter = {
           $or: [
@@ -141,7 +189,7 @@ export const TableSelectorProvider = (props) => {
         };
       }
     }
-    if (['obo'].includes(collectionField.interface)) {
+    if (['obo'].includes(collectionField.interface) && !isInFilterFormBlock(fieldSchema)) {
       const fields = getCollectionFields(collectionField.target);
       const targetField = fields.find((f) => f.foreignKey && f.foreignKey === collectionField.foreignKey);
       if (targetField) {
@@ -180,10 +228,20 @@ export const TableSelectorProvider = (props) => {
       params['filter'] = extraFilter;
     }
   }
+
+  try {
+    params.filter = mergeFilter([parentParams.filter, params.filter]);
+    params = { ...parentParams, ...params };
+  } catch (err) {
+    console.error(err);
+  }
+
   return (
-    <BlockProvider {...props} params={params}>
-      <InternalTableSelectorProvider {...props} params={params} extraFilter={extraFilter} />
-    </BlockProvider>
+    <SchemaComponentOptions scope={{ treeTable }}>
+      <BlockProvider {...props} params={params}>
+        <InternalTableSelectorProvider {...props} params={params} extraFilter={extraFilter} />
+      </BlockProvider>
+    </SchemaComponentOptions>
   );
 };
 

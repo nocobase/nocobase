@@ -6,11 +6,17 @@
       "request": "launch",
       "name": "Debug Server",
       "runtimeArgs": [
-        "-r", "dotenv/config",
-        "-r", "tsconfig-paths/register",
-        "-r", "ts-node/register"
+        "-r",
+        "dotenv/config",
+        "-r",
+        "tsconfig-paths/register",
+        "-r",
+        "ts-node/register"
       ],
-      "args": ["${workspaceRoot}/packages/app/server/src/index.ts", "start"],
+      "args": [
+        "${workspaceRoot}/packages/app/server/src/index.ts",
+        "start"
+      ],
       "skipFiles": [
         "<node_internals>/**"
       ],
@@ -33,7 +39,39 @@
         "<node_internals>/**"
       ],
       "console": "integratedTerminal",
-      "internalConsoleOptions": "neverOpen"
+      "internalConsoleOptions": "neverOpen",
+      "windows": {
+        "runtimeArgs": [
+          "run",
+          "--inspect-brk",
+          "test",
+          "--runInBand",
+          "/${fileBasename}"
+        ],
+      }
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug Client Tests",
+      "runtimeExecutable": "yarn",
+      "runtimeArgs": [
+        "run",
+        "test:client",
+        "${file}"
+      ],
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "windows": {
+        "runtimeArgs": [
+          "run",
+          "test:client",
+          "${relativeFile}"
+        ],
+      }
     },
     {
       "type": "node",

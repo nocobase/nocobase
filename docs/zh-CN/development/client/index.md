@@ -7,7 +7,6 @@ NocoBase 客户端的扩展大多以 Provider 的形式提供。
 - APIClientProvider
 - I18nextProvider
 - AntdConfigProvider
-- RemoteRouteSwitchProvider
 - SystemSettingsProvider
 - PluginManagerProvider
 - SchemaComponentProvider
@@ -42,6 +41,7 @@ const HelloProvider = React.memo((props) => {
   }
   return <>{props.children}</>
 });
+HelloProvider.displayName = 'HelloProvider'
 
 app.use(HelloProvider);
 ```

@@ -1,4 +1,4 @@
-import { FormDrawer, FormLayout } from '@formily/antd';
+import { FormDrawer, FormLayout } from '@formily/antd-v5';
 import { createForm } from '@formily/core';
 import { FormContext, ISchema, SchemaOptionsContext } from '@formily/react';
 import { uid } from '@formily/shared';
@@ -18,7 +18,7 @@ import {
   SchemaComponentProvider,
   SchemaInitializer,
   SchemaInitializerProvider,
-  useCollectionManager
+  useCollectionManager,
 } from '@nocobase/client';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useContext } from 'react';
@@ -82,7 +82,7 @@ const FormItemInitializer = (props) => {
         collection.fields.push(options);
         form.setValuesIn(name, uid());
 
-        const { values } = await FormDrawer('Add field', () => {
+        await FormDrawer('Add field', () => {
           return (
             <CollectionManagerContext.Provider value={cm}>
               <AntdSchemaComponentProvider>

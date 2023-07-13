@@ -1,158 +1,158 @@
-import { Spin } from 'antd';
+import { APIClientOptions } from '@nocobase/sdk';
 import { i18n as i18next } from 'i18next';
-import React, { useEffect, useState } from 'react';
+import get from 'lodash/get';
+import merge from 'lodash/merge';
+import set from 'lodash/set';
+import React, { ComponentType, FC, ReactElement } from 'react';
+import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
-import { Link, NavLink } from 'react-router-dom';
-import { ACLProvider } from '../acl';
-import { AntdConfigProvider } from '../antd-config-provider';
+import { Link, NavLink, Navigate } from 'react-router-dom';
 import { APIClient, APIClientProvider } from '../api-client';
-import { BlockSchemaComponentProvider } from '../block-provider';
-import { RemoteDocumentTitleProvider } from '../document-title';
 import { i18n } from '../i18n';
-import { PinnedPluginListProvider } from '../plugin-manager';
-import PMProvider, { PluginManagerLink, SettingsCenterDropdown } from '../pm';
-import {
-  AdminLayout,
-  AuthLayout,
-  RemoteRouteSwitchProvider,
-  RouteSchemaComponent,
-  RouteSwitch,
-  useRoutes
-} from '../route-switch';
-import {
-  AntdSchemaComponentProvider,
-  DesignableSwitch,
-  MenuItemInitializers,
-  SchemaComponentProvider
-} from '../schema-component';
-import { SchemaInitializerProvider } from '../schema-initializer';
-import { BlockTemplateDetails, BlockTemplatePage } from '../schema-templates';
-import { SystemSettingsProvider } from '../system-settings';
-import { SigninPage, SignupPage } from '../user';
-import { SigninPageExtensionProvider } from '../user/SigninPageExtension';
-import { compose } from './compose';
+import { PluginManager, PluginType } from './PluginManager';
+import { ComponentTypeAndString, RouterManager, RouterOptions } from './RouterManager';
+import { AppComponent, BlankComponent, defaultAppComponents } from './components';
+import { compose, normalizeContainer } from './utils';
 
+export type ComponentAndProps<T = any> = [ComponentType, T];
 export interface ApplicationOptions {
-  apiClient?: any;
-  i18n?: any;
-  plugins?: any[];
+  apiClient?: APIClientOptions;
+  i18n?: i18next;
+  providers?: (ComponentType | ComponentAndProps)[];
+  plugins?: PluginType[];
+  components?: Record<string, ComponentType>;
+  scopes?: Record<string, any>;
+  router?: RouterOptions;
   dynamicImport?: any;
 }
 
-export const getCurrentTimezone = () => {
-  const timezoneOffset = new Date().getTimezoneOffset() / -60;
-  const timezone = String(timezoneOffset).padStart(2, '0') + ':00';
-  return (timezoneOffset > 0 ? '+' : '-') + timezone;
-};
-
-export type PluginCallback = () => Promise<any>;
-
-const App = React.memo((props: any) => {
-  const C = compose(...props.providers)(() => {
-    const routes = useRoutes();
-    return (
-      <div>
-        <RouteSwitch routes={routes} />
-      </div>
-    );
-  });
-  return <C />;
-});
-
 export class Application {
-  providers = [];
-  mainComponent = null;
-  apiClient: APIClient;
-  i18n: i18next;
-  plugins: PluginCallback[] = [];
-  options: ApplicationOptions;
+  public providers: ComponentAndProps[] = [];
+  public router: RouterManager;
+  public scopes: Record<string, any> = {};
+  public i18n: i18next;
+  public apiClient: APIClient;
+  public components: Record<string, ComponentType> = { ...defaultAppComponents };
+  public pm: PluginManager;
 
-  constructor(options: ApplicationOptions) {
-    this.options = options;
-    this.apiClient = new APIClient({
-      baseURL: process.env.API_BASE_URL,
-      headers: {
-        'X-Hostname': window?.location?.hostname,
-        'X-Timezone': getCurrentTimezone(),
-      },
-      ...options.apiClient,
-    });
+  constructor(protected options: ApplicationOptions = {}) {
+    this.scopes = merge(this.scopes, options.scopes);
+    this.components = merge(this.components, options.components);
+    this.apiClient = new APIClient(options.apiClient);
     this.i18n = options.i18n || i18n;
+    this.router = new RouterManager({
+      ...options.router,
+      renderComponent: this.renderComponent.bind(this),
+    });
+    this.pm = new PluginManager(options.plugins, this);
+    this.addDefaultProviders();
+    this.addReactRouterComponents();
+    this.addProviders(options.providers || []);
+  }
+
+  private addDefaultProviders() {
     this.use(APIClientProvider, { apiClient: this.apiClient });
     this.use(I18nextProvider, { i18n: this.i18n });
-    this.use(AntdConfigProvider, { remoteLocale: true });
-    this.use(RemoteRouteSwitchProvider, {
-      components: {
-        AuthLayout,
-        AdminLayout,
-        RouteSchemaComponent,
-        SigninPage,
-        SignupPage,
-        BlockTemplatePage,
-        BlockTemplateDetails,
-      },
-    });
-    this.use(SystemSettingsProvider);
-    this.use(PinnedPluginListProvider, {
-      items: {
-        ui: { order: 100, component: 'DesignableSwitch', pin: true, snippet: 'ui.*' },
-        pm: { order: 200, component: 'PluginManagerLink', pin: true, snippet: 'pm' },
-        sc: { order: 300, component: 'SettingsCenterDropdown', pin: true, snippet: 'pm.*' },
-      },
-    });
-    this.use(SchemaComponentProvider, {
-      components: { Link, NavLink, DesignableSwitch, PluginManagerLink, SettingsCenterDropdown },
-    });
-    this.use(SchemaInitializerProvider, {
-      initializers: {
-        MenuItemInitializers,
-      },
-    });
-    this.use(BlockSchemaComponentProvider);
-    this.use(AntdSchemaComponentProvider);
-    this.use(SigninPageExtensionProvider);
-    this.use(ACLProvider);
-    this.use(RemoteDocumentTitleProvider);
-    this.use(PMProvider);
   }
 
-  use(component, props?: any) {
-    this.providers.push(props ? [component, props] : component);
+  private addReactRouterComponents() {
+    this.addComponents({
+      Link,
+      Navigate: Navigate as ComponentType,
+      NavLink,
+    });
   }
 
-  main(mainComponent: any) {
-    this.mainComponent = mainComponent;
+  get dynamicImport() {
+    return this.options.dynamicImport;
   }
 
-  /**
-   * TODO
-   */
-  plugin(plugin: PluginCallback) {
-    this.plugins.push(plugin);
+  getComposeProviders() {
+    const Providers = compose(...this.providers)(BlankComponent);
+    Providers.displayName = 'Providers';
+    return Providers;
   }
 
-  render() {
-    return (props: any) => {
-      const { plugins = [], dynamicImport } = this.options;
-      const [loading, setLoading] = useState(false);
-      useEffect(() => {
-        setLoading(true);
-        (async () => {
-          const res = await this.apiClient.request({ url: 'app:getPlugins' });
-          if (Array.isArray(res.data?.data)) {
-            plugins.push(...res.data.data);
-          }
-          for (const plugin of plugins) {
-            const pluginModule = await dynamicImport(plugin);
-            this.use(pluginModule.default);
-          }
-          setLoading(false);
-        })();
-      }, []);
-      if (loading) {
-        return <Spin />;
+  use<T = any>(component: ComponentType, props?: T) {
+    return this.addProvider(component, props);
+  }
+
+  addProvider<T = any>(component: ComponentType, props?: T) {
+    return this.providers.push([component, props]);
+  }
+
+  addProviders(providers: (ComponentType | [ComponentType, any])[]) {
+    providers.forEach((provider) => {
+      if (Array.isArray(provider)) {
+        this.addProvider(provider[0], provider[1]);
+      } else {
+        this.addProvider(provider);
       }
-      return <App providers={this.providers} />;
-    };
+    });
+  }
+
+  async load() {
+    return this.pm.load();
+  }
+
+  getComponent<T = any>(Component: ComponentTypeAndString<T>, isShowError = true): ComponentType<T> | undefined {
+    const showError = (msg: string) => isShowError && console.error(msg);
+    if (!Component) {
+      showError(`getComponent called with ${Component}`);
+      return;
+    }
+
+    // ClassComponent or FunctionComponent
+    if (typeof Component === 'function') return Component;
+
+    // Component is a string, try to get it from this.components
+    if (typeof Component === 'string') {
+      const res = get(this.components, Component) as ComponentType<T>;
+      if (!res) {
+        showError(`Component ${Component} not found`);
+        return;
+      }
+      return res;
+    }
+
+    showError(`Component ${Component} should be a string or a React component`);
+    return;
+  }
+
+  renderComponent<T extends {}>(Component: ComponentTypeAndString, props?: T): ReactElement {
+    return React.createElement(this.getComponent(Component), props);
+  }
+
+  addComponent(component: ComponentType, name?: string) {
+    const componentName = name || component.displayName || component.name;
+    if (!componentName) {
+      console.error('Component must have a displayName or pass name as second argument');
+      return;
+    }
+    set(this.components, componentName, component);
+  }
+
+  addComponents(components: Record<string, ComponentType>) {
+    Object.keys(components).forEach((name) => {
+      this.addComponent(components[name], name);
+    });
+  }
+
+  addScopes(scopes: Record<string, any>) {
+    this.scopes = merge(this.scopes, scopes);
+  }
+
+  getRootComponent() {
+    const Root: FC = () => <AppComponent app={this} />;
+    return Root;
+  }
+
+  mount(containerOrSelector: Element | ShadowRoot | string) {
+    const container = normalizeContainer(containerOrSelector);
+    if (!container) return;
+    const App = this.getRootComponent();
+    const root = createRoot(container);
+    root.render(<App />);
+    return root;
   }
 }

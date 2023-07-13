@@ -1,14 +1,12 @@
 import { ISchema, Schema } from '@formily/react';
-import { message } from 'antd';
 import { uid } from '@formily/shared';
+import { message } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { i18n } from '../../../i18n';
 import { CollectionOptions } from '../../types';
-import { CollectionTemplate } from '../components/CollectionTemplate';
 import { CollectionCategory } from '../components/CollectionCategory';
-import { collectionFieldSchema } from './collectionFields';
-
+import { CollectionTemplate } from '../components/CollectionTemplate';
 const compile = (source) => {
   return Schema.compile(source, { t: i18n.t });
 };
@@ -255,16 +253,21 @@ export const collectionTableSchema: ISchema = {
                       'x-component': 'Action.Drawer',
                       'x-component-props': {
                         destroyOnClose: true,
+                        width: '70%',
                       },
                       'x-reactions': (field) => {
                         const i = field.path.segments[1];
-                        const table = field.form.getValuesIn(`table.${i}`);
+                        const key = field.path.segments[0];
+                        const table = field.form.getValuesIn(`${key}.${i}`);
                         if (table) {
                           field.title = `${compile(table.title)} - ${compile('{{ t("Configure fields") }}')}`;
                         }
                       },
                       properties: {
-                        collectionFieldSchema,
+                        collectionFieldSchema: {
+                          type: 'void',
+                          'x-component': 'CollectionFields',
+                        },
                       },
                     },
                   },

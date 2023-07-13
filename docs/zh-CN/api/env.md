@@ -154,14 +154,14 @@ DB_LOGGING=on
 
 ### LOGGER_TRANSPORT
 
-日志 transport，默认值 `console,dailyRotateFile`，可选项
+日志 transport，默认值 `console,dailyRotateFile`，可选项：
 
 - `console`
 - `dailyRotateFile`
 
-### DAILY_ROTATE_FILE_DIRNAME
+### LOGGER_BASE_PATH
 
-`dailyRotateFile` 日志的存储路径，默认为 `storage/logs`
+基于文件的日志存储路径，默认为 `storage/logs`。
 
 ## 临时环境变量
 

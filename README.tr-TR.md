@@ -2,9 +2,16 @@
 
 ![](https://nocobase.oss-cn-beijing.aliyuncs.com/bbcedd403d31cd1ccc4e9709581f5c2f.png)  
 
-**Not:** 📌
+**Note:** 📌
 
 NocoBase, geliştirmenin ilk aşamasındadır ve sık sık değişiklik yaparak geliştiriyoruz. Lütfen üretim ortamlarında dikkatli olun.
+
+NocoBase v0.10 has been released, see [v0.10: update instructions](http://docs.nocobase.com/welcome/release/v10-changelog) for details.
+
+## Recent major updates
+
+- [v0.11: New client application, plugin and router - 2023/07/08](http://docs.nocobase.com/welcome/release/v11-changelog)
+- [v0.10: Update instructions - 2023/06/23](http://docs.nocobase.com/welcome/release/v10-changelog)
 
 ## Çalışma arkadaşımız olabilirsiniz
 

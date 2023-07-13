@@ -53,7 +53,9 @@ export const useDetailsBlockProps = () => {
   const ctx = useDetailsBlockContext();
   useEffect(() => {
     if (!ctx.service.loading) {
-      ctx.form.setValues(ctx.service?.data?.data?.[0] || {});
+      ctx.form.reset().then(() => {
+        ctx.form.setValues(ctx.service?.data?.data?.[0] || {});
+      });
     }
   }, [ctx.service.loading]);
   return {

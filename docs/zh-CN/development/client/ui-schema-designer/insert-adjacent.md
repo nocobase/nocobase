@@ -116,11 +116,11 @@ const Hello = observer((props) => {
       <div style={{ margin: 50 }}>{props.children}</div>
     </div>
   );
-});
+}, { displayName: 'Hello'  });
 
 const Page = observer((props) => {
   return <div>{props.children}</div>;
-});
+}, { displayName: 'Page' });
 
 export default () => {
   return (

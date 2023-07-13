@@ -50,7 +50,7 @@ export function createCache(cacheConfig: ICacheConfig | ICacheConfig[] = createD
     if (cacheConfig.length === 1) {
       return createCacheByICacheConfig(cacheConfig[0]);
     } else {
-      let caches = [];
+      const caches = [];
       for (const cacheConfigEle of cacheConfig) {
         caches.push(createCacheByICacheConfig(cacheConfigEle));
       }

@@ -2,7 +2,7 @@ import { Field } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect } from 'react';
-import { Redirect } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useAPIClient, useRequest } from '../api-client';
 import { useBlockRequestContext } from '../block-provider/BlockProvider';
 import { useCollection } from '../collection-manager';
@@ -12,6 +12,7 @@ import { SchemaComponentOptions, useDesignable } from '../schema-component';
 
 export const ACLContext = createContext<any>({});
 
+// TODO: delete this，replace by `ACLPlugin`
 export const ACLProvider = (props) => {
   return (
     <SchemaComponentOptions
@@ -29,20 +30,6 @@ const getRouteUrl = (props) => {
   return props && getRouteUrl(props?.children?.props);
 };
 
-const getRouteAclCheck = (match, snippets) => {
-  const { url, params } = match;
-  if (url === '/admin/pm/list' || params?.pluginName || params?.name?.includes('settings')) {
-    const pmAclCheck = url === '/admin/pm/list' && snippets.includes('pm');
-    const pluginTabByName = params?.name.split('/');
-    pluginTabByName.shift();
-    const pluginName = params.pluginName || pluginTabByName[0];
-    const tabName = params.tabName || pluginTabByName[1];
-    const pluginTabSnippet = pluginName && tabName && `!pm.${pluginName}.${tabName}`;
-    const pluginTabAclCheck = pluginTabSnippet && !snippets.includes(pluginTabSnippet);
-    return pmAclCheck || pluginTabAclCheck;
-  }
-  return true;
-};
 export const ACLRolesCheckProvider = (props) => {
   const route = getRouteUrl(props.children.props);
   const { setDesignable } = useDesignable();
@@ -66,7 +53,7 @@ export const ACLRolesCheckProvider = (props) => {
     return <Spin />;
   }
   if (result.error) {
-    return <Redirect to={'/signin'} />;
+    return <Navigate replace to={'/signin'} />;
   }
   return <ACLContext.Provider value={result}>{props.children}</ACLContext.Provider>;
 };
@@ -137,7 +124,7 @@ const getIgnoreScope = (options: any = {}) => {
 
 const useAllowedActions = () => {
   const result = useBlockRequestContext() || { service: useResourceActionContext() };
-  return result?.service?.data?.meta?.allowedActions;
+  return result?.allowedActions ?? result?.service?.data?.meta?.allowedActions;
 };
 
 const useResourceName = () => {
@@ -180,11 +167,11 @@ export const ACLCollectionProvider = (props) => {
   const { allowAll, parseAction } = useACLRoleContext();
   const schema = useFieldSchema();
   if (allowAll) {
-    return <>{props.children}</>;
+    return props.children;
   }
-  const actionPath = schema['x-acl-action'];
+  const actionPath = schema?.['x-acl-action'];
   if (!actionPath) {
-    return <>{props.children}</>;
+    return props.children;
   }
   const params = parseAction(actionPath, { schema });
   if (!params) {
@@ -288,5 +275,3 @@ export const ACLMenuItemProvider = (props) => {
   }
   return null;
 };
-
-export default ACLProvider;

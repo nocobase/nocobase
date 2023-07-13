@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
 import { useRecord } from '../../record-provider';
+import { useStyles } from '../style';
 import { useMenuItems } from './MenuItemsProvider';
 
 const findUids = (items) => {
@@ -31,7 +32,7 @@ const getParentUids = (tree, func, path = []) => {
   return [];
 };
 const getChildrenUids = (data = [], arr = []) => {
-  for (let item of data) {
+  for (const item of data) {
     arr.push(item.uid);
     if (item.children && item.children.length) getChildrenUids(item.children, arr);
   }
@@ -39,6 +40,7 @@ const getChildrenUids = (data = [], arr = []) => {
 };
 
 export const MenuConfigure = () => {
+  const { styles } = useStyles();
   const record = useRecord();
   const api = useAPIClient();
   const { items } = useMenuItems();
@@ -86,6 +88,7 @@ export const MenuConfigure = () => {
   };
   return (
     <Table
+      className={styles}
       loading={loading}
       rowKey={'uid'}
       pagination={false}
@@ -116,8 +119,8 @@ export const MenuConfigure = () => {
                   refresh();
                   message.success(t('Saved successfully'));
                 }}
-              />
-              {' '}{t('Accessible')}
+              />{' '}
+              {t('Accessible')}
             </>
           ),
           render: (_, schema) => {

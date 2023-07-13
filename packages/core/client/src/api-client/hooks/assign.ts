@@ -1,3 +1,4 @@
+import { isPlainObject } from '@nocobase/utils/client';
 import deepmerge from 'deepmerge';
 import uniq from 'lodash/uniq';
 
@@ -8,15 +9,6 @@ export type MergeStrategy = MergeStrategyType | MergeStrategyFunc;
 
 export interface MergeStrategies {
   [key: string]: MergeStrategy;
-}
-
-export default function isPlainObject(value) {
-  if (Object.prototype.toString.call(value) !== '[object Object]') {
-    return false;
-  }
-
-  const prototype = Object.getPrototypeOf(value);
-  return prototype === null || prototype === Object.prototype;
 }
 
 function getEnumerableOwnPropertySymbols(target: any): any[] {

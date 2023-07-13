@@ -1,5 +1,11 @@
 export * from './context';
 export * from './PinnedPluginListProvider';
-export * from './PluginManager';
-export * from './PluginManagerProvider';
 
+import { Plugin } from '../application/Plugin';
+import { PinnedPluginListProvider } from './PinnedPluginListProvider';
+
+export class PinnedListPlugin extends Plugin {
+  async load() {
+    this.app.use(PinnedPluginListProvider, this.options.config);
+  }
+}

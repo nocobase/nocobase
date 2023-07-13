@@ -1,8 +1,9 @@
+import { dayjs } from '@nocobase/utils/client';
 import { ConfigProvider, Spin } from 'antd';
-import moment from 'moment';
 import React, { createContext, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../api-client';
+import { Plugin } from '../application/Plugin';
 import { loadConstrueLocale } from './loadConstrueLocale';
 
 export const AppLangContext = createContext<any>({});
@@ -18,6 +19,9 @@ export function AntdConfigProvider(props) {
   const { data, loading } = useRequest(
     {
       url: 'app:getLang',
+      params: {
+        locale: api.auth.locale,
+      },
     },
     {
       onSuccess(data) {
@@ -30,7 +34,7 @@ export function AntdConfigProvider(props) {
           i18n.addResources(data?.data?.lang, key, data?.data?.resources[key] || {});
         });
         loadConstrueLocale(data?.data);
-        moment.locale(data?.data?.moment);
+        dayjs.locale(data?.data?.moment);
         window['cronLocale'] = data?.data?.cron;
       },
       manual: !remoteLocale,
@@ -41,9 +45,15 @@ export function AntdConfigProvider(props) {
   }
   return (
     <AppLangContext.Provider value={data?.data}>
-      <ConfigProvider dropdownMatchSelectWidth={false} {...others} locale={data?.data?.antd || {}}>
+      <ConfigProvider popupMatchSelectWidth={false} {...others} locale={data?.data?.antd || {}}>
         {props.children}
       </ConfigProvider>
     </AppLangContext.Provider>
   );
+}
+
+export class AntdConfigPlugin extends Plugin {
+  async load() {
+    this.app.use(AntdConfigProvider, this.options?.config || {});
+  }
 }

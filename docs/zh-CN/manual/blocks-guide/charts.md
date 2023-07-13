@@ -177,18 +177,24 @@ app.resourcer.registerActionHandlers({
 
 ### 静态数据
 
-https://user-images.githubusercontent.com/1267426/198877269-1c56562b-167a-4808-ada3-578f0872bce1.mp4
+<video width="100%" height="440" controls>
+  <source src="https://user-images.githubusercontent.com/1267426/198877269-1c56562b-167a-4808-ada3-578f0872bce1.mp4" type="video/mp4">
+</video>
 
 
 ### 动态数据
 
-https://user-images.githubusercontent.com/1267426/198877336-6bd85f0b-17c5-40a5-9442-8045717cc7b0.mp4
+<video width="100%" height="440" controls>
+  <source src="https://user-images.githubusercontent.com/1267426/198877336-6bd85f0b-17c5-40a5-9442-8045717cc7b0.mp4" type="video/mp4">
+</video>
 
 
 ### 更多图表
 理论上支持 https://g2plot.antv.vision/en/examples 上的所有图表
 
-https://user-images.githubusercontent.com/1267426/198877347-7fc2544c-b938-4e34-8a83-721b3f62525e.mp4
+<video width="100%" height="440" controls>
+  <source src="https://user-images.githubusercontent.com/1267426/198877347-7fc2544c-b938-4e34-8a83-721b3f62525e.mp4" type="video/mp4">
+</video>
 
 ## JS 表达式
 
@@ -200,5 +206,7 @@ Syntax
 }
 ```
 
-https://user-images.githubusercontent.com/1267426/198877361-808a51cc-6c91-429f-8cfc-8ad7f747645a.mp4
+<video width="100%" height="440" controls>
+  <source src="https://user-images.githubusercontent.com/1267426/198877361-808a51cc-6c91-429f-8cfc-8ad7f747645a.mp4" type="video/mp4">
+</video>
 
