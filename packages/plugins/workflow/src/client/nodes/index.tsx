@@ -235,7 +235,7 @@ function InnerJobButton({ job, ...props }) {
   const { icon, color } = JobStatusOptionsMap[job.status];
 
   return (
-    <Button {...props} shape="circle" className={cx(nodeJobButtonClass, props.className)}>
+    <Button {...props} shape="circle" size="small" className={cx(nodeJobButtonClass, props.className)}>
       <Tag color={color}>{icon}</Tag>
     </Button>
   );
@@ -279,6 +279,7 @@ export function JobButton() {
               <div
                 className={css`
                   display: flex;
+                  align-items: center;
                   gap: 0.5em;
 
                   time {
