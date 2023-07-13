@@ -6,7 +6,6 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 
 import {
   CollectionManagerProvider,
-  FormBlockContext,
   SchemaComponent,
   SchemaComponentContext,
   TableBlockProvider,
@@ -382,13 +381,14 @@ const ManualActionStatusContext = createContext<number | null>(null);
 function ManualActionStatusProvider({ value, children }) {
   const { userJob } = useFlowContext();
   const button = useField();
+  const buttonSchema = useFieldSchema();
 
   useEffect(() => {
     if (userJob.status) {
       button.disabled = true;
-      button.visible = userJob.status === value;
+      button.visible = userJob.status === value && userJob.result._ === buttonSchema.name;
     }
-  }, [userJob.status, value, button]);
+  }, [userJob, value, button]);
 
   return <ManualActionStatusContext.Provider value={value}>{children}</ManualActionStatusContext.Provider>;
 }
@@ -404,13 +404,15 @@ function useSubmit() {
   const { name: formKey } = buttonSchema.parent.parent;
   return {
     async run() {
+      if (userJob.status) {
+        return;
+      }
       await submit();
       await api.resource('users_jobs').submit({
         filterByTk: userJob.id,
         values: {
-          result: { [formKey]: values },
+          result: { [formKey]: values, _: actionKey },
         },
-        actionKey,
       });
       setVisible(false);
       service.refresh();

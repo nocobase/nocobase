@@ -6,7 +6,7 @@ import ManualInstruction from '.';
 
 export async function submit(context: Context, next) {
   const repository = utils.getRepositoryFromParams(context);
-  const { filterByTk, values, actionKey } = context.action.params;
+  const { filterByTk, values } = context.action.params;
   const { currentUser } = context.state;
 
   if (!currentUser) {
@@ -30,7 +30,8 @@ export async function submit(context: Context, next) {
   }
 
   const { forms = {} } = userJob.node.config;
-  const [formKey] = Object.keys(values.result ?? {});
+  const [formKey] = Object.keys(values.result ?? {}).filter(key => key !== '_');
+  const actionKey = values.result?._;
 
   const actionItem = forms[formKey]?.actions?.find((item) => item.key === actionKey);
   // NOTE: validate status
@@ -62,7 +63,7 @@ export async function submit(context: Context, next) {
   userJob.set({
     status: actionItem.status,
     result: actionItem.status
-      ? { [formKey]: Object.assign(values.result[formKey], presetValues) }
+      ? { [formKey]: Object.assign(values.result[formKey], presetValues), _: actionKey }
       : Object.assign(userJob.result ?? {}, values.result),
   });
 

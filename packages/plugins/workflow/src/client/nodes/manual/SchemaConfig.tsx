@@ -9,6 +9,7 @@ import {
   Action,
   ActionContextProvider,
   GeneralSchemaDesigner,
+  InitializerWithSwitch,
   SchemaComponent,
   SchemaComponentContext,
   SchemaInitializer,
@@ -275,7 +276,7 @@ function ManualActionDesigner(props) {
   );
 }
 
-function ActionInitializer({ action, actionProps, insert, ...props }) {
+function ContinueInitializer({ action, actionProps, insert, ...props }) {
   return (
     <SchemaInitializer.Item
       {...props}
@@ -300,6 +301,30 @@ function ActionInitializer({ action, actionProps, insert, ...props }) {
   );
 }
 
+function ActionInitializer({ action, actionProps, ...props }) {
+  return (
+    <InitializerWithSwitch
+      {...props}
+      schema={{
+        type: 'void',
+        title: props.title,
+        'x-decorator': 'ManualActionStatusProvider',
+        'x-decorator-props': {
+          value: action,
+        },
+        'x-component': 'Action',
+        'x-component-props': {
+          ...actionProps,
+          useAction: '{{ useSubmit }}',
+        },
+        'x-designer': 'Action.Designer',
+        'x-action': `${action}`,
+      }}
+      type="x-action"
+    />
+  );
+}
+
 function AddActionButton(props) {
   return (
     <SchemaInitializer.Button
@@ -309,7 +334,7 @@ function AddActionButton(props) {
           key: JOB_STATUS.RESOLVED,
           type: 'item',
           title: `{{t("Continue the process", { ns: "${NAMESPACE}" })}}`,
-          component: ActionInitializer,
+          component: ContinueInitializer,
           action: JOB_STATUS.RESOLVED,
           actionProps: {
             type: 'primary',
@@ -322,7 +347,6 @@ function AddActionButton(props) {
           component: ActionInitializer,
           action: JOB_STATUS.REJECTED,
           actionProps: {
-            type: 'primary',
             danger: true,
           },
         },
