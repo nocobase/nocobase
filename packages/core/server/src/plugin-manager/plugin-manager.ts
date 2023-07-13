@@ -41,6 +41,8 @@ export class PluginManager {
   pmSock: string;
   server: net.Server;
   collection: Collection;
+  hasInit = false;
+  initStaticPluginsPromise: Promise<void>;
   initDatabasePluginsPromise: Promise<void>;
   repository: PluginManagerRepository;
   plugins = new Map<string | typeof Plugin, Plugin>();
@@ -66,9 +68,7 @@ export class PluginManager {
     // plugin static files
     this.app.use(pluginStatic);
 
-    // init static plugins
-    this.initStaticPlugins(options.plugins);
-
+    this.initStaticPluginsPromise = this.initStaticPlugins(options.plugins);
     this.app.on('beforeLoad', async (app, options) => {
       if (options?.method && ['install', 'upgrade'].includes(options.method)) {
         await this.collection.sync();
@@ -81,23 +81,23 @@ export class PluginManager {
         return;
       }
 
-      if (options?.method !== 'install' || options.reload) {
-        // await all database plugins init
-        this.initDatabasePluginsPromise = this.initDatabasePlugins().then(async () => {
-          // run all plugins' beforeLoad
-          for await (const plugin of this.plugins.values()) {
-            if (plugin.enabled) {
-              await plugin.beforeLoad();
-            }
-          }
-        });
-        await this.initDatabasePluginsPromise;
-      }
+      // init static plugins
+      await this.initStaticPluginsPromise;
+
+      // init database plugins
+      this.initDatabasePluginsPromise = this.initDatabasePlugins();
+      await this.initDatabasePluginsPromise;
     });
 
     this.app.on('beforeUpgrade', async () => {
       await this.collection.sync();
     });
+  }
+
+  async waitPluginsInit() {
+    if (this.hasInit) return;
+    await Promise.all([this.initStaticPluginsPromise, this.initDatabasePluginsPromise]);
+    this.hasInit = true;
   }
 
   initCommandCliSocket() {
@@ -109,26 +109,27 @@ export class PluginManager {
   }
 
   async initStaticPlugins(plugins: PluginManagerOptions['plugins'] = []) {
-    for await (const plugin of plugins) {
-      let instance: Plugin;
+    const pluginsWithOptions: [typeof Plugin, any][] = plugins.map((item) => (Array.isArray(item) ? item : [item, {}]));
 
-      // 1. get plugin instance
-      if (Array.isArray(plugin)) {
-        const [PluginClass, options] = plugin;
-        instance = this.setPluginInstance(PluginClass, { ...options, enabled: true });
-      } else {
-        instance = this.setPluginInstance(plugin, { enabled: true });
-      }
+    for await (const [PluginClass, options] of pluginsWithOptions) {
+      const pluginInstance = this.setPluginInstance(PluginClass, options);
+
+      await this.app.emitAsync('beforeAddPlugin', pluginInstance, options);
+      await pluginInstance.afterAdd();
+      await this.app.emitAsync('beforeAddPlugin', pluginInstance, options);
     }
   }
 
   async initDatabasePlugins() {
     const pluginList: PluginData[] = await this.repository.list();
 
-    // TODO: 并发执行还是循序执行，现在的做法是顺序一个一个执行？
     for await (const pluginData of pluginList) {
       await checkPluginPackage(pluginData);
-      this.setDatabasePlugin(pluginData);
+      const pluginInstance = await this.setDatabasePlugin(pluginData);
+
+      await this.app.emitAsync('beforeAddPlugin', pluginInstance, pluginData);
+      await pluginInstance.afterAdd();
+      await this.app.emitAsync('beforeAddPlugin', pluginInstance, pluginData);
     }
   }
 
@@ -143,9 +144,6 @@ export class PluginManager {
    *  }
    */
   async getClientPlugins(): Promise<Record<string, string>> {
-    // await all plugins init
-    await this.initDatabasePluginsPromise;
-
     const pluginList: PluginData[] = await this.repository.list({ enabled: true, installed: true });
     return pluginList.reduce<Record<string, string>>((memo, item) => {
       const { name, clientUrl } = item;
@@ -177,9 +175,9 @@ export class PluginManager {
 
   setPluginInstance(
     PluginClass: typeof Plugin & { default?: typeof Plugin },
-    options: Pick<PluginData, 'name' | 'builtIn' | 'enabled'>,
+    options: Pick<PluginData, 'name' | 'builtIn' | 'enabled' | 'installed'>,
   ) {
-    const { name, enabled, builtIn } = options;
+    const { name, enabled, builtIn, installed } = options;
 
     const PluginCls: typeof Plugin = PluginClass.default || PluginClass;
 
@@ -192,6 +190,7 @@ export class PluginManager {
       name,
       enabled,
       builtIn,
+      installed,
     });
 
     // 3. add instance to plugins
@@ -201,20 +200,27 @@ export class PluginManager {
   }
 
   async addByNpm(data: Pick<PluginData, 'name' | 'builtIn' | 'registry' | 'isOfficial'>) {
-    // 1. add plugin to database
     const { name, registry, builtIn, isOfficial } = data;
 
     if (this.plugins.has(name)) {
       throw new Error(`plugin name [${name}] already exists`);
     }
 
+    // 1. emit event: beforeAddPlugin
+    await this.app.emitAsync('beforeAddPlugin', name, data);
+
+    // 2. download and unzip plugin
+    const { version } = await addOrUpdatePluginByNpm({ name, registry });
+
+    // 3. update database
     const res = await this.repository.create({
       values: {
         name,
         registry,
         zipUrl: undefined,
-        clientUrl: undefined,
-        version: undefined,
+        clientUrl: getClientStaticUrl(name),
+        version,
+        preVersion: version,
         enabled: false,
         isOfficial,
         type: 'npm',
@@ -224,21 +230,12 @@ export class PluginManager {
       },
     });
 
-    // 2. download and unzip plugin
-    const { version } = await addOrUpdatePluginByNpm({ name, registry });
-
-    // 3. update database
-    await this.repository.update({
-      filter: { name },
-      values: {
-        version,
-        clientUrl: getClientStaticUrl(name),
-        installed: true,
-      },
-    });
-
     // 4.init plugin
-    await this.setDatabasePlugin(data);
+    const pluginInstance = await this.setDatabasePlugin({ ...data });
+
+    // 5. run lifecycle: `afterAdd` & emit event: `afterAddPlugin`
+    await pluginInstance.afterAdd();
+    await this.app.emitAsync('afterAddPlugin', pluginInstance, { ...data, version });
 
     return res;
   }
@@ -257,24 +254,13 @@ export class PluginManager {
       throw new Error(`plugin [${name}] already exists`);
     }
 
-    // 1. set plugin instance
-    const instance = await this.setDatabasePlugin({ ...data, name });
+    // 1. run `beforeAddPlugin` hook
+    await this.app.emitAsync('beforeAddPlugin', name, data);
 
-    if (enabled) {
-      // 2. run `load` hook
-      await instance.beforeLoad();
+    // 2. set plugin instance
+    const instance = await this.setDatabasePlugin({ ...data, name, version });
 
-      // 3. run `load` hook
-      await this.load(instance);
-
-      // 4. run `install` hook
-      await this.install(instance);
-
-      // 5. run `afterEnable` hook
-      await instance.afterEnable();
-    }
-
-    // 5. add plugin to database
+    // 3. add plugin to database
     const res = await this.repository.create({
       values: {
         name,
@@ -284,12 +270,23 @@ export class PluginManager {
         isOfficial,
         clientUrl: getClientStaticUrl(name),
         version,
+        preVersion: version,
         registry: undefined,
-        enabled,
-        installed: true,
+        enabled: false,
+        installed: false,
         options: {},
       },
     });
+
+    // 4. run lifecycle: `afterAdd`
+    await instance.afterAdd();
+
+    // 5. emit event: afterAddPlugin
+    await this.app.emitAsync('afterAddPlugin', instance, { ...data, name });
+
+    if (enabled) {
+      await this.enable(name);
+    }
 
     return res;
   }
@@ -306,57 +303,9 @@ export class PluginManager {
     return this.addLocalPackage;
   }
 
-  async upgradeByNpm(name: string) {
-    const pluginData = await this.getPluginData(name);
-
-    // 1. download and unzip package
-    const latestVersion = await getNewVersion(pluginData);
-    if (latestVersion) {
-      await addOrUpdatePluginByNpm({ name, registry: pluginData.registry, version: latestVersion });
-    }
-
-    // 2. update database
-    await this.repository.update({
-      filter: { name },
-      values: {
-        version: latestVersion,
-      },
-    });
-
-    // 3. run plugin
-    const instance = await this.setDatabasePlugin(pluginData);
-
-    // TODO: 升级后应该执行哪些 hooks？
-    // 这里只执行了 `load`
-    if (pluginData.enabled) {
-      await this.load(instance);
-    }
-  }
-
-  async upgradeByZip(name: string, zipUrl: string) {
-    // 1. download and unzip package
-    const { version } = await addOrUpdatePluginByZip({ name, zipUrl });
-
-    // 2. update database
-    const pluginData = await this.repository.update({
-      filter: { name },
-      values: {
-        version,
-      },
-    });
-
-    // 3. run plugin
-    const instance = await this.setDatabasePlugin(pluginData);
-
-    // TODO: 升级后应该执行哪些 hooks？
-    // 这里只执行了 `load`
-    if (pluginData.enabled) {
-      await this.load(instance);
-    }
-  }
-
   async enable(name: string) {
     const pluginInstance = this.getPluginInstance(name);
+    const pluginData = await this.getPluginData(name);
 
     // 1. check required plugins
     const requiredPlugins = pluginInstance.requiredPlugins();
@@ -366,6 +315,10 @@ export class PluginManager {
         throw new Error(`${name} plugin need ${requiredPluginName} plugin enabled`);
       }
     }
+
+    // 1. emit event: `beforeEnablePlugin` & run lifecycle: `beforeEnable`
+    await this.app.emitAsync('beforeEnablePlugin', pluginInstance, pluginData);
+    await pluginInstance.beforeEnable();
 
     // 2. update database
     await this.repository.update({
@@ -377,17 +330,87 @@ export class PluginManager {
       },
     });
 
-    // 3. load plugin
-    await this.load(pluginInstance);
+    // 3. run app action: `reload`
+    await this.app.reload({ reload: true });
 
-    // 4. run `install` hook
-    await this.install(pluginInstance);
+    // 4. sync database
+    await this.app.db.sync();
 
-    // 6. run `afterEnable` hook
+    // 5. install plugin
+    if (!pluginInstance.installed) {
+      await this.install(pluginInstance);
+    }
+
+    // 6. run database migration
+    if (pluginData.preVersion !== pluginData.version) {
+      await this.app.db.migrator.up();
+    }
+
+    // 7.run lifecycle: `afterEnable` & emit event: `afterEnablePlugin`
     await pluginInstance.afterEnable();
+    await this.app.emitAsync('afterEnablePlugin', pluginInstance, { ...pluginData, enabled: true });
+  }
 
-    // 6. emit app hook
-    await this.app.emitAsync('afterEnablePlugin', name);
+  async upgradeByNpm(name: string) {
+    const pluginData = await this.getPluginData(name);
+    const pluginInstance = this.getPluginInstance(name);
+
+    // 1. check has new version
+    const latestVersion = await getNewVersion(pluginData);
+    if (!latestVersion) return;
+
+    // 2. emit event: `beforeEnablePlugin` & run lifecycle: `beforeEnable`
+    await this.app.emitAsync('beforeUpgradePlugin', pluginInstance, pluginData);
+    await pluginInstance.beforeUpgrade();
+
+    // 3. download and unzip package
+    await addOrUpdatePluginByNpm({ name, registry: pluginData.registry, version: latestVersion }, true);
+
+    // 4. common upgrade
+    return this.commonUpgrade(name, latestVersion, pluginData.version);
+  }
+
+  async upgradeByZip(name: string, zipUrl: string) {
+    const pluginData = await this.getPluginData(name);
+    const pluginInstance = this.getPluginInstance(name);
+
+    // 1. emit event: `beforeEnablePlugin` & run lifecycle: `beforeEnable`
+    await this.app.emitAsync('beforeUpgradePlugin', pluginInstance, pluginData);
+    await pluginInstance.beforeUpgrade();
+
+    // 2. download and unzip package
+    const { version } = await addOrUpdatePluginByZip({ name, zipUrl });
+
+    // 3. common upgrade
+    return this.commonUpgrade(name, version, pluginData.version);
+  }
+
+  async commonUpgrade(name: string, newVersion: string, oldVersion: string) {
+    // 1. update database
+    await this.repository.update({
+      filter: { name },
+      values: {
+        version: newVersion,
+        preVersion: oldVersion,
+      },
+    });
+
+    const pluginData = await this.getPluginData(name);
+    const newPluginData = { ...pluginData, version: newVersion, preVersion: oldVersion };
+
+    // 2. update instance
+    const pluginInstance = await this.setDatabasePlugin(newPluginData);
+
+    // 3. run database migration
+    if (pluginData.enabled) {
+      await this.app.reload({});
+      await this.app.db.sync();
+      await this.app.db.migrator.up();
+    }
+
+    // 4.run lifecycle: `afterEnable` & emit event: `afterEnablePlugin`
+    await pluginInstance.afterEnable();
+    await this.app.emitAsync('afterEnablePlugin', pluginInstance, newPluginData);
   }
 
   async disable(name: string) {
@@ -397,22 +420,32 @@ export class PluginManager {
       throw new Error(`${name} plugin is builtIn, can not disable`);
     }
 
-    // 1. update database
+    if (!pluginInstance.enabled) {
+      return;
+    }
+
+    const pluginData = await this.getPluginData(name);
+
+    // 1. emit event: `beforeDisablePlugin` & run lifecycle: `beforeDisable`
+    await this.app.emitAsync('beforeDisablePlugin', pluginInstance, pluginData);
+    await pluginInstance.beforeDisable();
+
+    // 2. update database
     await this.repository.update({
       filter: {
         name,
-        builtIn: false,
       },
       values: {
         enabled: false,
       },
     });
 
-    // 2. run `afterDisable` hook
-    await pluginInstance.afterDisable();
+    // 3. run app action: `reload`
+    await this.app.reload({});
 
-    // 3. emit app hook
-    await this.app.emitAsync('afterDisablePlugin', name);
+    // 5. run lifecycle: `afterEnable` & emit event: `afterDisablePlugin`
+    await pluginInstance.afterEnable();
+    await this.app.emitAsync('afterDisablePlugin', pluginInstance, { ...pluginData, enabled: true });
   }
 
   async remove(name: string) {
@@ -422,14 +455,16 @@ export class PluginManager {
       throw new Error(`${name} plugin is builtIn, can not remove`);
     }
 
-    // 1. run `remove` hook
-    await pluginInstance.remove();
+    const pluginData = await this.getPluginData(name);
+
+    // 1. emit event: `beforeRemovePlugin` & run lifecycle: `beforeRemove`
+    await this.app.emitAsync('beforeRemovePlugin', pluginInstance, pluginData);
+    await pluginInstance.beforeRemove();
 
     // 2. remove plugin from database
     await this.repository.destroy({
       filter: {
         name,
-        builtIn: false,
       },
     });
 
@@ -438,11 +473,22 @@ export class PluginManager {
 
     // 4. remove plugin package
     await removePluginPackage(name);
+
+    // 5. reload app
+    await this.app.reload({});
+
+    // 6. run lifecycle: `afterRemove` && emit event: `afterRemovePlugin`
+    await pluginInstance.afterRemove();
+    await this.app.emitAsync('afterRemovePlugin', pluginInstance, pluginData);
   }
 
-  async loadAll(options: any) {
-    for await (const [name, pluginInstance] of this.plugins.entries()) {
-      await this.load(pluginInstance, options);
+  async doAllPluginsLifecycle(lifecycle: string, options?: any) {
+    console.log('Do all plugins lifecycle: ', lifecycle);
+    for await (const pluginInstance of this.plugins.values()) {
+      await pluginInstance[lifecycle](options);
+      if (lifecycle === 'install') {
+        await this.app.db.sync();
+      }
     }
   }
 
@@ -484,17 +530,22 @@ export class PluginManager {
     return pm;
   }
 
-  async install(pluginInstance: Plugin, options: any = {}) {
-    if (!pluginInstance.enabled) return;
+  async install(pluginInstance: Plugin, options: InstallOptions = {}) {
+    if (!pluginInstance.enabled && pluginInstance.installed) return;
     await this.app.emitAsync('beforeInstallPlugin', pluginInstance, options);
-    await pluginInstance.install({});
-    await this.app.emitAsync('afterInstallPlugin', pluginInstance, options);
-  }
+    await pluginInstance.install(options);
 
-  async installAll(options: InstallOptions = {}) {
-    // for (const [name, plugin] of this.plugins) {
-    // await this.install(plugin, options);
-    // }
+    // update database
+    await this.repository.update({
+      filter: {
+        name: pluginInstance.name,
+      },
+      values: {
+        installed: true,
+      },
+    });
+
+    await this.app.emitAsync('afterInstallPlugin', pluginInstance, options);
   }
 
   // by cli: `yarn nocobase pm create xxx`
@@ -534,9 +585,11 @@ export class PluginManager {
     return this.disable;
   }
 
-  doCliCommand(method: string, name: string | string[]) {
+  async doCliCommand(method: string, name: string | string[]) {
     const pluginNames = Array.isArray(name) ? name : [name];
-    return Promise.all(pluginNames.map((name) => this[`${method}ByCli`](name)));
+    for await (const name of pluginNames) {
+      await this[`${method}ByCli`](name);
+    }
   }
 
   // for cli: `yarn nocobase pm create/add/enable/disable/remove xxx`

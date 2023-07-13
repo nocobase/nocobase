@@ -51,6 +51,12 @@ export interface DefaultState extends KoaDefaultState {
   [key: string]: any;
 }
 
+export interface AppLoadOptions {
+  method?: 'install' | 'upgrade' | 'start';
+  force?: boolean;
+  reload?: boolean;
+}
+
 export interface DefaultContext extends KoaDefaultContext {
   db: Database;
   cache: Cache;
@@ -374,26 +380,67 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return (<any>this.cli)._findCommand(name);
   }
 
-  async load(options?: any) {
-    if (options?.reload) {
-      console.log(`Reload the ${this.name} application configuration`);
-      const oldDb = this._db;
-      this.init();
-      await oldDb.close();
-    }
+  async beforeLoad(options: AppLoadOptions) {
+    console.log('app beforeLoad');
+
+    // wait all plugins init
+    await this.pm.waitPluginsInit();
 
     await this.emitAsync('beforeLoad', this, options);
-    await this.pm.loadAll(options);
-    await this.emitAsync('afterLoad', this, options);
+
+    if (options.method === 'install') {
+      if (options.force) {
+        console.log('Truncate database and reload app configuration');
+        await this.db.clean({ drop: true });
+        await this.db.sync();
+      } else {
+        // check if the database is empty, if not, throw an error
+        if (await this.isInstalled()) {
+          throw new Error(
+            'You have already installed the application, please use the `-f` method to reinstall the application.',
+          );
+        }
+      }
+    } else if (options.method === 'upgrade') {
+      // TODO: upgrade
+    }
+
+    await this.pm.doAllPluginsLifecycle('beforeLoad');
   }
 
-  async reload(options?: any) {
-    await this.load({
-      ...options,
-      reload: true,
-    });
+  async afterLoad(options: AppLoadOptions) {
+    console.log('app afterLoad');
+    await this.emitAsync('afterLoad', this, options);
 
-    await this.emitAsync('afterReload', this, options);
+    if (options.method === 'install') {
+      await this.pm.doAllPluginsLifecycle('afterLoad');
+    }
+
+    if (options.method === 'upgrade') {
+      await this.db.sync();
+    }
+
+    if (options.method === 'start' || options.method === 'upgrade') {
+      await this.db.getRepository<any>('collections').load();
+    }
+  }
+
+  async loadLifeCycles(options: AppLoadOptions) {
+    await this.beforeLoad(options);
+
+    await this.emitAsync('load', this, options);
+    await this.pm.doAllPluginsLifecycle('load');
+
+    await this.afterLoad(options);
+  }
+
+  async reload(options: AppLoadOptions) {
+    console.log(`Reload the ${this.name} application configuration`);
+    const oldDb = this._db;
+    this.init();
+    await oldDb.close();
+
+    await this.loadLifeCycles({ ...options, reload: true });
   }
 
   getPlugin<P extends Plugin>(name: string | typeof Plugin) {
@@ -416,12 +463,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     await this.db.prepare();
 
-    if (argv?.[2] !== 'upgrade') {
-      await this.load({
-        method: argv?.[2],
-      });
-    }
-
     return this.cli.parseAsync(argv, options);
   }
 
@@ -436,6 +477,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
 
     await this.emitAsync('beforeStart', this, options);
+    await this.loadLifeCycles({ ...options, method: 'start' });
 
     if (options?.listen?.port) {
       const pmServer = await this.pm.listen();
@@ -545,18 +587,13 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async install(options: InstallOptions = {}) {
-    console.log('Database dialect: ' + this.db.sequelize.getDialect());
-
-    if (options?.clean || options?.sync?.force) {
-      console.log('Truncate database and reload app configuration');
-      await this.db.clean({ drop: true });
-      await this.reload({ method: 'install' });
-    }
-
     await this.emitAsync('beforeInstall', this, options);
-    await this.db.sync();
-    await this.pm.installAll(options);
+
+    await this.loadLifeCycles({ ...options, method: 'install', force: !!options?.clean || options?.sync?.force });
+    await this.pm.doAllPluginsLifecycle('install', { ...options, method: 'install' });
+
     await this.version.update();
+
     await this.emitAsync('afterInstall', this, options);
   }
 
@@ -571,6 +608,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       },
     });
     await this.version.update();
+
+    await this.loadLifeCycles({ ...options, force, method: 'upgrade' });
+    await this.db.migrator.up();
+
+    // TODO: 更新所有插件版本号
+
     await this.emitAsync('afterUpgrade', this, options);
   }
 

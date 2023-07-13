@@ -54,7 +54,7 @@ export class PresetNocoBase extends Plugin {
     await this.app.reload({ method: options.method });
   }
 
-  afterAdd() {
+  async afterAdd() {
     this.app.on('beforeLoad', async (app, options) => {
       if (options?.method !== 'upgrade') {
         return;
@@ -70,9 +70,6 @@ export class PresetNocoBase extends Plugin {
         console.log(`Initialize all built-in plugins beforeUpgrade`);
         await this.addBuiltInPlugins({ method: 'upgrade' });
       }
-      await this.app.reload({ method: 'upgrade' });
-      await this.app.db.sync();
-      await this.app.db.getRepository<any>('collections').load();
     });
 
     this.app.on('beforeInstall', async () => {

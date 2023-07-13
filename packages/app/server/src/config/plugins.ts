@@ -1,4 +1,6 @@
 import PresetNocoBase from '@nocobase/preset-nocobase';
 import { PluginConfiguration } from '@nocobase/server';
 
-export default [PresetNocoBase] as PluginConfiguration[];
+const plugins: PluginConfiguration[] = [PresetNocoBase];
+
+export default plugins;

@@ -1,5 +1,6 @@
 import { Application } from './application';
 import { InstallOptions } from './plugin-manager';
+import { PluginData } from './plugin-manager/types';
 
 export interface PluginInterface {
   beforeLoad?: () => void;
@@ -24,16 +25,21 @@ export interface PluginOptions {
 
 export type PluginType = typeof Plugin;
 
-export class Plugin<O = any> implements PluginInterface {
-  options: any;
+export class Plugin implements PluginInterface {
+  options: PluginOptions;
   app: Application;
 
-  constructor(app: Application, options?: any) {
-    this.setOptions(options);
-
+  constructor(app: Application, options?: PluginData) {
     this.app = app;
     this.setOptions(options);
-    this.afterAdd();
+  }
+
+  setOptions(options: PluginOptions) {
+    this.options = options || {};
+  }
+
+  getName() {
+    return (this.options as any).name;
   }
 
   get name() {
@@ -60,27 +66,35 @@ export class Plugin<O = any> implements PluginInterface {
     this.options.builtIn = value;
   }
 
-  setOptions(options: any) {
-    this.options = options || {};
+  get installed() {
+    return this.options.installed;
   }
 
-  getName() {
-    return (this.options as any).name;
+  get setInstalled() {
+    return this.options.installed;
   }
 
-  afterAdd() { }
+  async afterAdd() { }
 
-  beforeLoad() { }
+  async beforeLoad() { }
+  async load() { }
+  async afterLoad() { }
 
+  async beforeInstall() { }
   async install(options?: InstallOptions) { }
+  async afterInstall() { }
 
-  async load() {}
+  async beforeUpgrade() { }
+  async afterUpgrade() { }
 
+  async beforeEnable() { }
   async afterEnable() {}
 
-  async afterDisable() {}
+  async beforeDisable() { }
+  async afterDisable() { }
 
-  async remove() { }
+  async beforeRemove() { }
+  async afterRemove() { }
 
   async importCollections(collectionsPath: string) {
     await this.db.import({
