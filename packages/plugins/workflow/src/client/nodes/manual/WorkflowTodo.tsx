@@ -222,6 +222,7 @@ export const WorkflowTodo: React.FC & { Drawer: React.FC } = () => {
           properties: {
             todos: {
               type: 'void',
+              'x-designer': 'TableBlockDesigner',
               'x-decorator': 'TableBlockProvider',
               'x-decorator-props': {
                 collection: 'users_jobs',

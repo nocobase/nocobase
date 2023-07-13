@@ -10,16 +10,17 @@ export const WorkflowTodoBlockInitializer: FC<any> = ({ insert, ...rest }) => {
       onClick={() => {
         insert({
           type: 'void',
-          // 'x-decorator': 'WorkflowTodo.Decorator',
-          // 'x-decorator-props': {},
-          'x-component': 'CardItem',
-          'x-designer': 'TableBlockDesigner',
-          properties: {
-            todos: {
-              type: 'void',
-              'x-component': 'WorkflowTodo',
-            },
-          },
+          'x-component': 'WorkflowTodo',
+          // // 'x-decorator': 'WorkflowTodo.Decorator',
+          // // 'x-decorator-props': {},
+          // 'x-component': 'CardItem',
+          // 'x-designer': 'TableBlockDesigner',
+          // properties: {
+          //   todos: {
+          //     type: 'void',
+          //     'x-component': 'WorkflowTodo',
+          //   },
+          // },
         });
       }}
     />
