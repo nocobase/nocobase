@@ -17,6 +17,106 @@ describe('string field', () => {
     await db.close();
   });
 
+  it('should init sorted value with thousand records', async () => {
+    const Test = db.collection({
+      name: 'tests',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+        {
+          type: 'string',
+          name: 'group',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await Test.model.bulkCreate(
+      (() => {
+        const values = [];
+        for (let i = 0; i < 100000; i++) {
+          values.push({
+            group: 'a',
+            name: `r${i}`,
+          });
+
+          values.push({
+            group: 'b',
+            name: `r${i}`,
+          });
+        }
+        return values;
+      })(),
+    );
+
+    Test.setField('sort', { type: 'sort', scopeKey: 'group' });
+
+    const begin = Date.now();
+    await db.sync();
+    const end = Date.now();
+    // log time cost as milliseconds
+    console.log(end - begin);
+  });
+
+  it('should init sorted value with scopeKey', async () => {
+    const Test = db.collection({
+      name: 'tests',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+        {
+          type: 'string',
+          name: 'group',
+        },
+      ],
+    });
+
+    await db.sync();
+    await Test.repository.create({
+      values: [
+        {
+          group: 'a',
+          name: 'r1',
+        },
+        {
+          group: 'b',
+          name: 'r2',
+        },
+        {
+          group: 'a',
+          name: 'r3',
+        },
+        {
+          group: 'b',
+          name: 'r4',
+        },
+        {
+          group: null,
+          name: 'r5',
+        },
+        {
+          group: null,
+          name: 'r6',
+        },
+      ],
+    });
+
+    Test.setField('sort', { type: 'sort', scopeKey: 'group' });
+
+    await db.sync();
+
+    const records = await Test.repository.find({});
+    const r3 = records.find((r) => r.get('name') === 'r3');
+    expect(r3.get('sort')).toBe(2);
+    const r5 = records.find((r) => r.get('name') === 'r5');
+    expect(r5.get('sort')).toBe(1);
+  });
+
   it('should init sorted value by createdAt when primaryKey not exists', async () => {
     const Test = db.collection({
       autoGenId: false,

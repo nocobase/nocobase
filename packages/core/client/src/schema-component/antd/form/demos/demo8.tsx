@@ -1,12 +1,15 @@
+import { FormItem } from '@formily/antd-v5';
 import { ISchema, observer } from '@formily/react';
 import {
-  ActionContext,
-  AntdSchemaComponentProvider,
+  Action,
+  ActionContextProvider,
+  Form,
+  Input,
   SchemaComponent,
   SchemaComponentProvider,
   useActionContext,
   useCloseAction,
-  useRequest
+  useRequest,
 } from '@nocobase/client';
 import { Button } from 'antd';
 import React, { useEffect, useState } from 'react';
@@ -67,19 +70,17 @@ export default observer(() => {
   const [visible, setVisible] = useState(false);
 
   return (
-    <SchemaComponentProvider scope={{ useCloseAction }}>
-      <AntdSchemaComponentProvider>
-        <ActionContext.Provider value={{ visible, setVisible }}>
-          <Button
-            onClick={() => {
-              setVisible(true);
-            }}
-          >
-            编辑
-          </Button>
-          <SchemaComponent schema={schema} />
-        </ActionContext.Provider>
-      </AntdSchemaComponentProvider>
+    <SchemaComponentProvider components={{ Action, Input, FormItem, Form }} scope={{ useCloseAction }}>
+      <ActionContextProvider value={{ visible, setVisible }}>
+        <Button
+          onClick={() => {
+            setVisible(true);
+          }}
+        >
+          Edit
+        </Button>
+        <SchemaComponent schema={schema} />
+      </ActionContextProvider>
     </SchemaComponentProvider>
   );
 });

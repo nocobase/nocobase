@@ -28,7 +28,7 @@ export function findMenuItem(schema: Schema) {
     if (ss) {
       return ss;
     }
-  };
+  }
   return null;
 }
 

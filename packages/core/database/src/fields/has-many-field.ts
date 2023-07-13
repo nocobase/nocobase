@@ -5,7 +5,7 @@ import {
   ForeignKeyOptions,
   HasManyOptions,
   HasManyOptions as SequelizeHasManyOptions,
-  Utils
+  Utils,
 } from 'sequelize';
 import { Collection } from '../collection';
 import { Reference } from '../features/ReferencesMap';
@@ -175,7 +175,7 @@ export class HasManyField extends RelationField {
 
     const association = collection.model.associations[this.name];
 
-    if (association) {
+    if (association && !this.options.inherit) {
       this.database.referenceMap.removeReference(this.reference(association));
     }
 

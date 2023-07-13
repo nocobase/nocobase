@@ -1,10 +1,10 @@
-import React from "react";
+import React from 'react';
 import { FormOutlined } from '@ant-design/icons';
 
-import { useCollectionManager } from "../../collection-manager";
-import { useSchemaTemplateManager } from "../../schema-templates";
-import { SchemaInitializer } from "../SchemaInitializer";
-import { createDetailsBlockSchema, useRecordCollectionDataSourceItems } from "../utils";
+import { useCollectionManager } from '../../collection-manager';
+import { useSchemaTemplateManager } from '../../schema-templates';
+import { SchemaInitializer } from '../SchemaInitializer';
+import { createDetailsBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
 
 export const RecordAssociationDetailsBlockInitializer = (props) => {
   const { item, onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;

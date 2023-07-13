@@ -11,7 +11,7 @@ interface IHasOneRepository<M extends Model> {
   // 更新
   update(options?): Promise<M>;
   // 删除
-  destroy(): Promise<Boolean>;
+  destroy(): Promise<boolean>;
   // 建立关联
   set(primaryKey: any): Promise<void>;
   // 移除关联

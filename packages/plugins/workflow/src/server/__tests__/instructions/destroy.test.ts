@@ -2,8 +2,6 @@ import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
 import { getApp, sleep } from '..';
 
-
-
 describe('workflow > instructions > destroy', () => {
   let app: Application;
   let db: Database;
@@ -24,8 +22,8 @@ describe('workflow > instructions > destroy', () => {
       type: 'collection',
       config: {
         mode: 1,
-        collection: 'posts'
-      }
+        collection: 'posts',
+      },
     });
   });
 
@@ -39,10 +37,10 @@ describe('workflow > instructions > destroy', () => {
           collection: 'posts',
           params: {
             filter: {
-              id: '{{$context.data.id}}'
-            }
-          }
-        }
+              id: '{{$context.data.id}}',
+            },
+          },
+        },
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });

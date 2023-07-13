@@ -10,6 +10,7 @@ type UpdateValues = {
 };
 
 type UpdateAction = 'create' | 'update';
+
 export class UpdateGuard {
   model: ModelStatic<any>;
   action: UpdateAction;
@@ -17,6 +18,21 @@ export class UpdateGuard {
   private associationKeysToBeUpdate: AssociationKeysToBeUpdate;
   private blackList: BlackList;
   private whiteList: WhiteList;
+
+  static fromOptions(model, options) {
+    const guard = new UpdateGuard();
+    guard.setModel(model);
+    guard.setWhiteList(options.whitelist);
+    guard.setBlackList(options.blacklist);
+    guard.setAction(lodash.get(options, 'action', 'update'));
+    guard.setAssociationKeysToBeUpdate(options.updateAssociationValues);
+
+    if (options.underscored) {
+      guard.underscored = options.underscored;
+    }
+
+    return guard;
+  }
 
   setAction(action: UpdateAction) {
     this.action = action;
@@ -77,14 +93,18 @@ export class UpdateGuard {
     Object.keys(associationsValues).forEach((association) => {
       let associationValues = associationsValues[association];
 
+      const associationObj = associations[association];
+
       const filterAssociationToBeUpdate = (value) => {
+        if (value === null) {
+          return value;
+        }
+
         const associationKeysToBeUpdate = this.associationKeysToBeUpdate || [];
 
         if (associationKeysToBeUpdate.includes(association)) {
           return value;
         }
-
-        const associationObj = associations[association];
 
         const associationKeyName =
           associationObj.associationType == 'BelongsTo' || associationObj.associationType == 'HasOne'
@@ -111,7 +131,7 @@ export class UpdateGuard {
 
       if (Array.isArray(associationValues)) {
         associationValues = associationValues.map((value) => {
-          if (typeof value == 'string' || typeof value == 'number') {
+          if (value === undefined || value === null || typeof value == 'string' || typeof value == 'number') {
             return value;
           } else {
             return sanitizeValue(value);
@@ -123,6 +143,16 @@ export class UpdateGuard {
 
       // set association values to sanitized value
       values[association] = associationValues;
+
+      if (associationObj.associationType === 'BelongsTo') {
+        if (typeof associationValues === 'object' && associationValues !== null) {
+          if (associationValues[(associationObj as any).targetKey] != null) {
+            values[(associationObj as any).foreignKey] = associationValues[(associationObj as any).targetKey];
+          }
+        } else {
+          values[(associationObj as any).foreignKey] = associationValues;
+        }
+      }
     });
 
     if (values instanceof Model) {
@@ -154,20 +184,5 @@ export class UpdateGuard {
     }, {});
 
     return result;
-  }
-
-  static fromOptions(model, options) {
-    const guard = new UpdateGuard();
-    guard.setModel(model);
-    guard.setWhiteList(options.whitelist);
-    guard.setBlackList(options.blacklist);
-    guard.setAction(lodash.get(options, 'action', 'update'));
-    guard.setAssociationKeysToBeUpdate(options.updateAssociationValues);
-
-    if (options.underscored) {
-      guard.underscored = options.underscored;
-    }
-
-    return guard;
   }
 }

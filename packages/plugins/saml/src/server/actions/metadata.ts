@@ -1,22 +1,14 @@
-import { Context } from '@nocobase/actions';
-import { getSaml } from '../shared/getSaml';
+import { Context, Next } from '@nocobase/actions';
+import { SAMLAuth } from '../saml-auth';
+import { SAML } from '@node-saml/node-saml';
 
-export const metadata = async (ctx: Context, next) => {
-  const {
-    params: { clientId },
-  } = ctx.action;
-  const providerRepo = ctx.db.getRepository('samlProviders');
-
-  const record = await providerRepo.findOne({
-    filter: {
-      clientId: clientId,
-    },
-  });
-
-  const saml = getSaml(record);
+export const metadata = async (ctx: Context, next: Next) => {
+  const auth = ctx.auth as SAMLAuth;
+  const options = auth.getOptions();
+  const saml = new SAML(options);
 
   ctx.type = 'text/xml';
-  ctx.body = saml.generateServiceProviderMetadata(record.certificate);
+  ctx.body = saml.generateServiceProviderMetadata(options.cert as string);
   ctx.withoutDataWrapping = true;
 
   return next();

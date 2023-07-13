@@ -8,14 +8,17 @@ import {
 } from '@ant-design/icons';
 import { Graph } from '@antv/x6';
 import '@antv/x6-react-shape';
-import { css, cx } from '@emotion/css';
 import { SchemaOptionsContext } from '@formily/react';
 import {
   APIClientProvider,
   collection,
+  CollectionCategroriesContext,
+  CollectionCategroriesProvider,
   CollectionManagerContext,
   CollectionManagerProvider,
+  css,
   CurrentAppInfoContext,
+  cx,
   SchemaComponent,
   SchemaComponentOptions,
   Select,
@@ -23,12 +26,11 @@ import {
   useCollectionManager,
   useCompile,
   useCurrentAppInfo,
-  CollectionCategroriesProvider,
 } from '@nocobase/client';
+import { lodash } from '@nocobase/utils/client';
 import { useFullscreen } from 'ahooks';
 import { Button, Input, Layout, Menu, Popover, Switch, Tooltip } from 'antd';
 import dagre from 'dagre';
-import { drop, groupBy, last, maxBy, minBy, take } from 'lodash';
 import React, { createContext, forwardRef, useContext, useEffect, useLayoutEffect, useState } from 'react';
 import { useAsyncDataSource, useCreateActionAndRefreshCM } from './action-hooks';
 import { AddCollectionAction } from './components/AddCollectionAction';
@@ -41,14 +43,17 @@ import {
   getDiffEdge,
   getDiffNode,
   getInheritCollections,
+  getPopupContainer,
   useGCMTranslation,
 } from './utils';
+
+const { drop, groupBy, last, maxBy, minBy, take } = lodash;
 
 const LINE_HEIGHT = 40;
 const NODE_WIDTH = 250;
 let targetGraph;
 let targetNode;
-let dir = 'TB'; // LR RL TB BT 横排
+const dir = 'TB'; // LR RL TB BT 横排
 
 export enum DirectionType {
   Both = 'both',
@@ -231,10 +236,6 @@ function getEdges(edges) {
   });
 }
 
-const getPopupContainer = () => {
-  return document.getElementById('graph_container');
-};
-
 const CollapsedContext = createContext<any>({});
 const formatNodeData = () => {
   const layoutNodes = [];
@@ -316,7 +317,7 @@ const handelResetLayout = () => {
     const yNodes = nodeWithEdges.filter((v) => {
       return Math.abs(targetGraph.getCellById(v).position().y - maxY) < 50;
     });
-    let referenceNode: any = targetGraph
+    const referenceNode: any = targetGraph
       .getCell(maxBy(yNodes, (k) => targetGraph.getCellById(k).position().x))
       ?.position();
     num = Math.round(maxX / 320) || 1;
@@ -363,7 +364,7 @@ const handelResetLayout = () => {
 };
 
 export const GraphDrawPage = React.memo(() => {
-  let options = useContext(SchemaOptionsContext);
+  const options = useContext(SchemaOptionsContext);
   const ctx = useContext(CollectionManagerContext);
   const api = useAPIClient();
   const compile = useCompile();
@@ -374,6 +375,7 @@ export const GraphDrawPage = React.memo(() => {
   const {
     data: { database },
   } = useCurrentAppInfo();
+  const categoryCtx = useContext(CollectionCategroriesContext);
   const scope = { ...options?.scope };
   const components = { ...options?.components };
   const useSaveGraphPositionAction = async (data) => {
@@ -504,7 +506,7 @@ export const GraphDrawPage = React.memo(() => {
           <CurrentAppInfoContext.Provider value={database}>
             <APIClientProvider apiClient={api}>
               <SchemaComponentOptions inherit scope={scope} components={components}>
-                <CollectionCategroriesProvider>
+                <CollectionCategroriesProvider {...categoryCtx}>
                   <CollectionManagerProvider
                     collections={targetGraph?.collections}
                     refreshCM={refreshGM}
@@ -817,7 +819,7 @@ export const GraphDrawPage = React.memo(() => {
     const node = targetGraph.getCellById(key);
     targetGraph.cacheCollection[key] = true;
     const connectedEdges = targetGraph.getConnectedEdges(node);
-    let visibleEdges = connectedEdges.filter((v) => !v.store.data?.connectionType && v.getTargetCellId() === key);
+    const visibleEdges = connectedEdges.filter((v) => !v.store.data?.connectionType && v.getTargetCellId() === key);
     visibleEdges.forEach((v) => {
       if (v.store.data.m2m) {
         v.store.data.m2m.forEach((i) => {
@@ -1020,12 +1022,7 @@ export const GraphDrawPage = React.memo(() => {
               <SchemaComponent
                 components={{
                   Select: (props) => (
-                    <Select
-                      {...props}
-                      getPopupContainer={() => {
-                        return document.getElementById('graph_container');
-                      }}
-                    />
+                    <Select popupMatchSelectWidth={false} {...props} getPopupContainer={getPopupContainer} />
                   ),
                   AddCollectionAction,
                 }}
@@ -1098,7 +1095,7 @@ export const GraphDrawPage = React.memo(() => {
                             },
                             collectionList: {
                               type: 'void',
-                              'x-component': () => {
+                              'x-component': function Com() {
                                 const { handleSearchCollection, collectionList } = useContext(CollapsedContext);
                                 const [selectedKeys, setSelectKey] = useState([]);
                                 const content = (
@@ -1119,13 +1116,13 @@ export const GraphDrawPage = React.memo(() => {
                                         }
                                       `}
                                       style={{ maxHeight: '70vh', overflowY: 'auto', border: 'none' }}
-                                    >
-                                      <Menu.Divider />
-                                      {collectionList.map((v) => {
-                                        return (
-                                          <Menu.Item
-                                            key={v.name}
-                                            onClick={(e: any) => {
+                                      items={[
+                                        { type: 'divider' },
+                                        ...collectionList.map((v) => {
+                                          return {
+                                            key: v.name,
+                                            label: compile(v.title),
+                                            onClick: (e: any) => {
                                               if (e.key !== selectedKeys[0]) {
                                                 setSelectKey([e.key]);
                                                 handleFiterCollections(e.key);
@@ -1134,13 +1131,11 @@ export const GraphDrawPage = React.memo(() => {
                                                 handleFiterCollections(false);
                                                 setSelectKey([]);
                                               }
-                                            }}
-                                          >
-                                            <span>{compile(v.title)}</span>
-                                          </Menu.Item>
-                                        );
-                                      })}
-                                    </Menu>
+                                            },
+                                          };
+                                        }),
+                                      ]}
+                                    />
                                   </div>
                                 );
                                 return (
@@ -1224,24 +1219,22 @@ export const GraphDrawPage = React.memo(() => {
                                         }
                                       `}
                                       style={{ maxHeight: '70vh', overflowY: 'auto', border: 'none' }}
-                                    >
-                                      <Menu.Divider />
-                                      {menuItems.map((v) => {
-                                        return (
-                                          <Menu.Item
-                                            key={v.key}
-                                            onClick={(e: any) => {
+                                      items={[
+                                        { type: 'divider' },
+                                        ...menuItems.map((v) => {
+                                          return {
+                                            key: v.key,
+                                            label: t(v.label),
+                                            onClick: (e: any) => {
                                               targetGraph.connectionType = v.key;
                                               const { filterConfig } = targetGraph;
                                               filterConfig && handleFiterCollections(filterConfig.key);
                                               handleSetRelationshipType(v.key);
-                                            }}
-                                          >
-                                            <span>{t(v.label)}</span>
-                                          </Menu.Item>
-                                        );
-                                      })}
-                                    </Menu>
+                                            },
+                                          };
+                                        }),
+                                      ]}
+                                    />
                                   </div>
                                 );
                                 return (
@@ -1301,25 +1294,23 @@ export const GraphDrawPage = React.memo(() => {
                                         }
                                       `}
                                       style={{ maxHeight: '70vh', overflowY: 'auto', border: 'none' }}
-                                    >
-                                      <Menu.Divider />
-                                      {menuItems.map((v) => {
-                                        return (
-                                          <Menu.Item
-                                            key={v.key}
-                                            onClick={(e: any) => {
+                                      items={[
+                                        { type: 'divider' },
+                                        ...menuItems.map((v) => {
+                                          return {
+                                            key: v.key,
+                                            label: t(v.label),
+                                            onClick: (e: any) => {
                                               targetGraph.direction = v.key;
                                               const { filterConfig } = targetGraph;
                                               if (filterConfig) {
                                                 handleFiterCollections(filterConfig.key);
                                               }
-                                            }}
-                                          >
-                                            <span>{t(v.label)}</span>
-                                          </Menu.Item>
-                                        );
-                                      })}
-                                    </Menu>
+                                            },
+                                          };
+                                        }),
+                                      ]}
+                                    />
                                   </div>
                                 );
                                 return (
@@ -1381,3 +1372,4 @@ export const GraphDrawPage = React.memo(() => {
     </Layout>
   );
 });
+GraphDrawPage.displayName = 'GraphDrawPage';

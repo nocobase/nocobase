@@ -1,30 +1,25 @@
-import React, { useEffect, useState } from 'react';
-import { Link, useHistory } from 'react-router-dom';
-import { Dropdown, Menu, Button, Tag, Switch, message, Breadcrumb } from 'antd';
-import { DownOutlined, RightOutlined, EllipsisOutlined } from '@ant-design/icons';
-import { cx } from '@emotion/css';
-import classnames from 'classnames';
-import { useTranslation } from 'react-i18next';
-
+import { DownOutlined, EllipsisOutlined, RightOutlined } from '@ant-design/icons';
 import {
-  ActionContext,
+  ActionContextProvider,
+  cx,
   ResourceActionProvider,
   SchemaComponent,
   useDocumentTitle,
   useResourceActionContext,
-  useResourceContext
+  useResourceContext,
 } from '@nocobase/client';
-
-import { FlowContext, useFlowContext } from './FlowContext';
-import { branchBlockClass, nodeCardClass, nodeMetaClass, workflowVersionDropdownClass } from './style';
-import { TriggerConfig } from './triggers';
-import { Branch } from './Branch';
-import { executionSchema } from './schemas/executions';
+import { Breadcrumb, Button, Dropdown, message, Modal, Switch } from 'antd';
+import classnames from 'classnames';
+import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Link, useNavigate } from 'react-router-dom';
+import { CanvasContent } from './CanvasContent';
 import { ExecutionLink } from './ExecutionLink';
+import { FlowContext, useFlowContext } from './FlowContext';
 import { lang } from './locale';
+import { executionSchema } from './schemas/executions';
+import { workflowVersionDropdownClass } from './style';
 import { linkNodes } from './utils';
-
-
 
 function ExecutionResourceProvider({ request, filter = {}, ...others }) {
   const { workflow } = useFlowContext();
@@ -35,22 +30,18 @@ function ExecutionResourceProvider({ request, filter = {}, ...others }) {
       params: {
         ...request?.params,
         filter: {
-          ...(request?.params?.filter),
+          ...request?.params?.filter,
           key: workflow.key,
-        }
-      }
-    }
+        },
+      },
+    },
   };
 
-  return (
-    <ResourceActionProvider {...props} />
-  );
+  return <ResourceActionProvider {...props} />;
 }
 
-
-
 export function WorkflowCanvas() {
-  const history = useHistory();
+  const navigate = useNavigate();
   const { t } = useTranslation();
   const { data, refresh, loading } = useResourceActionContext();
   const { resource } = useResourceContext();
@@ -61,19 +52,18 @@ export function WorkflowCanvas() {
     setTitle?.(`${lang('Workflow')}${title ? `: ${title}` : ''}`);
   }, [data?.data]);
 
-  if (!data?.data && !loading) {
-    return <div>{lang('Load failed')}</div>;
+  if (!data?.data) {
+    return <div>{loading ? lang('Loading') : lang('Load failed')}</div>;
   }
 
   const { nodes = [], revisions = [], ...workflow } = data?.data ?? {};
-
   linkNodes(nodes);
 
-  const entry = nodes.find(item => !item.upstream);
+  const entry = nodes.find((item) => !item.upstream);
 
   function onSwitchVersion({ key }) {
     if (key != workflow.id) {
-      history.push(key);
+      navigate(`/admin/settings/workflow/workflows/${key}`);
     }
   }
 
@@ -81,22 +71,46 @@ export function WorkflowCanvas() {
     await resource.update({
       filterByTk: workflow.id,
       values: {
-        enabled: value
-      }
+        enabled: value,
+      },
     });
     refresh();
   }
 
   async function onRevision() {
-    const { data: { data: revision } } = await resource.revision({
+    const {
+      data: { data: revision },
+    } = await resource.revision({
       filterByTk: workflow.id,
       filter: {
-        key: workflow.key
-      }
+        key: workflow.key,
+      },
     });
     message.success(t('Operation succeeded'));
 
-    history.push(`${revision.id}`);
+    navigate(`/admin/settings/workflow/workflows/${revision.id}`);
+  }
+
+  async function onDelete() {
+    const content = workflow.current
+      ? lang('Delete a main version will cause all other revisions to be deleted too.')
+      : '';
+    Modal.confirm({
+      title: t('Are you sure you want to delete it?'),
+      content,
+      async onOk() {
+        await resource.destroy({
+          filterByTk: workflow.id,
+        });
+        message.success(t('Operation succeeded'));
+
+        navigate(
+          workflow.current
+            ? '/admin/settings/workflow/workflows'
+            : `/admin/settings/workflow/workflows/${revisions.find((item) => item.current)?.id}`,
+        );
+      },
+    });
   }
 
   async function onMenuCommand({ key }) {
@@ -106,26 +120,30 @@ export function WorkflowCanvas() {
         return;
       case 'revision':
         return onRevision();
+      case 'delete':
+        return onDelete();
       default:
         break;
     }
   }
 
-  const revisionable = workflow.executed && !revisions.find(item => !item.executed && new Date(item.createdAt) > new Date(workflow.createdAt));
+  const revisionable =
+    workflow.executed &&
+    !revisions.find((item) => !item.executed && new Date(item.createdAt) > new Date(workflow.createdAt));
 
   return (
-    <FlowContext.Provider value={{
-      workflow,
-      nodes,
-      refresh,
-    }}>
+    <FlowContext.Provider
+      value={{
+        workflow,
+        nodes,
+        refresh,
+      }}
+    >
       <div className="workflow-toolbar">
         <header>
           <Breadcrumb>
             <Breadcrumb.Item>
-              <Link to={`/admin/settings/workflow/workflows`}>
-                {lang('Workflow')}
-              </Link>
+              <Link to={`/admin/settings/workflow/workflows`}>{lang('Workflow')}</Link>
             </Breadcrumb.Item>
             <Breadcrumb.Item>
               <strong>{workflow.title}</strong>
@@ -136,28 +154,29 @@ export function WorkflowCanvas() {
           <div className="workflow-versions">
             <Dropdown
               trigger={['click']}
-              overlay={
-                <Menu
-                  onClick={onSwitchVersion}
-                  defaultSelectedKeys={[`${workflow.id}`]}
-                  className={cx(workflowVersionDropdownClass)}
-                >
-                  {revisions.sort((a, b) => b.id - a.id).map((item, index) => (
-                    <Menu.Item
-                      key={`${item.id}`}
-                      icon={item.current ? <RightOutlined /> : null}
-                      className={classnames({
-                        executed: item.executed,
-                        unexecuted: !item.executed,
-                        enabled: item.enabled,
-                      })}
-                    >
-                      <strong>{`#${item.id}`}</strong>
-                      <time>{(new Date(item.createdAt)).toLocaleString()}</time>
-                    </Menu.Item>
-                  ))}
-                </Menu>
-              }
+              menu={{
+                onClick: onSwitchVersion,
+                defaultSelectedKeys: [`${workflow.id}`],
+                className: cx(workflowVersionDropdownClass),
+                items: revisions
+                  .sort((a, b) => b.id - a.id)
+                  .map((item, index) => ({
+                    key: `${item.id}`,
+                    icon: item.current ? <RightOutlined /> : null,
+                    label: (
+                      <span
+                        className={classnames({
+                          executed: item.executed,
+                          unexecuted: !item.executed,
+                          enabled: item.enabled,
+                        })}
+                      >
+                        <strong>{`#${item.id}`}</strong>
+                        <time>{new Date(item.createdAt).toLocaleString()}</time>
+                      </span>
+                    ),
+                  })),
+              }}
             >
               <Button type="text">
                 <label>{lang('Version')}</label>
@@ -173,37 +192,29 @@ export function WorkflowCanvas() {
             unCheckedChildren={lang('Off')}
           />
           <Dropdown
-            overlay={
-              <Menu onClick={onMenuCommand}>
-                <Menu.Item key="history" disabled={!workflow.allExecuted}>{lang('Execution history')}</Menu.Item>
-                <Menu.Item key="revision" disabled={!revisionable}>{lang('Copy to new version')}</Menu.Item>
-              </Menu>
-            }
+            menu={{
+              items: [
+                { key: 'history', label: lang('Execution history'), disabled: !workflow.allExecuted },
+                { key: 'revision', label: lang('Copy to new version'), disabled: !revisionable },
+                { key: 'delete', label: t('Delete') },
+              ],
+              onClick: onMenuCommand,
+            }}
           >
             <Button type="text" icon={<EllipsisOutlined />} />
           </Dropdown>
-          <ActionContext.Provider value={{ visible, setVisible }}>
+          <ActionContextProvider value={{ visible, setVisible }}>
             <SchemaComponent
               schema={executionSchema}
               components={{
                 ExecutionResourceProvider,
-                ExecutionLink
+                ExecutionLink,
               }}
             />
-          </ActionContext.Provider>
+          </ActionContextProvider>
         </aside>
       </div>
-      <div className="workflow-canvas">
-        <TriggerConfig />
-        <div className={branchBlockClass}>
-          <Branch entry={entry} />
-        </div>
-        <div className={cx(nodeCardClass)}>
-          <div className={cx(nodeMetaClass)}>
-            <Tag color="#333">{lang('End')}</Tag>
-          </div>
-        </div>
-      </div>
+      <CanvasContent entry={entry} />
     </FlowContext.Provider>
   );
 }

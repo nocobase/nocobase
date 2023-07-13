@@ -1,8 +1,8 @@
 import { registerField, registerGroup, useCurrentAppInfo } from '@nocobase/client';
 import React, { useEffect } from 'react';
 import { fields } from './fields';
-import './locale';
 import { generateNTemplate } from './locale';
+import './locale';
 
 export const useRegisterInterface = () => {
   const { data } = useCurrentAppInfo() || {};
@@ -26,7 +26,7 @@ export const useRegisterInterface = () => {
   }, [data]);
 };
 
-export const Initialize: React.FC = (props) => {
+export const MapInitializer: React.FC = (props) => {
   useRegisterInterface();
   return <React.Fragment>{props.children}</React.Fragment>;
 };

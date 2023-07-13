@@ -8,6 +8,7 @@ describe('hook', () => {
 
   beforeEach(async () => {
     api = mockServer();
+    await api.db.clean({ drop: true });
     api.plugin(logPlugin, { name: 'audit-logs' });
     await api.load();
     db = api.db;
@@ -46,9 +47,22 @@ describe('hook', () => {
     const post = await Post.create({ title: 't1' });
     await post.update({ title: 't2' });
     await post.destroy();
-    const AuditLog = db.getCollection('auditLogs').model;
-    const count = await AuditLog.count();
-    expect(count).toBe(3);
+    const auditLogs = await db.getCollection('auditLogs').repository.find({
+      appends: ['changes'],
+    });
+    expect(auditLogs.length).toBe(3);
+
+    const titleChange = (changes) => {
+      return changes.find((item) => item.field.name === 'title');
+    };
+
+    expect(titleChange(auditLogs[0].changes).before).toBeNull();
+    expect(titleChange(auditLogs[0].changes).after).toBe('t1');
+
+    expect(titleChange(auditLogs[1].changes).before).toBe('t1');
+    expect(titleChange(auditLogs[1].changes).after).toBe('t2');
+
+    expect(titleChange(auditLogs[2].changes).before).toBe('t2');
   });
 
   it('repository', async () => {

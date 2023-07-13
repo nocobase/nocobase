@@ -1,9 +1,9 @@
 /**
  * title: Menu
  */
-import React from 'react';
-import { Menu, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
 import { ISchema } from '@formily/react';
+import { Menu, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import React from 'react';
 
 const schema: ISchema = {
   type: 'object',
@@ -13,10 +13,7 @@ const schema: ISchema = {
       'x-component': 'Menu',
       'x-component-props': {
         mode: 'horizontal',
-        defaultSelectedUid: 'u8',
-        // style: {
-        //   width: 260,
-        // },
+        defaultSelectedUid: 'u1',
       },
       properties: {
         item1: {
@@ -63,14 +60,14 @@ const schema: ISchema = {
               properties: {
                 item7: {
                   type: 'void',
-                  title: 'Menu Item 11',
+                  title: 'Menu Item 12',
                   'x-uid': 'u7',
                   'x-component': 'Menu.Item',
                   'x-component-props': {},
                 },
                 item8: {
                   type: 'void',
-                  title: 'Menu Item 12',
+                  title: 'Menu Item 13',
                   'x-uid': 'u8',
                   'x-component': 'Menu.Item',
                   'x-component-props': {},

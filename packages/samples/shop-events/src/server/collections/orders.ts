@@ -3,31 +3,31 @@ export default {
   fields: [
     {
       type: 'belongsTo',
-      name: 'product'
+      name: 'product',
     },
     {
       type: 'integer',
-      name: 'quantity'
+      name: 'quantity',
     },
     {
       type: 'integer',
-      name: 'totalPrice'
+      name: 'totalPrice',
     },
     {
       type: 'integer',
-      name: 'status'
+      name: 'status',
     },
     {
       type: 'string',
-      name: 'address'
+      name: 'address',
     },
     {
       type: 'belongsTo',
-      name: 'user'
+      name: 'user',
     },
     {
       type: 'hasOne',
-      name: 'delivery'
-    }
-  ]
+      name: 'delivery',
+    },
+  ],
 };

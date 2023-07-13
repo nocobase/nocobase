@@ -13,7 +13,7 @@ export const TestDesigner = () => {
       >
         删除
       </a>
-      <DragHandler/>
+      <DragHandler />
     </div>
   );
 };

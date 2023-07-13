@@ -92,7 +92,7 @@ export function branch(
   options: {
     keyNotFound?(ctx, next): void;
     handlerNotSet?(ctx, next): void;
-  } = {}
+  } = {},
 ): HandlerType {
   return (ctx, next) => {
     const key = reducer(ctx);

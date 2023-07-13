@@ -65,10 +65,8 @@ describe('belongs to field', () => {
 
   it('custom targetKey and foreignKey', async () => {
     db.collection({
-      name: "posts",
-      fields: [
-        { type: "string", name: "key" },
-      ]
+      name: 'posts',
+      fields: [{ type: 'string', name: 'key' }],
     });
 
     const Comment = db.collection({
@@ -117,7 +115,6 @@ describe('belongs to field', () => {
     } catch (e) {
       error = e;
     }
-
 
     expect(error).toBeInstanceOf(IdentifierError);
   });

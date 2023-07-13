@@ -5,7 +5,7 @@ import { ApplicationOptions } from '@nocobase/server';
 import Plugin from '..';
 
 export function sleep(ms: number) {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     setTimeout(resolve, ms);
   });
 }
@@ -22,7 +22,7 @@ export async function getApp({ manual, ...options }: MockAppOptions = {}): Promi
   await app.load();
 
   await app.db.import({
-    directory: path.resolve(__dirname, './collections')
+    directory: path.resolve(__dirname, './collections'),
   });
 
   try {

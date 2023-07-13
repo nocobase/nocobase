@@ -1,4 +1,4 @@
-import { ArrayItems } from '@formily/antd';
+import { ArrayItems } from '@formily/antd-v5';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -107,6 +107,7 @@ export const TableVoidDesigner = () => {
                         field: {
                           type: 'string',
                           enum: sortFields,
+                          required: true,
                           'x-decorator': 'FormItem',
                           'x-component': 'Select',
                           'x-component-props': {
@@ -195,7 +196,7 @@ export const TableVoidDesigner = () => {
         }}
       />
       <SchemaSettings.Divider />
-      <SchemaSettings.Template componentName={'Table'} collectionName={name}/>
+      <SchemaSettings.Template componentName={'Table'} collectionName={name} />
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren

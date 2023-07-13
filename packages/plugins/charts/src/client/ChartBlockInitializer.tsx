@@ -1,12 +1,12 @@
-import { css } from '@emotion/css';
-import { FormDialog, FormLayout } from '@formily/antd';
+import { FormDialog, FormLayout } from '@formily/antd-v5';
 import { Field } from '@formily/core';
-import { observer, RecursionField, Schema, SchemaOptionsContext, useField, useForm } from '@formily/react';
+import { RecursionField, Schema, SchemaOptionsContext, observer, useField, useForm } from '@formily/react';
 import {
   APIClientProvider,
   FormProvider,
   SchemaComponent,
   SchemaComponentOptions,
+  css,
   useAPIClient,
   useCompile,
 } from '@nocobase/client';
@@ -20,24 +20,27 @@ import DataSetPreviewTable from './DataSetPreviewTable';
 import { lang, useChartsTranslation } from './locale';
 import { templates } from './templates';
 
-export const Options = observer((props) => {
-  const form = useForm<ChartFormInterface>();
-  const field = useField<Field>();
-  const [s, setSchema] = useState(new Schema({}));
-  const [chartType, setChartType] = useState(form.values.type);
-  useEffect(() => {
-    // form.clearFormGraph('options.*');
-    setChartType(form?.values?.type);
-    if (chartType !== form?.values?.type) {
-      form.clearFormGraph('options.*');
-    }
-    if (form.values.type) {
-      const template = templates.get(form.values.type);
-      setSchema(new Schema(template.configurableProperties || {}));
-    }
-  }, [form.values.type]);
-  return <RecursionField schema={s} />;
-});
+export const Options = observer(
+  (props) => {
+    const form = useForm<ChartFormInterface>();
+    const field = useField<Field>();
+    const [s, setSchema] = useState(new Schema({}));
+    const [chartType, setChartType] = useState(form.values.type);
+    useEffect(() => {
+      // form.clearFormGraph('options.*');
+      setChartType(form?.values?.type);
+      if (chartType !== form?.values?.type) {
+        form.clearFormGraph('options.*');
+      }
+      if (form.values.type) {
+        const template = templates.get(form.values.type);
+        setSchema(new Schema(template.configurableProperties || {}));
+      }
+    }, [form.values.type]);
+    return <RecursionField schema={s} />;
+  },
+  { displayName: 'Options' },
+);
 
 interface ChartFormInterface {
   type: string;
@@ -66,12 +69,12 @@ export const ChartBlockInitializer = (props) => {
             value: field.name,
           };
         });
-        let values = await FormDialog(
+        const values = await FormDialog(
           {
             okText: compile('{{t("Submit")}}'),
             title: lang('Create chart block'),
             width: 1200,
-            bodyStyle: { background: '#f0f2f5', maxHeight: '65vh', overflow: 'auto' },
+            bodyStyle: { background: 'var(--nb-box-bg)', maxHeight: '65vh', overflow: 'auto' },
           },
           () => {
             const form = useForm<ChartFormInterface>();

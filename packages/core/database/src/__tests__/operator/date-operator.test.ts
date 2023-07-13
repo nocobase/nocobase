@@ -1,24 +1,26 @@
-import { mockDatabase } from '../index';
-import { Collection } from '../../collection';
 import Database from '../../database';
+import { Repository } from '../../repository';
+import { mockDatabase } from '../index';
 
 describe('date operator test', () => {
   let db: Database;
 
-  let User: Collection;
+  let repository: Repository;
 
   afterEach(async () => {
     await db.close();
   });
 
   beforeEach(async () => {
-    db = mockDatabase();
-
-    User = db.collection({
-      name: 'users',
+    db = mockDatabase({
+      timezone: '+00:00',
+    });
+    await db.clean({ drop: true });
+    const Test = db.collection({
+      name: 'tests',
       fields: [
         {
-          name: 'birthday',
+          name: 'date1',
           type: 'date',
         },
         {
@@ -27,139 +29,283 @@ describe('date operator test', () => {
         },
       ],
     });
-
-    await db.sync({ force: true, alter: { drop: false } });
+    repository = Test.repository;
+    await db.sync();
   });
 
   test('$dateOn', async () => {
-    const u0 = await User.repository.create({
-      values: {
-        birthday: '1990-01-02 12:03:02',
-        name: 'u0',
+    await repository.create({
+      values: [
+        {
+          date1: '2023-01-01T00:00:00.000Z',
+          name: 'u0',
+        },
+        {
+          date1: '2023-01-01T00:00:00.001Z',
+          name: 'u1',
+        },
+        {
+          date1: '2022-12-31T16:00:00.000Z',
+          name: 'u2',
+        },
+        {
+          date1: '2022-12-31T16:00:00.001Z',
+          name: 'u3',
+        },
+      ],
+    });
+    let count: number;
+    count = await repository.count({
+      filter: {
+        'date1.$dateOn': '2023',
       },
     });
-
-    const user1 = await User.repository.create({
-      values: {
-        birthday: '1990-01-01 12:03:02',
-        name: 'user1',
+    expect(count).toBe(2);
+    count = await repository.count({
+      filter: {
+        'date1.$dateOn': '2023+08:00',
       },
     });
-
-    const user = await User.repository.findOne({
-      filter: { 'birthday.$dateOn': '1990-01-01' },
-    });
-
-    expect(user.get('id')).toEqual(user1.get('id'));
+    expect(count).toBe(4);
   });
 
   test('$dateNotOn', async () => {
-    const u0 = await User.repository.create({
-      values: {
-        birthday: '1990-01-02 12:03:02',
-        name: 'u0',
+    await repository.create({
+      values: [
+        {
+          date1: '2023-01-01T00:00:00.000Z',
+          name: 'u0',
+        },
+        {
+          date1: '2023-01-01T00:00:00.001Z',
+          name: 'u1',
+        },
+        {
+          date1: '2022-12-31T16:00:00.000Z',
+          name: 'u2',
+        },
+        {
+          date1: '2022-12-31T16:00:00.001Z',
+          name: 'u3',
+        },
+      ],
+    });
+    let count: number;
+    count = await repository.count({
+      filter: {
+        'date1.$dateNotOn': '2023',
       },
     });
-
-    const user1 = await User.repository.create({
-      values: {
-        birthday: '1990-01-01 12:03:02',
-        name: 'user1',
+    expect(count).toBe(2);
+    count = await repository.count({
+      filter: {
+        'date1.$dateNotOn': '2023+08:00',
       },
     });
-
-    const user = await User.repository.findOne({
-      filter: { 'birthday.$dateNotOn': '1990-01-01' },
-    });
-
-    expect(user.get('id')).toEqual(u0.get('id'));
+    expect(count).toBe(0);
   });
 
   test('$dateBefore', async () => {
-    const u0 = await User.repository.create({
-      values: {
-        birthday: '1990-05-01 12:03:02',
-        name: 'u0',
+    await repository.create({
+      values: [
+        {
+          date1: '2023-01-01T00:00:00.000Z',
+          name: 'u0',
+        },
+        {
+          date1: '2023-01-01T00:00:00.001Z',
+          name: 'u1',
+        },
+        {
+          date1: '2022-12-31T16:00:00.000Z',
+          name: 'u2',
+        },
+        {
+          date1: '2022-12-31T16:00:00.001Z',
+          name: 'u3',
+        },
+        {
+          date1: '2022-12-30T15:59:59.999Z',
+          name: 'u4',
+        },
+      ],
+    });
+    let count: number;
+    count = await repository.count({
+      filter: {
+        'date1.$dateBefore': '2023',
       },
     });
-
-    const user1 = await User.repository.create({
-      values: {
-        birthday: '1990-01-01 12:03:02',
-        name: 'user1',
+    expect(count).toBe(3);
+    count = await repository.count({
+      filter: {
+        'date1.$dateBefore': '2023+08:00',
       },
     });
-
-    const user = await User.repository.findOne({
-      filter: { 'birthday.$dateBefore': '1990-04-01' },
-    });
-
-    expect(user.get('id')).toEqual(user1.get('id'));
+    expect(count).toBe(1);
   });
 
   test('$dateNotBefore', async () => {
-    const u0 = await User.repository.create({
-      values: {
-        birthday: '1990-05-01 12:03:02',
-        name: 'u0',
+    await repository.create({
+      values: [
+        {
+          date1: '2023-01-01T00:00:00.000Z',
+          name: 'u0',
+        },
+        {
+          date1: '2023-01-01T00:00:00.001Z',
+          name: 'u1',
+        },
+        {
+          date1: '2022-12-31T16:00:00.000Z',
+          name: 'u2',
+        },
+        {
+          date1: '2022-12-31T16:00:00.001Z',
+          name: 'u3',
+        },
+        {
+          date1: '2022-12-30T15:59:59.999Z',
+          name: 'u4',
+        },
+      ],
+    });
+    let count: number;
+    count = await repository.count({
+      filter: {
+        'date1.$dateNotBefore': '2023',
       },
     });
-
-    const user1 = await User.repository.create({
-      values: {
-        birthday: '1990-01-01 12:03:02',
-        name: 'user1',
+    expect(count).toBe(2);
+    count = await repository.count({
+      filter: {
+        'date1.$dateNotBefore': '2023+08:00',
       },
     });
-
-    const user = await User.repository.findOne({
-      filter: { 'birthday.$dateNotBefore': '1990-04-01' },
-    });
-
-    expect(user.get('id')).toEqual(u0.get('id'));
+    expect(count).toBe(4);
   });
 
   test('$dateAfter', async () => {
-    const u0 = await User.repository.create({
-      values: {
-        birthday: '1990-05-01 12:03:02',
-        name: 'u0',
+    await repository.create({
+      values: [
+        {
+          date1: '2023-01-01T00:00:00.000Z',
+          name: 'u0',
+        },
+        {
+          date1: '2023-01-01T00:00:00.001Z',
+          name: 'u1',
+        },
+        {
+          date1: '2022-12-31T16:00:00.000Z',
+          name: 'u2',
+        },
+        {
+          date1: '2022-12-31T16:00:00.001Z',
+          name: 'u3',
+        },
+        {
+          date1: '2022-12-30T15:59:59.999Z',
+          name: 'u4',
+        },
+      ],
+    });
+    let count: number;
+    count = await repository.count({
+      filter: {
+        'date1.$dateAfter': '2022',
       },
     });
-
-    const user1 = await User.repository.create({
-      values: {
-        birthday: '1990-01-01 12:03:02',
-        name: 'user1',
+    expect(count).toBe(2);
+    count = await repository.count({
+      filter: {
+        'date1.$dateAfter': '2022+08:00',
       },
     });
-
-    const user = await User.repository.findOne({
-      filter: { 'birthday.$dateAfter': '1990-04-01' },
-    });
-
-    expect(user.get('id')).toEqual(u0.get('id'));
+    expect(count).toBe(4);
   });
 
   test('$dateNotAfter', async () => {
-    const u0 = await User.repository.create({
-      values: {
-        birthday: '1990-05-01 12:03:02',
-        name: 'u0',
+    await repository.create({
+      values: [
+        {
+          date1: '2023-01-01T00:00:00.000Z',
+          name: 'u0',
+        },
+        {
+          date1: '2023-01-01T00:00:00.001Z',
+          name: 'u1',
+        },
+        {
+          date1: '2022-12-31T16:00:00.000Z',
+          name: 'u2',
+        },
+        {
+          date1: '2022-12-31T16:00:00.001Z',
+          name: 'u3',
+        },
+        {
+          date1: '2022-12-30T15:59:59.999Z',
+          name: 'u4',
+        },
+      ],
+    });
+    let count: number;
+    count = await repository.count({
+      filter: {
+        'date1.$dateNotAfter': '2022',
       },
     });
-
-    const user1 = await User.repository.create({
-      values: {
-        birthday: '1990-01-01 12:03:02',
-        name: 'user1',
+    expect(count).toBe(3);
+    count = await repository.count({
+      filter: {
+        'date1.$dateNotAfter': '2022+08:00',
       },
     });
+    expect(count).toBe(1);
+  });
 
-    const user = await User.repository.findOne({
-      filter: { 'birthday.$dateNotAfter': '1990-04-01' },
+  test('$dateBetween', async () => {
+    await repository.create({
+      values: [
+        {
+          date1: '2023-01-01T00:00:00.000Z',
+          name: 'u0',
+        },
+        {
+          date1: '2023-01-05T16:00:00.000Z',
+          name: 'u1',
+        },
+        {
+          date1: '2022-12-31T16:00:00.000Z',
+          name: 'u2',
+        },
+        {
+          date1: '2022-12-31T16:00:00.001Z',
+          name: 'u3',
+        },
+        {
+          date1: '2022-12-30T15:59:59.999Z',
+          name: 'u4',
+        },
+        {
+          date1: '2023-01-04T16:00:00.000Z',
+          name: 'u1',
+        },
+      ],
     });
-
-    expect(user.get('id')).toEqual(user1.get('id'));
+    let count: number;
+    count = await repository.count({
+      filter: {
+        'date1.$dateBetween': '[2023-01-01,2023-01-05]',
+      },
+    });
+    expect(count).toBe(3);
+    count = await repository.count({
+      filter: {
+        'date1.$dateBetween': '[2023-01-01,2023-01-05]+08:00',
+      },
+    });
+    expect(count).toBe(4);
   });
 });

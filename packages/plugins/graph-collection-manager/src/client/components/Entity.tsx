@@ -1,13 +1,15 @@
 import { DeleteOutlined, DownOutlined, EditOutlined, UpOutlined } from '@ant-design/icons';
 import '@antv/x6-react-shape';
-import { css, cx } from '@emotion/css';
 import { uid } from '@formily/shared';
 import {
   Action,
   Checkbox,
   collection,
+  CollectionCategroriesContext,
   CollectionField,
   CollectionProvider,
+  css,
+  cx,
   Form,
   FormItem,
   Formula,
@@ -23,11 +25,10 @@ import {
   useCompile,
   useCurrentAppInfo,
   useRecord,
-  CollectionCategroriesContext,
 } from '@nocobase/client';
+import { lodash } from '@nocobase/utils/client';
 import { Badge, Dropdown, Popover, Tag } from 'antd';
-import { groupBy } from 'lodash';
-import React, { useRef, useState, useContext } from 'react';
+import React, { useContext, useRef, useState } from 'react';
 import {
   useAsyncDataSource,
   useCancelAction,
@@ -37,7 +38,7 @@ import {
   useValuesFromRecord,
 } from '../action-hooks';
 import { collectiionPopoverClass, entityContainer, headClass, tableBtnClass, tableNameClass } from '../style';
-import { useGCMTranslation } from '../utils';
+import { getPopupContainer, useGCMTranslation } from '../utils';
 import { AddFieldAction } from './AddFieldAction';
 import { CollectionNodeProvder } from './CollectionNodeProvder';
 import { EditCollectionAction } from './EditCollectionAction';
@@ -71,7 +72,7 @@ const Entity: React.FC<{
     }));
   };
   const loadCategories = async () => {
-    return categoryData.data.map((item: any) => ({
+    return categoryData?.data.map((item: any) => ({
       label: compile(item.name),
       value: item.id,
     }));
@@ -161,9 +162,7 @@ const Entity: React.FC<{
 
                           confirm: {
                             title: "{{t('Delete record')}}",
-                            getContainer: () => {
-                              return document.getElementById('graph_container');
-                            },
+                            getContainer: getPopupContainer,
                             collectionConten: "{{t('Are you sure you want to delete it?')}}",
                           },
                           useAction: () => useDestroyActionAndRefreshCM({ name, id }),
@@ -192,7 +191,8 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
   const [collapse, setCollapse] = useState(false);
   const { t } = useGCMTranslation();
   const compile = useCompile();
-  const portsData = groupBy(ports.items, (v) => {
+  const database = useCurrentAppInfo();
+  const portsData = lodash.groupBy(ports.items, (v) => {
     if (
       v.isForeignKey ||
       v.primaryKey ||
@@ -233,6 +233,7 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
       return 'orange';
     }
   };
+
   const OperationButton = ({ property }) => {
     const isInheritField = !(property.collectionName !== name);
     return (
@@ -245,12 +246,7 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
             Form,
             ResourceActionProvider,
             Select: (props) => (
-              <Select
-                {...props}
-                getPopupContainer={() => {
-                  return document.getElementById('graph_container');
-                }}
-              />
+              <Select popupMatchSelectWidth={false} {...props} getPopupContainer={getPopupContainer} />
             ),
             Checkbox,
             Radio,
@@ -298,6 +294,7 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
                         ...property,
                         title,
                       },
+                      database,
                     },
                   },
                   update: {
@@ -334,9 +331,7 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
                       `,
                       confirm: {
                         title: "{{t('Delete record')}}",
-                        getContainer: () => {
-                          return document.getElementById('graph_container');
-                        },
+                        getContainer: getPopupContainer,
                         collectionConten: "{{t('Are you sure you want to delete it?')}}",
                       },
                       useAction: () =>
@@ -409,9 +404,7 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
           property.uiSchema && (
             <Popover
               content={CollectionConten(property)}
-              getPopupContainer={() => {
-                return document.getElementById('graph_container');
-              }}
+              getPopupContainer={getPopupContainer}
               mouseLeaveDelay={0}
               zIndex={100}
               title={
@@ -452,9 +445,7 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
               property.uiSchema && (
                 <Popover
                   content={CollectionConten(property)}
-                  getPopupContainer={() => {
-                    return document.getElementById('graph_container');
-                  }}
+                  getPopupContainer={getPopupContainer}
                   mouseLeaveDelay={0}
                   zIndex={100}
                   title={

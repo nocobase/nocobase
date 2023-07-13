@@ -1,15 +1,14 @@
+import { CollectionGroup } from '@nocobase/database';
+import { dayjs, lodash } from '@nocobase/utils';
 import archiver from 'archiver';
-import dayjs from 'dayjs';
 import fs from 'fs';
 import fsPromises from 'fs/promises';
-import lodash from 'lodash';
 import mkdirp from 'mkdirp';
 import path from 'path';
 import stream from 'stream';
 import util from 'util';
 import { AppMigrator } from './app-migrator';
 import { CollectionGroupManager } from './collection-group-manager';
-import { CollectionGroup } from '@nocobase/database';
 import { FieldValueWriter } from './field-value-writer';
 import { DUMPED_EXTENSION, humanFileSize, sqlAdapter } from './utils';
 
@@ -56,7 +55,7 @@ export class Dumper extends AppMigrator {
 
   async dump(options: { selectedOptionalGroupNames: string[]; selectedUserCollections: string[] }) {
     const { requiredGroups, optionalGroups } = await this.dumpableCollections();
-    let { selectedOptionalGroupNames, selectedUserCollections = [] } = options;
+    const { selectedOptionalGroupNames, selectedUserCollections = [] } = options;
 
     const throughCollections = this.findThroughCollections(selectedUserCollections);
 
@@ -111,7 +110,7 @@ export class Dumper extends AppMigrator {
   async dumpDb() {
     const db = this.app.db;
     const dialect = db.sequelize.getDialect();
-    let sqlContent = [];
+    const sqlContent = [];
     if (dialect === 'postgres') {
       // get user defined functions in postgres
       const functions = await db.sequelize.query(
@@ -147,17 +146,22 @@ export class Dumper extends AppMigrator {
 
       // get user defined views in postgres
       const views = await db.sequelize.query(
-        `SELECT table_schema, table_name, pg_get_viewdef("table_name", true) as def
-         FROM information_schema.views
-         WHERE table_schema NOT IN ('information_schema', 'pg_catalog')
-         ORDER BY table_schema, table_name`,
+        `SELECT n.nspname    AS schema_name,
+                v.viewname   AS view_name,
+                v.definition AS view_definition
+         FROM pg_views v
+                JOIN
+              pg_namespace n ON v.schemaname = n.nspname
+         WHERE n.nspname NOT IN ('information_schema', 'pg_catalog')
+         ORDER BY schema_name,
+                  view_name;`,
         {
           type: 'SELECT',
         },
       );
 
       for (const v of views) {
-        sqlContent.push(`CREATE OR REPLACE VIEW ${v['table_name']} AS ${v['def']}`);
+        sqlContent.push(`CREATE OR REPLACE VIEW ${v['view_name']} AS ${v['view_definition']}`);
       }
     }
 
@@ -167,7 +171,7 @@ export class Dumper extends AppMigrator {
     }
   }
 
-  async dumpMeta(additionalMeta: Object = {}) {
+  async dumpMeta(additionalMeta: object = {}) {
     const metaPath = path.resolve(this.workDir, 'meta');
 
     await fsPromises.writeFile(

@@ -1,23 +1,22 @@
-import { Context } from '@nocobase/actions';
-import { createOIDCClient } from '../shared/createOIDCClient';
-import { OIDCProvider } from '../shared/types';
+import { Context, Next } from '@nocobase/actions';
+import { OIDCAuth } from '../oidc-auth';
+import { nanoid } from 'nanoid';
+import { cookieName } from '../../constants';
 
-export const getAuthUrl = async (ctx: Context, next) => {
-  const {
-    params: { values },
-  } = ctx.action;
-  const providerRepo = ctx.db.getRepository('oidcProviders');
-  const record = await providerRepo.findOne({
-    filter: {
-      clientId: values.clientId,
-    },
+export const getAuthUrl = async (ctx: Context, next: Next) => {
+  const auth = ctx.auth as OIDCAuth;
+  const client = await auth.createOIDCClient();
+  const { scope } = auth.getOptions();
+  const token = nanoid(15);
+  ctx.cookies.set(cookieName, token, {
+    httpOnly: true,
+    domain: ctx.hostname,
   });
-  const provider: OIDCProvider = record.toJSON();
-  const client = await createOIDCClient(provider);
-
   ctx.body = client.authorizationUrl({
-    nonce: ctx.OIDC_NONCE,
-    scope: 'openid profile',
+    response_type: 'code',
+    scope: scope || 'openid email profile',
+    redirect_uri: auth.getRedirectUri(),
+    state: `token=${token}&name=${ctx.headers['x-authenticator']}`,
   });
 
   return next();

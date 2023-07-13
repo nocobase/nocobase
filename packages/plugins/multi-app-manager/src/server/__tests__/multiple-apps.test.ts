@@ -1,7 +1,6 @@
 import { Database } from '@nocobase/database';
 import { mockServer, MockServer } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
-import { ApplicationModel } from '..';
 import { PluginMultiAppManager } from '../server';
 
 describe('multiple apps create', () => {
@@ -128,20 +127,83 @@ describe('multiple apps create', () => {
     expect(app.appManager.applications.has(name)).toBeTruthy();
   });
 
-  it('should change handleAppStart', async () => {
-    const customHandler = jest.fn();
-    ApplicationModel.handleAppStart = customHandler;
-    const name = `td_${uid()}`;
+  it('should upgrade sub apps when main app upgrade', async () => {
+    const subAppName = `t_${uid()}`;
 
-    await db.getRepository('applications').create({
+    await app.db.getRepository('applications').create({
       values: {
-        name,
+        name: subAppName,
         options: {
-          plugins: ['ui-schema-storage'],
+          plugins: [],
         },
       },
     });
 
-    expect(customHandler).toHaveBeenCalledTimes(1);
+    const subApp = await app.appManager.getApplication(subAppName);
+    const jestFn = jest.fn();
+
+    subApp.on('afterUpgrade', () => {
+      jestFn();
+    });
+
+    await app.upgrade();
+
+    expect(jestFn).toBeCalled();
+  });
+
+  it('should start automatically', async () => {
+    const subAppName = `t_${uid()}`;
+
+    const subApp = await app.db.getRepository('applications').create({
+      values: {
+        name: subAppName,
+        options: {},
+      },
+    });
+    await app.appManager.removeApplication(subAppName);
+    await app.start();
+    expect(app.appManager.applications.get(subAppName)).toBeUndefined();
+    await subApp.update({
+      options: {
+        autoStart: true,
+      },
+    });
+    await app.appManager.removeApplication(subAppName);
+    await app.start();
+    expect(app.appManager.applications.get(subAppName)).toBeDefined();
+  });
+
+  it('should get same obj ref when asynchronously access with same sub app name', async () => {
+    const subAppName = `t_${uid()}`;
+
+    const subApp = await app.db.getRepository('applications').create({
+      values: {
+        name: subAppName,
+        options: {},
+      },
+    });
+
+    await app.appManager.removeApplication(subAppName);
+    expect(app.appManager.applications.get(subAppName)).toBeUndefined();
+
+    const instances = [];
+
+    app.on('afterSubAppAdded', (subApp) => {
+      instances.push(subApp);
+    });
+
+    const promises = [];
+    for (let i = 0; i < 3; i++) {
+      promises.push(
+        (async () => {
+          await app.appManager.getApplication(subAppName);
+        })(),
+      );
+    }
+    await Promise.all(promises);
+
+    expect(instances.length).toBe(1);
+    expect(instances[0]).toBeDefined();
+    expect(instances[0].name == subAppName).toBeTruthy();
   });
 });

@@ -34,6 +34,6 @@ export default {
       type: 'string',
       'x-decorator': 'FormItem',
       'x-component': 'Input',
-    }
-  }
+    },
+  },
 } as ISchema;

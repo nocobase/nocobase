@@ -1,10 +1,10 @@
-import React from "react";
+import React from 'react';
 import { FormOutlined } from '@ant-design/icons';
 
-import { useCollection } from "../../collection-manager";
-import { useSchemaTemplateManager } from "../../schema-templates";
-import { SchemaInitializer } from "../SchemaInitializer";
-import { createTableSelectorSchema } from "../utils";
+import { useCollection } from '../../collection-manager';
+import { useSchemaTemplateManager } from '../../schema-templates';
+import { SchemaInitializer } from '../SchemaInitializer';
+import { createTableSelectorSchema } from '../utils';
 
 export const TableSelectorInitializer = (props) => {
   const { onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;

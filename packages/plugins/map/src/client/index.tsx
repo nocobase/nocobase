@@ -1,22 +1,24 @@
 import {
   CollectionManagerContext,
   CurrentAppInfoProvider,
+  Plugin,
   SchemaComponentOptions,
-  SettingsCenterProvider
+  SettingsCenterProvider,
 } from '@nocobase/client';
 import React, { useContext } from 'react';
-import Configuration from './components/Configuration';
-import Map from './components/Map';
+import { MapBlockOptions } from './block';
+import { Configuration, Map } from './components';
 import { interfaces } from './fields';
-import { Initialize } from './initialize';
+import { MapInitializer } from './initialize';
+import './locale';
 import { useMapTranslation } from './locale';
 
-export default React.memo((props) => {
+const MapProvider = React.memo((props) => {
   const ctx = useContext(CollectionManagerContext);
   const { t } = useMapTranslation();
   return (
     <CurrentAppInfoProvider>
-      <Initialize>
+      <MapInitializer>
         <SettingsCenterProvider
           settings={{
             map: {
@@ -32,12 +34,23 @@ export default React.memo((props) => {
           }}
         >
           <SchemaComponentOptions components={{ Map }}>
-            <CollectionManagerContext.Provider value={{ ...ctx, interfaces: { ...ctx.interfaces, ...interfaces } }}>
-              {props.children}
-            </CollectionManagerContext.Provider>
+            <MapBlockOptions>
+              <CollectionManagerContext.Provider value={{ ...ctx, interfaces: { ...ctx.interfaces, ...interfaces } }}>
+                {props.children}
+              </CollectionManagerContext.Provider>
+            </MapBlockOptions>
           </SchemaComponentOptions>
         </SettingsCenterProvider>
-      </Initialize>
+      </MapInitializer>
     </CurrentAppInfoProvider>
   );
 });
+MapProvider.displayName = 'MapProvider';
+
+export class MapPlugin extends Plugin {
+  async load() {
+    this.app.use(MapProvider);
+  }
+}
+
+export default MapPlugin;

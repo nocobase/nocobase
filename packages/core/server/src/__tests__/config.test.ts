@@ -1,9 +1,9 @@
 import * as path from 'path';
+import Application from '../application';
+import { PluginManager } from '../plugin-manager';
+import { readConfig } from '../read-config';
 import databaseConfiguration from './config/database';
 import userConfiguration from './config/plugins-options/users';
-import { readConfig } from '../read-config';
-import { PluginManager } from '../plugin-manager';
-import Application from '../application';
 
 const configurationDir = path.join(__dirname, './config');
 

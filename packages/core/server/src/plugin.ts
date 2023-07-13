@@ -68,6 +68,8 @@ export abstract class Plugin<O = any> implements PluginInterface {
 
   async install(options?: InstallOptions) {}
 
+  async beforeEnable() {}
+
   async afterEnable() {}
 
   async afterDisable() {}
@@ -79,6 +81,10 @@ export abstract class Plugin<O = any> implements PluginInterface {
       directory: collectionsPath,
       from: this.getName(),
     });
+  }
+
+  requiredPlugins() {
+    return [];
   }
 }
 

@@ -30,8 +30,13 @@ export const executionCollection = {
         title: `{{t("Version", { ns: "${NAMESPACE}" })}}`,
         ['x-component']({ value }) {
           const { setVisible } = useActionContext();
-          return <Link to={`/admin/settings/workflow/workflows/${value}`} onClick={() => setVisible(false)}>{`#${value}`}</Link>;
-        }
+          return (
+            <Link
+              to={`/admin/settings/workflow/workflows/${value}`}
+              onClick={() => setVisible(false)}
+            >{`#${value}`}</Link>
+          );
+        },
       } as ISchema,
     },
     {
@@ -45,7 +50,7 @@ export const executionCollection = {
         'x-decorator': 'FormItem',
         enum: ExecutionStatusOptions,
       } as ISchema,
-    }
+    },
   ],
 };
 
@@ -68,7 +73,7 @@ export const executionSchema = {
             appends: ['workflow.id', 'workflow.title'],
             pageSize: 20,
             sort: ['-createdAt'],
-            filter: {}
+            filter: {},
           },
         },
       },
@@ -86,7 +91,7 @@ export const executionSchema = {
             //   type: 'object',
             //   'x-component': 'Filter',
             // }
-          }
+          },
         },
         table: {
           type: 'void',
@@ -105,11 +110,11 @@ export const executionSchema = {
                   type: 'datetime',
                   'x-component': 'CollectionField',
                   'x-component-props': {
-                    showTime: true
+                    showTime: true,
                   },
                   'x-read-pretty': true,
                 },
-              }
+              },
             },
             workflowId: {
               type: 'void',
@@ -121,7 +126,7 @@ export const executionSchema = {
                   'x-component': 'CollectionField',
                   'x-read-pretty': true,
                 },
-              }
+              },
             },
             status: {
               type: 'void',
@@ -133,7 +138,7 @@ export const executionSchema = {
                   'x-component': 'CollectionField',
                   'x-read-pretty': true,
                 },
-              }
+              },
             },
             actions: {
               type: 'void',
@@ -150,15 +155,15 @@ export const executionSchema = {
                     config: {
                       type: 'void',
                       title: `{{t("Details", { ns: "${NAMESPACE}" })}}`,
-                      'x-component': 'ExecutionLink'
+                      'x-component': 'ExecutionLink',
                     },
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
 };

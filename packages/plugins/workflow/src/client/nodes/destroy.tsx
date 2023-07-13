@@ -9,6 +9,7 @@ export default {
   title: '{{t("Delete record")}}',
   type: 'destroy',
   group: 'collection',
+  description: `{{t("Delete records of a collection. Could use variables in workflow context as filter. All records match the filter will be deleted.", { ns: "${NAMESPACE}" })}}`,
   fieldset: {
     collection,
     params: {
@@ -19,17 +20,15 @@ export default {
           ['x-validator'](value) {
             return isValidFilter(value) ? '' : `{{t("Please add at least one condition", { ns: "${NAMESPACE}" })}}`;
           },
-        }
-      }
-    }
+        },
+      },
+    },
   },
-  view: {
-
-  },
+  view: {},
   scope: {
-    useCollectionDataSource
+    useCollectionDataSource,
   },
   components: {
-    FilterDynamicComponent
-  }
+    FilterDynamicComponent,
+  },
 };

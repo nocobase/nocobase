@@ -1,5 +1,7 @@
-import React from 'react';
+import { Plugin } from '@nocobase/client';
 
-export default React.memo((props) => {
-  return <>{props.children}</>;
-});
+class ShopEventsPlugin extends Plugin {
+  async load() { }
+}
+
+export default ShopEventsPlugin;

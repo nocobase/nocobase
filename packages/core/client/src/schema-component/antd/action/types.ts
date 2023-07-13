@@ -1,4 +1,4 @@
-import { ButtonProps, DrawerProps } from 'antd';
+import { ButtonProps, DrawerProps, ModalProps } from 'antd';
 
 export type ActionProps = ButtonProps & {
   component?: any;
@@ -12,6 +12,6 @@ export type ComposedAction = React.FC<ActionProps> & {
   [key: string]: any;
 };
 
-export type ComposedActionDrawer = React.FC<DrawerProps & { footerNodeName?: string }> & {
+export type ComposedActionDrawer<T = DrawerProps> = React.FC<T & { footerNodeName?: string }> & {
   Footer?: React.FC;
 };

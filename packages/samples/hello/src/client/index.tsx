@@ -1,8 +1,10 @@
 import { TableOutlined } from '@ant-design/icons';
 import {
+  Plugin,
   SchemaComponentOptions,
   SchemaInitializer,
-  SchemaInitializerContext, SettingsCenterProvider
+  SchemaInitializerContext,
+  SettingsCenterProvider,
 } from '@nocobase/client';
 import { Card } from 'antd';
 import React, { useContext } from 'react';
@@ -35,8 +37,8 @@ export const HelloBlockInitializer = (props) => {
   );
 };
 
-export default React.memo((props) => {
-  const items = useContext(SchemaInitializerContext);
+const HelloProvider = React.memo((props) => {
+  const items = useContext<any>(SchemaInitializerContext);
   const children = items.BlockInitializers.items[1].children;
   children.push({
     key: 'hello',
@@ -65,3 +67,12 @@ export default React.memo((props) => {
     </SettingsCenterProvider>
   );
 });
+HelloProvider.displayName = 'HelloProvider';
+
+class HelloPlugin extends Plugin {
+  async load() {
+    this.app.addProvider(HelloProvider);
+  }
+}
+
+export default HelloPlugin;

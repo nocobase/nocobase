@@ -1,17 +1,20 @@
 import { Field } from '@formily/core';
-import { useField, useForm } from '@formily/react';
+import { useField } from '@formily/react';
 import { reaction } from '@formily/reactive';
 import { isArr, isValid, toArr as toArray } from '@formily/shared';
-import { UploadChangeParam } from 'antd/lib/upload';
-import { UploadFile } from 'antd/lib/upload/interface';
+import { UploadFile } from 'antd/es/upload/interface';
 import { useEffect } from 'react';
 import { useAPIClient } from '../../../api-client';
 import { UPLOAD_PLACEHOLDER } from './placeholder';
 import type { IUploadProps, UploadProps } from './type';
 
 export const isImage = (extName: string) => {
-  var reg = /\.(png|jpg|gif|jpeg|webp)$/;
+  const reg = /\.(png|jpg|gif|jpeg|webp)$/;
   return reg.test(extName);
+};
+
+export const isPdf = (extName: string) => {
+  return extName.toLowerCase().endsWith('.pdf');
 };
 
 export const toMap = (fileList: any) => {
@@ -163,7 +166,7 @@ export const useUploadValidator = (serviceErrorMessage = 'Upload Service Error')
 
 export function useUploadProps<T extends IUploadProps = UploadProps>({ serviceErrorMessage, ...props }: T) {
   useUploadValidator(serviceErrorMessage);
-  const onChange = (param: UploadChangeParam<UploadFile>) => {
+  const onChange = (param: { fileList: any[] }) => {
     props.onChange?.(normalizeFileList([...param.fileList]));
   };
 
@@ -208,7 +211,10 @@ export function useUploadProps<T extends IUploadProps = UploadProps>({ serviceEr
 
 export const toItem = (file) => {
   if (file?.response?.data) {
-    file = file.response.data;
+    file = {
+      uid: file.uid,
+      ...file.response.data,
+    };
   }
   return {
     ...file,

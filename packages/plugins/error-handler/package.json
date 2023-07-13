@@ -1,13 +1,31 @@
 {
   "name": "@nocobase/plugin-error-handler",
-  "version": "0.9.1-alpha.2",
-  "description": "",
+  "displayName": "error handler",
+  "displayName.zh-CN": "错误处理",
+  "description": "Managing and handling errors and exceptions in an application.",
+  "description.zh-CN": "管理和处理应用程序中的错误和异常。",
+  "version": "0.11.0-alpha.1",
   "license": "AGPL-3.0",
-  "main": "./lib/index.js",
-  "types": "./lib/index.d.ts",
-  "dependencies": {
-    "@formily/json-schema": "^2.0.15",
-    "@nocobase/server": "0.9.1-alpha.2"
+  "main": "./lib/server/index.js",
+  "files": [
+    "lib",
+    "src",
+    "README.md",
+    "README.zh-CN.md",
+    "CHANGELOG.md",
+    "server.js",
+    "server.d.ts",
+    "client.js",
+    "client.d.ts"
+  ],
+  "devDependencies": {
+    "@formily/json-schema": "2.2.26",
+    "@nocobase/client": "0.11.0-alpha.1",
+    "@nocobase/database": "0.11.0-alpha.1",
+    "@nocobase/server": "0.11.0-alpha.1",
+    "@nocobase/test": "0.11.0-alpha.1",
+    "@nocobase/utils": "0.11.0-alpha.1",
+    "supertest": "^6.1.6"
   },
   "repository": {
     "type": "git",

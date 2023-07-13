@@ -1,15 +1,15 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { useCompile } from '../../schema-component';
 import { SchemaInitializer } from '../SchemaInitializer';
 import { gridRowColWrap, useCustomFormItemInitializerFields, useInheritsFormItemInitializerFields } from '../utils';
-import { useCompile } from '../../schema-component';
 
 // 表单里配置字段
 export const CustomFormItemInitializers = (props: any) => {
   const { t } = useTranslation();
   const compile = useCompile();
   const { insertPosition, component } = props;
-  const inheritFields = useInheritsFormItemInitializerFields();
+  const inheritFields = useInheritsFormItemInitializerFields({ component: 'AssignedField' });
   const fieldItems: any[] = [
     {
       type: 'itemGroup',

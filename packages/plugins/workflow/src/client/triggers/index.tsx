@@ -1,19 +1,26 @@
-import React, { useState } from "react";
-import { css, cx } from "@emotion/css";
-import { ISchema, useForm } from "@formily/react";
-import { Registry } from "@nocobase/utils/client";
-import { message, Tag, Alert, Button, Input } from "antd";
-import { useTranslation } from "react-i18next";
 import { InfoOutlined } from '@ant-design/icons';
-
-import { ActionContext, SchemaComponent, SchemaInitializerItemOptions, useActionContext, useAPIClient, useCompile, useRequest, useResourceActionContext } from '@nocobase/client';
-
-import { nodeCardClass, nodeMetaClass, nodeTitleClass } from "../style";
-import { useFlowContext } from "../FlowContext";
+import { createForm } from '@formily/core';
+import { ISchema, useForm } from '@formily/react';
+import {
+  ActionContextProvider,
+  css,
+  cx,
+  SchemaComponent,
+  SchemaInitializerItemOptions,
+  useActionContext,
+  useAPIClient,
+  useCompile,
+  useResourceActionContext,
+} from '@nocobase/client';
+import { Registry } from '@nocobase/utils/client';
+import { Alert, Button, Input, message, Tag } from 'antd';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useFlowContext } from '../FlowContext';
+import { lang, NAMESPACE } from '../locale';
+import { nodeCardClass, nodeJobButtonClass, nodeMetaClass, nodeTitleClass } from '../style';
+import { VariableOptions } from '../variable';
 import collection from './collection';
-import schedule from "./schedule/";
-import { lang, NAMESPACE } from "../locale";
-
+import schedule from './schedule/';
 
 function useUpdateConfigAction() {
   const form = useForm();
@@ -31,28 +38,27 @@ function useUpdateConfigAction() {
       await api.resource('workflows').update?.({
         filterByTk: workflow.id,
         values: {
-          config: form.values
-        }
+          config: form.values,
+        },
       });
       ctx.setVisible(false);
       refresh();
     },
   };
-};
+}
 
 export interface Trigger {
   title: string;
   type: string;
   // group: string;
-  getOptions?(config: any, types: any[]): { label: string; value: any; key: string }[];
+  useVariables?(config: any, options?): VariableOptions;
   fieldset: { [key: string]: ISchema };
   view?: ISchema;
   scope?: { [key: string]: any };
   components?: { [key: string]: any };
-  render?(props): React.ReactNode;
   useInitializers?(config): SchemaInitializerItemOptions | null;
   initializers?: any;
-};
+}
 
 export const triggers = new Registry<Trigger>();
 
@@ -77,15 +83,16 @@ function TriggerExecution() {
         'x-component-props': {
           title: <InfoOutlined />,
           shape: 'circle',
-          className: 'workflow-node-job-button',
-          type: 'primary'
+          size: 'small',
+          className: nodeJobButtonClass,
+          type: 'primary',
         },
         properties: {
           [execution.id]: {
             type: 'void',
             'x-decorator': 'Form',
             'x-decorator-props': {
-              initialValue: execution
+              initialValue: execution,
             },
             'x-component': 'Action.Modal',
             title: (
@@ -102,7 +109,7 @@ function TriggerExecution() {
                 'x-decorator': 'FormItem',
                 'x-component': 'DatePicker',
                 'x-component-props': {
-                  showTime: true
+                  showTime: true,
                 },
                 'x-read-pretty': true,
               },
@@ -115,13 +122,13 @@ function TriggerExecution() {
                   className: css`
                     padding: 1em;
                     background-color: #eee;
-                  `
+                  `,
                 },
                 'x-read-pretty': true,
-              }
-            }
-          }
-        }
+              },
+            },
+          },
+        },
       }}
     />
   );
@@ -131,16 +138,34 @@ export const TriggerConfig = () => {
   const api = useAPIClient();
   const compile = useCompile();
   const { workflow, refresh } = useFlowContext();
+  const [editingTitle, setEditingTitle] = useState<string>('');
+  const [editingConfig, setEditingConfig] = useState(false);
+  let typeTitle = '';
+  useEffect(() => {
+    if (workflow) {
+      setEditingTitle(workflow.title ?? typeTitle);
+    }
+  }, [workflow]);
+
+  const form = useMemo(
+    () =>
+      createForm({
+        initialValues: workflow?.config,
+        values: workflow?.config,
+        disabled: workflow?.executed,
+      }),
+    [workflow],
+  );
+
   if (!workflow || !workflow.type) {
     return null;
   }
-  const { title, type, config, executed } = workflow;
-  const { title: typeTitle, fieldset, scope, components } = triggers.get(type);
+  const { title, type, executed } = workflow;
+  const trigger = triggers.get(type);
+  const { fieldset, scope, components } = trigger;
+  typeTitle = trigger.title;
   const detailText = executed ? '{{t("View")}}' : '{{t("Configure")}}';
   const titleText = `${lang('Trigger')}: ${compile(typeTitle)}`;
-
-  const [editingTitle, setEditingTitle] = useState<string>(title ?? typeTitle);
-  const [editingConfig, setEditingConfig] = useState(false);
 
   async function onChangeTitle(next) {
     const t = next || typeTitle;
@@ -151,8 +176,8 @@ export const TriggerConfig = () => {
     await api.resource('workflows').update?.({
       filterByTk: workflow.id,
       values: {
-        title: t
-      }
+        title: t,
+      },
     });
     refresh();
   }
@@ -164,7 +189,7 @@ export const TriggerConfig = () => {
     }
     const whiteSet = new Set(['workflow-node-meta', 'workflow-node-config-button', 'ant-input-disabled']);
     for (let el = ev.target; el && el !== ev.currentTarget; el = el.parentNode) {
-      if ((Array.from(el.classList) as string[]).some((name: string) => whiteSet.has(name))) {
+      if ((Array.from(el.classList ?? []) as string[]).some((name: string) => whiteSet.has(name))) {
         setEditingConfig(true);
         ev.stopPropagation();
         return;
@@ -186,9 +211,10 @@ export const TriggerConfig = () => {
         />
       </div>
       <TriggerExecution />
-      <ActionContext.Provider value={{ visible: editingConfig, setVisible: setEditingConfig }}>
+      <ActionContextProvider value={{ visible: editingConfig, setVisible: setEditingConfig }}>
         <SchemaComponent
           schema={{
+            name: `workflow-trigger-${workflow.id}`,
             type: 'void',
             properties: {
               config: {
@@ -197,87 +223,84 @@ export const TriggerConfig = () => {
                 'x-component': Button,
                 'x-component-props': {
                   type: 'link',
-                  className: 'workflow-node-config-button'
+                  className: 'workflow-node-config-button',
                 },
               },
               drawer: {
                 type: 'void',
                 title: titleText,
                 'x-component': 'Action.Drawer',
-                'x-decorator': 'Form',
+                'x-decorator': 'FormV2',
                 'x-decorator-props': {
-                  disabled: workflow.executed,
-                  useValues(options) {
-                    return useRequest(() => Promise.resolve({
-                      data: config,
-                    }), options);
-                  },
+                  form,
                 },
                 properties: {
-                  ...(executed ? {
-                    alert: {
-                      'x-component': Alert,
-                      'x-component-props': {
-                        type: 'warning',
-                        showIcon: true,
-                        message: `{{t("Trigger in executed workflow cannot be modified", { ns: "${NAMESPACE}" })}}`,
-                        className: css`
-                          width: 100%;
-                          font-size: 85%;
-                          margin-bottom: 2em;
-                        `
-                      },
-                    }
-                  } : {}),
+                  ...(executed
+                    ? {
+                        alert: {
+                          'x-component': Alert,
+                          'x-component-props': {
+                            type: 'warning',
+                            showIcon: true,
+                            message: `{{t("Trigger in executed workflow cannot be modified", { ns: "${NAMESPACE}" })}}`,
+                            className: css`
+                              width: 100%;
+                              font-size: 85%;
+                              margin-bottom: 2em;
+                            `,
+                          },
+                        },
+                      }
+                    : {}),
                   fieldset: {
                     type: 'void',
                     'x-component': 'fieldset',
                     'x-component-props': {
                       className: css`
-                        .ant-select:not(.full-width){
+                        .ant-select:not(.full-width) {
                           width: auto;
                           min-width: 6em;
                         }
-                      `
+                      `,
                     },
-                    properties: fieldset
+                    properties: fieldset,
                   },
                   actions: {
                     ...(executed
-                    ? {}
-                    : {
-                      type: 'void',
-                      'x-component': 'Action.Drawer.Footer',
-                      properties: {
-                        cancel: {
-                          title: '{{t("Cancel")}}',
-                          'x-component': 'Action',
-                          'x-component-props': {
-                            useAction: '{{ cm.useCancelAction }}',
+                      ? {}
+                      : {
+                          type: 'void',
+                          'x-component': 'Action.Drawer.Footer',
+                          properties: {
+                            cancel: {
+                              title: '{{t("Cancel")}}',
+                              'x-component': 'Action',
+                              'x-component-props': {
+                                useAction: '{{ cm.useCancelAction }}',
+                              },
+                            },
+                            submit: {
+                              title: '{{t("Submit")}}',
+                              'x-component': 'Action',
+                              'x-component-props': {
+                                type: 'primary',
+                                useAction: useUpdateConfigAction,
+                              },
+                            },
                           },
-                        },
-                        submit: {
-                          title: '{{t("Submit")}}',
-                          'x-component': 'Action',
-                          'x-component-props': {
-                            type: 'primary',
-                            useAction: useUpdateConfigAction
-                          }
-                        }
-                      }
-                    })
-                  }
-                }
-              }
-            }
+                        }),
+                  },
+                },
+              },
+            },
           }}
           scope={scope}
           components={components}
         />
-      </ActionContext.Provider>
+      </ActionContextProvider>
     </div>
   );
-}
+};
 
 export function useTrigger() {
   const { workflow } = useFlowContext();

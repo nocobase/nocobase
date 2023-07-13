@@ -31,7 +31,7 @@ describe('model hook', () => {
     test('sequelize model hooks with existing collection', async () => {
       db.collection({
         name: 'posts',
-        fields: []
+        fields: [],
       });
       const matcher = db.modelHook.match('posts.beforeCreate');
       expect(matcher).toEqual('beforeCreate');
@@ -45,7 +45,7 @@ describe('model hook', () => {
     test('customized model hooks', async () => {
       db.collection({
         name: 'posts',
-        fields: []
+        fields: [],
       });
       const matcher = db.modelHook.match('posts.beforeCreateWithAssociations');
       expect(matcher).toBeNull();

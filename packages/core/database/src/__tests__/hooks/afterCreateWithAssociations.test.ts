@@ -25,8 +25,7 @@ describe('afterCreateWithAssociations', () => {
       await repo.create({
         values: {},
       });
-    } catch (error) {
-    }
+    } catch (error) {}
     const count = await repo.count();
     expect(count).toBe(0);
   });

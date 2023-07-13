@@ -2,9 +2,7 @@ import path from 'path';
 import { requireModule } from '@nocobase/utils';
 
 import Plugin from '..';
-import WorkflowModel from '../models/Workflow';
-
-
+import type { WorkflowModel } from '../types';
 
 export abstract class Trigger {
   constructor(public readonly plugin: Plugin) {}
@@ -12,7 +10,7 @@ export abstract class Trigger {
   abstract off(workflow: WorkflowModel): void;
 }
 
-export default function<T extends Trigger>(plugin, more: { [key: string]: { new(p: Plugin): T } } = {}) {
+export default function <T extends Trigger>(plugin, more: { [key: string]: { new (p: Plugin): T } } = {}) {
   const { triggers } = plugin;
 
   triggers.register('collection', new (requireModule(path.join(__dirname, 'collection')))(plugin));

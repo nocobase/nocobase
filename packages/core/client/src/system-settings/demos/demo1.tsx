@@ -2,12 +2,9 @@ import {
   AntdSchemaComponentProvider,
   APIClient,
   APIClientProvider,
-  PluginManager,
-  PluginManagerProvider,
   SchemaComponentProvider,
   SystemSettingsProvider,
-  SystemSettingsShortcut,
-  useSystemSettings
+  useSystemSettings,
 } from '@nocobase/client';
 import MockAdapter from 'axios-mock-adapter';
 import React from 'react';
@@ -24,10 +21,12 @@ mock.onGet('/systemSettings:get/1').reply(200, {
 
 const Demo = () => {
   const { data } = useSystemSettings();
-  return <div>
-    <h3>以下为测试内容</h3>
-    System title: {data?.data?.title}
-  </div>;
+  return (
+    <div>
+      <h3>以下为测试内容</h3>
+      System title: {data?.data?.title}
+    </div>
+  );
 };
 
 export default () => {
@@ -36,17 +35,7 @@ export default () => {
       <SystemSettingsProvider>
         <SchemaComponentProvider>
           <AntdSchemaComponentProvider>
-            <PluginManagerProvider components={{ SystemSettingsShortcut }}>
-              <PluginManager.Toolbar
-                items={[
-                  {
-                    component: 'SystemSettingsShortcut',
-                    pin: true,
-                  },
-                ]}
-              />
-              <Demo />
-            </PluginManagerProvider>
+            <Demo />
           </AntdSchemaComponentProvider>
         </SchemaComponentProvider>
       </SystemSettingsProvider>

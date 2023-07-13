@@ -166,8 +166,11 @@ export const RecordBlockInitializers = (props: any) => {
   const { insertPosition, component, actionInitializers } = props;
   const collection = useCollection();
   const { getChildrenCollections } = useCollectionManager();
-  const childrenCollections = getChildrenCollections(collection.name);
-  const hasChildCollection = childrenCollections?.length > 0;
+  const formChildrenCollections = getChildrenCollections(collection.name);
+  const hasFormChildCollection = formChildrenCollections?.length > 0;
+  const detailChildrenCollections = getChildrenCollections(collection.name, true);
+  const hasDetailChildCollection = detailChildrenCollections?.length > 0;
+  const modifyFlag = (collection as any).template !== 'view';
   return (
     <SchemaInitializer.Button
       wrap={gridRowColWrap}
@@ -179,36 +182,43 @@ export const RecordBlockInitializers = (props: any) => {
         {
           type: 'itemGroup',
           title: '{{t("Current record blocks")}}',
-          children: hasChildCollection
-            ? [
-                {
+          children: [
+            hasDetailChildCollection
+              ? {
                   key: 'details',
                   type: 'subMenu',
                   title: '{{t("Details")}}',
-                  children: useDetailCollections({ ...props, childrenCollections, collection }),
-                },
-                {
-                  key: 'form',
-                  type: 'subMenu',
-                  title: '{{t("Form")}}',
-                  children: useFormCollections({ ...props, childrenCollections, collection }),
-                },
-              ]
-            : [
-                {
+                  children: useDetailCollections({
+                    ...props,
+                    childrenCollections: detailChildrenCollections,
+                    collection,
+                  }),
+                }
+              : {
                   key: 'details',
                   type: 'item',
                   title: '{{t("Details")}}',
                   component: 'RecordReadPrettyFormBlockInitializer',
                   actionInitializers,
                 },
-                {
+            hasFormChildCollection
+              ? {
+                  key: 'form',
+                  type: 'subMenu',
+                  title: '{{t("Form")}}',
+                  children: useFormCollections({
+                    ...props,
+                    childrenCollections: formChildrenCollections,
+                    collection,
+                  }),
+                }
+              : modifyFlag && {
                   key: 'form',
                   type: 'item',
                   title: '{{t("Form")}}',
                   component: 'RecordFormBlockInitializer',
                 },
-              ],
+          ],
         },
         {
           type: 'itemGroup',

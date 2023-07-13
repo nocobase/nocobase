@@ -1,39 +1,10 @@
-import { collectionTemplates, Select, useRequest } from '@nocobase/client';
-import React from 'react';
+import { Plugin } from '@nocobase/client';
+import { MultiAppShareCollectionProvider } from './MultiAppShareCollectionProvider';
 
-const AppSelect = (props) => {
-  const { data, loading } = useRequest({
-    resource: 'applications',
-    action: 'list',
-    params: {
-      paginate: false,
-    },
-  });
-  return (
-    <Select
-      {...props}
-      mode={'multiple'}
-      fieldNames={{ value: 'name', label: 'displayName' }}
-      options={data?.data || []}
-      loading={loading}
-    />
-  );
-};
+export class MultiAppShareCollectionPlugin extends Plugin {
+  async load() {
+    this.app.use(MultiAppShareCollectionProvider);
+  }
+}
 
-collectionTemplates.calendar.configurableProperties.syncToApps = {
-  type: 'string',
-  title: '{{ t("Sync to apps") }}',
-  'x-decorator': 'FormItem',
-  'x-component': AppSelect,
-};
-
-collectionTemplates.general.configurableProperties.syncToApps = {
-  type: 'string',
-  title: '{{ t("Sync to apps") }}',
-  'x-decorator': 'FormItem',
-  'x-component': AppSelect,
-};
-
-export default (props) => {
-  return <>{props.children}</>;
-};
+export default MultiAppShareCollectionPlugin;

@@ -1,4 +1,5 @@
-import lodash, { omit } from 'lodash';
+import { flatten } from 'flat';
+import lodash from 'lodash';
 import {
   Association,
   BulkCreateOptions,
@@ -9,6 +10,7 @@ import {
   FindOptions as SequelizeFindOptions,
   ModelStatic,
   Op,
+  Sequelize,
   Transactionable,
   UpdateOptions as SequelizeUpdateOptions,
   WhereOperators,
@@ -17,6 +19,7 @@ import { Collection } from './collection';
 import { Database } from './database';
 import mustHaveFilter from './decorators/must-have-filter-decorator';
 import { transactionWrapperBuilder } from './decorators/transaction-decorator';
+import { EagerLoadingTree } from './eager-loading/eager-loading-tree';
 import { ArrayFieldRepository } from './field-repository/array-field-repository';
 import { ArrayField, RelationField } from './fields';
 import FilterParser from './filter-parser';
@@ -30,7 +33,6 @@ import { HasOneRepository } from './relation-repository/hasone-repository';
 import { RelationRepository } from './relation-repository/relation-repository';
 import { updateAssociations, updateModelByValues } from './update-associations';
 import { UpdateGuard } from './update-guard';
-import { handleAppendsQuery } from './utils';
 
 const debug = require('debug')('noco-database');
 
@@ -106,6 +108,7 @@ export interface CommonFindOptions extends Transactionable {
   except?: Except;
   sort?: Sort;
   context?: any;
+  tree?: boolean;
 }
 
 export type FindOneOptions = Omit<FindOptions, 'limit'>;
@@ -188,10 +191,6 @@ class RelationRepositoryBuilder<R extends RelationRepository> {
     }
   }
 
-  protected builder() {
-    return this.builderMap;
-  }
-
   of(id: string | number): R {
     if (!this.association) {
       return;
@@ -199,6 +198,22 @@ class RelationRepositoryBuilder<R extends RelationRepository> {
     const klass = this.builder()[this.association.associationType];
     return new klass(this.collection, this.associationName, id);
   }
+
+  protected builder() {
+    return this.builderMap;
+  }
+}
+
+export interface AggregateOptions {
+  method: 'avg' | 'count' | 'min' | 'max' | 'sum';
+  field?: string;
+  filter?: Filter;
+  distinct?: boolean;
+}
+
+interface FirstOrCreateOptions extends Transactionable {
+  filterKeys: string[];
+  values?: Values;
 }
 
 export class Repository<TModelAttributes extends {} = any, TCreationAttributes extends {} = TModelAttributes>
@@ -212,6 +227,50 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     this.database = collection.context.database;
     this.collection = collection;
     this.model = collection.model;
+  }
+
+  public static valuesToFilter(values: Values, filterKeys: Array<string>) {
+    const filterAnd = [];
+    const flattedValues = flatten(values);
+
+    const keyWithOutArrayIndex = (key) => {
+      const chunks = key.split('.');
+      return chunks
+        .filter((chunk) => {
+          return !Boolean(chunk.match(/\d+/));
+        })
+        .join('.');
+    };
+
+    for (const filterKey of filterKeys) {
+      let filterValue;
+
+      for (const flattedKey of Object.keys(flattedValues)) {
+        const flattedKeyWithoutIndex = keyWithOutArrayIndex(flattedKey);
+
+        if (flattedKeyWithoutIndex === filterKey) {
+          if (filterValue) {
+            if (Array.isArray(filterValue)) {
+              filterValue.push(flattedValues[flattedKey]);
+            } else {
+              filterValue = [filterValue, flattedValues[flattedKey]];
+            }
+          } else {
+            filterValue = flattedValues[flattedKey];
+          }
+        }
+      }
+
+      if (filterValue) {
+        filterAnd.push({
+          [filterKey]: filterValue,
+        });
+      }
+    }
+
+    return {
+      $and: filterAnd,
+    };
   }
 
   /**
@@ -258,11 +317,64 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     return count;
   }
 
+  async aggregate(options: AggregateOptions & { optionsTransformer?: (options: any) => any }): Promise<any> {
+    const { method, field } = options;
+
+    const queryOptions = this.buildQueryOptions({
+      ...options,
+      fields: [],
+    });
+
+    options.optionsTransformer?.(queryOptions);
+    const hasAssociationFilter = () => {
+      if (queryOptions.include && queryOptions.include.length > 0) {
+        const filterInclude = queryOptions.include.filter((include) => {
+          return (
+            Object.keys(include.where || {}).length > 0 ||
+            JSON.stringify(queryOptions?.filter)?.includes(include.association)
+          );
+        });
+        return filterInclude.length > 0;
+      }
+      return false;
+    };
+
+    if (hasAssociationFilter()) {
+      const primaryKeyField = this.model.primaryKeyAttribute;
+      const queryInterface = this.database.sequelize.getQueryInterface();
+
+      const findOptions = {
+        ...queryOptions,
+        raw: true,
+        includeIgnoreAttributes: false,
+        attributes: [
+          [
+            Sequelize.literal(
+              `DISTINCT ${queryInterface.quoteIdentifiers(`${this.collection.name}.${primaryKeyField}`)}`,
+            ),
+            primaryKeyField,
+          ],
+        ],
+      };
+
+      const ids = await this.model.findAll(findOptions);
+
+      return await this.model.aggregate(field, method, {
+        ...lodash.omit(queryOptions, ['where', 'include']),
+        where: {
+          [primaryKeyField]: ids.map((node) => node[primaryKeyField]),
+        },
+      });
+    }
+
+    return await this.model.aggregate(field, method, queryOptions);
+  }
+
   /**
    * find
    * @param options
    */
-  async find(options?: FindOptions) {
+  async find(options: FindOptions = {}) {
     const model = this.collection.model;
     const transaction = await this.getTransaction(options);
 
@@ -277,6 +389,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       // @ts-ignore
       const primaryKeyField = model.primaryKeyField || model.primaryKeyAttribute;
 
+      // find all ids
       const ids = (
         await model.findAll({
           ...opts,
@@ -298,37 +411,21 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         return [];
       }
 
-      const templateModel = await model.findOne({
-        ...opts,
-        includeIgnoreAttributes: false,
-        attributes: [primaryKeyField],
-        group: `${model.name}.${primaryKeyField}`,
-        transaction,
-        limit: 1,
-        offset: 0,
-      } as any);
-
-      const where = {
-        [primaryKeyField]: {
-          [Op.in]: ids.map((id) => id['pk']),
-        },
-      };
-
-      rows = await handleAppendsQuery({
-        queryPromises: opts.include.map((include) => {
-          const options = {
-            ...omit(opts, ['limit', 'offset']),
-            include: include,
-            where,
-            transaction,
-          };
-
-          return model.findAll(options).then((rows) => {
-            return { rows, include };
-          });
-        }),
-        templateModel: templateModel,
+      // find all rows
+      const eagerLoadingTree = EagerLoadingTree.buildFromSequelizeOptions({
+        model,
+        rootAttributes: opts.attributes,
+        includeOption: opts.include,
+        rootOrder: opts.order,
+        db: this.database,
       });
+
+      await eagerLoadingTree.load(
+        ids.map((i) => i.pk),
+        transaction,
+      );
+
+      rows = eagerLoadingTree.root.instances;
     } else {
       rows = await model.findAll({
         ...opts,
@@ -336,19 +433,11 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       });
     }
 
-    if (this.collection.isParent()) {
-      for (const row of rows) {
-        const rowCollectionName = this.database.tableNameCollectionMap.get(
-          options.raw ? row['__tableName'] : row.get('__tableName'),
-        ).name;
-
-        options.raw
-          ? (row['__collection'] = rowCollectionName)
-          : row.set('__collection', rowCollectionName, {
-              raw: true,
-            });
-      }
-    }
+    await this.collection.db.emitAsync('afterRepositoryFind', {
+      findOptions: options,
+      dataCollection: this.collection,
+      data: rows,
+    });
 
     return rows;
   }
@@ -358,10 +447,9 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
    * @param options
    */
   async findAndCount(options?: FindAndCountOptions): Promise<[Model[], number]> {
-    const transaction = await this.getTransaction(options);
     options = {
       ...options,
-      transaction,
+      transaction: await this.getTransaction(options),
     };
 
     const count = await this.count(options);
@@ -388,6 +476,39 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
     const rows = await this.find({ ...options, limit: 1, transaction });
     return rows.length == 1 ? rows[0] : null;
+  }
+
+  /**
+   * Get the first record matching the attributes or create it.
+   */
+  async firstOrCreate(options: FirstOrCreateOptions) {
+    const { filterKeys, values, transaction } = options;
+    const filter = Repository.valuesToFilter(values, filterKeys);
+
+    const instance = await this.findOne({ filter, transaction });
+
+    if (instance) {
+      return instance;
+    }
+
+    return this.create({ values, transaction });
+  }
+
+  async updateOrCreate(options: FirstOrCreateOptions) {
+    const { filterKeys, values, transaction } = options;
+    const filter = Repository.valuesToFilter(values, filterKeys);
+
+    const instance = await this.findOne({ filter, transaction });
+
+    if (instance) {
+      return await this.update({
+        filterByTk: instance.get(this.collection.model.primaryKeyAttribute),
+        values,
+        transaction,
+      });
+    }
+
+    return this.create({ values, transaction });
   }
 
   /**
@@ -479,11 +600,47 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         records: options.values,
       });
     }
+
     const transaction = await this.getTransaction(options);
 
     const guard = UpdateGuard.fromOptions(this.model, { ...options, underscored: this.collection.options.underscored });
 
     const values = guard.sanitize(options.values);
+
+    // NOTE:
+    // 1. better to be moved to separated API like bulkUpdate/updateMany
+    // 2. strictly `false` comparing for compatibility of legacy api invoking
+    if (options.individualHooks === false) {
+      const { model: Model } = this.collection;
+      // @ts-ignore
+      const primaryKeyField = Model.primaryKeyField || Model.primaryKeyAttribute;
+      // NOTE:
+      // 1. find ids first for reusing `queryOptions` logic
+      // 2. estimation memory usage will be N * M bytes (N = rows, M = model object memory)
+      // 3. would be more efficient up to 100000 ~ 1000000 rows
+      const queryOptions = this.buildQueryOptions({
+        ...options,
+        fields: [primaryKeyField],
+      });
+      const rows = await this.find({
+        ...queryOptions,
+        transaction,
+      });
+      const [result] = await Model.update(values, {
+        where: {
+          [primaryKeyField]: rows.map((row) => row.get(primaryKeyField)),
+        },
+        fields: options.fields,
+        hooks: options.hooks,
+        validate: options.validate,
+        sideEffects: options.sideEffects,
+        limit: options.limit,
+        silent: options.silent,
+        transaction,
+      });
+      // TODO: not support association fields except belongsTo
+      return result;
+    }
 
     const queryOptions = this.buildQueryOptions(options);
 

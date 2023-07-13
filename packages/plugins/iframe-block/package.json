@@ -1,12 +1,37 @@
 {
   "name": "@nocobase/plugin-iframe-block",
-  "version": "0.9.1-alpha.2",
-  "description": "",
+  "displayName": "iframe",
+  "displayName.zh-CN": "iframe",
+  "description": "create and manage IFrame blocks on the page for embedding and displaying external web pages or content.",
+  "description.zh-CN": "在页面上创建和管理iframe，用于嵌入和展示外部网页或内容。",
+  "version": "0.11.0-alpha.1",
   "license": "AGPL-3.0",
-  "main": "./lib/index.js",
-  "types": "./lib/index.d.ts",
+  "main": "./lib/server/index.js",
+  "files": [
+    "lib",
+    "src",
+    "README.md",
+    "README.zh-CN.md",
+    "CHANGELOG.md",
+    "server.js",
+    "server.d.ts",
+    "client.js",
+    "client.d.ts"
+  ],
+  "dependencies": {
+    "react-iframe": "~1.8.5"
+  },
   "devDependencies": {
-    "@nocobase/server": "0.9.1-alpha.2",
-    "@nocobase/test": "0.9.1-alpha.2"
+    "@ant-design/icons": "^5.1.4",
+    "@formily/react": "2.2.26",
+    "@formily/shared": "2.2.26",
+    "@nocobase/actions": "0.11.0-alpha.1",
+    "@nocobase/client": "0.11.0-alpha.1",
+    "@nocobase/database": "0.11.0-alpha.1",
+    "@nocobase/server": "0.11.0-alpha.1",
+    "@nocobase/test": "0.11.0-alpha.1",
+    "antd": "^5.6.4",
+    "react": "^18.2.0",
+    "react-i18next": "^11.15.1"
   }
 }

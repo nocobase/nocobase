@@ -65,7 +65,6 @@ export class SyncRunner {
         const match = regex.exec(columnDefault);
 
         const sequenceName = match[1];
-
         const sequenceCurrentValResult = await queryInterface.sequelize.query(
           `select last_value
            from ${sequenceName}`,
@@ -97,19 +96,16 @@ export class SyncRunner {
         const tableName = sequenceTable.tableName;
         const schemaName = sequenceTable.schema;
 
-        const queryName = Boolean(tableName.match(/[A-Z]/)) && !tableName.includes(`"`) ? `"${tableName}"` : tableName;
-
-        const idColumnQuery = await queryInterface.sequelize.query(
-          `SELECT column_name
+        const idColumnSql = `SELECT column_name
            FROM information_schema.columns
-           WHERE table_name = '${queryName}'
+           WHERE table_name = '${tableName}'
              and column_name = 'id'
              and table_schema = '${schemaName}';
-          `,
-          {
-            transaction,
-          },
-        );
+          `;
+
+        const idColumnQuery = await queryInterface.sequelize.query(idColumnSql, {
+          transaction,
+        });
 
         if (idColumnQuery[0].length == 0) {
           continue;

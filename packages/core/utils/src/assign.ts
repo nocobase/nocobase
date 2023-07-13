@@ -1,5 +1,6 @@
 import deepmerge from 'deepmerge';
 import lodash from 'lodash';
+import { isPlainObject } from './common';
 
 type MergeStrategyType = 'merge' | 'deepMerge' | 'overwrite' | 'andMerge' | 'orMerge' | 'intersect' | 'union';
 type MergeStrategyFunc = (x: any, y: any) => any;
@@ -8,15 +9,6 @@ export type MergeStrategy = MergeStrategyType | MergeStrategyFunc;
 
 export interface MergeStrategies {
   [key: string]: MergeStrategy;
-}
-
-export default function isPlainObject(value) {
-  if (Object.prototype.toString.call(value) !== '[object Object]') {
-    return false;
-  }
-
-  const prototype = Object.getPrototypeOf(value);
-  return prototype === null || prototype === Object.prototype;
 }
 
 function getEnumerableOwnPropertySymbols(target: any): any[] {
@@ -71,8 +63,8 @@ mergeStrategies.set('orMerge', (x, y) => {
 mergeStrategies.set('deepMerge', (x, y) => {
   return isPlainObject(x) && isPlainObject(y)
     ? deepmerge(x, y, {
-      arrayMerge: (x, y) => y,
-    })
+        arrayMerge: (x, y) => y,
+      })
     : y;
 });
 
@@ -90,21 +82,23 @@ mergeStrategies.set('union', (x, y) => {
   return lodash.uniq((x || []).concat(y || [])).filter(Boolean);
 });
 
-mergeStrategies.set('intersect', (x, y) => (() => {
-  if (typeof x === 'string') {
-    x = x.split(',');
-  }
-  if (typeof y === 'string') {
-    y = y.split(',');
-  }
-  if (!Array.isArray(x) || x.length === 0) {
-    return y || [];
-  }
-  if (!Array.isArray(y) || y.length === 0) {
-    return x || [];
-  }
-  return x.filter((v) => y.includes(v));
-})().filter(Boolean));
+mergeStrategies.set('intersect', (x, y) =>
+  (() => {
+    if (typeof x === 'string') {
+      x = x.split(',');
+    }
+    if (typeof y === 'string') {
+      y = y.split(',');
+    }
+    if (!Array.isArray(x) || x.length === 0) {
+      return y || [];
+    }
+    if (!Array.isArray(y) || y.length === 0) {
+      return x || [];
+    }
+    return x.filter((v) => y.includes(v));
+  })().filter(Boolean),
+);
 
 export function assign(target: any, source: any, strategies: MergeStrategies = {}) {
   getKeys(source).forEach((sourceKey) => {

@@ -42,49 +42,110 @@ export class SortField extends Field {
   };
 
   initRecordsSortValue = async ({ transaction }) => {
-    const totalCount = await this.collection.repository.count({
-      transaction,
-    });
-
-    const emptyCount = await this.collection.repository.count({
-      filter: {
-        [this.name]: null,
-      },
-      transaction,
-    });
-
-    const orderKey = (() => {
+    const orderField = (() => {
       const model = this.collection.model;
       if (model.primaryKeyAttribute) {
         return model.primaryKeyAttribute;
       }
       if (model.rawAttributes['createdAt']) {
-        return 'createdAt';
+        return model.rawAttributes['createdAt'].field;
       }
 
       throw new Error(`can not find order key for collection ${this.collection.name}`);
     })();
 
-    if (emptyCount === totalCount && emptyCount > 0) {
-      const records = await this.collection.repository.find({
-        order: [orderKey],
+    const needInit = async (scopeKey = null, scopeValue = null) => {
+      const filter = {};
+      if (scopeKey && scopeValue) {
+        filter[scopeKey] = scopeValue;
+      }
+
+      const totalCount = await this.collection.repository.count({
+        filter,
         transaction,
       });
 
-      let start = 1;
-      for (const record of records) {
-        await record.update(
-          {
-            sort: start,
-          },
-          {
-            transaction,
-            silent: true,
-          },
-        );
+      const emptyCount = await this.collection.repository.count({
+        filter: {
+          [this.name]: null,
+          ...filter,
+        },
+        transaction,
+      });
 
-        start += 1;
+      return emptyCount === totalCount && emptyCount > 0;
+    };
+
+    const doInit = async (scopeKey = null, scopeValue = null) => {
+      const queryInterface = this.collection.db.sequelize.getQueryInterface();
+
+      const quotedOrderField = queryInterface.quoteIdentifier(orderField);
+
+      const sql = `
+        WITH ordered_table AS (
+          SELECT *, ROW_NUMBER() OVER (${
+            scopeKey ? `PARTITION BY ${queryInterface.quoteIdentifier(scopeKey)}` : ''
+          } ORDER BY ${quotedOrderField}) AS new_sequence_number
+          FROM ${this.collection.quotedTableName()}
+          ${(() => {
+            if (scopeKey && scopeValue) {
+              const hasNull = scopeValue.includes(null);
+
+              return `WHERE ${queryInterface.quoteIdentifier(scopeKey)} IN (${scopeValue
+                .filter((v) => v !== null)
+                .map((v) => `'${v}'`)
+                .join(',')}) ${hasNull ? `OR ${queryInterface.quoteIdentifier(scopeKey)} IS NULL` : ''} `;
+            }
+
+            return '';
+          })()}
+
+        )
+        ${
+          this.collection.db.inDialect('mysql')
+            ? `
+             UPDATE ${this.collection.quotedTableName()}, ordered_table
+             SET ${this.collection.quotedTableName()}.${this.name} = ordered_table.new_sequence_number
+             WHERE ${this.collection.quotedTableName()}.${quotedOrderField} = ordered_table.${quotedOrderField}
+            `
+            : `
+          UPDATE ${this.collection.quotedTableName()}
+        SET ${queryInterface.quoteIdentifier(this.name)} = ordered_table.new_sequence_number
+        FROM ordered_table
+        WHERE ${this.collection.quotedTableName()}.${quotedOrderField} = ${queryInterface.quoteIdentifier(
+                'ordered_table',
+              )}.${quotedOrderField};
+        `
+        }
+
+      `;
+
+      await this.collection.db.sequelize.query(sql, {
+        transaction,
+      });
+    };
+
+    const scopeKey = this.options.scopeKey;
+    if (scopeKey) {
+      const groups = await this.collection.repository.find({
+        attributes: [scopeKey],
+        group: [scopeKey],
+        raw: true,
+        transaction,
+      });
+
+      const needInitGroups = [];
+      for (const group of groups) {
+        if (await needInit(scopeKey, group[scopeKey])) {
+          needInitGroups.push(group[scopeKey]);
+        }
       }
+
+      if (needInitGroups.length > 0) {
+        await doInit(scopeKey, needInitGroups);
+      }
+    } else if (await needInit()) {
+      await doInit();
     }
   };
 

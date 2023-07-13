@@ -1,7 +1,7 @@
 /**
- * title: DatePicker (GMT)
+ * title: DatePicker
  */
-import { FormItem } from '@formily/antd';
+import { FormItem } from '@formily/antd-v5';
 import { DatePicker, Input, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
 import React from 'react';
 
@@ -15,10 +15,9 @@ const schema = {
       'x-component': 'DatePicker',
       'x-component-props': {
         dateFormat: 'YYYY/MM/DD',
-        showTime: true,
-        gmt: true,
+        showTime: false,
+        utc: false,
       },
-      default: '2022-06-04T15:00:00.000Z',
       'x-reactions': {
         target: '*(read1,read2)',
         fulfill: {
@@ -29,7 +28,7 @@ const schema = {
       },
     },
     read1: {
-      type: 'string',
+      type: 'boolean',
       title: `Read pretty`,
       'x-read-pretty': true,
       'x-decorator': 'FormItem',
@@ -37,7 +36,6 @@ const schema = {
       'x-component-props': {
         dateFormat: 'YYYY/MM/DD',
         showTime: true,
-        gmt: true,
       },
     },
     read2: {

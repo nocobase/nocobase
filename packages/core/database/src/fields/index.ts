@@ -13,7 +13,7 @@ import {
   DoubleFieldOptions,
   FloatFieldOptions,
   IntegerFieldOptions,
-  RealFieldOptions
+  RealFieldOptions,
 } from './number-field';
 import { PasswordFieldOptions } from './password-field';
 import { RadioFieldOptions } from './radio-field';

@@ -1,1 +1,1 @@
-export { PluginErrorHandler as default } from './server';
+export { default } from './server';

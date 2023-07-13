@@ -1,12 +1,10 @@
-import { PluginManagerContext, RouteSwitchContext, SettingsCenterContext, SettingsCenterProvider } from '@nocobase/client';
+import { PluginManagerContext, SettingsCenterContext, SettingsCenterProvider } from '@nocobase/client';
 import React, { useContext } from 'react';
-import { GraphCollectionPane, GraphCollectionShortcut } from './GraphCollectionShortcut';
+import { GraphCollectionPane } from './GraphCollectionShortcut';
 import { useGCMTranslation } from './utils';
-
 
 export const GraphCollectionProvider = React.memo((props) => {
   const ctx = useContext(PluginManagerContext);
-  const { routes, components, ...others } = useContext(RouteSwitchContext);
   // i18n.addResources('en-US', 'graphPositions', enUS);
   // i18n.addResources('ja-JP', 'graphPositions', jaJP);
   // i18n.addResources('zh-CN', 'graphPositions', zhCN);
@@ -14,26 +12,22 @@ export const GraphCollectionProvider = React.memo((props) => {
   const items = useContext(SettingsCenterContext);
 
   items['collection-manager']['tabs']['graph'] = {
-    title: t("Graphical interface"),
+    title: t('Graphical interface'),
     component: GraphCollectionPane,
-  }
+  };
 
   return (
-    <SettingsCenterProvider
-      settings={items}
-    >
+    <SettingsCenterProvider settings={items}>
       <PluginManagerContext.Provider
         value={{
           components: {
             ...ctx?.components,
-            GraphCollectionShortcut,
           },
         }}
       >
-        <RouteSwitchContext.Provider value={{ components: { ...components }, ...others, routes }}>
-          {props.children}
-        </RouteSwitchContext.Provider>
+        {props.children}
       </PluginManagerContext.Provider>
     </SettingsCenterProvider>
   );
 });
+GraphCollectionProvider.displayName = 'GraphCollectionProvider';

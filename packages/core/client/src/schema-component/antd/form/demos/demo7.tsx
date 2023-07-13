@@ -1,4 +1,4 @@
-import { FormItem, Input } from '@formily/antd';
+import { FormItem, Input } from '@formily/antd-v5';
 import { ISchema, observer, useForm } from '@formily/react';
 import { Action, Form, FormUseValues, SchemaComponent, SchemaComponentProvider, useRequest } from '@nocobase/client';
 import { Card } from 'antd';
@@ -36,10 +36,13 @@ const schema: ISchema = {
   },
 };
 
-const Output = observer(() => {
-  const form = useForm();
-  return <pre>{JSON.stringify(form.values, null, 2)}</pre>;
-});
+const Output = observer(
+  () => {
+    const form = useForm();
+    return <pre>{JSON.stringify(form.values, null, 2)}</pre>;
+  },
+  { displayName: 'Output' },
+);
 
 const useSubmit = () => {
   const form = useForm();

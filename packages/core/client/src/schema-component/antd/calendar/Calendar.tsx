@@ -1,26 +1,28 @@
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { createForm } from '@formily/core';
-import { observer, RecursionField, Schema, useFieldSchema } from '@formily/react';
+import { RecursionField, Schema, observer, useFieldSchema } from '@formily/react';
+import { dayjs } from '@nocobase/utils/client';
 import { parseExpression } from 'cron-parser';
+import { eq } from 'date-arithmetic';
+import type { Dayjs } from 'dayjs';
 import get from 'lodash/get';
-import moment from 'moment';
 import React, { useCallback, useMemo, useState } from 'react';
-import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar';
-import * as dates from 'react-big-calendar/lib/utils/dates';
+import { Calendar as BigCalendar, View, dayjsLocalizer } from 'react-big-calendar';
 import { useTranslation } from 'react-i18next';
 import { RecordProvider } from '../../../';
 import { i18n } from '../../../i18n';
 import { useProps } from '../../hooks/useProps';
-import { ActionContext } from '../action';
+import { ActionContextProvider } from '../action';
 import Header from './components/Header';
 import { CalendarToolbarContext } from './context';
-import './style.less';
+import GlobalStyle from './global.style';
+import useStyle from './style';
 import type { ToolbarProps } from './types';
 import { formatDate } from './utils';
 
-const Weeks = ['month', 'week', 'day'] as const;
+const Weeks = ['month', 'week', 'day'] as View[];
 
-const localizer = momentLocalizer(moment);
+const localizer = dayjsLocalizer(dayjs);
 export const DeleteEventContext = React.createContext({
   close: () => {},
 });
@@ -69,7 +71,7 @@ const messages: any = {
   showMore: (count) => i18n.t('{{count}} more items', { count }),
 };
 
-const useEvents = (dataSource: any, fieldNames: any, date: Date, view: typeof Weeks[number]) => {
+const useEvents = (dataSource: any, fieldNames: any, date: Date, view: (typeof Weeks)[number]) => {
   const { t } = useTranslation();
   return useMemo(() => {
     if (!Array.isArray(dataSource)) return [];
@@ -77,18 +79,18 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: typeof We
 
     dataSource.forEach((item) => {
       const { cron, exclude = [] } = item;
-      const start = moment(get(item, fieldNames.start) || moment());
-      const end = moment(get(item, fieldNames.end) || start);
+      const start = dayjs(get(item, fieldNames.start) || dayjs());
+      const end = dayjs(get(item, fieldNames.end) || start);
       const intervalTime = end.diff(start, 'millisecond', true);
 
-      const dateM = moment(date);
+      const dateM = dayjs(date);
       const startDate = dateM.clone().startOf('month');
       const endDate = startDate.clone().endOf('month');
       if (view === 'month') {
         startDate.startOf('week');
         endDate.endOf('week');
       }
-      const push = (eventStart: moment.Moment = start.clone()) => {
+      const push = (eventStart: Dayjs = start.clone()) => {
         // 必须在这个月的开始时间和结束时间，且在日程的开始时间之后
         if (eventStart.isBefore(start) || !eventStart.isBetween(startDate, endDate)) {
           return;
@@ -118,7 +120,7 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: typeof We
       };
 
       if (cron === 'every_week') {
-        let nextStart = start
+        const nextStart = start
           .clone()
           .year(startDate.year())
           .month(startDate.month())
@@ -147,7 +149,7 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: typeof We
           });
           while (interval.hasNext()) {
             const { value } = interval.next();
-            if (push(moment(value.toDate()))) break;
+            if (push(dayjs(value.toDate()))) break;
           }
         } catch (err) {
           console.error(err);
@@ -180,81 +182,86 @@ const CalendarRecordViewer = (props) => {
   return (
     eventSchema && (
       <DeleteEventContext.Provider value={{ close }}>
-        <ActionContext.Provider value={{ visible, setVisible }}>
+        <ActionContextProvider value={{ visible, setVisible }}>
           <RecordProvider record={record}>
             <RecursionField schema={eventSchema} name={eventSchema.name} />
           </RecordProvider>
-        </ActionContext.Provider>
+        </ActionContextProvider>
       </DeleteEventContext.Provider>
     )
   );
 };
 
-export const Calendar: any = observer((props: any) => {
-  const { dataSource, fieldNames, showLunar } = useProps(props);
-  const [date, setDate] = useState<Date>(new Date());
-  const [view, setView] = useState<typeof Weeks[number]>('month');
-  const events = useEvents(dataSource, fieldNames, date, view);
-  const [visible, setVisible] = useState(false);
-  const [record, setRecord] = useState<any>({});
+export const Calendar: any = observer(
+  (props: any) => {
+    const { dataSource, fieldNames, showLunar, fixedBlock } = useProps(props);
+    const [date, setDate] = useState<Date>(new Date());
+    const [view, setView] = useState<View>('month');
+    const events = useEvents(dataSource, fieldNames, date, view);
+    const [visible, setVisible] = useState(false);
+    const [record, setRecord] = useState<any>({});
+    const { wrapSSR, hashId, componentCls: containerClassName } = useStyle();
 
-  const components = useMemo(() => {
-    return {
-      toolbar: (props) => <Toolbar {...props} showLunar={showLunar}></Toolbar>,
-      week: {
-        header: (props) => <Header {...props} type="week" showLunar={showLunar}></Header>,
-      },
-      month: {
-        dateHeader: (props) => <Header {...props} showLunar={showLunar}></Header>,
-      },
-    };
-  }, [showLunar]);
+    const components = useMemo(() => {
+      return {
+        toolbar: (props) => <Toolbar {...props} showLunar={showLunar}></Toolbar>,
+        week: {
+          header: (props) => <Header {...props} type="week" showLunar={showLunar}></Header>,
+        },
+        month: {
+          dateHeader: (props) => <Header {...props} showLunar={showLunar}></Header>,
+        },
+      };
+    }, [showLunar]);
 
-  return (
-    <div style={{ height: 700 }}>
-      <CalendarRecordViewer visible={visible} setVisible={setVisible} record={record} />
-      <BigCalendar
-        popup
-        selectable
-        events={events}
-        view={view}
-        views={Weeks}
-        date={date}
-        step={60}
-        showMultiDayTimes
-        messages={messages}
-        onNavigate={setDate}
-        onView={setView}
-        onSelectSlot={(slotInfo) => {
-          console.log('onSelectSlot', slotInfo);
-        }}
-        onDoubleClickEvent={(event) => {
-          console.log('onDoubleClickEvent');
-        }}
-        onSelectEvent={(event) => {
-          const record = dataSource?.find((item) => item[fieldNames.id] === event.id);
-          if (!record) {
-            return;
-          }
-          record.__event = { ...event, start: formatDate(moment(event.start)), end: formatDate(moment(event.end)) };
-
-          setRecord(record);
-          setVisible(true);
-        }}
-        formats={{
-          monthHeaderFormat: 'Y-M',
-          agendaDateFormat: 'M-DD',
-          dayHeaderFormat: 'Y-M-DD',
-          dayRangeHeaderFormat: ({ start, end }, culture, local) => {
-            if (dates.eq(start, end, 'month')) {
-              return local.format(start, 'Y-M', culture);
+    return wrapSSR(
+      <div className={`${hashId} ${containerClassName}`} style={{ height: fixedBlock ? '100%' : 700 }}>
+        <GlobalStyle />
+        <CalendarRecordViewer visible={visible} setVisible={setVisible} record={record} />
+        <BigCalendar
+          popup
+          selectable
+          events={events}
+          view={view}
+          views={Weeks}
+          date={date}
+          step={60}
+          showMultiDayTimes
+          messages={messages}
+          onNavigate={setDate}
+          onView={setView}
+          onSelectSlot={(slotInfo) => {
+            console.log('onSelectSlot', slotInfo);
+          }}
+          onDoubleClickEvent={() => {
+            console.log('onDoubleClickEvent');
+          }}
+          onSelectEvent={(event) => {
+            const record = dataSource?.find((item) => item[fieldNames.id] === event.id);
+            if (!record) {
+              return;
             }
-            return `${local.format(start, 'Y-M', culture)} - ${local.format(end, 'Y-M', culture)}`;
-          },
-        }}
-        components={components}
-        localizer={localizer}
-      />
-    </div>
-  );
-});
+            record.__event = { ...event, start: formatDate(dayjs(event.start)), end: formatDate(dayjs(event.end)) };
+
+            setRecord(record);
+            setVisible(true);
+          }}
+          formats={{
+            monthHeaderFormat: 'YYYY-M',
+            agendaDateFormat: 'M-DD',
+            dayHeaderFormat: 'YYYY-M-DD',
+            dayRangeHeaderFormat: ({ start, end }, culture, local) => {
+              if (eq(start, end, 'month')) {
+                return local.format(start, 'Y-M', culture);
+              }
+              return `${local.format(start, 'Y-M', culture)} - ${local.format(end, 'Y-M', culture)}`;
+            },
+          }}
+          components={components}
+          localizer={localizer}
+        />
+      </div>,
+    );
+  },
+  { displayName: 'Calendar' },
+);

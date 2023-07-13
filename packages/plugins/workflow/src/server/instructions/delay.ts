@@ -1,9 +1,8 @@
 import Plugin from '..';
-import { EXECUTION_STATUS, JOB_STATUS } from "../constants";
-import ExecutionModel from '../models/Execution';
-import JobModel from '../models/Job';
+import { EXECUTION_STATUS, JOB_STATUS } from '../constants';
 import Processor from '../Processor';
 import { Instruction } from '.';
+import type { ExecutionModel, JobModel } from '../types';
 
 type ValueOf<T> = T[keyof T];
 
@@ -16,62 +15,67 @@ export default class implements Instruction {
   timers: Map<number, NodeJS.Timeout> = new Map();
 
   constructor(protected plugin: Plugin) {
-    plugin.app.on('beforeStart', () => this.load());
-    plugin.app.on('beforeStop', () => this.unload());
+    plugin.app.on('beforeStart', this.load);
+    plugin.app.on('beforeStop', this.unload);
   }
 
-  async load() {
+  load = async () => {
     const { model } = this.plugin.db.getCollection('jobs');
-    const jobs = await model.findAll({
+    const jobs = (await model.findAll({
       where: {
-        status: JOB_STATUS.PENDING
+        status: JOB_STATUS.PENDING,
       },
       include: [
         {
           association: 'execution',
           attributes: [],
           where: {
-            status: EXECUTION_STATUS.STARTED
+            status: EXECUTION_STATUS.STARTED,
           },
-          required: true
+          required: true,
         },
         {
           association: 'node',
           attributes: ['config'],
           where: {
-            type: 'delay'
+            type: 'delay',
           },
-          required: true
-        }
-      ]
-    }) as JobModel[];
+          required: true,
+        },
+      ],
+    })) as JobModel[];
 
-    jobs.forEach(job => {
-      this.schedule(job, job.node!.config.duration);
+    jobs.forEach((job) => {
+      this.schedule(job);
     });
-  }
+  };
 
-  unload() {
+  unload = () => {
     for (const timer of this.timers.values()) {
       clearTimeout(timer);
     }
 
     this.timers = new Map();
-  }
+  };
 
-  schedule(job, duration: number) {
+  schedule(job) {
     const now = new Date();
     const createdAt = Date.parse(job.createdAt);
-    const delay = createdAt + duration - now.getTime();
-    const trigger = this.trigger.bind(this, job);
-    this.timers.set(job.id, setTimeout(trigger, Math.max(0, delay)));
+    const delay = createdAt + job.node.config.duration - now.getTime();
+    if (delay > 0) {
+      const trigger = this.trigger.bind(this, job);
+      this.timers.set(job.id, setTimeout(trigger, delay));
+    } else {
+      this.trigger(job);
+    }
   }
 
   async trigger(job) {
-    const execution = await job.getExecution() as ExecutionModel;
-    if (execution.status === EXECUTION_STATUS.STARTED) {
-      job.execution = execution;
-      await this.plugin.resume(job);
+    if (!job.execution) {
+      job.execution = await job.getExecution();
+    }
+    if (job.execution.status === EXECUTION_STATUS.STARTED) {
+      this.plugin.resume(job);
     }
     if (this.timers.get(job.id)) {
       this.timers.delete(job.id);
@@ -83,14 +87,14 @@ export default class implements Instruction {
       status: JOB_STATUS.PENDING,
       result: null,
       nodeId: node.id,
-      upstreamId: prevJob?.id ?? null
+      upstreamId: prevJob?.id ?? null,
     });
+    job.node = node;
 
-    const { duration } = node.config as DelayConfig;
     // add to schedule
-    this.schedule(job, duration);
+    this.schedule(job);
 
-    return processor.end(node, job);
+    return processor.exit();
   };
 
   resume = async (node, prevJob, processor: Processor) => {

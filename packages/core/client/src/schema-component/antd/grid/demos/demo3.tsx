@@ -1,12 +1,14 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import {
-  CardItem, Grid,
+  CardItem,
+  Grid,
   Markdown,
+  MarkdownBlockInitializer,
   SchemaComponent,
   SchemaComponentProvider,
   SchemaInitializer,
-  SchemaInitializerProvider
+  SchemaInitializerProvider,
 } from '@nocobase/client';
 import React from 'react';
 
@@ -69,7 +71,7 @@ const schema: ISchema = {
 export default function App() {
   return (
     <SchemaComponentProvider components={{ Grid, CardItem, Markdown }}>
-      <SchemaInitializerProvider initializers={{ AddBlockButton }}>
+      <SchemaInitializerProvider initializers={{ AddBlockButton }} components={{ MarkdownBlockInitializer }}>
         <SchemaComponent schema={schema} />
       </SchemaInitializerProvider>
     </SchemaComponentProvider>

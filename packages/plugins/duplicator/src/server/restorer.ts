@@ -11,7 +11,7 @@ import { Application } from '@nocobase/server';
 export class Restorer extends AppMigrator {
   direction = 'restore' as const;
   backUpFilePath: string;
-  decompressed: boolean = false;
+  decompressed = false;
   importedCollections: string[] = [];
 
   constructor(

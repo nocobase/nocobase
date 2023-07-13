@@ -1,4 +1,3 @@
-import { Schema } from '@formily/react';
 
 // 操作记录表格操作配置
 export const AuditLogsTableActionInitializers = {
@@ -30,22 +29,22 @@ export const AuditLogsTableActionInitializers = {
         },
       ],
     },
-    {
-      type: 'divider',
-    },
-    {
-      type: 'item',
-      title: "{{t('Association fields filter')}}",
-      component: 'ActionBarAssociationFilterAction',
-      schema: {
-        'x-align': 'left',
-      },
-      find: (schema: Schema) => {
-        const resultSchema = Object.entries(schema.parent.properties).find(
-          ([, value]) => value['x-component'] === 'AssociationFilter',
-        )?.[1];
-        return resultSchema;
-      },
-    },
+    // {
+    //   type: 'divider',
+    // },
+    // {
+    //   type: 'item',
+    //   title: "{{t('Association fields filter')}}",
+    //   component: 'ActionBarAssociationFilterAction',
+    //   schema: {
+    //     'x-align': 'left',
+    //   },
+    //   find: (schema: Schema) => {
+    //     const resultSchema = Object.entries(schema.parent.properties).find(
+    //       ([, value]) => value['x-component'] === 'AssociationFilter',
+    //     )?.[1];
+    //     return resultSchema;
+    //   },
+    // },
   ],
 };

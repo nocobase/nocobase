@@ -1,36 +1,48 @@
 import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { TabPaneProps, Tabs as AntdTabs, TabsProps } from 'antd';
+import { Tabs as AntdTabs, TabPaneProps, TabsProps } from 'antd';
 import classNames from 'classnames';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Icon } from '../../../icon';
 import { useSchemaInitializer } from '../../../schema-initializer';
 import { DndContext, SortableItem } from '../../common';
+import { useDesignable } from '../../hooks';
 import { useDesigner } from '../../hooks/useDesigner';
+import { useTabsContext } from './context';
 import { TabsDesigner } from './Tabs.Designer';
 
-export const Tabs: any = observer((props: TabsProps) => {
-  const fieldSchema = useFieldSchema();
-  const { render } = useSchemaInitializer(fieldSchema['x-initializer']);
-  return (
-    <DndContext>
-      <AntdTabs
-        style={props.style}
-        tabBarExtraContent={{
-          right: render(),
-        }}
-      >
-        {fieldSchema.mapProperties((schema, key) => {
-          return (
-            <AntdTabs.TabPane tab={<RecursionField name={key} schema={schema} onlyRenderSelf />} key={key}>
+export const Tabs: any = observer(
+  (props: TabsProps) => {
+    const fieldSchema = useFieldSchema();
+    const { render } = useSchemaInitializer(fieldSchema['x-initializer']);
+    const { designable } = useDesignable();
+    const contextProps = useTabsContext();
+    const { PaneRoot = React.Fragment as React.FC<any> } = contextProps;
+
+    const items = useMemo(() => {
+      const result = fieldSchema.mapProperties((schema, key: string) => {
+        return {
+          key,
+          label: <RecursionField name={key} schema={schema} onlyRenderSelf />,
+          children: (
+            <PaneRoot active={key === contextProps.activeKey}>
               <RecursionField name={key} schema={schema} onlyRenderProperties />
-            </AntdTabs.TabPane>
-          );
-        })}
-      </AntdTabs>
-    </DndContext>
-  );
-});
+            </PaneRoot>
+          ),
+        };
+      });
+
+      return result;
+    }, [fieldSchema.mapProperties((s, key) => key).join()]);
+
+    return (
+      <DndContext>
+        <AntdTabs {...contextProps} tabBarExtraContent={render()} style={props.style} items={items} />
+      </DndContext>
+    );
+  },
+  { displayName: 'Tabs' },
+);
 
 const designerCss = css`
   position: relative;
@@ -79,15 +91,18 @@ const designerCss = css`
   }
 `;
 
-Tabs.TabPane = observer((props: TabPaneProps & { icon?: any }) => {
-  const Designer = useDesigner();
-  const field = useField();
-  return (
-    <SortableItem className={classNames('nb-action-link', designerCss, props.className)}>
-      {props.icon && <Icon style={{ marginRight: 2 }} type={props.icon} />} {props.tab || field.title}
-      <Designer />
-    </SortableItem>
-  );
-});
+Tabs.TabPane = observer(
+  (props: TabPaneProps & { icon?: any }) => {
+    const Designer = useDesigner();
+    const field = useField();
+    return (
+      <SortableItem className={classNames('nb-action-link', designerCss, props.className)}>
+        {props.icon && <Icon style={{ marginRight: 2 }} type={props.icon} />} {props.tab || field.title}
+        <Designer />
+      </SortableItem>
+    );
+  },
+  { displayName: 'Tabs.TabPane' },
+);
 
 Tabs.Designer = TabsDesigner;

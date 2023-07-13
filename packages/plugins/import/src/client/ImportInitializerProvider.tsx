@@ -1,8 +1,8 @@
-import { SchemaInitializerContext } from '@nocobase/client';
+import { SchemaInitializerContext, useCollection } from '@nocobase/client';
 import { useContext } from 'react';
 
 export const ImportInitializerProvider = (props: any) => {
-  const initializes = useContext(SchemaInitializerContext);
+  const initializes = useContext<any>(SchemaInitializerContext);
   const hasImportAction = initializes.TableActionInitializers.items[0].children.some(
     (initialize) => initialize.component === 'ImportActionInitializer',
   );
@@ -17,6 +17,10 @@ export const ImportInitializerProvider = (props: any) => {
         'x-acl-action-props': {
           skipScopeCheck: true,
         },
+      },
+      visible: function useVisible() {
+        const collection = useCollection();
+        return collection.template !== 'view' && collection.template !== 'file';
       },
     });
   return props.children;

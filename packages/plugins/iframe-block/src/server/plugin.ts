@@ -18,9 +18,7 @@ export class IframeBlockPlugin extends Plugin {
     this.app.acl.allow('iframeHtml', 'getHtml', 'loggedIn');
     this.app.acl.registerSnippet({
       name: 'ui.iframeHtml',
-      actions: [
-        'iframeHtml:*',
-      ],
+      actions: ['iframeHtml:*'],
     });
   }
 

@@ -1,11 +1,11 @@
 import { observer, useField, useFieldSchema } from '@formily/react';
-import { Button, Input as AntdInput, Space } from 'antd';
+import { Button, Input as AntdInput, Space, Spin } from 'antd';
 import cls from 'classnames';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../../hooks/useDesignable';
 import { MarkdownVoidDesigner } from './Markdown.Void.Designer';
-import { markdown } from './util';
+import { useParseMarkdown } from './util';
 
 const MarkdownEditor = (props: any) => {
   const { t } = useTranslation();
@@ -41,40 +41,47 @@ const MarkdownEditor = (props: any) => {
   );
 };
 
-export const MarkdownVoid: any = observer((props: any) => {
-  const { content, className } = props;
-  const field = useField();
-  const schema = useFieldSchema();
-  const { dn } = useDesignable();
-  const { onSave, onCancel } = props;
-  return field?.editable ? (
-    <MarkdownEditor
-      {...props}
-      className
-      defaultValue={content}
-      onCancel={() => {
-        field.editable = false;
-        onCancel?.();
-      }}
-      onSubmit={async (value) => {
-        field.editable = false;
-        schema['x-component-props'] ?? (schema['x-component-props'] = {});
-        schema['x-component-props']['content'] = value;
-        field.componentProps.content = value;
-        onSave?.(schema);
-        dn.emit('patch', {
-          schema: {
-            'x-uid': schema['x-uid'],
-            'x-component-props': {
-              content: value,
+export const MarkdownVoid: any = observer(
+  (props: any) => {
+    const { content, className } = props;
+    const field = useField();
+    const schema = useFieldSchema();
+    const { dn } = useDesignable();
+    const { onSave, onCancel } = props;
+    const { html, loading } = useParseMarkdown(content);
+    if (loading) {
+      return <Spin />;
+    }
+    return field?.editable ? (
+      <MarkdownEditor
+        {...props}
+        className
+        defaultValue={content}
+        onCancel={() => {
+          field.editable = false;
+          onCancel?.();
+        }}
+        onSubmit={async (value) => {
+          field.editable = false;
+          schema['x-component-props'] ?? (schema['x-component-props'] = {});
+          schema['x-component-props']['content'] = value;
+          field.componentProps.content = value;
+          onSave?.(schema);
+          dn.emit('patch', {
+            schema: {
+              'x-uid': schema['x-uid'],
+              'x-component-props': {
+                content: value,
+              },
             },
-          },
-        });
-      }}
-    />
-  ) : (
-    <div className={cls(['nb-markdown', className])} dangerouslySetInnerHTML={{ __html: markdown(content) }} />
-  );
-});
+          });
+        }}
+      />
+    ) : (
+      <div className={cls(['nb-markdown', className])} dangerouslySetInnerHTML={{ __html: html }} />
+    );
+  },
+  { displayName: 'MarkdownVoid' },
+);
 
 MarkdownVoid.Designer = MarkdownVoidDesigner;

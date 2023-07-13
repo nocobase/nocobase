@@ -51,7 +51,7 @@ export async function percent(field, row, ctx) {
 
 export async function boolean(field, row, ctx, column?: any) {
   const value = row.get(field.name);
-  let { enum: enumData } = column ?? {};
+  const { enum: enumData } = column ?? {};
   if (enumData?.length > 0) {
     const option = enumData.find((item) => item.value === value);
     return option?.label;

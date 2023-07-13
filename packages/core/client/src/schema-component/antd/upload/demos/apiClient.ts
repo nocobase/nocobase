@@ -1,15 +1,9 @@
-import { APIClient } from '@nocobase/client';
-import MockAdapter from 'axios-mock-adapter';
-
-export const apiClient = new APIClient({
-  baseURL: 'http://localhost:8001/api/',
-});
-
-const mock = new MockAdapter(apiClient.axios);
+import { mockAPIClient } from '../../../../test';
 
 const sleep = (value: number) => new Promise((resolve) => setTimeout(resolve, value));
+const { apiClient, mockRequest } = mockAPIClient();
 
-mock.onPost('/attachments:upload').reply(async (config) => {
+mockRequest.onPost('/attachments:create').reply(async (config) => {
   const total = 1024; // mocked file size
   for (const progress of [0, 0.2, 0.4, 0.6, 0.8, 1]) {
     await sleep(500);

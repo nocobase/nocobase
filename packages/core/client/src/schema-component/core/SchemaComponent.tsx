@@ -6,7 +6,7 @@ function toSchema(schema?: any) {
   if (Schema.isSchemaInstance(schema)) {
     return schema;
   }
-  if (schema.name) {
+  if (schema?.name) {
     return new Schema({
       type: 'object',
       properties: {

@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
-import { DownOutlined, PlusOutlined } from '@ant-design/icons';
-import { RecursionField, useFieldSchema, useField } from '@formily/react';
-import { Dropdown, Menu, Button } from 'antd';
+import { DownOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { observer } from '@formily/react';
-import { useCollectionManager, useCollection, CollectionProvider } from '../../collection-manager';
-import { ActionContext, useCompile, useActionContext } from '../../schema-component';
-import { useRecordPkValue, useACLRolesCheck } from '../../acl/ACLProvider';
+import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
+import { Button, Dropdown, MenuProps } from 'antd';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useDesignable } from '../../';
+import { useACLRolesCheck, useRecordPkValue } from '../../acl/ACLProvider';
+import { CollectionProvider, useCollection, useCollectionManager } from '../../collection-manager';
+import { useRecord } from '../../record-provider';
+import { ActionContextProvider, useActionContext, useCompile } from '../../schema-component';
+import { linkageAction } from '../../schema-component/antd/action/utils';
+import { parseVariables } from '../../schema-component/common/utils/uitls';
 
 export const actionDesignerCss = css`
   position: relative;
@@ -47,7 +50,7 @@ export const actionDesignerCss = css`
   }
 `;
 
-const actionAclCheck = (actionPath) => {
+const actionAclCheck = function useAclCheck(actionPath) {
   const { data, inResources, getResourceActionParams, getStrategyActionParams } = useACLRolesCheck();
   const recordPkValue = useRecordPkValue();
   const collection = useCollection();
@@ -78,89 +81,237 @@ const actionAclCheck = (actionPath) => {
   return true;
 };
 
-export const CreateRecordAction = observer((props) => {
-  const [visible, setVisible] = useState(false);
-  const collection = useCollection();
-  const fieldSchema = useFieldSchema();
-  const enableChildren = fieldSchema['x-enable-children'] || [];
-  const field = useField();
-  const { getChildrenCollections } = useCollectionManager();
-  const totalChildCollections = getChildrenCollections(collection.name);
-  const inheritsCollections = enableChildren
-    .map((k) => {
-      const childCollection = totalChildCollections.find((j) => j.name === k.collection);
-      return {
-        ...childCollection,
-        title: k.title||childCollection.title,
-      };
-    })
-    .filter((v) => {
-      return actionAclCheck(`${v.name}:create`);
-    });
-  const [currentCollection, setCurrentCollection] = useState(collection.name);
-  const ctx = useActionContext();
-  const compile = useCompile();
-  const menu = (
-    <Menu>
-      {inheritsCollections.map((option) => {
-        return (
-          <Menu.Item
-            key={option.name}
-            onClick={(info) => {
+export const CreateRecordAction = observer(
+  (props: any) => {
+    const [visible, setVisible] = useState(false);
+    const collection = useCollection();
+    const fieldSchema = useFieldSchema();
+    const field: any = useField();
+    const [currentCollection, setCurrentCollection] = useState(collection.name);
+    const linkageRules = fieldSchema?.['x-linkage-rules'] || [];
+    const values = useRecord();
+    const ctx = useActionContext();
+    useEffect(() => {
+      field.linkageProperty = {};
+      linkageRules
+        .filter((k) => !k.disabled)
+        .map((v) => {
+          return v.actions?.map((h) => {
+            linkageAction(h.operator, field, v.condition, values);
+          });
+        });
+    }, [linkageRules, values]);
+    return (
+      <div className={actionDesignerCss}>
+        <ActionContextProvider value={{ ...ctx, visible, setVisible }}>
+          <CreateAction
+            {...props}
+            onClick={(name) => {
               setVisible(true);
-              setCurrentCollection(option.name);
+              setCurrentCollection(name);
             }}
-          >
-            {compile(option.title)}
-          </Menu.Item>
-        );
-      })}
-    </Menu>
-  );
-  return (
-    <div className={actionDesignerCss}>
-      <ActionContext.Provider value={{ ...ctx, visible, setVisible }}>
-        {inheritsCollections?.length > 0 ? (
-          <Dropdown.Button
-            type="primary"
-            icon={<DownOutlined />}
-            buttonsRender={([leftButton, rightButton]) => [
-              leftButton,
-              React.cloneElement(rightButton as React.ReactElement<any, string>, { loading: false }),
-            ]}
-            overlay={menu}
-            onClick={(info) => {
-              setVisible(true);
-              setCurrentCollection(collection.name);
-            }}
-          >
-            <PlusOutlined />
-            {props.children}
-          </Dropdown.Button>
-        ) : (
-          <Button
-            type={'primary'}
-            icon={<PlusOutlined />}
-            onClick={(info) => {
-              setVisible(true);
-              setCurrentCollection(collection.name);
-            }}
-          >
-            {props.children}
-          </Button>
-        )}
-        <CollectionProvider name={currentCollection}>
-          <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
-        </CollectionProvider>
-      </ActionContext.Provider>
-    </div>
-  );
-});
+          />
+          <CollectionProvider name={currentCollection}>
+            <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
+          </CollectionProvider>
+        </ActionContextProvider>
+      </div>
+    );
+  },
+  { displayName: 'CreateRecordAction' },
+);
 
-// export const CreateRecordAction = observer((props: any) => {
-//   return (
-//     <Action {...props} component={CreateAction}>
-//       {props.children}
-//     </Action>
-//   );
-// });
+function getLinkageCollection(str, form, field) {
+  const variablesCtx = { $form: form.values, $iteration: form.values };
+  if (str.includes('$iteration')) {
+    const path = field.path.segments.concat([]);
+    path.splice(-2);
+    str = str.replace('$iteration.', `$iteration.${path.join('.')}.`);
+    const data = parseVariables(str, variablesCtx);
+    return data;
+  } else {
+    const data = parseVariables(str, { $form: form.values });
+    return data;
+  }
+}
+export const CreateAction = observer(
+  (props: any) => {
+    const { onClick } = props;
+    const collection = useCollection();
+    const fieldSchema = useFieldSchema();
+    const field: any = useField();
+    const form = useForm();
+    const enableChildren = fieldSchema['x-enable-children'] || [];
+    const allowAddToCurrent = fieldSchema?.['x-allow-add-to-current'];
+    const linkageFromForm = fieldSchema?.['x-component-props']?.['linkageFromForm'];
+    // antd v5 danger type is deprecated
+    const componentType = field.componentProps.type === 'danger' ? undefined : field.componentProps.type || 'primary';
+    const { getChildrenCollections } = useCollectionManager();
+    const totalChildCollections = getChildrenCollections(collection.name);
+    const inheritsCollections = useMemo(() => {
+      return enableChildren
+        .map((k) => {
+          if (!k) {
+            return;
+          }
+          const childCollection = totalChildCollections.find((j) => j.name === k.collection);
+          if (!childCollection) {
+            return;
+          }
+          return {
+            ...childCollection,
+            title: k.title || childCollection.title,
+          };
+        })
+        .filter((v) => {
+          return v && actionAclCheck(`${v.name}:create`);
+        });
+    }, [enableChildren, totalChildCollections]);
+    const linkageRules = fieldSchema?.['x-linkage-rules'] || [];
+    const values = useRecord();
+    const compile = useCompile();
+    const { designable } = useDesignable();
+    const icon = props.icon || null;
+    const menuItems = useMemo<MenuProps['items']>(() => {
+      return inheritsCollections.map((option) => ({
+        key: option.name,
+        label: compile(option.title),
+        onClick: () => onClick?.(option.name),
+      }));
+    }, [inheritsCollections, onClick]);
+
+    const menu = useMemo<MenuProps>(() => {
+      return {
+        items: menuItems,
+      };
+    }, [menuItems]);
+
+    useEffect(() => {
+      field.linkageProperty = {};
+      linkageRules
+        .filter((k) => !k.disabled)
+        .map((v) => {
+          return v.actions?.map((h) => {
+            linkageAction(h.operator, field, v.condition, values);
+          });
+        });
+    }, [linkageRules, values]);
+    return (
+      <div className={actionDesignerCss}>
+        {FinallyButton({
+          inheritsCollections,
+          linkageFromForm,
+          allowAddToCurrent,
+          props,
+          componentType,
+          menu,
+          onClick,
+          collection,
+          icon,
+          field,
+          form,
+          designable,
+        })}
+      </div>
+    );
+  },
+  { displayName: 'CreateAction' },
+);
+
+function FinallyButton({
+  inheritsCollections,
+  linkageFromForm,
+  allowAddToCurrent,
+  props,
+  componentType,
+  menu,
+  onClick,
+  collection,
+  icon,
+  field,
+  form,
+  designable,
+}: {
+  inheritsCollections: any;
+  linkageFromForm: any;
+  allowAddToCurrent: any;
+  props: any;
+  componentType: any;
+  menu: MenuProps;
+  onClick: any;
+  collection;
+  icon: any;
+  field: any;
+  form;
+  designable: boolean;
+}) {
+  if (inheritsCollections?.length > 0) {
+    if (!linkageFromForm) {
+      return allowAddToCurrent === undefined || allowAddToCurrent ? (
+        <Dropdown.Button
+          danger={props.danger}
+          type={componentType}
+          icon={<DownOutlined />}
+          buttonsRender={([leftButton, rightButton]) => [
+            leftButton,
+            React.cloneElement(rightButton as React.ReactElement<any, string>, { loading: false }),
+          ]}
+          menu={menu}
+          onClick={(info) => {
+            onClick?.(collection.name);
+          }}
+        >
+          {icon}
+          {props.children}
+        </Dropdown.Button>
+      ) : (
+        <Dropdown menu={menu}>
+          {
+            <Button icon={icon} type={componentType} danger={props.danger}>
+              {props.children} <DownOutlined />
+            </Button>
+          }
+        </Dropdown>
+      );
+    }
+    return (
+      <Button
+        type={componentType}
+        disabled={field.disabled}
+        danger={props.danger}
+        icon={icon}
+        onClick={(info) => {
+          const collectionName = getLinkageCollection(linkageFromForm, form, field);
+          const targetCollection = inheritsCollections.find((v) => v.name === collectionName)
+            ? collectionName
+            : collection.name;
+          onClick?.(targetCollection);
+        }}
+        style={{
+          display: !designable && field?.data?.hidden && 'none',
+          opacity: designable && field?.data?.hidden && 0.1,
+        }}
+      >
+        {props.children}
+      </Button>
+    );
+  }
+
+  return (
+    <Button
+      type={componentType}
+      disabled={field.disabled}
+      danger={props.danger}
+      icon={icon}
+      onClick={(info) => {
+        onClick?.(collection.name);
+      }}
+      style={{
+        display: !designable && field?.data?.hidden && 'none',
+        opacity: designable && field?.data?.hidden && 0.1,
+      }}
+    >
+      {props.children}
+    </Button>
+  );
+}

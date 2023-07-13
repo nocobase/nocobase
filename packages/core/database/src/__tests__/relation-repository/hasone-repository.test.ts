@@ -93,6 +93,7 @@ describe('has one repository', () => {
     });
 
     const data = profile.toJSON();
+
     expect(data['a1']).toBeDefined();
     expect(data['a2']).toBeDefined();
   });

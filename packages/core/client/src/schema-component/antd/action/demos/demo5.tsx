@@ -8,11 +8,11 @@ import {
   FormLayout,
   Input,
   NumberPicker,
-  Submit
-} from '@formily/antd';
-import { Select } from 'antd';
-import { createForm, Field, onFieldValueChange } from '@formily/core';
+  Submit,
+} from '@formily/antd-v5';
+import { Field, createForm, onFieldValueChange } from '@formily/core';
 import { connect, createSchemaField, observer, useField, useForm, useFormEffects } from '@formily/react';
+import { Select } from 'antd';
 import React from 'react';
 
 const ViewOptions = connect((props) => {
@@ -62,59 +62,68 @@ function TypeSelect(props) {
 
   return (
     <Select {...props}>
-      {Object.keys(types).map(key => (
-        <Select.Option key={key} value={key}>{types[key].title}</Select.Option>
+      {Object.keys(types).map((key) => (
+        <Select.Option key={key} value={key}>
+          {types[key].title}
+        </Select.Option>
       ))}
     </Select>
   );
 }
 
-const EditOptions = observer((props) => {
-  const record = ArrayTable.useRecord();
-  const field = useField<Field>();
-  console.log(record.type);
-  return (
-    <div>
-      <a
-        onClick={() => {
-          FormDrawer('Pop-up form', () => {
-            return (
-              <FormLayout labelCol={6} wrapperCol={10}>
-                <SchemaField
-                  schema={{
-                    type: 'object',
-                    properties: record.type ? types[record.type] || {} : {},
-                  }}
-                />
-                <FormDrawer.Footer>
-                  <FormButtonGroup align="right">
-                    <Submit
-                      onSubmit={() => {
-                        return new Promise((resolve) => {
-                          setTimeout(resolve, 1000);
-                        });
-                      }}
-                    >
-                      Submit
-                    </Submit>
-                  </FormButtonGroup>
-                </FormDrawer.Footer>
-              </FormLayout>
-            );
-          })
-            .open({
-              initialValues: field.value,
+const EditOptions = observer(
+  (props) => {
+    const record = ArrayTable.useRecord();
+    const field = useField<Field>();
+    console.log(record.type);
+    return (
+      <div>
+        <a
+          onClick={() => {
+            FormDrawer('Pop-up form', () => {
+              return (
+                <FormLayout labelCol={6} wrapperCol={10}>
+                  <SchemaField
+                    schema={{
+                      type: 'object',
+                      properties: record.type ? types[record.type] || {} : {},
+                    }}
+                  />
+                  <FormDrawer.Footer>
+                    <FormButtonGroup align="right">
+                      <Submit
+                        onSubmit={() => {
+                          return new Promise((resolve) => {
+                            setTimeout(resolve, 1000);
+                          });
+                        }}
+                      >
+                        Submit
+                      </Submit>
+                    </FormButtonGroup>
+                  </FormDrawer.Footer>
+                </FormLayout>
+              );
             })
-            .then((values) => {
-              field.value = values;
-            });
-        }}
-      >
-        Edit
-      </a>
-    </div>
-  );
-});
+              .open({
+                initialValues: field.value,
+              })
+              .then((values) => {
+                field.value = values;
+                return values;
+              })
+              .catch((err) => {
+                console.error(err);
+              });
+          }}
+        >
+          Edit
+        </a>
+      </div>
+    );
+  },
+  { displayName: 'EditOptions' },
+);
 
 const SchemaField = createSchemaField({
   components: {
@@ -163,7 +172,7 @@ const schema = {
               type: {
                 type: 'string',
                 'x-decorator': 'FormItem',
-                'x-component': TypeSelect
+                'x-component': TypeSelect,
               },
             },
           },
@@ -176,7 +185,7 @@ const schema = {
             properties: {
               options: {
                 type: 'object',
-                'x-component': 'ViewOptions'
+                'x-component': 'ViewOptions',
               },
             },
           },

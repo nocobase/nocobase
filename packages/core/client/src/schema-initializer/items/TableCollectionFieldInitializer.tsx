@@ -1,7 +1,7 @@
-import React from "react";
-import { ISchema } from "@formily/react";
+import React from 'react';
+import { ISchema } from '@formily/react';
 
-import { InitializerWithSwitch } from "./InitializerWithSwitch";
+import { InitializerWithSwitch } from './InitializerWithSwitch';
 
 export const TableCollectionFieldInitializer = (props) => {
   const schema: ISchema = {};

@@ -482,7 +482,7 @@ describe('parentsIn', () => {
     const dn = createDesignable({
       current: schema.properties.menu.properties.item1,
     });
-    const callback = jest.fn();
+    const callback = vi.fn();
     dn.on('error', callback);
     dn.insertAfterBegin(schema.properties.menu);
     expect(schema.properties.menu).toBeDefined();

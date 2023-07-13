@@ -6,7 +6,7 @@ import {
   SchemaComponent,
   SchemaComponentProvider,
   SchemaInitializer,
-  SchemaInitializerProvider
+  SchemaInitializerProvider,
 } from '@nocobase/client';
 import React from 'react';
 
@@ -16,7 +16,7 @@ export const AddActionButton = (props: any) => {
     <SchemaInitializer.Button
       insertPosition={insertPosition}
       style={{
-        marginLeft: 8
+        marginLeft: 8,
       }}
       items={[
         {

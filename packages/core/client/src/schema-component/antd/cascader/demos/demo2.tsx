@@ -1,4 +1,4 @@
-import { FormItem } from '@formily/antd';
+import { FormItem } from '@formily/antd-v5';
 import { ArrayField } from '@formily/core';
 import { useField } from '@formily/react';
 import { action } from '@formily/reactive';
@@ -8,7 +8,7 @@ import {
   Cascader,
   SchemaComponent,
   SchemaComponentProvider,
-  useAPIClient
+  useAPIClient,
 } from '@nocobase/client';
 import MockAdapter from 'axios-mock-adapter';
 import React from 'react';
@@ -64,7 +64,7 @@ const useLoadData = () => {
         },
       ];
       field.dataSource = [...field.dataSource];
-    }, 500);
+    }, 300);
   };
 };
 

@@ -4,7 +4,6 @@ import { RuntimeOptions } from '@alicloud/tea-util';
 
 import { Provider } from '.';
 
-
 export default class extends Provider {
   client: DysmsApi;
 
@@ -13,7 +12,7 @@ export default class extends Provider {
 
     const { accessKeyId, accessKeySecret, endpoint } = this.options;
 
-    let config = new OpenApi.Config({
+    const config = new OpenApi.Config({
       // 您的 AccessKey ID
       accessKeyId: accessKeyId,
       // 您的 AccessKey Secret
@@ -22,7 +21,7 @@ export default class extends Provider {
     // 访问的域名
     config.endpoint = endpoint;
 
-    this.client =  new DysmsApi(config);
+    this.client = new DysmsApi(config);
   }
 
   async send(phoneNumbers, data = {}) {
@@ -30,12 +29,12 @@ export default class extends Provider {
       phoneNumbers,
       signName: this.options.sign,
       templateCode: this.options.template,
-      templateParam: JSON.stringify(data)
+      templateParam: JSON.stringify(data),
     });
 
     try {
       const { body } = await this.client.sendSmsWithOptions(request, new RuntimeOptions({}));
-      let err = new Error(body.message);
+      const err = new Error(body.message);
       switch (body.code) {
         case 'OK':
           break;

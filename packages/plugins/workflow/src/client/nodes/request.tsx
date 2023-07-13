@@ -1,15 +1,15 @@
-import { ArrayItems } from '@formily/antd';
-import { css } from '@emotion/css';
+import { ArrayItems } from '@formily/antd-v5';
+import React from 'react';
 
+import { Variable } from '@nocobase/client';
 import { NAMESPACE } from '../locale';
 import { useWorkflowVariableOptions } from '../variable';
-
-
 
 export default {
   title: `{{t("HTTP request", { ns: "${NAMESPACE}" })}}`,
   type: 'request',
   group: 'extended',
+  description: `{{t("Send HTTP request to a URL. You can use the variables in the upstream nodes as request headers, parameters and request body.", { ns: "${NAMESPACE}" })}}`,
   fieldset: {
     method: {
       type: 'string',
@@ -28,26 +28,18 @@ export default {
         { label: 'PATCH', value: 'PATCH' },
         { label: 'DELETE', value: 'DELETE' },
       ],
-      default: 'POST'
+      default: 'POST',
     },
     url: {
       type: 'string',
       required: true,
       title: `{{t("URL", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
-      'x-decorator-props': {
-        className: css`
-          .ant-formily-item-control-content-component{
-            .ant-input-affix-wrapper,
-            .ant-input{
-              width: 100%;
-            }
-          }
-        `
-      },
+      'x-decorator-props': {},
       'x-component': 'Input',
       'x-component-props': {
         placeholder: 'https://www.nocobase.com',
+        className: 'full-width',
       },
     },
     headers: {
@@ -76,8 +68,9 @@ export default {
                 'x-decorator': 'FormItem',
                 'x-component': 'Variable.Input',
                 'x-component-props': {
-                  scope: useWorkflowVariableOptions
-                }
+                  scope: '{{useWorkflowVariableOptions()}}',
+                  useTypedConstant: true,
+                },
               },
               remove: {
                 type: 'void',
@@ -121,8 +114,9 @@ export default {
                 'x-decorator': 'FormItem',
                 'x-component': 'Variable.Input',
                 'x-component-props': {
-                  scope: useWorkflowVariableOptions
-                }
+                  scope: '{{useWorkflowVariableOptions()}}',
+                  useTypedConstant: true,
+                },
               },
               remove: {
                 type: 'void',
@@ -146,17 +140,14 @@ export default {
       title: `{{t("Body", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-decorator-props': {},
-      'x-component': 'Variable.JSON',
+      'x-component': 'RequestBody',
       'x-component-props': {
-        scope: useWorkflowVariableOptions,
+        changeOnSelect: true,
         autoSize: {
           minRows: 10,
         },
         placeholder: `{{t("Input request data", { ns: "${NAMESPACE}" })}}`,
-        className: css`
-          font-size: 90%;
-          font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
-        `
+        className: 'full-width',
       },
       description: `{{t("Only support standard JSON data", { ns: "${NAMESPACE}" })}}`,
     },
@@ -178,11 +169,17 @@ export default {
       title: `{{t("Ignore fail request and continue workflow", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
-    }
+    },
   },
   view: {},
-  scope: {},
+  scope: {
+    useWorkflowVariableOptions,
+  },
   components: {
     ArrayItems,
+    RequestBody(props) {
+      const scope = useWorkflowVariableOptions();
+      return <Variable.JSON scope={scope} {...props} />;
+    },
   },
 };

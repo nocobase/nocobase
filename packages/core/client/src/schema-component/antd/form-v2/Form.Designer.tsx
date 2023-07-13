@@ -1,4 +1,4 @@
-import { ArrayItems } from '@formily/antd';
+import { ArrayItems } from '@formily/antd-v5';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -9,24 +9,29 @@ import { useCollectionFilterOptions, useSortFields } from '../../../collection-m
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
-import { useActionContext } from '../action';
+import { removeNullCondition } from '../filter';
+import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
 
 export const FormDesigner = () => {
   const { name, title } = useCollection();
   const template = useSchemaTemplate();
-  const ctx = useFormBlockContext();
-  const field = useField();
   const fieldSchema = useFieldSchema();
-  const { dn } = useDesignable();
-  const { t } = useTranslation();
-  const { visible } = useActionContext();
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
+  const { action } = useFormBlockContext();
+
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       {/* <SchemaSettings.Template componentName={'FormItem'} collectionName={name} /> */}
       <SchemaSettings.BlockTitleItem />
-      <SchemaSettings.FormItemTemplate componentName={'FormItem'} collectionName={name} resourceName={defaultResource} />
       <SchemaSettings.LinkageRules collectionName={name} />
+      {/* 当 action 没有值的时候，说明是在用表单创建新数据，此时需要显示数据模板 */}
+      {!action ? <SchemaSettings.DataTemplates collectionName={name} /> : null}
+      <SchemaSettings.Divider />
+      <SchemaSettings.FormItemTemplate
+        componentName={'FormItem'}
+        collectionName={name}
+        resourceName={defaultResource}
+      />
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren
@@ -103,12 +108,15 @@ export const DetailsDesigner = () => {
                 // title: '数据范围',
                 enum: dataSource,
                 'x-component': 'Filter',
-                'x-component-props': {},
+                'x-component-props': {
+                  dynamicComponent: (props) => FilterDynamicComponent({ ...props }),
+                },
               },
             },
           } as ISchema
         }
         onSubmit={({ filter }) => {
+          filter = removeNullCondition(filter);
           const params = field.decoratorProps.params || {};
           params.filter = filter;
           field.decoratorProps.params = params;
@@ -150,6 +158,7 @@ export const DetailsDesigner = () => {
                         field: {
                           type: 'string',
                           enum: sortFields,
+                          required: true,
                           'x-decorator': 'FormItem',
                           'x-component': 'Select',
                           'x-component-props': {

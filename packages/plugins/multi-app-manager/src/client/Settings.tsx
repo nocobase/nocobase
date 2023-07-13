@@ -4,7 +4,7 @@ import React from 'react';
 
 const schema = {
   type: 'object',
-}
+};
 
 export const Settings = () => {
   return (

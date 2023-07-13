@@ -1,10 +1,10 @@
 /**
  * title: Menu
  */
-import React, { useRef } from 'react';
-import { Menu, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
 import { ISchema } from '@formily/react';
+import { Menu, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
 import { Layout } from 'antd';
+import React, { useRef } from 'react';
 
 const schema: ISchema = {
   type: 'object',
@@ -15,7 +15,7 @@ const schema: ISchema = {
       'x-component-props': {
         mode: 'mix',
         theme: 'dark',
-        defaultSelectedUid: 'u8',
+        defaultSelectedUid: 'u1',
         sideMenuRefScopeKey: 'sideMenuRef',
       },
       properties: {

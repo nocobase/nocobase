@@ -8,8 +8,11 @@ import { mockServer, MockServer } from '@nocobase/test';
 describe('plugin', () => {
   let app: MockServer;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     app = mockServer();
+    await app.db.clean({ drop: true });
+
+    await app.db.sync();
   });
 
   afterEach(async () => {
@@ -106,6 +109,22 @@ describe('plugin', () => {
       await app.load();
       const Test = app.db.getCollection('tests');
       expect(Test).toBeDefined();
+    });
+  });
+
+  describe('enable', function () {
+    it('should call beforeEnable', async () => {
+      const beforeEnable = jest.fn();
+
+      class TestPlugin extends Plugin {
+        async beforeEnable() {
+          beforeEnable();
+        }
+      }
+
+      app.plugin(TestPlugin);
+      await app.pm.enable('TestPlugin');
+      expect(beforeEnable).toBeCalled();
     });
   });
 });

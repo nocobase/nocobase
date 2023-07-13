@@ -1,16 +1,16 @@
 import { useField } from '@formily/react';
 import { merge } from '@formily/shared';
-import flat from 'flat';
+import flat, { unflatten } from 'flat';
 import cloneDeep from 'lodash/cloneDeep';
 import get from 'lodash/get';
 import { useContext, useEffect } from 'react';
-import { FilterContext, FilterLogicContext } from './context';
+import { FilterContext } from './context';
 
 // import { useValues } from './useValues';
 const findOption = (dataIndex = [], options) => {
   let items = options;
   let option;
-  dataIndex?.forEach?.((name, index) => {
+  dataIndex?.forEach?.((name) => {
     const item = items.find((item) => item.name === name);
     if (item) {
       option = item;
@@ -22,8 +22,7 @@ const findOption = (dataIndex = [], options) => {
 
 export const useValues = () => {
   const field = useField<any>();
-  const logic = useContext(FilterLogicContext);
-  const { options } = useContext(FilterContext);
+  const { options } = useContext(FilterContext) || {};
   const data2value = () => {
     field.value = flat.unflatten({
       [`${field.data.dataIndex?.join('.')}.${field.data?.operator?.value}`]: field.data?.value,
@@ -31,9 +30,9 @@ export const useValues = () => {
   };
   const value2data = () => {
     field.data = field.data || {};
-    const values = flat(field.value);
+    const values: object = flat(field.value || {});
     const path = Object.keys(values).shift() || '';
-    if (!path) {
+    if (!path || !options) {
       return;
     }
     const [fieldPath = '', otherPath = ''] = path.split('.$');
@@ -46,12 +45,12 @@ export const useValues = () => {
     field.data.operators = operators;
     field.data.operator = operator;
     field.data.schema = merge(option?.schema, operator?.schema);
-    field.data.value = get(field.value, `${fieldPath}.$${operatorValue}`);
+    field.data.value = get(unflatten(field.value), `${fieldPath}.$${operatorValue}`);
   };
-  useEffect(value2data, [logic]);
+  useEffect(value2data, [field.path]);
   return {
     fields: options,
-    ...field.data,
+    ...(field?.data || {}),
     setDataIndex(dataIndex) {
       const option = findOption(dataIndex, options);
       const operator = option?.operators?.[0];
@@ -62,7 +61,7 @@ export const useValues = () => {
       const s2 = cloneDeep(operator?.schema);
       field.data.schema = merge(s1, s2);
       field.data.dataIndex = dataIndex;
-      field.data.value = operator.noValue ? operator.default || true : null;
+      field.data.value = operator?.noValue ? operator.default || true : undefined;
       data2value();
     },
     setOperator(operatorValue) {
@@ -72,7 +71,7 @@ export const useValues = () => {
       const s1 = cloneDeep(option?.schema);
       const s2 = cloneDeep(operator?.schema);
       field.data.schema = merge(s1, s2);
-      field.data.value = operator.noValue ? operator.default || true : null;
+      field.data.value = operator.noValue ? operator.default || true : undefined;
       data2value();
     },
     setValue(value) {

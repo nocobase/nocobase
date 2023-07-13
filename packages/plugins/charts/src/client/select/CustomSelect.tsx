@@ -1,8 +1,7 @@
 import { LoadingOutlined } from '@ant-design/icons';
-import { css } from '@emotion/css';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { isValid } from '@formily/shared';
-import { Icon } from '@nocobase/client';
+import { css, Icon } from '@nocobase/client';
 import type { SelectProps } from 'antd';
 import { Popover, Select as AntdSelect } from 'antd';
 import React from 'react';

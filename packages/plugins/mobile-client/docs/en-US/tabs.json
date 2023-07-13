@@ -1,0 +1,14 @@
+[
+  {
+    "title": "Introduction",
+    "path": "index"
+  },
+  {
+    "title": "Installation",
+    "path": "installation"
+  },
+  {
+    "title": "Usage",
+    "path": "usage"
+  }
+]

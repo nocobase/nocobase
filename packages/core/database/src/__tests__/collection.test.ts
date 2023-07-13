@@ -17,6 +17,25 @@ describe('collection', () => {
     await db.close();
   });
 
+  it('should remove sequelize model prototype methods after field remove', async () => {
+    db.collection({
+      name: 'tags',
+    });
+
+    const UserCollection = db.collection({
+      name: 'users',
+      fields: [{ type: 'belongsToMany', name: 'tags' }],
+    });
+
+    console.log(Object.getOwnPropertyNames(UserCollection.model.prototype));
+
+    await UserCollection.removeField('tags');
+
+    console.log(Object.getOwnPropertyNames(UserCollection.model.prototype));
+    // @ts-ignore
+    expect(UserCollection.model.prototype.getTags).toBeUndefined();
+  });
+
   it('should not throw error when create empty collection in sqlite and mysql', async () => {
     if (!db.inDialect('sqlite', 'mysql')) {
       return;
@@ -326,6 +345,50 @@ describe('collection sync', () => {
     }
 
     expect(error).toBeInstanceOf(IdentifierError);
+  });
+
+  it('should throw error when collection has same table name and same schema', async () => {
+    const c1 = db.collection({
+      name: 'test',
+      tableName: 'test',
+      schema: 'public',
+    });
+
+    let err;
+
+    try {
+      const c2 = db.collection({
+        name: 'test2',
+        tableName: 'test',
+        schema: 'public',
+      });
+    } catch (e) {
+      err = e;
+    }
+
+    expect(err.message).toContain('have same tableName');
+  });
+
+  it('should allow same table name in difference schema', async () => {
+    const c1 = db.collection({
+      name: 'test',
+      tableName: 'test',
+      schema: 'public',
+    });
+
+    let err;
+
+    try {
+      const c2 = db.collection({
+        name: 'test2',
+        tableName: 'test',
+        schema: 'other_schema',
+      });
+    } catch (e) {
+      err = e;
+    }
+
+    expect(err).toBeFalsy();
   });
 
   test('limit field name length', async () => {

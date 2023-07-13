@@ -1,5 +1,4 @@
 import { gridRowColWrap } from '../utils';
-import * as chartConfig from './chart-config';
 
 // 页面里添加区块
 export const BlockInitializers = {
@@ -31,6 +30,18 @@ export const BlockInitializers = {
           component: 'DetailsBlockInitializer',
         },
         {
+          key: 'List',
+          type: 'item',
+          title: '{{t("List")}}',
+          component: 'ListBlockInitializer',
+        },
+        {
+          key: 'GridCard',
+          type: 'item',
+          title: '{{t("Grid Card")}}',
+          component: 'GridCardBlockInitializer',
+        },
+        {
           key: 'calendar',
           type: 'item',
           title: '{{t("Calendar")}}',
@@ -41,6 +52,31 @@ export const BlockInitializers = {
           type: 'item',
           title: '{{t("Kanban")}}',
           component: 'KanbanBlockInitializer',
+        },
+        {
+          key: 'Gantt',
+          type: 'item',
+          title: '{{t("Gantt")}}',
+          component: 'GanttBlockInitializer',
+        },
+      ],
+    },
+    {
+      key: 'filterBlocks',
+      type: 'itemGroup',
+      title: '{{t("Filter blocks")}}',
+      children: [
+        {
+          key: 'filterForm',
+          type: 'item',
+          title: '{{t("Form")}}',
+          component: 'FilterFormBlockInitializer',
+        },
+        {
+          key: 'filterCollapse',
+          type: 'item',
+          title: '{{t("Collapse")}}',
+          component: 'FilterCollapseBlockInitializer',
         },
       ],
     },

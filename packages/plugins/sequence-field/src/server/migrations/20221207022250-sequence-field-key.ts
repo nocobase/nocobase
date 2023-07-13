@@ -17,9 +17,9 @@ export default class extends Migration {
     await db.sequelize.transaction(async (transaction) => {
       const seqPlugin = await pluginRepo.findOne({
         filter: {
-          name: 'sequence-field'
+          name: 'sequence-field',
         },
-        transaction
+        transaction,
       });
       if (!seqPlugin) {
         await pluginRepo.create({
@@ -29,35 +29,39 @@ export default class extends Migration {
             enabled: true,
             installed: true,
             builtIn: true,
-          }
+          },
         });
       }
 
       const fields = await fieldRepo.find({
         filter: {
-          type: 'sequence'
-        }
+          type: 'sequence',
+        },
       });
-      await fields.reduce((promise, field) => promise.then(async () => {
-        const options = field.get('options');
-        const fieldName = field.get('name');
-        const collectionName = field.get('collectionName');
-        // NOTE: cannot use .update because no changes are made, only for forcing to trigger beforeSave hook.
-        field.set('patterns', options.patterns);
-        await field.save({ transaction });
+      await fields.reduce(
+        (promise, field) =>
+          promise.then(async () => {
+            const options = field.get('options');
+            const fieldName = field.get('name');
+            const collectionName = field.get('collectionName');
+            // NOTE: cannot use .update because no changes are made, only for forcing to trigger beforeSave hook.
+            field.set('patterns', options.patterns);
+            await field.save({ transaction });
 
-        const repo = db.getRepository(collectionName);
-        const item = await repo.findOne({
-          sort: ['-createdAt'],
-          transaction
-        });
-        if (!item) {
-          return;
-        }
-        const collection = db.getCollection(collectionName);
-        const memField = collection.getField(fieldName);
-        await memField.update(item, { transaction });
-      }), Promise.resolve());
+            const repo = db.getRepository(collectionName);
+            const item = await repo.findOne({
+              sort: ['-createdAt'],
+              transaction,
+            });
+            if (!item) {
+              return;
+            }
+            const collection = db.getCollection(collectionName);
+            const memField = collection.getField(fieldName);
+            await memField.update(item, { transaction });
+          }),
+        Promise.resolve(),
+      );
     });
   }
 

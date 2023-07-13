@@ -157,6 +157,11 @@ export abstract class Field {
     //   return;
     // }
 
+    if (this.collection.isView()) {
+      this.remove();
+      return;
+    }
+
     const columnReferencesCount = _.filter(
       this.collection.model.rawAttributes,
       (attr) => attr.field == this.columnName(),
@@ -212,6 +217,7 @@ export abstract class Field {
   bind() {
     const { model } = this.context.collection;
     model.rawAttributes[this.name] = this.toSequelize();
+
     // @ts-ignore
     model.refreshAttributes();
     if (this.options.index) {
@@ -221,6 +227,9 @@ export abstract class Field {
 
   unbind() {
     const { model } = this.context.collection;
+
+    delete model.prototype[this.name];
+
     model.removeAttribute(this.name);
     if (this.options.index || this.options.unique) {
       this.context.collection.removeIndex([this.name]);
@@ -232,6 +241,7 @@ export abstract class Field {
     if (this.dataType) {
       Object.assign(opts, { type: this.dataType });
     }
+
     return opts;
   }
 

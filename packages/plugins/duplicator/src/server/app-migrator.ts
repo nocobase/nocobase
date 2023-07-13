@@ -3,7 +3,7 @@ import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import crypto from 'crypto';
 import EventEmitter from 'events';
 import fsPromises from 'fs/promises';
-import lodash from 'lodash';
+import { lodash } from '@nocobase/utils';
 import * as os from 'os';
 import path from 'path';
 import { CollectionGroupManager } from './collection-group-manager';

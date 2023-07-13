@@ -1,5 +1,5 @@
-import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
+import { Application } from '@nocobase/server';
 import { getApp, sleep } from '..';
 import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
 
@@ -62,8 +62,8 @@ describe('workflow > instructions > delay', () => {
         type: 'delay',
         config: {
           duration: 2000,
-          endStatus: JOB_STATUS.FAILED
-        }
+          endStatus: JOB_STATUS.FAILED,
+        },
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });

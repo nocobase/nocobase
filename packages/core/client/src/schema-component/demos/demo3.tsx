@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
-import {useDroppable, useDraggable} from '@dnd-kit/core';
-import {DndContext} from '@dnd-kit/core';
+import { useDroppable, useDraggable } from '@dnd-kit/core';
+import { DndContext } from '@dnd-kit/core';
 
 function Draggable(props) {
-  const {attributes, listeners, setNodeRef, transform} = useDraggable({
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: props.id,
   });
-  const style = transform ? {
-    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-  } : undefined;
+  const style = transform
+    ? {
+        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+      }
+    : undefined;
 
-  
   return (
     <button ref={setNodeRef} style={style} {...listeners} {...attributes}>
       {props.children}
@@ -19,14 +20,13 @@ function Draggable(props) {
 }
 
 function Droppable(props) {
-  const {isOver, setNodeRef} = useDroppable({
+  const { isOver, setNodeRef } = useDroppable({
     id: props.id,
   });
   const style = {
     color: isOver ? 'green' : undefined,
   };
-  
-  
+
   return (
     <div ref={setNodeRef} style={style}>
       {props.children}
@@ -37,9 +37,7 @@ function Droppable(props) {
 export default function App() {
   const containers = ['A', 'B', 'C'];
   const [parent, setParent] = useState(null);
-  const draggableMarkup = (
-    <Draggable id="draggable">Drag me</Draggable>
-  );
+  const draggableMarkup = <Draggable id="draggable">Drag me</Draggable>;
 
   return (
     <DndContext onDragEnd={handleDragEnd}>
@@ -56,10 +54,10 @@ export default function App() {
   );
 
   function handleDragEnd(event) {
-    const {over} = event;
+    const { over } = event;
 
     // If the item is dropped over a container, set it as the parent
     // otherwise reset the parent to `null`
     setParent(over ? over.id : null);
   }
-};
+}

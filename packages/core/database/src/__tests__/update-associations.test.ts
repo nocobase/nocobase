@@ -3,15 +3,302 @@ import { Database } from '../database';
 import { updateAssociations } from '../update-associations';
 import { mockDatabase } from './';
 
+describe('update belongs to many with view as through table', () => {
+  let db: Database;
+  beforeEach(async () => {
+    db = mockDatabase({
+      tablePrefix: '',
+    });
+    await db.clean({
+      drop: true,
+    });
+  });
+
+  afterEach(async () => {
+    await db.close();
+  });
+
+  it('should not update through table', async () => {
+    const Order = db.collection({
+      name: 'orders',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+        {
+          type: 'hasMany',
+          name: 'orderItems',
+          foreignKey: 'order_id',
+          target: 'orderItems',
+        },
+      ],
+    });
+
+    const OrderItem = db.collection({
+      name: 'orderItems',
+      timestamps: false,
+      fields: [
+        {
+          type: 'integer',
+          name: 'count',
+        },
+        {
+          type: 'belongsTo',
+          name: 'item',
+          target: 'items',
+          foreignKey: 'item_id',
+        },
+        {
+          type: 'belongsTo',
+          name: 'order',
+          target: 'orders',
+          foreignKey: 'order_id',
+        },
+      ],
+    });
+
+    const Item = db.collection({
+      name: 'items',
+      fields: [{ name: 'name', type: 'string' }],
+    });
+
+    await db.sync();
+
+    const viewName = 'order_item_view';
+
+    const dropViewSQL = `DROP VIEW IF EXISTS ${viewName}`;
+    await db.sequelize.query(dropViewSQL);
+
+    const viewSQL = `CREATE VIEW ${viewName} as SELECT orders.*, items.name as item_name FROM ${OrderItem.quotedTableName()} as orders INNER JOIN ${Item.quotedTableName()} as items ON orders.item_id = items.id`;
+
+    await db.sequelize.query(viewSQL);
+
+    const OrderItemView = db.collection({
+      name: viewName,
+      view: true,
+      schema: db.inDialect('postgres') ? 'public' : undefined,
+      fields: [
+        {
+          type: 'bigInt',
+          name: 'order_id',
+        },
+        {
+          type: 'bigInt',
+          name: 'item_id',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    Order.setField('items', {
+      type: 'belongsToMany',
+      target: 'orderItems',
+      through: viewName,
+      foreignKey: 'order_id',
+      otherKey: 'item_id',
+      sourceKey: 'id',
+      targetKey: 'id',
+    });
+
+    await db.sync();
+
+    const order1 = await db.getRepository('orders').create({
+      values: {
+        name: 'order1',
+        orderItems: [
+          {
+            count: 1,
+            item: {
+              name: 'item1',
+            },
+          },
+          {
+            count: 2,
+            item: {
+              name: 'item2',
+            },
+          },
+        ],
+      },
+    });
+
+    const item1 = await db.getRepository('items').findOne({
+      filter: {
+        name: 'item1',
+      },
+    });
+
+    const item2 = await db.getRepository('items').findOne({
+      filter: {
+        name: 'item2',
+      },
+    });
+
+    await db.getRepository('orders').update({
+      filterByTk: order1.get('id'),
+      values: {
+        name: 'order1',
+        orderItems: [
+          {
+            count: 1,
+            item: {
+              id: item1.get('id'),
+            },
+          },
+          {
+            count: 2,
+            item: {
+              id: item2.get('id'),
+            },
+          },
+          {
+            count: 3,
+            item: {
+              name: 'item3',
+            },
+          },
+        ],
+        items: [
+          {
+            id: item1.get('id'),
+          },
+          {
+            id: item2.get('id'),
+          },
+        ],
+      },
+    });
+
+    const order1AfterUpdate = await db.getRepository('orders').findOne({
+      filter: {
+        name: 'order1',
+      },
+      appends: ['items'],
+    });
+
+    expect(order1AfterUpdate.get('items').length).toBe(3);
+  });
+});
+
 describe('update associations', () => {
   describe('belongsTo', () => {
     let db: Database;
     beforeEach(async () => {
-      db = mockDatabase();
+      db = mockDatabase({});
+      await db.clean({
+        drop: true,
+      });
     });
 
     afterEach(async () => {
       await db.close();
+    });
+
+    test('update belongs to with foreign key and object', async () => {
+      const throughAB = db.collection({
+        name: 'throughAB',
+        fields: [
+          {
+            type: 'belongsTo',
+            name: 'b',
+            foreignKey: 'bId',
+            target: 'B',
+          },
+        ],
+      });
+
+      const throughBC = db.collection({
+        name: 'throughBC',
+        fields: [
+          {
+            type: 'belongsTo',
+            name: 'c',
+            foreignKey: 'cId',
+            target: 'C',
+          },
+        ],
+      });
+
+      const throughCD = db.collection({
+        name: 'throughCD',
+        fields: [
+          {
+            type: 'belongsTo',
+            name: 'd',
+            foreignKey: 'dId',
+            target: 'D',
+          },
+        ],
+      });
+
+      const A = db.collection({
+        name: 'A',
+        fields: [
+          { type: 'string', name: 'name' },
+          { type: 'hasMany', name: 'throughAB', foreignKey: 'aId', target: 'throughAB' },
+        ],
+      });
+
+      const B = db.collection({
+        name: 'B',
+        fields: [
+          { type: 'string', name: 'name' },
+          { type: 'hasMany', name: 'throughBC', foreignKey: 'bId', target: 'throughBC' },
+        ],
+      });
+
+      const C = db.collection({
+        name: 'C',
+        fields: [
+          { type: 'string', name: 'name' },
+          {
+            type: 'hasMany',
+            name: 'throughCD',
+            foreignKey: 'cId',
+            target: 'throughCD',
+          },
+        ],
+      });
+
+      const D = db.collection({
+        name: 'D',
+        fields: [{ type: 'string', name: 'name' }],
+      });
+
+      await db.sync();
+
+      const a1 = await A.repository.create({
+        values: {
+          name: 'a1',
+          throughAB: [
+            {
+              b: {
+                name: 'b1',
+                throughBC: [
+                  {
+                    c: {
+                      name: 'c1',
+                      throughCD: [
+                        {
+                          d: {
+                            name: 'd1',
+                          },
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      });
+
+      expect(
+        a1.get('throughAB')[0].get('b').get('throughBC')[0].get('c').get('throughCD')[0].get('d').get('name'),
+      ).toBe('d1');
     });
 
     it('post.user', async () => {

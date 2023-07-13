@@ -2,6 +2,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import { AddFieldAction as AddCollectionFieldAction } from '@nocobase/client';
 import React from 'react';
 import { useCancelAction, useCreateAction } from '../action-hooks';
+import { getPopupContainer } from '../utils';
 
 const useCreateCollectionField = (record) => {
   const title = record.collectionName;
@@ -13,7 +14,7 @@ const useCreateCollectionField = (record) => {
   };
 };
 
-export const AddFieldAction = ({ item: record }) => {
+export const AddFieldAction = ({ item: record, database }) => {
   return (
     <AddCollectionFieldAction
       trigger={['click']}
@@ -23,13 +24,14 @@ export const AddFieldAction = ({ item: record }) => {
         },
       }}
       item={record}
+      database={database}
       scope={{
         useCancelAction,
         useCreateCollectionField: () => useCreateCollectionField(record),
       }}
-      getContainer={() => document.getElementById('graph_container')}
+      getContainer={getPopupContainer}
     >
-      <PlusOutlined className="btn-add" id='graph_btn_add_field'/>
+      <PlusOutlined className="btn-add" id="graph_btn_add_field" />
     </AddCollectionFieldAction>
   );
 };

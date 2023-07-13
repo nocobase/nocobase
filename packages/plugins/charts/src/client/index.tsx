@@ -1,5 +1,7 @@
 import { registerValidateRules } from '@formily/core';
 import {
+  BlockSchemaComponentPlugin,
+  Plugin,
   SchemaComponentOptions,
   SchemaInitializerContext,
   SettingsCenterProvider,
@@ -39,9 +41,9 @@ registerValidateRules({
   },
 });
 
-export default React.memo((props) => {
+const ChartsProvider = React.memo((props) => {
   const api = useAPIClient();
-  const items = useContext(SchemaInitializerContext);
+  const items = useContext<any>(SchemaInitializerContext);
   const children = items.BlockInitializers.items[0].children;
   if (children) {
     const hasChartItem = children.some((child) => child?.component === 'ChartBlockInitializer');
@@ -50,7 +52,7 @@ export default React.memo((props) => {
         key: 'chart',
         type: 'item',
         icon: 'PieChartOutlined',
-        title: '{{t("Chart",{ns:"charts"})}}',
+        title: '{{t("Chart (Old)",{ns:"charts"})}}',
         component: 'ChartBlockInitializer',
       });
     }
@@ -99,3 +101,15 @@ export default React.memo((props) => {
     </ChartQueryMetadataProvider>
   );
 });
+ChartsProvider.displayName = 'ChartsProvider';
+
+export class ChartsPlugin extends Plugin {
+  async load() {
+    this.app.use(ChartsProvider);
+
+    // TODO: 主应用应该会有这个插件，按道理不需要再注册
+    this.app.pm.add(BlockSchemaComponentPlugin);
+  }
+}
+
+export default ChartsPlugin;

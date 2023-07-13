@@ -1,4 +1,5 @@
-import { Schema } from '@formily/react';
+import { useFieldSchema } from '@formily/react';
+import { useCollection } from '../../';
 
 // 表格操作配置
 export const TableActionInitializers = {
@@ -31,6 +32,10 @@ export const TableActionInitializers = {
               skipScopeCheck: true,
             },
           },
+          visible: function useVisible() {
+            const collection = useCollection();
+            return collection.template !== 'view' && collection.template !== 'file';
+          },
         },
         {
           type: 'item',
@@ -39,6 +44,10 @@ export const TableActionInitializers = {
           schema: {
             'x-align': 'right',
             'x-decorator': 'ACLActionProvider',
+          },
+          visible: function useVisible() {
+            const collection = useCollection();
+            return (collection as any).template !== 'view';
           },
         },
         {
@@ -49,28 +58,56 @@ export const TableActionInitializers = {
             'x-align': 'right',
           },
         },
+        {
+          type: 'item',
+          title: "{{t('Expand/Collapse')}}",
+          component: 'ExpandActionInitializer',
+          schema: {
+            'x-align': 'right',
+          },
+          visible: function useVisible() {
+            const schema = useFieldSchema();
+            const collection = useCollection();
+            const { treeTable } = schema?.parent?.['x-decorator-props'] || {};
+            return collection.tree && treeTable !== false;
+          },
+        },
       ],
     },
     {
       type: 'divider',
-    },
-    {
-      type: 'item',
-      title: "{{t('Association fields filter')}}",
-      component: 'ActionBarAssociationFilterAction',
-      schema: {
-        'x-align': 'left',
-      },
-      find: (schema: Schema) => {
-        const resultSchema = Object.entries(schema.parent.properties).find(
-          ([, value]) => value['x-component'] === 'AssociationFilter',
-        )?.[1];
-        return resultSchema;
+      visible: function useVisible() {
+        const collection = useCollection();
+        return (collection as any).template !== 'view';
       },
     },
-    {
-      type: 'divider',
-    },
+    // {
+    //   type: 'item',
+    //   title: "{{t('Association fields filter')}}",
+    //   component: 'ActionBarAssociationFilterAction',
+    //   schema: {
+    //     'x-align': 'left',
+    //   },
+    //   find: (schema: Schema) => {
+    //     const resultSchema = Object.entries(schema.parent.properties).find(
+    //       ([, value]) => value['x-component'] === 'AssociationFilter',
+    //     )?.[1];
+    //     return resultSchema;
+    //   },
+    //   visible: () => {
+    //     const collection = useCollection();
+    //     const schema = useFieldSchema();
+    //     return (collection as any).template !== 'view' && schema['x-initializer'] !== 'GanttActionInitializers';
+    //   },
+    // },
+    // {
+    //   type: 'divider',
+    //   visible: () => {
+    //     const collection = useCollection();
+    //     const schema = useFieldSchema();
+    //     return (collection as any).template !== 'view' && schema['x-initializer'] !== 'GanttActionInitializers';
+    //   },
+    // },
     {
       type: 'subMenu',
       title: '{{t("Customize")}}',
@@ -120,6 +157,10 @@ export const TableActionInitializers = {
           },
         },
       ],
+      visible: function useVisible() {
+        const collection = useCollection();
+        return (collection as any).template !== 'view';
+      },
     },
   ],
 };

@@ -1,23 +1,18 @@
-import { useField, useFieldSchema } from '@formily/react';
-import { EllipsisWithTooltip, useCollection } from '@nocobase/client';
-import React, { useEffect } from 'react';
-import AMapComponent from './AMap';
+import { useFieldSchema, useForm } from '@formily/react';
+import { EllipsisWithTooltip, useCollection, useFieldTitle } from '@nocobase/client';
+import React from 'react';
+import { MapComponent } from './MapComponent';
 
 const ReadPretty = (props) => {
-  const { value, readOnly } = props;
+  const { value } = props;
   const fieldSchema = useFieldSchema();
   const { getField } = useCollection();
   const collectionField = getField(fieldSchema.name);
   const mapType = props.mapType || collectionField?.uiSchema['x-component-props']?.mapType;
-  const field = useField();
+  const form = useForm();
+  useFieldTitle();
 
-  useEffect(() => {
-    if (!field.title && collectionField?.uiSchema?.title) {
-      field.title = collectionField.uiSchema.title;
-    }
-  }, collectionField?.title);
-
-  if (!readOnly)
+  if (!form.readPretty) {
     return (
       <div>
         <EllipsisWithTooltip ellipsis={true}>
@@ -25,8 +20,9 @@ const ReadPretty = (props) => {
         </EllipsisWithTooltip>
       </div>
     );
+  }
 
-  return mapType === 'amap' ? <AMapComponent mapType={mapType} {...props}></AMapComponent> : null;
+  return <MapComponent readonly mapType={mapType} {...props}></MapComponent>;
 };
 
 export default ReadPretty;

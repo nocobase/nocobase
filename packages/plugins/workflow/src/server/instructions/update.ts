@@ -1,28 +1,24 @@
-import FlowNodeModel from "../models/FlowNode";
-import Processor from "../Processor";
-import { JOB_STATUS } from "../constants";
+import Processor from '../Processor';
+import { JOB_STATUS } from '../constants';
+import type { FlowNodeModel } from '../types';
 
 export default {
   async run(node: FlowNodeModel, input, processor: Processor) {
-    const {
-      collection,
-      multiple = false,
-      params = {}
-    } = node.config;
+    const { collection, params = {} } = node.config;
 
     const repo = (<typeof FlowNodeModel>node.constructor).database.getRepository(collection);
-    const options = processor.getParsedValue(params);
+    const options = processor.getParsedValue(params, node);
     const result = await repo.update({
       ...options,
       context: {
-        executionId: processor.execution.id
+        executionId: processor.execution.id,
       },
-      transaction: processor.transaction
+      transaction: processor.transaction,
     });
 
     return {
-      result: multiple ? result : (result[0] || null),
-      status: JOB_STATUS.RESOLVED
+      result: result.length ?? result,
+      status: JOB_STATUS.RESOLVED,
     };
-  }
-}
+  },
+};

@@ -33,12 +33,7 @@ describe('sequelize-hooks', () => {
     });
     await collection.sync();
     await collection.model.create();
-    expect(orders).toEqual([
-      'model.beforeCreate',
-      'beforeCreate',
-      'model.afterCreate',
-      'afterCreate'
-    ]);
+    expect(orders).toEqual(['model.beforeCreate', 'beforeCreate', 'model.afterCreate', 'afterCreate']);
   });
 
   describe('afterSync', () => {

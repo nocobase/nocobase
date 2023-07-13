@@ -25,15 +25,24 @@ export type ModelCreateEventTypes = ModelCreateEventType | `${CollectionNameType
 export type ModelUpdateEventTypes = ModelUpdateEventType | `${CollectionNameType}.${ModelUpdateEventType}`;
 export type ModelSaveEventTypes = ModelSaveEventType | `${CollectionNameType}.${ModelSaveEventType}`;
 export type ModelDestroyEventTypes = ModelDestroyEventType | `${CollectionNameType}.${ModelDestroyEventType}`;
-export type ModelCreateWithAssociationsEventTypes = ModelCreateWithAssociationsEventType | `${CollectionNameType}.${ModelCreateWithAssociationsEventType}`;
-export type ModelUpdateWithAssociationsEventTypes = ModelUpdateWithAssociationsEventType | `${CollectionNameType}.${ModelUpdateWithAssociationsEventType}`;
-export type ModelSaveWithAssociationsEventTypes = ModelSaveWithAssociationsEventType | `${CollectionNameType}.${ModelSaveWithAssociationsEventType}`;
+export type ModelCreateWithAssociationsEventTypes =
+  | ModelCreateWithAssociationsEventType
+  | `${CollectionNameType}.${ModelCreateWithAssociationsEventType}`;
+export type ModelUpdateWithAssociationsEventTypes =
+  | ModelUpdateWithAssociationsEventType
+  | `${CollectionNameType}.${ModelUpdateWithAssociationsEventType}`;
+export type ModelSaveWithAssociationsEventTypes =
+  | ModelSaveWithAssociationsEventType
+  | `${CollectionNameType}.${ModelSaveWithAssociationsEventType}`;
 
 export type ModelBulkCreateEvnetTypes = ModelBulkCreateEvnetType | `${CollectionNameType}.${ModelBulkCreateEvnetType}`;
 export type ModelBulkUpdateEvnetTypes = ModelBulkUpdateEvnetType | `${CollectionNameType}.${ModelBulkUpdateEvnetType}`;
-export type ModelBulkDestroyEvnetTypes = ModelBulkDestroyEvnetType | `${CollectionNameType}.${ModelBulkDestroyEvnetType}`;
+export type ModelBulkDestroyEvnetTypes =
+  | ModelBulkDestroyEvnetType
+  | `${CollectionNameType}.${ModelBulkDestroyEvnetType}`;
 
-export type ModelEventTypes = ModelSyncEventType
+export type ModelEventTypes =
+  | ModelSyncEventType
   | ModelValidateEventTypes
   | ModelCreateEventTypes
   | ModelUpdateEventTypes
@@ -51,7 +60,8 @@ export type DatabaseAfterDefineCollectionEventType = 'afterDefineCollection';
 export type DatabaseBeforeRemoveCollectionEventType = 'beforeRemoveCollection';
 export type DatabaseAfterRemoveCollectionEventType = 'afterRemoveCollection';
 
-export type DatabaseEventTypes = DatabaseBeforeDefineCollectionEventType
+export type DatabaseEventTypes =
+  | DatabaseBeforeDefineCollectionEventType
   | DatabaseAfterDefineCollectionEventType
   | DatabaseBeforeRemoveCollectionEventType
   | DatabaseAfterRemoveCollectionEventType;

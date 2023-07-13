@@ -1,39 +1,54 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Input, Cascader, Tooltip, Button } from 'antd';
+import { css, cx } from '@emotion/css';
 import { useForm } from '@formily/react';
-import { cx, css } from '@emotion/css';
-import { useTranslation } from 'react-i18next';
-import { useCompile } from '../..';
+import { Input } from 'antd';
+import { cloneDeep } from 'lodash';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import * as sanitizeHTML from 'sanitize-html';
+
+import { error } from '@nocobase/utils/client';
+
+import { EllipsisWithTooltip } from '../..';
+import { VariableSelect } from './VariableSelect';
+import { useStyles } from './style';
+
+type RangeIndexes = [number, number, number, number];
 
 const VARIABLE_RE = /{{\s*([^{}]+)\s*}}/g;
 
-function pasteHtml(container, html, { selectPastedContent = false, range: indexes }) {
+function pasteHTML(
+  container: HTMLElement,
+  html: string,
+  { selectPastedContent = false, range: indexes }: { selectPastedContent?: boolean; range?: RangeIndexes } = {},
+) {
   // IE9 and non-IE
   const sel = window.getSelection?.();
-  if (!sel?.getRangeAt || !sel.rangeCount) {
-    return;
-  }
-  const range = sel.getRangeAt(0);
+  const range = sel?.getRangeAt(0);
   if (!range) {
     return;
   }
-  const children = Array.from(container.childNodes) as HTMLElement[];
-  if (indexes[0] === -1) {
-    if (indexes[1]) {
-      range.setStartAfter(children[indexes[1] - 1]);
-    }
-  } else {
-    range.setStart(children[indexes[0]], indexes[1]);
-  }
 
-  if (indexes[2] === -1) {
-    if (indexes[3]) {
-      range.setEndAfter(children[indexes[3] - 1]);
+  if (indexes) {
+    const children = Array.from(container.childNodes);
+    if (indexes[0] === -1) {
+      if (indexes[1]) {
+        range.setStartAfter(children[indexes[1] - 1]);
+      } else {
+        range.setStart(container, 0);
+      }
+    } else {
+      range.setStart(children[indexes[0]], indexes[1]);
     }
-  } else {
-    range.setEnd(children[indexes[2]], indexes[3]);
+
+    if (indexes[2] === -1) {
+      if (indexes[3]) {
+        range.setEndAfter(children[indexes[3] - 1]);
+      } else {
+        range.setEnd(container, 0);
+      }
+    } else {
+      range.setEnd(children[indexes[2]], indexes[3]);
+    }
   }
-  range.deleteContents();
 
   // Range.createContextualFragment() would be useful here but is
   // only relatively recently standardized and is not supported in
@@ -47,11 +62,12 @@ function pasteHtml(container, html, { selectPastedContent = false, range: indexe
     lastNode = frag.appendChild(el.firstChild);
   }
   const { firstChild } = frag;
+  range.deleteContents();
   range.insertNode(frag);
 
   // Preserve the selection
   if (lastNode) {
-    const next = range.cloneRange();
+    const next = new Range();
     next.setStartAfter(lastNode);
     if (selectPastedContent) {
       if (firstChild) {
@@ -60,21 +76,21 @@ function pasteHtml(container, html, { selectPastedContent = false, range: indexe
     } else {
       next.collapse(true);
     }
-    sel.removeAllRanges();
-    sel.addRange(next);
+    sel!.removeAllRanges();
+    sel!.addRange(next);
   }
 }
 
 function getValue(el) {
   const values: any[] = [];
   for (const node of el.childNodes) {
-    if (node.nodeName === 'SPAN') {
-      values.push(`{{${node['dataset']['key']}}}`);
+    if (node.nodeName === 'SPAN' && node['dataset']['variable']) {
+      values.push(`{{${node['dataset']['variable']}}}`);
     } else {
-      values.push(node.textContent?.trim?.());
+      values.push(node.textContent);
     }
   }
-  return values.join(' ').replace(/\s+/g, ' ').trim();
+  return values.join('');
 }
 
 function renderHTML(exp: string, keyLabelMap) {
@@ -99,50 +115,153 @@ function createOptionsValueLabelMap(options: any[]) {
 
 function createVariableTagHTML(variable, keyLabelMap) {
   const labels = keyLabelMap.get(variable);
-  return `<span class="ant-tag ant-tag-blue" contentEditable="false" data-key="${variable}">${labels?.join(
-    ' / ',
-  )}</span>`;
+  return `<span class="ant-tag ant-tag-blue" contentEditable="false" data-variable="${variable}">${
+    labels ? labels.join(' / ') : '...'
+  }</span>`;
+}
+
+// [#, <>, #, #, <>]
+// [#, #]
+// [<>, #, #]
+// [#, #, <>]
+function getSingleEndRange(nodes: ChildNode[], index: number, offset: number): [number, number] {
+  if (index === -1) {
+    let realIndex = offset;
+    let collapseFlag = false;
+    if (realIndex && nodes[realIndex - 1].nodeName === '#text' && nodes[realIndex]?.nodeName === '#text') {
+      // set a flag for collapse
+      collapseFlag = true;
+    }
+    let textOffset = 0;
+    for (let i = offset - 1; i >= 0; i--) {
+      if (collapseFlag) {
+        if (nodes[i].nodeName === '#text') {
+          textOffset += nodes[i].textContent!.length;
+        } else {
+          collapseFlag = false;
+        }
+      }
+      if (nodes[i].nodeName === '#text' && nodes[i + 1]?.nodeName === '#text') {
+        realIndex -= 1;
+      }
+    }
+
+    return textOffset ? [realIndex, textOffset] : [-1, realIndex];
+  } else {
+    let realIndex = 0;
+    let textOffset = 0;
+    for (let i = 0; i < index + 1; i++) {
+      // console.log(i, realIndex, textOffset);
+      if (nodes[i].nodeName === '#text') {
+        if (i !== index && nodes[i + 1] && nodes[i + 1].nodeName !== '#text') {
+          realIndex += 1;
+        }
+        textOffset += i === index ? offset : nodes[i].textContent!.length;
+      } else {
+        realIndex += 1;
+        textOffset = 0;
+      }
+    }
+    return [realIndex, textOffset];
+  }
+}
+
+function getCurrentRange(element: HTMLElement): RangeIndexes {
+  const sel = window.getSelection?.();
+  const range = sel?.getRangeAt(0);
+  if (!range) {
+    return [-1, 0, -1, 0];
+  }
+  const nodes = Array.from(element.childNodes);
+  if (!nodes.length) {
+    return [-1, 0, -1, 0];
+  }
+
+  const startElementIndex = range.startContainer === element ? -1 : nodes.indexOf(range.startContainer as HTMLElement);
+  const endElementIndex = range.endContainer === element ? -1 : nodes.indexOf(range.endContainer as HTMLElement);
+
+  const result: RangeIndexes = [
+    ...getSingleEndRange(nodes, startElementIndex, range.startOffset),
+    ...getSingleEndRange(nodes, endElementIndex, range.endOffset),
+  ];
+  return result;
 }
 
 export function TextArea(props) {
-  const { value = '', scope, onChange, multiline = true, button } = props;
-  const compile = useCompile();
-  const { t } = useTranslation();
+  const { wrapSSR, hashId, componentCls } = useStyles();
+  const { value = '', scope, onChange, multiline = true, changeOnSelect } = props;
   const inputRef = useRef<HTMLDivElement>(null);
-  const options = compile((typeof scope === 'function' ? scope() : scope) ?? []);
+  const [options, setOptions] = useState([]);
   const form = useForm();
-  const keyLabelMap = useMemo(() => createOptionsValueLabelMap(options), [scope]);
+  const keyLabelMap = useMemo(() => createOptionsValueLabelMap(options), [options]);
+  const [ime, setIME] = useState<boolean>(false);
   const [changed, setChanged] = useState(false);
   const [html, setHtml] = useState(() => renderHTML(value ?? '', keyLabelMap));
-  // [startElementIndex, startOffset, endElementIndex, endOffset]
+  // NOTE: e.g. [startElementIndex, startOffset, endElementIndex, endOffset]
   const [range, setRange] = useState<[number, number, number, number]>([-1, 0, -1, 0]);
 
   useEffect(() => {
-    if (changed) {
-      return;
-    }
+    preloadOptions(scope, value)
+      .then((preloaded) => {
+        setOptions(preloaded);
+      })
+      .catch((err) => console.error);
+  }, [scope, value]);
+
+  useEffect(() => {
     setHtml(renderHTML(value ?? '', keyLabelMap));
-  }, [value]);
+    if (!changed) {
+      setRange([-1, 0, -1, 0]);
+    }
+  }, [value, keyLabelMap]);
 
   useEffect(() => {
     const { current } = inputRef;
-    if (!current || changed) {
+    if (!current) {
       return;
     }
     const nextRange = new Range();
-    const { lastChild } = current;
-    if (lastChild) {
-      nextRange.setStartAfter(lastChild);
-      nextRange.setEndAfter(lastChild);
-      const nodes = Array.from(current.childNodes);
-      const startElementIndex = nextRange.startContainer === current ? -1 : nodes.indexOf(lastChild);
-      const endElementIndex = nextRange.startContainer === current ? -1 : nodes.indexOf(lastChild);
-      setRange([startElementIndex, nextRange.startOffset, endElementIndex, nextRange.endOffset]);
+    if (changed) {
+      setChanged(false);
+      if (range.join() === '-1,0,-1,0') {
+        return;
+      }
+      const sel = window.getSelection?.();
+      if (sel) {
+        const children = Array.from(current.childNodes) as HTMLElement[];
+        if (range[0] === -1) {
+          if (range[1]) {
+            nextRange.setStartAfter(children[range[1] - 1]);
+          }
+        } else {
+          nextRange.setStart(children[range[0]], range[1]);
+        }
+        if (range[2] === -1) {
+          if (range[3]) {
+            nextRange.setEndAfter(children[range[3] - 1]);
+          }
+        } else {
+          nextRange.setEnd(children[range[2]], range[3]);
+        }
+        nextRange.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(nextRange);
+      }
+    } else {
+      const { lastChild } = current;
+      if (lastChild) {
+        nextRange.setStartAfter(lastChild);
+        nextRange.setEndAfter(lastChild);
+        const nodes = Array.from(current.childNodes);
+        const startElementIndex = nextRange.startContainer === current ? -1 : nodes.indexOf(lastChild);
+        const endElementIndex = nextRange.startContainer === current ? -1 : nodes.indexOf(lastChild);
+        setRange([startElementIndex, nextRange.startOffset, endElementIndex, nextRange.endOffset]);
+      }
     }
   }, [html]);
 
-  function onInsert(keyPath) {
-    const variable: string[] = keyPath.filter((key) => Boolean(key.trim()));
+  function onInsert(paths: string[]) {
+    const variable: string[] = paths.filter((key) => Boolean(key.trim()));
     const { current } = inputRef;
     if (!current || !variable) {
       return;
@@ -150,61 +269,104 @@ export function TextArea(props) {
 
     current.focus();
 
-    pasteHtml(current, createVariableTagHTML(variable.join('.'), keyLabelMap), {
+    const content = createVariableTagHTML(variable.join('.'), keyLabelMap);
+    pasteHTML(current, content, {
       range,
     });
 
     setChanged(true);
+    setRange(getCurrentRange(current));
     onChange(getValue(current));
   }
 
   function onInput({ currentTarget }) {
+    if (ime) {
+      return;
+    }
     setChanged(true);
+    setRange(getCurrentRange(currentTarget));
     onChange(getValue(currentTarget));
   }
 
   function onBlur({ currentTarget }) {
-    const sel = window.getSelection?.();
-    if (!sel?.getRangeAt || !sel.rangeCount) {
-      return;
+    setRange(getCurrentRange(currentTarget));
+  }
+
+  function onKeyDown(ev) {
+    if (ev.key === 'Enter') {
+      ev.preventDefault();
     }
-    const r = sel.getRangeAt(0);
-    const nodes = Array.from(currentTarget.childNodes);
-    const startElementIndex = nodes.indexOf(r.startContainer);
-    const endElementIndex = nodes.indexOf(r.endContainer);
-    setRange([startElementIndex, r.startOffset, endElementIndex, r.endOffset]);
+    setIME(ev.keyCode === 229 && ![' ', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'Enter'].includes(ev.key));
+    // if (ev.key === 'Control') {
+    //   console.debug(getSelection().getRangeAt(0));
+    // }
+    // if (ev.key === 'Alt') {
+    //   console.debug(getCurrentRange(ev.currentTarget));
+    // }
+  }
+
+  function onPaste(ev) {
+    ev.preventDefault();
+    const input = ev.clipboardData.getData('text/html') || ev.clipboardData.getData('text');
+    const sanitizedHTML = sanitizeHTML(input, {
+      allowedTags: ['span'],
+      allowedAttributes: {
+        span: ['data-variable', 'contenteditable'],
+      },
+      allowedClasses: {
+        span: ['ant-tag', 'ant-tag-*'],
+      },
+      transformTags: {
+        span(tagName, attribs) {
+          return attribs['data-variable']
+            ? {
+                tagName: tagName,
+                attribs,
+              }
+            : {};
+        },
+      },
+    }).replace(/\n/g, ' ');
+    // ev.clipboardData.setData('text/html', sanitizedHTML);
+    // console.log(input, sanitizedHTML);
+    setChanged(true);
+    pasteHTML(ev.currentTarget, sanitizedHTML);
+    setRange(getCurrentRange(ev.currentTarget));
+    onChange(getValue(ev.currentTarget));
   }
 
   const disabled = props.disabled || form.disabled;
 
-  return (
+  return wrapSSR(
     <Input.Group
       compact
-      className={css`
-        &.ant-input-group.ant-input-group-compact {
-          display: flex;
-          .ant-input {
-            flex-grow: 1;
-            min-width: 200px;
-          }
-          .ant-input-disabled {
-            .ant-tag {
-              color: #bfbfbf;
-              border-color: #d9d9d9;
+      className={cx(
+        componentCls,
+        hashId,
+        css`
+          &.ant-input-group.ant-input-group-compact {
+            display: flex;
+            .ant-input {
+              flex-grow: 1;
+              min-width: 200px;
+            }
+            .ant-input-disabled {
+              .ant-tag {
+                color: #bfbfbf;
+                border-color: #d9d9d9;
+              }
             }
           }
-        }
-      `}
+        `,
+      )}
     >
       <div
         onInput={onInput}
         onBlur={onBlur}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-          }
-        }}
+        onKeyDown={onKeyDown}
+        onPaste={onPaste}
         className={cx(
+          hashId,
           'ant-input',
           { 'ant-input-disabled': disabled },
           css`
@@ -224,20 +386,73 @@ export function TextArea(props) {
         contentEditable={!disabled}
         dangerouslySetInnerHTML={{ __html: html }}
       />
-      <Tooltip title={t('Use variable')}>
-        <Cascader value={[]} options={options} onChange={onInsert}>
-          {button ?? (
-            <Button
-              className={css`
-                font-style: italic;
-                font-family: 'New York', 'Times New Roman', Times, serif;
-              `}
-            >
-              x
-            </Button>
-          )}
-        </Cascader>
-      </Tooltip>
-    </Input.Group>
+      {!disabled ? (
+        <VariableSelect options={options} setOptions={setOptions} onInsert={onInsert} changeOnSelect={changeOnSelect} />
+      ) : null}
+    </Input.Group>,
   );
 }
+
+async function preloadOptions(scope, value) {
+  const options = cloneDeep(scope ?? []);
+  for (let matcher; (matcher = VARIABLE_RE.exec(value ?? '')); ) {
+    const keys = matcher[1].split('.');
+
+    let prevOption = null;
+
+    for (let i = 0; i < keys.length; i++) {
+      const key = keys[i];
+      try {
+        if (i === 0) {
+          prevOption = options.find((item) => item.value === key);
+        } else {
+          if (prevOption.loadChildren && !prevOption.children?.length) {
+            await prevOption.loadChildren(prevOption);
+          }
+          prevOption = prevOption.children.find((item) => item.value === key);
+        }
+      } catch (err) {
+        error(err);
+      }
+    }
+  }
+  return options;
+}
+
+TextArea.ReadPretty = function ReadPretty(props): JSX.Element {
+  const { value, scope } = props;
+  const [options, setOptions] = useState([]);
+  const keyLabelMap = useMemo(() => createOptionsValueLabelMap(options), [options]);
+
+  useEffect(() => {
+    preloadOptions(scope, value)
+      .then((preloaded) => {
+        setOptions(preloaded);
+      })
+      .catch(error);
+  }, [scope, value]);
+  const html = renderHTML(value ?? '', keyLabelMap);
+
+  const content = (
+    <span
+      dangerouslySetInnerHTML={{ __html: html }}
+      className={css`
+        overflow: auto;
+
+        .ant-tag {
+          display: inline;
+          line-height: 19px;
+          margin: 0 0.25em;
+          padding: 2px 7px;
+          border-radius: 10px;
+        }
+      `}
+    />
+  );
+
+  return (
+    <EllipsisWithTooltip ellipsis popoverContent={content}>
+      {content}
+    </EllipsisWithTooltip>
+  );
+};

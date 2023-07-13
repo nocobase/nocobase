@@ -1,25 +1,23 @@
-import { BlockInitializers, SchemaInitializerItemOptions } from '@nocobase/client';
+import { BlockInitializers, SchemaInitializerItemOptions, useCollectionManager, useCompile } from '@nocobase/client';
 
 import { CollectionBlockInitializer } from '../../components/CollectionBlockInitializer';
-import { CollectionFieldInitializers } from '../../components/CollectionFieldInitializers';
-import { filterTypedFields } from '../../variable';
+import { getCollectionFieldOptions } from '../../variable';
 import { NAMESPACE } from '../../locale';
 import { SchemaConfig, SchemaConfigButton } from './SchemaConfig';
 import { ModeConfig } from './ModeConfig';
 import { AssigneesSelect } from './AssigneesSelect';
-
 
 const MULTIPLE_ASSIGNED_MODE = {
   SINGLE: Symbol('single'),
   ALL: Symbol('all'),
   ANY: Symbol('any'),
   ALL_PERCENTAGE: Symbol('all percentage'),
-  ANY_PERCENTAGE: Symbol('any percentage')
+  ANY_PERCENTAGE: Symbol('any percentage'),
 };
 
 // TODO(optimize): change to register way
-const initializerGroup = BlockInitializers.items.find(group => group.key ==='media');
-if (!initializerGroup.children.find(item => item.key === 'workflowTodos')) {
+const initializerGroup = BlockInitializers.items.find((group) => group.key === 'media');
+if (!initializerGroup.children.find((item) => item.key === 'workflowTodos')) {
   initializerGroup.children.push({
     key: 'workflowTodos',
     type: 'item',
@@ -33,6 +31,7 @@ export default {
   title: `{{t("Manual", { ns: "${NAMESPACE}" })}}`,
   type: 'manual',
   group: 'manual',
+  description: `{{t("Could be used for manually submitting data, and determine whether to continue or exit. Workflow will generate a todo item for assigned user when it reaches a manual node, and continue processing after user submits the form.", { ns: "${NAMESPACE}" })}}`,
   fieldset: {
     assignees: {
       type: 'array',
@@ -58,7 +57,7 @@ export default {
             visible: '{{$deps[0].length > 1}}',
           },
         },
-      }
+      },
     },
     schema: {
       type: 'void',
@@ -69,47 +68,95 @@ export default {
         schema: {
           type: 'object',
           'x-component': 'SchemaConfig',
+          default: null,
         },
-      }
+      },
+    },
+    forms: {
+      type: 'object',
+      default: {},
     },
   },
-  view: {
-
-  },
-  scope: {
-  },
+  view: {},
+  scope: {},
   components: {
     SchemaConfigButton,
     SchemaConfig,
     ModeConfig,
-    AssigneesSelect
+    AssigneesSelect,
   },
-  getOptions(config, types) {
-    const fields = (config.schema?.collection?.fields ?? []).map(field => ({
-      key: field.name,
-      value: field.name,
-      label: field.uiSchema.title,
-      title: field.uiSchema.title
-    }));
-    const filteredFields = filterTypedFields(fields, types);
-    return filteredFields.length ? filteredFields : null;
-  },
-  useInitializers(node): SchemaInitializerItemOptions | null {
-    if (!node.config.schema?.collection?.fields?.length
-      || node.config.mode
-    ) {
+  useVariables({ id, title, config }, { types }) {
+    const compile = useCompile();
+    const { getCollectionFields } = useCollectionManager();
+    const formKeys = Object.keys(config.forms ?? {});
+    if (!formKeys.length) {
       return null;
     }
 
-    return {
-      type: 'item',
-      title: node.title ?? `#${node.id}`,
-      component: CollectionBlockInitializer,
-      collection: node.config.schema.collection,
-      dataSource: `{{$jobsMapByNodeId.${node.id}}}`
-    }
+    const options = formKeys
+      .map((formKey) => {
+        const form = config.forms[formKey];
+
+        const fieldsOptions = getCollectionFieldOptions({
+          fields: form.collection?.fields,
+          collection: form.collection,
+          types,
+          compile,
+          getCollectionFields,
+        });
+        const label = compile(form.title) || formKey;
+        return fieldsOptions.length
+          ? {
+              key: formKey,
+              value: formKey,
+              label,
+              title: label,
+              children: fieldsOptions,
+            }
+          : null;
+      })
+      .filter(Boolean);
+
+    return options.length
+      ? {
+          value: `${id}`,
+          label: title,
+          children: options,
+        }
+      : null;
   },
-  initializers: {
-    CollectionFieldInitializers
-  }
+  useInitializers(node): SchemaInitializerItemOptions | null {
+    const { getCollection } = useCollectionManager();
+    const formKeys = Object.keys(node.config.forms ?? {});
+    if (!formKeys.length || node.config.mode) {
+      return null;
+    }
+
+    const forms = formKeys
+      .map((formKey) => {
+        const form = node.config.forms[formKey];
+        const { fields = [] } = getCollection(form.collection);
+
+        return fields.length
+          ? ({
+              type: 'item',
+              title: form.title ?? formKey,
+              component: CollectionBlockInitializer,
+              collection: form.collection,
+              dataSource: `{{$jobsMapByNodeId.${node.id}.${formKey}}}`,
+            } as SchemaInitializerItemOptions)
+          : null;
+      })
+      .filter(Boolean);
+
+    return forms.length
+      ? {
+          key: 'forms',
+          type: 'subMenu',
+          title: node.title,
+          children: forms,
+        }
+      : null;
+  },
+  initializers: {},
 };

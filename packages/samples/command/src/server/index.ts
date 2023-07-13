@@ -4,7 +4,6 @@ import path from 'path';
 import { InstallOptions, Plugin } from '@nocobase/server';
 
 export class CommandPlugin extends Plugin {
-
   beforeLoad() {
     // TODO
   }
@@ -15,16 +14,20 @@ export class CommandPlugin extends Plugin {
       .option('-o, --output-dir')
       .action(async (options, ...collections) => {
         const { outputDir = path.join(process.env.PWD, 'storage') } = options;
-        await collections.reduce((promise, collection) => promise.then(async () => {
-          if (!this.db.hasCollection(collection)) {
-            console.warn('No such collection:', collection);
-            return;
-          }
+        await collections.reduce(
+          (promise, collection) =>
+            promise.then(async () => {
+              if (!this.db.hasCollection(collection)) {
+                console.warn('No such collection:', collection);
+                return;
+              }
 
-          const repo = this.db.getRepository(collection);
-          const data = repo.find();
-          await fs.writeFile(path.join(outputDir, `${collection}.json`), JSON.stringify(data), { mode: 0o644 });
-        }), Promise.resolve());
+              const repo = this.db.getRepository(collection);
+              const data = repo.find();
+              await fs.writeFile(path.join(outputDir, `${collection}.json`), JSON.stringify(data), { mode: 0o644 });
+            }),
+          Promise.resolve(),
+        );
       });
   }
 

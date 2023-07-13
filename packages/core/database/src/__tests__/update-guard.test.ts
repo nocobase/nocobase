@@ -108,6 +108,19 @@ describe('update-guard', () => {
     });
   });
 
+  test('association with null array', () => {
+    const values = {
+      name: 'u1',
+      posts: [null],
+    };
+
+    const guard = new UpdateGuard();
+    guard.setModel(User.model);
+    const sanitized = guard.sanitize(values);
+
+    expect(sanitized).toEqual({ name: 'u1', posts: [null] });
+  });
+
   test('association black list', () => {
     const values = {
       name: 'username123',
@@ -357,6 +370,7 @@ describe('One2One Association', () => {
         uid: 1,
         name: '123',
       },
+      userId: 1,
     };
 
     const guard = new UpdateGuard();
@@ -368,6 +382,7 @@ describe('One2One Association', () => {
       user: {
         uid: 1,
       },
+      userId: 1,
     });
 
     guard.setAssociationKeysToBeUpdate(['user']);

@@ -1,12 +1,12 @@
-import { SchemaComponentOptions, SchemaInitializerContext, SchemaInitializerProvider } from '@nocobase/client';
+import { SchemaComponentOptions } from '@nocobase/client';
 import React from 'react';
 import { AuditLogsBlockInitializer } from './AuditLogsBlockInitializer';
-import { AuditLogsValue } from './components/AuditLogsValue';
-import { AuditLogsField } from './components/AuditLogsField';
 import { AuditLogsBlockProvider } from './AuditLogsBlockProvider';
-import { AuditLogsTableActionColumnInitializer } from './initializers/AuditLogsTableActionColumnInitializer';
-import { AuditLogs } from './deplicated/AuditLogs';
+import { AuditLogsField } from './components/AuditLogsField';
+import { AuditLogsValue } from './components/AuditLogsValue';
 import { AuditLogsViewActionInitializer } from './components/AuditLogsViewActionInitializer';
+import { AuditLogs } from './deplicated/AuditLogs';
+import { AuditLogsTableActionColumnInitializer } from './initializers/AuditLogsTableActionColumnInitializer';
 
 export const AuditLogsProvider = (props: any) => {
   return (

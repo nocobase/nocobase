@@ -2,15 +2,16 @@ import { css } from '@emotion/css';
 import cls from 'classnames';
 import React from 'react';
 import { SortableItem } from '../../common';
-import { useDesigner } from '../../hooks';
+import { useDesigner, useProps } from '../../hooks';
 
 export const BlockItem: React.FC<any> = (props) => {
+  const { className, children } = useProps(props);
   const Designer = useDesigner();
   return (
     <SortableItem
       className={cls(
         'nb-block-item',
-        props.className,
+        className,
         css`
           position: relative;
           &:hover {
@@ -57,7 +58,7 @@ export const BlockItem: React.FC<any> = (props) => {
       )}
     >
       <Designer />
-      {props.children}
+      {children}
     </SortableItem>
   );
 };

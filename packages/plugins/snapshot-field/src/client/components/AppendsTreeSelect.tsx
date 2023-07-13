@@ -1,10 +1,10 @@
-import React from 'react';
-import { TreeSelect, Tag } from 'antd';
-import type { DefaultOptionType } from 'rc-tree-select/lib/TreeSelect';
 import { useForm } from '@formily/react';
-import { CollectionFieldOptions, useCollectionManager, useCompile, useRecord } from '@nocobase/client';
-import { useSnapshotTranslation } from '../locale';
+import { CollectionFieldOptions, useCollectionManager, useCompile } from '@nocobase/client';
+import { Tag, TreeSelect } from 'antd';
+import type { DefaultOptionType } from 'rc-tree-select/es/TreeSelect';
+import React from 'react';
 import { useTopRecord } from '../interface';
+import { useSnapshotTranslation } from '../locale';
 
 export type TreeCacheMapNode = {
   parent?: TreeCacheMapNode;

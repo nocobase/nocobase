@@ -56,8 +56,9 @@ export default {
       defaultValue: false,
     },
     {
-      type: 'hasMany',
-      name: 'attachments',
+      type: 'boolean',
+      name: 'paranoid',
+      defaultValue: false,
     },
   ],
 } as CollectionOptions;

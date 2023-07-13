@@ -7,6 +7,7 @@ export default {
   title: '文件管理器',
   createdBy: true,
   updatedBy: true,
+  template: 'file',
   fields: [
     {
       comment: '用户文件名（不含扩展名）',

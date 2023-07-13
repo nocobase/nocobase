@@ -1,6 +1,29 @@
 import { Collection } from '../collection';
 import { Database } from '../database';
 import { mockDatabase } from './';
+import { Repository } from '@nocobase/database';
+
+describe('repository', () => {
+  test('value to filter', async () => {
+    const value = {
+      tags: [
+        {
+          categories: [{ name: 'c1' }, { name: 'c2' }],
+        },
+        {
+          categories: [{ name: 'c3' }, { name: 'c4' }],
+        },
+      ],
+    };
+
+    const filter = Repository.valuesToFilter(value, ['tags.categories.name']);
+    expect(filter.$and).toEqual([
+      {
+        'tags.categories.name': ['c1', 'c2', 'c3', 'c4'],
+      },
+    ]);
+  });
+});
 
 describe('find by targetKey', function () {
   let db: Database;
@@ -54,6 +77,7 @@ describe('repository.find', () => {
   let User: Collection;
   let Post: Collection;
   let Comment: Collection;
+  let Tag: Collection;
 
   beforeEach(async () => {
     db = mockDatabase();
@@ -70,8 +94,18 @@ describe('repository.find', () => {
         { type: 'string', name: 'name' },
         { type: 'belongsTo', name: 'user' },
         { type: 'hasMany', name: 'comments' },
+        { type: 'belongsToMany', name: 'tags' },
       ],
     });
+
+    Tag = db.collection({
+      name: 'tags',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'belongsToMany', name: 'posts' },
+      ],
+    });
+
     Comment = db.collection({
       name: 'comments',
       fields: [
@@ -80,6 +114,10 @@ describe('repository.find', () => {
       ],
     });
     await db.sync();
+
+    const tags = await Tag.repository.create({
+      values: [{ name: 't1' }, { name: 't2' }],
+    });
     await User.repository.createMany({
       records: [
         {
@@ -88,18 +126,22 @@ describe('repository.find', () => {
             {
               name: 'post11',
               comments: [{ name: 'comment111' }, { name: 'comment112' }, { name: 'comment113' }],
+              tags: [{ id: tags[0].get('id') }],
             },
             {
               name: 'post12',
               comments: [{ name: 'comment121' }, { name: 'comment122' }, { name: 'comment123' }],
+              tags: [{ id: tags[1].get('id') }, { id: tags[0].get('id') }],
             },
             {
               name: 'post13',
               comments: [{ name: 'comment131' }, { name: 'comment132' }, { name: 'comment133' }],
+              tags: [{ id: tags[0].get('id') }],
             },
             {
               name: 'post14',
               comments: [{ name: 'comment141' }, { name: 'comment142' }, { name: 'comment143' }],
+              tags: [{ id: tags[1].get('id') }],
             },
           ],
         },
@@ -109,6 +151,7 @@ describe('repository.find', () => {
             {
               name: 'post21',
               comments: [{ name: 'comment211' }, { name: 'comment212' }, { name: 'comment213' }],
+              tags: [{ id: tags[0].get('id') }, { id: tags[1].get('id') }],
             },
             {
               name: 'post22',
@@ -142,6 +185,16 @@ describe('repository.find', () => {
 
   afterEach(async () => {
     await db.close();
+  });
+
+  it('should appends with belongs to association', async () => {
+    const posts = await Post.repository.find({
+      appends: ['user'],
+    });
+
+    posts.forEach((post) => {
+      expect(post.get('user')).toBeDefined();
+    });
   });
 
   test('find pk with filter', async () => {
@@ -178,6 +231,80 @@ describe('repository.find', () => {
         'posts.comments.id': null,
       },
     });
+  });
+});
+
+describe('repository create with belongs to many', () => {
+  let db: Database;
+
+  beforeEach(async () => {
+    db = mockDatabase({
+      tablePrefix: '',
+    });
+    await db.clean({ drop: true });
+  });
+
+  afterEach(async () => [await db.close()]);
+
+  it('should save value at through table', async () => {
+    const Product = db.collection({
+      name: 'products',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'integer', name: 'price' },
+      ],
+    });
+
+    const OrderProduct = db.collection({
+      name: 'orders_products',
+      fields: [{ type: 'integer', name: 'quantity' }],
+    });
+
+    const Order = db.collection({
+      name: 'orders',
+      fields: [
+        {
+          type: 'belongsToMany',
+          name: 'products',
+          through: 'orders_products',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await Product.repository.create({
+      values: [
+        {
+          name: 'product1',
+          price: 100,
+        },
+        {
+          name: 'product2',
+          price: 200,
+        },
+      ],
+    });
+
+    const p1 = await Product.repository.findOne({
+      filter: { name: 'product1' },
+    });
+
+    await Order.repository.create({
+      values: {
+        products: [
+          {
+            id: p1.get('id'),
+            orders_products: {
+              quantity: 20,
+            },
+          },
+        ],
+      },
+    });
+
+    const through = await OrderProduct.repository.findOne();
+    expect(through.get('quantity')).toBe(20);
   });
 });
 
@@ -271,6 +398,7 @@ describe('repository.update', () => {
       fields: [
         { type: 'string', name: 'name' },
         { type: 'hasMany', name: 'comments' },
+        { type: 'belongsTo', name: 'user' },
       ],
     });
     Comment = db.collection({
@@ -284,7 +412,7 @@ describe('repository.update', () => {
     await db.close();
   });
 
-  it('update1', async () => {
+  it('update with filterByTk and with associations', async () => {
     const user = await User.model.create<any>({
       name: 'user1',
     });
@@ -311,9 +439,23 @@ describe('repository.update', () => {
       name: 'post1',
       userId: user.id,
     });
+
+    await User.repository.update({
+      filterByTk: user.id,
+      values: {
+        posts: [{ name: 'post2' }, { name: 'post3' }],
+      },
+    });
+
+    const updated2 = await User.repository.findOne({
+      filterByTk: user.id,
+      appends: ['posts'],
+    });
+
+    expect(updated2.posts.length).toBe(2);
   });
 
-  it('update2', async () => {
+  it('update with filterByTk', async () => {
     const user = await User.model.create<any>({
       name: 'user1',
     });
@@ -322,6 +464,9 @@ describe('repository.update', () => {
       name: 'user2',
     });
 
+    const hook = jest.fn();
+    db.on('users.afterUpdate', hook);
+
     await User.repository.update({
       filterByTk: user.id,
       values: {
@@ -329,12 +474,158 @@ describe('repository.update', () => {
       },
     });
 
+    expect(hook).toBeCalledTimes(1);
+
     const updated = await User.model.findByPk(user.id);
 
     expect(updated.get('name')).toEqual('user11');
 
     const u2 = await User.model.findByPk(user2.id);
     expect(u2.get('name')).toEqual('user2');
+  });
+
+  it('update with filter one by one when individualHooks is not set', async () => {
+    const u1 = await User.repository.create({ values: { name: 'u1' } });
+
+    const p1 = await Post.repository.create({ values: { name: 'p1', userId: u1.id } });
+    const p2 = await Post.repository.create({ values: { name: 'p2', userId: u1.id } });
+    const p3 = await Post.repository.create({ values: { name: 'p3' } });
+
+    const hook = jest.fn();
+    db.on('posts.afterUpdate', hook);
+
+    await Post.repository.update({
+      filter: {
+        userId: u1.id,
+      },
+      values: {
+        name: 'pp',
+      },
+    });
+
+    const postsAfterUpdated = await Post.repository.find({ order: [['id', 'ASC']] });
+    expect(postsAfterUpdated[0].name).toBe('pp');
+    expect(postsAfterUpdated[1].name).toBe('pp');
+    expect(postsAfterUpdated[2].name).toBe('p3');
+
+    expect(hook).toBeCalledTimes(2);
+  });
+
+  it('update in batch when individualHooks is false', async () => {
+    const u1 = await User.repository.create({ values: { name: 'u1' } });
+
+    const p1 = await Post.repository.create({ values: { name: 'p1', userId: u1.id } });
+    const p2 = await Post.repository.create({ values: { name: 'p2', userId: u1.id } });
+    const p3 = await Post.repository.create({ values: { name: 'p3' } });
+
+    const hook = jest.fn();
+    db.on('posts.afterUpdate', hook);
+
+    await Post.repository.update({
+      filter: {
+        userId: u1.id,
+      },
+      values: {
+        name: 'pp',
+      },
+      individualHooks: false,
+    });
+
+    const postsAfterUpdated = await Post.repository.find({ order: [['id', 'ASC']] });
+    expect(postsAfterUpdated[0].name).toBe('pp');
+    expect(postsAfterUpdated[1].name).toBe('pp');
+    expect(postsAfterUpdated[2].name).toBe('p3');
+
+    expect(hook).toBeCalledTimes(0);
+  });
+
+  it('update in batch with belongsTo field as foreignKey', async () => {
+    const u1 = await User.repository.create({ values: { name: 'u1' } });
+    const u2 = await User.repository.create({ values: { name: 'u2' } });
+    const p1 = await Post.repository.create({ values: { name: 'p1', userId: u1.id } });
+    const p2 = await Post.repository.create({ values: { name: 'p2', userId: u1.id } });
+
+    const r1 = await Post.repository.update({
+      filter: {
+        name: p1.name,
+      },
+      values: {
+        user: u2.id,
+      },
+      individualHooks: false,
+    });
+
+    expect(r1).toEqual(1);
+
+    const p1Updated = await Post.repository.findOne({
+      filterByTk: p1.id,
+    });
+    expect(p1Updated.userId).toBe(u2.id);
+
+    const r2 = await Post.repository.update({
+      filter: {
+        id: p2.id,
+      },
+      values: {
+        user: null,
+      },
+      individualHooks: false,
+    });
+
+    expect(r2).toEqual(1);
+
+    const p2Updated = await Post.repository.findOne({
+      filterByTk: p2.id,
+    });
+    expect(p2Updated.userId).toBe(null);
+
+    const r3 = await Post.repository.update({
+      filter: {
+        id: p1.id,
+      },
+      values: {
+        user: { id: u1.id },
+      },
+      individualHooks: false,
+    });
+
+    expect(r3).toEqual(1);
+
+    const p1Updated2 = await Post.repository.findOne({
+      filterByTk: p1.id,
+    });
+    expect(p1Updated2.userId).toBe(u1.id);
+  });
+
+  it('update in batch filtered by belongsTo field as deep association field', async () => {
+    const u1 = await User.repository.create({ values: { name: 'u1' } });
+    const u2 = await User.repository.create({ values: { name: 'u2' } });
+    const p1 = await Post.repository.create({ values: { name: 'p1', userId: u1.id } });
+    const p2 = await Post.repository.create({ values: { name: 'p2', userId: u1.id } });
+    const p3 = await Post.repository.create({ values: { name: 'p3', userId: u2.id } });
+
+    const r1 = await Post.repository.update({
+      filter: {
+        user: {
+          id: {
+            $eq: u1.id
+          },
+        },
+      },
+      values: {
+        name: 'p1_1',
+      },
+      individualHooks: false,
+    });
+
+    expect(r1).toEqual(2);
+
+    const updated = await Post.repository.find({
+      filter: {
+        id: [p1.id, p2.id],
+      }
+    });
+    expect(updated.map(item => item.name)).toEqual(['p1_1', 'p1_1']);
   });
 });
 
@@ -445,6 +736,7 @@ describe('repository.relatedQuery', () => {
     const post2 = await userPostRepository.create({
       values: { name: 'post2' },
     });
+
     expect(post2).toMatchObject({
       name: 'post2',
       userId: user.get('id'),

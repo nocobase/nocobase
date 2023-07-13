@@ -60,7 +60,7 @@ export const useAuditLogsCollection = () => {
         uiSchema: {
           type: 'object',
           title: '{{t("Collection")}}',
-          'x-component': 'RecordPicker',
+          'x-component': 'AssociationField',
           'x-component-props': { fieldNames: { value: 'name', label: 'title' }, ellipsis: true },
           'x-read-pretty': true,
         },
@@ -76,7 +76,7 @@ export const useAuditLogsCollection = () => {
         uiSchema: {
           type: 'object',
           title: '{{t("User")}}',
-          'x-component': 'RecordPicker',
+          'x-component': 'AssociationField',
           'x-component-props': { fieldNames: { value: 'id', label: 'nickname' }, ellipsis: true },
           'x-read-pretty': true,
         },

@@ -4,10 +4,10 @@ import {
   useBlockRequestContext,
   useCollection,
   useCollectionManager,
-  useCompile
+  useCompile,
 } from '@nocobase/client';
+import { lodash } from '@nocobase/utils/client';
 import { saveAs } from 'file-saver';
-import { cloneDeep } from 'lodash';
 import { useTranslation } from 'react-i18next';
 
 export const useExportAction = () => {
@@ -20,7 +20,7 @@ export const useExportAction = () => {
   const { t } = useTranslation();
   return {
     async onClick() {
-      const { exportSettings } = cloneDeep(actionSchema?.['x-action-settings'] ?? {});
+      const { exportSettings } = lodash.cloneDeep(actionSchema?.['x-action-settings'] ?? {});
       exportSettings.forEach((es) => {
         const { uiSchema, interface: fieldInterface } =
           getCollectionJoinField(`${name}.${es.dataIndex.join('.')}`) ?? {};
@@ -51,7 +51,7 @@ export const useExportAction = () => {
           responseType: 'blob',
         },
       );
-      let blob = new Blob([data], { type: 'application/x-xls' });
+      const blob = new Blob([data], { type: 'application/x-xls' });
       saveAs(blob, `${compile(title)}.xlsx`);
     },
   };

@@ -1,10 +1,15 @@
+import {
+  BaseColumnFieldOptions,
+  DataTypes,
+  Field,
+  FieldContext,
+  Model,
+  Transactionable,
+  ValidationError,
+  ValidationErrorItem,
+} from '@nocobase/database';
+import { Registry, dayjs, lodash } from '@nocobase/utils';
 import parser from 'cron-parser';
-import { escapeRegExp } from 'lodash';
-import moment from 'moment';
-import { DataTypes, Transactionable, ValidationError, ValidationErrorItem } from 'sequelize';
-
-import { BaseColumnFieldOptions, Field, FieldContext, Model } from '@nocobase/database';
-import { Registry } from '@nocobase/utils';
 
 export interface Pattern {
   validate?(options): string | null;
@@ -53,7 +58,7 @@ sequencePatterns.register('string', {
     return options.value.length;
   },
   getMatcher(options) {
-    return escapeRegExp(options.value);
+    return lodash.escapeRegExp(options.value);
   },
 });
 
@@ -68,18 +73,20 @@ sequencePatterns.register('integer', {
     const recordTime = <Date>instance.get('createdAt') ?? new Date();
     const { digits = 1, start = 0, base = 10, cycle, key } = options;
     const { repository: SeqRepo, model: SeqModel } = this.database.getCollection('sequences');
-    const lastSeq = (await SeqRepo.findOne({
-      filter: {
+    const lastSeq =
+      (await SeqRepo.findOne({
+        filter: {
+          collection: this.collection.name,
+          field: this.name,
+          key,
+        },
+        transaction,
+      })) ||
+      SeqModel.build({
         collection: this.collection.name,
         field: this.name,
         key,
-      },
-      transaction,
-    })) || SeqModel.build({
-      collection: this.collection.name,
-      field: this.name,
-      key,
-    });
+      });
 
     let next = start;
     if (lastSeq.get('current') != null) {
@@ -123,18 +130,20 @@ sequencePatterns.register('integer', {
     const { digits = 1, start = 0, base = 10, cycle, key } = options;
 
     const { repository: SeqRepo, model: SeqModel } = this.database.getCollection('sequences');
-    const lastSeq = (await SeqRepo.findOne({
-      filter: {
+    const lastSeq =
+      (await SeqRepo.findOne({
+        filter: {
+          collection: this.collection.name,
+          field: this.name,
+          key,
+        },
+        transaction,
+      })) ||
+      SeqModel.build({
         collection: this.collection.name,
         field: this.name,
         key,
-      },
-      transaction,
-    })) || SeqModel.build({
-      collection: this.collection.name,
-      field: this.name,
-      key,
-    });
+      });
 
     instances.forEach((instance, i) => {
       const recordTime = <Date>instance.get('createdAt') ?? new Date();
@@ -257,7 +266,7 @@ sequencePatterns.register('integer', {
 
 sequencePatterns.register('date', {
   generate(this: SequenceField, instance, options) {
-    return moment(instance.get(options?.field ?? 'createdAt')).format(options?.format ?? 'YYYYMMDD');
+    return dayjs(instance.get(options?.field ?? 'createdAt')).format(options?.format ?? 'YYYYMMDD');
   },
   batchGenerate(instances, values, options) {
     const { field, inputable } = options;
@@ -364,11 +373,17 @@ export class SequenceField extends Field {
     options.skipIndividualHooks.add(`${this.collection.name}.beforeCreate.${this.name}`);
 
     const { name, patterns, inputable } = this.options;
-    const array = Array(patterns.length).fill(null).map(() => Array(instances.length));
+    const array = Array(patterns.length)
+      .fill(null)
+      .map(() => Array(instances.length));
 
-    await patterns.reduce((promise, p, i) => promise.then(() =>
-      sequencePatterns.get(p.type).batchGenerate.call(this, instances, array[i], p.options ?? {}, options)),
-      Promise.resolve());
+    await patterns.reduce(
+      (promise, p, i) =>
+        promise.then(() =>
+          sequencePatterns.get(p.type).batchGenerate.call(this, instances, array[i], p.options ?? {}, options),
+        ),
+      Promise.resolve(),
+    );
 
     instances.forEach((instance, i) => {
       const value = instance.get(name);
@@ -380,7 +395,7 @@ export class SequenceField extends Field {
 
   cleanHook = (_, options) => {
     options.skipIndividualHooks.delete(`${this.collection.name}.beforeCreate.${this.name}`);
-  }
+  };
 
   match(value) {
     return typeof value === 'string' ? value.match(this.matcher) : null;

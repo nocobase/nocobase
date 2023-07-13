@@ -56,7 +56,7 @@ export default class FilterParser {
     return filter;
   }
 
-  toSequelizeParams() {
+  toSequelizeParams(): any {
     debug('filter %o', this.filter);
 
     if (!this.filter) {
@@ -96,7 +96,7 @@ export default class FilterParser {
       }
 
       debug('handle filter key "%s: "%s"', key, value);
-      let keys = key.split('.');
+      const keys = key.split('.');
 
       // paths ?
       const paths = [];
@@ -135,6 +135,7 @@ export default class FilterParser {
                 path: skipPrefix,
                 fullName,
                 fieldName,
+                fieldPath: `${this.collection.name}.${fullName}`,
                 model: this.model,
               });
               break;
@@ -163,11 +164,15 @@ export default class FilterParser {
 
         debug('associationKeys %o', associationKeys);
 
-        // set sequelize include option
-        _.set(include, firstKey, {
-          association: firstKey,
-          attributes: [], // out put empty fields by default
-        });
+        const existInclude = _.get(include, firstKey);
+
+        if (!existInclude) {
+          // set sequelize include option
+          _.set(include, firstKey, {
+            association: firstKey,
+            attributes: [], // out put empty fields by default
+          });
+        }
 
         // association target model
         let target = associations[firstKey].target;
@@ -191,10 +196,14 @@ export default class FilterParser {
               assoc.push(associationKey);
             });
 
-            _.set(include, assoc, {
-              association: attr,
-              attributes: [],
-            });
+            const existInclude = _.get(include, assoc);
+            if (!existInclude) {
+              _.set(include, assoc, {
+                association: attr,
+                attributes: [],
+              });
+            }
+
             target = target.associations[attr].target;
           } else {
             throw new Error(`${attr} neither ${firstKey}'s association nor ${firstKey}'s attribute`);
@@ -217,6 +226,7 @@ export default class FilterParser {
       if (values && typeof values === 'object' && value && typeof value === 'object') {
         value = { ...value, ...values };
       }
+
       _.set(where, paths, value);
     }
 
@@ -229,13 +239,27 @@ export default class FilterParser {
       });
     };
     debug('where %o, include %o', where, include);
-    return { where, include: toInclude(include) };
+    const results = { where, include: toInclude(include) };
+
+    //traverse filter include, set fromFiler to true
+    const traverseInclude = (include) => {
+      for (const item of include) {
+        if (item.include) {
+          traverseInclude(item.include);
+        }
+        item.fromFilter = true;
+      }
+    };
+
+    traverseInclude(results.include);
+
+    return results;
   }
 
   private getFieldNameFromQueryPath(queryPath: string) {
     const paths = queryPath.split('.');
     let fieldName;
-    let fullPaths = [];
+    const fullPaths = [];
     for (const path of paths) {
       if (path.startsWith('$') || !lodash.isNaN(parseInt(path))) {
         continue;

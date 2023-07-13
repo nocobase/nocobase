@@ -151,6 +151,10 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
   }
 
   static async sync(options) {
+    if (this.collection.isView()) {
+      return;
+    }
+
     const model = this as any;
 
     const _schema = model._schema;

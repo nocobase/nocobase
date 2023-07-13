@@ -1,9 +1,7 @@
 import { DataTypes } from 'sequelize';
 import { BaseColumnFieldOptions, Field } from './field';
 
-abstract class NumberField extends Field {
-  
-}
+abstract class NumberField extends Field {}
 
 export class IntegerField extends NumberField {
   get dataType() {

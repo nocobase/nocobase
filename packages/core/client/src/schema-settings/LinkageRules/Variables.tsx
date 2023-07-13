@@ -2,6 +2,7 @@ import { useCompile } from '../../schema-component';
 import { useCollectionManager, useCollection } from '../../collection-manager';
 
 const supportsType = [
+  'id',
   'checkbox',
   'number',
   'percent',
@@ -17,11 +18,14 @@ const supportsType = [
   'checkboxGroup',
   'select',
   'multipleSelect',
+  'formula',
   'oho',
   'obo',
   'm2o',
+  'o2m',
+  'm2m',
 ];
-const useVariableTypes = (currentCollection) => {
+const useVariableTypes = (currentCollection, excludes = []) => {
   const { getCollectionFields, getInterface, getCollection } = useCollectionManager();
   const collection = getCollection(currentCollection);
   const fields = getCollectionFields(currentCollection);
@@ -31,7 +35,7 @@ const useVariableTypes = (currentCollection) => {
       value: currentCollection,
       options() {
         const field2option = (field, depth) => {
-          if (!field.interface || !supportsType.includes(field.interface)) {
+          if (!field.interface || !supportsType.filter((v) => !excludes.includes(v)).includes(field.interface)) {
             return;
           }
           const fieldInterface = getInterface(field.interface);
@@ -45,10 +49,10 @@ const useVariableTypes = (currentCollection) => {
             schema: field?.uiSchema,
             value: field.name,
           };
-          if (field.target && depth > 2) {
+          if (field.target && depth > 1) {
             return;
           }
-          if (depth > 2) {
+          if (depth > 1) {
             return option;
           }
           if (children?.length) {
@@ -89,9 +93,9 @@ const useVariableTypes = (currentCollection) => {
   ];
 };
 
-export function useVariableOptions(collectionName) {
+export function useVariableOptions(collectionName, excludes?) {
   const compile = useCompile();
-  const options = useVariableTypes(collectionName).map((item) => {
+  const options = useVariableTypes(collectionName, excludes).map((item) => {
     const options = typeof item.options === 'function' ? item.options() : item.options;
     return {
       label: compile(item.title),

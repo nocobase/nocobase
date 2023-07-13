@@ -6,9 +6,10 @@ export default {
   'Create Collection': 'Create Collection',
   'All Fields': 'All Fields',
   'Association Fields': 'Association Fields',
+  'Choices fields': 'Choices fields',
   'All relationships': 'All relationships',
   'Entity relationship only': 'Entity relationship only',
   'Inheritance relationship only': 'Inheritance relationship only',
   'Graphical interface': 'Graphical interface',
-  'Selection': 'Selection',
+  Selection: 'Selection',
 };

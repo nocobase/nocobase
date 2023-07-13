@@ -234,10 +234,12 @@ describe('hidden field options', () => {
     await repo.create({
       values: {
         title: 'post1',
-        users: [{
-          name: 'abc',
-          password: '123',
-        }],
+        users: [
+          {
+            name: 'abc',
+            password: '123',
+          },
+        ],
       },
     });
     const instance = await repo.findOne({
@@ -284,10 +286,12 @@ describe('hidden field options', () => {
     await repo.create({
       values: {
         title: 'post1',
-        users: [{
-          name: 'abc',
-          password: '123',
-        }],
+        users: [
+          {
+            name: 'abc',
+            password: '123',
+          },
+        ],
       },
     });
     const instance = await repo.findOne({

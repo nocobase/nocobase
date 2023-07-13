@@ -24,18 +24,18 @@ export const BulkEditFormItemInitializers = (props: any) => {
             children: useCustomBulkEditFormItemInitializerFields(),
           },
         ],
-        associationFields.length > 0
-          ? [
-              {
-                type: 'divider',
-              },
-              {
-                type: 'itemGroup',
-                title: t('Display association fields'),
-                children: associationFields,
-              },
-            ]
-          : [],
+        // associationFields.length > 0
+        //   ? [
+        //       {
+        //         type: 'divider',
+        //       },
+        //       {
+        //         type: 'itemGroup',
+        //         title: t('Display association fields'),
+        //         children: associationFields,
+        //       },
+        //     ]
+        //   : [],
         [
           {
             type: 'divider',

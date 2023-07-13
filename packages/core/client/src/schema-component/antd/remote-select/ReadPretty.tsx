@@ -6,19 +6,20 @@ import { useRequest } from '../../../api-client';
 import { useRecord } from '../../../record-provider';
 import { useActionContext } from '../action';
 
-export const ReadPretty = observer((props: any) => {
-  const fieldNames = { ...defaultFieldNames, ...props.fieldNames };
-  const field = useField<any>();
-  const fieldSchema = useFieldSchema();
-  const record = useRecord();
-  const { snapshot } = useActionContext();
+export const ReadPretty = observer(
+  (props: any) => {
+    const fieldNames = { ...defaultFieldNames, ...props.fieldNames };
+    const field = useField<any>();
+    const fieldSchema = useFieldSchema();
+    const record = useRecord();
+    const { snapshot } = useActionContext();
 
-  const { data } = useRequest(
-    snapshot
-      ? async () => ({
+    const { data } = useRequest(
+      snapshot
+        ? async () => ({
           data: record[fieldSchema.name],
         })
-      : {
+        : {
           action: 'list',
           ...props.service,
           params: {
@@ -30,10 +31,12 @@ export const ReadPretty = observer((props: any) => {
             },
           },
         },
-    {
-      refreshDeps: [props.service, field.value],
-    },
-  );
+      {
+        refreshDeps: [props.service, field.value],
+      },
+    );
 
-  return <Select.ReadPretty {...props} options={data?.data}></Select.ReadPretty>;
-});
+    return <Select.ReadPretty {...props} options={data?.data}></Select.ReadPretty>;
+  },
+  { displayName: 'ReadPretty' },
+);

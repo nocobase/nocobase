@@ -2,13 +2,24 @@ import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty, useField } from '@formily/react';
 import { isValid } from '@formily/shared';
 import { Checkbox as AntdCheckbox, Tag } from 'antd';
-import type { CheckboxGroupProps, CheckboxProps } from 'antd/lib/checkbox';
+import type { CheckboxGroupProps, CheckboxProps } from 'antd/es/checkbox';
 import uniq from 'lodash/uniq';
 import React from 'react';
+import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
 
-type ComposedCheckbox = React.FC<CheckboxProps> & {
+type ComposedCheckbox = React.ForwardRefExoticComponent<
+  Pick<Partial<any>, string | number | symbol> & React.RefAttributes<unknown>
+> & {
   Group?: React.FC<CheckboxGroupProps>;
   __ANT_CHECKBOX?: boolean;
+  ReadPretty?: React.FC<CheckboxProps>;
+};
+
+const ReadPretty = (props) => {
+  if (props.value) {
+    return <CheckOutlined style={{ color: '#52c41a' }} />;
+  }
+  return props.showUnchecked ? <CloseOutlined style={{ color: '#ff4d4f' }} /> : null;
 };
 
 export const Checkbox: ComposedCheckbox = connect(
@@ -18,39 +29,31 @@ export const Checkbox: ComposedCheckbox = connect(
     };
     return <AntdCheckbox {...props} onChange={changeHandler} />;
   },
-  mapProps(
-    {
-      value: 'checked',
-      onInput: 'onChange',
-    },
-  ),
-  mapReadPretty((props) => {
-    if (props.value) {
-      return <CheckOutlined style={{ color: '#52c41a' }} />;
-    }
-    return props.showUnchecked ? <CloseOutlined style={{ color: '#ff4d4f' }} /> : null;
+  mapProps({
+    value: 'checked',
+    onInput: 'onChange',
   }),
+  mapReadPretty(ReadPretty),
 );
+
+Checkbox.ReadPretty = ReadPretty;
 
 Checkbox.__ANT_CHECKBOX = true;
 
 Checkbox.Group = connect(
   AntdCheckbox.Group,
-  mapProps(
-    {
-      dataSource: 'options',
-    },
-  ),
+  mapProps({
+    dataSource: 'options',
+  }),
   mapReadPretty((props) => {
     if (!isValid(props.value)) {
       return null;
     }
-    const { options = [] } = props;
     const field = useField<any>();
     const dataSource = field.dataSource || [];
     const value = uniq(field.value ? field.value : []);
     return (
-      <div>
+      <EllipsisWithTooltip ellipsis={props.ellipsis}>
         {dataSource
           .filter((option) => value.includes(option.value))
           .map((option, key) => (
@@ -58,7 +61,7 @@ Checkbox.Group = connect(
               {option.label}
             </Tag>
           ))}
-      </div>
+      </EllipsisWithTooltip>
     );
   }),
 );

@@ -1,38 +1,10 @@
-import { PluginManagerContext, SettingsCenterProvider, SigninPageExtensionProvider } from '@nocobase/client';
-import React, { useContext } from 'react';
-import { useOidcTranslation } from './locale';
-import { OIDCList } from './OIDCList';
-import { OIDCPanel } from './OIDCPanel';
+import { Plugin } from '@nocobase/client';
+import { OidcProvider } from './OidcProvider';
 
-export default function (props) {
-  const { t } = useOidcTranslation();
-  const ctx = useContext(PluginManagerContext);
-  return (
-    <SigninPageExtensionProvider component={OIDCList}>
-      <SettingsCenterProvider
-        settings={{
-          'oidc-manager': {
-            title: t('OIDC manager'),
-            icon: 'FileOutlined',
-            tabs: {
-              providers: {
-                title: t('OIDC Providers'),
-                component: OIDCPanel,
-              },
-            },
-          },
-        }}
-      >
-        <PluginManagerContext.Provider
-          value={{
-            components: {
-              ...ctx?.components,
-            },
-          }}
-        >
-          {props.children}
-        </PluginManagerContext.Provider>
-      </SettingsCenterProvider>
-    </SigninPageExtensionProvider>
-  );
+export class OidcPlugin extends Plugin {
+  async load() {
+    this.app.use(OidcProvider);
+  }
 }
+
+export default OidcPlugin;

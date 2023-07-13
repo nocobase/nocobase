@@ -2,7 +2,7 @@ import { Model } from '../model';
 import { CreateOptions, UpdateOptions } from '../repository';
 import { SingleRelationFindOption, SingleRelationRepository } from './single-relation-repository';
 
-interface BelongsToFindOptions extends SingleRelationFindOption {}
+type BelongsToFindOptions = SingleRelationFindOption;
 
 interface IBelongsToRepository<M extends Model> {
   // 不需要 findOne，find 就是 findOne
@@ -13,7 +13,7 @@ interface IBelongsToRepository<M extends Model> {
   // 更新
   update(options?: UpdateOptions): Promise<M>;
   // 删除
-  destroy(): Promise<Boolean>;
+  destroy(): Promise<boolean>;
   // 建立关联
   set(primaryKey: any): Promise<void>;
   // 移除关联

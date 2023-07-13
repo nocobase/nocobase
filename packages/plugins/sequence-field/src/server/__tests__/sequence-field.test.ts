@@ -1,10 +1,8 @@
-import moment from 'moment';
-
-import { Application } from '@nocobase/server';
 import { Database } from '@nocobase/database';
-import { mockServer, mockDatabase } from '@nocobase/test';
-
-import Plugin, { SequenceField, SequenceFieldOptions } from '..';
+import { Application } from '@nocobase/server';
+import { mockServer } from '@nocobase/test';
+import { dayjs } from '@nocobase/utils';
+import Plugin, { SequenceField } from '..';
 
 describe('sequence field', () => {
   let app: Application;
@@ -17,8 +15,8 @@ describe('sequence field', () => {
     await db.sync({
       force: true,
       alter: {
-        drop: true
-      }
+        drop: true,
+      },
     });
     await app.load();
     await app.start();
@@ -65,10 +63,8 @@ describe('sequence field', () => {
           {
             type: 'sequence',
             name: 'name',
-            patterns: [
-              { type: 'string', options: { value: 'abc' } }
-            ]
-          }
+            patterns: [{ type: 'string', options: { value: 'abc' } }],
+          },
         ],
       });
       await db.sync();
@@ -102,10 +98,10 @@ describe('sequence field', () => {
             patterns: [
               {
                 type: 'integer',
-                options: { key: 1 }
-              }
-            ]
-          }
+                options: { key: 1 },
+              },
+            ],
+          },
         ],
       });
       await db.sync();
@@ -130,11 +126,11 @@ describe('sequence field', () => {
                 type: 'integer',
                 options: {
                   start: 9,
-                  key: 1
-                }
-              }
-            ]
-          }
+                  key: 1,
+                },
+              },
+            ],
+          },
         ],
       });
       await db.sync();
@@ -157,18 +153,16 @@ describe('sequence field', () => {
             patterns: [
               {
                 type: 'integer',
-                options: { key: 1 }
-              }
-            ]
-          }
+                options: { key: 1 },
+              },
+            ],
+          },
         ],
       });
       await db.sync();
       const field = collection.getField('name');
       const SeqRepo = db.getRepository('sequences');
-      await SeqRepo.create({
-
-      });
+      await SeqRepo.create({});
 
       const TestModel = db.getModel('tests');
       const item1 = await TestModel.create();
@@ -188,11 +182,11 @@ describe('sequence field', () => {
                 options: {
                   digits: 2,
                   start: 9,
-                  key: 1
-                }
-              }
-            ]
-          }
+                  key: 1,
+                },
+              },
+            ],
+          },
         ],
       });
       await db.sync();
@@ -217,11 +211,11 @@ describe('sequence field', () => {
                 type: 'integer',
                 options: {
                   cycle: '0 0 0 * * *',
-                  key: 1
-                }
-              }
-            ]
-          }
+                  key: 1,
+                },
+              },
+            ],
+          },
         ],
       });
       await db.sync();
@@ -232,13 +226,13 @@ describe('sequence field', () => {
       const TestModel = db.getModel('tests');
       const item1 = await TestModel.create({
         id: 1,
-        createdAt: yesterday
+        createdAt: yesterday,
       });
       expect(item1.get('name')).toBe('0');
 
       const item2 = await TestModel.create({
         id: 2,
-        createdAt: yesterday
+        createdAt: yesterday,
       });
       expect(item2.get('name')).toBe('1');
 
@@ -265,9 +259,9 @@ describe('sequence field', () => {
         patterns: [
           {
             type: 'integer',
-            options: { key: 1 }
-          }
-        ]
+            options: { key: 1 },
+          },
+        ],
       });
       await db.sync();
 
@@ -285,10 +279,10 @@ describe('sequence field', () => {
             patterns: [
               {
                 type: 'integer',
-                options: { key: 1 }
-              }
-            ]
-          }
+                options: { key: 1 },
+              },
+            ],
+          },
         ],
       });
       await db.sync();
@@ -313,14 +307,14 @@ describe('sequence field', () => {
             patterns: [
               {
                 type: 'integer',
-                options: { key: 1 }
+                options: { key: 1 },
               },
               {
                 type: 'integer',
-                options: { key: 2 }
-              }
-            ]
-          }
+                options: { key: 2 },
+              },
+            ],
+          },
         ],
       });
       await db.sync();
@@ -342,16 +336,14 @@ describe('sequence field', () => {
           {
             type: 'sequence',
             name: 'name',
-            patterns: [
-              { type: 'date' }
-            ]
-          }
+            patterns: [{ type: 'date' }],
+          },
         ],
       });
       await db.sync();
 
       const now = new Date();
-      const YYYYMMDD = moment(now).format('YYYYMMDD');
+      const YYYYMMDD = dayjs(now).format('YYYYMMDD');
 
       const TestModel = db.getModel('tests');
       const item1 = await TestModel.create();
@@ -365,24 +357,22 @@ describe('sequence field', () => {
           {
             type: 'sequence',
             name: 'name',
-            patterns: [
-              { type: 'date', options: { field: 'date' } }
-            ]
+            patterns: [{ type: 'date', options: { field: 'date' } }],
           },
           {
             type: 'date',
-            name: 'date'
-          }
+            name: 'date',
+          },
         ],
       });
       await db.sync();
 
       const date = new Date(2022, 7, 1);
-      const YYYYMMDD = moment(date).format('YYYYMMDD');
+      const YYYYMMDD = dayjs(date).format('YYYYMMDD');
 
       const TestModel = db.getModel('tests');
       const item1 = await TestModel.create({
-        date
+        date,
       });
       expect(item1.get('name')).toBe(YYYYMMDD);
     });
@@ -394,16 +384,14 @@ describe('sequence field', () => {
           {
             type: 'sequence',
             name: 'name',
-            patterns: [
-              { type: 'date', options: { format: 'YYYY-MM-DD' } }
-            ]
-          }
+            patterns: [{ type: 'date', options: { format: 'YYYY-MM-DD' } }],
+          },
         ],
       });
       await db.sync();
 
       const now = new Date();
-      const YYYYMMDD = moment(now).format('YYYY-MM-DD');
+      const YYYYMMDD = dayjs(now).format('YYYY-MM-DD');
 
       const TestModel = db.getModel('tests');
       const item1 = await TestModel.create();
@@ -422,15 +410,15 @@ describe('sequence field', () => {
             patterns: [
               { type: 'string', options: { value: 'A' } },
               { type: 'date' },
-              { type: 'integer', options: { key: 1 } }
-            ]
-          }
+              { type: 'integer', options: { key: 1 } },
+            ],
+          },
         ],
       });
       await db.sync();
 
       const now = new Date();
-      const YYYYMMDD = moment(now).format('YYYYMMDD');
+      const YYYYMMDD = dayjs(now).format('YYYYMMDD');
 
       const TestModel = db.getModel('tests');
       const item1 = await TestModel.create();
@@ -450,15 +438,15 @@ describe('sequence field', () => {
             patterns: [
               { type: 'string', options: { value: 'A' } },
               { type: 'date' },
-              { type: 'integer', options: { key: 1 } }
-            ]
-          }
+              { type: 'integer', options: { key: 1 } },
+            ],
+          },
         ],
       });
       await db.sync();
 
       const now = new Date();
-      const YYYYMMDD = moment(now).format('YYYYMMDD');
+      const YYYYMMDD = dayjs(now).format('YYYYMMDD');
 
       const TestModel = db.getModel('tests');
       const item1 = await TestModel.create();
@@ -470,8 +458,8 @@ describe('sequence field', () => {
           { type: 'string', options: { value: 'A' } },
           { type: 'date' },
           // change options but no difference with default with new key
-          { type: 'integer', options: { digits: 1, key: 2 } }
-        ]
+          { type: 'integer', options: { digits: 1, key: 2 } },
+        ],
       }) as SequenceField;
 
       const item2 = await TestModel.create();
@@ -483,8 +471,8 @@ describe('sequence field', () => {
           { type: 'string', options: { value: 'A' } },
           { type: 'date' },
           // change options but no difference with default with key
-          { type: 'integer', options: { digits: 1, key: f2.options.patterns[2].options.key } }
-        ]
+          { type: 'integer', options: { digits: 1, key: f2.options.patterns[2].options.key } },
+        ],
       });
 
       const item3 = await TestModel.create();
@@ -495,8 +483,8 @@ describe('sequence field', () => {
         patterns: [
           { type: 'string', options: { value: 'A' } },
           { type: 'date' },
-          { type: 'integer', options: { digits: 2, key: 3 } }
-        ]
+          { type: 'integer', options: { digits: 2, key: 3 } },
+        ],
       });
 
       const item4 = await TestModel.create();
@@ -507,8 +495,8 @@ describe('sequence field', () => {
         patterns: [
           { type: 'string', options: { value: 'a' } },
           { type: 'date' },
-          { type: 'integer', options: { digits: 2, key: f4.options.patterns[2].options.key } }
-        ]
+          { type: 'integer', options: { digits: 2, key: f4.options.patterns[2].options.key } },
+        ],
       });
 
       const item5 = await TestModel.create();
@@ -516,10 +504,7 @@ describe('sequence field', () => {
 
       testsCollection.setField('name', {
         type: 'sequence',
-        patterns: [
-          { type: 'date' },
-          { type: 'integer', options: { digits: 2, key: 4 } }
-        ]
+        patterns: [{ type: 'date' }, { type: 'integer', options: { digits: 2, key: 4 } }],
       });
 
       const item6 = await TestModel.create();
@@ -538,25 +523,25 @@ describe('sequence field', () => {
             patterns: [
               { type: 'string', options: { value: 'A' } },
               { type: 'date' },
-              { type: 'integer', options: { digits: 2, cycle: '0 0 * * *', key: 1 } }
-            ]
+              { type: 'integer', options: { digits: 2, cycle: '0 0 * * *', key: 1 } },
+            ],
           },
           {
             type: 'sequence',
             name: 'code',
             patterns: [
               { type: 'string', options: { value: 'C' } },
-              { type: 'integer', options: { digits: 4, key: 1 }}
-            ]
-          }
-        ]
+              { type: 'integer', options: { digits: 4, key: 1 } },
+            ],
+          },
+        ],
       });
       await db.sync();
 
       const now = new Date();
       const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-      const NOW = moment(now).format('YYYYMMDD');
-      const YESTERDAY = moment(yesterday).format('YYYYMMDD');
+      const NOW = dayjs(now).format('YYYYMMDD');
+      const YESTERDAY = dayjs(yesterday).format('YYYYMMDD');
 
       const TestModel = db.getModel('tests');
       const item1 = await TestModel.create({ createdAt: yesterday });
@@ -573,7 +558,7 @@ describe('sequence field', () => {
           { type: 'date' },
           { type: 'integer', options: { digits: 1, key: 1 } },
           { type: 'string', options: { value: 'a' } },
-        ]
+        ],
       });
 
       const item3 = await TestModel.create();
@@ -593,16 +578,16 @@ describe('sequence field', () => {
             patterns: [
               { type: 'string', options: { value: 'A' } },
               { type: 'date' },
-              { type: 'integer', options: { key: 1 } }
+              { type: 'integer', options: { key: 1 } },
             ],
-            inputable: false
-          }
+            inputable: false,
+          },
         ],
       });
       await db.sync();
 
       const now = new Date();
-      const YYYYMMDD = moment(now).format('YYYYMMDD');
+      const YYYYMMDD = dayjs(now).format('YYYYMMDD');
       const name = `BB${YYYYMMDD}11`;
 
       const TestModel = db.getModel('tests');
@@ -620,17 +605,17 @@ describe('sequence field', () => {
             patterns: [
               { type: 'string', options: { value: 'A' } },
               { type: 'date' },
-              { type: 'integer', options: { key: 1 } }
+              { type: 'integer', options: { key: 1 } },
             ],
             inputable: true,
-            match: false
-          }
+            match: false,
+          },
         ],
       });
       await db.sync();
 
       const now = new Date();
-      const YYYYMMDD = moment(now).format('YYYYMMDD');
+      const YYYYMMDD = dayjs(now).format('YYYYMMDD');
       const name = `BB${YYYYMMDD}11`;
 
       const TestModel = db.getModel('tests');
@@ -648,17 +633,17 @@ describe('sequence field', () => {
             patterns: [
               { type: 'string', options: { value: 'A' } },
               { type: 'date' },
-              { type: 'integer', options: { key: 1 } }
+              { type: 'integer', options: { key: 1 } },
             ],
             inputable: true,
-            match: true
-          }
+            match: true,
+          },
         ],
       });
       await db.sync();
 
       const now = new Date();
-      const YYYYMMDD = moment(now).format('YYYYMMDD');
+      const YYYYMMDD = dayjs(now).format('YYYYMMDD');
 
       const TestModel = db.getModel('tests');
       await expect(TestModel.create({ name: `BB${YYYYMMDD}11` })).rejects.toThrow();
@@ -671,12 +656,10 @@ describe('sequence field', () => {
           {
             type: 'sequence',
             name: 'name',
-            patterns: [
-              { type: 'integer', options: { key: 1 } }
-            ],
+            patterns: [{ type: 'integer', options: { key: 1 } }],
             inputable: true,
-            match: true
-          }
+            match: true,
+          },
         ],
       });
       await db.sync();
@@ -699,12 +682,10 @@ describe('sequence field', () => {
           {
             type: 'sequence',
             name: 'name',
-            patterns: [
-              { type: 'integer', options: { key: 1 } }
-            ],
+            patterns: [{ type: 'integer', options: { key: 1 } }],
             inputable: true,
-            match: true
-          }
+            match: true,
+          },
         ],
       });
       await db.sync();
@@ -727,12 +708,10 @@ describe('sequence field', () => {
           {
             type: 'sequence',
             name: 'name',
-            patterns: [
-              { type: 'integer', options: { key: 1, cycle: '0 0 0 * * *' } }
-            ],
+            patterns: [{ type: 'integer', options: { key: 1, cycle: '0 0 0 * * *' } }],
             inputable: true,
-            match: true
-          }
+            match: true,
+          },
         ],
       });
       await db.sync();
@@ -763,73 +742,66 @@ describe('sequence field', () => {
           {
             type: 'sequence',
             name: 'seq',
-            patterns: [
-              { type: 'date' },
-              { type: 'integer', options: { key: 1 } }
-            ]
-          }
-        ]
+            patterns: [{ type: 'date' }, { type: 'integer', options: { key: 1 } }],
+          },
+        ],
       });
       const postsCollection = db.collection({
         name: 'posts',
         fields: [
           {
             type: 'string',
-            name: 'title'
+            name: 'title',
           },
           {
             type: 'belongsToMany',
             name: 'tags',
-            through: 'posts_tags'
-          }
-        ]
+            through: 'posts_tags',
+          },
+        ],
       });
       const tagsCollection = db.collection({
         name: 'tags',
         fields: [
           {
             type: 'string',
-            name: 'title'
+            name: 'title',
           },
           {
             type: 'belongsToMany',
             name: 'posts',
-            through: 'posts_tags'
-          }
-        ]
+            through: 'posts_tags',
+          },
+        ],
       });
 
       await db.sync();
 
       const now = new Date();
-      const dateStr = moment(now).format('YYYYMMDD');
+      const dateStr = dayjs(now).format('YYYYMMDD');
 
       const tagsRepo = db.getRepository('tags');
       const tags = await tagsRepo.create({
-        values: [
-          { title: 't1' },
-          { title: 't2' },
-          { title: 't3' },
-        ]
+        values: [{ title: 't1' }, { title: 't2' }, { title: 't3' }],
       });
       const postsTagsRepo = db.getRepository('posts_tags');
       const postTag = await postsTagsRepo.create({
         values: {
           postId: 1,
-          tagId: 1
-        }
+          tagId: 1,
+        },
       });
 
       const postsRepo = db.getRepository('posts');
       await postsRepo.create({
         values: {
           title: 'p1',
-          tags
-        }
+          tags,
+        },
       });
 
       const postsTags = await postsTagsRepo.find({
-        order: [['seq', 'ASC']]
+        order: [['seq', 'ASC']],
       });
 
       expect(postsTags[0].seq).toBe(`${dateStr}0`);

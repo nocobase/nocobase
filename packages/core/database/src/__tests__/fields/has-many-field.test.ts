@@ -186,7 +186,7 @@ describe('has many field', () => {
         name: 'comments',
         fields: [
           { type: 'string', name: 'content' },
-          { type: 'belongsTo', name: 'post', onDelete: "CASCADE" },
+          { type: 'belongsTo', name: 'post', onDelete: 'CASCADE' },
         ],
       });
 

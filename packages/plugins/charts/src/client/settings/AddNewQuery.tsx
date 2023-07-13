@@ -3,18 +3,18 @@ import { createForm } from '@formily/core';
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import {
-  ActionContext,
+  ActionContextProvider,
   SchemaComponent,
   useActionContext,
   useRecord,
   useResourceActionContext,
   useResourceContext,
 } from '@nocobase/client';
-import { Button, Dropdown, Menu } from 'antd';
+import { Button, Dropdown, MenuProps } from 'antd';
 import React, { useMemo, useState } from 'react';
 import { useChartQueryMetadataContext } from '../ChartQueryMetadataProvider';
-import { getQueryTypeSchema } from './queryTypes';
 import { lang } from '../locale';
+import { getQueryTypeSchema } from './queryTypes';
 
 const useCreateAction = () => {
   const { setVisible } = useActionContext();
@@ -112,31 +112,46 @@ export const AddNewQuery = () => {
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
   const form = useMemo(() => createForm(), []);
-  const menu = (
-    <Menu
-      onClick={(info) => {
+
+  const menu = useMemo<MenuProps>(() => {
+    return {
+      onClick: (info) => {
         setVisible(true);
         form.setValues({ type: info.key });
         setSchema(getSchema({ type: info.key }, { form, isNewRecord: true }));
-      }}
-    >
-      <Menu.Item key={'json'}>JSON</Menu.Item>
-      <Menu.Item key={'sql'}>SQL</Menu.Item>
-      <Menu.Item disabled key={'api'}>
-        API
-      </Menu.Item>
-      <Menu.Item disabled>Collection</Menu.Item>
-    </Menu>
-  );
+      },
+      items: [
+        {
+          key: 'json',
+          label: 'JSON',
+        },
+        {
+          key: 'sql',
+          label: 'SQL',
+        },
+        {
+          key: 'api',
+          label: 'API',
+          disabled: true,
+        },
+        {
+          key: 'collection',
+          label: 'Collection',
+          disabled: true,
+        },
+      ],
+    };
+  }, [form]);
+
   return (
-    <ActionContext.Provider value={{ visible, setVisible }}>
-      <Dropdown overlay={menu}>
+    <ActionContextProvider value={{ visible, setVisible }}>
+      <Dropdown menu={menu}>
         <Button icon={<PlusOutlined />} type={'primary'}>
           {lang('Add query')} <DownOutlined />
         </Button>
       </Dropdown>
       <SchemaComponent schema={schema} scope={{ useCloseAction, useSubmitAction: useCreateAction }} />
-    </ActionContext.Provider>
+    </ActionContextProvider>
   );
 };
 
@@ -146,7 +161,7 @@ export const EditQuery = () => {
   const form = useMemo(() => createForm(), []);
   const schema = getSchema(record, { form, isNewRecord: false });
   return (
-    <ActionContext.Provider value={{ visible, setVisible }}>
+    <ActionContextProvider value={{ visible, setVisible }}>
       <a
         onClick={() => {
           form.setValues(record);
@@ -156,6 +171,6 @@ export const EditQuery = () => {
         {lang('Edit')}
       </a>
       <SchemaComponent schema={schema} scope={{ useCloseAction, useSubmitAction: useUpdateAction }} />
-    </ActionContext.Provider>
+    </ActionContextProvider>
   );
 };

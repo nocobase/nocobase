@@ -10,24 +10,33 @@ export default {
     {
       type: 'boolean',
       name: 'published',
-      defaultValue: false
+      defaultValue: false,
     },
     {
       type: 'integer',
       name: 'read',
-      defaultValue: 0
+      defaultValue: 0,
     },
     {
       type: 'belongsTo',
-      name: 'category'
+      name: 'category',
     },
     {
       type: 'hasMany',
-      name: 'comments'
+      name: 'comments',
     },
     {
       type: 'belongsToMany',
-      name: 'tags'
-    }
-  ]
+      name: 'tags',
+    },
+    {
+      type: 'integer',
+      name: 'read',
+      defaultValue: 0,
+    },
+    {
+      type: 'expression',
+      name: 'dexp',
+    },
+  ],
 } as CollectionOptions;

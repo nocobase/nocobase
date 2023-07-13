@@ -1,6 +1,14 @@
 import { Popover } from 'antd';
-import React, { CSSProperties, forwardRef, useImperativeHandle, useState } from 'react';
+import React, { CSSProperties, forwardRef, useImperativeHandle, useState, useRef } from 'react';
 
+const getContentWidth = (element) => {
+  if (element) {
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    const contentWidth = range.getBoundingClientRect().width;
+    return contentWidth;
+  }
+};
 const ellipsisDefaultStyle: CSSProperties = {
   overflow: 'hidden',
   overflowWrap: 'break-word',
@@ -14,9 +22,11 @@ interface IEllipsisWithTooltipProps {
   popoverContent: unknown;
   children: any;
 }
+
 export const EllipsisWithTooltip = forwardRef((props: Partial<IEllipsisWithTooltipProps>, ref: any) => {
   const [ellipsis, setEllipsis] = useState(false);
   const [visible, setVisible] = useState(false);
+  const elRef: any = useRef();
   useImperativeHandle(ref, () => {
     return {
       setPopoverVisible: setVisible,
@@ -26,10 +36,17 @@ export const EllipsisWithTooltip = forwardRef((props: Partial<IEllipsisWithToolt
     return <>{props.children}</>;
   }
   const { popoverContent } = props;
+
+  const isOverflowTooltip = () => {
+    const contentWidth = getContentWidth(elRef.current);
+    const offsetWidth = elRef.current?.offsetWidth;
+    return contentWidth > offsetWidth;
+  };
+
   return (
     <Popover
-      visible={ellipsis && visible}
-      onVisibleChange={(visible) => {
+      open={ellipsis && visible}
+      onOpenChange={(visible) => {
         setVisible(ellipsis && visible);
       }}
       content={
@@ -44,10 +61,14 @@ export const EllipsisWithTooltip = forwardRef((props: Partial<IEllipsisWithToolt
       }
     >
       <div
+        ref={elRef}
         style={{ ...ellipsisDefaultStyle }}
         onMouseEnter={(e) => {
           const el = e.target as any;
-          setEllipsis(el.scrollWidth > el.clientWidth);
+          const isShowTooltips = isOverflowTooltip();
+          if (isShowTooltips) {
+            setEllipsis(el.scrollWidth >= el.clientWidth);
+          }
         }}
       >
         {props.children}

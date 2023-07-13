@@ -151,10 +151,11 @@ describe('associated field order', () => {
     });
 
     const u1 = await db.getRepository('users').findOne({
-      appends: ['posts.tags'],
+      appends: ['posts.tags', 'posts.title'],
     });
 
     const u1Json = u1.toJSON();
+
     const u1Posts = u1Json['posts'];
     expect(u1Posts.map((p) => p['title'])).toEqual(['a', 'b', 'c']);
 
@@ -214,6 +215,7 @@ describe('associated field order', () => {
     });
 
     const p1JSON = p1Result.toJSON();
+
     const p1Images = p1JSON['images'];
     expect(p1Images.map((i) => i['url'])).toEqual(['t2', 't1']);
   });

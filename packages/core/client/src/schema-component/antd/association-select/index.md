@@ -1,13 +1,14 @@
 ---
-nav:
-  path: /client
 group:
-  path: /schema-components
+  title: Schema Components
+  order: 3
 ---
 
-# RemoteSelect
+# AssociationSelect
 
 ## Examples
+
+<code src="./demos/demo1.tsx"></code>
 
 ## API
 

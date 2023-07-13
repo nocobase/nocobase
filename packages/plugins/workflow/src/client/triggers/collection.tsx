@@ -1,15 +1,9 @@
-
-import {
-  SchemaInitializerItemOptions,
-  useCollectionDataSource,
-} from '@nocobase/client';
-
-import { appends, collection, filter } from '../schemas/collection';
-import { useCollectionFieldOptions } from '../variable';
+import { SchemaInitializerItemOptions, useCollectionDataSource, useCollectionManager, useCompile } from '@nocobase/client';
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
-import { CollectionFieldInitializers } from '../components/CollectionFieldInitializers';
-import { NAMESPACE, useWorkflowTranslation } from '../locale';
 import { FieldsSelect } from '../components/FieldsSelect';
+import { NAMESPACE, lang } from '../locale';
+import { appends, collection, filter } from '../schemas/collection';
+import { getCollectionFieldOptions } from '../variable';
 
 const COLLECTION_TRIGGER_MODE = {
   CREATED: 1,
@@ -38,20 +32,29 @@ export default {
           effects: ['onFieldValueChange'],
           fulfill: {
             state: {
-              value: []
-            }
-          }
+              value: [],
+            },
+          },
         },
         {
           target: 'condition',
           effects: ['onFieldValueChange'],
           fulfill: {
             state: {
-              value: null
-            }
-          }
-        }
-      ]
+              value: null,
+            },
+          },
+        },
+        {
+          target: 'appends',
+          effects: ['onFieldValueChange'],
+          fulfill: {
+            state: {
+              value: [],
+            },
+          },
+        },
+      ],
     },
     mode: {
       type: 'number',
@@ -59,8 +62,9 @@ export default {
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       'x-component-props': {
+        popupMatchSelectWidth: false,
         options: collectionModeOptions,
-        placeholder: `{{t("Trigger on", { ns: "${NAMESPACE}" })}}`
+        placeholder: `{{t("Trigger on", { ns: "${NAMESPACE}" })}}`,
       },
       required: true,
       'x-reactions': [
@@ -70,9 +74,9 @@ export default {
             state: {
               visible: '{{!!$deps[0]}}',
             },
-          }
+          },
         },
-      ]
+      ],
     },
     changed: {
       type: 'array',
@@ -82,25 +86,25 @@ export default {
       'x-component': 'FieldsSelect',
       'x-component-props': {
         mode: 'multiple',
-        placeholder: '{{t("Select Field")}}',
+        placeholder: '{{t("Select field")}}',
         filter(field) {
           return (
-            !field.hidden
-            && (field.uiSchema ? !field.uiSchema['x-read-pretty'] : true)
-            && !['linkTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type)
+            !field.hidden &&
+            (field.uiSchema ? !field.uiSchema['x-read-pretty'] : true) &&
+            !['linkTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type)
           );
-        }
+        },
       },
       'x-reactions': [
         {
           dependencies: ['collection', 'mode'],
           fulfill: {
             state: {
-              visible: `{{$deps[0] && $deps[1] & ${COLLECTION_TRIGGER_MODE.UPDATED}}}`,
+              visible: `{{!!$deps[0] && ($deps[1] & ${COLLECTION_TRIGGER_MODE.UPDATED})}}`,
             },
-          }
+          },
         },
-      ]
+      ],
     },
     condition: {
       ...filter,
@@ -112,9 +116,9 @@ export default {
             state: {
               visible: '{{!!$deps[0]}}',
             },
-          }
+          },
         },
-      ]
+      ],
     },
     appends: {
       ...appends,
@@ -126,24 +130,43 @@ export default {
             state: {
               visible: `{{!($deps[0] & ${COLLECTION_TRIGGER_MODE.DELETED})}}`,
             },
-          }
+          },
         },
-      ]
+      ],
     },
   },
   scope: {
-    useCollectionDataSource
+    useCollectionDataSource,
   },
   components: {
-    FieldsSelect
+    FieldsSelect,
   },
-  getOptions(config, types) {
-    const { t } = useWorkflowTranslation();
-    const fieldOptions = useCollectionFieldOptions({ collection: config.collection, types });
-    const options: any[] = [
-      ...(fieldOptions?.length ? [{ label: t('Trigger data'), key: 'data', value: 'data', children: fieldOptions }] : []),
+  useVariables(config, options) {
+    const compile = useCompile();
+    const { getCollectionFields } = useCollectionManager();
+    const rootFields = [
+      {
+        collectionName: config.collection,
+        name: 'data',
+        type: 'hasOne',
+        target: config.collection,
+        uiSchema: {
+          title: lang('Trigger data'),
+        },
+      },
     ];
-    return options;
+    // const depth = config.appends?.length
+    //   ? config.appends.reduce((max, item) => Math.max(max, item.split('.').length), 1) + 1
+    //   : 1;
+    const result = getCollectionFieldOptions({
+      // depth,
+      ...options,
+      fields: rootFields,
+      appends: ['data', ...(config.appends?.map((item) => `data.${item}`) || [])],
+      compile,
+      getCollectionFields,
+    });
+    return result;
   },
   useInitializers(config): SchemaInitializerItemOptions | null {
     if (!config.collection) {
@@ -152,13 +175,12 @@ export default {
 
     return {
       type: 'item',
+      key: 'triggerData',
       title: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
       component: CollectionBlockInitializer,
       collection: config.collection,
-      dataSource: '{{$context.data}}'
+      dataSource: '{{$context.data}}',
     };
   },
-  initializers: {
-    CollectionFieldInitializers
-  }
+  initializers: {},
 };

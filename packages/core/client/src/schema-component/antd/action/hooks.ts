@@ -1,8 +1,9 @@
-import { useForm } from '@formily/react';
+import { useForm, useFieldSchema } from '@formily/react';
 import { Modal as AntdModal } from 'antd';
 import { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActionContext } from './context';
+import { useIsEmptyRecord } from '../../../block-provider/FormBlockProvider';
 
 export const useA = () => {
   return {
@@ -50,4 +51,11 @@ export const useCloseAction = () => {
       });
     },
   };
+};
+
+export const useLinkageAction = () => {
+  const fieldSchema = useFieldSchema();
+  const isRecordAction = useIsEmptyRecord();
+  const isAction = ['Action.Link', 'Action'].includes(fieldSchema['x-component']);
+  return isAction && isRecordAction;
 };

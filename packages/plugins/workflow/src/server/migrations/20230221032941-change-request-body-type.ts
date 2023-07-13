@@ -11,7 +11,7 @@ function migrateData(input) {
   }
   const typeMap = {
     ctx: '$context',
-    node: '$jobsMapByNodeId'
+    node: '$jobsMapByNodeId',
   };
   return input.replace(EJS_RE, (_, type, path) => {
     if (type === 'ctx') {
@@ -36,31 +36,40 @@ export default class extends Migration {
     await this.context.db.sequelize.transaction(async (transaction) => {
       const nodes = await NodeRepo.find({
         filter: {
-          type: 'request'
+          type: 'request',
         },
-        transaction
+        transaction,
       });
       console.log('%d nodes need to be migrated.', nodes.length);
 
-      await nodes.reduce((promise, node) => promise.then(async () => {
-        if (typeof node.config.data !== 'string') {
-          return;
-        }
-        let data = migrateData(node.config.data);
-        try {
-          data = JSON.parse(node.config.data);
-          return node.update({
-            config: {
-              ...node.config,
-              data
+      await nodes.reduce(
+        (promise, node) =>
+          promise.then(async () => {
+            if (typeof node.config.data !== 'string') {
+              return;
             }
-          }, {
-            transaction
-          });
-        } catch (error) {
-          console.error(`flow_node #${node.id} config migrating failed! you should migrate its format from ejs to json-templates manually in your db.`);
-        }
-      }), Promise.resolve());
+            let data = migrateData(node.config.data);
+            try {
+              data = JSON.parse(node.config.data);
+              return node.update(
+                {
+                  config: {
+                    ...node.config,
+                    data,
+                  },
+                },
+                {
+                  transaction,
+                },
+              );
+            } catch (error) {
+              console.error(
+                `flow_node #${node.id} config migrating failed! you should migrate its format from ejs to json-templates manually in your db.`,
+              );
+            }
+          }),
+        Promise.resolve(),
+      );
     });
   }
   async down() {}

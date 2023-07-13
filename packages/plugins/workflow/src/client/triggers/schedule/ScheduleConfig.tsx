@@ -1,16 +1,13 @@
-import React, { useState } from 'react';
 import { onFieldValueChange } from '@formily/core';
 import { useForm, useFormEffects } from '@formily/react';
-import { css } from '@emotion/css';
-
-import { SchemaComponent } from '@nocobase/client';
-
-import { collection } from '../../schemas/collection';
-import { OnField } from './OnField';
-import { EndsByField } from './EndsByField';
-import { RepeatField } from './RepeatField';
-import { SCHEDULE_MODE } from './constants';
+import { css, SchemaComponent } from '@nocobase/client';
+import React, { useState } from 'react';
 import { NAMESPACE } from '../../locale';
+import { appends, collection } from '../../schemas/collection';
+import { SCHEDULE_MODE } from './constants';
+import { EndsByField } from './EndsByField';
+import { OnField } from './OnField';
+import { RepeatField } from './RepeatField';
 
 const ModeFieldsets = {
   [SCHEDULE_MODE.STATIC]: {
@@ -20,9 +17,9 @@ const ModeFieldsets = {
       'x-decorator': 'FormItem',
       'x-component': 'DatePicker',
       'x-component-props': {
-        showTime: true
+        showTime: true,
       },
-      required: true
+      required: true,
     },
     repeat: {
       type: 'string',
@@ -36,7 +33,7 @@ const ModeFieldsets = {
             state: {
               visible: '{{!!$self.value}}',
             },
-          }
+          },
         },
         {
           target: 'limit',
@@ -44,9 +41,9 @@ const ModeFieldsets = {
             state: {
               visible: '{{!!$self.value}}',
             },
-          }
-        }
-      ]
+          },
+        },
+      ],
     },
     endsOn: {
       type: 'datetime',
@@ -54,8 +51,8 @@ const ModeFieldsets = {
       'x-decorator': 'FormItem',
       'x-component': 'DatePicker',
       'x-component-props': {
-        showTime: true
-      }
+        showTime: true,
+      },
     },
     limit: {
       type: 'number',
@@ -64,9 +61,9 @@ const ModeFieldsets = {
       'x-component': 'InputNumber',
       'x-component-props': {
         placeholder: `{{t("No limit", { ns: "${NAMESPACE}" })}}`,
-        min: 0
-      }
-    }
+        min: 0,
+      },
+    },
   },
   [SCHEDULE_MODE.COLLECTION_FIELD]: {
     collection: {
@@ -80,9 +77,9 @@ const ModeFieldsets = {
             state: {
               visible: '{{!!$self.value}}',
             },
-          }
-        }
-      ]
+          },
+        },
+      ],
     },
     startsOn: {
       type: 'object',
@@ -96,10 +93,10 @@ const ModeFieldsets = {
             state: {
               visible: '{{!!$self.value}}',
             },
-          }
-        }
+          },
+        },
       ],
-      required: true
+      required: true,
     },
     repeat: {
       type: 'string',
@@ -113,7 +110,7 @@ const ModeFieldsets = {
             state: {
               visible: '{{!!$self.value}}',
             },
-          }
+          },
         },
         {
           target: 'limit',
@@ -121,15 +118,15 @@ const ModeFieldsets = {
             state: {
               visible: '{{!!$self.value}}',
             },
-          }
-        }
-      ]
+          },
+        },
+      ],
     },
     endsOn: {
       type: 'object',
       title: `{{t("Ends on", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
-      'x-component': 'EndsByField'
+      'x-component': 'EndsByField',
     },
     limit: {
       type: 'number',
@@ -138,15 +135,31 @@ const ModeFieldsets = {
       'x-component': 'InputNumber',
       'x-component-props': {
         placeholder: `{{t("No limit", { ns: "${NAMESPACE}" })}}`,
-        min: 0
-      }
-    }
-  }
+        min: 0,
+      },
+    },
+    appends: {
+      ...appends,
+      'x-reactions': [
+        {
+          dependencies: ['mode', 'collection'],
+          fulfill: {
+            state: {
+              visible: `{{$deps[0] === ${SCHEDULE_MODE.COLLECTION_FIELD} && $deps[1]}}`,
+            },
+          },
+        },
+      ],
+    },
+  },
 };
 
 const scheduleModeOptions = [
   { value: SCHEDULE_MODE.STATIC, label: `{{t("Based on certain date", { ns: "${NAMESPACE}" })}}` },
-  { value: SCHEDULE_MODE.COLLECTION_FIELD, label: `{{t("Based on date field of collection", { ns: "${NAMESPACE}" })}}` },
+  {
+    value: SCHEDULE_MODE.COLLECTION_FIELD,
+    label: `{{t("Based on date field of collection", { ns: "${NAMESPACE}" })}}`,
+  },
 ];
 
 export const ScheduleConfig = () => {
@@ -173,10 +186,10 @@ export const ScheduleConfig = () => {
           'x-decorator': 'FormItem',
           'x-component': 'Radio.Group',
           'x-component-props': {
-            options: scheduleModeOptions
+            options: scheduleModeOptions,
           },
           required: true,
-          default: SCHEDULE_MODE.STATIC
+          default: SCHEDULE_MODE.STATIC,
         }}
       />
       <SchemaComponent
@@ -188,23 +201,23 @@ export const ScheduleConfig = () => {
               'x-component': 'fieldset',
               'x-component-props': {
                 className: css`
-                  .ant-input-number{
+                  .ant-input-number {
                     width: 4em;
                   }
 
-                  .ant-picker{
+                  .ant-picker {
                     width: auto;
                   }
-                `
+                `,
               },
-              properties: ModeFieldsets[mode]
-            }
-          }
+              properties: ModeFieldsets[mode],
+            },
+          },
         }}
         components={{
           OnField,
           RepeatField,
-          EndsByField
+          EndsByField,
         }}
       />
     </>

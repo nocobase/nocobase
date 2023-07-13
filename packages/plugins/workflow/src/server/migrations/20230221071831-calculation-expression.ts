@@ -13,19 +13,19 @@ function addQuote(v) {
 }
 
 const calculatorsMap = {
-  'equal': '==',
+  equal: '==',
   '===': '==',
-  'notEqual': '!=',
+  notEqual: '!=',
   '!==': '!=',
-  'gt': '>',
-  'gte': '>=',
-  'lt': '<',
-  'lte': '<=',
-  'add': '+',
-  'minus': '-',
-  'multiple': '*',
-  'divide': '/',
-  'mod': '%',
+  gt: '>',
+  gte: '>=',
+  lt: '<',
+  lte: '<=',
+  add: '+',
+  minus: '-',
+  multiple: '*',
+  divide: '/',
+  mod: '%',
   includes(a, b) {
     return `SEARCH(${b}, ${a}) >= 0`;
   },
@@ -33,7 +33,7 @@ const calculatorsMap = {
     return `SEARCH(${b}, ${a}) < 0`;
   },
   startsWith(a, b) {
-    return `SEARCH(${b}, ${a}) == 0`
+    return `SEARCH(${b}, ${a}) == 0`;
   },
   endsWith(a, b) {
     return `RIGHT(${a}, LEN(${b})) == ${b}`;
@@ -46,8 +46,8 @@ const calculatorsMap = {
   },
   concat(a, b) {
     return `CONCATENATE(${a}, ${b})`;
-  }
-}
+  },
+};
 
 function migrateConfig({ calculation, ...config }: any = {}) {
   if (!calculation?.calculator || !calculation?.operands?.length) {
@@ -55,14 +55,15 @@ function migrateConfig({ calculation, ...config }: any = {}) {
   }
 
   const calculator = calculatorsMap[calculation.calculator];
-  const operands = (calculator.operands ?? []).map(operand => addQuote(operand));
+  const operands = (calculator.operands ?? []).map((operand) => addQuote(operand));
 
   return {
     engine: 'formula.js',
-    expression: typeof calculator === 'function'
-      ? calculator(...operands)
-      : operands.join(` ${calculator ?? calculation.calculator} `)
-  }
+    expression:
+      typeof calculator === 'function'
+        ? calculator(...operands)
+        : operands.join(` ${calculator ?? calculation.calculator} `),
+  };
 }
 
 export default class extends Migration {
@@ -76,19 +77,26 @@ export default class extends Migration {
     await this.context.db.sequelize.transaction(async (transaction) => {
       const nodes = await NodeRepo.find({
         filter: {
-          type: 'calculation'
+          type: 'calculation',
         },
-        transaction
+        transaction,
       });
       console.log('%d nodes need to be migrated.', nodes.length);
 
-      await nodes.reduce((promise, node) => promise.then(() => {
-        return node.update({
-          config: migrateConfig(node.config)
-        }, {
-          transaction
-        });
-      }), Promise.resolve());
+      await nodes.reduce(
+        (promise, node) =>
+          promise.then(() => {
+            return node.update(
+              {
+                config: migrateConfig(node.config),
+              },
+              {
+                transaction,
+              },
+            );
+          }),
+        Promise.resolve(),
+      );
     });
   }
 }

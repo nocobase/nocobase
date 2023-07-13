@@ -1,12 +1,9 @@
-import { DeleteOutlined, PartitionOutlined } from '@ant-design/icons';
-import { css } from '@emotion/css';
+import { DeleteOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
-import { PluginManager, SchemaComponent, useActionContext, useRequest } from '@nocobase/client';
+import { css, SchemaComponent, useActionContext, useRequest } from '@nocobase/client';
 import React, { useEffect } from 'react';
-import { useHistory } from 'react-router-dom';
 import { useCreateActionAndRefreshCM } from './action-hooks';
 import { GraphDrawPage } from './GraphDrawPage';
-import { useGCMTranslation } from './utils';
 
 const useCollectionValues = (options) => {
   const { visible } = useActionContext();
@@ -117,7 +114,7 @@ export const GraphCollectionPane = () => {
       className={css`
         height: calc(100vh - 160px);
         overflow: auto;
-        margin: -24px;
+        margin: calc(var(--nb-spacing) * -1);
         position: relative;
       `}
       id="graph_container"
@@ -140,19 +137,5 @@ export const GraphCollectionPane = () => {
         scope={{ useCollectionValues, useCreateActionAndRefreshCM }}
       />
     </div>
-  );
-};
-
-export const GraphCollectionShortcut = () => {
-  const { t } = useGCMTranslation();
-  const history = useHistory();
-  return (
-    <PluginManager.Toolbar.Item
-      icon={<PartitionOutlined />}
-      title={t('Graph Collection')}
-      onClick={() => {
-        history.push('/admin/settings/graph/collections');
-      }}
-    />
   );
 };

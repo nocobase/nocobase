@@ -1,7 +1,7 @@
 export function linkNodes(nodes): void {
   const nodesMap = new Map();
-  nodes.forEach(item => nodesMap.set(item.id, item));
-  for (let node of nodesMap.values()) {
+  nodes.forEach((item) => nodesMap.set(item.id, item));
+  for (const node of nodesMap.values()) {
     if (node.upstreamId) {
       node.upstream = nodesMap.get(node.upstreamId);
     }
@@ -18,7 +18,7 @@ export function isValidFilter(condition) {
     return false;
   }
 
-  return group.some(item => {
+  return group.some((item) => {
     if (item.$and || item.$or) {
       return isValidFilter(item);
     }

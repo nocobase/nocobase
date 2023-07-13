@@ -1,18 +1,17 @@
-import { css } from "@emotion/css";
-import { useForm } from "@formily/react";
-import { useCollectionFilterOptions } from "@nocobase/client";
-import { NAMESPACE } from "../locale";
+import { useForm } from '@formily/react';
+import { css, useCollectionFilterOptions } from '@nocobase/client';
+import { NAMESPACE } from '../locale';
 
 export const collection = {
   type: 'string',
   title: '{{t("Collection")}}',
   required: true,
-  'x-reactions': ['{{useCollectionDataSource()}}'],
+  'x-reactions': [],
   'x-decorator': 'FormItem',
-  'x-component': 'Select',
+  'x-component': 'CollectionSelect',
   'x-component-props': {
-    placeholder: '{{t("Select collection")}}'
-  }
+    popupMatchSelectWidth: false,
+  },
 };
 
 export const values = {
@@ -23,10 +22,10 @@ export const values = {
     labelAlign: 'left',
     className: css`
       flex-direction: column;
-    `
+    `,
   },
   'x-component': 'CollectionFieldset',
-  description: `{{t("Fields that are not assigned a value will be set to the default value, and those that do not have a default value are set to null.", { ns: "${NAMESPACE}" })}}`,
+  description: `{{t("Unassigned fields will be set to default values, and those without default values will be set to null.", { ns: "${NAMESPACE}" })}}`,
 };
 
 export const filter = {
@@ -43,25 +42,25 @@ export const filter = {
         className: css`
           position: relative;
           width: 100%;
-        `
+        `,
       };
     },
-    dynamicComponent: 'FilterDynamicComponent'
-  }
+    dynamicComponent: 'FilterDynamicComponent',
+  },
 };
 
 export const appends = {
   type: 'array',
   title: `{{t("Preload associations", { ns: "${NAMESPACE}" })}}`,
-  description: `{{t("Only configured association field could be accessed in following nodes", { ns: "${NAMESPACE}" })}}`,
+  description: `{{t("Please select the associated fields that need to be accessed in subsequent nodes", { ns: "${NAMESPACE}" })}}`,
   'x-decorator': 'FormItem',
   'x-component': 'FieldsSelect',
   'x-component-props': {
     mode: 'multiple',
-    placeholder: '{{t("Select Field")}}',
+    placeholder: '{{t("Select field")}}',
     filter(field) {
       return ['linkTo', 'belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type);
-    }
+    },
   },
   'x-reactions': [
     {
@@ -70,7 +69,7 @@ export const appends = {
         state: {
           visible: '{{!!$deps[0]}}',
         },
-      }
+      },
     },
-  ]
+  ],
 };

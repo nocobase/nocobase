@@ -1,15 +1,11 @@
-import { useCollectionDataSource, SchemaInitializerItemOptions } from '@nocobase/client';
+import { useCollectionDataSource, SchemaInitializerItemOptions, useCompile, useCollectionManager } from '@nocobase/client';
 
 import { ScheduleConfig } from './ScheduleConfig';
 import { SCHEDULE_MODE } from './constants';
-import { NAMESPACE, useWorkflowTranslation } from '../../locale';
-import { CollectionFieldInitializers } from '../../components/CollectionFieldInitializers';
+import { NAMESPACE, lang } from '../../locale';
 import { CollectionBlockInitializer } from '../../components/CollectionBlockInitializer';
-import { useCollectionFieldOptions } from '../../variable';
-import { appends } from '../../schemas/collection';
+import { getCollectionFieldOptions } from '../../variable';
 import { FieldsSelect } from '../../components/FieldsSelect';
-
-
 
 export default {
   title: `{{t("Schedule event", { ns: "${NAMESPACE}" })}}`,
@@ -18,45 +14,42 @@ export default {
     config: {
       type: 'void',
       'x-component': 'ScheduleConfig',
-      'x-component-props': {
-      }
-    },
-    appends: {
-      ...appends,
-      'x-reactions': [
-        {
-          dependencies: ['mode', 'collection'],
-          fulfill: {
-            state: {
-              visible: `{{$deps[0] === ${SCHEDULE_MODE.COLLECTION_FIELD} && $deps[1]}}`,
-            },
-          }
-        },
-      ]
+      'x-component-props': {},
     },
   },
   scope: {
-    useCollectionDataSource
+    useCollectionDataSource,
   },
   components: {
     ScheduleConfig,
-    FieldsSelect
+    FieldsSelect,
   },
-  getOptions(config, types) {
-    const { t } = useWorkflowTranslation();
+  useVariables(config, opts) {
+    const compile = useCompile();
+    const { getCollectionFields } = useCollectionManager();
     const options: any[] = [];
-    if (!types || types.includes('date')) {
-      options.push({ key: 'date', value: 'date', label: t('Trigger time') });
+    if (!opts?.types || opts.types.includes('date')) {
+      options.push({ key: 'date', value: 'date', label: lang('Trigger time') });
     }
-    if (config.mode === SCHEDULE_MODE.COLLECTION_FIELD) {
-      const fieldOptions = useCollectionFieldOptions({ collection: config.collection });
 
+    const depth = config.appends?.length
+      ? config.appends.reduce((max, item) => Math.max(max, item.split('.').length), 1) + 1
+      : 1;
+
+    const fieldOptions = getCollectionFieldOptions({
+      depth,
+      ...opts,
+      collection: config.collection,
+      compile,
+      getCollectionFields,
+    });
+    if (config.mode === SCHEDULE_MODE.COLLECTION_FIELD) {
       if (fieldOptions.length) {
         options.push({
           key: 'data',
           value: 'data',
-          label: t('Trigger data'),
-          children: fieldOptions
+          label: lang('Trigger data'),
+          children: fieldOptions,
         });
       }
     }
@@ -72,10 +65,8 @@ export default {
       title: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
       component: CollectionBlockInitializer,
       collection: config.collection,
-      dataSource: '{{$context.data}}'
+      dataSource: '{{$context.data}}',
     };
   },
-  initializers: {
-    CollectionFieldInitializers
-  }
+  initializers: {},
 };

@@ -20,4 +20,6 @@ export default {
   'Delete provider': '删除',
   'Are you sure you want to delete it?': '你确定要删除它吗？',
   'Sign in button name, which will be displayed on the sign in page': '登录按钮名称，将在登录页中显示',
+  Copied: '已复制',
+  Usage: '使用',
 };

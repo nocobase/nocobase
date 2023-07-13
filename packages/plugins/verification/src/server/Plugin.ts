@@ -70,13 +70,14 @@ export default class VerificationPlugin extends Plugin {
 
     //   }
     // });
-
-    await next();
-
-    // or delete
-    await item.update({
-      status: CODE_STATUS_USED,
-    });
+    try {
+      await next();
+    } finally {
+      // or delete
+      await item.update({
+        status: CODE_STATUS_USED,
+      });
+    }
   };
 
   async install() {
@@ -97,6 +98,12 @@ export default class VerificationPlugin extends Plugin {
       INIT_ALI_SMS_VERIFY_CODE_SIGN
     ) {
       const ProviderRepo = this.db.getRepository('verifications_providers');
+      const existed = await ProviderRepo.count({
+        filterByTk: DEFAULT_SMS_VERIFY_CODE_PROVIDER,
+      });
+      if (existed) {
+        return;
+      }
       await ProviderRepo.create({
         values: {
           id: DEFAULT_SMS_VERIFY_CODE_PROVIDER,

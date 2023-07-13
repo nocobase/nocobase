@@ -1,11 +1,30 @@
-export { DataTypes, ModelStatic, Op, SyncOptions } from 'sequelize';
+export {
+  BaseError,
+  BelongsToGetAssociationMixin,
+  DataTypes,
+  fn,
+  HasManyCountAssociationsMixin,
+  HasManyCreateAssociationMixin,
+  HasManyGetAssociationsMixin,
+  literal,
+  ModelStatic,
+  Op,
+  SyncOptions,
+  Transaction,
+  UniqueConstraintError,
+  ValidationError,
+  ValidationErrorItem,
+  where,
+} from 'sequelize';
 export * from './collection';
+export * from './collection-group-manager';
 export * from './collection-importer';
 export * from './database';
 export { Database as default } from './database';
 export * from './field-repository/array-field-repository';
 export * from './fields';
 export * from './filter-match';
+export { default as FilterParser } from './filter-parser';
 export * from './inherited-collection';
 export * from './magic-attribute-model';
 export * from './migration';
@@ -20,4 +39,5 @@ export * from './repository';
 export * from './update-associations';
 export { snakeCase } from './utils';
 export * from './value-parsers';
-export * from './collection-group-manager';
+export * from './view-collection';
+export * from './view/view-inference';

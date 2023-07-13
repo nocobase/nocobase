@@ -1,3 +1,5 @@
+import { useCollection } from '../../';
+
 // 日历的操作配置
 export const CalendarActionInitializers = {
   title: '{{t("Configure actions")}}',
@@ -71,6 +73,10 @@ export const CalendarActionInitializers = {
             'x-acl-action-props': {
               skipScopeCheck: true,
             },
+          },
+          visible: () => {
+            const collection = useCollection();
+            return (collection as any).template !== 'view';
           },
         },
       ],

@@ -5,10 +5,10 @@ import {
   useBlockRequestContext,
   useCollection,
   useCollectionManager,
-  useCompile
+  useCompile,
 } from '@nocobase/client';
+import { lodash } from '@nocobase/utils/client';
 import { saveAs } from 'file-saver';
-import { cloneDeep } from 'lodash';
 import { useTranslation } from 'react-i18next';
 import { NAMESPACE } from './constants';
 import { useImportContext } from './context';
@@ -40,7 +40,9 @@ export const useDownloadXlsxTemplateAction = () => {
   const { schema: importSchema } = useImportSchema(actionSchema);
   return {
     async run() {
-      const { importColumns, explain } = cloneDeep(importSchema?.['x-action-settings']?.['importSettings'] ?? {});
+      const { importColumns, explain } = lodash.cloneDeep(
+        importSchema?.['x-action-settings']?.['importSettings'] ?? {},
+      );
       const columns = toArr(importColumns)
         .map((column) => {
           const field = getCollectionField(`${name}.${column.dataIndex[0]}`);
@@ -74,7 +76,7 @@ export const useDownloadXlsxTemplateAction = () => {
           responseType: 'blob',
         },
       );
-      let blob = new Blob([data], { type: 'application/x-xls' });
+      const blob = new Blob([data], { type: 'application/x-xls' });
       saveAs(blob, `${compile(title)}.xlsx`);
     },
   };
@@ -94,7 +96,9 @@ export const useImportStartAction = () => {
   const { setImportModalVisible, setImportStatus, setImportResult } = useImportContext();
   return {
     async run() {
-      const { importColumns, explain } = cloneDeep(importSchema?.['x-action-settings']?.['importSettings'] ?? {});
+      const { importColumns, explain } = lodash.cloneDeep(
+        importSchema?.['x-action-settings']?.['importSettings'] ?? {},
+      );
       const columns = toArr(importColumns)
         .map((column) => {
           const field = getCollectionField(`${name}.${column.dataIndex[0]}`);
@@ -115,7 +119,7 @@ export const useImportStartAction = () => {
           return column;
         })
         .filter(Boolean);
-      let formData = new FormData();
+      const formData = new FormData();
       const uploadFiles = form.values.upload.map((f) => f.originFileObj);
       formData.append('file', uploadFiles[0]);
       formData.append('columns', JSON.stringify(columns));

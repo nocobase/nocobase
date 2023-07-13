@@ -7,9 +7,9 @@ export interface FilterContextProps {
   fieldSchema?: Schema;
   dynamicComponent?: any;
   options?: any[];
-  disabled?: boolean
+  disabled?: boolean;
 }
 
 export const RemoveActionContext = createContext(null);
 export const FilterContext = createContext<FilterContextProps>(null);
-export const FilterLogicContext = createContext(null);
+export const LinkageLogicContext = createContext(null);

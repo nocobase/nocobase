@@ -59,6 +59,7 @@ export class ShopPlugin extends Plugin {
         },
         list: {
           filter: {
+            // TODO: 该操作符已废弃，该处代码需要重构
             // 由 users 插件扩展的过滤器运算符
             $isCurrentUser: true,
             status: {

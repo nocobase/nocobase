@@ -1,3 +1,4 @@
+import { AttachmentModel } from '.';
 import { STORAGE_TYPE_ALI_OSS } from '../constants';
 import { cloudFilenameGetter } from '../utils';
 
@@ -22,5 +23,13 @@ export default {
         bucket: process.env.ALI_OSS_BUCKET,
       },
     };
+  },
+  async delete(storage, records: AttachmentModel[]): Promise<[number, AttachmentModel[]]> {
+    const { client } = this.make(storage);
+    const { deleted } = await client.deleteMulti(records.map((record) => `${record.path}/${record.filename}`));
+    return [
+      deleted.length,
+      records.filter((record) => !deleted.find((item) => item.Key === `${record.path}/${record.filename}`)),
+    ];
   },
 };

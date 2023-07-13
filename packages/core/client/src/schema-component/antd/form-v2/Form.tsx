@@ -1,5 +1,6 @@
-import { FormLayout } from '@formily/antd';
-import { createForm, Field, onFormInputChange, onFieldReact, onFieldInit, onFieldChange } from '@formily/core';
+import { css } from '@emotion/css';
+import { FormLayout } from '@formily/antd-v5';
+import { createForm, Field, onFieldChange, onFieldInit, onFieldReact, onFormInputChange } from '@formily/core';
 import { FieldContext, FormContext, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { ConfigProvider, Spin } from 'antd';
@@ -69,7 +70,8 @@ const WithForm = (props) => {
   const { form } = props;
   const fieldSchema = useFieldSchema();
   const { setFormValueChanged } = useActionContext();
-  const linkageRules = getLinkageRules(fieldSchema) || fieldSchema.parent?.['x-linkage-rules'] || [];
+  const linkageRules =
+    (getLinkageRules(fieldSchema) || fieldSchema.parent?.['x-linkage-rules'])?.filter((k) => !k.disabled) || [];
   useEffect(() => {
     const id = uid();
     form.addEffects(id, () => {
@@ -100,7 +102,9 @@ const WithForm = (props) => {
               };
             });
             onFieldChange(`*(${fields})`, ['value', 'required', 'pattern', 'display'], (field: any) => {
-              field.linkageProperty = {};
+              field.linkageProperty = {
+                display: field.linkageProperty?.display,
+              };
             });
           }
         });
@@ -112,8 +116,8 @@ const WithForm = (props) => {
   }, []);
   useEffect(() => {
     const id = uid();
+    const linkagefields = [];
     form.addEffects(id, () => {
-      const linkagefields = [];
       return linkageRules.map((v, index) => {
         return v.actions?.map((h) => {
           if (h.targetFields) {
@@ -137,7 +141,7 @@ const WithForm = (props) => {
       form.removeEffects(id);
     };
   }, [linkageRules]);
-  return fieldSchema['x-decorator'] === 'Form' ? <FormDecorator {...props} /> : <FormComponent {...props} />;
+  return fieldSchema['x-decorator'] === 'FormV2' ? <FormDecorator {...props} /> : <FormComponent {...props} />;
 };
 
 const WithoutForm = (props) => {
@@ -155,28 +159,42 @@ const WithoutForm = (props) => {
       }),
     [],
   );
-  return fieldSchema['x-decorator'] === 'Form' ? (
+  return fieldSchema['x-decorator'] === 'FormV2' ? (
     <FormDecorator form={form} {...props} />
   ) : (
     <FormComponent form={form} {...props} />
   );
 };
 
-export const Form: React.FC<FormProps> & { Designer?: any; ReadPrettyDesigner?: any } = observer((props) => {
-  const field = useField<Field>();
-  const { form, disabled, ...others } = useProps(props);
-  const formDisabled = disabled || field.disabled;
-  return (
-    <ConfigProvider componentDisabled={formDisabled}>
-      <form>
-        <Spin spinning={field.loading || false}>
-          {form ? (
-            <WithForm form={form} {...others} disabled={formDisabled} />
-          ) : (
-            <WithoutForm {...others} disabled={formDisabled} />
-          )}
-        </Spin>
-      </form>
-    </ConfigProvider>
-  );
-});
+export const Form: React.FC<FormProps> & {
+  Designer?: any;
+  FilterDesigner?: any;
+  ReadPrettyDesigner?: any;
+  Templates?: any;
+} = observer(
+  (props) => {
+    const field = useField<Field>();
+    const { form, disabled, ...others } = useProps(props);
+    const formDisabled = disabled || field.disabled;
+    return (
+      <ConfigProvider componentDisabled={formDisabled}>
+        <form
+          className={css`
+            .ant-formily-item-feedback-layout-loose {
+              margin-bottom: 12px;
+            }
+          `}
+        >
+          <Spin spinning={field.loading || false}>
+            {form ? (
+              <WithForm form={form} {...others} disabled={formDisabled} />
+            ) : (
+              <WithoutForm {...others} disabled={formDisabled} />
+            )}
+          </Spin>
+        </form>
+      </ConfigProvider>
+    );
+  },
+  { displayName: 'Form' },
+);

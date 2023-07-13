@@ -11,6 +11,7 @@ export const CreateActionInitializer = (props) => {
     'x-decorator': 'ACLActionProvider',
     'x-component-props': {
       openMode: 'drawer',
+      type: 'primary',
       component: 'CreateRecordAction',
     },
     properties: {

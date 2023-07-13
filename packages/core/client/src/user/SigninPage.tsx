@@ -1,9 +1,9 @@
+import { css } from '@emotion/css';
 import { ISchema, useForm } from '@formily/react';
 import { Space, Tabs } from 'antd';
-import React, { useCallback, useContext } from 'react';
-import { css } from '@emotion/css';
+import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useHistory, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { SchemaComponent, useAPIClient, useCurrentDocumentTitle, useSystemSettings } from '..';
 import { useSigninPageExtension } from './SigninPageExtension';
 import VerificationCode from './VerificationCode';
@@ -50,12 +50,11 @@ const passwordForm: ISchema = {
 };
 
 export function useRedirect(next = '/admin') {
-  const location = useLocation<any>();
-  const history = useHistory();
-  const redirect = location?.['query']?.redirect;
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   return useCallback(() => {
-    history.push(redirect || '/admin');
-  }, [redirect]);
+    navigate(searchParams.get('redirect') || '/admin', { replace: true });
+  }, [navigate, searchParams]);
 }
 
 export const usePasswordSignIn = () => {
@@ -143,21 +142,30 @@ export const SigninPage = (props: SigninPageProps) => {
       `}
     >
       {smsAuthEnabled ? (
-        <Tabs defaultActiveKey="password">
-          <Tabs.TabPane tab={t('Sign in via account')} key="password">
-            <SchemaComponent scope={{ usePasswordSignIn }} schema={schema || passwordForm} />
-          </Tabs.TabPane>
-          <Tabs.TabPane tab={t('Sign in via phone')} key="phone">
-            <SchemaComponent
-              schema={phoneForm}
-              scope={{ usePhoneSignIn, ...scope }}
-              components={{
-                VerificationCode,
-                ...components,
-              }}
-            />
-          </Tabs.TabPane>
-        </Tabs>
+        <Tabs
+          defaultActiveKey="password"
+          items={[
+            {
+              label: t('Sign in via account'),
+              key: 'password',
+              children: <SchemaComponent scope={{ usePasswordSignIn }} schema={schema || passwordForm} />,
+            },
+            {
+              label: t('Sign in via phone'),
+              key: 'phone',
+              children: (
+                <SchemaComponent
+                  schema={phoneForm}
+                  scope={{ usePhoneSignIn, ...scope }}
+                  components={{
+                    VerificationCode,
+                    ...components,
+                  }}
+                />
+              ),
+            },
+          ]}
+        />
       ) : (
         <SchemaComponent
           components={{ ...components }}

@@ -16,7 +16,7 @@ export const EXECUTION_STATUS = {
   ERROR: -2,
   ABORTED: -3,
   CANCELED: -4,
-  REJECTED: -5
+  REJECTED: -5,
 };
 
 export const ExecutionStatusOptions = [
@@ -30,7 +30,10 @@ export const ExecutionStatusOptions = [
   { value: EXECUTION_STATUS.REJECTED, label: `{{t("Rejected", { ns: "${NAMESPACE}" })}}`, color: 'volcano' },
 ];
 
-export const ExecutionStatusOptionsMap = ExecutionStatusOptions.reduce((map, option) => Object.assign(map, { [option.value as number]: option }), {});
+export const ExecutionStatusOptionsMap = ExecutionStatusOptions.reduce(
+  (map, option) => Object.assign(map, { [option.value as number]: option }),
+  {},
+);
 
 export const JOB_STATUS = {
   PENDING: 0,
@@ -39,17 +42,50 @@ export const JOB_STATUS = {
   ERROR: -2,
   ABORTED: -3,
   CANCELED: -4,
-  REJECTED: -5
+  REJECTED: -5,
 };
 
 export const JobStatusOptions = [
-  { value: JOB_STATUS.PENDING, label: `{{t("Pending", { ns: "${NAMESPACE}" })}}`, color: 'gold', icon: <ClockCircleOutlined /> },
-  { value: JOB_STATUS.RESOLVED, label: `{{t("Resolved", { ns: "${NAMESPACE}" })}}`, color: 'green', icon: <CheckOutlined /> },
-  { value: JOB_STATUS.FAILED, label: `{{t("Failed", { ns: "${NAMESPACE}" })}}`, color: 'red', icon: <ExclamationOutlined /> },
+  {
+    value: JOB_STATUS.PENDING,
+    label: `{{t("Pending", { ns: "${NAMESPACE}" })}}`,
+    color: 'gold',
+    icon: <ClockCircleOutlined />,
+  },
+  {
+    value: JOB_STATUS.RESOLVED,
+    label: `{{t("Resolved", { ns: "${NAMESPACE}" })}}`,
+    color: 'green',
+    icon: <CheckOutlined />,
+  },
+  {
+    value: JOB_STATUS.FAILED,
+    label: `{{t("Failed", { ns: "${NAMESPACE}" })}}`,
+    color: 'red',
+    icon: <ExclamationOutlined />,
+  },
   { value: JOB_STATUS.ERROR, label: `{{t("Error", { ns: "${NAMESPACE}" })}}`, color: 'red', icon: <CloseOutlined /> },
-  { value: JOB_STATUS.ABORTED, label: `{{t("Aborted", { ns: "${NAMESPACE}" })}}`, color: 'red', icon: <MinusOutlined rotate={90} /> },
-  { value: JOB_STATUS.CANCELED, label: `{{t("Canceled", { ns: "${NAMESPACE}" })}}`, color: 'volcano', icon: <MinusOutlined rotate={45} /> },
-  { value: JOB_STATUS.REJECTED, label: `{{t("Rejected", { ns: "${NAMESPACE}" })}}`, color: 'volcano', icon: <MinusOutlined /> },
+  {
+    value: JOB_STATUS.ABORTED,
+    label: `{{t("Aborted", { ns: "${NAMESPACE}" })}}`,
+    color: 'red',
+    icon: <MinusOutlined rotate={90} />,
+  },
+  {
+    value: JOB_STATUS.CANCELED,
+    label: `{{t("Canceled", { ns: "${NAMESPACE}" })}}`,
+    color: 'volcano',
+    icon: <MinusOutlined rotate={45} />,
+  },
+  {
+    value: JOB_STATUS.REJECTED,
+    label: `{{t("Rejected", { ns: "${NAMESPACE}" })}}`,
+    color: 'volcano',
+    icon: <MinusOutlined />,
+  },
 ];
 
-export const JobStatusOptionsMap = JobStatusOptions.reduce((map, option) => Object.assign(map, { [option.value]: option }), {});
+export const JobStatusOptionsMap = JobStatusOptions.reduce(
+  (map, option) => Object.assign(map, { [option.value]: option }),
+  {},
+);

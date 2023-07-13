@@ -1,22 +1,37 @@
 {
   "name": "@nocobase/plugin-users",
-  "version": "0.9.1-alpha.2",
-  "description": "",
+  "displayName": "users",
+  "displayName.zh-CN": "用户管理",
+  "description": "manage the uses of nocobase system",
+  "description.zh-CN": "管理系统用户",
+  "version": "0.11.0-alpha.1",
   "license": "AGPL-3.0",
-  "main": "./lib/index.js",
-  "types": "./lib/index.d.ts",
+  "main": "./lib/server/index.js",
+  "files": [
+    "lib",
+    "src",
+    "README.md",
+    "README.zh-CN.md",
+    "CHANGELOG.md",
+    "server.js",
+    "server.d.ts",
+    "client.js",
+    "client.d.ts"
+  ],
   "dependencies": {
-    "@nocobase/actions": "0.9.1-alpha.2",
-    "@nocobase/database": "0.9.1-alpha.2",
-    "@nocobase/resourcer": "0.9.1-alpha.2",
-    "@nocobase/server": "0.9.1-alpha.2",
-    "@nocobase/utils": "0.9.1-alpha.2",
-    "json-templates": "^4.2.0",
+    "@types/jsonwebtoken": "^8.5.8",
     "jsonwebtoken": "^8.5.1"
   },
   "devDependencies": {
-    "@nocobase/test": "0.9.1-alpha.2",
-    "@types/jsonwebtoken": "^8.5.8"
+    "@nocobase/actions": "0.11.0-alpha.1",
+    "@nocobase/client": "0.11.0-alpha.1",
+    "@nocobase/database": "0.11.0-alpha.1",
+    "@nocobase/plugin-acl": "0.11.0-alpha.1",
+    "@nocobase/plugin-auth": "0.11.0-alpha.1",
+    "@nocobase/resourcer": "0.11.0-alpha.1",
+    "@nocobase/server": "0.11.0-alpha.1",
+    "@nocobase/test": "0.11.0-alpha.1",
+    "@nocobase/utils": "0.11.0-alpha.1"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
 }

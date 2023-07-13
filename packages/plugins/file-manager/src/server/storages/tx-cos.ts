@@ -1,3 +1,6 @@
+import { promisify } from 'util';
+
+import { AttachmentModel } from '.';
 import { STORAGE_TYPE_TX_COS } from '../constants';
 import { cloudFilenameGetter } from '../utils';
 
@@ -23,5 +26,17 @@ export default {
         Bucket: process.env.TX_COS_BUCKET,
       },
     };
+  },
+  async delete(storage, records: AttachmentModel[]): Promise<[number, AttachmentModel[]]> {
+    const { cos } = this.make(storage);
+    const { Deleted } = await promisify(cos.deleteMultipleObject)({
+      Region: storage.options.Region,
+      Bucket: storage.options.Bucket,
+      Objects: records.map((record) => ({ Key: `${record.path}/${record.filename}` })),
+    });
+    return [
+      Deleted.length,
+      records.filter((record) => !Deleted.find((item) => item.Key === `${record.path}/${record.filename}`)),
+    ];
   },
 };

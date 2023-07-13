@@ -5,23 +5,26 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { RemoveActionContext } from './context';
 import { FormButtonLinkageRuleAction, FormFieldLinkageRuleAction } from './LinkageRuleAction';
-export const LinkageRuleActions = observer((props: any): any => {
-  const { type, linkageOptions } = props;
-  const field = useField<ArrayFieldModel>();
-  return field?.value?.map((item, index) => {
-    return (
-      <RemoveActionContext.Provider key={index} value={() => field.remove(index)}>
-        <ObjectField
-          name={index}
-          component={[
-            type === 'button' ? FormButtonLinkageRuleAction : FormFieldLinkageRuleAction,
-            { ...props, options: linkageOptions },
-          ]}
-        />
-      </RemoveActionContext.Provider>
-    );
-  });
-});
+export const LinkageRuleActions = observer(
+  (props: any): any => {
+    const { type, linkageOptions } = props;
+    const field = useField<ArrayFieldModel>();
+    return field?.value?.map((item, index) => {
+      return (
+        <RemoveActionContext.Provider key={index} value={() => field.remove(index)}>
+          <ObjectField
+            name={index}
+            component={[
+              type === 'button' ? FormButtonLinkageRuleAction : FormFieldLinkageRuleAction,
+              { ...props, options: linkageOptions },
+            ]}
+          />
+        </RemoveActionContext.Provider>
+      );
+    });
+  },
+  { displayName: 'LinkageRuleActions' },
+);
 
 export const LinkageRuleActionGroup = (props) => {
   const { t } = useTranslation();

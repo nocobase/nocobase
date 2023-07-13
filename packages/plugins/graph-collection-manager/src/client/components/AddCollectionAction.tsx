@@ -1,8 +1,9 @@
 import { PlusOutlined } from '@ant-design/icons';
 import { AddCollection } from '@nocobase/client';
-import React from 'react';
 import { Button } from 'antd';
+import React from 'react';
 import { useCancelAction } from '../action-hooks';
+import { getPopupContainer } from '../utils';
 
 export const AddCollectionAction = ({ item: record }) => {
   return (
@@ -17,7 +18,7 @@ export const AddCollectionAction = ({ item: record }) => {
       scope={{
         useCancelAction,
       }}
-      getContainer={() => document.getElementById('graph_container')}
+      getContainer={getPopupContainer}
     >
       <Button type="primary">
         <PlusOutlined />

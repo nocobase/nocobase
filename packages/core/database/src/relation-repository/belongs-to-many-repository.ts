@@ -1,7 +1,15 @@
 import lodash from 'lodash';
 import { BelongsToMany, Op, Transaction } from 'sequelize';
 import { Model } from '../model';
-import { CreateOptions, DestroyOptions, FindOneOptions, FindOptions, TargetKey, UpdateOptions } from '../repository';
+import {
+  AggregateOptions,
+  CreateOptions,
+  DestroyOptions,
+  FindOneOptions,
+  FindOptions,
+  TargetKey,
+  UpdateOptions,
+} from '../repository';
 import { updateThroughTableValue } from '../update-associations';
 import { FindAndCountOptions, MultipleRelationRepository } from './multiple-relation-repository';
 import { transaction } from './relation-repository';
@@ -11,24 +19,57 @@ type CreateBelongsToManyOptions = CreateOptions;
 
 interface IBelongsToManyRepository<M extends Model> {
   find(options?: FindOptions): Promise<M[]>;
+
   findAndCount(options?: FindAndCountOptions): Promise<[M[], number]>;
+
   findOne(options?: FindOneOptions): Promise<M>;
+
   // 新增并关联，存在中间表数据
   create(options?: CreateOptions): Promise<M>;
+
   // 更新，存在中间表数据
   update(options?: UpdateOptions): Promise<M>;
+
   // 删除
-  destroy(options?: number | string | number[] | string[] | DestroyOptions): Promise<Boolean>;
+  destroy(options?: number | string | number[] | string[] | DestroyOptions): Promise<boolean>;
+
   // 建立关联
   set(options: TargetKey | TargetKey[] | AssociatedOptions): Promise<void>;
+
   // 附加关联，存在中间表数据
   add(options: TargetKey | TargetKey[] | AssociatedOptions): Promise<void>;
+
   // 移除关联
   remove(options: TargetKey | TargetKey[] | AssociatedOptions): Promise<void>;
+
   toggle(options: TargetKey | { pk?: TargetKey; transaction?: Transaction }): Promise<void>;
 }
 
 export class BelongsToManyRepository extends MultipleRelationRepository implements IBelongsToManyRepository<any> {
+  async aggregate(options: AggregateOptions) {
+    const targetRepository = this.targetCollection.repository;
+
+    const sourceModel = await this.getSourceModel();
+
+    const association = this.association as any;
+
+    return await targetRepository.aggregate({
+      ...options,
+      optionsTransformer: (modelOptions) => {
+        modelOptions.include = modelOptions.include || [];
+        const throughWhere = {};
+        throughWhere[association.foreignKey] = sourceModel.get(association.sourceKey);
+
+        modelOptions.include.push({
+          association: association.oneFromTarget,
+          required: true,
+          attributes: [],
+          where: throughWhere,
+        });
+      },
+    });
+  }
+
   @transaction()
   async create(options?: CreateBelongsToManyOptions): Promise<any> {
     if (Array.isArray(options.values)) {
@@ -58,7 +99,7 @@ export class BelongsToManyRepository extends MultipleRelationRepository implemen
       transaction,
     };
   })
-  async destroy(options?: TargetKey | TargetKey[] | DestroyOptions): Promise<Boolean> {
+  async destroy(options?: TargetKey | TargetKey[] | DestroyOptions): Promise<boolean> {
     const transaction = await this.getTransaction(options);
     const association = <BelongsToMany>this.association;
 
@@ -157,7 +198,17 @@ export class BelongsToManyRepository extends MultipleRelationRepository implemen
       return carry;
     }, {});
 
-    await sourceModel[this.accessors()[call]](Object.keys(setObj), {
+    const targetKeys = Object.keys(setObj);
+    const association = this.association;
+
+    const targetObjects = await this.targetModel.findAll({
+      where: {
+        [association['targetKey']]: targetKeys,
+      },
+      transaction,
+    });
+
+    await sourceModel[this.accessors()[call]](targetObjects, {
       transaction,
     });
 

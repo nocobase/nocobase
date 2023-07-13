@@ -1,5 +1,4 @@
-import { BaseFieldOptions, Field } from '@nocobase/database';
-import { DataTypes } from 'sequelize';
+import { BaseFieldOptions, DataTypes, Field } from '@nocobase/database';
 import { evaluate } from '../utils/evaluate';
 
 export class ExcelFormulaField extends Field {
@@ -44,7 +43,7 @@ export class ExcelFormulaField extends Field {
   calculateField = async (instance) => {
     const { expression, name } = this.options;
     const scope = instance.toJSON();
-    let result = this.calculate(expression, scope);
+    const result = this.calculate(expression, scope);
     if (result) {
       instance.set(name, result);
     }
@@ -98,7 +97,6 @@ export class ExcelFormulaField extends Field {
     delete opts.dataType;
     return opts;
   }
-
 }
 
 export interface ExcelFormulaFieldOptions extends BaseFieldOptions {

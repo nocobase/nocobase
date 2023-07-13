@@ -40,9 +40,7 @@ export class AsyncEmitter {
       callbacks = callbacks.slice().filter(Boolean);
       await callbacks.reduce((prev, next) => {
         return prev.then((res) => {
-          return run(next).then((result) =>
-            Promise.resolve(res.concat(result)),
-          );
+          return run(next).then((result) => Promise.resolve(res.concat(result)));
         });
       }, Promise.resolve([]));
     }

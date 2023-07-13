@@ -12,6 +12,7 @@ import {
   useAssociatedFormItemInitializerFields,
   useFormItemInitializerFields,
 } from '../../../schema-initializer/utils';
+import { OpenModeSchemaItems } from '../../../schema-items';
 
 const titleCss = css`
   pointer-events: none;
@@ -96,6 +97,10 @@ export const KanbanCardDesigner = (props: any) => {
       title: t('Display field title'),
       component: 'Kanban.Card.Designer.TitleSwitch',
       enable: true,
+    } as SchemaInitializerItemOptions,
+    {
+      type: 'item',
+      component: OpenModeSchemaItems,
     } as SchemaInitializerItemOptions,
   );
 

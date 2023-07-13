@@ -1,5 +1,5 @@
 import { ISchema } from '@formily/react';
-import { Registry } from "@nocobase/utils/client";
+import { Registry } from '@nocobase/utils/client';
 import SMSAliyun from './sms-aliyun';
 import SMSTencent from './sms-tencent';
 

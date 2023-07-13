@@ -16,9 +16,11 @@ export default async function getDictAction(ctx, next) {
     }
     const item = {
       name,
+      tableName: collection.model.tableName,
       title: collection.options.title,
       namespace: collection.options.namespace,
       duplicator: collection.options.duplicator,
+      schema: collection.options.schema || process.env.DB_SCHEMA,
       // columns,
     };
     if (!item.namespace && collectionNames.includes(name)) {

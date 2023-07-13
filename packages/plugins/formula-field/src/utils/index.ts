@@ -23,7 +23,7 @@ export const DataTypeTransformers = {
         return null;
       }
       return result;
-    }
+    },
   },
   bigInt: {
     boolean(value: boolean) {
@@ -48,7 +48,7 @@ export const DataTypeTransformers = {
         return null;
       }
       return result;
-    }
+    },
   },
   double: {
     boolean(value: boolean) {
@@ -73,7 +73,7 @@ export const DataTypeTransformers = {
         return null;
       }
       return result;
-    }
+    },
   },
   decimal: {
     boolean(value: boolean) {
@@ -91,7 +91,7 @@ export const DataTypeTransformers = {
         return null;
       }
       return result;
-    }
+    },
   },
   string: {
     boolean(value: boolean) {
@@ -108,7 +108,7 @@ export const DataTypeTransformers = {
     },
     date(value: Date) {
       return value.toISOString();
-    }
+    },
   },
   date: {
     boolean(value: boolean) {
@@ -137,11 +137,9 @@ export const DataTypeTransformers = {
     },
     date(value: Date) {
       return new Date(value);
-    }
-  }
+    },
+  },
 };
-
-
 
 export function toDbType(value: any, type: string) {
   if (value == null) {

@@ -53,6 +53,9 @@ export const AuditLogsViewActionInitializer = (props) => {
                                   collection: 'auditLogs',
                                   readPretty: true,
                                   action: 'get',
+                                  params: {
+                                    appends: ['collection', 'user', 'changes'],
+                                  },
                                   useParams: '{{ useParamsFromRecord }}',
                                   useSourceId: '{{ useSourceIdFromParentRecord }}',
                                 },
@@ -255,9 +258,7 @@ export const AuditLogsViewActionInitializer = (props) => {
                                                             type: 'array',
                                                             'x-component': 'TableV2',
                                                             'x-component-props': {
-                                                              rowSelection: {
-                                                                type: 'checkbox',
-                                                              },
+                                                              rowSelection: false,
                                                               useProps: '{{ useTableFieldProps }}',
                                                             },
                                                             properties: {

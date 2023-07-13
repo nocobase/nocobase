@@ -1,12 +1,9 @@
-import { DataTypes } from 'sequelize';
-
-import { BaseFieldOptions, Field } from '@nocobase/database';
-import evaluators from '@nocobase/evaluators';
-
+import { BaseFieldOptions, DataTypes, Field } from '@nocobase/database';
+import { evaluators } from '@nocobase/evaluators';
 import { toDbType } from '../utils';
 
 export interface FormulaFieldOptions extends BaseFieldOptions {
-  type: 'formula',
+  type: 'formula';
   engine: string;
   expression: string;
 }
@@ -19,9 +16,7 @@ const DataTypeMap = {
   decimal: DataTypes.DECIMAL,
   string: DataTypes.STRING,
   date: DataTypes.DATE(3),
-}
-
-
+};
 
 export class FormulaField extends Field {
   get dataType() {
@@ -35,7 +30,7 @@ export class FormulaField extends Field {
     try {
       const result = evaluate(expression, scope);
       return toDbType(result, dataType);
-    } catch (e){
+    } catch (e) {
       console.error(e);
     }
     return null;

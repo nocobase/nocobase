@@ -7,7 +7,9 @@ import { useCollectionFilterOptions } from '../../../collection-manager/action-h
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
-import { useFixedBlockDesignerSetting } from '../page';
+import { removeNullCondition } from '../filter';
+import { FixedBlockDesignerItem } from '../page';
+import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
 
 export const KanbanDesigner = () => {
   const { name, title } = useCollection();
@@ -20,7 +22,6 @@ export const KanbanDesigner = () => {
   const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
   const template = useSchemaTemplate();
-  const fixedBlockDesignerSetting = useFixedBlockDesignerSetting();
 
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
@@ -36,12 +37,15 @@ export const KanbanDesigner = () => {
                 default: defaultFilter,
                 enum: dataSource,
                 'x-component': 'Filter',
-                'x-component-props': {},
+                'x-component-props': {
+                  dynamicComponent: (props) => FilterDynamicComponent({ ...props }),
+                },
               },
             },
           } as ISchema
         }
         onSubmit={({ filter }) => {
+          filter = removeNullCondition(filter);
           const params = field.decoratorProps.params || {};
           params.filter = filter;
           field.decoratorProps.params = params;
@@ -55,7 +59,7 @@ export const KanbanDesigner = () => {
           });
         }}
       />
-      {fixedBlockDesignerSetting}
+      <FixedBlockDesignerItem />
       <SchemaSettings.Divider />
       <SchemaSettings.Template componentName={'Kanban'} collectionName={name} resourceName={defaultResource} />
       <SchemaSettings.Divider />

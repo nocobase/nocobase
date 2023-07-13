@@ -80,7 +80,7 @@ export const AuditLogsTableColumnInitializers = (props: any) => {
           },
         };
       }}
-      items={itemsMerge(fieldItems, items)}
+      items={itemsMerge(fieldItems)}
     >
       {t('Configure columns')}
     </SchemaInitializer.Button>

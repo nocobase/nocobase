@@ -1,6 +1,6 @@
 import { useForm } from '@formily/react';
-import { RouteSwitchContext, SignupPage, useSignup } from '@nocobase/client';
-import React, { useContext } from 'react';
+import { Plugin, SignupPage, useSignup } from '@nocobase/client';
+import React from 'react';
 
 const useCustomSignup = () => {
   const { run } = useSignup();
@@ -23,11 +23,12 @@ const CustomSignupPage = (props) => {
   );
 };
 
-export default React.memo((props) => {
-  const ctx = useContext(RouteSwitchContext);
-  return (
-    <RouteSwitchContext.Provider value={{ ...ctx, components: { ...ctx.components, SignupPage: CustomSignupPage } }}>
-      {props.children}
-    </RouteSwitchContext.Provider>
-  );
-});
+class CustomSignupPagePlugin extends Plugin {
+  async load() {
+    this.app.addComponents({
+      SignupPage: CustomSignupPage,
+    });
+  }
+}
+
+export default CustomSignupPagePlugin;

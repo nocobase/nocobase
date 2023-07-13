@@ -1,7 +1,7 @@
 import { connect, mapProps, mapReadPretty, useField } from '@formily/react';
 import { isValid } from '@formily/shared';
 import { Radio as AntdRadio, Tag } from 'antd';
-import type { RadioGroupProps, RadioProps } from 'antd/lib/radio';
+import type { RadioGroupProps, RadioProps } from 'antd/es/radio';
 import React from 'react';
 
 type ComposedRadio = React.FC<RadioProps> & {
@@ -11,27 +11,23 @@ type ComposedRadio = React.FC<RadioProps> & {
 
 export const Radio: ComposedRadio = connect(
   AntdRadio,
-  mapProps(
-    {
-      value: 'checked',
-      onInput: 'onChange',
-    },
-  ),
+  mapProps({
+    value: 'checked',
+    onInput: 'onChange',
+  }),
 );
 Radio.__ANT_RADIO = true;
 
 Radio.Group = connect(
   AntdRadio.Group,
-  mapProps(
-    {
-      dataSource: 'options',
-    },
-  ),
+  mapProps({
+    dataSource: 'options',
+  }),
   mapReadPretty((props) => {
     if (!isValid(props.value)) {
       return <div></div>;
     }
-    const { options = [], value } = props;
+    const { value } = props;
     const field = useField<any>();
     const dataSource = field.dataSource || [];
     return (

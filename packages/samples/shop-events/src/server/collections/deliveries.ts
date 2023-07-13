@@ -3,20 +3,20 @@ export default {
   fields: [
     {
       type: 'belongsTo',
-      name: 'order'
+      name: 'order',
     },
     {
       type: 'string',
-      name: 'provider'
+      name: 'provider',
     },
     {
       type: 'string',
-      name: 'trackingNumber'
+      name: 'trackingNumber',
     },
     {
       type: 'integer',
       name: 'status',
-      defaultValue: 0
-    }
-  ]
+      defaultValue: 0,
+    },
+  ],
 };

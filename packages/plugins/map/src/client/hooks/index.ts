@@ -1,1 +1,1 @@
-export * from './useMapConfiguration'
+export * from './useMapConfiguration';
