@@ -1,27 +1,24 @@
 import { css } from '@emotion/css';
 import { observer, useField, useFieldSchema, useForm } from '@formily/react';
-import { dayjs } from '@nocobase/utils/client';
-import { Spin, Tag } from 'antd';
-import React, { createContext, useContext, useEffect, useState } from 'react';
-
 import {
   CollectionManagerProvider,
   FormBlockContext,
   SchemaComponent,
   SchemaComponentContext,
-  TableBlockProvider,
-  useAPIClient,
   useActionContext,
+  useAPIClient,
   useCollectionManager,
   useCurrentUserContext,
   useFormBlockContext,
   useRecord,
   useTableBlockContext,
 } from '@nocobase/client';
-import { uid } from '@nocobase/utils/client';
+import { dayjs } from '@nocobase/utils/client';
+import { Spin, Tag } from 'antd';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { instructions, useAvailableUpstreams } from '..';
-import { FlowContext, useFlowContext } from '../../FlowContext';
 import { JobStatusOptions, JobStatusOptionsMap } from '../../constants';
+import { FlowContext, useFlowContext } from '../../FlowContext';
 import { NAMESPACE } from '../../locale';
 import { linkNodes } from '../../utils';
 import { DetailsBlockProvider } from './DetailsBlockProvider';
@@ -207,135 +204,162 @@ const UserColumn = observer(
   { displayName: 'UserColumn' },
 );
 
-export const WorkflowTodo: React.FC & { Drawer: React.FC; Decorator: React.FC } = () => {
+export const WorkflowTodo: React.FC & { Drawer: React.FC } = () => {
+  const { collections, ...cm } = useCollectionManager();
   return (
-    <SchemaComponent
-      components={{
-        NodeColumn,
-        WorkflowColumn,
-        UserColumn,
-      }}
-      schema={{
-        type: 'void',
-        name: uid(),
-        'x-component': 'div',
-        properties: {
-          actions: {
-            type: 'void',
-            'x-component': 'ActionBar',
-            'x-component-props': {
-              style: {
-                marginBottom: 16,
-              },
-            },
-            properties: {
-              filter: {
-                type: 'void',
-                title: '{{ t("Filter") }}',
-                'x-action': 'filter',
-                'x-designer': 'Filter.Action.Designer',
-                'x-component': 'Filter.Action',
-                'x-component-props': {
-                  icon: 'FilterOutlined',
-                  useProps: '{{ useFilterActionProps }}',
+    <CollectionManagerProvider
+      {...cm}
+      collections={[...collections, nodeCollection, workflowCollection, todoCollection]}
+    >
+      <SchemaComponent
+        components={{
+          NodeColumn,
+          WorkflowColumn,
+          UserColumn,
+        }}
+        schema={{
+          type: 'object',
+          properties: {
+            todos: {
+              type: 'void',
+              'x-decorator': 'TableBlockProvider',
+              'x-decorator-props': {
+                collection: 'users_jobs',
+                resource: 'users_jobs',
+                action: 'list',
+                params: {
+                  pageSize: 20,
+                  sort: ['-createdAt'],
+                  // ...params,
+                  appends: ['user', 'node', 'workflow'],
+                  except: ['node.config', 'workflow.config'],
                 },
-                'x-align': 'left',
+                rowKey: 'id',
+                showIndex: true,
+                dragSort: false,
               },
-              refresher: {
-                type: 'void',
-                title: '{{ t("Refresh") }}',
-                'x-action': 'refresh',
-                'x-component': 'Action',
-                'x-designer': 'Action.Designer',
-                'x-component-props': {
-                  icon: 'ReloadOutlined',
-                  useProps: '{{ useRefreshActionProps }}',
-                },
-                'x-align': 'right',
-              },
-            },
-          },
-          table: {
-            type: 'array',
-            'x-component': 'TableV2',
-            'x-component-props': {
-              rowKey: 'id',
-              useProps: '{{ useTableBlockProps }}',
-            },
-            properties: {
-              node: {
-                type: 'void',
-                'x-decorator': 'TableV2.Column.Decorator',
-                'x-component': 'TableV2.Column',
-                title: `{{t("Task", { ns: "${NAMESPACE}" })}}`,
-                properties: {
-                  node: {
-                    'x-component': 'NodeColumn',
-                    'x-read-pretty': true,
+              'x-component': 'CardItem',
+              'x-filter-targets': [],
+              properties: {
+                actions: {
+                  type: 'void',
+                  'x-component': 'ActionBar',
+                  'x-component-props': {
+                    style: {
+                      marginBottom: 16,
+                    },
+                  },
+                  properties: {
+                    filter: {
+                      type: 'void',
+                      title: '{{ t("Filter") }}',
+                      'x-action': 'filter',
+                      'x-designer': 'Filter.Action.Designer',
+                      'x-component': 'Filter.Action',
+                      'x-component-props': {
+                        icon: 'FilterOutlined',
+                        useProps: '{{ useFilterActionProps }}',
+                      },
+                      'x-align': 'left',
+                    },
+                    refresher: {
+                      type: 'void',
+                      title: '{{ t("Refresh") }}',
+                      'x-action': 'refresh',
+                      'x-component': 'Action',
+                      'x-designer': 'Action.Designer',
+                      'x-component-props': {
+                        icon: 'ReloadOutlined',
+                        useProps: '{{ useRefreshActionProps }}',
+                      },
+                      'x-align': 'right',
+                    },
                   },
                 },
-              },
-              workflow: {
-                type: 'void',
-                'x-decorator': 'TableV2.Column.Decorator',
-                'x-component': 'TableV2.Column',
-                title: `{{t("Workflow", { ns: "${NAMESPACE}" })}}`,
-                properties: {
-                  workflow: {
-                    'x-component': 'WorkflowColumn',
-                    'x-read-pretty': true,
+                table: {
+                  type: 'array',
+                  'x-component': 'TableV2',
+                  'x-component-props': {
+                    rowKey: 'id',
+                    useProps: '{{ useTableBlockProps }}',
                   },
-                },
-              },
-              createdAt: {
-                type: 'void',
-                'x-decorator': 'TableV2.Column.Decorator',
-                'x-component': 'TableV2.Column',
-                properties: {
-                  createdAt: {
-                    type: 'number',
-                    'x-component': 'CollectionField',
-                    'x-read-pretty': true,
-                  },
-                },
-              },
-              user: {
-                type: 'void',
-                'x-decorator': 'TableV2.Column.Decorator',
-                'x-component': 'TableV2.Column',
-                title: `{{t("Assignee", { ns: "${NAMESPACE}" })}}`,
-                properties: {
-                  user: {
-                    'x-component': 'UserColumn',
-                    'x-read-pretty': true,
-                  },
-                },
-              },
-              status: {
-                type: 'void',
-                'x-decorator': 'TableV2.Column.Decorator',
-                'x-component': 'TableV2.Column',
-                properties: {
-                  status: {
-                    type: 'number',
-                    'x-component': 'CollectionField',
-                    'x-read-pretty': true,
-                  },
-                },
-              },
-              actions: {
-                type: 'void',
-                'x-decorator': 'TableV2.Column.Decorator',
-                'x-component': 'TableV2.Column',
-                title: '{{t("Actions")}}',
-                properties: {
-                  view: {
-                    type: 'void',
-                    'x-component': 'Action.Link',
-                    title: '{{t("View")}}',
-                    properties: {
-                      drawer: {
-                        'x-component': 'WorkflowTodo.Drawer',
+                  properties: {
+                    node: {
+                      type: 'void',
+                      'x-decorator': 'TableV2.Column.Decorator',
+                      'x-component': 'TableV2.Column',
+                      title: `{{t("Task", { ns: "${NAMESPACE}" })}}`,
+                      properties: {
+                        node: {
+                          'x-component': 'NodeColumn',
+                          'x-read-pretty': true,
+                        },
+                      },
+                    },
+                    workflow: {
+                      type: 'void',
+                      'x-decorator': 'TableV2.Column.Decorator',
+                      'x-component': 'TableV2.Column',
+                      title: `{{t("Workflow", { ns: "${NAMESPACE}" })}}`,
+                      properties: {
+                        workflow: {
+                          'x-component': 'WorkflowColumn',
+                          'x-read-pretty': true,
+                        },
+                      },
+                    },
+                    createdAt: {
+                      type: 'void',
+                      'x-decorator': 'TableV2.Column.Decorator',
+                      'x-component': 'TableV2.Column',
+                      properties: {
+                        createdAt: {
+                          type: 'number',
+                          'x-component': 'CollectionField',
+                          'x-read-pretty': true,
+                        },
+                      },
+                    },
+                    user: {
+                      type: 'void',
+                      'x-decorator': 'TableV2.Column.Decorator',
+                      'x-component': 'TableV2.Column',
+                      title: `{{t("Assignee", { ns: "${NAMESPACE}" })}}`,
+                      properties: {
+                        user: {
+                          'x-component': 'UserColumn',
+                          'x-read-pretty': true,
+                        },
+                      },
+                    },
+                    status: {
+                      type: 'void',
+                      'x-decorator': 'TableV2.Column.Decorator',
+                      'x-component': 'TableV2.Column',
+                      properties: {
+                        status: {
+                          type: 'number',
+                          'x-component': 'CollectionField',
+                          'x-read-pretty': true,
+                        },
+                      },
+                    },
+                    actions: {
+                      type: 'void',
+                      'x-decorator': 'TableV2.Column.Decorator',
+                      'x-component': 'TableV2.Column',
+                      title: '{{t("Actions")}}',
+                      properties: {
+                        view: {
+                          type: 'void',
+                          'x-component': 'Action.Link',
+                          title: '{{t("View")}}',
+                          properties: {
+                            drawer: {
+                              'x-component': 'WorkflowTodo.Drawer',
+                            },
+                          },
+                        },
                       },
                     },
                   },
@@ -343,9 +367,9 @@ export const WorkflowTodo: React.FC & { Drawer: React.FC; Decorator: React.FC } 
               },
             },
           },
-        },
-      }}
-    />
+        }}
+      />
+    </CollectionManagerProvider>
   );
 };
 
@@ -579,33 +603,34 @@ function Drawer() {
   );
 }
 
-function Decorator({ params = {}, children }) {
-  const { collections, ...cm } = useCollectionManager();
-  const blockProps = {
-    collection: 'users_jobs',
-    resource: 'users_jobs',
-    action: 'list',
-    params: {
-      pageSize: 20,
-      sort: ['-createdAt'],
-      ...params,
-      appends: ['user', 'node', 'workflow'],
-      except: ['node.config', 'workflow.config'],
-    },
-    rowKey: 'id',
-    showIndex: true,
-    dragSort: false,
-  };
+// function Decorator({ params = {}, children }) {
+//   const { collections, ...cm } = useCollectionManager();
+//   const blockProps = {
+//     collection: 'users_jobs',
+//     resource: 'users_jobs',
+//     action: 'list',
+//     params: {
+//       pageSize: 20,
+//       sort: ['-createdAt'],
+//       ...params,
+//       appends: ['user', 'node', 'workflow'],
+//       except: ['node.config', 'workflow.config'],
+//     },
+//     rowKey: 'id',
+//     showIndex: true,
+//     dragSort: false,
+//   };
 
-  return (
-    <CollectionManagerProvider
-      {...cm}
-      collections={[...collections, nodeCollection, workflowCollection, todoCollection]}
-    >
-      <TableBlockProvider {...blockProps}>{children}</TableBlockProvider>
-    </CollectionManagerProvider>
-  );
-}
+//   return (
+//     <CollectionManagerProvider
+//       {...cm}
+//       collections={[...collections, nodeCollection, workflowCollection, todoCollection]}
+//     >
+//       {/* <TableBlockProvider {...blockProps}>{children}</TableBlockProvider> */}
+//       {children}
+//     </CollectionManagerProvider>
+//   );
+// }
 
 WorkflowTodo.Drawer = Drawer;
-WorkflowTodo.Decorator = Decorator;
+// WorkflowTodo.Decorator = Decorator;

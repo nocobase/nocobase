@@ -1,7 +1,6 @@
-import React, { FC } from 'react';
 import { TableOutlined } from '@ant-design/icons';
-
-import { SchemaInitializer, useCollectionManager } from '@nocobase/client';
+import { SchemaInitializer } from '@nocobase/client';
+import React, { FC } from 'react';
 
 export const WorkflowTodoBlockInitializer: FC<any> = ({ insert, ...rest }) => {
   return (
@@ -11,8 +10,8 @@ export const WorkflowTodoBlockInitializer: FC<any> = ({ insert, ...rest }) => {
       onClick={() => {
         insert({
           type: 'void',
-          'x-decorator': 'WorkflowTodo.Decorator',
-          'x-decorator-props': {},
+          // 'x-decorator': 'WorkflowTodo.Decorator',
+          // 'x-decorator-props': {},
           'x-component': 'CardItem',
           'x-designer': 'TableBlockDesigner',
           properties: {
@@ -25,4 +24,4 @@ export const WorkflowTodoBlockInitializer: FC<any> = ({ insert, ...rest }) => {
       }}
     />
   );
-}
+};
