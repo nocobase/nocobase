@@ -5,7 +5,7 @@ import { CircleField, LineStringField, PointField, PolygonField } from './fields
 import { CircleValueParser, LineStringValueParser, PointValueParser, PolygonValueParser } from './value-parsers';
 
 export class MapPlugin extends Plugin {
-  afterAdd() {}
+  async afterAdd() { }
 
   async beforeLoad() {
     const fields = {

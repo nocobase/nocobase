@@ -22,7 +22,7 @@ export class ChartsPlugin extends Plugin {
     instance.set('fields', fields);
   };
 
-  afterAdd() {}
+  async afterAdd() { }
 
   async beforeLoad() {
     this.app.db.on('chartsQueries.beforeCreate', this.syncFields);

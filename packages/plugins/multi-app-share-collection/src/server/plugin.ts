@@ -112,7 +112,7 @@ class SubAppPlugin extends Plugin {
 }
 
 export class MultiAppShareCollectionPlugin extends Plugin {
-  afterAdd() {}
+  async afterAdd() { }
 
   async beforeEnable() {
     if (!this.db.inDialect('postgres')) {

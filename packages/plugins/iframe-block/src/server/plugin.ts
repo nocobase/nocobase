@@ -3,7 +3,7 @@ import path from 'path';
 import { getHtml } from './actions';
 
 export class IframeBlockPlugin extends Plugin {
-  afterAdd() {}
+  async afterAdd() { }
 
   async beforeLoad() { }
 

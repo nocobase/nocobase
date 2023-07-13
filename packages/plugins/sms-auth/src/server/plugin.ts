@@ -6,7 +6,7 @@ import VerificationPlugin from '@nocobase/plugin-verification';
 import { resolve } from 'path';
 
 export class SmsAuthPlugin extends Plugin {
-  afterAdd() {}
+  async afterAdd() { }
 
   async beforeLoad() {
     this.app.i18n.addResources('zh-CN', namespace, zhCN);

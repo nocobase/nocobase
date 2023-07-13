@@ -14,7 +14,7 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
 
 export class MyPlugin extends Plugin {
-  afterAdd() {
+  async afterAdd() {
     // 插件 pm.add 注册进来之后。主要用于放置 app.beforeLoad 的事件。
   }
   async beforeLoad() {

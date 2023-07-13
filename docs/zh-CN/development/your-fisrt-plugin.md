@@ -55,7 +55,7 @@ NocoBase 插件也是 NPM 包，插件名和 NPM 包名的对应规则为 `${PLU
 import { InstallOptions, Plugin } from '@nocobase/server';
 
 export class HelloPlugin extends Plugin {
-  afterAdd() {}
+  async afterAdd() {}
 
   async beforeLoad() {}
 

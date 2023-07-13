@@ -3,7 +3,7 @@ import { resolve } from 'path';
 import { MathFormulaField } from './math-formula-field';
 
 export class MathFormulaFieldPlugin extends Plugin {
-  afterAdd() {}
+  async afterAdd() { }
 
   async beforeLoad() {
     this.db.registerFieldTypes({

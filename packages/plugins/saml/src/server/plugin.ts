@@ -6,7 +6,7 @@ import { SAMLAuth } from './saml-auth';
 import { authType } from '../constants';
 
 export class SAMLPlugin extends Plugin {
-  afterAdd() {}
+  async afterAdd() { }
 
   async beforeLoad() { }
 

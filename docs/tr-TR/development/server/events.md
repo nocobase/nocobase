@@ -9,7 +9,7 @@ The registration of events is usually placed in afterAdd or beforeLoad
 ```ts
 export class MyPlugin extends Plugin {
   // After the plugin is added, afterAdd() is executed with or without activation
-  afterAdd() {
+  async afterAdd() {
     this.app.on();
     this.db.on();
   }

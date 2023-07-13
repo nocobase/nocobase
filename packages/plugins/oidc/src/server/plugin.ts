@@ -5,7 +5,7 @@ import { authType } from '../constants';
 import { OIDCAuth } from './oidc-auth';
 
 export class OidcPlugin extends Plugin {
-  afterAdd() {}
+  async afterAdd() { }
 
   async beforeLoad() { }
 

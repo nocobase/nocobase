@@ -9,7 +9,7 @@ NocoBase 在应用、插件、数据库的生命周期中提供了非常多的�
 ```ts
 export class MyPlugin extends Plugin {
   // 插件添加进来之后，有没有激活都执行 afterAdd()
-  afterAdd() {
+  async afterAdd() {
     this.app.on();
     this.db.on();
   }

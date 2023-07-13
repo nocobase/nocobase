@@ -3,7 +3,7 @@ import { resolve } from 'path';
 import { FormulaField } from './formula-field';
 
 export class FormulaFieldPlugin extends Plugin {
-  afterAdd() {}
+  async afterAdd() { }
 
   async beforeLoad() {
     this.db.registerFieldTypes({

@@ -5,7 +5,7 @@ import { query } from './actions/query';
 export class DataVisualizationPlugin extends Plugin {
   cache: Cache;
 
-  afterAdd() {}
+  async afterAdd() { }
 
   async beforeLoad() {
     this.app.resource({

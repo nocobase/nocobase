@@ -10,7 +10,7 @@ import { AuthModel } from './model/authenticator';
 import { TokenBlacklistService } from './token-blacklist';
 
 export class AuthPlugin extends Plugin {
-  afterAdd() {}
+  async afterAdd() { }
   async beforeLoad() {
     this.app.i18n.addResources('zh-CN', namespace, zhCN);
     this.app.i18n.addResources('en-US', namespace, enUS);

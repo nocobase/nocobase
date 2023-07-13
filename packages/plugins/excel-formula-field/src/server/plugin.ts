@@ -2,7 +2,7 @@ import { InstallOptions, Plugin } from '@nocobase/server';
 import { ExcelFormulaField } from './excel-formula-field';
 
 export class ExcelFormulaFieldPlugin extends Plugin {
-  afterAdd() {}
+  async afterAdd() { }
 
   async beforeLoad() {
     this.db.registerFieldTypes({

@@ -55,7 +55,7 @@ Look at the `packages/plugins/hello/src/server/plugin.ts` file and modify it to
 import { InstallOptions, Plugin } from '@nocobase/server';
 
 export class HelloPlugin extends Plugin {
-  afterAdd() {}
+  async afterAdd() {}
 
   async beforeLoad() {}
 

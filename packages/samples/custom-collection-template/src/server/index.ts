@@ -1,7 +1,7 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
 
 export class CustomCollectionTemplatePlugin extends Plugin {
-  afterAdd() {}
+  async afterAdd() { }
 
   async beforeLoad() { }
 

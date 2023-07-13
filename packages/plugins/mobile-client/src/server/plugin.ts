@@ -3,7 +3,7 @@ import { resolve } from 'path';
 import { routes } from './routes';
 
 export class MobileClientPlugin extends Plugin {
-  afterAdd() {}
+  async afterAdd() { }
 
   async load() {
     this.db.addMigrations({

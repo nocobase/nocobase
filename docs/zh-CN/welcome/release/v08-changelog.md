@@ -97,7 +97,7 @@ v0.8 提供了更完整的插件生命周期方法
 import { InstallOptions, Plugin } from '@nocobase/server';
 
 export class HelloPlugin extends Plugin {
-  afterAdd() {
+  async afterAdd() {
     // 插件通过 pm.add 添加之后
   }
 
@@ -141,7 +141,7 @@ const app = new Application({
 });
 
 class MyPlugin extends Plugin {
-  afterAdd() {}
+  async afterAdd() {}
   async beforeLoad() {}
   load() {}
   install() {}

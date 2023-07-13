@@ -18,7 +18,7 @@ The server-side for an initialized, empty plugin has the following directory str
 import { InstallOptions, Plugin } from '@nocobase/server';
 
 export class MyPlugin extends Plugin {
-  afterAdd() {
+  async afterAdd() {
     // After the plugin pm.add is registered. This is mainly used to place a listener for the app beforeLoad event
     this.app.on('beforeLoad');
   }

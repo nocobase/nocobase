@@ -6,7 +6,7 @@
 const app = new Application();
 
 class MyPlugin extends Plugin {
-  afterAdd() {}
+  async afterAdd() {}
   async beforeLoad() {}
   load() {}
   install() {}

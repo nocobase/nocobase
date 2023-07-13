@@ -101,7 +101,7 @@ v0.8 provides a more complete approach to the plugin lifecycle.
 import { InstallOptions, Plugin } from '@nocobase/server';
 
 export class HelloPlugin extends Plugin {
-  afterAdd() {
+  async afterAdd() {
     // After the plugin has been added via pm.add
   }
 
@@ -146,7 +146,7 @@ const app = new Application({
 });
 
 class MyPlugin extends Plugin {
-  afterAdd() {}
+  async afterAdd() {}
   async beforeLoad() {}
   load() {}
   install() {}

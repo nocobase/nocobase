@@ -4,7 +4,7 @@ import { resolve } from 'path';
 import { SnapshotField } from './fields/snapshot-field';
 
 export class SnapshotFieldPlugin extends Plugin {
-  afterAdd() {}
+  async afterAdd() { }
 
   async beforeLoad() {
     const collectionHandler = async (model: Model, { transaction }) => {
