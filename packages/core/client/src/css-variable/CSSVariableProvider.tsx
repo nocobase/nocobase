@@ -1,8 +1,17 @@
+import { TinyColor } from '@ctrl/tinycolor';
 import { useEffect } from 'react';
 import { useToken } from '../style';
 
 const CSSVariableProvider = ({ children }) => {
   const { token } = useToken();
+
+  const colorBgScrollTrack = token.colorFillTertiary;
+  const colorBgScrollBar = new TinyColor(token.colorFill).onBackground(token.colorFillSecondary).toHexShortString();
+  const colorBgScrollBarHover = new TinyColor(token.colorFill).onBackground(token.colorFill).toHexShortString();
+  const colorBgScrollBarActive = new TinyColor(token.colorFill)
+    .onBackground(token.colorFill)
+    .onBackground(token.colorFill)
+    .toHexShortString();
 
   useEffect(() => {
     document.body.style.setProperty('--nb-spacing', `${token.marginLG}px`);
@@ -16,6 +25,10 @@ const CSSVariableProvider = ({ children }) => {
     document.body.style.setProperty('--colorInfoBg', token.colorInfoBg);
     document.body.style.setProperty('--colorInfoBorder', token.colorInfoBorder);
     document.body.style.setProperty('--colorText', token.colorText);
+    document.body.style.setProperty('--colorBgScrollTrack', colorBgScrollTrack);
+    document.body.style.setProperty('--colorBgScrollBar', colorBgScrollBar);
+    document.body.style.setProperty('--colorBgScrollBarHover', colorBgScrollBarHover);
+    document.body.style.setProperty('--colorBgScrollBarActive', colorBgScrollBarActive);
     document.body.style.setProperty('background-color', token.colorBgContainer);
   }, [
     token.marginLG,
@@ -29,6 +42,14 @@ const CSSVariableProvider = ({ children }) => {
     token.colorInfoBorder,
     token.colorText,
     token.colorBgContainer,
+    token.colorFillQuaternary,
+    token.colorFillSecondary,
+    token.colorFill,
+    token.colorFillTertiary,
+    colorBgScrollTrack,
+    colorBgScrollBar,
+    colorBgScrollBarHover,
+    colorBgScrollBarActive,
   ]);
 
   return children;

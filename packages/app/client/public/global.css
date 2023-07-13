@@ -10,20 +10,30 @@
 
 /* Track */
 .win ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: var(--colorBgScrollTrack);
 }
 
 /* Handle */
 .win ::-webkit-scrollbar-thumb {
-  background: #c0c0c0;
+  background: var(--colorBgScrollBar);
   border-radius: 4px;
 }
 
 /* Handle on hover */
 .win ::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: var(--colorBgScrollBarHover);
+}
+
+.win ::-webkit-scrollbar-thumb:active {
+  background: var(--colorBgScrollBarActive);
 }
 
 .win .rc-virtual-list-scrollbar-thumb {
-  background: #c0c0c0 !important;
+  background: var(--colorBgScrollBar);
+}
+.win .rc-virtual-list-scrollbar-thumb:hover {
+  background: var(--colorBgScrollBarHover);
+}
+.win .rc-virtual-list-scrollbar-thumb:active {
+  background: var(--colorBgScrollBarActive);
 }
