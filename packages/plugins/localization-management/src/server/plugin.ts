@@ -114,10 +114,10 @@ export class LocalizationManagementPlugin extends Plugin {
       if (resourceName === 'app' && actionName === 'getLang') {
         const custom = await this.resources.getResources(ctx.get('X-Locale') || 'en-US');
         const appLang = ctx.body;
+        const resources = {};
         Object.keys(appLang.resources).forEach((key) => {
-          if (custom[`resources.${key}`]) {
-            appLang.resources[key] = deepmerge(appLang.resources[key], custom[`resources.${key}`]);
-          }
+          const resource = custom[`resources.${key}`];
+          resources[key] = resource ? deepmerge(appLang.resources[key], resource) : appLang.resources[key];
         });
         // For duplicate texts, use translations from client to override translations in other modules
         const client = appLang.resources.client || {};
@@ -127,11 +127,14 @@ export class LocalizationManagementPlugin extends Plugin {
           }
           Object.keys(appLang.resources[key]).forEach((text) => {
             if (client[text]) {
-              appLang.resources[key][text] = client[text];
+              resources[key][text] = client[text];
             }
           });
         });
-        ctx.body = appLang;
+        ctx.body = {
+          ...appLang,
+          resources,
+        };
       }
     });
   }
