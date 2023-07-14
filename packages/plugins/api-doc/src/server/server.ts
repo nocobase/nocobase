@@ -120,11 +120,21 @@ export default class APIDoc extends Plugin {
             tags: [resourceName],
             summary: `${resourceName} -> ${actionName}`,
             description: `The method power by ${resourceName}`,
+            security: [
+              {
+                apiKey: [],
+              },
+            ],
           },
           post: {
             tags: [resourceName],
             summary: `${resourceName} -> ${actionName}`,
             description: `The method power by ${resourceName}`,
+            security: [
+              {
+                apiKey: [],
+              },
+            ],
           },
         };
       });
@@ -137,6 +147,11 @@ export default class APIDoc extends Plugin {
               tags: [name],
               summary: `${name} -> ${actionName}`,
               description: `The method power by ${name}`,
+              security: [
+                {
+                  apiKey: [],
+                },
+              ],
             };
           }
         });
