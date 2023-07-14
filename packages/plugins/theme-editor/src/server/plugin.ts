@@ -1,7 +1,7 @@
 import { defineCollection } from '@nocobase/database';
 import { InstallOptions, Plugin } from '@nocobase/server';
 
-export class CustomThemePlugin extends Plugin {
+export class ThemeEditorPlugin extends Plugin {
   afterAdd() {}
 
   beforeLoad() {}
@@ -41,4 +41,4 @@ export class CustomThemePlugin extends Plugin {
   async remove() {}
 }
 
-export default CustomThemePlugin;
+export default ThemeEditorPlugin;

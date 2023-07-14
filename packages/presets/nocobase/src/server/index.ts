@@ -40,7 +40,7 @@ export class PresetNocoBase extends Plugin {
     'graph-collection-manager',
     'mobile-client',
     'api-keys',
-    'custom-theme',
+    'theme-editor',
   ];
 
   splitNames(name: string) {

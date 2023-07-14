@@ -3,7 +3,7 @@ import { useTranslation as useT } from 'react-i18next';
 import enUS from './en-US';
 import zhCN from './zh-CN';
 
-export const NAMESPACE = 'custom-theme';
+export const NAMESPACE = 'theme-editor';
 
 i18n.addResources('zh-CN', NAMESPACE, zhCN);
 i18n.addResources('en-US', NAMESPACE, enUS);

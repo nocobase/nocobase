@@ -1,10 +1,10 @@
 {
-  "name": "@nocobase/plugin-custom-theme",
+  "name": "@nocobase/plugin-theme-editor",
   "version": "0.11.0-alpha.1",
   "main": "lib/server/index.js",
-  "displayName": "Custom-theme",
+  "displayName": "Theme editor",
   "displayName.zh-CN": "自定义主题",
-  "description": "Support custom theme function",
+  "description": "Support to custom theme",
   "description.zh-CN": "支持自定义主题功能",
   "dependencies": {
     "@nocobase/client": "0.11.0-alpha.1",

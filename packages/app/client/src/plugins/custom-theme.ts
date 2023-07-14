@@ -1,1 +1,1 @@
-export { default } from '@nocobase/plugin-custom-theme/client';
+export { default } from '@nocobase/plugin-theme-editor/client';
