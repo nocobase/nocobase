@@ -4,7 +4,7 @@ import { error } from '@nocobase/utils/client';
 import { Button, ConfigProvider, Space, Typography, message } from 'antd';
 import antdEnUs from 'antd/locale/en_US';
 import antdZhCN from 'antd/locale/zh_CN';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ThemeConfig } from '../../../types';
 import { ThemeEditor, enUS, zhCN } from '../../antd-token-previewer';
 import { useTranslation } from '../../locale';
@@ -45,6 +45,10 @@ const CustomTheme = ({ onThemeChange }: { onThemeChange?: (theme: ThemeConfig) =
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const { refresh } = useThemeListContext();
   const api = useAPIClient();
+
+  useEffect(() => {
+    setTheme(globalTheme);
+  }, [globalTheme]);
 
   const lang = i18n.language;
 

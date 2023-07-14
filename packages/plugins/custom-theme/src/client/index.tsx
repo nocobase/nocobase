@@ -15,9 +15,11 @@ import CustomTheme from './components/theme-editor';
 import { useThemeSettings } from './hooks/useThemeSettings';
 import { useTranslation } from './locale';
 
-const useStyles = createStyles(({ css }) => {
+const useStyles = createStyles(({ css, token }) => {
   return {
     editor: css`
+      overflow: hidden;
+      border-left: 1px solid ${token.colorBorderSecondary};
       animation: 0.1s ease-out 0s 1 slideInFromRight;
       @keyframes slideInFromRight {
         0% {
@@ -67,7 +69,7 @@ const CustomThemeProvider = React.memo((props) => {
     <div style={{ display: 'flex', overflow: 'hidden' }}>
       <div style={contentStyle}>{props.children}</div>
       {open ? (
-        <div className={styles.editor} style={{ overflow: 'hidden', borderLeft: '1px solid #f0f0f0' }}>
+        <div className={styles.editor}>
           <CustomTheme onThemeChange={setTheme} />
         </div>
       ) : null}
