@@ -55,14 +55,14 @@ export async function submit(context: Context, next) {
     return context.throw(403);
   }
   const presetValues = processor.getParsedValue(actionItem.values ?? {}, null, {
-    currentUser,
+    currentUser: currentUser.toJSON(),
     currentRecord: values.result[formKey],
     currentTime: new Date(),
   });
 
   userJob.set({
     status: actionItem.status,
-    result: actionItem.status
+    result: actionItem.status > JOB_STATUS.PENDING
       ? { [formKey]: Object.assign(values.result[formKey], presetValues), _: actionKey }
       : Object.assign(userJob.result ?? {}, values.result),
   });

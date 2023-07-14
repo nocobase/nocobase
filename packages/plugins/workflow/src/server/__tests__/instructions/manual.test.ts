@@ -179,7 +179,7 @@ describe('workflow > instructions > manual', () => {
       expect(job.result).toEqual({ f1: { a: 2 }, _: 'resolve' });
     });
 
-    it('values rejected will be overrided by action assigned', async () => {
+    it('values rejected will not be overrided by action assigned', async () => {
       const n1 = await workflow.createNode({
         type: 'manual',
         config: {
@@ -226,7 +226,7 @@ describe('workflow > instructions > manual', () => {
       expect(execution.status).toBe(EXECUTION_STATUS.REJECTED);
       const [job] = await execution.getJobs();
       expect(job.status).toBe(JOB_STATUS.REJECTED);
-      expect(job.result).toEqual({ f1: { a: 2 }, _: 'reject' });
+      expect(job.result).toEqual({ f1: { a: 1 }, _: 'reject' });
     });
 
     it('values saved as pending will not be overrided by action assigned', async () => {
@@ -277,6 +277,64 @@ describe('workflow > instructions > manual', () => {
       const [job] = await execution.getJobs();
       expect(job.status).toBe(JOB_STATUS.PENDING);
       expect(job.result).toEqual({ f1: { a: 1 }, _: 'save' });
+    });
+
+    it('variable within assigned values should work when resolve', async () => {
+      const n1 = await workflow.createNode({
+        type: 'manual',
+        config: {
+          assignees: [users[0].id],
+          forms: {
+            f1: {
+              actions: [
+                {
+                  status: JOB_STATUS.RESOLVED,
+                  key: 'resolve',
+                  values: {
+                    a: '{{currentUser.id}}',
+                    b: '{{currentRecord.id}}',
+                    c: '{{currentTime}}',
+                    d: '{{$context.data.title}}',
+                  },
+                },
+              ],
+            },
+          },
+        },
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [pending] = await workflow.getExecutions();
+      expect(pending.status).toBe(EXECUTION_STATUS.STARTED);
+      const [j1] = await pending.getJobs();
+      expect(j1.status).toBe(JOB_STATUS.PENDING);
+
+      const usersJobs = await UserJobModel.findAll();
+      expect(usersJobs.length).toBe(1);
+      expect(usersJobs[0].status).toBe(JOB_STATUS.PENDING);
+      expect(usersJobs[0].userId).toBe(users[0].id);
+      expect(usersJobs[0].jobId).toBe(j1.id);
+
+      const now = new Date();
+      const res1 = await userAgents[0].resource('users_jobs').submit({
+        filterByTk: usersJobs[0].id,
+        values: {
+          result: { f1: { a: 2, id: 3 }, _: 'resolve' },
+        },
+      });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
+      const [job] = await execution.getJobs();
+      expect(job.status).toBe(JOB_STATUS.RESOLVED);
+      expect(job.result).toMatchObject({ f1: { a: users[0].id, id: 3, b: 3, d: post.title }, _: 'resolve' });
+      const time = new Date(job.result.f1.c);
+      expect(time.getTime() - now.getTime()).toBeLessThan(1000);
     });
   });
 
