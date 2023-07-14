@@ -1,7 +1,7 @@
-import { MockServer } from '@nocobase/test';
-import { createApp } from '../index';
-import { uid } from '@nocobase/utils';
 import { Database, Repository } from '@nocobase/database';
+import { MockServer } from '@nocobase/test';
+import { uid } from '@nocobase/utils';
+import { createApp } from '../index';
 
 describe('view collection', () => {
   let app: MockServer;

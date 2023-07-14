@@ -37,4 +37,5 @@ export const datetime: IField = {
   filterable: {
     operators: operators.datetime,
   },
+  titleUsable: true,
 };
