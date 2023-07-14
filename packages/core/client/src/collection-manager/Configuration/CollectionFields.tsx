@@ -52,14 +52,11 @@ const tableContainer = css`
 `;
 
 const titlePrompt = 'Default title for each record';
-// 只有下面类型的字段才可以设置为标题字段
-const expectTypes = ['string', 'integer', 'bigInt', 'float', 'double', 'decimal', 'date', 'dateonly', 'time'];
-const excludeInterfaces = ['icon'];
 
 // 是否可以作为标题字段
 export const isTitleField = (field) => {
-  if (!field) return false;
-  return !field.isForeignKey && expectTypes.includes(field.type) && !excludeInterfaces.includes(field.interface);
+  const { getInterface } = useCollectionManager();
+  return !field.isForeignKey && getInterface(field.interface)?.titleUsable;
 };
 
 const CurrentFields = (props) => {

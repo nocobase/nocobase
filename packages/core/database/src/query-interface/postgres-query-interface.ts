@@ -1,6 +1,7 @@
-import QueryInterface from './query-interface';
+import lodash from 'lodash';
 import { Collection } from '../collection';
 import sqlParser from '../sql-parser/postgres';
+import QueryInterface from './query-interface';
 
 export default class PostgresQueryInterface extends QueryInterface {
   constructor(db) {
@@ -33,6 +34,23 @@ export default class PostgresQueryInterface extends QueryInterface {
     return await this.db.sequelize.query(sql, { type: 'SELECT' });
   }
 
+  async viewDef(viewName: string) {
+    const [schema, name] = viewName.split('.');
+
+    const viewDefQuery = await this.db.sequelize.query(
+      `
+    select pg_get_viewdef(format('%I.%I', '${schema}', '${name}')::regclass, true) as definition
+    `,
+      { type: 'SELECT' },
+    );
+
+    return lodash.trim(viewDefQuery[0]['definition']);
+  }
+
+  parseSQL(sql: string): any {
+    return sqlParser.parse(sql);
+  }
+
   async viewColumnUsage(options): Promise<{
     [view_column_name: string]: {
       column_name: string;
@@ -54,16 +72,10 @@ export default class PostgresQueryInterface extends QueryInterface {
       table_schema: string;
     }>;
 
-    const viewDefQuery = await this.db.sequelize.query(
-      `
-    select pg_get_viewdef(format('%I.%I', '${schema}', '${viewName}')::regclass, true) as definition
-    `,
-      { type: 'SELECT' },
-    );
+    const def = await this.viewDef(`${schema}.${viewName}`);
 
-    const def = viewDefQuery[0]['definition'];
     try {
-      const { ast } = sqlParser.parse(def);
+      const { ast } = this.parseSQL(def);
       const columns = ast[0].columns;
 
       const usages = columns
@@ -96,7 +108,7 @@ export default class PostgresQueryInterface extends QueryInterface {
 
       return Object.fromEntries(usages);
     } catch (e) {
-      this.db.logger.warn(e);
+      console.log(e);
       return {};
     }
   }

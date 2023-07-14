@@ -98,6 +98,9 @@ const getSchema = (schema, category, compile): ISchema => {
 };
 
 const getDefaultCollectionFields = (values) => {
+  if (values?.template === 'view') {
+    return values.fields;
+  }
   const defaults = values.fields ? [...values.fields] : [];
   const { autoGenId = true, createdAt = true, createdBy = true, updatedAt = true, updatedBy = true } = values;
   if (autoGenId) {
@@ -207,10 +210,8 @@ const useCreateCollection = (schema?: any) => {
         if (schema?.events?.beforeSubmit) {
           schema.events.beforeSubmit(values);
         }
-        const fields = values?.template !== 'view' ? getDefaultCollectionFields(values) : values.fields;
-        if (values.autoCreateReverseField) {
-          /* empty */
-        } else {
+        const fields = getDefaultCollectionFields(values);
+        if (!values.autoCreateReverseField) {
           delete values.reverseField;
         }
         delete values.id;
