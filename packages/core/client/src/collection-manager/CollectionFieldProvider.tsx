@@ -13,9 +13,13 @@ export const CollectionFieldProvider: React.FC<{
   const fieldSchema = useFieldSchema();
   const { getField } = useCollection();
   const { getCollectionJoinField } = useCollectionManager();
-  const value = field || getField(field?.name || name) || getCollectionJoinField(fieldSchema?.['x-collection-field']);
+  const value = getCollectionJoinField(fieldSchema?.['x-collection-field']) || field || getField(field?.name || name);
   if (!value) {
     return fallback;
   }
-  return <CollectionFieldContext.Provider value={value}>{children}</CollectionFieldContext.Provider>;
+  return (
+    <CollectionFieldContext.Provider value={{ ...value, uiSchema: value.uiSchema }}>
+      {children}
+    </CollectionFieldContext.Provider>
+  );
 };

@@ -280,6 +280,10 @@ export const sequence: IField = {
     },
   },
   hasDefaultValue: false,
+  filterable: {
+    operators: interfacesProperties.operators.string,
+  },
+  titleUsable: true,
   schemaInitialize(schema: ISchema, { block, field }) {
     if (block === 'Form') {
       Object.assign(schema['x-component-props'], {
@@ -404,8 +408,5 @@ export const sequence: IField = {
         },
       },
     },
-  },
-  filterable: {
-    operators: interfacesProperties.operators.string,
   },
 };
