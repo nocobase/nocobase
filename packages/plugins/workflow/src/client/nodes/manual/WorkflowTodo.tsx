@@ -18,7 +18,6 @@ import {
   useRecord,
   useTableBlockContext,
 } from '@nocobase/client';
-import { uid } from '@nocobase/utils/client';
 import { instructions, useAvailableUpstreams } from '..';
 import { FlowContext, useFlowContext } from '../../FlowContext';
 import { JobStatusOptions, JobStatusOptionsMap } from '../../constants';
@@ -216,8 +215,6 @@ export const WorkflowTodo: React.FC & { Drawer: React.FC; Decorator: React.FC } 
       }}
       schema={{
         type: 'void',
-        // name: uid(),
-        'x-component': 'div',
         properties: {
           actions: {
             type: 'void',
