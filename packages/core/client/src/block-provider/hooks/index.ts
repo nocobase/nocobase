@@ -1,6 +1,6 @@
 import { SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { parse } from '@nocobase/utils/client';
-import { Modal, message } from 'antd';
+import { message, Modal } from 'antd';
 import { cloneDeep } from 'lodash';
 import get from 'lodash/get';
 import omit from 'lodash/omit';
@@ -17,7 +17,7 @@ import { useRecord } from '../../record-provider';
 import { removeNullCondition, useActionContext, useCompile } from '../../schema-component';
 import { BulkEditFormItemValueType } from '../../schema-initializer/components';
 import { useCurrentUserContext } from '../../user';
-import { useBlockRequestContext, useFilterByTk } from '../BlockProvider';
+import { useBlockRequestContext, useFilterByTk, useParamsFromRecord } from '../BlockProvider';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { mergeFilter } from '../SharedFilterProvider';
 import { TableFieldResource } from '../TableFieldProvider';
@@ -707,7 +707,7 @@ export const useCustomizeRequestActionProps = () => {
 export const useUpdateActionProps = () => {
   const form = useForm();
   const filterByTk = useFilterByTk();
-  const { field, resource, __parent } = useBlockRequestContext();
+  const { field, resource, __parent, service } = useBlockRequestContext();
   const { setVisible } = useActionContext();
   const actionSchema = useFieldSchema();
   const navigate = useNavigate();
@@ -718,6 +718,7 @@ export const useUpdateActionProps = () => {
   const currentRecord = useRecord();
   const currentUserContext = useCurrentUserContext();
   const currentUser = currentUserContext?.data?.data;
+  const data = useParamsFromRecord();
   return {
     async onClick() {
       const {
@@ -742,6 +743,7 @@ export const useUpdateActionProps = () => {
             ...overwriteValues,
             ...assignedValues,
           },
+          ...data,
           updateAssociationValues,
         });
         actionField.data.loading = false;
@@ -778,10 +780,12 @@ export const useDestroyActionProps = () => {
   const filterByTk = useFilterByTk();
   const { resource, service, block, __parent } = useBlockRequestContext();
   const { setVisible } = useActionContext();
+  const data = useParamsFromRecord();
   return {
     async onClick() {
       await resource.destroy({
         filterByTk,
+        ...data,
       });
 
       const { count = 0, page = 0, pageSize = 0 } = service?.data?.meta || {};

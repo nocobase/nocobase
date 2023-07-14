@@ -1,7 +1,7 @@
-import QueryInterface from './query-interface';
-import { Collection } from '../collection';
 import { Transactionable } from 'sequelize';
+import { Collection } from '../collection';
 import sqlParser from '../sql-parser';
+import QueryInterface from './query-interface';
 
 export default class MysqlQueryInterface extends QueryInterface {
   constructor(db) {
@@ -39,13 +39,7 @@ export default class MysqlQueryInterface extends QueryInterface {
     };
   }> {
     try {
-      const viewDefinition = await this.db.sequelize.query(`SHOW CREATE VIEW ${options.viewName}`, { type: 'SELECT' });
-      const createView = viewDefinition[0]['Create View'];
-      const regex = /(?<=AS\s)([\s\S]*)/i;
-      const match = createView.match(regex);
-      const sql = match[0];
-
-      const { ast } = sqlParser.parse(sql);
+      const { ast } = this.parseSQL(await this.viewDef(options.viewName));
 
       const columns = ast.columns;
 
@@ -68,5 +62,18 @@ export default class MysqlQueryInterface extends QueryInterface {
 
       return {};
     }
+  }
+
+  parseSQL(sql: string): any {
+    return sqlParser.parse(sql);
+  }
+
+  async viewDef(viewName: string): Promise<string> {
+    const viewDefinition = await this.db.sequelize.query(`SHOW CREATE VIEW ${viewName}`, { type: 'SELECT' });
+    const createView = viewDefinition[0]['Create View'];
+    const regex = /(?<=AS\s)([\s\S]*)/i;
+    const match = createView.match(regex);
+    const sql = match[0];
+    return sql;
   }
 }
