@@ -90,10 +90,10 @@ const CustomThemeProvider = React.memo((props) => {
 });
 CustomThemeProvider.displayName = 'CustomThemeProvider';
 
-export class CustomThemePlugin extends Plugin {
+export class ThemeEditorPlugin extends Plugin {
   async load() {
     this.app.use(CustomThemeProvider);
   }
 }
 
-export default CustomThemePlugin;
+export default ThemeEditorPlugin;
