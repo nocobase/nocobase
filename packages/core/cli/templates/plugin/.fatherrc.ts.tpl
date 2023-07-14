@@ -120,8 +120,20 @@ function getFatherBuildConfig(options: BuildOptions) {
     const srcDir = path.join(__dirname, SRC);
     const distDir = path.join(__dirname, DIST);
 
-    const srcClientPackages = getSrcPackages(path.join(srcDir, CLIENT));
-    const srcServerPackages = getSrcPackages(path.join(srcDir, SERVER));
+    const srcClientDir = path.join(srcDir, CLIENT);
+    const srcServerDir = path.join(srcDir, SERVER);
+    if (!fs.existsSync(srcClientDir)) {
+      console.error(`[Plugin Build Error]: Missing \`\x1b[31m%s\x1b[0m\`. Please create it\n`, `${SRC}/${CLIENT}`);
+      process.exit(-1);
+    }
+
+    if (!fs.existsSync(srcServerDir)) {
+      console.error(`[Plugin Build Error]: Missing \`\x1b[31m%s\x1b[0m\`. Please create it\n`, `${SRC}/${SERVER}`);
+      process.exit(-1);
+    }
+
+    const srcClientPackages = getSrcPackages(srcClientDir);
+    const srcServerPackages = getSrcPackages(srcServerDir);
 
     const packageJsonPackages = getPackageJsonPackages();
     checkPackages([...srcClientPackages, ...srcServerPackages], packageJsonPackages);
@@ -139,6 +151,17 @@ function getFatherBuildConfig(options: BuildOptions) {
           memo.optimization.minimize(false);
           memo.output.filename('index.js');
           memo.output.libraryTarget('amd');
+          memo.plugin('checkClientBundleSize').use(class CheckClientBundleSizePlugin {
+            apply(compiler) {
+              compiler.hooks.done.tap('SizeCheck', () => {
+                const clientFile = path.join(distDir, CLIENT, 'index.js');
+                if (fs.statSync(clientFile).size > 1024 * 1024) {
+                  console.warn('\n[client build]: The bundle file size exceeds \`\x1b[31m%s\x1b[0m\`. Please check for unnecessary \`\x1b[31mdependencies\x1b[0m\` and move them to \`\x1b[31mdevDependencies\x1b[0m\` if possible.\n', '1MB');
+                }
+              });
+            }
+          }
+          );
           return memo;
         },
         externals: {
