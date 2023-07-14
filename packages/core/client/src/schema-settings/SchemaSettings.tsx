@@ -1,5 +1,5 @@
 import { ArrayCollapse, ArrayItems, FormDialog, FormItem, FormLayout, Input } from '@formily/antd-v5';
-import { Field, GeneralField, createForm } from '@formily/core';
+import { createForm, Field, GeneralField } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { error } from '@nocobase/utils/client';
@@ -8,6 +8,7 @@ import {
   Button,
   Cascader,
   CascaderProps,
+  ColorPicker,
   Dropdown,
   Empty,
   MenuItemProps,
@@ -19,31 +20,31 @@ import {
 } from 'antd';
 import _, { cloneDeep } from 'lodash';
 import React, {
-  ReactNode,
   createContext,
+  ReactNode,
   useCallback,
   useContext,
   useMemo,
+  useState,
   // @ts-ignore
   useTransition as useReactTransition,
-  useState,
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  APIClientProvider,
   ActionContextProvider,
+  APIClientProvider,
   CollectionFieldOptions,
   CollectionManagerContext,
   CollectionProvider,
+  createDesignable,
   Designable,
+  findFormBlock,
   FormProvider,
   RemoteSchemaComponent,
   SchemaComponent,
   SchemaComponentContext,
   SchemaComponentOptions,
-  createDesignable,
-  findFormBlock,
   useAPIClient,
   useBlockRequestContext,
   useCollection,
@@ -1244,6 +1245,44 @@ SchemaSettings.EnableChildCollections = function EnableChildCollectionsItem(prop
   );
 };
 
+SchemaSettings.ColorPickerItem = function SwitchItem(props) {
+  const { title, onChange, value, ...others } = props;
+  return (
+    <SchemaSettings.Item {...others}>
+      <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
+        {title}
+        <ColorPicker
+          defaultValue={value||'#fff'}
+          trigger="hover"
+          {...others}
+          destroyTooltipOnHide
+          getPopupContainer={(current) => current}
+          presets={[
+            {
+              label: 'Recommended',
+              colors: [
+                '#8BBB11',
+                '#52C41A',
+                '#13A8A8',
+                '#1677FF',
+                '#F5222D',
+                '#FADB14',
+                '#FA8C164D',
+                '#FADB144D',
+                '#52C41A4D',
+                '#1677FF4D',
+                '#2F54EB4D',
+                '#722ED14D',
+                '#EB2F964D',
+              ],
+            },
+          ]}
+          onChange={(color) => onChange(color.toHexString())}
+        />
+      </div>
+    </SchemaSettings.Item>
+  );
+};
 // 是否显示默认值配置项
 export const isShowDefaultValue = (collectionField: CollectionFieldOptions, getInterface) => {
   return (

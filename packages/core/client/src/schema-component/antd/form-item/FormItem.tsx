@@ -1,7 +1,7 @@
 import { css, cx } from '@emotion/css';
-import { ArrayCollapse, ArrayItems, FormLayout, FormItem as Item } from '@formily/antd-v5';
+import { ArrayCollapse, ArrayItems, FormItem as Item, FormLayout } from '@formily/antd-v5';
 import { Field } from '@formily/core';
-import { ISchema, Schema, observer, useField, useFieldSchema } from '@formily/react';
+import { ISchema, observer, Schema, useField, useFieldSchema } from '@formily/react';
 import { dayjs } from '@nocobase/utils/client';
 import { Select } from 'antd';
 import _ from 'lodash';
@@ -20,9 +20,9 @@ import {
 } from '../../../collection-manager';
 import { isTitleField } from '../../../collection-manager/Configuration/CollectionFields';
 import { GeneralSchemaItems } from '../../../schema-items/GeneralSchemaItems';
-import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isShowDefaultValue } from '../../../schema-settings';
-import { VariableInput } from '../../../schema-settings/VariableInput/VariableInput';
+import { GeneralSchemaDesigner, isPatternDisabled, isShowDefaultValue, SchemaSettings } from '../../../schema-settings';
 import { useIsShowMultipleSwitch } from '../../../schema-settings/hooks/useIsShowMultipleSwitch';
+import { VariableInput } from '../../../schema-settings/VariableInput/VariableInput';
 import { isVariable, parseVariables, useVariablesCtx } from '../../common/utils/uitls';
 import { SchemaComponent } from '../../core';
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
@@ -585,10 +585,6 @@ FormItem.Designer = function Designer() {
             schema['x-component-props'] = fieldSchema['x-component-props'];
             field.componentProps = field.componentProps || {};
             field.componentProps.mode = mode;
-            // if (mode === 'Nester') {
-            //   const initValue = ['hasMany', 'belongsToMany'].includes(collectionField?.type) ? [{}] : {};
-            //   field.value = field.value || initValue;
-            // }
             dn.emit('patch', {
               schema,
             });
@@ -859,6 +855,27 @@ FormItem.Designer = function Designer() {
             fieldSchema['x-component-props']['fieldNames'] = fieldNames;
             schema['x-component-props'] = fieldSchema['x-component-props'];
             field.componentProps.fieldNames = fieldSchema['x-component-props'].fieldNames;
+            dn.emit('patch', {
+              schema,
+            });
+            dn.refresh();
+          }}
+        />
+      )}
+      {field.readPretty && isAssociationField && ['Tag'].includes(fieldMode) && (
+        <SchemaSettings.ColorPickerItem
+          key="tag-config"
+          title={t('Tag color')}
+          value={field.componentProps?.tagColor}
+          onChange={(tagColor) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props']['tagColor'] = tagColor;
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            field.componentProps = field.componentProps || {};
+            field.componentProps.tagColor = tagColor;
             dn.emit('patch', {
               schema,
             });
