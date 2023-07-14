@@ -237,19 +237,23 @@ const useStyles = createStyles(({ css, token }) => {
       .workflow-node-config-button {
         padding: 0;
       }
+
+      &:hover {
+        box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.25);
+
+        .workflow-node-remove-button {
+          opacity: 1;
+        }
+      }
     `,
 
     nodeJobButtonClass: css`
       display: flex;
       position: absolute;
-      top: 1.25em;
-      right: 1.25em;
-      width: 1.25rem;
-      height: 1.25rem;
-      min-width: 1.25rem;
+      top: calc(1em - 1px);
+      right: 1em;
       justify-content: center;
       align-items: center;
-      font-size: 0.8em;
       color: ${token.colorText};
 
       &[type='button'] {
@@ -262,8 +266,9 @@ const useStyles = createStyles(({ css, token }) => {
 
       .ant-tag {
         padding: 0;
-        width: 100%;
-        line-height: 18px;
+        width: ${token.sizeLG}px;
+        height: ${token.sizeLG}px;
+        line-height: ${token.sizeLG}px;
         margin-right: 0;
         border-radius: 50%;
         text-align: center;
