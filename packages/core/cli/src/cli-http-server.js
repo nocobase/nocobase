@@ -82,6 +82,7 @@ class CliHttpServer {
 
             c.write('start');
           }
+
           if (dataObj.status === 'worker-exit') {
             this.server.listen(this.port);
           }

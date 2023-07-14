@@ -36,7 +36,7 @@ export class RedisDiscoveryServerClient extends ServiceDiscoveryClient {
   async unregisterService(serviceInfo: RemoteServiceInfo): Promise<boolean> {
     const key = this.serviceKey(serviceInfo);
     const client = await this.getRedisClient();
-    await client.sREM(key, this.serviceValue(serviceInfo));
+    await client.sRem(key, this.serviceValue(serviceInfo));
     return true;
   }
 
