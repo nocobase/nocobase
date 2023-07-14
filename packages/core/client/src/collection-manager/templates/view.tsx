@@ -91,6 +91,13 @@ export const view: ICollectionTemplate = {
         },
       },
     },
+    writableView: {
+      type: 'boolean',
+      'x-content': '{{t("Allow add new, update and delete actions")}}',
+      'x-decorator': 'FormItem',
+      'x-component': 'Checkbox',
+      default: false,
+    },
     sources: {
       type: 'array',
       title: '{{ t("Source collections") }}',
@@ -128,13 +135,7 @@ export const view: ICollectionTemplate = {
         },
       },
     },
-    writableView: {
-      type: 'boolean',
-      'x-content': '{{t("View collection can be edited")}}',
-      'x-decorator': 'FormItem',
-      'x-component': 'Checkbox',
-      default: false,
-    },
+ 
     ...getConfigurableProperties('category'),
   },
 };
