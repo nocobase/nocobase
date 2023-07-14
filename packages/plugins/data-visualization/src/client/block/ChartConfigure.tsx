@@ -230,7 +230,7 @@ export const ChartConfigure: React.FC<{
             <Card
               style={{
                 height: 'calc(100vh - 300px)',
-                overflow: 'scroll',
+                overflow: 'auto',
               }}
               ref={queryRef}
             >
@@ -255,7 +255,7 @@ export const ChartConfigure: React.FC<{
             <Card
               style={{
                 height: 'calc(100vh - 300px)',
-                overflow: 'scroll',
+                overflow: 'auto',
               }}
               ref={configRef}
             >
