@@ -7,6 +7,25 @@ const API_DOC_PATH = '/api/_documentation';
 export default class APIDoc extends Plugin {
   beforeLoad() {}
 
+  generateModels = () => {
+    const models = {};
+    this.db.collections.forEach((collection) => {
+      const properties = {};
+      const model = {
+        type: 'object',
+        properties,
+      };
+
+      collection.forEachField((field) => {
+        properties[field.name] = {
+          type: field.type,
+        };
+      });
+      models[collection.name] = model;
+    });
+    return models;
+  };
+
   generatePaths = () => {
     const names = this.app.resourcer.getResourcerNames();
     const options = this.app.resourcer.options;
@@ -186,6 +205,10 @@ export default class APIDoc extends Plugin {
         const result = {
           ...swagger,
           paths: this.generatePaths(),
+          components: {
+            ...swagger.components,
+            schemas: this.generateModels(),
+          },
           servers: [
             {
               url: (this.app.resourcer.options.prefix || '/').replace(/^[^/]/, '/$1'),
