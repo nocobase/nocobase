@@ -175,7 +175,8 @@ FormItem.Designer = function Designer() {
   const isPickerMode = fieldSchema['x-component-props']?.mode === 'Picker';
   const showFieldMode = isAssociationField && fieldModeOptions && !isTableField;
   const showModeSelect = showFieldMode && isPickerMode;
-  const isDateField = collectionField.interface === 'datetime';
+  const isDateField = ['datetime', 'createdAt', 'updatedAt'].includes(collectionField.interface);
+
   return (
     <GeneralSchemaDesigner>
       <GeneralSchemaItems />

@@ -44,7 +44,7 @@ export const TableColumnDesigner = (props) => {
   const { currentMode, field: tableField } = useAssociationFieldContext();
   const defaultFilter = fieldSchema?.['x-component-props']?.service?.params?.filter || {};
   const dataSource = useCollectionFilterOptions(collectionField?.target);
-  const isDateField = collectionField.interface === 'datetime';
+  const isDateField = ['datetime', 'createdAt', 'updatedAt'].includes(collectionField.interface);
   let readOnlyMode = 'editable';
   if (fieldSchema['x-disabled'] === true) {
     readOnlyMode = 'readonly';

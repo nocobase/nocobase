@@ -28,11 +28,12 @@ export const CustomFormatCom = observer((props: any) => {
       setChecked(false);
     }
   }, [form.getValuesIn([formatField])]);
+  console.log(props.value)
   return (
     <Radio
+      style={{ marginBottom: '20px' }}
       value={[customFormatField]}
-      checked={checked}
-      disabled={customFormatPreview === null}
+      checked={checked && form.getValuesIn([formatField]) === null}
       onChange={(e) => {
         if (e.target.checked) {
           form.setValuesIn([formatField], null);

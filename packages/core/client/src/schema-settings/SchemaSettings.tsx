@@ -1282,7 +1282,7 @@ SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Sche
                 fieldSchema?.['x-component-props']?.customDateFormat === null
                   ? fieldSchema?.['x-component-props']?.dateFormat ||
                     collectionField?.uiSchema?.['x-component-props']?.dateFormat
-                  : null,
+                  : 'YYYY-MM-DD',
               enum: [
                 {
                   label: DateFormatCom({ format: 'MMMMM Do YYYY' }),
@@ -1309,7 +1309,7 @@ SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Sche
             customDateFormat: {
               type: 'string',
               'x-component': CustomFormatCom,
-              default: fieldSchema?.['x-component-props']?.customDateFormat,
+              default: fieldSchema?.['x-component-props']?.customDateFormat || 'dddd',
               'x-component-props': {
                 formatField: 'dateFormat',
                 customFormatField: 'customDateFormat',
@@ -1324,7 +1324,10 @@ SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Sche
               'x-content': '{{t("Show time")}}',
               'x-reactions': [
                 `{{(field) => {
-              field.query('..[].timeFormat').take(f => {
+              field.query('.timeFormat').take(f => {
+                f.display = field.value ? 'visible' : 'none';
+              });
+              field.query('.customTimeFormat').take(f => {
                 f.display = field.value ? 'visible' : 'none';
               });
             }}}`,
@@ -1366,7 +1369,7 @@ SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Sche
             customTimeFormat: {
               type: 'string',
               'x-component': CustomFormatCom,
-              default: fieldSchema?.['x-component-props']?.customTimeFormat,
+              default: fieldSchema?.['x-component-props']?.customTimeFormat|| 'h:mm a',
               'x-component-props': {
                 formatField: 'timeFormat',
                 customFormatField: 'customTimeFormat',
