@@ -1,5 +1,5 @@
-
 import { defineConfig } from 'father';
+import LodashWebpackPlugin from 'lodash-webpack-plugin';
 import fs from 'fs';
 import { builtinModules } from 'module';
 import path from 'path';
@@ -149,9 +149,10 @@ function getFatherBuildConfig(options: BuildOptions) {
         chainWebpack: (memo) => {
           memo.optimization.minimize(false);
           memo.output.filename('index.js');
-          memo.output.libraryTarget('amd');
+          memo.plugin('lodash').use(LodashWebpackPlugin);
           return memo;
         },
+        extraBabelPlugins: ['lodash'],
         externals: {
           ...clientExcludePackages.reduce<Record<string, string>>((prev, curr) => {
             prev[`${curr}/${CLIENT}`] = curr;

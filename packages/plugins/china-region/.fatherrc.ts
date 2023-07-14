@@ -1,5 +1,6 @@
 
 import { defineConfig } from 'father';
+import LodashWebpackPlugin from 'lodash-webpack-plugin';
 import { builtinModules } from 'module';
 import path from 'path';
 import fs from 'fs';
