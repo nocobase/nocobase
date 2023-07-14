@@ -1,13 +1,13 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
-import React from 'react';
 import { set } from 'lodash';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCollectionManager, useCollectionFilterOptions } from '../../../collection-manager';
-import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled } from '../../../schema-settings';
+import { useCollectionFilterOptions, useCollectionManager } from '../../../collection-manager';
+import { GeneralSchemaDesigner, isPatternDisabled, SchemaSettings } from '../../../schema-settings';
 import { useCompile, useDesignable } from '../../hooks';
 import { useAssociationFieldContext } from '../association-field/hooks';
-import { FilterDynamicComponent } from './FilterDynamicComponent';
 import { removeNullCondition } from '../filter';
+import { FilterDynamicComponent } from './FilterDynamicComponent';
 
 const useLabelFields = (collectionName?: any) => {
   // 需要在组件顶层调用
@@ -44,6 +44,7 @@ export const TableColumnDesigner = (props) => {
   const { currentMode, field: tableField } = useAssociationFieldContext();
   const defaultFilter = fieldSchema?.['x-component-props']?.service?.params?.filter || {};
   const dataSource = useCollectionFilterOptions(collectionField?.target);
+  const fieldMode = fieldSchema?.['x-component-props']?.['mode'] || 'Select';
   let readOnlyMode = 'editable';
   if (fieldSchema['x-disabled'] === true) {
     readOnlyMode = 'readonly';
@@ -226,6 +227,52 @@ export const TableColumnDesigner = (props) => {
                   ...fieldSchema['x-component-props'],
                 },
               },
+            });
+            dn.refresh();
+          }}
+        />
+      )}
+      {readOnlyMode === 'read-pretty' && (
+        <SchemaSettings.SelectItem
+          key="field-mode"
+          title={t('Field component')}
+          options={[
+            { label: t('Title'), value: 'Select' },
+            { label: t('Tag'), value: 'Tag' },
+          ]}
+          value={fieldMode}
+          onChange={(mode) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props']['mode'] = mode;
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            field.componentProps = field.componentProps || {};
+            field.componentProps.mode = mode;
+            dn.emit('patch', {
+              schema,
+            });
+            dn.refresh();
+          }}
+        />
+      )}
+      {['Tag'].includes(fieldMode) && (
+        <SchemaSettings.ColorPickerItem
+          key="tag-config"
+          title={t('Tag color')}
+          value={field.componentProps?.tagColor}
+          onChange={(tagColor) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props']['tagColor'] = tagColor;
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            field.componentProps = field.componentProps || {};
+            field.componentProps.tagColor = tagColor;
+            dn.emit('patch', {
+              schema,
             });
             dn.refresh();
           }}

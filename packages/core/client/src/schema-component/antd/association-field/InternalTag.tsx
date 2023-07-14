@@ -27,7 +27,7 @@ export const ReadPrettyInternalTag: React.FC = observer(
   (props: any) => {
     const fieldSchema = useFieldSchema();
     const recordCtx = useRecord();
-    const { enableLink ,tagColor} = fieldSchema['x-component-props'];
+    const { enableLink, tagColor } = fieldSchema['x-component-props'];
     // value 做了转换，但 props.value 和原来 useField().value 的值不一致
     const field = useField();
     const fieldNames = useFieldNames(props);
@@ -45,7 +45,6 @@ export const ReadPrettyInternalTag: React.FC = observer(
       toArr(props.value).map((record, index, arr) => {
         const val = toValue(compile(record?.[fieldNames?.label || 'label']), 'N/A');
         const text = getTabFormatValue(compile(labelUiSchema), val, tagColor);
-        console.log(tagColor)
         return (
           <Fragment key={`${record.id}_${index}`}>
             <span>
