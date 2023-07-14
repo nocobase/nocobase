@@ -67,6 +67,6 @@ export const clientStaticMiddleware = async (ctx, next) => {
     const relativePath = path.relative(cwd, realPath);
     await send(ctx, relativePath);
     // }
-    await next();
   }
+  await next();
 };
