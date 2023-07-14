@@ -41,16 +41,16 @@ export const DuplicateAction = observer((props: any) => {
   const { name } = useCollection();
   const { getCollectionFields } = useCollectionManager();
   const { t } = useTranslation();
-  const collectionFields = getCollectionFields(__collection);
+  const collectionFields = getCollectionFields(__collection || name);
   const template = {
     key: 'duplicate',
     dataId: id,
     default: true,
     fields:
       duplicateFields?.filter((v) => {
-        return collectionFields.find((k) => k.name === v);
+        return collectionFields.find((k) => v.includes(k.name));
       }) || [],
-    collection: __collection,
+    collection: __collection || name,
   };
   const isLinkBtn = fieldSchema['x-component'] === 'Action.Link';
   const handelQuickDuplicate = async () => {

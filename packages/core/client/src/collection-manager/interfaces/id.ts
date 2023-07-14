@@ -45,4 +45,5 @@ export const id: IField = {
   filterable: {
     operators: operators.id,
   },
+  titleUsable: true,
 };

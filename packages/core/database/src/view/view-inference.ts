@@ -1,6 +1,6 @@
+import { isArray } from 'mathjs';
 import Database from '../database';
 import FieldTypeMap from './field-type-map';
-import { isArray } from 'mathjs';
 
 type InferredField = {
   name: string;
@@ -31,6 +31,7 @@ export class ViewFieldInference {
     });
 
     const rawFields = [];
+
     for (const [name, column] of Object.entries(columns)) {
       const inferResult: any = { name };
 
