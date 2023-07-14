@@ -79,4 +79,8 @@ export class Gateway {
       console.log(`Gateway Server running at http://${this.host}:${this.port}/`);
     });
   }
+
+  close() {
+    this.server.close();
+  }
 }

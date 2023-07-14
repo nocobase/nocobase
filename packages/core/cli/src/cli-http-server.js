@@ -12,6 +12,8 @@ class CliHttpServer {
   ipcServer;
   socketPath = '/tmp/cli-http-server.sock';
 
+  port;
+
   constructor() {
     this.listenDomainSocket();
   }
@@ -24,6 +26,8 @@ class CliHttpServer {
   }
 
   listen(port) {
+    this.port = port;
+
     this.server = http.createServer((req, res) => {
       if (!this.workerReady) {
         res.writeHead(503);
@@ -77,6 +81,9 @@ class CliHttpServer {
             this.server.close();
 
             c.write('start');
+          }
+          if (dataObj.status === 'worker-exit') {
+            this.server.listen(this.port);
           }
         }
       });
