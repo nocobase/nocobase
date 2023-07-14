@@ -1,5 +1,5 @@
 import { TinyColor } from '@ctrl/tinycolor';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useToken } from '../style';
 
 const CSSVariableProvider = ({ children }) => {
@@ -12,6 +12,11 @@ const CSSVariableProvider = ({ children }) => {
     .onBackground(token.colorFill)
     .onBackground(token.colorFill)
     .toHexShortString();
+
+  const colorBgDrawer = useMemo(() => {
+    const colorBgLayout = new TinyColor(token.colorBgLayout);
+    return colorBgLayout.isDark() ? colorBgLayout.lighten(6).toHexString() : token.colorBgLayout;
+  }, [token.colorBgLayout]);
 
   useEffect(() => {
     document.body.style.setProperty('--nb-spacing', `${token.marginLG}px`);
@@ -29,6 +34,7 @@ const CSSVariableProvider = ({ children }) => {
     document.body.style.setProperty('--colorBgScrollBar', colorBgScrollBar);
     document.body.style.setProperty('--colorBgScrollBarHover', colorBgScrollBarHover);
     document.body.style.setProperty('--colorBgScrollBarActive', colorBgScrollBarActive);
+    document.body.style.setProperty('--colorBgDrawer', colorBgDrawer);
     document.body.style.setProperty('background-color', token.colorBgContainer);
   }, [
     token.marginLG,
@@ -50,6 +56,7 @@ const CSSVariableProvider = ({ children }) => {
     colorBgScrollBar,
     colorBgScrollBarHover,
     colorBgScrollBarActive,
+    colorBgDrawer,
   ]);
 
   return children;
