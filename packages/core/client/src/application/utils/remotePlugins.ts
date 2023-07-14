@@ -15,55 +15,59 @@ import ReactDOM from 'react-dom';
 import * as reactI18next from 'react-i18next';
 import * as ReactRouterDom from 'react-router-dom';
 import * as nocobaseClient from '../../index';
-
-import 'requirejs';
+import { getRequireJs } from './requirejs';
 
 import type { Plugin } from '../Plugin';
 
-declare const requirejsVars: {
-  requirejs: Require;
-  require: Require;
-  define: RequireDefine;
-};
-
-export function initDeps() {
+export function initDeps(requirejs: any) {
   // react
-  requirejsVars.define('react', () => React);
-  requirejsVars.define('react-dom', () => ReactDOM);
+  requirejs.define('react', () => React);
+  requirejs.define('react-dom', () => ReactDOM);
 
   // react-router
-  requirejsVars.define('react-router-dom', () => ReactRouterDom);
+  requirejs.define('react-router-dom', () => ReactRouterDom);
 
   // antd
-  requirejsVars.define('antd', () => antd);
-  requirejsVars.define('antd-style', () => antdStyle);
-  requirejsVars.define('@ant-design/icons', () => antdIcons);
+  requirejs.define('antd', () => antd);
+  requirejs.define('antd-style', () => antdStyle);
+  requirejs.define('@ant-design/icons', () => antdIcons);
 
   // i18next
-  requirejsVars.define('i18next', () => i18next);
-  requirejsVars.define('react-i18next', () => reactI18next);
+  requirejs.define('i18next', () => i18next);
+  requirejs.define('react-i18next', () => reactI18next);
 
   // formily
-  requirejsVars.define('@formily/antd-v5', () => formilyAntdV5);
-  requirejsVars.define('@formily/core', () => formilyCore);
-  requirejsVars.define('@formily/react', () => formilyReact);
-  requirejsVars.define('@formily/shared', () => formilyShared);
-  requirejsVars.define('@formily/json-schema', () => formilyJsonSchema);
-  requirejsVars.define('@formily/reactive', () => formilyJsonReactive);
+  requirejs.define('@formily/antd-v5', () => formilyAntdV5);
+  requirejs.define('@formily/core', () => formilyCore);
+  requirejs.define('@formily/react', () => formilyReact);
+  requirejs.define('@formily/shared', () => formilyShared);
+  requirejs.define('@formily/json-schema', () => formilyJsonSchema);
+  requirejs.define('@formily/reactive', () => formilyJsonReactive);
 
   // nocobase
-  requirejsVars.define('@nocobase/utils', () => nocobaseClientUtils);
-  requirejsVars.define('@nocobase/client', () => nocobaseClient);
-  requirejsVars.define('@nocobase/evaluators', () => nocobaseEvaluators);
+  requirejs.define('@nocobase/utils', () => nocobaseClientUtils);
+  requirejs.define('@nocobase/client', () => nocobaseClient);
+  requirejs.define('@nocobase/evaluators', () => nocobaseEvaluators);
 }
 
 export function getPlugins(pluginsUrls: Record<string, string>): Promise<(typeof Plugin)[]> {
-  requirejsVars.requirejs.config({
+  const packageNames = Object.keys(pluginsUrls);
+  if (packageNames.length === 0) return Promise.resolve([]);
+  // if (process.env.NODE_ENV === 'development') {
+  //   return Promise.all(
+  //     packageNames.map((packageName) => import(`${packageName}/client`).then((item) => item.default || item)),
+  //   );
+  // }
+
+  const requirejs: any = getRequireJs();
+  (window as any).define = requirejs.define;
+  initDeps(requirejs);
+  requirejs.requirejs.config({
     paths: pluginsUrls,
   });
 
   return new Promise<(typeof Plugin)[]>((resolve) => {
-    requirejsVars.requirejs(Object.keys(pluginsUrls), (...plugins: (typeof Plugin & { default?: typeof Plugin })[]) => {
+    requirejs.requirejs(packageNames, (...plugins: (typeof Plugin & { default?: typeof Plugin })[]) => {
       resolve(plugins.map((item) => item.default || item));
     });
   });

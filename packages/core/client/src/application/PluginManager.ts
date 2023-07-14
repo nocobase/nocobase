@@ -1,6 +1,6 @@
 import type { Application } from './Application';
 import type { Plugin } from './Plugin';
-import { getPlugins, initDeps } from './utils/remotePlugins';
+import { getPlugins } from './utils/remotePlugins';
 
 export type PluginOptions<T = any> = { name?: string; config?: T };
 export type PluginType<Opts = any> = typeof Plugin | [typeof Plugin, PluginOptions<Opts>];
@@ -26,7 +26,6 @@ export class PluginManager {
   }
 
   private async initRemotePlugins() {
-    initDeps();
     const res = await this.app.apiClient.request({ url: 'app:getPlugins' });
     const pluginsUrls: Record<string, string> = res.data?.data || {};
     const plugins = await getPlugins(pluginsUrls);

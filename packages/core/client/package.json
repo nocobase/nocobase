@@ -46,9 +46,7 @@
     "react-to-print": "^2.14.7",
     "sanitize-html": "2.10.0",
     "solarlunar-es": "^1.0.9",
-    "use-deep-compare-effect": "^1.8.1",
-    "@types/requirejs": "^2.1.34",
-    "requirejs": "^2.3.6"
+    "use-deep-compare-effect": "^1.8.1"
   },
   "peerDependencies": {
     "react": ">=18.0.0",
