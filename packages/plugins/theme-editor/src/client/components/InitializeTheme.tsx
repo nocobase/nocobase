@@ -1,4 +1,5 @@
 import { useCurrentUserContext, useGlobalTheme, useSystemSettings } from '@nocobase/client';
+import { getSubAppName } from '@nocobase/sdk';
 import { error } from '@nocobase/utils/client';
 import { Spin } from 'antd';
 import React, { useEffect, useRef } from 'react';
@@ -7,7 +8,7 @@ import { changeAlgorithmFromStringToFunction } from '../utils/changeAlgorithmFro
 import { useThemeListContext } from './ThemeListProvider';
 
 // 之所以存储到 localStorage 中，是为了防止登录页面主题不生效的问题
-const CURRENT_THEME = 'CURRENT_THEME';
+const NOCOBASE_THEME = `${getSubAppName()}_NOCOBASE_THEME`;
 
 const CurrentThemeIdContext = React.createContext<number>(null);
 
@@ -26,7 +27,7 @@ const InitializeTheme: React.FC = ({ children }) => {
   const themeId = useRef<number>(null);
 
   useEffect(() => {
-    const storageTheme = localStorage.getItem(CURRENT_THEME);
+    const storageTheme = localStorage.getItem(NOCOBASE_THEME);
     if (storageTheme) {
       try {
         setTheme(changeAlgorithmFromStringToFunction(JSON.parse(storageTheme)).config);
@@ -53,13 +54,13 @@ const InitializeTheme: React.FC = ({ children }) => {
       if (theme) {
         setTheme(theme.config);
         localStorage.setItem(
-          CURRENT_THEME,
+          NOCOBASE_THEME,
           JSON.stringify(Object.assign({ ...theme }, { config: changeAlgorithmFromFunctionToString(theme.config) })),
         );
       }
     } else {
       setTheme({});
-      localStorage.setItem(CURRENT_THEME, null);
+      localStorage.setItem(NOCOBASE_THEME, null);
     }
   }, [
     currentUser?.data?.data?.systemSettings?.themeId,
