@@ -154,11 +154,8 @@ function getFatherBuildConfig(options: BuildOptions) {
           memo.output.libraryTarget('amd');
           memo.plugin('checkClientBundleSize').use(class CheckClientBundleSizePlugin {
             apply(compiler) {
-              // listen to webpack `done` event
               compiler.hooks.done.tap('InstallDepsPlugin', () => {
                 const clientFile = path.join(distDir, 'client', 'index.js');
-
-                // 检查文件大小，如果超过 1M 就 console.warn 提示
                 if (fs.statSync(clientFile).size > 1024 * 200) {
                   console.warn('\n[client build]: The bundle file size exceeds \`\x1b[31m%s\x1b[0m\`. Please check for unnecessary \`\x1b[31mdependencies\x1b[0m\` and move them to \`\x1b[31mdevDependencies\x1b[0m\` if possible.\n', '1MB');
                 }
