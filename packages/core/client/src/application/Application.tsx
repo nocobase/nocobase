@@ -1,5 +1,4 @@
 import { APIClientOptions } from '@nocobase/sdk';
-import { App as AntdApp } from 'antd';
 import { i18n as i18next } from 'i18next';
 import get from 'lodash/get';
 import merge from 'lodash/merge';
@@ -8,7 +7,7 @@ import React, { ComponentType, FC, ReactElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
 import { Link, NavLink, Navigate } from 'react-router-dom';
-import { GlobalThemeProvider } from '..';
+import { AntdAppProvider, GlobalThemeProvider } from '..';
 import { APIClient, APIClientProvider } from '../api-client';
 import { CSSVariableProvider } from '../css-variable';
 import { i18n } from '../i18n';
@@ -60,7 +59,7 @@ export class Application {
     this.use(I18nextProvider, { i18n: this.i18n });
     this.use(CurrentUserProvider);
     this.use(GlobalThemeProvider);
-    this.use(AntdApp);
+    this.use(AntdAppProvider);
     this.use(CSSVariableProvider);
     this.use(CurrentUserSettingsMenuProvider);
   }

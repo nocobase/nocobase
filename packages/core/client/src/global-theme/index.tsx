@@ -64,3 +64,5 @@ export const GlobalThemeProvider = ({ children }) => {
     </GlobalThemeContext.Provider>
   );
 };
+
+export { default as AntdAppProvider } from './AntdAppProvider';

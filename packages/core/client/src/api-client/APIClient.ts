@@ -3,7 +3,7 @@ import { Result } from 'ahooks/es/useRequest/src/types';
 import { notification } from 'antd';
 import React from 'react';
 
-const handleErrorMessage = (error) => {
+const handleErrorMessage = (error, notification) => {
   const reader = new FileReader();
   reader.readAsText(error?.response?.data, 'utf-8');
   reader.onload = function () {
@@ -19,6 +19,8 @@ const errorCache = new Map();
 export class APIClient extends APIClientSDK {
   services: Record<string, Result<any, any>> = {};
   silence = false;
+  /** 在初始化时应使用 antd 的 App.useApp() 返回的 notification，以确保使用正确的主题 */
+  antdNotification: any = notification;
 
   service(uid: string) {
     return this.services[uid];
@@ -49,7 +51,7 @@ export class APIClient extends APIClientSDK {
           return (window.location.href = redirectTo);
         }
         if (error?.response?.data?.type === 'application/json') {
-          handleErrorMessage(error);
+          handleErrorMessage(error, this.antdNotification);
         } else {
           if (errorCache.size > 10) {
             errorCache.clear();
@@ -66,7 +68,7 @@ export class APIClient extends APIClientSDK {
           if (errs.length === 0) {
             throw error;
           }
-          notification.error({
+          this.antdNotification.error({
             message: errs?.map?.((error: any) => {
               return React.createElement('div', {}, error.message);
             }),

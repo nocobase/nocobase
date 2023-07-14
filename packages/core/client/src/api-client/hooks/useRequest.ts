@@ -4,9 +4,8 @@ import { default as useReq } from 'ahooks/es/useRequest';
 import { Options } from 'ahooks/es/useRequest/src/types';
 import { AxiosRequestConfig } from 'axios';
 import cloneDeep from 'lodash/cloneDeep';
-import { useContext } from 'react';
-import { APIClientContext } from '../context';
 import { assign } from './assign';
+import { useAPIClient } from './useAPIClient';
 
 type FunctionService = (...args: any[]) => Promise<any>;
 
@@ -25,7 +24,7 @@ export function useRequest<P>(
 ) {
   // 缓存用途
   const [state, setState] = useSetState({});
-  const api = useContext(APIClientContext);
+  const api = useAPIClient();
 
   let tempService;
 
