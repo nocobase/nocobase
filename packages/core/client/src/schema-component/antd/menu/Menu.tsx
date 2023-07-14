@@ -392,7 +392,8 @@ export const Menu: ComposedMenu = observer(
 
       if (mode === 'mix' && key) {
         const s = schema.properties?.[key];
-        if (s['x-component'] === 'Menu.SubMenu') {
+        // fix T-934
+        if (s?.['x-component'] === 'Menu.SubMenu') {
           return s;
         }
       }
