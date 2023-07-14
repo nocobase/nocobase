@@ -6,6 +6,12 @@ const locale = {
   'Non-optional': '不可选',
   Current: '当前主题',
   Default: '默认',
+  'Delete theme': '删除主题',
+  'Deletion is unrecoverable. Confirm deletion?': '删除后不可恢复，确认删除？',
+  'Deleted successfully': '删除成功',
+  'Updated successfully': '更新成功',
+  'User selectable': '可被用户选择',
+  'Default theme': '默认主题',
 
   // 主题编辑器
   'Theme Editor': '主题编辑器',

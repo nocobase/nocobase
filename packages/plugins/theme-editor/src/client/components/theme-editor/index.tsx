@@ -63,7 +63,7 @@ const CustomTheme = ({ onThemeChange }: { onThemeChange?: (theme: ThemeConfig) =
           data: editingItem,
         });
         refresh?.();
-        message.success('保存成功');
+        message.success(t('Saved successfully'));
       } catch (err) {
         error(err);
       }

@@ -67,8 +67,8 @@ const ThemeCard = (props: Props) => {
 
   const handleDelete = useCallback(() => {
     modal.confirm({
-      title: '确认删除',
-      content: '删除后不可恢复，确认删除？',
+      title: t('Delete theme'),
+      content: t('Deletion is unrecoverable. Confirm deletion?'),
       onOk: async () => {
         await api.request({
           url: `themeConfig:destroy/${item.id}`,
@@ -80,7 +80,7 @@ const ThemeCard = (props: Props) => {
         if (item.id === systemSettings?.data?.data?.options?.themeId) {
           updateSystemThemeSettings(null);
         }
-        message.success('删除成功');
+        message.success(t('Deleted successfully'));
         onChange?.({ type: HandleTypes.delete, item });
       },
     });
@@ -116,7 +116,7 @@ const ThemeCard = (props: Props) => {
         error(err);
       }
       setLoading(false);
-      message.success('更改成功');
+      message.success(t('Updated successfully'));
       onChange?.({ type: HandleTypes.optional, item });
     },
     [item],
@@ -144,7 +144,7 @@ const ThemeCard = (props: Props) => {
         error(err);
       }
       setLoading(false);
-      message.success('更改成功');
+      message.success(t('Updated successfully'));
       onChange?.({ type: HandleTypes.optional, item });
     },
     [item],
@@ -169,7 +169,7 @@ const ThemeCard = (props: Props) => {
               size="middle"
               onClick={(e) => e.stopPropagation()}
             >
-              <span>可被用户选择</span>
+              <span>{t('User selectable')}</span>
               <Switch
                 style={{ transform: 'translateY(-2px)' }}
                 checked={item.optional}
@@ -189,7 +189,7 @@ const ThemeCard = (props: Props) => {
               size="middle"
               onClick={(e) => e.stopPropagation()}
             >
-              <span>设置为默认主题</span>
+              <span>{t('Default theme')}</span>
               <Switch
                 style={{ transform: 'translateY(-2px)' }}
                 checked={item.id === systemSettings?.data?.data?.options?.themeId}
