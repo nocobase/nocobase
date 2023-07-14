@@ -7,6 +7,7 @@ import { resolve } from 'path';
 import xpipe from 'xpipe';
 import Application from '../application';
 import { Plugin } from '../plugin';
+import { clientStaticMiddleware } from './clientStaticMiddleware';
 import collectionOptions from './options/collection';
 import resourceOptions from './options/resource';
 import { PluginManagerRepository } from './plugin-manager-repository';
@@ -44,6 +45,8 @@ export class PluginManager {
     this.repository = this.collection.repository as PluginManagerRepository;
     this.repository.setPluginManager(this);
     this.app.resourcer.define(resourceOptions);
+
+    this.app.use(clientStaticMiddleware);
 
     this.app.resourcer.use(async (ctx, next) => {
       await next();
