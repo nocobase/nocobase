@@ -120,8 +120,20 @@ function getFatherBuildConfig(options: BuildOptions) {
     const srcDir = path.join(__dirname, SRC);
     const distDir = path.join(__dirname, DIST);
 
-    const srcClientPackages = getSrcPackages(path.join(srcDir, CLIENT));
-    const srcServerPackages = getSrcPackages(path.join(srcDir, SERVER));
+    const srcClientDir = path.join(srcDir, CLIENT);
+    const srcServerDir = path.join(srcDir, SERVER);
+    if (!fs.existsSync(srcClientDir)) {
+      console.error(`[Plugin Build Error]: Missing \`\x1b[31m%s\x1b[0m\`. Please create it\n`, `${SRC}/${CLIENT}`);
+      process.exit(-1);
+    }
+
+    if (!fs.existsSync(srcServerDir)) {
+      console.error(`[Plugin Build Error]: Missing \`\x1b[31m%s\x1b[0m\`. Please create it\n`, `${SRC}/${SERVER}`);
+      process.exit(-1);
+    }
+
+    const srcClientPackages = getSrcPackages(srcClientDir);
+    const srcServerPackages = getSrcPackages(srcServerDir);
 
     const packageJsonPackages = getPackageJsonPackages();
     checkPackages([...srcClientPackages, ...srcServerPackages], packageJsonPackages);
