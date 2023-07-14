@@ -235,7 +235,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   get name() {
-    return this.options.name || 'main';
+    return this.options?.name || 'main';
   }
 
   getVersion() {

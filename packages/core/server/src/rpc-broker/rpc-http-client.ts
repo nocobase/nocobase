@@ -59,7 +59,7 @@ export class RpcHttpClient {
       },
       body: JSON.stringify({
         event,
-        options: eventOptions
+        options: eventOptions,
         appName,
       }),
     });

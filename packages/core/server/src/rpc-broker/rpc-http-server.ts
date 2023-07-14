@@ -1,5 +1,5 @@
-import { AppSupervisor } from '@nocobase/server';
 import http from 'http';
+import { AppSupervisor } from '../app-supervisor';
 import { LocalBroker } from './local-broker';
 
 interface RpcHttpServerOptions {
