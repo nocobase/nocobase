@@ -28,4 +28,5 @@ export const createdAt: IField = {
   filterable: {
     operators: operators.datetime,
   },
+  titleUsable: true,
 };
