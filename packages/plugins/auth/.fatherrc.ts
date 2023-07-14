@@ -141,6 +141,18 @@ function getFatherBuildConfig(options: BuildOptions) {
 
     const serverIncludePackages = getServerIncludePackages(srcServerPackages, options?.serverExtraExternals);
     const clientExcludePackages = getClientExcludePackages(options?.clientExtraExternals);
+    const clientIncludePackages = srcClientPackages.filter((packageName) => !clientExcludePackages.includes(packageName));
+
+    if (!process.env.BUILD_TIP) {
+      if (process.argv[2] === 'build' && clientIncludePackages.length) {
+        console.log('\n[client build]: Please note that \x1b[33m%s\x1b[0m will be bundled into dist.\nWhen a package is placed in `devDependencies`, it will not be bundled. When it is placed in `dependencies`, it will be bundled.\n', clientIncludePackages.join(', '))
+      }
+      if (process.argv[2] === 'prebundle' && serverIncludePackages.length) {
+        console.log('\n[server build]: Please note that \x1b[33m%s\x1b[0m will be bundled into dist.\nWhen a package is placed in `devDependencies`, it will not be bundled. When it is placed in `dependencies`, it will be bundled.\n', serverIncludePackages.join(', '))
+      }
+      process.env.BUILD_TIP = 'true'
+    }
+
     return defineConfig({
       umd: {
         name,
