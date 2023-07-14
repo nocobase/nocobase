@@ -2,6 +2,10 @@
   "name": "@nocobase/plugin-sample-shop-events",
   "version": "0.11.0-alpha.1",
   "main": "./lib/server/index.js",
+  "scripts": {
+    "build": "father build",
+    "watch": "father dev"
+  },
   "files": [
     "lib",
     "src",
@@ -14,6 +18,7 @@
     "client.d.ts"
   ],
   "devDependencies": {
+    "father": "^4.2.3",
     "@nocobase/client": "0.11.0-alpha.1",
     "@nocobase/server": "0.11.0-alpha.1",
     "@nocobase/test": "0.11.0-alpha.1"

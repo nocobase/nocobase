@@ -2,6 +2,10 @@
   "name": "@nocobase/plugin-sample-custom-page",
   "version": "0.11.0-alpha.1",
   "main": "./lib/server/index.js",
+  "scripts": {
+    "build": "father build",
+    "watch": "father dev"
+  },
   "files": [
     "lib",
     "src",

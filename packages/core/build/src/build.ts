@@ -5,6 +5,7 @@ import { merge } from 'lodash';
 import { isAbsolute, join, sep } from 'path';
 import rimraf from 'rimraf';
 import signale from 'signale';
+import execa from 'execa';
 import babel from './babel';
 import getUserConfig, { CONFIG_FILES } from './getUserConfig';
 import randomColor from './randomColor';
@@ -131,6 +132,27 @@ export async function build(opts: IOpts, extraOpts: IExtraBuildOpts = {}) {
 
   function log(msg) {
     console.log(`${pkg ? `${randomColor(`${pkgName}`)}: ` : ''}${msg}`);
+  }
+
+  // Clean dist
+  if (clean) {
+    log(chalk.gray(`Clean dist directory`));
+    rimraf.sync(join(cwd, 'dist'));
+    rimraf.sync(join(cwd, 'lib'));
+  }
+
+  if (pkgName.startsWith('@nocobase/plugin')) {
+    const buildOptions: execa.CommonOptions<any> = {
+      shell: true,
+      stdio: 'inherit',
+      cwd,
+      env: {
+        APP_ROOT: cwd,
+      },
+    }
+    await execa('father', ['build'], buildOptions)
+    await execa('father', ['prebundle'], buildOptions)
+    return [];
   }
 
   // Get user config
