@@ -26,8 +26,8 @@ export const useGlobalTheme = () => {
   return React.useContext(GlobalThemeContext);
 };
 
-export const GlobalThemeProvider = ({ children }) => {
-  const [theme, setTheme] = React.useState<ThemeConfig>({ name: 'Custom theme' });
+export const GlobalThemeProvider = ({ children, theme: defaultTheme }) => {
+  const [theme, setTheme] = React.useState<ThemeConfig>(defaultTheme || { name: 'Custom theme' });
   const currentSettingThemeRef = useRef<ThemeConfig>(null);
   const currentEditingThemeRef = useRef<ThemeItem>(null);
 

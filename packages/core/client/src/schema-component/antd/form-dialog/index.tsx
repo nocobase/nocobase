@@ -2,9 +2,10 @@ import { createForm, Form, IFormProps } from '@formily/core';
 import { FormProvider, Observer, observer, ReactFC } from '@formily/react';
 import { toJS } from '@formily/reactive';
 import { applyMiddleware, IMiddleware, isBool, isFn, isNum, isStr } from '@formily/shared';
-import { ConfigProvider, Modal, ModalProps, ThemeConfig } from 'antd';
+import { Modal, ModalProps, ThemeConfig } from 'antd';
 import React, { Fragment, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { GlobalThemeProvider } from '../../../global-theme';
 import { createPortalProvider, createPortalRoot, loading, usePrefixCls } from '../__builtins__';
 
 type FormDialogRenderer = React.ReactElement | ((form: Form) => React.ReactElement);
@@ -84,7 +85,7 @@ export function FormDialog(title: any, id: any, renderer?: any, theme?: any): IF
     const { form } = env;
     if (!form) return null;
     return (
-      <ConfigProvider theme={theme}>
+      <GlobalThemeProvider theme={theme}>
         <Observer>
           {() => (
             <Modal
@@ -108,7 +109,7 @@ export function FormDialog(title: any, id: any, renderer?: any, theme?: any): IF
             </Modal>
           )}
         </Observer>
-      </ConfigProvider>
+      </GlobalThemeProvider>
     );
   };
 
