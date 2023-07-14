@@ -72,6 +72,10 @@ export const useStyles = genStyleHook('nb-variable', (token) => {
           color: token.colorTextTertiary,
         },
       },
+
+      '.ant-btn': {
+        height: 'auto',
+      },
     },
   };
 });
