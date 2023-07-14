@@ -42,10 +42,11 @@ export const useStyles = genStyleHook('nb-page', (token) => {
       '.pageHeaderCss': {
         backgroundColor: token.colorBgContainer,
         '&.ant-page-header-has-footer': {
-          paddingTop: '12px',
+          paddingTop: token.paddingSM,
+          paddingInline: token.paddingLG,
           paddingBottom: '0',
           '.ant-page-header-heading-left': {},
-          '.ant-page-header-footer': { marginTop: '0' },
+          '.ant-page-header-footer': { marginBlockStart: '0' },
         },
         '.ant-tabs-nav': { marginBottom: '0' },
       },

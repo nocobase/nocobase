@@ -7,6 +7,7 @@ export const useStyles = createStyles(({ token }) => {
       paddingBottom: 0,
       paddingTop: token.paddingSM,
       paddingInline: token.paddingLG,
+      '.ant-page-header-footer': { marginBlockStart: '0' },
       '& .ant-tabs-nav': {
         marginBottom: 0,
       },
