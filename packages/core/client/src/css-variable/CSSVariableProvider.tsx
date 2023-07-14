@@ -14,9 +14,9 @@ const CSSVariableProvider = ({ children }) => {
     .toHexShortString();
 
   const colorBgDrawer = useMemo(() => {
-    const colorBgLayout = new TinyColor(token.colorBgLayout);
-    return colorBgLayout.isDark() ? colorBgLayout.lighten(6).toHexString() : token.colorBgLayout;
-  }, [token.colorBgLayout]);
+    const colorBgElevated = new TinyColor(token.colorBgElevated);
+    return colorBgElevated.isDark() ? token.colorBgElevated : colorBgElevated.darken(4).toHexString();
+  }, [token.colorBgElevated]);
 
   useEffect(() => {
     document.body.style.setProperty('--nb-spacing', `${token.marginLG}px`);

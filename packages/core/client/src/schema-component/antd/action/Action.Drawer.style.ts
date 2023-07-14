@@ -30,6 +30,10 @@ export const useStyles = genStyleHook('nb-action-drawer', (token) => {
         width: '100%',
         '.ant-btn': { marginRight: token.marginXS },
       },
+
+      '.ant-drawer-content-wrapper': {
+        borderLeft: `1px solid ${token.colorBorder}`,
+      },
     },
   };
 });
