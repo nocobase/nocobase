@@ -1,7 +1,7 @@
 import { Schema, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializer, useCollection, useCollectionManager, SchemaInitializerItemOptions } from '../..';
+import { SchemaInitializer, SchemaInitializerItemOptions, useCollection, useCollectionManager } from '../..';
 import { gridRowColWrap } from '../utils';
 
 const recursiveParent = (schema: Schema) => {
@@ -170,7 +170,7 @@ export const RecordBlockInitializers = (props: any) => {
   const hasFormChildCollection = formChildrenCollections?.length > 0;
   const detailChildrenCollections = getChildrenCollections(collection.name, true);
   const hasDetailChildCollection = detailChildrenCollections?.length > 0;
-  const modifyFlag = (collection as any).template !== 'view';
+  const modifyFlag = (collection as any).template !== 'view' || collection?.writableView;
   return (
     <SchemaInitializer.Button
       wrap={gridRowColWrap}
