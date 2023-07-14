@@ -19,9 +19,9 @@
   ],
   "license": "AGPL-3.0",
   "dependencies": {
-    "china-division": "^2.4.0"
   },
   "devDependencies": {
+    "china-division": "^2.4.0",
     "cross-spawn": "^7.0.3",
     "@types/cross-spawn": "^6.0.2",
     "@formily/core": "2.2.26",
