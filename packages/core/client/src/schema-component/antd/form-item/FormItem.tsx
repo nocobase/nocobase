@@ -30,6 +30,7 @@ import { BlockItem } from '../block-item';
 import { removeNullCondition } from '../filter';
 import { HTMLEncode } from '../input/shared';
 import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
+import { useColorFields } from '../table-v2/Table.Column.Designer';
 import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
 import { useEnsureOperatorsValid } from './SchemaSettingOptions';
 
@@ -143,6 +144,7 @@ FormItem.Designer = function Designer() {
       value: field?.name,
       label: compile(field?.uiSchema?.title) || field?.name,
     }));
+  const colorFieldOptions = useColorFields(collectionField?.target ?? collectionField?.targetCollection);
 
   let readOnlyMode = 'editable';
   if (fieldSchema['x-disabled'] === true) {
@@ -862,20 +864,22 @@ FormItem.Designer = function Designer() {
           }}
         />
       )}
-      {field.readPretty && isAssociationField && ['Tag'].includes(fieldMode) && (
-        <SchemaSettings.ColorPickerItem
-          key="tag-config"
-          title={t('Tag color')}
-          value={field.componentProps?.tagColor}
-          onChange={(tagColor) => {
+
+      {colorFieldOptions.length > 0 && isAssociationField && ['Tag'].includes(fieldMode) && (
+        <SchemaSettings.SelectItem
+          key="title-field"
+          title={t('Tag color field')}
+          options={colorFieldOptions}
+          value={field?.componentProps?.tagColorField}
+          onChange={(tagColorField) => {
             const schema = {
               ['x-uid']: fieldSchema['x-uid'],
             };
+
             fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-            fieldSchema['x-component-props']['tagColor'] = tagColor;
+            fieldSchema['x-component-props']['tagColorField'] = tagColorField;
             schema['x-component-props'] = fieldSchema['x-component-props'];
-            field.componentProps = field.componentProps || {};
-            field.componentProps.tagColor = tagColor;
+            field.componentProps.tagColorField = tagColorField;
             dn.emit('patch', {
               schema,
             });

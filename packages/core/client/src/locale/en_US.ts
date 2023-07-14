@@ -707,5 +707,6 @@ export default {
   "Current form": "Current form",
   "Current object":"Current object",
   "Linkage with form fields":"Linkage with form fields",
-  "Tag":"Tag"
+  "Tag":"Tag",
+  "Tag color field":"Tag color field"
 };

@@ -27,6 +27,22 @@ const useLabelFields = (collectionName?: any) => {
     });
 };
 
+export const useColorFields = (collectionName?: any) => {
+  const compile = useCompile();
+  const { getCollectionFields } = useCollectionManager();
+  if (!collectionName) {
+    return [];
+  }
+  const targetFields = getCollectionFields(collectionName);
+  return targetFields
+    ?.filter?.((field) => field?.interface === 'color')
+    ?.map?.((field) => {
+      return {
+        value: field.name,
+        label: compile(field?.uiSchema?.title || field.name),
+      };
+    });
+};
 export const TableColumnDesigner = (props) => {
   const { uiSchema, fieldSchema, collectionField } = props;
   const { getInterface, getCollection } = useCollectionManager();
@@ -37,6 +53,7 @@ export const TableColumnDesigner = (props) => {
   const fieldNames =
     fieldSchema?.['x-component-props']?.['fieldNames'] || uiSchema?.['x-component-props']?.['fieldNames'];
   const options = useLabelFields(collectionField?.target ?? collectionField?.targetCollection);
+  const colorFieldOptions = useColorFields(collectionField?.target ?? collectionField?.targetCollection);
   const intefaceCfg = getInterface(collectionField?.interface);
   const targetCollection = getCollection(collectionField?.target);
   const isFileField = isFileCollection(targetCollection);
@@ -257,20 +274,22 @@ export const TableColumnDesigner = (props) => {
           }}
         />
       )}
-      {['Tag'].includes(fieldMode) && (
-        <SchemaSettings.ColorPickerItem
-          key="tag-config"
-          title={t('Tag color')}
-          value={field.componentProps?.tagColor}
-          onChange={(tagColor) => {
+
+      {colorFieldOptions.length > 0 && ['Tag'].includes(fieldMode) && (
+        <SchemaSettings.SelectItem
+          key="title-field"
+          title={t('Tag color field')}
+          options={colorFieldOptions}
+          value={field?.componentProps?.tagColorField}
+          onChange={(tagColorField) => {
             const schema = {
               ['x-uid']: fieldSchema['x-uid'],
             };
+
             fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-            fieldSchema['x-component-props']['tagColor'] = tagColor;
+            fieldSchema['x-component-props']['tagColorField'] = tagColorField;
             schema['x-component-props'] = fieldSchema['x-component-props'];
-            field.componentProps = field.componentProps || {};
-            field.componentProps.tagColor = tagColor;
+            field.componentProps.tagColorField = tagColorField;
             dn.emit('patch', {
               schema,
             });

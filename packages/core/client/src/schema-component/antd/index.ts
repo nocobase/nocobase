@@ -8,6 +8,7 @@ export * from './card-item';
 export * from './cascader';
 export * from './checkbox';
 export * from './collection-select';
+export * from './color-picker';
 export * from './color-select';
 export * from './cron';
 export * from './date-picker';
@@ -47,4 +48,5 @@ export * from './time-picker';
 export * from './tree-select';
 export * from './upload';
 export * from './variable';
+
 import './index.less';

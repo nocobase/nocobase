@@ -1,6 +1,7 @@
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { toArr } from '@formily/shared';
 import React, { Fragment, useRef, useState } from 'react';
+import flat from 'flat'
 import { useDesignable } from '../../';
 import { BlockAssociationContext, WithoutTableFieldResource } from '../../../block-provider';
 import { CollectionProvider } from '../../../collection-manager';
@@ -27,7 +28,7 @@ export const ReadPrettyInternalTag: React.FC = observer(
   (props: any) => {
     const fieldSchema = useFieldSchema();
     const recordCtx = useRecord();
-    const { enableLink, tagColor } = fieldSchema['x-component-props'];
+    const { enableLink, tagColorField } = fieldSchema['x-component-props'];
     // value 做了转换，但 props.value 和原来 useField().value 的值不一致
     const field = useField();
     const fieldNames = useFieldNames(props);
@@ -40,10 +41,10 @@ export const ReadPrettyInternalTag: React.FC = observer(
     const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
     const { snapshot } = useActionContext();
     const ellipsisWithTooltipRef = useRef<IEllipsisWithTooltipRef>();
-
     const renderRecords = () =>
       toArr(props.value).map((record, index, arr) => {
         const val = toValue(compile(record?.[fieldNames?.label || 'label']), 'N/A');
+        const tagColor=flat(recordCtx)[`${fieldSchema.name}.${tagColorField}`]
         const text = getTabFormatValue(compile(labelUiSchema), val, tagColor);
         return (
           <Fragment key={`${record.id}_${index}`}>
