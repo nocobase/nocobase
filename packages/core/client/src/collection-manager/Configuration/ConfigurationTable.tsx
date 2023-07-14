@@ -151,7 +151,7 @@ export const ConfigurationTable = () => {
       .then(({ data }) => {
         return data?.data?.map((item: any) => {
           return {
-            label: compile(item.title),
+            label: t(compile(item.title)),
             value: item.name,
           };
         });
