@@ -216,7 +216,7 @@ export const WorkflowTodo: React.FC & { Drawer: React.FC; Decorator: React.FC } 
       }}
       schema={{
         type: 'void',
-        name: uid(),
+        // name: uid(),
         'x-component': 'div',
         properties: {
           actions: {
