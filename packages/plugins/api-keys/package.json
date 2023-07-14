@@ -18,6 +18,10 @@
     "client.js",
     "client.d.ts"
   ],
+  "dependencies": {
+    "dayjs": "^1.11.8",
+    "ahooks": "^3.7.2"
+  },
   "devDependencies": {
     "@formily/react": "2.2.26",
     "@formily/shared": "2.2.26",
@@ -29,7 +33,6 @@
     "@nocobase/test": "0.11.0-alpha.1",
     "@nocobase/utils": "0.11.0-alpha.1",
     "antd": "^5.6.4",
-    "dayjs": "^1.11.8",
     "i18next": "^22.4.9",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

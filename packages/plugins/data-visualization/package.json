@@ -7,6 +7,7 @@
   "description.zh-CN": "提供BI面板和数据可视化功能",
   "main": "lib/server/index.js",
   "dependencies": {
+    "lodash": "^4.17.21",
     "@ant-design/plots": "^1.2.5",
     "classnames": "^2.3.1",
     "react-error-boundary": "^4.0.10"
@@ -26,7 +27,6 @@
     "@nocobase/utils": "0.11.0-alpha.1",
     "@testing-library/react": "^12.1.5",
     "antd": "^5.6.4",
-    "lodash": "^4.17.21",
     "react": "^18.2.0",
     "react-i18next": "^11.15.1",
     "vitest": "^0.33.0"
