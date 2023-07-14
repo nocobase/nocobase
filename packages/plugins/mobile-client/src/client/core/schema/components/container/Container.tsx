@@ -1,8 +1,9 @@
 import { useFieldSchema } from '@formily/react';
-import { css, cx, SchemaComponent, SortableItem, useDesigner } from '@nocobase/client';
+import { cx, SchemaComponent, SortableItem, useDesigner, useToken } from '@nocobase/client';
 import React, { useEffect } from 'react';
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ContainerDesigner } from './Container.Designer';
+import useStyles from './style';
 
 const findGrid = (schema, uid) => {
   return schema.reduceProperties((final, next) => {
@@ -28,6 +29,8 @@ const TabContentComponent = () => {
 };
 
 const InternalContainer: React.FC = (props) => {
+  const { styles } = useStyles();
+  const { token } = useToken();
   const Designer = useDesigner();
   const fieldSchema = useFieldSchema();
   const navigate = useNavigate();
@@ -47,31 +50,13 @@ const InternalContainer: React.FC = (props) => {
   }, [location.pathname, navigate, params.name, redirectToUid]);
 
   return (
-    <SortableItem
-      eid="nb-mobile-scroll-wrapper"
-      className={cx(
-        'nb-mobile-container',
-        css`
-          & > .general-schema-designer > .general-schema-designer-icons {
-            right: unset;
-            left: 2px;
-          }
-          background: var(--nb-box-bg);
-          display: flex;
-          flex-direction: column;
-          width: 100%;
-          height: 100%;
-          overflow-y: scroll;
-          position: initial !important;
-        `,
-      )}
-    >
+    <SortableItem eid="nb-mobile-scroll-wrapper" className={cx('nb-mobile-container', styles.mobileContainer)}>
       <Designer></Designer>
       <div
         style={{
-          paddingBottom: redirectToUid ? '50px' : '0px',
+          paddingBottom: redirectToUid ? token.paddingLG * 2 : 0,
         }}
-        className={cx('nb-mobile-container-content')}
+        className="nb-mobile-container-content"
       >
         {redirectToUid ? (
           <TabContentComponent />
@@ -84,22 +69,7 @@ const InternalContainer: React.FC = (props) => {
           />
         )}
       </div>
-      <div
-        className={cx(
-          'nb-mobile-container-tab-bar',
-          css`
-            & > .general-schema-designer {
-              --nb-designer-top: 20px;
-            }
-            position: absolute;
-            background: #ffffff;
-            width: 100%;
-            bottom: 0;
-            left: 0;
-            z-index: 1000;
-          `,
-        )}
-      >
+      <div className={cx('nb-mobile-container-tab-bar', styles.tabBar)}>
         <SchemaComponent
           onlyRenderProperties
           filterProperties={(schema) => {
