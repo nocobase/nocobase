@@ -122,12 +122,6 @@ export async function build(opts: IOpts, extraOpts: IExtraBuildOpts = {}) {
     buildArgs.config &&
     (isAbsolute(buildArgs.config) ? buildArgs.config : join(process.cwd(), buildArgs.config));
 
-  // register babel for config files
-  registerBabel({
-    cwd,
-    only: customConfigPath ? CONFIG_FILES.concat(customConfigPath) : CONFIG_FILES,
-  });
-
   const pkgName = (typeof pkg === 'string' ? pkg : pkg?.name) || 'unknown';
 
   function log(msg) {
@@ -154,6 +148,12 @@ export async function build(opts: IOpts, extraOpts: IExtraBuildOpts = {}) {
     await execa('father', ['prebundle'], buildOptions)
     return [];
   }
+
+  // register babel for config files
+  registerBabel({
+    cwd,
+    only: customConfigPath ? CONFIG_FILES.concat(customConfigPath) : CONFIG_FILES,
+  });
 
   // Get user config
   const bundleOptsArray = getBundleOpts(opts);

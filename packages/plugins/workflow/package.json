@@ -20,6 +20,8 @@
   ],
   "dependencies": {
     "dayjs": "^1.11.8",
+    "lodash": "4.17.21",
+    "@emotion/css": "^11.7.1",
     "axios": "^0.27.2",
     "classnames": "^2.3.1",
     "cron-parser": "4.4.0",
