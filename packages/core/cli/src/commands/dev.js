@@ -65,7 +65,8 @@ module.exports = (cli) => {
         cliHttpServer.setCliDoingWork('start server process');
 
         const argv = [
-          '-P',
+          'watch',
+          '--tsconfig',
           './tsconfig.server.json',
           '-r',
           'tsconfig-paths/register',
@@ -80,7 +81,7 @@ module.exports = (cli) => {
         }
 
         const runDevServer = () => {
-          run('ts-node-dev', argv, {
+          run('tsx', argv, {
             env: {
               APP_PORT: serverPort,
               AS_WORKER_PROCESS: 'true',

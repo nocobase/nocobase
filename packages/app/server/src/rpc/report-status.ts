@@ -26,6 +26,7 @@ export function reportStatus(app) {
 
     // report uncaught errors
     process.on('uncaughtException', (err) => {
+      console.error(err.stack);
       mainProcessRPCClient.write(
         JSON.stringify({
           status: 'worker-error',
@@ -37,7 +38,6 @@ export function reportStatus(app) {
     });
 
     process.on('exit', (code) => {
-      console.log("process.on('exit')", code);
       Gateway.getInstance().close();
 
       mainProcessRPCClient &&

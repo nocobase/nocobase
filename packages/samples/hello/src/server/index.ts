@@ -2,7 +2,7 @@ import { InstallOptions, Plugin } from '@nocobase/server';
 
 export class HelloPlugin extends Plugin {
   beforeLoad() {
-    // TODO
+    // throw new Error('jhello world');
   }
 
   async load() {
