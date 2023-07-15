@@ -45,9 +45,9 @@ export const useStyles = genStyleHook('nb-variable', (token) => {
       },
 
       '.ant-tag-blue': {
-        color: textColor,
-        background: lightColor,
-        borderColor: lightBorderColor,
+        color: token.colorPrimaryText,
+        background: token.colorPrimaryBg,
+        borderColor: token.colorPrimaryBorder,
       },
 
       '.clear-button': {
