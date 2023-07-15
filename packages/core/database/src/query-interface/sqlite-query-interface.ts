@@ -1,6 +1,6 @@
-import QueryInterface from './query-interface';
 import { Collection } from '../collection';
 import sqlParser from '../sql-parser';
+import QueryInterface from './query-interface';
 
 export default class SqliteQueryInterface extends QueryInterface {
   constructor(db) {
@@ -22,7 +22,7 @@ export default class SqliteQueryInterface extends QueryInterface {
 
   async listViews() {
     const sql = `
-      SELECT name , sql as definition
+      SELECT name, sql as definition
       FROM sqlite_master
       WHERE type = 'view'
       ORDER BY name;
@@ -41,19 +41,7 @@ export default class SqliteQueryInterface extends QueryInterface {
     };
   }> {
     try {
-      const viewDefinition = await this.db.sequelize.query(
-        `SELECT sql FROM sqlite_master WHERE name = '${options.viewName}' AND type = 'view'`,
-        {
-          type: 'SELECT',
-        },
-      );
-
-      const createView = viewDefinition[0]['sql'];
-      const regex = /(?<=AS\s)([\s\S]*)/i;
-      const match = createView.match(regex);
-      const sql = match[0];
-
-      const { ast } = sqlParser.parse(sql);
+      const { ast } = this.parseSQL(await this.viewDef(options.viewName));
 
       const columns = ast.columns;
 
@@ -75,5 +63,27 @@ export default class SqliteQueryInterface extends QueryInterface {
       this.db.logger.warn(e);
       return {};
     }
+  }
+
+  parseSQL(sql: string): any {
+    return sqlParser.parse(sql);
+  }
+
+  async viewDef(viewName: string): Promise<string> {
+    const viewDefinition = await this.db.sequelize.query(
+      `SELECT sql
+       FROM sqlite_master
+       WHERE name = '${viewName}' AND type = 'view'`,
+      {
+        type: 'SELECT',
+      },
+    );
+
+    const createView = viewDefinition[0]['sql'];
+    const regex = /(?<=AS\s)([\s\S]*)/i;
+    const match = createView.match(regex);
+    const sql = match[0];
+
+    return sql;
   }
 }

@@ -46,6 +46,7 @@ export const number: IField = {
   filterable: {
     operators: operators.number,
   },
+  titleUsable: true,
   validateSchema(fieldSchema) {
     return {
       maximum: {
