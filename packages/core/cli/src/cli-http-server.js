@@ -14,6 +14,9 @@ class CliHttpServer {
 
   port;
 
+  workerErrors = [];
+  exitWithError = false;
+
   constructor() {
     this.listenDomainSocket();
   }
@@ -22,6 +25,7 @@ class CliHttpServer {
     if (!CliHttpServer.instance) {
       CliHttpServer.instance = new CliHttpServer();
     }
+
     return CliHttpServer.instance;
   }
 
@@ -33,8 +37,9 @@ class CliHttpServer {
         res.writeHead(503);
 
         const data = {
-          status: 'not-ready',
+          status: this.exitWithError ? 'exit-with-error' : 'not-ready',
           doing: this.cliDoingWork,
+          errors: this.workerErrors,
         };
 
         res.end(JSON.stringify(data));
@@ -85,6 +90,11 @@ class CliHttpServer {
 
           if (dataObj.status === 'worker-exit') {
             this.server.listen(this.port);
+          }
+
+          if (dataObj.status === 'worker-error') {
+            this.exitWithError = true;
+            this.workerErrors.push(dataObj.errorMessage);
           }
         }
       });

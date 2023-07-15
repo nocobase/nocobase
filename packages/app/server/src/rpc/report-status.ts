@@ -24,7 +24,18 @@ export function reportStatus(app) {
       );
     });
 
+    // report uncaught errors
+    process.on('uncaughtException', (err) => {
+      mainProcessRPCClient.write(
+        JSON.stringify({
+          status: 'worker-error',
+          errorMessage: err.message,
+        }),
+      );
+    });
+
     process.on('exit', (code) => {
+      console.log("process.on('exit')", code);
       Gateway.getInstance().close();
 
       mainProcessRPCClient &&
