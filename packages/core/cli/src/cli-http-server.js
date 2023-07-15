@@ -79,6 +79,7 @@ class CliHttpServer {
           const dataObj = JSON.parse(message);
 
           if (dataObj.workingMessage) {
+            this.exitWithError = false;
             this.setCliDoingWork(dataObj.workingMessage);
           }
 
@@ -89,7 +90,9 @@ class CliHttpServer {
           }
 
           if (dataObj.status === 'worker-exit') {
-            this.server.listen(this.port);
+            if (!this.server.listening) {
+              this.server.listen(this.port);
+            }
           }
 
           if (dataObj.status === 'worker-error') {

@@ -32,6 +32,8 @@ export function reportStatus(app) {
           errorMessage: err.message,
         }),
       );
+
+      process.exit(1);
     });
 
     process.on('exit', (code) => {

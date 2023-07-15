@@ -81,6 +81,6 @@ export class Gateway {
   }
 
   close() {
-    this.server.close();
+    this.server?.close();
   }
 }
