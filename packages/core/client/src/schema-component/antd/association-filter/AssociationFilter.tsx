@@ -69,6 +69,7 @@ export const AssociationFilter = (props) => {
                   line-height: 16px;
                   width: 16px;
                   padding-left: 1px;
+                  align-self: stretch;
                 }
               }
             }
