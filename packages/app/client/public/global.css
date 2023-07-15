@@ -49,3 +49,15 @@ body a:hover {
 body a:active {
   color: var(--colorPrimaryTextActive);
 }
+
+.ant-btn-link {
+  color: var(--colorPrimaryText);
+}
+
+.ant-btn-link:hover {
+  color: var(--colorPrimaryTextHover);
+}
+
+.ant-btn-link:active {
+  color: var(--colorPrimaryTextActive);
+}
