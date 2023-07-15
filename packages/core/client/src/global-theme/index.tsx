@@ -1,4 +1,4 @@
-import { ConfigProvider, type ThemeConfig as Config } from 'antd';
+import { ConfigProvider, theme as antdTheme, type ThemeConfig as Config } from 'antd';
 import _ from 'lodash';
 import React, { createContext, useCallback, useMemo, useRef } from 'react';
 
@@ -20,6 +20,7 @@ const GlobalThemeContext = createContext<{
   getCurrentSettingTheme: () => ThemeConfig;
   setCurrentEditingTheme: (themeItem: ThemeItem) => void;
   getCurrentEditingTheme: () => ThemeItem;
+  isDarkTheme: boolean;
 }>(null);
 
 export const useGlobalTheme = () => {
@@ -30,6 +31,14 @@ export const GlobalThemeProvider = ({ children, theme: defaultTheme }) => {
   const [theme, setTheme] = React.useState<ThemeConfig>(defaultTheme || { name: 'Custom theme' });
   const currentSettingThemeRef = useRef<ThemeConfig>(null);
   const currentEditingThemeRef = useRef<ThemeItem>(null);
+
+  const isDarkTheme = useMemo(() => {
+    const algorithm = theme?.algorithm;
+    if (Array.isArray(algorithm)) {
+      return algorithm.includes(antdTheme.darkAlgorithm);
+    }
+    return algorithm === antdTheme.darkAlgorithm;
+  }, [theme?.algorithm]);
 
   const setCurrentEditingTheme = useCallback((themeItem: ThemeItem) => {
     currentEditingThemeRef.current = themeItem ? _.cloneDeep(themeItem) : themeItem;
@@ -55,8 +64,16 @@ export const GlobalThemeProvider = ({ children, theme: defaultTheme }) => {
       getCurrentSettingTheme,
       setCurrentEditingTheme,
       getCurrentEditingTheme,
+      isDarkTheme,
     };
-  }, [theme]);
+  }, [
+    getCurrentEditingTheme,
+    getCurrentSettingTheme,
+    isDarkTheme,
+    setCurrentEditingTheme,
+    setCurrentSettingTheme,
+    theme,
+  ]);
 
   return (
     <GlobalThemeContext.Provider value={value}>

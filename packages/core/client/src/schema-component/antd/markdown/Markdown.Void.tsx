@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../../hooks/useDesignable';
 import { MarkdownVoidDesigner } from './Markdown.Void.Designer';
+import { useStyles } from './style';
 import { useParseMarkdown } from './util';
 
 const MarkdownEditor = (props: any) => {
@@ -43,6 +44,7 @@ const MarkdownEditor = (props: any) => {
 
 export const MarkdownVoid: any = observer(
   (props: any) => {
+    const { componentCls, hashId } = useStyles();
     const { content, className } = props;
     const field = useField();
     const schema = useFieldSchema();
@@ -78,7 +80,11 @@ export const MarkdownVoid: any = observer(
         }}
       />
     ) : (
-      <div className={cls(['nb-markdown', className])} style={props.style} dangerouslySetInnerHTML={{ __html: html }} />
+      <div
+        className={cls([componentCls, hashId, 'nb-markdown nb-markdown-default nb-markdown-table', className])}
+        style={props.style}
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
     );
   },
   { displayName: 'MarkdownVoid' },
