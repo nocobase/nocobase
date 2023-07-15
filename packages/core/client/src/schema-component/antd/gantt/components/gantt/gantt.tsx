@@ -4,6 +4,7 @@ import { RecursionField, Schema, useFieldSchema } from '@formily/react';
 import { message } from 'antd';
 import React, { SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAPIClient } from '../../../../../api-client';
 import { useCurrentAppInfo } from '../../../../../appInfo';
 import { useBlockRequestContext, useGanttBlockContext, useTableBlockContext } from '../../../../../block-provider';
 import { RecordProvider } from '../../../../../record-provider';
@@ -58,7 +59,8 @@ export const Gantt: any = (props: any) => {
   const { wrapSSR, componentCls, hashId } = useStyles();
   const { token } = useToken();
   const { designable } = useDesignable();
-  const currentTheme = localStorage.getItem('NOCOBASE_THEME');
+  const api = useAPIClient();
+  const currentTheme = api.auth.getOption('theme');
   const tableRowHeight = currentTheme === 'compact' ? 45 : 55.56;
   const {
     headerHeight = document.querySelector('.ant-table-thead')?.clientHeight || 0, // 与 antd 表格头部高度一致

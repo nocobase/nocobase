@@ -3,7 +3,7 @@ const getSubAppName = () => {
   if (!match) {
     return '';
   }
-  return match[1];
+  return match[1].toUpperCase();
 };
 
 export default getSubAppName;

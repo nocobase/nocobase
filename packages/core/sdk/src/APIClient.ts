@@ -31,6 +31,7 @@ export class Auth {
     role: 'NOCOBASE_ROLE',
     token: 'NOCOBASE_TOKEN',
     authenticator: 'NOCOBASE_AUTH',
+    theme: 'NOCOBASE_THEME',
   };
 
   protected options = {

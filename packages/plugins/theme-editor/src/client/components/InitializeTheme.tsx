@@ -1,14 +1,10 @@
-import { useCurrentUserContext, useGlobalTheme, useSystemSettings } from '@nocobase/client';
-import { getSubAppName } from '@nocobase/sdk';
+import { useAPIClient, useCurrentUserContext, useGlobalTheme, useSystemSettings } from '@nocobase/client';
 import { error } from '@nocobase/utils/client';
 import { Spin } from 'antd';
 import React, { useEffect, useRef } from 'react';
 import { changeAlgorithmFromFunctionToString } from '../utils/changeAlgorithmFromFunctionToString';
 import { changeAlgorithmFromStringToFunction } from '../utils/changeAlgorithmFromStringToFunction';
 import { useThemeListContext } from './ThemeListProvider';
-
-// 之所以存储到 localStorage 中，是为了防止登录页面主题不生效的问题
-const NOCOBASE_THEME = `${getSubAppName()}_NOCOBASE_THEME`;
 
 const CurrentThemeIdContext = React.createContext<number>(null);
 
@@ -25,9 +21,10 @@ const InitializeTheme: React.FC = ({ children }) => {
   const { setTheme } = useGlobalTheme();
   const { run, data, loading } = useThemeListContext();
   const themeId = useRef<number>(null);
+  const api = useAPIClient();
 
   useEffect(() => {
-    const storageTheme = localStorage.getItem(NOCOBASE_THEME);
+    const storageTheme = api.auth.getOption('theme');
     if (storageTheme) {
       try {
         setTheme(changeAlgorithmFromStringToFunction(JSON.parse(storageTheme)).config);
@@ -53,14 +50,11 @@ const InitializeTheme: React.FC = ({ children }) => {
       const theme = data?.find((item) => item.id === themeId.current);
       if (theme) {
         setTheme(theme.config);
-        localStorage.setItem(
-          NOCOBASE_THEME,
-          JSON.stringify(Object.assign({ ...theme }, { config: changeAlgorithmFromFunctionToString(theme.config) })),
-        );
+        api.auth.setOption('theme', JSON.stringify(Object.assign({ ...theme }, { config: changeAlgorithmFromFunctionToString(theme.config) })))
       }
     } else {
       setTheme({});
-      localStorage.setItem(NOCOBASE_THEME, null);
+      api.auth.setOption('theme', null);
     }
   }, [
     currentUser?.data?.data?.systemSettings?.themeId,
