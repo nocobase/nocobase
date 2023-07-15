@@ -1,20 +1,49 @@
 import { PlusOutlined } from '@ant-design/icons';
 import { useGlobalTheme, useToken } from '@nocobase/client';
-import { Button } from 'antd';
+import { App, Button, Space } from 'antd';
 import React, { useCallback } from 'react';
 import { useTranslation } from '../locale';
 import { useThemeEditorContext } from './ThemeEditorProvider';
 
 const ToEditTheme = () => {
-  const { theme, setCurrentSettingTheme } = useGlobalTheme();
+  const { theme, setTheme, setCurrentSettingTheme } = useGlobalTheme();
   const { token } = useToken();
   const { setOpen } = useThemeEditorContext();
   const { t } = useTranslation();
+  const { modal } = App.useApp();
 
   const handleClick = useCallback(() => {
-    setCurrentSettingTheme(theme);
-    setOpen(true);
-  }, [setCurrentSettingTheme, setOpen, theme]);
+    const m = modal.confirm({
+      title: t('Add New Theme'),
+      closable: true,
+      maskClosable: true,
+      width: 'fit-content',
+      footer: (
+        <Space style={{ float: 'right', marginTop: token.margin, justifyContent: 'flex-end' }} wrap>
+          <Button
+            onClick={() => {
+              setCurrentSettingTheme(theme);
+              setOpen(true);
+              m.destroy();
+            }}
+          >
+            {t('Edit based on current theme')}
+          </Button>
+          <Button
+            type={'primary'}
+            onClick={() => {
+              setCurrentSettingTheme(theme);
+              setTheme({});
+              setOpen(true);
+              m.destroy();
+            }}
+          >
+            {t('Create a brand new theme')}
+          </Button>
+        </Space>
+      ),
+    });
+  }, [modal, setCurrentSettingTheme, setOpen, setTheme, t, theme, token.margin]);
 
   return (
     <Button
