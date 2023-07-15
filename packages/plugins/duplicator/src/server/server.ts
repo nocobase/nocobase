@@ -2,7 +2,7 @@ import { Plugin } from '@nocobase/server';
 import addDumpCommand from './commands/dump-command';
 import addRestoreCommand from './commands/restore-command';
 
-import multer from '@koa/multer';
+import { koaMulter as multer } from '@nocobase/utils';
 import * as os from 'os';
 import dumpAction from './actions/dump-action';
 import dumpableCollections from './actions/dumpable-collections-action';
