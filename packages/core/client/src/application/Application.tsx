@@ -7,12 +7,9 @@ import React, { ComponentType, FC, ReactElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
 import { Link, NavLink, Navigate } from 'react-router-dom';
-import { AntdAppProvider, GlobalThemeProvider } from '..';
 import { APIClient, APIClientProvider } from '../api-client';
-import { CSSVariableProvider } from '../css-variable';
 import { i18n } from '../i18n';
 import { CurrentUserProvider } from '../user';
-import { CurrentUserSettingsMenuProvider } from '../user/CurrentUserSettingsMenuProvider';
 import { PluginManager, PluginType } from './PluginManager';
 import { ComponentTypeAndString, RouterManager, RouterOptions } from './RouterManager';
 import { AppComponent, BlankComponent, defaultAppComponents } from './components';
@@ -58,10 +55,6 @@ export class Application {
     this.use(APIClientProvider, { apiClient: this.apiClient });
     this.use(I18nextProvider, { i18n: this.i18n });
     this.use(CurrentUserProvider);
-    this.use(GlobalThemeProvider);
-    this.use(AntdAppProvider);
-    this.use(CSSVariableProvider);
-    this.use(CurrentUserSettingsMenuProvider);
   }
 
   private addReactRouterComponents() {

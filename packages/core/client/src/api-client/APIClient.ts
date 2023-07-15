@@ -19,7 +19,7 @@ const errorCache = new Map();
 export class APIClient extends APIClientSDK {
   services: Record<string, Result<any, any>> = {};
   silence = false;
-  /** 在初始化时应使用 antd 的 App.useApp() 返回的 notification，以确保使用正确的主题 */
+  /** 该值会在 AntdAppProvider 中被重新赋值 */
   antdNotification: any = notification;
 
   service(uid: string) {
