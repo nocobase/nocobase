@@ -1,2 +1,4 @@
+import { name } from '../package.json';
+
 export const authType = 'SMS';
-export const namespace = require('../package.json').name;
+export const namespace = name;

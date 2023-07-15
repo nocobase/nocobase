@@ -14,6 +14,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import * as reactI18next from 'react-i18next';
 import * as ReactRouterDom from 'react-router-dom';
+import jsxRuntime from 'react/jsx-runtime';
 import * as nocobaseClient from '../../index';
 import { getRequireJs } from './requirejs';
 
@@ -24,6 +25,7 @@ export function initDeps(requirejs: any) {
   // react
   requirejs.define('react', () => React);
   requirejs.define('react-dom', () => ReactDOM);
+  requirejs.define('react/jsx-runtime', () => jsxRuntime);
 
   // react-router
   requirejs.define('react-router-dom', () => ReactRouterDom);
@@ -47,8 +49,11 @@ export function initDeps(requirejs: any) {
 
   // nocobase
   requirejs.define('@nocobase/utils', () => nocobaseClientUtils);
+  requirejs.define('@nocobase/utils/client', () => nocobaseClientUtils);
   requirejs.define('@nocobase/client', () => nocobaseClient);
+  requirejs.define('@nocobase/client/client', () => nocobaseClient);
   requirejs.define('@nocobase/evaluators', () => nocobaseEvaluators);
+  requirejs.define('@nocobase/evaluators/client', () => nocobaseEvaluators);
 }
 
 export function getRemotePlugins(pluginData: PluginData[] = []): Promise<(typeof Plugin)[]> {
@@ -76,7 +81,7 @@ export async function getPlugins(pluginData: PluginData[], dynamicImport: any): 
   if (pluginData.length === 0) return [];
   const plugins = [];
 
-  if (process.env.NODE_ENV === 'development') {
+  if (process.env.NODE_ENV === 'development11') {
     const localPlugins = pluginData.filter((item) => item.type === 'local');
     const remotePlugins = pluginData.filter((item) => item.type !== 'local');
     plugins.push(

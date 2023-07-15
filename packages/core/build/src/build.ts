@@ -5,7 +5,6 @@ import { merge } from 'lodash';
 import { isAbsolute, join, sep } from 'path';
 import rimraf from 'rimraf';
 import signale from 'signale';
-import execa from 'execa';
 import babel from './babel';
 import getUserConfig, { CONFIG_FILES } from './getUserConfig';
 import randomColor from './randomColor';
@@ -13,6 +12,7 @@ import registerBabel from './registerBabel';
 import rollup from './rollup';
 import { Dispose, IBundleOptions, IBundleTypeOutput, ICjs, IEsm, IOpts } from './types';
 import { getExistFiles, getLernaPackages } from './utils';
+import { buildPluginServer, buildPluginClient } from './buildPlugin'
 
 export function getBundleOpts(opts: IOpts): IBundleOptions[] {
   const { cwd, buildArgs = {}, rootConfig = {} } = opts;
@@ -136,16 +136,8 @@ export async function build(opts: IOpts, extraOpts: IExtraBuildOpts = {}) {
   }
 
   if (pkgName.startsWith('@nocobase/plugin')) {
-    const buildOptions: execa.CommonOptions<any> = {
-      shell: true,
-      stdio: 'inherit',
-      cwd,
-      env: {
-        APP_ROOT: cwd,
-      },
-    }
-    await execa('father', ['build'], buildOptions)
-    await execa('father', ['prebundle'], buildOptions)
+    await buildPluginServer(cwd)
+    await buildPluginClient(cwd)
     return [];
   }
 
@@ -160,13 +152,6 @@ export async function build(opts: IOpts, extraOpts: IExtraBuildOpts = {}) {
 
   for (const bundleOpts of bundleOptsArray) {
     validateBundleOpts(bundleOpts, { cwd, rootPath });
-
-    // Clean dist
-    if (clean) {
-      log(chalk.gray(`Clean dist directory`));
-      rimraf.sync(join(cwd, 'dist'));
-    }
-
 
     // Build umd
     if (bundleOpts.umd) {

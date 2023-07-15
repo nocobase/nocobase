@@ -121,7 +121,7 @@
       "Are you sure you want to delete it?": "Ви впевнені, що хочете видалити це?",
       "This is a demo text, **supports Markdown syntax**.": "Це демонстраційний текст, **підтримує синтаксис Markdown**.",
       "Filter": "Фільтр",
-      "Connect data blocks": "З\'єднати блоки даних",
+      "Connect data blocks": "З'єднати блоки даних",
       "Action type": "Тип дії",
       "Actions": "Дії",
       "Insert": "Вставити",
@@ -397,7 +397,7 @@
       "Cyan": "Блакитний",
       "Blue": "Синій",
       "Geek blue": "Голубий",
-      "Purple": "Фіолетовий"
+      "Purple": "Фіолетовий",
       "Default": "Default",
       "Add card": "Add card",
       "edit title": "edit title",
@@ -1128,7 +1128,7 @@
         "default": "Помилка перевірки поля ${label}",
         "required": "Будь ласка, введіть ${label}",
         "enum": "${label} повинно бути одним із [${enum}]",
-        "whitespace": "${label} не може бути пробілом"
+        "whitespace": "${label} не може бути пробілом",
         "date": {
           "format": "Невірний формат дати для поля ${label}",
           "parse": "${label} не може бути перетворено у дату",
