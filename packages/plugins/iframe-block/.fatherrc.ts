@@ -174,7 +174,7 @@ function getFatherBuildConfig(options: BuildOptions) {
         },
       },
       cjs: {
-        input: `${SRC}/${SERVER}`,
+        input: SRC,
         output: `${DIST}/${SERVER}`,
       },
       prebundle: {
