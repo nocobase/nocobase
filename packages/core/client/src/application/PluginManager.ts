@@ -34,8 +34,8 @@ export class PluginManager {
 
   private async initRemotePlugins() {
     const res = await this.app.apiClient.request({ url: 'app:getPlugins' });
-    const pluginList: PluginData[] = res.data?.data || {};
-    const plugins = await getPlugins(pluginList);
+    const pluginList: PluginData[] = res.data?.data || [];
+    const plugins = await getPlugins(pluginList, this.app.dynamicImport);
     for await (const plugin of plugins) {
       await this.add(plugin);
     }

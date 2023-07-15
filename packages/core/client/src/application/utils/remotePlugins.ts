@@ -51,14 +51,7 @@ export function initDeps(requirejs: any) {
   requirejs.define('@nocobase/evaluators', () => nocobaseEvaluators);
 }
 
-export function getPlugins(pluginData: PluginData[]): Promise<(typeof Plugin)[]> {
-  if (pluginData.length === 0) return Promise.resolve([]);
-  // if (process.env.NODE_ENV === 'development') {
-  //   return Promise.all(
-  //     packageNames.map((packageName) => import(`${packageName}/client`).then((item) => item.default || item)),
-  //   );
-  // }
-
+export function getRemotePlugins(pluginData: PluginData[]): Promise<(typeof Plugin)[]> {
   const requirejs: any = getRequireJs();
   (window as any).define = requirejs.define;
   initDeps(requirejs);
@@ -69,7 +62,7 @@ export function getPlugins(pluginData: PluginData[]): Promise<(typeof Plugin)[]>
     }, {}),
   });
 
-  return new Promise<(typeof Plugin)[]>((resolve) => {
+  return new Promise((resolve) => {
     requirejs.requirejs(
       pluginData.map((item) => item.packageName),
       (...plugins: (typeof Plugin & { default?: typeof Plugin })[]) => {
@@ -77,4 +70,27 @@ export function getPlugins(pluginData: PluginData[]): Promise<(typeof Plugin)[]>
       },
     );
   });
+}
+
+export async function getPlugins(pluginData: PluginData[], dynamicImport: any): Promise<(typeof Plugin)[]> {
+  if (pluginData.length === 0) return [];
+  const plugins = [];
+
+  if (process.env.NODE_ENV === 'development') {
+    const localPlugins = pluginData.filter((item) => item.type === 'local');
+    const remotePlugins = pluginData.filter((item) => item.type !== 'local');
+    plugins.push(
+      ...(await Promise.all(localPlugins.map((item) => dynamicImport(item.name).then((item) => item.default || item)))),
+    );
+
+    if (remotePlugins.length === 0) {
+      return plugins;
+    } else {
+      const remotePluginList = await getRemotePlugins(remotePlugins);
+      plugins.push(...remotePluginList);
+      return plugins;
+    }
+  }
+
+  return getRemotePlugins(pluginData);
 }
