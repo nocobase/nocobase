@@ -4,6 +4,13 @@ import { getPlugins } from './utils/remotePlugins';
 
 export type PluginOptions<T = any> = { name?: string; config?: T };
 export type PluginType<Opts = any> = typeof Plugin | [typeof Plugin, PluginOptions<Opts>];
+export type PluginData = {
+  name: string;
+  packageName: string;
+  version: string;
+  url: string;
+  type: 'local' | 'upload' | 'npm';
+};
 
 export class PluginManager {
   protected pluginInstances: Map<typeof Plugin, Plugin> = new Map();
@@ -27,8 +34,8 @@ export class PluginManager {
 
   private async initRemotePlugins() {
     const res = await this.app.apiClient.request({ url: 'app:getPlugins' });
-    const pluginsUrls: Record<string, string> = res.data?.data || {};
-    const plugins = await getPlugins(pluginsUrls);
+    const pluginList: PluginData[] = res.data?.data || {};
+    const plugins = await getPlugins(pluginList);
     for await (const plugin of plugins) {
       await this.add(plugin);
     }

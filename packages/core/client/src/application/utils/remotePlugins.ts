@@ -18,6 +18,7 @@ import * as nocobaseClient from '../../index';
 import { getRequireJs } from './requirejs';
 
 import type { Plugin } from '../Plugin';
+import { PluginData } from '../PluginManager';
 
 export function initDeps(requirejs: any) {
   // react
@@ -50,9 +51,8 @@ export function initDeps(requirejs: any) {
   requirejs.define('@nocobase/evaluators', () => nocobaseEvaluators);
 }
 
-export function getPlugins(pluginsUrls: Record<string, string>): Promise<(typeof Plugin)[]> {
-  const packageNames = Object.keys(pluginsUrls);
-  if (packageNames.length === 0) return Promise.resolve([]);
+export function getPlugins(pluginData: PluginData[]): Promise<(typeof Plugin)[]> {
+  if (pluginData.length === 0) return Promise.resolve([]);
   // if (process.env.NODE_ENV === 'development') {
   //   return Promise.all(
   //     packageNames.map((packageName) => import(`${packageName}/client`).then((item) => item.default || item)),
@@ -63,12 +63,18 @@ export function getPlugins(pluginsUrls: Record<string, string>): Promise<(typeof
   (window as any).define = requirejs.define;
   initDeps(requirejs);
   requirejs.requirejs.config({
-    paths: pluginsUrls,
+    paths: pluginData.reduce<Record<string, string>>((memo, item) => {
+      memo[item.packageName] = item.url;
+      return memo;
+    }, {}),
   });
 
   return new Promise<(typeof Plugin)[]>((resolve) => {
-    requirejs.requirejs(packageNames, (...plugins: (typeof Plugin & { default?: typeof Plugin })[]) => {
-      resolve(plugins.map((item) => item.default || item));
-    });
+    requirejs.requirejs(
+      pluginData.map((item) => item.packageName),
+      (...plugins: (typeof Plugin & { default?: typeof Plugin })[]) => {
+        resolve(plugins.map((item) => item.default || item));
+      },
+    );
   });
 }

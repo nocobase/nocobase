@@ -193,15 +193,16 @@ export class ClientPlugin extends Plugin {
               try {
                 const packageName = PluginManager.getPackageName(item.name);
                 require.resolve(`${packageName}/client`);
-                return packageName;
-              } catch (error) {}
-              return false;
+                return {
+                  ...item.toJSON(),
+                  packageName,
+                  url: getPackageClientStaticUrl(packageName, 'index'),
+                };
+              } catch {
+                return false;
+              }
             })
-            .filter(Boolean)
-            .reduce((memo, packageName) => {
-              memo[packageName] = getPackageClientStaticUrl(packageName, 'index');
-              return memo;
-            }, {});
+            .filter(Boolean);
           await next();
         },
         async clearCache(ctx, next) {
