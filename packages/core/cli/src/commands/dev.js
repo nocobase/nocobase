@@ -81,18 +81,20 @@ module.exports = (cli) => {
         }
 
         const runDevServer = () => {
-          run('tsx', argv, {
+          const child = run('tsx', argv, {
             env: {
               APP_PORT: serverPort,
               AS_WORKER_PROCESS: 'true',
               MAIN_PROCESS_SOCKET_PATH: cliHttpServer.socketPath,
             },
-          }).catch((err) => {
-            if (err.exitCode == 100) {
-              console.log('Restarting server...');
+          });
+
+          cliHttpServer.devChildPid = child.pid;
+
+          child.on('exit', (code) => {
+            console.log(`child process exited with code ${code}`);
+            if (code === 143) {
               runDevServer();
-            } else {
-              console.error(err);
             }
           });
         };

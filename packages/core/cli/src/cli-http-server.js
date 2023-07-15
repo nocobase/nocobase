@@ -14,8 +14,10 @@ class CliHttpServer {
 
   port;
 
-  workerErrors = [];
+  lastWorkerError;
   exitWithError = false;
+
+  devChildPid;
 
   constructor() {
     this.listenDomainSocket();
@@ -39,12 +41,14 @@ class CliHttpServer {
         const data = {
           status: this.exitWithError ? 'exit-with-error' : 'not-ready',
           doing: this.cliDoingWork,
-          errors: this.workerErrors,
+          lastWorkerError: this.lastWorkerError,
         };
 
         res.end(JSON.stringify(data));
       }
     });
+
+    this.server.keepAliveTimeout = 1;
 
     this.server.listen(port, () => {
       console.log(`cli http server listening on port ${port}`);
@@ -89,15 +93,20 @@ class CliHttpServer {
             c.write('start');
           }
 
-          if (dataObj.status === 'worker-exit') {
+          if (dataObj.status === 'worker-exit' || dataObj.status === 'worker-restart') {
             if (!this.server.listening) {
               this.server.listen(this.port);
             }
           }
 
+          if (dataObj.status === 'worker-restart') {
+            console.log(`killing dev child process ${this.devChildPid}`);
+            process.kill(this.devChildPid, 'SIGTERM');
+          }
+
           if (dataObj.status === 'worker-error') {
             this.exitWithError = true;
-            this.workerErrors.push(dataObj.errorMessage);
+            this.lastWorkerError = dataObj.errorMessage;
           }
         }
       });
