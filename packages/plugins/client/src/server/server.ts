@@ -128,7 +128,7 @@ export class ClientPlugin extends Plugin {
       actions: ['app:reboot', 'app:clearCache'],
     });
     const dialect = this.app.db.sequelize.getDialect();
-    const locales = require('./locale').default;
+    const locales = require('./locale');
     const restartMark = resolve(process.cwd(), 'storage', 'restart');
     this.app.on('beforeStart', async () => {
       if (fs.existsSync(restartMark)) {

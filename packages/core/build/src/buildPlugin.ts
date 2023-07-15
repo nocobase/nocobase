@@ -132,14 +132,19 @@ export function buildPluginServer(cwd: string) {
   const packageJson = getPackageJson(cwd);
   check(cwd, packageJson, 'server')
 
-  const entry = fg.globSync(['src/index.ts', 'src/server/!(__tests__)/**'], {
+  const entry = fg.globSync([
+    'src/**',
+    '!src/server/__tests__/**',
+    '!src/client/**'
+  ], {
     cwd,
     absolute: true,
   })
   return tsupBuild({
     entry,
-    splitting: true,
+    splitting: false,
     clean: false,
+    bundle: false,
     silent: false,
     treeshake: true,
     outDir: path.join(cwd, 'lib'),
