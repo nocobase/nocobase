@@ -173,8 +173,8 @@ function getFatherBuildConfig(options: BuildOptions) {
         },
       },
       cjs: {
-        input: `${SRC}/${SERVER}`,
-        output: `${DIST}/${SERVER}`,
+        input: SRC,
+        output: DIST,
       },
       prebundle: {
         output: `${DIST}/node_modules`,

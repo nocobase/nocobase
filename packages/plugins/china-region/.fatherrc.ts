@@ -194,7 +194,7 @@ function getFatherBuildConfig(options: BuildOptions) {
       },
       cjs: {
         input: SRC,
-        output: `${DIST}/${SERVER}`,
+        output: DIST,
       },
       // prebundle: {
       //   output: DIST,
