@@ -8,6 +8,7 @@
     "@hapi/topo": "^6.0.0",
     "@koa/cors": "^3.1.0",
     "@koa/router": "^9.4.0",
+    "@formily/json-schema": "2.2.26",
     "@nocobase/acl": "0.11.0-alpha.1",
     "@nocobase/actions": "0.11.0-alpha.1",
     "@nocobase/auth": "0.11.0-alpha.1",

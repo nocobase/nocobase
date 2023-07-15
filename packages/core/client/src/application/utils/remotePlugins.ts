@@ -81,7 +81,7 @@ export async function getPlugins(pluginData: PluginData[], dynamicImport: any): 
   if (pluginData.length === 0) return [];
   const plugins = [];
 
-  if (process.env.NODE_ENV === 'development11') {
+  if (process.env.NODE_ENV === 'development') {
     const localPlugins = pluginData.filter((item) => item.type === 'local');
     const remotePlugins = pluginData.filter((item) => item.type !== 'local');
     plugins.push(
