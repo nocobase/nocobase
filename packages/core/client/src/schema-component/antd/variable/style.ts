@@ -14,6 +14,15 @@ export const useStyles = genStyleHook('nb-variable', (token) => {
 
   return {
     [componentCls]: {
+      '.ant-formily-item .ant-formily-item-control .ant-formily-item-control-content .ant-formily-item-control-content-component':
+        {
+          lineHeight: 'normal',
+        },
+
+      '.ant-formily-item': {
+        marginBottom: 0,
+      },
+
       '.ant-input': {
         borderTopRightRadius: 0,
         borderBottomRightRadius: 0,
