@@ -53,7 +53,13 @@ const Overview = ({ theme }: { theme: ThemeConfig }) => {
 };
 
 const ThemeCard = (props: Props) => {
-  const { theme: currentTheme, setTheme, setCurrentSettingTheme, setCurrentEditingTheme } = useGlobalTheme();
+  const {
+    theme: currentTheme,
+    setTheme,
+    setCurrentSettingTheme,
+    setCurrentEditingTheme,
+    getCurrentEditingTheme,
+  } = useGlobalTheme();
   const { setOpen } = useThemeEditorContext();
   const currentUser = useCurrentUserContext();
   const systemSettings = useSystemSettings();
@@ -84,7 +90,17 @@ const ThemeCard = (props: Props) => {
         onChange?.({ type: HandleTypes.delete, item });
       },
     });
-  }, [api, currentUser?.data?.data?.systemSettings?.theme, item, onChange, updateUserThemeSettings]);
+  }, [
+    api,
+    currentUser?.data?.data?.systemSettings?.themeId,
+    item,
+    modal,
+    onChange,
+    systemSettings?.data?.data?.options?.themeId,
+    t,
+    updateSystemThemeSettings,
+    updateUserThemeSettings,
+  ]);
   const handleSwitchOptional = useCallback(
     async (checked: boolean) => {
       setLoading(true);
@@ -119,7 +135,16 @@ const ThemeCard = (props: Props) => {
       message.success(t('Updated successfully'));
       onChange?.({ type: HandleTypes.optional, item });
     },
-    [item],
+    [
+      api,
+      currentThemeId,
+      item,
+      onChange,
+      systemSettings?.data?.data?.options?.themeId,
+      t,
+      updateSystemThemeSettings,
+      updateUserThemeSettings,
+    ],
   );
   const handleSwitchDefault = useCallback(
     async (checked: boolean) => {
@@ -147,7 +172,7 @@ const ThemeCard = (props: Props) => {
       message.success(t('Updated successfully'));
       onChange?.({ type: HandleTypes.optional, item });
     },
-    [item],
+    [api, item, onChange, t, updateSystemThemeSettings],
   );
 
   const handleEdit = useCallback(() => {
@@ -202,7 +227,15 @@ const ThemeCard = (props: Props) => {
         },
       ],
     };
-  }, [handleSwitchOptional, item.optional]);
+  }, [
+    handleSwitchDefault,
+    handleSwitchOptional,
+    item.id,
+    item.optional,
+    loading,
+    systemSettings?.data?.data?.options?.themeId,
+    t,
+  ]);
 
   const actions = useMemo(() => {
     return [
@@ -240,7 +273,14 @@ const ThemeCard = (props: Props) => {
         {text}
       </Tag>
     );
-  }, [currentThemeId, item.id, item.optional, systemSettings?.data?.data?.options?.themeId]);
+  }, [currentThemeId, item.id, item.optional, systemSettings?.data?.data?.options?.themeId, t]);
+
+  const cardStyle = useMemo(() => {
+    if (getCurrentEditingTheme()?.id === item.id) {
+      return { width: 240, height: 240, overflow: 'hidden', outline: '1px solid #f18b62', ...style };
+    }
+    return { width: 240, height: 240, overflow: 'hidden', ...style };
+  }, [getCurrentEditingTheme, item.id, style]);
 
   return (
     <Card
@@ -248,7 +288,7 @@ const ThemeCard = (props: Props) => {
       extra={extra}
       title={item.config.name}
       size="small"
-      style={{ width: 240, height: 240, overflow: 'hidden', ...style }}
+      style={cardStyle}
       headStyle={{ minHeight: 38 }}
       actions={actions}
     >
