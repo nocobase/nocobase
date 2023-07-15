@@ -393,12 +393,23 @@ export class PluginManager {
   }
 
   async install(options: InstallOptions = {}) {
+    this.app.setWorkingMessage('install plugins...');
+    const total = this.plugins.size;
+
+    let current = 0;
+
     for (const [name, plugin] of this.plugins) {
+      current += 1;
+
       if (!plugin.enabled) {
         continue;
       }
+
+      this.app.setWorkingMessage(`before install plugin [${name}], ${current}/${total}`);
       await this.app.emitAsync('beforeInstallPlugin', plugin, options);
+      this.app.logger.debug(`install plugin [${name}]...`);
       await plugin.install(options);
+      this.app.setWorkingMessage(`after install plugin [${name}], ${current}/${total}`);
       await this.app.emitAsync('afterInstallPlugin', plugin, options);
     }
   }

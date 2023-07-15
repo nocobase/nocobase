@@ -60,7 +60,7 @@ module.exports = (cli) => {
         cliHttpServer.listen(serverPort);
 
         cliHttpServer.setCliDoingWork('install');
-        await runAppCommand('install', ['--silent']);
+        await runAppCommand('install', ['--silent'], {});
 
         cliHttpServer.setCliDoingWork('start server process');
 

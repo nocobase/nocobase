@@ -8,7 +8,8 @@ const writeJSON = (socket, data) => {
 export function reportStatus(app) {
   if (process.env.MAIN_PROCESS_SOCKET_PATH) {
     console.log(`current pid is ${process.pid}`);
-    // connect to main process socket server
+
+    console.log(`connect to main process socket server`);
     const mainProcessRPCClient = net.createConnection({
       path: process.env.MAIN_PROCESS_SOCKET_PATH,
     });

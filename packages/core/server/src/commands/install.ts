@@ -28,7 +28,6 @@ export default (app: Application) => {
           console.log(chalk.red('This operation will clear the database!!!'));
           console.log();
         }
-
         return;
       }
 

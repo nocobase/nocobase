@@ -122,12 +122,12 @@ exports.runInstall = async () => {
   }
 };
 
-exports.runAppCommand = async (command, args = []) => {
+exports.runAppCommand = async (command, args = [], options = {}) => {
   const { APP_PACKAGE_ROOT } = process.env;
 
   if (exports.isDev()) {
     const argv = [
-      '-P',
+      '--tsconfig',
       './tsconfig.server.json',
       '-r',
       'tsconfig-paths/register',
@@ -135,10 +135,11 @@ exports.runAppCommand = async (command, args = []) => {
       command,
       ...args,
     ];
-    await exports.run('ts-node', argv);
+
+    await exports.run('tsx', argv, options);
   } else if (isProd()) {
     const argv = [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, command, ...args];
-    await exports.run('node', argv);
+    await exports.run('node', argv, options);
   }
 };
 

@@ -13,6 +13,7 @@ import { i18n, InitOptions } from 'i18next';
 import Koa, { DefaultContext as KoaDefaultContext, DefaultState as KoaDefaultState } from 'koa';
 import compose from 'koa-compose';
 import lodash from 'lodash';
+import * as process from 'process';
 import semver from 'semver';
 import { promisify } from 'util';
 import { createACL } from './acl';
