@@ -30,11 +30,16 @@ const CSSVariableProvider = ({ children }) => {
     document.body.style.setProperty('--colorInfoBg', token.colorInfoBg);
     document.body.style.setProperty('--colorInfoBorder', token.colorInfoBorder);
     document.body.style.setProperty('--colorText', token.colorText);
+    document.body.style.setProperty('--colorPrimaryText', token.colorPrimaryText);
+    document.body.style.setProperty('--colorPrimaryTextActive', token.colorPrimaryTextActive);
+    document.body.style.setProperty('--colorPrimaryTextHover', token.colorPrimaryTextHover);
     document.body.style.setProperty('--colorBgScrollTrack', colorBgScrollTrack);
     document.body.style.setProperty('--colorBgScrollBar', colorBgScrollBar);
     document.body.style.setProperty('--colorBgScrollBarHover', colorBgScrollBarHover);
     document.body.style.setProperty('--colorBgScrollBarActive', colorBgScrollBarActive);
     document.body.style.setProperty('--colorBgDrawer', colorBgDrawer);
+
+    // 设置登录页面的背景色
     document.body.style.setProperty('background-color', token.colorBgContainer);
   }, [
     token.marginLG,
@@ -57,6 +62,9 @@ const CSSVariableProvider = ({ children }) => {
     colorBgScrollBarHover,
     colorBgScrollBarActive,
     colorBgDrawer,
+    token.colorPrimaryText,
+    token.colorPrimaryTextActive,
+    token.colorPrimaryTextHover,
   ]);
 
   return children;

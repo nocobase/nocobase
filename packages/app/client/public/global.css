@@ -37,3 +37,15 @@
 .win .rc-virtual-list-scrollbar-thumb:active {
   background: var(--colorBgScrollBarActive);
 }
+
+body a {
+  color: var(--colorPrimaryText);
+}
+
+body a:hover {
+  color: var(--colorPrimaryTextHover);
+}
+
+body a:active {
+  color: var(--colorPrimaryTextActive);
+}
