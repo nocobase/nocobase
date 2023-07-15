@@ -277,9 +277,9 @@ const ThemeCard = (props: Props) => {
 
   const cardStyle = useMemo(() => {
     if (getCurrentEditingTheme()?.id === item.id) {
-      return { width: 240, height: 240, overflow: 'hidden', outline: '1px solid #f18b62', ...style };
+      return { cursor: 'default', width: 240, height: 240, overflow: 'hidden', outline: '1px solid #f18b62', ...style };
     }
-    return { width: 240, height: 240, overflow: 'hidden', ...style };
+    return { cursor: 'default', width: 240, height: 240, overflow: 'hidden', ...style };
   }, [getCurrentEditingTheme, item.id, style]);
 
   return (

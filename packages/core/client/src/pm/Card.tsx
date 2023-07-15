@@ -1,5 +1,4 @@
 import { DeleteOutlined, SettingOutlined } from '@ant-design/icons';
-import { css } from '@emotion/css';
 import {
   App,
   Avatar,
@@ -151,10 +150,12 @@ function PluginDetail(props: IPluginDetail) {
 
 function CommonCard(props: ICommonCard) {
   const { onClick, name, displayName, actions, description, title } = props;
+  const { styles } = useStyles();
+
   return (
     <Card
       bordered={false}
-      style={{ width: 'calc(20% - 24px)', marginRight: 24, marginBottom: 24, transition: 'all 0.35s ease-in-out' }}
+      className={styles.CommonCard}
       onClick={onClick}
       hoverable
       // className={cls(css`
@@ -169,15 +170,7 @@ function CommonCard(props: ICommonCard) {
       // actions={[<a>Settings</a>, <a>Remove</a>, <Switch size={'small'} defaultChecked={true}></Switch>]}
     >
       <Card.Meta
-        className={css`
-          .ant-card-meta-avatar {
-            margin-top: 8px;
-
-            .ant-avatar {
-              border-radius: 2px;
-            }
-          }
-        `}
+        className={styles.avatar}
         avatar={<Avatar style={{ background: `${stringToColor(name)}` }}>{name?.[0]}</Avatar>}
         description={
           <Tooltip title={description} placement="bottom">
@@ -195,17 +188,7 @@ function CommonCard(props: ICommonCard) {
         title={
           <span>
             {displayName || name}
-            <span
-              className={css`
-                display: block;
-                color: rgba(0, 0, 0, 0.45);
-                font-weight: normal;
-                font-size: 13px;
-                // margin-left: 8px;
-              `}
-            >
-              {title}
-            </span>
+            <span className={styles.version}>{title}</span>
           </span>
         }
       />

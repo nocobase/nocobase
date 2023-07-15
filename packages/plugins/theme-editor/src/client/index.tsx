@@ -48,12 +48,12 @@ const CustomThemeProvider = React.memo((props) => {
 
   const settings = useMemo(() => {
     return {
-      theme: {
-        title: t('Theme'),
+      'theme-editor': {
+        title: t('Theme editor'),
         icon: 'BgColorsOutlined',
         tabs: {
           themes: {
-            title: t('Local'),
+            title: t('Themes'),
             component: ThemeList,
           },
         },

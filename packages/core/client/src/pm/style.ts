@@ -36,5 +36,26 @@ export const useStyles = createStyles(({ token }) => {
       height: '60vh',
       overflowY: 'auto',
     },
+
+    CommonCard: {
+      width: `calc(20% - ${token.marginLG}px)`,
+      marginRight: token.marginLG,
+      marginBottom: token.marginLG,
+      transition: 'all 0.35s ease-in-out',
+    },
+
+    avatar: {
+      '.ant-card-meta-avatar': {
+        marginTop: '8px',
+        '.ant-avatar': { borderRadius: '2px' },
+      },
+    },
+
+    version: {
+      display: 'block',
+      color: token.colorTextDescription,
+      fontWeight: 'normal',
+      fontSize: token.fontSize,
+    },
   };
 });

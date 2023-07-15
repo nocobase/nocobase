@@ -1,6 +1,6 @@
 const locale = {
-  Theme: '主题',
-  Local: '本地',
+  'Theme editor': '主题编辑器',
+  Themes: '主题',
   'Dark theme': '暗黑主题',
   Optional: '可选',
   'Non-optional': '不可选',

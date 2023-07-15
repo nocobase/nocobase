@@ -3,9 +3,9 @@
   "version": "0.11.0-alpha.1",
   "main": "lib/server/index.js",
   "displayName": "Theme editor",
-  "displayName.zh-CN": "自定义主题",
-  "description": "Support to custom theme",
-  "description.zh-CN": "支持自定义主题功能",
+  "displayName.zh-CN": "主题编辑器",
+  "description": "Allows you to customize UI colors, sizes, etc.",
+  "description.zh-CN": "允许你自定义 UI 的颜色、尺寸等。",
   "dependencies": {
     "@nocobase/client": "0.11.0-alpha.1",
     "react": "^18.2.0",

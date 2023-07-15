@@ -54,7 +54,7 @@ const CustomTheme = ({ onThemeChange }: { onThemeChange?: (theme: ThemeConfig) =
   const api = useAPIClient();
   const [themeName, setThemeName] = React.useState<string>(globalTheme.name);
   const [loading, setLoading] = React.useState(false);
-  const { updateUserThemeSettings, updateSystemThemeSettings } = useUpdateThemeSettings();
+  const { updateUserThemeSettings } = useUpdateThemeSettings();
   const [themeNameStatus, setThemeNameStatus] = React.useState<'' | 'error' | 'warning'>();
 
   useEffect(() => {
@@ -108,7 +108,7 @@ const CustomTheme = ({ onThemeChange }: { onThemeChange?: (theme: ThemeConfig) =
           isBuiltIn: false,
         },
       });
-      await Promise.all([updateUserThemeSettings(data.data.data.id), updateSystemThemeSettings(data.data.data.id)]);
+      await updateUserThemeSettings(data.data.data.id);
       refresh?.();
       message.success(t('Saved successfully'));
     } catch (err) {
