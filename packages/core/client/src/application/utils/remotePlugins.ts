@@ -59,6 +59,7 @@ export function initDeps(requirejs: any) {
 export function getRemotePlugins(pluginData: PluginData[] = []): Promise<(typeof Plugin)[]> {
   const requirejs: any = getRequireJs();
   (window as any).define = requirejs.define;
+
   initDeps(requirejs);
   requirejs.requirejs.config({
     paths: pluginData.reduce<Record<string, string>>((memo, item) => {

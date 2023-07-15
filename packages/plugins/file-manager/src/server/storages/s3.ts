@@ -1,3 +1,5 @@
+import { DeleteObjectsCommand, S3Client } from '@aws-sdk/client-s3';
+import multerS3 from 'multer-s3';
 import { AttachmentModel } from '.';
 import { STORAGE_TYPE_S3 } from '../constants';
 import { cloudFilenameGetter } from '../utils';
@@ -5,8 +7,6 @@ import { cloudFilenameGetter } from '../utils';
 export default {
   filenameKey: 'key',
   make(storage) {
-    const { S3Client } = require('@aws-sdk/client-s3');
-    const multerS3 = require('multer-s3');
     const { accessKeyId, secretAccessKey, bucket, acl = 'public-read', ...options } = storage.options;
     const s3 = new S3Client({
       ...options,
@@ -46,7 +46,6 @@ export default {
     };
   },
   async delete(storage, records: AttachmentModel[]): Promise<[number, AttachmentModel[]]> {
-    const { DeleteObjectsCommand } = require('@aws-sdk/client-s3');
     const { s3 } = this.make(storage);
     const { Deleted } = await s3.send(
       new DeleteObjectsCommand({

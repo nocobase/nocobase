@@ -1,10 +1,10 @@
+import * as createAliOssStorage from 'multer-aliyun-oss';
 import { AttachmentModel } from '.';
 import { STORAGE_TYPE_ALI_OSS } from '../constants';
 import { cloudFilenameGetter } from '../utils';
 
 export default {
   make(storage) {
-    const createAliOssStorage = require('multer-aliyun-oss');
     return new createAliOssStorage({
       config: storage.options,
       filename: cloudFilenameGetter(storage),
