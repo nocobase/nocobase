@@ -51,7 +51,7 @@ export function initDeps(requirejs: any) {
   requirejs.define('@nocobase/evaluators', () => nocobaseEvaluators);
 }
 
-export function getRemotePlugins(pluginData: PluginData[]): Promise<(typeof Plugin)[]> {
+export function getRemotePlugins(pluginData: PluginData[] = []): Promise<(typeof Plugin)[]> {
   const requirejs: any = getRequireJs();
   (window as any).define = requirejs.define;
   initDeps(requirejs);

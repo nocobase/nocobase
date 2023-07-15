@@ -7,7 +7,7 @@ describe('Plugin', () => {
   beforeAll(() => {
     const mock = new MockAdapter(axios);
     mock.onGet('app:getPlugins').reply(200, {
-      data: {},
+      data: [],
     });
   });
 
