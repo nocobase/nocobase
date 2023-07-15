@@ -2,17 +2,19 @@ import { PlusOutlined } from '@ant-design/icons';
 import { useGlobalTheme, useToken } from '@nocobase/client';
 import { Button } from 'antd';
 import React, { useCallback } from 'react';
+import { useTranslation } from '../locale';
 import { useThemeEditorContext } from './ThemeEditorProvider';
 
 const ToEditTheme = () => {
   const { theme, setCurrentSettingTheme } = useGlobalTheme();
   const { token } = useToken();
   const { setOpen } = useThemeEditorContext();
+  const { t } = useTranslation();
 
   const handleClick = useCallback(() => {
     setCurrentSettingTheme(theme);
     setOpen(true);
-  }, [setOpen]);
+  }, [setCurrentSettingTheme, setOpen, theme]);
 
   return (
     <Button
@@ -27,7 +29,7 @@ const ToEditTheme = () => {
       icon={<PlusOutlined />}
       onClick={handleClick}
     >
-      Add New Theme
+      {t('Add New Theme')}
     </Button>
   );
 };
