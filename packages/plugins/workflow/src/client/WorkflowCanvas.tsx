@@ -141,14 +141,12 @@ export function WorkflowCanvas() {
     >
       <div className="workflow-toolbar">
         <header>
-          <Breadcrumb>
-            <Breadcrumb.Item>
-              <Link to={`/admin/settings/workflow/workflows`}>{lang('Workflow')}</Link>
-            </Breadcrumb.Item>
-            <Breadcrumb.Item>
-              <strong>{workflow.title}</strong>
-            </Breadcrumb.Item>
-          </Breadcrumb>
+          <Breadcrumb
+            items={[
+              { title: <Link to={`/admin/settings/workflow/workflows`}>{lang('Workflow')}</Link> },
+              { title: <strong>{workflow.title}</strong> },
+            ]}
+          />
         </header>
         <aside>
           <div className="workflow-versions">
