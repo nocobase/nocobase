@@ -24,20 +24,35 @@ export const createRpcHttpServer = (options: RpcHttpServerOptions) => {
 
       req.on('end', () => {
         const data = JSON.parse(body);
-        const { appName, method, args } = data;
-        localBroker
-          .callApp(appName, method, ...args)
-          .then((result) => {
+
+        let handlePromise;
+
+        if (req.url == '/push') {
+          const { appName, event, options } = data;
+
+          handlePromise = localBroker.pushToApp(appName, event, options).then((result) => {
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.write(JSON.stringify(result));
             res.end();
-          })
-          .catch((err) => {
-            console.log(err);
-            res.writeHead(500, { 'Content-Type': 'application/json' });
-            res.write(JSON.stringify({ error: err.message }));
+          });
+        }
+
+        if (req.url == '/call') {
+          const { appName, method, args } = data;
+
+          handlePromise = localBroker.callApp(appName, method, ...args).then((result) => {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.write(JSON.stringify(result));
             res.end();
           });
+        }
+
+        handlePromise?.catch((err) => {
+          console.log(err);
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.write(JSON.stringify({ error: err.message }));
+          res.end();
+        });
       });
     } else {
       res.end();

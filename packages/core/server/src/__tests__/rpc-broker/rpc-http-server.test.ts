@@ -47,7 +47,7 @@ describe('rpc http server', () => {
     await app.destroy();
   });
 
-  it('should handle rpc client request', async () => {
+  it('should handle rpc client call request', async () => {
     const rpcClient = createRpcClient();
 
     const callResponse = await rpcClient.call({
@@ -58,6 +58,10 @@ describe('rpc http server', () => {
     });
 
     expect(callResponse.result).toEqual(app.name);
+  });
+
+  it('should handle rpc client push request', async () => {
+    const rpcClient = createRpcClient();
 
     const appTestHandler = jest.fn();
 
