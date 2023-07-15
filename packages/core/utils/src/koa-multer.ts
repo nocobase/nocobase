@@ -1,7 +1,7 @@
 import originalMulter from 'multer';
 
-function multer(options) {
-  const m = originalMulter(options);
+function multer(options?) {
+  const m = originalMulter(options) as any;
 
   makePromise(m, 'any');
   makePromise(m, 'array');
