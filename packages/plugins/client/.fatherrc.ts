@@ -9,7 +9,7 @@ import { dependencies, devDependencies, name } from './package.json';
 export default getFatherBuildConfig({
   clientExtraExternals: [],
   serverExtraExternals: [],
-  sourcemap: true,
+  sourcemap: false,
 })
 
 interface BuildOptions {
