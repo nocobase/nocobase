@@ -144,17 +144,13 @@ export function ExecutionCanvas() {
     >
       <div className="workflow-toolbar">
         <header>
-          <Breadcrumb>
-            <Breadcrumb.Item>
-              <Link to={`/admin/settings/workflow/workflows`}>{lang('Workflow')}</Link>
-            </Breadcrumb.Item>
-            <Breadcrumb.Item>
-              <Link to={`/admin/settings/workflow/workflows/${workflow.id}`}>{workflow.title}</Link>
-            </Breadcrumb.Item>
-            <Breadcrumb.Item>
-              <strong>{`#${execution.id}`}</strong>
-            </Breadcrumb.Item>
-          </Breadcrumb>
+          <Breadcrumb
+            items={[
+              { title: <Link to={`/admin/settings/workflow/workflows`}>{lang('Workflow')}</Link> },
+              { title: <Link to={`/admin/settings/workflow/workflows/${workflow.id}`}>{workflow.title}</Link> },
+              { title: <strong>{`#${execution.id}`}</strong> },
+            ]}
+          />
         </header>
         <aside>
           <Tag color={statusOption.color}>{compile(statusOption.label)}</Tag>
