@@ -2,10 +2,6 @@
   "name": "{{{packageName}}}",
   "version": "{{{packageVersion}}}",
   "main": "lib/server/index.js",
-  "scripts": {
-    "build": "father build",
-    "watch": "father dev"
-  },
   "files": [
     "lib",
     "src",
