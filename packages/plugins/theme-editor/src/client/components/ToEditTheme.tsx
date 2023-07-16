@@ -14,7 +14,7 @@ const ToEditTheme = () => {
 
   const handleClick = useCallback(() => {
     const m = modal.confirm({
-      title: t('Add New Theme'),
+      title: t('Add new theme'),
       closable: true,
       maskClosable: true,
       width: 'fit-content',
@@ -58,7 +58,7 @@ const ToEditTheme = () => {
       icon={<PlusOutlined />}
       onClick={handleClick}
     >
-      {t('Add New Theme')}
+      {t('Add new theme')}
     </Button>
   );
 };

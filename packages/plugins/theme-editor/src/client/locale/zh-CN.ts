@@ -12,7 +12,7 @@ const locale = {
   'Updated successfully': '更新成功',
   'User selectable': '可被用户选择',
   'Default theme': '默认主题',
-  'Add New Theme': '添加新主题',
+  'Add new theme': '添加新主题',
   'Edit based on current theme': '基于当前主题进行编辑',
   'Create a brand new theme': '创建一个全新的主题',
 
