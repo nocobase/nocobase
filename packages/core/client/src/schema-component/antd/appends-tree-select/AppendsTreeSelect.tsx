@@ -1,15 +1,8 @@
 import { CollectionFieldOptions, useCollectionManager, useCompile } from '../../..';
 import { Tag, TreeSelect } from 'antd';
 import type { DefaultOptionType } from 'rc-tree-select/es/TreeSelect';
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-
-export type TreeCacheMapNode = {
-  parent?: TreeCacheMapNode;
-  title: string;
-  path: string;
-  children?: TreeCacheMapNode[];
-};
 
 export type AppendsTreeSelectProps = {
   value: string[];
@@ -20,20 +13,52 @@ export type AppendsTreeSelectProps = {
 
 type TreeOptionType = Omit<DefaultOptionType, 'value'> & { value: string };
 
-function buildTreeData(list: TreeOptionType[], parent?: TreeCacheMapNode, result = {}) {
-  return (list || []).map(({ children, value, title }) => {
-    const node: TreeCacheMapNode = (result[value] = {
-      parent,
-      path: value,
-      title,
-    });
-    node.children = buildTreeData(children, node, result);
-    return node;
-  });
-}
-
 function usePropsCollection({ collection }) {
   return collection;
+}
+
+type CallScope = {
+  compile?(value: string): string;
+  getCollectionFields?(name: any): CollectionFieldOptions[];
+}
+
+function loadChildren(this, option) {
+  const result = getCollectionFieldOptions.call(this, option.field.target, option);
+  if (result.length) {
+    // option.children = result;
+    if (!result.some((item) => isAssociation(item.field))) {
+      option.isLeaf = true;
+    }
+  } else {
+    option.isLeaf = true;
+  }
+  option.loadChildren = null;
+  return result;
+}
+
+function isAssociation(field) {
+  return field.target && field.interface;
+}
+
+function getCollectionFieldOptions(this: CallScope, collection, parentNode?): TreeOptionType[] {
+  const fields = this.getCollectionFields(collection).filter(isAssociation);
+  const boundLoadChildren = loadChildren.bind(this);
+  return fields.map((field) => {
+    const key = parentNode ? `${parentNode.value}.${field.name}` : field.name;
+    const fieldTitle = this.compile(field.uiSchema?.title) ?? field.name;
+    const isLeaf = !this.getCollectionFields(field.target).filter(isAssociation).length;
+    return {
+      pId: parentNode?.key ?? null,
+      id: key,
+      key,
+      value: key,
+      title: fieldTitle,
+      isLeaf,
+      loadChildren: isLeaf ? null : boundLoadChildren,
+      field,
+      fullTitle: parentNode ? [...parentNode.fullTitle, fieldTitle] : [fieldTitle],
+    };
+  });
 }
 
 export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
@@ -41,68 +66,87 @@ export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
   const { getCollectionFields } = useCollectionManager();
   const compile = useCompile();
   const { t } = useTranslation();
-  const targetCollection = useCollection({ collection });
+  const [optionsMap, setOptionsMap] = useState({});
+  const baseCollection = useCollection({ collection });
+  const treeData = Object.values(optionsMap);
 
-  const fieldsToOptions = useCallback(
-    (fields: CollectionFieldOptions[] = [], fieldPath: CollectionFieldOptions[] = []): TreeOptionType[] => {
-      const filter = (i: CollectionFieldOptions) =>
-        i.target && i.interface && !fieldPath.find((p) => p.target === i.target);
-      return fields.filter(filter).map((i) => ({
-        title: compile(i.uiSchema?.title) ?? i.name,
-        value: fieldPath
-          .map((p) => p.name)
-          .concat(i.name)
-          .join('.'),
-        children: fieldsToOptions(getCollectionFields(i.target), [...fieldPath, i]),
-      }));
-    },
-    [],
-  );
+  const loadData = useCallback(async (option) => {
+    if (!option.isLeaf && option.loadChildren) {
+      const children = option.loadChildren(option);
+      setOptionsMap((prev) => {
+        return children.reduce((result, item) => Object.assign(result, { [item.value]: item }), { ...prev });
+      });
+    }
+  }, [setOptionsMap]);
 
-  const treeData = fieldsToOptions(getCollectionFields(targetCollection));
+  useEffect(() => {
+    const treeData = getCollectionFieldOptions.call({ compile, getCollectionFields }, baseCollection);
+    setOptionsMap(treeData.reduce((result, item) => Object.assign(result, { [item.value]: item }), {}));
+  }, [collection, baseCollection]);
 
-  const valueMap: Record<string, TreeCacheMapNode> = {};
+  useEffect(() => {
+    if (!value?.length || value.every(v => Boolean(optionsMap[v]))) {
+      return;
+    }
+    const loaded = [];
 
-  buildTreeData(treeData, undefined, valueMap);
+    value.forEach((v) => {
+      const paths = v.split('.');
+      let option = optionsMap[paths[0]];
+      for (let i = 1; i < paths.length; i++) {
+        if (!option) {
+          break;
+        }
+        if (!option.isLeaf && option.loadChildren) {
+          const children = option.loadChildren(option);
+          if (children?.length) {
+            loaded.push(...children);
+            option = children.find(item => item.value === paths.slice(0, i + 1).join('.'));
+          }
+        }
+      }
+    });
+    setOptionsMap((prev) => {
+      return loaded.reduce((result, item) => Object.assign(result, { [item.value]: item }), { ...prev });
+    });
+  }, [value, treeData.length]);
 
-  const handleChange = (newNodes: DefaultOptionType[]) => {
-    const newValue = newNodes.map((i) => i.value) as string[];
+  const handleChange = useCallback((newNodes: DefaultOptionType[]) => {
+    const newValue = newNodes.map((i) => i.value).filter(Boolean) as string[];
     const valueSet = new Set(newValue);
     const delValue = value.find((i) => !newValue.includes(i));
 
     if (delValue) {
-      const delNode = valueMap[delValue];
-      const delNodeValue = (node: TreeCacheMapNode) => {
-        valueSet.delete(node.path);
-        node.children?.forEach((child) => delNodeValue(child));
-      };
-      delNodeValue(delNode);
+      const delNode = optionsMap[delValue];
+      const prefix = `${delNode.value}.`;
+      Object.keys(optionsMap)
+        .forEach((key) => {
+          if (key.startsWith(prefix)) {
+            valueSet.delete(key);
+          }
+        });
     } else {
       newValue.forEach((v) => {
-        let current = valueMap[v];
-        while ((current = current.parent)) {
-          valueSet.add(current.path);
+        const paths = v.split('.');
+        if (paths.length) {
+          for (let i = 1; i < paths.length; i++) {
+            valueSet.add(paths.slice(0, i).join('.'));
+          }
         }
       });
     }
     onChange(Array.from(valueSet));
-  };
+  }, [value, optionsMap]);
 
-  const TreeTag = (props) => {
+  const TreeTag = useCallback((props) => {
     const { value, onClose, disabled, closable } = props;
-    let node = valueMap[value];
-    let text = node?.title;
-    while ((node = node?.parent)) {
-      text = `${node.title} / ${text}`;
-    }
+    const { fullTitle } = optionsMap[value];
     return (
-      <Tag closable={closable && !disabled} onClose={onClose}>
-        {text}
-      </Tag>
+      <Tag closable={closable && !disabled} onClose={onClose}>{fullTitle.join(' / ')}</Tag>
     );
-  };
+  }, [optionsMap]);
 
-  const filterdValue = Array.isArray(value) ? value.filter((i) => i in valueMap) : value;
+  const filterdValue = Array.isArray(value) ? value.filter((i) => i in optionsMap) : value;
 
   return (
     <TreeSelect
@@ -116,7 +160,9 @@ export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
       treeCheckable
       tagRender={TreeTag}
       onChange={handleChange as unknown as () => void}
+      treeDataSimpleMode
       treeData={treeData}
+      loadData={loadData}
       {...restProps}
     />
   );
