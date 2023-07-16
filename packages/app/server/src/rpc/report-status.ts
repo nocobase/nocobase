@@ -30,7 +30,7 @@ export function reportStatus(app) {
 
     // report uncaught errors
     process.on('uncaughtException', (err) => {
-      console.error(err.stack);
+      console.error(err);
 
       writeJSON(mainProcessRPCClient, {
         status: 'worker-error',

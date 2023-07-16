@@ -10,4 +10,5 @@ export default {
   plugins,
   cache,
   logger,
+  name: process.env['STARTUP_SUBAPP'] || 'main',
 };

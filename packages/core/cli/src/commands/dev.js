@@ -15,6 +15,7 @@ module.exports = (cli) => {
     .option('-p, --port [port]')
     .option('--client')
     .option('--server')
+    .option('--skip-install')
     .option('--db-sync')
     .allowUnknownOption()
     .action(async (opts) => {
@@ -32,7 +33,8 @@ module.exports = (cli) => {
         return;
       }
 
-      const { port, client, server } = opts;
+      console.log({ opts });
+      const { port, client, server, skipInstall } = opts;
 
       if (port) {
         process.env.APP_PORT = opts.port;
@@ -59,8 +61,10 @@ module.exports = (cli) => {
         const cliHttpServer = CliHttpServer.getInstance();
         cliHttpServer.listen(serverPort);
 
-        cliHttpServer.setCliDoingWork('install');
-        await runAppCommand('install', ['--silent'], {});
+        if (!skipInstall) {
+          cliHttpServer.setCliDoingWork('install');
+          await runAppCommand('install', ['--silent'], {});
+        }
 
         cliHttpServer.setCliDoingWork('start server process');
 
