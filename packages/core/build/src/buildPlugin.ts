@@ -64,6 +64,7 @@ function checkPackages(srcPackages: string[], packageJsonPackages: string[], log
 }
 
 function checkRequire(sourceFiles: string[], packageJson: Record<string, any>, log: Log) {
+  if (!packageJson.dependencies) return;
   sourceFiles.forEach(item => {
     const code = fs.readFileSync(item, 'utf-8');
     const requireArr = [...code.matchAll(requireRegex), code.match(packageJsonRequireRegex)]
@@ -77,7 +78,7 @@ function checkRequire(sourceFiles: string[], packageJson: Record<string, any>, l
         // aa/bbFile => aa
         return item.split('/')[0];
       })
-      .filter(item => packageJson?.dependencies(item));
+      .filter(item => packageJson.dependencies[item]);
 
     if (requireArr.length) {
       log('%s in %s is not allowed. Please use %s instead.', chalk.red(requireArr.join(', ')), chalk.red(item), chalk.red('import'));
