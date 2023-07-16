@@ -36,7 +36,10 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   public buildRpcBroker(options: RpcBrokerOptions = {}) {
-    this.rpcBroker = RpcBrokerFactory.build(this, options);
+    this.rpcBroker = RpcBrokerFactory.build(this, {
+      discoveryServerURI: process.env.DISCOVERY_SERVER_URI,
+      ...options,
+    });
   }
 
   public static getInstance(): AppSupervisor {
