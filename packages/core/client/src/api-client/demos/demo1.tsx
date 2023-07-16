@@ -13,7 +13,9 @@ mock.onGet('/users:get').reply(200, {
 const providers = [[APIClientProvider, { apiClient }]];
 
 export default compose(...providers)(() => {
-  const { data } = useRequest({
+  const { data } = useRequest<{
+    data: any;
+  }>({
     resource: 'users',
     action: 'get',
     params: {},

@@ -120,7 +120,9 @@ export const RemoteSchemaTemplateManagerProvider: React.FC<{ children?: ReactNod
       paginate: false,
     },
   };
-  const service = useRequest(options);
+  const service = useRequest<{
+    data: any[];
+  }>(options);
   if (service.loading) {
     return <Spin />;
   }

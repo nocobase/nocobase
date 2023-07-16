@@ -7,7 +7,7 @@ import { Bar } from './bar/bar';
 import { BarSmall } from './bar/bar-small';
 import { Milestone } from './milestone/milestone';
 import { Project } from './project/project';
-import { barLabel, barLabelOutside, projectLabel } from './style';
+import useStyles from './style';
 
 export type TaskItemProps = {
   task: BarTask;
@@ -26,6 +26,7 @@ export type TaskItemProps = {
 };
 
 export const TaskItem: React.FC<TaskItemProps> = (props) => {
+  const { wrapSSR, componentCls, hashId } = useStyles();
   const { task, arrowIndent, isDelete, taskHeight, isSelected, rtl, onEventStart } = {
     ...props,
   };
@@ -68,8 +69,9 @@ export const TaskItem: React.FC<TaskItemProps> = (props) => {
       return task.x1 + width + arrowIndent * +hasChild + arrowIndent * 0.2;
     }
   };
-  return (
+  return wrapSSR(
     <g
+      className={cx(componentCls, hashId)}
       onKeyDown={(e) => {
         switch (e.key) {
           case 'Delete': {
@@ -99,13 +101,13 @@ export const TaskItem: React.FC<TaskItemProps> = (props) => {
       <text
         x={isProjectBar ? task.x1 : getX()}
         y={isProjectBar ? task.y - 8 : isTextInside ? task.y + taskHeight * 0.5 : task.y + taskHeight * 0.65}
-        className={isProjectBar ? cx(projectLabel) : isTextInside ? cx(barLabel) : cx(barLabel) && cx(barLabelOutside)}
+        className={isProjectBar ? cx('projectLabel') : isTextInside ? cx('barLabel') : cx('barLabelOutside')}
         ref={textRef}
       >
         {isProjectBar && getYmd(task.start) && getYmd(task.end)
           ? `${task.name}:  ${getYmd(task.start)} ~ ${getYmd(task.end)}`
           : task.name}
       </text>
-    </g>
+    </g>,
   );
 };

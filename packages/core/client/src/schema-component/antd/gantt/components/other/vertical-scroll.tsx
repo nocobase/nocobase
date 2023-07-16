@@ -1,6 +1,6 @@
-import React, { SyntheticEvent, useRef, useEffect } from 'react';
 import { cx } from '@emotion/css';
-import { verticalScroll } from './style';
+import React, { SyntheticEvent, useEffect, useRef } from 'react';
+import useStyles from './style';
 
 export const VerticalScroll: React.FC<{
   scroll: number;
@@ -10,6 +10,7 @@ export const VerticalScroll: React.FC<{
   rtl: boolean;
   onScroll: (event: SyntheticEvent<HTMLDivElement>) => void;
 }> = ({ scroll, ganttHeight, ganttFullHeight, headerHeight, rtl, onScroll }) => {
+  const { wrapSSR, componentCls, hashId } = useStyles();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -18,18 +19,18 @@ export const VerticalScroll: React.FC<{
     }
   }, [scroll]);
 
-  return (
+  return wrapSSR(
     <div
       style={{
         maxHeight: ganttHeight,
         marginTop: headerHeight,
         marginLeft: rtl ? '' : '-1rem',
       }}
-      className={cx(verticalScroll)}
+      className={cx(componentCls, hashId, 'verticalScroll')}
       onScroll={onScroll}
       ref={scrollRef}
     >
       <div style={{ height: ganttFullHeight, width: 1 }} />
-    </div>
+    </div>,
   );
 };

@@ -74,9 +74,9 @@ export const CalendarActionInitializers = {
               skipScopeCheck: true,
             },
           },
-          visible: () => {
+          visible: function useVisible() {
             const collection = useCollection();
-            return (collection as any).template !== 'view';
+            return collection.template !== 'view' || collection?.writableView;
           },
         },
       ],

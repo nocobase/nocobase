@@ -1,14 +1,14 @@
 import { css, cx } from '@emotion/css';
-import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { Button, message } from 'antd';
+import { RecursionField, observer, useField, useFieldSchema } from '@formily/react';
+import { App, Button } from 'antd';
 import React, { createContext, useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActionContextProvider,
   CollectionProvider,
   RecordProvider,
-  useActionContext,
   useAPIClient,
+  useActionContext,
   useBlockRequestContext,
   useCollection,
   useCollectionManager,
@@ -26,6 +26,7 @@ export const useDuplicatefieldsContext = () => {
 
 export const DuplicateAction = observer((props: any) => {
   const { children } = props;
+  const { message } = App.useApp();
   const field = useField();
   const fieldSchema = useFieldSchema();
   const api = useAPIClient();
@@ -41,16 +42,16 @@ export const DuplicateAction = observer((props: any) => {
   const { name } = useCollection();
   const { getCollectionFields } = useCollectionManager();
   const { t } = useTranslation();
-  const collectionFields = getCollectionFields(__collection);
+  const collectionFields = getCollectionFields(__collection || name);
   const template = {
     key: 'duplicate',
     dataId: id,
     default: true,
     fields:
       duplicateFields?.filter((v) => {
-        return collectionFields.find((k) => k.name === v);
+        return collectionFields.find((k) => v.includes(k.name));
       }) || [],
-    collection: __collection,
+    collection: __collection || name,
   };
   const isLinkBtn = fieldSchema['x-component'] === 'Action.Link';
   const handelQuickDuplicate = async () => {

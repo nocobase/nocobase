@@ -1,7 +1,8 @@
-import { FormDialog, FormLayout } from '@formily/antd-v5';
+import { FormLayout } from '@formily/antd-v5';
 import { SchemaOptionsContext, useField, useFieldSchema } from '@formily/react';
 import {
   APIClientProvider,
+  FormDialog,
   GeneralSchemaDesigner,
   SchemaComponent,
   SchemaComponentOptions,
@@ -11,7 +12,9 @@ import {
   useAPIClient,
   useCompile,
   useDesignable,
+  useGlobalTheme,
 } from '@nocobase/client';
+import { error } from '@nocobase/utils/client';
 import { Card } from 'antd';
 import JSON5 from 'json5';
 import React, { useContext, useEffect, useState } from 'react';
@@ -81,12 +84,15 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
   const compile = useCompile();
   const { chart, query } = chartBlockEngineMetaData;
   const { fields } = useFieldsById(query.id);
+  const { theme } = useGlobalTheme();
+
   const dataSource = fields.map((field) => {
     return {
       label: field.name,
       value: field.name,
     };
   });
+
   return (
     <SchemaSettings.Item
       onClick={async () => {
@@ -97,7 +103,7 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
             width: 1200,
             bodyStyle: { background: 'var(--nb-box-bg)', maxHeight: '65vh', overflow: 'auto' },
           },
-          (form) => {
+          function Com(form) {
             const [chartBlockEngineMetaData, setChartBlockEngineMetaData] = useState<ChartBlockEngineMetaData>(null);
             useEffect(() => {
               const chartBlockEngineMetaData = {
@@ -208,6 +214,7 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
               </APIClientProvider>
             );
           },
+          theme,
         )
           .open({
             initialValues: { ...chart }, //reset before chartBlockMetaData
@@ -229,6 +236,9 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
               },
             });
             dn.refresh();
+          })
+          .catch((err) => {
+            error(err);
           });
       }}
     >
