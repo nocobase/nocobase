@@ -73,7 +73,7 @@ export const genStyleHook = <ComponentName extends OverrideComponent>(
     return {
       wrapSSR: useStyleRegister(
         {
-          theme,
+          theme: theme as any,
           token,
           hashId,
           path: ['formily-antd', component, prefixCls, iconPrefixCls],

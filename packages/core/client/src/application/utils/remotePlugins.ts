@@ -1,3 +1,4 @@
+import * as antdCssinjs from '@ant-design/cssinjs';
 import * as antdIcons from '@ant-design/icons';
 import * as formilyAntdV5 from '@formily/antd-v5';
 import * as formilyCore from '@formily/core';
@@ -34,6 +35,7 @@ export function initDeps(requirejs: any) {
   requirejs.define('antd', () => antd);
   requirejs.define('antd-style', () => antdStyle);
   requirejs.define('@ant-design/icons', () => antdIcons);
+  requirejs.define('@ant-design/cssinjs', () => antdCssinjs);
 
   // i18next
   requirejs.define('i18next', () => i18next);
