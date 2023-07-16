@@ -12,7 +12,7 @@ export class RemoteBroker extends RpcBrokerInterface {
   rpcServer: http.Server;
   rpcClient: RpcHttpClient;
 
-  constructor(appSupervisor: AppSupervisor, options: RpcBrokerOptions) {
+  constructor(appSupervisor: AppSupervisor, options: RpcBrokerOptions = {}) {
     super(appSupervisor, options);
 
     this.serviceDiscoverClient = ServiceDiscoveryClientFactory.build({
