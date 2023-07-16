@@ -64,7 +64,7 @@ export function getRemotePlugins(pluginData: PluginData[] = []): Promise<(typeof
   requirejs.requirejs.config({
     paths: pluginData.reduce<Record<string, string>>((memo, item) => {
       memo[item.packageName] = item.url;
-      memo[`${item.packageName}/client`] = item.url;
+      memo[`${item.packageName}/client`] = `${item.url}.js?client`;
       return memo;
     }, {}),
   });

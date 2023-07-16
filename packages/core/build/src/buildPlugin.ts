@@ -185,11 +185,7 @@ export function buildPluginClient(cwd: string) {
         output: {
           exports: 'named',
           globals: {
-            ...Object.keys(packageJson.devDependencies || {}).reduce((prev, packageName) => {
-              prev[packageName] = packageName;
-              prev[`${packageName}/client`] = packageName;
-              return prev;
-            }, {}),
+            ...externals,
             'react/jsx-runtime': 'jsxRuntime',
           }
         },
