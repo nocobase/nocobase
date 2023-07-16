@@ -50,10 +50,29 @@ export class RemoteBroker extends RpcBrokerInterface {
     };
   }
 
-  broadcast(caller: Application, event: string, eventOptions?: any) {}
+  async broadcast(caller: Application, event: string, eventOptions?: any) {
+    const callerInfo = await this.getAppServiceInfo(caller);
+
+    const apps = await this.serviceDiscoverClient.listServicesByType('apps');
+    const targets = [...apps.values()]
+      .flat()
+      .filter((app) => app.name !== caller.name && app.host !== callerInfo.host && app.port !== callerInfo.port);
+
+    await Promise.all(
+      targets.map((remoteServiceInfo: RemoteServiceInfo) => {
+        return this.rpcClient.push({
+          remoteAddr: `http://${remoteServiceInfo.host}:${remoteServiceInfo.port}`,
+          appName: remoteServiceInfo.name,
+          event,
+          options: eventOptions,
+        });
+      }),
+    );
+  }
 
   async callApp(appName: string, method: string, ...args: any[]): Promise<{ result: any }> {
     const remoteAddr = await this.serviceDiscoverClient.fetchSingleService('apps', appName);
+
     if (!remoteAddr) {
       throw new Error(`failed to call app, app ${appName} not found`);
     }

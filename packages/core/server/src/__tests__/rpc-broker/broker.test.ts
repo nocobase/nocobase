@@ -15,6 +15,23 @@ class MockServiceDiscoveryClient extends ServiceDiscoveryClient {
       .map((info) => JSON.parse(info) as RemoteServiceInfo);
   }
 
+  async getServicesByName(serverType: 'apps', name: string): Promise<RemoteServiceInfo[]> {
+    return [...this.services.get(name)].map((info) => JSON.parse(info) as RemoteServiceInfo);
+  }
+
+  async listServicesByType(serverType: 'apps'): Promise<Map<string, RemoteServiceInfo[]>> {
+    const services = new Map<string, RemoteServiceInfo[]>();
+
+    this.services.forEach((value, key) => {
+      services.set(
+        key,
+        [...value].map((info) => JSON.parse(info) as RemoteServiceInfo),
+      );
+    });
+
+    return services;
+  }
+
   async registerService(serviceInfo: RemoteServiceInfo): Promise<boolean> {
     const info = JSON.stringify(serviceInfo);
     const exists = this.services.get(serviceInfo.name);
