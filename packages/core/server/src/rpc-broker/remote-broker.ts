@@ -54,6 +54,10 @@ export class RemoteBroker extends RpcBrokerInterface {
 
   async callApp(appName: string, method: string, ...args: any[]): Promise<{ result: any }> {
     const remoteAddr = await this.serviceDiscoverClient.fetchSingleService('apps', appName);
+    if (!remoteAddr) {
+      throw new Error(`failed to call app, app ${appName} not found`);
+    }
+
     return await this.rpcClient.call({
       remoteAddr: `http://${remoteAddr.host}:${remoteAddr.port}`,
       appName,
@@ -64,6 +68,10 @@ export class RemoteBroker extends RpcBrokerInterface {
 
   async pushToApp(appName: string, event: string, options?: any): Promise<boolean> {
     const remoteAddr = await this.serviceDiscoverClient.fetchSingleService('apps', appName);
+    if (!remoteAddr) {
+      throw new Error(`failed to push to app, app ${appName} not found`);
+    }
+
     return await this.rpcClient.push({
       remoteAddr: `http://${remoteAddr.host}:${remoteAddr.port}`,
       appName,
