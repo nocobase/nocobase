@@ -1,15 +1,17 @@
 import { App } from 'antd';
-import React from 'react';
+import React, { memo, useEffect } from 'react';
 import { useAPIClient } from '../api-client';
 
-const AppInner = ({ children }: { children: React.ReactNode }) => {
+const AppInner = memo(({ children }: { children: React.ReactNode }) => {
   const { notification } = App.useApp();
   const apiClient = useAPIClient();
 
-  apiClient.antdNotification = notification;
+  useEffect(() => {
+    apiClient.notification = notification;
+  }, [notification]);
 
   return <>{children}</>;
-};
+});
 
 const AntdAppProvider = ({ children }: { children: React.ReactNode }) => {
   return (
