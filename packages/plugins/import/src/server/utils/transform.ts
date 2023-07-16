@@ -104,7 +104,7 @@ export async function datetime({ value, field, ctx }) {
 export async function time({ value, field, ctx }) {
   const { format } = field.options?.uiSchema?.['x-component-props'] ?? {};
   if (format) {
-    const m = dayjs(value);
+    const m = dayjs(value, format);
     if (!m.isValid()) {
       throw new Error(ctx.t('Incorrect time format', { ns: namespace }));
     }

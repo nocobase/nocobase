@@ -1,13 +1,12 @@
 import { LoadingOutlined, PlusOutlined } from '@ant-design/icons';
 import { RecursionField, connect, mapProps, observer, useField, useFieldSchema, useForm } from '@formily/react';
-import { Input, Button, message } from 'antd';
+import { Space, message } from 'antd';
+import { isFunction } from 'mathjs';
 import React from 'react';
-import { RecordProvider } from '../../../';
 import { useTranslation } from 'react-i18next';
+import { RecordProvider, useAPIClient, useCollectionManager } from '../../../';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
 import useServiceOptions, { useAssociationFieldContext } from './hooks';
-import { useAPIClient, useCollectionManager } from '../../../';
-import { isFunction } from 'mathjs';
 
 export type AssociationSelectProps<P = any> = RemoteSelectProps<P> & {
   action?: string;
@@ -66,7 +65,7 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
   };
   return (
     <div key={fieldSchema.name}>
-      <Input.Group compact style={{ display: 'flex', lineHeight: '32px' }}>
+      <Space.Compact style={{ display: 'flex', lineHeight: '32px' }}>
         <RemoteSelect
           style={{ width: '100%' }}
           {...props}
@@ -89,7 +88,7 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
             />
           </RecordProvider>
         )}
-      </Input.Group>
+      </Space.Compact>
     </div>
   );
 });

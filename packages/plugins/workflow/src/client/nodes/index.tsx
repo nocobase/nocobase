@@ -13,7 +13,7 @@ import {
   useResourceActionContext,
 } from '@nocobase/client';
 import { Registry, parse, str2moment } from '@nocobase/utils/client';
-import { Alert, Button, Dropdown, Input, Modal, Tag, message } from 'antd';
+import { Alert, App, Button, Dropdown, Input, Tag, message } from 'antd';
 import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AddButton } from '../AddButton';
@@ -21,7 +21,7 @@ import { useFlowContext } from '../FlowContext';
 import { NodeDescription } from '../components/NodeDescription';
 import { JobStatusOptionsMap } from '../constants';
 import { NAMESPACE, lang } from '../locale';
-import { nodeBlockClass, nodeCardClass, nodeClass, nodeJobButtonClass, nodeMetaClass } from '../style';
+import useStyles from '../style';
 import { VariableOption, VariableOptions } from '../variable';
 import aggregate from './aggregate';
 import calculation from './calculation';
@@ -132,11 +132,12 @@ export function useUpstreamScopes(node) {
 }
 
 export function Node({ data }) {
+  const { styles } = useStyles();
   const { component: Component = NodeDefaultView, endding } = instructions.get(data.type);
 
   return (
     <NodeContext.Provider value={data}>
-      <div className={cx(nodeBlockClass)}>
+      <div className={cx(styles.nodeBlockClass)}>
         <Component data={data} />
         {!endding ? (
           <AddButton upstream={data} />
@@ -151,7 +152,7 @@ export function Node({ data }) {
               width: 1px;
               height: 6em;
               padding: 2em 0;
-              background-color: #f0f2f5;
+              background-color: var(--nb-box-bg);
 
               .anticon {
                 font-size: 1.5em;
@@ -172,6 +173,8 @@ export function RemoveButton() {
   const api = useAPIClient();
   const { workflow, nodes, refresh } = useFlowContext() ?? {};
   const current = useNodeContext();
+  const { modal } = App.useApp();
+
   if (!workflow) {
     return null;
   }
@@ -198,7 +201,7 @@ export function RemoveButton() {
     });
 
     if (usingNodes.length) {
-      Modal.error({
+      modal.error({
         title: lang('Can not delete'),
         content: lang(
           'The result of this node has been referenced by other nodes ({{nodes}}), please remove the usage before deleting.',
@@ -213,7 +216,7 @@ export function RemoveButton() {
       ? t('Are you sure you want to delete it?')
       : lang('This node contains branches, deleting will also be preformed to them, are you sure?');
 
-    Modal.confirm({
+    modal.confirm({
       title: t('Delete'),
       content: message,
       onOk,
@@ -232,10 +235,11 @@ export function RemoveButton() {
 }
 
 function InnerJobButton({ job, ...props }) {
+  const { styles } = useStyles();
   const { icon, color } = JobStatusOptionsMap[job.status];
 
   return (
-    <Button {...props} shape="circle" className={cx(nodeJobButtonClass, props.className)}>
+    <Button {...props} shape="circle" size="small" className={cx(styles.nodeJobButtonClass, props.className)}>
       <Tag color={color}>{icon}</Tag>
     </Button>
   );
@@ -244,6 +248,8 @@ function InnerJobButton({ job, ...props }) {
 export function JobButton() {
   const { execution, setViewJob } = useFlowContext();
   const { jobs } = useNodeContext() ?? {};
+  const { styles } = useStyles();
+
   if (!execution) {
     return null;
   }
@@ -252,7 +258,7 @@ export function JobButton() {
     return (
       <span
         className={cx(
-          nodeJobButtonClass,
+          styles.nodeJobButtonClass,
           css`
             border: 2px solid #d9d9d9;
             border-radius: 50%;
@@ -279,6 +285,7 @@ export function JobButton() {
               <div
                 className={css`
                   display: flex;
+                  align-items: center;
                   gap: 0.5em;
 
                   time {
@@ -287,7 +294,7 @@ export function JobButton() {
                   }
                 `}
               >
-                <span className={cx(nodeJobButtonClass, 'inner')}>
+                <span className={cx(styles.nodeJobButtonClass, 'inner')}>
                   <Tag color={color}>{icon}</Tag>
                 </span>
                 <time>{str2moment(job.updatedAt).format('YYYY-MM-DD HH:mm:ss')}</time>
@@ -310,6 +317,7 @@ export function NodeDefaultView(props) {
   const compile = useCompile();
   const api = useAPIClient();
   const { workflow, refresh } = useFlowContext() ?? {};
+  const { styles } = useStyles();
 
   const instruction = instructions.get(data.type);
   const detailText = workflow.executed ? '{{t("View")}}' : '{{t("Configure")}}';
@@ -349,9 +357,9 @@ export function NodeDefaultView(props) {
   }
 
   return (
-    <div className={cx(nodeClass, `workflow-node-type-${data.type}`)}>
-      <div className={cx(nodeCardClass, { configuring: editingConfig })} onClick={onOpenDrawer}>
-        <div className={cx(nodeMetaClass, 'workflow-node-meta')}>
+    <div className={cx(styles.nodeClass, `workflow-node-type-${data.type}`)}>
+      <div className={cx(styles.nodeCardClass, { configuring: editingConfig })} onClick={onOpenDrawer}>
+        <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
           <Tag>{typeTitle}</Tag>
           <span className="workflow-node-id">{data.id}</span>
         </div>
@@ -435,20 +443,6 @@ export function NodeDefaultView(props) {
                           .ant-cascader-picker,
                           .ant-picker,
                           .ant-input-number,
-                          .ant-input-affix-wrapper {
-                            &:not(.full-width) {
-                              width: auto;
-                              min-width: 6em;
-                            }
-                          }
-                          .ant-input-affix-wrapper {
-                            &:not(.full-width) {
-                              .ant-input {
-                                width: auto;
-                                min-width: 6em;
-                              }
-                            }
-                          }
                         `,
                       },
                       properties: instruction.fieldset,

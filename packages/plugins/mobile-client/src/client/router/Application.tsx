@@ -48,6 +48,7 @@ const commonDesignerCSS = css`
         line-height: 16px;
         width: 16px;
         padding-left: 1px;
+        align-self: stretch;
       }
     }
   }
@@ -69,7 +70,7 @@ const modalProps = {
     position: 'absolute',
   },
   wrapClassName: css`
-    position: absolute;
+    position: absolute !important;
   `,
 };
 

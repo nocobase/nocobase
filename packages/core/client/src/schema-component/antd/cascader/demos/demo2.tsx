@@ -1,4 +1,4 @@
-import { FormItem } from '@formily/antd';
+import { FormItem } from '@formily/antd-v5';
 import { ArrayField } from '@formily/core';
 import { useField } from '@formily/react';
 import { action } from '@formily/reactive';

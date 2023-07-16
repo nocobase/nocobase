@@ -1,4 +1,4 @@
-import { DownOutlined, PlusOutlined } from '@ant-design/icons';
+import { DownOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
 import { Button, Dropdown, MenuProps } from 'antd';
@@ -45,6 +45,7 @@ export const actionDesignerCss = css`
         line-height: 16px;
         width: 16px;
         padding-left: 1px;
+        align-self: stretch;
       }
     }
   }
@@ -144,7 +145,8 @@ export const CreateAction = observer(
     const enableChildren = fieldSchema['x-enable-children'] || [];
     const allowAddToCurrent = fieldSchema?.['x-allow-add-to-current'];
     const linkageFromForm = fieldSchema?.['x-component-props']?.['linkageFromForm'];
-    const componentType = field.componentProps.type || 'primary';
+    // antd v5 danger type is deprecated
+    const componentType = field.componentProps.type === 'danger' ? undefined : field.componentProps.type || 'primary';
     const { getChildrenCollections } = useCollectionManager();
     const totalChildCollections = getChildrenCollections(collection.name);
     const inheritsCollections = useMemo(() => {
@@ -170,7 +172,7 @@ export const CreateAction = observer(
     const values = useRecord();
     const compile = useCompile();
     const { designable } = useDesignable();
-    const icon = props.icon || <PlusOutlined />;
+    const icon = props.icon || null;
     const menuItems = useMemo<MenuProps['items']>(() => {
       return inheritsCollections.map((option) => ({
         key: option.name,
@@ -197,73 +199,120 @@ export const CreateAction = observer(
     }, [linkageRules, values]);
     return (
       <div className={actionDesignerCss}>
-        {inheritsCollections?.length > 0 ? (
-          !linkageFromForm ? (
-            allowAddToCurrent === undefined || allowAddToCurrent ? (
-              <Dropdown.Button
-                type={componentType}
-                icon={<DownOutlined />}
-                buttonsRender={([leftButton, rightButton]) => [
-                  leftButton,
-                  React.cloneElement(rightButton as React.ReactElement<any, string>, { loading: false }),
-                ]}
-                menu={menu}
-                onClick={(info) => {
-                  onClick?.(collection.name);
-                }}
-              >
-                {icon}
-                {props.children}
-              </Dropdown.Button>
-            ) : (
-              <Dropdown menu={menu}>
-                {
-                  <Button icon={icon} type={componentType}>
-                    {props.children} <DownOutlined />
-                  </Button>
-                }
-              </Dropdown>
-            )
-          ) : (
-            <Button
-              type={componentType}
-              disabled={field.disabled}
-              danger={componentType === 'danger'}
-              icon={icon}
-              onClick={(info) => {
-                const collectionName = getLinkageCollection(linkageFromForm, form, field);
-                const targetCollection = inheritsCollections.find((v) => v.name === collectionName)
-                  ? collectionName
-                  : collection.name;
-                onClick?.(targetCollection);
-              }}
-              style={{
-                display: !designable && field?.data?.hidden && 'none',
-                opacity: designable && field?.data?.hidden && 0.1,
-              }}
-            >
-              {props.children}
-            </Button>
-          )
-        ) : (
-          <Button
-            type={componentType}
-            disabled={field.disabled}
-            danger={componentType === 'danger'}
-            icon={icon}
-            onClick={(info) => {
-              onClick?.(collection.name);
-            }}
-            style={{
-              display: !designable && field?.data?.hidden && 'none',
-              opacity: designable && field?.data?.hidden && 0.1,
-            }}
-          >
-            {props.children}
-          </Button>
-        )}
+        {FinallyButton({
+          inheritsCollections,
+          linkageFromForm,
+          allowAddToCurrent,
+          props,
+          componentType,
+          menu,
+          onClick,
+          collection,
+          icon,
+          field,
+          form,
+          designable,
+        })}
       </div>
     );
   },
   { displayName: 'CreateAction' },
 );
+
+function FinallyButton({
+  inheritsCollections,
+  linkageFromForm,
+  allowAddToCurrent,
+  props,
+  componentType,
+  menu,
+  onClick,
+  collection,
+  icon,
+  field,
+  form,
+  designable,
+}: {
+  inheritsCollections: any;
+  linkageFromForm: any;
+  allowAddToCurrent: any;
+  props: any;
+  componentType: any;
+  menu: MenuProps;
+  onClick: any;
+  collection;
+  icon: any;
+  field: any;
+  form;
+  designable: boolean;
+}) {
+  if (inheritsCollections?.length > 0) {
+    if (!linkageFromForm) {
+      return allowAddToCurrent === undefined || allowAddToCurrent ? (
+        <Dropdown.Button
+          danger={props.danger}
+          type={componentType}
+          icon={<DownOutlined />}
+          buttonsRender={([leftButton, rightButton]) => [
+            leftButton,
+            React.cloneElement(rightButton as React.ReactElement<any, string>, { loading: false }),
+          ]}
+          menu={menu}
+          onClick={(info) => {
+            onClick?.(collection.name);
+          }}
+        >
+          {icon}
+          {props.children}
+        </Dropdown.Button>
+      ) : (
+        <Dropdown menu={menu}>
+          {
+            <Button icon={icon} type={componentType} danger={props.danger}>
+              {props.children} <DownOutlined />
+            </Button>
+          }
+        </Dropdown>
+      );
+    }
+    return (
+      <Button
+        type={componentType}
+        disabled={field.disabled}
+        danger={props.danger}
+        icon={icon}
+        onClick={(info) => {
+          const collectionName = getLinkageCollection(linkageFromForm, form, field);
+          const targetCollection = inheritsCollections.find((v) => v.name === collectionName)
+            ? collectionName
+            : collection.name;
+          onClick?.(targetCollection);
+        }}
+        style={{
+          display: !designable && field?.data?.hidden && 'none',
+          opacity: designable && field?.data?.hidden && 0.1,
+        }}
+      >
+        {props.children}
+      </Button>
+    );
+  }
+
+  return (
+    <Button
+      type={componentType}
+      disabled={field.disabled}
+      danger={props.danger}
+      icon={icon}
+      onClick={(info) => {
+        onClick?.(collection.name);
+      }}
+      style={{
+        display: !designable && field?.data?.hidden && 'none',
+        opacity: designable && field?.data?.hidden && 0.1,
+      }}
+    >
+      {props.children}
+    </Button>
+  );
+}

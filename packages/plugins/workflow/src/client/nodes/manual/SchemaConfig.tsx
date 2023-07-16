@@ -1,8 +1,10 @@
+import { default as React, useContext, useMemo, useState } from 'react';
+
 import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
+
 import {
   ActionContextProvider,
   GeneralSchemaDesigner,
-  gridRowColWrap,
   InitializerWithSwitch,
   SchemaComponent,
   SchemaComponentContext,
@@ -10,15 +12,16 @@ import {
   SchemaInitializerItemOptions,
   SchemaInitializerProvider,
   SchemaSettings,
+  gridRowColWrap,
   useCompile,
   useFormBlockContext,
 } from '@nocobase/client';
-import { lodash, Registry } from '@nocobase/utils/client';
-import React, { useContext, useMemo, useState } from 'react';
+import { Registry, lodash } from '@nocobase/utils/client';
+import { Button } from 'antd';
 import { instructions, useAvailableUpstreams, useNodeContext } from '..';
-import { JOB_STATUS } from '../../constants';
 import { useFlowContext } from '../../FlowContext';
-import { lang, NAMESPACE } from '../../locale';
+import { JOB_STATUS } from '../../constants';
+import { NAMESPACE, lang } from '../../locale';
 import { useTrigger } from '../../triggers';
 import { DetailsBlockProvider } from './DetailsBlockProvider';
 import { FormBlockProvider } from './FormBlockProvider';
@@ -135,7 +138,7 @@ function AddBlockButton(props: any) {
     {
       type: 'itemGroup',
       title: '{{t("Form")}}',
-      children: Array.from(manualFormTypes.getValues()).map((item) => {
+      children: Array.from(manualFormTypes.getValues()).map((item: ManualFormType) => {
         const { useInitializer: getInitializer } = item.config;
         return getInitializer();
       }),
@@ -202,7 +205,8 @@ function AddActionButton(props) {
           component: ActionInitializer,
           action: JOB_STATUS.REJECTED,
           actionProps: {
-            type: 'danger',
+            type: 'primary',
+            danger: true,
           },
         },
         {
@@ -297,7 +301,7 @@ export function SchemaConfig({ value, onChange }) {
           ctx.refresh?.();
           const { tabs } = lodash.get(schema.toJSON(), 'properties.drawer.properties') as { tabs: ISchema };
           const forms = Array.from(manualFormTypes.getValues()).reduce(
-            (result, item) => Object.assign(result, item.config.parseFormOptions(tabs)),
+            (result, item: ManualFormType) => Object.assign(result, item.config.parseFormOptions(tabs)),
             {},
           );
           form.setValuesIn('forms', forms);
@@ -312,8 +316,9 @@ export function SchemaConfig({ value, onChange }) {
           AddActionButton,
           ...trigger.initializers,
           ...nodeInitializers,
+          // @ts-ignore
           ...Array.from(manualFormTypes.getValues()).reduce(
-            (result, item) => Object.assign(result, item.config.initializers),
+            (result, item: ManualFormType) => Object.assign(result, item.config.initializers),
             {},
           ),
         }}
@@ -322,8 +327,9 @@ export function SchemaConfig({ value, onChange }) {
           schema={schema}
           components={{
             ...nodeComponents,
+            // @ts-ignore
             ...Array.from(manualFormTypes.getValues()).reduce(
-              (result, item) => Object.assign(result, item.config.components),
+              (result, item: ManualFormType) => Object.assign(result, item.config.components),
               {},
             ),
             FormBlockProvider,
@@ -352,9 +358,9 @@ export function SchemaConfigButton(props) {
   const [visible, setVisible] = useState(false);
   return (
     <>
-      <div className="ant-btn ant-btn-primary" onClick={() => setVisible(true)}>
+      <Button type="primary" onClick={() => setVisible(true)}>
         {workflow.executed ? lang('View user interface') : lang('Configure user interface')}
-      </div>
+      </Button>
       <ActionContextProvider value={{ visible, setVisible }}>{props.children}</ActionContextProvider>
     </>
   );

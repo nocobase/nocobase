@@ -1,6 +1,6 @@
 import { SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { parse } from '@nocobase/utils/client';
-import { Modal, message } from 'antd';
+import { App, message } from 'antd';
 import { cloneDeep } from 'lodash';
 import get from 'lodash/get';
 import omit from 'lodash/omit';
@@ -17,7 +17,7 @@ import { useRecord } from '../../record-provider';
 import { removeNullCondition, useActionContext, useCompile } from '../../schema-component';
 import { BulkEditFormItemValueType } from '../../schema-initializer/components';
 import { useCurrentUserContext } from '../../user';
-import { useBlockRequestContext, useFilterByTk } from '../BlockProvider';
+import { useBlockRequestContext, useFilterByTk, useParamsFromRecord } from '../BlockProvider';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { mergeFilter } from '../SharedFilterProvider';
 import { TableFieldResource } from '../TableFieldProvider';
@@ -142,9 +142,12 @@ export const useCreateActionProps = () => {
   const filterByTk = useFilterByTk();
   const currentRecord = useRecord();
   const currentUserContext = useCurrentUserContext();
+  const { modal } = App.useApp();
+
   const currentUser = currentUserContext?.data?.data;
   const action = actionField.componentProps.saveMode || 'create';
   const filterKeys = actionField.componentProps.filterKeys || [];
+
   return {
     async onClick() {
       const fieldNames = fields.map((field) => field.name);
@@ -185,7 +188,7 @@ export const useCreateActionProps = () => {
           return;
         }
         if (onSuccess?.manualClose) {
-          Modal.success({
+          modal.success({
             title: compile(onSuccess?.successMessage),
             onOk: async () => {
               await form.reset();
@@ -408,6 +411,7 @@ export const useCustomizeUpdateActionProps = () => {
   const navigate = useNavigate();
   const compile = useCompile();
   const form = useForm();
+  const { modal } = App.useApp();
 
   return {
     async onClick() {
@@ -432,7 +436,7 @@ export const useCustomizeUpdateActionProps = () => {
         return;
       }
       if (onSuccess?.manualClose) {
-        Modal.success({
+        modal.success({
           title: compile(onSuccess?.successMessage),
           onOk: async () => {
             if (onSuccess?.redirecting && onSuccess?.redirectTo) {
@@ -465,6 +469,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
   const compile = useCompile();
   const { t } = useTranslation();
   const actionField = useField();
+  const { modal } = App.useApp();
 
   return {
     async onClick() {
@@ -476,7 +481,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
       actionField.data = field.data || {};
       actionField.data.loading = true;
       const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentUser });
-      Modal.confirm({
+      modal.confirm({
         title: t('Bulk update'),
         content: updateMode === 'selected' ? t('Update selected data?') : t('Update all data?'),
         async onOk() {
@@ -512,7 +517,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
             return;
           }
           if (onSuccess?.manualClose) {
-            Modal.success({
+            modal.success({
               title: compile(onSuccess?.successMessage),
               onOk: async () => {
                 if (onSuccess?.redirecting && onSuccess?.redirectTo) {
@@ -546,6 +551,8 @@ export const useCustomizeBulkEditActionProps = () => {
   const compile = useCompile();
   const actionField = useField();
   const tableBlockContext = useTableBlockContext();
+  const { modal } = App.useApp();
+
   const { rowKey } = tableBlockContext;
   const selectedRecordKeys =
     tableBlockContext.field?.data?.selectedRowKeys ?? expressionScope?.selectedRecordKeys ?? {};
@@ -599,7 +606,7 @@ export const useCustomizeBulkEditActionProps = () => {
           return;
         }
         if (onSuccess?.manualClose) {
-          Modal.success({
+          modal.success({
             title: compile(onSuccess?.successMessage),
             onOk: async () => {
               await form.reset();
@@ -636,6 +643,7 @@ export const useCustomizeRequestActionProps = () => {
   const currentUser = currentUserContext?.data?.data;
   const actionField = useField();
   const { setVisible } = useActionContext();
+  const { modal } = App.useApp();
 
   return {
     async onClick() {
@@ -682,7 +690,7 @@ export const useCustomizeRequestActionProps = () => {
           return;
         }
         if (onSuccess?.manualClose) {
-          Modal.success({
+          modal.success({
             title: compile(onSuccess?.successMessage),
             onOk: async () => {
               if (onSuccess?.redirecting && onSuccess?.redirectTo) {
@@ -707,7 +715,7 @@ export const useCustomizeRequestActionProps = () => {
 export const useUpdateActionProps = () => {
   const form = useForm();
   const filterByTk = useFilterByTk();
-  const { field, resource, __parent } = useBlockRequestContext();
+  const { field, resource, __parent, service } = useBlockRequestContext();
   const { setVisible } = useActionContext();
   const actionSchema = useFieldSchema();
   const navigate = useNavigate();
@@ -717,7 +725,11 @@ export const useUpdateActionProps = () => {
   const { updateAssociationValues } = useFormBlockContext();
   const currentRecord = useRecord();
   const currentUserContext = useCurrentUserContext();
+  const { modal } = App.useApp();
+
   const currentUser = currentUserContext?.data?.data;
+  const data = useParamsFromRecord();
+
   return {
     async onClick() {
       const {
@@ -742,6 +754,7 @@ export const useUpdateActionProps = () => {
             ...overwriteValues,
             ...assignedValues,
           },
+          ...data,
           updateAssociationValues,
         });
         actionField.data.loading = false;
@@ -751,7 +764,7 @@ export const useUpdateActionProps = () => {
           return;
         }
         if (onSuccess?.manualClose) {
-          Modal.success({
+          modal.success({
             title: compile(onSuccess?.successMessage),
             onOk: async () => {
               await form.reset();
@@ -778,10 +791,12 @@ export const useDestroyActionProps = () => {
   const filterByTk = useFilterByTk();
   const { resource, service, block, __parent } = useBlockRequestContext();
   const { setVisible } = useActionContext();
+  const data = useParamsFromRecord();
   return {
     async onClick() {
       await resource.destroy({
         filterByTk,
+        ...data,
       });
 
       const { count = 0, page = 0, pageSize = 0 } = service?.data?.meta || {};
@@ -891,7 +906,9 @@ export const useAssociationFilterProps = () => {
   const labelKey = fieldSchema['x-component-props']?.fieldNames?.label || valueKey;
   const field = useField();
   const collectionFieldName = collectionField.name;
-  const { data, params, run } = useRequest(
+  const { data, params, run } = useRequest<{
+    data: { [key: string]: any }[];
+  }>(
     {
       resource: collectionField.target,
       action: 'list',
@@ -960,21 +977,21 @@ const isOptionalField = (field) => {
 
 export const useAssociationFilterBlockProps = () => {
   const collectionField = AssociationFilter.useAssociationField();
-  if (!collectionField) {
-    return {};
-  }
   const fieldSchema = useFieldSchema();
   const optionalFieldList = useOptionalFieldList();
   const { getDataBlocks } = useFilterBlock();
   const collectionFieldName = collectionField.name;
   const field = useField();
 
-  let list, onSelected, handleSearchInput, params, run, data, valueKey, labelKey, filterKey;
+  let list, handleSearchInput, params, run, data, valueKey, labelKey, filterKey;
 
   valueKey = collectionField?.targetKey || 'id';
   labelKey = fieldSchema['x-component-props']?.fieldNames?.label || valueKey;
 
-  ({ data, params, run } = useRequest(
+  // eslint-disable-next-line prefer-const
+  ({ data, params, run } = useRequest<{
+    data: { [key: string]: any }[];
+  }>(
     {
       resource: collectionField?.target,
       action: 'list',
@@ -998,6 +1015,10 @@ export const useAssociationFilterBlockProps = () => {
       run();
     }
   }, [labelKey, valueKey, JSON.stringify(field.componentProps?.params || {}), isOptionalField(fieldSchema)]);
+
+  if (!collectionField) {
+    return {};
+  }
 
   if (isOptionalField(fieldSchema)) {
     const field = optionalFieldList.find((field) => field.name === fieldSchema.name);
@@ -1036,7 +1057,7 @@ export const useAssociationFilterBlockProps = () => {
     };
   }
 
-  onSelected = (value) => {
+  const onSelected = (value) => {
     const { targets, uid } = findFilterTargets(fieldSchema);
 
     getDataBlocks().forEach((block) => {

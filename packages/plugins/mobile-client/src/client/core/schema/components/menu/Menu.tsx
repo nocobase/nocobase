@@ -1,6 +1,5 @@
 import { useFieldSchema } from '@formily/react';
 import {
-  css,
   cx,
   DndContext,
   SchemaComponent,
@@ -16,8 +15,10 @@ import { PageSchema } from '../../common';
 import { MenuDesigner } from './Menu.Designer';
 import { MenuItem } from './Menu.Item';
 import { menuItemSchema } from './schema';
+import useStyles from './style';
 
 const InternalMenu: React.FC = (props) => {
+  const { styles } = useStyles();
   const Designer = useDesigner();
   const fieldSchema = useFieldSchema();
   const { insertBeforeEnd, designable } = useDesignable();
@@ -40,16 +41,7 @@ const InternalMenu: React.FC = (props) => {
   };
 
   return (
-    <SortableItem
-      className={cx(
-        'nb-mobile-menu',
-        css`
-          background: #ffffff;
-          width: 100%;
-          margin-bottom: var(--nb-spacing);
-        `,
-      )}
-    >
+    <SortableItem className={cx('nb-mobile-menu', styles.mobileMenu)}>
       <List>
         {designable && (
           <List.Item>

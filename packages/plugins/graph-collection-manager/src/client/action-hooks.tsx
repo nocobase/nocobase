@@ -8,6 +8,7 @@ import {
   useCompile,
   useRequest,
 } from '@nocobase/client';
+import { error } from '@nocobase/utils/client';
 import { Select, message } from 'antd';
 import { lodash } from '@nocobase/utils/client'
 import React, { useContext, useEffect } from 'react';
@@ -35,7 +36,7 @@ export const SourceCollection = observer(
     return (
       <div>
         <Select
-          dropdownMatchSelectWidth={false}
+          popupMatchSelectWidth={false}
           disabled
           value={record.name}
           options={[{ value: record.name, label: compile(record.title) }]}
@@ -222,11 +223,15 @@ export const useDestroyFieldActionAndRefreshCM = (props) => {
 export const useAsyncDataSource = (service: any) => {
   return (field: any, { targetScope }) => {
     field.loading = true;
-    service(targetScope).then(
-      action.bound((data: any) => {
-        field.dataSource = data;
-        field.loading = false;
-      }),
-    );
+    service(targetScope)
+      .then(
+        action.bound((data: any) => {
+          field.dataSource = data;
+          field.loading = false;
+        }),
+      )
+      .catch((err) => {
+        error(err);
+      });
   };
 };

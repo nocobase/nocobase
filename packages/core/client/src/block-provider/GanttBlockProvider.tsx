@@ -88,7 +88,7 @@ export const useGanttBlockContext = () => {
 export const useGanttBlockProps = () => {
   const ctx = useGanttBlockContext();
   const [tasks, setTasks] = useState<any>([]);
-  const { getPrimaryKey, name, template } = useCollection();
+  const { getPrimaryKey, name, template, writableView } = useCollection();
   const { parseAction } = useACLRoleContext();
   const primaryKey = getPrimaryKey();
   const checkPermassion = (record) => {
@@ -96,7 +96,7 @@ export const useGanttBlockProps = () => {
     const schema = {};
     const recordPkValue = record?.[primaryKey];
     const params = parseAction(actionPath, { schema, recordPkValue });
-    return template === 'view' || !params;
+    return (template === 'view' && !writableView) || !params;
   };
 
   const onExpanderClick = (task: any) => {

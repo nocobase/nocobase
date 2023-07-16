@@ -1,6 +1,6 @@
 import { DragOutlined, MenuOutlined } from '@ant-design/icons';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
-import { Modal, Space } from 'antd';
+import { App, Space } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { DragHandler, useDesignable } from '../..';
@@ -113,9 +113,12 @@ export const PageDesigner = ({ title }) => {
 export const PageTabDesigner = ({ schema }) => {
   const { dn, designable } = useDesignable();
   const { t } = useTranslation();
+  const { modal } = App.useApp();
+
   if (!designable) {
     return null;
   }
+
   return (
     <div className={'general-schema-designer'}>
       <div className={'general-schema-designer-icons'}>
@@ -165,7 +168,7 @@ export const PageTabDesigner = ({ schema }) => {
             <SchemaSettings.Item
               eventKey="remove"
               onClick={() => {
-                Modal.confirm({
+                modal.confirm({
                   title: t('Delete block'),
                   content: t('Are you sure you want to delete it?'),
                   ...confirm,

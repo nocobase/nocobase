@@ -1,38 +1,38 @@
 import { RightSquareOutlined } from '@ant-design/icons';
-import { ArrayItems, Editable, Form, FormCollapse, FormItem, Switch } from '@formily/antd';
-import { createForm, Form as FormType, ObjectField, onFieldChange, onFormInit } from '@formily/core';
+import { ArrayItems, Editable, Form, FormCollapse, FormItem, Switch } from '@formily/antd-v5';
+import { Form as FormType, ObjectField, createForm, onFieldChange, onFormInit } from '@formily/core';
 import { FormConsumer, ISchema, Schema } from '@formily/react';
 import {
   AutoComplete,
   Cascader,
   DatePicker,
   Filter,
-  gridRowColWrap,
   Input,
   InputNumber,
   Radio,
   SchemaComponent,
   Select,
+  gridRowColWrap,
   useCollectionFieldsOptions,
   useCollectionFilterOptions,
   useDesignable,
 } from '@nocobase/client';
-import { Alert, Button, Card, Col, Modal, Row, Space, Table, Tabs, Typography } from 'antd';
+import { Alert, App, Button, Card, Col, Modal, Row, Space, Table, Tabs, Typography } from 'antd';
 import { cloneDeep, isEqual } from 'lodash';
 import React, { createContext, useContext, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   useChartFields,
   useCollectionOptions,
-  useFieldsWithAssociation,
   useFieldTypes,
+  useFieldsWithAssociation,
   useFormatters,
   useOrderFieldsOptions,
   useOrderReaction,
   useTransformers,
 } from '../hooks';
 import { useChartsTranslation } from '../locale';
-import { ChartRenderer, ChartRendererProvider, useCharts, useChartTypes } from '../renderer';
+import { ChartRenderer, ChartRendererProvider, useChartTypes, useCharts } from '../renderer';
 import { createRendererSchema, getField, getSelectedFields } from '../utils';
 import { getConfigSchema, querySchema, transformSchema } from './schemas/configure';
 const { Paragraph, Text } = Typography;
@@ -80,6 +80,7 @@ export const ChartConfigure: React.FC<{
   const { visible, setVisible, current } = useContext(ChartConfigContext);
   const { schema, field, collection } = current || {};
   const { dn } = useDesignable();
+  const { modal } = App.useApp();
   const { insert } = props;
 
   const charts = useCharts();
@@ -205,7 +206,7 @@ export const ChartConfigure: React.FC<{
         });
       }}
       onCancel={() => {
-        Modal.confirm({
+        modal.confirm({
           title: t('Are you sure to cancel?'),
           content: t('You changes are not saved. If you click OK, your changes will be lost.'),
           okButtonProps: {
@@ -229,7 +230,7 @@ export const ChartConfigure: React.FC<{
             <Card
               style={{
                 height: 'calc(100vh - 300px)',
-                overflow: 'scroll',
+                overflow: 'auto',
               }}
               ref={queryRef}
             >
@@ -254,7 +255,7 @@ export const ChartConfigure: React.FC<{
             <Card
               style={{
                 height: 'calc(100vh - 300px)',
-                overflow: 'scroll',
+                overflow: 'auto',
               }}
               ref={configRef}
             >

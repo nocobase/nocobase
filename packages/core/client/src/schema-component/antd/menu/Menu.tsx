@@ -63,6 +63,7 @@ const subMenuDesignerCss = css`
         line-height: 16px;
         width: 16px;
         padding-left: 1px;
+        align-self: stretch;
       }
     }
   }
@@ -113,6 +114,7 @@ const designerCss = css`
         line-height: 16px;
         width: 16px;
         padding-left: 1px;
+        align-self: stretch;
       }
     }
   }
@@ -392,7 +394,8 @@ export const Menu: ComposedMenu = observer(
 
       if (mode === 'mix' && key) {
         const s = schema.properties?.[key];
-        if (s['x-component'] === 'Menu.SubMenu') {
+        // fix T-934
+        if (s?.['x-component'] === 'Menu.SubMenu') {
           return s;
         }
       }

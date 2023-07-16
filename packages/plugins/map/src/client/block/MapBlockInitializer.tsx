@@ -1,7 +1,14 @@
 import { TableOutlined } from '@ant-design/icons';
-import { FormDialog, FormLayout } from '@formily/antd';
+import { FormLayout } from '@formily/antd-v5';
 import { SchemaOptionsContext } from '@formily/react';
-import { DataBlockInitializer, SchemaComponent, SchemaComponentOptions, useCollectionManager } from '@nocobase/client';
+import {
+  DataBlockInitializer,
+  FormDialog,
+  SchemaComponent,
+  SchemaComponentOptions,
+  useCollectionManager,
+  useGlobalTheme,
+} from '@nocobase/client';
 import React, { useContext } from 'react';
 import { useMapTranslation } from '../locale';
 import { createMapBlockSchema } from './utils';
@@ -9,9 +16,9 @@ import { createMapBlockSchema } from './utils';
 export const MapBlockInitializer = (props) => {
   const { insert } = props;
   const options = useContext(SchemaOptionsContext);
-  console.log('🚀 ~ file: MapBlockInitializer.tsx:12 ~ MapBlockInitializer ~ options:', options);
   const { getCollectionFieldsOptions } = useCollectionManager();
   const { t } = useMapTranslation();
+  const { theme } = useGlobalTheme();
 
   return (
     <DataBlockInitializer
@@ -21,48 +28,52 @@ export const MapBlockInitializer = (props) => {
       onCreateBlockSchema={async ({ item }) => {
         const mapFieldOptions = getCollectionFieldsOptions(item.name, ['point', 'lineString', 'polygon']);
         const markerFieldOptions = getCollectionFieldsOptions(item.name, 'string');
-        const values = await FormDialog(t('Create map block'), () => {
-          return (
-            <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
-              <FormLayout layout={'vertical'}>
-                <SchemaComponent
-                  schema={{
-                    properties: {
-                      field: {
-                        title: t('Map field'),
-                        enum: mapFieldOptions,
-                        required: true,
-                        'x-component': 'Select',
-                        'x-decorator': 'FormItem',
-                        default: mapFieldOptions[0]?.value,
-                      },
-                      marker: {
-                        title: t('Marker field'),
-                        enum: markerFieldOptions,
-                        'x-component': 'Select',
-                        'x-decorator': 'FormItem',
-                        'x-reactions': (field) => {
-                          const value = field.form.values.field;
-                          console.log('🚀 ~ file: MapBlockInitializer.tsx:45 ~ values ~ value:', value);
-                          console.log(
-                            '🚀 ~ file: MapBlockInitializer.tsx:50 ~ values ~ mapFieldOptions:',
-                            mapFieldOptions,
-                          );
+        const values = await FormDialog(
+          t('Create map block'),
+          () => {
+            return (
+              <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
+                <FormLayout layout={'vertical'}>
+                  <SchemaComponent
+                    schema={{
+                      properties: {
+                        field: {
+                          title: t('Map field'),
+                          enum: mapFieldOptions,
+                          required: true,
+                          'x-component': 'Select',
+                          'x-decorator': 'FormItem',
+                          default: mapFieldOptions[0]?.value,
+                        },
+                        marker: {
+                          title: t('Marker field'),
+                          enum: markerFieldOptions,
+                          'x-component': 'Select',
+                          'x-decorator': 'FormItem',
+                          'x-reactions': (field) => {
+                            const value = field.form.values.field;
+                            console.log('🚀 ~ file: MapBlockInitializer.tsx:45 ~ values ~ value:', value);
+                            console.log(
+                              '🚀 ~ file: MapBlockInitializer.tsx:50 ~ values ~ mapFieldOptions:',
+                              mapFieldOptions,
+                            );
 
-                          if (!value) {
-                            return;
-                          }
-                          const item = mapFieldOptions.find((item) => item.value === value).type;
-                          field.hidden = item !== 'point';
+                            if (!value) {
+                              return;
+                            }
+                            const item = mapFieldOptions.find((item) => item.value === value).type;
+                            field.hidden = item !== 'point';
+                          },
                         },
                       },
-                    },
-                  }}
-                />
-              </FormLayout>
-            </SchemaComponentOptions>
-          );
-        }).open({
+                    }}
+                  />
+                </FormLayout>
+              </SchemaComponentOptions>
+            );
+          },
+          theme,
+        ).open({
           initialValues: {},
         });
         insert(

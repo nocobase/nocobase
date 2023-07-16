@@ -14,9 +14,11 @@ import { CollectionManagerPane } from '../collection-manager';
 import { Icon } from '../icon';
 import { useCompile } from '../schema-component';
 import { BlockTemplatesPane } from '../schema-templates';
+import { useToken } from '../style';
 import { SystemSettingsPane } from '../system-settings';
 import { BuiltInPluginCard, PluginCard } from './Card';
 import { PluginManagerLink, SettingsCenterDropdown } from './PluginManagerLink';
+import { useStyles } from './style';
 
 export interface TData {
   data: IPluginData[];
@@ -57,7 +59,7 @@ export const SettingsCenterContext = createContext<any>({});
 
 const LocalPlugins = () => {
   // TODO: useRequest types for data ts type
-  const { data, loading }: { data: TData; loading: boolean } = useRequest<TData>({
+  const { data, loading } = useRequest<TData>({
     url: 'applicationPlugins:list',
     params: {
       filter: {
@@ -82,7 +84,10 @@ const LocalPlugins = () => {
 };
 
 const BuiltinPlugins = () => {
-  const { data, loading } = useRequest({
+  const { data, loading } = useRequest<{
+    data: IPluginData[];
+    meta: IMetaData;
+  }>({
     url: 'applicationPlugins:list',
     params: {
       filter: {
@@ -106,16 +111,18 @@ const BuiltinPlugins = () => {
 };
 
 const MarketplacePlugins = () => {
+  const { token } = useToken();
   const { t } = useTranslation();
-  return <div style={{ fontSize: 18 }}>{t('Coming soon...')}</div>;
+  return <div style={{ fontSize: token.fontSizeXL, color: token.colorText }}>{t('Coming soon...')}</div>;
 };
 
-const PluginList = (props) => {
+const PluginList = () => {
   const params = useParams<any>();
   const navigate = useNavigate();
   const { tabName = 'local' } = params;
   const { t } = useTranslation();
   const { snippets = [] } = useACLRoleContext();
+  const { styles } = useStyles();
 
   useEffect(() => {
     const { tabName } = params;
@@ -127,10 +134,7 @@ const PluginList = (props) => {
   return snippets.includes('pm') ? (
     <div>
       <PageHeader
-        style={{
-          backgroundColor: 'white',
-          paddingBottom: 0,
-        }}
+        className={styles.pageHeader}
         ghost={false}
         title={t('Plugin manager')}
         footer={
@@ -156,7 +160,7 @@ const PluginList = (props) => {
           />
         }
       />
-      <div className={'m24'} style={{ margin: 24, display: 'flex', flexFlow: 'row wrap' }}>
+      <div className={styles.pageContent} style={{ display: 'flex', flexFlow: 'row wrap' }}>
         {React.createElement(
           {
             local: LocalPlugins,
@@ -240,7 +244,8 @@ export const getPluginsTabs = _.memoize((items, snippets) => {
   return sortBy(pluginsTabs, (o) => !o.isAllow);
 });
 
-const SettingsCenter = (props) => {
+const SettingsCenter = () => {
+  const { styles } = useStyles();
   const { snippets = [] } = useACLRoleContext();
   const params = useParams<any>();
   const navigate = useNavigate();
@@ -311,7 +316,7 @@ const SettingsCenter = (props) => {
         <Layout.Content>
           {aclPluginTabCheck && (
             <PageHeader
-              style={{ backgroundColor: 'white', paddingBottom: 0 }}
+              className={styles.pageHeader}
               ghost={false}
               title={compile(items[pluginName]?.title)}
               footer={
@@ -333,7 +338,7 @@ const SettingsCenter = (props) => {
               }
             />
           )}
-          <div className={'m24'} style={{ margin: 24 }}>
+          <div className={styles.pageContent}>
             {aclPluginTabCheck ? (
               component && React.createElement(component)
             ) : (

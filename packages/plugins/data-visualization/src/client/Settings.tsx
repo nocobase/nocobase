@@ -1,5 +1,5 @@
 import { CheckOutlined } from '@ant-design/icons';
-import { Form, FormItem } from '@formily/antd';
+import { Form, FormItem } from '@formily/antd-v5';
 import { css } from '@nocobase/client';
 import { Button, Card } from 'antd';
 import cls from 'classnames';

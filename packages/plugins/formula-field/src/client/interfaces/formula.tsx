@@ -197,4 +197,5 @@ export default {
   filterable: {
     operators: operators.number,
   },
+  titleUsable: true,
 } as IField;

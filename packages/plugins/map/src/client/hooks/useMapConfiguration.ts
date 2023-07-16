@@ -16,9 +16,9 @@ export const useMapConfiguration = (type: string) => {
     return d;
   }, [type]);
 
-  if (config) return config;
-
-  return useRequest(
+  const { data } = useRequest<{
+    data: any;
+  }>(
     {
       resource: MapConfigurationResourceKey,
       action: 'get',
@@ -34,5 +34,9 @@ export const useMapConfiguration = (type: string) => {
       refreshDeps: [],
       manual: config ? true : false,
     },
-  ).data?.data;
+  );
+
+  if (config) return config;
+
+  return data?.data;
 };

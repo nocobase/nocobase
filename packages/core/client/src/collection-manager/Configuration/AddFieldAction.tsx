@@ -1,5 +1,5 @@
 import { PlusOutlined } from '@ant-design/icons';
-import { ArrayTable } from '@formily/antd';
+import { ArrayTable } from '@formily/antd-v5';
 import { useField, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Button, Dropdown, MenuProps } from 'antd';
@@ -120,6 +120,7 @@ export const useCollectionFieldFormValues = () => {
     getValues() {
       const values = cloneDeep(form.values);
       if (values.autoCreateReverseField) {
+        /* empty */
       } else {
         delete values.reverseField;
       }
@@ -143,6 +144,7 @@ const useCreateCollectionField = () => {
       field.data.loading = true;
       const values = cloneDeep(form.values);
       if (values.autoCreateReverseField) {
+        /* empty */
       } else {
         delete values.reverseField;
       }

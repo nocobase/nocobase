@@ -222,12 +222,7 @@ export class CollectionManagerPlugin extends Plugin {
         } catch (error) {
           this.app.logger.warn(error);
           await this.app.db.sync();
-
-          try {
-            await this.app.db.getRepository<CollectionRepository>('collections').load();
-          } catch (error) {
-            throw error;
-          }
+          await this.app.db.getRepository<CollectionRepository>('collections').load();
         }
       }
     });
@@ -287,7 +282,7 @@ export class CollectionManagerPlugin extends Plugin {
           const newOptions = {};
 
           // write original field options
-          lodash.merge(newOptions, collectionField.options);
+          lodash.merge(newOptions, lodash.omit(collectionField.options, 'name'));
 
           // merge with current field options
           lodash.mergeWith(newOptions, field.get(), (objValue, srcValue) => {
