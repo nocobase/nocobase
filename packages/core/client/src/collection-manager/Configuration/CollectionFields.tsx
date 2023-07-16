@@ -31,11 +31,6 @@ const indentStyle = css`
     margin-left: -16px !important;
   }
 `;
-const rowStyle = css`
-  .ant-table-cell {
-    background-color: white;
-  }
-`;
 const tableContainer = css`
   tr {
     display: flex;
@@ -431,7 +426,6 @@ export const CollectionFields = () => {
             expandable={{
               defaultExpandAllRows: true,
               defaultExpandedRowKeys: dataSource.map((d) => d.key),
-              expandedRowClassName: () => rowStyle,
               expandedRowRender: (record) =>
                 record.inherit ? (
                   <InheritFields

@@ -1,25 +1,14 @@
 import { RecursionField, useFieldSchema } from '@formily/react';
-import { ActionBarProvider, css, cx, SortableItem, TabsContextProvider, useDesigner } from '@nocobase/client';
+import { ActionBarProvider, SortableItem, TabsContextProvider, cx, useDesigner } from '@nocobase/client';
 import { TabsProps } from 'antd';
 import React, { useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { countGridCol } from '../../helpers';
 import { PageDesigner } from './Page.Designer';
-
-const globalActionCSS = css`
-  #nb-position-container > & {
-    height: 49px;
-    border-top: 1px solid var(--nb-box-bg);
-    margin-bottom: 0px !important;
-    padding: 0 var(--nb-spacing);
-    align-items: center;
-    overflow-x: auto;
-    background: #ffffff;
-    z-index: 100;
-  }
-`;
+import useStyles from './style';
 
 const InternalPage: React.FC = (props) => {
+  const { styles } = useStyles();
   const Designer = useDesigner();
   const fieldSchema = useFieldSchema();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -64,7 +53,7 @@ const InternalPage: React.FC = (props) => {
               }
               forceProps={{
                 layout: 'one-column',
-                className: globalActionCSS,
+                className: styles.globalActionCSS,
               }}
             >
               {props.children}
@@ -78,41 +67,13 @@ const InternalPage: React.FC = (props) => {
   );
 
   return (
-    <SortableItem
-      eid="nb-mobile-scroll-wrapper"
-      className={cx(
-        'nb-mobile-page',
-        css`
-          background: var(--nb-box-bg);
-          display: flex;
-          flex-direction: column;
-          width: 100%;
-          height: 100%;
-          overflow-x: hidden;
-          overflow-y: auto;
-          padding-bottom: var(--nb-spacing);
-        `,
-      )}
-    >
+    <SortableItem eid="nb-mobile-scroll-wrapper" className={cx('nb-mobile-page', styles.mobilePage)}>
       <Designer {...fieldSchema?.['x-designer-props']}></Designer>
       <div
         style={{
           paddingBottom: tabsSchema ? null : 'var(--nb-spacing)',
         }}
-        className={cx(
-          'nb-mobile-page-header',
-          css`
-            & > .ant-tabs > .ant-tabs-nav {
-              .ant-tabs-tab {
-                margin: 0 !important;
-                padding: 0 16px !important;
-              }
-              background: #fff;
-            }
-            display: flex;
-            flex-direction: column;
-          `,
-        )}
+        className={cx('nb-mobile-page-header', styles.mobilePageHeader)}
       >
         <RecursionField
           schema={fieldSchema}

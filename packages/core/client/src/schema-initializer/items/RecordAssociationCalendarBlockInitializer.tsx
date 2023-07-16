@@ -1,11 +1,12 @@
 import { TableOutlined } from '@ant-design/icons';
-import { FormDialog, FormLayout } from '@formily/antd-v5';
+import { FormLayout } from '@formily/antd-v5';
 import { SchemaOptionsContext } from '@formily/react';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useCollectionManager } from '../../collection-manager';
-import { SchemaComponent, SchemaComponentOptions } from '../../schema-component';
+import { useGlobalTheme } from '../../global-theme';
+import { FormDialog, SchemaComponent, SchemaComponentOptions } from '../../schema-component';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { SchemaInitializer } from '../SchemaInitializer';
 import { createCalendarBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
@@ -19,6 +20,7 @@ export const RecordAssociationCalendarBlockInitializer = (props) => {
   const field = item.field;
   const collection = getCollection(field.target);
   const resource = `${field.collectionName}.${field.name}`;
+  const { theme } = useGlobalTheme();
 
   return (
     <SchemaInitializer.Item
@@ -45,41 +47,45 @@ export const RecordAssociationCalendarBlockInitializer = (props) => {
                 value: field.name,
               };
             });
-          const values = await FormDialog(t('Create calendar block'), () => {
-            return (
-              <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
-                <FormLayout layout={'vertical'}>
-                  <SchemaComponent
-                    schema={{
-                      properties: {
-                        title: {
-                          title: t('Title field'),
-                          enum: stringFields,
-                          required: true,
-                          'x-component': 'Select',
-                          'x-decorator': 'FormItem',
+          const values = await FormDialog(
+            t('Create calendar block'),
+            () => {
+              return (
+                <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
+                  <FormLayout layout={'vertical'}>
+                    <SchemaComponent
+                      schema={{
+                        properties: {
+                          title: {
+                            title: t('Title field'),
+                            enum: stringFields,
+                            required: true,
+                            'x-component': 'Select',
+                            'x-decorator': 'FormItem',
+                          },
+                          start: {
+                            title: t('Start date field'),
+                            enum: dateFields,
+                            required: true,
+                            default: 'createdAt',
+                            'x-component': 'Select',
+                            'x-decorator': 'FormItem',
+                          },
+                          end: {
+                            title: t('End date field'),
+                            enum: dateFields,
+                            'x-component': 'Select',
+                            'x-decorator': 'FormItem',
+                          },
                         },
-                        start: {
-                          title: t('Start date field'),
-                          enum: dateFields,
-                          required: true,
-                          default: 'createdAt',
-                          'x-component': 'Select',
-                          'x-decorator': 'FormItem',
-                        },
-                        end: {
-                          title: t('End date field'),
-                          enum: dateFields,
-                          'x-component': 'Select',
-                          'x-decorator': 'FormItem',
-                        },
-                      },
-                    }}
-                  />
-                </FormLayout>
-              </SchemaComponentOptions>
-            );
-          }).open({
+                      }}
+                    />
+                  </FormLayout>
+                </SchemaComponentOptions>
+              );
+            },
+            theme,
+          ).open({
             initialValues: {},
           });
           insert(

@@ -9,11 +9,11 @@ import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
+import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
-import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import * as components from './components';
-import { TemplateSummay } from './components/TemplateSummay';
+import { TemplateSummary } from './components/TemplateSummary';
 import { templateOptions } from './templates';
 
 const getSchema = (schema, category, compile): ISchema => {
@@ -291,7 +291,7 @@ export const AddCollectionAction = (props) => {
         </Dropdown>
         <SchemaComponent
           schema={schema}
-          components={{ ...components, ArrayTable, TemplateSummay }}
+          components={{ ...components, ArrayTable, TemplateSummay: TemplateSummary }}
           scope={{
             getContainer,
             useCancelAction,
