@@ -8,7 +8,7 @@ import { Plugin } from '../Plugin';
 describe('Application', () => {
   const router: any = { type: 'memory', initialEntries: ['/'] };
   const initialComponentsLength = 6;
-  const initialProvidersLength = 3;
+  const initialProvidersLength = 2;
   it('basic', () => {
     const app = new Application({ router });
     expect(app.i18n).toBeDefined();
@@ -254,7 +254,7 @@ describe('Application', () => {
       expect(screen.getByText('AboutComponent')).toBeInTheDocument();
     });
 
-    // TODO: 会报错，暂时不知道怎么解决，先跳过
+    // TODO: 会一直 loading，暂时不知道怎么解决，先跳过
     it.skip('mount', async () => {
       const Hello = () => <div>Hello</div>;
       const app = new Application({
