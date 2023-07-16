@@ -1,11 +1,15 @@
-import { css, cx } from '@emotion/css';
+import { cx } from '@emotion/css';
 import { Button, Cascader } from 'antd';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useToken } from '../__builtins__';
+import useStyles from './VariableSelect.style';
 
 export function VariableSelect({ options, setOptions, onInsert, changeOnSelect = false }): JSX.Element {
   const { t } = useTranslation();
   const [selectedVar, setSelectedVar] = useState<string[]>([]);
+  const { wrapSSR, componentCls, hashId } = useStyles();
+  const { token } = useToken();
 
   async function loadData(selectedOptions) {
     const option = selectedOptions[selectedOptions.length - 1];
@@ -15,34 +19,9 @@ export function VariableSelect({ options, setOptions, onInsert, changeOnSelect =
     }
   }
 
-  return (
-    <Button
-      className={cx(
-        'x-button',
-        css`
-          position: relative;
-
-          .ant-select.ant-cascader {
-            position: absolute;
-            top: -1px;
-            left: -1px;
-            min-width: auto;
-            width: calc(100% + 2px);
-            height: calc(100% + 2px);
-            overflow: hidden;
-            opacity: 0;
-          }
-        `,
-      )}
-    >
-      <span
-        className={css`
-          font-style: italic;
-          font-family: 'New York', 'Times New Roman', Times, serif;
-        `}
-      >
-        x
-      </span>
+  return wrapSSR(
+    <Button className={cx('x-button', componentCls, hashId)}>
+      <span className={'variable-btn'}>x</span>
       <Cascader
         placeholder={t('Select a variable')}
         value={[]}
@@ -69,22 +48,18 @@ export function VariableSelect({ options, setOptions, onInsert, changeOnSelect =
             }
           }
         }}
-        popupClassName={css`
-          .ant-cascader-menu {
-            margin-bottom: 0;
-          }
-        `}
+        popupClassName={'Cascader-popupClassName'}
         dropdownRender={
           changeOnSelect
             ? (menu) => (
                 <>
                   {menu}
                   <div
-                    className={css`
-                      padding: 0.5em;
-                      border-top: 1px solid rgba(0, 0, 0, 0.06);
-                      color: rgba(0, 0, 0, 0.45);
-                    `}
+                    style={{
+                      padding: '0.5em',
+                      borderTop: `1px solid ${token.colorBorder}`,
+                      color: token.colorTextDescription,
+                    }}
                   >
                     {t('Double click to choose entire object')}
                   </div>
@@ -93,6 +68,6 @@ export function VariableSelect({ options, setOptions, onInsert, changeOnSelect =
             : null
         }
       />
-    </Button>
+    </Button>,
   );
 }

@@ -231,14 +231,14 @@ export const useStyles = genStyleHook('nb-rich-text', (token) => {
       '.ql-editor .ql-bg-orange': { backgroundColor: '#f90' },
       '.ql-editor .ql-bg-yellow': { backgroundColor: '#ff0' },
       '.ql-editor .ql-bg-green': { backgroundColor: '#008a00' },
-      '.ql-editor .ql-bg-blue': { backgroundColor: '#06c' },
+      '.ql-editor .ql-bg-blue': { backgroundColor: token.colorPrimaryTextHover },
       '.ql-editor .ql-bg-purple': { backgroundColor: '#93f' },
       '.ql-editor .ql-color-white': { color: '#fff' },
       '.ql-editor .ql-color-red': { color: '#e60000' },
       '.ql-editor .ql-color-orange': { color: '#f90' },
       '.ql-editor .ql-color-yellow': { color: '#ff0' },
       '.ql-editor .ql-color-green': { color: '#008a00' },
-      '.ql-editor .ql-color-blue': { color: '#06c' },
+      '.ql-editor .ql-color-blue': { color: token.colorPrimaryTextHover },
       '.ql-editor .ql-color-purple': { color: '#93f' },
       '.ql-editor .ql-font-serif': {
         fontFamily: 'Georgia, Times New Roman, serif',
@@ -289,27 +289,27 @@ export const useStyles = genStyleHook('nb-rich-text', (token) => {
       },
       '.ql-snow.ql-toolbar button:hover,\n.ql-snow .ql-toolbar button:hover,\n.ql-snow.ql-toolbar button:focus,\n.ql-snow .ql-toolbar button:focus,\n.ql-snow.ql-toolbar button.ql-active,\n.ql-snow .ql-toolbar button.ql-active,\n.ql-snow.ql-toolbar .ql-picker-label:hover,\n.ql-snow .ql-toolbar .ql-picker-label:hover,\n.ql-snow.ql-toolbar .ql-picker-label.ql-active,\n.ql-snow .ql-toolbar .ql-picker-label.ql-active,\n.ql-snow.ql-toolbar .ql-picker-item:hover,\n.ql-snow .ql-toolbar .ql-picker-item:hover,\n.ql-snow.ql-toolbar .ql-picker-item.ql-selected,\n.ql-snow .ql-toolbar .ql-picker-item.ql-selected':
         {
-          color: '#06c',
+          color: token.colorPrimaryTextHover,
         },
       '.ql-snow.ql-toolbar button:hover .ql-fill,\n.ql-snow .ql-toolbar button:hover .ql-fill,\n.ql-snow.ql-toolbar button:focus .ql-fill,\n.ql-snow .ql-toolbar button:focus .ql-fill,\n.ql-snow.ql-toolbar button.ql-active .ql-fill,\n.ql-snow .ql-toolbar button.ql-active .ql-fill,\n.ql-snow.ql-toolbar .ql-picker-label:hover .ql-fill,\n.ql-snow .ql-toolbar .ql-picker-label:hover .ql-fill,\n.ql-snow.ql-toolbar .ql-picker-label.ql-active .ql-fill,\n.ql-snow .ql-toolbar .ql-picker-label.ql-active .ql-fill,\n.ql-snow.ql-toolbar .ql-picker-item:hover .ql-fill,\n.ql-snow .ql-toolbar .ql-picker-item:hover .ql-fill,\n.ql-snow.ql-toolbar .ql-picker-item.ql-selected .ql-fill,\n.ql-snow .ql-toolbar .ql-picker-item.ql-selected .ql-fill,\n.ql-snow.ql-toolbar button:hover .ql-stroke.ql-fill,\n.ql-snow .ql-toolbar button:hover .ql-stroke.ql-fill,\n.ql-snow.ql-toolbar button:focus .ql-stroke.ql-fill,\n.ql-snow .ql-toolbar button:focus .ql-stroke.ql-fill,\n.ql-snow.ql-toolbar button.ql-active .ql-stroke.ql-fill,\n.ql-snow .ql-toolbar button.ql-active .ql-stroke.ql-fill,\n.ql-snow.ql-toolbar .ql-picker-label:hover .ql-stroke.ql-fill,\n.ql-snow .ql-toolbar .ql-picker-label:hover .ql-stroke.ql-fill,\n.ql-snow.ql-toolbar .ql-picker-label.ql-active .ql-stroke.ql-fill,\n.ql-snow .ql-toolbar .ql-picker-label.ql-active .ql-stroke.ql-fill,\n.ql-snow.ql-toolbar .ql-picker-item:hover .ql-stroke.ql-fill,\n.ql-snow .ql-toolbar .ql-picker-item:hover .ql-stroke.ql-fill,\n.ql-snow.ql-toolbar .ql-picker-item.ql-selected .ql-stroke.ql-fill,\n.ql-snow .ql-toolbar .ql-picker-item.ql-selected .ql-stroke.ql-fill':
         {
-          fill: '#06c',
+          fill: token.colorPrimaryTextHover,
         },
       '.ql-snow.ql-toolbar button:hover .ql-stroke,\n.ql-snow .ql-toolbar button:hover .ql-stroke,\n.ql-snow.ql-toolbar button:focus .ql-stroke,\n.ql-snow .ql-toolbar button:focus .ql-stroke,\n.ql-snow.ql-toolbar button.ql-active .ql-stroke,\n.ql-snow .ql-toolbar button.ql-active .ql-stroke,\n.ql-snow.ql-toolbar .ql-picker-label:hover .ql-stroke,\n.ql-snow .ql-toolbar .ql-picker-label:hover .ql-stroke,\n.ql-snow.ql-toolbar .ql-picker-label.ql-active .ql-stroke,\n.ql-snow .ql-toolbar .ql-picker-label.ql-active .ql-stroke,\n.ql-snow.ql-toolbar .ql-picker-item:hover .ql-stroke,\n.ql-snow .ql-toolbar .ql-picker-item:hover .ql-stroke,\n.ql-snow.ql-toolbar .ql-picker-item.ql-selected .ql-stroke,\n.ql-snow .ql-toolbar .ql-picker-item.ql-selected .ql-stroke,\n.ql-snow.ql-toolbar button:hover .ql-stroke-miter,\n.ql-snow .ql-toolbar button:hover .ql-stroke-miter,\n.ql-snow.ql-toolbar button:focus .ql-stroke-miter,\n.ql-snow .ql-toolbar button:focus .ql-stroke-miter,\n.ql-snow.ql-toolbar button.ql-active .ql-stroke-miter,\n.ql-snow .ql-toolbar button.ql-active .ql-stroke-miter,\n.ql-snow.ql-toolbar .ql-picker-label:hover .ql-stroke-miter,\n.ql-snow .ql-toolbar .ql-picker-label:hover .ql-stroke-miter,\n.ql-snow.ql-toolbar .ql-picker-label.ql-active .ql-stroke-miter,\n.ql-snow .ql-toolbar .ql-picker-label.ql-active .ql-stroke-miter,\n.ql-snow.ql-toolbar .ql-picker-item:hover .ql-stroke-miter,\n.ql-snow .ql-toolbar .ql-picker-item:hover .ql-stroke-miter,\n.ql-snow.ql-toolbar .ql-picker-item.ql-selected .ql-stroke-miter,\n.ql-snow .ql-toolbar .ql-picker-item.ql-selected .ql-stroke-miter':
         {
-          stroke: '#06c',
+          stroke: token.colorPrimaryTextHover,
         },
       '@media (pointer: coarse)': {
         '.ql-snow.ql-toolbar button:hover:not(.ql-active),\n  .ql-snow .ql-toolbar button:hover:not(.ql-active)': {
-          color: '#444',
+          color: token.colorTextSecondary,
         },
         '.ql-snow.ql-toolbar button:hover:not(.ql-active) .ql-fill,\n  .ql-snow .ql-toolbar button:hover:not(.ql-active) .ql-fill,\n  .ql-snow.ql-toolbar button:hover:not(.ql-active) .ql-stroke.ql-fill,\n  .ql-snow .ql-toolbar button:hover:not(.ql-active) .ql-stroke.ql-fill':
           {
-            fill: '#444',
+            fill: token.colorTextSecondary,
           },
         '.ql-snow.ql-toolbar button:hover:not(.ql-active) .ql-stroke,\n  .ql-snow .ql-toolbar button:hover:not(.ql-active) .ql-stroke,\n  .ql-snow.ql-toolbar button:hover:not(.ql-active) .ql-stroke-miter,\n  .ql-snow .ql-toolbar button:hover:not(.ql-active) .ql-stroke-miter':
           {
-            stroke: '#444',
+            stroke: token.colorTextSecondary,
           },
       },
       '.ql-snow': { boxSizing: 'border-box' },
@@ -320,9 +320,9 @@ export const useStyles = genStyleHook('nb-rich-text', (token) => {
         position: 'absolute',
         transform: 'translateY(10px)',
         backgroundColor: '#fff',
-        border: '1px solid #d9d9d9',
+        border: `1px solid ${token.colorBorder}`,
         boxShadow: '0px 0px 5px #ddd',
-        color: '#444',
+        color: token.colorTextSecondary,
         padding: '5px 12px',
         whiteSpace: 'nowrap',
       },
@@ -340,18 +340,18 @@ export const useStyles = genStyleHook('nb-rich-text', (token) => {
       },
       '.ql-snow .ql-stroke': {
         fill: 'none',
-        stroke: '#444',
+        stroke: token.colorTextSecondary,
         strokeLinecap: 'round',
         strokeLinejoin: 'round',
         strokeWidth: 2,
       },
       '.ql-snow .ql-stroke-miter': {
         fill: 'none',
-        stroke: '#444',
+        stroke: token.colorTextSecondary,
         strokeMiterlimit: '10',
         strokeWidth: 2,
       },
-      '.ql-snow .ql-fill,\n.ql-snow .ql-stroke.ql-fill': { fill: '#444' },
+      '.ql-snow .ql-fill,\n.ql-snow .ql-stroke.ql-fill': { fill: token.colorTextSecondary },
       '.ql-snow .ql-empty': { fill: 'none' },
       '.ql-snow .ql-even': { fillRule: 'evenodd' },
       '.ql-snow .ql-thin,\n.ql-snow .ql-stroke.ql-thin': { strokeWidth: 1 },
@@ -390,7 +390,7 @@ export const useStyles = genStyleHook('nb-rich-text', (token) => {
       },
       '.ql-snow .ql-editor img': { maxWidth: '100%' },
       '.ql-snow .ql-picker': {
-        color: '#444',
+        color: token.colorTextSecondary,
         display: 'inline-block',
         cssFloat: 'left',
         fontSize: '14px',
@@ -573,7 +573,7 @@ export const useStyles = genStyleHook('nb-rich-text', (token) => {
         backgroundColor: '#000',
       },
       '.ql-toolbar.ql-snow': {
-        border: '1px solid #d9d9d9',
+        border: `1px solid ${token.colorBorder}`,
         boxSizing: 'border-box',
         padding: '8px',
         borderTopLeftRadius: '2px',
@@ -587,10 +587,10 @@ export const useStyles = genStyleHook('nb-rich-text', (token) => {
         boxShadow: 'rgba(0, 0, 0, 0.2) 0 2px 8px',
       },
       '.ql-toolbar.ql-snow .ql-picker.ql-expanded .ql-picker-label': {
-        borderColor: '#d9d9d9',
+        borderColor: token.colorBorder,
       },
       '.ql-toolbar.ql-snow .ql-picker.ql-expanded .ql-picker-options': {
-        borderColor: '#d9d9d9',
+        borderColor: token.colorBorder,
       },
       '.ql-toolbar.ql-snow .ql-color-picker .ql-picker-item.ql-selected,\n.ql-toolbar.ql-snow .ql-color-picker .ql-picker-item:hover':
         {
@@ -604,7 +604,7 @@ export const useStyles = genStyleHook('nb-rich-text', (token) => {
       },
       ".ql-snow .ql-tooltip input[type='text']": {
         display: 'none',
-        border: '1px solid #d9d9d9',
+        border: `1px solid ${token.colorBorder}`,
         fontSize: '13px',
         height: '26px',
         margin: '0px',
@@ -648,9 +648,9 @@ export const useStyles = genStyleHook('nb-rich-text', (token) => {
       ".ql-snow .ql-tooltip[data-mode='video']::before": {
         content: "'Enter video:'",
       },
-      '.ql-snow a': { color: '#06c' },
+      '.ql-snow a': { color: token.colorPrimaryTextHover },
       '.ql-container.ql-snow': {
-        border: '1px solid #d9d9d9',
+        border: `1px solid ${token.colorBorder}`,
         borderBottomLeftRadius: '2px',
         borderBottomRightRadius: '2px',
       },

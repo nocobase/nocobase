@@ -22,6 +22,7 @@ export * from './DataBlockInitializer';
 export * from './DeleteEventActionInitializer';
 export * from './DestroyActionInitializer';
 export * from './DetailsBlockInitializer';
+export * from './DuplicateActionInitializer';
 export * from './ExpandActionInitializer';
 export * from './FilterActionInitializer';
 export * from './FilterCollapseBlockInitializer';
@@ -51,5 +52,5 @@ export * from './TableCollectionFieldInitializer';
 export * from './TableSelectorInitializer';
 export * from './UpdateActionInitializer';
 export * from './UpdateSubmitActionInitializer';
-export * from './DuplicateActionInitializer';
 export * from './ViewActionInitializer';
+
