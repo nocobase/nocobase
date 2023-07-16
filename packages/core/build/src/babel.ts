@@ -25,6 +25,7 @@ interface IBabelOpts {
   log?: (string) => void;
   watch?: boolean;
   dispose?: Dispose[];
+  onlyTypes?: boolean;
   importLibToEs?: boolean;
   bundleOpts: IBundleOptions;
 }
@@ -46,6 +47,7 @@ export default async function (opts: IBabelOpts) {
     dispose,
     importLibToEs,
     log,
+    onlyTypes = false,
     bundleOpts: {
       target = "browser",
       runtimeHelpers,
@@ -63,8 +65,10 @@ export default async function (opts: IBabelOpts) {
   const targetDir = type === "esm" ? "es" : "lib";
   const targetPath = join(cwd, targetDir);
 
-  log(chalk.gray(`Clean ${targetDir} directory`));
-  rimraf.sync(targetPath);
+  if (!onlyTypes) {
+    log(chalk.gray(`Clean ${targetDir} directory`));
+    rimraf.sync(targetPath);
+  }
 
   function transform(opts: ITransformOpts) {
     const { file, type } = opts;
@@ -157,6 +161,7 @@ export default async function (opts: IBabelOpts) {
     }
 
     function isTransform(path) {
+      if (onlyTypes) return false
       return babelTransformRegexp.test(path) && !path.endsWith(".d.ts");
     }
 
@@ -197,7 +202,7 @@ export default async function (opts: IBabelOpts) {
           })
         )
       )
-      .pipe(vfs.dest(targetPath));
+      .pipe(gulpIf(onlyTypes ? '**/*.d.ts' : true, vfs.dest(targetPath)))
   }
 
   return new Promise((resolve) => {

@@ -145,7 +145,7 @@ export function buildPluginServer(cwd: string) {
     splitting: false,
     clean: false,
     bundle: false,
-    silent: false,
+    silent: true,
     treeshake: true,
     outDir: path.join(cwd, 'lib'),
     format: 'cjs',
@@ -171,6 +171,7 @@ export function buildPluginClient(cwd: string) {
     define: {
       'process.env.NODE_ENV': JSON.stringify('production'),
     },
+    logLevel: 'error',
     build: {
       minify: false,
       outDir,

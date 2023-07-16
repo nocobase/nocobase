@@ -12,7 +12,7 @@ import registerBabel from './registerBabel';
 import rollup from './rollup';
 import { Dispose, IBundleOptions, IBundleTypeOutput, ICjs, IEsm, IOpts } from './types';
 import { getExistFiles, getLernaPackages } from './utils';
-import { buildPluginServer, buildPluginClient } from './buildPlugin'
+import { buildPluginClient, buildPluginServer } from './buildPlugin';
 
 export function getBundleOpts(opts: IOpts): IBundleOptions[] {
   const { cwd, buildArgs = {}, rootConfig = {} } = opts;
@@ -122,36 +122,38 @@ export async function build(opts: IOpts, extraOpts: IExtraBuildOpts = {}) {
     buildArgs.config &&
     (isAbsolute(buildArgs.config) ? buildArgs.config : join(process.cwd(), buildArgs.config));
 
-  const pkgName = (typeof pkg === 'string' ? pkg : pkg?.name) || 'unknown';
-
-  function log(msg) {
-    console.log(`${pkg ? `${randomColor(`${pkgName}`)}: ` : ''}${msg}`);
-  }
-
-  // Clean dist
-  if (clean) {
-    log(chalk.gray(`Clean dist directory`));
-    rimraf.sync(join(cwd, 'dist'));
-    rimraf.sync(join(cwd, 'lib'));
-  }
-
-  if (pkgName.startsWith('@nocobase/plugin')) {
-    await buildPluginServer(cwd)
-    await buildPluginClient(cwd)
-    return [];
-  }
-
   // register babel for config files
   registerBabel({
     cwd,
     only: customConfigPath ? CONFIG_FILES.concat(customConfigPath) : CONFIG_FILES,
   });
 
+  const pkgName = (typeof pkg === 'string' ? pkg : pkg?.name) || 'unknown';
+
+  function log(msg) {
+    console.log(`${pkg ? `${randomColor(`${pkgName}`)}: ` : ''}${msg}`);
+  }
+
   // Get user config
   const bundleOptsArray = getBundleOpts(opts);
-
+  const isPlugin = pkgName.startsWith('@nocobase/plugin');
   for (const bundleOpts of bundleOptsArray) {
     validateBundleOpts(bundleOpts, { cwd, rootPath });
+
+    // Clean dist
+    if (clean) {
+      log(chalk.gray(`Clean dist directory`));
+      rimraf.sync(join(cwd, 'dist'));
+    }
+
+    if (isPlugin) {
+      rimraf.sync(join(cwd, 'lib'));
+
+      log('build server');
+      await buildPluginServer(cwd)
+      log('build client');
+      await buildPluginClient(cwd)
+    }
 
     // Build umd
     if (bundleOpts.umd) {
@@ -171,9 +173,9 @@ export async function build(opts: IOpts, extraOpts: IExtraBuildOpts = {}) {
     // Build cjs
     if (bundleOpts.cjs) {
       const cjs = bundleOpts.cjs as IBundleTypeOutput;
-      log(`Build cjs with ${cjs.type}`);
+      log(`Build ${isPlugin ? 'd.ts' : 'cjs'} with ${cjs.type}`);
       if (cjs.type === 'babel') {
-        await babel({ cwd, rootPath, watch, dispose, type: 'cjs', log, bundleOpts });
+        await babel({ cwd, rootPath, watch, dispose, onlyTypes: isPlugin, type: 'cjs', log, bundleOpts });
       } else {
         await rollup({
           cwd,
