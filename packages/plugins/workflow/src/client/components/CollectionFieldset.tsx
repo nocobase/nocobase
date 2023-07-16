@@ -3,11 +3,12 @@ import { observer, useField, useForm } from '@formily/react';
 import {
   CollectionField,
   CollectionProvider,
-  css,
   SchemaComponent,
+  Variable,
+  css,
   useCollectionManager,
   useCompile,
-  Variable,
+  useToken,
 } from '@nocobase/client';
 import { Button, Dropdown, Form, Input, MenuProps } from 'antd';
 import React, { useMemo } from 'react';
@@ -42,6 +43,7 @@ export function useCollectionUIFields(collection) {
 // NOTE: observer for watching useProps
 const CollectionFieldSet = observer(
   ({ value, disabled, onChange, filter }: any) => {
+    const { token } = useToken();
     const { t } = useTranslation();
     const compile = useCompile();
     const form = useForm();
@@ -147,7 +149,7 @@ const CollectionFieldSet = observer(
             ) : null}
           </CollectionProvider>
         ) : (
-          <p>{lang('Please select collection first')}</p>
+          <p style={{ color: token.colorText }}>{lang('Please select collection first')}</p>
         )}
       </fieldset>
     );

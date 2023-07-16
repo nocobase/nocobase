@@ -13,7 +13,9 @@ import { AppNameInput } from './AppNameInput';
 import { usePluginUtils } from './utils';
 
 const MultiAppManager = () => {
-  const { data, loading, run } = useRequest(
+  const { data, run } = useRequest<{
+    data: any[];
+  }>(
     {
       resource: 'applications',
       action: 'listPinned',

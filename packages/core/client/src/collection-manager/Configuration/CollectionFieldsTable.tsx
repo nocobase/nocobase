@@ -22,8 +22,11 @@ const useDefSelectedRowKeys = () => {
 };
 const useDef = (options, props) => {
   const { request, dataSource } = props;
+  const result = useRequest(request(props), { ...options, manual: true });
+
   if (request) {
-    return useRequest(request(props), options);
+    result.run();
+    return result;
   } else {
     return Promise.resolve({
       data: dataSource,

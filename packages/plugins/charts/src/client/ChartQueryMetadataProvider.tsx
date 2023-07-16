@@ -22,7 +22,9 @@ export const ChartQueryMetadataProvider: React.FC = (props) => {
 
   const location = useLocation();
 
-  const service = useRequest(options, {
+  const service = useRequest<{
+    data: any;
+  }>(options, {
     manual: true,
   });
 

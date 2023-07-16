@@ -26,7 +26,7 @@ import { NAMESPACE } from '../../locale';
 import { linkNodes } from '../../utils';
 import { DetailsBlockProvider } from './DetailsBlockProvider';
 import { FormBlockProvider } from './FormBlockProvider';
-import { manualFormTypes } from './SchemaConfig';
+import { ManualFormType, manualFormTypes } from './SchemaConfig';
 
 const nodeCollection = {
   title: `{{t("Task", { ns: "${NAMESPACE}" })}}`,
@@ -464,8 +464,9 @@ function FlowContextProvider(props) {
           DetailsBlockProvider,
           ActionBarProvider,
           ManualActionStatusProvider,
+          // @ts-ignore
           ...Array.from(manualFormTypes.getValues()).reduce(
-            (result, item) => Object.assign(result, item.block.components),
+            (result, item: ManualFormType) => Object.assign(result, item.block.components),
             {},
           ),
           ...nodeComponents,
@@ -474,8 +475,9 @@ function FlowContextProvider(props) {
           useSubmit,
           useFormBlockProps,
           useDetailsBlockProps,
+          // @ts-ignore
           ...Array.from(manualFormTypes.getValues()).reduce(
-            (result, item) => Object.assign(result, item.block.scope),
+            (result, item: ManualFormType) => Object.assign(result, item.block.scope),
             {},
           ),
         }}
