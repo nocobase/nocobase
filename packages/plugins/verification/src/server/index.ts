@@ -1,4 +1,5 @@
-import { name } from '../../package.json'
+// @ts-ignore
+import { name } from '../../package.json';
 export * from './constants';
 export { Provider } from './providers';
 export { Interceptor, default } from './Plugin';

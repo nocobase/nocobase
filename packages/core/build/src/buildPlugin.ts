@@ -1,63 +1,50 @@
 import fs from 'fs';
+import chalk from 'chalk';
 import { builtinModules } from 'module';
 import path from 'path';
 import react from '@vitejs/plugin-react'
 import { build as tsupBuild } from 'tsup'
-import { build as viteBuild, PluginOption } from 'vite'
+import { build as viteBuild } from 'vite'
 import fg from 'fast-glob'
 
-function isBuiltinModule(packageName: string) {
-  return builtinModules.includes(packageName);
+const requireRegex = /require\s*\(\s*[`'"]([^`'"\s.].+?)[`'"]\s*\)/g;
+const packageJsonRequireRegex = /require\((['"])\.\.\/+(\.\.\/)*package\.json\1\)/;
+const importRegex = /import\s+.*?\s+from\s+['"]([^'"\s.].+?)['"];?/g;
+
+const serverGlobalFiles: string[] = [
+  'src/**',
+  '!src/server/__tests__/**',
+  '!src/client/**'
+]
+
+const clientGlobalFiles: string[] = [
+  'src/client/**',
+  '!src/client/__tests__/**',
+]
+
+type Log = (msg: string, ...args: any) => void;
+
+function isNotBuiltinModule(packageName: string) {
+  return !builtinModules.includes(packageName);
 }
 
-function getSrcPackages(sourceDir: string): string[] {
-  const importedPackages = new Set<string>();
-  const exts = ['.js', '.ts', '.jsx', '.tsx'];
-
-  const importRegex = /import\s+.*?\s+from\s+['"]([^'"\s.].+?)['"];?/g;
-  const requireRegex = /require\s*\(\s*[`'"]([^`'"\s.].+?)[`'"]\s*\)/g;
-  function setPackagesFromContent(reg: RegExp, content: string) {
-    let match: RegExpExecArray | null;
-    while ((match = reg.exec(content))) {
-      let importedPackage = match[1];
-      if (importedPackage.startsWith('@')) {
+function getSourcePackages(sourceFiles: string[]): string[] {
+  const packages = sourceFiles
+    .map(item => fs.readFileSync(item, 'utf-8'))
+    .map(item => [...item.matchAll(importRegex)])
+    .flat()
+    .map(item => item[1])
+    .filter(isNotBuiltinModule)
+    .map(item => {
+      if (item.startsWith('@')) {
         // @aa/bb/ccFile => @aa/bb
-        importedPackage = importedPackage.split('/').slice(0, 2).join('/');
-      } else {
-        // aa/bbFile => aa
-        importedPackage = importedPackage.split('/')[0];
+        return item.split('/').slice(0, 2).join('/');
       }
-
-      if (!isBuiltinModule(importedPackage)) {
-        importedPackages.add(importedPackage);
-      }
-    }
-  }
-
-  function traverseDirectory(directory: string) {
-    const files = fs.readdirSync(directory);
-
-    for (const file of files) {
-      const filePath = path.join(directory, file);
-      const stat = fs.statSync(filePath);
-
-      if (stat.isDirectory()) {
-        // recursive
-        traverseDirectory(filePath);
-      } else if (stat.isFile() && !filePath.includes('__tests__')) {
-        if (exts.includes(path.extname(filePath).toLowerCase())) {
-          const content = fs.readFileSync(filePath, 'utf-8');
-
-          setPackagesFromContent(importRegex, content);
-          setPackagesFromContent(requireRegex, content);
-        }
-      }
-    }
-  }
-
-  traverseDirectory(sourceDir);
-
-  return [...importedPackages];
+      // aa/bbFile => aa
+      item = item.split('/')[0];
+    })
+    .filter(Boolean)
+  return [...new Set(packages)];
 }
 
 function getPackageJson(cwd: string) {
@@ -68,54 +55,71 @@ function getPackageJsonPackages(packageJson: Record<string, any>): string[] {
   return [...Object.keys(packageJson.devDependencies || {}), ...Object.keys(packageJson.dependencies || {})];
 }
 
-function checkPackages(srcPackages: string[], packageJsonPackages: string[]) {
+function checkPackages(srcPackages: string[], packageJsonPackages: string[], log: Log) {
   const missingPackages = srcPackages.filter((packageName) => !packageJsonPackages.includes(packageName));
   if (missingPackages.length) {
-    console.error(
-      `[Plugin Build Error]: Missing packages \`\x1b[31m%s\x1b[0m\` \nPlease add them to "devDependencies" or "dependencies" in package.json\n`, missingPackages.join(', ')
-    );
+    log("Missing packages %s in package.json. If you want it to be bundled into the output, put it in %s; otherwise, put it in %s.", chalk.red(missingPackages.join(', ')), chalk.grey('dependencies'), chalk.grey('devDependencies'));
     process.exit(-1);
   }
 }
 
+function checkRequire(sourceFiles: string[], packageJson: Record<string, any>, log: Log) {
+  sourceFiles.forEach(item => {
+    const code = fs.readFileSync(item, 'utf-8');
+    const requireArr = [...code.matchAll(requireRegex), code.match(packageJsonRequireRegex)]
+      .filter(Boolean)
+      .map(item => item[0])
+      .map(item => {
+        if (item.startsWith('@')) {
+          // @aa/bb/ccFile => @aa/bb
+          return item.split('/').slice(0, 2).join('/');
+        }
+        // aa/bbFile => aa
+        return item.split('/')[0];
+      })
+      .filter(item => packageJson?.dependencies(item));
 
-function checkSrcExists(cwd: string, entry: 'server' | 'client') {
+    if (requireArr.length) {
+      log('%s in %s is not allowed. Please use %s instead.', chalk.red(requireArr.join(', ')), chalk.red(item), chalk.red('import'));
+      process.exit(-1);
+    }
+  })
+}
+
+function checkEntryExists(cwd: string, entry: 'server' | 'client', log: Log) {
   const srcDir = path.join(cwd, 'src', entry);
   if (!fs.existsSync(srcDir)) {
-    console.error(`[Plugin Build Error]: Missing \`\x1b[31m%s\x1b[0m\`. Please create it\n`, `src/${entry}`);
+    log('Missing %s. Please create it.', chalk.red(`src/${entry}`));
     process.exit(-1);
   }
 
   return srcDir;
 }
 
-function tipDeps(srcPackages: string[], packageJson: Record<string, any>, entry: 'server' | 'client') {
+function tipDeps(sourcePackages: string[], packageJson: Record<string, any>, log: Log) {
   if (!packageJson.dependencies) return;
-  const includePackages = srcPackages.filter(item => packageJson.dependencies[item])
+  const includePackages = sourcePackages.filter(item => packageJson.dependencies[item])
   if (!includePackages.length) return;
-  console.log('\n[%s build tip]: Please note that \x1b[33m%s\x1b[0m will be bundled into dist.\n',
-    entry,
-    includePackages.join(', '),
-  )
+  log("%s will be bundled into dist. If you want it to be bundled into the output, put it in %s; otherwise, put it in %s.", chalk.yellow(includePackages.join(', ')), chalk.grey('dependencies'), chalk.grey('devDependencies'));
 }
 
-function check(cwd: string, packageJson: Record<string, any>, entry: 'server' | 'client') {
-  const srcDir = checkSrcExists(cwd, entry)
-  const srcPackages = getSrcPackages(srcDir);
-  checkPackages(srcPackages, getPackageJsonPackages(packageJson));
-  tipDeps(srcPackages, packageJson, entry)
+type CheckOptions = {
+  cwd: string;
+  log: Log;
+  entry: 'server' | 'client';
+  files: string[];
+  packageJson: Record<string, any>;
 }
 
-function checkFileSizePlugin(filePath: string): PluginOption {
-  return {
-    name: 'check-file-size',
-    closeBundle() {
-      const fileSize = getFileSize(filePath);
-      if (fileSize > 1024 * 1024) {
-        console.warn('\n[client build]: The bundle file size exceeds 1MB \`\x1b[31m%s\x1b[0m\`. Please check for unnecessary \`\x1b[31mdependencies\x1b[0m\` and move them to \`\x1b[31mdevDependencies\x1b[0m\` if possible.\n', formatFileSize(fileSize));
-      }
-    },
-  };
+function check(options: CheckOptions) {
+  const { cwd, log, entry, files, packageJson } = options;
+  checkEntryExists(cwd, entry, log)
+
+  const sourcePackages = getSourcePackages(files);
+
+  checkPackages(sourcePackages, getPackageJsonPackages(packageJson), log);
+  checkRequire(files, packageJson, log);
+  tipDeps(sourcePackages, packageJson, log)
 }
 
 function getFileSize(filePath: string) {
@@ -128,20 +132,22 @@ function formatFileSize(fileSize: number) {
   return kb.toFixed(2) + ' KB';
 }
 
-export function buildPluginServer(cwd: string) {
-  const packageJson = getPackageJson(cwd);
-  check(cwd, packageJson, 'server')
-
-  const entry = fg.globSync([
-    'src/**',
-    '!src/server/__tests__/**',
-    '!src/client/**'
-  ], {
-    cwd,
-    absolute: true,
+export function deleteJsFiles(cwd: string, log: Log) {
+  log('delete babel js files')
+  const jsFiles = fg.globSync(['**/*', '!**/*.d.ts'], { cwd: path.join(cwd, 'lib'), absolute: true })
+  jsFiles.forEach(item => {
+    fs.unlinkSync(item);
   })
+}
+
+export function buildPluginServer(cwd: string, log: Log) {
+  log('build server')
+  const packageJson = getPackageJson(cwd);
+  const serverFiles = fg.globSync(serverGlobalFiles, { cwd, absolute: true })
+  check({ cwd, packageJson, entry: 'server', files: serverFiles, log })
+
   return tsupBuild({
-    entry,
+    entry: serverFiles,
     splitting: false,
     clean: false,
     bundle: false,
@@ -149,13 +155,16 @@ export function buildPluginServer(cwd: string) {
     treeshake: true,
     outDir: path.join(cwd, 'lib'),
     format: 'cjs',
-    external: Object.keys(packageJson.devDependencies || {}),
+    external: Object.keys(packageJson.devDependencies || {})
   })
 }
 
-export function buildPluginClient(cwd: string) {
+export function buildPluginClient(cwd: string, log: Log) {
+  log('build client')
+
   const packageJson = getPackageJson(cwd);
-  check(cwd, packageJson, 'client')
+  const clientFiles = fg.globSync(clientGlobalFiles, { cwd, absolute: true })
+  check({ cwd, packageJson, entry: 'client', files: clientFiles, log })
 
   const outDir = path.join(cwd, 'lib/client');
 
@@ -165,8 +174,9 @@ export function buildPluginClient(cwd: string) {
     return prev;
   }, {})
 
+  const entry = fg.globSync('src/client/index.{ts,tsx,js,jsx}', { cwd })
+  const outputFileName = 'index.js';
   return viteBuild({
-    plugins: [react(), checkFileSizePlugin(path.join(outDir, 'index.js'))],
     mode: 'production',
     define: {
       'process.env.NODE_ENV': JSON.stringify('production'),
@@ -176,10 +186,10 @@ export function buildPluginClient(cwd: string) {
       minify: false,
       outDir,
       lib: {
-        entry: path.join(cwd, 'src/client'),
+        entry,
         formats: ['umd'],
         name: packageJson.name,
-        fileName: () => 'index.js',
+        fileName: () => outputFileName,
       },
       rollupOptions: {
         external: [...Object.keys(externals), 'react/jsx-runtime'],
@@ -191,6 +201,17 @@ export function buildPluginClient(cwd: string) {
           }
         },
       }
-    }
+    },
+    plugins: [
+      react(),
+      {
+        name: 'check-file-size',
+        closeBundle() {
+          const fileSize = getFileSize(path.join(outDir, outputFileName));
+          if (fileSize > 1024 * 1024) {
+            log('The bundle file size exceeds 1MB %s. Please check for unnecessary %s and move them to %s if possible.\n', chalk.yellow(formatFileSize(fileSize)), chalk.yellow('dependencies'), chalk.yellow('devDependencies'));
+          }
+        },
+      }],
   })
 }

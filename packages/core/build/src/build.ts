@@ -12,7 +12,7 @@ import registerBabel from './registerBabel';
 import rollup from './rollup';
 import { Dispose, IBundleOptions, IBundleTypeOutput, ICjs, IEsm, IOpts } from './types';
 import { getExistFiles, getLernaPackages } from './utils';
-import { buildPluginClient, buildPluginServer } from './buildPlugin';
+import { buildPluginClient, buildPluginServer, deleteJsFiles } from './buildPlugin';
 
 export function getBundleOpts(opts: IOpts): IBundleOptions[] {
   const { cwd, buildArgs = {}, rootConfig = {} } = opts;
@@ -130,30 +130,22 @@ export async function build(opts: IOpts, extraOpts: IExtraBuildOpts = {}) {
 
   const pkgName = (typeof pkg === 'string' ? pkg : pkg?.name) || 'unknown';
 
-  function log(msg) {
-    console.log(`${pkg ? `${randomColor(`${pkgName}`)}: ` : ''}${msg}`);
+  function log(msg, ...args) {
+    console.log(`${pkg ? `${randomColor(`${pkgName}`)}: ` : ''}${msg}`, ...args);
   }
 
   // Get user config
   const bundleOptsArray = getBundleOpts(opts);
   const isPlugin = pkgName.startsWith('@nocobase/plugin');
+
+  // Clean dist
+  if (clean) {
+    log(chalk.gray(`Clean dist directory`));
+    rimraf.sync(join(cwd, 'dist'));
+  }
+
   for (const bundleOpts of bundleOptsArray) {
     validateBundleOpts(bundleOpts, { cwd, rootPath });
-
-    // Clean dist
-    if (clean) {
-      log(chalk.gray(`Clean dist directory`));
-      rimraf.sync(join(cwd, 'dist'));
-    }
-
-    if (isPlugin) {
-      rimraf.sync(join(cwd, 'lib'));
-
-      log('build server');
-      await buildPluginServer(cwd)
-      log('build client');
-      await buildPluginClient(cwd)
-    }
 
     // Build umd
     if (bundleOpts.umd) {
@@ -176,6 +168,11 @@ export async function build(opts: IOpts, extraOpts: IExtraBuildOpts = {}) {
       log(`Build ${isPlugin ? 'd.ts' : 'cjs'} with ${cjs.type}`);
       if (cjs.type === 'babel') {
         await babel({ cwd, rootPath, watch, dispose, onlyTypes: isPlugin, type: 'cjs', log, bundleOpts });
+        if (isPlugin) {
+          deleteJsFiles(cwd, log);
+          await buildPluginServer(cwd, log)
+          await buildPluginClient(cwd, log)
+        }
       } else {
         await rollup({
           cwd,

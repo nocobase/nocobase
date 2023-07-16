@@ -65,10 +65,8 @@ export default async function (opts: IBabelOpts) {
   const targetDir = type === "esm" ? "es" : "lib";
   const targetPath = join(cwd, targetDir);
 
-  if (!onlyTypes) {
-    log(chalk.gray(`Clean ${targetDir} directory`));
-    rimraf.sync(targetPath);
-  }
+  log(chalk.gray(`Clean ${targetDir} directory`));
+  rimraf.sync(targetPath);
 
   function transform(opts: ITransformOpts) {
     const { file, type } = opts;
@@ -164,7 +162,6 @@ export default async function (opts: IBabelOpts) {
       if (onlyTypes) return false
       return babelTransformRegexp.test(path) && !path.endsWith(".d.ts");
     }
-
     return vfs
       .src(src, {
         allowEmpty: true,
@@ -201,13 +198,13 @@ export default async function (opts: IBabelOpts) {
             }
           })
         )
-      )
-      .pipe(gulpIf(onlyTypes ? '**/*.d.ts' : true, vfs.dest(targetPath)))
+    )
+      .pipe(vfs.dest(targetPath))
   }
 
   return new Promise((resolve) => {
     const patterns = [
-      join(srcPath, "**/*"),
+      onlyTypes ? join(srcPath, "**/*.{ts,tsx}") : join(srcPath, "**/*"),
       `!${join(srcPath, "**/fixtures{,/**}")}`,
       `!${join(srcPath, "**/demos{,/**}")}`,
       `!${join(srcPath, "**/__test__{,/**}")}`,
