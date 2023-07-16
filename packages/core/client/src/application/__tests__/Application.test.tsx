@@ -5,14 +5,6 @@ import { describe } from 'vitest';
 import { Application } from '../Application';
 import { Plugin } from '../Plugin';
 
-// TODO: TypeError: Protocol "auth:" not supported. Expected "http:
-// const { apiClient, mockRequest } = mockAPIClient();
-// mockRequest.onGet('auth:check').reply(200, {
-//   data: {
-//     id: 1,
-//   },
-// });
-
 describe('Application', () => {
   const router: any = { type: 'memory', initialEntries: ['/'] };
   const initialComponentsLength = 6;
@@ -262,7 +254,7 @@ describe('Application', () => {
       expect(screen.getByText('AboutComponent')).toBeInTheDocument();
     });
 
-    // TODO: 会报错，暂时不知道怎么解决
+    // TODO: 会报错，暂时不知道怎么解决，先跳过
     it.skip('mount', async () => {
       const Hello = () => <div>Hello</div>;
       const app = new Application({
