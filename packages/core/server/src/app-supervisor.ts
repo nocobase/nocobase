@@ -58,6 +58,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     }
 
     this.appBootstrapper = null;
+    await this.rpcBroker.destroy();
     this.removeAllListeners();
   }
 

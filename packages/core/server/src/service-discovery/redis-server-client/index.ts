@@ -1,5 +1,5 @@
 import { createClient } from 'redis';
-import { ConnectionInfo, RemoteServiceInfo, ServiceDiscoveryClient } from '../client';
+import { ConnectionInfo, RemoteServiceInfo, ServiceDiscoveryClient, ServiceType } from '../client';
 
 export class RedisDiscoveryServerClient extends ServiceDiscoveryClient {
   serverURI: string;
@@ -22,24 +22,32 @@ export class RedisDiscoveryServerClient extends ServiceDiscoveryClient {
     return this.client;
   }
 
-  async getServicesByName(serverType: string, name: string): Promise<RemoteServiceInfo[]> {
+  async getServicesByName(serverType: ServiceType, name: string): Promise<RemoteServiceInfo[]> {
     const keyPrefix = `nocobase:${serverType}:${name}`;
     const client = await this.getRedisClient();
     const values = await client.sMembers(keyPrefix);
 
-    return values.map((value) => this.serviceValue(value));
+    return values.map((value) => {
+      const [host, port] = value.split(':');
+      return {
+        type: serverType,
+        name,
+        host,
+        port: parseInt(port),
+      };
+    });
   }
 
-  async listServicesByType(serverType: string): Promise<Map<string, RemoteServiceInfo[]>> {
+  async listServicesByType(serverType: ServiceType): Promise<Map<string, RemoteServiceInfo[]>> {
     const keyPrefix = `nocobase:${serverType}:*`;
     const client = await this.getRedisClient();
     const keys = await client.keys(keyPrefix);
     const servicesName = keys.map((key) => key.split(':')[2]);
-
     const services = new Map<string, RemoteServiceInfo[]>();
 
     for (const name of servicesName) {
-      services.set(name, await this.getServicesByName(serverType, name));
+      const servicesInfo = await this.getServicesByName(serverType, name);
+      services.set(name, servicesInfo);
     }
 
     return services;
@@ -48,7 +56,9 @@ export class RedisDiscoveryServerClient extends ServiceDiscoveryClient {
   async registerService(serviceInfo: RemoteServiceInfo): Promise<boolean> {
     const key = this.serviceKey(serviceInfo);
     const client = await this.getRedisClient();
-    await client.sAdd(key, this.serviceValue(serviceInfo));
+    const serviceValue = this.serviceValue(serviceInfo);
+    console.log(`register service ${key} ${serviceValue}`);
+    await client.sAdd(key, serviceValue);
     return true;
   }
 
@@ -69,5 +79,11 @@ export class RedisDiscoveryServerClient extends ServiceDiscoveryClient {
 
   private serviceValue(serviceInfo: RemoteServiceInfo) {
     return `${serviceInfo.host}:${serviceInfo.port}`;
+  }
+
+  async destroy() {
+    if (this.client) {
+      await this.client.disconnect();
+    }
   }
 }

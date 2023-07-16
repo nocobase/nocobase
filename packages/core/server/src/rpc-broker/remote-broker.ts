@@ -71,4 +71,11 @@ export class RemoteBroker extends RpcBrokerInterface {
       options,
     });
   }
+
+  async destroy() {
+    console.log('destroy remote broker');
+    this.rpcServer?.close();
+
+    await this.serviceDiscoverClient.destroy();
+  }
 }
