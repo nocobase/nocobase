@@ -6,7 +6,7 @@ const AppInner = ({ children }: { children: React.ReactNode }) => {
   const { notification } = App.useApp();
   const apiClient = useAPIClient();
 
-  apiClient.antdNotification = notification;
+  apiClient.notification = notification;
 
   return <>{children}</>;
 };
