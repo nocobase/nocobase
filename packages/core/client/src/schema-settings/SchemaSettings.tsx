@@ -1,5 +1,5 @@
 import { ArrayCollapse, ArrayItems, FormItem, FormLayout, Input } from '@formily/antd-v5';
-import { Field, GeneralField, createForm } from '@formily/core';
+import { createForm, Field, GeneralField } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { error } from '@nocobase/utils/client';
@@ -39,6 +39,7 @@ import {
   CollectionProvider,
   createDesignable,
   Designable,
+  findFormBlock,
   FormDialog,
   FormProvider,
   RemoteSchemaComponent,
