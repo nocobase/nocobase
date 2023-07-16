@@ -1,15 +1,15 @@
-import React, { useCallback, useState } from 'react';
-import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { css, cx } from '@emotion/css';
-import { List as AntdList, PaginationProps, Col } from 'antd';
-import { useGridCardActionBarProps } from './hooks';
+import { ArrayField } from '@formily/core';
+import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
+import { List as AntdList, Col, PaginationProps } from 'antd';
+import React, { useCallback, useState } from 'react';
 import { SortableItem } from '../../common';
 import { SchemaComponentOptions } from '../../core';
 import { useDesigner, useProps } from '../../hooks';
-import { GridCardItem } from './GridCard.Item';
-import { useGridCardBlockContext, useGridCardItemProps, GridCardBlockProvider } from './GridCard.Decorator';
+import { GridCardBlockProvider, useGridCardBlockContext, useGridCardItemProps } from './GridCard.Decorator';
 import { GridCardDesigner } from './GridCard.Designer';
-import { ArrayField } from '@formily/core';
+import { GridCardItem } from './GridCard.Item';
+import { useGridCardActionBarProps } from './hooks';
 import { defaultColumnCount, pageSizeOptions } from './options';
 
 const rowGutter = {
@@ -49,6 +49,7 @@ const designerCss = css`
         line-height: 16px;
         width: 16px;
         padding-left: 1px;
+        align-self: stretch;
       }
     }
   }

@@ -8,6 +8,7 @@ import cls from 'classnames';
 import { clone } from 'lodash';
 import React, { Fragment, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useToken } from '../../../style';
 import { useStyles } from './LinkageHeader.style';
 
 const LinkageRulesTitle = (props) => {
@@ -236,6 +237,7 @@ export default ArrayCollapse;
 
 //@ts-ignore
 ArrayCollapse.Copy = React.forwardRef((props: any, ref) => {
+  const { token } = useToken();
   const self = useField();
   const array = ArrayBase.useArray();
   const index = ArrayBase.useIndex(props.index);
@@ -246,8 +248,8 @@ ArrayCollapse.Copy = React.forwardRef((props: any, ref) => {
       {...props}
       style={{
         transition: 'all 0.25s ease-in-out',
-        color: 'rgba(0, 0, 0, 0.8)',
-        fontSize: '16px',
+        color: token.colorText,
+        fontSize: token.fontSizeLG,
         marginLeft: 6,
       }}
       ref={ref}

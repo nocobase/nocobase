@@ -8,7 +8,9 @@ import { Application } from '../application';
 import { Plugin } from '../application/Plugin';
 import { SigninPage, SigninPageExtensionPlugin, SignupPage } from '../auth';
 import { BlockSchemaComponentPlugin } from '../block-provider';
+import CSSVariableProvider from '../css-variable/CSSVariableProvider';
 import { RemoteDocumentTitlePlugin } from '../document-title';
+import { AntdAppProvider, GlobalThemeProvider } from '../global-theme';
 import { PinnedListPlugin } from '../plugin-manager';
 import { PMPlugin } from '../pm';
 import { AdminLayoutPlugin, AuthLayout, RouteSchemaComponent } from '../route-switch';
@@ -17,6 +19,7 @@ import { ErrorFallback } from '../schema-component/antd/error-fallback';
 import { SchemaInitializerPlugin } from '../schema-initializer';
 import { BlockTemplateDetails, BlockTemplatePage } from '../schema-templates';
 import { SystemSettingsPlugin } from '../system-settings';
+import { CurrentUserProvider, CurrentUserSettingsMenuProvider } from '../user';
 
 const AppSpin = Spin;
 
@@ -52,6 +55,12 @@ export class NocoBaseBuildInPlugin extends Plugin {
   async load() {
     this.addComponents();
     this.addRoutes();
+
+    this.app.use(CurrentUserProvider);
+    this.app.use(GlobalThemeProvider);
+    this.app.use(AntdAppProvider);
+    this.app.use(CSSVariableProvider);
+    this.app.use(CurrentUserSettingsMenuProvider);
   }
   addRoutes() {
     this.router.add('root', {

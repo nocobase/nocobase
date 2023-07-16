@@ -4,6 +4,7 @@ import { ArrayField, connect, useField } from '@formily/react';
 import { Select, Space } from 'antd';
 import React, { useContext } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
+import { useToken } from '../__builtins__';
 import { FilterItems } from './FilterItems';
 import { FilterLogicContext, RemoveConditionContext } from './context';
 
@@ -12,6 +13,8 @@ export const FilterGroup = connect((props) => {
   const field = useField<ObjectFieldModel>();
   const remove = useContext(RemoveConditionContext);
   const { t } = useTranslation();
+  const { token } = useToken();
+
   const keys = Object.keys(field.value || {});
   const logic = keys.includes('$or') ? '$or' : '$and';
   const setLogic = (value) => {
@@ -28,13 +31,13 @@ export const FilterGroup = connect((props) => {
           bordered
             ? {
                 position: 'relative',
-                border: '1px dashed #dedede',
-                padding: 14,
-                marginBottom: 8,
+                border: `1px dashed ${token.colorBorder}`,
+                padding: token.paddingSM,
+                marginBottom: token.marginXS,
               }
             : {
                 position: 'relative',
-                marginBottom: 8,
+                marginBottom: token.marginXS,
               }
         }
       >
@@ -51,7 +54,7 @@ export const FilterGroup = connect((props) => {
             />
           </a>
         )}
-        <div style={{ marginBottom: 8 }}>
+        <div style={{ marginBottom: 8, color: token.colorText }}>
           <Trans>
             {'Meet '}
             <Select

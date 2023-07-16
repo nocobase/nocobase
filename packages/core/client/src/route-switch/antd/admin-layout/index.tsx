@@ -1,12 +1,12 @@
 import { css } from '@emotion/css';
 import { Layout, Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Outlet, useNavigate, useParams, useMatches, useMatch } from 'react-router-dom';
+import { Outlet, useMatch, useNavigate, useParams } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
   CurrentAppInfoProvider,
   CurrentUser,
-  CurrentUserProvider,
+  NavigateIfNotSignIn,
   PinnedPluginList,
   RemoteCollectionManagerProvider,
   RemoteSchemaTemplateManagerPlugin,
@@ -20,7 +20,7 @@ import {
   useRequest,
   useSystemSettings,
 } from '../../../';
-import { Plugin } from '../../../application';
+import { Plugin } from '../../../application/Plugin';
 import { useCollectionManager } from '../../../collection-manager';
 
 const filterByACL = (schema, options) => {
@@ -75,7 +75,9 @@ const MenuEditor = (props) => {
   };
 
   const adminSchemaUid = useAdminSchemaUid();
-  const { data, loading } = useRequest(
+  const { data, loading } = useRequest<{
+    data: any;
+  }>(
     {
       url: `/uiSchemas:getJsonSchema/${adminSchemaUid}`,
     },
@@ -166,9 +168,10 @@ export const InternalAdminLayout = (props: any) => {
           }
 
           position: fixed;
-          width: 100%;
-          height: 46px;
-          line-height: 46px;
+          left: 0;
+          right: 0;
+          height: var(--nb-header-height);
+          line-height: var(--nb-header-height);
           padding: 0;
           z-index: 100;
         `}
@@ -243,10 +246,10 @@ export const InternalAdminLayout = (props: any) => {
             background: rgba(0, 0, 0, 0);
             z-index: 100;
             .ant-layout-sider-children {
-              top: 46px;
+              top: var(--nb-header-height);
               position: fixed;
               width: 200px;
-              height: calc(100vh - 46px);
+              height: calc(100vh - var(--nb-header-height));
             }
           `}
           theme={'light'}
@@ -263,7 +266,6 @@ export const InternalAdminLayout = (props: any) => {
           max-height: 100vh;
           > div {
             position: relative;
-            // z-index: 1;
           }
           .ant-layout-footer {
             position: absolute;
@@ -278,8 +280,8 @@ export const InternalAdminLayout = (props: any) => {
         <header
           className={css`
             flex-shrink: 0;
-            height: 46px;
-            line-height: 46px;
+            height: var(--nb-header-height);
+            line-height: var(--nb-header-height);
             background: transparent;
             pointer-events: none;
           `}
@@ -293,13 +295,13 @@ export const InternalAdminLayout = (props: any) => {
 export const AdminProvider = (props) => {
   return (
     <CurrentAppInfoProvider>
-      <CurrentUserProvider>
+      <NavigateIfNotSignIn>
         <RemoteSchemaTemplateManagerProvider>
           <RemoteCollectionManagerProvider>
             <ACLRolesCheckProvider>{props.children}</ACLRolesCheckProvider>
           </RemoteCollectionManagerProvider>
         </RemoteSchemaTemplateManagerProvider>
-      </CurrentUserProvider>
+      </NavigateIfNotSignIn>
     </CurrentAppInfoProvider>
   );
 };

@@ -3,7 +3,7 @@ import { SortableContext, useSortable } from '@dnd-kit/sortable';
 import { css } from '@emotion/css';
 import { ArrayField, Field } from '@formily/core';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
-import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
+import { RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
 import { action, reaction } from '@formily/reactive';
 import { useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, TableColumnProps } from 'antd';
@@ -19,6 +19,7 @@ import {
   useTableSelectorContext,
 } from '../../../';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
+import { useToken } from '../__builtins__';
 import { ColumnFieldProvider } from './components/ColumnFieldProvider';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
 
@@ -59,10 +60,7 @@ const useTableColumns = (props) => {
           return (
             <RecordIndexProvider index={record.__index || index}>
               <RecordProvider record={record}>
-                <ColumnFieldProvider
-                  schema={s}
-                  basePath={field.address.concat(record.__index || index)}
-                >
+                <ColumnFieldProvider schema={s} basePath={field.address.concat(record.__index || index)}>
                   <RecursionField
                     basePath={field.address.concat(record.__index || index)}
                     schema={s}
@@ -201,6 +199,7 @@ const useValidator = (validator: (value: any) => string) => {
 
 export const Table: any = observer(
   (props: any) => {
+    const { token } = useToken();
     const { pagination: pagination1, useProps, onChange, ...others1 } = props;
     const { pagination: pagination2, onClickRow, ...others2 } = useProps?.() || {};
     const {
@@ -238,10 +237,10 @@ export const Table: any = observer(
       };
       highlightRow = css`
         & > td {
-          background-color: #caedff !important;
+          background-color: ${token.controlItemBgActiveHover} !important;
         }
         &:hover > td {
-          background-color: #caedff !important;
+          background-color: ${token.controlItemBgActiveHover} !important;
         }
       `;
     }
