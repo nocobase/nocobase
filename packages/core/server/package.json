@@ -33,7 +33,8 @@
     "xstate": "^4.37.2"
   },
   "devDependencies": {
-    "@types/semver": "^7.3.9"
+    "@types/semver": "^7.3.9",
+    "redis-mock": "^0.56.3"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
 }
