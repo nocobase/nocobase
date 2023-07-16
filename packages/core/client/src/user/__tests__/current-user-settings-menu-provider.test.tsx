@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, renderHook } from 'testUtils';
+import { render } from 'testUtils';
 import AppContextProvider from '../../test/AppContextProvider';
 import { SettingsMenu } from '../CurrentUser';
 import { useCurrentUserSettingsMenu } from '../CurrentUserSettingsMenuProvider';
@@ -35,11 +35,11 @@ describe('CurrentUserSettingsMenuProvider', () => {
   });
 
   // TODO: result.current 是 null，会报错，暂时不知道哪里出了问题
-  it.skip('add menu item', () => {
-    const { result } = renderHook(() => useCurrentUserSettingsMenu(), {
-      wrapper,
-    });
+  // it.skip('add menu item', () => {
+  //   const { result } = renderHook(() => useCurrentUserSettingsMenu(), {
+  //     wrapper,
+  //   });
 
-    expect(result.current.getMenuItems()).not.toHaveLength(0);
-  });
+  //   expect(result.current.getMenuItems()).not.toHaveLength(0);
+  // });
 });

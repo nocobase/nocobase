@@ -77,7 +77,7 @@ class NocobasePresetPlugin extends Plugin {
 }
 
 const app = new Application({
-  apiClient: {
+  apiClientOptions: {
     baseURL: process.env.API_BASE_URL,
   },
   router: {

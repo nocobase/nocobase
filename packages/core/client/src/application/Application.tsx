@@ -17,7 +17,8 @@ import { compose, normalizeContainer } from './utils';
 
 export type ComponentAndProps<T = any> = [ComponentType, T];
 export interface ApplicationOptions {
-  apiClient?: APIClientOptions;
+  apiClientOptions?: APIClientOptions;
+  apiClient?: APIClient;
   i18n?: i18next;
   providers?: (ComponentType | ComponentAndProps)[];
   plugins?: PluginType[];
@@ -39,7 +40,7 @@ export class Application {
   constructor(protected options: ApplicationOptions = {}) {
     this.scopes = merge(this.scopes, options.scopes);
     this.components = merge(this.components, options.components);
-    this.apiClient = new APIClient(options.apiClient);
+    this.apiClient = options.apiClient || new APIClient(options.apiClientOptions);
     this.i18n = options.i18n || i18n;
     this.router = new RouterManager({
       ...options.router,
