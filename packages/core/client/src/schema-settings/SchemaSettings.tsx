@@ -1,3 +1,4 @@
+import { css } from '@emotion/css';
 import { ArrayCollapse, ArrayItems, FormItem, FormLayout, Input } from '@formily/antd-v5';
 import { Field, GeneralField, createForm } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema, useForm } from '@formily/react';
@@ -20,32 +21,32 @@ import {
 } from 'antd';
 import _, { cloneDeep } from 'lodash';
 import React, {
-  createContext,
   ReactNode,
+  createContext,
   useCallback,
   useContext,
   useMemo,
-  useState,
   // @ts-ignore
   useTransition as useReactTransition,
+  useState,
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  ActionContextProvider,
   APIClientProvider,
+  ActionContextProvider,
   CollectionFieldOptions,
   CollectionManagerContext,
   CollectionProvider,
-  createDesignable,
   Designable,
   FormDialog,
-  findFormBlock,
   FormProvider,
   RemoteSchemaComponent,
   SchemaComponent,
   SchemaComponentContext,
   SchemaComponentOptions,
+  createDesignable,
+  findFormBlock,
   useAPIClient,
   useBlockRequestContext,
   useCollection,
@@ -1391,7 +1392,7 @@ SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Sche
             customTimeFormat: {
               type: 'string',
               'x-component': CustomFormatCom,
-              default: fieldSchema?.['x-component-props']?.customTimeFormat|| 'h:mm a',
+              default: fieldSchema?.['x-component-props']?.customTimeFormat || 'h:mm a',
               'x-component-props': {
                 formatField: 'timeFormat',
                 customFormatField: 'customTimeFormat',
