@@ -1,7 +1,7 @@
 import { useField } from '@formily/react';
-import { css, cx, SortableItem, useCompile, useDesigner, useDocumentTitle } from '@nocobase/client';
+import { cx, SortableItem, useCompile, useDesigner, useDocumentTitle, useToken } from '@nocobase/client';
 import { NavBar, NavBarProps } from 'antd-mobile';
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { generateNTemplate } from '../../../../locale';
 import { HeaderDesigner } from './Header.Designer';
@@ -18,22 +18,22 @@ const InternalHeader = (props: HeaderProps) => {
   const compiledTitle = compile(title);
   const navigate = useNavigate();
   const { setTitle } = useDocumentTitle();
+  const { token } = useToken();
 
   useEffect(() => {
     // sync title
     setTitle(compiledTitle);
   }, [compiledTitle]);
 
+  const style = useMemo(() => {
+    return {
+      width: '100%',
+      background: token.colorBgContainer,
+    };
+  }, [token.colorBgContainer]);
+
   return (
-    <SortableItem
-      className={cx(
-        'nb-mobile-header',
-        css`
-          width: 100%;
-          background: #fff;
-        `,
-      )}
-    >
+    <SortableItem className={cx('nb-mobile-header')} style={style}>
       <NavBar backArrow={showBack} onBack={() => navigate(-1)}>
         {compiledTitle}
       </NavBar>

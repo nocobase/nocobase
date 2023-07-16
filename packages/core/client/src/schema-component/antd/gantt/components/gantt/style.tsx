@@ -1,33 +1,40 @@
-import { css } from '@emotion/css';
+import { genStyleHook } from '../../../__builtins__';
 
-export const ganttVerticalContainer = css`
-  overflow: hidden;
-  font-size: 0;
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  border-left: 2px solid #f4f2f2;
-`;
+const useStyles = genStyleHook('nb-gantt', (token) => {
+  const { componentCls } = token;
 
-export const horizontalContainer = css`
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-`;
+  return {
+    [componentCls]: {
+      '.ganttVerticalContainer': {
+        overflow: 'hidden',
+        fontSize: '0',
+        margin: '0',
+        padding: '0',
+        width: '100%',
+        borderLeft: `2px solid ${token.colorBorderSecondary}`,
 
-export const wrapper = css`
-  display: flex;
-  padding: 0;
-  margin: 0;
-  list-style: none;
-  outline: none;
-  position: relative;
-  .gantt-horizontal-scoll {
-    display: none;
-  }
-  &:hover {
-    .gantt-horizontal-scoll {
-      display: block;
-    }
-  }
-`;
+        '.ganttHeader': { borderBottom: `1px solid ${token.colorBorderSecondary}`, fontWeight: 700 },
+        '.ganttBody': { borderBottom: `1px solid ${token.colorBorderSecondary}` },
+      },
+
+      '.horizontalContainer': {
+        margin: '0',
+        padding: '0',
+        overflow: 'hidden',
+      },
+
+      '.wrapper': {
+        display: 'flex',
+        padding: '0',
+        margin: '0',
+        listStyle: 'none',
+        outline: 'none',
+        position: 'relative',
+        '.gantt-horizontal-scoll': { display: 'none' },
+        '&:hover': { '.gantt-horizontal-scoll': { display: 'block' } },
+      },
+    },
+  };
+});
+
+export default useStyles;

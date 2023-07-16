@@ -6,6 +6,7 @@ import { useCollection } from '../../../collection-manager';
 import { useSchemaInitializer } from '../../../schema-initializer';
 import { DndContext, SortableItem } from '../../common';
 import { useDesigner } from '../../hooks';
+import { useToken } from '../__builtins__';
 import { AssociationFilterBlockDesigner } from './AssociationFilter.BlockDesigner';
 import { AssociationFilterFilterBlockInitializer } from './AssociationFilter.FilterBlockInitializer';
 import { AssociationFilterInitializer } from './AssociationFilter.Initializer';
@@ -14,6 +15,7 @@ import { AssociationFilterItemDesigner } from './AssociationFilter.Item.Designer
 import { AssociationFilterProvider } from './AssociationFilterProvider';
 
 export const AssociationFilter = (props) => {
+  const { token } = useToken();
   const Designer = useDesigner();
   const filedSchema = useFieldSchema();
 
@@ -29,6 +31,7 @@ export const AssociationFilter = (props) => {
             height: 100%;
             overflow-y: auto;
             position: relative;
+            border-radius: ${token.borderRadiusLG}px;
             &:hover {
               > .general-schema-designer {
                 display: block;
@@ -66,6 +69,7 @@ export const AssociationFilter = (props) => {
                   line-height: 16px;
                   width: 16px;
                   padding-left: 1px;
+                  align-self: stretch;
                 }
               }
             }
