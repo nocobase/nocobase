@@ -417,48 +417,40 @@ export class PluginManager {
   async enable(name: string | string[]) {
     this.app.log.debug(`enabling plugin ${name}`);
 
-    try {
-      const pluginNames = await this.repository.enable(name);
-      await this.app.reload();
+    const pluginNames = await this.repository.enable(name);
+    await this.app.reload();
 
-      this.app.log.debug(`syncing database in enable plugin ${name}...`);
+    this.app.log.debug(`syncing database in enable plugin ${name}...`);
 
-      await this.app.db.sync();
+    await this.app.db.sync();
 
-      for (const pluginName of pluginNames) {
-        const plugin = this.app.getPlugin(pluginName);
-        if (!plugin) {
-          throw new Error(`${name} plugin does not exist`);
-        }
-        this.app.log.debug(`installing plugin ${pluginName}...`);
-        await plugin.install();
-        await plugin.afterEnable();
+    for (const pluginName of pluginNames) {
+      const plugin = this.app.getPlugin(pluginName);
+      if (!plugin) {
+        throw new Error(`${name} plugin does not exist`);
       }
-
-      this.app.log.debug(`emit afterEnablePlugin event...`);
-      await this.app.emitAsync('afterEnablePlugin', name);
-      this.app.log.debug(`afterEnablePlugin event emitted`);
-    } catch (error) {
-      throw error;
+      this.app.log.debug(`installing plugin ${pluginName}...`);
+      await plugin.install();
+      await plugin.afterEnable();
     }
+
+    this.app.log.debug(`emit afterEnablePlugin event...`);
+    await this.app.emitAsync('afterEnablePlugin', name);
+    this.app.log.debug(`afterEnablePlugin event emitted`);
   }
 
   async disable(name: string | string[]) {
-    try {
-      const pluginNames = await this.repository.disable(name);
-      await this.app.reload();
-      for (const pluginName of pluginNames) {
-        const plugin = this.app.getPlugin(pluginName);
-        if (!plugin) {
-          throw new Error(`${name} plugin does not exist`);
-        }
-        await plugin.afterDisable();
+    const pluginNames = await this.repository.disable(name);
+    await this.app.reload();
+    for (const pluginName of pluginNames) {
+      const plugin = this.app.getPlugin(pluginName);
+      if (!plugin) {
+        throw new Error(`${name} plugin does not exist`);
       }
-
-      await this.app.emitAsync('afterDisablePlugin', name);
-    } catch (error) {
-      throw error;
+      await plugin.afterDisable();
     }
+
+    await this.app.emitAsync('afterDisablePlugin', name);
   }
 
   async remove(name: string | string[]) {
