@@ -1,6 +1,8 @@
+import { LoadingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
+import { useInterval } from 'ahooks';
 import { Button, Result, Spin } from 'antd';
-import React, { FC } from 'react';
+import React, { FC, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { ACLPlugin } from '../acl';
 import { AntdConfigPlugin } from '../antd-config-provider';
@@ -20,26 +22,76 @@ import { SystemSettingsPlugin } from '../system-settings';
 
 const AppSpin = Spin;
 
-const AppError: FC<{ app: Application; error: Error }> = ({ app, error }) => (
-  <div>
-    <Result
-      className={css`
-        top: 50%;
-        position: absolute;
-        width: 100%;
-        transform: translate(0, -50%);
-      `}
-      status="error"
-      title={app.i18n.t('Failed to load plugin')}
-      subTitle={app.i18n.t(error?.message)}
-      extra={[
-        <Button type="primary" key="try" onClick={() => window.location.reload()}>
-          {app.i18n.t('Try again')}
-        </Button>,
-      ]}
-    />
-  </div>
-);
+const toData = (error) => {
+  const data = error?.response?.data;
+  if (data) {
+    if (data.doing) {
+      if (data.status === 'not-ready') {
+        return {
+          hideButton: true,
+          polling: true,
+          icon: <LoadingOutlined />,
+          title: 'Application is starting',
+          message: data?.doing,
+        };
+      }
+      return {
+        status: 'error',
+        title: data.lastWorkerError,
+        // message: data?.doing,
+      };
+    }
+    return error?.response?.data;
+  }
+  return {
+    status: 'error',
+    message: error?.message,
+  };
+};
+
+const AppError: FC<{ app: Application; error: any }> = ({ app, error }) => {
+  const [data, setData] = useState(toData(error));
+  const clear = useInterval(() => {
+    if (data.polling) {
+      app.apiClient
+        .silent()
+        .request({ url: 'app:getInfo' })
+        .then(() => {
+          window.location.reload();
+        })
+        .catch((error) => {
+          setData(toData(error));
+        });
+    } else {
+      clear();
+    }
+  }, 1000);
+  return (
+    <div>
+      <Result
+        className={css`
+          top: 50%;
+          position: absolute;
+          width: 100%;
+          transform: translate(0, -50%);
+        `}
+        icon={data.icon}
+        status={data.status}
+        title={app.i18n.t(data.title)}
+        subTitle={app.i18n.t(data.message)}
+        extra={
+          data.hideButton
+            ? []
+            : [
+                <Button type="primary" key="try" onClick={() => window.location.reload()}>
+                  {app.i18n.t('Try again')}
+                </Button>,
+              ]
+        }
+      />
+    </div>
+  );
+};
 
 export class NocoBaseBuildInPlugin extends Plugin {
   async afterAdd(): Promise<void> {
@@ -47,6 +99,7 @@ export class NocoBaseBuildInPlugin extends Plugin {
       AppSpin,
       AppError,
     });
+    this.app.apiClient.silent();
     this.addPlugins();
   }
   async load() {

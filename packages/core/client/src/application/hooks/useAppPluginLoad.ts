@@ -8,6 +8,7 @@ export function useAppPluginLoad(app: Application) {
     async function run() {
       try {
         await app.load();
+        app.apiClient.silence = false;
       } catch (err) {
         setError(err);
       }
