@@ -20,7 +20,7 @@ export class APIClient extends APIClientSDK {
   services: Record<string, Result<any, any>> = {};
   silence = false;
   /** 该值会在 AntdAppProvider 中被重新赋值 */
-  antdNotification: any = notification;
+  notification: any = notification;
 
   service(uid: string) {
     return this.services[uid];
@@ -36,10 +36,10 @@ export class APIClient extends APIClientSDK {
       return config;
     });
     super.interceptors();
-    this.notification();
+    this.useNotificationMiddleware();
   }
 
-  notification() {
+  useNotificationMiddleware() {
     this.axios.interceptors.response.use(
       (response) => response,
       (error) => {
@@ -51,7 +51,7 @@ export class APIClient extends APIClientSDK {
           return (window.location.href = redirectTo);
         }
         if (error?.response?.data?.type === 'application/json') {
-          handleErrorMessage(error, this.antdNotification);
+          handleErrorMessage(error, this.notification);
         } else {
           if (errorCache.size > 10) {
             errorCache.clear();
@@ -68,7 +68,7 @@ export class APIClient extends APIClientSDK {
           if (errs.length === 0) {
             throw error;
           }
-          this.antdNotification.error({
+          this.notification.error({
             message: errs?.map?.((error: any) => {
               return React.createElement('div', {}, error.message);
             }),
