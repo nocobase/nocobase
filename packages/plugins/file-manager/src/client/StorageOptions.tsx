@@ -119,6 +119,39 @@ const schema = {
       },
     },
   },
+  minio: {
+    properties: {
+      region: {
+        title: `{{t("Region", { ns: "${NAMESPACE}" })}}`,
+        type: 'string',
+        'x-decorator': 'FormItem',
+        'x-component': 'Input',
+        required: true,
+        default: 'us-east-1',
+      },
+      accessKeyId: {
+        title: `{{t("AccessKey ID", { ns: "${NAMESPACE}" })}}`,
+        type: 'string',
+        'x-decorator': 'FormItem',
+        'x-component': 'Input',
+        required: true,
+      },
+      secretAccessKey: {
+        title: `{{t("AccessKey Secret", { ns: "${NAMESPACE}" })}}`,
+        type: 'string',
+        'x-decorator': 'FormItem',
+        'x-component': 'Password',
+        required: true,
+      },
+      bucket: {
+        title: `{{t("Bucket", { ns: "${NAMESPACE}" })}}`,
+        type: 'string',
+        'x-decorator': 'FormItem',
+        'x-component': 'Input',
+        required: true,
+      },
+    },
+  },
 };
 
 export const StorageOptions = observer(
