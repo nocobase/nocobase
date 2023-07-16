@@ -92,17 +92,20 @@ export class RemoteBroker extends RpcBrokerInterface {
   }
 
   async pushToApp(appName: string, event: string, options?: any): Promise<boolean> {
-    const remoteAddr = await this.serviceDiscoverClient.fetchSingleService('apps', appName);
-    if (!remoteAddr) {
-      throw new Error(`failed to push to app, app ${appName} not found`);
-    }
+    const remoteAddrs = await this.serviceDiscoverClient.getServicesByName('apps', appName);
 
-    return await this.rpcClient.push({
-      remoteAddr: `http://${remoteAddr.host}:${remoteAddr.port}`,
-      appName,
-      event,
-      options,
-    });
+    return (
+      await Promise.all(
+        remoteAddrs.map((remoteAddr) => {
+          return this.rpcClient.push({
+            remoteAddr: `http://${remoteAddr.host}:${remoteAddr.port}`,
+            appName,
+            event,
+            options,
+          });
+        }),
+      )
+    ).every(Boolean);
   }
 
   async destroy() {

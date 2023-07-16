@@ -15,7 +15,6 @@ export const createRpcHttpServer = (options: RpcHttpServerOptions) => {
   const localBroker = new LocalBroker(appSupervisor);
 
   const server = http.createServer((req, res) => {
-    console.log(`rpc http server request ${req.url} ${req.method}`);
     if (req.method == 'POST') {
       let body = '';
       req.on('data', (chunk) => {
@@ -24,6 +23,8 @@ export const createRpcHttpServer = (options: RpcHttpServerOptions) => {
 
       req.on('end', () => {
         const data = JSON.parse(body);
+
+        console.log(`receive rpc request ${req.url} ${req.method}, ${body}`);
 
         let handlePromise;
 

@@ -11,6 +11,7 @@ export interface RemoteServiceInfo extends ConnectionInfo {
 export type ServiceInfo = RemoteServiceInfo;
 
 export type ServiceType = 'apps';
+
 export abstract class ServiceDiscoveryClient {
   // register service to service discovery server
   // service name must contain namespace, form: namespace:service
