@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Application, compose } from '../application';
+import { Application } from '../application';
 
 /**
  * 运行整个 App 所需要的所有上下文
@@ -9,9 +9,9 @@ const AppContextProvider = ({ children }: { children?: React.ReactNode }) => {
     return new Application({});
   }, []);
 
-  return compose(...app.providers)(({ children }) => {
-    return <>{children}</>;
-  })({ children });
+  const Provider = app.getComposeProviders();
+
+  return <Provider>{children}</Provider>;
 };
 
 AppContextProvider.displayName = 'AppContextProvider';
