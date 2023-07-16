@@ -1,6 +1,7 @@
 const http = require('http');
 const net = require('net');
 const fs = require('fs');
+const path = require('path');
 
 class CliHttpServer {
   static instance;
@@ -10,7 +11,7 @@ class CliHttpServer {
   cliDoingWork = null;
 
   ipcServer;
-  socketPath = '/tmp/cli-http-server.sock';
+  socketPath = path.resolve(__dirname, '../../../../storage/cli-ipc.sock');
 
   port;
 
