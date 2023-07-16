@@ -15,6 +15,17 @@ interface RemotePushOptions {
 }
 
 export class RpcHttpClient {
+  async sendPostRequest(url, body) {
+    console.log('sendPostRequest', url, body);
+    return await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+  }
+
   remoteUrl(remoteAddr: string) {
     if (!remoteAddr.startsWith('http://')) {
       return `http://${remoteAddr}`;
@@ -28,16 +39,10 @@ export class RpcHttpClient {
 
     const url = `${this.remoteUrl(remoteAddr)}/call`;
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        method,
-        args,
-        appName,
-      }),
+    const response = await this.sendPostRequest(url, {
+      method,
+      args,
+      appName,
     });
 
     const data = await response.json();
@@ -52,21 +57,13 @@ export class RpcHttpClient {
 
     const url = `${this.remoteUrl(remoteAddr)}/push`;
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        event,
-        options: eventOptions,
-        appName,
-      }),
+    const response = await this.sendPostRequest(url, {
+      event,
+      options: eventOptions,
+      appName,
     });
 
-    const data = await response.json();
-
-    return data;
+    return await response.json();
   }
 }
 

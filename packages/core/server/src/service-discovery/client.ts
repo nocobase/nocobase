@@ -18,12 +18,14 @@ export abstract class ServiceDiscoveryClient {
 
   abstract unregisterService(serviceInfo: RemoteServiceInfo): Promise<boolean>;
 
-  abstract getServices(namespace: string): Promise<RemoteServiceInfo[]>;
+  abstract getServicesByName(serverType: string, name: string): Promise<RemoteServiceInfo[]>;
+
+  abstract listServicesByType(serverType: string): Promise<Map<string, RemoteServiceInfo[]>>;
 
   abstract clientConnectionInfo(): Promise<ConnectionInfo>;
 
-  async fetchSingleService(namespace: string, name: string): Promise<RemoteServiceInfo> {
-    const services = await this.getServices(namespace);
+  async fetchSingleService(serverType: string, name: string): Promise<RemoteServiceInfo> {
+    const services = await this.getServicesByName(serverType, name);
     return this.randomSelectArrayItem(services);
   }
 

@@ -22,8 +22,27 @@ export class RedisDiscoveryServerClient extends ServiceDiscoveryClient {
     return this.client;
   }
 
-  getServices(namespace: string): Promise<RemoteServiceInfo[]> {
-    return Promise.resolve([]);
+  async getServicesByName(serverType: string, name: string): Promise<RemoteServiceInfo[]> {
+    const keyPrefix = `nocobase:${serverType}:${name}`;
+    const client = await this.getRedisClient();
+    const values = await client.sMembers(keyPrefix);
+
+    return values.map((value) => this.serviceValue(value));
+  }
+
+  async listServicesByType(serverType: string): Promise<Map<string, RemoteServiceInfo[]>> {
+    const keyPrefix = `nocobase:${serverType}:*`;
+    const client = await this.getRedisClient();
+    const keys = await client.keys(keyPrefix);
+    const servicesName = keys.map((key) => key.split(':')[2]);
+
+    const services = new Map<string, RemoteServiceInfo[]>();
+
+    for (const name of servicesName) {
+      services.set(name, await this.getServicesByName(serverType, name));
+    }
+
+    return services;
   }
 
   async registerService(serviceInfo: RemoteServiceInfo): Promise<boolean> {
