@@ -45,10 +45,11 @@ async function request(config) {
 export default class implements Instruction {
   constructor(public plugin) {}
 
-  async run(node: FlowNodeModel, input, processor: Processor) {
+  async run(node: FlowNodeModel, prevJob, processor: Processor) {
     const job = await processor.saveJob({
       status: JOB_STATUS.PENDING,
       nodeId: node.id,
+      upstreamId: prevJob?.id ?? null,
     });
 
     const config = processor.getParsedValue(node.config, node) as RequestConfig;

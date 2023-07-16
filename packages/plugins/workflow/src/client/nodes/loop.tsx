@@ -5,7 +5,7 @@ import { NodeDefaultView } from '.';
 import { Branch } from '../Branch';
 import { useFlowContext } from '../FlowContext';
 import { NAMESPACE, lang } from '../locale';
-import { addButtonClass, branchBlockClass, branchClass, nodeSubtreeClass } from '../style';
+import useStyles from '../style';
 import { VariableOption, nodesOptions, triggerOptions, useWorkflowVariableOptions } from '../variable';
 
 function findOption(options: VariableOption[], paths: string[]) {
@@ -59,14 +59,15 @@ export default {
   view: {},
   component: function Component({ data }) {
     const { nodes } = useFlowContext();
+    const { styles } = useStyles();
     const entry = nodes.find((node) => node.upstreamId === data.id && node.branchIndex != null);
 
     return (
       <NodeDefaultView data={data}>
-        <div className={cx(nodeSubtreeClass)}>
+        <div className={cx(styles.nodeSubtreeClass)}>
           <div
             className={cx(
-              branchBlockClass,
+              styles.branchBlockClass,
               css`
                 padding-left: 20em;
               `,
@@ -74,28 +75,10 @@ export default {
           >
             <Branch from={data} entry={entry} branchIndex={entry?.branchIndex ?? 0} />
 
-            <div className={cx(branchClass)}>
+            <div className={cx(styles.branchClass)}>
               <div className="workflow-branch-lines" />
-              <div
-                className={cx(
-                  addButtonClass,
-                  css`
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    position: absolute;
-                    top: 50%;
-                    transform: translateY(-50%);
-                    width: 2em;
-                    height: 6em;
-                  `,
-                )}
-              >
-                <ArrowUpOutlined
-                  className={css`
-                    background-color: var(--nb-box-bg);
-                  `}
-                />
+              <div className={cx(styles.addButtonClass, styles.loopLineClass)}>
+                <ArrowUpOutlined />
               </div>
             </div>
           </div>

@@ -1,14 +1,16 @@
-import { css } from '@emotion/css';
 import { FormLayout } from '@formily/antd-v5';
 import { createForm } from '@formily/core';
 import { FormContext, useField } from '@formily/react';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { BlockProvider, useBlockRequestContext } from '../../../block-provider';
+import useStyles from './GridCard.Decorator.style';
 export const GridCardBlockContext = createContext<any>({});
 
 const InternalGridCardBlockProvider = (props) => {
   const { resource, service } = useBlockRequestContext();
   const field = useField();
+  const { wrapSSR, componentCls, hashId } = useStyles();
+
   const form = useMemo(() => {
     return createForm({
       readPretty: true,
@@ -21,7 +23,7 @@ const InternalGridCardBlockProvider = (props) => {
     }
   }, [service?.data?.data, service?.loading]);
 
-  return (
+  return wrapSSR(
     <GridCardBlockContext.Provider
       value={{
         service,
@@ -31,29 +33,10 @@ const InternalGridCardBlockProvider = (props) => {
     >
       <FormContext.Provider value={form}>
         <FormLayout layout={'vertical'}>
-          <div
-            className={css`
-              & > .nb-block-item {
-                margin-bottom: var(--nb-spacing);
-                & > .nb-action-bar:has(:first-child:not(:empty)) {
-                  padding: var(--nb-spacing);
-                  background: #fff;
-                }
-                .ant-list-pagination {
-                  padding: var(--nb-spacing);
-                  background: #fff;
-                }
-              }
-              .ant-formily-item-feedback-layout-loose {
-                margin-bottom: 12px;
-              }
-            `}
-          >
-            {props.children}
-          </div>
+          <div className={`${componentCls} ${hashId}`}>{props.children}</div>
         </FormLayout>
       </FormContext.Provider>
-    </GridCardBlockContext.Provider>
+    </GridCardBlockContext.Provider>,
   );
 };
 

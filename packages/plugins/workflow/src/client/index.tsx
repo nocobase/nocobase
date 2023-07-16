@@ -6,12 +6,12 @@ export { useWorkflowVariableOptions } from './variable';
 
 import { Plugin, useCollectionDataSource } from '@nocobase/client';
 import React from 'react';
-import { DynamicExpression } from './components/DynamicExpression';
 import { ExecutionPage } from './ExecutionPage';
-import { WorkflowTodo } from './nodes/manual/WorkflowTodo';
-import { WorkflowTodoBlockInitializer } from './nodes/manual/WorkflowTodoBlockInitializer';
 import { WorkflowPage } from './WorkflowPage';
 import { WorkflowProvider } from './WorkflowProvider';
+import { DynamicExpression } from './components/DynamicExpression';
+import { WorkflowTodo } from './nodes/manual/WorkflowTodo';
+import { WorkflowTodoBlockInitializer } from './nodes/manual/WorkflowTodoBlockInitializer';
 
 export class WorkflowPlugin extends Plugin {
   async load() {

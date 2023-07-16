@@ -10,6 +10,7 @@ export function useAppPluginLoad(app: Application) {
         await app.load();
         app.apiClient.silence = false;
       } catch (err) {
+        console.error(err);
         setError(err);
       }
       setLoading(false);

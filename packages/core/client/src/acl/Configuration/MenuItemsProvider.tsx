@@ -32,7 +32,11 @@ export const MenuItemsProvider = (props) => {
   const options = {
     url: `uiSchemas:getProperties/${adminSchemaUid}`,
   };
-  const service = useRequest(options);
+  const service = useRequest<{
+    data: {
+      properties: any;
+    };
+  }>(options);
   if (service.loading) {
     return <Spin />;
   }

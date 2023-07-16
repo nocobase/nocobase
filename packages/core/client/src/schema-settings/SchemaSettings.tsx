@@ -1,10 +1,11 @@
-import { ArrayCollapse, ArrayItems, FormDialog, FormItem, FormLayout, Input } from '@formily/antd-v5';
+import { ArrayCollapse, ArrayItems, FormItem, FormLayout, Input } from '@formily/antd-v5';
 import { Field, GeneralField, createForm } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { error } from '@nocobase/utils/client';
 import {
   Alert,
+  App,
   Button,
   Cascader,
   CascaderProps,
@@ -37,6 +38,7 @@ import {
   CollectionManagerContext,
   CollectionProvider,
   Designable,
+  FormDialog,
   FormProvider,
   RemoteSchemaComponent,
   SchemaComponent,
@@ -51,6 +53,7 @@ import {
   useCompile,
   useDesignable,
   useFilterBlock,
+  useGlobalTheme,
   useLinkageCollectionFilterOptions,
 } from '..';
 import { findFilterTargets, updateFilterTargets } from '../block-provider/hooks';
@@ -178,6 +181,8 @@ SchemaSettings.Template = function Template(props) {
   const api = useAPIClient();
   const { dn: tdn } = useBlockTemplateContext();
   const { saveAsTemplate, copyTemplateSchema } = useSchemaTemplateManager();
+  const { theme } = useGlobalTheme();
+
   if (!collectionName && !needRender) {
     return null;
   }
@@ -205,27 +210,31 @@ SchemaSettings.Template = function Template(props) {
       onClick={async () => {
         setVisible(false);
         const { title } = collectionName ? getCollection(collectionName) : { title: '' };
-        const values = await FormDialog(t('Save as template'), () => {
-          return (
-            <FormLayout layout={'vertical'}>
-              <SchemaComponent
-                components={{ Input, FormItem }}
-                schema={{
-                  type: 'object',
-                  properties: {
-                    name: {
-                      title: t('Template name'),
-                      required: true,
-                      default: title ? `${compile(title)}_${t(componentName)}` : t(componentName),
-                      'x-decorator': 'FormItem',
-                      'x-component': 'Input',
+        const values = await FormDialog(
+          t('Save as template'),
+          () => {
+            return (
+              <FormLayout layout={'vertical'}>
+                <SchemaComponent
+                  components={{ Input, FormItem }}
+                  schema={{
+                    type: 'object',
+                    properties: {
+                      name: {
+                        title: t('Template name'),
+                        required: true,
+                        default: title ? `${compile(title)}_${t(componentName)}` : t(componentName),
+                        'x-decorator': 'FormItem',
+                        'x-component': 'Input',
+                      },
                     },
-                  },
-                }}
-              />
-            </FormLayout>
-          );
-        }).open({});
+                  }}
+                />
+              </FormLayout>
+            );
+          },
+          theme,
+        ).open({});
         const sdn = createDesignable({
           t,
           api,
@@ -297,6 +306,8 @@ SchemaSettings.FormItemTemplate = function FormItemTemplate(props) {
   const { dn, setVisible, template, fieldSchema } = useSchemaSettings();
   const api = useAPIClient();
   const { saveAsTemplate, copyTemplateSchema } = useSchemaTemplateManager();
+  const { theme } = useGlobalTheme();
+
   if (!collectionName) {
     return null;
   }
@@ -343,31 +354,35 @@ SchemaSettings.FormItemTemplate = function FormItemTemplate(props) {
         setVisible(false);
         const { title } = getCollection(collectionName);
         const gridSchema = findGridSchema(fieldSchema);
-        const values = await FormDialog(t('Save as template'), () => {
-          const componentTitle = {
-            FormItem: t('Form'),
-            ReadPrettyFormItem: t('Details'),
-          };
-          return (
-            <FormLayout layout={'vertical'}>
-              <SchemaComponent
-                components={{ Input, FormItem }}
-                schema={{
-                  type: 'object',
-                  properties: {
-                    name: {
-                      title: t('Template name'),
-                      required: true,
-                      default: `${compile(title)}_${componentTitle[componentName] || componentName}`,
-                      'x-decorator': 'FormItem',
-                      'x-component': 'Input',
+        const values = await FormDialog(
+          t('Save as template'),
+          () => {
+            const componentTitle = {
+              FormItem: t('Form'),
+              ReadPrettyFormItem: t('Details'),
+            };
+            return (
+              <FormLayout layout={'vertical'}>
+                <SchemaComponent
+                  components={{ Input, FormItem }}
+                  schema={{
+                    type: 'object',
+                    properties: {
+                      name: {
+                        title: t('Template name'),
+                        required: true,
+                        default: `${compile(title)}_${componentTitle[componentName] || componentName}`,
+                        'x-decorator': 'FormItem',
+                        'x-component': 'Input',
+                      },
                     },
-                  },
-                }}
-              />
-            </FormLayout>
-          );
-        }).open({});
+                  }}
+                />
+              </FormLayout>
+            );
+          },
+          theme,
+        ).open({});
         const sdn = createDesignable({
           t,
           api,
@@ -481,11 +496,13 @@ SchemaSettings.Remove = function Remove(props: any) {
   const fieldSchema = useFieldSchema();
   const ctx = useBlockTemplateContext();
   const form = useForm();
+  const { modal } = App.useApp();
+
   return (
     <SchemaSettings.Item
       eventKey="remove"
       onClick={() => {
-        Modal.confirm({
+        modal.confirm({
           title: t('Delete block'),
           content: t('Are you sure you want to delete it?'),
           ...confirm,
@@ -858,6 +875,8 @@ SchemaSettings.ModalItem = function ModalItem(props) {
   const cm = useContext(CollectionManagerContext);
   const collection = useCollection();
   const apiClient = useAPIClient();
+  const { theme } = useGlobalTheme();
+
   if (hidden) {
     return null;
   }
@@ -866,21 +885,25 @@ SchemaSettings.ModalItem = function ModalItem(props) {
       {...others}
       onClick={async () => {
         const values = asyncGetInitialValues ? await asyncGetInitialValues() : initialValues;
-        FormDialog({ title: schema.title || title, width }, () => {
-          return (
-            <CollectionManagerContext.Provider value={cm}>
-              <CollectionProvider collection={collection}>
-                <SchemaComponentOptions scope={options.scope} components={options.components}>
-                  <FormLayout layout={'vertical'} style={{ minWidth: 520 }}>
-                    <APIClientProvider apiClient={apiClient}>
-                      <SchemaComponent components={components} scope={scope} schema={schema} />
-                    </APIClientProvider>
-                  </FormLayout>
-                </SchemaComponentOptions>
-              </CollectionProvider>
-            </CollectionManagerContext.Provider>
-          );
-        })
+        FormDialog(
+          { title: schema.title || title, width },
+          () => {
+            return (
+              <CollectionManagerContext.Provider value={cm}>
+                <CollectionProvider collection={collection}>
+                  <SchemaComponentOptions scope={options.scope} components={options.components}>
+                    <FormLayout layout={'vertical'} style={{ minWidth: 520 }}>
+                      <APIClientProvider apiClient={apiClient}>
+                        <SchemaComponent components={components} scope={scope} schema={schema} />
+                      </APIClientProvider>
+                    </FormLayout>
+                  </SchemaComponentOptions>
+                </CollectionProvider>
+              </CollectionManagerContext.Provider>
+            );
+          },
+          theme,
+        )
           .open({
             initialValues: values,
             effects,
