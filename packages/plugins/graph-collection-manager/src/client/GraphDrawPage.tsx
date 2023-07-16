@@ -11,32 +11,33 @@ import '@antv/x6-react-shape';
 import { SchemaOptionsContext } from '@formily/react';
 import {
   APIClientProvider,
-  collection,
   CollectionCategroriesContext,
   CollectionCategroriesProvider,
   CollectionManagerContext,
   CollectionManagerProvider,
-  css,
   CurrentAppInfoContext,
-  cx,
   SchemaComponent,
   SchemaComponentOptions,
   Select,
+  collection,
+  css,
+  cx,
   useAPIClient,
   useCollectionManager,
   useCompile,
   useCurrentAppInfo,
+  useGlobalTheme,
 } from '@nocobase/client';
 import { lodash } from '@nocobase/utils/client';
 import { useFullscreen } from 'ahooks';
-import { Button, Input, Layout, Menu, Popover, Switch, Tooltip } from 'antd';
+import { Button, ConfigProvider, Input, Layout, Menu, Popover, Switch, Tooltip } from 'antd';
 import dagre from 'dagre';
 import React, { createContext, forwardRef, useContext, useEffect, useLayoutEffect, useState } from 'react';
 import { useAsyncDataSource, useCreateActionAndRefreshCM } from './action-hooks';
 import { AddCollectionAction } from './components/AddCollectionAction';
 import Entity from './components/Entity';
 import { SimpleNodeView } from './components/ViewNode';
-import { collectionListClass, graphCollectionContainerClass } from './style';
+import useStyles from './style';
 import {
   formatData,
   getChildrenCollections,
@@ -364,6 +365,8 @@ const handelResetLayout = () => {
 };
 
 export const GraphDrawPage = React.memo(() => {
+  const { theme } = useGlobalTheme();
+  const { styles } = useStyles();
   const options = useContext(SchemaOptionsContext);
   const ctx = useContext(CollectionManagerContext);
   const api = useAPIClient();
@@ -512,9 +515,12 @@ export const GraphDrawPage = React.memo(() => {
                     refreshCM={refreshGM}
                     interfaces={ctx.interfaces}
                   >
-                    <div style={{ height: 'auto' }}>
-                      <Entity node={node} setTargetNode={setTargetNode} targetGraph={targetGraph} />
-                    </div>
+                    {/* TODO: 因为画布中的卡片是一次性注册进 Graph 的，这里的 theme 是存在闭包里的，因此当主题动态变更时，并不会触发卡片的重新渲染 */}
+                    <ConfigProvider theme={theme}>
+                      <div style={{ height: 'auto' }}>
+                        <Entity node={node} setTargetNode={setTargetNode} targetGraph={targetGraph} />
+                      </div>
+                    </ConfigProvider>
                   </CollectionManagerProvider>
                 </CollectionCategroriesProvider>
               </SchemaComponentOptions>
@@ -1015,10 +1021,10 @@ export const GraphDrawPage = React.memo(() => {
   };
   return (
     <Layout>
-      <div className={cx(graphCollectionContainerClass)}>
+      <div className={styles.graphCollectionContainerClass}>
         <CollectionManagerProvider collections={targetGraph?.collections} refreshCM={refreshGM}>
           <CollapsedContext.Provider value={{ collectionList, handleSearchCollection }}>
-            <div className={cx(collectionListClass)}>
+            <div className={cx(styles.collectionListClass)}>
               <SchemaComponent
                 components={{
                   Select: (props) => (
@@ -1366,6 +1372,7 @@ export const GraphDrawPage = React.memo(() => {
         <div id="container" style={{ width: '100vw', height: '100vh' }}></div>
         <div
           id="graph-minimap"
+          className={styles.graphMinimap}
           style={{ width: '300px', height: '250px', right: '10px', bottom: '20px', position: 'fixed' }}
         ></div>
       </div>

@@ -9,6 +9,7 @@ export function useAppPluginLoad(app: Application) {
       try {
         await app.load();
       } catch (err) {
+        console.error(err);
         setError(err);
       }
       setLoading(false);

@@ -5,7 +5,7 @@ import React, { useCallback, useMemo } from 'react';
 import { useFlowContext } from './FlowContext';
 import { NAMESPACE } from './locale';
 import { Instruction, instructions } from './nodes';
-import { addButtonClass } from './style';
+import useStyles from './style';
 
 interface AddButtonProps {
   upstream;
@@ -17,6 +17,8 @@ export function AddButton({ upstream, branchIndex = null }: AddButtonProps) {
   const api = useAPIClient();
   const { workflow, refresh } = useFlowContext() ?? {};
   const instructionList = Array.from(instructions.getValues()) as Instruction[];
+  const { styles } = useStyles();
+
   const groups = useMemo(() => {
     return [
       { key: 'control', label: `{{t("Control", { ns: "${NAMESPACE}" })}}` },
@@ -90,7 +92,7 @@ export function AddButton({ upstream, branchIndex = null }: AddButtonProps) {
   }
 
   return (
-    <div className={cx(addButtonClass)}>
+    <div className={styles.addButtonClass}>
       <Dropdown
         trigger={['click']}
         menu={menu}

@@ -77,7 +77,9 @@ export const SettingsCenterConfigure = () => {
   const items: any[] = (pluginTags && formatPluginTabs(pluginTags)) || [];
   const { t } = useTranslation();
   const compile = useCompile();
-  const { loading, refresh, data } = useRequest({
+  const { loading, refresh, data } = useRequest<{
+    data: any;
+  }>({
     resource: 'roles.snippets',
     resourceOf: record.name,
     action: 'list',

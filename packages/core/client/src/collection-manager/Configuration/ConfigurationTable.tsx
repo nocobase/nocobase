@@ -15,7 +15,7 @@ import { AddSubFieldAction } from './AddSubFieldAction';
 import { CollectionFields } from './CollectionFields';
 import { EditSubFieldAction } from './EditSubFieldAction';
 import { FieldSummary } from './components/FieldSummary';
-import { TemplateSummay } from './components/TemplateSummay';
+import { TemplateSummary } from './components/TemplateSummary';
 import { collectionSchema } from './schemas/collections';
 
 /**
@@ -165,7 +165,7 @@ export const ConfigurationTable = () => {
           AddSubFieldAction,
           EditSubFieldAction,
           FieldSummary,
-          TemplateSummay,
+          TemplateSummay: TemplateSummary,
           CollectionFieldsTable,
           CollectionFields,
         }}

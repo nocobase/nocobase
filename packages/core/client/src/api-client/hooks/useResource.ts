@@ -1,7 +1,6 @@
-import { useContext } from 'react';
-import { APIClientContext } from '../context';
+import { useAPIClient } from './useAPIClient';
 
 export function useResource(name: string, of?: string | number) {
-  const apiClient = useContext(APIClientContext);
+  const apiClient = useAPIClient();
   return apiClient.resource(name, of);
 }

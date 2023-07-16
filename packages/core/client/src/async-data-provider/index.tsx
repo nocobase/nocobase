@@ -13,10 +13,10 @@ export interface AsyncDataProviderProps {
 
 export const AsyncDataProvider: React.FC<AsyncDataProviderProps> = (props) => {
   const { value, request, children, ...others } = props;
+  const result = useRequest(request, { ...others });
   if (value) {
     return <AsyncDataContext.Provider value={value}>{children}</AsyncDataContext.Provider>;
   }
-  const result = useRequest(request, { ...others });
   return <AsyncDataContext.Provider value={result}>{children}</AsyncDataContext.Provider>;
 };
 

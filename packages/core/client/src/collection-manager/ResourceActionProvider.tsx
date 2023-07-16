@@ -29,13 +29,18 @@ const CollectionResourceActionProvider = (props) => {
     others['filterByTk'] = record[collection.targetKey || collection.filterTargetKey || 'id'];
   }
   const appends = request?.params?.appends || [];
-  const service = useRequest(
+  const service = useRequest<{
+    data: any;
+  }>(
     {
       ...request,
       params: {
         ...others,
         ...request?.params,
-        appends: [...collection?.fields?.filter?.((field) => field.target).map((field) => field.name), ...appends],
+        appends: [
+          ...(collection?.fields?.filter?.((field) => field.target).map((field) => field.name) || []),
+          ...appends,
+        ],
         sort: dragSort ? [collection.sortable === true ? 'sort' : collection.sortable] : request?.params?.sort,
       },
     },
@@ -63,7 +68,10 @@ const AssociationResourceActionProvider = (props) => {
       ...request,
       params: {
         ...request?.params,
-        appends: [...collection?.fields?.filter?.((field) => field.target).map((field) => field.name), ...appends],
+        appends: [
+          ...(collection?.fields?.filter?.((field) => field.target).map((field) => field.name) || []),
+          ...appends,
+        ],
       },
     },
     { uid },
@@ -79,6 +87,7 @@ const AssociationResourceActionProvider = (props) => {
 };
 
 export const ResourceActionProvider: React.FC<ResourceActionProviderProps> = (props) => {
+  // eslint-disable-next-line prefer-const
   let { collection, request } = props;
   const { getCollection } = useCollectionManager();
   if (typeof collection === 'string') {

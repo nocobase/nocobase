@@ -96,7 +96,16 @@ export const ActionBar = observer(
         {...others}
         className={cx(others.className, 'nb-action-bar')}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', flexWrap: 'wrap' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            width: '100%',
+            overflow: 'hidden',
+            flexWrap: 'wrap',
+          }}
+        >
           <DndContext>
             <Space {...spaceProps}>
               {fieldSchema.mapProperties((schema, key) => {

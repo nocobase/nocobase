@@ -223,13 +223,13 @@ export const CollectionFieldsTableArray: React.FC<any> = observer(
           rowSelection:
             props.rowSelection && !inherits.includes(record.key)
               ? {
-                type: 'checkbox',
-                selectedRowKeys,
-                onChange(selectedRowKeys: any[]) {
-                  setSelectedRowKeys(selectedRowKeys);
-                },
-                ...props.rowSelection,
-              }
+                  type: 'checkbox',
+                  selectedRowKeys,
+                  onChange(selectedRowKeys: any[]) {
+                    setSelectedRowKeys(selectedRowKeys);
+                  },
+                  ...props.rowSelection,
+                }
               : undefined,
         };
         return (

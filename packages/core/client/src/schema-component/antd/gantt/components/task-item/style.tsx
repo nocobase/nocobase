@@ -1,36 +1,48 @@
-import { css } from '@emotion/css';
+import { genStyleHook } from '../../../__builtins__';
 
-export const barLabel = css`
-  fill: #fff;
-  text-anchor: middle;
-  font-weight: 400;
-  dominant-baseline: central;
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-  pointer-events: none;
-`;
-export const projectLabel = css`
-  fill: #130d0d;
-  font-weight: 500;
-  font-size: 0.9em;
-  dominant-baseline: central;
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-  pointer-events: none;
-`;
-export const barLabelOutside = css`
-  fill: #555;
-  text-anchor: start;
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-  pointer-events: none;
-`;
+const useStyles = genStyleHook('nb-gantt-task-item', (token) => {
+  const { componentCls } = token;
+
+  return {
+    [componentCls]: {
+      '.barLabel': {
+        fill: token.colorTextLightSolid,
+        textAnchor: 'middle',
+        fontWeight: 400,
+        dominantBaseline: 'central',
+        WebkitTouchCallout: 'none',
+        WebkitUserSelect: 'none',
+        MozUserSelect: 'none',
+        msUserSelect: 'none',
+        userSelect: 'none',
+        pointerEvents: 'none',
+      },
+
+      '.projectLabel': {
+        fill: '#130d0d',
+        fontWeight: 500,
+        fontSize: '0.9em',
+        dominantBaseline: 'central',
+        WebkitTouchCallout: 'none',
+        WebkitUserSelect: 'none',
+        MozUserSelect: 'none',
+        msUserSelect: 'none',
+        userSelect: 'none',
+        pointerEvents: 'none',
+      },
+
+      '.barLabelOutside': {
+        fill: token.colorTextLabel,
+        textAnchor: 'start',
+        WebkitTouchCallout: 'none',
+        WebkitUserSelect: 'none',
+        MozUserSelect: 'none',
+        msUserSelect: 'none',
+        userSelect: 'none',
+        pointerEvents: 'none',
+      },
+    },
+  };
+});
+
+export default useStyles;
