@@ -91,7 +91,6 @@ export const SettingsMenu: React.FC<{
             },
             onOk: async () => {
               await api.resource('app').reboot();
-              await check();
               window.location.reload();
             },
           });
