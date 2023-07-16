@@ -33,7 +33,7 @@ export class Gateway {
   }
 
   public reset() {
-    this.appSelector = () => 'main';
+    this.appSelector = () => process.env['STARTUP_SUBAPP'] || 'main';
     if (this.server) {
       this.server.close();
       this.server = null;
