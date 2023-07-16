@@ -4,10 +4,12 @@ import { RecursionField, Schema, useFieldSchema } from '@formily/react';
 import { message } from 'antd';
 import React, { SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAPIClient } from '../../../../../api-client';
 import { useCurrentAppInfo } from '../../../../../appInfo';
 import { useBlockRequestContext, useGanttBlockContext, useTableBlockContext } from '../../../../../block-provider';
 import { RecordProvider } from '../../../../../record-provider';
 import { useDesignable } from '../../../../../schema-component';
+import { useToken } from '../../../__builtins__';
 import { ActionContextProvider } from '../../../action';
 import { convertToBarTasks } from '../../helpers/bar-helper';
 import { ganttDateRange, seedDates } from '../../helpers/date-helper';
@@ -21,7 +23,7 @@ import { GridProps } from '../grid/grid';
 import { HorizontalScroll } from '../other/horizontal-scroll';
 import { StandardTooltipContent, Tooltip } from '../other/tooltip';
 import { VerticalScroll } from '../other/vertical-scroll';
-import { wrapper } from './style';
+import useStyles from './style';
 import { TaskGantt } from './task-gantt';
 import { TaskGanttContentProps } from './task-gantt-content';
 
@@ -54,25 +56,28 @@ const GanttRecordViewer = (props) => {
   );
 };
 export const Gantt: any = (props: any) => {
+  const { wrapSSR, componentCls, hashId } = useStyles();
+  const { token } = useToken();
   const { designable } = useDesignable();
-  const currentTheme = localStorage.getItem('NOCOBASE_THEME');
+  const api = useAPIClient();
+  const currentTheme = api.auth.getOption('theme');
   const tableRowHeight = currentTheme === 'compact' ? 45 : 55.56;
   const {
-    headerHeight = currentTheme === 'compact' ? (designable ? 53 : 45) : designable ? 65 : 55,
+    headerHeight = document.querySelector('.ant-table-thead')?.clientHeight || 0, // 与 antd 表格头部高度一致
     listCellWidth = '155px',
     rowHeight = tableRowHeight,
     ganttHeight = 0,
     preStepsCount = 1,
     barFill = 60,
-    barCornerRadius = 2,
-    barProgressColor = '#1890ff',
-    barProgressSelectedColor = '#1890ff',
-    barBackgroundColor = '#1890ff',
-    barBackgroundSelectedColor = '#1890ff',
-    projectProgressColor = '#1890ff',
-    projectProgressSelectedColor = '#1890ff',
-    projectBackgroundColor = '#1890ff',
-    projectBackgroundSelectedColor = '#1890ff',
+    barCornerRadius = token.borderRadiusXS,
+    barProgressColor = token.colorPrimary,
+    barProgressSelectedColor = token.colorPrimary,
+    barBackgroundColor = token.colorPrimary,
+    barBackgroundSelectedColor = token.colorPrimary,
+    projectProgressColor = token.colorPrimary,
+    projectProgressSelectedColor = token.colorPrimary,
+    projectBackgroundColor = token.colorPrimary,
+    projectBackgroundSelectedColor = token.colorPrimary,
     milestoneBackgroundColor = '#f1c453',
     milestoneBackgroundSelectedColor = '#f29e4c',
     rtl = false,
@@ -80,7 +85,7 @@ export const Gantt: any = (props: any) => {
     timeStep = 300000,
     arrowColor = 'grey',
     fontFamily = `-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'`,
-    fontSize = currentTheme === 'compact' ? '12px' : '14px',
+    fontSize = token.fontSize,
     arrowIndent = 20,
     todayColor = 'rgba(252, 248, 227, 0.5)',
     viewDate,
@@ -481,66 +486,69 @@ export const Gantt: any = (props: any) => {
     onClick: handleBarClick,
     onDelete,
   };
-  return (
-    <div>
-      <div
-        className={css`
+
+  return wrapSSR(
+    <div
+      className={cx(
+        componentCls,
+        hashId,
+        css`
           .ant-table-container::after {
             box-shadow: none !important;
           }
           .ant-table-row {
             height: ${tableRowHeight}px;
           }
-        `}
-      >
-        <GanttRecordViewer visible={visible} setVisible={setVisible} record={record} />
-        <RecursionField name={'anctionBar'} schema={fieldSchema.properties.toolBar} />
-        <RecursionField name={'table'} schema={fieldSchema.properties.table} />
-        <div className={cx(wrapper)} onKeyDown={handleKeyDown} tabIndex={0} ref={wrapperRef}>
-          <TaskGantt
-            gridProps={gridProps}
-            calendarProps={calendarProps}
-            barProps={barProps}
-            ganttHeight={ganttHeight}
-            scrollY={scrollY}
+        `,
+      )}
+    >
+      <GanttRecordViewer visible={visible} setVisible={setVisible} record={record} />
+      <RecursionField name={'anctionBar'} schema={fieldSchema.properties.toolBar} />
+      <RecursionField name={'table'} schema={fieldSchema.properties.table} />
+      <div className="wrapper" onKeyDown={handleKeyDown} tabIndex={0} ref={wrapperRef}>
+        <TaskGantt
+          gridProps={gridProps}
+          calendarProps={calendarProps}
+          barProps={barProps}
+          ganttHeight={ganttHeight}
+          scrollY={scrollY}
+          scrollX={scrollX}
+          ref={verticalGanttContainerRef}
+        />
+        {ganttEvent.changedTask && (
+          <Tooltip
+            arrowIndent={arrowIndent}
+            rowHeight={rowHeight}
+            svgContainerHeight={svgContainerHeight}
+            svgContainerWidth={svgContainerWidth}
+            fontFamily={fontFamily}
+            fontSize={fontSize}
             scrollX={scrollX}
-            ref={verticalGanttContainerRef}
-          />
-          {ganttEvent.changedTask && (
-            <Tooltip
-              arrowIndent={arrowIndent}
-              rowHeight={rowHeight}
-              svgContainerHeight={svgContainerHeight}
-              svgContainerWidth={svgContainerWidth}
-              fontFamily={fontFamily}
-              fontSize={fontSize}
-              scrollX={scrollX}
-              scrollY={scrollY}
-              task={ganttEvent.changedTask}
-              headerHeight={headerHeight}
-              taskListWidth={taskListWidth}
-              TooltipContent={TooltipContent}
-              rtl={rtl}
-              svgWidth={svgWidth}
-            />
-          )}
-          <VerticalScroll
-            ganttFullHeight={ganttFullHeight}
-            ganttHeight={ganttHeight}
+            scrollY={scrollY}
+            task={ganttEvent.changedTask}
             headerHeight={headerHeight}
-            scroll={scrollY}
-            onScroll={handleScrollY}
-            rtl={rtl}
-          />
-          <HorizontalScroll
-            svgWidth={svgWidth}
             taskListWidth={taskListWidth}
-            scroll={scrollX}
+            TooltipContent={TooltipContent}
             rtl={rtl}
-            onScroll={handleScrollX}
+            svgWidth={svgWidth}
           />
-        </div>
+        )}
+        <VerticalScroll
+          ganttFullHeight={ganttFullHeight}
+          ganttHeight={ganttHeight}
+          headerHeight={headerHeight}
+          scroll={scrollY}
+          onScroll={handleScrollY}
+          rtl={rtl}
+        />
+        <HorizontalScroll
+          svgWidth={svgWidth}
+          taskListWidth={taskListWidth}
+          scroll={scrollX}
+          rtl={rtl}
+          onScroll={handleScrollX}
+        />
       </div>
-    </div>
+    </div>,
   );
 };

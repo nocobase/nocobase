@@ -1,10 +1,10 @@
-import { uid } from '@formily/shared';
 import { ISchema } from '@formily/react';
+import { uid } from '@formily/shared';
 import { useAPIClient, useActionContext, useRequest } from '@nocobase/client';
-import { useContext } from 'react';
-import { AuthTypeContext } from '../authType';
 import { message } from 'antd';
+import { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
+import { AuthTypeContext } from '../authType';
 
 const collection = {
   name: 'authenticators',

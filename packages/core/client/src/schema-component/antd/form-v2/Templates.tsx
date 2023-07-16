@@ -1,14 +1,15 @@
 import { useFieldSchema } from '@formily/react';
 import { dayjs, error, forEach } from '@nocobase/utils/client';
-import { Cascader, Tag } from 'antd';
+import { Select, Tag } from 'antd';
 import _ from 'lodash';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../../';
 import { useAPIClient } from '../../../api-client';
 import { findFormBlock } from '../../../block-provider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { useDuplicatefieldsContext } from '../../../schema-initializer/components';
+import { useToken } from '../__builtins__';
 
 export interface ITemplate {
   config?: {
@@ -139,6 +140,7 @@ export const mapOptionsToTags = (options, fieldNames, titleCollectionfield, comp
 };
 
 export const Templates = ({ style = {}, form }) => {
+  const { token } = useToken();
   const { templates, display, enabled, defaultTemplate } = useDataTemplates();
   const [options, setOptions] = useState<any>(templates);
   const [value, setValue] = useState(defaultTemplate?.key || 'none');
@@ -166,6 +168,19 @@ export const Templates = ({ style = {}, form }) => {
         });
     }
   }, []);
+
+  const wrapperStyle = useMemo(() => {
+    return { display: 'flex', alignItems: 'center', backgroundColor: token.colorFillAlter, padding: '1em', ...style };
+  }, [style, token.colorFillAlter]);
+
+  const labelStyle = useMemo<{
+    fontSize: number;
+    fontWeight: 'bold';
+    whiteSpace: 'nowrap';
+    marginRight: number;
+  }>(() => {
+    return { fontSize: token.fontSize, fontWeight: 'bold', whiteSpace: 'nowrap', marginRight: token.marginXS };
+  }, [token.fontSize, token.marginXS]);
 
   const handleChange = useCallback(async (value, option) => {
     const key = value?.[0];
@@ -231,14 +246,12 @@ export const Templates = ({ style = {}, form }) => {
     }
   };
   return (
-    <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#f8f8f8', padding: '1em', ...style }}>
-      <label style={{ fontSize: 14, fontWeight: 'bold', whiteSpace: 'nowrap', marginRight: 8 }}>
-        {t('Data template')}:{' '}
-      </label>
-      <Cascader
-        changeOnSelect
-        options={options}
-        fieldNames={{ label: 'title', value: 'key', children: 'children' }}
+    <div style={wrapperStyle}>
+      <label style={labelStyle}>{t('Data template')}: </label>
+      <Select
+        popupMatchSelectWidth={false}
+        options={templates}
+        fieldNames={{ label: 'title', value: 'key' }}
         value={value}
         onChange={handleChange}
         loadData={loadData}

@@ -1,14 +1,16 @@
-import { FormDialog, FormLayout } from '@formily/antd-v5';
+import { FormLayout } from '@formily/antd-v5';
 import { Field } from '@formily/core';
 import { RecursionField, Schema, SchemaOptionsContext, observer, useField, useForm } from '@formily/react';
 import {
   APIClientProvider,
+  FormDialog,
   FormProvider,
   SchemaComponent,
   SchemaComponentOptions,
   css,
   useAPIClient,
   useCompile,
+  useGlobalTheme,
 } from '@nocobase/client';
 import { Card } from 'antd';
 import JSON5 from 'json5';
@@ -17,7 +19,7 @@ import { ChartBlockEngineMetaData } from './ChartBlockEngine';
 import { jsonConfigDesc } from './ChartBlockEngineDesigner';
 import { ChartQueryBlockInitializer, ChartQueryMetadata } from './ChartQueryBlockInitializer';
 import DataSetPreviewTable from './DataSetPreviewTable';
-import { lang, useChartsTranslation } from './locale';
+import { lang } from './locale';
 import { templates } from './templates';
 
 export const Options = observer(
@@ -57,7 +59,8 @@ export const ChartBlockInitializer = (props) => {
   const options = useContext(SchemaOptionsContext);
   const api = useAPIClient();
   const compile = useCompile();
-  const { t } = useChartsTranslation();
+  const { theme } = useGlobalTheme();
+
   return (
     <ChartQueryBlockInitializer
       {...props}
@@ -76,7 +79,7 @@ export const ChartBlockInitializer = (props) => {
             width: 1200,
             bodyStyle: { background: 'var(--nb-box-bg)', maxHeight: '65vh', overflow: 'auto' },
           },
-          () => {
+          function Com() {
             const form = useForm<ChartFormInterface>();
             const [chartBlockEngineMetaData, setChartBlockEngineMetaData] = useState<ChartBlockEngineMetaData>(null);
             useEffect(() => {
@@ -192,6 +195,7 @@ export const ChartBlockInitializer = (props) => {
               </APIClientProvider>
             );
           },
+          theme,
         ).open({
           initialValues: {},
         });

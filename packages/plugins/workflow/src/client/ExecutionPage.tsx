@@ -2,13 +2,14 @@ import { cx, SchemaComponent } from '@nocobase/client';
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { ExecutionCanvas } from './ExecutionCanvas';
-import { workflowPageClass } from './style';
+import useStyles from './style';
 
 export const ExecutionPage = () => {
   const params = useParams<any>();
+  const { styles } = useStyles();
 
   return (
-    <div className={cx(workflowPageClass)}>
+    <div className={cx(styles.workflowPageClass)}>
       <SchemaComponent
         schema={{
           type: 'void',

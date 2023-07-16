@@ -26,7 +26,12 @@ export const MarkdownReadPretty = (props) => {
   const { wrapSSR, hashId, componentCls: className } = useStyles();
   const { html = '', loading } = useParseMarkdown(props.value);
   const text = convertToText(html);
-  const value = <div className={`${hashId} ${className} nb-markdown`} dangerouslySetInnerHTML={{ __html: html }} />;
+  const value = (
+    <div
+      className={`${hashId} ${className} nb-markdown nb-markdown-default nb-markdown-table`}
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
   if (loading) {
     return wrapSSR(<Spin />);
   }

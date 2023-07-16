@@ -6,15 +6,15 @@ import {
 } from '@nocobase/client';
 import { Card } from 'antd';
 import React, { useContext } from 'react';
-import OpenDrawer from './components/OpenDrawer';
 import { ExecutionLink } from './ExecutionLink';
 import { ExecutionResourceProvider } from './ExecutionResourceProvider';
+import { WorkflowLink } from './WorkflowLink';
+import OpenDrawer from './components/OpenDrawer';
 import expressionField from './interfaces/expression';
 import { lang } from './locale';
 import { instructions } from './nodes';
 import { workflowSchema } from './schemas/workflows';
 import { triggers } from './triggers';
-import { WorkflowLink } from './WorkflowLink';
 
 // registerField(expressionField.group, 'expression', expressionField);
 
