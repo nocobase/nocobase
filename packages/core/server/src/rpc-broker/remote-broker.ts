@@ -52,20 +52,26 @@ export class RemoteBroker extends RpcBrokerInterface {
 
   async broadcast(caller: Application, event: string, eventOptions?: any) {
     const callerInfo = await this.getAppServiceInfo(caller);
+    console.log(`broadcast ${caller.name} ${event} ${JSON.stringify(callerInfo)}`);
 
     const apps = await this.serviceDiscoverClient.listServicesByType('apps');
     const targets = [...apps.values()]
       .flat()
-      .filter((app) => app.name !== caller.name && app.host !== callerInfo.host && app.port !== callerInfo.port);
+      .filter(
+        (app) => !(callerInfo.name == callerInfo.name && app.host == callerInfo.host && app.port == callerInfo.port),
+      );
 
     await Promise.all(
       targets.map((remoteServiceInfo: RemoteServiceInfo) => {
-        return this.rpcClient.push({
+        const pushArgs = {
           remoteAddr: `http://${remoteServiceInfo.host}:${remoteServiceInfo.port}`,
           appName: remoteServiceInfo.name,
           event,
           options: eventOptions,
-        });
+        };
+
+        console.log(`broadcast ${JSON.stringify(pushArgs)}`);
+        return this.rpcClient.push(pushArgs);
       }),
     );
   }
