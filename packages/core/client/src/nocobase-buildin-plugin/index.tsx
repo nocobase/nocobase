@@ -19,7 +19,7 @@ import { ErrorFallback } from '../schema-component/antd/error-fallback';
 import { SchemaInitializerPlugin } from '../schema-initializer';
 import { BlockTemplateDetails, BlockTemplatePage } from '../schema-templates';
 import { SystemSettingsPlugin } from '../system-settings';
-import { CurrentUserSettingsMenuProvider } from '../user';
+import { CurrentUserProvider, CurrentUserSettingsMenuProvider } from '../user';
 
 const AppSpin = Spin;
 
@@ -56,6 +56,7 @@ export class NocoBaseBuildInPlugin extends Plugin {
     this.addComponents();
     this.addRoutes();
 
+    this.app.use(CurrentUserProvider);
     this.app.use(GlobalThemeProvider);
     this.app.use(AntdAppProvider);
     this.app.use(CSSVariableProvider);
