@@ -1,7 +1,7 @@
 import { Application, NocoBaseBuildInPlugin } from '@nocobase/client';
 
 export const app = new Application({
-  apiClientOptions: {
+  apiClient: {
     baseURL: process.env.API_BASE_URL,
   },
   plugins: [NocoBaseBuildInPlugin],
