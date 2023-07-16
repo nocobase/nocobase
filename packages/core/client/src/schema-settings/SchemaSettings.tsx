@@ -1301,11 +1301,10 @@ SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Sche
                   }
                 `,
               },
-              default:
-                fieldSchema?.['x-component-props']?.customDateFormat === null
-                  ? fieldSchema?.['x-component-props']?.dateFormat ||
-                    collectionField?.uiSchema?.['x-component-props']?.dateFormat
-                  : 'YYYY-MM-DD',
+              default: !fieldSchema?.['x-component-props']?.customDateFormat
+                ? fieldSchema?.['x-component-props']?.dateFormat ||
+                  collectionField?.uiSchema?.['x-component-props']?.dateFormat
+                : null,
               enum: [
                 {
                   label: DateFormatCom({ format: 'MMMMM Do YYYY' }),
