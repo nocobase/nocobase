@@ -1,9 +1,14 @@
 import { ServiceDiscoveryClient } from './client';
 import { RedisDiscoveryServerClient } from './redis-server-client';
 
+interface ServiceDiscoveryClientBuildOptions {
+  serverURI: string;
+}
+
 export class ServiceDiscoveryClientFactory {
-  static build(): ServiceDiscoveryClient {
-    const ServerURI = process.env['APP_DISCOVERY_SERVER'];
+  static build(options: ServiceDiscoveryClientBuildOptions): ServiceDiscoveryClient {
+    const ServerURI = options.serverURI;
+
     if (!ServerURI) {
       throw new Error('APP_DISCOVERY_SERVER is not set');
     }

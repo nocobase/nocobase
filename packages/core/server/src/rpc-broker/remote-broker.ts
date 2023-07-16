@@ -3,7 +3,7 @@ import { AppSupervisor } from '../app-supervisor';
 import Application from '../application';
 import { RemoteServiceInfo, ServiceDiscoveryClient } from '../service-discovery/client';
 import { ServiceDiscoveryClientFactory } from '../service-discovery/factory';
-import { RpcBrokerInterface } from './interface';
+import { RpcBrokerInterface, RpcBrokerOptions } from './interface';
 import { RpcHttpClient, createRpcClient } from './rpc-http-client';
 import { createRpcHttpServer } from './rpc-http-server';
 
@@ -12,10 +12,12 @@ export class RemoteBroker extends RpcBrokerInterface {
   rpcServer: http.Server;
   rpcClient: RpcHttpClient;
 
-  constructor(appSupervisor: AppSupervisor) {
-    super(appSupervisor);
+  constructor(appSupervisor: AppSupervisor, options: RpcBrokerOptions) {
+    super(appSupervisor, options);
 
-    this.serviceDiscoverClient = ServiceDiscoveryClientFactory.build();
+    this.serviceDiscoverClient = ServiceDiscoveryClientFactory.build({
+      serverURI: options.discoveryServerURI,
+    });
 
     appSupervisor.on('afterAppAdded', (app: Application) => {
       app.on('afterStart', async () => {
@@ -35,6 +37,7 @@ export class RemoteBroker extends RpcBrokerInterface {
         await this.serviceDiscoverClient.unregisterService(await this.getAppServiceInfo(app));
       });
     });
+
     this.rpcClient = createRpcClient();
   }
 
@@ -59,7 +62,13 @@ export class RemoteBroker extends RpcBrokerInterface {
     });
   }
 
-  pushToApp(appName: string, event: string, options?: any): Promise<boolean> {
-    return Promise.resolve(false);
+  async pushToApp(appName: string, event: string, options?: any): Promise<boolean> {
+    const remoteAddr = await this.serviceDiscoverClient.fetchSingleService('apps', appName);
+    return await this.rpcClient.push({
+      remoteAddr: `http://${remoteAddr.host}:${remoteAddr.port}`,
+      appName,
+      event,
+      options,
+    });
   }
 }

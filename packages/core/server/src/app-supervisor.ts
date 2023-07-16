@@ -2,7 +2,7 @@ import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import { EventEmitter } from 'events';
 import type Application from './application';
 import { RpcBrokerFactory } from './rpc-broker/factory';
-import { RpcBrokerInterface } from './rpc-broker/interface';
+import { RpcBrokerInterface, RpcBrokerOptions } from './rpc-broker/interface';
 
 type BootOptions = {
   appName: string;
@@ -32,7 +32,11 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
       this.singleAppName = process.env.STARTUP_SUBAPP;
     }
 
-    this.rpcBroker = RpcBrokerFactory.build(this);
+    this.buildRpcBroker();
+  }
+
+  public buildRpcBroker(options: RpcBrokerOptions = {}) {
+    this.rpcBroker = RpcBrokerFactory.build(this, options);
   }
 
   public static getInstance(): AppSupervisor {

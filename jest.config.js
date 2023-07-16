@@ -10,7 +10,11 @@ module.exports = {
   preset: 'ts-jest',
   testMatch: ['**/__tests__/**/*.test.[jt]s'],
   setupFiles: ['./jest.setup.ts'],
-  setupFilesAfterEnv: [require.resolve('jest-dom/extend-expect'), './jest.setupAfterEnv.ts'],
+  setupFilesAfterEnv: [
+    require.resolve('jest-dom/extend-expect'),
+    './jest.setupAfterEnv.ts',
+    './jest.setup.redis-mock.js',
+  ],
   moduleNameMapper: {
     ...pathsToModuleNameMapper(compilerOptions.paths, {
       prefix: '<rootDir>/',
