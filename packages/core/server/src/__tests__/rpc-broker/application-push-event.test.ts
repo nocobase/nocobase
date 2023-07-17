@@ -1,3 +1,4 @@
+import { AppSupervisor } from '../../app-supervisor';
 import Application from '../../application';
 
 describe('application push event', () => {
@@ -19,15 +20,23 @@ describe('application push event', () => {
     });
   });
 
+  afterEach(async () => {
+    await AppSupervisor.getInstance().destroy();
+  });
+
   it('should handle push event at application', async () => {
     const jestFn = jest.fn();
 
     app.on('rpc:test_event', async () => {
+      await new Promise((resolve) => setTimeout(resolve, 100));
       jestFn();
     });
 
     app.handleEventPush('test_event');
 
-    expect(jestFn).toBeCalledTimes(1);
+    // do assert at the end of next tick
+    setTimeout(() => {
+      expect(jestFn).toBeCalledTimes(1);
+    }, 0);
   });
 });

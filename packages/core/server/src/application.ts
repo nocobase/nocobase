@@ -17,10 +17,11 @@ import * as process from 'process';
 import { promisify } from 'util';
 import { createACL } from './acl';
 import { AppSupervisor } from './app-supervisor';
-import { ApplicationVersion } from './application-version';
 import { registerCli } from './commands';
-import { ApplicationFsm } from './fsm';
 import { createI18n, createResourcer, registerMiddlewares } from './helper';
+import { ApplicationEventSubject } from './helpers/application-event-subject';
+import { ApplicationVersion } from './helpers/application-version';
+import { ApplicationFsm } from './helpers/fsm';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
 
@@ -50,6 +51,7 @@ export interface ApplicationOptions {
 
 export interface DefaultState extends KoaDefaultState {
   currentUser?: any;
+
   [key: string]: any;
 }
 
@@ -104,6 +106,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   protected plugins = new Map<string, Plugin>();
   protected _appSupervisor: AppSupervisor = AppSupervisor.getInstance();
   private workingMessage: string = null;
+
+  private eventSubject: ApplicationEventSubject;
 
   constructor(public options: ApplicationOptions) {
     super();
@@ -452,8 +456,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   public handleEventPush(eventName: string, options?: any) {
-    this.emitAsync(`rpc:${eventName}`, options);
-    return true;
+    this.eventSubject.push(eventName, options);
   }
 
   protected init() {
@@ -548,6 +551,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     for (const [event, listener] of alwaysRebindEvents) {
       this.on(event, listener);
     }
+
+    this.eventSubject = new ApplicationEventSubject(this);
   }
 
   private createDatabase(options: ApplicationOptions) {

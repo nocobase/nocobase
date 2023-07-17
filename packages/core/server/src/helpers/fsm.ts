@@ -1,6 +1,6 @@
 import { createMachine, interpret, StateMachine } from 'xstate';
 import { Interpreter } from 'xstate/lib/interpreter';
-import Application from './application';
+import Application from '../application';
 
 export class ApplicationFsm {
   interpret: Interpreter<any, any, any, any, any>;
