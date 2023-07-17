@@ -198,10 +198,16 @@ const sync = async (ctx: Context, next: Next) => {
   }));
   textValues = (await resourcesInstance.filterExists(textValues)) as any[];
   await ctx.db.sequelize.transaction(async (t) => {
-    const texts = await ctx.db.getModel('localizationTexts').bulkCreate(textValues, {
+    const newTexts = await ctx.db.getModel('localizationTexts').bulkCreate(textValues, {
+      transaction: t,
+    });
+    const texts = await ctx.db.getModel('localizationTexts').findAll({
+      include: [{ association: 'translations', where: { locale }, required: false }],
+      where: { '$translations.id$': null },
       transaction: t,
     });
     const translationValues = texts
+      .filter((text: Model) => records[text.text])
       .map((text: Model) => {
         return {
           locale,
@@ -213,7 +219,7 @@ const sync = async (ctx: Context, next: Next) => {
     await ctx.db.getModel('localizationTranslations').bulkCreate(translationValues, {
       transaction: t,
     });
-    await resourcesInstance.updateCacheTexts(texts);
+    await resourcesInstance.updateCacheTexts(newTexts);
   });
   ctx.app.logger.info(`Sync localization resources done, ${Date.now() - startTime}ms`);
   await next();
