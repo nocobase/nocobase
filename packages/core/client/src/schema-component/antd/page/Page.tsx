@@ -25,6 +25,7 @@ import { useStyles } from './style';
 
 export const Page = (props) => {
   const { children, ...others } = props;
+  const { t } = useTranslation();
   const compile = useCompile();
   const { title, setTitle } = useDocumentTitle();
   const fieldSchema = useFieldSchema();
@@ -41,13 +42,12 @@ export const Page = (props) => {
 
   useEffect(() => {
     if (!title) {
-      setTitle(fieldSchema.title);
+      setTitle(t(fieldSchema.title));
     }
   }, [fieldSchema.title, title]);
   const disablePageHeader = fieldSchema['x-component-props']?.disablePageHeader;
   const enablePageTabs = fieldSchema['x-component-props']?.enablePageTabs;
   const hidePageTitle = fieldSchema['x-component-props']?.hidePageTitle;
-  const { t } = useTranslation();
   const options = useContext(SchemaOptionsContext);
   const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
@@ -77,7 +77,7 @@ export const Page = (props) => {
               className={classNames('pageHeaderCss', pageHeaderTitle || enablePageTabs ? '' : 'height0')}
               ghost={false}
               // 如果标题为空的时候会导致 PageHeader 不渲染，所以这里设置一个空白字符，然后再设置高度为 0
-              title={pageHeaderTitle || ' '}
+              title={t(pageHeaderTitle || ' ')}
               {...others}
               footer={
                 enablePageTabs && (

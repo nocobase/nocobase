@@ -56,6 +56,7 @@ export default {
         title: '{{t("Title")}}',
         'x-component': 'Input',
       },
+      translation: true,
     },
     {
       interface: 'textarea',

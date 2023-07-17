@@ -13,6 +13,7 @@ export default {
     {
       type: 'string',
       name: 'name',
+      translation: true,
     },
     {
       type: 'string',
