@@ -244,10 +244,6 @@ export class Resourcer {
     return this.actionHandlers;
   }
 
-  getResourcerNames() {
-    return Array.from(this.resources.keys());
-  }
-
   getResource(name: string): Resource {
     if (!this.resources.has(name)) {
       throw new Error(`${name} resource does not exist`);

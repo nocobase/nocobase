@@ -3,7 +3,20 @@ import send from 'koa-send';
 import { resolve } from 'path';
 import swagger from './swagger';
 
+const ACTIONS_METHODS = {
+  list: 'get',
+  create: 'post',
+  get: 'get',
+  update: 'put',
+  destroy: 'delete',
+  add: 'post',
+  set: 'post',
+  remove: 'delete',
+  toggle: 'post',
+  move: 'put',
+};
 const API_DOC_PATH = '/api/_documentation';
+
 export default class APIDoc extends Plugin {
   beforeLoad() {}
 
@@ -27,7 +40,6 @@ export default class APIDoc extends Plugin {
   };
 
   generatePaths = () => {
-    const names = this.app.resourcer.getResourcerNames();
     const options = this.app.resourcer.options;
     const accessors = {
       // 常规 actions
@@ -40,153 +52,88 @@ export default class APIDoc extends Plugin {
       add: 'add',
       set: 'set',
       remove: 'remove',
+      toggle: 'toggle',
+      move: 'move',
       ...(options.accessors || {}),
     };
 
-    const defaults = {
-      single: {
-        '/:resourceName': {
-          get: accessors.list,
-          post: accessors.create,
-          delete: accessors.delete,
-        },
-        '/:resourceName/:resourceIndex': {
-          get: accessors.get,
-          put: accessors.update,
-          patch: accessors.update,
-          delete: accessors.delete,
-        },
-        '/:associatedName/:associatedIndex/:resourceName': {
-          get: accessors.list,
-          post: accessors.create,
-          delete: accessors.delete,
-        },
-        '/:associatedName/:associatedIndex/:resourceName/:resourceIndex': {
-          get: accessors.get,
-          post: accessors.create,
-          put: accessors.update,
-          patch: accessors.update,
-          delete: accessors.delete,
-        },
-      },
-      hasOne: {
-        '/:associatedName/:associatedIndex/:resourceName': {
-          get: accessors.get,
-          post: accessors.update,
-          put: accessors.update,
-          patch: accessors.update,
-          delete: accessors.delete,
-        },
-      },
-      hasMany: {
-        '/:associatedName/:associatedIndex/:resourceName': {
-          get: accessors.list,
-          post: accessors.create,
-          delete: accessors.delete,
-        },
-        '/:associatedName/:associatedIndex/:resourceName/:resourceIndex': {
-          get: accessors.get,
-          post: accessors.create,
-          put: accessors.update,
-          patch: accessors.update,
-          delete: accessors.delete,
-        },
-      },
-      belongsTo: {
-        '/:associatedName/:associatedIndex/:resourceName': {
-          get: accessors.get,
-          delete: accessors.remove,
-        },
-        '/:associatedName/:associatedIndex/:resourceName/:resourceIndex': {
-          post: accessors.set,
-        },
-      },
-      belongsToMany: {
-        '/:associatedName/:associatedIndex/:resourceName': {
-          get: accessors.list,
-          post: accessors.set,
-        },
-        '/:associatedName/:associatedIndex/:resourceName/:resourceIndex': {
-          get: accessors.get,
-          post: accessors.add,
-          put: accessors.update, // Many to Many 的 update 是针对 through
-          patch: accessors.update, // Many to Many 的 update 是针对 through
-          delete: accessors.remove,
-        },
-      },
-      set: {
-        '/:associatedName/:associatedIndex/:resourceName': {
-          get: accessors.list,
-          post: accessors.add,
-          delete: accessors.remove,
-        },
-      },
+    const single = {
+      '/{resourceName}': [accessors.list, accessors.create, accessors.delete],
+      '/{resourceName}/{resourceIndex}': [accessors.get, accessors.update, accessors.delete],
+      '/{associatedName}/{associatedIndex}/{resourceName}': [
+        accessors.list,
+        accessors.create,
+        accessors.delete,
+        accessors.toggle,
+        accessors.add,
+        accessors.remove,
+      ],
+      '/{associatedName}/{associatedIndex}/{resourceName}/{resourceIndex}': [
+        accessors.get,
+        accessors.update,
+        accessors.delete,
+        accessors.remove,
+        accessors.toggle,
+        accessors.set,
+        accessors.move,
+      ],
     };
 
-    return names.reduce((paths, name) => {
-      const actions = this.app.resourcer.getResource(name).actions;
-      const pathsMethods = {};
-      const currentPattern = defaults['single'];
+    // console.log(Array.from(this.app.values()));
+    const paths = {};
+    this.db.collections.forEach(({ name }) => {
+      if (!this.app.resourcer.isDefined(name)) {
+        return;
+      }
 
-      Array.from(actions.keys()).forEach((_actionName) => {
-        let [resourceName, actionName] = _actionName.split(':');
-        if (typeof actionName === 'undefined') {
-          actionName = resourceName;
-          resourceName = name;
-        }
-        pathsMethods[`/${resourceName}:${actionName}`] = {
-          get: {
-            tags: [resourceName],
-            summary: `${resourceName} -> ${actionName}`,
-            description: `The method power by ${resourceName}`,
-            security: [
-              {
-                apiKey: [],
+      const { actions } = this.app.resourcer.getResource(name);
+      const collectionMethods = {};
+      Object.entries(single).forEach(([path, actionNames]) => {
+        actionNames.forEach((actionName) => {
+          const method = ACTIONS_METHODS[actionName] || 'post';
+          const parameters = [];
+          if (path.includes('{associatedName}')) {
+            parameters.push({
+              name: 'associatedName',
+              required: true,
+              schema: {
+                type: 'string',
               },
-            ],
-          },
-          post: {
-            tags: [resourceName],
-            summary: `${resourceName} -> ${actionName}`,
-            description: `The method power by ${resourceName}`,
-            security: [
-              {
-                apiKey: [],
+            });
+          }
+          if (path.includes('{associatedIndex}')) {
+            parameters.push({
+              name: 'associatedIndex',
+              required: true,
+              schema: {
+                type: 'string',
               },
-            ],
-          },
-        };
-      });
+            });
+          }
+          if (path.includes('{resourceIndex}')) {
+            parameters.push({
+              name: 'resourceIndex',
+              required: true,
+              schema: {
+                type: 'string',
+              },
+            });
+          }
 
-      Object.entries(currentPattern).forEach(([matchPath, maps]) => {
-        const currentPathMethods = {};
-        Object.entries(maps).map(([method, actionName]) => {
-          if (actions.has(actionName as string)) {
-            currentPathMethods[method] = {
-              tags: [name],
-              summary: `${name} -> ${actionName}`,
-              description: `The method power by ${name}`,
-              security: [
-                {
-                  apiKey: [],
-                },
-              ],
+          if (actions.has(actionName)) {
+            collectionMethods[path.replace('{resourceName}', `${name}:${actionName}`)] = {
+              [method]: {
+                tags: [name],
+                description: `${name}:${actionName}`,
+                parameters,
+              },
             };
           }
         });
-
-        const pathName = matchPath.replace(':resourceName', name);
-        if (!pathsMethods[pathName]) {
-          pathsMethods[pathName] = {};
-        }
-        Object.assign(pathsMethods[pathName], currentPathMethods);
       });
-
-      return {
-        ...paths,
-        ...pathsMethods,
-      };
-    }, {});
+      Object.assign(paths, collectionMethods);
+    });
+    return paths;
   };
 
   async load() {
@@ -216,13 +163,6 @@ export default class APIDoc extends Plugin {
           ],
         };
         ctx.body = result;
-      }
-
-      if (ctx.path.startsWith('/api/test/data')) {
-        ctx.withoutDataWrapping = true;
-        ctx.set('Content-Type', 'application/json');
-
-        ctx.body = this.generatePaths();
       }
       await next();
     });
