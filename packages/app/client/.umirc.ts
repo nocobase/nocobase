@@ -45,5 +45,16 @@ export default defineConfig({
     edge: 79,
     safari: 12,
   },
+  chainWebpack(config, { env }) {
+    if (env === 'production') {
+      config.plugin('ignore nocobase plugins')
+        .use(require('webpack').IgnorePlugin, [
+          {
+            resourceRegExp: /^@nocobase\/plugin-/,
+          },
+        ]);
+    }
+    return config;
+  },
   routes: [{ path: '/*', component: 'index' }],
 });
