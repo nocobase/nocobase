@@ -14,6 +14,7 @@ import * as i18next from 'i18next';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import * as reactI18next from 'react-i18next';
+import * as ReactRouter from 'react-router';
 import * as ReactRouterDom from 'react-router-dom';
 import jsxRuntime from 'react/jsx-runtime';
 import * as nocobaseClient from '../../index';
@@ -29,6 +30,7 @@ export function initDeps(requirejs: any) {
   requirejs.define('react/jsx-runtime', () => jsxRuntime);
 
   // react-router
+  requirejs.define('react-router', () => ReactRouter);
   requirejs.define('react-router-dom', () => ReactRouterDom);
 
   // antd
