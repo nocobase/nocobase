@@ -29,6 +29,7 @@ describe('application', () => {
       dataWrapping: false,
       registerActions: false,
     });
+
     app.resourcer.registerActionHandlers({
       list: async (ctx, next) => {
         ctx.body = [1, 2];
@@ -43,6 +44,7 @@ describe('application', () => {
         await next();
       },
     });
+
     agent = supertest.agent(app.callback());
   });
 

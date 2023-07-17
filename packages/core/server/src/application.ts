@@ -2,7 +2,7 @@ import { ACL } from '@nocobase/acl';
 import { registerActions } from '@nocobase/actions';
 import { actions as authActions, AuthManager } from '@nocobase/auth';
 import { Cache, createCache, ICacheConfig } from '@nocobase/cache';
-import Database, { Collection, CollectionOptions, IDatabaseOptions } from '@nocobase/database';
+import Database, { CollectionOptions, IDatabaseOptions } from '@nocobase/database';
 import { AppLoggerOptions, createAppLogger, Logger } from '@nocobase/logger';
 import Resourcer, { ResourceOptions } from '@nocobase/resourcer';
 import { applyMixins, AsyncEmitter, Toposort, ToposortOptions } from '@nocobase/utils';
@@ -14,10 +14,10 @@ import Koa, { DefaultContext as KoaDefaultContext, DefaultState as KoaDefaultSta
 import compose from 'koa-compose';
 import lodash from 'lodash';
 import * as process from 'process';
-import semver from 'semver';
 import { promisify } from 'util';
 import { createACL } from './acl';
 import { AppSupervisor } from './app-supervisor';
+import { ApplicationVersion } from './application-version';
 import { registerCli } from './commands';
 import { ApplicationFsm } from './fsm';
 import { createI18n, createResourcer, registerMiddlewares } from './helper';
@@ -50,7 +50,6 @@ export interface ApplicationOptions {
 
 export interface DefaultState extends KoaDefaultState {
   currentUser?: any;
-
   [key: string]: any;
 }
 
@@ -95,59 +94,6 @@ interface StartOptions {
   cliArgs?: any[];
   dbSync?: boolean;
   listen?: ListenOptions;
-}
-
-export class ApplicationVersion {
-  protected app: Application;
-  protected collection: Collection;
-
-  constructor(app: Application) {
-    this.app = app;
-    if (!app.db.hasCollection('applicationVersion')) {
-      app.db.collection({
-        name: 'applicationVersion',
-        namespace: 'core.applicationVersion',
-        duplicator: 'required',
-        timestamps: false,
-        fields: [{ name: 'value', type: 'string' }],
-      });
-    }
-    this.collection = this.app.db.getCollection('applicationVersion');
-  }
-
-  async get() {
-    if (await this.app.db.collectionExistsInDb('applicationVersion')) {
-      const model = await this.collection.model.findOne();
-      if (!model) {
-        return null;
-      }
-      return model.get('value') as any;
-    }
-    return null;
-  }
-
-  async update() {
-    await this.collection.sync();
-    await this.collection.model.destroy({
-      truncate: true,
-    });
-
-    await this.collection.model.create({
-      value: this.app.getVersion(),
-    });
-  }
-
-  async satisfies(range: string) {
-    if (await this.app.db.collectionExistsInDb('applicationVersion')) {
-      const model: any = await this.collection.model.findOne();
-      const version = model?.value as any;
-      if (!version) {
-        return true;
-      }
-      return semver.satisfies(version, range, { includePrerelease: true });
-    }
-    return true;
-  }
 }
 
 export class Application<StateT = DefaultState, ContextT = DefaultContext> extends Koa implements AsyncEmitter {
@@ -505,8 +451,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return JSON.parse(JSON.stringify({ result }));
   }
 
-  public async handleEventPush(eventName: string, options?: any) {
-    await this.emitAsync(`rpc:${eventName}`, options);
+  public handleEventPush(eventName: string, options?: any) {
+    this.emitAsync(`rpc:${eventName}`, options);
+    return true;
   }
 
   protected init() {
