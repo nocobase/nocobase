@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { CollectionFieldOptions } from '../../collection-manager';
 import { useCompile, Variable } from '../../schema-component';
+import { useContextAssociationFields } from './hooks/useContextAssociationFields';
 import { useUserVariable } from './hooks/useUserVariable';
 
 type Props = {
@@ -25,9 +26,11 @@ export const VariableInput = (props: Props) => {
     schema,
     className,
     collectionField,
+    collectionName,
   } = props;
   const compile = useCompile();
   const userVariable = useUserVariable({ schema, maxDepth: 1 });
+  const contextVariable = useContextAssociationFields({ schema, maxDepth: 2, contextCollectionName: collectionName });
   const scope = useMemo(() => {
     const data = [
       compile({
@@ -46,6 +49,9 @@ export const VariableInput = (props: Props) => {
     ];
     if (collectionField?.target === 'users') {
       data.unshift(userVariable);
+    }
+    if (collectionName) {
+      data.unshift(contextVariable);
     }
     return data;
   }, []);
