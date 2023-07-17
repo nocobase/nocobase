@@ -4,6 +4,7 @@ import { createFormBlockSchema } from '../utils';
 import { DataBlockInitializer } from './DataBlockInitializer';
 
 export const FormBlockInitializer = (props) => {
+  console.log(props)
   return (
     <DataBlockInitializer
       {...props}
