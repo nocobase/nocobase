@@ -107,7 +107,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   protected _appSupervisor: AppSupervisor = AppSupervisor.getInstance();
   private workingMessage: string = null;
 
-  private eventSubject: ApplicationEventSubject;
+  private _eventSubject: ApplicationEventSubject;
 
   constructor(public options: ApplicationOptions) {
     super();
@@ -116,6 +116,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   protected _fsm = new ApplicationFsm(this);
+
+  get eventSubject() {
+    return this._eventSubject;
+  }
 
   get fsm() {
     return this._fsm;
@@ -552,7 +556,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       this.on(event, listener);
     }
 
-    this.eventSubject = new ApplicationEventSubject(this);
+    this._eventSubject = new ApplicationEventSubject(this);
   }
 
   private createDatabase(options: ApplicationOptions) {

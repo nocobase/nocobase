@@ -1,4 +1,4 @@
-import { Subject, delayWhen, interval } from 'rxjs';
+import { Subject, debounce, delayWhen, interval, map } from 'rxjs';
 import Application from '../application';
 
 interface EventObject {
@@ -9,10 +9,20 @@ interface EventObject {
 export class ApplicationEventSubject {
   private events: Subject<EventObject> = new Subject();
 
+  debounceInterval = 200;
+
   constructor(app: Application) {
+    this.initEvents(app);
+  }
+
+  initEvents(app: Application) {
     this.events
       .pipe(
-        delayWhen((value, index) => {
+        map((value) => {
+          return value;
+        }),
+        debounce((value) => interval(this.debounceInterval)),
+        delayWhen((value) => {
           const options = value.options;
           if (options && options.__$delay) {
             return interval(options.__$delay);

@@ -69,4 +69,30 @@ describe('application push event', () => {
       }, 200),
     );
   });
+
+  it('should debounce event', async () => {
+    const jestFn1 = jest.fn();
+    const jestFn2 = jest.fn();
+
+    app.on('rpc:event1', () => {
+      jestFn1();
+    });
+
+    app.on('rpc:event2', () => {
+      jestFn2();
+    });
+
+    for (let i = 0; i < 100; i++) {
+      app.handleEventPush('event1');
+      app.handleEventPush('event2');
+    }
+
+    await new Promise((resolve) =>
+      setTimeout(() => {
+        expect(jestFn2).toBeCalledTimes(1);
+        expect(jestFn1).toBeCalledTimes(1);
+        resolve(0);
+      }, app.eventSubject.debounceInterval + 10),
+    );
+  });
 });
