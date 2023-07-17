@@ -10,7 +10,7 @@ export class LocalizationManagementPlugin extends Plugin {
       return (
         <SettingsCenterProvider
           settings={{
-            localization: {
+            ['localization-management']: {
               title: t('Localization'),
               icon: 'GlobalOutlined',
               tabs: {

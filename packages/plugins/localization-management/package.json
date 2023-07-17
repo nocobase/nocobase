@@ -13,5 +13,9 @@
   },
   "dependencies": {
     "deepmerge": "^4.3.1"
-  }
+  },
+  "displayName": "Localization management",
+  "displayName.zh-CN": "多语言管理",
+  "description": "Allows to manage localization resources of the application",
+  "description.zh-CN": "支持管理应用程序的多语言资源"
 }

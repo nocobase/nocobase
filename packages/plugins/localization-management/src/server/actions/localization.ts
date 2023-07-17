@@ -123,28 +123,42 @@ const getTextsFromDB = async (db: Database) => {
   return result;
 };
 
-const getAdminSchemaUid = async (db: Database) => {
+const getSchemaUid = async (db: Database) => {
   const systemSettings = await db.getRepository('systemSettings').findOne();
   const options = systemSettings?.options || {};
-  return options.adminSchemaUid;
+  const { adminSchemaUid, mobileSchemaUid } = options;
+  return { adminSchemaUid, mobileSchemaUid };
 };
 
 const getTextsFromMenu = async (db: Database) => {
   const result = {};
-  const uid = await getAdminSchemaUid(db);
+  const { adminSchemaUid, mobileSchemaUid } = await getSchemaUid(db);
   const repo = db.getRepository('uiSchemas') as UiSchemaRepository;
-  const schema = await repo.getProperties(uid);
-  const extractTitle = (schema: any) => {
-    if (schema.properties) {
-      Object.values(schema.properties).forEach((item: any) => {
-        if (item.title) {
-          result[item.title] = '';
+  if (adminSchemaUid) {
+    const schema = await repo.getProperties(adminSchemaUid);
+    const extractTitle = (schema: any) => {
+      if (schema.properties) {
+        Object.values(schema.properties).forEach((item: any) => {
+          if (item.title) {
+            result[item.title] = '';
+          }
+          extractTitle(item);
+        });
+      }
+    };
+    extractTitle(schema);
+  }
+  if (mobileSchemaUid) {
+    const schema = await repo.getProperties(mobileSchemaUid);
+    if (schema['properties']?.tabBar?.properties) {
+      Object.values(schema['properties']?.tabBar?.properties).forEach((item: any) => {
+        const title = item['x-component-props']?.title;
+        if (title) {
+          result[title] = '';
         }
-        extractTitle(item);
       });
     }
-  };
-  extractTitle(schema);
+  }
   return result;
 };
 

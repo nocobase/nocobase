@@ -18,7 +18,8 @@ export class LocalizationManagementPlugin extends Plugin {
     }
 
     uiSchemaStoragePlugin.serverHooks.register('onSelfSave', 'extractTextToLocale', async ({ schemaInstance }) => {
-      const title = schemaInstance.get('schema')?.title;
+      const schema = schemaInstance.get('schema');
+      const title = schema?.title || schema?.['x-component-props']?.title;
       if (!title) {
         return;
       }
