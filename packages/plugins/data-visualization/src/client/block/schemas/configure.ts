@@ -287,7 +287,7 @@ export const getQuerySchema = (): ISchema => ({
                       'x-decorator': 'FormItem',
                       'x-decorator-props': {
                         style: {
-                          overflow: 'scroll',
+                          overflow: 'auto',
                         },
                       },
                       'x-component': 'Filter',

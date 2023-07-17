@@ -14,6 +14,15 @@ export const useStyles = genStyleHook('nb-variable', (token) => {
 
   return {
     [componentCls]: {
+      '.ant-formily-item .ant-formily-item-control .ant-formily-item-control-content .ant-formily-item-control-content-component':
+        {
+          lineHeight: 'normal',
+        },
+
+      '.ant-formily-item': {
+        marginBottom: 0,
+      },
+
       '.ant-input': {
         borderTopRightRadius: 0,
         borderBottomRightRadius: 0,
@@ -36,9 +45,9 @@ export const useStyles = genStyleHook('nb-variable', (token) => {
       },
 
       '.ant-tag-blue': {
-        color: textColor,
-        background: lightColor,
-        borderColor: lightBorderColor,
+        color: token.colorPrimaryText,
+        background: token.colorPrimaryBg,
+        borderColor: token.colorPrimaryBorder,
       },
 
       '.clear-button': {
@@ -71,6 +80,10 @@ export const useStyles = genStyleHook('nb-variable', (token) => {
         '&:hover': {
           color: token.colorTextTertiary,
         },
+      },
+
+      '.ant-btn': {
+        height: 'auto',
       },
     },
   };

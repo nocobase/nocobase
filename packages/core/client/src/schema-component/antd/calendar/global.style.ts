@@ -5,11 +5,10 @@ const GlobalStyle = createGlobalStyle`
     position: absolute;
     z-index: 50;
     margin-top: 5px;
-    border-radius: 2px;
-    // border: 1px solid #e5e5e5;
-    background-color: #fff;
-    box-shadow: 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 9px 28px 8px rgba(0, 0, 0, 0.05);
-    padding: 12px 16px;
+    border-radius: ${({ theme }) => `${theme.borderRadius}px`};
+    background-color: ${({ theme }) => theme.colorBgElevated};
+    box-shadow: ${({ theme }) => theme.boxShadow};
+    padding: ${({ theme }) => `${theme.paddingContentVertical}px ${theme.paddingContentHorizontalSM}px`};
   }
   .rbc-overlay > * + * {
     margin-top: 1px;
@@ -17,10 +16,13 @@ const GlobalStyle = createGlobalStyle`
 
   .rbc-overlay-header {
     font-weight: 500;
-    min-height: 32px;
-    border-bottom: 1px solid #f0f0f0;
-    margin: -12px -16px 12px -16px;
-    padding: 5px 16px 4px;
+    font-size: ${({ theme }) => `${theme.fontSize}px`};
+    color: ${({ theme }) => theme.colorTextSecondary};
+    min-height: ${({ theme }) => `${theme.sizeXL}px`};
+    border-bottom: ${({ theme }) => `1px solid ${theme.colorBorderSecondary}`};
+    margin: ${({ theme }) =>
+      `-${theme.paddingContentVertical}px -${theme.paddingContentHorizontalSM}px ${theme.paddingContentVertical}px -${theme.paddingContentHorizontalSM}px`};
+    padding: ${({ theme }) => `${theme.paddingXXS}px ${theme.paddingContentHorizontalSM}px`};
   }
 
   .rbc-event {
@@ -29,16 +31,16 @@ const GlobalStyle = createGlobalStyle`
     box-shadow: none;
     margin: 0;
     padding: 2px 5px;
-    background-color: rgba(240, 240, 240, 0.65);
-    border-radius: 2px;
-    // color: #1890ff;
+    background-color: ${({ theme }) => theme.colorBorderSecondary};
+    border-radius: ${({ theme }) => `${theme.borderRadiusXS}px`};
+    color: ${({ theme }) => theme.colorTextSecondary};
     cursor: pointer;
-    font-size: 12px;
+    font-size: ${({ theme }) => `${theme.fontSizeSM}px`};
     width: 100%;
     text-align: left;
     &:hover {
-      background-color: #e6f7ff;
-      color: #1890ff;
+      background-color: ${({ theme }) => theme.colorPrimaryBg};
+      color: ${({ theme }) => theme.colorPrimaryText};
     }
   }
   .rbc-slot-selecting .rbc-event {
@@ -46,8 +48,8 @@ const GlobalStyle = createGlobalStyle`
     pointer-events: none;
   }
   .rbc-event.rbc-selected {
-    background-color: #e6f7ff;
-    color: #1890ff;
+    background-color: ${({ theme }) => theme.colorPrimaryBg};
+    color: ${({ theme }) => theme.colorPrimaryText};
   }
   .rbc-event:focus {
     // outline: 5px auto #3b99fc;
@@ -58,7 +60,7 @@ const GlobalStyle = createGlobalStyle`
   }
 
   .rbc-event-overlaps {
-    box-shadow: -1px 1px 5px 0px rgba(51, 51, 51, 0.5);
+    box-shadow: ${({ theme }) => theme.boxShadow};
   }
 
   .rbc-event-continues-prior {

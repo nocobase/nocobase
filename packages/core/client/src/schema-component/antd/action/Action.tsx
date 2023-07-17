@@ -1,6 +1,6 @@
 import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
-import { Button, Modal, Popover } from 'antd';
+import { App, Button, Popover } from 'antd';
 import classnames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -60,6 +60,7 @@ export const actionDesignerCss = css`
         line-height: 16px;
         width: 16px;
         padding-left: 1px;
+        align-self: stretch;
       }
     }
   }
@@ -97,6 +98,8 @@ export const Action: ComposedAction = observer(
     const linkageRules = fieldSchema?.['x-linkage-rules'] || [];
     const { designable } = useDesignable();
     const tarComponent = useComponent(component) || component;
+    const { modal } = App.useApp();
+
     useEffect(() => {
       field.linkageProperty = {};
       linkageRules
@@ -132,7 +135,7 @@ export const Action: ComposedAction = observer(
                 run();
               };
               if (confirm) {
-                Modal.confirm({
+                modal.confirm({
                   ...confirm,
                   onOk,
                 });

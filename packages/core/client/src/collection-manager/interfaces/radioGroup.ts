@@ -26,4 +26,5 @@ export const radioGroup: IField = {
   filterable: {
     operators: operators.enumType,
   },
+  titleUsable: true,
 };

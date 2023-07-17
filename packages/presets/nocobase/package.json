@@ -40,7 +40,8 @@
     "@nocobase/plugin-users": "0.11.0-alpha.1",
     "@nocobase/plugin-verification": "0.11.0-alpha.1",
     "@nocobase/plugin-workflow": "0.11.0-alpha.1",
-    "@nocobase/server": "0.11.0-alpha.1"
+    "@nocobase/server": "0.11.0-alpha.1",
+    "@nocobase/plugin-theme-editor": "0.11.0-alpha.1"
   },
   "repository": {
     "type": "git",

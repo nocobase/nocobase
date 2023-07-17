@@ -41,6 +41,7 @@ export class PresetNocoBase extends Plugin {
     'mobile-client',
     'api-keys',
     'localization-management',
+    'theme-editor',
   ];
 
   splitNames(name: string) {

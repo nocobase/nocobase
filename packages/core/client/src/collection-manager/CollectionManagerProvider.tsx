@@ -55,8 +55,12 @@ export const RemoteCollectionManagerProvider = (props: any) => {
       sort: ['sort'],
     },
   };
-  const service = useRequest(options);
-  const result = useRequest(coptions);
+  const service = useRequest<{
+    data: any;
+  }>(options);
+  const result = useRequest<{
+    data: any;
+  }>(coptions);
 
   if (service.loading) {
     return <Spin />;

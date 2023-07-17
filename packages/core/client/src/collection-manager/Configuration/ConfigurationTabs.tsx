@@ -11,7 +11,7 @@ import {
 } from '@dnd-kit/core';
 import { RecursionField, observer } from '@formily/react';
 import { uid } from '@formily/shared';
-import { Badge, Card, Dropdown, Modal, Tabs } from 'antd';
+import { App, Badge, Card, Dropdown, Tabs } from 'antd';
 import _ from 'lodash';
 import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -127,6 +127,7 @@ export const ConfigurationTabs = () => {
   const [activeKey, setActiveKey] = useState('all');
   const compile = useCompile();
   const api = useAPIClient();
+  const { modal } = App.useApp();
 
   if (!data) return null;
 
@@ -163,7 +164,7 @@ export const ConfigurationTabs = () => {
   };
 
   const remove = (key: any) => {
-    Modal.confirm({
+    modal.confirm({
       title: compile("{{t('Delete category')}}"),
       content: compile("{{t('Are you sure you want to delete it?')}}"),
       onOk: async () => {

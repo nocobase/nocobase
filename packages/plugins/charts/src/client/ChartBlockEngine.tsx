@@ -36,19 +36,19 @@ const ChartRenderComponent = ({
   const chartConfig = chartBlockEngineMetaData.chart;
   const { loading, dataSet, error } = useGetDataSet(chartBlockEngineMetaData.query.id);
 
-  if (error) {
-    return (
-      <>
-        <Empty description={<span>May be this chart block's query data has been deleted,please check!</span>} />
-      </>
-    );
-  }
-
   const [currentConfig, setCurrentConfig] = useState<IChartConfig>({} as any);
 
   useEffect(() => {
     setCurrentConfig(chartConfig);
   }, [JSON.stringify(chartConfig)]);
+
+  if (error) {
+    return (
+      <>
+        <Empty description={<span>{`May be this chart block's query data has been deleted,please check!`}</span>} />
+      </>
+    );
+  }
 
   if (currentConfig.type !== chartConfig.type) {
     return <></>;
@@ -56,8 +56,7 @@ const ChartRenderComponent = ({
 
   switch (renderComponent) {
     case 'G2Plot': {
-      let finalChartOptions;
-      finalChartOptions = templates.get(chartType)?.defaultChartOptions;
+      const finalChartOptions = templates.get(chartType)?.defaultChartOptions;
       let template;
       try {
         template = JSON5.parse(chartConfig?.template);
@@ -85,7 +84,9 @@ const ChartRenderComponent = ({
 };
 
 export const useGetDataSet = (chartQueryId: number) => {
-  const { data, loading, error } = useRequest({
+  const { data, loading, error } = useRequest<{
+    data: any;
+  }>({
     url: `/chartsQueries:getData/${chartQueryId}`,
   });
   const dataSet = data?.data;

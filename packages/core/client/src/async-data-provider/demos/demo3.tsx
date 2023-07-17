@@ -1,15 +1,14 @@
-import React from 'react';
-import { Table } from 'antd';
-import MockAdapter from 'axios-mock-adapter';
 import {
-  APIClientProvider,
-  SchemaComponentProvider,
-  SchemaComponent,
-  useRequest,
   APIClient,
+  APIClientProvider,
   AsyncDataProvider,
+  SchemaComponent,
+  SchemaComponentProvider,
   useAsyncData,
 } from '@nocobase/client';
+import { Table } from 'antd';
+import MockAdapter from 'axios-mock-adapter';
+import React from 'react';
 
 const apiClient = new APIClient();
 

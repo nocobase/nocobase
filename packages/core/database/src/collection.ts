@@ -1,6 +1,6 @@
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
-import { default as lodash, default as _ } from 'lodash';
+import { default as _, default as lodash } from 'lodash';
 import {
   ModelOptions,
   ModelStatic,
@@ -12,8 +12,8 @@ import {
 import { Database } from './database';
 import { BelongsToField, Field, FieldOptions, HasManyField } from './fields';
 import { Model } from './model';
+import { AdjacencyListRepository } from './repositories/tree-repository/adjacency-list-repository';
 import { Repository } from './repository';
-import { AdjacencyListRepository } from './tree-repository/adjacency-list-repository';
 import { checkIdentifier, md5, snakeCase } from './utils';
 
 export type RepositoryType = typeof Repository;
@@ -44,6 +44,7 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> 
   tableName?: string;
   inherits?: string[] | string;
   viewName?: string;
+  writableView?: boolean;
 
   filterTargetKey?: string;
   fields?: FieldOptions[];
@@ -272,7 +273,7 @@ export class Collection<
           `source field "${sourceFieldName}" not found for field "${name}" at collection "${this.name}"`,
         );
       } else {
-        options = { ...sourceField.options, ...options };
+        options = { ...lodash.omit(sourceField.options, 'name'), ...options };
       }
     }
 

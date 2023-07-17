@@ -23,9 +23,9 @@ export const CalendarFormActionInitializers = {
               type: 'primary',
             },
           },
-          visible: () => {
+          visible: function useVisible() {
             const collection = useCollection();
-            return (collection as any).template !== 'view';
+            return collection.template !== 'view' || collection?.writableView;
           },
         },
         {
@@ -36,9 +36,9 @@ export const CalendarFormActionInitializers = {
             'x-component': 'Action',
             'x-decorator': 'ACLActionProvider',
           },
-          visible: () => {
+          visible: function useVisible() {
             const collection = useCollection();
-            return (collection as any).template !== 'view';
+            return collection.template !== 'view' || collection?.writableView;
           },
         },
         {
@@ -49,9 +49,9 @@ export const CalendarFormActionInitializers = {
             'x-component': 'Action',
             'x-decorator': 'ACLActionProvider',
           },
-          visible: () => {
+          visible: function useVisible() {
             const collection = useCollection();
-            return (collection as any).template !== 'view';
+            return collection.template !== 'view' || collection?.writableView;
           },
         },
         {
@@ -144,9 +144,9 @@ export const CalendarFormActionInitializers = {
               useProps: '{{ useCustomizeUpdateActionProps }}',
             },
           },
-          visible: () => {
+          visible: function useVisible() {
             const collection = useCollection();
-            return (collection as any).template !== 'view';
+            return collection.template !== 'view' || collection?.writableView;
           },
         },
         {
@@ -173,7 +173,7 @@ export const CalendarFormActionInitializers = {
           },
           visible: () => {
             const collection = useCollection();
-            return (collection as any).template !== 'view';
+            return collection.template !== 'view' || collection?.writableView;
           },
         },
       ],
