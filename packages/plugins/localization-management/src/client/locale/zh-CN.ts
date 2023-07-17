@@ -1,7 +1,7 @@
 export default {
   Edit: '编辑',
   'Add new': '新增',
-  Localization: '多语言管理',
+  'Localization management': '多语言管理',
   'No data': '暂无数据',
   'Delete text': '删除原文',
   'Delete translation': '删除译文',
@@ -19,4 +19,5 @@ export default {
   'Please select the resources you want to synchronize': '请选择需要同步的资源',
   Menu: '菜单',
   Publish: '发布',
+  Translations: '翻译',
 };

@@ -11,11 +11,11 @@ export class LocalizationManagementPlugin extends Plugin {
         <SettingsCenterProvider
           settings={{
             ['localization-management']: {
-              title: t('Localization'),
+              title: t('Localization management'),
               icon: 'GlobalOutlined',
               tabs: {
                 localization: {
-                  title: t('Localization'),
+                  title: t('Translations'),
                   component: () => <Localization />,
                 },
               },
