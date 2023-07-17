@@ -511,6 +511,7 @@ Menu.Item = observer(
 
 Menu.URL = observer(
   (props) => {
+    const { t } = useTranslation();
     const { pushMenuItem } = useCollectMenuItems();
     const { icon, children, ...others } = props;
     const schema = useFieldSchema();
@@ -546,7 +547,7 @@ Menu.URL = observer(
                     verticalAlign: 'middle',
                   }}
                 >
-                  {field.title}
+                  {t(field.title)}
                 </span>
                 <Designer />
               </SortableItem>
@@ -564,6 +565,7 @@ Menu.URL = observer(
 
 Menu.SubMenu = observer(
   (props) => {
+    const { t } = useTranslation();
     const { Component, getMenuItems } = useMenuItem();
     const { pushMenuItem } = useCollectMenuItems();
     const { icon, children, ...others } = props;
@@ -582,7 +584,7 @@ Menu.SubMenu = observer(
             <FieldContext.Provider value={field}>
               <SortableItem className={subMenuDesignerCss} removeParentsIfNoChildren={false}>
                 <Icon type={icon} />
-                {field.title}
+                {t(field.title)}
                 <Designer />
               </SortableItem>
             </FieldContext.Provider>
