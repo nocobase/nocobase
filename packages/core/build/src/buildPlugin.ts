@@ -10,6 +10,33 @@ import fg from 'fast-glob'
 const requireRegex = /require\s*\(\s*[`'"]([^`'"\s.].+?)[`'"]\s*\)/g;
 const packageJsonRequireRegex = /require\((['"])\.\.\/+(\.\.\/)*package\.json\1\)/;
 const importRegex = /import\s+.*?\s+from\s+['"]([^'"\s.].+?)['"];?/g;
+const shouldDevDependencies = [
+  'react',
+  'react-dom',
+  'react-router',
+  'react-router-dom',
+  'antd',
+  'antd-style',
+  '@ant-design/icons',
+  '@ant-design/cssinjs',
+  'i18next',
+  'react-i18next',
+  '@formily/antd-v5',
+  '@formily/core',
+  '@formily/react',
+  '@formily/shared',
+  '@formily/json-schema',
+  '@formily/reactive',
+  '@nocobase/acl',
+  '@nocobase/actions',
+  '@nocobase/auth',
+  '@nocobase/cache',
+  '@nocobase/database',
+  '@nocobase/evaluators',
+  '@nocobase/logger',
+  '@nocobase/resourcer',
+  '@nocobase/utils',
+]
 
 const serverGlobalFiles: string[] = [
   'src/**',
@@ -55,7 +82,7 @@ function getPackageJsonPackages(packageJson: Record<string, any>): string[] {
   return [...Object.keys(packageJson.devDependencies || {}), ...Object.keys(packageJson.dependencies || {})];
 }
 
-function checkPackages(srcPackages: string[], packageJsonPackages: string[], log: Log) {
+function checkSourcePackages(srcPackages: string[], packageJsonPackages: string[], log: Log) {
   const missingPackages = srcPackages.filter((packageName) => !packageJsonPackages.includes(packageName));
   if (missingPackages.length) {
     log("Missing packages %s in package.json. If you want it to be bundled into the output, put it in %s; otherwise, put it in %s.", chalk.red(missingPackages.join(', ')), chalk.grey('dependencies'), chalk.grey('devDependencies'));
@@ -97,6 +124,15 @@ function checkEntryExists(cwd: string, entry: 'server' | 'client', log: Log) {
   return srcDir;
 }
 
+function checkDependencies(packageJson: Record<string, any>, log: Log) {
+  if (!packageJson.dependencies) return;
+  const shouldDevDependenciesList = shouldDevDependencies.filter(item => packageJson.dependencies[item]);
+  if (shouldDevDependenciesList.length) {
+    log('%s should not be placed in %s, but rather in %s. For more information, please refer to: %s.', chalk.red(shouldDevDependenciesList.join(', ')), chalk.red('dependencies'), chalk.red('devDependencies'), chalk.underline(chalk.blue('https://docs.nocobase.com/development/deps')));
+    process.exit(-1);
+  }
+}
+
 function tipDeps(sourcePackages: string[], packageJson: Record<string, any>, log: Log) {
   if (!packageJson.dependencies) return;
   const includePackages = sourcePackages.filter(item => packageJson.dependencies[item])
@@ -118,8 +154,9 @@ function check(options: CheckOptions) {
 
   const sourcePackages = getSourcePackages(files);
 
-  checkPackages(sourcePackages, getPackageJsonPackages(packageJson), log);
+  checkSourcePackages(sourcePackages, getPackageJsonPackages(packageJson), log);
   checkRequire(files, packageJson, log);
+  checkDependencies(packageJson, log);
   tipDeps(sourcePackages, packageJson, log)
 }
 

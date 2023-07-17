@@ -17,7 +17,6 @@
     "koa-ratelimit": "^5.0.1"
   },
   "devDependencies": {
-    "father": "^4.2.3",
     "@nocobase/client": "0.11.0-alpha.1",
     "@nocobase/server": "0.11.0-alpha.1",
     "@nocobase/test": "0.11.0-alpha.1"
