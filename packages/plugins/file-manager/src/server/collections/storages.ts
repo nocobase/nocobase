@@ -11,6 +11,7 @@ export default {
       comment: '存储引擎名称',
       type: 'string',
       name: 'title',
+      translation: true,
     },
     {
       title: '英文标识',

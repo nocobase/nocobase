@@ -1,6 +1,6 @@
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
-import { default as lodash, default as _ } from 'lodash';
+import { default as _, default as lodash } from 'lodash';
 import {
   ModelOptions,
   ModelStatic,
@@ -399,7 +399,6 @@ export class Collection<
   updateOptions(options: CollectionOptions, mergeOptions?: any) {
     let newOptions = lodash.cloneDeep(options);
     newOptions = merge(this.options, newOptions, mergeOptions);
-
     this.context.database.emit('beforeUpdateCollection', this, newOptions);
     this.options = newOptions;
 
@@ -409,7 +408,6 @@ export class Collection<
     }
 
     this.context.database.emit('afterUpdateCollection', this);
-
     return this;
   }
 

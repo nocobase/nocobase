@@ -36,6 +36,7 @@ export default {
         title: '{{t("Role name")}}',
         'x-component': 'Input',
       },
+      translation: true,
     },
     {
       type: 'boolean',
@@ -84,6 +85,17 @@ export default {
       type: 'set',
       name: 'snippets',
       defaultValue: ['!ui.*', '!pm', '!pm.*'],
+    },
+    {
+      type: 'belongsToMany',
+      name: 'users',
+      target: 'users',
+      foreignKey: 'roleName',
+      otherKey: 'userId',
+      onDelete: 'CASCADE',
+      sourceKey: 'name',
+      targetKey: 'id',
+      through: 'rolesUsers',
     },
   ],
 } as CollectionOptions;

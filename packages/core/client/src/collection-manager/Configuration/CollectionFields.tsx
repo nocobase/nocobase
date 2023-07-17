@@ -71,7 +71,7 @@ const CurrentFields = (props) => {
 
   const columns: TableColumnProps<any>[] = [
     {
-      dataIndex: ['uiSchema', 'title'],
+      dataIndex: ['uiSchema', 'rawTitle'],
       title: t('Field display name'),
       render: (value) => <div style={{ marginLeft: 7 }}>{compile(value)}</div>,
     },
@@ -177,7 +177,7 @@ const InheritFields = (props) => {
 
   const columns: TableColumnProps<any>[] = [
     {
-      dataIndex: ['uiSchema', 'title'],
+      dataIndex: ['uiSchema', 'rawTitle'],
       title: t('Field display name'),
       render: (value) => <div style={{ marginLeft: 1 }}>{compile(value)}</div>,
     },

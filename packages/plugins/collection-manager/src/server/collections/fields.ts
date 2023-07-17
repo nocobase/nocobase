@@ -63,6 +63,7 @@ export default {
       type: 'json',
       name: 'options',
       defaultValue: {},
+      translation: true,
     },
   ],
 } as CollectionOptions;
