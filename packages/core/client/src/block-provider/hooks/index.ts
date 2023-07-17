@@ -980,7 +980,7 @@ export const useAssociationFilterBlockProps = () => {
   const fieldSchema = useFieldSchema();
   const optionalFieldList = useOptionalFieldList();
   const { getDataBlocks } = useFilterBlock();
-  const collectionFieldName = collectionField.name;
+  const collectionFieldName = collectionField?.name;
   const field = useField();
 
   let list, handleSearchInput, params, run, data, valueKey, labelKey, filterKey;
