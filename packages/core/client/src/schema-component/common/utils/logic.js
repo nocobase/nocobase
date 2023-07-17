@@ -150,6 +150,49 @@ http://ricostacruz.com/cheatsheets/umdjs.html
       }
       return false;
     },
+    $dateOn: function (a, b) {
+      if (!a || !b) {
+        return false;
+      }
+      const milliseconds1 = new Date(a).getTime();
+      const milliseconds2 = new Date(b).getTime();
+      return milliseconds1 === milliseconds2;
+    },
+    $dateBefore: function (a, b) {
+      if (!a || !b) {
+        return false;
+      }
+
+      return new Date(a) < new Date(b);
+    },
+    $dateNotBefore: function (a, b) {
+      if (!a || !b) {
+        return false;
+      }
+
+      return new Date(a) <= new Date(b);
+    },
+    $dateAfter: function (a, b) {
+      if (!a || !b) {
+        return false;
+      }
+
+      return new Date(a) > new Date(b);
+    },
+    $dateNotAfter: function (a, b) {
+      if (!a || !b) {
+        return false;
+      }
+      return new Date(a) >= new Date(b);
+    },
+    $dateBetween: function (a, b) {
+      if (!a || !b) {
+        return false;
+      }
+      const startTime = new Date(b?.[0]);
+      const endTime = new Date(b?.[1]);
+      return new Date(a) > startTime && new Date(a) < endTime;
+    },
     $isTruly: function (a) {
       if (Array.isArray(a)) return a.some((k) => k === true || k === 1);
       return a === true || a === 1;
