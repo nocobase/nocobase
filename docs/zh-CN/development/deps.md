@@ -1,8 +1,12 @@
 # 依赖管理
 
+## 约定式
+
 插件的依赖构建采用约定式的方式，即 `package.json` 中 `devDependencies` 中的依赖*不会*被打包到插件中，`dependencies` 中的依赖*会*被打包到应用中。
 
-其中有一些依赖由 `@nocobase/server` 和 `@nocobase/client` 提供，不需要打包到插件产物中，因此不应该放到 `dependencies`，而应该放到 `devDependencies` 中。具体如下：
+## 需要放到 devDependencies 中的 npm 包
+
+有一些依赖由 `@nocobase/server` 和 `@nocobase/client` 提供，不需要打包到插件产物中，因此不应该放到 `dependencies`，而应该放到 `devDependencies` 中。具体如下：
 
 ```bash
 # react
@@ -58,3 +62,8 @@ react-i18next
 + export const namespace = name
 ```
 
+如果你想动态的引入相对路径的文件，依然可以使用 `require`，例如：
+
+```js
+const lang = require(`./locales/${locale}.json`); // ok
+```

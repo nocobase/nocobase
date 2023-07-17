@@ -71,4 +71,3 @@ export default MyPlugin;
 ```js
 const lang = require(`./locales/${locale}.json`); // ok
 ```
-
