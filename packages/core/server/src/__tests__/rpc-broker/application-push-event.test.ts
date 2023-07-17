@@ -28,15 +28,45 @@ describe('application push event', () => {
     const jestFn = jest.fn();
 
     app.on('rpc:test_event', async () => {
-      await new Promise((resolve) => setTimeout(resolve, 100));
       jestFn();
     });
 
     app.handleEventPush('test_event');
 
-    // do assert at the end of next tick
-    setTimeout(() => {
-      expect(jestFn).toBeCalledTimes(1);
-    }, 0);
+    await new Promise((resolve) =>
+      // do assert at the end of next tick
+      setTimeout(() => {
+        expect(jestFn).toBeCalledTimes(1);
+        resolve(0);
+      }, 0),
+    );
+  });
+
+  it('should handle delay event', async () => {
+    const jestFn = jest.fn();
+
+    app.on('rpc:test_event', () => {
+      jestFn();
+    });
+
+    app.handleEventPush('test_event', {
+      __$delay: 199,
+    });
+
+    await new Promise((resolve) =>
+      // do assert at the end of next tick
+      setTimeout(() => {
+        expect(jestFn).toBeCalledTimes(0);
+        resolve(0);
+      }, 10),
+    );
+
+    await new Promise((resolve) =>
+      // do assert at the end of next tick
+      setTimeout(() => {
+        expect(jestFn).toBeCalledTimes(1);
+        resolve(0);
+      }, 200),
+    );
   });
 });
