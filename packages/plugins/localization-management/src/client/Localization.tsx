@@ -140,7 +140,6 @@ const Sync = () => {
     >
       <Button
         icon={<SyncOutlined />}
-        type="primary"
         loading={loading}
         onClick={async () => {
           if (!checkedList.length) {
