@@ -193,6 +193,12 @@ http://ricostacruz.com/cheatsheets/umdjs.html
       const endTime = new Date(b?.[1]);
       return new Date(a) > startTime && new Date(a) < endTime;
     },
+    $dateNotOn: function (a, b) {
+      if (!a || !b) {
+        return false;
+      }
+      return new Date(a) != new Date(b);
+    },
     $isTruly: function (a) {
       if (Array.isArray(a)) return a.some((k) => k === true || k === 1);
       return a === true || a === 1;
