@@ -235,8 +235,7 @@ export const Localization = () => {
     </Typography>
   );
 
-  const TranslationField = (props) =>
-    props.value !== undefined ? <Input.TextArea {...props} /> : <div>{t('No data')}</div>;
+  const TranslationField = (props) => (props.value !== undefined ? <Input.TextArea {...props} /> : <div></div>);
   return (
     <Card bordered={false}>
       <SchemaComponent
