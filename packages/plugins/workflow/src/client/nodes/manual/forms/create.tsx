@@ -71,7 +71,11 @@ export default {
           type: 'create',
           title: formBlock['x-component-props']?.title || formKey,
           actions: findSchema(formSchema.properties.actions, (item) => item['x-component'] === 'Action').map(
-            (item) => item['x-decorator-props'].value,
+            (item) => ({
+              status: item['x-decorator-props'].value,
+              values: item['x-action-settings']?.assignedValues?.values,
+              key: item.name,
+            }),
           ),
           collection: formBlock['x-decorator-props'].collection,
         };
