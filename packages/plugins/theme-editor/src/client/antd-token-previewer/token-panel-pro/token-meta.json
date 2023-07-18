@@ -1619,32 +1619,32 @@
   "colorBgHeader": {
     "name": "导航栏背景色",
     "nameEn": "Background color of header",
-    "desc": "",
-    "descEn": "",
+    "desc": "顶部导航栏的背景色",
+    "descEn": "Configure the background color of the header",
     "type": "string",
     "source": "map"
   },
   "colorBgHeaderMenuHover": {
     "name": "导航栏菜单背景悬浮态",
     "nameEn": "Background color of header menu when hover",
-    "desc": "",
-    "descEn": "",
+    "desc": "鼠标悬浮在导航栏菜单上时的背景色",
+    "descEn": "Background color of header menu when hover",
     "type": "string",
     "source": "map"
   },
   "colorBgHeaderMenuActive": {
     "name": "导航栏菜单背景激活态",
     "nameEn": "Background color of header menu when active",
-    "desc": "",
-    "descEn": "",
+    "desc": "已选中的导航栏菜单的背景色",
+    "descEn": "Background color of header menu when active",
     "type": "string",
     "source": "map"
   },
   "colorTextHeaderMenu": {
     "name": "导航栏菜单文本色",
     "nameEn": "Text color of header menu",
-    "desc": "",
-    "descEn": "",
+    "desc": "导航栏菜单文本色",
+    "descEn": "Text color of header menu",
     "type": "string",
     "source": "map"
   },
@@ -1659,24 +1659,24 @@
   "colorBgSettings": {
     "name": "UI 配置背景色",
     "nameEn": "Background color of settings",
-    "desc": "",
-    "descEn": "",
+    "desc": "UI 配置组件的背景色",
+    "descEn": "Background color of settings",
     "type": "string",
     "source": "map"
   },
   "colorBorderSettings": {
     "name": "UI 配置边框色",
     "nameEn": "Border color of settings",
-    "desc": "",
-    "descEn": "",
+    "desc": "UI 配置组件的边框色",
+    "descEn": "Border color of settings",
     "type": "string",
     "source": "map"
   },
   "colorTextSettings": {
     "name": "UI 配置文本色",
     "nameEn": "Text color of settings",
-    "desc": "",
-    "descEn": "",
+    "desc": "UI 配置组件的文本色",
+    "descEn": "Text color of settings",
     "type": "string",
     "source": "map"
   }

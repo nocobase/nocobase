@@ -1,5 +1,5 @@
 import { PlusOutlined } from '@ant-design/icons';
-import { useGlobalTheme, useToken } from '@nocobase/client';
+import { defaultTheme, useGlobalTheme, useToken } from '@nocobase/client';
 import { App, Button, Space } from 'antd';
 import React, { useCallback } from 'react';
 import { useTranslation } from '../locale';
@@ -33,7 +33,7 @@ const ToEditTheme = () => {
             type={'primary'}
             onClick={() => {
               setCurrentSettingTheme(theme);
-              setTheme({});
+              setTheme(defaultTheme);
               setOpen(true);
               m.destroy();
             }}
