@@ -5,7 +5,6 @@ import { RemoteBroker } from '../../rpc-broker/remote-broker';
 
 describe('redis service discovery', () => {
   let redisClient;
-
   let app: Application;
 
   beforeEach(async () => {
@@ -14,8 +13,8 @@ describe('redis service discovery', () => {
     await redisClient.connect({
       url: process.env['REDIS_URL'] || 'redis://localhost:6379',
     });
-
     await redisClient.flushAll();
+    await redisClient.disconnect();
 
     AppSupervisor.getInstance().buildRpcBroker({
       discoveryServerURI: process.env['REDIS_URL'] || 'redis://localhost:6379',
@@ -40,7 +39,6 @@ describe('redis service discovery', () => {
   });
 
   afterEach(async () => {
-    await redisClient.disconnect();
     await AppSupervisor.getInstance().destroy();
   });
 

@@ -78,6 +78,7 @@ describe('rpc http server', () => {
 
     expect(pushResponse).toEqual(true);
 
+    await new Promise((resolve) => setTimeout(resolve, 200));
     expect(appTestHandler).toBeCalled();
   });
 });

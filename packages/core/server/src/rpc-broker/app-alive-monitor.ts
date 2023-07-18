@@ -21,16 +21,21 @@ export class AppAliveMonitor {
     const monitor = this.monitors.get(appName);
 
     if (monitor) {
+      console.log(`stop monitor app ${appName}`);
       clearTimeout(monitor);
+      this.monitors.delete(appName);
     }
-
-    this.monitors.delete(appName);
   }
 
   async monitor(appName: string) {
     const app = await this.remoteBroker.appSupervisor.getApp(appName, {
       withOutBootStrap: true,
     });
+
+    if (!app) {
+      this.stopMonitor(appName);
+      return;
+    }
 
     const isAlive = await app.isAlive();
 
@@ -45,9 +50,8 @@ export class AppAliveMonitor {
   }
 
   stop() {
-    for (const [appName, monitor] of this.monitors) {
-      clearTimeout(monitor);
-      this.monitors.delete(appName);
+    for (const appName of this.monitors.keys()) {
+      this.stopMonitor(appName);
     }
   }
 }

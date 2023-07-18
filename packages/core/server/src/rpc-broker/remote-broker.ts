@@ -126,11 +126,9 @@ export class RemoteBroker extends RpcBrokerInterface {
   async destroy() {
     // close rpc server
     this.rpcServer?.close();
-
-    // destroy service discovery client
-    await this.serviceDiscoverClient.destroy();
-
     // stop app alive monitor
     this.appAliveMonitor.stop();
+    // destroy service discovery client
+    await this.serviceDiscoverClient.destroy();
   }
 }

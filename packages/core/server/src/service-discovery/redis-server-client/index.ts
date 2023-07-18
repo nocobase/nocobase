@@ -100,6 +100,7 @@ export class RedisDiscoveryServerClient extends ServiceDiscoveryClient {
   async destroy() {
     if (this.client) {
       await this.client.disconnect();
+      this.client = null;
     }
   }
 }
