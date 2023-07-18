@@ -1,3 +1,5 @@
+import { AcquireLockOptions, MutexInterface } from '../rpc-broker/mutex-interface';
+
 export interface ConnectionInfo {
   port: number;
   host: string;
@@ -13,7 +15,7 @@ export type ServiceInfo = RemoteServiceInfo;
 
 export type ServiceType = 'apps';
 
-export abstract class ServiceDiscoveryClient {
+export abstract class ServiceDiscoveryClient implements MutexInterface {
   // register service to service discovery server
   // service name must contain namespace, form: namespace:service
   // e.g. apps:main, apps:admin
@@ -38,4 +40,8 @@ export abstract class ServiceDiscoveryClient {
 
   // destroy client
   async destroy() {}
+
+  abstract acquireLock(options: AcquireLockOptions): Promise<string | null>;
+
+  abstract releaseLock(lockName: string, identifier: string): Promise<boolean>;
 }

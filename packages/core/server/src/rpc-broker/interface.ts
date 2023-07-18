@@ -1,18 +1,12 @@
 import { AppSupervisor } from '../app-supervisor';
 import Application from '../application';
+import { AcquireLockOptions, MutexInterface } from './mutex-interface';
 
 export interface RpcBrokerOptions {
   discoveryServerURI?: string;
 }
 
-export interface AcquireLockOptions {
-  lockName: string;
-  timeout?: number;
-  retryDelay?: number;
-  maxRetries?: number;
-}
-
-export abstract class RpcBrokerInterface {
+export abstract class RpcBrokerInterface implements MutexInterface {
   appSupervisor: AppSupervisor;
   options: RpcBrokerOptions;
 

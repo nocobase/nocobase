@@ -1,7 +1,8 @@
 import { Mutex } from 'async-mutex';
 import { nanoid } from 'nanoid';
 import Application from '../application';
-import { AcquireLockOptions, RpcBrokerInterface } from './interface';
+import { RpcBrokerInterface } from './interface';
+import { AcquireLockOptions } from './mutex-interface';
 
 export class LocalBroker extends RpcBrokerInterface {
   private lockInfoMap = new Map();
@@ -22,7 +23,7 @@ export class LocalBroker extends RpcBrokerInterface {
       throw new Error(`rpc call failed, app ${appName} not exists`);
     }
 
-    await app.handleEventPush(event, options);
+    app.handleEventPush(event, options);
 
     return true;
   }

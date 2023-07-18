@@ -1,10 +1,12 @@
-import { createClient } from 'redis';
+import { nanoid } from 'nanoid';
+import { createClient, RedisClientType } from 'redis';
+import { AcquireLockOptions } from '../../rpc-broker/mutex-interface';
 import { ConnectionInfo, RemoteServiceInfo, ServiceDiscoveryClient, ServiceType } from '../client';
 
 export class RedisDiscoveryServerClient extends ServiceDiscoveryClient {
   serverURI: string;
 
-  client: any;
+  client: RedisClientType;
 
   setServerURI(serverURI: string) {
     this.serverURI = serverURI;
@@ -102,5 +104,51 @@ export class RedisDiscoveryServerClient extends ServiceDiscoveryClient {
       await this.client.disconnect();
       this.client = null;
     }
+  }
+
+  async acquireLock(options: AcquireLockOptions): Promise<string | null> {
+    const { lockName, timeout = 10000, retryDelay = 100, maxRetries = 10 } = options;
+
+    const client = await this.getRedisClient();
+    const identifier = nanoid();
+    const lockKey = `lock:${lockName}`;
+
+    for (let i = 0; i < maxRetries; i++) {
+      const result = await client.sendCommand(['SET', lockKey, identifier, 'NX', 'PX', `${timeout}`]);
+
+      if (result) {
+        return identifier;
+      }
+
+      console.log(`acquire lock ${lockName} failed, retry ${i + 1} times`);
+      await new Promise((resolve) => setTimeout(resolve, retryDelay));
+    }
+
+    return null;
+  }
+
+  async releaseLock(lockName: string, identifier: string): Promise<boolean> {
+    lockName = `lock:${lockName}`;
+
+    const client = await this.getRedisClient();
+
+    try {
+      await client.watch(lockName);
+
+      const result = await client.get(lockName);
+
+      if (result === identifier) {
+        const multi = client.multi();
+        multi.del(lockName);
+        await multi.exec();
+      }
+
+      await client.unwatch();
+    } catch (err) {
+      console.error(err);
+      return false;
+    }
+
+    return true;
   }
 }
