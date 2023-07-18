@@ -19,5 +19,9 @@ export default {
       type: 'text',
       name: 'expression',
     },
+    {
+      type: 'hasMany',
+      name: 'posts',
+    },
   ],
 } as CollectionOptions;
