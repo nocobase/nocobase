@@ -1,0 +1,21 @@
+{
+  "name": "@nocobase/plugin-workflow-extensions",
+  "displayName": "Workflow advanced extensions",
+  "displayName.zh-CN": "工作流高级扩展功能",
+  "description": "A set of extensions for workflow plugin.",
+  "description.zh-CN": "工作流高级扩展插件。",
+  "version": "0.11.0-alpha.1",
+  "license": "AGPL-3.0",
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "peedDependencies": {
+    "@nocobase/client": "^0.11.0-alpha.1",
+    "@nocobase/database": "^0.11.0-alpha.1",
+    "@nocobase/server": "^0.11.0-alpha.1",
+    "@nocobase/plugin-workflow": "^0.11.0-alpha.1",
+    "react": "18.x"
+  },
+  "devDependencies": {
+    "@nocobase/test": "0.11.0-alpha.1"
+  }
+}
