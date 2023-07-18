@@ -1,4 +1,3 @@
-import createTxCosStorage from 'multer-cos';
 import { promisify } from 'util';
 
 import { AttachmentModel } from '.';
@@ -8,6 +7,7 @@ import { cloudFilenameGetter } from '../utils';
 export default {
   filenameKey: 'url',
   make(storage) {
+    const createTxCosStorage = require('multer-cos');
     return new createTxCosStorage({
       cos: storage.options,
       filename: cloudFilenameGetter(storage),

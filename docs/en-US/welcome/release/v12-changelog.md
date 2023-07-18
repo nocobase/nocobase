@@ -51,12 +51,7 @@ export default MyPlugin;
 
 For more information, refer to: [sample-hello](https://github.com/nocobase/nocobase/tree/main/packages/samples/hello)
 
-### ES module
-
-```diff
-- const dayjs = require('dayjs');
-+ import dayjs from 'dayjs';
-```
+### package.json
 
 ```diff
 - export const namespace = require('../../package.json').name
@@ -64,10 +59,4 @@ For more information, refer to: [sample-hello](https://github.com/nocobase/nocob
 + // @ts-ignore
 + import { name } from '../../package.json'
 + export const namespace = name
-```
-
-If you want to dynamically import a relative path file, you can still use `require`, for example:
-
-```js
-const lang = require(`./locales/${locale}.json`); // ok
 ```

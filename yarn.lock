@@ -7946,6 +7946,11 @@
   dependencies:
     "@use-gesture/core" "10.2.20"
 
+"@vercel/ncc@0.36.1":
+  version "0.36.1"
+  resolved "https://registry.yarnpkg.com/@vercel/ncc/-/ncc-0.36.1.tgz#d4c01fdbbe909d128d1bf11c7f8b5431654c5b95"
+  integrity sha512-S4cL7Taa9yb5qbv+6wLgiKVZ03Qfkc4jGRuiUQMQ8HGBD5pcNRnHeYM33zBvJE4/zJGjJJ8GScB+WmTsn9mORw==
+
 "@vitejs/plugin-react@4.0.0":
   version "4.0.0"
   resolved "https://registry.npmjs.org/@vitejs/plugin-react/-/plugin-react-4.0.0.tgz#46d1c37c507447d10467be1c111595174555ef28"
@@ -8462,7 +8467,7 @@ antd-style@^3.3.0:
     "@emotion/utils" "^1"
     use-merge-value "^1"
 
-antd-token-previewer@^2.0.0-alpha.6:
+antd-token-previewer@2.0.0-alpha.8, antd-token-previewer@^2.0.0-alpha.6:
   version "2.0.0-alpha.8"
   resolved "https://registry.npmjs.org/antd-token-previewer/-/antd-token-previewer-2.0.0-alpha.8.tgz#9f47bc531d8bf6907f0e7e5cfbacf50d15619d86"
   integrity sha512-wS5OStPGUj5J6uIe/2NS8sfwjC12x9ILbyXgSgnqbhRqhkOwTck06JaAyY0QLYYFG90Q7r3/nNZPcGWWEhi93Q==

@@ -3,7 +3,7 @@ import chalk from 'chalk';
 import { builtinModules } from 'module';
 import path from 'path';
 
-const requireRegex = /require\s*\(\s*[`'"]([^`'"\s.].+?)[`'"]\s*\)/g;
+const requireRegex = /require\((["'])(.*?)\1\)/g;
 const packageJsonRequireRegex = /require\((['"])\.\.\/+(\.\.\/)*package\.json\1\)/;
 const importRegex = /import\s+.*?\s+from\s+['"]([^'"\s.].+?)['"];?/g;
 
@@ -13,21 +13,54 @@ export function isNotBuiltinModule(packageName: string) {
   return !builtinModules.includes(packageName);
 }
 
+/**
+ * get package name from string
+ * @example
+ * getPackageNameFromString('lodash') => lodash
+ * getPackageNameFromString('lodash/xx') => lodash
+ * getPackageNameFromString('@aa/bb') => @aa/bb
+ * getPackageNameFromString('aa/${lang}') => aa
+ *
+ * getPackageNameFromString('./xx') => null
+ * getPackageNameFromString('../xx') => null
+ * getPackageNameFromString($file) => null
+ * getPackageNameFromString(`${file}`) => null
+ * getPackageNameFromString($file + './xx') => null
+ */
+function getPackageNameFromString(str: string) {
+  // ./xx or ../xx
+  if (str.startsWith('.')) return null;
+
+  const arr = str.split('/');
+  let packageName: string;
+  if (arr[0].startsWith('@')) {
+    // @aa/bb/ccFile => @aa/bb
+    packageName = arr.slice(0, 2).join('/');
+  } else {
+    // aa/bbFile => aa
+    packageName = arr[0];
+  }
+
+  try {
+    require.resolve(packageName, { paths: [process.cwd()] });
+    return packageName;
+  } catch {
+    return null;
+  }
+}
+
 export function getSourcePackages(sourceFiles: string[]): string[] {
   const packages = sourceFiles
     .map(item => fs.readFileSync(item, 'utf-8'))
-    .map(item => [...item.matchAll(importRegex)])
-    .flat()
-    .map(item => item[1])
-    .filter(isNotBuiltinModule)
     .map(item => {
-      if (item.startsWith('@')) {
-        // @aa/bb/ccFile => @aa/bb
-        return item.split('/').slice(0, 2).join('/');
-      }
-      // aa/bbFile => aa
-      item = item.split('/')[0];
+      return [
+        ...Array.from(item.matchAll(importRegex)).map(item => item[1]),
+        ...Array.from(item.matchAll(requireRegex)).map(item => item[2]),
+      ]
     })
+    .flat()
+    .filter(isNotBuiltinModule)
+    .map(getPackageNameFromString)
     .filter(Boolean)
   return [...new Set(packages)];
 }
@@ -51,25 +84,14 @@ export function checkSourcePackages(srcPackages: string[], packageJsonPackages: 
   }
 }
 
-export function checkRequire(sourceFiles: string[], packageJson: Record<string, any>, log: Log) {
+export function checkRequirePackageJson(sourceFiles: string[], packageJson: Record<string, any>, log: Log) {
   if (!packageJson.dependencies) return;
   sourceFiles.forEach(item => {
     const code = fs.readFileSync(item, 'utf-8');
-    const requireArr = [...code.matchAll(requireRegex), code.match(packageJsonRequireRegex)]
-      .filter(Boolean)
-      .map(item => item[0])
-      .map(item => {
-        if (item.startsWith('@')) {
-          // @aa/bb/ccFile => @aa/bb
-          return item.split('/').slice(0, 2).join('/');
-        }
-        // aa/bbFile => aa
-        return item.split('/')[0];
-      })
-      .filter(item => packageJson.dependencies[item]);
+    const match = code.match(packageJsonRequireRegex)
 
-    if (requireArr.length) {
-      log('%s in %s is not allowed. Please use %s instead.', chalk.red(requireArr.join(', ')), chalk.red(item), chalk.red('import'));
+    if (match) {
+      log('%s in %s is not allowed. Please use %s instead.', chalk.red(match[0]), chalk.red(item), chalk.red('import'));
       process.exit(-1);
     }
   })
@@ -93,14 +115,6 @@ export function checkDependencies(packageJson: Record<string, any>, shouldDevDep
   }
 }
 
-export function tipDeps(sourcePackages: string[], packageJson: Record<string, any>, shouldDevDependencies: string[], log: Log) {
-  if (!packageJson.dependencies) return;
-  const includePackages = sourcePackages
-    .filter(item => packageJson.dependencies[item])
-    .filter(item => !shouldDevDependencies.includes(item));
-  if (!includePackages.length) return;
-  log("%s will be bundled into dist. If you want it to be bundled into the output, put it in %s; otherwise, put it in %s.", chalk.yellow(includePackages.join(', ')), chalk.bold('dependencies'), chalk.bold('devDependencies'));
-}
 type CheckOptions = {
   cwd: string;
   log: Log;
@@ -128,7 +142,6 @@ export function buildCheck(options: CheckOptions) {
   const sourcePackages = getSourcePackages(files);
 
   checkSourcePackages(sourcePackages, getPackageJsonPackages(packageJson), shouldDevDependencies, log);
-  checkRequire(files, packageJson, log);
+  checkRequirePackageJson(files, packageJson, log);
   checkDependencies(packageJson, shouldDevDependencies, log);
-  tipDeps(sourcePackages, packageJson, shouldDevDependencies, log)
 }

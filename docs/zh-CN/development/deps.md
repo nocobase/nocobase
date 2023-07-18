@@ -45,14 +45,15 @@ react-i18next
 @nocobase/logger
 @nocobase/resourcer
 @nocobase/utils
+
+# database
+mysql
+pg
+pg-hstore
+sqlite3
 ```
 
-## 必须使用 ES Module 方式
-
-```diff
-- const dayjs = require('dayjs');
-+ import dayjs from 'dayjs';
-```
+## import package.json
 
 ```diff
 - export const namespace = require('../../package.json').name
@@ -60,10 +61,4 @@ react-i18next
 + // @ts-ignore
 + import { name } from '../../package.json'
 + export const namespace = name
-```
-
-如果你想动态的引入相对路径的文件，依然可以使用 `require`，例如：
-
-```js
-const lang = require(`./locales/${locale}.json`); // ok
 ```

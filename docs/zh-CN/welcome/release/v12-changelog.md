@@ -51,12 +51,7 @@ export default MyPlugin;
 
 具体 Demo 代码可以参考：[sample-hello](https://github.com/nocobase/nocobase/tree/main/packages/samples/hello)
 
-### 插件引入 NPM 包必须使用 ES Module 方式
-
-```diff
-- const dayjs = require('dayjs');
-+ import dayjs from 'dayjs';
-```
+### package.json 必须使用 ES Module 方式
 
 ```diff
 - export const namespace = require('../../package.json').name
@@ -66,8 +61,3 @@ export default MyPlugin;
 + export const namespace = name
 ```
 
-如果你想动态的引入相对路径的文件，依然可以使用 `require`，例如：
-
-```js
-const lang = require(`./locales/${locale}.json`); // ok
-```

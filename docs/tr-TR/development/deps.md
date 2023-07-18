@@ -45,14 +45,15 @@ react-i18next
 @nocobase/logger
 @nocobase/resourcer
 @nocobase/utils
+
+# database
+mysql
+pg
+pg-hstore
+sqlite3
 ```
 
-## ES module
-
-```diff
-- const dayjs = require('dayjs');
-+ import dayjs from 'dayjs';
-```
+## import package.json
 
 ```diff
 - export const namespace = require('../../package.json').name
@@ -60,10 +61,4 @@ react-i18next
 + // @ts-ignore
 + import { name } from '../../package.json'
 + export const namespace = name
-```
-
-If you want to dynamically import a relative path file, you can still use `require`, for example:
-
-```js
-const lang = require(`./locales/${locale}.json`); // ok
 ```

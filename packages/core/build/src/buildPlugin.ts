@@ -1,13 +1,13 @@
 import fs from 'fs';
 import chalk from 'chalk';
-import { builtinModules } from 'module';
+import ncc from '@vercel/ncc';
 import path from 'path';
 import react from '@vitejs/plugin-react'
 import { build as tsupBuild } from 'tsup'
 import { build as viteBuild } from 'vite'
 import fg from 'fast-glob'
-import { buildCheck, formatFileSize, getFileSize, getPackageJson } from './utils/buildCheck';
-
+import { buildCheck, formatFileSize, getFileSize, getPackageJson, getSourcePackages } from './utils/buildCheck';
+import { getDepsConfig } from './utils/getDepsConfig';
 
 const serverGlobalFiles: string[] = [
   'src/**',
@@ -23,6 +23,7 @@ const clientGlobalFiles: string[] = [
 const shouldDevDependencies = [
   'react',
   'react-dom',
+  'react/jsx-runtime',
   'react-router',
   'react-router-dom',
   'antd',
@@ -62,23 +63,88 @@ export function deleteJsFiles(cwd: string, log: Log) {
   })
 }
 
-export function buildPluginServer(cwd: string, log: Log) {
-  log('build server')
+export async function buildServerDeps(cwd: string, serverFiles: string[], packageJson: Record<string, any>, log: Log) {
+  log('build server dependencies')
+  const external = [...new Set([...Object.keys(packageJson.devDependencies || {}), ...shouldDevDependencies])]
+  const outDir = path.join(cwd, 'lib', 'node_modules');
+
+  const packages = packageJson.dependencies ?
+    getSourcePackages(serverFiles)
+      .filter(packageName => packageJson.dependencies[packageName])
+      .filter(packageName => !shouldDevDependencies[packageName]) : [];
+
+  if (!packages.length) return;
+
+  log("%s will be bundled. If you want it to be bundled into the output, put it in %s; otherwise, put it in %s.", chalk.yellow(packages.join(', ')), chalk.bold('dependencies'), chalk.bold('devDependencies'));
+
+  const deps = getDepsConfig(cwd, outDir, packages, external);
+
+  // bundle deps
+  for await (const dep of Object.keys(deps)) {
+    const { output, pkg, nccConfig } = deps[dep];
+    const outputDir = path.dirname(output);
+    await ncc(dep, nccConfig).then(
+      ({
+        code,
+        assets,
+      }: {
+        code: string;
+        assets: Record<string, { source: string; permissions: number }>;
+      }) => {
+        // create dist path
+        if (!fs.existsSync(outputDir)) {
+          fs.mkdirSync(outputDir, { recursive: true });
+        }
+        // emit dist file
+        fs.writeFileSync(output, code, 'utf-8');
+
+        // emit assets
+        Object.entries(assets).forEach(([name, item]) => {
+          fs.writeFileSync(path.join(outputDir, name), item.source, {
+            encoding: 'utf-8',
+            mode: item.permissions,
+          });
+        });
+
+        // emit package.json
+        fs.writeFileSync(
+          path.join(outputDir, 'package.json'),
+          JSON.stringify({
+            name: pkg.name,
+            version: pkg.version,
+            author: pkg.author,
+            authors: pkg.authors,
+            contributors: pkg.contributors,
+            license: pkg.license,
+            _lastModified: new Date().toISOString(),
+          }),
+          'utf-8',
+        );
+      },
+    );
+  }
+}
+
+export async function buildPluginServer(cwd: string, log: Log) {
+  log('build server source')
   const packageJson = getPackageJson(cwd);
   const serverFiles = fg.globSync(serverGlobalFiles, { cwd, absolute: true })
   buildCheck({ cwd, packageJson, entry: 'server', shouldDevDependencies, files: serverFiles, log })
 
-  return tsupBuild({
+  await tsupBuild({
     entry: serverFiles,
     splitting: false,
     clean: false,
     bundle: false,
     silent: true,
     treeshake: true,
+    target: 'node18',
     outDir: path.join(cwd, 'lib'),
     format: 'cjs',
-    external: [...new Set([...Object.keys(packageJson.devDependencies || {}), ...shouldDevDependencies])]
+    skipNodeModulesBundle: true
   })
+
+  await buildServerDeps(cwd, serverFiles, packageJson, log)
 }
 
 export function buildPluginClient(cwd: string, log: Log) {
@@ -90,8 +156,10 @@ export function buildPluginClient(cwd: string, log: Log) {
 
   const outDir = path.join(cwd, 'lib/client');
 
-  const externals = Object.keys(packageJson.devDependencies || {}).reduce<Record<string, string>>((prev, curr) => {
-    prev[`${curr}/client`] = curr;
+  const globals = [...new Set([...Object.keys(packageJson.devDependencies || {}), ...shouldDevDependencies])].reduce<Record<string, string>>((prev, curr) => {
+    if (curr.startsWith('@nocobase')) {
+      prev[`${curr}/client`] = curr;
+    }
     prev[curr] = curr;
     return prev;
   }, {})
@@ -114,13 +182,10 @@ export function buildPluginClient(cwd: string, log: Log) {
         fileName: () => outputFileName,
       },
       rollupOptions: {
-        external: [...new Set([...Object.keys(externals), ...shouldDevDependencies])],
+        external: Object.keys(globals),
         output: {
           exports: 'named',
-          globals: {
-            ...externals,
-            'react/jsx-runtime': 'jsxRuntime',
-          }
+          globals,
         },
       }
     },
@@ -129,10 +194,10 @@ export function buildPluginClient(cwd: string, log: Log) {
       {
         name: 'check-file-size',
         closeBundle() {
-          const fileSize = getFileSize(path.join(outDir, outputFileName));
-          if (fileSize > 1024 * 1024) {
-            log('The bundle file size exceeds 1MB %s. Please check for unnecessary %s and move them to %s if possible.\n', chalk.yellow(formatFileSize(fileSize)), chalk.yellow('dependencies'), chalk.yellow('devDependencies'));
-          }
+          // const fileSize = getFileSize(path.join(outDir, outputFileName));
+          // if (fileSize > 1024 * 1024) {
+          //   log('The bundle file size exceeds 1MB %s. Please check for unnecessary %s and move them to %s if possible.\n', chalk.yellow(formatFileSize(fileSize)), chalk.yellow('dependencies'), chalk.yellow('devDependencies'));
+          // }
         },
       }],
   })
