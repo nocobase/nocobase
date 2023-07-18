@@ -12,18 +12,20 @@ interface EventObject {
 
 export class ApplicationEventSubject {
   private events: Subject<EventObject> = new Subject();
-
-  debounceInterval = 100;
+  debounceInterval = 111;
+  private subscription: any;
 
   constructor(app: Application) {
     this.initEvents(app);
-    app.on('beforeDestroy', () => {
-      this.events.complete();
-    });
+  }
+
+  stop() {
+    this.events.complete();
+    this.subscription.unsubscribe();
   }
 
   initEvents(app: Application) {
-    this.events
+    this.subscription = this.events
       .pipe(
         map((value) => {
           return {

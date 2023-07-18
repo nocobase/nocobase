@@ -152,15 +152,6 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       }
     });
 
-    this.app.on('rpc:field.afterRemove', async ({ collectionName, fieldName }) => {
-      const collection = this.db.getCollection(collectionName);
-      if (!collection) {
-        return;
-      }
-
-      collection.removeField(fieldName);
-    });
-
     this.app.on('rpc:afterRemoveCollection', async ({ collectionName }) => {
       this.db.removeCollection(collectionName);
     });
@@ -221,13 +212,6 @@ export class MultiAppShareCollectionPlugin extends Plugin {
     this.app.on('afterDisablePlugin', async (pluginName) => {
       if (subAppFilteredPlugins.includes(pluginName)) return;
       await appSupervisor.rpcBroadcast(this.app, 'afterDisablePlugin', pluginName);
-    });
-
-    this.app.db.on('field.afterRemove', async (removeField) => {
-      await appSupervisor.rpcBroadcast(this.app, 'field.afterRemove', {
-        collectionName: removeField.collection.name,
-        fieldName: removeField.name,
-      });
     });
 
     this.app.db.on('afterRemoveCollection', async (collection) => {

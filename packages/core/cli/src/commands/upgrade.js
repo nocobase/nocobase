@@ -17,7 +17,6 @@ module.exports = (cli) => {
     .action(async (options) => {
       if (hasTsNode()) promptForTs();
       if (hasCorePackages()) {
-        // await run('yarn', ['install']);
         await runAppCommand('upgrade');
         return;
       }

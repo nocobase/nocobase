@@ -10,7 +10,8 @@ export default (app: Application) => {
     .option('-r, --retry [retry]')
     .option('-I, --ignore-installed')
     .action(async (...cliArgs) => {
-      let installed = await app.isInstalled();
+      const installed = await app.isInstalled();
+
       const [opts] = cliArgs;
 
       if (opts.ignoreInstalled && installed) {

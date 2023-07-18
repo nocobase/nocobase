@@ -24977,7 +24977,8 @@ which@^2.0.1, which@^2.0.2:
 
 why-is-node-running@^2.2.2:
   version "2.2.2"
-  resolved "https://registry.npmmirror.com/why-is-node-running/-/why-is-node-running-2.2.2.tgz#4185b2b4699117819e7154594271e7e344c9973e"
+  resolved "https://registry.npmjs.org/why-is-node-running/-/why-is-node-running-2.2.2.tgz#4185b2b4699117819e7154594271e7e344c9973e"
+  integrity sha512-6tSwToZxTOcotxHeA+qGCq1mVzKR3CwcJGmVcY+QE8SHy6TnpFnh8PAvPNHYr7EcuVeG0QSMxtYCuO1ta/G/oA==
   dependencies:
     siginfo "^2.0.0"
     stackback "0.0.2"
@@ -25168,6 +25169,11 @@ ws@^7.0.0, ws@^7.4.6:
 ws@~7.4.0:
   version "7.4.6"
   resolved "https://registry.npmmirror.com/ws/-/ws-7.4.6.tgz#5654ca8ecdeee47c33a9a4bf6d28e2be2980377c"
+
+wtfnode@^0.9.1:
+  version "0.9.1"
+  resolved "https://registry.npmjs.org/wtfnode/-/wtfnode-0.9.1.tgz#c385679d2df6fb4d64d734eeeaab767fcee3e0d3"
+  integrity sha512-Ip6C2KeQPl/F3aP1EfOnPoQk14Udd9lffpoqWDNH3Xt78svxPbv53ngtmtfI0q2Te3oTq79XKTnRNXVIn/GsPA==
 
 xdg-basedir@^3.0.0:
   version "3.0.0"

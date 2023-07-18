@@ -31,8 +31,6 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
       this.runningMode = 'single';
       this.singleAppName = process.env.STARTUP_SUBAPP;
     }
-
-    this.buildRpcBroker();
   }
 
   public buildRpcBroker(options: RpcBrokerOptions = {}) {
@@ -51,6 +49,10 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   getRpcBroker() {
+    if (!this.rpcBroker) {
+      this.buildRpcBroker();
+    }
+
     return this.rpcBroker;
   }
 
@@ -61,7 +63,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     }
 
     this.appBootstrapper = null;
-    await this.rpcBroker.destroy();
+    this.rpcBroker && (await this.rpcBroker.destroy());
     this.removeAllListeners();
   }
 
@@ -166,17 +168,17 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
   // call rpc method of other app
   async rpcCall(appName: string, method: string, ...args: any[]): Promise<{ result: any }> {
-    return this.rpcBroker.callApp(appName, method, ...args);
+    return this.getRpcBroker().callApp(appName, method, ...args);
   }
 
   // push event to other app
   async rpcPush(appName: string, event: string, options?: any) {
-    return this.rpcBroker.pushToApp(appName, event, options);
+    return this.getRpcBroker().pushToApp(appName, event, options);
   }
 
   // broadcast event to all other apps
   async rpcBroadcast(caller: Application, event: string, eventOptions?: any) {
-    return this.rpcBroker.broadcast(caller, event, eventOptions);
+    return this.getRpcBroker().broadcast(caller, event, eventOptions);
   }
 }
 

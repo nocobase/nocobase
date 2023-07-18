@@ -37,7 +37,9 @@
   },
   "devDependencies": {
     "@types/semver": "^7.3.9",
-    "redis-mock": "^0.56.3"
+    "redis-mock": "^0.56.3",
+    "why-is-node-running": "^2.2.2",
+    "wtfnode": "^0.9.1"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
 }

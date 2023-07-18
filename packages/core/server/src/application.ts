@@ -470,6 +470,16 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   public handleEventPush(eventName: string, options?: any) {
+    if (!this._eventSubject) {
+      this._eventSubject = new ApplicationEventSubject(this);
+      const stopEventSubject = () => {
+        this._eventSubject.stop();
+      };
+
+      stopEventSubject.alwaysBind = true;
+      this.on('afterStop', stopEventSubject);
+    }
+
     this.eventSubject.push(eventName, options);
   }
 
@@ -565,8 +575,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     for (const [event, listener] of alwaysRebindEvents) {
       this.on(event, listener);
     }
-
-    this._eventSubject = new ApplicationEventSubject(this);
   }
 
   private createDatabase(options: ApplicationOptions) {
