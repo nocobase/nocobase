@@ -37,7 +37,7 @@ export const isVariable = (str: unknown) => {
   return matches ? true : false;
 };
 
-export const parseVariables = (str: string, ctx: VariablesCtx) => {
+export const parseVariables = (str: string, ctx: VariablesCtx|any) => {
   const regex = /{{(.*?)}}/;
   const matches = str?.match?.(regex);
   if (matches) {

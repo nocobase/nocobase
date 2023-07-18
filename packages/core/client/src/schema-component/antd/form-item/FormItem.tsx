@@ -31,6 +31,24 @@ import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
 import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
 import { useEnsureOperatorsValid } from './SchemaSettingOptions';
 
+export const findColumnFieldSchema = (fieldSchema) => {
+  const { getCollectionJoinField } = useCollectionManager();
+  const columnSchema = [];
+  const getAssociationAppends = (schema) => {
+    schema.reduceProperties((buf, s) => {
+      const collectionfield = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
+      const isAssociationField = collectionfield && ['belongsTo'].includes(collectionfield.type);
+      if (collectionfield && isAssociationField && s.default?.includes('$context')) {
+        columnSchema.push(s);
+      } else {
+        getAssociationAppends(s);
+      }
+    }, []);
+  };
+  getAssociationAppends(fieldSchema);
+  return columnSchema;
+};
+
 export const FormItem: any = observer(
   (props: any) => {
     useEnsureOperatorsValid();
@@ -41,7 +59,7 @@ export const FormItem: any = observer(
     const variablesCtx = useVariablesCtx();
     const { getCollectionJoinField } = useCollectionManager();
     const collectionField = getCollectionJoinField(schema['x-collection-field']);
-    console.log(collectionField)
+    const columnFieldWithDefault = findColumnFieldSchema(schema);
     useEffect(() => {
       if (ctx?.block === 'form') {
         ctx.field.data = ctx.field.data || {};
@@ -50,7 +68,7 @@ export const FormItem: any = observer(
         // 如果默认值是一个变量，则需要解析之后再显示出来
         if (isVariable(schema?.default)) {
           //hasMany/belongsTo组合时 上文记录默认值往上一级设置
-          if (collectionField.interface === 'm2o'&&schema.default.includes('$context')) {
+          if (collectionField?.interface === 'm2o' && schema.default?.includes('$context')) {
             field.query(field.path.segments?.[0]).take((f: any) =>
               f.setInitialValue?.(
                 parseVariables(schema.default, variablesCtx).map((v) => {
@@ -61,6 +79,16 @@ export const FormItem: any = observer(
           } else {
             field.setInitialValue?.(parseVariables(schema.default, variablesCtx));
           }
+        } else if (columnFieldWithDefault.length > 0) {
+          const contextData = parseVariables('{{$context}}', variablesCtx);
+          const initValues = contextData?.map((v) => {
+            const obj = {};
+            columnFieldWithDefault.forEach((s) => {
+              obj[s.name] = parseVariables(s.default, { $context: v });
+            });
+            return obj;
+          });
+          field.setInitialValue?.(initValues);
         }
       }
     }, []);

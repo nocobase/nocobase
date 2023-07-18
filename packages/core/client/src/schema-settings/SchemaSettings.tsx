@@ -1277,10 +1277,19 @@ const defaultInputStyle = css`
     flex: 1;
   }
 `;
+const findTableSchema = (fieldSchema) => {
+  let parent = fieldSchema.parent;
+  while (parent) {
+    if (parent['x-component'] === 'CollectionField' && parent['x-component-props']['mode'] === 'SubTable') {
+      return parent;
+    }
+    parent = parent.parent;
+  }
+};
 SchemaSettings.DefaultValue = function DefaultvalueConfigure(props) {
   const variablesCtx = useVariablesCtx();
-  let fieldSchema = useFieldSchema();
-  fieldSchema = props?.fieldSchema ?? fieldSchema;
+  const currentSchema = useFieldSchema();
+  const fieldSchema = props?.fieldSchema ?? currentSchema;
   const field = useField<Field>();
   const { dn } = useDesignable();
   const { t } = useTranslation();
@@ -1350,7 +1359,20 @@ SchemaSettings.DefaultValue = function DefaultvalueConfigure(props) {
         } as ISchema
       }
       onSubmit={(v) => {
-        console.log(fieldSchema,field,collectionField)
+        // const tabelFieldSchema = findTableSchema(currentSchema);
+        // if (collectionField.interface === 'm2o' && v.default.includes('$context') && tabelFieldSchema) {
+        //   console.log(tabelFieldSchema);
+        //   tabelFieldSchema.default = {
+        //     value: v.default,
+        //     key: collectionField.name,
+        //   };
+        //   dn.emit('patch', {
+        //     schema: {
+        //       ['x-uid']: tabelFieldSchema['x-uid'],
+        //       default: tabelFieldSchema.default,
+        //     },
+        //   });
+        // }
         const schema: ISchema = {
           ['x-uid']: fieldSchema['x-uid'],
         };
@@ -1361,6 +1383,7 @@ SchemaSettings.DefaultValue = function DefaultvalueConfigure(props) {
         schema.default = v.default;
         dn.emit('patch', {
           schema,
+          currentSchema,
         });
         dn.refresh();
       }}

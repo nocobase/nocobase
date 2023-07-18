@@ -7,7 +7,7 @@ export const CustomizeAddRecordActionInitializer = (props) => {
     title: '{{t("Add record")}}',
     'x-designer': 'Action.Designer',
     'x-component': 'Action',
-    'x-action': 'create',
+    'x-action': 'customize:create',
     'x-component-props': {
       openMode: 'drawer',
       icon: 'PlusOutlined',
