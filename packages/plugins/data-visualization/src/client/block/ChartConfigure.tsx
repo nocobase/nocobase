@@ -20,7 +20,6 @@ import {
 import { Alert, App, Button, Card, Col, Modal, Row, Space, Table, Tabs, Typography } from 'antd';
 import { cloneDeep, isEqual } from 'lodash';
 import React, { createContext, useContext, useMemo, useRef } from 'react';
-import { useTranslation } from 'react-i18next';
 import {
   useChartFields,
   useCollectionOptions,
@@ -32,7 +31,7 @@ import {
   useTransformers,
 } from '../hooks';
 import { useChartsTranslation } from '../locale';
-import { ChartRenderer, ChartRendererProvider, useChartTypes, useCharts } from '../renderer';
+import { ChartRenderer, ChartRendererContext, useChartTypes, useCharts } from '../renderer';
 import { createRendererSchema, getField, getSelectedFields } from '../utils';
 import { getConfigSchema, querySchema, transformSchema } from './schemas/configure';
 const { Paragraph, Text } = Typography;
@@ -41,6 +40,7 @@ export type ChartConfigCurrent = {
   schema: ISchema;
   field: any;
   collection: string;
+  service: any;
 };
 
 export type SelectedField = {
@@ -53,8 +53,6 @@ export const ChartConfigContext = createContext<{
   setVisible?: (visible: boolean) => void;
   current?: ChartConfigCurrent;
   setCurrent?: (current: ChartConfigCurrent) => void;
-  data?: any[] | string;
-  setData?: (data: any[] | string) => void;
 }>({
   visible: true,
 });
@@ -68,15 +66,14 @@ export const ChartConfigure: React.FC<{
     },
   ) => void;
 }> & {
-  Renderer: React.FC<{
-    runQuery?: any;
-  }>;
+  Renderer: React.FC;
   Config: React.FC;
   Query: React.FC;
   Transform: React.FC;
   Data: React.FC;
 } = (props) => {
   const { t } = useChartsTranslation();
+  const { service } = useContext(ChartRendererContext);
   const { visible, setVisible, current } = useContext(ChartConfigContext);
   const { schema, field, collection } = current || {};
   const { dn } = useDesignable();
@@ -130,48 +127,47 @@ export const ChartConfigure: React.FC<{
     () => {
       const chartType = chartTypes[0]?.children?.[0]?.value;
       return createForm({
-        values: { config: { chartType }, ...schema?.['x-decorator-props'], collection, data: '' },
+        values: { config: { chartType }, ...field?.decoratorProps, collection, data: '' },
         effects: (form) => {
           onFieldChange('config.chartType', () => initChart(true));
-          onFormInit(() => queryReact(form));
+          onFormInit(() => {
+            queryReact(form);
+            // if (!service.loading) {
+            //   service.run(collection, form.values.query);
+            // }
+          });
         },
       });
     },
     // visible, collection added here to re-initialize form when visible, collection change
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [schema, visible, collection],
+    [field, collection],
   );
 
-  const runQuery = useRef(null);
-  const RunButton: React.FC = () => {
-    const [loading, setLoading] = React.useState(false);
-    return (
-      <Button
-        type="link"
-        loading={loading}
-        icon={<RightSquareOutlined />}
-        onClick={async () => {
-          const queryField = form.query('query').take() as ObjectField;
-          try {
-            await queryField?.validate();
-          } catch (e) {
-            return;
-          }
+  const RunButton: React.FC = () => (
+    <Button
+      type="link"
+      loading={service?.loading}
+      icon={<RightSquareOutlined />}
+      onClick={async () => {
+        const queryField = form.query('query').take() as ObjectField;
+        try {
+          await queryField?.validate();
+        } catch (e) {
+          return;
+        }
 
-          setLoading(true);
-          try {
-            await runQuery?.current(form.values.query);
-          } catch (e) {
-            console.log(e);
-          }
-          queryReact(form, initChart);
-          setLoading(false);
-        }}
-      >
-        {t('Run query')}
-      </Button>
-    );
-  };
+        try {
+          await service.runAsync(collection, form.values.query);
+        } catch (e) {
+          console.log(e);
+        }
+        queryReact(form, initChart);
+      }}
+    >
+      {t('Run query')}
+    </Button>
+  );
 
   const queryRef = useRef(null);
   const configRef = useRef(null);
@@ -181,6 +177,12 @@ export const ChartConfigure: React.FC<{
       open={visible}
       onOk={() => {
         const { query, config, transform, mode } = form.values;
+        const afterSave = () => {
+          setVisible(false);
+          current.service?.run(collection, query);
+          queryRef.current.scrollTop = 0;
+          configRef.current.scrollTop = 0;
+        };
         const rendererProps = {
           query,
           config,
@@ -195,13 +197,11 @@ export const ChartConfigure: React.FC<{
           dn.emit('patch', {
             schema,
           });
-          setVisible(false);
-          queryRef.current.scrollTop = 0;
-          configRef.current.scrollTop = 0;
+          afterSave();
           return;
         }
         insert(createRendererSchema(rendererProps), {
-          onSuccess: () => setVisible(false),
+          onSuccess: afterSave,
           wrap: gridRowColWrap,
         });
       }}
@@ -231,6 +231,7 @@ export const ChartConfigure: React.FC<{
               style={{
                 height: 'calc(100vh - 300px)',
                 overflow: 'auto',
+                margin: '12px 0 12px 12px',
               }}
               ref={queryRef}
             >
@@ -256,6 +257,7 @@ export const ChartConfigure: React.FC<{
               style={{
                 height: 'calc(100vh - 300px)',
                 overflow: 'auto',
+                margin: '12px 3px 12px 3px',
               }}
               ref={configRef}
             >
@@ -276,8 +278,12 @@ export const ChartConfigure: React.FC<{
             </Card>
           </Col>
           <Col span={11}>
-            <Card>
-              <ChartConfigure.Renderer runQuery={runQuery} />
+            <Card
+              style={{
+                margin: '12px 12px 12px 0',
+              }}
+            >
+              <ChartConfigure.Renderer />
             </Card>
           </Col>
         </Row>
@@ -289,6 +295,7 @@ export const ChartConfigure: React.FC<{
 ChartConfigure.Renderer = function Renderer(props) {
   const { current } = useContext(ChartConfigContext);
   const { collection } = current || {};
+  const { service } = useContext(ChartRendererContext);
   return (
     <FormConsumer>
       {(form) => {
@@ -297,15 +304,11 @@ ChartConfigure.Renderer = function Renderer(props) {
         const config = cloneDeep(form.values.config);
         const transform = cloneDeep(form.values.transform);
         return (
-          <ChartRendererProvider
-            collection={collection}
-            query={form.values.query}
-            config={config}
-            transform={transform}
-            mode={form.values.mode}
+          <ChartRendererContext.Provider
+            value={{ collection, config, transform, service, data: current?.service?.data }}
           >
-            <ChartRenderer configuring={true} {...props} />
-          </ChartRendererProvider>
+            <ChartRenderer {...props} />
+          </ChartRendererContext.Provider>
         );
       }}
     </FormConsumer>
@@ -314,26 +317,27 @@ ChartConfigure.Renderer = function Renderer(props) {
 
 ChartConfigure.Query = function Query() {
   const { t } = useChartsTranslation();
-  const { t: lang } = useTranslation();
   const fields = useFieldsWithAssociation();
   const useFormatterOptions = useFormatters(fields);
   const collectionOptions = useCollectionOptions();
   const { current, setCurrent } = useContext(ChartConfigContext);
   const { collection } = current || {};
   const fieldOptions = useCollectionFieldsOptions(collection, 1);
-  const compiledFieldOptions = Schema.compile(fieldOptions, { t: lang });
+  const compiledFieldOptions = Schema.compile(fieldOptions, { t });
   const filterOptions = useCollectionFilterOptions(collection);
   const formCollapse = FormCollapse.createFormCollapse(['measures', 'dimensions', 'filter', 'sort']);
+  const { service } = useContext(ChartRendererContext);
   const onCollectionChange = (value: string) => {
     const { schema, field } = current;
-    const newSchema = { ...schema };
-    newSchema['x-decorator-props'] = { collection: value };
-    newSchema['x-acl-action'] = `${value}:list`;
+    field.decoratorProps = { collection: value };
+    field['x-acl-action'] = `${value}:list`;
     setCurrent({
-      schema: newSchema,
+      schema,
       field,
       collection: value,
+      service: current.service,
     });
+    service.mutate([]);
   };
   const FromSql = () => (
     <Text code>
@@ -430,22 +434,37 @@ ChartConfigure.Transform = function Transform() {
 };
 
 ChartConfigure.Data = function Data() {
-  const { data } = useContext(ChartConfigContext);
+  const { current } = useContext(ChartConfigContext);
+  const { service } = useContext(ChartRendererContext);
   const fields = useFieldsWithAssociation();
-  return Array.isArray(data) ? (
-    <Table
-      dataSource={data}
-      columns={Object.keys(data[0] || {}).map((col) => {
-        const field = getField(fields, col.split('.'));
-        return {
-          title: field?.label || col,
-          dataIndex: col,
-          key: col,
-        };
-      })}
-      size="small"
-    />
+  const data = service?.data || current?.service?.data || [];
+  const error = service?.error;
+  return !error ? (
+    <div
+      style={{
+        overflowX: 'auto',
+        overflowY: 'hidden',
+      }}
+    >
+      <Table
+        dataSource={data}
+        columns={Object.keys(data[0] || {}).map((col) => {
+          const field = getField(fields, col.split('.'));
+          return {
+            title: field?.label || col,
+            dataIndex: col,
+            key: col,
+          };
+        })}
+        size="small"
+      />
+    </div>
   ) : (
-    <Alert message="Error" type="error" description={data} showIcon />
+    <Alert
+      message="Error"
+      type="error"
+      description={error?.response?.data?.errors?.map?.((error: any) => error.message).join('\n') || error.message}
+      showIcon
+    />
   );
 };

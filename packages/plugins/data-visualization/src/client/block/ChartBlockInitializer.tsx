@@ -8,13 +8,12 @@ import { ChartConfigContext } from './ChartConfigure';
 
 const itemWrap = SchemaInitializer.itemWrap;
 const ConfigureButton = itemWrap((props) => {
-  const { setVisible, setCurrent, setData } = useContext(ChartConfigContext);
+  const { setVisible, setCurrent } = useContext(ChartConfigContext);
   return (
     <SchemaInitializer.Item
       {...props}
       onClick={() => {
-        setCurrent({ schema: {}, field: null, collection: props.item?.name });
-        setData([]);
+        setCurrent({ schema: {}, field: null, collection: props.item?.name, service: null });
         setVisible(true);
       }}
     />
