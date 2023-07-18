@@ -13,14 +13,13 @@ export interface CustomToken extends AliasToken {
   colorBgHeaderMenuActive: string;
   /** 导航栏菜单文本色 */
   colorTextHeaderMenu: string;
-  /** UI 配置主色 */
-  colorPrimarySettings: string;
-  /** UI 配置背景色 */
-  colorBgSettings: string;
-  /** UI 配置边框色 */
-  colorBorderSettings: string;
-  /** UI 配置文本色 */
-  colorTextSettings: string;
+  /** 导航栏菜单文本色悬浮态 */
+  colorTextHeaderMenuHover: string;
+  /** 导航栏菜单文本色激活态 */
+  colorTextHeaderMenuActive: string;
+
+  /** UI 配置色 */
+  colorSettings: string;
 }
 
 export interface ThemeConfig {

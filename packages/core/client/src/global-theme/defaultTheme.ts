@@ -8,13 +8,12 @@ const defaultTheme: ThemeConfig = {
     colorBgHeader: '#001529',
     colorBgHeaderMenuHover: '#ffffff1a',
     colorBgHeaderMenuActive: '#ffffff1a',
-    colorTextHeaderMenu: '#ffffff',
+    colorTextHeaderMenu: '#ffffffa6',
+    colorTextHeaderMenuHover: '#ffffff',
+    colorTextHeaderMenuActive: '#ffffff',
 
     // UI 配置组件
-    colorPrimarySettings: '#F18B62',
-    colorBgSettings: '#F18B62',
-    colorBorderSettings: '#F18B62',
-    colorTextSettings: '#F18B62',
+    colorSettings: '#F18B62',
   },
 };
 

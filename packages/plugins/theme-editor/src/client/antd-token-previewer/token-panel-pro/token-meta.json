@@ -1622,7 +1622,7 @@
     "desc": "顶部导航栏的背景色",
     "descEn": "Configure the background color of the header",
     "type": "string",
-    "source": "map"
+    "source": "seed"
   },
   "colorBgHeaderMenuHover": {
     "name": "导航栏菜单背景悬浮态",
@@ -1630,7 +1630,7 @@
     "desc": "鼠标悬浮在导航栏菜单上时的背景色",
     "descEn": "Background color of header menu when hover",
     "type": "string",
-    "source": "map"
+    "source": "seed"
   },
   "colorBgHeaderMenuActive": {
     "name": "导航栏菜单背景激活态",
@@ -1638,7 +1638,7 @@
     "desc": "已选中的导航栏菜单的背景色",
     "descEn": "Background color of header menu when active",
     "type": "string",
-    "source": "map"
+    "source": "seed"
   },
   "colorTextHeaderMenu": {
     "name": "导航栏菜单文本色",
@@ -1646,13 +1646,29 @@
     "desc": "导航栏菜单文本色",
     "descEn": "Text color of header menu",
     "type": "string",
-    "source": "map"
+    "source": "seed"
   },
-  "colorPrimarySettings": {
-    "name": "UI 配置的主色",
+  "colorTextHeaderMenuHover": {
+    "name": "导航栏菜单文本色悬浮态",
+    "nameEn": "Text color of header menu when hover",
+    "desc": "导航栏菜单文本色悬浮态",
+    "descEn": "Text color of header menu when hover",
+    "type": "string",
+    "source": "seed"
+  },
+  "colorTextHeaderMenuActive": {
+    "name": "导航栏菜单文本色激活态",
+    "nameEn": "Text color of header menu when active",
+    "desc": "导航栏菜单文本色激活态",
+    "descEn": "Text color of header menu when active",
+    "type": "string",
+    "source": "seed"
+  },
+  "colorSettings": {
+    "name": "UI 配置色",
     "nameEn": "Primary color of settings",
-    "desc": "用于配置 UI 配置组件的主色，会根据该色派生出背景色、文本色等变量",
-    "descEn": "Used to configure the primary color of the settings, background color, text color and other variables will be derived from this color",
+    "desc": "用于更改 UI 配置组件的颜色",
+    "descEn": "Used to change the primary color of the UI configuration component.",
     "type": "string",
     "source": "seed"
   },
@@ -1662,7 +1678,7 @@
     "desc": "UI 配置组件的背景色",
     "descEn": "Background color of settings",
     "type": "string",
-    "source": "map"
+    "source": "seed"
   },
   "colorBorderSettings": {
     "name": "UI 配置边框色",
@@ -1670,7 +1686,7 @@
     "desc": "UI 配置组件的边框色",
     "descEn": "Border color of settings",
     "type": "string",
-    "source": "map"
+    "source": "seed"
   },
   "colorTextSettings": {
     "name": "UI 配置文本色",
@@ -1678,6 +1694,6 @@
     "desc": "UI 配置组件的文本色",
     "descEn": "Text color of settings",
     "type": "string",
-    "source": "map"
+    "source": "seed"
   }
 }
