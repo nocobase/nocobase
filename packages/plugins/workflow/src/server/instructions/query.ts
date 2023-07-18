@@ -1,5 +1,6 @@
 import Processor from '../Processor';
 import { JOB_STATUS } from '../constants';
+import { toJSON } from '../utils';
 import type { FlowNodeModel } from '../types';
 
 export default {
@@ -8,8 +9,18 @@ export default {
 
     const repo = (<typeof FlowNodeModel>node.constructor).database.getRepository(collection);
     const options = processor.getParsedValue(params, node);
+    const appends = options.appends
+      ? Array.from(
+          options.appends.reduce((set, field) => {
+            set.add(field.split('.')[0]);
+            set.add(field);
+            return set;
+          }, new Set()),
+        )
+      : options.appends;
     const result = await (multiple ? repo.find : repo.findOne).call(repo, {
       ...options,
+      appends: appends,
       transaction: processor.transaction,
     });
 
@@ -24,7 +35,7 @@ export default {
     // e.g. Object.prototype.hasOwnProperty.call(result, 'id') // false
     // so the properties can not be get by json-templates(object-path)
     return {
-      result: multiple ? result.map((item) => item.toJSON()) : result?.toJSON(),
+      result: toJSON(result),
       status: JOB_STATUS.RESOLVED,
     };
   },
