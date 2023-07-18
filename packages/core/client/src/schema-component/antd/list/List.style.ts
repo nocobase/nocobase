@@ -27,7 +27,7 @@ const useStyles = genStyleHook('nb-list', (token) => {
           lineHeight: '16px',
           pointerEvents: 'all',
           '.ant-space-item': {
-            backgroundColor: '#f18b62',
+            backgroundColor: 'var(--colorSettings)',
             color: '#fff',
             lineHeight: '16px',
             width: '16px',

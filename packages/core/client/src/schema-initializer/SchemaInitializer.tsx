@@ -69,8 +69,8 @@ SchemaInitializer.Button = observer(
       <Button
         type={'dashed'}
         style={{
-          borderColor: '#f18b62',
-          color: '#f18b62',
+          borderColor: 'var(--colorSettings)',
+          color: 'var(--colorSettings)',
           ...style,
         }}
         {...others}

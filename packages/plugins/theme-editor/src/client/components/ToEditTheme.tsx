@@ -52,8 +52,8 @@ const ToEditTheme = () => {
         width: 240,
         height: 240,
         borderRadius: token.borderRadiusLG,
-        borderColor: '#f18b62',
-        color: '#f18b62',
+        borderColor: 'var(--colorSettings)',
+        color: 'var(--colorSettings)',
       }}
       icon={<PlusOutlined />}
       onClick={handleClick}

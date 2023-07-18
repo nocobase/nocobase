@@ -38,6 +38,7 @@ const CSSVariableProvider = ({ children }) => {
     document.body.style.setProperty('--colorBgScrollBarHover', colorBgScrollBarHover);
     document.body.style.setProperty('--colorBgScrollBarActive', colorBgScrollBarActive);
     document.body.style.setProperty('--colorBgDrawer', colorBgDrawer);
+    document.body.style.setProperty('--colorSettings', token.colorSettings);
 
     // 设置登录页面的背景色
     document.body.style.setProperty('background-color', token.colorBgContainer);
@@ -65,6 +66,7 @@ const CSSVariableProvider = ({ children }) => {
     token.colorPrimaryText,
     token.colorPrimaryTextActive,
     token.colorPrimaryTextHover,
+    token.colorSettings,
   ]);
 
   return children;

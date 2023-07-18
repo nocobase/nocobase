@@ -10,7 +10,7 @@ export const DesignableSwitch = () => {
   const { t } = useTranslation();
   const style = {};
   if (designable) {
-    style['backgroundColor'] = '#f18b62';
+    style['backgroundColor'] = 'var(--colorSettings)';
   }
 
   // 快捷键切换编辑状态

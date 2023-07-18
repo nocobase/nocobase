@@ -40,7 +40,7 @@ export const actionDesignerCss = css`
       line-height: 16px;
       pointer-events: all;
       .ant-space-item {
-        background-color: #f18b62;
+        background-color: var(--colorSettings);
         color: #fff;
         line-height: 16px;
         width: 16px;

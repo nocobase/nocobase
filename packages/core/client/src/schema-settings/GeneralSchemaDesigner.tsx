@@ -13,7 +13,7 @@ const titleCss = css`
   pointer-events: none;
   position: absolute;
   font-size: 12px;
-  /* background: #f18b62;
+  /* background: var(--colorSettings);
   color: #fff; */
   padding: 0;
   line-height: 16px;
@@ -25,7 +25,7 @@ const titleCss = css`
   .title-tag {
     padding: 0 3px;
     border-radius: 2px;
-    background: #f18b62;
+    background: var(--colorSettings);
     color: #fff;
     display: block;
   }
