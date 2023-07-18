@@ -63,7 +63,7 @@ export const ActionDesigner = (props) => {
   const { t } = useTranslation();
   const isAction = useLinkageAction();
   const record = useRecord();
-  const isPopupAction = ['create', 'update', 'view', 'customize:popup', 'duplicate'].includes(
+  const isPopupAction = ['create', 'update', 'view', 'customize:popup', 'duplicate','customize:create'].includes(
     fieldSchema['x-action'] || '',
   );
   const isUpdateModePopupAction = ['customize:bulkUpdate', 'customize:bulkEdit'].includes(fieldSchema['x-action']);

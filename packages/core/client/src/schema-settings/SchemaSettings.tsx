@@ -1277,15 +1277,6 @@ const defaultInputStyle = css`
     flex: 1;
   }
 `;
-const findTableSchema = (fieldSchema) => {
-  let parent = fieldSchema.parent;
-  while (parent) {
-    if (parent['x-component'] === 'CollectionField' && parent['x-component-props']['mode'] === 'SubTable') {
-      return parent;
-    }
-    parent = parent.parent;
-  }
-};
 SchemaSettings.DefaultValue = function DefaultvalueConfigure(props) {
   const variablesCtx = useVariablesCtx();
   const currentSchema = useFieldSchema();
@@ -1304,6 +1295,9 @@ SchemaSettings.DefaultValue = function DefaultvalueConfigure(props) {
     );
   }
   const tableCtx = useTableBlockContext();
+  const isAllowContexVariable =
+    collectionField.interface === 'm2m' ||
+    (fieldSchema?.parent['x-component'] === 'TableV2.Column' && collectionField.interface === 'm2o');
   return (
     <SchemaSettings.ModalItem
       title={t('Set default value')}
@@ -1323,7 +1317,7 @@ SchemaSettings.DefaultValue = function DefaultvalueConfigure(props) {
                 collectionField,
                 targetField,
                 collectionName: collectionField?.collectionName,
-                contextCollectionName: tableCtx.collection,
+                contextCollectionName: isAllowContexVariable && tableCtx.collection,
                 schema: collectionField?.uiSchema,
                 className: defaultInputStyle,
                 renderSchemaComponent: function Com(props) {
@@ -1344,6 +1338,7 @@ SchemaSettings.DefaultValue = function DefaultvalueConfigure(props) {
                           style: {
                             width: '100%',
                             verticalAlign: 'top',
+                            minWidth: '200px',
                           },
                         },
                       }}
@@ -1359,20 +1354,6 @@ SchemaSettings.DefaultValue = function DefaultvalueConfigure(props) {
         } as ISchema
       }
       onSubmit={(v) => {
-        // const tabelFieldSchema = findTableSchema(currentSchema);
-        // if (collectionField.interface === 'm2o' && v.default.includes('$context') && tabelFieldSchema) {
-        //   console.log(tabelFieldSchema);
-        //   tabelFieldSchema.default = {
-        //     value: v.default,
-        //     key: collectionField.name,
-        //   };
-        //   dn.emit('patch', {
-        //     schema: {
-        //       ['x-uid']: tabelFieldSchema['x-uid'],
-        //       default: tabelFieldSchema.default,
-        //     },
-        //   });
-        // }
         const schema: ISchema = {
           ['x-uid']: fieldSchema['x-uid'],
         };

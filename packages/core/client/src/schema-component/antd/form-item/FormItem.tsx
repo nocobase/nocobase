@@ -38,7 +38,7 @@ export const findColumnFieldSchema = (fieldSchema) => {
     schema.reduceProperties((buf, s) => {
       const collectionfield = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
       const isAssociationField = collectionfield && ['belongsTo'].includes(collectionfield.type);
-      if (collectionfield && isAssociationField && s.default?.includes('$context')) {
+      if (collectionfield && isAssociationField && s.default?.includes?.('$context')) {
         columnSchema.push(s);
       } else {
         getAssociationAppends(s);
