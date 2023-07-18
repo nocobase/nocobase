@@ -86,6 +86,24 @@ export const MenuConfigure = () => {
     }
     message.success(t('Saved successfully'));
   };
+
+  const translateTitle = (menus: any[]) => {
+    return menus.map((menu) => {
+      const title = t(menu.title);
+      if (menu.children) {
+        return {
+          ...menu,
+          title,
+          children: translateTitle(menu.children),
+        };
+      }
+      return {
+        ...menu,
+        title,
+      };
+    });
+  };
+
   return (
     <Table
       className={styles}
@@ -129,7 +147,7 @@ export const MenuConfigure = () => {
           },
         },
       ]}
-      dataSource={items}
+      dataSource={translateTitle(items)}
     />
   );
 };

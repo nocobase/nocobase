@@ -8,6 +8,7 @@ export type HookType =
   | 'onCollectionFieldDestroy'
   | 'onAnyCollectionFieldDestroy'
   | 'onSelfCreate'
+  | 'onSelfSave'
   | 'onSelfMove';
 
 export class ServerHooks {
@@ -39,6 +40,10 @@ export class ServerHooks {
     this.db.on('uiSchemaMove', async (model, options) => {
       await this.onUiSchemaMove(model, options);
     });
+
+    this.db.on('uiSchemas.afterSave', async (model, options) => {
+      await this.onUiSchemaSave(model, options);
+    });
   }
 
   protected async callSchemaInstanceHooksByType(schemaInstance, options, type: HookType) {
@@ -48,7 +53,7 @@ export class ServerHooks {
 
     for (const hook of hooks) {
       const hookFunc = this.hooks.get(type)?.get(hook['method']);
-      await hookFunc({
+      await hookFunc?.({
         schemaInstance,
         options,
         db: this.db,
@@ -117,6 +122,10 @@ export class ServerHooks {
     await this.callSchemaInstanceHooksByType(schemaInstance, options, 'onSelfCreate');
   }
 
+  protected async onUiSchemaSave(schemaInstance, options) {
+    await this.callSchemaInstanceHooksByType(schemaInstance, options, 'onSelfSave');
+  }
+
   protected async findHooksAndCall(hooksFilter, hooksArgs, transaction) {
     const hooks = (await this.db.getRepository('uiSchemaServerHooks').find({
       filter: hooksFilter,
@@ -152,5 +161,14 @@ export class ServerHooks {
 
     const hookTypeMap = this.hooks.get(type);
     hookTypeMap.set(name, hookFunc);
+  }
+
+  remove(type: HookType, name: string) {
+    if (!this.hooks.has(type)) {
+      return;
+    }
+
+    const hookTypeMap = this.hooks.get(type);
+    hookTypeMap.delete(name);
   }
 }
