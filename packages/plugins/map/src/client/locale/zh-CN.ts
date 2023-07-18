@@ -1,4 +1,5 @@
 const locale = {
+  Map: '地图',
   'Map-based geometry': '基于地图的几何图形',
   'Map type': '地图类型',
   Point: '点',
@@ -45,6 +46,7 @@ const locale = {
   'Marker field': '标记字段',
   'Load google maps failed, Please check the Api key and refresh the page':
     '加载谷歌地图失败，请检查 Api key 并刷新页面',
+  'Create map block': '创建地图区块',
 };
 
 export default locale;

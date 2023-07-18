@@ -15,6 +15,12 @@ export const useSchemaPatch = () => {
       schema: {
         ['x-uid']: fieldSchema['x-uid'],
         'x-component-props': fieldSchema['x-component-props'],
+        'x-server-hooks': [
+          {
+            type: 'onSelfSave',
+            method: 'extractTextToLocale',
+          },
+        ],
       },
     });
     dn.refresh();

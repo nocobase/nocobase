@@ -41,7 +41,6 @@ export default {
   },
   components: {
     FilterDynamicComponent,
-    FieldsSelect,
   },
   useVariables({ id, title, config }, options) {
     const compile = useCompile();

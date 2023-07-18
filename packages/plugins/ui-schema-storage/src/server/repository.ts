@@ -341,6 +341,9 @@ export class UiSchemaRepository extends Repository {
       s.set('schema', { ...s.toJSON(), ...newSchema });
       // console.log(s.toJSON());
       await s.save({ transaction, hooks: false });
+      if (newSchema['x-server-hooks']) {
+        await this.database.emitAsync(`${this.collection.name}.afterSave`, s, options);
+      }
       return;
     }
     const oldTree = await this.getJsonSchema(rootUid, { transaction });
@@ -389,6 +392,10 @@ export class UiSchemaRepository extends Repository {
         transaction,
       },
     );
+
+    if (schema['x-server-hooks']) {
+      await this.database.emitAsync(`${this.collection.name}.afterSave`, nodeModel, { transaction });
+    }
   }
 
   protected async childrenCount(uid, transaction) {
@@ -806,6 +813,7 @@ export class UiSchemaRepository extends Repository {
     if (rootNode['x-server-hooks']) {
       const rootModel = await this.findOne({ filter: { 'x-uid': rootNode['x-uid'] }, transaction });
       await this.database.emitAsync(`${this.collection.name}.afterCreateWithAssociations`, rootModel, options);
+      await this.database.emitAsync(`${this.collection.name}.afterSave`, rootModel, options);
     }
 
     if (options?.returnNode) {
