@@ -1,7 +1,7 @@
 import { BlockInitializers, SchemaInitializerItemOptions, useCollectionManager, useCompile } from '@nocobase/client';
 
 import { CollectionBlockInitializer } from '../../components/CollectionBlockInitializer';
-import { getCollectionFieldOptions } from '../../variable';
+import { defaultFieldNames, getCollectionFieldOptions } from '../../variable';
 import { NAMESPACE } from '../../locale';
 import { SchemaConfig, SchemaConfigButton } from './SchemaConfig';
 import { ModeConfig } from './ModeConfig';
@@ -85,7 +85,7 @@ export default {
     ModeConfig,
     AssigneesSelect,
   },
-  useVariables({ id, title, config }, { types }) {
+  useVariables({ id, title, config }, { types, fieldNames = defaultFieldNames }) {
     const compile = useCompile();
     const { getCollectionFields } = useCollectionManager();
     const formKeys = Object.keys(config.forms ?? {});
@@ -119,9 +119,9 @@ export default {
 
     return options.length
       ? {
-          value: `${id}`,
-          label: title,
-          children: options,
+          [fieldNames.value]: `${id}`,
+          [fieldNames.label]: title,
+          [fieldNames.children]: options,
         }
       : null;
   },
