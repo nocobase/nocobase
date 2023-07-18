@@ -78,13 +78,13 @@ const filterOption = (input, option) => (option?.label ?? '').toLowerCase().incl
 
 const InternalSelect = connect(
   (props: Props) => {
-    const { objectValue, loading, value, ...others } = props;
+    const { objectValue, loading, value, rawOptions, ...others } = props;
     let mode: any = props.multiple ? 'multiple' : props.mode;
     if (mode && !['multiple', 'tags'].includes(mode)) {
       mode = undefined;
     }
     if (objectValue) {
-      return <ObjectSelect {...others} value={value} mode={mode} loading={loading} />;
+      return <ObjectSelect rawOptions={rawOptions} {...others} value={value} mode={mode} loading={loading} />;
     }
     const toValue = (v) => {
       if (['tags', 'multiple'].includes(props.mode) || props.multiple) {

@@ -14,6 +14,7 @@ import { uid } from '@formily/shared';
 import { App, Badge, Card, Dropdown, Tabs } from 'antd';
 import _ from 'lodash';
 import React, { useContext, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../api-client';
 import { SchemaComponent, SchemaComponentOptions, useCompile } from '../../schema-component';
 import { useResourceActionContext } from '../ResourceActionProvider';
@@ -67,11 +68,12 @@ const TabTitle = observer(
 );
 
 const TabBar = ({ item }) => {
+  const { t } = useTranslation();
   const compile = useCompile();
   return (
     <span>
       <Badge color={item.color} />
-      {compile(item.name)}
+      {t(compile(item.name))}
     </span>
   );
 };
@@ -118,6 +120,7 @@ const DndProvider = observer(
   { displayName: 'DndProvider' },
 );
 export const ConfigurationTabs = () => {
+  const { t } = useTranslation();
   const { data, refresh } = useContext(CollectionCategroriesContext);
   const { refresh: refreshCM, run, defaultRequest, setState } = useResourceActionContext();
   const [key, setKey] = useState('all');
@@ -179,7 +182,7 @@ export const ConfigurationTabs = () => {
 
   const loadCategories = async () => {
     return data.map((item: any) => ({
-      label: compile(item.name),
+      label: t(compile(item.name)),
       value: item.id,
     }));
   };

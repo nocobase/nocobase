@@ -3,7 +3,6 @@ import { Button, Result, Spin } from 'antd';
 import React, { FC } from 'react';
 import { Navigate } from 'react-router-dom';
 import { ACLPlugin } from '../acl';
-import { AntdConfigPlugin } from '../antd-config-provider';
 import { Application } from '../application';
 import { Plugin } from '../application/Plugin';
 import { SigninPage, SigninPageExtensionPlugin, SignupPage } from '../auth';
@@ -20,6 +19,7 @@ import { SchemaInitializerPlugin } from '../schema-initializer';
 import { BlockTemplateDetails, BlockTemplatePage } from '../schema-templates';
 import { SystemSettingsPlugin } from '../system-settings';
 import { CurrentUserProvider, CurrentUserSettingsMenuProvider } from '../user';
+import { LocalePlugin } from './plugins/LocalePlugin';
 
 const AppSpin = Spin;
 
@@ -45,13 +45,14 @@ const AppError: FC<{ app: Application; error: Error }> = ({ app, error }) => (
 );
 
 export class NocoBaseBuildInPlugin extends Plugin {
-  async afterAdd(): Promise<void> {
+  async afterAdd() {
     this.app.addComponents({
       AppSpin,
       AppError,
     });
     this.addPlugins();
   }
+
   async load() {
     this.addComponents();
     this.addRoutes();
@@ -62,6 +63,7 @@ export class NocoBaseBuildInPlugin extends Plugin {
     this.app.use(CSSVariableProvider);
     this.app.use(CurrentUserSettingsMenuProvider);
   }
+
   addRoutes() {
     this.router.add('root', {
       path: '/',
@@ -102,8 +104,8 @@ export class NocoBaseBuildInPlugin extends Plugin {
     });
   }
   addPlugins() {
+    this.app.pm.add(LocalePlugin, { name: 'locale' });
     this.app.pm.add(AdminLayoutPlugin, { name: 'admin-layout' });
-    this.app.pm.add(AntdConfigPlugin, { name: 'antd-config', config: { remoteLocale: true } });
     this.app.pm.add(SystemSettingsPlugin, { name: 'system-setting' });
     this.app.pm.add(PinnedListPlugin, {
       name: 'pinned-list',

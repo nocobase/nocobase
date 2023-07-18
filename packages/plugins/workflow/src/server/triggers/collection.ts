@@ -1,5 +1,6 @@
 import { Collection, Model } from '@nocobase/database';
 import { Trigger } from '..';
+import { toJSON } from '../utils';
 import type { WorkflowModel } from '../types';
 
 export interface CollectionChangeTriggerConfig {
@@ -66,24 +67,27 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
     }
   }
 
+  let result = data;
+
   if (appends?.length && !(mode & MODE_BITMAP.DESTROY)) {
-    const includeFields = appends.filter((field) => !data.get(field) || !data[field]);
-    const included = await model.findByPk(data[model.primaryKeyAttribute], {
-      attributes: [model.primaryKeyAttribute],
-      include: includeFields,
+    const includeFields = appends.reduce((set, field) => {
+      set.add(field.split('.')[0]);
+      set.add(field);
+      return set;
+    }, new Set());
+    result = await repository.findOne({
+      filterByTk: data[model.primaryKeyAttribute],
+      appends: Array.from(includeFields),
       transaction,
-    });
-    includeFields.forEach((field) => {
-      const value = included!.get(field);
-      data.set(field, Array.isArray(value) ? value.map((item) => item.toJSON()) : value ? value.toJSON() : null, {
-        raw: true,
-      });
     });
   }
 
+  // TODO: `result.toJSON()` throws error
+  const json = toJSON(result);
+
   this.plugin.trigger(
     workflow,
-    { data: data.toJSON() },
+    { data: json },
     {
       context,
     },

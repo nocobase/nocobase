@@ -63,7 +63,7 @@ const useDataTemplates = () => {
       key: 'none',
       title: t('None'),
     },
-  ].concat(items.map<any>((t, i) => ({ key: i, ...t })));
+  ].concat(items.map<any>((item, i) => ({ key: i, ...item })));
 
   const defaultTemplate = items.find((item) => item.default);
   return {
