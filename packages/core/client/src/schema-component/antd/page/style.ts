@@ -57,8 +57,8 @@ export const useStyles = genStyleHook('nb-page', (token) => {
       },
 
       '.addTabBtn': {
-        borderColor: 'rgb(241, 139, 98) !important',
-        color: 'rgb(241, 139, 98) !important',
+        borderColor: 'var(--colorSettings)',
+        color: 'var(--colorSettings)',
       },
 
       '.designerCss': {
