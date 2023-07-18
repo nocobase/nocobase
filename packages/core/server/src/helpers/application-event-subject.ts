@@ -1,4 +1,4 @@
-import { Subject, bufferTime, delayWhen, distinct, flatMap, interval, map } from 'rxjs';
+import { Subject, bufferTime, delayWhen, distinct, interval, map, mergeMap } from 'rxjs';
 import Application from '../application';
 
 import { hasher } from 'node-object-hash';
@@ -32,7 +32,7 @@ export class ApplicationEventSubject {
           };
         }),
         bufferTime(this.debounceInterval),
-        flatMap((x) => x),
+        mergeMap((x) => x),
         distinct((e) => e.__$hash),
         delayWhen((value: EventObject) => {
           const options = value.options;
