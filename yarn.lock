@@ -14893,7 +14893,7 @@ jest-config@^24.9.0:
     pretty-format "^24.9.0"
     realpath-native "^1.1.0"
 
-jest-config@^29.6.1:
+jest-config@^29.0.0, jest-config@^29.6.1:
   version "29.6.1"
   resolved "https://registry.npmjs.org/jest-config/-/jest-config-29.6.1.tgz#d785344509065d53a238224c6cdc0ed8e2f2f0dd"
   integrity sha512-XdjYV2fy2xYixUiV2Wc54t3Z4oxYPAELUzWnV6+mcbq0rh742X2p52pii5A3oeRzYjLnQxCsZmp0qpI6klE2cQ==
