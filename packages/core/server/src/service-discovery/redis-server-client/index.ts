@@ -111,7 +111,7 @@ export class RedisDiscoveryServerClient extends ServiceDiscoveryClient {
 
     const client = await this.getRedisClient();
     const identifier = nanoid();
-    const lockKey = `lock:${lockName}`;
+    const lockKey = `nocobase:lock:${lockName}`;
 
     for (let i = 0; i < maxRetries; i++) {
       const result = await client.sendCommand(['SET', lockKey, identifier, 'NX', 'PX', `${timeout}`]);
@@ -128,7 +128,7 @@ export class RedisDiscoveryServerClient extends ServiceDiscoveryClient {
   }
 
   async releaseLock(lockName: string, identifier: string): Promise<boolean> {
-    lockName = `lock:${lockName}`;
+    lockName = `nocobase:lock:${lockName}`;
 
     const client = await this.getRedisClient();
 
