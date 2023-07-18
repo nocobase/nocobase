@@ -25,14 +25,12 @@ type CallScope = {
 function loadChildren(this, option) {
   const result = getCollectionFieldOptions.call(this, option.field.target, option);
   if (result.length) {
-    // option.children = result;
     if (!result.some((item) => isAssociation(item.field))) {
       option.isLeaf = true;
     }
   } else {
     option.isLeaf = true;
   }
-  option.loadChildren = null;
   return result;
 }
 
@@ -95,6 +93,11 @@ export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
       let option = optionsMap[paths[0]];
       for (let i = 1; i < paths.length; i++) {
         if (!option) {
+          break;
+        }
+        const next = paths.slice(0, i + 1).join('.');
+        if (optionsMap[next]) {
+          option = optionsMap[next];
           break;
         }
         if (!option.isLeaf && option.loadChildren) {

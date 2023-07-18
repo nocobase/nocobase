@@ -52,7 +52,7 @@ export const filter = {
 export const appends = {
   type: 'array',
   title: `{{t("Preload associations", { ns: "${NAMESPACE}" })}}`,
-  description: `{{t("Please select the associated fields that need to be accessed in subsequent nodes", { ns: "${NAMESPACE}" })}}`,
+  description: `{{t("Please select the associated fields that need to be accessed in subsequent nodes. With more than two levels of to-many associations may cause performance issue, please use with caution.", { ns: "${NAMESPACE}" })}}`,
   'x-decorator': 'FormItem',
   'x-component': 'AppendsTreeSelect',
   'x-component-props': {
