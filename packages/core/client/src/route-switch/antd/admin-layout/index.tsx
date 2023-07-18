@@ -180,8 +180,11 @@ export const InternalAdminLayout = (props: any) => {
           z-index: 100;
           background-color: ${token.colorBgHeader};
 
-          .ant-menu-item {
+          .ant-menu {
             background-color: transparent;
+          }
+
+          .ant-menu-item {
             color: ${token.colorTextHeaderMenu};
           }
         `}
