@@ -3,18 +3,84 @@ import send from 'koa-send';
 import { resolve } from 'path';
 import swagger from './swagger';
 
-const ACTIONS_METHODS = {
-  list: 'get',
-  create: 'post',
-  get: 'get',
-  update: 'put',
-  destroy: 'delete',
-  add: 'post',
-  set: 'post',
-  remove: 'delete',
-  toggle: 'post',
-  move: 'put',
+const SchemaTypeMapping = {
+  uid: 'string',
+  json: 'object',
+  jsonb: 'object',
+  text: 'string',
+  bigInt: 'integer',
+  sort: 'integer',
+  content: 'string',
 };
+
+const createDefaultActionSwagger = ({ collection }) => {
+  const responses = {
+    default: {
+      content: {
+        'application/json': {
+          schema: {
+            $ref: `#/components/schemas/${collection.name}`,
+          },
+        },
+      },
+    },
+  };
+  const requestBody = {
+    content: {
+      'application/json': {
+        schema: {
+          $ref: `#/components/schemas/${collection.name}`,
+        },
+      },
+    },
+  };
+  return {
+    list: {
+      method: 'get',
+      responses,
+    },
+    create: {
+      method: 'post',
+      requestBody,
+    },
+    get: {
+      method: 'get',
+      responses,
+    },
+    update: {
+      method: 'put',
+      requestBody,
+      responses,
+    },
+    destroy: {
+      method: 'delete',
+      responses,
+    },
+    add: {
+      method: 'post',
+      requestBody,
+      responses,
+    },
+    set: {
+      method: 'post',
+      requestBody,
+    },
+    remove: {
+      method: 'delete',
+      responses,
+    },
+    toggle: {
+      method: 'post',
+      requestBody,
+      responses,
+    },
+    move: {
+      method: 'post',
+      requestBody,
+    },
+  };
+};
+
 const API_DOC_PATH = '/api/_documentation';
 
 export default class APIDoc extends Plugin {
@@ -30,9 +96,23 @@ export default class APIDoc extends Plugin {
       };
 
       collection.forEachField((field) => {
-        properties[field.name] = {
-          type: field.type,
-        };
+        const property: Record<string, any> = {};
+        if (field.type === 'array') {
+          property['items'] = {
+            type: 'object',
+          };
+        } else if (field.type === 'hasMany' || field.type === 'belongsToMany') {
+          property['type'] = 'array';
+          property['items'] = {
+            $ref: `#/components/schemas/${field.target}`,
+          };
+        } else if (field.type === 'belongsTo' || field.type === 'hasOne') {
+          property['type'] = 'object';
+          property['$ref'] = `#/components/schemas/${field.target}`;
+        } else {
+          property.type = SchemaTypeMapping[field.type] || field.type;
+        }
+        properties[field.name] = property;
       });
       models[collection.name] = model;
     });
@@ -79,9 +159,9 @@ export default class APIDoc extends Plugin {
       ],
     };
 
-    // console.log(Array.from(this.app.values()));
     const paths = {};
-    this.db.collections.forEach(({ name }) => {
+    this.db.collections.forEach((collection) => {
+      const { name } = collection;
       if (!this.app.resourcer.isDefined(name)) {
         return;
       }
@@ -90,35 +170,22 @@ export default class APIDoc extends Plugin {
       const collectionMethods = {};
       Object.entries(single).forEach(([path, actionNames]) => {
         actionNames.forEach((actionName) => {
-          const method = ACTIONS_METHODS[actionName] || 'post';
+          const actionMethods = createDefaultActionSwagger({
+            collection,
+          });
+          const { method = 'post', ...swaggerArgs } = actionMethods[actionName];
           const parameters = [];
-          if (path.includes('{associatedName}')) {
-            parameters.push({
-              name: 'associatedName',
-              required: true,
-              schema: {
-                type: 'string',
-              },
-            });
-          }
-          if (path.includes('{associatedIndex}')) {
-            parameters.push({
-              name: 'associatedIndex',
-              required: true,
-              schema: {
-                type: 'string',
-              },
-            });
-          }
-          if (path.includes('{resourceIndex}')) {
-            parameters.push({
-              name: 'resourceIndex',
-              required: true,
-              schema: {
-                type: 'string',
-              },
-            });
-          }
+          ['associatedName', 'associatedIndex', 'resourceIndex'].forEach((name) => {
+            if (path.includes(`{${name}}`)) {
+              parameters.push({
+                name,
+                required: true,
+                schema: {
+                  type: 'string',
+                },
+              });
+            }
+          });
 
           if (actions.has(actionName)) {
             collectionMethods[path.replace('{resourceName}', `${name}:${actionName}`)] = {
@@ -126,6 +193,7 @@ export default class APIDoc extends Plugin {
                 tags: [name],
                 description: `${name}:${actionName}`,
                 parameters,
+                ...swaggerArgs,
               },
             };
           }
