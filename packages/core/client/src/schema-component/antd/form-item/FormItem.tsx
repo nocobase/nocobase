@@ -39,7 +39,9 @@ export const FormItem: any = observer(
     const ctx = useBlockRequestContext();
     const schema = useFieldSchema();
     const variablesCtx = useVariablesCtx();
-
+    const { getCollectionJoinField } = useCollectionManager();
+    const collectionField = getCollectionJoinField(schema['x-collection-field']);
+    console.log(collectionField)
     useEffect(() => {
       if (ctx?.block === 'form') {
         ctx.field.data = ctx.field.data || {};
@@ -47,7 +49,18 @@ export const FormItem: any = observer(
         ctx.field.data.activeFields.add(schema.name);
         // 如果默认值是一个变量，则需要解析之后再显示出来
         if (isVariable(schema?.default)) {
-          field.setInitialValue?.(parseVariables(schema.default, variablesCtx));
+          //hasMany/belongsTo组合时 上文记录默认值往上一级设置
+          if (collectionField.interface === 'm2o'&&schema.default.includes('$context')) {
+            field.query(field.path.segments?.[0]).take((f: any) =>
+              f.setInitialValue?.(
+                parseVariables(schema.default, variablesCtx).map((v) => {
+                  return { [schema.name]: v };
+                }),
+              ),
+            );
+          } else {
+            field.setInitialValue?.(parseVariables(schema.default, variablesCtx));
+          }
         }
       }
     }, []);

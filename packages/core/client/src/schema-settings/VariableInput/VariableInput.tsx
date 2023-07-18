@@ -15,6 +15,7 @@ type Props = {
   className?: string;
   style?: React.CSSProperties;
   collectionField?: CollectionFieldOptions;
+  contextCollectionName?: string;
 };
 
 export const VariableInput = (props: Props) => {
@@ -26,11 +27,11 @@ export const VariableInput = (props: Props) => {
     schema,
     className,
     collectionField,
-    collectionName,
+    contextCollectionName,
   } = props;
   const compile = useCompile();
   const userVariable = useUserVariable({ schema, maxDepth: 1 });
-  const contextVariable = useContextAssociationFields({ schema, maxDepth: 2, contextCollectionName: collectionName });
+  const contextVariable = useContextAssociationFields({ schema, maxDepth: 2, contextCollectionName });
   const scope = useMemo(() => {
     const data = [
       compile({
@@ -50,14 +51,21 @@ export const VariableInput = (props: Props) => {
     if (collectionField?.target === 'users') {
       data.unshift(userVariable);
     }
-    if (collectionName) {
+    if (contextCollectionName) {
       data.unshift(contextVariable);
     }
     return data;
   }, []);
 
   return (
-    <Variable.Input className={className} value={value} onChange={onChange} scope={scope} style={style}>
+    <Variable.Input
+      className={className}
+      value={value}
+      onChange={onChange}
+      scope={scope}
+      style={style}
+      changeOnSelect={contextCollectionName!==null}
+    >
       <RenderSchemaComponent value={value} onChange={onChange} />
     </Variable.Input>
   );

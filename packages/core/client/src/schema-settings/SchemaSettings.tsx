@@ -57,6 +57,7 @@ import {
   useGlobalTheme,
   useLinkageCollectionFilterOptions,
 } from '..';
+import { useTableBlockContext } from '../block-provider';
 import { findFilterTargets, updateFilterTargets } from '../block-provider/hooks';
 import { FilterBlockType, isSameCollection, useSupportedBlocks } from '../filter-provider/utils';
 import { useCollectMenuItem, useCollectMenuItems, useMenuItem } from '../hooks/useMenuItem';
@@ -1293,6 +1294,7 @@ SchemaSettings.DefaultValue = function DefaultvalueConfigure(props) {
       `${collectionField.target}.${fieldSchema['x-component-props']?.fieldNames?.label || 'id'}`,
     );
   }
+  const tableCtx = useTableBlockContext();
   return (
     <SchemaSettings.ModalItem
       title={t('Set default value')}
@@ -1312,6 +1314,7 @@ SchemaSettings.DefaultValue = function DefaultvalueConfigure(props) {
                 collectionField,
                 targetField,
                 collectionName: collectionField?.collectionName,
+                contextCollectionName: tableCtx.collection,
                 schema: collectionField?.uiSchema,
                 className: defaultInputStyle,
                 renderSchemaComponent: function Com(props) {
@@ -1347,6 +1350,7 @@ SchemaSettings.DefaultValue = function DefaultvalueConfigure(props) {
         } as ISchema
       }
       onSubmit={(v) => {
+        console.log(fieldSchema,field,collectionField)
         const schema: ISchema = {
           ['x-uid']: fieldSchema['x-uid'],
         };
