@@ -1,9 +1,9 @@
 const { pathsToModuleNameMapper } = require('ts-jest');
 const { compilerOptions } = require('./tsconfig.json');
-const { defaults } = require('jest-config');
 
 module.exports = {
   rootDir: process.cwd(),
+  testEnvironment: 'node',
   collectCoverage: false,
   verbose: true,
   preset: 'ts-jest',

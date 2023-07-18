@@ -1,7 +1,7 @@
 import { Collection } from '../collection';
 import { Database } from '../database';
-import { mockDatabase } from './index';
 import { IdentifierError } from '../errors/identifier-error';
+import { mockDatabase } from './index';
 
 const pgOnly = () => (process.env.DB_DIALECT == 'postgres' ? it : it.skip);
 describe('collection', () => {

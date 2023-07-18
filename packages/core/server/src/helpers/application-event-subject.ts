@@ -1,4 +1,4 @@
-import { Subject, delayWhen, interval, map } from 'rxjs';
+import { Subject, bufferTime, delayWhen, distinct, flatMap, interval, map } from 'rxjs';
 import Application from '../application';
 
 import { hasher } from 'node-object-hash';
@@ -13,10 +13,13 @@ interface EventObject {
 export class ApplicationEventSubject {
   private events: Subject<EventObject> = new Subject();
 
-  debounceInterval = 200;
+  debounceInterval = 100;
 
   constructor(app: Application) {
     this.initEvents(app);
+    app.on('beforeDestroy', () => {
+      this.events.complete();
+    });
   }
 
   initEvents(app: Application) {
@@ -28,8 +31,10 @@ export class ApplicationEventSubject {
             __$hash: objectHasher.hash(value),
           };
         }),
-        delayWhen((value) => {
-          console.log({ value });
+        bufferTime(this.debounceInterval),
+        flatMap((x) => x),
+        distinct((e) => e.__$hash),
+        delayWhen((value: EventObject) => {
           const options = value.options;
           if (options && options.__$delay) {
             return interval(options.__$delay);

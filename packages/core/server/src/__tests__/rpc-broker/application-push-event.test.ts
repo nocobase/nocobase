@@ -1,6 +1,10 @@
 import { AppSupervisor } from '../../app-supervisor';
 import Application from '../../application';
 
+function timeOut(delay) {
+  return new Promise((resolve) => setTimeout(resolve, delay));
+}
+
 describe('application push event', () => {
   let app: Application;
 
@@ -33,13 +37,8 @@ describe('application push event', () => {
 
     app.handleEventPush('test_event');
 
-    await new Promise((resolve) =>
-      // do assert at the end of next tick
-      setTimeout(() => {
-        expect(jestFn).toBeCalledTimes(1);
-        resolve(0);
-      }, 0),
-    );
+    await timeOut(100);
+    expect(jestFn).toBeCalledTimes(1);
   });
 
   it('should handle delay event', async () => {
@@ -50,24 +49,14 @@ describe('application push event', () => {
     });
 
     app.handleEventPush('test_event', {
-      __$delay: 199,
+      __$delay: 200,
     });
 
-    await new Promise((resolve) =>
-      // do assert at the end of next tick
-      setTimeout(() => {
-        expect(jestFn).toBeCalledTimes(0);
-        resolve(0);
-      }, 10),
-    );
+    await timeOut(100);
+    expect(jestFn).toBeCalledTimes(0);
 
-    await new Promise((resolve) =>
-      // do assert at the end of next tick
-      setTimeout(() => {
-        expect(jestFn).toBeCalledTimes(1);
-        resolve(0);
-      }, 200),
-    );
+    await timeOut(210);
+    expect(jestFn).toBeCalledTimes(1);
   });
 
   it('should debounce event', async () => {
@@ -87,12 +76,8 @@ describe('application push event', () => {
       app.handleEventPush('event2');
     }
 
-    await new Promise((resolve) =>
-      setTimeout(() => {
-        expect(jestFn2).toBeCalledTimes(1);
-        expect(jestFn1).toBeCalledTimes(1);
-        resolve(0);
-      }, app.eventSubject.debounceInterval + 10),
-    );
+    await timeOut(200);
+    expect(jestFn2).toBeCalledTimes(1);
+    expect(jestFn1).toBeCalledTimes(1);
   });
 });
