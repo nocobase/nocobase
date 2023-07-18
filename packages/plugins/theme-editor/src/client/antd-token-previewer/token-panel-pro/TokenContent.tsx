@@ -3,7 +3,6 @@ import { Button, Checkbox, Collapse, ConfigProvider, Popover, Switch, Tooltip, T
 import type { MutableTheme } from 'antd-token-previewer';
 import type { ThemeConfig } from 'antd/es/config-provider/context';
 import seed from 'antd/es/theme/themes/seed';
-import tokenMeta from 'antd/lib/version/token-meta.json';
 import classNames from 'classnames';
 import type { FC } from 'react';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -21,6 +20,7 @@ import makeStyle from '../utils/makeStyle';
 import InputNumberPlus from './InputNumberPlus';
 import TokenDetail from './TokenDetail';
 import TokenPreview from './TokenPreview';
+import tokenMeta from './token-meta.json';
 
 const { Panel } = Collapse;
 
