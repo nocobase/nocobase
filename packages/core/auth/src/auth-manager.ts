@@ -98,6 +98,7 @@ export class AuthManager {
         ctx.auth = authenticator;
       } catch (err) {
         ctx.auth = {} as Auth;
+        ctx.app.logger.warn(`auth, ${err.message}`);
         return next();
       }
       if (authenticator) {

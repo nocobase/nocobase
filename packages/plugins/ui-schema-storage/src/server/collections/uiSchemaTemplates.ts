@@ -14,6 +14,7 @@ export default defineCollection({
     {
       type: 'string',
       name: 'name',
+      translation: true,
     },
     {
       type: 'string',

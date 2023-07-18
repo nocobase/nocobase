@@ -26,6 +26,7 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       'sequence-field',
       'snapshot-field',
       'verification',
+      'localization-management',
     ];
 
     const collectionGroups = (await AppSupervisor.getInstance().rpcCall('main', 'db.collectionGroupManager.getGroups'))

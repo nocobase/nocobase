@@ -294,5 +294,40 @@ describe('workflow > triggers > collection', () => {
       const [job] = await execution.getJobs();
       expect(job.result.data.tags.length).toBe(1);
     });
+
+    describe('appends depth > 1', () => {
+      it('create with associtions', async () => {
+        const workflow = await WorkflowModel.create({
+          enabled: true,
+          type: 'collection',
+          config: {
+            mode: 1,
+            collection: 'categories',
+            appends: ['posts.tags'],
+          },
+        });
+
+        const tags = await TagRepo.create({ values: [{}] });
+        const tagIds = tags.map((item) => item.id);
+
+        const category = await CategoryRepo.create({
+          values: {
+            title: 't1',
+            posts: [
+              { title: 't1', tags: tagIds },
+              { title: 't2', tags: tagIds },
+            ],
+          },
+        });
+
+        await sleep(500);
+
+        const [execution] = await workflow.getExecutions();
+        expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
+        expect(execution.context.data.posts.length).toBe(2);
+        expect(execution.context.data.posts.map((item) => item.title)).toEqual(['t1', 't2']);
+        expect(execution.context.data.posts.map((item) => item.tags.map((tag) => tag.id))).toEqual([tagIds, tagIds]);
+      });
+    });
   });
 });

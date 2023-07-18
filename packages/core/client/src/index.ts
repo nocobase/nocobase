@@ -30,6 +30,7 @@ export * from './global-theme';
 export * from './hooks';
 export * from './i18n';
 export * from './icon';
+export { default as locale } from './locale';
 export * from './nocobase-buildin-plugin';
 export * from './plugin-manager';
 export * from './pm';
