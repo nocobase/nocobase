@@ -1,5 +1,9 @@
-import { Subject, debounce, delayWhen, interval, map } from 'rxjs';
+import { Subject, delayWhen, interval, map } from 'rxjs';
 import Application from '../application';
+
+import { hasher } from 'node-object-hash';
+
+const objectHasher = hasher({});
 
 interface EventObject {
   name: string;
@@ -19,10 +23,13 @@ export class ApplicationEventSubject {
     this.events
       .pipe(
         map((value) => {
-          return value;
+          return {
+            ...value,
+            __$hash: objectHasher.hash(value),
+          };
         }),
-        debounce((value) => interval(this.debounceInterval)),
         delayWhen((value) => {
+          console.log({ value });
           const options = value.options;
           if (options && options.__$delay) {
             return interval(options.__$delay);
