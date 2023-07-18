@@ -40,6 +40,7 @@ export class PresetNocoBase extends Plugin {
     'graph-collection-manager',
     'mobile-client',
     'api-keys',
+    'localization-management',
     'theme-editor',
   ];
 

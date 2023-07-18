@@ -332,14 +332,18 @@ export const useCreateAction = () => {
   const { resource } = useResourceContext();
   return {
     async run() {
-      await form.submit();
-      field.data = field.data || {};
-      field.data.loading = true;
-      await resource.create({ values: form.values });
-      ctx.setVisible(false);
-      await form.reset();
-      field.data.loading = false;
-      refresh();
+      try {
+        await form.submit();
+        field.data = field.data || {};
+        field.data.loading = true;
+        await resource.create({ values: form.values });
+        ctx.setVisible(false);
+        await form.reset();
+        field.data.loading = false;
+        refresh();
+      } catch (error) {
+        field.data.loading=false;
+      }
     },
   };
 };

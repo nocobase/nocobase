@@ -1,5 +1,4 @@
 import _ from 'lodash';
-
 import {
   DataType,
   ModelAttributeColumnOptions,
@@ -22,6 +21,7 @@ export interface FieldContext {
 export interface BaseFieldOptions {
   name?: string;
   hidden?: boolean;
+  translation?: boolean;
 
   [key: string]: any;
 }

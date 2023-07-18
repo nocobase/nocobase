@@ -68,4 +68,5 @@ export default {
   Min: '最小值',
   Max: '最大值',
   'Please select a chart type.': '请选择图表类型',
+  Collection: '数据表',
 };

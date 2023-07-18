@@ -1,8 +1,9 @@
 import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { Tabs as AntdTabs, TabPaneProps, TabsProps } from 'antd';
+import { TabPaneProps, Tabs as AntdTabs, TabsProps } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Icon } from '../../../icon';
 import { useSchemaInitializer } from '../../../schema-initializer';
 import { DndContext, SortableItem } from '../../common';

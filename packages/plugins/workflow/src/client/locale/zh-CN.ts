@@ -28,8 +28,8 @@ export default {
     '只有被选中的某个字段发生变动时才会触发。如果不选择，则表示任何字段变动时都会触发。新增或删除数据时，任意字段都被认为发生变动。',
   'Only triggers when match conditions': '满足以下条件才触发',
   'Preload associations': '预加载关联数据',
-  'Please select the associated fields that need to be accessed in subsequent nodes':
-    '请选中需要在后续节点中被访问的关系字段',
+  'Please select the associated fields that need to be accessed in subsequent nodes. With more than two levels of to-many associations may cause performance issue, please use with caution.':
+    '请选中需要在后续节点中被访问的关系字段。超过两层的对多关联可能会导致性能问题，请谨慎使用。',
   'Schedule event': '定时任务',
   'Trigger mode': '触发模式',
   'Based on certain date': '自定义时间',
