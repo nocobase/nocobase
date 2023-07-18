@@ -4,7 +4,7 @@ import Application from '../application';
 import { RemoteServiceInfo, ServiceDiscoveryClient } from '../service-discovery/client';
 import { ServiceDiscoveryClientFactory } from '../service-discovery/factory';
 import { AppAliveMonitor } from './app-alive-monitor';
-import { RpcBrokerInterface, RpcBrokerOptions } from './interface';
+import { AcquireLockOptions, RpcBrokerInterface, RpcBrokerOptions } from './interface';
 import { RpcHttpClient, createRpcClient } from './rpc-http-client';
 import { createRpcHttpServer } from './rpc-http-server';
 
@@ -130,5 +130,13 @@ export class RemoteBroker extends RpcBrokerInterface {
     this.appAliveMonitor.stop();
     // destroy service discovery client
     await this.serviceDiscoverClient.destroy();
+  }
+
+  acquireLock(options: AcquireLockOptions): Promise<string | null> {
+    return Promise.resolve(undefined);
+  }
+
+  releaseLock(lockName: string, identifier: string): Promise<boolean> {
+    return Promise.resolve(false);
   }
 }
