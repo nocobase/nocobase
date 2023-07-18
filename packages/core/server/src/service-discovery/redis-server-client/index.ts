@@ -22,20 +22,31 @@ export class RedisDiscoveryServerClient extends ServiceDiscoveryClient {
     return this.client;
   }
 
-  async getServicesByName(serverType: ServiceType, name: string): Promise<RemoteServiceInfo[]> {
-    const keyPrefix = `nocobase:${serverType}:${name}`;
-    const client = await this.getRedisClient();
-    const values = await client.sMembers(keyPrefix);
+  getInstanceIdFromKey(key) {
+    return key.split(':').pop();
+  }
 
-    return values.map((value) => {
+  async getServicesByName(serverType: ServiceType, name: string): Promise<RemoteServiceInfo[]> {
+    const keyPrefix = `nocobase:${serverType}:${name}:*`;
+    const client = await this.getRedisClient();
+    const keys = await client.keys(keyPrefix);
+
+    const services: RemoteServiceInfo[] = [];
+
+    for (const key of keys) {
+      const value = await client.get(key);
       const [host, port] = value.split(':');
-      return {
+
+      services.push({
+        instanceId: this.getInstanceIdFromKey(key),
         type: serverType,
         name,
         host,
         port: parseInt(port),
-      };
-    });
+      });
+    }
+
+    return services;
   }
 
   async listServicesByType(serverType: ServiceType): Promise<Map<string, RemoteServiceInfo[]>> {
@@ -58,14 +69,19 @@ export class RedisDiscoveryServerClient extends ServiceDiscoveryClient {
     const client = await this.getRedisClient();
     const serviceValue = this.serviceValue(serviceInfo);
     console.log(`register service ${key} ${serviceValue}`);
-    await client.sAdd(key, serviceValue);
+    await client.set(key, serviceValue);
+
+    // service will expire after 10 seconds
+    await client.expire(key, 10);
     return true;
   }
 
   async unregisterService(serviceInfo: RemoteServiceInfo): Promise<boolean> {
     const key = this.serviceKey(serviceInfo);
     const client = await this.getRedisClient();
-    await client.sRem(key, this.serviceValue(serviceInfo));
+    console.log(`unregister service ${key}`);
+
+    await client.del(key);
     return true;
   }
 
@@ -74,7 +90,7 @@ export class RedisDiscoveryServerClient extends ServiceDiscoveryClient {
   }
 
   private serviceKey(serviceInfo: RemoteServiceInfo) {
-    return `nocobase:${serviceInfo.type}:${serviceInfo.name}`;
+    return `nocobase:${serviceInfo.type}:${serviceInfo.name}:${serviceInfo.instanceId}`;
   }
 
   private serviceValue(serviceInfo: RemoteServiceInfo) {

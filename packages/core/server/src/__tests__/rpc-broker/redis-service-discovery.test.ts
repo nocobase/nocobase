@@ -6,6 +6,8 @@ import { RemoteBroker } from '../../rpc-broker/remote-broker';
 describe('redis service discovery', () => {
   let redisClient;
 
+  let app: Application;
+
   beforeEach(async () => {
     redisClient = createClient();
 
@@ -18,15 +20,8 @@ describe('redis service discovery', () => {
     AppSupervisor.getInstance().buildRpcBroker({
       discoveryServerURI: process.env['REDIS_URL'] || 'redis://localhost:6379',
     });
-  });
 
-  afterEach(async () => {
-    await redisClient.disconnect();
-    await AppSupervisor.getInstance().destroy();
-  });
-
-  it('should register into app', async () => {
-    const app = new Application({
+    app = new Application({
       database: {
         dialect: 'sqlite',
         dialectModule: require('sqlite3'),
@@ -42,12 +37,41 @@ describe('redis service discovery', () => {
     });
 
     await app.start();
+  });
 
-    const discoveryClient = (AppSupervisor.getInstance().getRpcBroker() as RemoteBroker).serviceDiscoverClient;
+  afterEach(async () => {
+    await redisClient.disconnect();
+    await AppSupervisor.getInstance().destroy();
+  });
+
+  it('should register into app', async () => {
+    const remoteBroker = AppSupervisor.getInstance().getRpcBroker() as RemoteBroker;
+    const discoveryClient = remoteBroker.serviceDiscoverClient;
     const serviceInfo = await discoveryClient.getServicesByName('apps', app.name);
     expect(serviceInfo.length).toBe(1);
     const allServices = await discoveryClient.listServicesByType('apps');
     expect(allServices.size).toBe(1);
     expect(allServices.get(app.name).length).toBe(1);
+
+    remoteBroker.appAliveMonitor.stopMonitor(app.name);
+
+    // should expire after 10 seconds
+    await new Promise((resolve) => setTimeout(resolve, 10000));
+    const serviceInfo2 = await discoveryClient.getServicesByName('apps', app.name);
+    expect(serviceInfo2.length).toBe(0);
+  });
+
+  it('should keep alive', async () => {
+    const remoteBroker = AppSupervisor.getInstance().getRpcBroker() as RemoteBroker;
+    const discoveryClient = remoteBroker.serviceDiscoverClient;
+    const serviceInfo = await discoveryClient.getServicesByName('apps', app.name);
+    expect(serviceInfo.length).toBe(1);
+    const allServices = await discoveryClient.listServicesByType('apps');
+    expect(allServices.size).toBe(1);
+    expect(allServices.get(app.name).length).toBe(1);
+
+    await new Promise((resolve) => setTimeout(resolve, 15000));
+    const serviceInfo3 = await discoveryClient.getServicesByName('apps', app.name);
+    expect(serviceInfo3.length).toBe(1);
   });
 });

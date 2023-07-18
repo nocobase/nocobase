@@ -3,6 +3,7 @@ import { AppSupervisor } from '../app-supervisor';
 import Application from '../application';
 import { RemoteServiceInfo, ServiceDiscoveryClient } from '../service-discovery/client';
 import { ServiceDiscoveryClientFactory } from '../service-discovery/factory';
+import { AppAliveMonitor } from './app-alive-monitor';
 import { RpcBrokerInterface, RpcBrokerOptions } from './interface';
 import { RpcHttpClient, createRpcClient } from './rpc-http-client';
 import { createRpcHttpServer } from './rpc-http-server';
@@ -11,6 +12,7 @@ export class RemoteBroker extends RpcBrokerInterface {
   serviceDiscoverClient: ServiceDiscoveryClient;
   rpcServer: http.Server;
   rpcClient: RpcHttpClient;
+  appAliveMonitor: AppAliveMonitor;
 
   constructor(appSupervisor: AppSupervisor, options: RpcBrokerOptions = {}) {
     super(appSupervisor, options);
@@ -18,6 +20,8 @@ export class RemoteBroker extends RpcBrokerInterface {
     this.serviceDiscoverClient = ServiceDiscoveryClientFactory.build({
       serverURI: options.discoveryServerURI,
     });
+    this.rpcClient = createRpcClient();
+    this.appAliveMonitor = new AppAliveMonitor(this);
 
     appSupervisor.on('afterAppAdded', (app: Application) => {
       app.on('afterStart', async () => {
@@ -30,15 +34,25 @@ export class RemoteBroker extends RpcBrokerInterface {
           });
         }
 
-        await this.serviceDiscoverClient.registerService(await this.getAppServiceInfo(app));
+        await this.registerApp(app);
+
+        // start app alive monitor
+        this.appAliveMonitor.startMonitor(app.name);
       });
 
       app.on('afterStop', async () => {
-        await this.serviceDiscoverClient.unregisterService(await this.getAppServiceInfo(app));
+        await this.unregisterApp(app);
+        this.appAliveMonitor.stopMonitor(app.name);
       });
     });
+  }
 
-    this.rpcClient = createRpcClient();
+  async registerApp(app: Application) {
+    await this.serviceDiscoverClient.registerService(await this.getAppServiceInfo(app));
+  }
+
+  async unregisterApp(app: Application) {
+    await this.serviceDiscoverClient.unregisterService(await this.getAppServiceInfo(app));
   }
 
   async getAppServiceInfo(app: Application): Promise<RemoteServiceInfo> {
@@ -47,6 +61,7 @@ export class RemoteBroker extends RpcBrokerInterface {
       host: '127.0.0.1',
       port: parseInt(process.env['RPC_PORT']) || 23000,
       name: app.name,
+      instanceId: app.instanceId,
     };
   }
 
@@ -109,9 +124,13 @@ export class RemoteBroker extends RpcBrokerInterface {
   }
 
   async destroy() {
-    console.log('destroy remote broker');
+    // close rpc server
     this.rpcServer?.close();
 
+    // destroy service discovery client
     await this.serviceDiscoverClient.destroy();
+
+    // stop app alive monitor
+    this.appAliveMonitor.stop();
   }
 }

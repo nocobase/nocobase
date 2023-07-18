@@ -13,6 +13,7 @@ import { i18n, InitOptions } from 'i18next';
 import Koa, { DefaultContext as KoaDefaultContext, DefaultState as KoaDefaultState } from 'koa';
 import compose from 'koa-compose';
 import lodash from 'lodash';
+import { nanoid } from 'nanoid';
 import * as process from 'process';
 import { promisify } from 'util';
 import { createACL } from './acl';
@@ -108,6 +109,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   private workingMessage: string = null;
 
   private _eventSubject: ApplicationEventSubject;
+  private _instanceId = nanoid();
 
   constructor(public options: ApplicationOptions) {
     super();
@@ -123,6 +125,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   get fsm() {
     return this._fsm;
+  }
+
+  get instanceId() {
+    return this._instanceId;
   }
 
   protected _db: Database;
@@ -224,6 +230,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     };
 
     return handleRequest;
+  }
+
+  async isAlive() {
+    return true;
   }
 
   collection(options: CollectionOptions) {

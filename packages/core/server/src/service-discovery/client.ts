@@ -6,6 +6,7 @@ export interface ConnectionInfo {
 export interface RemoteServiceInfo extends ConnectionInfo {
   type: ServiceType;
   name: string;
+  instanceId: string;
 }
 
 export type ServiceInfo = RemoteServiceInfo;
