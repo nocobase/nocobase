@@ -33,7 +33,6 @@ module.exports = (cli) => {
         return;
       }
 
-      console.log({ opts });
       const { port, client, server, skipInstall } = opts;
 
       if (port) {
