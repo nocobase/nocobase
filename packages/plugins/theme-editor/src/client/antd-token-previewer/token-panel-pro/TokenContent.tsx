@@ -230,6 +230,7 @@ export type SeedTokenProps = {
   theme: MutableTheme;
   tokenName: string;
   disabled?: boolean;
+  alpha?: boolean;
 };
 
 const getSeedValue = (config: ThemeConfig, token: string) => {
@@ -256,7 +257,7 @@ const seedRange: Record<string, { min: number; max: number }> = {
   },
 };
 
-const SeedTokenPreview: FC<SeedTokenProps> = ({ theme, tokenName, disabled }) => {
+const SeedTokenPreview: FC<SeedTokenProps> = ({ theme, tokenName, disabled, alpha }) => {
   const tokenPath = ['token', tokenName];
   const [tokenValue, setTokenValue] = useState(getSeedValue(theme.config, tokenName));
   const locale = useLocale();
@@ -305,7 +306,7 @@ const SeedTokenPreview: FC<SeedTokenProps> = ({ theme, tokenName, disabled }) =>
           trigger="click"
           placement="bottomRight"
           overlayInnerStyle={{ padding: 0 }}
-          content={<ColorPanel color={tokenValue} onChange={handleChange} style={{ border: 'none' }} />}
+          content={<ColorPanel color={tokenValue} onChange={handleChange} style={{ border: 'none' }} alpha={alpha} />}
         >
           <div
             className="token-panel-pro-token-collapse-seed-block-sample-card"
@@ -643,6 +644,7 @@ const TokenContent: FC<ColorTokenContentProps> = ({
                           </div>
                         </div>
                         <SeedTokenPreview
+                          alpha={!!group.seedTokenAlpha}
                           theme={theme}
                           tokenName={seedToken}
                           disabled={seedToken === 'colorInfo' && infoFollowPrimary}

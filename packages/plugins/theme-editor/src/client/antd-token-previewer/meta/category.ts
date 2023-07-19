@@ -100,6 +100,7 @@ const category: TokenTree<keyof AliasToken | string> = [
           'colorTextHeaderMenuHover',
           'colorTextHeaderMenuActive',
         ],
+        seedTokenAlpha: true,
       },
       {
         key: 'settingsColor',
@@ -110,6 +111,7 @@ const category: TokenTree<keyof AliasToken | string> = [
         descEn: 'Used to change the color of the UI Settings component.',
         // seedToken: ['colorPrimarySettings'],
         seedToken: ['colorSettings'],
+        seedTokenAlpha: true,
       },
     ],
   },
