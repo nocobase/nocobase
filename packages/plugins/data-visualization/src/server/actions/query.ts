@@ -161,7 +161,7 @@ export const parseBuilder = (ctx: Context, builder: QueryParams) => {
   });
 
   orders.forEach((item: OrderProps) => {
-    const name = hasAgg ? sequelize.literal(`"${item.alias}"`) : sequelize.col(item.field as string);
+    const name = hasAgg ? sequelize.literal(`\`${item.alias}\``) : sequelize.col(item.field as string);
     order.push([name, item.order || 'ASC']);
   });
 
