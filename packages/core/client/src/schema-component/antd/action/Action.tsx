@@ -21,6 +21,7 @@ import { ActionContextProvider } from './context';
 import { useA } from './hooks';
 import { ComposedAction } from './types';
 import { linkageAction } from './utils';
+import { lodash } from '@nocobase/utils';
 
 export const actionDesignerCss = css`
   position: relative;
@@ -99,6 +100,8 @@ export const Action: ComposedAction = observer(
     const { designable } = useDesignable();
     const tarComponent = useComponent(component) || component;
     const { modal } = App.useApp();
+    let actionTitle = title || compile(fieldSchema.title);
+    actionTitle = lodash.isString(actionTitle) ? t(actionTitle) : actionTitle;
 
     useEffect(() => {
       field.linkageProperty = {};
@@ -148,7 +151,7 @@ export const Action: ComposedAction = observer(
           className={classnames(actionDesignerCss, className)}
           type={props.type === 'danger' ? undefined : props.type}
         >
-          {t(title || compile(fieldSchema.title))}
+          {actionTitle}
           <Designer {...designerProps} />
         </SortableItem>
       );
