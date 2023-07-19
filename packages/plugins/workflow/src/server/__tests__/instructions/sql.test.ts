@@ -92,7 +92,7 @@ describe('workflow > instructions > sql', () => {
       const n1 = await workflow.createNode({
         type: 'sql',
         config: {
-          sql: `update ${db.options.tablePrefix ?? ''}posts set ${queryInterface.quoteIdentifier('read')}={{$context.data.id}} where ${queryInterface.quoteIdentifier('id')}={{$context.data.id}}`,
+          sql: `update ${queryInterface.quoteIdentifier(`${db.options.tablePrefix ?? ''}posts`)} set ${queryInterface.quoteIdentifier('read')}={{$context.data.id}} where ${queryInterface.quoteIdentifier('id')}={{$context.data.id}}`,
         },
       });
 
@@ -127,7 +127,7 @@ describe('workflow > instructions > sql', () => {
       const n1 = await workflow.createNode({
         type: 'sql',
         config: {
-          sql: `delete from ${db.options.tablePrefix ?? ''}posts where ${queryInterface.quoteIdentifier('id')}={{$context.data.id}}`,
+          sql: `delete from ${queryInterface.quoteIdentifier(`${db.options.tablePrefix ?? ''}posts`)} where ${queryInterface.quoteIdentifier('id')}={{$context.data.id}}`,
         },
       });
 
