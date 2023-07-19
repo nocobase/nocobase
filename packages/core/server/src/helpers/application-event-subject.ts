@@ -12,7 +12,7 @@ interface EventObject {
 
 export class ApplicationEventSubject {
   private events: Subject<EventObject> = new Subject();
-  debounceInterval = 111;
+  debounceInterval = 100;
   private subscription: any;
 
   constructor(app: Application) {
