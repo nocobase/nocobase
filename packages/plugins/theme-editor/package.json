@@ -16,6 +16,7 @@
   },
   "devDependencies": {
     "@nocobase/server": "0.11.0-alpha.1",
-    "@nocobase/test": "0.11.0-alpha.1"
+    "@nocobase/test": "0.11.0-alpha.1",
+    "@ctrl/tinycolor": "^3.6.0"
   }
 }

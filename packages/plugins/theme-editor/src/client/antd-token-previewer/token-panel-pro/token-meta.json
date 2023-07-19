@@ -1680,11 +1680,27 @@
     "type": "string",
     "source": "seed"
   },
+  "colorBgSettingsHover": {
+    "name": "UI 配置背景色悬浮态",
+    "nameEn": "Background color of settings when hover",
+    "desc": "鼠标悬浮时显示的背景色",
+    "descEn": "Background color of settings when hover",
+    "type": "string",
+    "source": "seed"
+  },
   "colorBorderSettings": {
     "name": "UI 配置边框色",
     "nameEn": "Border color of settings",
     "desc": "UI 配置组件的边框色",
     "descEn": "Border color of settings",
+    "type": "string",
+    "source": "seed"
+  },
+  "colorBorderSettingsHover": {
+    "name": "UI 配置边框色悬浮态",
+    "nameEn": "Border color of settings when hover",
+    "desc": "鼠标悬浮时显示的边框色",
+    "descEn": "Border color of settings when hover",
     "type": "string",
     "source": "seed"
   },

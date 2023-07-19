@@ -20,6 +20,10 @@ export interface CustomToken extends AliasToken {
 
   /** UI 配置色 */
   colorSettings: string;
+  /** 鼠标悬浮时显示的背景色 */
+  colorBgSettingsHover: string;
+  /** 鼠标悬浮时显示的边框色 */
+  colorBorderSettingsHover: string;
 }
 
 export interface ThemeConfig {

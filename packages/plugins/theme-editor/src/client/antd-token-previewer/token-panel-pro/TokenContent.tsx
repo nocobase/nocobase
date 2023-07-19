@@ -20,6 +20,7 @@ import makeStyle from '../utils/makeStyle';
 import InputNumberPlus from './InputNumberPlus';
 import TokenDetail from './TokenDetail';
 import TokenPreview from './TokenPreview';
+import calcCustomToken from './calcCustomToken';
 import tokenMeta from './token-meta.json';
 
 const { Panel } = Collapse;
@@ -268,7 +269,7 @@ const SeedTokenPreview: FC<SeedTokenProps> = ({ theme, tokenName, disabled, alph
         ...theme.config,
         token: {
           ...theme.config.token,
-          [tokenName]: newValue,
+          ...calcCustomToken(tokenName, newValue),
         },
       },
       ['token', tokenName],
