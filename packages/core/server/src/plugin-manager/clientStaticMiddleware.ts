@@ -1,3 +1,4 @@
+import fs from 'fs';
 import send from 'koa-send';
 import path from 'path';
 
@@ -58,15 +59,29 @@ const getRealPath = (packageName: string, url: string) => {
  */
 export const clientStaticMiddleware = async (ctx, next) => {
   if (isMatchClientStaticUrl(ctx.path)) {
+    // TODO: check packageName in plugins
     const packageName = getPackageName(ctx.path);
-    // if (!ctx.app.pm.plugins.has(packageName)) {
-    //   ctx.throw(404);
-    // } else {
+
     const realPath = getRealPath(packageName, ctx.path);
+
+    // get file stats
+    const stats = await fs.promises.stat(realPath);
+    const ifModifiedSince = ctx.get('If-Modified-Since');
+    const lastModified = stats.mtime.toUTCString();
+
+    // check cache headers
+    if (ifModifiedSince === lastModified) {
+      ctx.status = 304;
+      return;
+    }
+
     // `send` only accept relative path
     const relativePath = path.relative(cwd, realPath);
-    await send(ctx, relativePath);
-    // }
+    await send(ctx, relativePath, {
+      setHeaders: (res) => {
+        res.setHeader('Last-Modified', lastModified);
+      },
+    });
   }
   await next();
 };
