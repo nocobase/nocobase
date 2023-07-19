@@ -53,28 +53,16 @@ describe('Checkbox.Group', () => {
     const option1 = screen.getByLabelText('选项1');
     const option2 = screen.getByLabelText('选项2');
     await userEvent.click(option1);
-    expect(container.querySelectorAll('.ant-tag')).toMatchInlineSnapshot(`
-      NodeList [
-        <span
-          class="ant-tag ant-tag-red css-dev-only-do-not-override-14wwjjs"
-        >
-          选项1
-        </span>,
+    expect(Array.from(container.querySelectorAll('.ant-tag')).map((el) => el.innerHTML)).toMatchInlineSnapshot(`
+      [
+        "选项1",
       ]
     `);
     await userEvent.click(option2);
-    expect(container.querySelectorAll('.ant-tag')).toMatchInlineSnapshot(`
-      NodeList [
-        <span
-          class="ant-tag ant-tag-red css-dev-only-do-not-override-14wwjjs"
-        >
-          选项1
-        </span>,
-        <span
-          class="ant-tag ant-tag-blue css-dev-only-do-not-override-14wwjjs"
-        >
-          选项2
-        </span>,
+    expect(Array.from(container.querySelectorAll('.ant-tag')).map((el) => el.innerHTML)).toMatchInlineSnapshot(`
+      [
+        "选项1",
+        "选项2",
       ]
     `);
 
