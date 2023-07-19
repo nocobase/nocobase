@@ -3,7 +3,7 @@ import Database from '@nocobase/database';
 import { getApp, sleep } from '..';
 import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
 
-describe('workflow-extensions > instructions > sql', () => {
+describe('workflow > instructions > sql', () => {
   let app: Application;
   let db: Database;
   let PostRepo;
@@ -88,10 +88,11 @@ describe('workflow-extensions > instructions > sql', () => {
 
   describe('sql with variables', () => {
     it('update', async () => {
+      const queryInterface = db.sequelize.getQueryInterface();
       const n1 = await workflow.createNode({
         type: 'sql',
         config: {
-          sql: `update ${db.options.tablePrefix ?? ''}posts set read={{$context.data.id}} where id={{$context.data.id}}`,
+          sql: `update ${db.options.tablePrefix ?? ''}posts set ${queryInterface.quoteIdentifier('read')}={{$context.data.id}} where ${queryInterface.quoteIdentifier('id')}={{$context.data.id}}`,
         },
       });
 
@@ -122,10 +123,11 @@ describe('workflow-extensions > instructions > sql', () => {
     });
 
     it('delete', async () => {
+      const queryInterface = db.sequelize.getQueryInterface();
       const n1 = await workflow.createNode({
         type: 'sql',
         config: {
-          sql: `delete from ${db.options.tablePrefix ?? ''}posts where id={{$context.data.id}}`,
+          sql: `delete from ${db.options.tablePrefix ?? ''}posts where ${queryInterface.quoteIdentifier('id')}={{$context.data.id}}`,
         },
       });
 
