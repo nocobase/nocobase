@@ -124,10 +124,11 @@ describe('workflow > instructions > sql', () => {
 
     it('delete', async () => {
       const queryInterface = db.sequelize.getQueryInterface();
+      const tableName = queryInterface.quoteIdentifier(`${db.options.tablePrefix ?? ''}posts`);
       const n1 = await workflow.createNode({
         type: 'sql',
         config: {
-          sql: `delete from ${queryInterface.quoteIdentifier(`${db.options.tablePrefix ?? ''}posts`)} where ${queryInterface.quoteIdentifier('id')}={{$context.data.id}}`,
+          sql: `delete from public.${tableName} where ${tableName}.${queryInterface.quoteIdentifier('id')}={{$context.data.id}}`,
         },
       });
 
