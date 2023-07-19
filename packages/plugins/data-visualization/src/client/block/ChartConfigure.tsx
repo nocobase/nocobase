@@ -32,7 +32,7 @@ import {
 } from '../hooks';
 import { useChartsTranslation } from '../locale';
 import { ChartRenderer, ChartRendererContext, useChartTypes, useCharts } from '../renderer';
-import { createRendererSchema, getField, getSelectedFields } from '../utils';
+import { createRendererSchema, getField, getSelectedFields, processData } from '../utils';
 import { getConfigSchema, querySchema, transformSchema } from './schemas/configure';
 const { Paragraph, Text } = Typography;
 
@@ -432,10 +432,11 @@ ChartConfigure.Transform = function Transform() {
 };
 
 ChartConfigure.Data = function Data() {
+  const { t } = useChartsTranslation();
   const { current } = useContext(ChartConfigContext);
   const { service } = useContext(ChartRendererContext);
   const fields = useFieldsWithAssociation();
-  const data = service?.data || current?.service?.data || [];
+  const data = processData(fields, service?.data || current?.service?.data || [], { t });
   const error = service?.error;
   return !error ? (
     <div
