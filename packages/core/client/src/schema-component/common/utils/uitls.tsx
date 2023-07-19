@@ -92,6 +92,7 @@ const getVariableValue = (str, values) => {
     //对多关系字段
     return getFieldValue(targetField, values);
   } else {
+    console.log(values, match?.[1]);
     return flat(values)[match?.[1]];
   }
 };
@@ -122,7 +123,8 @@ function getAllKeys(obj) {
   return keys;
 }
 
-export const conditionAnalyse = (rules, values) => {
+export const conditionAnalyse = (rules, scope) => {
+  const values = { ...scope, now: new Date() };
   const type = Object.keys(rules)[0] || '$and';
   const conditions = rules[type];
   const results = conditions.map((c) => {
