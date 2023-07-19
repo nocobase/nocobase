@@ -1,11 +1,11 @@
 import { merge } from '@nocobase/utils';
-import ApiDocPlugin from '../server';
+import APIDocPlugin from '../server';
 import baseSwagger from './base-swagger';
 import { SchemaTypeMapping } from './constants';
 import { createDefaultActionSwagger, getInterfaceCollection } from './helpers';
 import { getSwaggerDocument } from './load';
 export class SwaggerManager {
-  private plugin: ApiDocPlugin;
+  private plugin: APIDocPlugin;
 
   private get app() {
     return this.plugin.app;
@@ -27,7 +27,7 @@ export class SwaggerManager {
     });
   }
 
-  constructor(plugin: ApiDocPlugin) {
+  constructor(plugin: APIDocPlugin) {
     this.plugin = plugin;
   }
 
@@ -73,11 +73,16 @@ export class SwaggerManager {
     const IC = getInterfaceCollection(this.app.resourcer.options);
     this.db.collections.forEach((collection) => {
       const { name } = collection;
-      if (!this.app.resourcer.isDefined(name)) {
-        return;
+      let actions;
+
+      if (this.app.resourcer.isDefined(name)) {
+        actions = this.app.resourcer.getResource(name).actions;
+      } else {
+        actions = {
+          has: () => true,
+        };
       }
 
-      const { actions } = this.app.resourcer.getResource(name);
       const collectionMethods = {};
       Object.entries(IC).forEach(([path, actionNames]) => {
         actionNames.forEach((actionName) => {
