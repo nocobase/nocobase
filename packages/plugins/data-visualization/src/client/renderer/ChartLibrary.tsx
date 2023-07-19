@@ -77,7 +77,7 @@ export const useChartTypes = (): {
       const children = Object.entries(l.charts).map(([type, chart]) => ({
         ...chart,
         key: type,
-        label: chart.name,
+        label: lang(chart.name),
         value: type,
       }));
       return [

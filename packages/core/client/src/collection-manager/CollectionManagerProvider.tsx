@@ -1,6 +1,7 @@
 import { Spin } from 'antd';
 import { keyBy } from 'lodash';
 import React, { useContext, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../api-client';
 import { templateOptions } from '../collection-manager/Configuration/templates';
 import { useCollectionHistory } from './CollectionHistoryProvider';
@@ -31,6 +32,7 @@ export const CollectionManagerProvider: React.FC<CollectionManagerOptions> = (pr
 };
 
 export const RemoteCollectionManagerProvider = (props: any) => {
+  const { t } = useTranslation();
   const api = useAPIClient();
   const [contentLoading, setContentLoading] = useState(false);
   const { refreshCH } = useCollectionHistory();
@@ -85,11 +87,33 @@ export const RemoteCollectionManagerProvider = (props: any) => {
     service.mutate({ data: collection });
   };
 
+  const collections = (service?.data?.data || []).map(({ rawTitle, title, fields, ...collection }) => ({
+    ...collection,
+    title: rawTitle ? title : t(title),
+    rawTitle: rawTitle || title,
+    fields: fields.map(({ uiSchema, ...field }) => {
+      if (uiSchema?.title) {
+        const title = uiSchema.title;
+        uiSchema.title = uiSchema.rawTitle ? title : t(title);
+        uiSchema.rawTitle = uiSchema.rawTitle || title;
+      }
+      if (uiSchema?.enum) {
+        uiSchema.enum = uiSchema.enum.map((item) => ({
+          ...item,
+          value: item?.value || item,
+          label: item.rawLabel ? item.label : t(item.label),
+          rawLabel: item.rawLabel || item.label,
+        }));
+      }
+      return { uiSchema, ...field };
+    }),
+  }));
+
   return (
     <CollectionCategroriesProvider service={{ ...result }} refreshCategory={refreshCategory}>
       <CollectionManagerProvider
         service={{ ...service, contentLoading, setContentLoading }}
-        collections={service?.data?.data}
+        collections={collections}
         refreshCM={refreshCM}
         updateCollection={updateCollection}
         {...props}
