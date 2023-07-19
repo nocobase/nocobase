@@ -94,18 +94,27 @@ export class RemoteBroker extends RpcBrokerInterface {
   }
 
   async callApp(appName: string, method: string, ...args: any[]): Promise<{ result: any }> {
-    const remoteAddr = await this.serviceDiscoverClient.fetchSingleService('apps', appName);
+    const retryTimes = 10;
+    const retryDelay = 1000;
 
-    if (!remoteAddr) {
-      throw new Error(`failed to call app, app ${appName} not found`);
+    for (let i = 0; i < retryTimes; i++) {
+      const remoteAddr = await this.serviceDiscoverClient.fetchSingleService('apps', appName);
+
+      if (!remoteAddr) {
+        console.log(`rpc app ${appName} not found, retry ${i + 1} times`);
+        await new Promise((resolve) => setTimeout(resolve, retryDelay));
+        continue;
+      }
+
+      return await this.rpcClient.call({
+        remoteAddr: `http://${remoteAddr.host}:${remoteAddr.port}`,
+        appName,
+        method,
+        args,
+      });
     }
 
-    return await this.rpcClient.call({
-      remoteAddr: `http://${remoteAddr.host}:${remoteAddr.port}`,
-      appName,
-      method,
-      args,
-    });
+    throw new Error(`rpc app ${appName} not found`);
   }
 
   async pushToApp(appName: string, event: string, options?: any): Promise<boolean> {
