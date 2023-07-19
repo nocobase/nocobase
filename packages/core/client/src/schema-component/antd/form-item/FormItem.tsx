@@ -66,7 +66,7 @@ export const FormItem: any = observer(
         if (isVariable(schema?.default)) {
           field.setInitialValue?.(parseVariables(schema.default, variablesCtx));
         } else if (
-          collectionField.interface === 'o2m' &&
+          collectionField?.interface === 'o2m' &&
           ['SubTable', 'Nester'].includes(schema?.['x-component-props']?.['mode'])
         ) {
           const columnFieldWithDefault = findColumnFieldSchema(schema, getCollectionJoinField);
