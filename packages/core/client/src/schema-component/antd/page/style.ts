@@ -66,10 +66,10 @@ export const useStyles = genStyleHook('nb-page', (token) => {
         '&:hover': { '> .general-schema-designer': { display: 'block' } },
         '&.nb-action-link': {
           '> .general-schema-designer': {
-            top: 'var(--nb-designer-offset)',
-            bottom: 'var(--nb-designer-offset)',
-            right: 'var(--nb-designer-offset)',
-            left: 'var(--nb-designer-offset)',
+            top: '-10px',
+            bottom: '-10px',
+            left: '-10px',
+            right: '-10px',
           },
         },
         '> .general-schema-designer': {
