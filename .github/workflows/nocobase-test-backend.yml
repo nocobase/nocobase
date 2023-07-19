@@ -51,6 +51,7 @@ jobs:
         run: yarn nocobase install -f && node --max_old_space_size=4096 --no-compilation-cache ./node_modules/.bin/jest --maxWorkers=1 --workerIdleMemoryLimit=3000MB
         env:
           REDIS_URI: redis://redis:6379
+          LOGGER_LEVEL: error
           DB_DIALECT: sqlite
           DB_STORAGE: /tmp/db.sqlite
           DB_UNDERSCORED: ${{ matrix.underscored }}
@@ -102,7 +103,7 @@ jobs:
         run: yarn nocobase install -f && node --max_old_space_size=4096 --no-compilation-cache ./node_modules/.bin/jest --maxWorkers=1 --workerIdleMemoryLimit=3000MB
         env:
           REDIS_URI: redis://redis:6379
-          NODE_OPTIONS: '--max_old_space_size=4096'
+          LOGGER_LEVEL: error
           DB_DIALECT: postgres
           DB_HOST: postgres
           DB_PORT: 5432
@@ -150,7 +151,7 @@ jobs:
         run: yarn nocobase install -f && node --max_old_space_size=4096 --no-compilation-cache ./node_modules/.bin/jest --maxWorkers=1 --workerIdleMemoryLimit=3000MB
         env:
           REDIS_URI: redis://redis:6379
-          NODE_OPTIONS: '--max_old_space_size=4096'
+          LOGGER_LEVEL: error
           DB_DIALECT: mysql
           DB_HOST: mysql
           DB_PORT: 3306
