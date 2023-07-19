@@ -3,7 +3,7 @@ import { set } from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollectionFilterOptions, useCollectionManager } from '../../../collection-manager';
-import { GeneralSchemaDesigner, isPatternDisabled, SchemaSettings } from '../../../schema-settings';
+import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled } from '../../../schema-settings';
 import { useCompile, useDesignable } from '../../hooks';
 import { useAssociationFieldContext } from '../association-field/hooks';
 import { removeNullCondition } from '../filter';
@@ -275,7 +275,7 @@ export const TableColumnDesigner = (props) => {
         />
       )}
 
-      {colorFieldOptions.length > 0 && ['Tag'].includes(fieldMode) && (
+      {['Tag'].includes(fieldMode) && (
         <SchemaSettings.SelectItem
           key="title-field"
           title={t('Tag color field')}
