@@ -70,13 +70,15 @@ export default async function (opts: IBabelOpts) {
     log(chalk.gray(`Clean ${targetDir} directory`));
     rimraf.sync(targetPath);
   } else {
-    // exclude node_modules
-    const files = fs.readdirSync(targetPath, { recursive: false }) as string[];
-    files.forEach((file) => {
-      if (file !== 'node_modules') {
-        rimraf.sync(join(targetPath, file));
-      }
-    })
+    if (fs.existsSync(targetPath)) {
+      // exclude node_modules
+      const files = fs.readdirSync(targetPath, { recursive: false }) as string[];
+      files.forEach((file) => {
+        if (file !== 'node_modules') {
+          rimraf.sync(join(targetPath, file));
+        }
+      })
+    }
   }
 
   function transform(opts: ITransformOpts) {
