@@ -92,7 +92,6 @@ const getVariableValue = (str, values) => {
     //对多关系字段
     return getFieldValue(targetField, values);
   } else {
-    console.log(values, match?.[1]);
     return flat(values)[match?.[1]];
   }
 };
