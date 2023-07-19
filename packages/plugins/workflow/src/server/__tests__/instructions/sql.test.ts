@@ -7,6 +7,7 @@ describe('workflow > instructions > sql', () => {
   let app: Application;
   let db: Database;
   let PostRepo;
+  let PostCollection;
   let ReplyRepo;
   let WorkflowModel;
   let workflow;
@@ -16,7 +17,8 @@ describe('workflow > instructions > sql', () => {
 
     db = app.db;
     WorkflowModel = db.getCollection('workflows').model;
-    PostRepo = db.getCollection('posts').repository;
+    PostCollection = db.getCollection('posts');
+    PostRepo = PostCollection.repository;
     ReplyRepo = db.getCollection('replies').repository;
 
     workflow = await WorkflowModel.create({
@@ -30,7 +32,7 @@ describe('workflow > instructions > sql', () => {
     });
   });
 
-  afterEach(() => db.close());
+  afterEach(async () => await app.destroy());
 
   describe('invalid', () => {
     it('no sql', async () => {
@@ -92,7 +94,7 @@ describe('workflow > instructions > sql', () => {
       const n1 = await workflow.createNode({
         type: 'sql',
         config: {
-          sql: `update ${queryInterface.quoteIdentifier(`${db.options.tablePrefix ?? ''}posts`)} set ${queryInterface.quoteIdentifier('read')}={{$context.data.id}} where ${queryInterface.quoteIdentifier('id')}={{$context.data.id}}`,
+          sql: `update ${PostCollection.quotedTableName()} set ${queryInterface.quoteIdentifier('read')}={{$context.data.id}} where ${queryInterface.quoteIdentifier('id')}={{$context.data.id}}`,
         },
       });
 
@@ -127,7 +129,7 @@ describe('workflow > instructions > sql', () => {
       const n1 = await workflow.createNode({
         type: 'sql',
         config: {
-          sql: `delete from ${queryInterface.quoteIdentifier(`${db.options.tablePrefix ?? ''}posts`)} where ${queryInterface.quoteIdentifier('id')}={{$context.data.id}}`,
+          sql: `delete from ${PostCollection.quotedTableName()} where ${queryInterface.quoteIdentifier('id')}={{$context.data.id}};`,
         },
       });
 

@@ -13,7 +13,8 @@ export default {
 
     const result = await sequelize.query(sql, {
       transaction: processor.transaction,
-      plain: true,
+      // plain: true,
+      // model: db.getCollection(node.config.collection).model
     });
 
     return {
