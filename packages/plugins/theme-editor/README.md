@@ -12,25 +12,25 @@ English | [中文](./README.zh-CN.md)
 
 首先把 NocoBase 更新到最新版本，然后会在[插件管理页面](http://localhost:13000/admin/pm/list/local/)看到 `theme-editor` 的卡片，点击卡片右下角的 `启用` 按钮等待页面刷新。
 
-![启用 theme-editor 插件](image.png)
+<a href="https://sm.ms/image/EkiMxUpngzAb8yo" target="_blank"><img src="https://s2.loli.net/2023/07/19/EkiMxUpngzAb8yo.png" height="200"></a>
 
 ### 2、跳转到主题配置页面
 
 启用之后点击卡片左下角的设置按钮，会跳转到主题编辑页面。默认会有三个主题选项，分别是 `antd 的默认主题`、`暗黑主题` 和 `紧凑主题`。
 
-![Theme editor](image-1.png)
+<a href="https://sm.ms/image/EGXaztphIqRcxgB" target="_blank"><img src="https://s2.loli.net/2023/07/19/EGXaztphIqRcxgB.png" height="200"></a>
 
 ## 新增一个主题
 
 点击 `添加新主题` 按钮，选择 `新增一个全新的主题`，然后会在页面右侧弹出一个 `主题编辑器`，支持编辑 `颜色`、`尺寸`、`风格`等。编辑好之后输入主题名称然后点击保存即可完成主题的新增。
 
-![Alt text](image-3.png)
+<a href="https://sm.ms/image/ksxKVAG9ltgFEXo" target="_blank"><img src="https://s2.loli.net/2023/07/19/ksxKVAG9ltgFEXo.png" height="200"></a>
 
 ## 应用新主题
 
 可以把鼠标移到页面右上角，可以看到一个主题切换项，点击可以切换到其他主题，比如可以切换刚才新增的主题。
 
-![Alt text](image-2.png)
+<a href="https://sm.ms/image/5I8F9dY4chPltZD" target="_blank"><img src="https://s2.loli.net/2023/07/19/5I8F9dY4chPltZD.png" height="200"></a>
 
 ## 编辑已经存在的主题
 
@@ -40,16 +40,16 @@ English | [中文](./README.zh-CN.md)
 
 新添加的主题默认是允许非管理员用户切换的，如果不想让非管理员用户切换某个主题，可以关闭主题卡片右下角的 `可被用户选择` 开关，这样用户就无法切换到该主题了。
 
-![可被用户选择开关](image-4.png)
+<a href="https://sm.ms/image/aNOo3n1hzMJkFfv" target="_blank"><img src="https://s2.loli.net/2023/07/19/aNOo3n1hzMJkFfv.png" height="200"></a>
 
-## 设置为默认主题
+## 设置为默认主题（默认主题不可删除）
 
 在初始状态下，默认主题是 `antd 的默认主题`，如果想把某个主题设置为默认主题，可以开启卡片右下角的 `默认主题` 开关，这样当新用户第一次打开页面时应用的就是该默认主题。
 
-![Alt text](image-5.png)
+<a href="https://sm.ms/image/thZGqcmnJz5gwrY" target="_blank"><img src="https://s2.loli.net/2023/07/19/thZGqcmnJz5gwrY.png" height="200"></a>
 
 ## 删除主题
 
 点击卡片下方的 `删除` 按钮，然后点击弹出的确认按钮即可删除主题。
 
-![Alt text](image-6.png)
+<a href="https://sm.ms/image/jAyfnuMNO1vzcB4" target="_blank"><img src="https://s2.loli.net/2023/07/19/jAyfnuMNO1vzcB4.png" height="200"></a>
