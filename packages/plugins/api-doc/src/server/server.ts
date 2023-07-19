@@ -1,7 +1,9 @@
 import { Plugin } from '@nocobase/server';
 import send from 'koa-send';
+import { merge } from 'lodash';
 import { resolve } from 'path';
-import swagger from './swagger';
+import baseSwagger from './base-swagger';
+import { getSwaggerDocument } from './load';
 
 const SchemaTypeMapping = {
   uid: 'string',
@@ -11,6 +13,7 @@ const SchemaTypeMapping = {
   bigInt: 'integer',
   sort: 'integer',
   content: 'string',
+  set: 'array',
 };
 
 const createDefaultActionSwagger = ({ collection }) => {
@@ -88,6 +91,7 @@ export default class APIDoc extends Plugin {
 
   generateModels = () => {
     const models = {};
+    this.app.i18n;
     this.db.collections.forEach((collection) => {
       const properties = {};
       const model = {
@@ -215,13 +219,13 @@ export default class APIDoc extends Plugin {
         }
         return send(ctx, filename, { root });
       }
+
       if (ctx.path.startsWith('/api/swagger.json')) {
+        const swagger = await getSwaggerDocument(this.db);
         ctx.withoutDataWrapping = true;
-        const result = {
-          ...swagger,
+        const automaticGenerateSwagger = {
           paths: this.generatePaths(),
           components: {
-            ...swagger.components,
             schemas: this.generateModels(),
           },
           servers: [
@@ -230,7 +234,7 @@ export default class APIDoc extends Plugin {
             },
           ],
         };
-        ctx.body = result;
+        ctx.body = merge(baseSwagger, automaticGenerateSwagger, swagger);
       }
       await next();
     });
