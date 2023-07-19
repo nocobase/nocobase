@@ -13,7 +13,7 @@ import {
 import { collection, filter } from '../schemas/collection';
 import { NAMESPACE, lang } from '../locale';
 import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
-import { BaseTypeSets, nodesOptions, triggerOptions, useWorkflowVariableOptions } from '../variable';
+import { BaseTypeSets, defaultFieldNames, nodesOptions, triggerOptions, useWorkflowVariableOptions } from '../variable';
 import { FieldsSelect } from '../components/FieldsSelect';
 import { ValueBlock } from '../components/ValueBlock';
 import { useNodeContext } from '.';
@@ -299,7 +299,7 @@ export default {
     ValueBlock,
     AssociatedConfig,
   },
-  useVariables({ id, title }, { types }) {
+  useVariables({ id, title }, { types, fieldNames = defaultFieldNames }) {
     if (
       types &&
       !types.some((type) => type in BaseTypeSets || Object.values(BaseTypeSets).some((set) => set.has(type)))
@@ -307,8 +307,8 @@ export default {
       return null;
     }
     return {
-      value: `${id}`,
-      label: title,
+      [fieldNames.value]: `${id}`,
+      [fieldNames.label]: title,
     };
   },
   useInitializers(node): SchemaInitializerItemOptions | null {

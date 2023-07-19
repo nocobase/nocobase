@@ -2,12 +2,13 @@ import { useFieldSchema } from '@formily/react';
 import { error, forEach } from '@nocobase/utils/client';
 import { Select } from 'antd';
 import _ from 'lodash';
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { findFormBlock } from '../../../block-provider';
 import { useCollectionManager } from '../../../collection-manager';
 import { useDuplicatefieldsContext } from '../../../schema-initializer/components';
+import { useToken } from '../__builtins__';
 
 export interface ITemplate {
   config?: {
@@ -62,7 +63,7 @@ const useDataTemplates = () => {
       key: 'none',
       title: t('None'),
     },
-  ].concat(items.map<any>((t, i) => ({ key: i, ...t })));
+  ].concat(items.map<any>((item, i) => ({ key: i, ...item })));
 
   const defaultTemplate = items.find((item) => item.default);
   return {
@@ -83,6 +84,7 @@ function filterReferences(obj) {
   return filteredObj;
 }
 export const Templates = ({ style = {}, form }) => {
+  const { token } = useToken();
   const { templates, display, enabled, defaultTemplate } = useDataTemplates();
   const [value, setValue] = React.useState(defaultTemplate?.key || 'none');
   const api = useAPIClient();
@@ -106,6 +108,19 @@ export const Templates = ({ style = {}, form }) => {
         });
     }
   }, []);
+
+  const wrapperStyle = useMemo(() => {
+    return { display: 'flex', alignItems: 'center', backgroundColor: token.colorFillAlter, padding: '1em', ...style };
+  }, [style, token.colorFillAlter]);
+
+  const labelStyle = useMemo<{
+    fontSize: number;
+    fontWeight: 'bold';
+    whiteSpace: 'nowrap';
+    marginRight: number;
+  }>(() => {
+    return { fontSize: token.fontSize, fontWeight: 'bold', whiteSpace: 'nowrap', marginRight: token.marginXS };
+  }, [token.fontSize, token.marginXS]);
 
   const handleChange = useCallback(async (value, option) => {
     setValue(value);
@@ -138,13 +153,10 @@ export const Templates = ({ style = {}, form }) => {
   }
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#f8f8f8', padding: '1em', ...style }}>
-      <label style={{ fontSize: 14, fontWeight: 'bold', whiteSpace: 'nowrap', marginRight: 8 }}>
-        {t('Data template')}:{' '}
-      </label>
+    <div style={wrapperStyle}>
+      <label style={labelStyle}>{t('Data template')}: </label>
       <Select
         popupMatchSelectWidth={false}
-        // style={{ width: '8em' }}
         options={templates}
         fieldNames={{ label: 'title', value: 'key' }}
         value={value}

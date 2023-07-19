@@ -792,4 +792,5 @@ export default {
   "Copy into the form and continue to fill in": "复制到表单并继续填写",
   "Linkage with form fields":"从表单字段联动",
   "Failed to load plugin": "插件加载失败",
+  "Allow add new, update and delete actions":"允许增删改操作"
 }

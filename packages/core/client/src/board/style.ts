@@ -1,6 +1,6 @@
 import { createStyles } from 'antd-style';
 
-export const useStyles = createStyles(({ css }) => {
+export const useStyles = createStyles(({ css, token }) => {
   return css`
     .react-kanban-board {
       height: 100%;
@@ -52,9 +52,7 @@ export const useStyles = createStyles(({ css }) => {
     }
 
     .react-kanban-column {
-      // padding: 15px 0;
-      // border-radius: 2px;
-      background-color: #f9f9f9;
+      background-color: ${token.colorFillQuaternary};
       margin-right: 15px;
       padding-bottom: 15px;
       width: 300px;

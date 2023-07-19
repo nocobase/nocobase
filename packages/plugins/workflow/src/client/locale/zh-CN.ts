@@ -28,8 +28,8 @@ export default {
     '只有被选中的某个字段发生变动时才会触发。如果不选择，则表示任何字段变动时都会触发。新增或删除数据时，任意字段都被认为发生变动。',
   'Only triggers when match conditions': '满足以下条件才触发',
   'Preload associations': '预加载关联数据',
-  'Please select the associated fields that need to be accessed in subsequent nodes':
-    '请选中需要在后续节点中被访问的关系字段',
+  'Please select the associated fields that need to be accessed in subsequent nodes. With more than two levels of to-many associations may cause performance issue, please use with caution.':
+    '请选中需要在后续节点中被访问的关系字段。超过两层的对多关联可能会导致性能问题，请谨慎使用。',
   'Schedule event': '定时任务',
   'Trigger mode': '触发模式',
   'Based on certain date': '自定义时间',
@@ -90,6 +90,8 @@ export default {
   Manual: '人工处理',
   'Could be used for manually submitting data, and determine whether to continue or exit. Workflow will generate a todo item for assigned user when it reaches a manual node, and continue processing after user submits the form.':
     '可用于人工提交数据，并决定是否继续或退出流程。工作流在执行到人工节点时会为被指派的用户生成待办事项，直到用户提交对应表单后继续处理该流程。',
+  'Values preset in this form will override user submitted ones when continue or reject.':
+    '表单中预设的字段值会在用户提交继续或拒绝时覆盖相应字段的值。',
   'Extended types': '扩展类型',
   'Node type': '节点类型',
   Calculation: '运算',

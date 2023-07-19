@@ -27,6 +27,7 @@ export default {
       type: 'string',
       name: 'title',
       required: true,
+      translation: true,
     },
     {
       type: 'boolean',

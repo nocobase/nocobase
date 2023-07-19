@@ -1,10 +1,10 @@
 import { observer, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
-import { getValues } from './shared';
-import { Select, defaultFieldNames } from '../select';
 import { useRequest } from '../../../api-client';
 import { useRecord } from '../../../record-provider';
 import { useActionContext } from '../action';
+import { Select, defaultFieldNames } from '../select';
+import { getValues } from './shared';
 
 export const ReadPretty = observer(
   (props: any) => {
@@ -14,23 +14,25 @@ export const ReadPretty = observer(
     const record = useRecord();
     const { snapshot } = useActionContext();
 
-    const { data } = useRequest(
+    const { data } = useRequest<{
+      data: any[];
+    }>(
       snapshot
         ? async () => ({
-          data: record[fieldSchema.name],
-        })
+            data: record[fieldSchema.name],
+          })
         : {
-          action: 'list',
-          ...props.service,
-          params: {
-            paginate: false,
-            filter: {
-              [fieldNames.value]: {
-                $in: getValues(field.value, fieldNames),
+            action: 'list',
+            ...props.service,
+            params: {
+              paginate: false,
+              filter: {
+                [fieldNames.value]: {
+                  $in: getValues(field.value, fieldNames),
+                },
               },
             },
           },
-        },
       {
         refreshDeps: [props.service, field.value],
       },

@@ -3,12 +3,13 @@ import { Button, Result, Spin } from 'antd';
 import React, { FC } from 'react';
 import { Navigate } from 'react-router-dom';
 import { ACLPlugin } from '../acl';
-import { AntdConfigPlugin } from '../antd-config-provider';
 import { Application } from '../application';
 import { Plugin } from '../application/Plugin';
 import { SigninPage, SigninPageExtensionPlugin, SignupPage } from '../auth';
 import { BlockSchemaComponentPlugin } from '../block-provider';
+import CSSVariableProvider from '../css-variable/CSSVariableProvider';
 import { RemoteDocumentTitlePlugin } from '../document-title';
+import { AntdAppProvider, GlobalThemeProvider } from '../global-theme';
 import { PinnedListPlugin } from '../plugin-manager';
 import { PMPlugin } from '../pm';
 import { AdminLayoutPlugin, AuthLayout, RouteSchemaComponent } from '../route-switch';
@@ -17,6 +18,8 @@ import { ErrorFallback } from '../schema-component/antd/error-fallback';
 import { SchemaInitializerPlugin } from '../schema-initializer';
 import { BlockTemplateDetails, BlockTemplatePage } from '../schema-templates';
 import { SystemSettingsPlugin } from '../system-settings';
+import { CurrentUserProvider, CurrentUserSettingsMenuProvider } from '../user';
+import { LocalePlugin } from './plugins/LocalePlugin';
 
 const AppSpin = Spin;
 
@@ -42,17 +45,25 @@ const AppError: FC<{ app: Application; error: Error }> = ({ app, error }) => (
 );
 
 export class NocoBaseBuildInPlugin extends Plugin {
-  async afterAdd(): Promise<void> {
+  async afterAdd() {
     this.app.addComponents({
       AppSpin,
       AppError,
     });
     this.addPlugins();
   }
+
   async load() {
     this.addComponents();
     this.addRoutes();
+
+    this.app.use(CurrentUserProvider);
+    this.app.use(GlobalThemeProvider);
+    this.app.use(AntdAppProvider);
+    this.app.use(CSSVariableProvider);
+    this.app.use(CurrentUserSettingsMenuProvider);
   }
+
   addRoutes() {
     this.router.add('root', {
       path: '/',
@@ -93,8 +104,8 @@ export class NocoBaseBuildInPlugin extends Plugin {
     });
   }
   addPlugins() {
+    this.app.pm.add(LocalePlugin, { name: 'locale' });
     this.app.pm.add(AdminLayoutPlugin, { name: 'admin-layout' });
-    this.app.pm.add(AntdConfigPlugin, { name: 'antd-config', config: { remoteLocale: true } });
     this.app.pm.add(SystemSettingsPlugin, { name: 'system-setting' });
     this.app.pm.add(PinnedListPlugin, {
       name: 'pinned-list',

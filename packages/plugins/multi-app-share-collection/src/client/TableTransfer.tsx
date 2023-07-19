@@ -1,7 +1,7 @@
 import { connect } from '@formily/react';
-import { css, useCollectionManager, useRecord, useRequest } from '@nocobase/client';
+import { css, useCollectionManager, useRecord, useRequest, useToken } from '@nocobase/client';
 import { CollectionsGraph, lodash } from '@nocobase/utils/client';
-import { Col, Input, Modal, Row, Select, Spin, Table, Tag } from 'antd';
+import { App, Col, Input, Row, Select, Spin, Table, Tag } from 'antd';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -60,7 +60,9 @@ const useCollections = () => {
     },
   );
 
-  const res2 = useRequest({
+  const res2 = useRequest<{
+    data: any[];
+  }>({
     url: `collections`,
     params: {
       fields: ['name', 'title', 'hidden', 'category.name', 'category.color', 'category.sort'],
@@ -69,7 +71,9 @@ const useCollections = () => {
     },
   });
 
-  const res3 = useRequest({
+  const res3 = useRequest<{
+    data: any[];
+  }>({
     url: `collectionCategories`,
     params: {
       sort: 'sort',
@@ -177,6 +181,8 @@ export const TableTransfer = connect((props) => {
   const addedDataSource = useAddedDataSource({ collections, removed });
   const removedDataSource = useRemovedDataSource({ collections, removed });
   const { t } = useTranslation('multi-app-share-collection');
+  const { modal } = App.useApp();
+  const { token } = useToken();
   const columns = useMemo(
     () => [
       {
@@ -224,7 +230,7 @@ export const TableTransfer = connect((props) => {
               margin-bottom: 8px;
             `}
           >
-            <strong style={{ fontSize: 16 }}>{t('Unshared collections')}</strong>
+            <strong style={{ fontSize: token.fontSizeLG, color: token.colorText }}>{t('Unshared collections')}</strong>
             <Input.Group compact style={{ width: 360 }}>
               <Select
                 popupMatchSelectWidth={false}
@@ -277,7 +283,7 @@ export const TableTransfer = connect((props) => {
                 if (adding.length === 1) {
                   return change();
                 }
-                Modal.confirm({
+                modal.confirm({
                   title: t('Are you sure to add the following collections?'),
                   width: '60%',
                   content: (
@@ -309,7 +315,7 @@ export const TableTransfer = connect((props) => {
               margin-bottom: 8px;
             `}
           >
-            <strong style={{ fontSize: 16 }}>{t('Shared collections')}</strong>
+            <strong style={{ fontSize: token.fontSizeLG, color: token.colorText }}>{t('Shared collections')}</strong>
             <Input.Group compact style={{ width: 360 }}>
               <Select
                 popupMatchSelectWidth={false}
@@ -362,7 +368,7 @@ export const TableTransfer = connect((props) => {
                 if (removing.length === 1) {
                   return change();
                 }
-                Modal.confirm({
+                modal.confirm({
                   title: t('Are you sure to remove the following collections?'),
                   width: '60%',
                   content: (

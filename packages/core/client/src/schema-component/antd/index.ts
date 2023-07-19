@@ -1,4 +1,5 @@
 export * from './action';
+export * from './appends-tree-select';
 export * from './association-field';
 export * from './association-select';
 export * from './auto-complete';
@@ -15,6 +16,7 @@ export * from './details';
 export * from './expand-action';
 export * from './filter';
 export * from './form';
+export * from './form-dialog';
 export * from './form-item';
 export * from './form-v2';
 export * from './g2plot';
