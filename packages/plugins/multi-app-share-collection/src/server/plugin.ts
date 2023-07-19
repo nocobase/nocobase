@@ -3,7 +3,7 @@ import { Application, Plugin } from '@nocobase/server';
 import { lodash } from '@nocobase/utils';
 import { resolve } from 'path';
 
-const subAppFilteredPlugins = ['multi-app-share-collection', 'multi-app-manager'];
+const subAppFilteredPlugins = ['multi-app-share-collection', 'multi-app-manager', 'localization-management'];
 
 class SubAppPlugin extends Plugin {
   beforeLoad() {
