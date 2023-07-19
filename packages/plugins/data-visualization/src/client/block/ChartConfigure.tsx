@@ -132,9 +132,6 @@ export const ChartConfigure: React.FC<{
           onFieldChange('config.chartType', () => initChart(true));
           onFormInit(() => {
             queryReact(form);
-            // if (!service.loading) {
-            //   service.run(collection, form.values.query);
-            // }
           });
         },
       });
@@ -182,6 +179,7 @@ export const ChartConfigure: React.FC<{
           current.service?.run(collection, query);
           queryRef.current.scrollTop = 0;
           configRef.current.scrollTop = 0;
+          service.mutate(undefined);
         };
         const rendererProps = {
           query,
@@ -337,7 +335,7 @@ ChartConfigure.Query = function Query() {
       collection: value,
       service: current.service,
     });
-    service.mutate([]);
+    service.mutate(undefined);
   };
   const FromSql = () => (
     <Text code>
