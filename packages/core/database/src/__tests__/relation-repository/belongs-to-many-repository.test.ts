@@ -5,6 +5,7 @@ import { mockDatabase } from '../index';
 
 describe('belongs to many with collection that has no id key', () => {
   let db: Database;
+
   beforeEach(async () => {
     db = mockDatabase();
 
