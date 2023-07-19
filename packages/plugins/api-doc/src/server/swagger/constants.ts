@@ -5,6 +5,6 @@ export const SchemaTypeMapping = {
   text: 'string',
   bigInt: 'integer',
   sort: 'integer',
-  content: 'string',
+  context: 'string',
   set: 'array',
 };

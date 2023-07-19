@@ -5,8 +5,8 @@ import { SchemaTypeMapping } from './constants';
 import { createDefaultActionSwagger, getInterfaceCollection } from './helpers';
 import { getSwaggerDocument } from './load';
 export class SwaggerManager {
-  private swagger: Record<string, any> = baseSwagger;
   private plugin: ApiDocPlugin;
+
   private get app() {
     return this.plugin.app;
   }
@@ -14,8 +14,11 @@ export class SwaggerManager {
     return this.plugin.db;
   }
 
-  private get baseSwagger() {
-    return Object.assign(baseSwagger, {
+  private async getBaseSwagger() {
+    return merge(baseSwagger, {
+      info: {
+        version: await this.app.version.get(),
+      },
       servers: [
         {
           url: (this.app.resourcer.options.prefix || '/').replace(/^[^/]/, '/$1'),
@@ -26,17 +29,6 @@ export class SwaggerManager {
 
   constructor(plugin: ApiDocPlugin) {
     this.plugin = plugin;
-    this.listenAppEvent();
-  }
-
-  private listenAppEvent() {
-    const eventCallback = () => {
-      this.generateSwagger();
-    };
-    this.app.on('afterLoad', eventCallback);
-    this.app.on('afterReload', eventCallback);
-    this.app.on('afterEnablePlugin', eventCallback);
-    this.app.on('afterDisablePlugin', eventCallback);
   }
 
   private generateSchemas() {
@@ -50,21 +42,24 @@ export class SwaggerManager {
       };
 
       collection.forEachField((field) => {
+        const { type, target } = field;
         const property: Record<string, any> = {};
-        if (field.type === 'array') {
-          property['items'] = {
-            type: 'object',
-          };
-        } else if (field.type === 'hasMany' || field.type === 'belongsToMany') {
+        if (type === 'hasMany' || type === 'belongsToMany') {
           property['type'] = 'array';
           property['items'] = {
-            $ref: `#/components/schemas/${field.target}`,
+            $ref: `#/components/schemas/${target}`,
           };
-        } else if (field.type === 'belongsTo' || field.type === 'hasOne') {
+        } else if (type === 'belongsTo' || type === 'hasOne') {
           property['type'] = 'object';
-          property['$ref'] = `#/components/schemas/${field.target}`;
+          property['$ref'] = `#/components/schemas/${target}`;
         } else {
-          property.type = SchemaTypeMapping[field.type] || field.type;
+          property.type = SchemaTypeMapping[type] || type;
+          if (property.type === 'array' && !property.items) {
+            property.items = {
+              type: 'object',
+            };
+          }
+          property.example = field.get('defaultValue');
         }
         properties[field.name] = property;
       });
@@ -131,11 +126,10 @@ export class SwaggerManager {
         schemas: await this.generateSchemas(),
       },
     };
-    this.swagger = merge(merge(this.baseSwagger, newSchemas), await this.loadSwaggers());
-    return this.swagger;
+    return merge(merge(await this.getBaseSwagger(), newSchemas), await this.loadSwaggers());
   }
 
-  getSwagger() {
-    return this.swagger;
+  async getSwagger() {
+    return this.generateSwagger();
   }
 }

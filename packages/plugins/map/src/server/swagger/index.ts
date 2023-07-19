@@ -17,7 +17,7 @@ export default {
             },
           },
         ],
-        response: {
+        responses: {
           200: {
             description: 'successful operation',
             content: {

@@ -26,7 +26,7 @@ export default class APIDoc extends Plugin {
 
       if (ctx.path.startsWith('/api/swagger.json')) {
         ctx.withoutDataWrapping = true;
-        ctx.body = this.swagger.getSwagger();
+        ctx.body = await this.swagger.getSwagger();
       }
       await next();
     });
