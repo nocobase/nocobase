@@ -1277,6 +1277,17 @@ const defaultInputStyle = css`
     flex: 1;
   }
 `;
+
+export const findParentFieldSchema = (fieldSchema: Schema) => {
+  let parent = fieldSchema.parent;
+  while (parent) {
+    if (parent['x-component'] === 'CollectionField') {
+      return parent;
+    }
+    parent = parent.parent;
+  }
+};
+
 SchemaSettings.DefaultValue = function DefaultvalueConfigure(props) {
   const variablesCtx = useVariablesCtx();
   const currentSchema = useFieldSchema();
@@ -1294,10 +1305,13 @@ SchemaSettings.DefaultValue = function DefaultvalueConfigure(props) {
       `${collectionField.target}.${fieldSchema['x-component-props']?.fieldNames?.label || 'id'}`,
     );
   }
+  const parentFieldSchema = collectionField.interface === 'm2o' && findParentFieldSchema(fieldSchema);
+  const parentCollectionField = parentFieldSchema && getCollectionJoinField(parentFieldSchema?.['x-collection-field']);
   const tableCtx = useTableBlockContext();
   const isAllowContexVariable =
     collectionField.interface === 'm2m' ||
-    (fieldSchema?.parent['x-component'] === 'TableV2.Column' && collectionField.interface === 'm2o');
+    (parentCollectionField?.type === 'hasMany' && collectionField.interface === 'm2o');
+    console.log(getFieldDefaultValue(fieldSchema, collectionField))
   return (
     <SchemaSettings.ModalItem
       title={t('Set default value')}
