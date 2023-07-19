@@ -181,7 +181,7 @@ export const G2PlotLibrary: Charts = {
                 'x-reactions': '{{ useChartFields }}',
                 'x-component-props': {
                   style: {
-                    'min-width': '200px',
+                    minWidth: '200px',
                   },
                 },
                 required: true,

@@ -1,6 +1,8 @@
 import { css } from '@emotion/css';
-import { MaybeCollectionProvider } from '@nocobase/client';
+import { useFieldSchema } from '@formily/react';
+import { MaybeCollectionProvider, useAPIClient, useRequest } from '@nocobase/client';
 import React, { createContext } from 'react';
+import { parseField } from '../utils';
 
 export type MeasureProps = {
   field: string | string[];
@@ -47,10 +49,62 @@ export type ChartRendererProps = {
   mode?: 'builder' | 'sql';
 };
 
-export const ChartRendererContext = createContext<ChartRendererProps>({} as any);
+export const ChartRendererContext = createContext<{
+  collection: string;
+  config?: {
+    chartType: string;
+    general: any;
+    advanced: any;
+  };
+  transform?: TransformProps[];
+  service: any;
+  data?: any[];
+}>({} as any);
 
 export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
-  const { collection } = props;
+  const { query, config, collection, transform } = props;
+  const schema = useFieldSchema();
+  const api = useAPIClient();
+  const service = useRequest(
+    (collection, query) =>
+      new Promise((resolve, reject) => {
+        if (!(collection && query?.measures?.length)) return resolve(undefined);
+        api
+          .request({
+            url: 'charts:query',
+            method: 'POST',
+            data: {
+              uid: schema?.['x-uid'],
+              collection,
+              ...query,
+              dimensions: (query?.dimensions || []).map((item: DimensionProps) => {
+                const dimension = { ...item };
+                if (item.format && !item.alias) {
+                  const { alias } = parseField(item.field);
+                  dimension.alias = alias;
+                }
+                return dimension;
+              }),
+              measures: (query?.measures || []).map((item: MeasureProps) => {
+                const measure = { ...item };
+                if (item.aggregation && !item.alias) {
+                  const { alias } = parseField(item.field);
+                  measure.alias = alias;
+                }
+                return measure;
+              }),
+            },
+          })
+          .then((res) => {
+            resolve(res?.data?.data);
+          })
+          .catch(reject);
+      }),
+    {
+      defaultParams: [collection, query],
+    },
+  );
+
   return (
     <MaybeCollectionProvider collection={collection}>
       <div
@@ -58,12 +112,11 @@ export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
           .ant-card {
             box-shadow: none;
           }
-          .ant-card-body {
-            padding: 0;
-          }
         `}
       >
-        <ChartRendererContext.Provider value={{ ...props }}>{props.children}</ChartRendererContext.Provider>
+        <ChartRendererContext.Provider value={{ collection, config, transform, service }}>
+          {props.children}
+        </ChartRendererContext.Provider>
       </div>
     </MaybeCollectionProvider>
   );
