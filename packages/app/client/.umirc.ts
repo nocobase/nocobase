@@ -28,6 +28,7 @@ export default defineConfig({
   },
   define: {
     ...umiConfig.define,
+    'process.env.USER_REMOTE_PLUGIN': process.env.USER_REMOTE_PLUGIN,
   },
   proxy: {
     ...umiConfig.proxy,

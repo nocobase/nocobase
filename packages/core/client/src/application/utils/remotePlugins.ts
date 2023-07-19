@@ -60,15 +60,22 @@ export function initDeps(requirejs: any) {
   requirejs.define('@nocobase/evaluators/client', () => nocobaseEvaluators);
 }
 
-export function getRemotePlugins(pluginData: PluginData[] = []): Promise<(typeof Plugin)[]> {
+export function getRemotePlugins(pluginData: PluginData[] = [], baseURL = ''): Promise<(typeof Plugin)[]> {
+  if (baseURL.endsWith('/')) {
+    baseURL = baseURL.slice(0, -1);
+  }
+  if (baseURL.endsWith('/api')) {
+    baseURL = baseURL.slice(0, -4);
+  }
+
   const requirejs: any = getRequireJs();
   (window as any).define = requirejs.define;
 
   initDeps(requirejs);
   requirejs.requirejs.config({
     paths: pluginData.reduce<Record<string, string>>((memo, item) => {
-      memo[item.packageName] = item.url;
-      memo[`${item.packageName}/client`] = `${item.url}.js?client`;
+      memo[item.packageName] = `${baseURL}${item.url}`;
+      memo[`${item.packageName}/client`] = `${baseURL}${item.url}.js?client`;
       return memo;
     }, {}),
   });
@@ -83,11 +90,15 @@ export function getRemotePlugins(pluginData: PluginData[] = []): Promise<(typeof
   });
 }
 
-export async function getPlugins(pluginData: PluginData[], dynamicImport: any): Promise<(typeof Plugin)[]> {
+export async function getPlugins(
+  pluginData: PluginData[],
+  dynamicImport: any,
+  baseURL: string,
+): Promise<(typeof Plugin)[]> {
   if (pluginData.length === 0) return [];
   const plugins = [];
 
-  if (process.env.NODE_ENV === 'development') {
+  if (process.env.NODE_ENV === 'development' && !process.env.USER_REMOTE_PLUGIN) {
     const localPlugins = pluginData.filter((item) => item.type === 'local');
     const remotePlugins = pluginData.filter((item) => item.type !== 'local');
     plugins.push(
@@ -97,11 +108,11 @@ export async function getPlugins(pluginData: PluginData[], dynamicImport: any): 
     if (remotePlugins.length === 0) {
       return plugins;
     } else {
-      const remotePluginList = await getRemotePlugins(remotePlugins);
+      const remotePluginList = await getRemotePlugins(remotePlugins, baseURL);
       plugins.push(...remotePluginList);
       return plugins;
     }
   }
 
-  return getRemotePlugins(pluginData);
+  return getRemotePlugins(pluginData, baseURL);
 }

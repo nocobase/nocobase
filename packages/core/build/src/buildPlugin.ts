@@ -182,6 +182,7 @@ export function buildPluginClient(cwd: string, log: Log) {
         fileName: () => outputFileName,
       },
       rollupOptions: {
+        cache: true,
         external: Object.keys(globals),
         output: {
           exports: 'named',
