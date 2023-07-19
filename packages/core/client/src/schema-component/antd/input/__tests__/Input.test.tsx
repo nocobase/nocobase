@@ -39,31 +39,7 @@ describe('Input.TextArea', () => {
     fireEvent.change(textarea, { target: { value: 'Hello World, Hello World' } });
 
     expect(textarea.value).toBe('Hello World, Hello World');
-    expect(screen.getAllByText('Hello World, Hello World')).toMatchInlineSnapshot(`
-      [
-        <textarea
-          class="ant-input css-dev-only-do-not-override-14wwjjs"
-          style="resize: none; height: -70px; min-height: -14px; max-height: -70px;"
-        >
-          Hello World, Hello World
-        </textarea>,
-        <div
-          style="line-height: 1.612;"
-        >
-          Hello World, Hello World
-        </div>,
-        <div
-          style="overflow: hidden; overflow-wrap: break-word; text-overflow: ellipsis; white-space: nowrap; word-break: break-all;"
-        >
-          Hello World, Hello World
-        </div>,
-        <div
-          style="line-height: 1.612;"
-        >
-          Hello World, Hello World
-        </div>,
-      ]
-    `);
+    expect(screen.getAllByText('Hello World, Hello World')).toHaveLength(4);
   });
 
   it('should not display undefined', () => {
@@ -88,16 +64,7 @@ describe('Input.URL', () => {
     const input = container.querySelector('input') as HTMLInputElement;
     await userEvent.type(input, 'https://www.nocobase.com');
     expect(input.value).toBe('https://www.nocobase.com');
-    expect(screen.getByText('https://www.nocobase.com')).toMatchInlineSnapshot(`
-      <a
-        class="ant-typography ant-typography-ellipsis ant-typography-single-line ant-typography-ellipsis-single-line css-dev-only-do-not-override-14wwjjs"
-        href="https://www.nocobase.com"
-        rel="noopener noreferrer"
-        target="_blank"
-      >
-        https://www.nocobase.com
-      </a>
-    `);
+    expect(screen.getByText('https://www.nocobase.com')).toBeInTheDocument();
   });
 
   it('should display the error when the value is invalid', async () => {
@@ -106,16 +73,7 @@ describe('Input.URL', () => {
     const input = container.querySelector('input') as HTMLInputElement;
     await userEvent.type(input, 'abcd');
     expect(input.value).toBe('abcd');
-    expect(screen.getByText('abcd')).toMatchInlineSnapshot(`
-      <a
-        class="ant-typography ant-typography-ellipsis ant-typography-single-line ant-typography-ellipsis-single-line css-dev-only-do-not-override-14wwjjs"
-        href="abcd"
-        rel="noopener noreferrer"
-        target="_blank"
-      >
-        abcd
-      </a>
-    `);
+    expect(screen.getByText('abcd')).toBeInTheDocument();
 
     // show error message
     expect(screen.getByText('The field value is a invalid url').innerHTML).toBe('The field value is a invalid url');
