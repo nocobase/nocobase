@@ -1311,7 +1311,6 @@ SchemaSettings.DefaultValue = function DefaultvalueConfigure(props) {
   const isAllowContexVariable =
     collectionField.interface === 'm2m' ||
     (parentCollectionField?.type === 'hasMany' && collectionField.interface === 'm2o');
-    console.log(getFieldDefaultValue(fieldSchema, collectionField))
   return (
     <SchemaSettings.ModalItem
       title={t('Set default value')}

@@ -32,20 +32,21 @@ import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
 import { useEnsureOperatorsValid } from './SchemaSettingOptions';
 
 export const findColumnFieldSchema = (fieldSchema, getCollectionJoinField) => {
-  const columnSchema = [];
+  const childsSchema = new Set();
   const getAssociationAppends = (schema) => {
     schema.reduceProperties((_, s) => {
       const collectionfield = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
       const isAssociationField = collectionfield && ['belongsTo'].includes(collectionfield.type);
       if (collectionfield && isAssociationField && s.default?.includes?.('$context')) {
-        columnSchema.push(s);
+        childsSchema.add(JSON.stringify({ name: s.name, default: s.default }));
       } else {
         getAssociationAppends(s);
       }
     }, []);
   };
+
   getAssociationAppends(fieldSchema);
-  return columnSchema;
+  return [...childsSchema];
 };
 
 export const FormItem: any = observer(
@@ -63,20 +64,21 @@ export const FormItem: any = observer(
         ctx.field.data.activeFields = ctx.field.data.activeFields || new Set();
         ctx.field.data.activeFields.add(schema.name);
         // 如果默认值是一个变量，则需要解析之后再显示出来
-        if (isVariable(schema?.default)) {
+        if (isVariable(schema?.default) && !schema?.default.includes('$context')) {
           field.setInitialValue?.(parseVariables(schema.default, variablesCtx));
         } else if (
           collectionField?.interface === 'o2m' &&
           ['SubTable', 'Nester'].includes(schema?.['x-component-props']?.['mode'])
         ) {
-          const columnFieldWithDefault = findColumnFieldSchema(schema, getCollectionJoinField);
+          const childrenFieldWithDefault = findColumnFieldSchema(schema, getCollectionJoinField);
           // 子表格/子表单中找出所有belongsTo字段的上下文默认值
-          if (columnFieldWithDefault.length > 0) {
+          if (childrenFieldWithDefault.length > 0) {
             const contextData = parseVariables('{{$context}}', variablesCtx);
             const initValues = contextData?.map((v) => {
               const obj = {};
-              columnFieldWithDefault.forEach((s) => {
-                obj[s.name] = parseVariables(s.default, { $context: v });
+              childrenFieldWithDefault.forEach((s: any) => {
+                const child = JSON.parse(s);
+                obj[child.name] = parseVariables(child.default, { $context: v });
               });
               return obj;
             });
