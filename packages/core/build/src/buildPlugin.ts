@@ -57,7 +57,7 @@ type Log = (msg: string, ...args: any) => void;
 
 export function deleteJsFiles(cwd: string, log: Log) {
   log('delete babel js files')
-  const jsFiles = fg.globSync(['**/*', '!**/*.d.ts'], { cwd: path.join(cwd, 'lib'), absolute: true })
+  const jsFiles = fg.globSync(['**/*', '!**/*.d.ts', '!node_modules'], { cwd: path.join(cwd, 'lib'), absolute: true })
   jsFiles.forEach(item => {
     fs.unlinkSync(item);
   })
@@ -80,9 +80,19 @@ export async function buildServerDeps(cwd: string, serverFiles: string[], packag
   const deps = getDepsConfig(cwd, outDir, packages, external);
 
   // bundle deps
-  for await (const dep of Object.keys(deps)) {
+  for (const dep of Object.keys(deps)) {
     const { output, pkg, nccConfig } = deps[dep];
     const outputDir = path.dirname(output);
+    const outputPackageJson = path.join(outputDir, 'package.json');
+
+    // cache check
+    if (fs.existsSync(outputPackageJson)) {
+      const outputPackage = require(outputPackageJson);
+      if (outputPackage.version === pkg.version) {
+        continue;
+      }
+    }
+
     await ncc(dep, nccConfig).then(
       ({
         code,
@@ -108,7 +118,7 @@ export async function buildServerDeps(cwd: string, serverFiles: string[], packag
 
         // emit package.json
         fs.writeFileSync(
-          path.join(outputDir, 'package.json'),
+          outputPackageJson,
           JSON.stringify({
             name: pkg.name,
             version: pkg.version,
@@ -138,7 +148,7 @@ export async function buildPluginServer(cwd: string, log: Log) {
     bundle: false,
     silent: true,
     treeshake: true,
-    target: 'node18',
+    target: 'node16',
     outDir: path.join(cwd, 'lib'),
     format: 'cjs',
     skipNodeModulesBundle: true

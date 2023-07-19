@@ -13,6 +13,7 @@ import gulpLess from "gulp-less";
 import gulpPlumber from "gulp-plumber";
 import gulpIf from "gulp-if";
 import chalk from "chalk";
+import fs from 'fs-extra'
 import getBabelConfig from "./getBabelConfig";
 import { Dispose, IBundleOptions } from "./types";
 import * as ts from "typescript";
@@ -25,7 +26,7 @@ interface IBabelOpts {
   log?: (string) => void;
   watch?: boolean;
   dispose?: Dispose[];
-  onlyTypes?: boolean;
+  isPlugin?: boolean;
   importLibToEs?: boolean;
   bundleOpts: IBundleOptions;
 }
@@ -47,7 +48,7 @@ export default async function (opts: IBabelOpts) {
     dispose,
     importLibToEs,
     log,
-    onlyTypes = false,
+    isPlugin = false,
     bundleOpts: {
       target = "browser",
       runtimeHelpers,
@@ -65,8 +66,18 @@ export default async function (opts: IBabelOpts) {
   const targetDir = type === "esm" ? "es" : "lib";
   const targetPath = join(cwd, targetDir);
 
-  log(chalk.gray(`Clean ${targetDir} directory`));
-  rimraf.sync(targetPath);
+  if (!isPlugin) {
+    log(chalk.gray(`Clean ${targetDir} directory`));
+    rimraf.sync(targetPath);
+  } else {
+    // exclude node_modules
+    const files = fs.readdirSync(targetPath, { recursive: false }) as string[];
+    files.forEach((file) => {
+      if (file !== 'node_modules') {
+        rimraf.sync(join(targetPath, file));
+      }
+    })
+  }
 
   function transform(opts: ITransformOpts) {
     const { file, type } = opts;
@@ -159,7 +170,7 @@ export default async function (opts: IBabelOpts) {
     }
 
     function isTransform(path) {
-      if (onlyTypes) return false
+      if (isPlugin) return false
       return babelTransformRegexp.test(path) && !path.endsWith(".d.ts");
     }
     return vfs
@@ -204,7 +215,7 @@ export default async function (opts: IBabelOpts) {
 
   return new Promise((resolve) => {
     const patterns = [
-      onlyTypes ? join(srcPath, "**/*.{ts,tsx}") : join(srcPath, "**/*"),
+      isPlugin ? join(srcPath, "**/*.{ts,tsx}") : join(srcPath, "**/*"),
       `!${join(srcPath, "**/fixtures{,/**}")}`,
       `!${join(srcPath, "**/demos{,/**}")}`,
       `!${join(srcPath, "**/__test__{,/**}")}`,

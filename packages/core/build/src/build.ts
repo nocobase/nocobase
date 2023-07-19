@@ -167,7 +167,7 @@ export async function build(opts: IOpts, extraOpts: IExtraBuildOpts = {}) {
       const cjs = bundleOpts.cjs as IBundleTypeOutput;
       log(`Build ${isPlugin ? 'd.ts' : 'cjs'} with ${cjs.type}`);
       if (cjs.type === 'babel') {
-        await babel({ cwd, rootPath, watch, dispose, onlyTypes: isPlugin, type: 'cjs', log, bundleOpts });
+        await babel({ cwd, rootPath, watch, dispose, isPlugin, type: 'cjs', log, bundleOpts });
         if (isPlugin) {
           deleteJsFiles(cwd, log);
           await buildPluginServer(cwd, log)
