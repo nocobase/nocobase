@@ -3,6 +3,7 @@ import { observer, RecursionField, useField, useFieldSchema, useForm } from '@fo
 import { App, Button, Popover } from 'antd';
 import classnames from 'classnames';
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useActionContext } from '../..';
 import { useDesignable } from '../../';
 import { Icon } from '../../../icon';
@@ -20,6 +21,7 @@ import { ActionContextProvider } from './context';
 import { useA } from './hooks';
 import { ComposedAction } from './types';
 import { linkageAction } from './utils';
+import { lodash } from '@nocobase/utils';
 
 export const actionDesignerCss = css`
   position: relative;
@@ -79,6 +81,7 @@ export const Action: ComposedAction = observer(
       title,
       ...others
     } = props;
+    const { t } = useTranslation();
     const { onClick } = useProps(props);
     const [visible, setVisible] = useState(false);
     const [formValueChanged, setFormValueChanged] = useState(false);
@@ -97,6 +100,8 @@ export const Action: ComposedAction = observer(
     const { designable } = useDesignable();
     const tarComponent = useComponent(component) || component;
     const { modal } = App.useApp();
+    let actionTitle = title || compile(fieldSchema.title);
+    actionTitle = lodash.isString(actionTitle) ? t(actionTitle) : actionTitle;
 
     useEffect(() => {
       field.linkageProperty = {};
@@ -146,7 +151,7 @@ export const Action: ComposedAction = observer(
           className={classnames(actionDesignerCss, className)}
           type={props.type === 'danger' ? undefined : props.type}
         >
-          {title || compile(fieldSchema.title)}
+          {actionTitle}
           <Designer {...designerProps} />
         </SortableItem>
       );

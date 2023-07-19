@@ -1,5 +1,5 @@
 import { onFieldValueChange } from '@formily/core';
-import { useForm, useFormEffects } from '@formily/react';
+import { useForm, useFormEffects, ISchema } from '@formily/react';
 import { css, SchemaComponent } from '@nocobase/client';
 import React, { useState } from 'react';
 import { NAMESPACE } from '../../locale';
@@ -193,27 +193,29 @@ export const ScheduleConfig = () => {
         }}
       />
       <SchemaComponent
-        schema={{
-          type: 'void',
-          properties: {
-            [`mode-${mode}`]: {
-              type: 'void',
-              'x-component': 'fieldset',
-              'x-component-props': {
-                className: css`
-                  .ant-input-number {
-                    width: 4em;
-                  }
+        schema={
+          {
+            type: 'void',
+            properties: {
+              [`mode-${mode}`]: {
+                type: 'void',
+                'x-component': 'fieldset',
+                'x-component-props': {
+                  className: css`
+                    .ant-input-number {
+                      width: 4em;
+                    }
 
-                  .ant-picker {
-                    width: auto;
-                  }
-                `,
+                    .ant-picker {
+                      width: auto;
+                    }
+                  `,
+                },
+                properties: ModeFieldsets[mode],
               },
-              properties: ModeFieldsets[mode],
             },
-          },
-        }}
+          } as ISchema
+        }
         components={{
           OnField,
           RepeatField,
