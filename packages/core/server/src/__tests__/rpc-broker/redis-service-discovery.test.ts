@@ -72,4 +72,12 @@ describe('redis service discovery', () => {
     const serviceInfo3 = await discoveryClient.getServicesByName('apps', app.name);
     expect(serviceInfo3.length).toBe(1);
   });
+
+  it('should get client connection info', async () => {
+    const remoteBroker = AppSupervisor.getInstance().getRpcBroker() as RemoteBroker;
+    const discoveryClient = remoteBroker.serviceDiscoverClient;
+    const clientConnectionInfo = await discoveryClient.clientConnectionInfo();
+
+    expect(clientConnectionInfo).toBeDefined();
+  });
 });

@@ -65,5 +65,10 @@ export const createRpcHttpServer = (options: RpcHttpServerOptions) => {
     console.log(`rpc server is listening on ${rpcHost}:${rpcPort}`);
   });
 
+  server.on('error', (e) => {
+    console.error(`rpc server error: `, e);
+    process.exit(1);
+  });
+
   return server;
 };

@@ -31,6 +31,8 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
       this.runningMode = 'single';
       this.singleAppName = process.env.STARTUP_SUBAPP;
     }
+
+    this.buildRpcBroker();
   }
 
   public buildRpcBroker(options: RpcBrokerOptions = {}) {
@@ -49,10 +51,6 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   getRpcBroker() {
-    if (!this.rpcBroker) {
-      this.buildRpcBroker();
-    }
-
     return this.rpcBroker;
   }
 

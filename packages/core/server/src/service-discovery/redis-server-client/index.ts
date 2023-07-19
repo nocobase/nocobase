@@ -87,8 +87,30 @@ export class RedisDiscoveryServerClient extends ServiceDiscoveryClient {
     return true;
   }
 
-  clientConnectionInfo(): Promise<ConnectionInfo> {
-    return Promise.resolve(undefined);
+  async clientConnectionInfo(): Promise<ConnectionInfo> {
+    const client = await this.getRedisClient();
+    const clientId = await client.sendCommand(['CLIENT', 'ID']);
+    const clientList = await client.sendCommand<string>(['CLIENT', 'LIST']);
+
+    const clientInfo = clientList
+      .split('\n')
+      .map((line) => {
+        const client = {};
+        const parts = line.split(' ');
+        parts.forEach((part) => {
+          const [key, value] = part.split('=');
+          client[key] = value;
+        });
+        return client;
+      })
+      .find((c) => c['id'] == clientId);
+
+    const [host, port] = clientInfo['addr'].split(':');
+
+    return {
+      host,
+      port: parseInt(port),
+    };
   }
 
   private serviceKey(serviceInfo: RemoteServiceInfo) {

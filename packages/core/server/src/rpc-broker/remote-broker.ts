@@ -29,10 +29,12 @@ export class RemoteBroker extends RpcBrokerInterface {
       app.on('afterStart', async () => {
         // start rpc server at least one app is started
         if (!this.rpcServer) {
+          const rpcServerConfig = this.rpcServerConfig();
+
           this.rpcServer = createRpcHttpServer({
-            port: parseInt(process.env['RPC_PORT']) || 23000,
+            port: rpcServerConfig.port,
             appSupervisor,
-            host: '127.0.0.1',
+            host: rpcServerConfig.host,
           });
         }
 
@@ -49,6 +51,13 @@ export class RemoteBroker extends RpcBrokerInterface {
     });
   }
 
+  private rpcServerConfig() {
+    return {
+      host: process.env['RPC_HOST'] || '127.0.0.1',
+      port: parseInt(process.env['RPC_PORT']) || 23000,
+    };
+  }
+
   async registerApp(app: Application) {
     await this.serviceDiscoverClient.registerService(await this.getAppServiceInfo(app));
   }
@@ -58,10 +67,15 @@ export class RemoteBroker extends RpcBrokerInterface {
   }
 
   async getAppServiceInfo(app: Application): Promise<RemoteServiceInfo> {
+    const rpcServerConfig = this.rpcServerConfig();
+
     return {
       type: 'apps',
-      host: '127.0.0.1',
-      port: parseInt(process.env['RPC_PORT']) || 23000,
+      host:
+        rpcServerConfig.host == '0.0.0.0'
+          ? (await this.serviceDiscoverClient.clientConnectionInfo()).host
+          : rpcServerConfig.host,
+      port: rpcServerConfig.port,
       name: app.name,
       instanceId: app.instanceId,
     };
