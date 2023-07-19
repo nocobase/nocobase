@@ -1,5 +1,5 @@
 import { PluginManager } from '@nocobase/server';
-import { merge } from 'lodash';
+import { merge } from '@nocobase/utils';
 
 const loadSwagger = (packageName: string) => {
   let swaggers = {};
