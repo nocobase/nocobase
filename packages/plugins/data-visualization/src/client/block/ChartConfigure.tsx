@@ -127,7 +127,7 @@ export const ChartConfigure: React.FC<{
     () => {
       const chartType = chartTypes[0]?.children?.[0]?.value;
       return createForm({
-        values: { config: { chartType }, ...field?.decoratorProps, collection, data: '' },
+        values: { config: { chartType }, ...field?.decoratorProps, collection },
         effects: (form) => {
           onFieldChange('config.chartType', () => initChart(true));
           onFormInit(() => {
@@ -138,7 +138,7 @@ export const ChartConfigure: React.FC<{
     },
     // visible, collection added here to re-initialize form when visible, collection change
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [field, collection],
+    [field, visible, collection],
   );
 
   const RunButton: React.FC = () => (
@@ -214,6 +214,7 @@ export const ChartConfigure: React.FC<{
             setVisible(false);
             queryRef.current.scrollTop = 0;
             configRef.current.scrollTop = 0;
+            service.mutate(undefined);
           },
         });
       }}
