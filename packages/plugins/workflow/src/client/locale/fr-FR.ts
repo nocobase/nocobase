@@ -18,7 +18,7 @@ export default {
   'Triggered at': 'Déclenché à',
   'Collection event': 'Événement de collection',
   'Trigger on': 'Déclencher sur',
-  'After record added': 'Après l\'ajout d'un enregistrement',
+  'After record added': 'Après l\'ajout d\'un enregistrement',
   'After record updated': 'Après la mise à jour d\'un enregistrement',
   'After record added or updated': 'Après l\'ajout ou la mise à jour d\'un enregistrement',
   'After record deleted': 'Après la suppression d\'un enregistrement',
@@ -94,7 +94,7 @@ export default {
   'Continue after all branches succeeded': 'Continuer après la réussite de toutes les branches',
   'Continue after any branch succeeded': 'Continuer après la réussite d\'une branche',
   'Continue after any branch succeeded, or exit after any branch failed':
-  'Continuer après la réussite d\'une branche, ou quitter après l\'échec d'une branche',
+  'Continuer après la réussite d\'une branche, ou quitter après l\'échec d\'une branche',
   Delay: 'Délai',
   Duration: 'Durée',
   'End Status': 'Statut de fin',
