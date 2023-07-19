@@ -7,6 +7,7 @@ import { ThemeConfig, ThemeItem } from '../../types';
 import { Primary } from '../antd-token-previewer';
 import { useUpdateThemeSettings } from '../hooks/useUpdateThemeSettings';
 import { useTranslation } from '../locale';
+import compatOldTheme from '../utils/compatOldTheme';
 import { useCurrentThemeId } from './InitializeTheme';
 import { useThemeEditorContext } from './ThemeEditorProvider';
 
@@ -178,7 +179,7 @@ const ThemeCard = (props: Props) => {
   const handleEdit = useCallback(() => {
     setCurrentSettingTheme(currentTheme);
     setCurrentEditingTheme(item);
-    setTheme(item.config);
+    setTheme(compatOldTheme(item.config));
     setOpen(true);
   }, [item, setCurrentEditingTheme, setCurrentSettingTheme, setOpen, setTheme, currentTheme]);
 

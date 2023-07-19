@@ -3,6 +3,7 @@ import { defaultTheme, useGlobalTheme, useToken } from '@nocobase/client';
 import { App, Button, Space } from 'antd';
 import React, { useCallback } from 'react';
 import { useTranslation } from '../locale';
+import compatOldTheme from '../utils/compatOldTheme';
 import { useThemeEditorContext } from './ThemeEditorProvider';
 
 const ToEditTheme = () => {
@@ -33,7 +34,7 @@ const ToEditTheme = () => {
             type={'primary'}
             onClick={() => {
               setCurrentSettingTheme(theme);
-              setTheme(defaultTheme);
+              setTheme(compatOldTheme(defaultTheme));
               setOpen(true);
               m.destroy();
             }}
