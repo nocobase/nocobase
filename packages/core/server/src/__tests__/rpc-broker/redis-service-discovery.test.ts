@@ -11,13 +11,13 @@ describe('redis service discovery', () => {
     redisClient = createClient();
 
     await redisClient.connect({
-      url: process.env['REDIS_URL'] || 'redis://localhost:6379',
+      url: process.env['REDIS_URI'] || 'redis://localhost:6379',
     });
     await redisClient.flushAll();
     await redisClient.disconnect();
 
     AppSupervisor.getInstance().buildRpcBroker({
-      discoveryServerURI: process.env['REDIS_URL'] || 'redis://localhost:6379',
+      discoveryServerURI: process.env['REDIS_URI'] || 'redis://localhost:6379',
     });
 
     app = new Application({

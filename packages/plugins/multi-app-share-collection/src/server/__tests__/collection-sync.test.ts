@@ -98,6 +98,8 @@ pgOnly()('collection sync', () => {
 
       expect((await getSubAppMapRecord(sub1)).get('enabled')).toBeFalsy();
       await mainApp.pm.enable('map');
+
+      await sleep(200);
       expect((await getSubAppMapRecord(sub1)).get('enabled')).toBeTruthy();
 
       // create new app sub2
