@@ -1,9 +1,9 @@
 import { merge } from '@nocobase/utils';
-import baseSwagger from '../base-swagger';
-import { getSwaggerDocument } from '../load';
 import ApiDocPlugin from '../server';
+import baseSwagger from './base-swagger';
 import { SchemaTypeMapping } from './constants';
 import { createDefaultActionSwagger, getInterfaceCollection } from './helpers';
+import { getSwaggerDocument } from './load';
 export class SwaggerManager {
   private swagger: Record<string, any> = baseSwagger;
   private plugin: ApiDocPlugin;
