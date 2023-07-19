@@ -18,7 +18,7 @@ export const designerCss = css`
     left: 0;
     right: 0;
     display: none;
-    background: rgba(241, 139, 98, 0.06) !important;
+    background: var(--colorBgSettingsHover) !important;
     border: 0 !important;
     top: -16px !important;
     bottom: -16px !important;

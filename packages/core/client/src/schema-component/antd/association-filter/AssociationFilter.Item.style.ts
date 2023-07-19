@@ -10,7 +10,7 @@ const useStyles = genStyleHook('nb-association-filter-item', (token) => {
         '&:hover': { '> .general-schema-designer': { display: 'block' } },
         '&.nb-form-item:hover': {
           '> .general-schema-designer': {
-            background: 'rgba(241, 139, 98, 0.06) !important',
+            background: 'var(--colorBgSettingsHover) !important',
             border: '0 !important',
             top: `-${token.sizeXXS}px !important`,
             bottom: `-${token.sizeXXS}px !important`,
@@ -26,7 +26,7 @@ const useStyles = genStyleHook('nb-association-filter-item', (token) => {
           left: '0',
           right: '0',
           display: 'none',
-          border: '2px solid rgba(241, 139, 98, 0.3)',
+          border: '2px solid var(--colorBorderSettingsHover)',
           pointerEvents: 'none',
           '> .general-schema-designer-icons': {
             position: 'absolute',

@@ -20,7 +20,7 @@ const actionDesignerCss = css`
     left: 0;
     right: 0;
     display: none;
-    background: rgba(241, 139, 98, 0.06);
+    background: var(--colorBgSettingsHover);
     border: 0;
     top: 0;
     bottom: 0;
