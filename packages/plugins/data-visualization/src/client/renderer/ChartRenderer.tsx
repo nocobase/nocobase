@@ -88,7 +88,7 @@ ChartRenderer.Designer = function Designer() {
       <SchemaSettings.Item
         key="configure"
         onClick={() => {
-          setCurrent({ schema, field, collection: name, service });
+          setCurrent({ schema, field, collection: name, service, data: service?.data });
           setVisible(true);
         }}
       >

@@ -31,7 +31,7 @@ import {
   useTransformers,
 } from '../hooks';
 import { useChartsTranslation } from '../locale';
-import { ChartRenderer, ChartRendererContext, useChartTypes, useCharts } from '../renderer';
+import { ChartRenderer, ChartRendererContext, useChartTypes, useCharts, useDefaultChartType } from '../renderer';
 import { createRendererSchema, getField, getSelectedFields, processData } from '../utils';
 import { getConfigSchema, querySchema, transformSchema } from './schemas/configure';
 const { Paragraph, Text } = Typography;
@@ -41,6 +41,8 @@ export type ChartConfigCurrent = {
   field: any;
   collection: string;
   service: any;
+  initialValues?: any;
+  data: any[];
 };
 
 export type SelectedField = {
@@ -75,7 +77,7 @@ export const ChartConfigure: React.FC<{
   const { t } = useChartsTranslation();
   const { service } = useContext(ChartRendererContext);
   const { visible, setVisible, current } = useContext(ChartConfigContext);
-  const { schema, field, collection } = current || {};
+  const { schema, field, collection, initialValues } = current || {};
   const { dn } = useDesignable();
   const { modal } = App.useApp();
   const { insert } = props;
@@ -122,12 +124,11 @@ export const ChartConfigure: React.FC<{
     setMeasures(cloneDeep(currentMeasures));
     setDimensions(cloneDeep(currentDimensions));
   };
-  const chartTypes = useChartTypes();
+  const chartType = useDefaultChartType();
   const form = useMemo(
     () => {
-      const chartType = chartTypes[0]?.children?.[0]?.value;
       return createForm({
-        values: { config: { chartType }, ...field?.decoratorProps, collection },
+        values: { config: { chartType }, ...(initialValues || field?.decoratorProps), collection },
         effects: (form) => {
           onFieldChange('config.chartType', () => initChart(true));
           onFormInit(() => {
@@ -293,7 +294,7 @@ export const ChartConfigure: React.FC<{
 
 ChartConfigure.Renderer = function Renderer(props) {
   const { current } = useContext(ChartConfigContext);
-  const { collection } = current || {};
+  const { collection, data } = current || {};
   const { service } = useContext(ChartRendererContext);
   return (
     <FormConsumer>
@@ -303,9 +304,7 @@ ChartConfigure.Renderer = function Renderer(props) {
         const config = cloneDeep(form.values.config);
         const transform = cloneDeep(form.values.transform);
         return (
-          <ChartRendererContext.Provider
-            value={{ collection, config, transform, service, data: current?.service?.data }}
-          >
+          <ChartRendererContext.Provider value={{ collection, config, transform, service, data }}>
             <ChartRenderer {...props} />
           </ChartRendererContext.Provider>
         );
@@ -324,20 +323,22 @@ ChartConfigure.Query = function Query() {
   const fieldOptions = useCollectionFieldsOptions(collection, 1);
   const compiledFieldOptions = Schema.compile(fieldOptions, { t });
   const filterOptions = useCollectionFilterOptions(collection);
-  const formCollapse = FormCollapse.createFormCollapse(['measures', 'dimensions', 'filter', 'sort']);
+
   const { service } = useContext(ChartRendererContext);
   const onCollectionChange = (value: string) => {
     const { schema, field } = current;
-    field.decoratorProps = { collection: value };
-    field['x-acl-action'] = `${value}:list`;
     setCurrent({
       schema,
       field,
       collection: value,
       service: current.service,
+      initialValues: {},
+      data: undefined,
     });
     service.mutate(undefined);
   };
+
+  const formCollapse = FormCollapse.createFormCollapse(['measures', 'dimensions', 'filter', 'sort']);
   const FromSql = () => (
     <Text code>
       From <span style={{ color: '#1890ff' }}>{current?.collection}</span>
@@ -437,7 +438,7 @@ ChartConfigure.Data = function Data() {
   const { current } = useContext(ChartConfigContext);
   const { service } = useContext(ChartRendererContext);
   const fields = useFieldsWithAssociation();
-  const data = processData(fields, service?.data || current?.service?.data || [], { t });
+  const data = processData(fields, service?.data || current?.data || [], { t });
   const error = service?.error;
   return !error ? (
     <div
