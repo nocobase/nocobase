@@ -5,7 +5,7 @@ export const antd: Omit<ThemeItem, 'id'> = {
   config: {
     name: 'Default theme of antd',
   },
-  optional: false,
+  optional: true,
   isBuiltIn: true,
 };
 
@@ -15,7 +15,7 @@ export const dark: Omit<ThemeItem, 'id'> = {
     // @ts-ignore
     algorithm: 'darkAlgorithm',
   },
-  optional: false,
+  optional: true,
   isBuiltIn: true,
 };
 
@@ -25,7 +25,7 @@ export const compact: Omit<ThemeItem, 'id'> = {
     // @ts-ignore
     algorithm: 'compactAlgorithm',
   },
-  optional: false,
+  optional: true,
   isBuiltIn: true,
 };
 
@@ -36,6 +36,6 @@ export const compactDark: Omit<ThemeItem, 'id'> = {
     // @ts-ignore
     algorithm: ['compactAlgorithm', 'darkAlgorithm'],
   },
-  optional: false,
+  optional: true,
   isBuiltIn: true,
 };
