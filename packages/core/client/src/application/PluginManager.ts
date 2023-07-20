@@ -33,11 +33,20 @@ export class PluginManager {
   }
 
   private async initRemotePlugins() {
-    const res = await this.app.apiClient.request({ url: 'app:getPlugins' });
-    const pluginList: PluginData[] = res.data?.data || [];
-    const plugins = await getPlugins(pluginList, this.app.dynamicImport, this.app.apiClient.axios?.defaults?.baseURL);
-    for await (const plugin of plugins) {
-      await this.add(plugin);
+    try {
+      const res = await this.app.apiClient.request({ url: 'app:getPlugins' });
+      const pluginList: PluginData[] = res.data?.data || [];
+      const plugins = await getPlugins(pluginList, this.app.dynamicImport, this.app.apiClient.axios?.defaults?.baseURL);
+      for await (const plugin of plugins) {
+        await this.add(plugin);
+      }
+    } catch (error) {
+      if (401 === error?.response?.status) {
+        this.app.apiClient.auth.setRole(null);
+        window.location.reload();
+      } else {
+        throw error;
+      }
     }
   }
 

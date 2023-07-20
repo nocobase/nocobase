@@ -104,12 +104,13 @@ export function getRemotePlugins(pluginData: PluginData[] = [], baseURL = ''): P
     }, {}),
   });
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     requirejs.requirejs(
       pluginData.map((item) => item.packageName),
       (...plugins: (typeof Plugin & { default?: typeof Plugin })[]) => {
         resolve(plugins.map((item) => item.default || item));
       },
+      reject
     );
   });
 }
