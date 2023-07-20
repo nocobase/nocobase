@@ -121,7 +121,7 @@ export const Templates = ({ style = {}, form }) => {
 
   const handleTemplateDataChange: any = useCallback(async (value, option) => {
     const template = { ...option, dataId: value };
-    setTemplateData(value);
+    setTemplateData(option);
     fetchTemplateData(api, template, t)
       .then((data) => {
         if (form && data) {
