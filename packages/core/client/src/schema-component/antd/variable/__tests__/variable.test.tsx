@@ -13,14 +13,7 @@ describe('Variable', () => {
     await userEvent.click(screen.getByText('x'));
     await userEvent.click(screen.getByText('v1'));
     await waitFor(() => {
-      expect(screen.getByText('v1', { selector: '.ant-tag' })).toMatchInlineSnapshot(`
-        <span
-          class="ant-tag ant-tag-blue css-dev-only-do-not-override-14wwjjs"
-          contenteditable="false"
-        >
-          v1
-        </span>
-      `);
+      expect(screen.getByText('v1', { selector: '.ant-tag' }).innerHTML).toMatchInlineSnapshot('"v1"');
     });
   });
 
@@ -35,20 +28,7 @@ describe('Variable', () => {
     await userEvent.click(variableSelector);
     await userEvent.click(screen.getByText('v1'));
     await waitFor(() => {
-      expect(input).toMatchInlineSnapshot(`
-        <div
-          class="css-dev-only-do-not-override-14wwjjs ant-input css-1p5yrh5"
-          contenteditable="true"
-        >
-          <span
-            class="ant-tag ant-tag-blue"
-            contenteditable="false"
-            data-variable="v1"
-          >
-            v1
-          </span>
-        </div>
-      `);
+      expect(input.innerHTML).toMatchInlineSnapshot('"<span class=\\"ant-tag ant-tag-blue\\" contenteditable=\\"false\\" data-variable=\\"v1\\">v1</span>"');
     });
   });
 

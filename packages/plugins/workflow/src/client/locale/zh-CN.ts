@@ -241,4 +241,8 @@ export default {
   'Dynamic expression': '动态表达式',
   'An expression for calculation in each rows': '每行数据计算规则不同时使用',
   Unconfigured: '未配置',
+
+  'SQL action': 'SQL 操作',
+  'Execute a SQL statement in database': '在数据库中执行一个 SQL 语句',
+  'Usage of SQL query result is not supported yet.': 'SQL 执行的结果暂不支持使用。'
 };

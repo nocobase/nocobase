@@ -17,6 +17,6 @@ describe('Password', () => {
     const { container } = render(<App2 />);
     const input = container.querySelector('input') as HTMLInputElement;
     fireEvent.change(input, { target: { value: '123456' } });
-    expect(container).toMatchSnapshot();
+    expect(screen.getByText('********')).toBeInTheDocument();
   });
 });
