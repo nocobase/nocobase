@@ -1,5 +1,5 @@
 {
-  "name": "@nocobase/plugin-acl",
+  "name": "@nocobase/plugin-xxx",
   "main": "./lib/server/index.js",
   "devDependencies": {
     "@nocobase/acl": "0.11.0-alpha.1",

@@ -64,8 +64,8 @@ export default MyPlugin;
 
 ## 其他
 
-本地加载远程的插件：
+本地加载远程的插件需要设置环境为 `USER_REMOTE_PLUGIN=true`：
 
 ```bash
-yarn cross-env USER_REMOTE_PLUGIN=true nocobase dev --client --port=14000
+yarn cross-env USER_REMOTE_PLUGIN=true nocobase dev
 ``

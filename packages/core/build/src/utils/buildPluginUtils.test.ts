@@ -1,5 +1,5 @@
 import path from 'path';
-import { getPackageNameFromString, getPackagesFromFiles, getSourcePackages, getPackageJson, getPackageJsonPackages, checkSourcePackages, checkRequirePackageJson, checkEntryExists, isValidPackageName, checkDependencies, getFileSize, formatFileSize } from './buildPluginUtils'
+import { getPackageNameFromString, getPackagesFromFiles, getSourcePackages, getPackageJson, getPackageJsonPackages, checkSourcePackages, checkRequirePackageJson, checkEntryExists, isValidPackageName, checkDependencies, getFileSize, formatFileSize, checkPluginPrefixDependencies } from './buildPluginUtils'
 import { expect, vitest } from 'vitest';
 
 describe('buildPluginUtils', () => {
@@ -263,7 +263,7 @@ describe('buildPluginUtils', () => {
     })
   })
 
-  describe('shouldDevDependenciesList', () => {
+  describe('checkDependencies', () => {
     it('has tip', () => {
       const log = vitest.fn();
       const packageJson = {
@@ -286,6 +286,33 @@ describe('buildPluginUtils', () => {
       }
       const shouldDevDependencies = ['react', 'antd']
       checkDependencies(packageJson, shouldDevDependencies, log);
+      expect(log).not.toBeCalled();
+    })
+  })
+
+  describe('checkPluginPrefixDependencies', () => {
+    it('has tip', () => {
+      const log = vitest.fn();
+      const packageJson = {
+        dependencies: {
+          'antd': '1.0.0',
+          '@nocobase/plugin-aaa': '1.0.0',
+        }
+      }
+      const pluginPrefix = ['@nocobase/plugin-']
+      checkPluginPrefixDependencies(packageJson, pluginPrefix, log);
+      expect(log).toBeCalled();
+    })
+    it('no tip', () => {
+      const log = vitest.fn();
+      const packageJson = {
+        dependencies: {
+          'lodash': '1.0.0',
+          'dayjs': '1.0.0',
+        }
+      }
+      const pluginPrefix = ['@nocobase/plugin-']
+      checkPluginPrefixDependencies(packageJson, pluginPrefix, log);
       expect(log).not.toBeCalled();
     })
   })

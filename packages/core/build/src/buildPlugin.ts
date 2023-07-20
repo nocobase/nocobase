@@ -7,6 +7,7 @@ import { build as tsupBuild } from 'tsup'
 import { build as viteBuild } from 'vite'
 import fg from 'fast-glob'
 import { buildCheck, formatFileSize, getFileSize, getPackageJson, getSourcePackages } from './utils/buildPluginUtils';
+import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js'
 import { getDepsConfig } from './utils/getDepsConfig';
 
 const serverGlobalFiles: string[] = [
@@ -246,6 +247,7 @@ export function buildPluginClient(cwd: string, log: Log) {
     build: {
       minify: false,
       outDir,
+      cssCodeSplit: false,
       lib: {
         entry,
         formats: ['umd'],
@@ -263,6 +265,7 @@ export function buildPluginClient(cwd: string, log: Log) {
     },
     plugins: [
       react(),
+      cssInjectedByJsPlugin({ styleId: packageJson.name }),
       {
         name: 'check-file-size',
         closeBundle() {

@@ -68,7 +68,8 @@
     "fast-glob": "3.3.0",
     "@vercel/ncc": "0.36.1",
     "yargs-parser": "13.1.2",
-    "deps-regex": "^0.2.0"
+    "deps-regex": "^0.2.0",
+    "vite-plugin-css-injected-by-js": "^3.2.1"
   },
   "license": "Apache-2.0",
   "scripts": {
