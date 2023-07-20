@@ -70,7 +70,7 @@ const InternalFileManager = (props) => {
   const [options, setOptions] = useState([]);
   const { getField } = useCollection();
   const collectionField = getField(field.props.name);
-  const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
+  const labelUiSchema = useLabelUiSchema(collectionField?.target, fieldNames?.label || 'label');
   const compile = useCompile();
   const getFilter = () => {
     const targetKey = collectionField?.targetKey || 'id';
@@ -192,7 +192,7 @@ const FileManageReadPretty = connect((props) => {
   const fieldNames = useFieldNames(props);
   const { getField } = useCollection();
   const collectionField = getField(field.props.name);
-  const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
+  const labelUiSchema = useLabelUiSchema(collectionField?.target, fieldNames?.label || 'label');
   const showFilePicker = isShowFilePicker(labelUiSchema);
 
   if (showFilePicker) {
@@ -202,4 +202,4 @@ const FileManageReadPretty = connect((props) => {
   }
 });
 
-export { InternalFileManager, FileManageReadPretty };
+export { FileManageReadPretty, InternalFileManager };
