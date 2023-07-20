@@ -1,15 +1,25 @@
 import * as antdCssinjs from '@ant-design/cssinjs';
 import * as antdIcons from '@ant-design/icons';
+import * as dndKitAccessibility from '@dnd-kit/accessibility';
+import * as dndKitCore from '@dnd-kit/core';
+import * as dndKitModifiers from '@dnd-kit/modifiers';
+import * as dndKitSortable from '@dnd-kit/sortable';
+import * as dndKitUtilities from '@dnd-kit/utilities';
 import * as formilyAntdV5 from '@formily/antd-v5';
 import * as formilyCore from '@formily/core';
 import * as formilyJsonSchema from '@formily/json-schema';
+import * as formilyPath from '@formily/path';
 import * as formilyReact from '@formily/react';
 import * as formilyJsonReactive from '@formily/reactive';
+import * as formilyReactiveReact from '@formily/reactive-react';
 import * as formilyShared from '@formily/shared';
+import * as formilyValidator from '@formily/validator';
 import * as nocobaseEvaluators from '@nocobase/evaluators/client';
 import * as nocobaseClientUtils from '@nocobase/utils/client';
 import * as antd from 'antd';
 import * as antdStyle from 'antd-style';
+import axios from 'axios';
+import dayjs from 'dayjs';
 import * as i18next from 'i18next';
 import React from 'react';
 import ReactDOM from 'react-dom';
@@ -50,6 +60,9 @@ export function initDeps(requirejs: any) {
   requirejs.define('@formily/shared', () => formilyShared);
   requirejs.define('@formily/json-schema', () => formilyJsonSchema);
   requirejs.define('@formily/reactive', () => formilyJsonReactive);
+  requirejs.define('@formily/path', () => formilyPath);
+  requirejs.define('@formily/validator', () => formilyValidator);
+  requirejs.define('@formily/reactive-react', () => formilyReactiveReact);
 
   // nocobase
   requirejs.define('@nocobase/utils', () => nocobaseClientUtils);
@@ -58,6 +71,17 @@ export function initDeps(requirejs: any) {
   requirejs.define('@nocobase/client/client', () => nocobaseClient);
   requirejs.define('@nocobase/evaluators', () => nocobaseEvaluators);
   requirejs.define('@nocobase/evaluators/client', () => nocobaseEvaluators);
+
+  // dnd-kit 相关
+  requirejs.define('@dnd-kit/accessibility', () => dndKitAccessibility);
+  requirejs.define('@dnd-kit/core', () => dndKitCore);
+  requirejs.define('@dnd-kit/modifiers', () => dndKitModifiers);
+  requirejs.define('@dnd-kit/sortable', () => dndKitSortable);
+  requirejs.define('@dnd-kit/utilities', () => dndKitUtilities);
+
+  // utils
+  requirejs.define('axios', () => axios);
+  requirejs.define('dayjs', () => dayjs);
 }
 
 export function getRemotePlugins(pluginData: PluginData[] = [], baseURL = ''): Promise<(typeof Plugin)[]> {

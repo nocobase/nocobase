@@ -21,6 +21,7 @@ const clientGlobalFiles: string[] = [
 ]
 
 const shouldDevDependencies = [
+  // nocobase
   '@nocobase/acl',
   '@nocobase/actions',
   '@nocobase/auth',
@@ -40,7 +41,6 @@ const shouldDevDependencies = [
 
   // @nocobase/cache
   'cache-manager',
-  'cache-manager-fs-hash',
 
   // @nocobase/database
   'sequelize',
@@ -53,6 +53,7 @@ const shouldDevDependencies = [
 
   // @nocobase/logger
   'winston',
+  'winston-daily-rotate-file',
 
   // koa
   'koa',
