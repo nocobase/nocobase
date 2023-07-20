@@ -37,13 +37,16 @@ export const ReadPrettyInternalViewer: React.FC = observer(
     const [record, setRecord] = useState({});
     const compile = useCompile();
     const { designable } = useDesignable();
-    const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
     const { snapshot } = useActionContext();
     const ellipsisWithTooltipRef = useRef<IEllipsisWithTooltipRef>();
 
     const renderRecords = () =>
       toArr(props.value).map((record, index, arr) => {
         const val = toValue(compile(record?.[fieldNames?.label || 'label']), 'N/A');
+        const labelUiSchema = useLabelUiSchema(
+          record?.__collection || collectionField?.target,
+          fieldNames?.label || 'label',
+        );
         const text = getLabelFormatValue(compile(labelUiSchema), val, true);
         return (
           <Fragment key={`${record.id}_${index}`}>
