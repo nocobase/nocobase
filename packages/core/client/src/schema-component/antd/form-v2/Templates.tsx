@@ -6,7 +6,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../../';
 import { useAPIClient } from '../../../api-client';
-import { findFormBlock } from '../../../block-provider';
+import { findFormBlock, mergeFilter } from '../../../block-provider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { useDuplicatefieldsContext } from '../../../schema-initializer/components';
 import { compatibleDataId } from '../../../schema-settings/DataTemplates/FormDataTemplates';
@@ -145,20 +145,7 @@ export const Templates = ({ style = {}, form }) => {
   useEffect(() => {
     if (enabled && defaultTemplate) {
       form.__template = true;
-      fetchTemplateData(api, defaultTemplate, t)
-        .then((data) => {
-          if (form && data) {
-            forEach(data, (value, key) => {
-              if (value) {
-                form.values[key] = value;
-              }
-            });
-          }
-          return data;
-        })
-        .catch((err) => {
-          console.error(err);
-        });
+      loadData(defaultTemplate);
     }
   }, []);
 
@@ -211,8 +198,8 @@ export const Templates = ({ style = {}, form }) => {
     return null;
   }
 
-  const loadChildren = async (option) => {
-    const { data } = (await resource.list({ filter: option.dataScope })) || {};
+  const loadChildren = async (option, filter) => {
+    const { data } = (await resource.list({ filter })) || {};
     if (data?.data.length === 0) {
       return;
     }
@@ -225,12 +212,13 @@ export const Templates = ({ style = {}, form }) => {
     );
   };
 
-  const loadData = async (selectedOptions) => {
+  const loadData = async (selectedOptions, filter?) => {
     if (selectedOptions.dataScope) {
-      const data = await loadChildren(selectedOptions);
+      const data = await loadChildren(selectedOptions, mergeFilter([selectedOptions.dataScope, filter || {}]));
       setTemaplteDatas(data);
     }
   };
+
   return (
     <div style={wrapperStyle}>
       <Space wrap>
@@ -244,14 +232,19 @@ export const Templates = ({ style = {}, form }) => {
         />
         {targetTemplate !== 'none' && (
           <Select
-            style={{ width: 120 }}
+            style={{ width: 220 }}
             fieldNames={{ label: 'title', value: 'key' }}
             value={targetTemplateData}
             onChange={handleTemplateDataChange}
             options={templateDatas}
             showSearch
-            onSearch={(e) => {
-              console.log(e);
+            // onSearch={async (val) => {
+            //   const template = templateOptions?.find((v) => v.key === targetTemplate);
+            //   loadData(template, { $and: [{ [template.titleField]: { $includes: val } }] });
+            // }}
+            onSearch={(val) => {
+              const template = templateOptions?.find((v) => v.key === targetTemplate);
+              onSearch(template, { $and: [{ [template.titleField]: { $eq: 1 } }] });
             }}
           />
         )}

@@ -153,11 +153,6 @@ export const FormDataTemplates = observer(
                           fulfill: {
                             state: {
                               disabled: '{{ !$deps[0] }}',
-                              componentProps: {
-                                service: {
-                                  resource: '{{ getResource($deps[0], $self) }}',
-                                },
-                              },
                             },
                             schema: {
                               enum: '{{ getScopeDataSource($deps[0]) }}',
