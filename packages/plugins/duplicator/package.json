@@ -24,17 +24,17 @@
     "directory": "packages/plugins/duplicator"
   },
   "dependencies": {
-    "@koa/multer": "^3.0.2",
     "@types/archiver": "^5.3.1",
     "archiver": "^5.3.1",
-    "dayjs": "^1.11.8",
     "decompress": "^4.2.1",
     "inquirer": "^8.0.0",
-    "koa-send": "^5.0.1",
     "mkdirp": "^1.0.4",
     "tar": "^6.1.13"
   },
   "devDependencies": {
+    "dayjs": "^1.11.8",
+    "@koa/multer": "^3.0.2",
+    "koa-send": "^5.0.1",
     "@nocobase/client": "0.11.0-alpha.1",
     "@nocobase/database": "0.11.0-alpha.1",
     "@nocobase/server": "0.11.0-alpha.1",

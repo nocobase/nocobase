@@ -6,7 +6,11 @@
 
 ## 需要放到 devDependencies 中的 npm 包
 
-有一些依赖由 `@nocobase/server` 和 `@nocobase/client` 提供，不需要打包到插件产物中，因此不应该放到 `dependencies`，而应该放到 `devDependencies` 中。具体如下：
+有一些依赖由 `@nocobase/server` 和 `@nocobase/client` 提供，不需要打包到插件产物中，因此不应该放到 `dependencies`，而应该放到 `devDependencies` 中。
+
+<Alert type="warning">
+当插件安装如下依赖时，要注意 **版本** 和 `@nocobase/server` 和 `@nocobase/client` 的保持一致。
+</Alert>
 
 ### 全局依赖
 

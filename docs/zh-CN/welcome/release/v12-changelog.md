@@ -8,6 +8,7 @@
 
 ```bash
 yarn clean
+yarn install
 yarn build
 ```
 

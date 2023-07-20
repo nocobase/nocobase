@@ -21,36 +21,93 @@ const clientGlobalFiles: string[] = [
 ]
 
 const shouldDevDependencies = [
-  'react',
-  'react-dom',
-  'react/jsx-runtime',
-  'react-router',
-  'react-router-dom',
-  'antd',
-  'antd-style',
-  '@ant-design/icons',
-  '@ant-design/cssinjs',
-  'i18next',
-  'react-i18next',
-  '@formily/antd-v5',
-  '@formily/core',
-  '@formily/react',
-  '@formily/shared',
-  '@formily/json-schema',
-  '@formily/reactive',
   '@nocobase/acl',
   '@nocobase/actions',
   '@nocobase/auth',
   '@nocobase/cache',
+  '@nocobase/client',
   '@nocobase/database',
   '@nocobase/evaluators',
   '@nocobase/logger',
   '@nocobase/resourcer',
+  '@nocobase/sdk',
+  '@nocobase/server',
+  '@nocobase/test',
   '@nocobase/utils',
-  'mysql',
+
+  // @nocobase/auth
+  'jsonwebtoken',
+
+  // @nocobase/cache
+  'cache-manager',
+  'cache-manager-fs-hash',
+
+  // @nocobase/database
+  'sequelize',
+  'umzug',
+  'async-mutex',
+
+  // @nocobase/evaluators
+  '@formulajs/formulajs',
+  'mathjs',
+
+  // @nocobase/logger
+  'winston',
+
+  // koa
+  'koa',
+  '@koa/cors',
+  '@koa/router',
+  '@koa/multer',
+  'koa-bodyparser',
+  'koa-static',
+  'koa-send',
+
+  // react
+  'react',
+  'react-dom',
+  'react/jsx-runtime',
+
+  // react-router
+  'react-router',
+  'react-router-dom',
+
+  // antd
+  'antd',
+  'antd-style',
+  '@ant-design/icons',
+  '@ant-design/cssinjs',
+
+  // i18next
+  'i18next',
+  'react-i18next',
+
+  // dnd-kit 相关
+  '@dnd-kit/accessibility',
+  '@dnd-kit/core',
+  '@dnd-kit/modifiers',
+  '@dnd-kit/sortable',
+  '@dnd-kit/utilities',
+
+  // formily 相关
+  '@formily/antd-v5',
+  '@formily/core',
+  '@formily/react',
+  '@formily/json-schema',
+  '@formily/path',
+  '@formily/validator',
+  '@formily/shared',
+  '@formily/reactive',
+  '@formily/reactive-react',
+
+  // utils
+  'dayjs',
+  'mysql2',
   'pg',
   'pg-hstore',
-  'sqlite3'
+  'sqlite3',
+  'supertest',
+  'axios',
 ]
 const pluginPrefix = (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro-').split(
   ',');

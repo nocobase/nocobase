@@ -19,9 +19,9 @@
     "client.d.ts"
   ],
   "dependencies": {
-    "mathjs": "^10.6.0"
   },
   "devDependencies": {
+    "mathjs": "^10.6.0",
     "@formily/react": "2.2.26",
     "@nocobase/client": "0.11.0-alpha.1",
     "@nocobase/database": "0.11.0-alpha.1",

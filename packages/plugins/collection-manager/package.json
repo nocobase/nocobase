@@ -20,10 +20,10 @@
   "license": "AGPL-3.0",
   "dependencies": {
     "@hapi/topo": "^6.0.0",
-    "async-mutex": "^0.3.2",
     "toposort": "^2.0.2"
   },
   "devDependencies": {
+    "async-mutex": "^0.3.2",
     "@nocobase/client": "0.11.0-alpha.1",
     "@nocobase/database": "0.11.0-alpha.1",
     "@nocobase/plugin-error-handler": "0.11.0-alpha.1",

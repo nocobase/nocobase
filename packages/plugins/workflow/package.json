@@ -19,18 +19,18 @@
     "client.d.ts"
   ],
   "dependencies": {
-    "dayjs": "^1.11.8",
     "lodash": "4.17.21",
     "@emotion/css": "^11.7.1",
-    "axios": "^0.27.2",
     "classnames": "^2.3.1",
     "cron-parser": "4.4.0",
-    "lru-cache": "8.0.5",
-    "react-js-cron": "^3.1.0",
-    "sequelize": "^6.26.0",
-    "winston": "^3.8.2"
+    "react-js-cron": "^3.1.0"
   },
   "devDependencies": {
+    "axios": "^0.27.2",
+    "lru-cache": "8.0.5",
+    "winston": "^3.8.2",
+    "dayjs": "^1.11.8",
+    "sequelize": "^6.26.0",
     "@ant-design/icons": "^5.1.4",
     "@formily/antd-v5": "1.1.0-beta.4",
     "@formily/core": "2.2.26",

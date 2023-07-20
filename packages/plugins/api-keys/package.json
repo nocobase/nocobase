@@ -19,10 +19,10 @@
     "client.d.ts"
   ],
   "dependencies": {
-    "dayjs": "^1.11.8",
     "ahooks": "^3.7.2"
   },
   "devDependencies": {
+    "dayjs": "^1.11.8",
     "@formily/react": "2.2.26",
     "@formily/shared": "2.2.26",
     "@nocobase/actions": "0.11.0-alpha.1",

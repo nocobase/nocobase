@@ -27,11 +27,11 @@
     "@nocobase/test": "0.11.0-alpha.1",
     "@nocobase/utils": "0.11.0-alpha.1",
     "react": "^18.2.0",
+    "@types/jsonwebtoken": "^8.5.8",
+    "jsonwebtoken": "^8.5.1",
     "react-dom": "^18.2.0"
   },
   "dependencies": {
-    "@types/jsonwebtoken": "^8.5.8",
-    "jsonwebtoken": "^8.5.1"
   },
   "repository": {
     "type": "git",
