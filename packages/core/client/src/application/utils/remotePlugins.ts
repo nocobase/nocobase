@@ -96,9 +96,8 @@ export async function getPlugins(
   baseURL: string,
 ): Promise<(typeof Plugin)[]> {
   if (pluginData.length === 0) return [];
-  const plugins = [];
-
   if (process.env.NODE_ENV === 'development' && !process.env.USER_REMOTE_PLUGIN) {
+    const plugins = [];
     const localPlugins = pluginData.filter((item) => item.type === 'local');
     const remotePlugins = pluginData.filter((item) => item.type !== 'local');
     plugins.push(

@@ -24,7 +24,7 @@ export default defineConfig({
       { find: /^@nocobase\/preset-(.*)/, replacement: 'packages/presets/$1/src' },
       { find: /^@nocobase\/(.*)/, replacement: 'packages/core/$1/src' },
     ],
-    include: ['packages/**/{dumi-theme-nocobase,sdk,client}/**/__tests__/**/*.{test,spec}.{ts,tsx}'],
+    // include: ['packages/**/{dumi-theme-nocobase,sdk,client}/**/__tests__/**/*.{test,spec}.{ts,tsx}'],
     exclude: ['**/node_modules/**', '**/dist/**', '**/lib/**', '**/es/**', '**/{vitest,commitlint}.config.*'],
     testTimeout: 300000,
     bail: 1,

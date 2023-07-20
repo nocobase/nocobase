@@ -1,16 +1,21 @@
 import fs from 'fs';
 import chalk from 'chalk';
-import { builtinModules } from 'module';
+import DepsRegex from 'deps-regex';
 import path from 'path';
 
-const requireRegex = /require\((["'])(.*?)\1\)/g;
+const depsRegex = new DepsRegex({
+  matchInternal: false,
+  matchES6: true,
+  matchCoffeescript: false,
+});
+
 const packageJsonRequireRegex = /require\((['"])\.\.\/+(\.\.\/)*package\.json\1\)/;
-const importRegex = /import\s+.*?\s+from\s+['"]([^'"\s.].+?)['"];?/g;
 
 type Log = (msg: string, ...args: any) => void;
 
-export function isNotBuiltinModule(packageName: string) {
-  return !builtinModules.includes(packageName);
+export const isValidPackageName = (str: string) => {
+  const pattern = /^(?:@[a-zA-Z0-9_-]+\/)?[a-zA-Z0-9_-]+$/;
+  return pattern.test(str);
 }
 
 /**
@@ -27,7 +32,7 @@ export function isNotBuiltinModule(packageName: string) {
  * getPackageNameFromString(`${file}`) => null
  * getPackageNameFromString($file + './xx') => null
  */
-function getPackageNameFromString(str: string) {
+export function getPackageNameFromString(str: string) {
   // ./xx or ../xx
   if (str.startsWith('.')) return null;
 
@@ -41,28 +46,24 @@ function getPackageNameFromString(str: string) {
     packageName = arr[0];
   }
 
-  try {
-    require.resolve(packageName, { paths: [process.cwd()] });
-    return packageName;
-  } catch {
-    return null;
-  }
+  packageName = packageName.trim()
+
+  return isValidPackageName(packageName) ? packageName : null;
 }
 
-export function getSourcePackages(sourceFiles: string[]): string[] {
-  const packages = sourceFiles
-    .map(item => fs.readFileSync(item, 'utf-8'))
-    .map(item => {
-      return [
-        ...Array.from(item.matchAll(importRegex)).map(item => item[1]),
-        ...Array.from(item.matchAll(requireRegex)).map(item => item[2]),
-      ]
-    })
+export function getPackagesFromFiles(files: string[]): string[] {
+  const packageNames = files
+    .map(item => depsRegex.getDependencies(item))
     .flat()
-    .filter(isNotBuiltinModule)
     .map(getPackageNameFromString)
     .filter(Boolean)
-  return [...new Set(packages)];
+
+  return [...new Set(packageNames)];
+}
+
+export function getSourcePackages(sourcePaths: string[]): string[] {
+  const files = sourcePaths.map(item => fs.readFileSync(item, 'utf-8'))
+  return getPackagesFromFiles(files);
 }
 
 export function getPackageJson(cwd: string) {
@@ -70,7 +71,7 @@ export function getPackageJson(cwd: string) {
 }
 
 export function getPackageJsonPackages(packageJson: Record<string, any>): string[] {
-  return [...Object.keys(packageJson.devDependencies || {}), ...Object.keys(packageJson.dependencies || {})];
+  return [...new Set([...Object.keys(packageJson.devDependencies || {}), ...Object.keys(packageJson.dependencies || {})])];
 }
 
 export function checkSourcePackages(srcPackages: string[], packageJsonPackages: string[], shouldDevDependencies: string[], log: Log) {
@@ -84,12 +85,11 @@ export function checkSourcePackages(srcPackages: string[], packageJsonPackages: 
   }
 }
 
-export function checkRequirePackageJson(sourceFiles: string[], packageJson: Record<string, any>, log: Log) {
-  if (!packageJson.dependencies) return;
-  sourceFiles.forEach(item => {
+export function checkRequirePackageJson(sourcePaths: string[], log: Log) {
+  sourcePaths.forEach(item => {
     const code = fs.readFileSync(item, 'utf-8');
     const match = code.match(packageJsonRequireRegex)
-
+    console.log('match', match)
     if (match) {
       log('%s in %s is not allowed. Please use %s instead.', chalk.red(match[0]), chalk.red(item), chalk.red('import'));
       process.exit(-1);
@@ -142,6 +142,6 @@ export function buildCheck(options: CheckOptions) {
   const sourcePackages = getSourcePackages(files);
 
   checkSourcePackages(sourcePackages, getPackageJsonPackages(packageJson), shouldDevDependencies, log);
-  checkRequirePackageJson(files, packageJson, log);
+  checkRequirePackageJson(files, log);
   checkDependencies(packageJson, shouldDevDependencies, log);
 }

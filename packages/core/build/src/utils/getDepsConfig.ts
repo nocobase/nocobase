@@ -13,7 +13,7 @@ export function winPath(path: string) {
  * get relative externals for specific pre-bundle pkg from other pre-bundle deps
  * @note  for example, "compiled/a" can be externalized in "compiled/b" as "../a"
  */
-function getRltExternalsFromDeps(
+export function getRltExternalsFromDeps(
   depExternals: Record<string, string>,
   current: { name: string; output: string },
 ) {
@@ -85,8 +85,6 @@ export function getDepsConfig(cwd: string, outDir: string, depsName: string[], e
       name: depConfig.pkg.name!,
       output: depConfig.output,
     });
-
-    depConfig.nccConfig.externals
 
     depConfig.nccConfig.externals = {
       ...pkgExternals,

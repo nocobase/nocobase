@@ -6,7 +6,7 @@ import react from '@vitejs/plugin-react'
 import { build as tsupBuild } from 'tsup'
 import { build as viteBuild } from 'vite'
 import fg from 'fast-glob'
-import { buildCheck, formatFileSize, getFileSize, getPackageJson, getSourcePackages } from './utils/buildCheck';
+import { buildCheck, formatFileSize, getFileSize, getPackageJson, getSourcePackages } from './utils/buildPluginUtils';
 import { getDepsConfig } from './utils/getDepsConfig';
 
 const serverGlobalFiles: string[] = [
@@ -205,10 +205,10 @@ export function buildPluginClient(cwd: string, log: Log) {
       {
         name: 'check-file-size',
         closeBundle() {
-          // const fileSize = getFileSize(path.join(outDir, outputFileName));
-          // if (fileSize > 1024 * 1024) {
-          //   log('The bundle file size exceeds 1MB %s. Please check for unnecessary %s and move them to %s if possible.\n', chalk.yellow(formatFileSize(fileSize)), chalk.yellow('dependencies'), chalk.yellow('devDependencies'));
-          // }
+          const fileSize = getFileSize(path.join(outDir, outputFileName));
+          if (fileSize > 1024 * 1024) {
+            log('The bundle file size exceeds 1MB %s. Please check for unnecessary %s and move them to %s if possible.\n', chalk.yellow(formatFileSize(fileSize)), chalk.yellow('dependencies'), chalk.yellow('devDependencies'));
+          }
         },
       }],
   })
