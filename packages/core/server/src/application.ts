@@ -332,6 +332,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.emitAsync('afterStart', this, options);
     this.fsm.interpret.send('STARTED');
     this.stopped = false;
+    this.setWorkingMessage('started');
   }
 
   async stop(options: any = {}) {

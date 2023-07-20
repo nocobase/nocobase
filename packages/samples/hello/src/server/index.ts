@@ -22,9 +22,7 @@ export class HelloPlugin extends Plugin {
     // this.app.resourcer.removeResource('testHello');
   }
 
-  async install(options: InstallOptions) {
-    // TODO
-  }
+  async install(options: InstallOptions) {}
 }
 
 export default HelloPlugin;

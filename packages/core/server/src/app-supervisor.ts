@@ -17,6 +17,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   public runningMode: 'single' | 'multiple' = 'multiple';
   public singleAppName: string | null = null;
   declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
+
   public apps: {
     [key: string]: Application;
   } = {};
@@ -112,8 +113,16 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
     console.log(`add app ${app.name} into supervisor`);
 
+    this.bindAppEvents(app);
+
     this.apps[app.name] = app;
 
+    this.emit('afterAppAdded', app);
+
+    return app;
+  }
+
+  private bindAppEvents(app: Application) {
     // listen afterDestroy event, after app destroyed, remove it from supervisor
     const afterDestroy = () => {
       delete this.apps[app.name];
@@ -123,9 +132,16 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     afterDestroy.alwaysBind = true;
 
     app.on('afterDestroy', afterDestroy);
-    this.emit('afterAppAdded', app);
 
-    return app;
+    const listenWorkingMessageChanged = (message) => {
+      this.emit('workingMessageChanged', {
+        appName: app.name,
+        message,
+      });
+    };
+
+    listenWorkingMessageChanged.alwaysBind = true;
+    app.on('workingMessageChanged', listenWorkingMessageChanged);
   }
 
   // get registered app names

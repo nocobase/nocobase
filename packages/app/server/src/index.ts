@@ -5,7 +5,7 @@ import { reportStatus } from './rpc/report-status';
 const app = new Application(config);
 
 if (require.main === module) {
-  reportStatus(app);
+  reportStatus();
   app.runAsCLI();
 }
 

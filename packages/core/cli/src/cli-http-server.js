@@ -2,8 +2,12 @@ const http = require('http');
 const net = require('net');
 const fs = require('fs');
 const path = require('path');
+const { parse } = require('url');
+const WebSocket = require('ws');
+const { nanoid } = require('nanoid');
+const EventEmitter = require('events');
 
-class CliHttpServer {
+class CliHttpServer extends EventEmitter {
   static instance;
   server;
 
@@ -20,8 +24,28 @@ class CliHttpServer {
 
   devChildPid;
 
+  wss;
+
+  webSocketClients = new Map();
+
   constructor() {
+    super();
     this.listenDomainSocket();
+  }
+
+  addNewConnection(ws) {
+    const id = nanoid();
+
+    ws.id = id;
+
+    this.webSocketClients.set(id, {
+      ws,
+      tags: [`app#${process.env['STARTUP_SUBAPP'] || 'main'}`],
+    });
+  }
+
+  removeConnection(id) {
+    this.webSocketClients.delete(id);
   }
 
   static getInstance() {
@@ -50,6 +74,34 @@ class CliHttpServer {
     });
 
     this.server.keepAliveTimeout = 1;
+
+    this.wss = new WebSocket.Server({
+      noServer: true,
+    });
+
+    this.wss.on('connection', (ws) => {
+      this.addNewConnection(ws);
+      console.log(`new client connected ${ws.id}`);
+
+      ws.on('error', () => {
+        this.removeConnection(ws.id);
+      });
+      ws.on('close', () => {
+        this.removeConnection(ws.id);
+      });
+    });
+
+    this.server.on('upgrade', (request, socket, head) => {
+      const { pathname } = parse(request.url);
+
+      if (pathname === '/ws') {
+        this.wss.handleUpgrade(request, socket, head, (ws) => {
+          this.wss.emit('connection', ws, request);
+        });
+      } else {
+        socket.destroy();
+      }
+    });
 
     this.server.listen(port, () => {
       console.log(`cli http server listening on port ${port}`);
@@ -83,32 +135,39 @@ class CliHttpServer {
 
           const dataObj = JSON.parse(message);
 
-          if (dataObj.workingMessage) {
-            this.exitWithError = false;
-            this.setCliDoingWork(dataObj.workingMessage);
-          }
+          this.handleClientMessage(dataObj);
 
-          if (dataObj.status === 'worker-ready') {
-            this.server.close();
+          // if (dataObj.workingMessage) {
+          //   this.exitWithError = false;
+          //   this.setCliDoingWork(dataObj.workingMessage);
+          //   this.wss.clients.forEach((client) => {
+          //     if (client.readyState === WebSocket.OPEN) {
+          //       client.send(this.cliDoingWork);
+          //     }
+          //   });
+          // }
 
-            c.write('start');
-          }
+          // if (dataObj.status === 'worker-ready') {
+          //   // this.server.close();
+          //   //
+          //   // c.write('start');
+          // }
 
-          if (dataObj.status === 'worker-exit' || dataObj.status === 'worker-restart') {
-            if (!this.server.listening) {
-              this.server.listen(this.port);
-            }
-          }
-
-          if (dataObj.status === 'worker-restart') {
-            console.log(`killing dev child process ${this.devChildPid}`);
-            process.kill(this.devChildPid, 'SIGTERM');
-          }
-
-          if (dataObj.status === 'worker-error') {
-            this.exitWithError = true;
-            this.lastWorkerError = dataObj.errorMessage;
-          }
+          // if (dataObj.status === 'worker-exit' || dataObj.status === 'worker-restart') {
+          //   if (!this.server.listening) {
+          //     this.server.listen(this.port);
+          //   }
+          // }
+          //
+          // if (dataObj.status === 'worker-restart') {
+          //   console.log(`killing dev child process ${this.devChildPid}`);
+          //   process.kill(this.devChildPid, 'SIGTERM');
+          // }
+          //
+          // if (dataObj.status === 'worker-error') {
+          //   this.exitWithError = true;
+          //   this.lastWorkerError = dataObj.errorMessage;
+          // }
         }
       });
     });
@@ -116,6 +175,27 @@ class CliHttpServer {
     this.ipcServer.listen(this.socketPath, () => {
       console.log('cli socket server bound');
     });
+  }
+
+  sendToConnectionsByTag(tagName, tagValue, sendMessage) {
+    this.webSocketClients.forEach((client) => {
+      if (client.tags.includes(`${tagName}#${tagValue}`)) {
+        client.ws.send(JSON.stringify(sendMessage));
+      }
+    });
+  }
+
+  handleClientMessage({ type, payload }) {
+    if (type === 'appStatusChanged') {
+      const { appName, workingMessage } = payload;
+
+      this.sendToConnectionsByTag('app', appName, {
+        type: 'appStatusChanged',
+        payload: {
+          workingMessage,
+        },
+      });
+    }
   }
 }
 

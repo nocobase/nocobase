@@ -1,32 +1,42 @@
-import { Gateway } from '@nocobase/server';
+import { AppSupervisor, Gateway } from '@nocobase/server';
 import net from 'net';
 
 const writeJSON = (socket, data) => {
   socket.write(JSON.stringify(data) + '\n', 'utf8');
 };
 
-export function reportStatus(app) {
+export function reportStatus() {
   if (process.env.MAIN_PROCESS_SOCKET_PATH) {
-    console.log(`current pid is ${process.pid}`);
+    const appSupervisor = AppSupervisor.getInstance();
 
-    console.log(`connect to main process socket server`);
     const mainProcessRPCClient = net.createConnection({
       path: process.env.MAIN_PROCESS_SOCKET_PATH,
     });
 
-    mainProcessRPCClient.on('data', (data) => {
-      const dataAsString = data.toString();
-      // start app process server
-      if (dataAsString == 'start') {
-        Gateway.getInstance().start();
-      }
-    });
-
-    app.on('afterStart', () => {
+    appSupervisor.on('workingMessageChanged', ({ appName, message }) => {
       writeJSON(mainProcessRPCClient, {
-        status: 'worker-ready',
+        type: 'appStatusChanged',
+        payload: {
+          appName,
+          workingMessage: message,
+        },
       });
     });
+
+    // mainProcessRPCClient.on('data', (data) => {
+    //   const dataAsString = data.toString();
+    //   // start app process server
+    //   if (dataAsString == 'start') {
+    //     Gateway.getInstance().start();
+    //   }
+    // });
+
+    //
+    // app.on('afterStart', () => {
+    //   writeJSON(mainProcessRPCClient, {
+    //     status: 'worker-ready',
+    //   });
+    // });
 
     // report uncaught errors
     process.on('uncaughtException', (err) => {
@@ -45,19 +55,13 @@ export function reportStatus(app) {
 
       if (code == 100) {
         writeJSON(mainProcessRPCClient, {
-          status: 'worker-restart',
+          type: 'worker-restart',
         });
       } else {
         writeJSON(mainProcessRPCClient, {
-          status: 'worker-exit',
+          type: 'worker-exit',
         });
       }
-    });
-
-    app.on('workingMessageChanged', (newMessage) => {
-      writeJSON(mainProcessRPCClient, {
-        workingMessage: newMessage,
-      });
     });
   }
 }
