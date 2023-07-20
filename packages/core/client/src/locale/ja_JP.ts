@@ -618,7 +618,7 @@ export default {
   "Current form":"現在のフォーム",
   "Current object":"現在のオブジェクト",
   "Linkage with form fields":"フォームデータから連動",
-  "Allow add new, update and delete actions":"削除変更操作の許可"
+  "Allow add new, update and delete actions":"削除変更操作の許可",
   "Assign  data scope for the template":"テンプレートのデータ範囲の指定",
   "Assign target data for the template":"テンプレートのターゲットデータの指定"
 }
