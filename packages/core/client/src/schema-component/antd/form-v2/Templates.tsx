@@ -4,13 +4,13 @@ import { Select, Space, Tag } from 'antd';
 import _ from 'lodash';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCompile } from '../../';
 import { useAPIClient } from '../../../api-client';
-import { findFormBlock, mergeFilter } from '../../../block-provider';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { findFormBlock } from '../../../block-provider';
+import { useCollectionManager } from '../../../collection-manager';
 import { useDuplicatefieldsContext } from '../../../schema-initializer/components';
 import { compatibleDataId } from '../../../schema-settings/DataTemplates/FormDataTemplates';
 import { useToken } from '../__builtins__';
+import { RemoteSelect } from '../remote-select';
 
 export interface ITemplate {
   config?: {
@@ -84,68 +84,19 @@ const useDataTemplates = () => {
   };
 };
 
-export const mapOptionsToTags = (options, fieldNames, titleCollectionfield, templateConfig, compile) => {
-  try {
-    return options
-      .map((option) => {
-        let label = compile(option[fieldNames.label]);
-        if (titleCollectionfield?.uiSchema?.enum) {
-          if (Array.isArray(label)) {
-            label = label
-              .map((item, index) => {
-                const option = titleCollectionfield.uiSchema.enum.find((i) => i.value === item);
-                if (option) {
-                  return (
-                    <Tag key={index} color={option.color} style={{ marginRight: 3 }}>
-                      {option?.label || item}
-                    </Tag>
-                  );
-                } else {
-                  return <Tag key={item}>{item}</Tag>;
-                }
-              })
-              .reverse();
-          } else {
-            const item = titleCollectionfield.uiSchema.enum.find((i) => i.value === label);
-            if (item) {
-              label = <Tag color={item.color}>{item.label}</Tag>;
-            }
-          }
-        }
-
-        if (titleCollectionfield?.type === 'date') {
-          label = dayjs(label).format('YYYY-MM-DD');
-        }
-
-        return {
-          ...templateConfig,
-          title: label,
-          key: option.id,
-        };
-      })
-      .filter(Boolean);
-  } catch (err) {
-    console.error(err);
-    return options;
-  }
-};
 
 export const Templates = ({ style = {}, form }) => {
   const { token } = useToken();
   const { templates, display, enabled, defaultTemplate } = useDataTemplates();
+  const { getCollectionJoinField } = useCollectionManager();
   const templateOptions = compatibleDataId(templates);
   const [targetTemplate, setTargetTemplate] = useState(defaultTemplate?.key || 'none');
   const [targetTemplateData, setTemplateData] = useState(null);
-  const [templateDatas, setTemaplteDatas] = useState([]);
   const api = useAPIClient();
   const { t } = useTranslation();
-  const compile = useCompile();
-  const { name } = useCollection();
-  const resource = api.resource(name);
   useEffect(() => {
     if (enabled && defaultTemplate) {
       form.__template = true;
-      loadData(defaultTemplate);
     }
   }, []);
 
@@ -166,12 +117,9 @@ export const Templates = ({ style = {}, form }) => {
     setTargetTemplate(value);
     setTemplateData(null);
     form?.reset();
-    if (value.key !== 'none') {
-      loadData(option);
-    }
   }, []);
 
-  const handleTemplateDataChange = useCallback(async (value, option) => {
+  const handleTemplateDataChange: any = useCallback(async (value, option) => {
     const template = { ...option, dataId: value };
     setTemplateData(value);
     fetchTemplateData(api, template, t)
@@ -197,27 +145,7 @@ export const Templates = ({ style = {}, form }) => {
   if (!enabled || !display) {
     return null;
   }
-
-  const loadChildren = async (option, filter) => {
-    const { data } = (await resource.list({ filter })) || {};
-    if (data?.data.length === 0) {
-      return;
-    }
-    return mapOptionsToTags(
-      data?.data,
-      { label: option?.titleField || 'id', value: 'id', children: 'children' },
-      option?.titleCollectionField,
-      option,
-      compile,
-    );
-  };
-
-  const loadData = async (selectedOptions, filter?) => {
-    if (selectedOptions.dataScope) {
-      const data = await loadChildren(selectedOptions, mergeFilter([selectedOptions.dataScope, filter || {}]));
-      setTemaplteDatas(data);
-    }
-  };
+  const template = templateOptions?.find((v) => v.key === targetTemplate);
 
   return (
     <div style={wrapperStyle}>
@@ -231,21 +159,20 @@ export const Templates = ({ style = {}, form }) => {
           onChange={handleTemplateChange}
         />
         {targetTemplate !== 'none' && (
-          <Select
+          <RemoteSelect
             style={{ width: 220 }}
-            fieldNames={{ label: 'title', value: 'key' }}
+            fieldNames={{ label: template.titleField, value: 'id' }}
+            target={template?.collection}
             value={targetTemplateData}
-            onChange={handleTemplateDataChange}
-            options={templateDatas}
-            showSearch
-            // onSearch={async (val) => {
-            //   const template = templateOptions?.find((v) => v.key === targetTemplate);
-            //   loadData(template, { $and: [{ [template.titleField]: { $includes: val } }] });
-            // }}
-            onSearch={(val) => {
-              const template = templateOptions?.find((v) => v.key === targetTemplate);
-              onSearch(template, { $and: [{ [template.titleField]: { $eq: 1 } }] });
+            objectValue
+            service={{
+              resource: template?.collection,
+              params: {
+                filter: template?.dataScope,
+              },
             }}
+            onChange={(value) => handleTemplateDataChange(value.id, { ...value, ...template })}
+            targetField={getCollectionJoinField(`${template?.collection}.${template.titleField}`)}
           />
         )}
       </Space>
