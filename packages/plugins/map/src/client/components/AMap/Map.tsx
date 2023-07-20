@@ -1,13 +1,12 @@
 import AMapLoader from '@amap/amap-jsapi-loader';
 import '@amap/amap-jsapi-types';
 import { SyncOutlined } from '@ant-design/icons';
-import { css } from '@emotion/css';
 import { useFieldSchema } from '@formily/react';
-import { useCollection } from '@nocobase/client';
+import { css, useCollection } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
-import { Alert, Button, Modal, Spin } from 'antd';
+import { Alert, App, Button, Spin } from 'antd';
 import React, { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 import { useMapConfiguration } from '../../hooks';
 import { useMapTranslation } from '../../locale';
 import { MapEditorType } from '../../types';
@@ -103,6 +102,7 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
   const editor = useRef(null);
   const navigate = useNavigate();
   const id = useRef(`nocobase-map-${type || ''}-${Date.now().toString(32)}`);
+  const { modal } = App.useApp();
 
   const [commonOptions] = useState<AMap.PolylineOptions & AMap.PolygonOptions>({
     strokeWeight: 5,
@@ -211,7 +211,7 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
       }
       onChange?.(null);
     };
-    Modal.confirm({
+    modal.confirm({
       title: t('Clear the canvas'),
       content: t('Are you sure to clear the canvas?'),
       okText: t('Confirm'),

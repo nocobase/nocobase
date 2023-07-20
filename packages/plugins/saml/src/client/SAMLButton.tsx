@@ -1,10 +1,11 @@
 import { LoginOutlined } from '@ant-design/icons';
-import { css } from '@emotion/css';
-import { Authenticator, useAPIClient, useRedirect } from '@nocobase/client';
+import { Authenticator, css, useAPIClient, useRedirect } from '@nocobase/client';
 import { Button, Space } from 'antd';
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useSamlTranslation } from './locale';
 
 export const SAMLButton = (props: { authenticator: Authenticator }) => {
+  const { t } = useSamlTranslation();
   const [windowHandler, setWindowHandler] = useState<Window | undefined>();
   const api = useAPIClient();
   const redirect = useRedirect();
@@ -71,7 +72,7 @@ export const SAMLButton = (props: { authenticator: Authenticator }) => {
       `}
     >
       <Button shape="round" block icon={<LoginOutlined />} onClick={() => handleOpen(authenticator.name)}>
-        {authenticator.title}
+        {t(authenticator.title)}
       </Button>
     </Space>
   );

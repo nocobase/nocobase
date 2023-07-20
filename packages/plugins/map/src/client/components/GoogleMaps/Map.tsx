@@ -1,12 +1,11 @@
 import { SyncOutlined } from '@ant-design/icons';
-import { css } from '@emotion/css';
 import { useFieldSchema } from '@formily/react';
 import { Loader } from '@googlemaps/js-api-loader';
-import { useAPIClient, useCollection } from '@nocobase/client';
+import { css, useAPIClient, useCollection } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
-import { Alert, Button, Modal, Spin } from 'antd';
+import { Alert, App, Button, Spin } from 'antd';
 import React, { useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 import { defaultImage } from '../../constants';
 import { useMapConfiguration } from '../../hooks';
 import { useMapTranslation } from '../../locale';
@@ -89,6 +88,7 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
     const [needUpdateFlag, forceUpdate] = useState([]);
     const [errMessage, setErrMessage] = useState('');
     const api = useAPIClient();
+    const { modal } = App.useApp();
 
     const type = useMemo<MapEditorType>(() => {
       if (props.type) return props.type;
@@ -353,7 +353,7 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
         drawingManagerRef.current.setDrawingMode(drawingMode.current);
         onChange?.(null);
       };
-      Modal.confirm({
+      modal.confirm({
         title: t('Clear the canvas'),
         content: t('Are you sure to clear the canvas?'),
         okText: t('Confirm'),

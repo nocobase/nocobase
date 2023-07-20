@@ -1,10 +1,15 @@
+import {
+  BaseColumnFieldOptions,
+  DataTypes,
+  Field,
+  FieldContext,
+  Model,
+  Transactionable,
+  ValidationError,
+  ValidationErrorItem,
+} from '@nocobase/database';
+import { Registry, dayjs, lodash } from '@nocobase/utils';
 import parser from 'cron-parser';
-import { escapeRegExp } from 'lodash';
-import moment from 'moment';
-import { DataTypes, Transactionable, ValidationError, ValidationErrorItem } from 'sequelize';
-
-import { BaseColumnFieldOptions, Field, FieldContext, Model } from '@nocobase/database';
-import { Registry } from '@nocobase/utils';
 
 export interface Pattern {
   validate?(options): string | null;
@@ -53,7 +58,7 @@ sequencePatterns.register('string', {
     return options.value.length;
   },
   getMatcher(options) {
-    return escapeRegExp(options.value);
+    return lodash.escapeRegExp(options.value);
   },
 });
 
@@ -261,7 +266,7 @@ sequencePatterns.register('integer', {
 
 sequencePatterns.register('date', {
   generate(this: SequenceField, instance, options) {
-    return moment(instance.get(options?.field ?? 'createdAt')).format(options?.format ?? 'YYYYMMDD');
+    return dayjs(instance.get(options?.field ?? 'createdAt')).format(options?.format ?? 'YYYYMMDD');
   },
   batchGenerate(instances, values, options) {
     const { field, inputable } = options;

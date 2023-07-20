@@ -1,3 +1,4 @@
+import { Logger } from '@nocobase/logger';
 import { applyMixins, AsyncEmitter, requireModule } from '@nocobase/utils';
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
@@ -19,7 +20,9 @@ import {
 } from 'sequelize';
 import { SequelizeStorage, Umzug } from 'umzug';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
+import { CollectionGroupManager } from './collection-group-manager';
 import { ImporterReader, ImportFileExtension } from './collection-importer';
+import DatabaseUtils from './database-utils';
 import ReferencesMap from './features/ReferencesMap';
 import { referentialIntegrityCheck } from './features/referential-integrity-check';
 import { ArrayFieldRepository } from './field-repository/array-field-repository';
@@ -27,10 +30,13 @@ import * as FieldTypes from './fields';
 import { Field, FieldContext, RelationField } from './fields';
 import { InheritedCollection } from './inherited-collection';
 import InheritanceMap from './inherited-map';
+import { registerBuiltInListeners } from './listeners';
 import { MigrationItem, Migrations } from './migration';
 import { Model } from './model';
 import { ModelHook } from './model-hook';
 import extendOperators from './operators';
+import QueryInterface from './query-interface/query-interface';
+import buildQueryInterface from './query-interface/query-interface-builder';
 import { RelationRepository } from './relation-repository/relation-repository';
 import { Repository } from './repository';
 import {
@@ -61,13 +67,6 @@ import {
   ValidateListener,
 } from './types';
 import { patchSequelizeQueryInterface, snakeCase } from './utils';
-
-import { Logger } from '@nocobase/logger';
-import { CollectionGroupManager } from './collection-group-manager';
-import DatabaseUtils from './database-utils';
-import { registerBuiltInListeners } from './listeners';
-import QueryInterface from './query-interface/query-interface';
-import buildQueryInterface from './query-interface/query-interface-builder';
 import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
 import { ViewCollection } from './view-collection';
 
@@ -709,7 +708,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
         console.log('Connection has been established successfully.');
         return true;
       } catch (error) {
-        if (count >= retry) {
+        if (count >= (retry as number)) {
           throw new Error('Connection failed, please check your database connection credentials and try again.');
         }
         console.log('reconnecting...', count);

@@ -1,18 +1,18 @@
 import { CloseCircleOutlined, PlusOutlined } from '@ant-design/icons';
-import { css } from '@emotion/css';
 import { observer, useField, useForm } from '@formily/react';
-import { Button, Dropdown, Form, Input, MenuProps } from 'antd';
-import React, { useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
-
 import {
   CollectionField,
   CollectionProvider,
   SchemaComponent,
   Variable,
+  css,
   useCollectionManager,
   useCompile,
+  useToken,
 } from '@nocobase/client';
+import { Button, Dropdown, Form, Input, MenuProps } from 'antd';
+import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { lang } from '../locale';
 import { useWorkflowVariableOptions } from '../variable';
 
@@ -43,6 +43,7 @@ export function useCollectionUIFields(collection) {
 // NOTE: observer for watching useProps
 const CollectionFieldSet = observer(
   ({ value, disabled, onChange, filter }: any) => {
+    const { token } = useToken();
     const { t } = useTranslation();
     const compile = useCompile();
     const form = useForm();
@@ -148,7 +149,7 @@ const CollectionFieldSet = observer(
             ) : null}
           </CollectionProvider>
         ) : (
-          <p>{lang('Please select collection first')}</p>
+          <p style={{ color: token.colorText }}>{lang('Please select collection first')}</p>
         )}
       </fieldset>
     );

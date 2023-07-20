@@ -1,8 +1,7 @@
-import { css } from '@emotion/css';
 import type { ISchema } from '@formily/react';
 import { Schema, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
-import { SchemaInitializer, useCollection, useDesignable } from '@nocobase/client';
+import { SchemaInitializer, css, useCollection, useDesignable, useToken } from '@nocobase/client';
 import React from 'react';
 import { NAMESPACE } from './constants';
 import { useFields } from './useFields';
@@ -45,6 +44,7 @@ export const ImportActionInitializer = (props) => {
   const { exists, remove } = useCurrentSchema('importXlsx', 'x-action', item.find, item.remove);
   const { name } = useCollection();
   const fields = useFields(name);
+  const { token } = useToken();
 
   const schema: ISchema = {
     type: 'void',
@@ -69,7 +69,7 @@ export const ImportActionInitializer = (props) => {
           width: '50%',
           className: css`
             .ant-formily-item-label {
-              height: 30px;
+              height: var(--controlHeightLG);
             }
           `,
         },
@@ -88,15 +88,13 @@ export const ImportActionInitializer = (props) => {
                     'x-component': 'Markdown.Void',
                     'x-editable': false,
                     'x-component-props': {
-                      className: css`
-                        padding: 8px 15px;
-                        background-color: #e6f7ff;
-                        border: 1px solid #91d5ff;
-                        margin-bottom: 10px;
-                        li {
-                          line-height: 26px;
-                        }
-                      `,
+                      style: {
+                        padding: `var(--paddingContentVerticalSM)`,
+                        backgroundColor: `var(--colorInfoBg)`,
+                        border: `1px solid var(--colorInfoBorder)`,
+                        color: `var(--colorText)`,
+                        marginBottom: `var(--marginSM)`,
+                      },
                       content: `{{ t("Download tip", {ns: "${NAMESPACE}" }) }}`,
                     },
                   },

@@ -1,4 +1,4 @@
-import { FormLayout } from '@formily/antd';
+import { FormLayout } from '@formily/antd-v5';
 import { Field } from '@formily/core';
 import { observer, RecursionField, Schema, useField, useForm } from '@formily/react';
 import React, { useEffect, useState } from 'react';
@@ -116,6 +116,12 @@ const schema = {
         'x-decorator': 'FormItem',
         'x-component': 'Input',
         required: true,
+      },
+      endpoint: {
+        title: `{{t("Endpoint", { ns: "${NAMESPACE}" })}}`,
+        type: 'string',
+        'x-decorator': 'FormItem',
+        'x-component': 'Input',
       },
     },
   },

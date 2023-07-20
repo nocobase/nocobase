@@ -28,4 +28,5 @@ export const updatedAt: IField = {
   filterable: {
     operators: operators.datetime,
   },
+  titleUsable: true,
 };

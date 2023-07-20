@@ -1,8 +1,9 @@
 import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { Tabs as AntdTabs, TabPaneProps, TabsProps } from 'antd';
+import { TabPaneProps, Tabs as AntdTabs, TabsProps } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Icon } from '../../../icon';
 import { useSchemaInitializer } from '../../../schema-initializer';
 import { DndContext, SortableItem } from '../../common';
@@ -25,27 +26,19 @@ export const Tabs: any = observer(
           key,
           label: <RecursionField name={key} schema={schema} onlyRenderSelf />,
           children: (
-            <PaneRoot active={key === contextProps.activeKey}>
+            <PaneRoot {...(PaneRoot !== React.Fragment ? { active: key === contextProps.activeKey } : {})}>
               <RecursionField name={key} schema={schema} onlyRenderProperties />
             </PaneRoot>
           ),
         };
       });
 
-      if (designable) {
-        result.push({
-          key: 'designer',
-          label: render(),
-          children: null,
-        });
-      }
-
       return result;
     }, [fieldSchema.mapProperties((s, key) => key).join()]);
 
     return (
       <DndContext>
-        <AntdTabs {...contextProps} style={props.style} items={items} />
+        <AntdTabs {...contextProps} tabBarExtraContent={render()} style={props.style} items={items} />
       </DndContext>
     );
   },
@@ -94,6 +87,7 @@ const designerCss = css`
         line-height: 16px;
         width: 16px;
         padding-left: 1px;
+        align-self: stretch;
       }
     }
   }

@@ -1,10 +1,8 @@
 import { ArrayField, createForm } from '@formily/core';
 import { FormContext, useField, useFieldSchema } from '@formily/react';
-import { boolean } from 'mathjs';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useCollectionManager } from '../collection-manager';
 import { useFilterBlock } from '../filter-provider/FilterProvider';
-import { useRecord } from '../record-provider';
 import { FixedBlockWrapper, removeNullCondition, SchemaComponentOptions } from '../schema-component';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
 import { findFilterTargets } from './hooks';
@@ -68,60 +66,9 @@ const InternalTableBlockProvider = (props: Props) => {
   );
 };
 
-// export const useAssociationNames = (collection) => {
-//   const { getCollectionFields } = useCollectionManager();
-//   const collectionFields = getCollectionFields(collection);
-//   const associationFields = new Set();
-//   for (const collectionField of collectionFields) {
-//     if (collectionField.target) {
-//       associationFields.add(collectionField.name);
-//       const fields = getCollectionFields(collectionField.target);
-//       for (const field of fields) {
-//         if (field.target) {
-//           associationFields.add(`${collectionField.name}.${field.name}`);
-//         }
-//       }
-//     }
-//   }
-//   const fieldSchema = useFieldSchema();
-//   const tableSchema = fieldSchema.reduceProperties((buf, schema) => {
-//     if (schema['x-component'] === 'TableV2') {
-//       return schema;
-//     }
-//     if (schema['x-component'] === 'Gantt') {
-//       return schema.properties?.table;
-//     }
-//     return buf;
-//   }, new Schema({}));
-//   return uniq(
-//     tableSchema.reduceProperties((buf, schema) => {
-//       if (schema['x-component'] === 'TableV2.Column') {
-//         const s = schema.reduceProperties((buf, s) => {
-//           const [name] = (s.name as string).split('.');
-//           if (s['x-collection-field'] && associationFields.has(name)) {
-//             return s;
-//           }
-//           return buf;
-//         }, null);
-//         if (s) {
-//           // 关联字段和关联的关联字段
-//           const [firstName] = s.name.split('.');
-//           if (associationFields.has(s.name)) {
-//             buf.push(s.name);
-//           } else if (associationFields.has(firstName)) {
-//             buf.push(firstName);
-//           }
-//         }
-//       }
-//       return buf;
-//     }, []),
-//   );
-// };
-
 export const TableBlockProvider = (props) => {
   const resourceName = props.resource;
   const params = { ...props.params };
-  const record = useRecord();
   const fieldSchema = useFieldSchema();
   const { getCollection, getCollectionField } = useCollectionManager();
   const collection = getCollection(props.collection);
@@ -170,6 +117,7 @@ export const useTableBlockProps = () => {
 
   useEffect(() => {
     if (!ctx?.service?.loading) {
+      field.value=[];
       field.value = ctx?.service?.data?.data;
       field.data = field.data || {};
       field.data.selectedRowKeys = ctx?.field?.data?.selectedRowKeys;

@@ -1,12 +1,22 @@
-import React, { createContext, useContext, useState } from 'react';
-import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { RecordProvider, ActionContextProvider, useActionContext, useRecord, useCollection } from '../../';
-import { useTranslation } from 'react-i18next';
 import { css, cx } from '@emotion/css';
-import { useAPIClient, useBlockRequestContext, useDesignable } from '../../';
-import { actionDesignerCss } from './CreateRecordAction';
+import { RecursionField, observer, useField, useFieldSchema } from '@formily/react';
+import { App, Button } from 'antd';
+import React, { createContext, useContext, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import {
+  ActionContextProvider,
+  CollectionProvider,
+  RecordProvider,
+  useAPIClient,
+  useActionContext,
+  useBlockRequestContext,
+  useCollection,
+  useCollectionManager,
+  useDesignable,
+  useRecord,
+} from '../../';
 import { fetchTemplateData } from '../../schema-component/antd/form-v2/Templates';
-import { Button, message } from 'antd';
+import { actionDesignerCss } from './CreateRecordAction';
 
 const DuplicatefieldsContext = createContext(null);
 
@@ -16,6 +26,7 @@ export const useDuplicatefieldsContext = () => {
 
 export const DuplicateAction = observer((props: any) => {
   const { children } = props;
+  const { message } = App.useApp();
   const field = useField();
   const fieldSchema = useFieldSchema();
   const api = useAPIClient();
@@ -23,19 +34,31 @@ export const DuplicateAction = observer((props: any) => {
   const { designable } = useDesignable();
   const [visible, setVisible] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { resource, service, __parent, block } = useBlockRequestContext();
-  const { duplicateFields, duplicateMode = 'quickDulicate' } = fieldSchema['x-component-props'];
-  const { id } = useRecord();
+  const { service, __parent, block } = useBlockRequestContext();
+  const { duplicateFields, duplicateMode = 'quickDulicate', duplicateCollection } = fieldSchema['x-component-props'];
+  const record = useRecord();
+  const { id, __collection } = record;
   const ctx = useActionContext();
   const { name } = useCollection();
+  const { getCollectionFields } = useCollectionManager();
   const { t } = useTranslation();
-  const template = { key: 'duplicate', dataId: id, default: true, fields: duplicateFields || [], collection: name };
+  const collectionFields = getCollectionFields(__collection || name);
+  const template = {
+    key: 'duplicate',
+    dataId: id,
+    default: true,
+    fields:
+      duplicateFields?.filter((v) => {
+        return collectionFields.find((k) => v.includes(k.name));
+      }) || [],
+    collection: __collection || name,
+  };
   const isLinkBtn = fieldSchema['x-component'] === 'Action.Link';
   const handelQuickDuplicate = async () => {
     setLoading(true);
     try {
       const data = await fetchTemplateData(api, template, t);
-      await resource.create({
+      await api.resource(__collection || name).create({
         values: {
           ...data,
         },
@@ -52,7 +75,6 @@ export const DuplicateAction = observer((props: any) => {
       console.error(error); // Handle or log the error appropriately
     }
   };
-
   const handelDuplicate = () => {
     if (!disabled && !loading) {
       if (duplicateFields?.length > 0) {
@@ -111,9 +133,13 @@ export const DuplicateAction = observer((props: any) => {
               {loading ? t('Duplicating') : children || t('Duplicate')}
             </Button>
           )}
-          <ActionContextProvider value={{ ...ctx, visible, setVisible }}>
-            <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
-          </ActionContextProvider>
+          <CollectionProvider name={duplicateCollection || name}>
+            <RecordProvider record={{ ...record, __collection: duplicateCollection || __collection }}>
+              <ActionContextProvider value={{ ...ctx, visible, setVisible }}>
+                <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
+              </ActionContextProvider>
+            </RecordProvider>
+          </CollectionProvider>
         </div>
       </DuplicatefieldsContext.Provider>
     </div>

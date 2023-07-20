@@ -1,15 +1,10 @@
-import { OptionsComponentProvider, SigninPageExtensionProvider } from '@nocobase/client';
-import React from 'react';
-import { OIDCButton } from './OIDCButton';
-import { authType } from '../constants';
-import { Options } from './Options';
+import { Plugin } from '@nocobase/client';
+import { OidcProvider } from './OidcProvider';
 
-export default function (props) {
-  return (
-    <SigninPageExtensionProvider component={OIDCButton} authType={authType}>
-      <OptionsComponentProvider authType={authType} component={Options}>
-        {props.children}
-      </OptionsComponentProvider>
-    </SigninPageExtensionProvider>
-  );
+export class OidcPlugin extends Plugin {
+  async load() {
+    this.app.use(OidcProvider);
+  }
 }
+
+export default OidcPlugin;

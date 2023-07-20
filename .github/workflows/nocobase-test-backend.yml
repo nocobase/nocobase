@@ -25,8 +25,8 @@ jobs:
   sqlite-test:
     strategy:
       matrix:
-        node_version: [ '18' ]
-        underscored: [ true, false ]
+        node_version: ['18']
+        underscored: [true, false]
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
     steps:
@@ -40,7 +40,7 @@ jobs:
       - name: Test with Sqlite
         run: yarn nocobase install -f && yarn test
         env:
-          NODE_OPTIONS: "--max_old_space_size=4096"
+          NODE_OPTIONS: '--max_old_space_size=4096'
           DB_DIALECT: sqlite
           DB_STORAGE: /tmp/db.sqlite
           DB_UNDERSCORED: ${{ matrix.underscored }}
@@ -49,17 +49,17 @@ jobs:
   postgres-test:
     strategy:
       matrix:
-        node_version: [ '18' ]
-        underscored: [ true, false ]
-        schema: [ public, nocobase ]
-        collection_schema: [ public, user_schema ]
+        node_version: ['18']
+        underscored: [true, false]
+        schema: [public, nocobase]
+        collection_schema: [public, user_schema]
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
     services:
       # Label used to access the service container
       postgres:
         # Docker Hub image
-        image: postgres:10
+        image: postgres:11
         # Provide the password for postgres
         env:
           POSTGRES_USER: nocobase
@@ -82,7 +82,7 @@ jobs:
       - name: Test with postgres
         run: yarn nocobase install -f && yarn test
         env:
-          NODE_OPTIONS: "--max_old_space_size=4096"
+          NODE_OPTIONS: '--max_old_space_size=4096'
           DB_DIALECT: postgres
           DB_HOST: postgres
           DB_PORT: 5432
@@ -97,8 +97,8 @@ jobs:
   mysql-test:
     strategy:
       matrix:
-        node_version: [ '18' ]
-        underscored: [ true, false ]
+        node_version: ['18']
+        underscored: [true, false]
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
     services:
@@ -120,7 +120,7 @@ jobs:
       - name: Test with MySQL
         run: yarn nocobase install -f && yarn test
         env:
-          NODE_OPTIONS: "--max_old_space_size=4096"
+          NODE_OPTIONS: '--max_old_space_size=4096'
           DB_DIALECT: mysql
           DB_HOST: mysql
           DB_PORT: 3306

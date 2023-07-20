@@ -1,5 +1,6 @@
 import { TableOutlined } from '@ant-design/icons';
 import {
+  Plugin,
   SchemaComponentOptions,
   SchemaInitializer,
   SchemaInitializerContext,
@@ -36,7 +37,7 @@ export const HelloBlockInitializer = (props) => {
   );
 };
 
-const Hello = React.memo((props) => {
+const HelloProvider = React.memo((props) => {
   const items = useContext<any>(SchemaInitializerContext);
   const children = items.BlockInitializers.items[1].children;
   children.push({
@@ -66,6 +67,12 @@ const Hello = React.memo((props) => {
     </SettingsCenterProvider>
   );
 });
-Hello.displayName = 'Hello';
+HelloProvider.displayName = 'HelloProvider';
 
-export default Hello;
+class HelloPlugin extends Plugin {
+  async load() {
+    this.app.addProvider(HelloProvider);
+  }
+}
+
+export default HelloPlugin;

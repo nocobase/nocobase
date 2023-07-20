@@ -133,7 +133,7 @@ export const InternalPicker = observer(
           <div style={{ width: '100%' }}>
             <Select
               style={{ width: '100%' }}
-              dropdownMatchSelectWidth={false}
+              popupMatchSelectWidth={false}
               {...others}
               mode={multiple ? 'multiple' : props.mode}
               fieldNames={fieldNames}

@@ -1,19 +1,28 @@
 {
   "name": "@nocobase/plugin-sample-shop-i18n",
-  "version": "0.10.0-alpha.5",
-  "main": "lib/server/index.js",
+  "version": "0.11.0-alpha.1",
+  "main": "./lib/server/index.js",
+  "files": [
+    "lib",
+    "src",
+    "README.md",
+    "README.zh-CN.md",
+    "CHANGELOG.md",
+    "server.js",
+    "server.d.ts",
+    "client.js",
+    "client.d.ts"
+  ],
   "dependencies": {
     "nodejs-snowflake": "2.0.1"
   },
   "devDependencies": {
-    "@nocobase/client": "0.10.0-alpha.5",
-    "@nocobase/server": "0.10.0-alpha.5",
-    "@nocobase/test": "0.10.0-alpha.5"
-  },
-  "peerDependencies": {
-    "@nocobase/client": "*",
-    "@nocobase/server": "*",
-    "@nocobase/test": "*"
+    "@nocobase/client": "0.11.0-alpha.1",
+    "@nocobase/server": "0.11.0-alpha.1",
+    "@nocobase/test": "0.11.0-alpha.1",
+    "antd": "^5.6.4",
+    "react": "^18.2.0",
+    "react-i18next": "^11.15.1"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
 }

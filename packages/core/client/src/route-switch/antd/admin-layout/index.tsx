@@ -1,14 +1,15 @@
 import { css } from '@emotion/css';
 import { Layout, Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Outlet, useNavigate, useParams } from 'react-router-dom';
+import { Outlet, useMatch, useNavigate, useParams } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
   CurrentAppInfoProvider,
   CurrentUser,
-  CurrentUserProvider,
+  NavigateIfNotSignIn,
   PinnedPluginList,
   RemoteCollectionManagerProvider,
+  RemoteSchemaTemplateManagerPlugin,
   RemoteSchemaTemplateManagerProvider,
   SchemaComponent,
   findByUid,
@@ -19,6 +20,7 @@ import {
   useRequest,
   useSystemSettings,
 } from '../../../';
+import { Plugin } from '../../../application/Plugin';
 import { useCollectionManager } from '../../../collection-manager';
 
 const filterByACL = (schema, options) => {
@@ -59,6 +61,8 @@ const MenuEditor = (props) => {
   const { setTitle } = useDocumentTitle();
   const navigate = useNavigate();
   const params = useParams<any>();
+  const isMatchAdmin = useMatch('/admin');
+  const isMatchAdminName = useMatch('/admin/:name');
   const defaultSelectedUid = params.name;
   const { sideMenuRef } = props;
   const ctx = useACLRoleContext();
@@ -71,8 +75,9 @@ const MenuEditor = (props) => {
   };
 
   const adminSchemaUid = useAdminSchemaUid();
-
-  const { data, loading } = useRequest(
+  const { data, loading } = useRequest<{
+    data: any;
+  }>(
     {
       url: `/uiSchemas:getJsonSchema/${adminSchemaUid}`,
     },
@@ -81,7 +86,7 @@ const MenuEditor = (props) => {
       onSuccess(data) {
         const schema = filterByACL(data?.data, ctx);
         // url 为 `/admin` 的情况
-        if (params['*'] === 'admin' || params['*'] === 'admin/') {
+        if (isMatchAdmin) {
           const s = findMenuItem(schema);
           if (s) {
             navigate(`/admin/${s['x-uid']}`);
@@ -89,11 +94,11 @@ const MenuEditor = (props) => {
           } else {
             navigate(`/admin/`);
           }
+          return;
         }
 
         // url 不为 `/admin/xxx` 的情况，不做处理
-        const paramsArr = params['*'].split('/');
-        if (paramsArr[0] !== 'admin' || paramsArr[1] !== defaultSelectedUid || paramsArr.length > 2) return;
+        if (!isMatchAdminName) return;
 
         // url 为 `admin/xxx` 的情况
         const s = findByUid(schema, defaultSelectedUid);
@@ -154,7 +159,8 @@ export const InternalAdminLayout = (props: any) => {
       <Layout.Header
         className={css`
           .ant-menu.ant-menu-dark .ant-menu-item-selected,
-          .ant-menu-submenu-popup.ant-menu-dark .ant-menu-item-selected {
+          .ant-menu-submenu-popup.ant-menu-dark .ant-menu-item-selected,
+          .ant-menu-submenu-horizontal.ant-menu-submenu-selected {
             background-color: rgba(255, 255, 255, 0.1);
           }
           .ant-menu-dark.ant-menu-horizontal > .ant-menu-item:hover {
@@ -162,9 +168,10 @@ export const InternalAdminLayout = (props: any) => {
           }
 
           position: fixed;
-          width: 100%;
-          height: 46px;
-          line-height: 46px;
+          left: 0;
+          right: 0;
+          height: var(--nb-header-height);
+          line-height: var(--nb-header-height);
           padding: 0;
           z-index: 100;
         `}
@@ -239,10 +246,10 @@ export const InternalAdminLayout = (props: any) => {
             background: rgba(0, 0, 0, 0);
             z-index: 100;
             .ant-layout-sider-children {
-              top: 46px;
+              top: var(--nb-header-height);
               position: fixed;
               width: 200px;
-              height: calc(100vh - 46px);
+              height: calc(100vh - var(--nb-header-height));
             }
           `}
           theme={'light'}
@@ -259,7 +266,6 @@ export const InternalAdminLayout = (props: any) => {
           max-height: 100vh;
           > div {
             position: relative;
-            // z-index: 1;
           }
           .ant-layout-footer {
             position: absolute;
@@ -274,8 +280,8 @@ export const InternalAdminLayout = (props: any) => {
         <header
           className={css`
             flex-shrink: 0;
-            height: 46px;
-            line-height: 46px;
+            height: var(--nb-header-height);
+            line-height: var(--nb-header-height);
             background: transparent;
             pointer-events: none;
           `}
@@ -289,13 +295,13 @@ export const InternalAdminLayout = (props: any) => {
 export const AdminProvider = (props) => {
   return (
     <CurrentAppInfoProvider>
-      <CurrentUserProvider>
+      <NavigateIfNotSignIn>
         <RemoteSchemaTemplateManagerProvider>
           <RemoteCollectionManagerProvider>
             <ACLRolesCheckProvider>{props.children}</ACLRolesCheckProvider>
           </RemoteCollectionManagerProvider>
         </RemoteSchemaTemplateManagerProvider>
-      </CurrentUserProvider>
+      </NavigateIfNotSignIn>
     </CurrentAppInfoProvider>
   );
 };
@@ -308,4 +314,9 @@ export const AdminLayout = (props) => {
   );
 };
 
-export default AdminLayout;
+export class AdminLayoutPlugin extends Plugin {
+  async load() {
+    this.app.pm.add(RemoteSchemaTemplateManagerPlugin);
+    this.app.addComponents({ AdminLayout });
+  }
+}

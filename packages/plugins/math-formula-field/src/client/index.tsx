@@ -1,34 +1,10 @@
-import { CollectionManagerContext, registerField, SchemaComponentOptions } from '@nocobase/client';
-import React, { useContext } from 'react';
-import { useTranslation } from 'react-i18next';
-import { mathFormula } from './math-formula';
-import { MathFormula } from './MathFormula';
+import { Plugin } from '@nocobase/client';
+import { MathFormulaFieldProvider } from './MathFormulaFieldProvider';
 
-registerField(mathFormula.group, 'mathFormula', mathFormula);
+export class MathFormulaFieldPlugin extends Plugin {
+  async load() {
+    this.app.use(MathFormulaFieldProvider);
+  }
+}
 
-const MathFormulaField = React.memo((props) => {
-  const ctx = useContext(CollectionManagerContext);
-  const { t } = useTranslation();
-  return (
-    <SchemaComponentOptions
-      scope={{
-        mathExpressionDescription: (
-          <div>
-            {t('Syntax see', { ns: 'math-formula-field' })}{' '}
-            <a target={'_blank'} href={'https://mathjs.org/docs/expressions/syntax.html'} rel="noreferrer">
-              math.js
-            </a>
-          </div>
-        ),
-      }}
-      components={{ MathFormula }}
-    >
-      <CollectionManagerContext.Provider value={{ ...ctx, interfaces: { ...ctx.interfaces, mathFormula } }}>
-        {props.children}
-      </CollectionManagerContext.Provider>
-    </SchemaComponentOptions>
-  );
-});
-MathFormulaField.displayName = 'MathFormulaField';
-
-export default MathFormulaField;
+export default MathFormulaFieldPlugin;

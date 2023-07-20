@@ -617,5 +617,6 @@ export default {
   "Create":"新規のみ"  ,
   "Current form":"現在のフォーム",
   "Current object":"現在のオブジェクト",
-  "Linkage form form data":"フォームデータから連動",
+  "Linkage with form fields":"フォームデータから連動",
+  "Allow add new, update and delete actions":"削除変更操作の許可"
 }

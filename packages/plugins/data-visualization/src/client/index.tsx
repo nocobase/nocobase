@@ -1,4 +1,4 @@
-import { SchemaComponentOptions, SchemaInitializerContext, SchemaInitializerProvider } from '@nocobase/client';
+import { Plugin, SchemaComponentOptions, SchemaInitializerContext, SchemaInitializerProvider } from '@nocobase/client';
 import React, { useContext } from 'react';
 import { ChartInitializers, ChartV2Block, ChartV2BlockDesigner, ChartV2BlockInitializer } from './block';
 import { useChartsTranslation } from './locale';
@@ -14,7 +14,7 @@ const Chart: React.FC = (props) => {
     children.push({
       key: 'chart-v2',
       type: 'item',
-      title: t('Chart'),
+      title: t('Charts'),
       component: 'ChartV2BlockInitializer',
     });
   }
@@ -37,5 +37,11 @@ const Chart: React.FC = (props) => {
   );
 };
 
-export default Chart;
+class DataVisualizationPlugin extends Plugin {
+  async load() {
+    this.app.addProvider(Chart);
+  }
+}
+
+export default DataVisualizationPlugin;
 export { ChartLibraryProvider };

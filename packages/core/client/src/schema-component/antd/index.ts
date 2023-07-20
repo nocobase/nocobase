@@ -1,4 +1,5 @@
 export * from './action';
+export * from './appends-tree-select';
 export * from './association-field';
 export * from './association-select';
 export * from './auto-complete';
@@ -15,6 +16,7 @@ export * from './details';
 export * from './expand-action';
 export * from './filter';
 export * from './form';
+export * from './form-dialog';
 export * from './form-item';
 export * from './form-v2';
 export * from './g2plot';
@@ -33,6 +35,7 @@ export * from './pagination';
 export * from './password';
 export * from './percent';
 export * from './preview';
+export * from './quick-edit';
 export * from './radio';
 export * from './record-picker';
 export * from './remote-select';
@@ -46,5 +49,4 @@ export * from './time-picker';
 export * from './tree-select';
 export * from './upload';
 export * from './variable';
-export * from './quick-edit'
 import './index.less';

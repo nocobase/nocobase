@@ -49,7 +49,7 @@ const ObjectSelect = (props: Props) => {
       options={options}
       fieldNames={fieldNames}
       showSearch
-      dropdownMatchSelectWidth={false}
+      popupMatchSelectWidth={false}
       filterOption={(input, option) => (option?.[fieldNames.label || 'label'] ?? '').includes(input)}
       filterSort={(optionA, optionB) =>
         (optionA?.[fieldNames.label || 'label'] ?? '')
@@ -78,13 +78,13 @@ const filterOption = (input, option) => (option?.label ?? '').toLowerCase().incl
 
 const InternalSelect = connect(
   (props: Props) => {
-    const { objectValue, loading, value, ...others } = props;
+    const { objectValue, loading, value, rawOptions, ...others } = props;
     let mode: any = props.multiple ? 'multiple' : props.mode;
     if (mode && !['multiple', 'tags'].includes(mode)) {
       mode = undefined;
     }
     if (objectValue) {
-      return <ObjectSelect {...others} value={value} mode={mode} loading={loading} />;
+      return <ObjectSelect rawOptions={rawOptions} {...others} value={value} mode={mode} loading={loading} />;
     }
     const toValue = (v) => {
       if (['tags', 'multiple'].includes(props.mode) || props.multiple) {
@@ -100,7 +100,7 @@ const InternalSelect = connect(
         showSearch
         filterOption={filterOption}
         allowClear
-        dropdownMatchSelectWidth={false}
+        popupMatchSelectWidth={false}
         notFoundContent={loading ? <Spin /> : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />}
         value={toValue(value)}
         {...others}

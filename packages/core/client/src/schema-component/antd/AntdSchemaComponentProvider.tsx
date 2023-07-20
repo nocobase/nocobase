@@ -1,10 +1,12 @@
 import React from 'react';
 import * as components from '.';
+import { Plugin } from '../../application/Plugin';
 import * as common from '../common';
-import { SchemaComponentOptions } from '../core/SchemaComponentOptions';
+import { SchemaComponentOptions } from '../core';
 import { useFilterActionProps } from './filter/useFilterActionProps';
 import { requestChartData } from './g2plot/requestChartData';
 
+// TODO: delete this, replaced by `AntdSchemaComponentPlugin`
 export const AntdSchemaComponentProvider = (props) => {
   const { children } = props;
   return (
@@ -16,3 +18,24 @@ export const AntdSchemaComponentProvider = (props) => {
     </SchemaComponentOptions>
   );
 };
+
+export class AntdSchemaComponentPlugin extends Plugin {
+  async load() {
+    this.addComponents();
+    this.addScopes();
+  }
+
+  addComponents() {
+    this.app.addComponents({
+      ...(components as any),
+      ...common,
+    });
+  }
+
+  addScopes() {
+    this.app.addScopes({
+      requestChartData,
+      useFilterActionProps,
+    });
+  }
+}

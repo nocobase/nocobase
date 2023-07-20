@@ -1,6 +1,5 @@
-import { BaseFieldOptions, Field } from '@nocobase/database';
+import { BaseFieldOptions, DataTypes, Field } from '@nocobase/database';
 import * as math from 'mathjs';
-import { DataTypes } from 'sequelize';
 import { evaluate } from '../utils/evaluate';
 
 export class MathFormulaField extends Field {

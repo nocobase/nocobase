@@ -81,4 +81,12 @@ export class BaseAuth extends Auth {
       token,
     };
   }
+
+  async signOut(): Promise<any> {
+    const token = this.ctx.getBearerToken();
+    if (!token) {
+      return;
+    }
+    return await this.jwt.block(token);
+  }
 }

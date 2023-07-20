@@ -1,7 +1,7 @@
-import { BlockInitializers, SchemaInitializerItemOptions, useCollectionManager } from '@nocobase/client';
+import { BlockInitializers, SchemaInitializerItemOptions, useCollectionManager, useCompile } from '@nocobase/client';
 
 import { CollectionBlockInitializer } from '../../components/CollectionBlockInitializer';
-import { useCollectionFieldOptions } from '../../variable';
+import { defaultFieldNames, getCollectionFieldOptions } from '../../variable';
 import { NAMESPACE } from '../../locale';
 import { SchemaConfig, SchemaConfigButton } from './SchemaConfig';
 import { ModeConfig } from './ModeConfig';
@@ -85,7 +85,9 @@ export default {
     ModeConfig,
     AssigneesSelect,
   },
-  useVariables({ config }, { types }) {
+  useVariables({ id, title, config }, { types, fieldNames = defaultFieldNames }) {
+    const compile = useCompile();
+    const { getCollectionFields } = useCollectionManager();
     const formKeys = Object.keys(config.forms ?? {});
     if (!formKeys.length) {
       return null;
@@ -95,25 +97,33 @@ export default {
       .map((formKey) => {
         const form = config.forms[formKey];
 
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        const options = useCollectionFieldOptions({
+        const fieldsOptions = getCollectionFieldOptions({
           fields: form.collection?.fields,
           collection: form.collection,
           types,
+          compile,
+          getCollectionFields,
         });
-        return options.length
+        const label = compile(form.title) || formKey;
+        return fieldsOptions.length
           ? {
               key: formKey,
               value: formKey,
-              label: form.title || formKey,
-              title: form.title || formKey,
-              children: options,
+              label,
+              title: label,
+              children: fieldsOptions,
             }
           : null;
       })
       .filter(Boolean);
 
-    return options.length ? options : null;
+    return options.length
+      ? {
+          [fieldNames.value]: `${id}`,
+          [fieldNames.label]: title,
+          [fieldNames.children]: options,
+        }
+      : null;
   },
   useInitializers(node): SchemaInitializerItemOptions | null {
     const { getCollection } = useCollectionManager();

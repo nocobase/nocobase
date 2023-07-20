@@ -1,8 +1,9 @@
 import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
-import { Button, Modal, Popover } from 'antd';
+import { App, Button, Popover } from 'antd';
 import classnames from 'classnames';
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useActionContext } from '../..';
 import { useDesignable } from '../../';
 import { Icon } from '../../../icon';
@@ -20,6 +21,7 @@ import { ActionContextProvider } from './context';
 import { useA } from './hooks';
 import { ComposedAction } from './types';
 import { linkageAction } from './utils';
+import { lodash } from '@nocobase/utils';
 
 export const actionDesignerCss = css`
   position: relative;
@@ -59,6 +61,7 @@ export const actionDesignerCss = css`
         line-height: 16px;
         width: 16px;
         padding-left: 1px;
+        align-self: stretch;
       }
     }
   }
@@ -78,6 +81,7 @@ export const Action: ComposedAction = observer(
       title,
       ...others
     } = props;
+    const { t } = useTranslation();
     const { onClick } = useProps(props);
     const [visible, setVisible] = useState(false);
     const [formValueChanged, setFormValueChanged] = useState(false);
@@ -95,6 +99,10 @@ export const Action: ComposedAction = observer(
     const linkageRules = fieldSchema?.['x-linkage-rules'] || [];
     const { designable } = useDesignable();
     const tarComponent = useComponent(component) || component;
+    const { modal } = App.useApp();
+    let actionTitle = title || compile(fieldSchema.title);
+    actionTitle = lodash.isString(actionTitle) ? t(actionTitle) : actionTitle;
+
     useEffect(() => {
       field.linkageProperty = {};
       linkageRules
@@ -114,7 +122,7 @@ export const Action: ComposedAction = observer(
         <SortableItem
           {...others}
           loading={field?.data?.loading}
-          icon={<Icon type={icon} />}
+          icon={icon ? <Icon type={icon} /> : null}
           disabled={disabled}
           style={{
             ...others.style,
@@ -130,7 +138,7 @@ export const Action: ComposedAction = observer(
                 run();
               };
               if (confirm) {
-                Modal.confirm({
+                modal.confirm({
                   ...confirm,
                   onOk,
                 });
@@ -141,8 +149,9 @@ export const Action: ComposedAction = observer(
           }}
           component={tarComponent || Button}
           className={classnames(actionDesignerCss, className)}
+          type={props.type === 'danger' ? undefined : props.type}
         >
-          {title || compile(fieldSchema.title)}
+          {actionTitle}
           <Designer {...designerProps} />
         </SortableItem>
       );

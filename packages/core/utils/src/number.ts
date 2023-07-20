@@ -1,5 +1,4 @@
-import { toFixed } from 'rc-input-number/lib/utils/MiniDecimal';
-import { getNumberPrecision } from 'rc-input-number/lib/utils/numberUtil';
+import { getNumberPrecision, toFixed } from '@rc-component/mini-decimal';
 
 export function toFixedByStep(value: any, step: string | number) {
   if (typeof value === 'undefined' || value === null || value === '') {

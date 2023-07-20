@@ -1,4 +1,4 @@
-import { ArrayTable } from '@formily/antd';
+import { ArrayTable } from '@formily/antd-v5';
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import cloneDeep from 'lodash/cloneDeep';
@@ -116,6 +116,7 @@ const useUpdateCollectionField = () => {
       await form.submit();
       const values = cloneDeep(form.values);
       if (values.autoCreateReverseField) {
+        /* empty */
       } else {
         delete values.reverseField;
       }

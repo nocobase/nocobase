@@ -1,6 +1,6 @@
+import { dayjs } from '@nocobase/utils/client';
 import flat from 'flat';
 import _, { every, findIndex, isArray, some } from 'lodash';
-import moment from 'moment';
 import { useMemo } from 'react';
 import { useCurrentUserContext } from '../../../user';
 import jsonLogic from '../../common/utils/logic';
@@ -18,7 +18,7 @@ export const useVariablesCtx = (): VariablesCtx => {
     return {
       $user: data?.data || {},
       $date: {
-        now: () => moment().toISOString(),
+        now: () => dayjs().toISOString(),
       },
     };
   }, [data]);
@@ -122,7 +122,8 @@ function getAllKeys(obj) {
   return keys;
 }
 
-export const conditionAnalyse = (rules, values) => {
+export const conditionAnalyse = (rules, scope) => {
+  const values = { ...scope, now: new Date() };
   const type = Object.keys(rules)[0] || '$and';
   const conditions = rules[type];
   const results = conditions.map((c) => {

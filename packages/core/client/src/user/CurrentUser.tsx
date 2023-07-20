@@ -1,16 +1,16 @@
 import { css } from '@emotion/css';
 import { error } from '@nocobase/utils/client';
-import { Dropdown, Menu, MenuProps, Modal } from 'antd';
+import { App, Dropdown, Menu, MenuProps } from 'antd';
 import React, { createContext, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useACLRoleContext, useAPIClient, useCurrentUserContext } from '..';
 import { useCurrentAppInfo } from '../appInfo/CurrentAppInfoProvider';
 import { useChangePassword } from './ChangePassword';
+import { useCurrentUserSettingsMenu } from './CurrentUserSettingsMenuProvider';
 import { useEditProfile } from './EditProfile';
 import { useLanguageSettings } from './LanguageSettings';
 import { useSwitchRole } from './SwitchRole';
-import { useThemeSettings } from './ThemeSettings';
 const useApplicationVersion = () => {
   const data = useCurrentAppInfo();
   return useMemo(() => {
@@ -28,6 +28,7 @@ const useApplicationVersion = () => {
 export const SettingsMenu: React.FC<{
   redirectUrl?: string;
 }> = (props) => {
+  const { addMenuItem, getMenuItems } = useCurrentUserSettingsMenu();
   const { redirectUrl = '' } = props;
   const { allowAll, snippets } = useACLRoleContext();
   const appAllowed = allowAll || snippets?.includes('app');
@@ -55,17 +56,12 @@ export const SettingsMenu: React.FC<{
       }, 3000);
     });
   }, [silenceApi]);
-  const divider = useMemo<MenuProps['items'][0]>(() => {
-    return {
-      type: 'divider',
-    };
-  }, []);
   const appVersion = useApplicationVersion();
   const editProfile = useEditProfile();
   const changePassword = useChangePassword();
   const switchRole = useSwitchRole();
   const languageSettings = useLanguageSettings();
-  const themeSettings = useThemeSettings();
+  const { modal } = App.useApp();
   const controlApp = useMemo<MenuProps['items']>(() => {
     if (!appAllowed) {
       return [];
@@ -84,7 +80,7 @@ export const SettingsMenu: React.FC<{
         key: 'reboot',
         label: t('Reboot application'),
         onClick: async () => {
-          Modal.confirm({
+          modal.confirm({
             title: t('Reboot application'),
             content: t('The will interrupt service, it may take a few seconds to restart. Are you sure to continue?'),
             okText: t('Reboot'),
@@ -99,43 +95,49 @@ export const SettingsMenu: React.FC<{
           });
         },
       },
-      divider,
-    ];
-  }, [appAllowed, check]);
-  const items = useMemo<MenuProps['items']>(() => {
-    return [
-      appVersion,
-      divider,
-      editProfile,
-      changePassword,
-      divider,
-      switchRole,
-      languageSettings,
-      themeSettings,
-      divider,
-      ...controlApp,
       {
-        key: 'signout',
-        label: t('Sign out'),
-        onClick: async () => {
-          await api.auth.signOut();
-          navigate(`/signin?redirect=${encodeURIComponent(redirectUrl)}`);
-        },
+        key: 'divider_4',
+        type: 'divider',
       },
     ];
-  }, [
-    appVersion,
-    changePassword,
-    controlApp,
-    divider,
-    editProfile,
-    history,
-    languageSettings,
-    switchRole,
-    themeSettings,
-  ]);
+  }, [api, appAllowed, check, modal, t]);
 
-  return <Menu items={items} />;
+  const items = [
+    appVersion,
+    {
+      key: 'divider_1',
+      type: 'divider',
+    },
+    editProfile,
+    changePassword,
+    {
+      key: 'divider_2',
+      type: 'divider',
+    },
+    switchRole,
+    languageSettings,
+    {
+      key: 'divider_3',
+      type: 'divider',
+    },
+    ...controlApp,
+    {
+      key: 'signout',
+      label: t('Sign out'),
+      onClick: async () => {
+        await api.auth.signOut();
+        navigate(`/signin?redirect=${encodeURIComponent(redirectUrl)}`);
+      },
+    },
+  ];
+
+  items.forEach((item) => {
+    if (item) {
+      addMenuItem(item);
+    }
+  });
+
+  return <Menu items={getMenuItems()} />;
 };
 
 export const DropdownVisibleContext = createContext(null);

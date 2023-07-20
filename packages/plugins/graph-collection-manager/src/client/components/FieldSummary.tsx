@@ -1,9 +1,8 @@
-import { css } from '@emotion/css';
 import { observer } from '@formily/react';
+import { css, useCollectionManager, useCompile } from '@nocobase/client';
 import { Tag } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCompile, useCollectionManager } from '@nocobase/client';
 
 export const FieldSummary = observer(
   (props: any) => {

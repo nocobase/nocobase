@@ -1,8 +1,8 @@
 import { Database } from '@nocobase/database';
 import { MockServer, mockServer } from '@nocobase/test';
-import SAMLPlugin from '@nocobase/plugin-saml';
-import { authType } from '../../constants';
 import { SAML } from '@node-saml/node-saml';
+import { authType } from '../../constants';
+import SAMLPlugin from '../index';
 
 describe('saml', () => {
   let app: MockServer;

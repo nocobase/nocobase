@@ -706,5 +706,6 @@ export default {
   "Create":"Create",
   "Current form": "Current form",
   "Current object":"Current object",
-  "Linkage form form data":"Linkage form form data",
+  "Linkage with form fields":"Linkage with form fields",
+  "Allow add new, update and delete actions":"Allow add new, update and delete actions"
 };

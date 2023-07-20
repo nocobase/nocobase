@@ -1,7 +1,8 @@
-import { css, cx } from '@emotion/css';
 import {
   ActionContextProvider,
   AdminProvider,
+  css,
+  cx,
   RemoteSchemaComponent,
   useSystemSettings,
   useViewport,
@@ -47,6 +48,7 @@ const commonDesignerCSS = css`
         line-height: 16px;
         width: 16px;
         padding-left: 1px;
+        align-self: stretch;
       }
     }
   }
@@ -68,7 +70,7 @@ const modalProps = {
     position: 'absolute',
   },
   wrapClassName: css`
-    position: absolute;
+    position: absolute !important;
   `,
 };
 
@@ -79,7 +81,6 @@ const useMobileSchemaUid = () => {
 
 const MApplication: React.FC = (props) => {
   const mobileSchemaUid = useMobileSchemaUid();
-  console.log('mobileSchemaUid', mobileSchemaUid);
   const params = useParams<{ name: string }>();
   const interfaceContext = useInterfaceContext();
   const Provider = useMemo(() => {

@@ -2,7 +2,7 @@ import { ExpressionScope, SchemaComponentsContext, SchemaOptionsContext } from '
 import React, { useContext } from 'react';
 import { ISchemaComponentOptionsProps } from '../types';
 
-const useSchemaOptionsContext = () => {
+export const useSchemaOptionsContext = () => {
   const options = useContext(SchemaOptionsContext);
   return options || {};
 };

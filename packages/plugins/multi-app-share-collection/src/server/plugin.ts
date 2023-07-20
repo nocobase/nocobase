@@ -1,6 +1,6 @@
 import PluginMultiAppManager from '@nocobase/plugin-multi-app-manager';
 import { Application, Plugin } from '@nocobase/server';
-import lodash from 'lodash';
+import { lodash } from '@nocobase/utils';
 import { resolve } from 'path';
 
 const subAppFilteredPlugins = ['multi-app-share-collection', 'multi-app-manager'];
@@ -21,6 +21,7 @@ class SubAppPlugin extends Plugin {
       'sequence-field',
       'snapshot-field',
       'verification',
+      'localization-management',
     ];
 
     const collectionGroups = mainApp.db.collectionGroupManager.getGroups();
