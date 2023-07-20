@@ -43,8 +43,8 @@ const CustomThemeProvider = React.memo((props) => {
 
   useEffect(() => {
     // 在页面右上角中添加一个 Theme 菜单项
-    addMenuItem(themeItem, { after: 'role' });
-  }, [themeItem]);
+    addMenuItem(themeItem, { before: 'divider_3' });
+  }, [addMenuItem, themeItem]);
 
   const settings = useMemo(() => {
     return {
