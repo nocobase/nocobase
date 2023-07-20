@@ -70,8 +70,15 @@ const ThemeCard = (props: Props) => {
   const [loading, setLoading] = React.useState(false);
   const currentThemeId = useCurrentThemeId();
   const { t } = useTranslation();
+  const { token } = useToken();
+
+  const isDefault = item.id === systemSettings?.data?.data?.options?.themeId;
 
   const handleDelete = useCallback(() => {
+    if (isDefault) {
+      return;
+    }
+
     modal.confirm({
       title: t('Delete theme'),
       content: t('Deletion is unrecoverable. Confirm deletion?'),
@@ -93,6 +100,7 @@ const ThemeCard = (props: Props) => {
   }, [
     api,
     currentUser?.data?.data?.systemSettings?.themeId,
+    isDefault,
     item,
     modal,
     onChange,
@@ -196,6 +204,7 @@ const ThemeCard = (props: Props) => {
             >
               <span>{t('User selectable')}</span>
               <Switch
+                disabled={isDefault}
                 style={{ transform: 'translateY(-2px)' }}
                 checked={item.optional}
                 size={'small'}
@@ -216,8 +225,9 @@ const ThemeCard = (props: Props) => {
             >
               <span>{t('Default theme')}</span>
               <Switch
+                disabled={isDefault}
                 style={{ transform: 'translateY(-2px)' }}
-                checked={item.id === systemSettings?.data?.data?.options?.themeId}
+                checked={isDefault}
                 size={'small'}
                 loading={loading}
                 onChange={handleSwitchDefault}
@@ -227,25 +237,29 @@ const ThemeCard = (props: Props) => {
         },
       ],
     };
-  }, [
-    handleSwitchDefault,
-    handleSwitchOptional,
-    item.id,
-    item.optional,
-    loading,
-    systemSettings?.data?.data?.options?.themeId,
-    t,
-  ]);
+  }, [handleSwitchDefault, handleSwitchOptional, isDefault, item.optional, loading, t]);
 
   const actions = useMemo(() => {
     return [
       <EditOutlined key="edit" onClick={handleEdit} />,
-      <DeleteOutlined key="delete" onClick={handleDelete} />,
+      <DeleteOutlined
+        key="delete"
+        style={
+          isDefault
+            ? {
+                color: token.colorTextDisabled,
+                cursor: 'not-allowed',
+              }
+            : null
+        }
+        disabled={isDefault}
+        onClick={handleDelete}
+      />,
       <Dropdown key="ellipsis" menu={menu}>
         <EllipsisOutlined />
       </Dropdown>,
     ];
-  }, [handleDelete, handleEdit, menu]);
+  }, [handleDelete, handleEdit, isDefault, menu, token.colorTextDisabled]);
 
   const extra = useMemo(() => {
     if (item.id !== systemSettings?.data?.data?.options?.themeId && !item.optional) {
