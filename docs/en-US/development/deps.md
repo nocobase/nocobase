@@ -53,6 +53,25 @@ pg-hstore
 sqlite3
 ```
 
+### Plugins depend on other plugins
+
+If a plugin depends on another plugin, then the dependent plugin should also be placed in `devDependencies`. For example:
+
+```diff
+{
+  "name": "@nocobase/plugin-hello",
+-  "dependencies": {
+-    "@nocobase/plugin-users": "^1.0.0"
+-  },
++  "devDependencies": {
++    "@nocobase/plugin-users": "^1.0.0"
++  }
+}
+```
+
+生产环境中，应该先将 `@nocobase/plugin-users` 安装到应用中，然后再安装 `@nocobase/plugin-hello`，激活插件顺序也应该为先激活 `@nocobase/plugin-users`，再激活 `@nocobase/plugin-hello`。
+
+
 ## import package.json
 
 ```diff

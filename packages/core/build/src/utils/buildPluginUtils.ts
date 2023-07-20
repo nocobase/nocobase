@@ -1,5 +1,6 @@
 import fs from 'fs';
 import chalk from 'chalk';
+import { builtinModules } from 'module';
 import DepsRegex from 'deps-regex';
 import path from 'path';
 
@@ -12,6 +13,10 @@ const depsRegex = new DepsRegex({
 const packageJsonRequireRegex = /require\((['"])\.\.\/+(\.\.\/)*package\.json\1\)/;
 
 type Log = (msg: string, ...args: any) => void;
+
+export function isNotBuiltinModule(packageName: string) {
+  return !builtinModules.includes(packageName);
+}
 
 export const isValidPackageName = (str: string) => {
   const pattern = /^(?:@[a-zA-Z0-9_-]+\/)?[a-zA-Z0-9_-]+$/;
@@ -57,6 +62,7 @@ export function getPackagesFromFiles(files: string[]): string[] {
     .flat()
     .map(getPackageNameFromString)
     .filter(Boolean)
+    .filter(isNotBuiltinModule);
 
   return [...new Set(packageNames)];
 }
@@ -89,7 +95,6 @@ export function checkRequirePackageJson(sourcePaths: string[], log: Log) {
   sourcePaths.forEach(item => {
     const code = fs.readFileSync(item, 'utf-8');
     const match = code.match(packageJsonRequireRegex)
-    console.log('match', match)
     if (match) {
       log('%s in %s is not allowed. Please use %s instead.', chalk.red(match[0]), chalk.red(item), chalk.red('import'));
       process.exit(-1);
@@ -115,12 +120,22 @@ export function checkDependencies(packageJson: Record<string, any>, shouldDevDep
   }
 }
 
+export function checkPluginPrefixDependencies(packageJson: Record<string, any>, pluginPrefix: string[], log: Log) {
+  if (!packageJson.dependencies) return;
+  const dependenciesName = Object.keys(packageJson.dependencies);
+  const shouldDevPluginDependenciesList = dependenciesName.filter(packageName => pluginPrefix.find(prefix => packageName.startsWith(prefix)));
+  if (shouldDevPluginDependenciesList.length) {
+    log('%s should not be placed in %s, but rather in %s. For more information, please refer to: %s.', chalk.yellow(shouldDevPluginDependenciesList.join(', ')), chalk.yellow('dependencies'), chalk.yellow('devDependencies'), chalk.blue(chalk.blue('https://docs.nocobase.com/development/deps')));
+  }
+}
+
 type CheckOptions = {
   cwd: string;
   log: Log;
   entry: 'server' | 'client';
   files: string[];
   shouldDevDependencies: string[];
+  pluginPrefix: string[];
   packageJson: Record<string, any>;
 }
 
@@ -136,7 +151,7 @@ export function formatFileSize(fileSize: number) {
 
 
 export function buildCheck(options: CheckOptions) {
-  const { cwd, log, entry, files, packageJson, shouldDevDependencies } = options;
+  const { cwd, log, entry, files, packageJson, pluginPrefix, shouldDevDependencies } = options;
   checkEntryExists(cwd, entry, log)
 
   const sourcePackages = getSourcePackages(files);
@@ -144,4 +159,5 @@ export function buildCheck(options: CheckOptions) {
   checkSourcePackages(sourcePackages, getPackageJsonPackages(packageJson), shouldDevDependencies, log);
   checkRequirePackageJson(files, log);
   checkDependencies(packageJson, shouldDevDependencies, log);
+  checkPluginPrefixDependencies(packageJson, pluginPrefix, log);
 }

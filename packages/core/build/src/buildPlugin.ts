@@ -52,6 +52,8 @@ const shouldDevDependencies = [
   'pg-hstore',
   'sqlite3'
 ]
+const pluginPrefix = (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro-').split(
+  ',');
 
 type Log = (msg: string, ...args: any) => void;
 
@@ -71,7 +73,8 @@ export async function buildServerDeps(cwd: string, serverFiles: string[], packag
   const packages = packageJson.dependencies ?
     getSourcePackages(serverFiles)
       .filter(packageName => packageJson.dependencies[packageName])
-      .filter(packageName => !shouldDevDependencies[packageName]) : [];
+      .filter(packageName => !shouldDevDependencies[packageName])
+      .filter(packageName => pluginPrefix.find(prefix => packageName.startsWith(prefix))) : [];
 
   if (!packages.length) return;
 
@@ -139,7 +142,7 @@ export async function buildPluginServer(cwd: string, log: Log) {
   log('build server source')
   const packageJson = getPackageJson(cwd);
   const serverFiles = fg.globSync(serverGlobalFiles, { cwd, absolute: true })
-  buildCheck({ cwd, packageJson, entry: 'server', shouldDevDependencies, files: serverFiles, log })
+  buildCheck({ cwd, packageJson, entry: 'server', shouldDevDependencies, pluginPrefix, files: serverFiles, log })
 
   await tsupBuild({
     entry: serverFiles,
@@ -162,7 +165,7 @@ export function buildPluginClient(cwd: string, log: Log) {
 
   const packageJson = getPackageJson(cwd);
   const clientFiles = fg.globSync(clientGlobalFiles, { cwd, absolute: true })
-  buildCheck({ cwd, packageJson, entry: 'client', shouldDevDependencies, files: clientFiles, log })
+  buildCheck({ cwd, packageJson, entry: 'client', shouldDevDependencies, pluginPrefix, files: clientFiles, log })
 
   const outDir = path.join(cwd, 'lib/client');
 

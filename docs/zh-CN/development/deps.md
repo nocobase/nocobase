@@ -8,6 +8,8 @@
 
 有一些依赖由 `@nocobase/server` 和 `@nocobase/client` 提供，不需要打包到插件产物中，因此不应该放到 `dependencies`，而应该放到 `devDependencies` 中。具体如下：
 
+### 全局依赖
+
 ```bash
 # react
 react
@@ -52,6 +54,24 @@ pg
 pg-hstore
 sqlite3
 ```
+
+### 插件依赖别的插件
+
+如果一个插件依赖了另一个插件，那么依赖的插件也应该放到 `devDependencies` 中，例如：
+
+```diff
+{
+  "name": "@nocobase/plugin-hello",
+-  "dependencies": {
+-    "@nocobase/plugin-users": "^1.0.0"
+-  },
++  "devDependencies": {
++    "@nocobase/plugin-users": "^1.0.0"
++  }
+}
+```
+
+生产环境中，应该先将 `@nocobase/plugin-users` 安装到应用中，然后再安装 `@nocobase/plugin-hello`，激活插件顺序也应该为先激活 `@nocobase/plugin-users`，再激活 `@nocobase/plugin-hello`。
 
 ## import package.json
 
