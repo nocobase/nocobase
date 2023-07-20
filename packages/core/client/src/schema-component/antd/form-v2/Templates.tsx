@@ -1,6 +1,6 @@
 import { useFieldSchema } from '@formily/react';
 import { dayjs, error, forEach } from '@nocobase/utils/client';
-import { Select, Tag } from 'antd';
+import { Select, Space, Tag } from 'antd';
 import _ from 'lodash';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -9,6 +9,7 @@ import { useAPIClient } from '../../../api-client';
 import { findFormBlock } from '../../../block-provider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { useDuplicatefieldsContext } from '../../../schema-initializer/components';
+import { compatibleDataId } from '../../../schema-settings/DataTemplates/FormDataTemplates';
 import { useToken } from '../__builtins__';
 
 export interface ITemplate {
@@ -82,18 +83,8 @@ const useDataTemplates = () => {
     enabled: items.length > 0 && items.every((item) => item.dataId || item.dataScope),
   };
 };
-function filterReferences(obj) {
-  const filteredObj = {};
-  for (const key in obj) {
-    if (typeof obj[key] !== 'object') {
-      filteredObj[key] = obj[key];
-    }
-  }
 
-  return filteredObj;
-}
-
-export const mapOptionsToTags = (options, fieldNames, titleCollectionfield, compile) => {
+export const mapOptionsToTags = (options, fieldNames, titleCollectionfield, templateConfig, compile) => {
   try {
     return options
       .map((option) => {
@@ -127,7 +118,7 @@ export const mapOptionsToTags = (options, fieldNames, titleCollectionfield, comp
         }
 
         return {
-          ...option,
+          ...templateConfig,
           title: label,
           key: option.id,
         };
@@ -142,8 +133,10 @@ export const mapOptionsToTags = (options, fieldNames, titleCollectionfield, comp
 export const Templates = ({ style = {}, form }) => {
   const { token } = useToken();
   const { templates, display, enabled, defaultTemplate } = useDataTemplates();
-  const [options, setOptions] = useState<any>(templates);
-  const [value, setValue] = useState(defaultTemplate?.key || 'none');
+  const templateOptions = compatibleDataId(templates);
+  const [targetTemplate, setTargetTemplate] = useState(defaultTemplate?.key || 'none');
+  const [targetTemplateData, setTemplateData] = useState(null);
+  const [templateDatas, setTemaplteDatas] = useState([]);
   const api = useAPIClient();
   const { t } = useTranslation();
   const compile = useCompile();
@@ -182,80 +175,87 @@ export const Templates = ({ style = {}, form }) => {
     return { fontSize: token.fontSize, fontWeight: 'bold', whiteSpace: 'nowrap', marginRight: token.marginXS };
   }, [token.fontSize, token.marginXS]);
 
-  const handleChange = useCallback(async (value, option) => {
-    const key = value?.[0];
-    const template = { ...option?.[0], dataId: option?.[1]?.key || option?.[0]?.dataId };
-    setValue(value);
-    if (key !== 'none') {
-      fetchTemplateData(api, template, t)
-        .then((data) => {
-          if (form && data) {
-            // 切换之前先把之前的数据清空
-            form.reset();
-            form.__template = true;
-
-            forEach(data, (value, key) => {
-              if (value) {
-                form.values[key] = value;
-              }
-            });
-          }
-          return data;
-        })
-        .catch((err) => {
-          console.error(err);
-        });
-    } else {
-      form?.reset();
+  const handleTemplateChange = useCallback(async (value, option) => {
+    setTargetTemplate(value);
+    setTemplateData(null);
+    form?.reset();
+    if (value.key !== 'none') {
+      loadData(option);
     }
   }, []);
+
+  const handleTemplateDataChange = useCallback(async (value, option) => {
+    const template = { ...option, dataId: value };
+    setTemplateData(value);
+    fetchTemplateData(api, template, t)
+      .then((data) => {
+        if (form && data) {
+          // 切换之前先把之前的数据清空
+          form.reset();
+          form.__template = true;
+
+          forEach(data, (value, key) => {
+            if (value) {
+              form.values[key] = value;
+            }
+          });
+        }
+        return data;
+      })
+      .catch((err) => {
+        console.error(err);
+      });
+  }, []);
+
   if (!enabled || !display) {
     return null;
   }
 
-  const loadChildren = (option): Promise<void> => {
-    if (!option.dataScope) {
-      return new Promise((resolve) => {
-        error('Must be set field target');
-        resolve(void 0);
-      });
+  const loadChildren = async (option) => {
+    const { data } = (await resource.list({ filter: option.dataScope })) || {};
+    if (data?.data.length === 0) {
+      return;
     }
-    return new Promise(async (resolve) => {
-      const { data } = (await resource.list({ filter: option.dataScope })) || {};
-      if (data?.data.length === 0) {
-        option.children=[]
-        option.disabled = true;
-        resolve();
-        return;
-      }
-      option.children = mapOptionsToTags(
-        data?.data,
-        { label: option?.titleField, value: 'id', children: 'children' },
-        option?.titleCollectionField,
-        compile,
-      );
-      resolve();
-    });
+    return mapOptionsToTags(
+      data?.data,
+      { label: option?.titleField || 'id', value: 'id', children: 'children' },
+      option?.titleCollectionField,
+      option,
+      compile,
+    );
   };
 
   const loadData = async (selectedOptions) => {
-    const option = selectedOptions[selectedOptions.length - 1];
-    if (option.dataScope) {
-      await loadChildren(option);
-      setOptions((prev) => [...prev]);
+    if (selectedOptions.dataScope) {
+      const data = await loadChildren(selectedOptions);
+      setTemaplteDatas(data);
     }
   };
   return (
     <div style={wrapperStyle}>
-      <label style={labelStyle}>{t('Data template')}: </label>
-      <Select
-        popupMatchSelectWidth={false}
-        options={templates}
-        fieldNames={{ label: 'title', value: 'key' }}
-        value={value}
-        onChange={handleChange}
-        loadData={loadData}
-      />
+      <Space wrap>
+        <label style={labelStyle}>{t('Data template')}: </label>
+        <Select
+          popupMatchSelectWidth={false}
+          options={templateOptions}
+          fieldNames={{ label: 'title', value: 'key' }}
+          value={targetTemplate}
+          onChange={handleTemplateChange}
+        />
+        {targetTemplate !== 'none' && (
+          <Select
+            style={{ width: 120 }}
+            fieldNames={{ label: 'title', value: 'key' }}
+            value={targetTemplateData}
+            onChange={handleTemplateDataChange}
+            options={templateDatas}
+            showSearch
+            onSearch={(e) => {
+              console.log(e);
+            }}
+          />
+        )}
+      </Space>
     </div>
   );
 };

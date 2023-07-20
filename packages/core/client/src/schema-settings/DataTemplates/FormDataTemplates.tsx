@@ -7,16 +7,11 @@ import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { mergeFilter } from '../../block-provider';
 import { useCollectionManager } from '../../collection-manager';
-import {
-  AssociationSelect,
-  removeNullCondition,
-  SchemaComponent,
-  SchemaComponentContext,
-} from '../../schema-component';
+import { SchemaComponent, SchemaComponentContext, removeNullCondition } from '../../schema-component';
 import { ITemplate } from '../../schema-component/antd/form-v2/Templates';
 import { AsDefaultTemplate } from './components/AsDefaultTemplate';
 import { ArrayCollapse } from './components/DataTemplateTitle';
-import { Designer, getSelectedIdFilter } from './components/Designer';
+import { getSelectedIdFilter } from './components/Designer';
 import { useCollectionState } from './hooks/useCollectionState';
 
 const Tree = connect(
@@ -26,6 +21,17 @@ const Tree = connect(
     dataSource: 'treeData',
   }),
 );
+
+export const compatibleDataId = (data) => {
+  return data.map((v) => {
+    const { dataId, ...others } = v;
+    const obj = { ...others };
+    if (dataId) {
+      obj.dataScope = { $and: [{ id: { $eq: dataId } }] };
+    }
+    return obj;
+  });
+};
 
 export const FormDataTemplates = observer(
   (props: any) => {
@@ -46,7 +52,11 @@ export const FormDataTemplates = observer(
     const activeData = useMemo<ITemplate>(
       () =>
         observable(
-          defaultValues || { items: [], display: true, config: { [collectionName]: { titleField: '', filter: {} } } },
+          { ...defaultValues, items: compatibleDataId(defaultValues?.items || []) } || {
+            items: [],
+            display: true,
+            config: { [collectionName]: { titleField: '', filter: {} } },
+          },
         ),
       [],
     );
@@ -87,7 +97,6 @@ export const FormDataTemplates = observer(
       }),
       [],
     );
-
     const schema = useMemo(
       () => ({
         type: 'object',
@@ -127,49 +136,6 @@ export const FormDataTemplates = observer(
                         options: collectionList,
                       },
                     },
-
-                    dataId: {
-                      type: 'number',
-                      title: '{{ t("Assign target data for the template") }}',
-                      description: t('Select an existing piece of data as the initialization data for the form'),
-                      'x-designer': Designer,
-                      'x-designer-props': {
-                        formSchema,
-                        data: activeData,
-                      },
-                      'x-decorator': 'FormItem',
-                      'x-component': AssociationSelect,
-                      'x-component-props': {
-                        service: {
-                          resource: '{{ $record.collection || collectionName }}',
-                          params: {
-                            filter: '{{ getFilter($self.componentProps.service.resource, $self.value) }}',
-                          },
-                        },
-                        action: 'list',
-                        multiple: false,
-                        objectValue: false,
-                        manual: false,
-                        targetField: '{{ getTargetField($self.componentProps.service.resource) }}',
-                        mapOptions: getMapOptions(),
-                        fieldNames: '{{ getFieldNames($self.componentProps.service.resource) }}',
-                      },
-                      'x-reactions': [
-                        {
-                          dependencies: ['.collection'],
-                          fulfill: {
-                            state: {
-                              disabled: '{{ !$deps[0] }}',
-                              componentProps: {
-                                service: {
-                                  resource: '{{ getResource($deps[0], $self) }}',
-                                },
-                              },
-                            },
-                          },
-                        },
-                      ],
-                    },
                     dataScope: {
                       type: 'object',
                       title: '{{ t("Assign  data scope for the template") }}',
@@ -180,15 +146,8 @@ export const FormDataTemplates = observer(
                           marginBottom: '0px',
                         },
                       },
+                      required: true,
                       'x-reactions': [
-                        {
-                          dependencies: ['.dataId'],
-                          fulfill: {
-                            state: {
-                              required: '{{ !$deps[0] }}',
-                            },
-                          },
-                        },
                         {
                           dependencies: ['.collection'],
                           fulfill: {
@@ -212,16 +171,8 @@ export const FormDataTemplates = observer(
                       'x-decorator': 'FormItem',
                       title: '{{ t("Title field") }}',
                       'x-component': 'Select',
+                      required: true,
                       'x-reactions': [
-                        {
-                          dependencies: ['.dataId'],
-                          fulfill: {
-                            state: {
-                              required: '{{ !$deps[0] }}',
-                              visible: '{{ !$deps[0] }}',
-                            },
-                          },
-                        },
                         {
                           dependencies: ['.collection'],
                           fulfill: {
