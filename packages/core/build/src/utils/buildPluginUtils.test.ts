@@ -141,7 +141,7 @@ describe('buildPluginUtils', () => {
   it('getPackageJson', () => {
     const res = getPackageJson(path.join(__dirname, './fixtures/buildPluginUtils'));
     expect(res).toContain({
-      "name": "@nocobase/plugin-acl"
+      "name": "@nocobase/plugin-xxx"
     })
   })
 
