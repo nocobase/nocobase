@@ -1,6 +1,6 @@
 import { useFieldSchema } from '@formily/react';
-import { dayjs, error, forEach } from '@nocobase/utils/client';
-import { Select, Space, Tag } from 'antd';
+import { error, forEach } from '@nocobase/utils/client';
+import { Select, Space } from 'antd';
 import _ from 'lodash';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -84,7 +84,6 @@ const useDataTemplates = () => {
   };
 };
 
-
 export const Templates = ({ style = {}, form }) => {
   const { token } = useToken();
   const { templates, display, enabled, defaultTemplate } = useDataTemplates();
@@ -97,6 +96,9 @@ export const Templates = ({ style = {}, form }) => {
   useEffect(() => {
     if (enabled && defaultTemplate) {
       form.__template = true;
+      if (defaultTemplate.key === 'duplicate') {
+        handleTemplateDataChange(defaultTemplate.dataId, defaultTemplate);
+      }
     }
   }, []);
 

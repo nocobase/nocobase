@@ -23,7 +23,7 @@ const Tree = connect(
 );
 
 export const compatibleDataId = (data) => {
-  return data.map((v) => {
+  return data?.map((v) => {
     const { dataId, ...others } = v;
     const obj = { ...others };
     if (dataId) {
