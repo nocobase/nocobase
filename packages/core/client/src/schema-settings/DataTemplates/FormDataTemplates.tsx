@@ -43,7 +43,7 @@ export const FormDataTemplates = observer(
       getOnLoadData,
       getOnCheck,
       getScopeDataSource,
-      getTitleFieldDataSource,
+      useTitleFieldDataSource,
     } = useCollectionState(collectionName);
     const { getCollection, getCollectionField } = useCollectionManager();
     const { t } = useTranslation();
@@ -93,7 +93,7 @@ export const FormDataTemplates = observer(
         getOnCheck,
         collectionName,
         getScopeDataSource,
-        getTitleFieldDataSource,
+        useTitleFieldDataSource,
       }),
       [],
     );
@@ -172,24 +172,7 @@ export const FormDataTemplates = observer(
                       title: '{{ t("Title field") }}',
                       'x-component': 'Select',
                       required: true,
-                      'x-reactions': [
-                        {
-                          dependencies: ['.collection'],
-                          fulfill: {
-                            state: {
-                              disabled: '{{ !$deps[0] }}',
-                              componentProps: {
-                                service: {
-                                  resource: '{{ getResource($deps[0], $self) }}',
-                                },
-                              },
-                            },
-                            schema: {
-                              enum: '{{ getTitleFieldDataSource($deps[0]) }}',
-                            },
-                          },
-                        },
-                      ],
+                      'x-reactions': '{{useTitleFieldDataSource}}',
                     },
                     fields: {
                       type: 'array',
@@ -275,15 +258,6 @@ export const FormDataTemplates = observer(
 
 export function getLabel(titleField) {
   return titleField || 'label';
-}
-
-function getMapOptions() {
-  return (option) => {
-    if (option?.id === undefined) {
-      return null;
-    }
-    return option;
-  };
 }
 
 function getResource(resource: string, field: Field) {

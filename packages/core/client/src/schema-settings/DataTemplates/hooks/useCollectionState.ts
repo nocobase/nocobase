@@ -202,17 +202,19 @@ export const useCollectionState = (currentCollectionName: string) => {
     const options = getOptions(fields, 1);
     return options;
   };
-  const getTitleFieldDataSource = (collectionName) => {
+  const useTitleFieldDataSource = (field) => {
+    const fieldPath = field.path.entire.replace('titleField', 'collection');
+    const collectionName = field.query(fieldPath).get('value');
     const targetFields = getCollectionFields(collectionName);
     const options = targetFields
       .filter((field) => {
-        return isTitleField(field);
+        return !field.isForeignKey && getInterface(field.interface)?.titleUsable;
       })
       .map((field) => ({
         value: field?.name,
         label: compile(field?.uiSchema?.title) || field?.name,
       }));
-    return options;
+    field.dataSource = options;
   };
   return {
     collectionList,
@@ -220,7 +222,7 @@ export const useCollectionState = (currentCollectionName: string) => {
     getOnLoadData,
     getOnCheck,
     getScopeDataSource,
-    getTitleFieldDataSource,
+    useTitleFieldDataSource,
   };
 };
 
