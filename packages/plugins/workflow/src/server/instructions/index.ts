@@ -46,6 +46,7 @@ export default function <T extends Instruction>(plugin, more: { [key: string]: T
     'destroy',
     'aggregate',
     'request',
+    'sql',
   ].reduce(
     (result, key) =>
       Object.assign(result, {
