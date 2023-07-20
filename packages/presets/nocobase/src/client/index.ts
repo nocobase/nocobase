@@ -21,7 +21,16 @@ export class NocoBaseClientPresetPlugin extends Plugin {
       return config;
     });
     this.app.pm.add(NocoBaseBuildInPlugin);
-    await this.loadRemotePlugin();
+    try {
+      await this.loadRemotePlugin();
+    } catch (error) {
+      if (401 === error?.response?.status) {
+        this.app.apiClient.auth.setRole(null);
+        window.location.reload();
+      } else {
+        throw error;
+      }
+    }
   }
 
   // TODO: 现在是先远程加载远程组件的名称，然后再加载本地组件
