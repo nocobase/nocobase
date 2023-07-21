@@ -2,13 +2,23 @@ import { observer, useForm } from '@formily/react';
 import { Input, Radio } from 'antd';
 import moment from 'moment';
 import React, { useEffect, useState } from 'react';
-
+import { useToken } from '../../';
 export const DateFormatCom = (props?) => {
   const date = moment();
+  const { token } = useToken();
   return (
     <div style={{ display: 'inline-flex' }}>
       <span>{props.format}</span>
-      <span style={{ display: 'inline-block', background: '#f2f2f2', marginLeft: '20px' }}>
+      <span
+        style={{
+          display: 'inline-block',
+          background: token.colorBgTextHover,
+          marginLeft: token.marginMD,
+          padding: token.paddingXXS,
+          borderRadius: token.borderRadiusOuter,
+          lineHeight: token.lineHeight,
+        }}
+      >
         {date.format(props.format)}
       </span>
     </div>
@@ -22,13 +32,14 @@ export const CustomFormatCom = observer((props: any) => {
   const [state, setState] = React.useState(props.value);
   const form = useForm();
   const [checked, setChecked] = useState(value);
+  const { token } = useToken();
+
   useEffect(() => {
     if (form.getValuesIn([formatField])) {
       form.setValuesIn([customFormatField], null);
       setChecked(false);
     }
   }, [form.getValuesIn([formatField])]);
-  console.log(props.value)
   return (
     <Radio
       style={{ marginBottom: '20px' }}
@@ -55,7 +66,16 @@ export const CustomFormatCom = observer((props: any) => {
             }
           }}
         />
-        <span style={{ display: 'inline-block', background: '#f2f2f2', marginLeft: '20px', lineHeight: '30px' }}>
+        <span
+          style={{
+            display: 'inline-block',
+            background: token.colorBgTextHover,
+            marginLeft: token.marginMD,
+            lineHeight: token.lineHeight,
+            padding: token.paddingXXS,
+            borderRadius: token.borderRadiusOuter,
+          }}
+        >
           {customFormatPreview}
         </span>
       </div>
