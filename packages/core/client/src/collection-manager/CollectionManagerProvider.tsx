@@ -100,6 +100,7 @@ export const RemoteCollectionManagerProvider = (props: any) => {
       if (uiSchema?.enum) {
         uiSchema.enum = uiSchema.enum.map((item) => ({
           ...item,
+          value: item?.value || item,
           label: item.rawLabel ? item.label : t(item.label),
           rawLabel: item.rawLabel || item.label,
         }));

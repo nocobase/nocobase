@@ -1,107 +1,34 @@
 import { useField, useFieldSchema } from '@formily/react';
 import {
   GeneralSchemaDesigner,
-  gridRowColWrap,
   SchemaSettings,
+  gridRowColWrap,
   useAPIClient,
   useCollection,
   useDesignable,
-  useRequest,
 } from '@nocobase/client';
-import { Empty, Result, Typography } from 'antd';
-import React, { useContext, useEffect, useState } from 'react';
+import { Empty, Result, Spin, Typography } from 'antd';
+import React, { useContext } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { ChartConfigContext } from '../block';
-import { useFieldsWithAssociation, useFieldTransformer } from '../hooks';
+import { useFieldTransformer, useFieldsWithAssociation } from '../hooks';
 import { useChartsTranslation } from '../locale';
-import { createRendererSchema, getField, parseField, processData } from '../utils';
+import { createRendererSchema, getField, processData } from '../utils';
 import { useCharts } from './ChartLibrary';
-import { ChartRendererContext, DimensionProps, MeasureProps, QueryProps } from './ChartRendererProvider';
+import { ChartRendererContext } from './ChartRendererProvider';
 const { Paragraph, Text } = Typography;
 
-export const ChartRenderer: React.FC<{
-  configuring?: boolean;
-  runQuery?: any;
-}> & {
+export const ChartRenderer: React.FC & {
   Designer: React.FC;
 } = (props) => {
   const { t } = useChartsTranslation();
-  const { setData: setQueryData, current } = useContext(ChartConfigContext);
-  const { query, config, collection, transform } = useContext(ChartRendererContext);
-  const { configuring, runQuery } = props;
+  const ctx = useContext(ChartRendererContext);
+  const { config, transform, collection, service, data: _data } = ctx;
+  const fields = useFieldsWithAssociation(collection);
+  const data = processData(fields, service?.data || _data || [], { t });
   const general = config?.general || {};
   const advanced = config?.advanced || {};
-  const schema = useFieldSchema();
-  const currentSchema = schema || current?.schema;
-  const fields = useFieldsWithAssociation(collection);
   const api = useAPIClient();
-  const [data, setData] = useState<any[]>([]);
-  const { runAsync } = useRequest(
-    (query) =>
-      api
-        .request({
-          url: 'charts:query',
-          method: 'POST',
-          data: {
-            uid: currentSchema?.['x-uid'],
-            collection,
-            ...query,
-            dimensions: (query?.dimensions || []).map((item: DimensionProps) => {
-              const dimension = { ...item };
-              if (item.format && !item.alias) {
-                const { alias } = parseField(item.field);
-                dimension.alias = alias;
-              }
-              return dimension;
-            }),
-            measures: (query?.measures || []).map((item: MeasureProps) => {
-              const measure = { ...item };
-              if (item.aggregation && !item.alias) {
-                const { alias } = parseField(item.field);
-                measure.alias = alias;
-              }
-              return measure;
-            }),
-          },
-        })
-        .then((res) => {
-          const data = res?.data?.data || [];
-          return processData(fields, data, { t });
-        }),
-    {
-      manual: true,
-      onSuccess: (data) => {
-        setData(data);
-      },
-      onFinally(params, data, error: any) {
-        if (!configuring) {
-          return;
-        }
-        if (error) {
-          const message = error?.response?.data?.errors?.map?.((error: any) => error.message).join('\n');
-          setQueryData(message || error.message);
-          return;
-        }
-        setQueryData(data);
-      },
-    },
-  );
-
-  useEffect(() => {
-    setData([]);
-    const run = async (query: QueryProps) => {
-      if (
-        query?.measures?.length
-        // || (query?.sql?.fields && query?.sql?.clauses)
-      ) {
-        await runAsync(query);
-      }
-    };
-    if (runQuery) {
-      runQuery.current = run;
-    }
-    run(query);
-  }, [query, runAsync, runQuery]);
 
   const charts = useCharts();
   const chart = charts[config?.chartType];
@@ -137,16 +64,21 @@ export const ChartRenderer: React.FC<{
       <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('Please configure chart')} />
     );
 
-  return data && data.length ? (
-    <C />
-  ) : (
-    <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('Please configure and run query')} />
-  );
+  if (service.loading) {
+    return <Spin />;
+  }
+
+  if (!(data && data.length)) {
+    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('Please configure and run query')} />;
+  }
+
+  return <C />;
 };
 
 ChartRenderer.Designer = function Designer() {
   const { t } = useChartsTranslation();
   const { setVisible, setCurrent } = useContext(ChartConfigContext);
+  const { service } = useContext(ChartRendererContext);
   const field = useField();
   const schema = useFieldSchema();
   const { insertAdjacent } = useDesignable();
@@ -156,7 +88,7 @@ ChartRenderer.Designer = function Designer() {
       <SchemaSettings.Item
         key="configure"
         onClick={() => {
-          setCurrent({ schema, field, collection: name });
+          setCurrent({ schema, field, collection: name, service, data: service?.data });
           setVisible(true);
         }}
       >

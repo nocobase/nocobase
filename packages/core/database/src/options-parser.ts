@@ -1,3 +1,4 @@
+import lodash from 'lodash';
 import { FindAttributeOptions, ModelStatic, Op, Sequelize } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
@@ -77,6 +78,14 @@ export class OptionsParser {
           },
         ],
       };
+    }
+
+    if (this.options?.include) {
+      if (!queryParams.include) {
+        queryParams.include = [];
+      }
+
+      queryParams.include.push(...lodash.castArray(this.options.include));
     }
 
     return this.parseSort(this.parseFields(queryParams));

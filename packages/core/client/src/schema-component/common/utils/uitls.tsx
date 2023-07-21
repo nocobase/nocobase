@@ -126,7 +126,8 @@ function getAllKeys(obj) {
   return keys;
 }
 
-export const conditionAnalyse = (rules, values) => {
+export const conditionAnalyse = (rules, scope) => {
+  const values = { ...scope, now: new Date() };
   const type = Object.keys(rules)[0] || '$and';
   const conditions = rules[type];
   const results = conditions.map((c) => {

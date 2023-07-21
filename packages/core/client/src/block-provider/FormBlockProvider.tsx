@@ -122,7 +122,6 @@ const RenderChildrenWithDataTemplates = ({ form }) => {
   const { findComponent } = useDesignable();
   const field = useField();
   const Component = findComponent(field.component?.[0]) || React.Fragment;
-
   return (
     <Component {...field.componentProps}>
       <DataTemplateSelect style={{ marginBottom: 18 }} form={form} />

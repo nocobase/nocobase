@@ -35,6 +35,7 @@ import parallel from './parallel';
 import query from './query';
 import request from './request';
 import update from './update';
+import sql from './sql';
 
 export interface Instruction {
   title: string;
@@ -71,6 +72,7 @@ instructions.register('destroy', destroy);
 instructions.register('aggregate', aggregate);
 
 instructions.register('request', request);
+instructions.register('sql', sql);
 
 function useUpdateAction() {
   const form = useForm();

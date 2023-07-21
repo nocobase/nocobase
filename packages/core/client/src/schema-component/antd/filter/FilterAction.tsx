@@ -103,8 +103,8 @@ const SaveConditions = () => {
     <Button
       type={'dashed'}
       className={css`
-        border-color: rgb(241, 139, 98);
-        color: rgb(241, 139, 98);
+        border-color: var(--colorSettings);
+        color: var(--colorSettings);
       `}
       onClick={() => {
         const defaultValue = { ...form.values.filter };

@@ -1,6 +1,5 @@
 import { Tooltip } from 'antd';
 import type { MutableTheme } from 'antd-token-previewer';
-import tokenMeta from 'antd/lib/version/token-meta.json';
 import classNames from 'classnames';
 import type { FC } from 'react';
 import React, { useMemo } from 'react';
@@ -13,6 +12,7 @@ import getDesignToken from '../utils/getDesignToken';
 import getValueByPath from '../utils/getValueByPath';
 import makeStyle from '../utils/makeStyle';
 import { getRelatedComponents } from '../utils/statistic';
+import tokenMeta from './token-meta.json';
 
 const useStyle = makeStyle('TokenDetail', (token) => ({
   '.token-panel-token-detail': {

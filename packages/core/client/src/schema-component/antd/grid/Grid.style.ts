@@ -18,7 +18,7 @@ const useStyles = genStyleHook('nb-grid', (token) => {
             cursor: 'col-resize',
           },
           '&:hover': {
-            '&::before': { background: 'rgba(241, 139, 98, 0.06) !important' },
+            '&::before': { background: 'var(--colorBgSettingsHover) !important' },
           },
           width: token.marginLG,
           height: '100%',
