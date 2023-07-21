@@ -8,7 +8,6 @@
     "@nocobase/database": "0.11.0-alpha.1",
     "@nocobase/server": "0.11.0-alpha.1",
     "@nocobase/test": "0.11.0-alpha.1",
-    "@nocobase/plugin-client": "0.11.0-alpha.1",
     "@nocobase/plugin-ui-schema-storage": "0.11.0-alpha.1"
   },
   "dependencies": {

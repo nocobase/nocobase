@@ -1,6 +1,5 @@
 import { Context, Next } from '@nocobase/actions';
 import { Database, Model, Op } from '@nocobase/database';
-import { getResourceLocale } from '@nocobase/plugin-client';
 import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 import LocalizationManagementPlugin from '../plugin';
 import { getTextsFromDBRecord, getTextsFromUISchema } from '../utils';
@@ -10,8 +9,8 @@ const getResourcesInstance = async (ctx: Context) => {
   return plugin.resources;
 };
 
-export const getResources = async (locale: string, db: Database) => {
-  const resources = await getResourceLocale(locale, db);
+export const getResources = async (ctx: Context) => {
+  const resources = await ctx.app.locales.getCacheResources(ctx.get('X-Locale') || 'en-US');
   const client = resources['client'];
   // Remove duplicated keys
   Object.keys(resources).forEach((module) => {
@@ -174,7 +173,7 @@ const sync = async (ctx: Context, next: Next) => {
 
   let resources: { [module: string]: any } = { client: {} };
   if (type.includes('local')) {
-    resources = await getResources(locale, ctx.db);
+    resources = await getResources(ctx);
   }
   if (type.includes('menu')) {
     const menuTexts = await getTextsFromMenu(ctx.db);

@@ -3,6 +3,7 @@ import { registerActions } from '@nocobase/actions';
 import { actions as authActions, AuthManager } from '@nocobase/auth';
 import { Cache, createCache, ICacheConfig } from '@nocobase/cache';
 import Database, { Collection, CollectionOptions, IDatabaseOptions } from '@nocobase/database';
+import { Locale } from '@nocobase/locale';
 import { AppLoggerOptions, createAppLogger, Logger } from '@nocobase/logger';
 import Resourcer, { ResourceOptions } from '@nocobase/resourcer';
 import { applyMixins, AsyncEmitter, Toposort, ToposortOptions } from '@nocobase/utils';
@@ -167,6 +168,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   protected _authManager: AuthManager;
 
+  protected _locales: Locale;
+
   protected _version: ApplicationVersion;
 
   protected plugins = new Map<string, Plugin>();
@@ -228,6 +231,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   get log() {
     return this._logger;
+  }
+
+  get locales() {
+    return this._locales;
   }
 
   get name() {
@@ -297,6 +304,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     if (this.options.acl !== false) {
       this._resourcer.use(this._acl.middleware(), { tag: 'acl', after: ['auth'] });
     }
+
+    this._locales = new Locale(this);
 
     registerMiddlewares(this, options);
 
