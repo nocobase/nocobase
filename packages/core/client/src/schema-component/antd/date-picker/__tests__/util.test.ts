@@ -1,5 +1,5 @@
 import { str2moment } from '@nocobase/utils';
-import { dayjs } from '@nocobase/utils/client';
+import dayjs from 'dayjs';
 import { moment2str } from '../util';
 
 describe('str2moment', () => {

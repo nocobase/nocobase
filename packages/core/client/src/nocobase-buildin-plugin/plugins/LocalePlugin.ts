@@ -1,5 +1,5 @@
-import { dayjs } from '@nocobase/utils/client';
 import { ConfigProvider } from 'antd';
+import dayjs from 'dayjs';
 import { loadConstrueLocale } from '../../antd-config-provider/loadConstrueLocale';
 import { Plugin } from '../../application/Plugin';
 import { dayjsLocale } from '../../locale';

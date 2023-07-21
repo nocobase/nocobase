@@ -1,7 +1,7 @@
 import { InheritedCollection, UniqueConstraintError } from '@nocobase/database';
 import PluginErrorHandler from '@nocobase/plugin-error-handler';
 import { Plugin } from '@nocobase/server';
-import { lodash } from '@nocobase/utils';
+import lodash from 'lodash';
 import { Mutex } from 'async-mutex';
 import path from 'path';
 import * as process from 'process';

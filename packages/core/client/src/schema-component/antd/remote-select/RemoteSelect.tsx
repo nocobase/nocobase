@@ -1,6 +1,6 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty, useField, useFieldSchema, useForm } from '@formily/react';
-import { dayjs } from '@nocobase/utils/client';
+import dayjs from 'dayjs';
 import { Divider, SelectProps, Tag } from 'antd';
 import flat from 'flat';
 import _, { uniqBy } from 'lodash';

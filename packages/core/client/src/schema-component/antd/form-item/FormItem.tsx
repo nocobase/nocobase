@@ -2,7 +2,7 @@ import { css, cx } from '@emotion/css';
 import { ArrayCollapse, ArrayItems, FormLayout, FormItem as Item } from '@formily/antd-v5';
 import { Field } from '@formily/core';
 import { ISchema, Schema, observer, useField, useFieldSchema } from '@formily/react';
-import { dayjs } from '@nocobase/utils/client';
+import dayjs from 'dayjs';
 import { Select } from 'antd';
 import _ from 'lodash';
 import React, { useEffect } from 'react';

@@ -1,10 +1,10 @@
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { createForm } from '@formily/core';
 import { RecursionField, Schema, observer, useFieldSchema } from '@formily/react';
-import { dayjs } from '@nocobase/utils/client';
 import { parseExpression } from 'cron-parser';
 import { eq } from 'date-arithmetic';
 import type { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 import get from 'lodash/get';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Calendar as BigCalendar, View, dayjsLocalizer } from 'react-big-calendar';

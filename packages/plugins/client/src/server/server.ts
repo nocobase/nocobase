@@ -1,5 +1,5 @@
 import { Plugin, PluginManager, getPackageClientStaticUrl } from '@nocobase/server';
-import { lodash } from '@nocobase/utils';
+import lodash from 'lodash';
 import fs from 'fs';
 import send from 'koa-send';
 import serve from 'koa-static';

@@ -21,7 +21,7 @@ import { ActionContextProvider } from './context';
 import { useA } from './hooks';
 import { ComposedAction } from './types';
 import { linkageAction } from './utils';
-import { lodash } from '@nocobase/utils';
+import lodash from 'lodash';
 
 export const actionDesignerCss = css`
   position: relative;
