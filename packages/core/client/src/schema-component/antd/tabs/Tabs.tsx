@@ -1,9 +1,8 @@
 import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { TabPaneProps, Tabs as AntdTabs, TabsProps } from 'antd';
+import { Tabs as AntdTabs, TabPaneProps, TabsProps } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
 import { Icon } from '../../../icon';
 import { useSchemaInitializer } from '../../../schema-initializer';
 import { DndContext, SortableItem } from '../../common';
@@ -68,7 +67,7 @@ const designerCss = css`
     left: 0;
     right: 0;
     display: none;
-    background: rgba(241, 139, 98, 0.06);
+    background: var(--colorBgSettingsHover);
     border: 0;
     top: 0;
     bottom: 0;
@@ -82,7 +81,7 @@ const designerCss = css`
       line-height: 16px;
       pointer-events: all;
       .ant-space-item {
-        background-color: #f18b62;
+        background-color: var(--colorSettings);
         color: #fff;
         line-height: 16px;
         width: 16px;

@@ -1,7 +1,9 @@
+import { TinyColor } from '@ctrl/tinycolor';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { cx } from '@emotion/css';
 import { Schema, observer, useField, useFieldSchema } from '@formily/react';
 import React, { HTMLAttributes, createContext, useContext } from 'react';
+import { useToken } from '../../antd/__builtins__';
 
 export const DraggableContext = createContext(null);
 export const SortableContext = createContext(null);
@@ -21,12 +23,15 @@ export const SortableProvider = (props) => {
 
 export const Sortable = (props: any) => {
   const { component, overStyle, style, children, openMode, ...others } = props;
+  const { token } = useToken();
   const { draggable, droppable } = useContext(SortableContext);
   const { isOver, setNodeRef } = droppable;
   const droppableStyle = { ...style };
 
   if (isOver && draggable?.active?.id !== droppable?.over?.id) {
-    droppableStyle[component === 'a' ? 'color' : 'background'] = 'rgba(241, 139, 98, .15)';
+    droppableStyle[component === 'a' ? 'color' : 'background'] = new TinyColor(token.colorSettings)
+      .setAlpha(0.15)
+      .toHex8String();
     Object.assign(droppableStyle, overStyle);
   }
 

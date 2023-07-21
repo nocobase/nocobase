@@ -1,4 +1,3 @@
-import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
 import { App, Button, Popover } from 'antd';
 import classnames from 'classnames';
@@ -17,55 +16,12 @@ import { ActionDrawer } from './Action.Drawer';
 import { ActionLink } from './Action.Link';
 import { ActionModal } from './Action.Modal';
 import { ActionPage } from './Action.Page';
+import useStyles from './Action.style';
 import { ActionContextProvider } from './context';
 import { useA } from './hooks';
 import { ComposedAction } from './types';
 import { linkageAction } from './utils';
 import { lodash } from '@nocobase/utils';
-
-export const actionDesignerCss = css`
-  position: relative;
-  &:hover {
-    > .general-schema-designer {
-      display: block;
-    }
-  }
-  &.nb-action-link {
-    > .general-schema-designer {
-      top: -10px;
-      bottom: -10px;
-      left: -10px;
-      right: -10px;
-    }
-  }
-  > .general-schema-designer {
-    position: absolute;
-    z-index: 999;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    display: none;
-    background: rgba(241, 139, 98, 0.06);
-    border: 0;
-    pointer-events: none;
-    > .general-schema-designer-icons {
-      position: absolute;
-      right: 2px;
-      top: 2px;
-      line-height: 16px;
-      pointer-events: all;
-      .ant-space-item {
-        background-color: #f18b62;
-        color: #fff;
-        line-height: 16px;
-        width: 16px;
-        padding-left: 1px;
-        align-self: stretch;
-      }
-    }
-  }
-`;
 
 export const Action: ComposedAction = observer(
   (props: any) => {
@@ -81,6 +37,7 @@ export const Action: ComposedAction = observer(
       title,
       ...others
     } = props;
+    const { wrapSSR, componentCls, hashId } = useStyles();
     const { t } = useTranslation();
     const { onClick } = useProps(props);
     const [visible, setVisible] = useState(false);
@@ -148,7 +105,7 @@ export const Action: ComposedAction = observer(
             }
           }}
           component={tarComponent || Button}
-          className={classnames(actionDesignerCss, className)}
+          className={classnames('renderButton', className)}
           type={props.type === 'danger' ? undefined : props.type}
         >
           {actionTitle}
@@ -157,23 +114,25 @@ export const Action: ComposedAction = observer(
       );
     };
 
-    return (
-      <ActionContextProvider
-        button={renderButton()}
-        visible={visible}
-        setVisible={setVisible}
-        formValueChanged={formValueChanged}
-        setFormValueChanged={setFormValueChanged}
-        openMode={openMode}
-        openSize={openSize}
-        containerRefKey={containerRefKey}
-        fieldSchema={fieldSchema}
-      >
-        {popover && <RecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
-        {!popover && renderButton()}
-        {!popover && <div onClick={(e) => e.stopPropagation()}>{props.children}</div>}
-        {element}
-      </ActionContextProvider>
+    return wrapSSR(
+      <div className={`${componentCls} ${hashId}`}>
+        <ActionContextProvider
+          button={renderButton()}
+          visible={visible}
+          setVisible={setVisible}
+          formValueChanged={formValueChanged}
+          setFormValueChanged={setFormValueChanged}
+          openMode={openMode}
+          openSize={openSize}
+          containerRefKey={containerRefKey}
+          fieldSchema={fieldSchema}
+        >
+          {popover && <RecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
+          {!popover && renderButton()}
+          {!popover && <div onClick={(e) => e.stopPropagation()}>{props.children}</div>}
+          {element}
+        </ActionContextProvider>
+      </div>,
     );
   },
   { displayName: 'Action' },
@@ -201,17 +160,7 @@ Action.Popover = observer(
 
 Action.Popover.Footer = observer(
   (props) => {
-    return (
-      <div
-        className={css`
-          display: flex;
-          justify-content: flex-end;
-          width: 100%;
-        `}
-      >
-        {props.children}
-      </div>
-    );
+    return <div className="popover">{props.children}</div>;
   },
   { displayName: 'Action.Popover.Footer' },
 );
