@@ -33,7 +33,8 @@ class CliHttpServer extends EventEmitter {
     this.listenDomainSocket();
   }
 
-  addNewConnection(ws) {
+  addNewConnection(ws, request) {
+    console.log(request);
     const id = nanoid();
 
     ws.id = id;

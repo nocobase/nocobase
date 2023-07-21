@@ -4,6 +4,12 @@ import { AppSupervisor } from './app-supervisor';
 import Application from './application';
 
 type AppSelectorReturn = Application | string | undefined | null;
+
+export interface IncomingRequest {
+  url: string;
+  headers: any;
+}
+
 export type AppSelector = (req: IncomingMessage) => AppSelectorReturn | Promise<AppSelectorReturn>;
 
 export class Gateway extends EventEmitter {
@@ -36,7 +42,7 @@ export class Gateway extends EventEmitter {
 
   public reset() {
     this.setAppSelector(() => process.env['STARTUP_SUBAPP'] || 'main');
-    
+
     if (this.server) {
       this.server.close();
       this.server = null;
