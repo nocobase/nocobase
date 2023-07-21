@@ -74,11 +74,11 @@ export const useShared = () => {
               'x-component': 'ArrayItems.Addition',
               'x-component-props': {
                 className: css`
-                  border-color: rgb(241, 139, 98);
-                  color: rgb(241, 139, 98);
+                  border-color: var(--colorSettings);
+                  color: var(--colorSettings);
                   &.ant-btn-dashed:hover {
-                    border-color: rgb(241, 139, 98);
-                    color: rgb(241, 139, 98);
+                    border-color: var(--colorSettings);
+                    color: var(--colorSettings);
                   }
                 `,
               },

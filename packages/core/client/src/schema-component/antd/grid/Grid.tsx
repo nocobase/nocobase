@@ -1,3 +1,4 @@
+import { TinyColor } from '@ctrl/tinycolor';
 import { useDndContext, useDndMonitor, useDraggable, useDroppable } from '@dnd-kit/core';
 import { RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
@@ -16,6 +17,7 @@ const breakRemoveOnGrid = (s: Schema) => s['x-component'] === 'Grid';
 const breakRemoveOnRow = (s: Schema) => s['x-component'] === 'Grid.Row';
 
 const ColDivider = (props) => {
+  const { token } = useToken();
   const dragIdRef = useRef<string | null>(null);
 
   const { isOver, setNodeRef } = useDroppable({
@@ -28,7 +30,7 @@ const ColDivider = (props) => {
   const droppableStyle = useMemo(() => {
     if (!isOver) return {};
     return {
-      backgroundColor: 'rgba(241, 139, 98, .1)',
+      backgroundColor: new TinyColor(token.colorSettings).setAlpha(0.1).toHex8String(),
     };
   }, [isOver]);
 
@@ -161,6 +163,7 @@ const ColDivider = (props) => {
 };
 
 const RowDivider = (props) => {
+  const { token } = useToken();
   const { isOver, setNodeRef } = useDroppable({
     id: props.id,
     data: props.data,
@@ -176,7 +179,7 @@ const RowDivider = (props) => {
 
     return {
       zIndex: active ? 1000 : -1,
-      backgroundColor: 'rgba(241, 139, 98, .1)',
+      backgroundColor: new TinyColor(token.colorSettings).setAlpha(0.1).toHex8String(),
     };
   }, [active, isOver]);
 
