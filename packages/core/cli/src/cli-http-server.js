@@ -79,8 +79,8 @@ class CliHttpServer extends EventEmitter {
       noServer: true,
     });
 
-    this.wss.on('connection', (ws) => {
-      this.addNewConnection(ws);
+    this.wss.on('connection', (ws, request) => {
+      this.addNewConnection(ws, request);
       console.log(`new client connected ${ws.id}`);
 
       ws.on('error', () => {
@@ -179,6 +179,10 @@ class CliHttpServer extends EventEmitter {
 
   sendToConnectionsByTag(tagName, tagValue, sendMessage) {
     this.webSocketClients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        return;
+      }
+
       if (client.tags.includes(`${tagName}#${tagValue}`)) {
         client.ws.send(JSON.stringify(sendMessage));
       }

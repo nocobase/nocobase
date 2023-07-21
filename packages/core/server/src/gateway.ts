@@ -1,3 +1,4 @@
+import { EventEmitter } from 'events';
 import http, { IncomingMessage, ServerResponse } from 'http';
 import { AppSupervisor } from './app-supervisor';
 import Application from './application';
@@ -5,7 +6,7 @@ import Application from './application';
 type AppSelectorReturn = Application | string | undefined | null;
 export type AppSelector = (req: IncomingMessage) => AppSelectorReturn | Promise<AppSelectorReturn>;
 
-export class Gateway {
+export class Gateway extends EventEmitter {
   private static instance: Gateway;
   /**
    * use main app as default app to handle request
@@ -16,6 +17,7 @@ export class Gateway {
   private host = '0.0.0.0';
 
   private constructor() {
+    super();
     this.reset();
   }
 
@@ -33,7 +35,8 @@ export class Gateway {
   }
 
   public reset() {
-    this.appSelector = () => process.env['STARTUP_SUBAPP'] || 'main';
+    this.setAppSelector(() => process.env['STARTUP_SUBAPP'] || 'main');
+    
     if (this.server) {
       this.server.close();
       this.server = null;
@@ -42,6 +45,7 @@ export class Gateway {
 
   setAppSelector(selector: AppSelector) {
     this.appSelector = selector;
+    this.emit('appSelectorChanged');
   }
 
   async requestHandler(req: IncomingMessage, res: ServerResponse) {

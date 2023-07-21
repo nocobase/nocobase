@@ -8,6 +8,7 @@ const writeJSON = (socket, data) => {
 export function reportStatus() {
   if (process.env.MAIN_PROCESS_SOCKET_PATH) {
     const appSupervisor = AppSupervisor.getInstance();
+    const gateway = Gateway.getInstance();
 
     const mainProcessRPCClient = net.createConnection({
       path: process.env.MAIN_PROCESS_SOCKET_PATH,
@@ -23,6 +24,12 @@ export function reportStatus() {
       });
     });
 
+    gateway.on('appSelectorChanged', () => {
+      writeJSON(mainProcessRPCClient, {
+        type: 'needRefreshTags',
+      });
+    });
+    
     // mainProcessRPCClient.on('data', (data) => {
     //   const dataAsString = data.toString();
     //   // start app process server
