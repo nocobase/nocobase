@@ -1,4 +1,4 @@
-import type { ThemeConfig as Config } from 'antd';
+import type { ThemeConfig as Config } from '@nocobase/client';
 import type { ReactElement } from 'react';
 export type ThemeConfig = Config & { name?: string };
 

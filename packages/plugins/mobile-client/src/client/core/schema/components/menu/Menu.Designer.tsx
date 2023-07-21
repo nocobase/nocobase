@@ -1,9 +1,9 @@
-import { GeneralSchemaDesigner, SchemaSettings, useDesignable } from '@nocobase/client';
 import { MenuOutlined } from '@ant-design/icons';
+import { useField, useFieldSchema } from '@formily/react';
+import { SchemaSettings, useDesignable } from '@nocobase/client';
+import { Button } from 'antd';
 import React from 'react';
 import { useTranslation } from '../../../../locale';
-import { Button } from 'antd';
-import { useFieldSchema, useField } from '@formily/react';
 
 export const MenuDesigner: React.FC = (props) => {
   const { t } = useTranslation();
@@ -20,8 +20,8 @@ export const MenuDesigner: React.FC = (props) => {
       title={
         <Button
           style={{
-            borderColor: 'rgb(241, 139, 98)',
-            color: 'rgb(241, 139, 98)',
+            borderColor: 'var(--colorSettings)',
+            color: 'var(--colorSettings)',
           }}
           icon={<MenuOutlined />}
           type="dashed"
