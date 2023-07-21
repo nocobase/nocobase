@@ -1,4 +1,5 @@
-import { ThemeConfig, defaultTheme } from '@nocobase/client';
+import defaultTheme from './defaultTheme';
+import { ThemeConfig } from './type';
 
 // 兼容旧主题
 function compatOldTheme(theme: ThemeConfig) {

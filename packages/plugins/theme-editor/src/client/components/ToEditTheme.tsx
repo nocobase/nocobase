@@ -1,9 +1,8 @@
 import { PlusOutlined } from '@ant-design/icons';
-import { defaultTheme, useGlobalTheme, useToken } from '@nocobase/client';
+import { compatOldTheme, defaultTheme, useGlobalTheme, useToken } from '@nocobase/client';
 import { App, Button, Space } from 'antd';
 import React, { useCallback } from 'react';
 import { useTranslation } from '../locale';
-import compatOldTheme from '../utils/compatOldTheme';
 import { useThemeEditorContext } from './ThemeEditorProvider';
 
 const ToEditTheme = () => {
