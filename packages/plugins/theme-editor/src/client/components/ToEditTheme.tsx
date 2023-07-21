@@ -24,6 +24,7 @@ const ToEditTheme = () => {
           <Button
             onClick={() => {
               setCurrentSettingTheme(theme);
+              setTheme(compatOldTheme(theme));
               setOpen(true);
               m.destroy();
             }}
