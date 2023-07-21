@@ -22,10 +22,10 @@
     "@amap/amap-jsapi-loader": "^1.0.1",
     "@amap/amap-jsapi-types": "^0.0.10",
     "@googlemaps/js-api-loader": "^1.16.1",
-    "@types/google.maps": "^3.53.4",
-    "ahooks": "^3.7.2"
+    "@types/google.maps": "^3.53.4"
   },
   "devDependencies": {
+    "ahooks": "^3.7.2",
     "@ant-design/icons": "^5.1.4",
     "@formily/antd-v5": "^1.1.0-beta.4",
     "@formily/core": "2.2.26",

@@ -5,6 +5,7 @@ import * as dndKitCore from '@dnd-kit/core';
 import * as dndKitModifiers from '@dnd-kit/modifiers';
 import * as dndKitSortable from '@dnd-kit/sortable';
 import * as dndKitUtilities from '@dnd-kit/utilities';
+import * as emotionCss from '@emotion/css';
 import * as formilyAntdV5 from '@formily/antd-v5';
 import * as formilyCore from '@formily/core';
 import * as formilyJsonSchema from '@formily/json-schema';
@@ -16,11 +17,13 @@ import * as formilyShared from '@formily/shared';
 import * as formilyValidator from '@formily/validator';
 import * as nocobaseEvaluators from '@nocobase/evaluators/client';
 import * as nocobaseClientUtils from '@nocobase/utils/client';
+import * as ahooks from 'ahooks';
 import * as antd from 'antd';
 import * as antdStyle from 'antd-style';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import * as i18next from 'i18next';
+import lodash from 'lodash';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import * as reactI18next from 'react-i18next';
@@ -82,6 +85,10 @@ export function initDeps(requirejs: any) {
   // utils
   requirejs.define('axios', () => axios);
   requirejs.define('dayjs', () => dayjs);
+  requirejs.define('lodash', () => lodash);
+  requirejs.define('ahooks', () => ahooks);
+  requirejs.define('@emotion/css', () => emotionCss);
+  requirejs.define('dayjs', () => dayjs);
 }
 
 export function getRemotePlugins(pluginData: PluginData[] = [], baseURL = ''): Promise<(typeof Plugin)[]> {
@@ -110,7 +117,7 @@ export function getRemotePlugins(pluginData: PluginData[] = [], baseURL = ''): P
       (...plugins: (typeof Plugin & { default?: typeof Plugin })[]) => {
         resolve(plugins.map((item) => item.default || item));
       },
-      reject
+      reject,
     );
   });
 }

@@ -19,15 +19,15 @@
     "client.d.ts"
   ],
   "dependencies": {
-    "lodash": "4.17.21",
-    "@emotion/css": "^11.7.1",
     "classnames": "^2.3.1",
     "cron-parser": "4.4.0",
     "react-js-cron": "^3.1.0"
   },
   "peerDependencies": {
     "dayjs": "^1.11.8",
+    "lodash": "4.17.21",
     "axios": "^0.26.1",
+    "@emotion/css": "^11.7.1",
     "@ant-design/icons": "^5.1.4",
     "@formily/antd-v5": "1.1.0-beta.4",
     "@formily/core": "2.2.26",

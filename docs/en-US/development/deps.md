@@ -99,6 +99,9 @@ Some dependencies are provided by `@nocobase/server` and `@nocobase/client` and 
 'sqlite3',
 'supertest',
 'axios',
+'@emotion/css',
+'ahooks',
+'lodash'
 ```
 
 ### Plugins depend on other plugins

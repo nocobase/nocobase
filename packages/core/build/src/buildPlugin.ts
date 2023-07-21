@@ -110,6 +110,9 @@ const shouldDevDependencies = [
   'sqlite3',
   'supertest',
   'axios',
+  '@emotion/css',
+  'ahooks',
+  'lodash'
 ]
 const pluginPrefix = (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro-').split(
   ',');

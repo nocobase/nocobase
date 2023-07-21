@@ -104,6 +104,9 @@
 'sqlite3',
 'supertest',
 'axios',
+'@emotion/css',
+'ahooks',
+'lodash'
 ```
 
 ### 插件依赖别的插件
