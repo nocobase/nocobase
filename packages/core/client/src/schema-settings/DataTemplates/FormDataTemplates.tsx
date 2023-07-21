@@ -18,6 +18,7 @@ import { AsDefaultTemplate } from './components/AsDefaultTemplate';
 import { ArrayCollapse } from './components/DataTemplateTitle';
 import { Designer, getSelectedIdFilter } from './components/Designer';
 import { useCollectionState } from './hooks/useCollectionState';
+import { useSyncFromForm } from './utils';
 
 const Tree = connect(
   AntdTree,
@@ -161,13 +162,12 @@ export const FormDataTemplates = observer(
                     },
                     syncFromForm: {
                       type: 'void',
-                      'x-component': 'a',
+                      title: '{{ t("Sync from form fields") }}',
+                      'x-component': 'Action.Link',
                       'x-component-props': {
+                        type: 'primary',
                         style: { float: 'right', position: 'relative', zIndex: 12000 },
-                        children: '{{ t("Sync from form fields") }}',
-                        onClick: (e) => {
-                          console.log(formSchema);
-                        },
+                        useAction: () => useSyncFromForm(formSchema),
                       },
                     },
                     fields: {
