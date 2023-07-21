@@ -272,89 +272,85 @@ export async function updateSingleAssociation(
   const { recursive, context, updateAssociationValues = [], transaction } = options;
   const keys = getKeysByPrefix(updateAssociationValues, key);
 
-  try {
-    // set method of association
-    const setAccessor = association.accessors.set;
+  // set method of association
+  const setAccessor = association.accessors.set;
 
-    const removeAssociation = async () => {
-      await model[setAccessor](null, { transaction });
-      model.setDataValue(key, null);
-      return true;
-    };
+  const removeAssociation = async () => {
+    await model[setAccessor](null, { transaction });
+    model.setDataValue(key, null);
+    return true;
+  };
 
-    if (isUndefinedOrNull(value)) {
-      return await removeAssociation();
-    }
+  if (isUndefinedOrNull(value)) {
+    return await removeAssociation();
+  }
 
-    if (isStringOrNumber(value)) {
-      await model[setAccessor](value, { context, transaction });
-      return true;
-    }
+  if (isStringOrNumber(value)) {
+    await model[setAccessor](value, { context, transaction });
+    return true;
+  }
 
-    if (value instanceof Model) {
-      await model[setAccessor](value, { context, transaction });
-      model.setDataValue(key, value);
-      return true;
-    }
+  if (value instanceof Model) {
+    await model[setAccessor](value, { context, transaction });
+    model.setDataValue(key, value);
+    return true;
+  }
 
-    const createAccessor = association.accessors.create;
-    let dataKey: string;
-    let M: ModelStatic<Model>;
-    if (association.associationType === 'BelongsTo') {
-      M = association.target as ModelStatic<Model>;
-      // @ts-ignore
-      dataKey = association.targetKey;
-    } else {
-      M = association.target as ModelStatic<Model>;
-      dataKey = M.primaryKeyAttribute;
-    }
+  const createAccessor = association.accessors.create;
+  let dataKey: string;
+  let M: ModelStatic<Model>;
+  if (association.associationType === 'BelongsTo') {
+    M = association.target as ModelStatic<Model>;
+    // @ts-ignore
+    dataKey = association.targetKey;
+  } else {
+    M = association.target as ModelStatic<Model>;
+    dataKey = M.primaryKeyAttribute;
+  }
 
-    if (isStringOrNumber(value[dataKey])) {
-      const instance: any = await M.findOne({
-        where: {
-          [dataKey]: value[dataKey],
-        },
-        transaction,
-      });
-
-      if (instance) {
-        await model[setAccessor](instance, { context, transaction });
-
-        if (!recursive) {
-          return;
-        }
-
-        if (updateAssociationValues.includes(key)) {
-          await instance.update(value, { ...options, transaction });
-        }
-
-        await updateAssociations(instance, value, {
-          ...options,
-          transaction,
-          associationContext: association,
-          updateAssociationValues: keys,
-        });
-        model.setDataValue(key, instance);
-        return true;
-      }
-    }
-
-    const instance = await model[createAccessor](value, { context, transaction });
-
-    await updateAssociations(instance, value, {
-      ...options,
+  if (isStringOrNumber(value[dataKey])) {
+    const instance: any = await M.findOne({
+      where: {
+        [dataKey]: value[dataKey],
+      },
       transaction,
-      associationContext: association,
-      updateAssociationValues: keys,
     });
 
-    model.setDataValue(key, instance);
-    // @ts-ignore
-    if (association.targetKey) {
-      model.setDataValue(association.foreignKey, instance[dataKey]);
+    if (instance) {
+      await model[setAccessor](instance, { context, transaction });
+
+      if (!recursive) {
+        return;
+      }
+
+      if (updateAssociationValues.includes(key)) {
+        await instance.update(value, { ...options, transaction });
+      }
+
+      await updateAssociations(instance, value, {
+        ...options,
+        transaction,
+        associationContext: association,
+        updateAssociationValues: keys,
+      });
+      model.setDataValue(key, instance);
+      return true;
     }
-  } catch (error) {
-    throw error;
+  }
+
+  const instance = await model[createAccessor](value, { context, transaction });
+
+  await updateAssociations(instance, value, {
+    ...options,
+    transaction,
+    associationContext: association,
+    updateAssociationValues: keys,
+  });
+
+  model.setDataValue(key, instance);
+  // @ts-ignore
+  if (association.targetKey) {
+    model.setDataValue(association.foreignKey, instance[dataKey]);
   }
 }
 
@@ -389,112 +385,108 @@ export async function updateMultipleAssociation(
   const { recursive, context, updateAssociationValues = [], transaction } = options;
   const keys = getKeysByPrefix(updateAssociationValues, key);
 
-  try {
-    const setAccessor = association.accessors.set;
+  const setAccessor = association.accessors.set;
 
-    const createAccessor = association.accessors.create;
+  const createAccessor = association.accessors.create;
 
-    if (isUndefinedOrNull(value)) {
-      await model[setAccessor](null, { transaction, context });
-      model.setDataValue(key, null);
-      return;
+  if (isUndefinedOrNull(value)) {
+    await model[setAccessor](null, { transaction, context });
+    model.setDataValue(key, null);
+    return;
+  }
+
+  if (isStringOrNumber(value)) {
+    await model[setAccessor](value, { transaction, context, individualHooks: true });
+    return;
+  }
+
+  value = lodash.castArray(value);
+
+  const setItems = []; // to be setted
+  const objectItems = []; // to be added
+
+  // iterate item in value
+  for (const item of value) {
+    if (isUndefinedOrNull(item)) {
+      continue;
     }
 
-    if (isStringOrNumber(value)) {
-      await model[setAccessor](value, { transaction, context, individualHooks: true });
-      return;
+    if (isStringOrNumber(item)) {
+      setItems.push(item);
+    } else if (item instanceof Model) {
+      setItems.push(item);
+    } else if (item.sequelize) {
+      setItems.push(item);
+    } else if (typeof item === 'object') {
+      const targetKey = (association as any).targetKey || 'id';
+
+      if (item[targetKey]) {
+        setItems.push(item[targetKey]);
+      }
+
+      objectItems.push(item);
+    }
+  }
+
+  // associate targets in lists1
+  await model[setAccessor](setItems, { transaction, context, individualHooks: true });
+
+  const newItems = [];
+
+  for (const item of objectItems) {
+    const pk = association.target.primaryKeyAttribute;
+
+    const through = (<any>association).through ? (<any>association).through.model.name : null;
+
+    const accessorOptions = {
+      context,
+      transaction,
+    };
+
+    const throughValue = item[through];
+
+    if (throughValue) {
+      accessorOptions['through'] = throughValue;
     }
 
-    value = lodash.castArray(value);
+    if (isUndefinedOrNull(item[pk])) {
+      // create new record
+      const instance = await model[createAccessor](item, accessorOptions);
 
-    const setItems = []; // to be setted
-    const objectItems = []; // to be added
-
-    // iterate item in value
-    for (const item of value) {
-      if (isUndefinedOrNull(item)) {
+      await updateAssociations(instance, item, {
+        ...options,
+        transaction,
+        associationContext: association,
+        updateAssociationValues: keys,
+      });
+      newItems.push(instance);
+    } else {
+      // set & update record
+      const instance = await association.target.findByPk<any>(item[pk], {
+        transaction,
+      });
+      if (!instance) {
         continue;
       }
+      const addAccessor = association.accessors.add;
 
-      if (isStringOrNumber(item)) {
-        setItems.push(item);
-      } else if (item instanceof Model) {
-        setItems.push(item);
-      } else if (item.sequelize) {
-        setItems.push(item);
-      } else if (typeof item === 'object') {
-        const targetKey = (association as any).targetKey || 'id';
+      await model[addAccessor](item[pk], accessorOptions);
 
-        if (item[targetKey]) {
-          setItems.push(item[targetKey]);
-        }
-
-        objectItems.push(item);
+      if (!recursive) {
+        continue;
       }
-    }
-
-    // associate targets in lists1
-    await model[setAccessor](setItems, { transaction, context, individualHooks: true });
-
-    const newItems = [];
-
-    for (const item of objectItems) {
-      const pk = association.target.primaryKeyAttribute;
-
-      const through = (<any>association).through ? (<any>association).through.model.name : null;
-
-      const accessorOptions = {
-        context,
+      if (updateAssociationValues.includes(key)) {
+        await instance.update(item, { ...options, transaction });
+      }
+      await updateAssociations(instance, item, {
+        ...options,
         transaction,
-      };
-
-      const throughValue = item[through];
-
-      if (throughValue) {
-        accessorOptions['through'] = throughValue;
-      }
-
-      if (isUndefinedOrNull(item[pk])) {
-        // create new record
-        const instance = await model[createAccessor](item, accessorOptions);
-
-        await updateAssociations(instance, item, {
-          ...options,
-          transaction,
-          associationContext: association,
-          updateAssociationValues: keys,
-        });
-        newItems.push(instance);
-      } else {
-        // set & update record
-        const instance = await association.target.findByPk<any>(item[pk], {
-          transaction,
-        });
-        if (!instance) {
-          continue;
-        }
-        const addAccessor = association.accessors.add;
-
-        await model[addAccessor](item[pk], accessorOptions);
-
-        if (!recursive) {
-          continue;
-        }
-        if (updateAssociationValues.includes(key)) {
-          await instance.update(item, { ...options, transaction });
-        }
-        await updateAssociations(instance, item, {
-          ...options,
-          transaction,
-          associationContext: association,
-          updateAssociationValues: keys,
-        });
-        newItems.push(instance);
-      }
+        associationContext: association,
+        updateAssociationValues: keys,
+      });
+      newItems.push(instance);
     }
-
-    model.setDataValue(key, setItems.concat(newItems));
-  } catch (error) {
-    throw error;
   }
+
+  model.setDataValue(key, setItems.concat(newItems));
 }
