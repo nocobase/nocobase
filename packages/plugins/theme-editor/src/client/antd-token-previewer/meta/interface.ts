@@ -34,6 +34,8 @@ export type TokenGroup<T> = {
 
   // Seed token
   seedToken?: T[];
+  /** make seedToken can be alpha */
+  seedTokenAlpha?: boolean;
   mapToken?: T[];
   aliasToken?: T[];
 

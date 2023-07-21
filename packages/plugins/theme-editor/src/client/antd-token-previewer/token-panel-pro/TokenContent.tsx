@@ -3,7 +3,6 @@ import { Button, Checkbox, Collapse, ConfigProvider, Popover, Switch, Tooltip, T
 import type { MutableTheme } from 'antd-token-previewer';
 import type { ThemeConfig } from 'antd/es/config-provider/context';
 import seed from 'antd/es/theme/themes/seed';
-import tokenMeta from 'antd/lib/version/token-meta.json';
 import classNames from 'classnames';
 import type { FC } from 'react';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -21,6 +20,8 @@ import makeStyle from '../utils/makeStyle';
 import InputNumberPlus from './InputNumberPlus';
 import TokenDetail from './TokenDetail';
 import TokenPreview from './TokenPreview';
+import calcCustomToken from './calcCustomToken';
+import tokenMeta from './token-meta.json';
 
 const { Panel } = Collapse;
 
@@ -230,6 +231,7 @@ export type SeedTokenProps = {
   theme: MutableTheme;
   tokenName: string;
   disabled?: boolean;
+  alpha?: boolean;
 };
 
 const getSeedValue = (config: ThemeConfig, token: string) => {
@@ -256,7 +258,7 @@ const seedRange: Record<string, { min: number; max: number }> = {
   },
 };
 
-const SeedTokenPreview: FC<SeedTokenProps> = ({ theme, tokenName, disabled }) => {
+const SeedTokenPreview: FC<SeedTokenProps> = ({ theme, tokenName, disabled, alpha }) => {
   const tokenPath = ['token', tokenName];
   const [tokenValue, setTokenValue] = useState(getSeedValue(theme.config, tokenName));
   const locale = useLocale();
@@ -267,7 +269,7 @@ const SeedTokenPreview: FC<SeedTokenProps> = ({ theme, tokenName, disabled }) =>
         ...theme.config,
         token: {
           ...theme.config.token,
-          [tokenName]: newValue,
+          ...calcCustomToken(tokenName, newValue),
         },
       },
       ['token', tokenName],
@@ -305,7 +307,7 @@ const SeedTokenPreview: FC<SeedTokenProps> = ({ theme, tokenName, disabled }) =>
           trigger="click"
           placement="bottomRight"
           overlayInnerStyle={{ padding: 0 }}
-          content={<ColorPanel color={tokenValue} onChange={handleChange} style={{ border: 'none' }} />}
+          content={<ColorPanel color={tokenValue} onChange={handleChange} style={{ border: 'none' }} alpha={alpha} />}
         >
           <div
             className="token-panel-pro-token-collapse-seed-block-sample-card"
@@ -643,6 +645,7 @@ const TokenContent: FC<ColorTokenContentProps> = ({
                           </div>
                         </div>
                         <SeedTokenPreview
+                          alpha={!!group.seedTokenAlpha}
                           theme={theme}
                           tokenName={seedToken}
                           disabled={seedToken === 'colorInfo' && infoFollowPrimary}

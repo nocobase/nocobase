@@ -7,6 +7,7 @@ import { ThemeConfig, ThemeItem } from '../../types';
 import { Primary } from '../antd-token-previewer';
 import { useUpdateThemeSettings } from '../hooks/useUpdateThemeSettings';
 import { useTranslation } from '../locale';
+import compatOldTheme from '../utils/compatOldTheme';
 import { useCurrentThemeId } from './InitializeTheme';
 import { useThemeEditorContext } from './ThemeEditorProvider';
 
@@ -178,7 +179,7 @@ const ThemeCard = (props: Props) => {
   const handleEdit = useCallback(() => {
     setCurrentSettingTheme(currentTheme);
     setCurrentEditingTheme(item);
-    setTheme(item.config);
+    setTheme(compatOldTheme(item.config));
     setOpen(true);
   }, [item, setCurrentEditingTheme, setCurrentSettingTheme, setOpen, setTheme, currentTheme]);
 
@@ -277,7 +278,14 @@ const ThemeCard = (props: Props) => {
 
   const cardStyle = useMemo(() => {
     if (getCurrentEditingTheme()?.id === item.id) {
-      return { cursor: 'default', width: 240, height: 240, overflow: 'hidden', outline: '1px solid #f18b62', ...style };
+      return {
+        cursor: 'default',
+        width: 240,
+        height: 240,
+        overflow: 'hidden',
+        outline: '1px solid var(--colorSettings)',
+        ...style,
+      };
     }
     return { cursor: 'default', width: 240, height: 240, overflow: 'hidden', ...style };
   }, [getCurrentEditingTheme, item.id, style]);
