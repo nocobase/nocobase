@@ -1,5 +1,5 @@
+import { dayjs } from '@nocobase/utils/client';
 import { ConfigProvider, Spin } from 'antd';
-import dayjs from 'dayjs';
 import React, { createContext, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../api-client';

@@ -17,11 +17,11 @@ import * as formilyShared from '@formily/shared';
 import * as formilyValidator from '@formily/validator';
 import * as nocobaseEvaluators from '@nocobase/evaluators/client';
 import * as nocobaseClientUtils from '@nocobase/utils/client';
+import { dayjs } from '@nocobase/utils/client';
 import * as ahooks from 'ahooks';
 import * as antd from 'antd';
 import * as antdStyle from 'antd-style';
 import axios from 'axios';
-import dayjs from 'dayjs';
 import * as i18next from 'i18next';
 import lodash from 'lodash';
 import React from 'react';
@@ -128,7 +128,7 @@ export async function getPlugins(
   baseURL: string,
 ): Promise<(typeof Plugin)[]> {
   if (pluginData.length === 0) return [];
-  if (process.env.NODE_ENV === 'development' && !process.env.USER_REMOTE_PLUGIN) {
+  if (process.env.NODE_ENV === 'development' && !process.env.USE_REMOTE_PLUGIN) {
     const plugins = [];
     const localPlugins = pluginData.filter((item) => item.type === 'local');
     const remotePlugins = pluginData.filter((item) => item.type !== 'local');

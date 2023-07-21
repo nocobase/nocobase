@@ -6,6 +6,10 @@ const umiConfig = getUmiConfig();
 process.env.MFSU_AD = 'none';
 process.env.DID_YOU_KNOW = 'none';
 
+const pluginPrefix = (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro-')
+  .split(',')
+  .filter(item => item.includes('preset')); // 因为现在 preset 是直接引入的，所以不能忽略，如果以后 preset 也是动态插件的形式引入，那么这里可以去掉
+
 export default defineConfig({
   title: 'Loading...',
   favicons: ['/favicon/favicon.ico'],
@@ -28,7 +32,7 @@ export default defineConfig({
   },
   define: {
     ...umiConfig.define,
-    'process.env.USER_REMOTE_PLUGIN': process.env.USER_REMOTE_PLUGIN,
+    'process.env.USE_REMOTE_PLUGIN': process.env.USE_REMOTE_PLUGIN,
   },
   proxy: {
     ...umiConfig.proxy,
@@ -51,7 +55,7 @@ export default defineConfig({
       config.plugin('ignore nocobase plugins')
         .use(require('webpack').IgnorePlugin, [
           {
-            resourceRegExp: /^@nocobase\/plugin-/,
+            resourceRegExp: new RegExp(pluginPrefix.join('|')),
           },
         ]);
     }

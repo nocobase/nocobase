@@ -15,7 +15,6 @@
   ],
   "dependencies": {},
   "devDependencies": {
-    "father": "^4.2.3",
     "@nocobase/server": "{{{nocobaseVersion}}}",
     "@nocobase/test": "{{{nocobaseVersion}}}"
   }
