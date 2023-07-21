@@ -40,14 +40,8 @@ const CSSVariableProvider = ({ children }) => {
     document.body.style.setProperty('--colorBgScrollBarActive', colorBgScrollBarActive);
     document.body.style.setProperty('--colorBgDrawer', colorBgDrawer);
     document.body.style.setProperty('--colorSettings', token.colorSettings || defaultTheme.token.colorSettings);
-    document.body.style.setProperty(
-      '--colorBgSettingsHover',
-      token.colorBgSettingsHover || defaultTheme.token.colorBgSettingsHover,
-    );
-    document.body.style.setProperty(
-      '--colorBorderSettingsHover',
-      token.colorBorderSettingsHover || defaultTheme.token.colorBorderSettingsHover,
-    );
+    document.body.style.setProperty('--colorBgSettingsHover', token.colorBgSettingsHover);
+    document.body.style.setProperty('--colorBorderSettingsHover', token.colorBorderSettingsHover);
 
     // 设置登录页面的背景色
     document.body.style.setProperty('background-color', token.colorBgContainer);

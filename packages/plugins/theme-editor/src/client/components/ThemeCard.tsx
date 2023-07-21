@@ -1,5 +1,12 @@
 import { DeleteOutlined, EditOutlined, EllipsisOutlined } from '@ant-design/icons';
-import { useAPIClient, useCurrentUserContext, useGlobalTheme, useSystemSettings, useToken } from '@nocobase/client';
+import {
+  compatOldTheme,
+  useAPIClient,
+  useCurrentUserContext,
+  useGlobalTheme,
+  useSystemSettings,
+  useToken,
+} from '@nocobase/client';
 import { error } from '@nocobase/utils/client';
 import { App, Card, ConfigProvider, Dropdown, Space, Switch, Tag, message } from 'antd';
 import React, { useCallback, useMemo } from 'react';
@@ -7,7 +14,6 @@ import { ThemeConfig, ThemeItem } from '../../types';
 import { Primary } from '../antd-token-previewer';
 import { useUpdateThemeSettings } from '../hooks/useUpdateThemeSettings';
 import { useTranslation } from '../locale';
-import compatOldTheme from '../utils/compatOldTheme';
 import { useCurrentThemeId } from './InitializeTheme';
 import { useThemeEditorContext } from './ThemeEditorProvider';
 
