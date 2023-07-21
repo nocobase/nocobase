@@ -1,5 +1,6 @@
 import { TinyColor } from '@ctrl/tinycolor';
 import { useEffect, useMemo } from 'react';
+import { defaultTheme } from '../global-theme';
 import { useToken } from '../style';
 
 const CSSVariableProvider = ({ children }) => {
@@ -38,9 +39,15 @@ const CSSVariableProvider = ({ children }) => {
     document.body.style.setProperty('--colorBgScrollBarHover', colorBgScrollBarHover);
     document.body.style.setProperty('--colorBgScrollBarActive', colorBgScrollBarActive);
     document.body.style.setProperty('--colorBgDrawer', colorBgDrawer);
-    document.body.style.setProperty('--colorSettings', token.colorSettings);
-    document.body.style.setProperty('--colorBgSettingsHover', token.colorBgSettingsHover);
-    document.body.style.setProperty('--colorBorderSettingsHover', token.colorBorderSettingsHover);
+    document.body.style.setProperty('--colorSettings', token.colorSettings || defaultTheme.token.colorSettings);
+    document.body.style.setProperty(
+      '--colorBgSettingsHover',
+      token.colorBgSettingsHover || defaultTheme.token.colorBgSettingsHover,
+    );
+    document.body.style.setProperty(
+      '--colorBorderSettingsHover',
+      token.colorBorderSettingsHover || defaultTheme.token.colorBorderSettingsHover,
+    );
 
     // 设置登录页面的背景色
     document.body.style.setProperty('background-color', token.colorBgContainer);
