@@ -1,4 +1,4 @@
-import { useAPIClient, useCurrentUserContext, useGlobalTheme, useSystemSettings } from '@nocobase/client';
+import { defaultTheme, useAPIClient, useCurrentUserContext, useGlobalTheme, useSystemSettings } from '@nocobase/client';
 import { error } from '@nocobase/utils/client';
 import { Spin } from 'antd';
 import React, { useEffect, useRef } from 'react';
@@ -50,13 +50,17 @@ const InitializeTheme: React.FC = ({ children }) => {
       const theme = data?.find((item) => item.id === themeId.current);
       if (theme) {
         setTheme(theme.config);
-        api.auth.setOption('theme', JSON.stringify(Object.assign({ ...theme }, { config: changeAlgorithmFromFunctionToString(theme.config) })))
+        api.auth.setOption(
+          'theme',
+          JSON.stringify(Object.assign({ ...theme }, { config: changeAlgorithmFromFunctionToString(theme.config) })),
+        );
       }
     } else {
-      setTheme({});
+      setTheme(defaultTheme);
       api.auth.setOption('theme', null);
     }
   }, [
+    api.auth,
     currentUser?.data?.data?.systemSettings?.themeId,
     data,
     run,

@@ -2,6 +2,7 @@ import type { CSSInterpolation, CSSObject } from '@ant-design/cssinjs';
 import { useStyleRegister } from '@ant-design/cssinjs';
 import { merge } from '@formily/shared';
 import type { ComponentTokenMap, GlobalToken } from 'antd/es/theme/interface';
+import { CustomToken } from '../../../global-theme';
 import { useConfig, usePrefixCls, useToken } from './hooks';
 
 export type OverrideComponent = keyof ComponentTokenMap | string;
@@ -62,7 +63,7 @@ export type UseComponentStyleResult = {
 
 export const genStyleHook = <ComponentName extends OverrideComponent>(
   component: ComponentName,
-  styleFn: (token: TokenWithCommonCls<GlobalToken>, props: any, info: StyleInfo) => CSSInterpolation,
+  styleFn: (token: TokenWithCommonCls<CustomToken>, props: any, info: StyleInfo) => CSSInterpolation,
 ) => {
   return (props?: any): UseComponentStyleResult => {
     const { theme, token, hashId } = useToken();
@@ -80,7 +81,7 @@ export const genStyleHook = <ComponentName extends OverrideComponent>(
         },
         () => {
           const componentCls = `.${prefixCls}`;
-          const mergedToken: TokenWithCommonCls<GlobalToken> = merge(token, {
+          const mergedToken: TokenWithCommonCls<CustomToken> = merge(token, {
             componentCls,
             prefixCls,
             iconCls: `.${iconPrefixCls}`,
