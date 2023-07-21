@@ -134,7 +134,7 @@ export const SigninPage = () => {
         `}
       >
         {tabs.length > 1 ? (
-          <Tabs items={tabs.map((tab) => ({ label: tab.tabTitle, key: tab.name, children: tab.component }))} />
+          <Tabs items={tabs.map((tab) => ({ label: t(tab.tabTitle), key: tab.name, children: tab.component }))} />
         ) : tabs.length ? (
           <div>{tabs[0].component}</div>
         ) : (

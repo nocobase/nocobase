@@ -1,5 +1,4 @@
 import { Area, Bar, Column, DualAxes, Line, Pie, Scatter } from '@ant-design/plots';
-import { lang } from '../../locale';
 import { Charts, commonInit, infer, usePropsFunc } from '../ChartLibrary';
 const init = commonInit;
 
@@ -7,7 +6,7 @@ const basicSchema = {
   type: 'object',
   properties: {
     xField: {
-      title: lang('xField'),
+      title: '{{t("xField")}}',
       type: 'string',
       'x-decorator': 'FormItem',
       'x-component': 'Select',
@@ -15,7 +14,7 @@ const basicSchema = {
       required: true,
     },
     yField: {
-      title: lang('yField'),
+      title: '{{t("yField")}}',
       type: 'string',
       'x-decorator': 'FormItem',
       'x-component': 'Select',
@@ -23,7 +22,7 @@ const basicSchema = {
       required: true,
     },
     seriesField: {
-      title: lang('seriesField'),
+      title: '{{t("seriesField")}}',
       type: 'string',
       'x-decorator': 'FormItem',
       'x-component': 'Select',
@@ -50,40 +49,40 @@ const useProps: usePropsFunc = ({ data, fieldProps, general, advanced }) => {
 
 export const G2PlotLibrary: Charts = {
   line: {
-    name: lang('Line Chart'),
+    name: 'Line Chart',
     component: Line,
     schema: basicSchema,
     init,
     useProps,
     reference: {
-      title: lang('Line Chart'),
+      title: 'Line Chart',
       link: 'https://g2plot.antv.antgroup.com/api/plots/bar',
     },
   },
   area: {
-    name: lang('Area Chart'),
+    name: 'Area Chart',
     component: Area,
     schema: basicSchema,
     init,
     useProps,
     reference: {
-      title: lang('Area Chart'),
+      title: 'Area Chart',
       link: 'https://g2plot.antv.antgroup.com/api/plots/area',
     },
   },
   column: {
-    name: lang('Column Chart'),
+    name: 'Column Chart',
     component: Column,
     schema: basicSchema,
     init,
     useProps,
     reference: {
-      title: lang('Column Chart'),
+      title: 'Column Chart',
       link: 'https://g2plot.antv.antgroup.com/api/plots/column',
     },
   },
   bar: {
-    name: lang('Bar Chart'),
+    name: 'Bar Chart',
     component: Bar,
     schema: basicSchema,
     init: (fields, { measures, dimensions }) => {
@@ -98,18 +97,18 @@ export const G2PlotLibrary: Charts = {
     },
     useProps,
     reference: {
-      title: lang('Bar Chart'),
+      title: 'Bar Chart',
       link: 'https://g2plot.antv.antgroup.com/api/plots/bar',
     },
   },
   pie: {
-    name: lang('Pie Chart'),
+    name: 'Pie Chart',
     component: Pie,
     schema: {
       type: 'object',
       properties: {
         angleField: {
-          title: lang('angleField'),
+          title: '{{t("angleField")}}',
           type: 'string',
           'x-decorator': 'FormItem',
           'x-component': 'Select',
@@ -117,7 +116,7 @@ export const G2PlotLibrary: Charts = {
           required: true,
         },
         colorField: {
-          title: lang('colorField'),
+          title: '{{t("colorField")}}',
           type: 'string',
           'x-decorator': 'FormItem',
           'x-component': 'Select',
@@ -137,12 +136,12 @@ export const G2PlotLibrary: Charts = {
     },
     useProps,
     reference: {
-      title: lang('Pie Chart'),
+      title: 'Pie Chart',
       link: 'https://g2plot.antv.antgroup.com/api/plots/pie',
     },
   },
   dualAxes: {
-    name: lang('Dual Axes Chart'),
+    name: 'Dual Axes Chart',
     component: DualAxes,
     useProps: ({ data, fieldProps, general, advanced }) => {
       return {
@@ -154,7 +153,7 @@ export const G2PlotLibrary: Charts = {
       type: 'object',
       properties: {
         xField: {
-          title: lang('xField'),
+          title: '{{t("xField")}}',
           type: 'string',
           'x-decorator': 'FormItem',
           'x-component': 'Select',
@@ -162,7 +161,7 @@ export const G2PlotLibrary: Charts = {
           required: true,
         },
         yField: {
-          title: lang('yField'),
+          title: '{{t("yField")}}',
           type: 'array',
           'x-decorator': 'FormItem',
           'x-component': 'ArrayItems',
@@ -182,7 +181,7 @@ export const G2PlotLibrary: Charts = {
                 'x-reactions': '{{ useChartFields }}',
                 'x-component-props': {
                   style: {
-                    'min-width': '200px',
+                    minWidth: '200px',
                   },
                 },
                 required: true,
@@ -197,7 +196,7 @@ export const G2PlotLibrary: Charts = {
           properties: {
             add: {
               type: 'void',
-              title: lang('Add'),
+              title: '{{t("Add")}}',
               'x-component': 'ArrayItems.Addition',
             },
           },
@@ -214,22 +213,22 @@ export const G2PlotLibrary: Charts = {
       };
     },
     reference: {
-      title: lang('Dual Axes Chart'),
+      title: 'Dual Axes Chart',
       link: 'https://g2plot.antv.antgroup.com/api/plots/dual-axes',
     },
   },
   // gauge: {
-  //   name: lang('Gauge Chart'),
+  //   name: 'Gauge Chart',
   //   component: Gauge,
   // },
   scatter: {
-    name: lang('Scatter Chart'),
+    name: 'Scatter Chart',
     component: Scatter,
     schema: basicSchema,
     init,
     useProps,
     reference: {
-      title: lang('Scatter Chart'),
+      title: 'Scatter Chart',
       link: 'https://g2plot.antv.antgroup.com/api/plots/scatter',
     },
   },

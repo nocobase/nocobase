@@ -1,5 +1,5 @@
 import { PlusOutlined } from '@ant-design/icons';
-import { useGlobalTheme, useToken } from '@nocobase/client';
+import { compatOldTheme, defaultTheme, useGlobalTheme, useToken } from '@nocobase/client';
 import { App, Button, Space } from 'antd';
 import React, { useCallback } from 'react';
 import { useTranslation } from '../locale';
@@ -23,6 +23,7 @@ const ToEditTheme = () => {
           <Button
             onClick={() => {
               setCurrentSettingTheme(theme);
+              setTheme(compatOldTheme(theme));
               setOpen(true);
               m.destroy();
             }}
@@ -33,7 +34,7 @@ const ToEditTheme = () => {
             type={'primary'}
             onClick={() => {
               setCurrentSettingTheme(theme);
-              setTheme({});
+              setTheme(compatOldTheme(defaultTheme));
               setOpen(true);
               m.destroy();
             }}
@@ -52,8 +53,8 @@ const ToEditTheme = () => {
         width: 240,
         height: 240,
         borderRadius: token.borderRadiusLG,
-        borderColor: '#f18b62',
-        color: '#f18b62',
+        borderColor: 'var(--colorSettings)',
+        color: 'var(--colorSettings)',
       }}
       icon={<PlusOutlined />}
       onClick={handleClick}

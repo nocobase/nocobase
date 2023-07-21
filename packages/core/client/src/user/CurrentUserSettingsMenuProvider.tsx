@@ -2,7 +2,19 @@ import { error } from '@nocobase/utils/client';
 import { ItemType } from 'antd/es/menu/hooks/useItems';
 import React, { createContext, useCallback, useContext, useRef } from 'react';
 
-type menuItemsKey = 'version' | 'profile' | 'password' | 'role' | 'language' | 'cache' | 'reboot' | 'signout';
+type menuItemsKey =
+  | 'version'
+  | 'profile'
+  | 'password'
+  | 'role'
+  | 'language'
+  | 'cache'
+  | 'reboot'
+  | 'signout'
+  | 'divider_1'
+  | 'divider_2'
+  | 'divider_3'
+  | 'divider_4';
 
 interface OptionsOfAddMenuItem {
   before?: menuItemsKey;

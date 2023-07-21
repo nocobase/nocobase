@@ -1,11 +1,11 @@
 import { useField, useFieldSchema } from '@formily/react';
 import {
-  css,
-  cx,
   GeneralSchemaDesigner,
   Icon,
   SchemaSettings,
   SortableItem,
+  css,
+  cx,
   useCompile,
   useDesigner,
 } from '@nocobase/client';

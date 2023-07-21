@@ -30,7 +30,7 @@ export const useStyles = genStyleHook('nb-page', (token) => {
           lineHeight: '16px',
           pointerEvents: 'all',
           '.ant-space-item': {
-            backgroundColor: '#f18b62',
+            backgroundColor: 'var(--colorSettings)',
             color: '#fff',
             lineHeight: '16px',
             width: '16px',
@@ -57,8 +57,8 @@ export const useStyles = genStyleHook('nb-page', (token) => {
       },
 
       '.addTabBtn': {
-        borderColor: 'rgb(241, 139, 98) !important',
-        color: 'rgb(241, 139, 98) !important',
+        borderColor: 'var(--colorSettings)',
+        color: 'var(--colorSettings)',
       },
 
       '.designerCss': {
@@ -66,10 +66,10 @@ export const useStyles = genStyleHook('nb-page', (token) => {
         '&:hover': { '> .general-schema-designer': { display: 'block' } },
         '&.nb-action-link': {
           '> .general-schema-designer': {
-            top: 'var(--nb-designer-offset)',
-            bottom: 'var(--nb-designer-offset)',
-            right: 'var(--nb-designer-offset)',
-            left: 'var(--nb-designer-offset)',
+            top: '-10px',
+            bottom: '-10px',
+            left: '-10px',
+            right: '-10px',
           },
         },
         '> .general-schema-designer': {
@@ -80,7 +80,7 @@ export const useStyles = genStyleHook('nb-page', (token) => {
           left: '0',
           right: '0',
           display: 'none',
-          background: 'rgba(241, 139, 98, 0.06)',
+          background: 'var(--colorBgSettingsHover)',
           border: '0',
           pointerEvents: 'none',
           '> .general-schema-designer-icons': {
@@ -90,7 +90,7 @@ export const useStyles = genStyleHook('nb-page', (token) => {
             lineHeight: '16px',
             pointerEvents: 'all',
             '.ant-space-item': {
-              backgroundColor: '#f18b62',
+              backgroundColor: 'var(--colorSettings)',
               color: '#fff',
               lineHeight: '16px',
               width: '16px',

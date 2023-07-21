@@ -6,7 +6,7 @@ import { Branch } from '../Branch';
 import { useFlowContext } from '../FlowContext';
 import { NAMESPACE, lang } from '../locale';
 import useStyles from '../style';
-import { VariableOption, nodesOptions, triggerOptions, useWorkflowVariableOptions } from '../variable';
+import { VariableOption, defaultFieldNames, nodesOptions, triggerOptions, useWorkflowVariableOptions } from '../variable';
 
 function findOption(options: VariableOption[], paths: string[]) {
   let opts = options;
@@ -64,7 +64,7 @@ export default {
 
     return (
       <NodeDefaultView data={data}>
-        <div className={cx(styles.nodeSubtreeClass)}>
+        <div className={styles.nodeSubtreeClass}>
           <div
             className={cx(
               styles.branchBlockClass,
@@ -75,7 +75,7 @@ export default {
           >
             <Branch from={data} entry={entry} branchIndex={entry?.branchIndex ?? 0} />
 
-            <div className={cx(styles.branchClass)}>
+            <div className={styles.branchClass}>
               <div className="workflow-branch-lines" />
               <div className={cx(styles.addButtonClass, styles.loopLineClass)}>
                 <ArrowUpOutlined />
@@ -103,13 +103,15 @@ export default {
       return null;
     }
 
+    const { fieldNames = defaultFieldNames } = options;
+
     // const { workflow } = useFlowContext();
     // const current = useNodeContext();
     // const upstreams = useAvailableUpstreams(current);
     // find target data model by path described in `config.target`
     // 1. get options from $context/$jobsMapByNodeId
     // 2. route to sub-options and use as loop target options
-    let targetOption: VariableOption = { key: 'item', value: 'item', label: lang('Loop target') };
+    let targetOption: VariableOption = { key: 'item', [fieldNames.value]: 'item', [fieldNames.label]: lang('Loop target') };
 
     if (typeof target === 'string' && target.startsWith('{{') && target.endsWith('}}')) {
       const paths = target
@@ -120,10 +122,10 @@ export default {
       const targetOptions = [nodesOptions, triggerOptions].map((item: any) => {
         const opts = item.useOptions(options).filter(Boolean);
         return {
-          label: compile(item.title),
-          value: item.value,
+          [fieldNames.label]: compile(item.title),
+          [fieldNames.value]: item.value,
           key: item.value,
-          children: opts,
+          [fieldNames.children]: opts,
           disabled: opts && !opts.length,
         };
       });
@@ -135,8 +137,8 @@ export default {
 
     return [
       targetOption,
-      { key: 'index', value: 'index', label: lang('Loop index') },
-      { key: 'length', value: 'length', label: lang('Loop length') },
+      { key: 'index', [fieldNames.value]: 'index', [fieldNames.label]: lang('Loop index') },
+      { key: 'length', [fieldNames.value]: 'length', [fieldNames.label]: lang('Loop length') },
     ];
   },
 };

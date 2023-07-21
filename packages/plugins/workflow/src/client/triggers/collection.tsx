@@ -85,6 +85,7 @@ export default {
       'x-decorator': 'FormItem',
       'x-component': 'FieldsSelect',
       'x-component-props': {
+        className: 'full-width',
         mode: 'multiple',
         placeholder: '{{t("Select field")}}',
         filter(field) {
@@ -109,6 +110,9 @@ export default {
     condition: {
       ...filter,
       title: `{{t("Only triggers when match conditions", { ns: "${NAMESPACE}" })}}`,
+      'x-component-props': {
+        useProps: filter['x-component-props'].useProps,
+      },
       'x-reactions': [
         {
           dependencies: ['collection'],

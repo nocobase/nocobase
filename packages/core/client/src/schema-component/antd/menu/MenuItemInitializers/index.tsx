@@ -93,6 +93,10 @@ export const GroupItem = itemWrap((props) => {
           type: 'onSelfCreate',
           method: 'bindMenuToRole',
         },
+        {
+          type: 'onSelfSave',
+          method: 'extractTextToLocale',
+        },
       ],
     });
   }, [theme]);
@@ -151,6 +155,10 @@ export const PageMenuItem = itemWrap((props) => {
         {
           type: 'onSelfCreate',
           method: 'bindMenuToRole',
+        },
+        {
+          type: 'onSelfSave',
+          method: 'extractTextToLocale',
         },
       ],
       properties: {
@@ -231,6 +239,10 @@ export const LinkMenuItem = itemWrap((props) => {
         {
           type: 'onSelfCreate',
           method: 'bindMenuToRole',
+        },
+        {
+          type: 'onSelfSave',
+          method: 'extractTextToLocale',
         },
       ],
     });
