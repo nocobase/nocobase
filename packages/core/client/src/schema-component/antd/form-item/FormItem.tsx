@@ -64,7 +64,10 @@ export const FormItem: any = observer(
         ctx.field.data.activeFields = ctx.field.data.activeFields || new Set();
         ctx.field.data.activeFields.add(schema.name);
         // 如果默认值是一个变量，则需要解析之后再显示出来
-        if (isVariable(schema?.default) && !schema?.default.includes('$context')) {
+        if (
+          isVariable(schema?.default) &&
+          (!schema?.default.includes('$context') || collectionField.interface === 'm2m')
+        ) {
           field.setInitialValue?.(parseVariables(schema.default, variablesCtx));
         } else if (
           collectionField?.interface === 'o2m' &&

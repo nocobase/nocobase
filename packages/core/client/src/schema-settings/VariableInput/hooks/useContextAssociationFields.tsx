@@ -105,7 +105,7 @@ export const useContextAssociationFields = ({
 
   const result = useMemo(() => {
     return {
-      label: t('Context selection record'),
+      label: t('Table selected records'),
       value: '$context',
       key: '$context',
       isLeaf: false,
