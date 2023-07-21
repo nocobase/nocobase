@@ -14,6 +14,7 @@
     "antd-token-previewer": "2.0.0-alpha.8",
     "vanilla-jsoneditor": "^0.17.8",
     "tinycolor2": "^1.6.0",
+    "@ctrl/tinycolor": "^3.6.0",
     "@arvinxu/layout-kit": "^1"
   },
   "devDependencies": {
@@ -27,7 +28,6 @@
     "@nocobase/utils": "0.11.0-alpha.1",
     "@nocobase/database": "0.11.0-alpha.1",
     "@nocobase/server": "0.11.0-alpha.1",
-    "@nocobase/test": "0.11.0-alpha.1",
-    "@ctrl/tinycolor": "^3.6.0"
+    "@nocobase/test": "0.11.0-alpha.1"
   }
 }
