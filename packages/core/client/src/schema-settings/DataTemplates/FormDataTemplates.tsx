@@ -22,12 +22,13 @@ const Tree = connect(
   }),
 );
 
-export const compatibleDataId = (data) => {
+export const compatibleDataId = (data, config?) => {
   return data?.map((v) => {
     const { dataId, ...others } = v;
     const obj = { ...others };
     if (dataId) {
       obj.dataScope = { $and: [{ id: { $eq: dataId } }] };
+      obj.titleField = obj?.titleField || config?.[v.collection]?.['titleField'] || 'id';
     }
     return obj;
   });
@@ -52,7 +53,7 @@ export const FormDataTemplates = observer(
     const activeData = useMemo<ITemplate>(
       () =>
         observable(
-          { ...defaultValues, items: compatibleDataId(defaultValues?.items || []) } || {
+          { ...defaultValues, items: compatibleDataId(defaultValues?.items || [], defaultValues?.config) } || {
             items: [],
             display: true,
             config: { [collectionName]: { titleField: '', filter: {} } },
@@ -60,7 +61,7 @@ export const FormDataTemplates = observer(
         ),
       [],
     );
-
+    console.log(activeData);
     const getTargetField = (collectionName: string) => {
       const collection = getCollection(collectionName);
       return getCollectionField(
