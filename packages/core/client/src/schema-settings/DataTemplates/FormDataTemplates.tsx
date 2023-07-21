@@ -34,7 +34,6 @@ export const FormDataTemplates = observer(
     const { collectionList, getEnableFieldTree, getOnLoadData, getOnCheck } = useCollectionState(collectionName);
     const { getCollection, getCollectionField } = useCollectionManager();
     const { t } = useTranslation();
-
     // 不要在后面的数组中依赖 defaultValues，否则会因为 defaultValues 的变化导致 activeData 响应性丢失
     const activeData = useMemo<ITemplate>(
       () =>
@@ -159,6 +158,17 @@ export const FormDataTemplates = observer(
                           },
                         },
                       ],
+                    },
+                    syncFromForm: {
+                      type: 'void',
+                      'x-component': 'a',
+                      'x-component-props': {
+                        style: { float: 'right', position: 'relative', zIndex: 12000 },
+                        children: '{{ t("Sync from form fields") }}',
+                        onClick: (e) => {
+                          console.log(formSchema);
+                        },
+                      },
                     },
                     fields: {
                       type: 'array',
