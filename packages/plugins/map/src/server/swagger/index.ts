@@ -52,4 +52,24 @@ export default {
       },
     },
   },
+  components: {
+    schemas: {
+      mapConfiguration: {
+        type: 'object',
+        properties: {
+          accessKey: {
+            type: 'string',
+          },
+          securityJsCode: {
+            type: 'string',
+          },
+          type: {
+            type: 'string',
+            default: 'amap',
+            enum: ['amap', 'google'],
+          },
+        },
+      },
+    },
+  },
 };
