@@ -39,7 +39,6 @@ export default class APIDoc extends Plugin {
         if (type === 'nocobase.json') {
           ctx.body = await this.swagger.getSwagger();
         } else if (type === 'core' && index === 'swagger.json') {
-          console.log(type, index);
           ctx.body = await this.swagger.getCoreSwagger();
         } else if (type === 'plugins') {
           ctx.body = await this.swagger.getPluginsSwagger(index === 'swagger.json' ? undefined : index);

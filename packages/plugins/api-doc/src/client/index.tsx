@@ -30,10 +30,8 @@ APIDocumentationProvider.displayName = 'APIDocumentationProvider';
 
 export class APIDocumentationPlugin extends Plugin {
   async load() {
-    console.log('why ?');
     this.app.use(APIDocumentationProvider);
   }
 }
 
 export default APIDocumentationPlugin;
-console.log('why?');

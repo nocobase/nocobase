@@ -3,7 +3,8 @@ import APIDocPlugin from '../server';
 import baseSwagger from './base-swagger';
 import { SchemaTypeMapping } from './constants';
 import { createDefaultActionSwagger, getInterfaceCollection } from './helpers';
-import { getSwaggerDocument, loadSwagger } from './load';
+import { getPluginsSwagger, getSwaggerDocument, loadSwagger } from './loader';
+
 export class SwaggerManager {
   private plugin: APIDocPlugin;
 
@@ -143,18 +144,12 @@ export class SwaggerManager {
   }
 
   async getUrls() {
-    const plugins = await this.db
-      .getRepository('applicationPlugins')
-      .find({
-        filter: {
-          enabled: true,
-        },
-      })
+    const plugins = await getPluginsSwagger(this.db)
       .then((res) => {
-        return res.map((item) => {
+        return Object.keys(res).map((name) => {
           return {
-            name: `NocoBase ${item.get('name')} plugin documentation`,
-            url: `/api/swagger/plugins/${item.get('name')}/swagger.json`,
+            name: `NocoBase ${name} plugin documentation`,
+            url: `/api/swagger/plugins/${name}/swagger.json`,
           };
         });
       })
@@ -170,7 +165,7 @@ export class SwaggerManager {
       },
       {
         name: 'NocoBase Plugins documentation',
-        url: '/api/plugins/swagger.json',
+        url: '/api/swagger/plugins/swagger.json',
       },
       ...plugins,
     ];

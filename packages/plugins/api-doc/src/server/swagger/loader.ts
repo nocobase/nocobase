@@ -23,7 +23,7 @@ export const loadSwagger = (packageName: string) => {
   return swaggers;
 };
 
-export const getSwaggerDocument = async (db: any, pluginNames?: string[]) => {
+export const getPluginsSwagger = async (db: any, pluginNames?: string[]) => {
   const nameFilter = pluginNames ? { name: { $in: pluginNames } } : {};
   const plugins = await db.getRepository('applicationPlugins').find({
     filter: {
@@ -31,11 +31,25 @@ export const getSwaggerDocument = async (db: any, pluginNames?: string[]) => {
       ...nameFilter,
     },
   });
-  let swagger = {};
+  const swaggers = {};
   for (const plugin of plugins) {
     const packageName = PluginManager.getPackageName(plugin.get('name'));
     const res = loadSwagger(packageName);
-    swagger = merge(swagger, res);
+    if (Object.keys(res).length) {
+      swaggers[plugin.get('name')] = res;
+    }
   }
-  return swagger;
+
+  return swaggers;
+};
+
+export const mergeObjects = (objs: any[]) => {
+  return objs.reduce((cur, obj) => {
+    return merge(cur, obj);
+  }, {});
+};
+
+export const getSwaggerDocument = async (db: any, pluginNames?: string[]) => {
+  const swaggers = await getPluginsSwagger(db, pluginNames);
+  return mergeObjects(Object.values(swaggers));
 };
