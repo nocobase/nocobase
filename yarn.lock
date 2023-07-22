@@ -447,7 +447,7 @@
     mousetrap "^1.6.5"
     utility-types "^3.10.0"
 
-"@arvinxu/layout-kit@^1":
+"@arvinxu/layout-kit@^1", "@arvinxu/layout-kit@^1.4.0":
   version "1.4.0"
   resolved "https://registry.npmmirror.com/@arvinxu/layout-kit/-/layout-kit-1.4.0.tgz#8bcb4328a19b76a1aed2614730c330616b6ca29f"
   dependencies:
@@ -24667,7 +24667,7 @@ urllib@^2.33.1:
     statuses "^1.3.1"
     utility "^1.16.1"
 
-use-debouncy@^4.3.0:
+use-debouncy@^4.3.0, use-debouncy@^4.4.0:
   version "4.4.0"
   resolved "https://registry.npmmirror.com/use-debouncy/-/use-debouncy-4.4.0.tgz#b04907e74f3e681beb74cd49784f93376a6511f2"
 
