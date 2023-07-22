@@ -4,7 +4,7 @@
   "license": "AGPL-3.0",
   "main": "./lib/server/index.js",
   "dependencies": {
-    "@nocobase/plugin-api-doc": "0.11.0-alpha.1",
+    "@nocobase/plugin-api-doc": "0.11.1-alpha.1",
     "@nocobase/plugin-acl": "0.11.1-alpha.1",
     "@nocobase/plugin-api-keys": "0.11.1-alpha.1",
     "@nocobase/plugin-audit-logs": "0.11.1-alpha.1",

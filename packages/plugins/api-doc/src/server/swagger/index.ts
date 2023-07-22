@@ -141,4 +141,38 @@ export class SwaggerManager {
   async getCoreSwagger() {
     return merge(await this.getBaseSwagger(), await loadSwagger('@nocobase/server'));
   }
+
+  async getUrls() {
+    const plugins = await this.db
+      .getRepository('applicationPlugins')
+      .find({
+        filter: {
+          enabled: true,
+        },
+      })
+      .then((res) => {
+        return res.map((item) => {
+          return {
+            name: `NocoBase ${item.get('name')} plugin documentation`,
+            url: `/api/swagger/plugins/${item.get('name')}/swagger.json`,
+          };
+        });
+      })
+      .catch(() => []);
+    return [
+      {
+        name: 'NocoBase documentation',
+        url: '/api/swagger/nocobase.json',
+      },
+      {
+        name: 'NocoBase Core documentation',
+        url: '/api/swagger/core/swagger.json',
+      },
+      {
+        name: 'NocoBase Plugins documentation',
+        url: '/api/plugins/swagger.json',
+      },
+      ...plugins,
+    ];
+  }
 }
