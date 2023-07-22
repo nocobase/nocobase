@@ -33,7 +33,9 @@ export const getSupportFieldsByForeignKey = (
   block: DataBlock,
 ) => {
   return block.foreignKeyFields?.filter((foreignKeyField) => {
-    return filterBlockCollection.fields.some((field) => field.foreignKey === foreignKeyField.name);
+    return filterBlockCollection.fields.some(
+      (field) => field.type !== 'belongsTo' && field.foreignKey === foreignKeyField.name,
+    );
   });
 };
 
