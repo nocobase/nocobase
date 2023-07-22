@@ -24,9 +24,16 @@ export default class APIDoc extends Plugin {
         return send(ctx, filename, { root });
       }
 
-      if (ctx.path.startsWith('/api/swagger.json')) {
+      const { path } = ctx;
+
+      if (path.startsWith('/api/swagger/')) {
         ctx.withoutDataWrapping = true;
-        ctx.body = await this.swagger.getSwagger();
+        const [type, index] = path.split('/').slice(3);
+        if (type === 'nocobase.json') {
+          ctx.body = await this.swagger.getSwagger();
+        } else if (type === 'plugins') {
+          ctx.body = await this.swagger.getSwaggerByPlugin(index);
+        }
       }
       await next();
     });

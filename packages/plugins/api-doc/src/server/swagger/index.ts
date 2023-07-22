@@ -120,21 +120,21 @@ export class SwaggerManager {
     return paths;
   }
 
-  private loadSwaggers() {
-    return getSwaggerDocument(this.db);
+  private loadSwaggers(plugins: string[]) {
+    return getSwaggerDocument(this.db, plugins);
   }
 
-  async generateSwagger() {
-    const newSchemas = {
-      paths: await this.generateCollectionBuiltInInterface(),
-      components: {
-        schemas: await this.generateSchemas(),
-      },
-    };
-    return merge(merge(await this.getBaseSwagger(), newSchemas), await this.loadSwaggers());
+  async generateSwagger(options: { plugins?: string[] } = {}) {
+    return merge(await this.getBaseSwagger(), await this.loadSwaggers(options.plugins));
   }
 
   async getSwagger() {
     return this.generateSwagger();
+  }
+
+  async getSwaggerByPlugin(pluginName?: string) {
+    return this.generateSwagger({
+      plugins: pluginName ? [pluginName] : undefined,
+    });
   }
 }

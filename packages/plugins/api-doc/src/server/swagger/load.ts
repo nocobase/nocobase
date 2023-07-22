@@ -23,10 +23,12 @@ const loadSwagger = (packageName: string) => {
   return swaggers;
 };
 
-export const getSwaggerDocument = async (db: any) => {
+export const getSwaggerDocument = async (db: any, pluginNames?: string[]) => {
+  const nameFilter = pluginNames ? { name: { $in: pluginNames } } : {};
   const plugins = await db.getRepository('applicationPlugins').find({
     filter: {
       enabled: true,
+      ...nameFilter,
     },
   });
   let swagger = {};
