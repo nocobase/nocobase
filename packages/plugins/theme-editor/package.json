@@ -7,18 +7,27 @@
   "description": "Allows you to customize UI colors, sizes, etc.",
   "description.zh-CN": "允许你自定义 UI 的颜色、尺寸等。",
   "dependencies": {
-    "@nocobase/client": "0.11.1-alpha.1",
-    "@nocobase/server": "0.11.1-alpha.1",
-    "tinycolor2": "^1.6.0",
+    "rc-util": "^5.32.0",
+    "react-colorful": "^5.5.1",
+    "classnames": "^2.3.1",
+    "use-debouncy": "^4.3.0",
+    "antd-token-previewer": "2.0.0-alpha.8",
     "vanilla-jsoneditor": "^0.17.8",
-    "react-colorful": "^5.6.1",
-    "@arvinxu/layout-kit": "^1.4.0",
-    "use-debouncy": "^4.4.0"
+    "tinycolor2": "^1.6.0",
+    "@ctrl/tinycolor": "^3.6.0",
+    "@arvinxu/layout-kit": "^1"
   },
   "devDependencies": {
-    "@ctrl/tinycolor": "^3.6.0",
-    "@emotion/css": "^11.11.2",
     "antd": "^5.6.4",
-    "react": "^18.0.0"
+    "lodash": "4.17.21",
+    "@emotion/css": "^11.11.2",
+    "@ant-design/icons": "^5.1.4",
+    "@ant-design/cssinjs": "^1.11.1",
+    "react": "^18.2.0",
+    "@nocobase/client": "0.11.1-alpha.1",
+    "@nocobase/utils": "0.11.1-alpha.1",
+    "@nocobase/database": "0.11.1-alpha.1",
+    "@nocobase/server": "0.11.1-alpha.1",
+    "@nocobase/test": "0.11.1-alpha.1"
   }
 }
