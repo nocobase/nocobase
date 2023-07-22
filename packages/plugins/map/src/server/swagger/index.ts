@@ -3,7 +3,7 @@ export default {
     '/map-configuration:get': {
       get: {
         description: 'Get map configuration',
-        tags: ['mapConfiguration'],
+        tags: ['map-configuration'],
         parameters: [
           {
             name: 'type',
@@ -34,7 +34,7 @@ export default {
     '/map-configuration:set': {
       post: {
         description: '设置·地图配置',
-        tags: ['mapConfiguration'],
+        tags: ['map-configuration'],
         requestBody: {
           content: {
             'application/json': {
