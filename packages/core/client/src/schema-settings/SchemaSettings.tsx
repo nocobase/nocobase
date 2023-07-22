@@ -57,7 +57,13 @@ import {
   useLinkageCollectionFilterOptions,
 } from '..';
 import { findFilterTargets, updateFilterTargets } from '../block-provider/hooks';
-import { FilterBlockType, isSameCollection, useSupportedBlocks } from '../filter-provider/utils';
+import {
+  FilterBlockType,
+  getSupportFieldsByAssociation,
+  getSupportFieldsByForeignKey,
+  isSameCollection,
+  useSupportedBlocks,
+} from '../filter-provider/utils';
 import { useCollectMenuItem, useCollectMenuItems, useMenuItem } from '../hooks/useMenuItem';
 import { getTargetKey } from '../schema-component/antd/association-filter/utilts';
 import { useSchemaTemplateManager } from '../schema-templates';
@@ -608,14 +614,18 @@ SchemaSettings.ConnectDataBlocks = function ConnectDataBlocks(props: {
         title={title}
         value={target?.field || ''}
         options={[
-          ...block.associatedFields
-            .filter((field) => field.target === collection.name)
-            .map((field) => {
-              return {
-                label: compile(field.uiSchema.title) || field.name,
-                value: `${field.name}.${getTargetKey(field)}`,
-              };
-            }),
+          ...getSupportFieldsByAssociation(collection, block).map((field) => {
+            return {
+              label: compile(field.uiSchema.title) || field.name,
+              value: `${field.name}.${getTargetKey(field)}`,
+            };
+          }),
+          ...getSupportFieldsByForeignKey(collection, block).map((field) => {
+            return {
+              label: `${compile(field.uiSchema.title) || field.name} [${t('Foreign key')}]`,
+              value: field.name,
+            };
+          }),
           {
             label: t('Unconnected'),
             value: '',

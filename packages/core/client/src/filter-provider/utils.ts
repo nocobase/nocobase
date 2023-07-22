@@ -7,7 +7,7 @@ import { FilterTarget, findFilterTargets } from '../block-provider/hooks';
 import { Collection, CollectionFieldOptions, FieldOptions, useCollection } from '../collection-manager';
 import { removeNullCondition } from '../schema-component';
 import { findFilterOperators } from '../schema-component/antd/form-item/SchemaSettingOptions';
-import { useFilterBlock } from './FilterProvider';
+import { DataBlock, useFilterBlock } from './FilterProvider';
 
 export enum FilterBlockType {
   FORM,
@@ -15,6 +15,22 @@ export enum FilterBlockType {
   TREE,
   COLLAPSE,
 }
+
+export const getSupportFieldsByAssociation = (
+  filterBlockCollection: ReturnType<typeof useCollection>,
+  block: DataBlock,
+) => {
+  return block.associatedFields?.filter((field) => field.target === filterBlockCollection.name);
+};
+
+export const getSupportFieldsByForeignKey = (
+  filterBlockCollection: ReturnType<typeof useCollection>,
+  block: DataBlock,
+) => {
+  return block.foreignKeyFields?.filter((foreignKeyField) => {
+    return filterBlockCollection.fields.some((field) => field.foreignKey === foreignKeyField.name);
+  });
+};
 
 /**
  * 根据筛选区块类型筛选出支持的数据区块（同表或具有关系字段的表）
@@ -36,10 +52,14 @@ export const useSupportedBlocks = (filterBlockType: FilterBlockType) => {
   // Table 和 Tree 支持同表或者关系表的数据区块
   if (filterBlockType === FilterBlockType.TABLE || filterBlockType === FilterBlockType.TREE) {
     return getDataBlocks().filter((block) => {
+      // 1. 同表
+      // 2. 关系字段
+      // 3. 外键字段
       return (
         fieldSchema['x-uid'] !== block.uid &&
         (isSameCollection(block.collection, collection) ||
-          block.associatedFields.some((field) => field.target === collection.name))
+          getSupportFieldsByAssociation(collection, block)?.length ||
+          getSupportFieldsByForeignKey(collection, block)?.length)
       );
     });
   }
