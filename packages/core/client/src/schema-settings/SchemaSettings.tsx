@@ -550,6 +550,7 @@ SchemaSettings.ConnectDataBlocks = function ConnectDataBlocks(props: {
   // eslint-disable-next-line prefer-const
   let { targets = [], uid } = findFilterTargets(fieldSchema);
   const compile = useCompile();
+  const { getInheritCollectionsChain } = useCollectionManager();
 
   if (!inProvider) {
     return null;
@@ -614,7 +615,7 @@ SchemaSettings.ConnectDataBlocks = function ConnectDataBlocks(props: {
         title={title}
         value={target?.field || ''}
         options={[
-          ...getSupportFieldsByAssociation(collection, block).map((field) => {
+          ...getSupportFieldsByAssociation(getInheritCollectionsChain(collection.name), block).map((field) => {
             return {
               label: compile(field.uiSchema.title) || field.name,
               value: `${field.name}.${getTargetKey(field)}`,

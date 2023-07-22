@@ -4,7 +4,13 @@ import _ from 'lodash';
 import { useCallback, useEffect, useState } from 'react';
 import { mergeFilter } from '../block-provider';
 import { FilterTarget, findFilterTargets } from '../block-provider/hooks';
-import { Collection, CollectionFieldOptions, FieldOptions, useCollection } from '../collection-manager';
+import {
+  Collection,
+  CollectionFieldOptions,
+  FieldOptions,
+  useCollection,
+  useCollectionManager,
+} from '../collection-manager';
 import { removeNullCondition } from '../schema-component';
 import { findFilterOperators } from '../schema-component/antd/form-item/SchemaSettingOptions';
 import { DataBlock, useFilterBlock } from './FilterProvider';
@@ -16,11 +22,10 @@ export enum FilterBlockType {
   COLLAPSE,
 }
 
-export const getSupportFieldsByAssociation = (
-  filterBlockCollection: ReturnType<typeof useCollection>,
-  block: DataBlock,
-) => {
-  return block.associatedFields?.filter((field) => field.target === filterBlockCollection.name);
+export const getSupportFieldsByAssociation = (inheritCollectionsChain: string[], block: DataBlock) => {
+  return block.associatedFields?.filter((field) =>
+    inheritCollectionsChain.some((collectionName) => collectionName === field.target),
+  );
 };
 
 export const getSupportFieldsByForeignKey = (
@@ -41,6 +46,7 @@ export const useSupportedBlocks = (filterBlockType: FilterBlockType) => {
   const { getDataBlocks } = useFilterBlock();
   const fieldSchema = useFieldSchema();
   const collection = useCollection();
+  const { getInheritCollectionsChain } = useCollectionManager();
 
   // Form 和 Collapse 仅支持同表的数据区块
   if (filterBlockType === FilterBlockType.FORM || filterBlockType === FilterBlockType.COLLAPSE) {
@@ -58,7 +64,7 @@ export const useSupportedBlocks = (filterBlockType: FilterBlockType) => {
       return (
         fieldSchema['x-uid'] !== block.uid &&
         (isSameCollection(block.collection, collection) ||
-          getSupportFieldsByAssociation(collection, block)?.length ||
+          getSupportFieldsByAssociation(getInheritCollectionsChain(collection.name), block)?.length ||
           getSupportFieldsByForeignKey(collection, block)?.length)
       );
     });
