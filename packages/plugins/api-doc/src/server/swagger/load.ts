@@ -1,7 +1,7 @@
 import { PluginManager } from '@nocobase/server';
 import { merge } from '@nocobase/utils';
 
-const loadSwagger = (packageName: string) => {
+export const loadSwagger = (packageName: string) => {
   let swaggers = {};
   const prefixes = ['src', 'lib'];
   const targets = ['swagger.ts', 'swagger', 'server/swagger'];

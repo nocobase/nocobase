@@ -3,7 +3,7 @@ import APIDocPlugin from '../server';
 import baseSwagger from './base-swagger';
 import { SchemaTypeMapping } from './constants';
 import { createDefaultActionSwagger, getInterfaceCollection } from './helpers';
-import { getSwaggerDocument } from './load';
+import { getSwaggerDocument, loadSwagger } from './load';
 export class SwaggerManager {
   private plugin: APIDocPlugin;
 
@@ -132,9 +132,13 @@ export class SwaggerManager {
     return this.generateSwagger();
   }
 
-  async getSwaggerByPlugin(pluginName?: string) {
+  async getPluginsSwagger(pluginName?: string) {
     return this.generateSwagger({
       plugins: pluginName ? [pluginName] : undefined,
     });
+  }
+
+  async getCoreSwagger() {
+    return merge(await this.getBaseSwagger(), await loadSwagger('@nocobase/server'));
   }
 }
