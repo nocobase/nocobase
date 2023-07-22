@@ -1,7 +1,12 @@
-import Database, { Repository } from '@nocobase/database';
+import Database, {
+  BelongsToManyRepository,
+  BelongsToRepository,
+  HasManyRepository,
+  Repository,
+} from '@nocobase/database';
 import Application from '@nocobase/server';
-import { createApp } from '..';
 import { pgOnly } from '@nocobase/test';
+import { createApp } from '..';
 
 pgOnly()('Inherited Collection', () => {
   let db: Database;
@@ -12,7 +17,11 @@ pgOnly()('Inherited Collection', () => {
   let fieldsRepository: Repository;
 
   beforeEach(async () => {
-    app = await createApp();
+    app = await createApp({
+      database: {
+        prefix: '',
+      },
+    });
 
     db = app.db;
 
@@ -22,6 +31,237 @@ pgOnly()('Inherited Collection', () => {
 
   afterEach(async () => {
     await app.destroy();
+  });
+
+  it('should return child model at get action in belongsTo', async () => {
+    await collectionRepository.create({
+      values: {
+        name: 'parent',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await collectionRepository.create({
+      values: {
+        name: 'child',
+        fields: [{ type: 'string', name: 'childName' }],
+        inherits: ['parent'],
+      },
+      context: {},
+    });
+
+    await collectionRepository.create({
+      values: {
+        name: 'users',
+        fields: [
+          { type: 'string', name: 'name' },
+          { type: 'belongsTo', name: 'assoc', target: 'parent' },
+        ],
+      },
+      context: {},
+    });
+
+    const child1 = await db.getRepository('child').create({
+      values: {
+        name: 'child1',
+        childName: 'child1',
+      },
+    });
+
+    const parent1 = await db.getRepository('parent').create({
+      values: {
+        name: 'parent1',
+      },
+    });
+
+    const user1 = await db.getRepository('users').create({
+      values: {
+        name: 'user1',
+        assoc: { id: child1.id },
+      },
+    });
+
+    const child1ViaObject1 = await db.getRepository<BelongsToRepository>('users.assoc', user1.get('id')).findOne({
+      targetCollection: 'child',
+    });
+
+    expect(child1ViaObject1.get('childName')).toBe('child1');
+    expect(child1ViaObject1.get('__collection')).toBe('child');
+
+    await db.getRepository<BelongsToRepository>('users.assoc', user1.get('id')).update({
+      values: {
+        childName: 'child2',
+        __collection: 'child',
+      },
+    });
+
+    const child2 = await db.getRepository<BelongsToRepository>('users.assoc', user1.get('id')).findOne({
+      targetCollection: 'child',
+    });
+
+    expect(child2.get('childName')).toBe('child2');
+  });
+
+  it('should return child model at get action in belongsToMany', async () => {
+    await collectionRepository.create({
+      values: {
+        name: 'parent',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await collectionRepository.create({
+      values: {
+        name: 'child',
+        fields: [{ type: 'string', name: 'childName' }],
+        inherits: ['parent'],
+      },
+      context: {},
+    });
+
+    await collectionRepository.create({
+      values: {
+        name: 'object',
+        fields: [
+          { type: 'string', name: 'name' },
+          { type: 'belongsToMany', name: 'assocs', target: 'parent' },
+        ],
+      },
+
+      context: {},
+    });
+
+    const child1 = await db.getRepository('child').create({
+      values: {
+        name: 'child1',
+        childName: 'child1',
+      },
+    });
+
+    const parent1 = await db.getRepository('parent').create({
+      values: {
+        name: 'parent1',
+      },
+    });
+
+    const object1 = await db.getRepository('object').create({
+      values: {
+        name: 'object1',
+        assocs: [{ id: parent1.id }, { id: child1.id }],
+      },
+    });
+
+    const child1ViaObject1 = await db.getRepository<BelongsToManyRepository>('object.assocs', object1.id).findOne({
+      filterByTk: child1.get('id'),
+      targetCollection: 'child',
+    });
+
+    expect(child1ViaObject1.get('childName')).toBe('child1');
+  });
+
+  it('should return child model at get action in hasMany', async () => {
+    await collectionRepository.create({
+      values: {
+        name: 'parent',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await collectionRepository.create({
+      values: {
+        name: 'child',
+        fields: [{ type: 'string', name: 'childName' }],
+        inherits: ['parent'],
+      },
+      context: {},
+    });
+
+    await collectionRepository.create({
+      values: {
+        name: 'object',
+        fields: [
+          { type: 'string', name: 'name' },
+          { type: 'hasMany', name: 'assocs', target: 'parent', foreignKey: 'object_id' },
+        ],
+      },
+
+      context: {},
+    });
+
+    const child1 = await db.getRepository('child').create({
+      values: {
+        name: 'child1',
+        childName: 'child1',
+      },
+    });
+
+    const parent1 = await db.getRepository('parent').create({
+      values: {
+        name: 'parent1',
+      },
+    });
+
+    const object1 = await db.getRepository('object').create({
+      values: {
+        name: 'object1',
+        assocs: [{ id: parent1.id }, { id: child1.id }],
+      },
+    });
+
+    const child1ViaObject1 = await db.getRepository<HasManyRepository>('object.assocs', object1.id).findOne({
+      filterByTk: child1.get('id'),
+      targetCollection: 'child',
+    });
+
+    expect(child1ViaObject1.get('childName')).toBe('child1');
+
+    await db.getRepository<HasManyRepository>('object.assocs', object1.id).update({
+      filterByTk: child1.get('id'),
+      targetCollection: 'child',
+      values: {
+        childName: 'child2',
+      },
+    });
+
+    const child2 = await db.getRepository<HasManyRepository>('object.assocs', object1.id).findOne({
+      filterByTk: child1.get('id'),
+      targetCollection: 'child',
+    });
+
+    expect(child2.get('childName')).toBe('child2');
+
+    await db.getRepository<HasManyRepository>('object.assocs', object1.id).update({
+      filterByTk: child1.get('id'),
+      values: {
+        __collection: 'child',
+        childName: 'child3',
+      },
+    });
+
+    const child3 = await db.getRepository<HasManyRepository>('object.assocs', object1.id).findOne({
+      filterByTk: child1.get('id'),
+      targetCollection: 'child',
+    });
+
+    expect(child3.get('childName')).toBe('child3');
   });
 
   it('should update overridden multiple select field', async () => {

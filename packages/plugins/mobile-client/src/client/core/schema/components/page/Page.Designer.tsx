@@ -26,8 +26,8 @@ export const PageDesigner = (props) => {
       title={
         <Button
           style={{
-            borderColor: 'rgb(241, 139, 98)',
-            color: 'rgb(241, 139, 98)',
+            borderColor: 'var(--colorSettings)',
+            color: 'var(--colorSettings)',
             width: '100%',
           }}
           icon={<MenuOutlined />}

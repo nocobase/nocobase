@@ -1,12 +1,16 @@
+import { Collection } from '@nocobase/database';
 import { InstallOptions, Plugin } from '@nocobase/server';
+import { antd, compact, compactDark, dark } from './builtinThemes';
 
 export class ThemeEditorPlugin extends Plugin {
+  theme: Collection<any, any>;
+
   afterAdd() {}
 
   beforeLoad() {}
 
   async load() {
-    this.db.collection({
+    this.theme = this.db.collection({
       name: 'themeConfig',
       fields: [
         // 主题配置内容，一个 JSON 字符串
@@ -27,7 +31,13 @@ export class ThemeEditorPlugin extends Plugin {
     });
   }
 
-  async install(options?: InstallOptions) {}
+  async install(options?: InstallOptions) {
+    if ((await this.theme.repository.count()) === 0) {
+      await this.theme.repository.create({
+        values: [antd, dark, compact, compactDark],
+      });
+    }
+  }
 
   async afterEnable() {}
 

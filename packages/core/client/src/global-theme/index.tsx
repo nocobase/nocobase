@@ -1,8 +1,9 @@
-import { ConfigProvider, theme as antdTheme, type ThemeConfig as Config } from 'antd';
+import { ConfigProvider, theme as antdTheme } from 'antd';
 import _ from 'lodash';
 import React, { createContext, useCallback, useMemo, useRef } from 'react';
-
-type ThemeConfig = Config & { name?: string; algorithm?: string | Config['algorithm'] };
+import compatOldTheme from './compatOldTheme';
+import defaultTheme from './defaultTheme';
+import { ThemeConfig } from './type';
 
 interface ThemeItem {
   id: number;
@@ -27,8 +28,8 @@ export const useGlobalTheme = () => {
   return React.useContext(GlobalThemeContext);
 };
 
-export const GlobalThemeProvider = ({ children, theme: defaultTheme }) => {
-  const [theme, setTheme] = React.useState<ThemeConfig>(defaultTheme || { name: 'Custom theme' });
+export const GlobalThemeProvider = ({ children, theme: themeFromProps }) => {
+  const [theme, setTheme] = React.useState<ThemeConfig>(themeFromProps || defaultTheme);
   const currentSettingThemeRef = useRef<ThemeConfig>(null);
   const currentEditingThemeRef = useRef<ThemeItem>(null);
 
@@ -77,9 +78,13 @@ export const GlobalThemeProvider = ({ children, theme: defaultTheme }) => {
 
   return (
     <GlobalThemeContext.Provider value={value}>
-      <ConfigProvider theme={theme}>{children}</ConfigProvider>
+      <ConfigProvider theme={compatOldTheme(theme)}>{children}</ConfigProvider>
     </GlobalThemeContext.Provider>
   );
 };
 
 export { default as AntdAppProvider } from './AntdAppProvider';
+export { default as compatOldTheme } from './compatOldTheme';
+export * from './type';
+export { defaultTheme };
+

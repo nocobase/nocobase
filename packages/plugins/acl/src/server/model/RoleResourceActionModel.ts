@@ -46,7 +46,7 @@ export class RoleResourceActionModel extends Model {
       const collectionField = collection.getField(field);
 
       if (!collectionField) {
-        console.log(`${field} does not exist`);
+        console.log(`field ${field} does not exist at ${collection.name}`);
         continue;
       }
 
