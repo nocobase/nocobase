@@ -10,7 +10,7 @@ export interface IncomingRequest {
   headers: any;
 }
 
-export type AppSelector = (req: IncomingMessage) => AppSelectorReturn | Promise<AppSelectorReturn>;
+export type AppSelector = (req: IncomingRequest) => AppSelectorReturn | Promise<AppSelectorReturn>;
 
 export class Gateway extends EventEmitter {
   private static instance: Gateway;
