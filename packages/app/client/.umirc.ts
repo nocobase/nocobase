@@ -1,5 +1,6 @@
-import { getUmiConfig } from '@nocobase/devtools/umiConfig';
+import { getUmiConfig, PluginIndexGeneratorPlugin } from '@nocobase/devtools/umiConfig';
 import { defineConfig } from 'umi';
+import path from 'path';
 
 const umiConfig = getUmiConfig();
 
@@ -51,6 +52,11 @@ export default defineConfig({
     safari: 12,
   },
   chainWebpack(config, { env }) {
+    config.plugin('plugin index generator')
+      .use(PluginIndexGeneratorPlugin, [
+        path.join(__dirname, 'src', '.plugins', 'index.ts'),
+        path.join(process.cwd(), 'packages', 'plugins'),
+      ]);
     if (env === 'production') {
       config.plugin('ignore nocobase plugins')
         .use(require('webpack').IgnorePlugin, [

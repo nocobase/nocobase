@@ -3,6 +3,7 @@ const { resolve, sep } = require('path');
 const packageJson = require('./package.json');
 const fs = require('fs');
 const glob = require('glob');
+const path = require('path');
 
 console.log('VERSION: ', packageJson.version);
 
@@ -95,5 +96,62 @@ function resolveNocobasePackagesAlias(config) {
   }
 }
 
+class PluginIndexGeneratorPlugin {
+  constructor(outputPath, pluginsPath) {
+    this.outputPath = outputPath;
+    this.pluginsPath = pluginsPath;
+  }
+
+  apply(compiler) {
+    compiler.hooks.entryOption.tap('PluginIndexGeneratorPlugin', () => {
+      if (process.env.NODE_ENV === 'production') {
+        fs.writeFileSync(this.outputPath, 'export default {}');
+        return;
+      }
+      this.generatePluginIndex();
+      fs.watch(this.pluginsPath, { recursive: false }, (eventType, fileName) => {
+        this.generatePluginIndex();
+      })
+    });
+  }
+
+  generatePluginIndex() {
+    if (!fs.existsSync(this.pluginsPath)) {
+      return;
+    }
+    if (!fs.existsSync(this.outputPath)) {
+      fs.mkdirSync(path.dirname(this.outputPath), { recursive: true });
+    }
+
+
+    const pluginFolders = fs.readdirSync(this.pluginsPath);
+    const pluginImports = pluginFolders.filter((folder) => {
+      const pluginPackageJsonPath = path.join(this.pluginsPath, folder, 'package.json');
+      const pluginSrcClientPath = path.join(this.pluginsPath, folder, 'src', 'client');
+      return fs.existsSync(pluginPackageJsonPath) && fs.existsSync(pluginSrcClientPath);
+    }).map((folder, index) => {
+      const pluginPackageJsonPath = path.join(this.pluginsPath, folder, 'package.json');
+      const pluginPackageJson = require(pluginPackageJsonPath);
+      const pluginSrcClientPath = path.relative(path.dirname(this.outputPath), path.join(this.pluginsPath, folder, 'src', 'client')).replaceAll('\\', '/');
+      const pluginName = `plugin${index}`
+      const importStatement = `import ${pluginName} from '${pluginSrcClientPath}';`;
+      return { importStatement, pluginName, packageJsonName: pluginPackageJson.name };
+    });
+
+    const indexContent = pluginImports
+      .map(({ importStatement }) => importStatement)
+      .join('\n');
+
+    const exportContent = pluginImports
+      .map(({ pluginName, packageJsonName }) => `  "${packageJsonName}": ${pluginName},`)
+      .join('\n');
+
+    const fileContent = `${indexContent}\n\nexport default {\n${exportContent}\n}`;
+
+    fs.writeFileSync(this.outputPath, fileContent);
+  }
+}
+
 exports.getUmiConfig = getUmiConfig;
 exports.resolveNocobasePackagesAlias = resolveNocobasePackagesAlias;
+exports.PluginIndexGeneratorPlugin = PluginIndexGeneratorPlugin;

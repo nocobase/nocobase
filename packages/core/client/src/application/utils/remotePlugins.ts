@@ -91,7 +91,17 @@ export function initDeps(requirejs: any) {
   requirejs.define('dayjs', () => dayjs);
 }
 
-export function getRemotePlugins(pluginData: PluginData[] = [], baseURL = ''): Promise<(typeof Plugin)[]> {
+export function defineDevPlugins(requirejs: any, plugins: Record<string, typeof Plugin>) {
+  Object.entries(plugins).forEach(([name, plugin]) => {
+    requirejs.define(name, () => plugin);
+  });
+}
+
+export function getRemotePlugins(
+  requirejs: any,
+  pluginData: PluginData[] = [],
+  baseURL = '',
+): Promise<(typeof Plugin)[]> {
   if (baseURL.endsWith('/')) {
     baseURL = baseURL.slice(0, -1);
   }
@@ -99,10 +109,6 @@ export function getRemotePlugins(pluginData: PluginData[] = [], baseURL = ''): P
     baseURL = baseURL.slice(0, -4);
   }
 
-  const requirejs: any = getRequireJs();
-  (window as any).define = requirejs.define;
-
-  initDeps(requirejs);
   requirejs.requirejs.config({
     paths: pluginData.reduce<Record<string, string>>((memo, item) => {
       memo[item.packageName] = `${baseURL}${item.url}`;
@@ -124,26 +130,30 @@ export function getRemotePlugins(pluginData: PluginData[] = [], baseURL = ''): P
 
 export async function getPlugins(
   pluginData: PluginData[],
-  dynamicImport: any,
   baseURL: string,
+  devPlugins: Record<string, typeof Plugin> = {},
 ): Promise<(typeof Plugin)[]> {
   if (pluginData.length === 0) return [];
+
+  const requirejs: any = getRequireJs();
+  (window as any).define = requirejs.define;
+
+  initDeps(requirejs);
   if (process.env.NODE_ENV === 'development' && !process.env.USE_REMOTE_PLUGIN) {
     const plugins = [];
-    const localPlugins = pluginData.filter((item) => item.type === 'local');
-    const remotePlugins = pluginData.filter((item) => item.type !== 'local');
-    plugins.push(
-      ...(await Promise.all(localPlugins.map((item) => dynamicImport(item.name).then((item) => item.default || item)))),
-    );
 
+    defineDevPlugins(requirejs, devPlugins);
+    const localPlugins = pluginData.map((item) => devPlugins[item.packageName]);
+    const remotePlugins = pluginData.filter((item) => !devPlugins[item.packageName]);
+    plugins.push(...localPlugins);
     if (remotePlugins.length === 0) {
       return plugins;
     } else {
-      const remotePluginList = await getRemotePlugins(remotePlugins, baseURL);
+      const remotePluginList = await getRemotePlugins(requirejs, remotePlugins, baseURL);
       plugins.push(...remotePluginList);
       return plugins;
     }
   }
 
-  return getRemotePlugins(pluginData, baseURL);
+  return getRemotePlugins(requirejs, pluginData, baseURL);
 }

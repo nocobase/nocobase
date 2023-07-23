@@ -196,7 +196,6 @@ export class ClientPlugin extends Plugin {
                 return {
                   ...item.toJSON(),
                   packageName,
-                  type: 'local',
                   url: getPackageClientStaticUrl(packageName, 'index'),
                 };
               } catch {

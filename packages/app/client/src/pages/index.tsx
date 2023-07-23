@@ -1,14 +1,13 @@
 import { Application } from '@nocobase/client';
 import { NocoBaseClientPresetPlugin } from '@nocobase/preset-nocobase/client';
+import devPlugins from '../.plugins/index';
 
 export const app = new Application({
   apiClient: {
     baseURL: process.env.API_BASE_URL,
   },
-  dynamicImport: (name: string) => {
-    return import(`../plugins/${name}`);
-  },
   plugins: [NocoBaseClientPresetPlugin],
+  devPlugins,
 });
 
 export default app.getRootComponent();

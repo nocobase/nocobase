@@ -20,3 +20,4 @@ export declare function getUmiConfig(): {
 };
 
 export declare function resolveNocobasePackagesAlias(config: any): {};
+export declare function PluginIndexGeneratorPlugin(outputPath: string, pluginsPath: string): void;

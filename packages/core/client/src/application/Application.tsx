@@ -9,6 +9,7 @@ import { I18nextProvider } from 'react-i18next';
 import { Link, NavLink, Navigate } from 'react-router-dom';
 import { APIClient, APIClientProvider } from '../api-client';
 import { i18n } from '../i18n';
+import type { Plugin } from './Plugin';
 import { PluginManager, PluginType } from './PluginManager';
 import { ComponentTypeAndString, RouterManager, RouterOptions } from './RouterManager';
 import { AppComponent, BlankComponent, defaultAppComponents } from './components';
@@ -23,7 +24,7 @@ export interface ApplicationOptions {
   components?: Record<string, ComponentType>;
   scopes?: Record<string, any>;
   router?: RouterOptions;
-  dynamicImport?: any;
+  devPlugins?: Record<string, typeof Plugin>;
 }
 
 export class Application {
@@ -34,8 +35,10 @@ export class Application {
   public apiClient: APIClient;
   public components: Record<string, ComponentType> = { ...defaultAppComponents };
   public pm: PluginManager;
+  public devPlugins: Record<string, typeof Plugin> = {};
 
   constructor(protected options: ApplicationOptions = {}) {
+    this.devPlugins = options.devPlugins || {};
     this.scopes = merge(this.scopes, options.scopes);
     this.components = merge(this.components, options.components);
     this.apiClient = new APIClient(options.apiClient);
@@ -61,10 +64,6 @@ export class Application {
       Navigate: Navigate as ComponentType,
       NavLink,
     });
-  }
-
-  get dynamicImport() {
-    return this.options.dynamicImport;
   }
 
   getComposeProviders() {
