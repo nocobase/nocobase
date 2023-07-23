@@ -6,7 +6,7 @@
   "description.zh-CN": "为数据库或数据管理系统提供自动生成唯一序列值的功能。",
   "version": "0.11.1-alpha.2",
   "license": "AGPL-3.0",
-  "main": "./lib/server/index.js",
+  "main": "./dist/server/index.js",
   "files": [
     "lib",
     "src",

@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/plugin-theme-editor",
   "version": "0.11.1-alpha.2",
-  "main": "lib/server/index.js",
+  "main": "dist/server/index.js",
   "displayName": "Theme editor",
   "displayName.zh-CN": "主题编辑器",
   "description": "Allows you to customize UI colors, sizes, etc.",

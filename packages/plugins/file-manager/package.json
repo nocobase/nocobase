@@ -6,7 +6,7 @@
   "description": "file management plugin.",
   "description.zh-CN": "文件管理。",
   "license": "AGPL-3.0",
-  "main": "./lib/server/index.js",
+  "main": "./dist/server/index.js",
   "files": [
     "lib",
     "src",

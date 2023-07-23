@@ -6,7 +6,7 @@
   "description.zh-CN": "在页面上创建和管理iframe，用于嵌入和展示外部网页或内容。",
   "version": "0.11.1-alpha.2",
   "license": "AGPL-3.0",
-  "main": "./lib/server/index.js",
+  "main": "./dist/server/index.js",
   "files": [
     "lib",
     "src",

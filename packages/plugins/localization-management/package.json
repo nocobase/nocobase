@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/plugin-localization-management",
   "version": "0.11.1-alpha.2",
-  "main": "lib/server/index.js",
+  "main": "dist/server/index.js",
   "devDependencies": {
     "deepmerge": "^4.3.1",
     "@nocobase/cache": "0.11.1-alpha.2",

@@ -6,7 +6,7 @@
   "description.zh-CN": "管理和处理应用程序中的错误和异常。",
   "version": "0.11.1-alpha.2",
   "license": "AGPL-3.0",
-  "main": "./lib/server/index.js",
+  "main": "./dist/server/index.js",
   "files": [
     "lib",
     "src",

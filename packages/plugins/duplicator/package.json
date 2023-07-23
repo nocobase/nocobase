@@ -6,7 +6,7 @@
   "description.zh-CN": "NocoBase 应用的备份与还原插件，可用于应用的复制、迁移、升级等场景。",
   "version": "0.11.1-alpha.2",
   "license": "AGPL-3.0",
-  "main": "./lib/server/index.js",
+  "main": "./dist/server/index.js",
   "files": [
     "lib",
     "src",

@@ -5,7 +5,7 @@
   "displayName.zh-CN": "审计日志",
   "description": "audit logs plugin",
   "description.zh-CN": "审计日志。",
-  "main": "./lib/server/index.js",
+  "main": "./dist/server/index.js",
   "files": [
     "lib",
     "src",

@@ -6,7 +6,7 @@
   "description.zh-CN": "为数据库系统提供快速、可靠的数据库备份和恢复功能。。",
   "version": "0.11.1-alpha.2",
   "license": "AGPL-3.0",
-  "main": "./lib/server/index.js",
+  "main": "./dist/server/index.js",
   "files": [
     "lib",
     "src",

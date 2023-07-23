@@ -5,7 +5,7 @@
   "description": "Out-of-the-box, feature-rich chart plugins.",
   "description.zh-CN": "开箱即用、丰富的报表。",
   "version": "0.11.1-alpha.2",
-  "main": "./lib/server/index.js",
+  "main": "./dist/server/index.js",
   "files": [
     "lib",
     "src",
