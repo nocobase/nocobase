@@ -1,4 +1,4 @@
-import { defineCollection, NOW } from '@nocobase/database';
+import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   name: 'service_registry',
@@ -13,9 +13,9 @@ export default defineCollection({
       name: 'value',
     },
     {
-      type: 'date',
-      name: 'updated_at',
-      defaultValue: NOW,
+      type: 'bigInt',
+      name: 'updatedAt',
+      defaultValue: () => Math.floor(Date.now() / 1000) + 15,
     },
   ],
 });

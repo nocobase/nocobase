@@ -30,10 +30,14 @@ export class DatabaseDiscoveryClient extends ServiceDiscoveryClient {
     };
   }
 
-  async getDb() {
+  async getDb(options: any = {}) {
     if (!this.db) {
       const db = new Database(this.databaseOptions());
       db.collection(ServiceRegistryCollection);
+
+      if (options.beforeSync) {
+        await options.beforeSync(db);
+      }
 
       await db.sync({
         force: false,
@@ -65,18 +69,47 @@ export class DatabaseDiscoveryClient extends ServiceDiscoveryClient {
     return Promise.resolve(undefined);
   }
 
-  getServicesByName(serverType: ServiceType, name: string): Promise<RemoteServiceInfo[]> {
-    return Promise.resolve([]);
+  async filterByPrefix(prefix: string) {
+    const collection = await this.getRegistryCollection();
+    const services: RemoteServiceInfo[] = [];
+
+    const rows = await collection.repository.find({
+      filter: {
+        'key.$startsWith': prefix,
+        'updatedAt.$gt': Math.floor(Date.now() / 1000),
+      },
+    });
+
+    for (const row of rows) {
+      const [host, port] = row.value.split(':');
+      const [_prefix, serverType, name, instanceId] = row.key.split(':');
+
+      services.push({
+        instanceId,
+        type: serverType,
+        name,
+        host,
+        port: parseInt(port),
+      });
+    }
+
+    return services;
+  }
+
+  async getServicesByName(serverType: ServiceType, name: string): Promise<RemoteServiceInfo[]> {
+    const keyPrefix = `nocobase:${serverType}:${name}:`;
+    return this.filterByPrefix(keyPrefix);
   }
 
   async listServicesByType(serverType: ServiceType): Promise<Map<string, RemoteServiceInfo[]>> {
-    const keyPrefix = `nocobase:${serverType}:*`;
+    const keyPrefix = `nocobase:${serverType}:`;
     const collection = await this.getRegistryCollection();
     const services = new Map<string, RemoteServiceInfo[]>();
 
     const rows = await collection.repository.find({
       filter: {
         'key.$startsWith': keyPrefix,
+        'updatedAt.$gt': Math.floor(Date.now() / 1000),
       },
     });
 
@@ -110,6 +143,7 @@ export class DatabaseDiscoveryClient extends ServiceDiscoveryClient {
       values: {
         key,
         value: serviceValue,
+        updatedAt: Math.floor(Date.now() / 1000) + 10,
       },
     });
 

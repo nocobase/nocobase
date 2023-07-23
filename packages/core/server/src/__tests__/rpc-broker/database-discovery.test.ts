@@ -2,6 +2,7 @@ import { Database } from '@nocobase/database';
 import { Application, AppSupervisor } from '../../';
 import { RemoteBroker } from '../../rpc-broker/remote-broker';
 import { DatabaseDiscoveryClient } from '../../service-discovery/database-discovery-client';
+
 export const sleep = async (timeout = 0) => {
   return new Promise((resolve) => {
     setTimeout(resolve, timeout);
@@ -15,6 +16,15 @@ describe('database discovery', () => {
   beforeEach(async () => {
     AppSupervisor.getInstance().buildRpcBroker({
       discoveryServerURI: 'db',
+    });
+
+    const remoteBroker = AppSupervisor.getInstance().getRpcBroker() as RemoteBroker;
+    const discoveryClient = remoteBroker.serviceDiscoverClient as DatabaseDiscoveryClient;
+
+    db = await discoveryClient.getDb({
+      beforeSync: async (db) => {
+        await db.clean({ drop: true });
+      },
     });
 
     app = new Application({
@@ -33,12 +43,6 @@ describe('database discovery', () => {
     });
 
     await app.start();
-    const remoteBroker = AppSupervisor.getInstance().getRpcBroker() as RemoteBroker;
-    const discoveryClient = remoteBroker.serviceDiscoverClient as DatabaseDiscoveryClient;
-
-    db = await discoveryClient.getDb();
-
-    await db.clean({ drop: true });
   });
 
   afterEach(async () => {
@@ -68,5 +72,19 @@ describe('database discovery', () => {
     await new Promise((resolve) => setTimeout(resolve, 10000));
     const serviceInfo2 = await discoveryClient.getServicesByName('apps', app.name);
     expect(serviceInfo2.length).toBe(0);
+  });
+
+  it('should keep alive', async () => {
+    const remoteBroker = AppSupervisor.getInstance().getRpcBroker() as RemoteBroker;
+    const discoveryClient = remoteBroker.serviceDiscoverClient;
+    const serviceInfo = await discoveryClient.getServicesByName('apps', app.name);
+    expect(serviceInfo.length).toBe(1);
+    const allServices = await discoveryClient.listServicesByType('apps');
+    expect(allServices.size).toBe(1);
+    expect(allServices.get(app.name).length).toBe(1);
+
+    await new Promise((resolve) => setTimeout(resolve, 15000));
+    const serviceInfo3 = await discoveryClient.getServicesByName('apps', app.name);
+    expect(serviceInfo3.length).toBe(1);
   });
 });
