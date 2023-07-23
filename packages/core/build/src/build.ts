@@ -139,7 +139,7 @@ export async function build(opts: IOpts, extraOpts: IExtraBuildOpts = {}) {
   const isPlugin = pkgName.startsWith('@nocobase/plugin');
 
   // Clean dist
-  if (clean) {
+  if (clean && !isPlugin) {
     log(chalk.gray(`Clean dist directory`));
     rimraf.sync(join(cwd, 'dist'));
   }

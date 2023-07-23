@@ -1,3 +1,1 @@
-export * from './src/client';
-export { default } from './src/client';
-
+export * from './src/client/index';

@@ -105,13 +105,16 @@ class IndexGenerator {
   generate() {
     this.generatePluginIndex();
     if (process.env.NODE_ENV === 'production') return;
-    fs.watch(this.pluginsPath, { recursive: false }, () => {
-      this.generatePluginIndex();
-    })
+    this.pluginsPath.forEach((pluginPath) => {
+      fs.watch(pluginPath, { recursive: false }, () => {
+        this.generatePluginIndex();
+      })
+    });
   }
 
   generatePluginIndex() {
-    if (!fs.existsSync(this.pluginsPath)) {
+    const validPluginPaths = this.pluginsPath.filter((pluginPath) => fs.existsSync(pluginPath))
+    if (!validPluginPaths.length) {
       return;
     }
     if (!fs.existsSync(this.outputPath)) {
@@ -121,16 +124,26 @@ class IndexGenerator {
       fs.writeFileSync(this.outputPath, 'export default {}');
       return;
     }
-    const pluginFolders = fs.readdirSync(this.pluginsPath);
+    const pluginInfo = validPluginPaths.map(pluginPath => this.getContent(pluginPath));
+    const importContent = pluginInfo.map(({ indexContent }) => indexContent).join('\n');
+    const exportContent = pluginInfo.map(({ exportContent }) => exportContent).join('\n');
+
+    const fileContent = `${importContent}\n\nexport default {\n${exportContent}\n}`;
+
+    fs.writeFileSync(this.outputPath, fileContent);
+  }
+
+  getContent(pluginPath) {
+    const pluginFolders = fs.readdirSync(pluginPath);
     const pluginImports = pluginFolders.filter((folder) => {
-      const pluginPackageJsonPath = path.join(this.pluginsPath, folder, 'package.json');
-      const pluginSrcClientPath = path.join(this.pluginsPath, folder, 'src', 'client');
+      const pluginPackageJsonPath = path.join(pluginPath, folder, 'package.json');
+      const pluginSrcClientPath = path.join(pluginPath, folder, 'src', 'client');
       return fs.existsSync(pluginPackageJsonPath) && fs.existsSync(pluginSrcClientPath);
     }).map((folder, index) => {
-      const pluginPackageJsonPath = path.join(this.pluginsPath, folder, 'package.json');
+      const pluginPackageJsonPath = path.join(pluginPath, folder, 'package.json');
       const pluginPackageJson = require(pluginPackageJsonPath);
-      const pluginSrcClientPath = path.relative(path.dirname(this.outputPath), path.join(this.pluginsPath, folder, 'src', 'client')).replaceAll('\\', '/');
-      const pluginName = `plugin${index}`
+      const pluginSrcClientPath = path.relative(path.dirname(this.outputPath), path.join(pluginPath, folder, 'src', 'client')).replaceAll('\\', '/');
+      const pluginName = `${folder.replaceAll('-', '_')}${index}`
       const importStatement = `import ${pluginName} from '${pluginSrcClientPath}';`;
       return { importStatement, pluginName, packageJsonName: pluginPackageJson.name };
     });
@@ -143,9 +156,10 @@ class IndexGenerator {
       .map(({ pluginName, packageJsonName }) => `  "${packageJsonName}": ${pluginName},`)
       .join('\n');
 
-    const fileContent = `${indexContent}\n\nexport default {\n${exportContent}\n}`;
-
-    fs.writeFileSync(this.outputPath, fileContent);
+    return {
+      indexContent,
+      exportContent,
+    }
   }
 }
 

@@ -72,6 +72,17 @@ export function getSourcePackages(sourcePaths: string[]): string[] {
   return getPackagesFromFiles(files);
 }
 
+export function getIncludePackages(sourcePackages: string[], external: string[], pluginPrefix: string[]): string[] {
+  return sourcePackages
+    .filter(packageName => !external.includes(packageName))  // exclude external
+    .filter(packageName => !pluginPrefix.some(prefix => packageName.startsWith(prefix))) // exclude other plugin
+}
+
+export function getExcludePackages(sourcePackages: string[], external: string[], pluginPrefix: string[]): string[] {
+  const includePackages = getIncludePackages(sourcePackages, external, pluginPrefix);
+  return sourcePackages.filter(packageName => !includePackages.includes(packageName))
+}
+
 export function getPackageJson(cwd: string) {
   return JSON.parse(fs.readFileSync(path.join(cwd, 'package.json'), 'utf-8'));
 }

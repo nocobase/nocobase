@@ -46,7 +46,7 @@ const getRealPath = (packageName: string, url: string) => {
   if (ext.toLowerCase() === '.md') {
     return path.join(NODE_MODULES, packageName, filePath);
   } else {
-    return path.join(NODE_MODULES, packageName, 'lib', 'client', filePath);
+    return path.join(NODE_MODULES, packageName, 'dist', 'client', filePath);
   }
 };
 

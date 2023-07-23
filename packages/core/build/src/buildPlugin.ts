@@ -6,7 +6,7 @@ import react from '@vitejs/plugin-react'
 import { build as tsupBuild } from 'tsup'
 import { build as viteBuild } from 'vite'
 import fg from 'fast-glob'
-import { buildCheck, formatFileSize, getFileSize, getPackageJson, getSourcePackages } from './utils/buildPluginUtils';
+import { buildCheck, formatFileSize, getExcludePackages, getFileSize, getIncludePackages, getPackageJson, getSourcePackages } from './utils/buildPluginUtils';
 import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js'
 import { getDepsConfig } from './utils/getDepsConfig';
 
@@ -134,14 +134,12 @@ export async function buildServerDeps(cwd: string, serverFiles: string[], log: L
   log('build server dependencies')
   const outDir = path.join(cwd, target_dir, 'node_modules');
   const sourcePackages = getSourcePackages(serverFiles)
-  const packages = sourcePackages
-    .filter(packageName => !external.includes(packageName))  // exclude external
-    .filter(packageName => !pluginPrefix.some(prefix => packageName.startsWith(prefix))) // exclude other plugin
+  const includePackages = getIncludePackages(sourcePackages, external, pluginPrefix);
+  const excludePackages = getExcludePackages(sourcePackages, external, pluginPrefix)
 
-  const excludePackages = sourcePackages.filter(packageName => !packages.includes(packageName))
   let tips = [];
-  if (packages.length) {
-    tips.push(`These packages ${chalk.yellow(packages.join(', '))} will be ${chalk.bold('bundled')} to dist/node_modules.`)
+  if (includePackages.length) {
+    tips.push(`These packages ${chalk.yellow(includePackages.join(', '))} will be ${chalk.bold('bundled')} to dist/node_modules.`)
   }
   if (excludePackages.length) {
     tips.push(`These packages ${chalk.yellow(excludePackages.join(', '))} will be ${chalk.bold('exclude')}.`)
@@ -149,9 +147,9 @@ export async function buildServerDeps(cwd: string, serverFiles: string[], log: L
   tips.push(`For more information, please refer to: ${chalk.blue('https://docs.nocobase.com/development/deps')}.`)
   log(tips.join(' '))
 
-  if (!packages.length) return;
+  if (!includePackages.length) return;
 
-  const deps = getDepsConfig(cwd, outDir, packages, external);
+  const deps = getDepsConfig(cwd, outDir, includePackages, external);
 
   // bundle deps
   for (const dep of Object.keys(deps)) {
@@ -236,11 +234,14 @@ export function buildPluginClient(cwd: string, log: Log) {
 
   const packageJson = getPackageJson(cwd);
   const clientFiles = fg.globSync(clientGlobalFiles, { cwd, absolute: true })
+  const sourcePackages = getSourcePackages(clientFiles)
+  const excludePackages = getExcludePackages(sourcePackages, external, pluginPrefix)
+
   buildCheck({ cwd, packageJson, entry: 'client', files: clientFiles, log })
 
   const outDir = path.join(cwd, target_dir, 'client');
 
-  const globals = [...new Set([...Object.keys(packageJson.devDependencies || {}), ...external])].reduce<Record<string, string>>((prev, curr) => {
+  const globals = excludePackages.reduce<Record<string, string>>((prev, curr) => {
     if (curr.startsWith('@nocobase')) {
       prev[`${curr}/client`] = curr;
     }
@@ -248,18 +249,19 @@ export function buildPluginClient(cwd: string, log: Log) {
     return prev;
   }, {})
 
-  const entry = fg.globSync('src/client/index.{ts,tsx,js,jsx}', { cwd })
+  const entry = fg.globSync('src/client/index.{ts,tsx,js,jsx}', { cwd, })
   const outputFileName = 'index.js';
   return viteBuild({
     mode: 'production',
     define: {
       'process.env.NODE_ENV': JSON.stringify('production'),
     },
-    logLevel: 'error',
+    logLevel: 'warn',
     build: {
       minify: false,
       outDir,
       cssCodeSplit: false,
+      emptyOutDir: false,
       lib: {
         entry,
         formats: ['umd'],
@@ -281,11 +283,14 @@ export function buildPluginClient(cwd: string, log: Log) {
       {
         name: 'check-file-size',
         closeBundle() {
+          const file = path.join(outDir, outputFileName);
+          if (!fs.existsSync(file)) return;
           const fileSize = getFileSize(path.join(outDir, outputFileName));
           if (fileSize > 1024 * 1024) {
             log('The bundle file size exceeds 1MB %s. Please check for unnecessary %s and move them to %s if possible.\n', chalk.yellow(formatFileSize(fileSize)), chalk.yellow('dependencies'), chalk.yellow('devDependencies'));
           }
         },
-      }],
+      }
+    ],
   })
 }
