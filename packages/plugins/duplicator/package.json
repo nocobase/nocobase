@@ -24,15 +24,15 @@
     "directory": "packages/plugins/duplicator"
   },
   "dependencies": {
+  },
+  "devDependencies": {
+    "dayjs": "^1.11.8",
     "@types/archiver": "^5.3.1",
     "archiver": "^5.3.1",
     "decompress": "^4.2.1",
     "inquirer": "^8.0.0",
     "mkdirp": "^1.0.4",
-    "tar": "^6.1.13"
-  },
-  "devDependencies": {
-    "dayjs": "^1.11.8",
+    "tar": "^6.1.13",
     "@koa/multer": "^3.0.2",
     "koa-send": "^5.0.1",
     "@nocobase/client": "0.11.1-alpha.1",

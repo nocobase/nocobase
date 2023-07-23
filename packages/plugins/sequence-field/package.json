@@ -19,11 +19,11 @@
     "client.d.ts"
   ],
   "dependencies": {
-    "classnames": "^2.3.1",
-    "cron-parser": "4.4.0",
-    "react-js-cron": "^3.1.0"
   },
   "devDependencies": {
+    "classnames": "^2.3.1",
+    "cron-parser": "4.4.0",
+    "react-js-cron": "^3.1.0",
     "@formily/antd-v5": "1.1.0-beta.4",
     "@formily/core": "2.2.26",
     "@formily/react": "2.2.26",

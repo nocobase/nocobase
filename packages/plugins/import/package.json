@@ -19,12 +19,12 @@
     "client.d.ts"
   ],
   "dependencies": {
+  },
+  "devDependencies": {
     "@types/node-xlsx": "^0.15.1",
     "file-saver": "^2.0.5",
     "node-xlsx": "^0.16.1",
-    "xlsx": "^0.18.5"
-  },
-  "devDependencies": {
+    "xlsx": "^0.18.5",
     "mathjs": "^10.6.0",
     "@koa/multer": "^3.0.2",
     "@ant-design/icons": "^5.1.4",

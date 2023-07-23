@@ -7,12 +7,12 @@
   "description.zh-CN": "提供BI面板和数据可视化功能",
   "main": "lib/server/index.js",
   "dependencies": {
-    "@ant-design/plots": "^1.2.5",
-    "classnames": "^2.3.1",
-    "react-error-boundary": "^4.0.10"
   },
   "devDependencies": {
     "lodash": "^4.17.21",
+    "@ant-design/plots": "^1.2.5",
+    "classnames": "^2.3.1",
+    "react-error-boundary": "^4.0.10",
     "@emotion/css": "^11.7.1",
     "@ant-design/icons": "^5.1.4",
     "@formily/antd-v5": "1.1.0-beta.4",

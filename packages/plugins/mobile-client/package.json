@@ -33,11 +33,11 @@
     "antd-style": "^3.3.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
+    "antd-mobile": "^5.29.1",
+    "classnames": "^2.3.1",
     "react-i18next": "^11.15.1",
     "react-router-dom": "^6.11.2"
   },
   "dependencies": {
-    "antd-mobile": "^5.29.1",
-    "classnames": "^2.3.1"
   }
 }

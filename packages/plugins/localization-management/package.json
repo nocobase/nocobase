@@ -3,6 +3,7 @@
   "version": "0.11.1-alpha.1",
   "main": "lib/server/index.js",
   "devDependencies": {
+    "deepmerge": "^4.3.1",
     "@nocobase/cache": "0.11.1-alpha.1",
     "@nocobase/client": "0.11.1-alpha.1",
     "@nocobase/database": "0.11.1-alpha.1",
@@ -12,7 +13,6 @@
     "@nocobase/test": "0.11.1-alpha.1"
   },
   "dependencies": {
-    "deepmerge": "^4.3.1"
   },
   "displayName": "Localization management",
   "displayName.zh-CN": "多语言管理",

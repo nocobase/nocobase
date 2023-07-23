@@ -19,11 +19,11 @@
     "client.d.ts"
   ],
   "dependencies": {
-    "@types/node-xlsx": "^0.15.1",
-    "file-saver": "^2.0.5",
-    "node-xlsx": "^0.16.1"
   },
   "devDependencies": {
+    "@types/node-xlsx": "^0.15.1",
+    "file-saver": "^2.0.5",
+    "node-xlsx": "^0.16.1",
     "@formily/antd-v5": "1.1.0-beta.4",
     "@formily/react": "2.2.26",
     "@formily/shared": "2.2.26",

@@ -14,9 +14,9 @@
     "client.d.ts"
   ],
   "dependencies": {
-    "koa-ratelimit": "^5.0.1"
   },
   "devDependencies": {
+    "koa-ratelimit": "^5.0.1",
     "@nocobase/client": "0.11.1-alpha.1",
     "@nocobase/server": "0.11.1-alpha.1",
     "@nocobase/test": "0.11.1-alpha.1"

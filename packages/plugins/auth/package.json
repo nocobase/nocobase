@@ -14,9 +14,9 @@
     "client.d.ts"
   ],
   "dependencies": {
-    "cron": "^2.3.1"
   },
   "devDependencies": {
+    "cron": "^2.3.1",
     "@ant-design/icons": "^5.1.4",
     "@formily/react": "2.2.26",
     "@formily/shared": "2.2.26",

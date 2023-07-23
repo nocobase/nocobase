@@ -19,9 +19,9 @@
     "client.d.ts"
   ],
   "dependencies": {
-    "react-iframe": "~1.8.5"
   },
   "devDependencies": {
+    "react-iframe": "~1.8.5",
     "@ant-design/icons": "^5.1.4",
     "@formily/react": "2.2.26",
     "@formily/shared": "2.2.26",

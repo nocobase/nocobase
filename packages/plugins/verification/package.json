@@ -19,12 +19,12 @@
     "client.d.ts"
   ],
   "dependencies": {
+  },
+  "devDependencies": {
     "@alicloud/dysmsapi20170525": "2.0.17",
     "@alicloud/openapi-client": "0.4.1",
     "@alicloud/tea-util": "1.4.4",
-    "tencentcloud-sdk-nodejs": "^4.0.525"
-  },
-  "devDependencies": {
+    "tencentcloud-sdk-nodejs": "^4.0.525",
     "@formily/antd-v5": "1.1.0-beta.4",
     "@formily/core": "2.2.26",
     "@formily/react": "2.2.26",

@@ -7,6 +7,8 @@
   "description": "Allows you to customize UI colors, sizes, etc.",
   "description.zh-CN": "允许你自定义 UI 的颜色、尺寸等。",
   "dependencies": {
+  },
+  "devDependencies": {
     "rc-util": "^5.32.0",
     "react-colorful": "^5.5.1",
     "classnames": "^2.3.1",
@@ -15,9 +17,7 @@
     "vanilla-jsoneditor": "^0.17.8",
     "tinycolor2": "^1.6.0",
     "@ctrl/tinycolor": "^3.6.0",
-    "@arvinxu/layout-kit": "^1"
-  },
-  "devDependencies": {
+    "@arvinxu/layout-kit": "^1",
     "antd": "^5.6.4",
     "lodash": "4.17.21",
     "@emotion/css": "^11.11.2",

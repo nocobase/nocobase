@@ -14,9 +14,9 @@
     "client.d.ts"
   ],
   "dependencies": {
-    "nodejs-snowflake": "2.0.1"
   },
   "devDependencies": {
+    "nodejs-snowflake": "2.0.1",
     "@nocobase/client": "0.11.1-alpha.1",
     "@nocobase/database": "0.11.1-alpha.1",
     "@nocobase/server": "0.11.1-alpha.1",

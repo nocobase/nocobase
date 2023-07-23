@@ -19,6 +19,8 @@
     "client.d.ts"
   ],
   "dependencies": {
+  },
+  "devDependencies": {
     "@aws-sdk/client-s3": "^3.245.0",
     "@types/multer": "^1.4.5",
     "cos-nodejs-sdk-v5": "^2.11.14",
@@ -27,9 +29,7 @@
     "multer": "^1.4.2",
     "multer-aliyun-oss": "2.1.1",
     "multer-cos": "^1.0.3",
-    "multer-s3": "^3.0.1"
-  },
-  "devDependencies": {
+    "multer-s3": "^3.0.1",
     "koa-static": "^5.0.0",
     "@koa/multer": "^3.0.0",
     "@types/koa-multer": "^1.0.1",
