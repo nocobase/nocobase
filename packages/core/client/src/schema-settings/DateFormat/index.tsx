@@ -16,7 +16,7 @@ export const DateFormatCom = (props?) => {
           marginLeft: token.marginMD,
           padding: token.paddingXXS,
           borderRadius: token.borderRadiusOuter,
-          lineHeight: token.lineHeight,
+          lineHeight: '1',
         }}
       >
         {date.format(props.format)}
@@ -71,7 +71,7 @@ export const CustomFormatCom = observer((props: any) => {
             display: 'inline-block',
             background: token.colorBgTextHover,
             marginLeft: token.marginMD,
-            lineHeight: token.lineHeight,
+            lineHeight: '1',
             padding: token.paddingXXS,
             borderRadius: token.borderRadiusOuter,
           }}
