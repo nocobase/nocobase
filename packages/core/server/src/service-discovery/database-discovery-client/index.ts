@@ -33,6 +33,10 @@ export class DatabaseDiscoveryClient extends ServiceDiscoveryClient {
   async getDb(options: any = {}) {
     if (!this.db) {
       const db = new Database(this.databaseOptions());
+      if (!db.inDialect('mysql', 'postgres')) {
+        throw new Error('only support mysql or postgresql as discovery database');
+      }
+
       db.collection(ServiceRegistryCollection);
 
       if (options.beforeSync) {
@@ -65,8 +69,37 @@ export class DatabaseDiscoveryClient extends ServiceDiscoveryClient {
     return Promise.resolve(undefined);
   }
 
-  clientConnectionInfo(): Promise<ConnectionInfo> {
-    return Promise.resolve(undefined);
+  async clientConnectionInfo(): Promise<ConnectionInfo> {
+    const db = await this.getDb();
+    if (db.inDialect('postgres')) {
+      const sql = `SELECT * FROM pg_stat_activity WHERE pid = pg_backend_pid()`;
+
+      // get id and address from pg_stat_activity
+      const result: any = await db.sequelize.query(sql, {
+        type: 'SELECT',
+      });
+
+      return {
+        host: result[0].client_addr,
+        port: result[0].client_port,
+      };
+    }
+
+    if (db.inDialect('mysql')) {
+      const sql = `SELECT * FROM information_schema.processlist WHERE id = connection_id()`;
+
+      const result: any = await db.sequelize.query(sql, {
+        type: 'SELECT',
+      });
+
+      const [host, port] = result[0].HOST.split(':');
+      return {
+        host,
+        port,
+      };
+    }
+
+    throw new Error('cant get client connection info');
   }
 
   async filterByPrefix(prefix: string) {
@@ -154,8 +187,17 @@ export class DatabaseDiscoveryClient extends ServiceDiscoveryClient {
     return Promise.resolve(false);
   }
 
-  unregisterService(serviceInfo: RemoteServiceInfo): Promise<boolean> {
-    return Promise.resolve(false);
+  async unregisterService(serviceInfo: RemoteServiceInfo): Promise<boolean> {
+    const key = this.serviceKey(serviceInfo);
+    const collection = await this.getRegistryCollection();
+
+    await collection.repository.destroy({
+      filter: {
+        key,
+      },
+    });
+
+    return true;
   }
 
   private serviceKey(serviceInfo: RemoteServiceInfo) {
