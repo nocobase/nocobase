@@ -14,13 +14,26 @@ yarn build
 
 ## 不兼容的变化
 
-### 插件 package.json devDependencies 和 dependencies
+### 插件依赖打包
 
-因为插件热更新的加载方式要求 package.json 做出如下变更：
+插件的依赖分为自身的依赖和全局依赖，全局依赖由 `@nocobase/server` 和 `@nocobase/client` 提供，不会打包到插件产物中，自身的依赖会被打包到产物中。
 
-- `dependencies` 会被打包到产物中，`devDependencies` 不会
-- 如果源码中使用了某个 npm 包，则必须将其添加到 `dependencies` 或者 `devDependencies` 中，否则打包时会报错并提示
-- 有一些包是由 `@nocobase/server` 或者 `@nocobase/client` 提供，不必添加到 `dependencies`，而应该添加到 `devDependencies` 中，否则会报错并提示，详细参见：[插件依赖管理](/development/deps)
+因为自身的依赖会被打包到产物中（包括 server 依赖的 npm 包，也会被打包到 `dist/node_modules`），所以在开发插件时，将所有依赖放到 `devDependencies` 中即可。
+
+```diff
+{
+  "dependencies": {
+-   "@nocobase/server": "^0.11.0",
+-   "dayjs": "^4.17.21"
+  }
+  "devDependencies": {
++   "@nocobase/server": "^0.11.0",
++   "dayjs": "^4.17.21"
+  }
+}
+```
+
+更新信息和全局插件列表，参见：[插件依赖管理](/development/deps)。
 
 ### 插件目录必须同时有 `src/client` 和 `src/server` 目录
 
@@ -51,16 +64,6 @@ export default MyPlugin;
 ```
 
 具体 Demo 代码可以参考：[sample-hello](https://github.com/nocobase/nocobase/tree/main/packages/samples/hello)
-
-### package.json 必须使用 ES Module 方式
-
-```diff
-- export const namespace = require('../../package.json').name
-
-+ // @ts-ignore
-+ import { name } from '../../package.json'
-+ export const namespace = name
-```
 
 ## 其他
 

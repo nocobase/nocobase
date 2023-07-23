@@ -1,12 +1,8 @@
 # 依赖管理
 
-## 约定式
+插件的依赖分为自身的依赖和全局依赖，全局依赖由 `@nocobase/server` 和 `@nocobase/client` 提供，不会打包到插件产物中，自身的依赖会被打包到产物中。
 
-插件的依赖构建采用约定式的方式，即 `package.json` 中 `devDependencies` 中的依赖*不会*被打包到插件中，`dependencies` 中的依赖*会*被打包到应用中。
-
-## 需要放到 devDependencies 中的 npm 包
-
-有一些依赖由 `@nocobase/server` 和 `@nocobase/client` 提供，不需要打包到插件产物中，因此不应该放到 `dependencies`，而应该放到 `devDependencies` 中。
+因为自身的依赖会被打包到产物中（包括 server 依赖的 npm 包，也会被打包到 `dist/node_modules`），所以在开发插件时，将所有依赖放到 `devDependencies` 中即可。
 
 <Alert type="warning">
 当插件安装如下依赖时，要注意 **版本** 和 `@nocobase/server` 和 `@nocobase/client` 的保持一致。
@@ -107,32 +103,4 @@
 '@emotion/css',
 'ahooks',
 'lodash'
-```
-
-### 插件依赖别的插件
-
-如果一个插件依赖了另一个插件，那么依赖的插件也应该放到 `devDependencies` 中，例如：
-
-```diff
-{
-  "name": "@nocobase/plugin-hello",
--  "dependencies": {
--    "@nocobase/plugin-users": "^1.0.0"
--  },
-+  "devDependencies": {
-+    "@nocobase/plugin-users": "^1.0.0"
-+  }
-}
-```
-
-生产环境中，应该先将 `@nocobase/plugin-users` 安装到应用中，然后再安装 `@nocobase/plugin-hello`，激活插件顺序也应该为先激活 `@nocobase/plugin-users`，再激活 `@nocobase/plugin-hello`。
-
-## import package.json
-
-```diff
-- export const namespace = require('../../package.json').name
-
-+ // @ts-ignore
-+ import { name } from '../../package.json'
-+ export const namespace = name
 ```

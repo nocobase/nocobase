@@ -80,17 +80,6 @@ export function getPackageJsonPackages(packageJson: Record<string, any>): string
   return [...new Set([...Object.keys(packageJson.devDependencies || {}), ...Object.keys(packageJson.dependencies || {})])];
 }
 
-export function checkSourcePackages(srcPackages: string[], packageJsonPackages: string[], shouldDevDependencies: string[], log: Log) {
-  const missingPackages = srcPackages
-    .filter((packageName) => !packageJsonPackages.includes(packageName))
-    .filter((packageName) => !shouldDevDependencies.includes(packageName));
-
-  if (missingPackages.length) {
-    log("Missing packages %s in package.json. If you want it to be bundled into the output, put it in %s; otherwise, put it in %s.", chalk.red(missingPackages.join(', ')), chalk.bold('dependencies'), chalk.bold('devDependencies'));
-    process.exit(-1);
-  }
-}
-
 export function checkRequirePackageJson(sourcePaths: string[], log: Log) {
   sourcePaths.forEach(item => {
     const code = fs.readFileSync(item, 'utf-8');
@@ -112,21 +101,10 @@ export function checkEntryExists(cwd: string, entry: 'server' | 'client', log: L
   return srcDir;
 }
 
-export function checkDependencies(packageJson: Record<string, any>, shouldDevDependencies: string[], log: Log) {
-  if (!packageJson.dependencies) return;
-  const shouldDevDependenciesList = shouldDevDependencies.filter(item => packageJson.dependencies[item]);
-  if (shouldDevDependenciesList.length) {
-    log('%s should not be placed in %s, but rather in %s. For more information, please refer to: %s.', chalk.yellow(shouldDevDependenciesList.join(', ')), chalk.yellow('dependencies'), chalk.yellow('devDependencies'), chalk.blue(chalk.blue('https://docs.nocobase.com/development/deps')));
-  }
-}
-
-export function checkPluginPrefixDependencies(packageJson: Record<string, any>, pluginPrefix: string[], log: Log) {
-  if (!packageJson.dependencies) return;
-  const dependenciesName = Object.keys(packageJson.dependencies);
-  const shouldDevPluginDependenciesList = dependenciesName.filter(packageName => pluginPrefix.find(prefix => packageName.startsWith(prefix)));
-  if (shouldDevPluginDependenciesList.length) {
-    log('%s should not be placed in %s, but rather in %s. For more information, please refer to: %s.', chalk.yellow(shouldDevPluginDependenciesList.join(', ')), chalk.yellow('dependencies'), chalk.yellow('devDependencies'), chalk.blue(chalk.blue('https://docs.nocobase.com/development/deps')));
-  }
+export function checkDependencies(packageJson: Record<string, any>, log: Log) {
+  const packages = Object.keys(packageJson.dependencies || {})
+  if (!packages.length) return;
+  log("The build tool will package all dependencies into the dist directory, so you don't need to put them in %s. Instead, they should be placed in %s. For more information, please refer to: %s.", chalk.yellow(packages.join(', ')), chalk.yellow('dependencies'), chalk.yellow('devDependencies'), chalk.blue(chalk.blue('https://docs.nocobase.com/development/deps')));
 }
 
 type CheckOptions = {
@@ -134,8 +112,6 @@ type CheckOptions = {
   log: Log;
   entry: 'server' | 'client';
   files: string[];
-  shouldDevDependencies: string[];
-  pluginPrefix: string[];
   packageJson: Record<string, any>;
 }
 
@@ -149,15 +125,10 @@ export function formatFileSize(fileSize: number) {
   return kb.toFixed(2) + ' KB';
 }
 
-
 export function buildCheck(options: CheckOptions) {
-  const { cwd, log, entry, files, packageJson, pluginPrefix, shouldDevDependencies } = options;
+  const { cwd, log, entry, files, packageJson } = options;
   checkEntryExists(cwd, entry, log)
 
-  const sourcePackages = getSourcePackages(files);
-
-  checkSourcePackages(sourcePackages, getPackageJsonPackages(packageJson), shouldDevDependencies, log);
-  checkRequirePackageJson(files, log);
-  checkDependencies(packageJson, shouldDevDependencies, log);
-  checkPluginPrefixDependencies(packageJson, pluginPrefix, log);
+  // checkRequirePackageJson(files, log);
+  checkDependencies(packageJson, log);
 }

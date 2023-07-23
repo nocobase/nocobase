@@ -1,13 +1,12 @@
 # Dependency management
 
-## convention-based
+The dependencies of the plugin are divided into its own dependencies and global dependencies. Global dependencies are provided by `@nocobase/server` and `@nocobase/client`, and will not be packaged into the plugin product. Its own dependencies will be packaged into the product.
 
-The dependency building for plugins follows a convention-based approach, where dependencies in `devDependencies` of the package.json file *will not be* bundled with the plugin, while the dependencies in `dependencies` *will be* bundled with the application.
+Because the dependencies of the plugin itself will be packaged into the product (including the npm packages that the server depends on, which will also be packaged into `dist/node_modules`), when developing the plugin, all dependencies should be placed in `devDependencies`.
 
-## devDependencies npm package list
-
-Some dependencies are provided by `@nocobase/server` and `@nocobase/client` and *do not need to* be bundled with the plugin output. Therefore, they should not be placed in `dependencies` but rather in `devDependencies`. Here are the specific steps:
-
+<Alert type="warning">
+When installing the following dependencies, pay attention to the **version** and keep consistent with `@nocobase/server` and `@nocobase/client`.
+</Alert>
 
 ```js
 // nocobase
@@ -102,33 +101,4 @@ Some dependencies are provided by `@nocobase/server` and `@nocobase/client` and 
 '@emotion/css',
 'ahooks',
 'lodash'
-```
-
-### Plugins depend on other plugins
-
-If a plugin depends on another plugin, then the dependent plugin should also be placed in `devDependencies`. For example:
-
-```diff
-{
-  "name": "@nocobase/plugin-hello",
--  "dependencies": {
--    "@nocobase/plugin-users": "^1.0.0"
--  },
-+  "devDependencies": {
-+    "@nocobase/plugin-users": "^1.0.0"
-+  }
-}
-```
-
-生产环境中，应该先将 `@nocobase/plugin-users` 安装到应用中，然后再安装 `@nocobase/plugin-hello`，激活插件顺序也应该为先激活 `@nocobase/plugin-users`，再激活 `@nocobase/plugin-hello`。
-
-
-## import package.json
-
-```diff
-- export const namespace = require('../../package.json').name
-
-+ // @ts-ignore
-+ import { name } from '../../package.json'
-+ export const namespace = name
 ```

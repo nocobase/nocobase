@@ -12,16 +12,16 @@ import { getDepsConfig } from './utils/getDepsConfig';
 
 const serverGlobalFiles: string[] = [
   'src/**',
-  '!src/server/__tests__/**',
+  '!src/**/__tests__',
   '!src/client/**'
 ]
 
 const clientGlobalFiles: string[] = [
   'src/client/**',
-  '!src/client/__tests__/**',
+  '!src/**/__tests__',
 ]
 
-const shouldDevDependencies = [
+const external = [
   // nocobase
   '@nocobase/acl',
   '@nocobase/actions',
@@ -119,28 +119,37 @@ const pluginPrefix = (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@n
 
 type Log = (msg: string, ...args: any) => void;
 
+
+const target_dir = 'dist'
+
 export function deleteJsFiles(cwd: string, log: Log) {
   log('delete babel js files')
-  const jsFiles = fg.globSync(['**/*', '!**/*.d.ts', '!node_modules'], { cwd: path.join(cwd, 'lib'), absolute: true })
+  const jsFiles = fg.globSync(['**/*', '!**/*.d.ts', '!node_modules'], { cwd: path.join(cwd, target_dir), absolute: true })
   jsFiles.forEach(item => {
     fs.unlinkSync(item);
   })
 }
 
-export async function buildServerDeps(cwd: string, serverFiles: string[], packageJson: Record<string, any>, log: Log) {
+export async function buildServerDeps(cwd: string, serverFiles: string[], log: Log) {
   log('build server dependencies')
-  const external = [...new Set([...Object.keys(packageJson.devDependencies || {}), ...shouldDevDependencies])]
-  const outDir = path.join(cwd, 'lib', 'node_modules');
+  const outDir = path.join(cwd, target_dir, 'node_modules');
+  const sourcePackages = getSourcePackages(serverFiles)
+  const packages = sourcePackages
+    .filter(packageName => !external.includes(packageName))  // exclude external
+    .filter(packageName => !pluginPrefix.some(prefix => packageName.startsWith(prefix))) // exclude other plugin
 
-  const packages = packageJson.dependencies ?
-    getSourcePackages(serverFiles)
-      .filter(packageName => packageJson.dependencies[packageName])
-      .filter(packageName => !shouldDevDependencies[packageName])
-      .filter(packageName => pluginPrefix.find(prefix => packageName.startsWith(prefix))) : [];
+  const excludePackages = sourcePackages.filter(packageName => !packages.includes(packageName))
+  let tips = [];
+  if (packages.length) {
+    tips.push(`These packages ${chalk.yellow(packages.join(', '))} will be bundled to dist/node_modules.`)
+  }
+  if (excludePackages.length) {
+    tips.push(`These packages ${chalk.yellow(excludePackages.join(', '))} will be exclude.`)
+  }
+  tips.push(`For more information, please refer to: ${chalk.blue('https://docs.nocobase.com/development/deps')}.`)
+  log(tips.join(' '))
 
   if (!packages.length) return;
-
-  log("%s will be bundled. If you want it to be bundled into the output, put it in %s; otherwise, put it in %s.", chalk.yellow(packages.join(', ')), chalk.bold('dependencies'), chalk.bold('devDependencies'));
 
   const deps = getDepsConfig(cwd, outDir, packages, external);
 
@@ -204,7 +213,7 @@ export async function buildPluginServer(cwd: string, log: Log) {
   log('build server source')
   const packageJson = getPackageJson(cwd);
   const serverFiles = fg.globSync(serverGlobalFiles, { cwd, absolute: true })
-  buildCheck({ cwd, packageJson, entry: 'server', shouldDevDependencies, pluginPrefix, files: serverFiles, log })
+  buildCheck({ cwd, packageJson, entry: 'server', files: serverFiles, log })
 
   await tsupBuild({
     entry: serverFiles,
@@ -214,12 +223,12 @@ export async function buildPluginServer(cwd: string, log: Log) {
     silent: true,
     treeshake: true,
     target: 'node16',
-    outDir: path.join(cwd, 'lib'),
+    outDir: path.join(cwd, target_dir),
     format: 'cjs',
     skipNodeModulesBundle: true
   })
 
-  await buildServerDeps(cwd, serverFiles, packageJson, log)
+  await buildServerDeps(cwd, serverFiles, log)
 }
 
 export function buildPluginClient(cwd: string, log: Log) {
@@ -227,11 +236,11 @@ export function buildPluginClient(cwd: string, log: Log) {
 
   const packageJson = getPackageJson(cwd);
   const clientFiles = fg.globSync(clientGlobalFiles, { cwd, absolute: true })
-  buildCheck({ cwd, packageJson, entry: 'client', shouldDevDependencies, pluginPrefix, files: clientFiles, log })
+  buildCheck({ cwd, packageJson, entry: 'client', files: clientFiles, log })
 
-  const outDir = path.join(cwd, 'lib/client');
+  const outDir = path.join(cwd, target_dir, 'client');
 
-  const globals = [...new Set([...Object.keys(packageJson.devDependencies || {}), ...shouldDevDependencies])].reduce<Record<string, string>>((prev, curr) => {
+  const globals = [...new Set([...Object.keys(packageJson.devDependencies || {}), ...external])].reduce<Record<string, string>>((prev, curr) => {
     if (curr.startsWith('@nocobase')) {
       prev[`${curr}/client`] = curr;
     }

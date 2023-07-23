@@ -16,11 +16,24 @@ yarn build
 
 ### Plugin's `devDependencies` and `dependencies`
 
-Due to the plugin hot update loading method, the following changes are required in the package.json:
+The dependencies of the plugin are divided into its own dependencies and global dependencies. Global dependencies are provided by `@nocobase/server` and `@nocobase/client`, and will not be packaged into the plugin product. Its own dependencies will be packaged into the product.
 
-- `dependencies` will be bundled into the bundle, while `devDependencies` will not.
-- If a certain npm package is used in the source code, it must be added to either `dependencies` or `devDependencies`.
-- Some packages are provided by `@nocobase/server` or `@nocobase/client`, and they do not need to be added to `dependencies`. Instead, they should be added to `devDependencies`. For more details, refer to: [Plugin dependency management](/development/deps)
+Because the dependencies of the plugin itself will be packaged into the product (including the npm packages that the server depends on, which will also be packaged into `dist/node_modules`), when developing the plugin, all dependencies should be placed in `devDependencies`.
+
+```diff
+{
+  "dependencies": {
+-   "@nocobase/server": "^0.11.0",
+-   "dayjs": "^4.17.21"
+  }
+  "devDependencies": {
++   "@nocobase/server": "^0.11.0",
++   "dayjs": "^4.17.21"
+  }
+}
+```
+
+More information about updates and global plugin lists, see: [Plugin dependency management](/development/deps).
 
 ### plugin directory must have both `src/client` and `src/server` directories
 
@@ -52,12 +65,10 @@ export default MyPlugin;
 
 For more information, refer to: [sample-hello](https://github.com/nocobase/nocobase/tree/main/packages/samples/hello)
 
-### package.json
+## Other
 
-```diff
-- export const namespace = require('../../package.json').name
+Load plugins remotely in the local development environment, you need to set the environment to `USE_REMOTE_PLUGIN=true`:
 
-+ // @ts-ignore
-+ import { name } from '../../package.json'
-+ export const namespace = name
-```
+```bash
+yarn cross-env USE_REMOTE_PLUGIN=true nocobase dev
+``

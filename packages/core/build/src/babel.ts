@@ -63,7 +63,7 @@ export default async function (opts: IBabelOpts) {
     },
   } = opts;
   const srcPath = join(cwd, "src");
-  const targetDir = type === "esm" ? "es" : "lib";
+  const targetDir = type === "esm" ? "es" : isPlugin ? 'dist' : "lib";
   const targetPath = join(cwd, targetDir);
 
   if (!isPlugin) {
