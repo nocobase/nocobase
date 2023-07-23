@@ -13,19 +13,8 @@ export const ColumnFieldProvider = observer(
     }, null);
     if (fieldSchema && record?.__collection) {
       const fieldName = `${record.__collection}.${fieldSchema.name}`;
-      const newSchema = {
-        ...schema.toJSON(),
-        properties: {
-          [fieldSchema.name]: {
-            ...fieldSchema.toJSON(),
-            'x-collection-field': fieldName,
-            'x-component-props': {
-              ...fieldSchema['x-component-props'],
-            },
-          },
-        },
-      };
-      return <RecursionField basePath={basePath} schema={newSchema} onlyRenderProperties />;
+      schema.properties[fieldSchema.name]['x-collection-field'] = fieldName;
+      return <RecursionField basePath={basePath} schema={schema} onlyRenderProperties />;
     }
     return props.children;
   },
