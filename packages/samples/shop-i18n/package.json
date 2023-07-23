@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-sample-shop-i18n",
-  "version": "0.11.1-alpha.1",
+  "version": "0.11.1-alpha.2",
   "main": "./lib/server/index.js",
   "files": [
     "lib",
@@ -17,9 +17,9 @@
   },
   "devDependencies": {
     "nodejs-snowflake": "2.0.1",
-    "@nocobase/client": "0.11.1-alpha.1",
-    "@nocobase/server": "0.11.1-alpha.1",
-    "@nocobase/test": "0.11.1-alpha.1",
+    "@nocobase/client": "0.11.1-alpha.2",
+    "@nocobase/server": "0.11.1-alpha.2",
+    "@nocobase/test": "0.11.1-alpha.2",
     "antd": "^5.6.4",
     "react": "^18.2.0",
     "react-i18next": "^11.15.1"
