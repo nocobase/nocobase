@@ -31,6 +31,7 @@ module.exports = (cli) => {
         await run('umi', ['build'], {
           env: {
             APP_ROOT: `packages/${APP_PACKAGE_ROOT}/client`,
+            NODE_ENV: 'production',
           },
         });
       }

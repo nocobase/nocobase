@@ -117,6 +117,10 @@ class IndexGenerator {
     if (!fs.existsSync(this.outputPath)) {
       fs.mkdirSync(path.dirname(this.outputPath), { recursive: true });
     }
+    if (process.env.NODE_ENV === 'production') {
+      fs.writeFileSync(this.outputPath, 'export default {}');
+      return;
+    }
     const pluginFolders = fs.readdirSync(this.pluginsPath);
     const pluginImports = pluginFolders.filter((folder) => {
       const pluginPackageJsonPath = path.join(this.pluginsPath, folder, 'package.json');
