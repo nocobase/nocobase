@@ -1,6 +1,7 @@
 import { Cache, createCache } from '@nocobase/cache';
-import { Application, PluginManager } from '@nocobase/server';
 import { lodash } from '@nocobase/utils';
+import Application from '../application';
+import { PluginManager } from '../plugin-manager';
 import { getAntdLocale } from './antd';
 import { getCronstrueLocale } from './cronstrue';
 import { getResource } from './resource';
