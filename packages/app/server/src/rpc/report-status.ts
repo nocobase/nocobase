@@ -7,11 +7,39 @@ const writeJSON = (socket, data) => {
 
 export function reportStatus() {
   if (process.env.MAIN_PROCESS_SOCKET_PATH) {
-    const appSupervisor = AppSupervisor.getInstance();
-    const gateway = Gateway.getInstance();
-
     const mainProcessRPCClient = net.createConnection({
       path: process.env.MAIN_PROCESS_SOCKET_PATH,
+    });
+
+    const handleClientMessage = ({ type, payload }) => {
+      if (type == 'requestConnectionTags') {
+        const connectedApp = Gateway.getInstance().appSelector({
+          url: payload.url,
+          headers: payload.headers,
+        });
+
+        writeJSON(mainProcessRPCClient, {
+          type: 'responseConnectionTags',
+          payload: {
+            connectionId: payload.id,
+            tags: [`app:${connectedApp}`],
+          },
+        });
+      }
+    };
+
+    const afterSelectorChanged = () => {
+      writeJSON(mainProcessRPCClient, {
+        type: 'needRefreshTags',
+      });
+    };
+
+    const appSupervisor = AppSupervisor.getInstance();
+
+    const gateway = Gateway.getInstance({
+      afterCreate: () => {
+        afterSelectorChanged();
+      },
     });
 
     appSupervisor.on('workingMessageChanged', ({ appName, message }) => {
@@ -25,18 +53,23 @@ export function reportStatus() {
     });
 
     gateway.on('appSelectorChanged', () => {
-      writeJSON(mainProcessRPCClient, {
-        type: 'needRefreshTags',
-      });
+      afterSelectorChanged();
     });
-    
-    // mainProcessRPCClient.on('data', (data) => {
-    //   const dataAsString = data.toString();
-    //   // start app process server
-    //   if (dataAsString == 'start') {
-    //     Gateway.getInstance().start();
-    //   }
-    // });
+
+    mainProcessRPCClient.on('data', (data) => {
+      const dataAsString = data.toString();
+
+      const messages = dataAsString.split('\n');
+
+      for (const message of messages) {
+        if (message.length === 0) {
+          continue;
+        }
+
+        const dataObj = JSON.parse(message);
+        handleClientMessage(dataObj);
+      }
+    });
 
     //
     // app.on('afterStart', () => {

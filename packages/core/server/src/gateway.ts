@@ -27,9 +27,12 @@ export class Gateway extends EventEmitter {
     this.reset();
   }
 
-  public static getInstance(): Gateway {
+  public static getInstance(options: any = {}): Gateway {
     if (!Gateway.instance) {
       Gateway.instance = new Gateway();
+      if (options.afterCreate) {
+        options.afterCreate(Gateway.instance);
+      }
     }
 
     return Gateway.instance;

@@ -28,25 +28,11 @@ class CliHttpServer extends EventEmitter {
 
   webSocketClients = new Map();
 
+  ipcClient;
+
   constructor() {
     super();
     this.listenDomainSocket();
-  }
-
-  addNewConnection(ws, request) {
-    console.log(request);
-    const id = nanoid();
-
-    ws.id = id;
-
-    this.webSocketClients.set(id, {
-      ws,
-      tags: [`app#${process.env['STARTUP_SUBAPP'] || 'main'}`],
-    });
-  }
-
-  removeConnection(id) {
-    this.webSocketClients.delete(id);
   }
 
   static getInstance() {
@@ -55,6 +41,27 @@ class CliHttpServer extends EventEmitter {
     }
 
     return CliHttpServer.instance;
+  }
+
+  addNewConnection(ws, request) {
+    const id = nanoid();
+
+    ws.id = id;
+
+    this.webSocketClients.set(id, {
+      ws,
+      tags: [`app#${process.env['STARTUP_SUBAPP'] || 'main'}`],
+      url: request.url,
+      headers: request.headers,
+    });
+
+    this.requestConnectionTag(id);
+
+    console.log(`total connections: ${this.webSocketClients.size}`);
+  }
+
+  removeConnection(id) {
+    this.webSocketClients.delete(id);
   }
 
   listen(port) {
@@ -120,6 +127,7 @@ class CliHttpServer extends EventEmitter {
 
     this.ipcServer = net.createServer((c) => {
       console.log('client connected');
+      this.ipcClient = c;
 
       c.on('end', () => {
         console.log('client disconnected');
@@ -137,16 +145,6 @@ class CliHttpServer extends EventEmitter {
           const dataObj = JSON.parse(message);
 
           this.handleClientMessage(dataObj);
-
-          // if (dataObj.workingMessage) {
-          //   this.exitWithError = false;
-          //   this.setCliDoingWork(dataObj.workingMessage);
-          //   this.wss.clients.forEach((client) => {
-          //     if (client.readyState === WebSocket.OPEN) {
-          //       client.send(this.cliDoingWork);
-          //     }
-          //   });
-          // }
 
           // if (dataObj.status === 'worker-ready') {
           //   // this.server.close();
@@ -179,13 +177,17 @@ class CliHttpServer extends EventEmitter {
   }
 
   sendToConnectionsByTag(tagName, tagValue, sendMessage) {
-    this.webSocketClients.forEach((client) => {
-      if (client.readyState === WebSocket.OPEN) {
-        return;
-      }
-
+    this.loopThroughConnections((client) => {
       if (client.tags.includes(`${tagName}#${tagValue}`)) {
         client.ws.send(JSON.stringify(sendMessage));
+      }
+    });
+  }
+
+  loopThroughConnections(callback) {
+    this.webSocketClients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        callback(client);
       }
     });
   }
@@ -201,6 +203,41 @@ class CliHttpServer extends EventEmitter {
         },
       });
     }
+
+    if (type === 'needRefreshTags') {
+      this.loopThroughConnections((client) => {
+        this.requestConnectionTag(client.id);
+      });
+    }
+
+    if (type === 'responseConnectionTags') {
+      const { connectionId, tags } = payload;
+
+      console.log({ connectionId, tags });
+      const connection = this.webSocketClients.get(connectionId);
+
+      connection.tags = tags;
+    }
+  }
+
+  requestConnectionTag(connectionId) {
+    const connection = this.webSocketClients.get(connectionId);
+
+    this.writeJsonToIPCClient({
+      type: 'requestConnectionTags',
+      payload: {
+        id: connectionId,
+        headers: connection.headers,
+        url: connection.url,
+      },
+    });
+  }
+
+  writeJsonToIPCClient(data) {
+    if (!this.ipcClient) {
+      return;
+    }
+    this.ipcClient.write(JSON.stringify(data) + '\n', 'utf8');
   }
 }
 
