@@ -106,10 +106,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
   protected plugins = new Map<string, Plugin>();
   protected _appSupervisor: AppSupervisor = AppSupervisor.getInstance();
-  private workingMessage: string = null;
-
-  private _eventSubject: ApplicationEventSubject;
-  private _instanceId = nanoid();
 
   constructor(public options: ApplicationOptions) {
     super();
@@ -117,18 +113,28 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._appSupervisor.addApp(this);
   }
 
-  protected _fsm = new ApplicationFsm(this);
+  private _workingMessage: string = null;
+
+  get workingMessage() {
+    return this._workingMessage;
+  }
+
+  private _eventSubject: ApplicationEventSubject;
 
   get eventSubject() {
     return this._eventSubject;
   }
 
-  get fsm() {
-    return this._fsm;
-  }
+  private _instanceId = nanoid();
 
   get instanceId() {
     return this._instanceId;
+  }
+
+  protected _fsm = new ApplicationFsm(this);
+
+  get fsm() {
+    return this._fsm;
   }
 
   protected _db: Database;
@@ -453,8 +459,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   public setWorkingMessage(message: string) {
-    this.workingMessage = message;
-    this.emit('workingMessageChanged', this.workingMessage);
+    this._workingMessage = message;
+    this.emit('workingMessageChanged', this._workingMessage);
   }
 
   public async handleDynamicCall(method, ...args): Promise<{ result: any }> {

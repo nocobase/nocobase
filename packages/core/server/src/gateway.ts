@@ -18,7 +18,7 @@ export class Gateway extends EventEmitter {
    * use main app as default app to handle request
    */
   appSelector;
-  private server: http.Server | null = null;
+  public server: http.Server | null = null;
   private port: number = process.env.APP_PORT ? parseInt(process.env.APP_PORT) : null;
   private host = '0.0.0.0';
 
@@ -60,12 +60,20 @@ export class Gateway extends EventEmitter {
   async requestHandler(req: IncomingMessage, res: ServerResponse) {
     const handleApp = (await this.appSelector(req)) || 'main';
 
-    const app = typeof handleApp === 'string' ? await AppSupervisor.getInstance().getApp(handleApp) : handleApp;
+    const app: Application =
+      typeof handleApp === 'string' ? await AppSupervisor.getInstance().getApp(handleApp) : handleApp;
 
     if (!app) {
       console.log(`app ${handleApp} not found`);
       res.statusCode = 404;
       res.end(`app ${handleApp} not found`);
+      return;
+    }
+
+    // if app is not ready, return 503
+    if (app.workingMessage !== 'started') {
+      res.statusCode = 503;
+      res.end(`app ${handleApp} is not ready yet`);
       return;
     }
 
@@ -76,7 +84,7 @@ export class Gateway extends EventEmitter {
     return this.requestHandler.bind(this);
   }
 
-  start(options?: { port: number }) {
+  start(options?: { port: number; callback?: () => void }) {
     if (options?.port) {
       this.port = options.port;
     }
@@ -90,6 +98,9 @@ export class Gateway extends EventEmitter {
 
     this.server.listen(this.port, () => {
       console.log(`Gateway Server running at http://${this.host}:${this.port}/`);
+      if (options?.callback) {
+        options.callback();
+      }
     });
   }
 

@@ -6,12 +6,32 @@ const { parse } = require('url');
 const WebSocket = require('ws');
 const { nanoid } = require('nanoid');
 const EventEmitter = require('events');
+const fetch = require('node-fetch');
+
+function proxyRequest(req, res, targetUrl) {
+  const url = new URL(req.url, targetUrl);
+  fetch(url, {
+    method: req.method,
+    headers: req.headers,
+    body: req.method === 'POST' ? req.body : undefined,
+  })
+    .then((response) => {
+      res.writeHead(response.status, response.headers);
+      response.body.pipe(res);
+    })
+    .catch((err) => {
+      console.error(err);
+      res.status(500).send(err.message);
+    });
+}
 
 class CliHttpServer extends EventEmitter {
   static instance;
   server;
 
   workerReady = false;
+  workerPort;
+
   cliDoingWork = null;
 
   ipcServer;
@@ -58,6 +78,14 @@ class CliHttpServer extends EventEmitter {
     this.requestConnectionTag(id);
 
     console.log(`total connections: ${this.webSocketClients.size}`);
+
+    this.sendMessageToConnection(this.webSocketClients.get(id), {
+      type: 'appStatusChanged',
+      payload: {
+        workingMessage: this.cliDoingWork,
+        tags: this.webSocketClients.get(id).tags,
+      },
+    });
   }
 
   removeConnection(id) {
@@ -78,6 +106,8 @@ class CliHttpServer extends EventEmitter {
         };
 
         res.end(JSON.stringify(data));
+      } else {
+        proxyRequest(req, res, `http://localhost:${this.workerPort}`);
       }
     });
 
@@ -118,6 +148,15 @@ class CliHttpServer extends EventEmitter {
 
   setCliDoingWork(cliDoingWork) {
     this.cliDoingWork = cliDoingWork;
+
+    this.loopThroughConnections((client) => {
+      this.sendMessageToConnection(client, {
+        type: 'appStatusChanged',
+        payload: {
+          workingMessage: cliDoingWork,
+        },
+      });
+    });
   }
 
   listenDomainSocket() {
@@ -145,28 +184,6 @@ class CliHttpServer extends EventEmitter {
           const dataObj = JSON.parse(message);
 
           this.handleClientMessage(dataObj);
-
-          // if (dataObj.status === 'worker-ready') {
-          //   // this.server.close();
-          //   //
-          //   // c.write('start');
-          // }
-
-          // if (dataObj.status === 'worker-exit' || dataObj.status === 'worker-restart') {
-          //   if (!this.server.listening) {
-          //     this.server.listen(this.port);
-          //   }
-          // }
-          //
-          // if (dataObj.status === 'worker-restart') {
-          //   console.log(`killing dev child process ${this.devChildPid}`);
-          //   process.kill(this.devChildPid, 'SIGTERM');
-          // }
-          //
-          // if (dataObj.status === 'worker-error') {
-          //   this.exitWithError = true;
-          //   this.lastWorkerError = dataObj.errorMessage;
-          // }
         }
       });
     });
@@ -179,20 +196,24 @@ class CliHttpServer extends EventEmitter {
   sendToConnectionsByTag(tagName, tagValue, sendMessage) {
     this.loopThroughConnections((client) => {
       if (client.tags.includes(`${tagName}#${tagValue}`)) {
-        client.ws.send(JSON.stringify(sendMessage));
+        this.sendMessageToConnection(client, sendMessage);
       }
     });
+  }
+
+  sendMessageToConnection(client, sendMessage) {
+    client.ws.send(JSON.stringify(sendMessage));
   }
 
   loopThroughConnections(callback) {
     this.webSocketClients.forEach((client) => {
-      if (client.readyState === WebSocket.OPEN) {
-        callback(client);
-      }
+      callback(client);
     });
   }
 
   handleClientMessage({ type, payload }) {
+    console.log(`cli received message ${type}`);
+
     if (type === 'appStatusChanged') {
       const { appName, workingMessage } = payload;
 
@@ -217,12 +238,52 @@ class CliHttpServer extends EventEmitter {
       const connection = this.webSocketClients.get(connectionId);
 
       connection.tags = tags;
+
+      this.sendMessageToConnection(connection, {
+        type: 'tagsChanged',
+        payload: {
+          tags,
+        },
+      });
+    }
+
+    if (type === 'gatewayCreated') {
+      const workerPort = parseInt(this.port) + 1;
+      this.workerPort = workerPort;
+
+      this.writeJsonToIPCClient({
+        type: 'startListen',
+        payload: {
+          port: workerPort,
+        },
+      });
+    }
+
+    if (type === 'listenStarted') {
+      this.setCliDoingWork('worker started', { payload });
+      this.workerReady = true;
+    }
+
+    if (type === 'workerExit' || type === 'workerRestart') {
+      this.workerReady = false;
+    }
+
+    if (type === 'workerError') {
+      this.cliDoingWork = `worker error: ${payload.error}`;
+    }
+
+    if (type === 'workerRestart') {
+      this.setCliDoingWork('worker restarting');
+      console.log(`killing dev child process ${this.devChildPid}`);
+      process.kill(this.devChildPid, 'SIGTERM');
     }
   }
 
   requestConnectionTag(connectionId) {
     const connection = this.webSocketClients.get(connectionId);
-
+    if (!connection) {
+      return;
+    }
     this.writeJsonToIPCClient({
       type: 'requestConnectionTags',
       payload: {

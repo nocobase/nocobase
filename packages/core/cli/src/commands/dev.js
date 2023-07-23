@@ -63,6 +63,7 @@ module.exports = (cli) => {
         if (!skipInstall) {
           cliHttpServer.setCliDoingWork('install');
           await runAppCommand('install', ['--silent'], {});
+          cliHttpServer.setCliDoingWork('install done');
         }
 
         cliHttpServer.setCliDoingWork('start server process');

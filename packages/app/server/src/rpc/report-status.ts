@@ -26,6 +26,22 @@ export function reportStatus() {
           },
         });
       }
+
+      if (type == 'startListen') {
+        const { port } = payload;
+        const gateway = Gateway.getInstance();
+        gateway.start({
+          port,
+          callback() {
+            writeJSON(mainProcessRPCClient, {
+              type: 'listenStarted',
+              payload: {
+                address: gateway.server.address(),
+              },
+            });
+          },
+        });
+      }
     };
 
     const afterSelectorChanged = () => {
@@ -39,6 +55,10 @@ export function reportStatus() {
     const gateway = Gateway.getInstance({
       afterCreate: () => {
         afterSelectorChanged();
+
+        writeJSON(mainProcessRPCClient, {
+          type: 'gatewayCreated',
+        });
       },
     });
 
@@ -71,20 +91,15 @@ export function reportStatus() {
       }
     });
 
-    //
-    // app.on('afterStart', () => {
-    //   writeJSON(mainProcessRPCClient, {
-    //     status: 'worker-ready',
-    //   });
-    // });
-
     // report uncaught errors
     process.on('uncaughtException', (err) => {
       console.error(err);
 
       writeJSON(mainProcessRPCClient, {
-        status: 'worker-error',
-        errorMessage: err.message,
+        type: 'workerError',
+        payload: {
+          errorMessage: err.message,
+        },
       });
 
       process.exit(1);
@@ -95,11 +110,11 @@ export function reportStatus() {
 
       if (code == 100) {
         writeJSON(mainProcessRPCClient, {
-          type: 'worker-restart',
+          type: 'workerRestart',
         });
       } else {
         writeJSON(mainProcessRPCClient, {
-          type: 'worker-exit',
+          type: 'workerExit',
         });
       }
     });
