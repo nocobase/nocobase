@@ -40,11 +40,20 @@
   },
   "config": {
     "ghooks": {
+      "pre-commit": "yarn lint-staged",
       "commit-msg": "commitlint --edit"
     }
   },
+  "lint-staged": {
+    "*.{js,json}": [
+      "prettier --write"
+    ],
+    "*.ts?(x)": [
+      "eslint",
+      "prettier --parser=typescript --write"
+    ]
+  },
   "devDependencies": {
-    "commander": "^9.2.0",
     "@commitlint/cli": "^16.1.0",
     "@commitlint/config-conventional": "^16.0.0",
     "@commitlint/prompt-cli": "^16.1.0",
@@ -55,13 +64,15 @@
     "@types/react-dom": "^17.0.0",
     "@vitejs/plugin-react": "^4.0.0",
     "auto-changelog": "^2.4.0",
+    "commander": "^9.2.0",
     "dumi": "^2.2.0",
     "dumi-theme-nocobase": "^0.2.14",
     "eslint-plugin-jest-dom": "^5.0.1",
     "eslint-plugin-testing-library": "^5.11.0",
     "ghooks": "^2.0.4",
     "jsdom-worker": "^0.3.0",
-    "prettier": "^2.2.1",
+    "lint-staged": "^13.2.3",
+    "prettier": "^3.0.0",
     "pretty-format": "^24.0.0",
     "pretty-quick": "^3.1.0",
     "react": "^18.0.0",
