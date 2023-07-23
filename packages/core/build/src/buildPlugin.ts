@@ -141,10 +141,10 @@ export async function buildServerDeps(cwd: string, serverFiles: string[], log: L
   const excludePackages = sourcePackages.filter(packageName => !packages.includes(packageName))
   let tips = [];
   if (packages.length) {
-    tips.push(`These packages ${chalk.yellow(packages.join(', '))} will be bundled to dist/node_modules.`)
+    tips.push(`These packages ${chalk.yellow(packages.join(', '))} will be ${chalk.bold('bundled')} to dist/node_modules.`)
   }
   if (excludePackages.length) {
-    tips.push(`These packages ${chalk.yellow(excludePackages.join(', '))} will be exclude.`)
+    tips.push(`These packages ${chalk.yellow(excludePackages.join(', '))} will be ${chalk.bold('exclude')}.`)
   }
   tips.push(`For more information, please refer to: ${chalk.blue('https://docs.nocobase.com/development/deps')}.`)
   log(tips.join(' '))
