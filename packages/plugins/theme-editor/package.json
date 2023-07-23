@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-theme-editor",
-  "version": "0.11.0-alpha.1",
+  "version": "0.11.1-alpha.1",
   "main": "lib/server/index.js",
   "displayName": "Theme editor",
   "displayName.zh-CN": "主题编辑器",
@@ -24,10 +24,10 @@
     "@ant-design/icons": "^5.1.4",
     "@ant-design/cssinjs": "^1.11.1",
     "react": "^18.2.0",
-    "@nocobase/client": "0.11.0-alpha.1",
-    "@nocobase/utils": "0.11.0-alpha.1",
-    "@nocobase/database": "0.11.0-alpha.1",
-    "@nocobase/server": "0.11.0-alpha.1",
-    "@nocobase/test": "0.11.0-alpha.1"
+    "@nocobase/client": "0.11.1-alpha.1",
+    "@nocobase/utils": "0.11.1-alpha.1",
+    "@nocobase/database": "0.11.1-alpha.1",
+    "@nocobase/server": "0.11.1-alpha.1",
+    "@nocobase/test": "0.11.1-alpha.1"
   }
 }

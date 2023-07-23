@@ -593,16 +593,10 @@ function Decorator({ params = {}, children }) {
     dragSort: false,
   };
 
-  [nodeCollection, workflowCollection, todoCollection].forEach((collection) => {
-    if (!collections.find((item) => item.name === collection.name)) {
-      collections.push(collection);
-    }
-  });
-
   return (
     <CollectionManagerProvider
       {...cm}
-      collections={[...collections]}
+      collections={[...collections, nodeCollection, workflowCollection, todoCollection]}
     >
       <TableBlockProvider {...blockProps}>{children}</TableBlockProvider>
     </CollectionManagerProvider>

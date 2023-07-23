@@ -151,9 +151,9 @@
     stylis "^4.0.13"
 
 "@ant-design/cssinjs@^1.11.1":
-  version "1.11.1"
-  resolved "https://registry.yarnpkg.com/@ant-design/cssinjs/-/cssinjs-1.11.1.tgz#d6e12c30c60abfefa3ed3d700a67d93fb4329cc5"
-  integrity sha512-ya0wpkOzBTdQX4u2h6xpluflKPPQuq7LtvJQ9ThDXwu6t67CNFr6SJCEvkuQ9+4rU89VhYMP4IUaTaqYgtsBTQ==
+  version "1.13.2"
+  resolved "https://registry.npmmirror.com/@ant-design/cssinjs/-/cssinjs-1.13.2.tgz#833098a6866a9f754e31562b0d5dc8b1133648d9"
+  integrity sha512-II3QJx6V6boYkAIUiEd1/hquSeX1r67sUOtsvco35fTmV46JvkJz946/6K+ikiuODBSE1kLf7fJ5gHetQyUyww==
   dependencies:
     "@babel/runtime" "^7.11.1"
     "@emotion/hash" "^0.8.0"
