@@ -3,7 +3,7 @@ import { createClient, RedisClientType } from 'redis';
 import { AcquireLockOptions } from '../../rpc-broker/mutex-interface';
 import { ConnectionInfo, RemoteServiceInfo, ServiceDiscoveryClient, ServiceType } from '../client';
 
-export class RedisDiscoveryServerClient extends ServiceDiscoveryClient {
+export class RedisDiscoveryClient extends ServiceDiscoveryClient {
   serverURI: string;
 
   client: RedisClientType;

@@ -1,5 +1,6 @@
 import { ServiceDiscoveryClient } from './client';
-import { RedisDiscoveryServerClient } from './redis-server-client';
+import { DatabaseDiscoveryClient } from './database-discovery-client';
+import { RedisDiscoveryClient } from './redis-discovery-client';
 
 interface ServiceDiscoveryClientBuildOptions {
   serverURI: string;
@@ -13,8 +14,12 @@ export class ServiceDiscoveryClientFactory {
       throw new Error('APP_DISCOVERY_SERVER is not set');
     }
 
+    if (ServerURI.startsWith('db')) {
+      return new DatabaseDiscoveryClient();
+    }
+
     if (ServerURI.startsWith('redis://')) {
-      const client = new RedisDiscoveryServerClient();
+      const client = new RedisDiscoveryClient();
       client.setServerURI(ServerURI);
       return client;
     }

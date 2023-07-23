@@ -42,7 +42,7 @@ describe('redis service discovery', () => {
     await AppSupervisor.getInstance().destroy();
   });
 
-  it('should register into app', async () => {
+  it('should register app', async () => {
     const remoteBroker = AppSupervisor.getInstance().getRpcBroker() as RemoteBroker;
     const discoveryClient = remoteBroker.serviceDiscoverClient;
     const serviceInfo = await discoveryClient.getServicesByName('apps', app.name);
