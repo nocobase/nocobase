@@ -71,4 +71,4 @@ Load plugins remotely in the local development environment, you need to set the 
 
 ```bash
 yarn cross-env USE_REMOTE_PLUGIN=true nocobase dev
-``
+```

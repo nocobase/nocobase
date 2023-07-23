@@ -96,23 +96,18 @@ function resolveNocobasePackagesAlias(config) {
   }
 }
 
-class PluginIndexGeneratorPlugin {
+class IndexGenerator {
   constructor(outputPath, pluginsPath) {
     this.outputPath = outputPath;
     this.pluginsPath = pluginsPath;
   }
 
-  apply(compiler) {
-    compiler.hooks.entryOption.tap('PluginIndexGeneratorPlugin', () => {
-      if (process.env.NODE_ENV === 'production') {
-        fs.writeFileSync(this.outputPath, 'export default {}');
-        return;
-      }
+  generate() {
+    this.generatePluginIndex();
+    if (process.env.NODE_ENV === 'production') return;
+    fs.watch(this.pluginsPath, { recursive: false }, () => {
       this.generatePluginIndex();
-      fs.watch(this.pluginsPath, { recursive: false }, (eventType, fileName) => {
-        this.generatePluginIndex();
-      })
-    });
+    })
   }
 
   generatePluginIndex() {
@@ -122,8 +117,6 @@ class PluginIndexGeneratorPlugin {
     if (!fs.existsSync(this.outputPath)) {
       fs.mkdirSync(path.dirname(this.outputPath), { recursive: true });
     }
-
-
     const pluginFolders = fs.readdirSync(this.pluginsPath);
     const pluginImports = pluginFolders.filter((folder) => {
       const pluginPackageJsonPath = path.join(this.pluginsPath, folder, 'package.json');
@@ -154,4 +147,4 @@ class PluginIndexGeneratorPlugin {
 
 exports.getUmiConfig = getUmiConfig;
 exports.resolveNocobasePackagesAlias = resolveNocobasePackagesAlias;
-exports.PluginIndexGeneratorPlugin = PluginIndexGeneratorPlugin;
+exports.IndexGenerator = IndexGenerator;

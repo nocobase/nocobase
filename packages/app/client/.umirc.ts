@@ -1,4 +1,4 @@
-import { getUmiConfig, PluginIndexGeneratorPlugin } from '@nocobase/devtools/umiConfig';
+import { getUmiConfig, IndexGenerator } from '@nocobase/devtools/umiConfig';
 import { defineConfig } from 'umi';
 import path from 'path';
 
@@ -10,6 +10,12 @@ process.env.DID_YOU_KNOW = 'none';
 const pluginPrefix = (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro-')
   .split(',')
   .filter(item => !item.includes('preset')); // 因为现在 preset 是直接引入的，所以不能忽略，如果以后 preset 也是动态插件的形式引入，那么这里可以去掉
+
+
+const outputPluginPath = path.join(__dirname, 'src', '.plugins', 'index.ts');
+const pluginsPath = path.join(process.cwd(), 'packages', 'plugins')
+const indexGenerator = new IndexGenerator(outputPluginPath, pluginsPath);
+indexGenerator.generate();
 
 export default defineConfig({
   title: 'Loading...',
@@ -52,11 +58,6 @@ export default defineConfig({
     safari: 12,
   },
   chainWebpack(config, { env }) {
-    config.plugin('plugin index generator')
-      .use(PluginIndexGeneratorPlugin, [
-        path.join(__dirname, 'src', '.plugins', 'index.ts'),
-        path.join(process.cwd(), 'packages', 'plugins'),
-      ]);
     if (env === 'production') {
       config.plugin('ignore nocobase plugins')
         .use(require('webpack').IgnorePlugin, [

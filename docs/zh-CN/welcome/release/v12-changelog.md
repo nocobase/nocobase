@@ -71,4 +71,4 @@ export default MyPlugin;
 
 ```bash
 yarn cross-env USE_REMOTE_PLUGIN=true nocobase dev
-``
+```
