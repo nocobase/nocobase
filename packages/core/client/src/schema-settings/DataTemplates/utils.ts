@@ -1,23 +1,32 @@
-import { useField } from '@formily/react';
+import { ArrayBase } from '@formily/antd-v5';
+import { getAssociationPath } from '../../block-provider/hooks';
 import { useCollectionManager } from '../../collection-manager';
 
 export const useSyncFromForm = (fieldSchema) => {
-  const { refreshCM, getCollectionJoinField } = useCollectionManager();
-
-  const field = useField();
+  const { getCollectionJoinField } = useCollectionManager();
+  const array = ArrayBase.useArray();
+  const index = ArrayBase.useIndex();
   return {
     async run() {
       const formData = new Set([]);
-      const getAssociationAppends = (schema) => {
-        schema.reduceProperties((_, s) => {
+      const selectFields = new Set([]);
+      const getAssociationAppends = (schema, str) => {
+        schema.reduceProperties((pre, s) => {
+          const prefix = pre || str;
           const collectionfield = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
           const isAssociationSubfield = s.name.includes('.');
           const isAssociationField =
             collectionfield && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionfield.type);
+          const fieldPath = !isAssociationField && isAssociationSubfield ? getAssociationPath(s.name) : s.name;
+          const path = prefix === '' || !prefix ? fieldPath : prefix + '.' + fieldPath;
+          if (collectionfield) {
+            selectFields.add(path);
+          }
           if (collectionfield && (isAssociationField || isAssociationSubfield) && s['x-component'] !== 'TableField') {
-            formData.add(s.name);
+            formData.add({ name: path, fieldMode: s['x-component-props']['mode'] || 'Select' });
             if (['Nester', 'SubTable'].includes(s['x-component-props']?.mode)) {
-              getAssociationAppends(s);
+              const bufPrefix = prefix && prefix !== '' ? prefix + '.' + s.name : s.name;
+              getAssociationAppends(s, bufPrefix);
             }
           } else if (
             ![
@@ -33,13 +42,12 @@ export const useSyncFromForm = (fieldSchema) => {
               'TableField',
             ].includes(s['x-component'])
           ) {
-            getAssociationAppends(s);
+            getAssociationAppends(s, str);
           }
-        }, null);
+        }, str);
       };
-      getAssociationAppends(fieldSchema);
-
-      console.log(formData, fieldSchema);
+      getAssociationAppends(fieldSchema, '');
+      array.field.value.splice(index, 1, { ...array?.field?.value[index], fields: [...selectFields] });
     },
   };
 };
