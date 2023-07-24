@@ -1279,7 +1279,9 @@ SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Sche
   const collectionField = getCollectionJoinField(fieldSchema?.['x-collection-field']) || {};
   const isShowTime = fieldSchema?.['x-component-props']?.showTime;
   const dateFormatDefaultValue =
-    fieldSchema?.['x-component-props']?.dateFormat || collectionField?.uiSchema?.['x-component-props']?.dateFormat;
+    fieldSchema?.['x-component-props']?.dateFormat ||
+    collectionField?.uiSchema?.['x-component-props']?.dateFormat ||
+    'YYYY-MM-DD';
   const timeFormatDefaultValue =
     fieldSchema?.['x-component-props']?.timeFormat || collectionField?.uiSchema?.['x-component-props']?.timeFormat;
   return (
