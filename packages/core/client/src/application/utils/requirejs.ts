@@ -9,8 +9,15 @@
 //problems with requirejs.exec()/transpiler plugins that may not be strict.
 /*jslint regexp: true, nomen: true, sloppy: true */
 /*global window, navigator, document, importScripts, setTimeout, opera */
+/// <reference types="@types/requirejs" />
 
-export function getRequireJs() {
+export interface RequireJS {
+  require: Require
+  requirejs: Require
+  define: RequireDefine
+}
+
+export function getRequireJs(): RequireJS {
   var requirejs, require, define;
   var req, s, head, baseElement, dataMain, src,
     interactiveScript, currentlyAddingScript, mainScript, subPath,

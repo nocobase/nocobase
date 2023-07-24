@@ -36,7 +36,12 @@ export class PluginManager {
     try {
       const res = await this.app.apiClient.request({ url: 'app:getPlugins' });
       const pluginList: PluginData[] = res.data?.data || [];
-      const plugins = await getPlugins(pluginList, this.app.apiClient.axios?.defaults?.baseURL, this.app.devPlugins);
+      const plugins = await getPlugins({
+        requirejs: this.app.requirejs,
+        pluginData: pluginList,
+        baseURL: this.app.apiClient.axios?.defaults?.baseURL,
+        devPlugins: this.app.devPlugins,
+      });
       for await (const plugin of plugins) {
         await this.add(plugin);
       }

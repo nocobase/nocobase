@@ -14,6 +14,14 @@ import { PluginManager, PluginType } from './PluginManager';
 import { ComponentTypeAndString, RouterManager, RouterOptions } from './RouterManager';
 import { AppComponent, BlankComponent, defaultAppComponents } from './components';
 import { compose, normalizeContainer } from './utils';
+import { defineGlobalDeps } from './utils/globalDeps';
+import { getRequireJs, type RequireJS } from './utils/requirejs';
+
+declare global {
+  interface Window {
+    define: RequireJS['define'];
+  }
+}
 
 export type ComponentAndProps<T = any> = [ComponentType, T];
 export interface ApplicationOptions {
@@ -36,8 +44,10 @@ export class Application {
   public components: Record<string, ComponentType> = { ...defaultAppComponents };
   public pm: PluginManager;
   public devPlugins: Record<string, typeof Plugin> = {};
+  public requirejs: RequireJS;
 
   constructor(protected options: ApplicationOptions = {}) {
+    this.initRequireJs();
     this.devPlugins = options.devPlugins || {};
     this.scopes = merge(this.scopes, options.scopes);
     this.components = merge(this.components, options.components);
@@ -51,6 +61,12 @@ export class Application {
     this.addDefaultProviders();
     this.addReactRouterComponents();
     this.addProviders(options.providers || []);
+  }
+
+  private initRequireJs() {
+    this.requirejs = getRequireJs();
+    defineGlobalDeps(this.requirejs);
+    window.define = this.requirejs.define;
   }
 
   private addDefaultProviders() {
