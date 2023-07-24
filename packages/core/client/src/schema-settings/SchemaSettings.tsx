@@ -1332,7 +1332,7 @@ SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Sche
                   value: 'DD/MM/YYYY',
                 },
                 {
-                  label: CustomFormatCom({ format: 'dddd' }),
+                  label: CustomFormatCom({ defaultValue: 'dddd', name: 'dateFormat' }),
                   value: 'custom',
                 },
               ],
@@ -1382,7 +1382,7 @@ SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Sche
                   value: 'HH:mm:ss',
                 },
                 {
-                  label: CustomFormatCom({ format: 'h:mm a' }),
+                  label: CustomFormatCom({ defaultValue: 'h:mm a', name: 'timeFormat' }),
                   value: 'custom',
                 },
               ],
