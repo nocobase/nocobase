@@ -5,7 +5,6 @@ import 'swagger-ui-react/swagger-ui.css';
 import { useTranslation } from '../locale';
 
 const SwaggerUI = lazy(() => {
-  import('swagger-ui-react/swagger-ui.css');
   return import('swagger-ui-react');
 });
 
