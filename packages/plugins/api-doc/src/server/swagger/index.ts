@@ -165,7 +165,7 @@ export class SwaggerManager {
       },
       {
         name: 'NocoBase Plugins documentation',
-        url: '/api/swagger:get?ns=plugin',
+        url: '/api/swagger:get?ns=plugins',
       },
       ...plugins,
     ];

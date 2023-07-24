@@ -4,6 +4,8 @@ import React, { lazy, useEffect, useState } from 'react';
 import 'swagger-ui-react/swagger-ui.css';
 import { useTranslation } from '../locale';
 
+const DESTINATION_URL_KEY = 'API_DOC:DESTINATION_URL_KEY';
+const getUrl = () => localStorage.getItem(DESTINATION_URL_KEY);
 const SwaggerUI = lazy(() => {
   return import('swagger-ui-react');
 });
@@ -18,11 +20,19 @@ const Documentation = () => {
     return req;
   };
 
-  const [destination, onDestinationChange] = useState<string>();
+  const [destination, onDestinationChange] = useState<string>(getUrl());
 
   useEffect(() => {
-    if (!destination) {
-      onDestinationChange(urls?.data[0].url);
+    if (destination) {
+      localStorage.setItem(DESTINATION_URL_KEY, destination);
+    }
+  }, [destination]);
+
+  useEffect(() => {
+    if (!urls?.data?.length) return;
+
+    if (!destination || !urls.data.find((item) => item.url === getUrl())) {
+      onDestinationChange(urls.data[0].url);
     }
   }, [destination, urls]);
 
