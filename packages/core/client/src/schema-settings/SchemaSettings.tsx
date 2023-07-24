@@ -1367,6 +1367,7 @@ SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Sche
                 `,
                 defaultValue: 'h:mm a',
                 formats: ['hh:mm:ss a', 'HH:mm:ss'],
+                timeFormat: true,
               },
               default: timeFormatDefaultValue,
               enum: [

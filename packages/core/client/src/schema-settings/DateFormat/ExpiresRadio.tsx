@@ -44,10 +44,10 @@ const DateTimeFormatPreview = ({ content }) => {
 };
 
 const InternalExpiresRadio = (props) => {
-  const { onChange, defaultValue, formats } = props;
-  const [isCustom, { setFalse, setTrue }] = useBoolean(!formats.includes(props.value));
-  const targetValue = !formats.includes(props.value) ? props.value : defaultValue;
-  const [customFormatPreview, setCustomFormatPreview] = useState(date.format(targetValue));
+  const { onChange, defaultValue, formats, timeFormat } = props;
+  const [isCustom, { setFalse, setTrue }] = useBoolean(props.value && !formats.includes(props.value));
+  const targetValue = props.value && !formats.includes(props.value) ? props.value : defaultValue;
+  const [customFormatPreview, setCustomFormatPreview] = useState(targetValue ? date.format(targetValue) : null);
   const onSelectChange = (v) => {
     if (v.target.value === 'custom') {
       setTrue();
@@ -57,6 +57,7 @@ const InternalExpiresRadio = (props) => {
       onChange(v.target.value);
     }
   };
+
   return (
     <Space className={spaceCSS}>
       <Radio.Group value={isCustom ? 'custom' : props.value} onChange={onSelectChange}>
@@ -69,12 +70,17 @@ const InternalExpiresRadio = (props) => {
                     style={{ width: '150px' }}
                     defaultValue={targetValue}
                     onChange={(e) => {
-                      if (e.target.value && moment(date.toLocaleString(), e.target.value).isValid()) {
+                      if (
+                        e.target.value &&
+                        moment(timeFormat ? date.format() : date.toLocaleString(), e.target.value).isValid()
+                      ) {
                         setCustomFormatPreview(date.format(e.target.value));
                       } else {
                         setCustomFormatPreview(null);
                       }
-                      onChange(e.target.value);
+                      if (isCustom) {
+                        onChange(e.target.value);
+                      }
                     }}
                   />
                   <DateTimeFormatPreview content={customFormatPreview} />
