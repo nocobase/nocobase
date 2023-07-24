@@ -1272,6 +1272,7 @@ SchemaSettings.EnableChildCollections = function EnableChildCollectionsItem(prop
 SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Schema }) {
   const { fieldSchema } = props;
   const field = useField();
+  const form = useForm();
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const { getCollectionJoinField } = useCollectionManager();
@@ -1292,11 +1293,7 @@ SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Sche
               type: 'string',
               'x-component': 'Radio.Group',
               'x-decorator': 'FormItem',
-              'x-decorator-props': {
-                className: css`
-                  margin-bottom: 0px;
-                `,
-              },
+              'x-decorator-props': {},
               'x-component-props': {
                 className: css`
                   .ant-radio-wrapper {
@@ -1332,7 +1329,18 @@ SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Sche
                   value: 'DD/MM/YYYY',
                 },
                 {
-                  label: CustomFormatCom({ defaultValue: 'dddd', name: 'dateFormat' }),
+                  label: (
+                    <CustomFormatCom
+                      defaultValue={
+                        !['MMMMM Do YYYY', 'YYYY-MM-DD', 'MM/DD/YY', 'YYYY/MM/DD', 'DD/MM/YYYY'].includes(
+                          dateFormatDefaultValue,
+                        )
+                          ? dateFormatDefaultValue
+                          : 'dddd'
+                      }
+                      name="dateFormat"
+                    />
+                  ),
                   value: 'custom',
                 },
               ],
@@ -1382,7 +1390,14 @@ SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Sche
                   value: 'HH:mm:ss',
                 },
                 {
-                  label: CustomFormatCom({ defaultValue: 'h:mm a', name: 'timeFormat' }),
+                  label: (
+                    <CustomFormatCom
+                      defaultValue={
+                        !['hh:mm:ss a', 'HH:mm:ss'].includes(timeFormatDefaultValue) ? timeFormatDefaultValue : 'h:mm a'
+                      }
+                      name="timeFormat"
+                    />
+                  ),
                   value: 'custom',
                 },
               ],
@@ -1391,6 +1406,7 @@ SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Sche
         } as ISchema
       }
       onSubmit={(data) => {
+        console.log(data);
         const schema = {
           ['x-uid']: fieldSchema['x-uid'],
         };

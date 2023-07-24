@@ -35,7 +35,9 @@ const DateTimeFormatPreview = ({ content }) => {
 export const CustomFormatCom = observer((props: any) => {
   const { defaultValue, name } = props;
   const date = moment();
-  const [customFormatPreview, setCustomFormatPreview] = useState(props.value ? date.format(props.value) : null);
+  const [customFormatPreview, setCustomFormatPreview] = useState(
+    props.defaultValue ? date.format(props.defaultValue) : null,
+  );
   const form = useForm();
   return (
     <div style={{ display: 'inline-flex' }}>
