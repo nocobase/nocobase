@@ -10,7 +10,6 @@ export default {
       name: 'Core packages are Apache 2.0 & Plugins packages are AGPL 3.0 licensed.',
       url: 'https://github.com/nocobase/nocobase#license',
     },
-    version: '1.0.11',
   },
   externalDocs: {
     description: 'Find out more about NocoBase',
