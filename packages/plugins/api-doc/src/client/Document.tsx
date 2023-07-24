@@ -12,7 +12,7 @@ const Documentation = () => {
   const apiClient = useAPIClient();
   const { t } = useTranslation();
 
-  const { data: urls } = useRequest<{ data: { name: string; url: string }[] }>({ url: 'swagger:urls' });
+  const { data: urls } = useRequest<{ data: { name: string; url: string }[] }>({ url: 'swagger:getUrls' });
   const requestInterceptor: <T extends Record<string, any> = Record<string, any>>(req: T) => T | Promise<T> = (req) => {
     req.headers['Authorization'] = `Bearer ${apiClient.auth.getToken()}`;
     return req;

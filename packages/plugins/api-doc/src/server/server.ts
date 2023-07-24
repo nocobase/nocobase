@@ -14,30 +14,29 @@ export default class APIDoc extends Plugin {
       name: 'swagger',
       type: 'single',
       actions: {
-        urls: async (ctx: Context) => {
+        getUrls: async (ctx: Context) => {
           ctx.body = await this.swagger.getUrls();
         },
-        get: async (ctx: Context, next) => {
-          ctx.body = 'ok';
-          await next();
-        },
-        configs: async (ctx: Context) => {
-          const { type, index } = ctx.action.params;
-
+        get: async (ctx: Context) => {
           ctx.withoutDataWrapping = true;
-          if (type === 'nocobase') {
+
+          const { ns } = ctx.action.params;
+          if (!ns) {
             ctx.body = await this.swagger.getSwagger();
-          } else if (type === 'core') {
+            return;
+          }
+
+          const [type, index] = ns.split('/');
+          if (type === 'core') {
             ctx.body = await this.swagger.getCoreSwagger();
-          } else if (type === 'plugin') {
+          } else if (type === 'plugins') {
             ctx.body = await this.swagger.getPluginsSwagger(index);
           }
-          return;
         },
       },
-      only: ['get', 'urls', 'configs'],
+      only: ['get', 'getUrls'],
     });
-    this.app.acl.allow('swagger', ['get', 'urls', 'configs'], 'public');
+    this.app.acl.allow('swagger', ['get', 'getUrls'], 'loggedIn');
     this.app.acl.registerSnippet({
       name: ['pm', this.name, 'documentation'].join('.'),
       actions: ['swagger:*'],

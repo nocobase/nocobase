@@ -149,7 +149,7 @@ export class SwaggerManager {
         return Object.keys(res).map((name) => {
           return {
             name: `NocoBase ${name} plugin documentation`,
-            url: `/api/swagger:configs?type=plugin&index=${name}`,
+            url: `/api/swagger:get?ns=${encodeURIComponent(`plugins/${name}`)}`,
           };
         });
       })
@@ -157,15 +157,15 @@ export class SwaggerManager {
     return [
       {
         name: 'NocoBase documentation',
-        url: '/api/swagger:configs?type=nocobase',
+        url: '/api/swagger:get',
       },
       {
         name: 'NocoBase Core documentation',
-        url: '/api/swagger:configs?type=core',
+        url: '/api/swagger:get?ns=core',
       },
       {
         name: 'NocoBase Plugins documentation',
-        url: '/api/swagger:configs?type=plugin',
+        url: '/api/swagger:get?ns=plugin',
       },
       ...plugins,
     ];
