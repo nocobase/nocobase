@@ -1406,7 +1406,6 @@ SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Sche
         } as ISchema
       }
       onSubmit={(data) => {
-        console.log(data);
         const schema = {
           ['x-uid']: fieldSchema['x-uid'],
         };
@@ -1414,6 +1413,8 @@ SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Sche
         fieldSchema['x-component-props'] = {
           ...(fieldSchema['x-component-props'] || {}),
           ...data,
+          dateFormat: data.dateFormat === 'custom' ? 'dddd' : data.dateFormat,
+          timeFormat: data.timeFormat === 'custom' ? 'h:mm a' : data.timeFormat,
         };
         schema['x-component-props'] = fieldSchema['x-component-props'];
         field.componentProps = fieldSchema['x-component-props'];
