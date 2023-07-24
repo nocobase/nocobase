@@ -50,6 +50,7 @@
 'koa',
 '@koa/cors',
 '@koa/router',
+'multer',
 '@koa/multer',
 'koa-bodyparser',
 'koa-static',

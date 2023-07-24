@@ -48,6 +48,7 @@ When installing the following dependencies, pay attention to the **version** and
 'koa',
 '@koa/cors',
 '@koa/router',
+'multer',
 '@koa/multer',
 'koa-bodyparser',
 'koa-static',
