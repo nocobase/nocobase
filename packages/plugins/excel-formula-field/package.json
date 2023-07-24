@@ -5,7 +5,7 @@
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "files": [
-    "lib",
+    "dist",
     "src",
     "README.md",
     "README.zh-CN.md",

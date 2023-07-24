@@ -37,8 +37,8 @@ const getPackageName = (url: string) => {
  * get plugin client static file real path
  *
  * @example
- * /api/plugins/client/@nocobase/plugin-acl/index.js => /node_modules/@nocobase/plugin-acl/lib/client/index.js
- * /api/plugins/client/my-plugin/README.md => /node_modules/my-plugin/lib/client/README.md
+ * /api/plugins/client/@nocobase/plugin-acl/index.js => /node_modules/@nocobase/plugin-acl/dist/client/index.js
+ * /api/plugins/client/my-plugin/README.md => /node_modules/my-plugin/dist/client/README.md
  */
 const getRealPath = (packageName: string, url: string) => {
   const ext = path.extname(url);
