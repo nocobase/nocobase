@@ -1284,7 +1284,7 @@ SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Sche
     fieldSchema?.['x-component-props']?.timeFormat || collectionField?.uiSchema?.['x-component-props']?.timeFormat;
   return (
     <SchemaSettings.ModalItem
-      title={t('Date format')}
+      title={t('Date display format')}
       schema={
         {
           type: 'object',
