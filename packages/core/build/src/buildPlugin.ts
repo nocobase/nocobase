@@ -156,7 +156,6 @@ export async function buildServerDeps(cwd: string, serverFiles: string[], log: L
   // bundle deps
   for (const dep of Object.keys(deps)) {
     const { outputDir, mainFile, pkg, nccConfig, depDir } = deps[dep];
-    debugger
     const outputPackageJson = path.join(outputDir, 'package.json');
 
     // cache check
@@ -169,6 +168,28 @@ export async function buildServerDeps(cwd: string, serverFiles: string[], log: L
 
     // copy package
     await fs.copy(depDir, outputDir, { errorOnExist: false });
+
+    // delete files
+    const deleteFiles = fg.sync([
+      './**/*.map',
+      './**/*.js.map',
+      './**/*.md',
+      './**/*.mjs',
+      './**/*.png',
+      './**/*.jpg',
+      './**/*.jpeg',
+      './**/*.gif',
+      './**/*/.bin',
+      './**/*/bin',
+      './**/*/LICENSE',
+      './**/*/tsconfig.json'
+    ], { cwd: outputDir, absolute: true });
+
+    console.log('deleteFiles', deleteFiles)
+
+    deleteFiles.forEach((file) => {
+      fs.unlinkSync(file);
+    });
 
     await ncc(dep, nccConfig).then(
       ({

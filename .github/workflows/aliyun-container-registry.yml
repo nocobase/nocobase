@@ -25,9 +25,12 @@ jobs:
     runs-on: ubuntu-latest
     services:
       verdaccio:
-        image: verdaccio/verdaccio
+        image: verdaccio/verdaccio:latest
         ports:
           - 4873:4873
+        steps:
+          - name: Override config file
+            run: docker cp ./verdaccio-config.yaml ${{ job.services.verdaccio.id }}:/verdaccio/conf/config.yaml
     steps:
       - name: Checkout
         uses: actions/checkout@v3
