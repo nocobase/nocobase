@@ -12,9 +12,14 @@ export default class APIDoc extends Plugin {
   async load() {
     this.app.resource({
       name: 'swagger',
+      type: 'single',
       actions: {
         urls: async (ctx: Context) => {
           ctx.body = await this.swagger.getUrls();
+        },
+        get: async (ctx: Context, next) => {
+          ctx.body = 'ok';
+          await next();
         },
         configs: async (ctx: Context) => {
           const { type, index } = ctx.action.params;
@@ -30,9 +35,9 @@ export default class APIDoc extends Plugin {
           return;
         },
       },
-      only: ['urls', 'configs'],
+      only: ['get', 'urls', 'configs'],
     });
-    this.app.acl.allow('swagger', ['urls', 'configs'], 'loggedIn');
+    this.app.acl.allow('swagger', ['get', 'urls', 'configs'], 'public');
     this.app.acl.registerSnippet({
       name: ['pm', this.name, 'documentation'].join('.'),
       actions: ['swagger:*'],
