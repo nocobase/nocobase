@@ -113,7 +113,8 @@ const external = [
   'axios',
   '@emotion/css',
   'ahooks',
-  'lodash'
+  'lodash',
+  'china-division'
 ]
 const pluginPrefix = (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro-').split(
   ',');
