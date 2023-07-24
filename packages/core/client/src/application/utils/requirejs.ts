@@ -1,4 +1,4 @@
-// @ts-ignore
+// @ts-nocheck
 /* eslint-disable */
 /* prettier-ignore */
 /** vim: et:ts=4:sw=4:sts=4
