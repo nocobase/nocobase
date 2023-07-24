@@ -1,16 +1,10 @@
 import fs from 'fs';
 import chalk from 'chalk';
 import { builtinModules } from 'module';
-import DepsRegex from 'deps-regex';
 import path from 'path';
 
-const depsRegex = new DepsRegex({
-  matchInternal: false,
-  matchES6: true,
-  matchCoffeescript: false,
-});
-
-const packageJsonRequireRegex = /require\((['"])\.\.\/+(\.\.\/)*package\.json\1\)/;
+const requireRegex = /require\s*\(['"`](.*?)['"`]\)/g;
+const importRegex = /^import(?:['"\s]*([\w*${}\s,]+)from\s*)?['"\s]['"\s](.*[@\w_-]+)['"\s].*/gm;
 
 type Log = (msg: string, ...args: any) => void;
 
@@ -58,7 +52,7 @@ export function getPackageNameFromString(str: string) {
 
 export function getPackagesFromFiles(files: string[]): string[] {
   const packageNames = files
-    .map(item => depsRegex.getDependencies(item))
+    .map(item => [...[...item.matchAll(importRegex)].map(item => item[2]), ...[...item.matchAll(requireRegex)].map(item => item[1])])
     .flat()
     .map(getPackageNameFromString)
     .filter(Boolean)
@@ -89,17 +83,6 @@ export function getPackageJson(cwd: string) {
 
 export function getPackageJsonPackages(packageJson: Record<string, any>): string[] {
   return [...new Set([...Object.keys(packageJson.devDependencies || {}), ...Object.keys(packageJson.dependencies || {})])];
-}
-
-export function checkRequirePackageJson(sourcePaths: string[], log: Log) {
-  sourcePaths.forEach(item => {
-    const code = fs.readFileSync(item, 'utf-8');
-    const match = code.match(packageJsonRequireRegex)
-    if (match) {
-      log('%s in %s is not allowed. Please use %s instead.', chalk.red(match[0]), chalk.red(item), chalk.red('import'));
-      process.exit(-1);
-    }
-  })
 }
 
 export function checkEntryExists(cwd: string, entry: 'server' | 'client', log: Log) {

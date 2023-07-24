@@ -87,7 +87,10 @@ describe('buildPluginUtils', () => {
         const dayjs = require("dayjs");
         const { Button } = require('antd');
         const cloneDeep = require('lodash/cloneDeep')
-        const { Form } = require('@formily/antd')
+        const {
+          Form,
+          Button,
+        } = require('@formily/antd')
         const Loading = require('@ant-design/icons/Loading')
         const Github = require('@ant-design/icons/Github')
         require('systemjs')

@@ -113,7 +113,10 @@ const external = [
   'axios',
   '@emotion/css',
   'ahooks',
-  'lodash'
+  'lodash',
+
+  // others
+  'china-division'
 ]
 const pluginPrefix = (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro-').split(
   ',');
@@ -136,7 +139,6 @@ export async function buildServerDeps(cwd: string, serverFiles: string[], log: L
   const sourcePackages = getSourcePackages(serverFiles)
   const includePackages = getIncludePackages(sourcePackages, external, pluginPrefix);
   const excludePackages = getExcludePackages(sourcePackages, external, pluginPrefix)
-
   let tips = [];
   if (includePackages.length) {
     tips.push(`These packages ${chalk.yellow(includePackages.join(', '))} will be ${chalk.bold('bundled')} to dist/node_modules.`)
@@ -257,7 +259,7 @@ export function buildPluginClient(cwd: string, log: Log) {
           if (!fs.existsSync(file)) return;
           const fileSize = getFileSize(path.join(outDir, outputFileName));
           if (fileSize > 1024 * 1024) {
-            log('The bundle file size exceeds 1MB %s. Please check for unnecessary %s and move them to %s if possible.\n', chalk.yellow(formatFileSize(fileSize)), chalk.yellow('dependencies'), chalk.yellow('devDependencies'));
+            log('The bundle file size exceeds 1MB %s. ', chalk.red(formatFileSize(fileSize)));
           }
         },
       }
