@@ -64,7 +64,7 @@ import { getTargetKey } from '../schema-component/antd/association-filter/utilts
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
 import { FormDataTemplates } from './DataTemplates';
-import { CustomFormatCom, DateFormatCom } from './DateFormat';
+import { DateFormatCom, ExpiresRadio } from './DateFormat/ExpiresRadio';
 import { EnableChildCollections } from './EnableChildCollections';
 import { ChildDynamicComponent } from './EnableChildCollections/DynamicComponent';
 import { FormLinkageRules } from './LinkageRules';
@@ -1291,7 +1291,7 @@ SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Sche
           properties: {
             dateFormat: {
               type: 'string',
-              'x-component': 'Radio.Group',
+              'x-component': ExpiresRadio,
               'x-decorator': 'FormItem',
               'x-decorator-props': {},
               'x-component-props': {
@@ -1301,12 +1301,10 @@ SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Sche
                     margin: 5px 0px;
                   }
                 `,
+                defaultValue: 'dddd',
+                formats: ['MMMMM Do YYYY', 'YYYY-MM-DD', 'MM/DD/YY', 'YYYY/MM/DD', 'DD/MM/YYYY'],
               },
-              default: ['MMMMM Do YYYY', 'YYYY-MM-DD', 'MM/DD/YY', 'YYYY/MM/DD', 'DD/MM/YYYY'].includes(
-                dateFormatDefaultValue,
-              )
-                ? dateFormatDefaultValue
-                : 'custom',
+              default: dateFormatDefaultValue,
               enum: [
                 {
                   label: DateFormatCom({ format: 'MMMMM Do YYYY' }),
@@ -1329,18 +1327,7 @@ SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Sche
                   value: 'DD/MM/YYYY',
                 },
                 {
-                  label: (
-                    <CustomFormatCom
-                      defaultValue={
-                        !['MMMMM Do YYYY', 'YYYY-MM-DD', 'MM/DD/YY', 'YYYY/MM/DD', 'DD/MM/YYYY'].includes(
-                          dateFormatDefaultValue,
-                        )
-                          ? dateFormatDefaultValue
-                          : 'dddd'
-                      }
-                      name="dateFormat"
-                    />
-                  ),
+                  label: 'custom',
                   value: 'custom',
                 },
               ],
@@ -1363,7 +1350,7 @@ SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Sche
             timeFormat: {
               type: 'string',
               title: '{{t("Time format")}}',
-              'x-component': 'Radio.Group',
+              'x-component': ExpiresRadio,
               'x-decorator': 'FormItem',
               'x-decorator-props': {
                 className: css`
@@ -1378,8 +1365,10 @@ SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Sche
                     margin: 5px 0px;
                   }
                 `,
+                defaultValue: 'h:mm a',
+                formats: ['hh:mm:ss a', 'HH:mm:ss'],
               },
-              default: ['hh:mm:ss a', 'HH:mm:ss'].includes(timeFormatDefaultValue) ? timeFormatDefaultValue : 'custom',
+              default: timeFormatDefaultValue,
               enum: [
                 {
                   label: DateFormatCom({ format: 'hh:mm:ss a' }),
@@ -1390,14 +1379,7 @@ SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Sche
                   value: 'HH:mm:ss',
                 },
                 {
-                  label: (
-                    <CustomFormatCom
-                      defaultValue={
-                        !['hh:mm:ss a', 'HH:mm:ss'].includes(timeFormatDefaultValue) ? timeFormatDefaultValue : 'h:mm a'
-                      }
-                      name="timeFormat"
-                    />
-                  ),
+                  label: 'custom',
                   value: 'custom',
                 },
               ],
@@ -1413,8 +1395,6 @@ SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Sche
         fieldSchema['x-component-props'] = {
           ...(fieldSchema['x-component-props'] || {}),
           ...data,
-          dateFormat: data.dateFormat === 'custom' ? 'dddd' : data.dateFormat,
-          timeFormat: data.timeFormat === 'custom' ? 'h:mm a' : data.timeFormat,
         };
         schema['x-component-props'] = fieldSchema['x-component-props'];
         field.componentProps = fieldSchema['x-component-props'];
