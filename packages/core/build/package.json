@@ -67,6 +67,7 @@
     "tsup": "7.1.0",
     "fast-glob": "3.3.0",
     "yargs-parser": "13.1.2",
+    "@vercel/ncc": "0.36.1",
     "vite-plugin-css-injected-by-js": "^3.2.1"
   },
   "license": "Apache-2.0",

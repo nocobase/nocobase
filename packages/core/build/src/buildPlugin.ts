@@ -1,7 +1,7 @@
-import fs from 'fs';
+import fs from 'fs-extra';
 import chalk from 'chalk';
+import ncc from '@vercel/ncc';
 import path from 'path';
-import execa from 'execa'
 import react from '@vitejs/plugin-react'
 import { build as tsupBuild } from 'tsup'
 import { build as viteBuild } from 'vite'
@@ -113,10 +113,7 @@ const external = [
   'axios',
   '@emotion/css',
   'ahooks',
-  'lodash',
-
-  // others
-  'china-division'
+  'lodash'
 ]
 const pluginPrefix = (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro-').split(
   ',');
@@ -136,9 +133,11 @@ export function deleteJsFiles(cwd: string, log: Log) {
 
 export async function buildServerDeps(cwd: string, serverFiles: string[], log: Log) {
   log('build server dependencies')
+  const outDir = path.join(cwd, target_dir, 'node_modules');
   const sourcePackages = getSourcePackages(serverFiles)
   const includePackages = getIncludePackages(sourcePackages, external, pluginPrefix);
   const excludePackages = getExcludePackages(sourcePackages, external, pluginPrefix)
+
   let tips = [];
   if (includePackages.length) {
     tips.push(`These packages ${chalk.yellow(includePackages.join(', '))} will be ${chalk.bold('bundled')} to dist/node_modules.`)
@@ -151,32 +150,56 @@ export async function buildServerDeps(cwd: string, serverFiles: string[], log: L
 
   if (!includePackages.length) return;
 
-  const dependencies = getDepsConfig(cwd, includePackages);
+  const deps = getDepsConfig(cwd, outDir, includePackages, external);
 
-  const outputDir = path.join(cwd, target_dir);
-  if (!fs.existsSync(outputDir)) {
-    fs.mkdirSync(outputDir);
+  // bundle deps
+  for (const dep of Object.keys(deps)) {
+    const { outputDir, mainFile, pkg, nccConfig, depDir } = deps[dep];
+    debugger
+    const outputPackageJson = path.join(outputDir, 'package.json');
+
+    // cache check
+    if (fs.existsSync(outputPackageJson)) {
+      const outputPackage = require(outputPackageJson);
+      if (outputPackage.version === pkg.version) {
+        continue;
+      }
+    }
+
+    // copy package
+    await fs.copy(depDir, outputDir, { errorOnExist: false });
+
+    await ncc(dep, nccConfig).then(
+      ({
+        code,
+        assets,
+      }: {
+        code: string;
+        assets: Record<string, { source: string; permissions: number }>;
+      }) => {
+        // emit dist file
+        fs.writeFileSync(mainFile, code, 'utf-8');
+
+        // emit assets
+        Object.entries(assets).forEach(([name, item]) => {
+          fs.writeFileSync(path.join(outputDir, name), item.source, {
+            encoding: 'utf-8',
+            mode: item.permissions,
+          });
+        });
+
+        // emit package.json
+        fs.writeFileSync(
+          outputPackageJson,
+          JSON.stringify({
+            ...pkg,
+            _lastModified: new Date().toISOString(),
+          }),
+          'utf-8',
+        );
+      },
+    );
   }
-  const outputPackageJson = path.join(outputDir, 'package.json');
-  const oldPackageJson = path.join(outputDir, 'node_modules', '_package.json');
-  const content = JSON.stringify({
-    name: 'plugin-tmp',
-    version: '1.0.0',
-    dependencies
-  });
-
-  if (fs.existsSync(oldPackageJson)) {
-    const oldContent = fs.readFileSync(oldPackageJson, 'utf-8');
-    if (oldContent === content) return;
-  }
-
-  fs.writeFileSync(outputPackageJson, content, 'utf-8')
-
-  execa.sync('yarn', ['install', '--production', '--non-interactive'], {
-    cwd: outputDir,
-  })
-
-  fs.renameSync(outputPackageJson, oldPackageJson)
 }
 
 export async function buildPluginServer(cwd: string, log: Log) {
