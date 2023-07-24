@@ -33,9 +33,6 @@ export class DatabaseDiscoveryClient extends ServiceDiscoveryClient {
   async getDb(options: any = {}) {
     if (!this.db) {
       const db = new Database(this.databaseOptions());
-      if (!db.inDialect('mysql', 'postgres')) {
-        throw new Error('only support mysql or postgresql as discovery database');
-      }
 
       db.collection(ServiceRegistryCollection);
 
