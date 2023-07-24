@@ -64,14 +64,24 @@ export const FormItem: any = observer(
         ctx.field.data.activeFields = ctx.field.data.activeFields || new Set();
         ctx.field.data.activeFields.add(schema.name);
         // 如果默认值是一个变量，则需要解析之后再显示出来
-        if (
-          isVariable(schema?.default) &&
-          (!schema?.default.includes('$context') || collectionField.interface === 'm2m')
-        ) {
+        if (isVariable(schema?.default) && !schema?.default.includes('$context')) {
           field.setInitialValue?.(parseVariables(schema.default, variablesCtx));
         } else if (
+          isVariable(schema?.default) &&
+          schema?.default?.includes('$context') &&
+          collectionField.interface === 'm2m'
+        ) {
+          // 直接对多
+          const contextData = parseVariables('{{$context}}', variablesCtx);
+          let iniValues = [];
+          contextData?.map((v) => {
+            const data = parseVariables(schema.default, { $context: v });
+            iniValues = iniValues.concat(data);
+          });
+          field.setInitialValue?.(_.uniqBy(iniValues, 'id'));
+        } else if (
           collectionField?.interface === 'o2m' &&
-          ['SubTable', 'Nester'].includes(schema?.['x-component-props']?.['mode'])
+          ['SubTable', 'Nester'].includes(schema?.['x-component-props']?.['mode']) // 间接对多
         ) {
           const childrenFieldWithDefault = findColumnFieldSchema(schema, getCollectionJoinField);
           // 子表格/子表单中找出所有belongsTo字段的上下文默认值
