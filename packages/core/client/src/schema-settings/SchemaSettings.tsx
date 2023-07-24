@@ -1291,6 +1291,7 @@ SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Sche
           properties: {
             dateFormat: {
               type: 'string',
+              title: '{{t("Date format")}}',
               'x-component': ExpiresRadio,
               'x-decorator': 'FormItem',
               'x-decorator-props': {},
