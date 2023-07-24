@@ -9,16 +9,13 @@ const arr2obj = (items: any[]) => {
 export const getResource = (packageName: string, lang: string) => {
   const resources = [];
   const prefixes = ['src', 'lib'];
-  const localeKeys = ['locale', 'client/locale', 'server/locale'];
   for (const prefix of prefixes) {
-    for (const localeKey of localeKeys) {
-      try {
-        const file = `${packageName}/${prefix}/${localeKey}/${lang}`;
-        require.resolve(file);
-        const resource = require(file).default;
-        resources.push(resource);
-      } catch (error) {}
-    }
+    try {
+      const file = `${packageName}/${prefix}/locale/${lang}`;
+      require.resolve(file);
+      const resource = require(file).default;
+      resources.push(resource);
+    } catch (error) {}
     if (resources.length) {
       break;
     }

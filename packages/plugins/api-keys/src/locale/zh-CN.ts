@@ -16,6 +16,7 @@ const locale = {
   '7 Days': '7 天',
   '30 Days': '30 天',
   '90 Days': '90 天',
+  'Role not found': '角色不存在',
 };
 
 export default locale;

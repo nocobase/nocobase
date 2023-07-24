@@ -1,5 +1,3 @@
-const locale = {
-
-}
+const locale = {};
 
 export default locale;
