@@ -21,7 +21,7 @@ export const BlockItem: React.FC<any> = (props) => {
           }
           &.nb-form-item:hover {
             > .general-schema-designer {
-              background: rgba(241, 139, 98, 0.06) !important;
+              background: var(--colorBgSettingsHover) !important;
               border: 0 !important;
               top: -5px !important;
               bottom: -5px !important;
@@ -37,7 +37,7 @@ export const BlockItem: React.FC<any> = (props) => {
             left: 0;
             right: 0;
             display: none;
-            border: 2px solid rgba(241, 139, 98, 0.3);
+            border: 2px solid var(--colorBorderSettingsHover);
             pointer-events: none;
             > .general-schema-designer-icons {
               position: absolute;
@@ -46,7 +46,7 @@ export const BlockItem: React.FC<any> = (props) => {
               line-height: 16px;
               pointer-events: all;
               .ant-space-item {
-                background-color: #f18b62;
+                background-color: var(--colorSettings);
                 color: #fff;
                 line-height: 16px;
                 width: 16px;

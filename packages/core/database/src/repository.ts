@@ -18,6 +18,7 @@ import {
 import { Collection } from './collection';
 import { Database } from './database';
 import mustHaveFilter from './decorators/must-have-filter-decorator';
+import injectTargetCollection from './decorators/target-collection-decorator';
 import { transactionWrapperBuilder } from './decorators/transaction-decorator';
 import { EagerLoadingTree } from './eager-loading/eager-loading-tree';
 import { ArrayFieldRepository } from './field-repository/array-field-repository';
@@ -97,6 +98,7 @@ export type CountOptions = Omit<SequelizeCountOptions, 'distinct' | 'where' | 'i
 
 export interface FilterByTk {
   filterByTk?: TargetKey;
+  targetCollection?: string;
 }
 
 export type FindOptions = SequelizeFindOptions & CommonFindOptions & FilterByTk;
@@ -111,7 +113,9 @@ export interface CommonFindOptions extends Transactionable {
   tree?: boolean;
 }
 
-export type FindOneOptions = Omit<FindOptions, 'limit'>;
+export type FindOneOptions = Omit<FindOptions, 'limit'> & {
+  targetCollection?: string;
+};
 
 export interface DestroyOptions extends SequelizeDestroyOptions {
   filter?: Filter;
@@ -137,6 +141,7 @@ export interface UpdateOptions extends Omit<SequelizeUpdateOptions, 'where'> {
   whitelist?: WhiteList;
   blacklist?: BlackList;
   updateAssociationValues?: AssociationKeysToBeUpdate;
+  targetCollection?: string;
   context?: any;
 }
 
@@ -375,6 +380,10 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
    * @param options
    */
   async find(options: FindOptions = {}) {
+    if (options?.targetCollection && options?.targetCollection !== this.collection.name) {
+      return await this.database.getCollection(options.targetCollection).repository.find(options);
+    }
+
     const model = this.collection.model;
     const transaction = await this.getTransaction(options);
 
@@ -599,6 +608,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
    */
   @transaction()
   @mustHaveFilter()
+  @injectTargetCollection
   async update(options: UpdateOptions & { forceUpdate?: boolean }) {
     if (Array.isArray(options.values)) {
       return this.updateMany({

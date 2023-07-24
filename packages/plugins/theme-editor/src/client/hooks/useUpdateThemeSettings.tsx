@@ -13,8 +13,7 @@ export function useUpdateThemeSettings() {
         return;
       }
       try {
-        await api.resource('users').update({
-          filterByTk: currentUser.data.data.id,
+        await api.resource('users').updateProfile({
           values: {
             systemSettings: {
               ...currentUser.data.data.systemSettings,

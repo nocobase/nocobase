@@ -487,7 +487,7 @@ describe('belongs to many', () => {
 
     const PostTagRepository = new BelongsToManyRepository(Post, 'tags', p1.id);
 
-    const t1 = await PostTagRepository.findOne({
+    let t1 = await PostTagRepository.findOne({
       filter: {
         name: 't1',
       },
@@ -503,7 +503,7 @@ describe('belongs to many', () => {
     });
 
     const Post2TagRepository = new BelongsToManyRepository(Post, 'tags', p2.id);
-    const p2Tag = await Post2TagRepository.findOne();
+    let p2Tag = await Post2TagRepository.findOne();
     expect(p2Tag.posts_tags.tagged_at).toBeNull();
 
     // 设置p1与t1关联的tagged_at
@@ -518,11 +518,15 @@ describe('belongs to many', () => {
       },
     });
 
-    await t1.reload();
+    t1 = await PostTagRepository.findOne({
+      filter: {
+        name: 't1',
+      },
+    });
 
     expect(t1.posts_tags.tagged_at).toEqual('456');
 
-    await p2Tag.reload();
+    p2Tag = await Post2TagRepository.findOne();
     // p2-tag1 still not change
     expect(p2Tag.posts_tags.tagged_at).toBeNull();
   });

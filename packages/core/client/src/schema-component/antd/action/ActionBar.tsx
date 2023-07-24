@@ -103,6 +103,7 @@ export const ActionBar = observer(
             alignItems: 'center',
             width: '100%',
             overflow: 'hidden',
+            flexWrap: 'wrap',
           }}
         >
           <DndContext>

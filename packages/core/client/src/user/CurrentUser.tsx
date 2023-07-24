@@ -1,7 +1,7 @@
 import { css } from '@emotion/css';
 import { error } from '@nocobase/utils/client';
 import { App, Dropdown, Menu, MenuProps } from 'antd';
-import React, { createContext, useCallback, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useMemo as useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useACLRoleContext, useAPIClient, useCurrentUserContext } from '..';
@@ -13,7 +13,7 @@ import { useLanguageSettings } from './LanguageSettings';
 import { useSwitchRole } from './SwitchRole';
 const useApplicationVersion = () => {
   const data = useCurrentAppInfo();
-  return useMemo(() => {
+  return useEffect(() => {
     return {
       key: 'version',
       disabled: true,
@@ -62,7 +62,7 @@ export const SettingsMenu: React.FC<{
   const switchRole = useSwitchRole();
   const languageSettings = useLanguageSettings();
   const { modal } = App.useApp();
-  const controlApp = useMemo<MenuProps['items']>(() => {
+  const controlApp = useEffect<MenuProps['items']>(() => {
     if (!appAllowed) {
       return [];
     }
@@ -101,40 +101,56 @@ export const SettingsMenu: React.FC<{
     ];
   }, [api, appAllowed, check, modal, t]);
 
-  const items = [
-    appVersion,
-    {
-      key: 'divider_1',
-      type: 'divider',
-    },
-    editProfile,
-    changePassword,
-    {
-      key: 'divider_2',
-      type: 'divider',
-    },
-    switchRole,
-    languageSettings,
-    {
-      key: 'divider_3',
-      type: 'divider',
-    },
-    ...controlApp,
-    {
-      key: 'signout',
-      label: t('Sign out'),
-      onClick: async () => {
-        await api.auth.signOut();
-        navigate(`/signin?redirect=${encodeURIComponent(redirectUrl)}`);
+  useEffect(() => {
+    const items = [
+      appVersion,
+      {
+        key: 'divider_1',
+        type: 'divider',
       },
-    },
-  ];
+      editProfile,
+      changePassword,
+      {
+        key: 'divider_2',
+        type: 'divider',
+      },
+      switchRole,
+      {
+        key: 'divider_3',
+        type: 'divider',
+      },
+      ...controlApp,
+      {
+        key: 'signout',
+        label: t('Sign out'),
+        onClick: async () => {
+          await api.auth.signOut();
+          navigate(`/signin?redirect=${encodeURIComponent(redirectUrl)}`);
+        },
+      },
+    ];
 
-  items.forEach((item) => {
-    if (item) {
-      addMenuItem(item);
+    items.forEach((item) => {
+      if (item) {
+        addMenuItem(item);
+      }
+    });
+    if (languageSettings) {
+      addMenuItem(languageSettings, { before: 'divider_3' });
     }
-  });
+  }, [
+    addMenuItem,
+    api.auth,
+    appVersion,
+    changePassword,
+    controlApp,
+    editProfile,
+    languageSettings,
+    navigate,
+    redirectUrl,
+    switchRole,
+    t,
+  ]);
 
   return <Menu items={getMenuItems()} />;
 };

@@ -2,6 +2,7 @@ import { dayjs } from '@nocobase/utils/client';
 import { ConfigProvider } from 'antd';
 import { loadConstrueLocale } from '../../antd-config-provider/loadConstrueLocale';
 import { Plugin } from '../../application/Plugin';
+import { dayjsLocale } from '../../locale';
 
 export class LocalePlugin extends Plugin {
   locales: any = {};
@@ -25,6 +26,8 @@ export class LocalePlugin extends Plugin {
         this.app.i18n.addResources(data?.data?.lang, key, data?.data?.resources[key] || {});
       });
       loadConstrueLocale(data?.data);
+      const dayjsLang = dayjsLocale[data?.data?.lang] || 'en';
+      await import(`dayjs/locale/${dayjsLang}`);
       dayjs.locale(data?.data?.moment);
       window['cronLocale'] = data?.data?.cron;
     } catch (error) {

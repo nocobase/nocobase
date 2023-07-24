@@ -343,9 +343,9 @@ export default class Processor {
     };
   }
 
-  public getParsedValue(value, node?) {
+  public getParsedValue(value, node?, additionalScope?: object) {
     const template = parse(value);
-    const scope = this.getScope(node);
+    const scope = Object.assign(this.getScope(node), additionalScope);
     template.parameters.forEach(({ key }) => {
       appendArrayColumn(scope, key);
     });

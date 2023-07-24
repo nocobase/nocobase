@@ -90,6 +90,11 @@ export const useChartTypes = (): {
     }, []);
 };
 
+export const useDefaultChartType = () => {
+  const chartTypes = useChartTypes();
+  return chartTypes[0]?.children?.[0]?.value;
+};
+
 export const useToggleChartLibrary = () => {
   const ctx = useContext(ChartLibraryContext);
   return {
