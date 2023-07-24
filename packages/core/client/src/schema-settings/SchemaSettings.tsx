@@ -1277,6 +1277,10 @@ SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Sche
   const { getCollectionJoinField } = useCollectionManager();
   const collectionField = getCollectionJoinField(fieldSchema?.['x-collection-field']) || {};
   const isShowTime = fieldSchema?.['x-component-props']?.showTime;
+  const dateFormatDefaultValue =
+    fieldSchema?.['x-component-props']?.dateFormat || collectionField?.uiSchema?.['x-component-props']?.dateFormat;
+  const timeFormatDefaultValue =
+    fieldSchema?.['x-component-props']?.timeFormat || collectionField?.uiSchema?.['x-component-props']?.timeFormat;
   return (
     <SchemaSettings.ModalItem
       title={t('Date format')}
@@ -1301,10 +1305,11 @@ SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Sche
                   }
                 `,
               },
-              default: !fieldSchema?.['x-component-props']?.customDateFormat
-                ? fieldSchema?.['x-component-props']?.dateFormat ||
-                  collectionField?.uiSchema?.['x-component-props']?.dateFormat
-                : null,
+              default: ['MMMMM Do YYYY', 'YYYY-MM-DD', 'MM/DD/YY', 'YYYY/MM/DD', 'DD/MM/YYYY'].includes(
+                dateFormatDefaultValue,
+              )
+                ? dateFormatDefaultValue
+                : 'custom',
               enum: [
                 {
                   label: DateFormatCom({ format: 'MMMMM Do YYYY' }),
@@ -1326,16 +1331,11 @@ SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Sche
                   label: DateFormatCom({ format: 'DD/MM/YYYY' }),
                   value: 'DD/MM/YYYY',
                 },
+                {
+                  label: CustomFormatCom({ format: 'dddd' }),
+                  value: 'custom',
+                },
               ],
-            },
-            customDateFormat: {
-              type: 'string',
-              'x-component': CustomFormatCom,
-              default: fieldSchema?.['x-component-props']?.customDateFormat || 'dddd',
-              'x-component-props': {
-                formatField: 'dateFormat',
-                customFormatField: 'customDateFormat',
-              },
             },
             showTime: {
               default:
@@ -1347,9 +1347,6 @@ SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Sche
               'x-reactions': [
                 `{{(field) => {
               field.query('.timeFormat').take(f => {
-                f.display = field.value ? 'visible' : 'none';
-              });
-              field.query('.customTimeFormat').take(f => {
                 f.display = field.value ? 'visible' : 'none';
               });
             }}}`,
@@ -1374,9 +1371,7 @@ SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Sche
                   }
                 `,
               },
-              default:
-                fieldSchema?.['x-component-props']?.timeFormat ||
-                collectionField?.uiSchema?.['x-component-props']?.timeFormat,
+              default: ['hh:mm:ss a', 'HH:mm:ss'].includes(timeFormatDefaultValue) ? timeFormatDefaultValue : 'custom',
               enum: [
                 {
                   label: DateFormatCom({ format: 'hh:mm:ss a' }),
@@ -1386,16 +1381,11 @@ SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Sche
                   label: DateFormatCom({ format: 'HH:mm:ss' }),
                   value: 'HH:mm:ss',
                 },
+                {
+                  label: CustomFormatCom({ format: 'h:mm a' }),
+                  value: 'custom',
+                },
               ],
-            },
-            customTimeFormat: {
-              type: 'string',
-              'x-component': CustomFormatCom,
-              default: fieldSchema?.['x-component-props']?.customTimeFormat || 'h:mm a',
-              'x-component-props': {
-                formatField: 'timeFormat',
-                customFormatField: 'customTimeFormat',
-              },
             },
           },
         } as ISchema
