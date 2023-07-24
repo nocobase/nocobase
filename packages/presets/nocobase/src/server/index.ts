@@ -27,7 +27,6 @@ export class PresetNocoBase extends Plugin {
     'data-visualization',
     'auth',
     'sms-auth',
-    'api-doc',
   ];
 
   localPlugins = [
@@ -43,6 +42,7 @@ export class PresetNocoBase extends Plugin {
     'api-keys',
     'localization-management',
     'theme-editor',
+    'api-doc',
   ];
 
   splitNames(name: string) {
