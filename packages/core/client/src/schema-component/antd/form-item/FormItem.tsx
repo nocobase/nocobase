@@ -355,73 +355,47 @@ FormItem.Designer = function Designer() {
                 type: 'object',
                 title: t('Set default value'),
                 properties: {
-                  default:
-                    //  isInvariable(interfaceConfig)
-                    // ? {
-                    //     ...(fieldSchemaWithoutRequired || {}),
-                    //     'x-decorator': 'FormItem',
-                    //     'x-component-props': {
-                    //       ...fieldSchema['x-component-props'],
-                    //       targetField,
-                    //       component:
-                    //         collectionField?.target && collectionField?.interface !== 'chinaRegion'
-                    //           ? 'AssociationSelect'
-                    //           : undefined,
-                    //       service: {
-                    //         resource: collectionField?.target,
-                    //       },
-                    //       style: {
-                    //         width: '100%',
-                    //         verticalAlign: 'top',
-                    //       },
-                    //     },
-                    //     name: 'default',
-                    //     title: t('Default value'),
-                    //     default: getFieldDefaultValue(fieldSchema, collectionField),
-                    //     'x-read-pretty': false,
-                    //     'x-disabled': false,
-                    //   }
-                    // :
-                    {
-                      ...(fieldSchemaWithoutRequired || {}),
-                      'x-decorator': 'FormItem',
-                      'x-component': 'VariableInput',
-                      'x-component-props': {
-                        ...(fieldSchema?.['x-component-props'] || {}),
-                        collectionField,
-                        targetField,
-                        collectionName: collectionField?.collectionName,
-                        schema: collectionField?.uiSchema,
-                        className: defaultInputStyle,
-                        renderSchemaComponent: function Com(props) {
-                          const s = _.cloneDeep(fieldSchemaWithoutRequired) || ({} as Schema);
-                          s.title = '';
-                          s['x-read-pretty'] = false;
-                          s['x-disabled'] = false;
+                  default: {
+                    ...(fieldSchemaWithoutRequired || {}),
+                    'x-decorator': 'FormItem',
+                    'x-component': 'VariableInput',
+                    'x-component-props': {
+                      ...(fieldSchema?.['x-component-props'] || {}),
+                      collectionField,
+                      targetField,
+                      collectionName: collectionField?.collectionName,
+                      schema: collectionField?.uiSchema,
+                      className: defaultInputStyle,
+                      renderSchemaComponent: function Com(props) {
+                        const s = _.cloneDeep(fieldSchemaWithoutRequired) || ({} as Schema);
 
-                          return (
-                            <SchemaComponent
-                              schema={{
-                                ...(s || {}),
-                                'x-component-props': {
-                                  ...s['x-component-props'],
-                                  onChange: props.onChange,
-                                  value: props.value,
-                                  defaultValue: getFieldDefaultValue(s, collectionField),
-                                  style: {
-                                    width: '100%',
-                                    verticalAlign: 'top',
-                                  },
+                        s.title = '';
+                        s['x-read-pretty'] = false;
+                        s['x-disabled'] = false;
+
+                        return (
+                          <SchemaComponent
+                            schema={{
+                              ...(s || {}),
+                              'x-component-props': {
+                                ...s['x-component-props'],
+                                onChange: props.onChange,
+                                value: props.value,
+                                defaultValue: getFieldDefaultValue(s, collectionField),
+                                style: {
+                                  width: '100%',
+                                  verticalAlign: 'top',
                                 },
-                              }}
-                            />
-                          );
-                        },
+                              },
+                            }}
+                          />
+                        );
                       },
-                      name: 'default',
-                      title: t('Default value'),
-                      default: getFieldDefaultValue(fieldSchema, collectionField),
                     },
+                    name: 'default',
+                    title: t('Default value'),
+                    default: getFieldDefaultValue(fieldSchema, collectionField),
+                  },
                 },
               } as ISchema
             }

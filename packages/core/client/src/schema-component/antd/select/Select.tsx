@@ -3,10 +3,10 @@ import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { isValid, toArr } from '@formily/shared';
 import { isPlainObject } from '@nocobase/utils/client';
 import type { SelectProps } from 'antd';
-import { Empty, Select as AntdSelect, Spin } from 'antd';
+import { Select as AntdSelect, Empty, Spin } from 'antd';
 import React from 'react';
 import { ReadPretty } from './ReadPretty';
-import { defaultFieldNames, FieldNames, getCurrentOptions } from './utils';
+import { FieldNames, defaultFieldNames, getCurrentOptions } from './utils';
 
 type Props = SelectProps<any, any> & {
   objectValue?: boolean;
@@ -19,7 +19,7 @@ type Props = SelectProps<any, any> & {
 const isEmptyObject = (val: any) => !isValid(val) || (typeof val === 'object' && Object.keys(val).length === 0);
 
 const ObjectSelect = (props: Props) => {
-  const { value, options, onChange, fieldNames, mode, loading, rawOptions, ...others } = props;
+  const { value, options, onChange, fieldNames, mode, loading, rawOptions, defaultValue, ...others } = props;
   const toValue = (v: any) => {
     if (isEmptyObject(v)) {
       return;
@@ -40,9 +40,11 @@ const ObjectSelect = (props: Props) => {
     }
     return currentOptions.shift();
   };
+
   return (
     <AntdSelect
       value={toValue(value)}
+      defaultValue={toValue(defaultValue)}
       allowClear
       labelInValue
       notFoundContent={loading ? <Spin /> : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />}
@@ -78,13 +80,22 @@ const filterOption = (input, option) => (option?.label ?? '').toLowerCase().incl
 
 const InternalSelect = connect(
   (props: Props) => {
-    const { objectValue, loading, value, rawOptions, ...others } = props;
+    const { objectValue, loading, value, rawOptions, defaultValue, ...others } = props;
     let mode: any = props.multiple ? 'multiple' : props.mode;
     if (mode && !['multiple', 'tags'].includes(mode)) {
       mode = undefined;
     }
     if (objectValue) {
-      return <ObjectSelect rawOptions={rawOptions} {...others} value={value} mode={mode} loading={loading} />;
+      return (
+        <ObjectSelect
+          rawOptions={rawOptions}
+          {...others}
+          defaultValue={defaultValue}
+          value={value}
+          mode={mode}
+          loading={loading}
+        />
+      );
     }
     const toValue = (v) => {
       if (['tags', 'multiple'].includes(props.mode) || props.multiple) {
@@ -103,6 +114,7 @@ const InternalSelect = connect(
         popupMatchSelectWidth={false}
         notFoundContent={loading ? <Spin /> : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />}
         value={toValue(value)}
+        defaultValue={toValue(defaultValue)}
         {...others}
         onChange={(changed) => {
           props.onChange?.(changed === undefined ? null : changed);
