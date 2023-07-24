@@ -8,9 +8,6 @@ export const useStyles = genStyleHook('nb-variable', (token) => {
   const tagFontSize = token.fontSizeSM;
   const tagLineHeight = `${token.lineHeightSM * tagFontSize}px`;
   const defaultBg = colorFillQuaternary;
-  const lightColor = token[`blue1`];
-  const lightBorderColor = token[`blue3`];
-  const textColor = token[`blue7`];
 
   return {
     [componentCls]: {
