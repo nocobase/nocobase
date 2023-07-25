@@ -59,10 +59,20 @@ jobs:
           password: ${{ secrets.ALI_DOCKER_PASSWORD }}
 
       - name: Login to Docker Hub
+        if: github.ref == 'refs/heads/main'
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set tags
+        id: set-tags
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "::set-output name=tags::${{ steps.meta.outputs.tags }},${{ secrets.ALI_DOCKER_REGISTRY }}/${{ steps.meta.outputs.tags }}"
+          else
+           echo "::set-output name=tags::${{ secrets.ALI_DOCKER_REGISTRY }}/${{ steps.meta.outputs.tags }}"
+          fi
 
       - name: Build and push
         uses: docker/build-push-action@v3
@@ -73,7 +83,7 @@ jobs:
             VERDACCIO_URL=http://localhost:4873/
             COMMIT_HASH=${GITHUB_SHA}
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ steps.set-tags.outputs.tags }}
 
       - name: Deploy NocoBase
         env:
