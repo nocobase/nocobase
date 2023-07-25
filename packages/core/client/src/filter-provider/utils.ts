@@ -48,7 +48,7 @@ export const useSupportedBlocks = (filterBlockType: FilterBlockType) => {
   const { getDataBlocks } = useFilterBlock();
   const fieldSchema = useFieldSchema();
   const collection = useCollection();
-  const { getInheritCollectionsChain } = useCollectionManager();
+  const { getAllCollectionsInheritChain } = useCollectionManager();
 
   // Form 和 Collapse 仅支持同表的数据区块
   if (filterBlockType === FilterBlockType.FORM || filterBlockType === FilterBlockType.COLLAPSE) {
@@ -66,7 +66,7 @@ export const useSupportedBlocks = (filterBlockType: FilterBlockType) => {
       return (
         fieldSchema['x-uid'] !== block.uid &&
         (isSameCollection(block.collection, collection) ||
-          getSupportFieldsByAssociation(getInheritCollectionsChain(collection.name), block)?.length ||
+          getSupportFieldsByAssociation(getAllCollectionsInheritChain(collection.name), block)?.length ||
           getSupportFieldsByForeignKey(collection, block)?.length)
       );
     });
