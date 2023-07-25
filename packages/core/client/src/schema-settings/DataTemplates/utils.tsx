@@ -43,11 +43,10 @@ export const useSyncFromForm = (fieldSchema) => {
           field,
         };
         const tatgetFormField = formData.find((v) => v.name === field.name);
-
         // 多对多和多对一只展示关系字段
         if (
           ['belongsTo', 'belongsToMany'].includes(field.type) &&
-          (!tatgetFormField || ['Select', 'RecordPicker'].includes(tatgetFormField?.fieldMode))
+          (!tatgetFormField || ['Select', 'Picker'].includes(tatgetFormField?.fieldMode))
         ) {
           node['type'] = 'reference';
           option['type'] = 'reference';
