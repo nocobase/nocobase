@@ -424,6 +424,10 @@ export default class ScheduleTrigger extends Trigger {
   }
 
   init() {
+    if (this.plugin.app.name !== 'main') {
+      return;
+    }
+
     if (this.timer) {
       return;
     }
@@ -435,7 +439,7 @@ export default class ScheduleTrigger extends Trigger {
       this.run,
       // NOTE:
       //  try to align to system time on each second starts,
-      //  after at least 1 second initialized for anything to get ready.
+      //  after at least 1 second initialized for everything to get ready.
       //  so jobs in 2 seconds will be missed at first start.
       1_000 - now.getMilliseconds(),
     );
