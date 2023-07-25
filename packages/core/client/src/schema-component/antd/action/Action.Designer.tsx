@@ -580,7 +580,7 @@ export const ActionDesigner = (props) => {
   const { name } = useCollection();
   const { getChildrenCollections } = useCollectionManager();
   const isAction = useLinkageAction();
-  const isPopupAction = ['create', 'update', 'view', 'customize:popup', 'duplicate'].includes(
+  const isPopupAction = ['create', 'update', 'view', 'customize:popup', 'duplicate','customize:create'].includes(
     fieldSchema['x-action'] || '',
   );
   const isUpdateModePopupAction = ['customize:bulkUpdate', 'customize:bulkEdit'].includes(fieldSchema['x-action']);

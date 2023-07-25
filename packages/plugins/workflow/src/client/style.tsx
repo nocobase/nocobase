@@ -96,7 +96,7 @@ const useStyles = createStyles(({ css, token }) => {
         bottom: 0;
         left: calc(50% - 0.5px);
         width: 1px;
-        background-color: ${token.colorBorder};
+        background-color: ${token.colorBgLayout};
       }
     `,
 
@@ -220,7 +220,9 @@ const useStyles = createStyles(({ css, token }) => {
         font-weight: bold;
 
         &:not(:focus) {
-          transition: background-color 0.3s ease, border-color 0.3s ease;
+          transition:
+            background-color 0.3s ease,
+            border-color 0.3s ease;
           border-color: ${token.colorBorderBg};
           background-color: ${token.colorBgContainerDisabled};
 
@@ -254,7 +256,7 @@ const useStyles = createStyles(({ css, token }) => {
       right: 1em;
       justify-content: center;
       align-items: center;
-      color: ${token.colorText};
+      color: ${token.colorTextLightSolid};
 
       &[type='button'] {
         border: none;
@@ -327,6 +329,7 @@ const useStyles = createStyles(({ css, token }) => {
         top: calc(1.5em - 1px);
         line-height: 1em;
         color: ${token.colorTextSecondary};
+        background-color: ${token.colorBgLayout};
         padding: 1px;
       }
     `,
