@@ -2,7 +2,6 @@ import { ArrayField } from '@formily/core';
 import { useField } from '@formily/react';
 import React, { useCallback, useState } from 'react';
 import { useCollectionManager } from '../../../collection-manager';
-import { isTitleField } from '../../../collection-manager/Configuration/CollectionFields';
 import { useCompile } from '../../../schema-component';
 import { TreeNode } from '../TreeLabel';
 

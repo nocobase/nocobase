@@ -83,9 +83,10 @@ export const useSyncFromForm = (fieldSchema) => {
   };
 
   const traverseAssociations = (collectionName, { prefix, maxDepth, depth = 0, exclude = [] }) => {
-    if (depth > maxDepth) {
-      return [];
-    }
+    // if (depth > maxDepth) {
+    //   return [];
+    // }
+    console.log(getCollectionFields(collectionName));
     return getCollectionFields(collectionName)
       .map((field) => {
         if (!field.target || !field.interface) {
@@ -174,7 +175,6 @@ export const useSyncFromForm = (fieldSchema) => {
       const treeData = getEnableFieldTree(record.collection, [...formData]);
       array.field.form.query(`fieldReaction.items.${index}.layout.fields`).take((f: any) => {
         f.componentProps.treeData = new Proxy(treeData, {});
-        f.dataSource = treeData;
       });
       array.field.value.splice(index, 1, {
         ...array?.field?.value[index],
