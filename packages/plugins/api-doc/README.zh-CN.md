@@ -75,6 +75,6 @@ export default {
 
 > 注意：涉及到运行时才能获取的配置，并没有填写在 base-swagger 里，如 server, version 字段
 
-这些默认到配置你同样也可以覆盖它，在你编写插件的 `swagger` 文档时，你需要视你的插件文档是独立的文档，可以被单独访问。
+这些默认的配置你同样也可以覆盖它，在你编写插件的 `swagger` 文档时，你需要视你的插件文档是独立的文档，可以被单独访问。
 
 详细的 `swagger` 编写规则请参考[官方文档](https://swagger.io/docs/specification/about/)
