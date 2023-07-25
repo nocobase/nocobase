@@ -199,9 +199,8 @@ export const ChartConfigure: React.FC<{
           afterSave();
           return;
         }
-        insert(createRendererSchema(rendererProps), {
+        insert(gridRowColWrap(createRendererSchema(rendererProps)), {
           onSuccess: afterSave,
-          wrap: gridRowColWrap,
         });
       }}
       onCancel={() => {
