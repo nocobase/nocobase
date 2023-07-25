@@ -1,5 +1,5 @@
-import { Authenticator, SchemaComponent, SignupPageContext, useSignIn } from '@nocobase/client';
 import { ISchema } from '@formily/react';
+import { Authenticator, SchemaComponent, SignupPageContext, useSignIn } from '@nocobase/client';
 import React, { useContext } from 'react';
 
 const passwordForm: ISchema = {

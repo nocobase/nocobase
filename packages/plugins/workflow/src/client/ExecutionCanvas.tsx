@@ -15,7 +15,7 @@ import { ExecutionStatusOptionsMap, JobStatusOptions } from './constants';
 import { FlowContext, useFlowContext } from './FlowContext';
 import { lang, NAMESPACE } from './locale';
 import { instructions } from './nodes';
-import { nodeTitleClass } from './style';
+import useStyles from './style';
 import { linkNodes } from './utils';
 
 function attachJobs(nodes, jobs: any[] = []): void {
@@ -41,6 +41,8 @@ function attachJobs(nodes, jobs: any[] = []): void {
 function JobModal() {
   const compile = useCompile();
   const { viewJob: job, setViewJob } = useFlowContext();
+  const { styles } = useStyles();
+
   const { node = {} } = job ?? {};
   const instruction = instructions.get(node.type);
 
@@ -58,7 +60,7 @@ function JobModal() {
               },
               'x-component': 'Action.Modal',
               title: (
-                <div className={nodeTitleClass}>
+                <div className={styles.nodeTitleClass}>
                   <Tag>{compile(instruction?.title)}</Tag>
                   <strong>{node.title}</strong>
                   <span className="workflow-node-id">#{node.id}</span>
@@ -144,17 +146,13 @@ export function ExecutionCanvas() {
     >
       <div className="workflow-toolbar">
         <header>
-          <Breadcrumb>
-            <Breadcrumb.Item>
-              <Link to={`/admin/settings/workflow/workflows`}>{lang('Workflow')}</Link>
-            </Breadcrumb.Item>
-            <Breadcrumb.Item>
-              <Link to={`/admin/settings/workflow/workflows/${workflow.id}`}>{workflow.title}</Link>
-            </Breadcrumb.Item>
-            <Breadcrumb.Item>
-              <strong>{`#${execution.id}`}</strong>
-            </Breadcrumb.Item>
-          </Breadcrumb>
+          <Breadcrumb
+            items={[
+              { title: <Link to={`/admin/settings/workflow/workflows`}>{lang('Workflow')}</Link> },
+              { title: <Link to={`/admin/settings/workflow/workflows/${workflow.id}`}>{workflow.title}</Link> },
+              { title: <strong>{`#${execution.id}`}</strong> },
+            ]}
+          />
         </header>
         <aside>
           <Tag color={statusOption.color}>{compile(statusOption.label)}</Tag>

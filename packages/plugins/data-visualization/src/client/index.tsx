@@ -14,7 +14,7 @@ const Chart: React.FC = (props) => {
     children.push({
       key: 'chart-v2',
       type: 'item',
-      title: t('Chart'),
+      title: t('Charts'),
       component: 'ChartV2BlockInitializer',
     });
   }

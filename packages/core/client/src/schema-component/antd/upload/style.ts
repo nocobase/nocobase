@@ -5,6 +5,22 @@ export const useStyles = genStyleHook('upload', (token) => {
 
   return {
     [`${componentCls}-wrapper`]: {
+      '&.nb-upload-small': {
+        [`${componentCls}-list-picture-card-container${componentCls}-list-picture-card-container`]: {
+          margin: '0 3px 3px 0 !important',
+          height: '32px !important',
+          width: '32px !important',
+          marginBlock: '0 !important',
+        },
+        [`${componentCls}-list-picture-card ${componentCls}-list-item-name${componentCls}-list-item-name`]: {
+          display: 'none !important',
+        },
+        [`${componentCls}-list-picture ${componentCls}-list-item, ${componentCls}-list-picture-card ${componentCls}-list-item`]:
+          {
+            padding: '1px !important',
+          },
+      },
+
       '&.nb-upload': {
         [`${componentCls}-list-item${componentCls}-list-item-list-type-picture-card`]: {
           padding: '3px !important',

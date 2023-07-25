@@ -1,7 +1,14 @@
 import { TableOutlined } from '@ant-design/icons';
-import { FormDialog, FormLayout } from '@formily/antd-v5';
+import { FormLayout } from '@formily/antd-v5';
 import { SchemaOptionsContext } from '@formily/react';
-import { DataBlockInitializer, SchemaComponent, SchemaComponentOptions, useCollectionManager } from '@nocobase/client';
+import {
+  DataBlockInitializer,
+  FormDialog,
+  SchemaComponent,
+  SchemaComponentOptions,
+  useCollectionManager,
+  useGlobalTheme,
+} from '@nocobase/client';
 import React, { useContext } from 'react';
 import { useMapTranslation } from '../locale';
 import { createMapBlockSchema, findNestedOption } from './utils';
@@ -11,6 +18,7 @@ export const MapBlockInitializer = (props) => {
   const options = useContext(SchemaOptionsContext);
   const { getCollectionFieldsOptions } = useCollectionManager();
   const { t } = useMapTranslation();
+  const { theme } = useGlobalTheme();
 
   return (
     <DataBlockInitializer
@@ -22,47 +30,51 @@ export const MapBlockInitializer = (props) => {
           association: ['o2o', 'obo', 'oho', 'm2o'],
         });
         const markerFieldOptions = getCollectionFieldsOptions(item.name, 'string');
-        const values = await FormDialog(t('Create map block'), () => {
-          return (
-            <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
-              <FormLayout layout={'vertical'}>
-                <SchemaComponent
-                  schema={{
-                    properties: {
-                      field: {
-                        title: t('Map field'),
-                        enum: mapFieldOptions,
-                        required: true,
-                        'x-component': 'Cascader',
-                        'x-decorator': 'FormItem',
-                        default: mapFieldOptions.length
-                          ? [mapFieldOptions[0].value, mapFieldOptions[0].children?.[0].value]
-                          : [],
-                      },
-                      marker: {
-                        title: t('Marker field'),
-                        enum: markerFieldOptions,
-                        'x-component': 'Select',
-                        'x-decorator': 'FormItem',
-                        'x-reactions': (field) => {
-                          const value = field.form.values.field;
-                          if (!value?.length) {
-                            return;
-                          }
-                          const item = findNestedOption(value, mapFieldOptions);
+        const values = await FormDialog(
+          t('Create map block'),
+          () => {
+            return (
+              <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
+                <FormLayout layout={'vertical'}>
+                  <SchemaComponent
+                    schema={{
+                      properties: {
+                        field: {
+                          title: t('Map field'),
+                          enum: mapFieldOptions,
+                          required: true,
+                          'x-component': 'Cascader',
+                          'x-decorator': 'FormItem',
+                          default: mapFieldOptions.length
+                            ? [mapFieldOptions[0].value, mapFieldOptions[0].children?.[0].value]
+                            : [],
+                        },
+                        marker: {
+                          title: t('Marker field'),
+                          enum: markerFieldOptions,
+                          'x-component': 'Select',
+                          'x-decorator': 'FormItem',
+                          'x-reactions': (field) => {
+                            const value = field.form.values.field;
+                            if (!value?.length) {
+                              return;
+                            }
+                            const item = findNestedOption(value, mapFieldOptions);
 
-                          if (item) {
-                            field.hidden = item.type !== 'point';
-                          }
+                            if (item) {
+                              field.hidden = item.type !== 'point';
+                            }
+                          },
                         },
                       },
-                    },
-                  }}
-                />
-              </FormLayout>
-            </SchemaComponentOptions>
-          );
-        }).open({
+                    }}
+                  />
+                </FormLayout>
+              </SchemaComponentOptions>
+            );
+          },
+          theme,
+        ).open({
           initialValues: {},
         });
         insert(

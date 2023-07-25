@@ -38,7 +38,6 @@ export default {
   },
   components: {
     CollectionFieldset,
-    FieldsSelect,
   },
   useVariables({ id, title, config }, options) {
     const compile = useCompile();

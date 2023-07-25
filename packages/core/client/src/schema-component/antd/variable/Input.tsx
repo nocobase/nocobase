@@ -2,7 +2,8 @@ import { CloseCircleFilled } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
 import { useForm } from '@formily/react';
 import { dayjs, error } from '@nocobase/utils/client';
-import { Input as AntInput, Cascader, DatePicker, InputNumber, Select, Tag } from 'antd';
+import { Input as AntInput, Cascader, DatePicker, InputNumber, Select, Space, Tag } from 'antd';
+import useAntdInputStyle from 'antd/es/input/style';
 import type { DefaultOptionType } from 'antd/lib/cascader';
 import classNames from 'classnames';
 import { cloneDeep } from 'lodash';
@@ -155,7 +156,11 @@ export function Input(props) {
     changeOnSelect,
     fieldNames,
   } = props;
-  const { wrapSSR, hashId, componentCls } = useStyles();
+  const { wrapSSR, hashId, componentCls, rootPrefixCls } = useStyles();
+
+  // 添加 antd input 样式，防止样式缺失
+  useAntdInputStyle(`${rootPrefixCls}-input`);
+
   const compile = useCompile();
   const { t } = useTranslation();
   const form = useForm();
@@ -263,7 +268,7 @@ export function Input(props) {
   const disabled = props.disabled || form.disabled;
 
   return wrapSSR(
-    <AntInput.Group compact style={style} className={classNames(groupClass, componentCls, hashId, className)}>
+    <Space.Compact style={style} className={classNames(groupClass, componentCls, hashId, className)}>
       {variable ? (
         <div
           className={cx(
@@ -338,6 +343,6 @@ export function Input(props) {
           {button ?? <XButton type={variable ? 'primary' : 'default'} />}
         </Cascader>
       ) : null}
-    </AntInput.Group>,
+    </Space.Compact>,
   );
 }

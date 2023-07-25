@@ -77,7 +77,7 @@ export const useChartTypes = (): {
       const children = Object.entries(l.charts).map(([type, chart]) => ({
         ...chart,
         key: type,
-        label: chart.name,
+        label: lang(chart.name),
         value: type,
       }));
       return [
@@ -88,6 +88,11 @@ export const useChartTypes = (): {
         },
       ];
     }, []);
+};
+
+export const useDefaultChartType = () => {
+  const chartTypes = useChartTypes();
+  return chartTypes[0]?.children?.[0]?.value;
 };
 
 export const useToggleChartLibrary = () => {

@@ -1,7 +1,6 @@
 import { Repository } from '@nocobase/database';
-import { CollectionsGraph } from '@nocobase/utils';
+import { CollectionsGraph, lodash } from '@nocobase/utils';
 import { CollectionModel } from '../models/collection';
-import { lodash } from '@nocobase/utils';
 
 interface LoadOptions {
   filter?: any;
@@ -23,6 +22,7 @@ export class CollectionRepository extends Repository {
 
     const viewCollections = [];
 
+    // set all graph nodes
     for (const instance of instances) {
       graph.setNode(instance.get('name'));
       if (instance.get('view')) {
@@ -30,22 +30,11 @@ export class CollectionRepository extends Repository {
       }
     }
 
+    // set graph edges by inherits
     for (const instance of instances) {
       const collectionName = instance.get('name');
 
       nameMap[collectionName] = instance;
-
-      // @ts-ignore
-      const fields = instance.get('fields') || [];
-      for (const field of fields) {
-        if (field['type'] === 'belongsToMany') {
-          const throughName = field.options.through;
-          if (throughName) {
-            graph.setEdge(throughName, collectionName);
-            graph.setEdge(throughName, field.options.target);
-          }
-        }
-      }
 
       if (instance.get('inherits')) {
         for (const parent of instance.get('inherits')) {
@@ -56,20 +45,25 @@ export class CollectionRepository extends Repository {
 
     if (graph.nodeCount() === 0) return;
 
+    // check if graph is acyclic, throw error if not
     if (!graphlib.alg.isAcyclic(graph)) {
       const cycles = graphlib.alg.findCycles(graph);
       throw new Error(`Cyclic dependencies: ${cycles.map((cycle) => cycle.join(' -> ')).join(', ')}`);
     }
 
+    // sort graph nodes
     const sortedNames = graphlib.alg.topsort(graph);
 
     const lazyCollectionFields: {
       [key: string]: Array<string>;
     } = {};
+
     for (const instanceName of sortedNames) {
       if (!nameMap[instanceName]) continue;
 
+      // skip load collection field
       const skipField = (() => {
+        // skip load collection field if collection is view
         if (viewCollections.includes(instanceName)) {
           return true;
         }
@@ -77,7 +71,11 @@ export class CollectionRepository extends Repository {
         const fields = nameMap[instanceName].get('fields');
 
         return fields
-          .filter((field) => field['type'] === 'belongsTo' && viewCollections.includes(field.options?.['target']))
+          .filter(
+            (field) =>
+              (field['type'] === 'belongsTo' && viewCollections.includes(field.options?.['target'])) ||
+              field['type'] === 'belongsToMany',
+          )
           .map((field) => field.get('name'));
       })();
 

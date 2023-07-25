@@ -22,9 +22,14 @@ export class StringValueParser extends BaseValueParser {
     const map = new Map();
     const set = new Set();
     for (const option of options) {
-      set.add(option.value);
-      set.add(option.label);
-      map.set(option.label, option.value);
+      if (typeof option === 'string') {
+        set.add(option);
+        map.set(option, option);
+      } else {
+        set.add(option.value);
+        set.add(option.label);
+        map.set(option.label, option.value);
+      }
     }
     return { map, set };
   }

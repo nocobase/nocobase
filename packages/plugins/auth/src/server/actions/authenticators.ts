@@ -1,8 +1,8 @@
 import { Context, Next } from '@nocobase/actions';
-import { namespace } from '../../preset';
 import { Model, Repository } from '@nocobase/database';
+import { namespace } from '../../preset';
 
-async function checkCount(repository: Repository, id: number) {
+async function checkCount(repository: Repository, id: number[]) {
   // TODO(yangqia): This is a temporary solution, may cause concurrency problem.
   const count = await repository.count({
     filter: {

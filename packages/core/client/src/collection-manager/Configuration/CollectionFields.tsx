@@ -31,11 +31,6 @@ const indentStyle = css`
     margin-left: -16px !important;
   }
 `;
-const rowStyle = css`
-  .ant-table-cell {
-    background-color: white;
-  }
-`;
 const tableContainer = css`
   tr {
     display: flex;
@@ -57,14 +52,11 @@ const tableContainer = css`
 `;
 
 const titlePrompt = 'Default title for each record';
-// 只有下面类型的字段才可以设置为标题字段
-const expectTypes = ['string', 'integer', 'bigInt', 'float', 'double', 'decimal', 'date', 'dateonly', 'time'];
-const excludeInterfaces = ['icon'];
 
 // 是否可以作为标题字段
 export const isTitleField = (field) => {
-  if (!field) return false;
-  return !field.isForeignKey && expectTypes.includes(field.type) && !excludeInterfaces.includes(field.interface);
+  const { getInterface } = useCollectionManager();
+  return !field.isForeignKey && getInterface(field.interface)?.titleUsable;
 };
 
 const CurrentFields = (props) => {
@@ -79,7 +71,7 @@ const CurrentFields = (props) => {
 
   const columns: TableColumnProps<any>[] = [
     {
-      dataIndex: ['uiSchema', 'title'],
+      dataIndex: ['uiSchema', 'rawTitle'],
       title: t('Field display name'),
       render: (value) => <div style={{ marginLeft: 7 }}>{compile(value)}</div>,
     },
@@ -185,7 +177,7 @@ const InheritFields = (props) => {
 
   const columns: TableColumnProps<any>[] = [
     {
-      dataIndex: ['uiSchema', 'title'],
+      dataIndex: ['uiSchema', 'rawTitle'],
       title: t('Field display name'),
       render: (value) => <div style={{ marginLeft: 1 }}>{compile(value)}</div>,
     },
@@ -434,7 +426,6 @@ export const CollectionFields = () => {
             expandable={{
               defaultExpandAllRows: true,
               defaultExpandedRowKeys: dataSource.map((d) => d.key),
-              expandedRowClassName: () => rowStyle,
               expandedRowRender: (record) =>
                 record.inherit ? (
                   <InheritFields

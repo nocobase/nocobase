@@ -21,8 +21,8 @@ import type { ToolbarProps } from './types';
 import { formatDate } from './utils';
 
 const Weeks = ['month', 'week', 'day'] as View[];
-
 const localizer = dayjsLocalizer(dayjs);
+
 export const DeleteEventContext = React.createContext({
   close: () => {},
 });
@@ -45,31 +45,6 @@ function Toolbar(props: ToolbarProps) {
     </CalendarToolbarContext.Provider>
   );
 }
-
-const messages: any = {
-  allDay: '',
-  previous: (
-    <div>
-      <LeftOutlined />
-    </div>
-  ),
-  next: (
-    <div>
-      <RightOutlined />
-    </div>
-  ),
-  today: i18n.t('Today'),
-  month: i18n.t('Month'),
-  week: i18n.t('Week'),
-  work_week: i18n.t('Work week'),
-  day: i18n.t('Day'),
-  agenda: i18n.t('Agenda'),
-  date: i18n.t('Date'),
-  time: i18n.t('Time'),
-  event: i18n.t('Event'),
-  noEventsInRange: i18n.t('None'),
-  showMore: (count) => i18n.t('{{count}} more items', { count }),
-};
 
 const useEvents = (dataSource: any, fieldNames: any, date: Date, view: (typeof Weeks)[number]) => {
   const { t } = useTranslation();
@@ -213,6 +188,31 @@ export const Calendar: any = observer(
         },
       };
     }, [showLunar]);
+
+    const messages: any = {
+      allDay: '',
+      previous: (
+        <div>
+          <LeftOutlined />
+        </div>
+      ),
+      next: (
+        <div>
+          <RightOutlined />
+        </div>
+      ),
+      today: i18n.t('Today'),
+      month: i18n.t('Month'),
+      week: i18n.t('Week'),
+      work_week: i18n.t('Work week'),
+      day: i18n.t('Day'),
+      agenda: i18n.t('Agenda'),
+      date: i18n.t('Date'),
+      time: i18n.t('Time'),
+      event: i18n.t('Event'),
+      noEventsInRange: i18n.t('None'),
+      showMore: (count) => i18n.t('{{count}} more items', { count }),
+    };
 
     return wrapSSR(
       <div className={`${hashId} ${containerClassName}`} style={{ height: fixedBlock ? '100%' : 700 }}>

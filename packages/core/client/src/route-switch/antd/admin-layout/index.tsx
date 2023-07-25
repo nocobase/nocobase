@@ -1,12 +1,12 @@
 import { css } from '@emotion/css';
 import { Layout, Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Outlet, useNavigate, useParams, useMatches, useMatch } from 'react-router-dom';
+import { Outlet, useMatch, useNavigate, useParams } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
   CurrentAppInfoProvider,
   CurrentUser,
-  CurrentUserProvider,
+  NavigateIfNotSignIn,
   PinnedPluginList,
   RemoteCollectionManagerProvider,
   RemoteSchemaTemplateManagerPlugin,
@@ -19,8 +19,9 @@ import {
   useDocumentTitle,
   useRequest,
   useSystemSettings,
+  useToken,
 } from '../../../';
-import { Plugin } from '../../../application';
+import { Plugin } from '../../../application/Plugin';
 import { useCollectionManager } from '../../../collection-manager';
 
 const filterByACL = (schema, options) => {
@@ -75,7 +76,9 @@ const MenuEditor = (props) => {
   };
 
   const adminSchemaUid = useAdminSchemaUid();
-  const { data, loading } = useRequest(
+  const { data, loading } = useRequest<{
+    data: any;
+  }>(
     {
       url: `/uiSchemas:getJsonSchema/${adminSchemaUid}`,
     },
@@ -151,6 +154,7 @@ export const InternalAdminLayout = (props: any) => {
   const result = useSystemSettings();
   const { service } = useCollectionManager();
   const params = useParams<any>();
+  const { token } = useToken();
 
   return (
     <Layout>
@@ -159,18 +163,30 @@ export const InternalAdminLayout = (props: any) => {
           .ant-menu.ant-menu-dark .ant-menu-item-selected,
           .ant-menu-submenu-popup.ant-menu-dark .ant-menu-item-selected,
           .ant-menu-submenu-horizontal.ant-menu-submenu-selected {
-            background-color: rgba(255, 255, 255, 0.1);
+            background-color: ${token.colorBgHeaderMenuActive};
+            color: ${token.colorTextHeaderMenuActive};
           }
           .ant-menu-dark.ant-menu-horizontal > .ant-menu-item:hover {
-            background-color: rgba(255, 255, 255, 0.1);
+            background-color: ${token.colorBgHeaderMenuHover};
+            color: ${token.colorTextHeaderMenuHover};
           }
 
           position: fixed;
-          width: 100%;
-          height: 46px;
-          line-height: 46px;
+          left: 0;
+          right: 0;
+          height: var(--nb-header-height);
+          line-height: var(--nb-header-height);
           padding: 0;
           z-index: 100;
+          background-color: ${token.colorBgHeader};
+
+          .ant-menu {
+            background-color: transparent;
+          }
+
+          .ant-menu-item {
+            color: ${token.colorTextHeaderMenu};
+          }
         `}
       >
         <div
@@ -243,10 +259,10 @@ export const InternalAdminLayout = (props: any) => {
             background: rgba(0, 0, 0, 0);
             z-index: 100;
             .ant-layout-sider-children {
-              top: 46px;
+              top: var(--nb-header-height);
               position: fixed;
               width: 200px;
-              height: calc(100vh - 46px);
+              height: calc(100vh - var(--nb-header-height));
             }
           `}
           theme={'light'}
@@ -263,7 +279,6 @@ export const InternalAdminLayout = (props: any) => {
           max-height: 100vh;
           > div {
             position: relative;
-            // z-index: 1;
           }
           .ant-layout-footer {
             position: absolute;
@@ -278,8 +293,8 @@ export const InternalAdminLayout = (props: any) => {
         <header
           className={css`
             flex-shrink: 0;
-            height: 46px;
-            line-height: 46px;
+            height: var(--nb-header-height);
+            line-height: var(--nb-header-height);
             background: transparent;
             pointer-events: none;
           `}
@@ -293,13 +308,13 @@ export const InternalAdminLayout = (props: any) => {
 export const AdminProvider = (props) => {
   return (
     <CurrentAppInfoProvider>
-      <CurrentUserProvider>
+      <NavigateIfNotSignIn>
         <RemoteSchemaTemplateManagerProvider>
           <RemoteCollectionManagerProvider>
             <ACLRolesCheckProvider>{props.children}</ACLRolesCheckProvider>
           </RemoteCollectionManagerProvider>
         </RemoteSchemaTemplateManagerProvider>
-      </CurrentUserProvider>
+      </NavigateIfNotSignIn>
     </CurrentAppInfoProvider>
   );
 };

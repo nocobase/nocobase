@@ -14,14 +14,14 @@ function InnerCollectionBlockInitializer({ insert, collection, dataSource, ...pr
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const { getCollection } = useCollectionManager();
   const items = useRecordCollectionDataSourceItems('FormItem') as SchemaInitializerItemOptions[];
-  const resovledCollection = getCollection(collection);
+  const resolvedCollection = getCollection(collection);
 
   async function onConfirm({ item }) {
     const template = item.template ? await getTemplateSchemaByMode(item) : null;
     const result = {
       type: 'void',
-      name: resovledCollection.name,
-      title: resovledCollection.title,
+      name: resolvedCollection.name,
+      title: resolvedCollection.title,
       'x-decorator': 'DetailsBlockProvider',
       'x-decorator-props': {
         collection,

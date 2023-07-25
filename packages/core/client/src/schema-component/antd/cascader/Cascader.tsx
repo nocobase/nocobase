@@ -6,8 +6,8 @@ import { Cascader as AntdCascader, Space } from 'antd';
 import { isBoolean, omit } from 'lodash';
 import React from 'react';
 import { useRequest } from '../../../api-client';
-import { defaultFieldNames } from './defaultFieldNames';
 import { ReadPretty } from './ReadPretty';
+import { defaultFieldNames } from './defaultFieldNames';
 
 const useDefDataSource = (options) => {
   const field = useField<ArrayField>();

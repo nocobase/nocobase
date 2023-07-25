@@ -8,6 +8,7 @@ export default defineCollection({
     {
       type: 'string',
       name: 'title',
+      translation: true,
     },
     {
       type: 'boolean',
