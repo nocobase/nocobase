@@ -1,30 +1,31 @@
 import { ArrayField } from '@formily/core';
+import { useField } from '@formily/react';
 import React, { useCallback, useState } from 'react';
 import { useCollectionManager } from '../../../collection-manager';
 import { useCompile } from '../../../schema-component';
 import { TreeNode } from '../TreeLabel';
 
+// 过滤掉系统字段
+export const systemKeys = [
+  // 'id',
+  'sort',
+  'createdById',
+  'createdBy',
+  'createdAt',
+  'updatedById',
+  'updatedBy',
+  'updatedAt',
+];
 export const useCollectionState = (currentCollectionName: string) => {
   const { getCollectionFields, getAllCollectionsInheritChain, getCollection } = useCollectionManager();
   const [collectionList] = useState(getCollectionList);
   const compile = useCompile();
+  const templateField: any = useField();
 
   function getCollectionList() {
     const collections = getAllCollectionsInheritChain(currentCollectionName);
     return collections.map((name) => ({ label: getCollection(name)?.title, value: name }));
   }
-
-  // 过滤掉系统字段
-  const systemKeys = [
-    // 'id',
-    'sort',
-    'createdById',
-    'createdBy',
-    'createdAt',
-    'updatedById',
-    'updatedBy',
-    'updatedAt',
-  ];
 
   /**
    * maxDepth: 从 0 开始，0 表示一层，1 表示两层，以此类推
@@ -114,12 +115,25 @@ export const useCollectionState = (currentCollectionName: string) => {
       })
       .filter(Boolean);
   };
+  const parseTreeData = (data) => {
+    return data.map((v) => {
+      return {
+        ...v,
+        title: React.createElement(TreeNode, { ...v, type: v.type }),
+        children: v.children ? parseTreeData(v.children) : null,
+      };
+    });
+  };
 
-  const getEnableFieldTree = useCallback((collectionName: string) => {
+  const getEnableFieldTree = useCallback((collectionName: string, field) => {
+    const index = field.index;
+    const targetTemplate = templateField.initialValue?.items?.[index];
     if (!collectionName) {
       return [];
     }
-
+    if (targetTemplate?.treeData) {
+      return parseTreeData(targetTemplate.treeData);
+    }
     try {
       return traverseFields(collectionName, { exclude: ['id', ...systemKeys], maxDepth: 1 });
     } catch (error) {
@@ -174,9 +188,8 @@ function findNode(treeData, item) {
 }
 
 function loadChildren({ node, traverseAssociations, traverseFields, systemKeys, fields }) {
-  const activeNode = findNode(fields.componentProps.treeData, node);
+  const activeNode = findNode(fields.dataSource || fields.componentProps.treeData, node);
   let children = [];
-
   // 多对多和多对一只展示关系字段
   if (['belongsTo', 'belongsToMany'].includes(node.field.type)) {
     children = traverseAssociations(node.field.target, {

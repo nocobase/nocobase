@@ -166,7 +166,7 @@ export const FormDataTemplates = observer(
                       'x-component': 'Action.Link',
                       'x-component-props': {
                         type: 'primary',
-                        style: { float: 'right', position: 'relative', zIndex: 12000 },
+                        style: { float: 'right', position: 'relative', zIndex: 1200 },
                         useAction: () => useSyncFromForm(formSchema),
                       },
                     },
