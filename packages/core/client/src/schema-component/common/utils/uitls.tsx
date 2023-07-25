@@ -2,6 +2,7 @@ import { dayjs } from '@nocobase/utils/client';
 import flat from 'flat';
 import _, { every, findIndex, isArray, some } from 'lodash';
 import { useMemo } from 'react';
+import { useTableBlockContext } from '../../../block-provider';
 import { useCurrentUserContext } from '../../../user';
 import jsonLogic from '../../common/utils/logic';
 
@@ -14,12 +15,15 @@ type VariablesCtx = {
 
 export const useVariablesCtx = (): VariablesCtx => {
   const { data } = useCurrentUserContext() || {};
+  const { field, service, rowKey } = useTableBlockContext();
+  const contextData = service?.data?.data?.filter((v) => (field?.data?.selectedRowKeys || [])?.includes(v[rowKey]));
   return useMemo(() => {
     return {
       $user: data?.data || {},
       $date: {
         now: () => dayjs().toISOString(),
       },
+      $context: contextData,
     };
   }, [data]);
 };
@@ -33,7 +37,7 @@ export const isVariable = (str: unknown) => {
   return matches ? true : false;
 };
 
-export const parseVariables = (str: string, ctx: VariablesCtx) => {
+export const parseVariables = (str: string, ctx: VariablesCtx | any) => {
   const regex = /{{(.*?)}}/;
   const matches = str?.match?.(regex);
   if (matches) {

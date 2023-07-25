@@ -1,13 +1,13 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
-import React from 'react';
 import { set } from 'lodash';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCollectionManager, useCollectionFilterOptions } from '../../../collection-manager';
-import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled } from '../../../schema-settings';
+import { useCollectionFilterOptions, useCollectionManager } from '../../../collection-manager';
+import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isShowDefaultValue } from '../../../schema-settings';
 import { useCompile, useDesignable } from '../../hooks';
 import { useAssociationFieldContext } from '../association-field/hooks';
-import { FilterDynamicComponent } from './FilterDynamicComponent';
 import { removeNullCondition } from '../filter';
+import { FilterDynamicComponent } from './FilterDynamicComponent';
 
 const useLabelFields = (collectionName?: any) => {
   // 需要在组件顶层调用
@@ -44,6 +44,7 @@ export const TableColumnDesigner = (props) => {
   const { currentMode, field: tableField } = useAssociationFieldContext();
   const defaultFilter = fieldSchema?.['x-component-props']?.service?.params?.filter || {};
   const dataSource = useCollectionFilterOptions(collectionField?.target);
+  const isDateField = ['datetime', 'createdAt', 'updatedAt'].includes(collectionField.interface);
   let readOnlyMode = 'editable';
   if (fieldSchema['x-disabled'] === true) {
     readOnlyMode = 'readonly';
@@ -323,6 +324,12 @@ export const TableColumnDesigner = (props) => {
             }}
           />
         )}
+      {isDateField && <SchemaSettings.DataFormat fieldSchema={fieldSchema} />}
+
+
+      {isSubTableColumn && !field?.readPretty && isShowDefaultValue(collectionField, getInterface) && (
+        <SchemaSettings.DefaultValue fieldSchema={fieldSchema}/>
+      )}
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren={!isSubTableColumn}

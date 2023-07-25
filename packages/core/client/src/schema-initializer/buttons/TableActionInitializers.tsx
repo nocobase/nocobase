@@ -156,6 +156,19 @@ export const TableActionInitializers = {
             },
           },
         },
+        {
+          type: 'item',
+          title: '{{t("Add record")}}',
+          component: 'CustomizeAddRecordActionInitializer',
+          schema: {
+            'x-align': 'right',
+            'x-decorator': 'ACLActionProvider',
+            'x-acl-action': 'create',
+            'x-acl-action-props': {
+              skipScopeCheck: true,
+            },
+          },
+        },
       ],
       visible: function useVisible() {
         const collection = useCollection();
