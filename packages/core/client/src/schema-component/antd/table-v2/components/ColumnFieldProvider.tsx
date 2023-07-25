@@ -14,7 +14,7 @@ export const ColumnFieldProvider = observer(
       return buf;
     }, null);
     const collectionField = fieldSchema && getCollectionJoinField(fieldSchema['x-collection-field']);
-    if (fieldSchema && record?.__collection && ['select', 'multipleSelect'].includes(collectionField.interface)) {
+    if (fieldSchema && record?.__collection && ['select', 'multipleSelect'].includes(collectionField?.interface)) {
       const fieldName = `${record.__collection}.${fieldSchema.name}`;
       schema.properties[fieldSchema.name]['x-collection-field'] = fieldName;
       return <RecursionField basePath={basePath} schema={schema} onlyRenderProperties />;
