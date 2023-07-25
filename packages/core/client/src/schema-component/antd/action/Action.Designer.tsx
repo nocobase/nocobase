@@ -1,17 +1,18 @@
+import { ArrayTable } from '@formily/antd-v5';
 import { connect, ISchema, mapProps, useField, useFieldSchema } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
-import { Tree as AntdTree } from 'antd';
+import { Alert, Tree as AntdTree, Select } from 'antd';
 import { cloneDeep } from 'lodash';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useDesignable } from '../..';
+import { AppendsTreeSelect, useCompile, useDesignable } from '../..';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { useRecord } from '../../../record-provider';
 import { OpenModeSchemaItems } from '../../../schema-items';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useCollectionState } from '../../../schema-settings/DataTemplates/hooks/useCollectionState';
 import { useLinkageAction } from './hooks';
 import { requestSettingsSchema } from './utils';
-import { useRecord } from '../../../record-provider';
 
 const Tree = connect(
   AntdTree,
@@ -26,30 +27,15 @@ const Tree = connect(
 );
 const MenuGroup = (props) => {
   const fieldSchema = useFieldSchema();
-  const actionType = fieldSchema['x-action'] || '';
   const { t } = useTranslation();
-  const actionTitles = {
-    'customize:popup': t('Popup'),
-    'customize:update': t('Update record'),
-    'customize:save': t('Save record'),
-    'customize:table:request': t('Custom request'),
-    'customize:form:request': t('Custom request'),
-  };
-  if (
-    ![
-      'customize:popup',
-      'customize:update',
-      'customize:save',
-      'customize:table:request',
-      'customize:form:request',
-    ].includes(actionType)
-  ) {
-    return <>{props.children}</>;
+  const compile = useCompile();
+  const actionTitle = fieldSchema.title ? compile(fieldSchema.title) : '';
+  const actionType = fieldSchema['x-action'] ?? '';
+  if (!actionType.startsWith('customize:') || !actionTitle) {
+    return props.children;
   }
   return (
-    <SchemaSettings.ItemGroup title={`${t('Customize')} > ${actionTitles[actionType]}`}>
-      {props.children}
-    </SchemaSettings.ItemGroup>
+    <SchemaSettings.ItemGroup title={`${t('Customize')} > ${actionTitle}`}>{props.children}</SchemaSettings.ItemGroup>
   );
 };
 
@@ -469,30 +455,15 @@ function AfterSuccess() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
-  const actionType = fieldSchema['x-action'] ?? '';
 
   return (
     <SchemaSettings.ModalItem
-      title={
-        {
-          'customize:save': t('After successful save'),
-          'customize:update': t('After successful update'),
-          'customize:table:request': t('After successful request'),
-          'customize:form:request': t('After successful request'),
-          'customize:bulkUpdate': t('After successful bulk update'),
-        }[actionType]
-      }
+      title={t('After operation succeeded')}
       initialValues={fieldSchema?.['x-action-settings']?.['onSuccess']}
       schema={
         {
           type: 'object',
-          title: {
-            'customize:save': t('After successful save'),
-            'customize:update': t('After successful update'),
-            'customize:table:request': t('After successful request'),
-            'customize:form:request': t('After successful request'),
-            'customize:bulkUpdate': t('After successful bulk update'),
-          }[actionType],
+          title: t('After operation succeeded'),
           properties: {
             successMessage: {
               title: t('Popup message'),
@@ -574,13 +545,154 @@ function RemoveButton() {
   );
 }
 
+function WorkflowConfig() {
+  const { dn } = useDesignable();
+  const { t } = useTranslation();
+  const fieldSchema = useFieldSchema();
+  const description = {
+    submit: t('Workflow will be triggered after submitting succeeded.', { ns: 'workflow' }),
+    'customize:save': t('Workflow will be triggered after saving succeeded.', { ns: 'workflow' }),
+    'customize:triggerWorkflows': t('Workflow will be triggered directly once the button clicked.', { ns: 'workflow' }),
+  }[fieldSchema?.['x-action']];
+
+  return (
+    <SchemaSettings.ModalItem
+      title={t('Bind workflows', { ns: 'workflow' })}
+      scope={{
+        useCollection() {
+          const collection = useCollection();
+          return collection.name;
+        },
+      }}
+      components={{
+        Alert,
+        ArrayTable,
+      }}
+      schema={
+        {
+          type: 'void',
+          title: t('Bind workflows', { ns: 'workflow' }),
+          properties: {
+            description: description && {
+              type: 'void',
+              'x-component': 'Alert',
+              'x-component-props': {
+                message: description,
+                style: {
+                  marginBottom: '1em',
+                },
+              },
+            },
+            group: {
+              type: 'array',
+              'x-component': 'ArrayTable',
+              'x-decorator': 'FormItem',
+              description: t('Leave context unselected will use full form data as context.', { ns: 'workflow' }),
+              items: {
+                type: 'object',
+                properties: {
+                  workflowId: {
+                    type: 'void',
+                    'x-component': 'ArrayTable.Column',
+                    'x-component-props': {
+                      title: t('Workflow', { ns: 'workflow' }),
+                    },
+                    properties: {
+                      workflowId: {
+                        type: 'number',
+                        'x-decorator': 'FormItem',
+                        'x-component': 'RemoteSelect',
+                        'x-component-props': {
+                          placeholder: t('Select workflow', { ns: 'workflow' }),
+                          fieldNames: {
+                            label: 'title',
+                            value: 'id',
+                          },
+                          service: {
+                            resource: 'workflows',
+                            action: 'list',
+                            params: {
+                              filter: {
+                                $and: [
+                                  {
+                                    type: 'form',
+                                  },
+                                ],
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                  context: {
+                    type: 'void',
+                    'x-component': 'ArrayTable.Column',
+                    'x-component-props': {
+                      title: t('Trigger data context', { ns: 'workflow' }),
+                      width: 160,
+                    },
+                    properties: {
+                      context: {
+                        type: 'string',
+                        'x-decorator': 'FormItem',
+                        'x-component': 'AppendsTreeSelect',
+                        'x-component-props': {
+                          placeholder: t('Select context', { ns: 'workflow' }),
+                          popupMatchSelectWidth: false,
+                          useCollection: '{{ useCollection }}',
+                        },
+                      },
+                    },
+                  },
+                  operations: {
+                    type: 'void',
+                    'x-component': 'ArrayTable.Column',
+                    'x-component-props': {
+                      width: 32,
+                    },
+                    properties: {
+                      remove: {
+                        type: 'void',
+                        'x-decorator': 'FormItem',
+                        'x-component': 'ArrayTable.Remove',
+                      },
+                    },
+                  },
+                },
+              },
+              properties: {
+                add: {
+                  type: 'void',
+                  title: t('Add workflow', { ns: 'workflow' }),
+                  'x-component': 'ArrayTable.Addition',
+                },
+              },
+            },
+          },
+        } as ISchema
+      }
+      initialValues={{ group: fieldSchema?.['x-action-settings']?.triggerWorkflows }}
+      onSubmit={({ group }) => {
+        fieldSchema['x-action-settings']['triggerWorkflows'] = group;
+        dn.emit('patch', {
+          schema: {
+            ['x-uid']: fieldSchema['x-uid'],
+            'x-action-settings': fieldSchema['x-action-settings'],
+          },
+        });
+      }}
+    />
+  );
+}
+
 export const ActionDesigner = (props) => {
   const { modalTip, linkageAction, ...restProps } = props;
   const fieldSchema = useFieldSchema();
   const { name } = useCollection();
   const { getChildrenCollections } = useCollectionManager();
   const isAction = useLinkageAction();
-  const isPopupAction = ['create', 'update', 'view', 'customize:popup', 'duplicate','customize:create'].includes(
+  const isPopupAction = ['create', 'update', 'view', 'customize:popup', 'duplicate', 'customize:create'].includes(
     fieldSchema['x-action'] || '',
   );
   const isUpdateModePopupAction = ['customize:bulkUpdate', 'customize:bulkEdit'].includes(fieldSchema['x-action']);
@@ -603,6 +715,7 @@ export const ActionDesigner = (props) => {
         {isValid(fieldSchema?.['x-action-settings']?.requestSettings) && <RequestSettings />}
         {isValid(fieldSchema?.['x-action-settings']?.skipValidator) && <SkipValidation />}
         {isValid(fieldSchema?.['x-action-settings']?.['onSuccess']) && <AfterSuccess />}
+        {isValid(fieldSchema?.['x-action-settings']?.triggerWorkflows) && <WorkflowConfig />}
 
         {isChildCollectionAction && <SchemaSettings.EnableChildCollections collectionName={name} />}
 

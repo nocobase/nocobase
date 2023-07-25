@@ -1,4 +1,9 @@
-import { SchemaInitializerItemOptions, useCollectionDataSource, useCollectionManager, useCompile } from '@nocobase/client';
+import {
+  SchemaInitializerItemOptions,
+  useCollectionDataSource,
+  useCollectionManager,
+  useCompile,
+} from '@nocobase/client';
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
 import { FieldsSelect } from '../components/FieldsSelect';
 import { NAMESPACE, lang } from '../locale';
@@ -22,6 +27,7 @@ const collectionModeOptions = [
 export default {
   title: `{{t("Collection event", { ns: "${NAMESPACE}" })}}`,
   type: 'collection',
+  description: `{{t("Event will be triggered on collection data row created, updated or deleted.", { ns: "${NAMESPACE}" })}}`,
   fieldset: {
     collection: {
       ...collection,

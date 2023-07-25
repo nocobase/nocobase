@@ -1,3 +1,29 @@
+// TODO(refactor): should be moved to workflow plugin
+const FormTriggerWorkflowActionInitializer = {
+  type: 'item',
+  title: '{{t("Submit to workflow", { ns: "workflow" })}}',
+  component: 'CustomizeActionInitializer',
+  schema: {
+    title: '{{t("Submit to workflow", { ns: "workflow" })}}',
+    'x-component': 'Action',
+    'x-component-props': {
+      useProps: '{{ useTriggerWorkflowsActionProps }}',
+    },
+    'x-designer': 'Action.Designer',
+    'x-action-settings': {
+      assignedValues: {},
+      skipValidator: false,
+      onSuccess: {
+        manualClose: true,
+        redirecting: false,
+        successMessage: '{{t("Operation succeeded")}}',
+      },
+      triggerWorkflows: [],
+    },
+    'x-action': 'customize:triggerWorkflows',
+  },
+};
+
 // 表单的操作配置
 export const FormActionInitializers = {
   title: '{{t("Configure actions")}}',
@@ -94,14 +120,16 @@ export const FormActionInitializers = {
               onSuccess: {
                 manualClose: true,
                 redirecting: false,
-                successMessage: '{{t("Saved successfully")}}',
+                successMessage: '{{t("Operation succeeded")}}',
               },
+              triggerWorkflows: [],
             },
             'x-component-props': {
               useProps: '{{ useCreateActionProps }}',
             },
           },
         },
+        FormTriggerWorkflowActionInitializer,
         {
           type: 'item',
           title: '{{t("Custom request")}}',
@@ -225,14 +253,16 @@ export const CreateFormActionInitializers = {
               onSuccess: {
                 manualClose: true,
                 redirecting: false,
-                successMessage: '{{t("Saved successfully")}}',
+                successMessage: '{{t("Operation succeeded")}}',
               },
+              triggerWorkflows: [],
             },
             'x-component-props': {
               useProps: '{{ useCreateActionProps }}',
             },
           },
         },
+        FormTriggerWorkflowActionInitializer,
         {
           type: 'item',
           title: '{{t("Custom request")}}',
@@ -355,14 +385,16 @@ export const UpdateFormActionInitializers = {
               onSuccess: {
                 manualClose: true,
                 redirecting: false,
-                successMessage: '{{t("Saved successfully")}}',
+                successMessage: '{{t("Operation succeeded")}}',
               },
+              triggerWorkflows: [],
             },
             'x-component-props': {
               useProps: '{{ useUpdateActionProps }}',
             },
           },
         },
+        FormTriggerWorkflowActionInitializer,
         {
           type: 'item',
           title: '{{t("Custom request")}}',
@@ -378,7 +410,7 @@ export const UpdateFormActionInitializers = {
               onSuccess: {
                 manualClose: false,
                 redirecting: false,
-                successMessage: '{{t("Request success")}}',
+                successMessage: '{{t("Operation succeeded")}}',
               },
             },
             'x-component-props': {
@@ -485,7 +517,7 @@ export const BulkEditFormActionInitializers = {
               onSuccess: {
                 manualClose: true,
                 redirecting: false,
-                successMessage: '{{t("Saved successfully")}}',
+                successMessage: '{{t("Operation succeeded")}}',
               },
             },
             'x-component-props': {

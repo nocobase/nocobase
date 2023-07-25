@@ -169,6 +169,7 @@ export const snapshot: IField = {
       'x-decorator': 'FormItem',
       'x-component': 'AppendsTreeSelect',
       'x-component-props': {
+        multiple: true,
         useCollection: useRecordCollection,
       },
       'x-reactions': [

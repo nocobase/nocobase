@@ -18,7 +18,7 @@ import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AddButton } from '../AddButton';
 import { useFlowContext } from '../FlowContext';
-import { NodeDescription } from '../components/NodeDescription';
+import { DrawerDescription } from '../components/DrawerDescription';
 import { JobStatusOptionsMap } from '../constants';
 import { NAMESPACE, lang } from '../locale';
 import useStyles from '../style';
@@ -34,8 +34,8 @@ import manual from './manual';
 import parallel from './parallel';
 import query from './query';
 import request from './request';
-import update from './update';
 import sql from './sql';
+import update from './update';
 
 export interface Instruction {
   title: string;
@@ -429,9 +429,11 @@ export function NodeDefaultView(props) {
                       ? {
                           description: {
                             type: 'void',
-                            'x-component': NodeDescription,
+                            'x-component': DrawerDescription,
                             'x-component-props': {
-                              instruction,
+                              label: lang('Node type'),
+                              title: instruction.title,
+                              description: instruction.description,
                             },
                           },
                         }
