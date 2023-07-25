@@ -619,6 +619,7 @@ export default {
   "Current object":"現在のオブジェクト",
   "Linkage with form fields":"フォームデータから連動",
   "Allow add new, update and delete actions":"削除変更操作の許可",
+  "Date display format":"日付表示形式",
   "Sync successfully":"同期成功",
   "Sync from form fields":"フォームフィールドの同期"
 }
