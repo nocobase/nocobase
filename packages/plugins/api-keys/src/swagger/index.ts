@@ -93,7 +93,7 @@ export default {
             type: 'string',
             example: 'key-name',
           },
-          roles: {
+          role: {
             type: 'object',
             // $ref: '#/components/schemas/roles'
           },
