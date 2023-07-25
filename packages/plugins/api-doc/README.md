@@ -16,11 +16,10 @@ This plugin is based on `swagger` to write documentation.
 
 > The method in the plugin is the same
 
-1. `src/swagger.ts`
-2. `src/swagger/index.ts`
-3. `src/server/swagger/index.ts`
+1. `src/swagger.{ts,json}`
+2. `src/swagger/index.{ts,json}`
 
-All three paths can be used to write documents. Just export the document you wrote by default. For example:
+The file paths above can all be traversed to write documentation. Just export your written documentation by default. An example is shown below:
 
 ```ts
 export default {

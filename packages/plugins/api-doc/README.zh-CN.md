@@ -15,11 +15,10 @@
 
 > 插件内方式一样
 
-1. `src/swagger.ts`
-2. `src/swagger/index.ts`
-3. `src/server/swagger/index.ts`
+1. `src/swagger.{ts,json}`
+2. `src/swagger/index.{ts,json}`
 
-以上三个路径均可遍写文档，只需最后将您编写的文档默认导出即可，例子如下：
+上面的文件路径均可遍写文档，只需最后将您编写的文档默认导出即可，例子如下：
 
 ```ts
 export default {
