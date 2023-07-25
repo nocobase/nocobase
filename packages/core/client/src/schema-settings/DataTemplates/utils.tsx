@@ -97,6 +97,8 @@ export const useSyncFromForm = (fieldSchema) => {
         };
         const value = prefix ? `${prefix}.${field.name}` : field.name;
         return {
+          type: 'preloading',
+          tag: compile(field.uiSchema?.title) || field.name,
           title: React.createElement(TreeNode, option),
           key: value,
           isLeaf: false,
