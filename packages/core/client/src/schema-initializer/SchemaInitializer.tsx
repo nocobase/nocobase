@@ -69,8 +69,8 @@ SchemaInitializer.Button = observer(
       <Button
         type={'dashed'}
         style={{
-          borderColor: '#f18b62',
-          color: '#f18b62',
+          borderColor: 'var(--colorSettings)',
+          color: 'var(--colorSettings)',
           ...style,
         }}
         {...others}
@@ -329,8 +329,8 @@ SchemaInitializer.ActionModal = function ActionModal(props: SchemaInitializerAct
           'x-component-props': {
             icon: 'PlusOutlined',
             style: {
-              borderColor: 'rgb(241, 139, 98)',
-              color: 'rgb(241, 139, 98)',
+              borderColor: 'var(--colorSettings)',
+              color: 'var(--colorSettings)',
             },
             title: buttonText,
             type: 'dashed',

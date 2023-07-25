@@ -1,4 +1,5 @@
 import { MenuOutlined } from '@ant-design/icons';
+import { TinyColor } from '@ctrl/tinycolor';
 import { css } from '@emotion/css';
 import { ArrayField, Field } from '@formily/core';
 import {
@@ -15,6 +16,7 @@ import React, { useContext, useState } from 'react';
 import ReactDragListView from 'react-drag-listview';
 import { DndContext } from '../..';
 import { RecordIndexProvider, RecordProvider, useRequest, useSchemaInitializer } from '../../../';
+import { useToken } from '../__builtins__';
 
 const isColumnComponent = (schema: Schema) => {
   return schema['x-component']?.endsWith('.Column') > -1;
@@ -149,6 +151,7 @@ const useDefAction = () => {
 
 export const TableArray: React.FC<any> = observer(
   (props) => {
+    const { token } = useToken();
     const field = useField<ArrayField>();
     const columns = useTableColumns();
     const {
@@ -270,7 +273,7 @@ export const TableArray: React.FC<any> = observer(
             await move(from, to);
           }}
           lineClassName={css`
-            border-bottom: 2px solid rgba(241, 139, 98, 0.6) !important;
+            border-bottom: 2px solid ${new TinyColor(token.colorSettings).setAlpha(0.6).toHex8String()} !important;
           `}
         >
           <Table
