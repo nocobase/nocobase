@@ -10,7 +10,7 @@ export const ColorPicker = connect(
     const { value, onChange, ...others } = props;
     return (
       <AntdColorPicker
-        defaultValue={value}
+        value={value}
         trigger="hover"
         {...others}
         destroyTooltipOnHide

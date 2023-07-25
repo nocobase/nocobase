@@ -9,10 +9,8 @@ export const color: IField = {
   title: '{{t("Color")}}',
   default: {
     type: 'string',
-    // name,
     uiSchema: {
       type: 'string',
-      // title,
       'x-component': 'ColorPicker',
     },
   },
