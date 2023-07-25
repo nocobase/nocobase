@@ -1,5 +1,12 @@
 import { DeleteOutlined, EditOutlined, EllipsisOutlined } from '@ant-design/icons';
-import { useAPIClient, useCurrentUserContext, useGlobalTheme, useSystemSettings, useToken } from '@nocobase/client';
+import {
+  compatOldTheme,
+  useAPIClient,
+  useCurrentUserContext,
+  useGlobalTheme,
+  useSystemSettings,
+  useToken,
+} from '@nocobase/client';
 import { error } from '@nocobase/utils/client';
 import { App, Card, ConfigProvider, Dropdown, Space, Switch, Tag, message } from 'antd';
 import React, { useCallback, useMemo } from 'react';
@@ -7,7 +14,6 @@ import { ThemeConfig, ThemeItem } from '../../types';
 import { Primary } from '../antd-token-previewer';
 import { useUpdateThemeSettings } from '../hooks/useUpdateThemeSettings';
 import { useTranslation } from '../locale';
-import compatOldTheme from '../utils/compatOldTheme';
 import { useCurrentThemeId } from './InitializeTheme';
 import { useThemeEditorContext } from './ThemeEditorProvider';
 
@@ -71,8 +77,15 @@ const ThemeCard = (props: Props) => {
   const [loading, setLoading] = React.useState(false);
   const currentThemeId = useCurrentThemeId();
   const { t } = useTranslation();
+  const { token } = useToken();
+
+  const isDefault = item.id === systemSettings?.data?.data?.options?.themeId;
 
   const handleDelete = useCallback(() => {
+    if (isDefault) {
+      return;
+    }
+
     modal.confirm({
       title: t('Delete theme'),
       content: t('Deletion is unrecoverable. Confirm deletion?'),
@@ -94,6 +107,7 @@ const ThemeCard = (props: Props) => {
   }, [
     api,
     currentUser?.data?.data?.systemSettings?.themeId,
+    isDefault,
     item,
     modal,
     onChange,
@@ -197,6 +211,7 @@ const ThemeCard = (props: Props) => {
             >
               <span>{t('User selectable')}</span>
               <Switch
+                disabled={isDefault}
                 style={{ transform: 'translateY(-2px)' }}
                 checked={item.optional}
                 size={'small'}
@@ -217,8 +232,9 @@ const ThemeCard = (props: Props) => {
             >
               <span>{t('Default theme')}</span>
               <Switch
+                disabled={isDefault}
                 style={{ transform: 'translateY(-2px)' }}
-                checked={item.id === systemSettings?.data?.data?.options?.themeId}
+                checked={isDefault}
                 size={'small'}
                 loading={loading}
                 onChange={handleSwitchDefault}
@@ -228,25 +244,29 @@ const ThemeCard = (props: Props) => {
         },
       ],
     };
-  }, [
-    handleSwitchDefault,
-    handleSwitchOptional,
-    item.id,
-    item.optional,
-    loading,
-    systemSettings?.data?.data?.options?.themeId,
-    t,
-  ]);
+  }, [handleSwitchDefault, handleSwitchOptional, isDefault, item.optional, loading, t]);
 
   const actions = useMemo(() => {
     return [
       <EditOutlined key="edit" onClick={handleEdit} />,
-      <DeleteOutlined key="delete" onClick={handleDelete} />,
+      <DeleteOutlined
+        key="delete"
+        style={
+          isDefault
+            ? {
+                color: token.colorTextDisabled,
+                cursor: 'not-allowed',
+              }
+            : null
+        }
+        disabled={isDefault}
+        onClick={handleDelete}
+      />,
       <Dropdown key="ellipsis" menu={menu}>
         <EllipsisOutlined />
       </Dropdown>,
     ];
-  }, [handleDelete, handleEdit, menu]);
+  }, [handleDelete, handleEdit, isDefault, menu, token.colorTextDisabled]);
 
   const extra = useMemo(() => {
     if (item.id !== systemSettings?.data?.data?.options?.themeId && !item.optional) {
@@ -294,7 +314,7 @@ const ThemeCard = (props: Props) => {
     <Card
       hoverable
       extra={extra}
-      title={item.config.name}
+      title={t(item.config.name)}
       size="small"
       style={cardStyle}
       headStyle={{ minHeight: 38 }}
