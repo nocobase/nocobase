@@ -1,11 +1,12 @@
 import { ArrayField } from '@formily/core';
 import React, { useCallback, useState } from 'react';
 import { useCollectionManager } from '../../../collection-manager';
+import { isTitleField } from '../../../collection-manager/Configuration/CollectionFields';
 import { useCompile } from '../../../schema-component';
 import { TreeNode } from '../TreeLabel';
 
 export const useCollectionState = (currentCollectionName: string) => {
-  const { getCollectionFields, getAllCollectionsInheritChain, getCollection } = useCollectionManager();
+  const { getCollectionFields, getAllCollectionsInheritChain, getCollection, getInterface } = useCollectionManager();
   const [collectionList] = useState(getCollectionList);
   const compile = useCompile();
 
@@ -150,11 +151,78 @@ export const useCollectionState = (currentCollectionName: string) => {
     };
   }, []);
 
+  const getScopeDataSource = (resource: string) => {
+    const fields = getCollectionFields(resource);
+    const field2option = (field, depth) => {
+      if (!field.interface) {
+        return;
+      }
+      const fieldInterface = getInterface(field.interface);
+      if (!fieldInterface?.filterable) {
+        return;
+      }
+      const { nested, children, operators } = fieldInterface.filterable;
+      const option = {
+        name: field.name,
+        title: field?.uiSchema?.title || field.name,
+        schema: field?.uiSchema,
+        operators:
+          operators?.filter?.((operator) => {
+            return !operator?.visible || operator.visible(field);
+          }) || [],
+        interface: field.interface,
+      };
+      if (field.target && depth > 2) {
+        return;
+      }
+      if (depth > 2) {
+        return option;
+      }
+      if (children?.length) {
+        option['children'] = children;
+      }
+      if (nested) {
+        const targetFields = getCollectionFields(field.target);
+        const options = getOptions(targetFields, depth + 1).filter(Boolean);
+        option['children'] = option['children'] || [];
+        option['children'].push(...options);
+      }
+      return option;
+    };
+    const getOptions = (fields, depth) => {
+      const options = [];
+      fields.forEach((field) => {
+        const option = field2option(field, depth);
+        if (option) {
+          options.push(option);
+        }
+      });
+      return options;
+    };
+    const options = getOptions(fields, 1);
+    return options;
+  };
+  const useTitleFieldDataSource = (field) => {
+    const fieldPath = field.path.entire.replace('titleField', 'collection');
+    const collectionName = field.query(fieldPath).get('value');
+    const targetFields = getCollectionFields(collectionName);
+    const options = targetFields
+      .filter((field) => {
+        return !field.isForeignKey && getInterface(field.interface)?.titleUsable;
+      })
+      .map((field) => ({
+        value: field?.name,
+        label: compile(field?.uiSchema?.title) || field?.name,
+      }));
+    field.dataSource = options;
+  };
   return {
     collectionList,
     getEnableFieldTree,
     getOnLoadData,
     getOnCheck,
+    getScopeDataSource,
+    useTitleFieldDataSource,
   };
 };
 
