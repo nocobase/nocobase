@@ -1,16 +1,17 @@
 import lodash from 'lodash';
 import { SingleAssociationAccessors, Transactionable } from 'sequelize';
+import injectTargetCollection from '../decorators/target-collection-decorator';
 import { Model } from '../model';
 import { Appends, Except, Fields, Filter, TargetKey, UpdateOptions } from '../repository';
 import { updateModelByValues } from '../update-associations';
 import { RelationRepository, transaction } from './relation-repository';
-import { EagerLoadingTree } from '../eager-loading/eager-loading-tree';
 
 export interface SingleRelationFindOption extends Transactionable {
   fields?: Fields;
   except?: Except;
   appends?: Appends;
   filter?: Filter;
+  targetCollection?: string;
 }
 
 interface SetOption extends Transactionable {
@@ -18,6 +19,8 @@ interface SetOption extends Transactionable {
 }
 
 export abstract class SingleRelationRepository extends RelationRepository {
+  abstract filterOptions(sourceModel);
+
   @transaction()
   async remove(options?: Transactionable): Promise<void> {
     const transaction = await this.getTransaction(options);
@@ -45,44 +48,22 @@ export abstract class SingleRelationRepository extends RelationRepository {
   }
 
   async find(options?: SingleRelationFindOption): Promise<any> {
-    const transaction = await this.getTransaction(options);
+    const targetRepository = this.targetCollection.repository;
 
-    const findOptions = this.buildQueryOptions({
-      ...options,
-    });
-
-    const getAccessor = this.accessors().get;
-    const sourceModel = await this.getSourceModel(transaction);
+    const sourceModel = await this.getSourceModel(await this.getTransaction(options));
 
     if (!sourceModel) return null;
 
-    if (findOptions?.include?.length > 0) {
-      const templateModel = await sourceModel[getAccessor]({
-        ...findOptions,
-        includeIgnoreAttributes: false,
-        transaction,
-        attributes: [this.targetModel.primaryKeyAttribute],
-        group: `${this.targetModel.name}.${this.targetModel.primaryKeyAttribute}`,
-      });
+    const addFilter = await this.filterOptions(sourceModel);
 
-      if (!templateModel) return null;
+    const findOptions = {
+      ...options,
+      filter: {
+        $and: [options?.filter || {}, addFilter],
+      },
+    };
 
-      const eagerLoadingTree = EagerLoadingTree.buildFromSequelizeOptions({
-        model: this.targetModel,
-        rootAttributes: findOptions.attributes,
-        includeOption: findOptions.include,
-        db: this.db,
-      });
-
-      await eagerLoadingTree.load([templateModel.get(this.targetModel.primaryKeyAttribute)], transaction);
-
-      return eagerLoadingTree.root.instances[0];
-    }
-
-    return await sourceModel[getAccessor]({
-      ...findOptions,
-      transaction,
-    });
+    return await targetRepository.findOne(findOptions);
   }
 
   async findOne(options?: SingleRelationFindOption): Promise<Model<any>> {
@@ -105,11 +86,13 @@ export abstract class SingleRelationRepository extends RelationRepository {
   }
 
   @transaction()
+  @injectTargetCollection
   async update(options: UpdateOptions): Promise<any> {
     const transaction = await this.getTransaction(options);
 
     const target = await this.find({
       transaction,
+      targetCollection: options.targetCollection,
     });
 
     if (!target) {

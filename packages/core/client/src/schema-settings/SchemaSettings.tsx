@@ -1,3 +1,4 @@
+import { css } from '@emotion/css';
 import { ArrayCollapse, ArrayItems, FormItem, FormLayout, Input } from '@formily/antd-v5';
 import { createForm, Field, GeneralField } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema, useForm } from '@formily/react';
@@ -63,6 +64,7 @@ import { getTargetKey } from '../schema-component/antd/association-filter/utilts
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
 import { FormDataTemplates } from './DataTemplates';
+import { DateFormatCom, ExpiresRadio } from './DateFormat/ExpiresRadio';
 import { EnableChildCollections } from './EnableChildCollections';
 import { ChildDynamicComponent } from './EnableChildCollections/DynamicComponent';
 import { FormLinkageRules } from './LinkageRules';
@@ -1258,6 +1260,151 @@ SchemaSettings.EnableChildCollections = function EnableChildCollectionsItem(prop
           linkageFromForm: v?.linkageFromForm,
         };
         field.componentProps['linkageFromForm'] = v.linkageFromForm;
+        dn.emit('patch', {
+          schema,
+        });
+        dn.refresh();
+      }}
+    />
+  );
+};
+
+SchemaSettings.DataFormat = function DateFormatConfig(props: { fieldSchema: Schema }) {
+  const { fieldSchema } = props;
+  const field = useField();
+  const form = useForm();
+  const { dn } = useDesignable();
+  const { t } = useTranslation();
+  const { getCollectionJoinField } = useCollectionManager();
+  const collectionField = getCollectionJoinField(fieldSchema?.['x-collection-field']) || {};
+  const isShowTime = fieldSchema?.['x-component-props']?.showTime;
+  const dateFormatDefaultValue =
+    fieldSchema?.['x-component-props']?.dateFormat ||
+    collectionField?.uiSchema?.['x-component-props']?.dateFormat ||
+    'YYYY-MM-DD';
+  const timeFormatDefaultValue =
+    fieldSchema?.['x-component-props']?.timeFormat || collectionField?.uiSchema?.['x-component-props']?.timeFormat;
+  return (
+    <SchemaSettings.ModalItem
+      title={t('Date display format')}
+      schema={
+        {
+          type: 'object',
+          properties: {
+            dateFormat: {
+              type: 'string',
+              title: '{{t("Date format")}}',
+              'x-component': ExpiresRadio,
+              'x-decorator': 'FormItem',
+              'x-decorator-props': {},
+              'x-component-props': {
+                className: css`
+                  .ant-radio-wrapper {
+                    display: flex;
+                    margin: 5px 0px;
+                  }
+                `,
+                defaultValue: 'dddd',
+                formats: ['MMMMM Do YYYY', 'YYYY-MM-DD', 'MM/DD/YY', 'YYYY/MM/DD', 'DD/MM/YYYY'],
+              },
+              default: dateFormatDefaultValue,
+              enum: [
+                {
+                  label: DateFormatCom({ format: 'MMMMM Do YYYY' }),
+                  value: 'MMMMM Do YYYY',
+                },
+                {
+                  label: DateFormatCom({ format: 'YYYY-MM-DD' }),
+                  value: 'YYYY-MM-DD',
+                },
+                {
+                  label: DateFormatCom({ format: 'MM/DD/YY' }),
+                  value: 'MM/DD/YY',
+                },
+                {
+                  label: DateFormatCom({ format: 'YYYY/MM/DD' }),
+                  value: 'YYYY/MM/DD',
+                },
+                {
+                  label: DateFormatCom({ format: 'DD/MM/YYYY' }),
+                  value: 'DD/MM/YYYY',
+                },
+                {
+                  label: 'custom',
+                  value: 'custom',
+                },
+              ],
+            },
+            showTime: {
+              default:
+                isShowTime === undefined ? collectionField?.uiSchema?.['x-component-props']?.showTime : isShowTime,
+              type: 'boolean',
+              'x-decorator': 'FormItem',
+              'x-component': 'Checkbox',
+              'x-content': '{{t("Show time")}}',
+              'x-reactions': [
+                `{{(field) => {
+              field.query('.timeFormat').take(f => {
+                f.display = field.value ? 'visible' : 'none';
+              });
+            }}}`,
+              ],
+            },
+            timeFormat: {
+              type: 'string',
+              title: '{{t("Time format")}}',
+              'x-component': ExpiresRadio,
+              'x-decorator': 'FormItem',
+              'x-decorator-props': {
+                className: css`
+                  margin-bottom: 0px;
+                `,
+              },
+              'x-component-props': {
+                className: css`
+                  color: red;
+                  .ant-radio-wrapper {
+                    display: flex;
+                    margin: 5px 0px;
+                  }
+                `,
+                defaultValue: 'h:mm a',
+                formats: ['hh:mm:ss a', 'HH:mm:ss'],
+                timeFormat: true,
+              },
+              default: timeFormatDefaultValue,
+              enum: [
+                {
+                  label: DateFormatCom({ format: 'hh:mm:ss a' }),
+                  value: 'hh:mm:ss a',
+                },
+                {
+                  label: DateFormatCom({ format: 'HH:mm:ss' }),
+                  value: 'HH:mm:ss',
+                },
+                {
+                  label: 'custom',
+                  value: 'custom',
+                },
+              ],
+            },
+          },
+        } as ISchema
+      }
+      onSubmit={(data) => {
+        const schema = {
+          ['x-uid']: fieldSchema['x-uid'],
+        };
+        schema['x-component-props'] = fieldSchema['x-component-props'] || {};
+        fieldSchema['x-component-props'] = {
+          ...(fieldSchema['x-component-props'] || {}),
+          ...data,
+        };
+        schema['x-component-props'] = fieldSchema['x-component-props'];
+        field.componentProps = fieldSchema['x-component-props'];
+        field.query(`.*.${fieldSchema.name}`).forEach((f) => {
+          f.componentProps = fieldSchema['x-component-props'];
+        });
         dn.emit('patch', {
           schema,
         });

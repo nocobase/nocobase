@@ -1,4 +1,5 @@
 import { DeleteOutlined, MenuOutlined } from '@ant-design/icons';
+import { TinyColor } from '@ctrl/tinycolor';
 import { SortableContext, useSortable } from '@dnd-kit/sortable';
 import { css } from '@emotion/css';
 import { ArrayField, Field } from '@formily/core';
@@ -36,7 +37,7 @@ const useTableColumns = (props) => {
   const { exists, render } = useSchemaInitializer(schema['x-initializer']);
   const columns = schema
     .reduceProperties((buf, s) => {
-      if (isColumnComponent(s) && schemaInWhitelist(Object.values(s.properties || {}).pop())) {
+      if (isColumnComponent(s) && schemaInWhitelist(Object.values(s.properties || {}).pop(), props?.isSubTable)) {
         return buf.concat([s]);
       }
       return buf;
@@ -113,27 +114,33 @@ const useTableColumns = (props) => {
   return tableColumns;
 };
 
-const topActiveClass = css`
-  & > td {
-    border-top: 2px solid rgba(241, 139, 98, 0.6) !important;
-  }
-`;
-const bottomActiveClass = css`
-  & > td {
-    border-bottom: 2px solid rgba(241, 139, 98, 0.6) !important;
-  }
-`;
-
 const SortableRow = (props) => {
+  const { token } = useToken();
   const id = props['data-row-key']?.toString();
   const { setNodeRef, isOver, active, over } = useSortable({
     id,
   });
 
+  const classObj = useMemo(() => {
+    const borderColor = new TinyColor(token.colorSettings).setAlpha(0.6).toHex8String();
+    return {
+      topActiveClass: css`
+        & > td {
+          border-top: 2px solid ${borderColor} !important;
+        }
+      `,
+      bottomActiveClass: css`
+        & > td {
+          border-bottom: 2px solid ${borderColor} !important;
+        }
+      `,
+    };
+  }, [token.colorSettings]);
+
   const className =
     (active?.data.current?.sortable.index ?? -1) > (over?.data.current?.sortable?.index ?? -1)
-      ? topActiveClass
-      : bottomActiveClass;
+      ? classObj.topActiveClass
+      : classObj.bottomActiveClass;
 
   return (
     <tr

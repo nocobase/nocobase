@@ -5,12 +5,12 @@ import { Tag } from 'antd';
 import React from 'react';
 import { CollectionFieldOptions, useCollectionManager } from '../../../collection-manager';
 
-export const useLabelUiSchema = (collectionField: CollectionFieldOptions, label: string): ISchema => {
+export const useLabelUiSchema = (collectionName: string, label: string): ISchema => {
   const { getCollectionJoinField } = useCollectionManager();
-  if (!collectionField) {
+  if (!collectionName) {
     return;
   }
-  const labelField = getCollectionJoinField(`${collectionField.target}.${label}`) as CollectionFieldOptions;
+  const labelField = getCollectionJoinField(`${collectionName}.${label}`) as CollectionFieldOptions;
   return labelField?.uiSchema;
 };
 

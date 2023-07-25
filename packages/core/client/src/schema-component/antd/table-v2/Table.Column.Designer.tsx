@@ -3,7 +3,7 @@ import { set } from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollectionFilterOptions, useCollectionManager } from '../../../collection-manager';
-import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled } from '../../../schema-settings';
+import { GeneralSchemaDesigner, isPatternDisabled, SchemaSettings } from '../../../schema-settings';
 import { useCompile, useDesignable } from '../../hooks';
 import { useAssociationFieldContext } from '../association-field/hooks';
 import { removeNullCondition } from '../filter';
@@ -61,6 +61,7 @@ export const TableColumnDesigner = (props) => {
   const { currentMode, field: tableField } = useAssociationFieldContext();
   const defaultFilter = fieldSchema?.['x-component-props']?.service?.params?.filter || {};
   const dataSource = useCollectionFilterOptions(collectionField?.target);
+  const isDateField = ['datetime', 'createdAt', 'updatedAt'].includes(collectionField.interface);
   const fieldMode = fieldSchema?.['x-component-props']?.['mode'] || 'Select';
   let readOnlyMode = 'editable';
   if (fieldSchema['x-disabled'] === true) {
@@ -389,6 +390,8 @@ export const TableColumnDesigner = (props) => {
             }}
           />
         )}
+      {isDateField && <SchemaSettings.DataFormat fieldSchema={fieldSchema} />}
+
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren={!isSubTableColumn}

@@ -57,6 +57,20 @@ const useControlledTheme: UseControlledTheme = ({ theme: customTheme, defaultThe
   const handleResetTheme = (path: string[]) => {
     let newConfig = { ...theme.config };
     newConfig = deepUpdateObj(newConfig, path, getValueByPath(themeRef.current?.config, path));
+
+    if (path[1] === 'colorSettings') {
+      newConfig = deepUpdateObj(
+        newConfig,
+        ['token', 'colorBgSettingsHover'],
+        getValueByPath(themeRef.current?.config, ['token', 'colorBgSettingsHover']),
+      );
+      newConfig = deepUpdateObj(
+        newConfig,
+        ['token', 'colorBorderSettingsHover'],
+        getValueByPath(themeRef.current?.config, ['token', 'colorBorderSettingsHover']),
+      );
+    }
+
     handleSetTheme({ ...theme, config: newConfig }, path);
   };
 
