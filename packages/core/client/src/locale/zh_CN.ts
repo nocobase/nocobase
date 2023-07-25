@@ -793,5 +793,6 @@ export default {
   "Linkage with form fields":"从表单字段联动",
   "Failed to load plugin": "插件加载失败",
   "Allow add new, update and delete actions":"允许增删改操作",
+  "Date display format":"日期显示格式",
   "Table selected records":"表格中选中的记录"
 }

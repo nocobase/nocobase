@@ -1,7 +1,7 @@
 import { css, cx } from '@emotion/css';
-import { ArrayCollapse, ArrayItems, FormLayout, FormItem as Item } from '@formily/antd-v5';
+import { ArrayCollapse, ArrayItems, FormItem as Item, FormLayout } from '@formily/antd-v5';
 import { Field } from '@formily/core';
-import { ISchema, observer, useField, useFieldSchema } from '@formily/react';
+import { ISchema, observer, Schema, useField, useFieldSchema } from '@formily/react';
 import { dayjs } from '@nocobase/utils/client';
 import { Select } from 'antd';
 import _ from 'lodash';
@@ -20,7 +20,7 @@ import {
 } from '../../../collection-manager';
 import { isTitleField } from '../../../collection-manager/Configuration/CollectionFields';
 import { GeneralSchemaItems } from '../../../schema-items/GeneralSchemaItems';
-import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isShowDefaultValue } from '../../../schema-settings';
+import { GeneralSchemaDesigner, isPatternDisabled, isShowDefaultValue, SchemaSettings } from '../../../schema-settings';
 import { useIsShowMultipleSwitch } from '../../../schema-settings/hooks/useIsShowMultipleSwitch';
 import { isVariable, parseVariables, useVariablesCtx } from '../../common/utils/uitls';
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
@@ -212,6 +212,8 @@ FormItem.Designer = function Designer() {
   const isPickerMode = fieldSchema['x-component-props']?.mode === 'Picker';
   const showFieldMode = isAssociationField && fieldModeOptions && !isTableField;
   const showModeSelect = showFieldMode && isPickerMode;
+  const isDateField = ['datetime', 'createdAt', 'updatedAt'].includes(collectionField.interface);
+
   return (
     <GeneralSchemaDesigner>
       <GeneralSchemaItems />
@@ -808,6 +810,7 @@ FormItem.Designer = function Designer() {
           }}
         />
       )}
+      {isDateField && <SchemaSettings.DataFormat fieldSchema={fieldSchema} />}
       {collectionField && <SchemaSettings.Divider />}
       <SchemaSettings.Remove
         key="remove"
