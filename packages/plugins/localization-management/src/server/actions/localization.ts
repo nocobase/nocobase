@@ -23,7 +23,7 @@ export const getResources = async (ctx: Context) => {
       }
     });
   });
-  return resources;
+  return { ...resources };
 };
 
 export const getUISchemas = async (db: Database) => {
