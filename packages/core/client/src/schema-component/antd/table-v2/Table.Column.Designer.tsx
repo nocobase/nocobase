@@ -3,7 +3,7 @@ import { set } from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollectionFilterOptions, useCollectionManager } from '../../../collection-manager';
-import { GeneralSchemaDesigner, isPatternDisabled, SchemaSettings } from '../../../schema-settings';
+import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isShowDefaultValue } from '../../../schema-settings';
 import { useCompile, useDesignable } from '../../hooks';
 import { useAssociationFieldContext } from '../association-field/hooks';
 import { removeNullCondition } from '../filter';
@@ -392,6 +392,10 @@ export const TableColumnDesigner = (props) => {
         )}
       {isDateField && <SchemaSettings.DataFormat fieldSchema={fieldSchema} />}
 
+
+      {isSubTableColumn && !field?.readPretty && isShowDefaultValue(collectionField, getInterface) && (
+        <SchemaSettings.DefaultValue fieldSchema={fieldSchema}/>
+      )}
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren={!isSubTableColumn}

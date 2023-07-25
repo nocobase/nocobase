@@ -710,6 +710,7 @@ export default {
   "Allow add new, update and delete actions":"Allow add new, update and delete actions",
   "Date display format":"Date display format",
   "Assign  data scope for the template":"Assign  data scope for the template",
+  "Table selected records":"Table selected records",
   "Tag":"Tag",
   "Tag color field":"Tag color field"
 };
