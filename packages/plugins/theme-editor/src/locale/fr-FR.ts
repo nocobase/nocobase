@@ -17,7 +17,7 @@ const locale = {
   'The theme of the JSON format is incorrect': 'Le thème au format JSON est incorrect',
   'Edited successfully': 'Modifié avec succès',
   'Saved successfully': 'Enregistré avec succès',
-  'Initializing Editor...': 'Initialisation de l\'éditeur...',
+  'Initializing Editor...': "Initialisation de l'éditeur...",
   'Save theme': 'Enregistrer le thème',
   'Please set a name for this theme': 'Veuillez définir un nom pour ce thème',
   'Please input the theme name': 'Veuillez saisir le nom du thème',

@@ -1,6 +1,6 @@
 export default {
   Workflow: 'Workflow',
-  'Execution history': 'Historique d\'exécution',
+  'Execution history': "Historique d'exécution",
   Executed: 'Exécuté',
   'Trigger type': 'Type de déclencheur',
   Status: 'Statut',
@@ -18,13 +18,13 @@ export default {
   'Triggered at': 'Déclenché à',
   'Collection event': 'Événement de collection',
   'Trigger on': 'Déclencher sur',
-  'After record added': 'Après l\'ajout d\'un enregistrement',
-  'After record updated': 'Après la mise à jour d\'un enregistrement',
-  'After record added or updated': 'Après l\'ajout ou la mise à jour d\'un enregistrement',
-  'After record deleted': 'Après la suppression d\'un enregistrement',
+  'After record added': "Après l'ajout d'un enregistrement",
+  'After record updated': "Après la mise à jour d'un enregistrement",
+  'After record added or updated': "Après l'ajout ou la mise à jour d'un enregistrement",
+  'After record deleted': "Après la suppression d'un enregistrement",
   'Changed fields': 'Champs modifiés',
   'Triggered only if one of the selected fields changes. If unselected, it means that it will be triggered when any field changes. When record is added or deleted, any field is considered to have been changed.':
-  'Déclenché uniquement si l\'un des champs sélectionnés change. S\'il n\'est pas sélectionné, cela signifie qu\'il sera déclenché lorsque n\'importe quel champ change. Lorsque l\'enregistrement est ajouté ou supprimé, n\'importe quel champ est considéré comme ayant été modifié.',
+    "Déclenché uniquement si l'un des champs sélectionnés change. S'il n'est pas sélectionné, cela signifie qu'il sera déclenché lorsque n'importe quel champ change. Lorsque l'enregistrement est ajouté ou supprimé, n'importe quel champ est considéré comme ayant été modifié.",
   'Only triggers when match conditions': 'Déclenche uniquement lorsque les conditions correspondent',
   'Schedule event': 'Événement planifié',
   'Trigger mode': 'Mode de déclenchement',
@@ -70,7 +70,7 @@ export default {
   Pending: 'En attente',
   Canceled: 'Annulé',
   'This node contains branches, deleting will also be preformed to them, are you sure?':
-  'Ce nœud contient des branches, leur suppression sera également effectuée, êtes-vous sûr(e) ?',
+    'Ce nœud contient des branches, leur suppression sera également effectuée, êtes-vous sûr(e) ?',
   Control: 'Contrôle',
   'Collection operations': 'Opérations sur la collection',
   'Extended types': 'Types étendus',
@@ -92,9 +92,9 @@ export default {
   'Any succeeded': 'Un réussi',
   'Any succeeded or failed': 'Un réussi ou un échoué',
   'Continue after all branches succeeded': 'Continuer après la réussite de toutes les branches',
-  'Continue after any branch succeeded': 'Continuer après la réussite d\'une branche',
+  'Continue after any branch succeeded': "Continuer après la réussite d'une branche",
   'Continue after any branch succeeded, or exit after any branch failed':
-  'Continuer après la réussite d\'une branche, ou quitter après l\'échec d\'une branche',
+    "Continuer après la réussite d'une branche, ou quitter après l'échec d'une branche",
   Delay: 'Délai',
   Duration: 'Durée',
   'End Status': 'Statut de fin',
@@ -105,15 +105,16 @@ export default {
   'Update record': 'Mettre à jour un enregistrement',
   'Query record': 'Interroger un enregistrement',
   'Multiple records': 'Multiples enregistrements',
-  'Please select collection first': 'Veuillez d\'abord sélectionner une collection',
-  'Only update records matching conditions': 'Mettre à jour uniquement les enregistrements correspondant aux conditions',
+  'Please select collection first': "Veuillez d'abord sélectionner une collection",
+  'Only update records matching conditions':
+    'Mettre à jour uniquement les enregistrements correspondant aux conditions',
   'Fields that are not assigned a value will be set to the default value, and those that do not have a default value are set to null.':
-  'Les champs qui ne reçoivent pas de valeur seront définis sur la valeur par défaut, et ceux qui n\'ont pas de valeur par défaut seront définis sur null.',
+    "Les champs qui ne reçoivent pas de valeur seront définis sur la valeur par défaut, et ceux qui n'ont pas de valeur par défaut seront définis sur null.",
   'Trigger in executed workflow cannot be modified': 'Le déclencheur dans le workflow exécuté ne peut pas être modifié',
   'Node in executed workflow cannot be modified': 'Le nœud dans le workflow exécuté ne peut pas être modifié',
   'Can not delete': 'Impossible de supprimer',
   'The result of this node has been referenced by other nodes ({{nodes}}), please remove the usage before deleting.':
-  'Le résultat de ce nœud a été référencé par d\'autres nœuds ({{nodes}}), veuillez supprimer son utilisation avant de le supprimer.',
+    "Le résultat de ce nœud a été référencé par d'autres nœuds ({{nodes}}), veuillez supprimer son utilisation avant de le supprimer.",
 
   'HTTP request': 'Requête HTTP',
   'HTTP method': 'Méthode HTTP',
@@ -126,11 +127,11 @@ export default {
   'Use variable': 'Utiliser une variable',
   Format: 'Format',
   Insert: 'Insérer',
-  'Timeout config': 'Configuration du délai d\'expiration',
+  'Timeout config': "Configuration du délai d'expiration",
   ms: 'ms',
   'Input request data': 'Entrée des données de requête',
   'Only support standard JSON data': 'Prend uniquement en charge les données JSON standard',
   '"Content-Type" only support "application/json", and no need to specify':
-  '"Content-Type" prend uniquement en charge "application/json" et n\'a pas besoin d\'être spécifié',
-  'Ignore fail request and continue workflow': 'Ignorer l\'échec de la requête et continuer le workflow',
+    '"Content-Type" prend uniquement en charge "application/json" et n\'a pas besoin d\'être spécifié',
+  'Ignore fail request and continue workflow': "Ignorer l'échec de la requête et continuer le workflow",
 };
