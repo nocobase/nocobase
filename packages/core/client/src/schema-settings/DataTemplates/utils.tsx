@@ -1,5 +1,7 @@
 import { ArrayBase } from '@formily/antd-v5';
+import { message } from 'antd';
 import React, { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getAssociationPath } from '../../block-provider/hooks';
 import { useCollectionManager } from '../../collection-manager';
 import { useCompile } from '../../schema-component';
@@ -12,6 +14,7 @@ export const useSyncFromForm = (fieldSchema) => {
   const index = ArrayBase.useIndex();
   const record = ArrayBase.useRecord();
   const compile = useCompile();
+  const { t } = useTranslation();
 
   /**
    * maxDepth: 从 0 开始，0 表示一层，1 表示两层，以此类推
@@ -178,6 +181,7 @@ export const useSyncFromForm = (fieldSchema) => {
         fields: [...selectFields],
         treeData: treeData,
       });
+      message.success(t('Sync successfully'));
     },
   };
 };

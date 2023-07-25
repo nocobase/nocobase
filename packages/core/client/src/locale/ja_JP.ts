@@ -618,5 +618,7 @@ export default {
   "Current form":"現在のフォーム",
   "Current object":"現在のオブジェクト",
   "Linkage with form fields":"フォームデータから連動",
-  "Allow add new, update and delete actions":"削除変更操作の許可"
+  "Allow add new, update and delete actions":"削除変更操作の許可",
+  "Sync successfully":"同期成功",
+  "Sync from form fields":"フォームフィールドの同期"
 }
