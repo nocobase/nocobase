@@ -60,7 +60,6 @@ export const ColorPicker = connect(
         )}
       >
         <AntdColorPicker disabled value={props.value} size="small" {...props} />
-        <div style={{ lineHeight: '30px', marginLeft: '5px' }}>{props.value}</div>
       </div>
     );
   }),
