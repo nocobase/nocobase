@@ -35,6 +35,7 @@ const InternalRemoteSelect = connect(
       service = {},
       wait = 300,
       value,
+      defaultValue,
       objectValue,
       manual = true,
       mapOptions,
@@ -249,12 +250,13 @@ const InternalRemoteSelect = connect(
     };
 
     const options = useMemo(() => {
+      const v = value || defaultValue;
       if (!data?.data?.length) {
-        return value != null ? (Array.isArray(value) ? value : [value]) : [];
+        return v != null ? (Array.isArray(v) ? v : [v]) : [];
       }
-      const valueOptions = (value != null && (Array.isArray(value) ? value : [value])) || [];
+      const valueOptions = (v != null && (Array.isArray(v) ? v : [v])) || [];
       return uniqBy(data?.data?.concat(valueOptions) || [], fieldNames.value);
-    }, [data?.data, value]);
+    }, [value, defaultValue, data?.data, fieldNames.value]);
 
     const onDropdownVisibleChange = (visible) => {
       setOpen(visible);
@@ -264,6 +266,7 @@ const InternalRemoteSelect = connect(
       }
       firstRun.current = true;
     };
+
     return (
       <Select
         open={open}
@@ -276,6 +279,7 @@ const InternalRemoteSelect = connect(
         onDropdownVisibleChange={onDropdownVisibleChange}
         objectValue={objectValue}
         value={value}
+        defaultValue={defaultValue}
         {...others}
         loading={data! ? loading : true}
         options={mapOptionsToTags(options)}

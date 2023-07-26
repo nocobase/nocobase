@@ -20,7 +20,6 @@ const useDragEnd = (props?: any) => {
     const wrapSchema = over?.data?.current?.wrapSchema;
     const onSuccess = over?.data?.current?.onSuccess;
     const removeParentsIfNoChildren = over?.data?.current?.removeParentsIfNoChildren ?? true;
-
     if (!activeSchema || !overSchema) {
       props?.onDragEnd?.(event);
       return;

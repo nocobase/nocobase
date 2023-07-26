@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-audit-logs",
-  "version": "0.11.1-alpha.2",
+  "version": "0.11.1-alpha.3",
   "displayName": "audit-logs",
   "displayName.zh-CN": "审计日志",
   "description": "audit logs plugin",
@@ -23,10 +23,10 @@
     "@formily/antd-v5": "1.1.0-beta.4",
     "@formily/react": "2.2.26",
     "@formily/shared": "2.2.26",
-    "@nocobase/client": "0.11.1-alpha.2",
-    "@nocobase/database": "0.11.1-alpha.2",
-    "@nocobase/server": "0.11.1-alpha.2",
-    "@nocobase/test": "0.11.1-alpha.2",
+    "@nocobase/client": "0.11.1-alpha.3",
+    "@nocobase/database": "0.11.1-alpha.3",
+    "@nocobase/server": "0.11.1-alpha.3",
+    "@nocobase/test": "0.11.1-alpha.3",
     "react": "^18.2.0",
     "react-i18next": "^11.15.1"
   },

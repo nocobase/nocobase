@@ -3,6 +3,7 @@ import { css, cx } from '@emotion/css';
 import { useForm } from '@formily/react';
 import { error } from '@nocobase/utils/client';
 import { Input as AntInput, Cascader, DatePicker, InputNumber, Select, Space, Tag } from 'antd';
+import useAntdInputStyle from 'antd/es/input/style';
 import type { DefaultOptionType } from 'antd/lib/cascader';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
@@ -156,7 +157,11 @@ export function Input(props) {
     changeOnSelect,
     fieldNames,
   } = props;
-  const { wrapSSR, hashId, componentCls } = useStyles();
+  const { wrapSSR, hashId, componentCls, rootPrefixCls } = useStyles();
+
+  // 添加 antd input 样式，防止样式缺失
+  useAntdInputStyle(`${rootPrefixCls}-input`);
+
   const compile = useCompile();
   const { t } = useTranslation();
   const form = useForm();

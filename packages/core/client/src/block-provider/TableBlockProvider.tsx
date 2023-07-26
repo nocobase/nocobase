@@ -3,10 +3,10 @@ import { FormContext, useField, useFieldSchema } from '@formily/react';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useCollectionManager } from '../collection-manager';
 import { useFilterBlock } from '../filter-provider/FilterProvider';
-import { FixedBlockWrapper, removeNullCondition, SchemaComponentOptions } from '../schema-component';
+import { FixedBlockWrapper, SchemaComponentOptions, removeNullCondition } from '../schema-component';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
-import { findFilterTargets } from './hooks';
 import { mergeFilter } from './SharedFilterProvider';
+import { findFilterTargets } from './hooks';
 
 export const TableBlockContext = createContext<any>({});
 export function getIdsWithChildren(nodes) {
@@ -31,7 +31,7 @@ interface Props {
 }
 
 const InternalTableBlockProvider = (props: Props) => {
-  const { params, showIndex, dragSort, rowKey, childrenColumnName, fieldNames } = props;
+  const { params, showIndex, dragSort, rowKey, childrenColumnName, fieldNames, ...others } = props;
   const field: any = useField();
   const { resource, service } = useBlockRequestContext();
   const fieldSchema = useFieldSchema();
@@ -47,6 +47,7 @@ const InternalTableBlockProvider = (props: Props) => {
     <FixedBlockWrapper>
       <TableBlockContext.Provider
         value={{
+          ...others,
           field,
           service,
           resource,
@@ -97,7 +98,11 @@ export const TableBlockProvider = (props) => {
     <SchemaComponentOptions scope={{ treeTable }}>
       <FormContext.Provider value={form}>
         <BlockProvider {...props} params={params} runWhenParamsChanged>
-          <InternalTableBlockProvider {...props} childrenColumnName={childrenColumnName} params={params} />
+          <InternalTableBlockProvider
+            {...props}
+            childrenColumnName={childrenColumnName}
+            params={params}
+          />
         </BlockProvider>
       </FormContext.Provider>
     </SchemaComponentOptions>
@@ -117,7 +122,7 @@ export const useTableBlockProps = () => {
 
   useEffect(() => {
     if (!ctx?.service?.loading) {
-      field.value=[];
+      field.value = [];
       field.value = ctx?.service?.data?.data;
       field.data = field.data || {};
       field.data.selectedRowKeys = ctx?.field?.data?.selectedRowKeys;

@@ -1,6 +1,7 @@
 import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
 import { App, Button, Popover } from 'antd';
 import classnames from 'classnames';
+import lodash from 'lodash';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useActionContext } from '../..';
@@ -21,7 +22,6 @@ import { ActionContextProvider } from './context';
 import { useA } from './hooks';
 import { ComposedAction } from './types';
 import { linkageAction } from './utils';
-import lodash from 'lodash';
 
 export const Action: ComposedAction = observer(
   (props: any) => {
@@ -105,7 +105,7 @@ export const Action: ComposedAction = observer(
             }
           }}
           component={tarComponent || Button}
-          className={classnames('renderButton', className)}
+          className={classnames(componentCls, hashId, className)}
           type={props.type === 'danger' ? undefined : props.type}
         >
           {actionTitle}
@@ -115,24 +115,22 @@ export const Action: ComposedAction = observer(
     };
 
     return wrapSSR(
-      <div className={`${componentCls} ${hashId}`}>
-        <ActionContextProvider
-          button={renderButton()}
-          visible={visible}
-          setVisible={setVisible}
-          formValueChanged={formValueChanged}
-          setFormValueChanged={setFormValueChanged}
-          openMode={openMode}
-          openSize={openSize}
-          containerRefKey={containerRefKey}
-          fieldSchema={fieldSchema}
-        >
-          {popover && <RecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
-          {!popover && renderButton()}
-          {!popover && <div onClick={(e) => e.stopPropagation()}>{props.children}</div>}
-          {element}
-        </ActionContextProvider>
-      </div>,
+      <ActionContextProvider
+        button={renderButton()}
+        visible={visible}
+        setVisible={setVisible}
+        formValueChanged={formValueChanged}
+        setFormValueChanged={setFormValueChanged}
+        openMode={openMode}
+        openSize={openSize}
+        containerRefKey={containerRefKey}
+        fieldSchema={fieldSchema}
+      >
+        {popover && <RecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
+        {!popover && renderButton()}
+        {!popover && <div onClick={(e) => e.stopPropagation()}>{props.children}</div>}
+        {element}
+      </ActionContextProvider>,
     );
   },
   { displayName: 'Action' },
@@ -160,7 +158,17 @@ Action.Popover = observer(
 
 Action.Popover.Footer = observer(
   (props) => {
-    return <div className="popover">{props.children}</div>;
+    return (
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'flex-end',
+          width: '100%',
+        }}
+      >
+        {props.children}
+      </div>
+    );
   },
   { displayName: 'Action.Popover.Footer' },
 );

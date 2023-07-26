@@ -59,6 +59,7 @@ export type UseComponentStyleResult = {
   wrapSSR: ReturnType<typeof useStyleRegister>;
   hashId: string;
   componentCls: string;
+  rootPrefixCls: string;
 };
 
 export const genStyleHook = <ComponentName extends OverrideComponent>(
@@ -99,6 +100,7 @@ export const genStyleHook = <ComponentName extends OverrideComponent>(
       ),
       hashId,
       componentCls: prefixCls,
+      rootPrefixCls,
     };
   };
 };

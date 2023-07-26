@@ -41,7 +41,7 @@ export class TokenBlacklistService implements ITokenBlacklistService {
 
   async has(token: string) {
     return !!(await this.repo.findOne({
-      where: {
+      filter: {
         token,
       },
     }));

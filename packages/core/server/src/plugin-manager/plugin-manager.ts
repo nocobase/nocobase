@@ -321,7 +321,10 @@ export class PluginManager {
         if (!plugin) {
           throw new Error(`${name} plugin does not exist`);
         }
-        await plugin.install();
+        if (!plugin.options.installed) {
+          await plugin.install();
+          plugin.options.installed = true;
+        }
         await plugin.afterEnable();
       }
 

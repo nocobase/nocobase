@@ -4,7 +4,8 @@ import { Space, message } from 'antd';
 import { isFunction } from 'mathjs';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { RecordProvider, useAPIClient, useCollectionManager } from '../../../';
+import { RecordProvider, useAPIClient } from '../../../';
+import { isVariable } from '../../common/utils/uitls';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
 import useServiceOptions, { useAssociationFieldContext } from './hooks';
 
@@ -17,10 +18,10 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
   const { objectValue = true } = props;
   const field: any = useField();
   const fieldSchema = useFieldSchema();
-  const { getCollection } = useCollectionManager();
   const service = useServiceOptions(props);
   const { options: collectionField } = useAssociationFieldContext();
-  const value = Array.isArray(props.value) ? props.value.filter(Boolean) : props.value;
+  const initValue = isVariable(props.value) ? undefined : props.value;
+  const value = Array.isArray(initValue) ? initValue.filter(Boolean) : initValue;
   const addMode = fieldSchema['x-component-props']?.addMode;
   const isAllowAddNew = fieldSchema['x-add-new'];
   const { t } = useTranslation();
@@ -28,7 +29,6 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
   const form = useForm();
   const api = useAPIClient();
   const resource = api.resource(collectionField.target);
-  const targetCollection = getCollection(collectionField.target);
   const handleCreateAction = async (props) => {
     const { search: value, callBack } = props;
     const {

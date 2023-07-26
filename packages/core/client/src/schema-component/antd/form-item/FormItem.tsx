@@ -1,9 +1,9 @@
 import { css, cx } from '@emotion/css';
 import { ArrayCollapse, ArrayItems, FormLayout, FormItem as Item } from '@formily/antd-v5';
 import { Field } from '@formily/core';
-import { ISchema, Schema, observer, useField, useFieldSchema } from '@formily/react';
-import dayjs from 'dayjs';
+import { ISchema, observer, useField, useFieldSchema } from '@formily/react';
 import { Select } from 'antd';
+import dayjs from 'dayjs';
 import _ from 'lodash';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -21,10 +21,8 @@ import {
 import { isTitleField } from '../../../collection-manager/Configuration/CollectionFields';
 import { GeneralSchemaItems } from '../../../schema-items/GeneralSchemaItems';
 import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isShowDefaultValue } from '../../../schema-settings';
-import { VariableInput } from '../../../schema-settings/VariableInput/VariableInput';
 import { useIsShowMultipleSwitch } from '../../../schema-settings/hooks/useIsShowMultipleSwitch';
 import { isVariable, parseVariables, useVariablesCtx } from '../../common/utils/uitls';
-import { SchemaComponent } from '../../core';
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
 import { BlockItem } from '../block-item';
 import { removeNullCondition } from '../filter';
@@ -33,29 +31,72 @@ import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
 import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
 import { useEnsureOperatorsValid } from './SchemaSettingOptions';
 
-const defaultInputStyle = css`
-  & > .nb-form-item {
-    flex: 1;
-  }
-`;
+export const findColumnFieldSchema = (fieldSchema, getCollectionJoinField) => {
+  const childsSchema = new Set();
+  const getAssociationAppends = (schema) => {
+    schema.reduceProperties((_, s) => {
+      const collectionfield = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
+      const isAssociationField = collectionfield && ['belongsTo'].includes(collectionfield.type);
+      if (collectionfield && isAssociationField && s.default?.includes?.('$context')) {
+        childsSchema.add(JSON.stringify({ name: s.name, default: s.default }));
+      } else {
+        getAssociationAppends(s);
+      }
+    }, []);
+  };
+
+  getAssociationAppends(fieldSchema);
+  return [...childsSchema];
+};
 
 export const FormItem: any = observer(
   (props: any) => {
     useEnsureOperatorsValid();
-
     const field = useField<Field>();
     const ctx = useBlockRequestContext();
     const schema = useFieldSchema();
     const variablesCtx = useVariablesCtx();
-
+    const { getCollectionJoinField } = useCollectionManager();
+    const collectionField = getCollectionJoinField(schema['x-collection-field']);
     useEffect(() => {
       if (ctx?.block === 'form') {
         ctx.field.data = ctx.field.data || {};
         ctx.field.data.activeFields = ctx.field.data.activeFields || new Set();
         ctx.field.data.activeFields.add(schema.name);
         // 如果默认值是一个变量，则需要解析之后再显示出来
-        if (isVariable(schema?.default)) {
+        if (isVariable(schema?.default) && !schema?.default.includes('$context')) {
           field.setInitialValue?.(parseVariables(schema.default, variablesCtx));
+        } else if (
+          isVariable(schema?.default) &&
+          schema?.default?.includes('$context') &&
+          collectionField?.interface === 'm2m'
+        ) {
+          // 直接对多
+          const contextData = parseVariables('{{$context}}', variablesCtx);
+          let iniValues = [];
+          contextData?.map((v) => {
+            const data = parseVariables(schema.default, { $context: v });
+            iniValues = iniValues.concat(data);
+          });
+          field.setInitialValue?.(_.uniqBy(iniValues, 'id'));
+        } else if (
+          collectionField?.interface === 'o2m' &&
+          ['SubTable', 'Nester'].includes(schema?.['x-component-props']?.['mode']) // 间接对多
+        ) {
+          const childrenFieldWithDefault = findColumnFieldSchema(schema, getCollectionJoinField);
+          // 子表格/子表单中找出所有belongsTo字段的上下文默认值
+          if (childrenFieldWithDefault.length > 0) {
+            const contextData = parseVariables('{{$context}}', variablesCtx);
+            const initValues = contextData?.map((v) => {
+              const obj = {};
+              childrenFieldWithDefault.forEach((s: any) => {
+                const child = JSON.parse(s);
+                obj[child.name] = parseVariables(child.default, { $context: v });
+              });
+              return obj;
+            });
+            field.setInitialValue?.(initValues);
+          }
         }
       }
     }, []);
@@ -109,7 +150,6 @@ FormItem.Designer = function Designer() {
   const { t } = useTranslation();
   const { dn, refresh, insertAdjacent } = useDesignable();
   const compile = useCompile();
-  const variablesCtx = useVariablesCtx();
   const IsShowMultipleSwitch = useIsShowMultipleSwitch();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
   if (collectionField?.target) {
@@ -168,13 +208,12 @@ FormItem.Designer = function Designer() {
           direction: 'asc',
         };
   });
-
-  const fieldSchemaWithoutRequired = _.omit(fieldSchema, 'required');
-
   const isSubFormMode = fieldSchema['x-component-props']?.mode === 'Nester';
   const isPickerMode = fieldSchema['x-component-props']?.mode === 'Picker';
   const showFieldMode = isAssociationField && fieldModeOptions && !isTableField;
   const showModeSelect = showFieldMode && isPickerMode;
+  const isDateField = ['datetime', 'createdAt', 'updatedAt'].includes(collectionField?.interface);
+
   return (
     <GeneralSchemaDesigner>
       <GeneralSchemaItems />
@@ -343,102 +382,7 @@ FormItem.Designer = function Designer() {
       {form &&
         !form?.readPretty &&
         isShowDefaultValue(collectionField, getInterface) &&
-        !isPatternDisabled(fieldSchema) && (
-          <SchemaSettings.ModalItem
-            title={t('Set default value')}
-            components={{ ArrayCollapse, FormLayout, VariableInput }}
-            width={800}
-            schema={
-              {
-                type: 'object',
-                title: t('Set default value'),
-                properties: {
-                  default:
-                    //  isInvariable(interfaceConfig)
-                    // ? {
-                    //     ...(fieldSchemaWithoutRequired || {}),
-                    //     'x-decorator': 'FormItem',
-                    //     'x-component-props': {
-                    //       ...fieldSchema['x-component-props'],
-                    //       targetField,
-                    //       component:
-                    //         collectionField?.target && collectionField?.interface !== 'chinaRegion'
-                    //           ? 'AssociationSelect'
-                    //           : undefined,
-                    //       service: {
-                    //         resource: collectionField?.target,
-                    //       },
-                    //       style: {
-                    //         width: '100%',
-                    //         verticalAlign: 'top',
-                    //       },
-                    //     },
-                    //     name: 'default',
-                    //     title: t('Default value'),
-                    //     default: getFieldDefaultValue(fieldSchema, collectionField),
-                    //     'x-read-pretty': false,
-                    //     'x-disabled': false,
-                    //   }
-                    // :
-                    {
-                      ...(fieldSchemaWithoutRequired || {}),
-                      'x-decorator': 'FormItem',
-                      'x-component': 'VariableInput',
-                      'x-component-props': {
-                        ...(fieldSchema?.['x-component-props'] || {}),
-                        collectionField,
-                        targetField,
-                        collectionName: collectionField?.collectionName,
-                        schema: collectionField?.uiSchema,
-                        className: defaultInputStyle,
-                        renderSchemaComponent: function Com(props) {
-                          const s = _.cloneDeep(fieldSchemaWithoutRequired) || ({} as Schema);
-                          s.title = '';
-                          s['x-read-pretty'] = false;
-                          s['x-disabled'] = false;
-
-                          return (
-                            <SchemaComponent
-                              schema={{
-                                ...(s || {}),
-                                'x-component-props': {
-                                  ...s['x-component-props'],
-                                  onChange: props.onChange,
-                                  value: props.value,
-                                  defaultValue: getFieldDefaultValue(s, collectionField),
-                                  style: {
-                                    width: '100%',
-                                    verticalAlign: 'top',
-                                  },
-                                },
-                              }}
-                            />
-                          );
-                        },
-                      },
-                      name: 'default',
-                      title: t('Default value'),
-                      default: getFieldDefaultValue(fieldSchema, collectionField),
-                    },
-                },
-              } as ISchema
-            }
-            onSubmit={(v) => {
-              const schema: ISchema = {
-                ['x-uid']: fieldSchema['x-uid'],
-              };
-              if (field.value !== v.default) {
-                field.value = parseVariables(v.default, variablesCtx);
-              }
-              fieldSchema.default = v.default;
-              schema.default = v.default;
-              dn.emit('patch', {
-                schema,
-              });
-              refresh();
-            }}
-          />
-        )}
+        !isPatternDisabled(fieldSchema) && <SchemaSettings.DefaultValue />}
       {isSelectFieldMode && !field.readPretty && (
         <SchemaSettings.ModalItem
           title={t('Set the data scope')}
@@ -866,6 +810,7 @@ FormItem.Designer = function Designer() {
           }}
         />
       )}
+      {isDateField && <SchemaSettings.DataFormat fieldSchema={fieldSchema} />}
       {collectionField && <SchemaSettings.Divider />}
       <SchemaSettings.Remove
         key="remove"

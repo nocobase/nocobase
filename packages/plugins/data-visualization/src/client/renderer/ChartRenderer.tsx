@@ -96,11 +96,7 @@ ChartRenderer.Designer = function Designer() {
       </SchemaSettings.Item>
       <SchemaSettings.Item
         key="duplicate"
-        onClick={() =>
-          insertAdjacent('afterEnd', createRendererSchema(schema?.['x-decorator-props']), {
-            wrap: gridRowColWrap,
-          })
-        }
+        onClick={() => insertAdjacent('afterEnd', gridRowColWrap(createRendererSchema(schema?.['x-decorator-props'])))}
       >
         {t('Duplicate')}
       </SchemaSettings.Item>
