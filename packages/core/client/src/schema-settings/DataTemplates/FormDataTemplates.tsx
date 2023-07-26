@@ -61,7 +61,6 @@ export const FormDataTemplates = observer(
         ),
       [],
     );
-    console.log(activeData);
     const getTargetField = (collectionName: string) => {
       const collection = getCollection(collectionName);
       return getCollectionField(
