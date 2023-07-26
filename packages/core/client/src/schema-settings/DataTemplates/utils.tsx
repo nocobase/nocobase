@@ -8,7 +8,7 @@ import { useCompile } from '../../schema-component';
 import { TreeNode } from './TreeLabel';
 import { systemKeys } from './hooks/useCollectionState';
 
-export const useSyncFromForm = (fieldSchema) => {
+export const useSyncFromForm = (fieldSchema, collection?) => {
   const { getCollectionJoinField, getCollectionFields } = useCollectionManager();
   const array = ArrayBase.useArray();
   const index = ArrayBase.useIndex();
@@ -171,16 +171,22 @@ export const useSyncFromForm = (fieldSchema) => {
         }, str);
       };
       getAssociationAppends(fieldSchema, '');
-      const treeData = getEnableFieldTree(record.collection, [...formData]);
-      array.field.form.query(`fieldReaction.items.${index}.layout.fields`).take((f: any) => {
-        f.componentProps.treeData = [];
-        setTimeout(() => (f.componentProps.treeData = treeData));
-      });
-      array.field.value.splice(index, 1, {
-        ...array?.field?.value[index],
-        fields: [...selectFields],
-        treeData: treeData,
-      });
+      if (record) {
+        const treeData = getEnableFieldTree(record.collection, [...formData]);
+        array.field.form.query(`fieldReaction.items.${index}.layout.fields`).take((f: any) => {
+          f.componentProps.treeData = [];
+          setTimeout(() => (f.componentProps.treeData = treeData));
+        });
+        array.field.value.splice(index, 1, {
+          ...array?.field?.value[index],
+          fields: [...selectFields],
+          treeData: treeData,
+        });
+      } else {
+        const treeData = getEnableFieldTree(collection, [...formData]);
+        console.log(treeData);
+      }
+
       message.success(t('Sync successfully'));
     },
   };

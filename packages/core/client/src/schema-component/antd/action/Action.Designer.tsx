@@ -12,6 +12,8 @@ import { useCollectionState } from '../../../schema-settings/DataTemplates/hooks
 import { useLinkageAction } from './hooks';
 import { requestSettingsSchema } from './utils';
 import { useRecord } from '../../../record-provider';
+import { useSyncFromForm } from '../../../schema-settings/DataTemplates/utils';
+import { Schema } from '@formily/react/esm';
 
 const Tree = connect(
   AntdTree,
@@ -218,6 +220,17 @@ function SaveMode() {
   );
 }
 
+const findFormBlock = (schema) => {
+  const formSchema = schema.reduceProperties((_, s) => {
+    if (s['x-decorator'] === 'FormBlockProvider') {
+      return s;
+    } else {
+      findFormBlock(s);
+    }
+  }, null);
+  return formSchema;
+};
+
 function DuplicationMode() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
@@ -227,6 +240,8 @@ function DuplicationMode() {
   const { collectionList, getEnableFieldTree, getOnLoadData, getOnCheck } = useCollectionState(name);
   const duplicateValues = cloneDeep(fieldSchema['x-component-props'].duplicateFields || []);
   const record = useRecord();
+  const formSchema = findFormBlock(fieldSchema);
+  console.log(formSchema);
 
   return (
     <SchemaSettings.ModalItem
@@ -277,6 +292,20 @@ function DuplicationMode() {
                   },
                 },
               ],
+            },
+            syncFromForm: {
+              type: 'void',
+              title: '{{ t("Sync from form fields") }}',
+              'x-component': 'Action.Link',
+              'x-component-props': {
+                type: 'primary',
+                style: { float: 'right', position: 'relative', zIndex: 1200 },
+                useAction: () =>
+                  useSyncFromForm(
+                    formSchema,
+                    fieldSchema['x-component-props']?.duplicateCollection || record?.__collection || name,
+                  ),
+              },
             },
             duplicateFields: {
               type: 'array',
@@ -580,7 +609,7 @@ export const ActionDesigner = (props) => {
   const { name } = useCollection();
   const { getChildrenCollections } = useCollectionManager();
   const isAction = useLinkageAction();
-  const isPopupAction = ['create', 'update', 'view', 'customize:popup', 'duplicate','customize:create'].includes(
+  const isPopupAction = ['create', 'update', 'view', 'customize:popup', 'duplicate', 'customize:create'].includes(
     fieldSchema['x-action'] || '',
   );
   const isUpdateModePopupAction = ['customize:bulkUpdate', 'customize:bulkEdit'].includes(fieldSchema['x-action']);
