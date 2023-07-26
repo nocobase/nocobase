@@ -17,7 +17,7 @@ const getResource = (packageName: string, lang: string) => {
       try {
         const file = `${packageName}/${prefix}/${localeKey}/${lang}`;
         require.resolve(file);
-        const resource = require(file).default;
+        const resource = require(file);
         resources.push(resource);
       } catch (error) {}
     }
