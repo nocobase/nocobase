@@ -91,7 +91,6 @@ jobs:
             VERDACCIO_URL=http://localhost:4873/
             COMMIT_HASH=${GITHUB_SHA}
           push: true
-          platforms: linux/amd64,linux/arm64
           tags: ${{ steps.set-tags.outputs.tags }}
 
       - name: Deploy NocoBase
