@@ -198,6 +198,7 @@ export const EditFieldAction = (props) => {
             showReverseFieldConfig: !data?.reverseField,
             collections: currentCollections,
             isDialect,
+            disabledJSONB: true,
             ...scope,
           }}
         />

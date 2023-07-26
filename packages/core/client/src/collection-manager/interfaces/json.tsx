@@ -56,6 +56,7 @@ export const json: IField = {
       ),
       'x-component': 'Checkbox',
       'x-hidden': `{{ !isDialect('postgres') }}`,
+      'x-disabled': `{{ disabledJSONB }}`,
     },
   },
   filterable: {},
