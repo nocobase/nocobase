@@ -9,10 +9,11 @@ import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
+import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
+import useDialect from '../hooks/useDialect';
 import { IField } from '../interfaces/types';
-import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import * as components from './components';
 import { getOptions } from './interfaces';
 
@@ -176,6 +177,8 @@ export const AddFieldAction = (props) => {
   const [schema, setSchema] = useState({});
   const compile = useCompile();
   const { t } = useTranslation();
+  const { isDialect } = useDialect();
+
   const currentCollections = useMemo(() => {
     return collections.map((v) => {
       return {
@@ -298,6 +301,7 @@ export const AddFieldAction = (props) => {
               showReverseFieldConfig: true,
               targetScope,
               collections: currentCollections,
+              isDialect,
               ...scope,
             }}
           />

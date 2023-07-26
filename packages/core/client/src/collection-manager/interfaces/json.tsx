@@ -1,8 +1,6 @@
-import { FormLayout } from '@formily/antd-v5';
+import { FormItem, FormLayout } from '@formily/antd-v5';
 import { registerValidateRules } from '@formily/core';
 import React from 'react';
-import { useCurrentAppInfo } from '../../appInfo';
-import { FormItem } from '../../schema-component';
 import { defaultProps } from './properties';
 import { IField } from './types';
 
@@ -50,18 +48,14 @@ export const json: IField = {
     jsonb: {
       type: 'boolean',
       title: 'JSONB',
-      'x-decorator': function Com({ children }) {
-        const {
-          data: { database },
-        } = useCurrentAppInfo();
-
-        return (
-          <FormLayout style={{ display: database.dialect === 'postgres' ? 'block' : 'none' }}>
-            <FormItem>{children}</FormItem>
-          </FormLayout>
-        );
-      },
+      // 不直接用 `FormItem` 的原因是为了想要设置 `FormLayout` 的 `layout` 属性为 `horizontal` （默认就是 horizontal）
+      'x-decorator': ({ children }) => (
+        <FormLayout>
+          <FormItem>{children}</FormItem>
+        </FormLayout>
+      ),
       'x-component': 'Checkbox',
+      'x-hidden': `{{ !isDialect('postgres') }}`,
     },
   },
   filterable: {},
