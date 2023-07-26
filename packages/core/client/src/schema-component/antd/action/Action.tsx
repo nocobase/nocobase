@@ -1,5 +1,5 @@
 import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
-import { lodash } from '@nocobase/utils';
+import { lodash } from '@nocobase/utils/client';
 import { App, Button, Popover } from 'antd';
 import classnames from 'classnames';
 import React, { useEffect, useState } from 'react';
