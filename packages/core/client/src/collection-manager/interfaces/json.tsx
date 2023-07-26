@@ -1,4 +1,7 @@
+import { FormLayout } from '@formily/antd-v5';
 import { registerValidateRules } from '@formily/core';
+import React from 'react';
+import { FormItem } from '../../schema-component';
 import { defaultProps } from './properties';
 import { IField } from './types';
 
@@ -43,6 +46,17 @@ export const json: IField = {
   hasDefaultValue: true,
   properties: {
     ...defaultProps,
+    jsonb: {
+      type: 'boolean',
+      title: 'JSONB',
+      'x-decorator': ({ children }) => (
+        <FormLayout>
+          <FormItem>{children}</FormItem>
+        </FormLayout>
+      ),
+      'x-decorator-props': {},
+      'x-component': 'Checkbox',
+    },
   },
   filterable: {},
 };
