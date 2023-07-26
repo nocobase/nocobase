@@ -69,7 +69,7 @@ export const FormItem: any = observer(
         } else if (
           isVariable(schema?.default) &&
           schema?.default?.includes('$context') &&
-          collectionField.interface === 'm2m'
+          collectionField?.interface === 'm2m'
         ) {
           // 直接对多
           const contextData = parseVariables('{{$context}}', variablesCtx);
@@ -212,7 +212,7 @@ FormItem.Designer = function Designer() {
   const isPickerMode = fieldSchema['x-component-props']?.mode === 'Picker';
   const showFieldMode = isAssociationField && fieldModeOptions && !isTableField;
   const showModeSelect = showFieldMode && isPickerMode;
-  const isDateField = ['datetime', 'createdAt', 'updatedAt'].includes(collectionField.interface);
+  const isDateField = ['datetime', 'createdAt', 'updatedAt'].includes(collectionField?.interface);
 
   return (
     <GeneralSchemaDesigner>
