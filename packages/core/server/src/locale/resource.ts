@@ -8,14 +8,16 @@ const arr2obj = (items: any[]) => {
 
 export const getResource = (packageName: string, lang: string) => {
   const resources = [];
-  const prefixes = ['src', 'lib'];
+  const prefixes = ['src', 'dist'];
   for (const prefix of prefixes) {
     try {
       const file = `${packageName}/${prefix}/locale/${lang}`;
       require.resolve(file);
       const resource = require(file).default;
       resources.push(resource);
-    } catch (error) {}
+    } catch (error) {
+      // empty
+    }
     if (resources.length) {
       break;
     }
