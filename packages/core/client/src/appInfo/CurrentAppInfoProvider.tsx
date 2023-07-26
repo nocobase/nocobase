@@ -5,7 +5,17 @@ import { useRequest } from '../api-client';
 export const CurrentAppInfoContext = createContext(null);
 
 export const useCurrentAppInfo = () => {
-  return useContext(CurrentAppInfoContext);
+  return useContext<{
+    data: {
+      database: {
+        dialect: string;
+      };
+      lang: string;
+      version: string;
+    };
+    loading: boolean;
+    error: any;
+  }>(CurrentAppInfoContext);
 };
 export const CurrentAppInfoProvider = (props) => {
   const result = useRequest({

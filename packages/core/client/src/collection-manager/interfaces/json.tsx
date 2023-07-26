@@ -1,6 +1,7 @@
 import { FormLayout } from '@formily/antd-v5';
 import { registerValidateRules } from '@formily/core';
 import React from 'react';
+import { useCurrentAppInfo } from '../../appInfo';
 import { FormItem } from '../../schema-component';
 import { defaultProps } from './properties';
 import { IField } from './types';
@@ -49,12 +50,17 @@ export const json: IField = {
     jsonb: {
       type: 'boolean',
       title: 'JSONB',
-      'x-decorator': ({ children }) => (
-        <FormLayout>
-          <FormItem>{children}</FormItem>
-        </FormLayout>
-      ),
-      'x-decorator-props': {},
+      'x-decorator': function Com({ children }) {
+        const {
+          data: { database },
+        } = useCurrentAppInfo();
+
+        return (
+          <FormLayout style={{ display: database.dialect === 'postgres' ? 'block' : 'none' }}>
+            <FormItem>{children}</FormItem>
+          </FormLayout>
+        );
+      },
       'x-component': 'Checkbox',
     },
   },
