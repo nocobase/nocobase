@@ -161,11 +161,7 @@ export const parseBuilder = (ctx: Context, builder: QueryParams) => {
   });
 
   orders.forEach((item: OrderProps) => {
-    const dialect = sequelize.getDialect();
-    let alias = `"${item.alias}"`;
-    if (dialect === 'mysql') {
-      alias = `\`${item.alias}\``;
-    }
+    const alias = sequelize.getQueryInterface().quoteIdentifier(item.alias);
     const name = hasAgg ? sequelize.literal(alias) : sequelize.col(item.field as string);
     order.push([name, item.order || 'ASC']);
   });
