@@ -8,11 +8,11 @@ RUN apt-get update && apt-get install -y jq
 WORKDIR /tmp
 COPY . /tmp
 RUN npx npm-cli-adduser --username test --password test -e test@nocobase.com -r $VERDACCIO_URL
-RUN cd /tmp && \
-    NEWVERSION="$(cat lerna.json | jq '.version' | tr -d '"').$(date +'%Y%m%d%H%M%S')" \
-        && tmp=$(mktemp) \
-        && jq ".version = \"${NEWVERSION}\"" lerna.json > "$tmp" && mv "$tmp" lerna.json
-RUN  yarn install && yarn build
+# RUN cd /tmp && \
+#     NEWVERSION="$(cat lerna.json | jq '.version' | tr -d '"').$(date +'%Y%m%d%H%M%S')" \
+#         && tmp=$(mktemp) \
+#         && jq ".version = \"${NEWVERSION}\"" lerna.json > "$tmp" && mv "$tmp" lerna.json
+# RUN  yarn install && yarn build
 
 RUN git checkout -b release \
     && yarn version:alpha -y  \
@@ -60,4 +60,3 @@ RUN mkdir -p /app/nocobase/storage/uploads/ && echo "$COMMIT_HASH" >> /app/nocob
 COPY ./docker/nocobase/docker-entrypoint.sh /app/
 
 CMD ["/app/docker-entrypoint.sh"]
-
