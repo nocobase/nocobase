@@ -56,6 +56,7 @@ import {
   useFilterBlock,
   useGlobalTheme,
   useLinkageCollectionFilterOptions,
+  useSortFields,
 } from '..';
 import { useTableBlockContext } from '../block-provider';
 import { findFilterTargets, updateFilterTargets } from '../block-provider/hooks';
@@ -1537,6 +1538,122 @@ SchemaSettings.DefaultValue = function DefaultvalueConfigure(props) {
           currentSchema,
         });
         dn.refresh();
+      }}
+    />
+  );
+};
+
+SchemaSettings.SortingRule = function SortRuleConfigure(props) {
+  const field = useField();
+  const { dn } = useDesignable();
+  const { t } = useTranslation();
+  const currentSchema = useFieldSchema();
+  const { getField } = useCollection();
+  const { getCollectionJoinField } = useCollectionManager();
+  const fieldSchema = props?.fieldSchema ?? currentSchema;
+  const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
+  const sortFields = useSortFields(collectionField?.target);
+  const defaultSort = fieldSchema['x-component-props']?.service?.params?.sort || [];
+  const sort = defaultSort?.map((item: string) => {
+    return item?.startsWith('-')
+      ? {
+          field: item.substring(1),
+          direction: 'desc',
+        }
+      : {
+          field: item,
+          direction: 'asc',
+        };
+  });
+  return (
+    <SchemaSettings.ModalItem
+      title={t('Set default sorting rules')}
+      components={{ ArrayItems }}
+      schema={
+        {
+          type: 'object',
+          title: t('Set default sorting rules'),
+          properties: {
+            sort: {
+              type: 'array',
+              default: sort,
+              'x-component': 'ArrayItems',
+              'x-decorator': 'FormItem',
+              items: {
+                type: 'object',
+                properties: {
+                  space: {
+                    type: 'void',
+                    'x-component': 'Space',
+                    properties: {
+                      sort: {
+                        type: 'void',
+                        'x-decorator': 'FormItem',
+                        'x-component': 'ArrayItems.SortHandle',
+                      },
+                      field: {
+                        type: 'string',
+                        enum: sortFields,
+                        required: true,
+                        'x-decorator': 'FormItem',
+                        'x-component': 'Select',
+                        'x-component-props': {
+                          style: {
+                            width: 260,
+                          },
+                        },
+                      },
+                      direction: {
+                        type: 'string',
+                        'x-decorator': 'FormItem',
+                        'x-component': 'Radio.Group',
+                        'x-component-props': {
+                          optionType: 'button',
+                        },
+                        enum: [
+                          {
+                            label: t('ASC'),
+                            value: 'asc',
+                          },
+                          {
+                            label: t('DESC'),
+                            value: 'desc',
+                          },
+                        ],
+                      },
+                      remove: {
+                        type: 'void',
+                        'x-decorator': 'FormItem',
+                        'x-component': 'ArrayItems.Remove',
+                      },
+                    },
+                  },
+                },
+              },
+              properties: {
+                add: {
+                  type: 'void',
+                  title: t('Add sort field'),
+                  'x-component': 'ArrayItems.Addition',
+                },
+              },
+            },
+          },
+        } as ISchema
+      }
+      onSubmit={({ sort }) => {
+        const sortArr = sort.map((item) => {
+          return item.direction === 'desc' ? `-${item.field}` : item.field;
+        });
+        _.set(field.componentProps, 'service.params.sort', sortArr);
+        props?.onSubmitCallBack?.(sortArr);
+        fieldSchema['x-component-props'] = field.componentProps;
+        dn.emit('patch', {
+          schema: {
+            ['x-uid']: fieldSchema['x-uid'],
+            'x-component-props': field.componentProps,
+          },
+        });
       }}
     />
   );
