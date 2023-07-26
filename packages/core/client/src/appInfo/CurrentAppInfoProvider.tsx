@@ -13,8 +13,6 @@ export const useCurrentAppInfo = () => {
       lang: string;
       version: string;
     };
-    loading: boolean;
-    error: any;
   }>(CurrentAppInfoContext);
 };
 export const CurrentAppInfoProvider = (props) => {
