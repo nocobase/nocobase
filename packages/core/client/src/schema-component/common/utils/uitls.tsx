@@ -13,11 +13,23 @@ type VariablesCtx = {
   $form?: Record<string, any>;
 };
 
+function flattenDeep(data, result = []) {
+  for (let i = 0; i < data.length; i++) {
+    const { children, ...rest } = data[i];
+    result.push(rest);
+    if (children) {
+      flattenDeep(children, result);
+    }
+  }
+  return result;
+}
+
 export const useVariablesCtx = (): VariablesCtx => {
   const { data } = useCurrentUserContext() || {};
   const { field, service, rowKey } = useTableBlockContext();
-  const contextData = service?.data?.data?.filter((v) => (field?.data?.selectedRowKeys || [])?.includes(v[rowKey]));
+  const tableData = flattenDeep(service?.data?.data);
   return useMemo(() => {
+    const contextData = tableData?.filter((v) => (field?.data?.selectedRowKeys || [])?.includes(v[rowKey]));
     return {
       $user: data?.data || {},
       $date: {
