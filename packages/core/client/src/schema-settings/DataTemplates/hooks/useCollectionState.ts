@@ -125,14 +125,14 @@ export const useCollectionState = (currentCollectionName: string) => {
     });
   };
 
-  const getEnableFieldTree = useCallback((collectionName: string, field) => {
+  const getEnableFieldTree = useCallback((collectionName: string, field, treeData?) => {
     const index = field.index;
     const targetTemplate = templateField.initialValue?.items?.[index];
     if (!collectionName) {
       return [];
     }
-    if (targetTemplate?.treeData) {
-      return parseTreeData(targetTemplate.treeData);
+    if (targetTemplate?.treeData || treeData) {
+      return parseTreeData(treeData || targetTemplate.treeData);
     }
     try {
       return traverseFields(collectionName, { exclude: ['id', ...systemKeys], maxDepth: 1 });

@@ -1,4 +1,5 @@
 import { ArrayBase } from '@formily/antd-v5';
+import { useField, useForm } from '@formily/react';
 import { message } from 'antd';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -8,13 +9,14 @@ import { useCompile } from '../../schema-component';
 import { TreeNode } from './TreeLabel';
 import { systemKeys } from './hooks/useCollectionState';
 
-export const useSyncFromForm = (fieldSchema, collection?) => {
+export const useSyncFromForm = (fieldSchema, collection?, callBack?) => {
   const { getCollectionJoinField, getCollectionFields } = useCollectionManager();
   const array = ArrayBase.useArray();
   const index = ArrayBase.useIndex();
   const record = ArrayBase.useRecord();
   const compile = useCompile();
   const { t } = useTranslation();
+  const from = useForm();
 
   /**
    * maxDepth: 从 0 开始，0 表示一层，1 表示两层，以此类推
@@ -171,22 +173,20 @@ export const useSyncFromForm = (fieldSchema, collection?) => {
         }, str);
       };
       getAssociationAppends(fieldSchema, '');
-      if (record) {
-        const treeData = getEnableFieldTree(record.collection, [...formData]);
-        array.field.form.query(`fieldReaction.items.${index}.layout.fields`).take((f: any) => {
+      const treeData = getEnableFieldTree(record?.collection || collection, [...formData]);
+      if (callBack) {
+        callBack(treeData, [...selectFields], from);
+      } else {
+        array?.field.form.query(`fieldReaction.items.${index}.layout.fields`).take((f: any) => {
           f.componentProps.treeData = [];
           setTimeout(() => (f.componentProps.treeData = treeData));
         });
-        array.field.value.splice(index, 1, {
+        array?.field.value.splice(index, 1, {
           ...array?.field?.value[index],
           fields: [...selectFields],
           treeData: treeData,
         });
-      } else {
-        const treeData = getEnableFieldTree(collection, [...formData]);
-        console.log(treeData);
       }
-
       message.success(t('Sync successfully'));
     },
   };
