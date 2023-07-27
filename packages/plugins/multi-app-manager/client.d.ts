@@ -1,1 +1,1 @@
-export * from './src/client/index';
+export * from './dist/client/index';
