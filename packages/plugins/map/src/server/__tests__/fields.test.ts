@@ -121,30 +121,15 @@ describe('fields', () => {
       polygon: null,
     });
 
-    expect(await findOne()).toMatchInlineSnapshot(`
-      Object {
-        "circle": Array [
-          114.058996,
-          22.549695,
-          4171,
-        ],
-        "lineString": Array [
-          Array [
-            114.047323,
-            22.534158,
-          ],
-          Array [
-            114.120966,
-            22.544146,
-          ],
-        ],
-        "point": Array [
-          1,
-          2,
-        ],
-        "polygon": null,
-      }
-    `);
+    expect(await findOne()).toMatchObject({
+      circle: [114.058996, 22.549695, 4171],
+      lineString: [
+        [114.047323, 22.534158],
+        [114.120966, 22.544146],
+      ],
+      point: [1, 2],
+      polygon: null,
+    });
   });
 
   it('empty', async () => {
@@ -162,13 +147,11 @@ describe('fields', () => {
         except: ['createdAt', 'updatedAt', 'id'],
       });
 
-    expect(await findOne()).toMatchInlineSnapshot(`
-      Object {
-        "circle": null,
-        "lineString": null,
-        "point": null,
-        "polygon": null,
-      }
-    `);
+    expect(await findOne()).toMatchObject({
+      circle: null,
+      lineString: null,
+      point: null,
+      polygon: null,
+    });
   });
 });
