@@ -140,15 +140,6 @@ export class OptionsParser {
     return filterParams;
   }
 
-  private mergeField(arr: string[]) {
-    const baseItems = arr.filter((item) => !item.includes('.'));
-
-    return arr.filter((item) => {
-      const splitItem = item.split('.');
-      return splitItem.length === 1 || !baseItems.includes(splitItem[0]);
-    });
-  }
-
   protected parseFields(filterParams: any) {
     const appends = this.options?.appends || [];
     const except = [];
@@ -169,8 +160,6 @@ export class OptionsParser {
     }
 
     if (this.options?.fields) {
-      this.options.fields = this.mergeField(this.options.fields);
-
       attributes = [];
 
       if (this.collection.isParent()) {
@@ -251,6 +240,9 @@ export class OptionsParser {
   protected parseAppends(appends: Appends, filterParams: any) {
     if (!appends) return filterParams;
 
+    // sort appends by path length
+    appends = lodash.sortBy(appends, (append) => append.split('.').length);
+
     /**
      * set include params
      * @param model
@@ -294,6 +286,11 @@ export class OptionsParser {
       let existIncludeIndex = queryParams['include'].findIndex(
         (include) => include['association'] == appendAssociation,
       );
+
+      if (lastLevel && existIncludeIndex != -1) {
+        // if append is last level and association exists, ignore it
+        return;
+      }
 
       // if include from filter, remove fromFilter attribute
       if (existIncludeIndex != -1) {

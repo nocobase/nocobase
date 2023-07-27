@@ -160,6 +160,20 @@ describe('option parser', () => {
       expect(params['include'][0]['attributes']).toContain('title');
     });
 
+    it('should handle nested fields option', () => {
+      const options = {
+        fields: ['posts', 'posts.title'],
+      };
+
+      const parser = new OptionsParser(options, {
+        collection: User,
+      });
+
+      const params = parser.toSequelizeParams();
+      const postAssociationParams = params['include'][0];
+      expect(postAssociationParams['attributes']).toEqual({ include: [] });
+    });
+
     it('should handle fields with association & association field', () => {
       // fields with nested field
       const options = {
@@ -171,10 +185,12 @@ describe('option parser', () => {
       });
 
       const params = parser.toSequelizeParams();
+      const postAssociationParams = params['include'][0];
+
       expect(params['attributes']).toContain('id');
-      expect(params['include'][0]['association']).toEqual('posts');
-      expect(params['include'][0]['attributes']).toEqual({ include: [] });
-      expect(params['include'][0]['include'][0]['association']).toEqual('comments');
+      expect(postAssociationParams['association']).toEqual('posts');
+      expect(postAssociationParams['attributes']).toEqual({ include: [] });
+      expect(postAssociationParams['include'][0]['association']).toEqual('comments');
     });
 
     it('should handle except option', () => {
