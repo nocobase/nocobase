@@ -1,3 +1,5 @@
+import { requireModule } from '@nocobase/utils';
+
 const arr2obj = (items: any[]) => {
   const obj = {};
   for (const item of items) {
@@ -13,7 +15,7 @@ export const getResource = (packageName: string, lang: string) => {
     try {
       const file = `${packageName}/${prefix}/locale/${lang}`;
       require.resolve(file);
-      const resource = require(file).default;
+      const resource = requireModule(file);
       resources.push(resource);
     } catch (error) {
       // empty
