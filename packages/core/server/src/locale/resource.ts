@@ -12,7 +12,7 @@ export const getResource = (packageName: string, lang: string, isPlugin = true) 
   const resources = [];
   const prefixes = [isPlugin ? 'dist' : 'lib'];
   if (process.env.APP_ENV !== 'production') {
-    prefixes.push('src');
+    prefixes.unshift('src');
   }
   for (const prefix of prefixes) {
     try {

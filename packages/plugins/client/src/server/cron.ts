@@ -1,20 +1,19 @@
 import { requireModule } from '@nocobase/utils';
+import { resolve } from 'path';
 
 export const getCronLocale = (lang: string) => {
-  const packageName = '@nocobase/client';
-  let locale = null;
-  try {
-    const file = `${packageName}/src/locale/cron/${lang}`;
-    require.resolve(file);
-    locale = requireModule(file);
-  } catch (error) {
+  const lng = lang.replace('-', '_');
+  const files = [resolve(__dirname, `./../locale/cron/${lng}`)];
+  if (process.env.APP_ENV !== 'production') {
+    files.push(`@nocobase/client/src/locale/cron/${lng}`, `@nocobase/client/lib/locale/cron/${lng}`);
+  }
+  for (const file of files) {
     try {
-      const file = `${packageName}/lib/locale/cron/${lang}`;
       require.resolve(file);
-      locale = requireModule(file);
+      return requireModule(file);
     } catch (error) {
-      // empty
+      continue;
     }
   }
-  return locale;
+  return {};
 };
