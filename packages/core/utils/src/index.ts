@@ -8,6 +8,7 @@ export * from './date';
 export * from './dayjs';
 export * from './forEach';
 export * from './json-templates';
+export * from './koa-multer';
 export * from './merge';
 export * from './mixin';
 export * from './mixin/AsyncEmitter';
