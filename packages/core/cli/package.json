@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/cli",
-  "version": "0.11.1-alpha.2",
+  "version": "0.11.1-alpha.3",
   "description": "",
   "license": "Apache-2.0",
   "main": "./src/index.js",
@@ -22,7 +22,7 @@
     "tsx": "^3.12.7"
   },
   "devDependencies": {
-    "@nocobase/devtools": "0.11.1-alpha.2"
+    "@nocobase/devtools": "0.11.1-alpha.3"
   },
   "repository": {
     "type": "git",
