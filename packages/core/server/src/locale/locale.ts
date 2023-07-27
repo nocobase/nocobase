@@ -2,14 +2,13 @@ import { Cache, createCache } from '@nocobase/cache';
 import { lodash } from '@nocobase/utils';
 import Application from '../application';
 import { PluginManager } from '../plugin-manager';
-import { getAntdLocale } from './antd';
-import { getCronstrueLocale } from './cronstrue';
 import { getResource } from './resource';
 
 export class Locale {
   app: Application;
   cache: Cache;
   defaultLang = 'en-US';
+  localeFn = new Map();
 
   constructor(app: Application) {
     this.app = app;
@@ -22,12 +21,21 @@ export class Locale {
     this.getCacheResources(this.defaultLang);
   }
 
+  setLocaleFn(name: string, fn: (lang: string) => Promise<any>) {
+    this.localeFn.set(name, fn);
+  }
+
   async get(lang: string) {
-    return {
-      antd: await this.wrapCache(`locale:antd:${lang}`, () => getAntdLocale(lang)),
-      cronstrue: await this.wrapCache(`locale:cronstrue:${lang}`, () => getCronstrueLocale(lang)),
+    const defaults = {
       resources: await this.getCacheResources(lang),
     };
+    for (const [name, fn] of this.localeFn) {
+      const result = await this.wrapCache(`locale:${name}:${lang}`, async () => await fn(lang));
+      if (result) {
+        defaults[name] = result;
+      }
+    }
+    return defaults;
   }
 
   async wrapCache(key: string, fn: () => any) {

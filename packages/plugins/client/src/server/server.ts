@@ -3,6 +3,9 @@ import fs from 'fs';
 import send from 'koa-send';
 import serve from 'koa-static';
 import { isAbsolute, resolve } from 'path';
+import { getAntdLocale } from './antd';
+import { getCronLocale } from './cron';
+import { getCronstrueLocale } from './cronstrue';
 
 async function getReadMe(name: string, locale: string) {
   const packageName = PluginManager.getPackageName(name);
@@ -106,6 +109,9 @@ export class ClientPlugin extends Plugin {
   }
 
   async load() {
+    this.app.locales.setLocaleFn('antd', async (lang) => getAntdLocale(lang));
+    this.app.locales.setLocaleFn('cronstrue', async (lang) => getCronstrueLocale(lang));
+    this.app.locales.setLocaleFn('cron', async (lang) => getCronLocale(lang));
     this.db.addMigrations({
       namespace: 'client',
       directory: resolve(__dirname, './migrations'),
@@ -128,6 +134,7 @@ export class ClientPlugin extends Plugin {
         fs.unlinkSync(restartMark);
       }
     });
+
     this.app.resource({
       name: 'app',
       actions: {

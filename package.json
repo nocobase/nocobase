@@ -16,7 +16,7 @@
     "pm": "nocobase pm",
     "dev": "nocobase dev",
     "start": "nocobase start",
-    "build": "nocobase build",
+    "build": "nocobase build && cd packages/plugins/client && yarn build",
     "test": "nocobase test",
     "test:client": "vitest",
     "tc": "yarn test:client",
