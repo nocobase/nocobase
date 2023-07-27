@@ -11,10 +11,9 @@ export const useStyles = genStyleHook('nb-variable', (token) => {
 
   return {
     [componentCls]: {
-      '.ant-formily-item .ant-formily-item-control .ant-formily-item-control-content .ant-formily-item-control-content-component':
-        {
-          lineHeight: 'normal',
-        },
+      '.ant-formily-item .ant-formily-item-control .ant-formily-item-control-content .ant-formily-item-control-content-component': {
+        lineHeight: 'normal',
+      },
 
       '.ant-formily-item': {
         marginBottom: 0,
@@ -81,6 +80,10 @@ export const useStyles = genStyleHook('nb-variable', (token) => {
 
       '.ant-btn': {
         height: 'auto',
+      },
+
+      '.variable': {
+        flex: 1,
       },
     },
   };
