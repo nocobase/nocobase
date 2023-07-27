@@ -6,13 +6,13 @@ import { isAbsolute, join, sep } from 'path';
 import rimraf from 'rimraf';
 import signale from 'signale';
 import babel from './babel';
+import { buildPluginClient, buildPluginServer, deleteJsFiles } from './buildPlugin';
 import getUserConfig, { CONFIG_FILES } from './getUserConfig';
 import randomColor from './randomColor';
 import registerBabel from './registerBabel';
 import rollup from './rollup';
 import { Dispose, IBundleOptions, IBundleTypeOutput, ICjs, IEsm, IOpts } from './types';
 import { getExistFiles, getLernaPackages } from './utils';
-import { buildPluginClient, buildPluginServer, deleteJsFiles } from './buildPlugin';
 
 export function getBundleOpts(opts: IOpts): IBundleOptions[] {
   const { cwd, buildArgs = {}, rootConfig = {} } = opts;
@@ -27,7 +27,7 @@ export function getBundleOpts(opts: IOpts): IBundleOptions[] {
       'src/server/index.js',
       'src/client/index.js',
       'src/client/index.ts',
-      'src/client/index.tsx'
+      'src/client/index.tsx',
     ],
     onlyOne: false,
     returnRelative: true,
@@ -41,7 +41,7 @@ export function getBundleOpts(opts: IOpts): IBundleOptions[] {
       },
       rootConfig,
       userConfig,
-      buildArgs
+      buildArgs,
     );
 
     // Support config esm: 'rollup' and cjs: 'rollup'
@@ -63,43 +63,34 @@ function validateBundleOpts(bundleOpts: IBundleOptions, { cwd, rootPath }) {
     const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
     assert.ok(
       (pkg.dependencies || {})['@babel/runtime'],
-      `@babel/runtime dependency is required to use runtimeHelpers`
+      `@babel/runtime dependency is required to use runtimeHelpers`,
     );
   }
-  if (
-    bundleOpts.cjs &&
-    (bundleOpts.cjs as ICjs).lazy &&
-    (bundleOpts.cjs as ICjs).type === 'rollup'
-  ) {
+  if (bundleOpts.cjs && (bundleOpts.cjs as ICjs).lazy && (bundleOpts.cjs as ICjs).type === 'rollup') {
     throw new Error(
       `
 cjs.lazy don't support rollup.
-    `.trim()
+    `.trim(),
     );
   }
   if (!bundleOpts.esm && !bundleOpts.cjs && !bundleOpts.umd) {
     throw new Error(
       `
 None format of ${chalk.cyan(
-        'cjs | esm | umd'
+        'cjs | esm | umd',
       )} is configured, checkout https://github.com/umijs/father for usage details.
-`.trim()
+`.trim(),
     );
   }
   if (bundleOpts.entry) {
     const tsConfigPath = join(cwd, 'tsconfig.json');
-    const tsConfig =
-      existsSync(tsConfigPath) || (rootPath && existsSync(join(rootPath, 'tsconfig.json')));
+    const tsConfig = existsSync(tsConfigPath) || (rootPath && existsSync(join(rootPath, 'tsconfig.json')));
     if (
       !tsConfig &&
       ((Array.isArray(bundleOpts.entry) && bundleOpts.entry.some(isTypescriptFile)) ||
         (!Array.isArray(bundleOpts.entry) && isTypescriptFile(bundleOpts.entry)))
     ) {
-      signale.info(
-        `Project using ${chalk.cyan(
-          'typescript'
-        )} but tsconfig.json not exists. Use default config.`
-      );
+      signale.info(`Project using ${chalk.cyan('typescript')} but tsconfig.json not exists. Use default config.`);
     }
   }
 }
@@ -119,8 +110,7 @@ export async function build(opts: IOpts, extraOpts: IExtraBuildOpts = {}) {
   const dispose: Dispose[] = [];
 
   const customConfigPath =
-    buildArgs.config &&
-    (isAbsolute(buildArgs.config) ? buildArgs.config : join(process.cwd(), buildArgs.config));
+    buildArgs.config && (isAbsolute(buildArgs.config) ? buildArgs.config : join(process.cwd(), buildArgs.config));
 
   // register babel for config files
   registerBabel({
@@ -169,9 +159,19 @@ export async function build(opts: IOpts, extraOpts: IExtraBuildOpts = {}) {
       if (cjs.type === 'babel') {
         await babel({ cwd, rootPath, watch, dispose, isPlugin, type: 'cjs', log, bundleOpts });
         if (isPlugin) {
+          log(cwd);
           deleteJsFiles(cwd, log);
-          await buildPluginServer(cwd, log)
-          await buildPluginClient(cwd, log)
+          await buildPluginServer(cwd, log);
+          await buildPluginClient(cwd, log);
+          const buildFile = join(cwd, 'build.js');
+          if (existsSync(buildFile)) {
+            log('build others');
+            try {
+              await require(buildFile).run(log);
+            } catch (error) {
+              console.error(error);
+            }
+          }
         }
       } else {
         await rollup({
@@ -233,7 +233,7 @@ export async function buildForLerna(opts: IOpts) {
   let pkgs = await getLernaPackages(cwd, userConfig.pkgFilter);
   // support define pkgs in lerna
   if (userConfig.pkgs) {
-    pkgs = pkgs.filter(pkg => userConfig.pkgs.includes(getPkgRelativePath(cwd, pkg)));
+    pkgs = pkgs.filter((pkg) => userConfig.pkgs.includes(getPkgRelativePath(cwd, pkg)));
   }
   const dispose: Dispose[] = [];
   for (const pkg of pkgs) {
@@ -244,10 +244,7 @@ export async function buildForLerna(opts: IOpts) {
     if (packages.length && !packages.includes(pkgName)) continue;
     // build error when .DS_Store includes in packages root
     const pkgPath = pkg.contents;
-    assert.ok(
-      existsSync(join(pkgPath, 'package.json')),
-      `package.json not found in packages/${pkg}`
-    );
+    assert.ok(existsSync(join(pkgPath, 'package.json')), `package.json not found in packages/${pkg}`);
     process.chdir(pkgPath);
     dispose.push(
       ...(await build(
@@ -261,8 +258,8 @@ export async function buildForLerna(opts: IOpts) {
         },
         {
           pkg,
-        }
-      ))
+        },
+      )),
     );
   }
   return dispose;
