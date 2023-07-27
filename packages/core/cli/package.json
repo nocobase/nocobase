@@ -18,7 +18,8 @@
     "fs-extra": "^11.1.1",
     "pm2": "^5.2.0",
     "portfinder": "^1.0.28",
-    "serve": "^13.0.2"
+    "serve": "^13.0.2",
+    "tsx": "^3.12.7"
   },
   "devDependencies": {
     "@nocobase/devtools": "0.11.1-alpha.3"
