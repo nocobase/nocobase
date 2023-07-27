@@ -12,7 +12,7 @@ export function getRemotePlugins(
   requirejs: any,
   pluginData: PluginData[] = [],
   baseURL = '',
-): Promise<typeof Plugin[]> {
+): Promise<Array<typeof Plugin>> {
   if (baseURL.endsWith('/')) {
     baseURL = baseURL.slice(0, -1);
   }
@@ -46,13 +46,13 @@ interface GetPluginsOption {
   devPlugins?: Record<string, Promise<{ default: typeof Plugin }>>;
 }
 
-export async function getPlugins(options: GetPluginsOption): Promise<typeof Plugin[]> {
+export async function getPlugins(options: GetPluginsOption): Promise<Array<typeof Plugin>> {
   const { requirejs, pluginData, baseURL, devPlugins = {} } = options;
 
   if (pluginData.length === 0) return [];
 
   if (process.env.NODE_ENV === 'development' && !process.env.USE_REMOTE_PLUGIN) {
-    const plugins = [];
+    const plugins: Array<typeof Plugin> = [];
 
     const resolveDevPlugins: Record<string, typeof Plugin> = {};
     const pluginPackageNames = pluginData.map((item) => item.packageName);

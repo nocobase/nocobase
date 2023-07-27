@@ -15,7 +15,8 @@ import { ComponentTypeAndString, RouterManager, RouterOptions } from './RouterMa
 import { AppComponent, BlankComponent, defaultAppComponents } from './components';
 import { compose, normalizeContainer } from './utils';
 import { defineGlobalDeps } from './utils/globalDeps';
-import { getRequireJs, type RequireJS } from './utils/requirejs';
+import { getRequireJs } from './utils/requirejs';
+import type { RequireJS } from './utils/requirejs';
 
 declare global {
   interface Window {
@@ -32,7 +33,7 @@ export interface ApplicationOptions {
   components?: Record<string, ComponentType>;
   scopes?: Record<string, any>;
   router?: RouterOptions;
-  devPlugins?: Record<string, typeof Plugin>;
+  devPlugins?: Record<string, Promise<{ default: typeof Plugin }>>;
 }
 
 export class Application {
@@ -43,7 +44,7 @@ export class Application {
   public apiClient: APIClient;
   public components: Record<string, ComponentType> = { ...defaultAppComponents };
   public pm: PluginManager;
-  public devPlugins: Record<string, typeof Plugin> = {};
+  public devPlugins: Record<string, Promise<{ default: typeof Plugin }>> = {};
   public requirejs: RequireJS;
 
   constructor(protected options: ApplicationOptions = {}) {
