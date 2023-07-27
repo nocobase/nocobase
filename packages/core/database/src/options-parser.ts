@@ -287,14 +287,21 @@ export class OptionsParser {
         (include) => include['association'] == appendAssociation,
       );
 
-      if (lastLevel && existIncludeIndex != -1) {
-        // if append is last level and association exists, ignore it
-        return;
-      }
-
       // if include from filter, remove fromFilter attribute
       if (existIncludeIndex != -1) {
         delete queryParams['include'][existIncludeIndex]['fromFilter'];
+
+        // set include attributes to all attributes
+        if (Array.isArray(queryParams['include'][existIncludeIndex]['attributes'])) {
+          queryParams['include'][existIncludeIndex]['attributes'] = {
+            include: [],
+          };
+        }
+      }
+
+      if (lastLevel && existIncludeIndex != -1) {
+        // if append is last level and association exists, ignore it
+        return;
       }
 
       // if association not exist, create it
