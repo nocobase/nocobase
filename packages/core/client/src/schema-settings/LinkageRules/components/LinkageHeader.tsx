@@ -5,7 +5,7 @@ import { ISchema, RecursionField, observer, useField, useFieldSchema } from '@fo
 import { toArr } from '@formily/shared';
 import { Badge, Card, Collapse, CollapsePanelProps, CollapseProps, Empty, Input } from 'antd';
 import cls from 'classnames';
-import { clone } from 'lodash';
+import { cloneDeep } from 'lodash';
 import React, { Fragment, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useToken } from '../../../style';
@@ -257,7 +257,7 @@ ArrayCollapse.Copy = React.forwardRef((props: any, ref) => {
         if (self?.disabled) return;
         e.stopPropagation();
         if (array.props?.disabled) return;
-        const value = clone(array?.field?.value[index]);
+        const value = cloneDeep(array?.field?.value[index]);
         array.field.push(value);
         if (props.onClick) {
           props.onClick(e);
