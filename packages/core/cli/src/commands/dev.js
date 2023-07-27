@@ -55,13 +55,12 @@ module.exports = (cli) => {
       }
 
       await runAppCommand('install', ['--silent']);
-      // if (opts.dbSync) {
-      //   await runAppCommand('db:sync');
-      // }
+
       if (server || !client) {
         console.log('starting server', serverPort);
 
         const argv = [
+          'watch',
           '--tsconfig',
           './tsconfig.server.json',
           '-r',
