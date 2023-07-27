@@ -12,6 +12,7 @@ export const color: IField = {
     uiSchema: {
       type: 'string',
       'x-component': 'ColorPicker',
+      default: '#1677FF',
     },
   },
   availableTypes: ['string'],
