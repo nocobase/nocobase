@@ -56,7 +56,7 @@ export const G2PlotLibrary: Charts = {
     useProps,
     reference: {
       title: 'Line Chart',
-      link: 'https://g2plot.antv.antgroup.com/api/plots/bar',
+      link: 'https://g2plot.antv.antgroup.com/api/plots/line',
     },
   },
   area: {
