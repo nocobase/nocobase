@@ -250,31 +250,32 @@ export const TableColumnDesigner = (props) => {
           }}
         />
       )}
-      {readOnlyMode === 'read-pretty' && (
-        <SchemaSettings.SelectItem
-          key="field-mode"
-          title={t('Field component')}
-          options={[
-            { label: t('Title'), value: 'Select' },
-            { label: t('Tag'), value: 'Tag' },
-          ]}
-          value={fieldMode}
-          onChange={(mode) => {
-            const schema = {
-              ['x-uid']: fieldSchema['x-uid'],
-            };
-            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-            fieldSchema['x-component-props']['mode'] = mode;
-            schema['x-component-props'] = fieldSchema['x-component-props'];
-            field.componentProps = field.componentProps || {};
-            field.componentProps.mode = mode;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          }}
-        />
-      )}
+      {readOnlyMode === 'read-pretty' &&
+        ['linkTo', 'm2m', 'm2o', 'o2m', 'obo', 'oho', 'snapshot'].includes(collectionField?.interface) && (
+          <SchemaSettings.SelectItem
+            key="field-mode"
+            title={t('Field component')}
+            options={[
+              { label: t('Title'), value: 'Select' },
+              { label: t('Tag'), value: 'Tag' },
+            ]}
+            value={fieldMode}
+            onChange={(mode) => {
+              const schema = {
+                ['x-uid']: fieldSchema['x-uid'],
+              };
+              fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+              fieldSchema['x-component-props']['mode'] = mode;
+              schema['x-component-props'] = fieldSchema['x-component-props'];
+              field.componentProps = field.componentProps || {};
+              field.componentProps.mode = mode;
+              dn.emit('patch', {
+                schema,
+              });
+              dn.refresh();
+            }}
+          />
+        )}
 
       {['Tag'].includes(fieldMode) && (
         <SchemaSettings.SelectItem
@@ -392,9 +393,8 @@ export const TableColumnDesigner = (props) => {
         )}
       {isDateField && <SchemaSettings.DataFormat fieldSchema={fieldSchema} />}
 
-
       {isSubTableColumn && !field?.readPretty && isShowDefaultValue(collectionField, getInterface) && (
-        <SchemaSettings.DefaultValue fieldSchema={fieldSchema}/>
+        <SchemaSettings.DefaultValue fieldSchema={fieldSchema} />
       )}
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
