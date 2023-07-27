@@ -29,7 +29,7 @@ export const VariableInput = (props: Props) => {
     contextCollectionName,
   } = props;
   const compile = useCompile();
-  const userVariable = useUserVariable({ schema, maxDepth: 1 });
+  const userVariable = useUserVariable({ schema, maxDepth: 3 });
   const contextVariable = useContextAssociationFields({ schema, maxDepth: 2, contextCollectionName });
   const scope = useMemo(() => {
     const data = [
