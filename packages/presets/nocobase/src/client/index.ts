@@ -20,6 +20,6 @@ export class NocoBaseClientPresetPlugin extends Plugin {
       config.headers['X-Timezone'] = getCurrentTimezone();
       return config;
     });
-    this.app.pm.add(NocoBaseBuildInPlugin);
+    await this.app.pm.add(NocoBaseBuildInPlugin);
   }
 }

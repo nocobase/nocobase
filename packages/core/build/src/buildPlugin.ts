@@ -197,8 +197,6 @@ export async function buildServerDeps(cwd: string, serverFiles: string[], log: L
       { cwd: outputDir, absolute: true },
     );
 
-    console.log('deleteFiles', deleteFiles);
-
     deleteFiles.forEach((file) => {
       fs.unlinkSync(file);
     });

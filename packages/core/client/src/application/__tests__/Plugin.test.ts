@@ -77,7 +77,7 @@ describe('PluginManager', () => {
 
     class Demo1Plugin extends Plugin {
       async afterAdd() {
-        this.app.pm.add(Demo2, { name: 'demo2', config });
+        await this.app.pm.add(Demo2, { name: 'demo2', config });
       }
     }
     const app = new Application({
@@ -100,7 +100,7 @@ describe('PluginManager', () => {
   });
 
   it('get', async () => {
-    class DemoPlugin extends Plugin { }
+    class DemoPlugin extends Plugin {}
     const app = new Application({ plugins: [[DemoPlugin, { name: 'demo' }]] });
     await app.load();
     expect(app.pm.get('demo')).toBeInstanceOf(DemoPlugin);

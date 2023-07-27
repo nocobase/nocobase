@@ -15,13 +15,16 @@ export type PluginData = {
 export class PluginManager {
   protected pluginInstances: Map<typeof Plugin, Plugin> = new Map();
   protected pluginsAliases: Record<string, Plugin> = {};
-  private initStaticPluginsPromise: Promise<void>;
-  private initRemotePluginPromise: Promise<void>;
+  private initPlugins: Promise<void>;
 
   constructor(protected _plugins: PluginType[], protected app: Application) {
     this.app = app;
-    this.initStaticPluginsPromise = this.initStaticPlugins(_plugins);
-    this.initRemotePluginPromise = this.initRemotePlugins();
+    this.initPlugins = this.init(_plugins);
+  }
+
+  async init(_plugins: PluginType[]) {
+    await this.initStaticPlugins(_plugins);
+    await this.initRemotePlugins();
   }
 
   private async initStaticPlugins(_plugins: PluginType[] = []) {
@@ -80,8 +83,7 @@ export class PluginManager {
   }
 
   async load() {
-    await this.initStaticPluginsPromise;
-    await this.initRemotePluginPromise;
+    await this.initPlugins;
 
     for (const plugin of this.pluginInstances.values()) {
       await plugin.beforeLoad();
