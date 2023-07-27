@@ -1,8 +1,7 @@
 import { css, cx } from '@emotion/css';
-import { ArrayCollapse, ArrayItems, FormItem as Item, FormLayout } from '@formily/antd-v5';
+import { ArrayCollapse, ArrayItems, FormLayout, FormItem as Item } from '@formily/antd-v5';
 import { Field } from '@formily/core';
-import { ISchema, observer, Schema, useField, useFieldSchema } from '@formily/react';
-import { dayjs } from '@nocobase/utils/client';
+import { ISchema, observer, useField, useFieldSchema } from '@formily/react';
 import { Select } from 'antd';
 import _ from 'lodash';
 import React, { useEffect } from 'react';
@@ -12,7 +11,6 @@ import { useBlockRequestContext } from '../../../block-provider/BlockProvider';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import {
   Collection,
-  CollectionFieldOptions,
   useCollection,
   useCollectionFilterOptions,
   useCollectionManager,
@@ -20,7 +18,7 @@ import {
 } from '../../../collection-manager';
 import { isTitleField } from '../../../collection-manager/Configuration/CollectionFields';
 import { GeneralSchemaItems } from '../../../schema-items/GeneralSchemaItems';
-import { GeneralSchemaDesigner, isPatternDisabled, isShowDefaultValue, SchemaSettings } from '../../../schema-settings';
+import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isShowDefaultValue } from '../../../schema-settings';
 import { useIsShowMultipleSwitch } from '../../../schema-settings/hooks/useIsShowMultipleSwitch';
 import { isVariable, parseVariables, useVariablesCtx } from '../../common/utils/uitls';
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
@@ -830,17 +828,4 @@ export function isFileCollection(collection: Collection) {
   return collection?.template === 'file';
 }
 
-function extractFirstPart(path) {
-  const firstDotIndex = path.indexOf('.');
-  return firstDotIndex !== -1 ? path.slice(0, firstDotIndex) : path;
-}
-
 FormItem.FilterFormDesigner = FilterFormDesigner;
-
-export function getFieldDefaultValue(fieldSchema: ISchema, collectionField: CollectionFieldOptions) {
-  const result = fieldSchema?.default ?? collectionField?.defaultValue;
-  if (collectionField?.uiSchema?.['x-component'] === 'DatePicker' && result) {
-    return dayjs(result);
-  }
-  return result;
-}

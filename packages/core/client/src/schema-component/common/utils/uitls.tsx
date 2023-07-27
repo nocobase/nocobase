@@ -25,7 +25,7 @@ export const useVariablesCtx = (): VariablesCtx => {
       },
       $context: contextData,
     };
-  }, [data]);
+  }, [contextData, data?.data]);
 };
 
 export const isVariable = (str: unknown) => {

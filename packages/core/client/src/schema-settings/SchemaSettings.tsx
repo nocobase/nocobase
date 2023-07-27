@@ -3,7 +3,7 @@ import { ArrayCollapse, ArrayItems, FormItem, FormLayout, Input } from '@formily
 import { Field, GeneralField, createForm } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import { error } from '@nocobase/utils/client';
+import { dayjs, error } from '@nocobase/utils/client';
 import {
   Alert,
   App,
@@ -68,7 +68,6 @@ import {
 } from '../filter-provider/utils';
 import { useCollectMenuItem, useCollectMenuItems, useMenuItem } from '../hooks/useMenuItem';
 import { getTargetKey } from '../schema-component/antd/association-filter/utilts';
-import { getFieldDefaultValue } from '../schema-component/antd/form-item';
 import { parseVariables, useVariablesCtx } from '../schema-component/common/utils/uitls';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
@@ -1558,3 +1557,11 @@ export const isSystemField = (collectionField: CollectionFieldOptions, getInterf
 export const isPatternDisabled = (fieldSchema: Schema) => {
   return fieldSchema?.['x-component-props']?.['pattern-disable'] == true;
 };
+
+function getFieldDefaultValue(fieldSchema: ISchema, collectionField: CollectionFieldOptions) {
+  const result = fieldSchema?.default ?? collectionField?.defaultValue;
+  if (collectionField?.uiSchema?.['x-component'] === 'DatePicker' && result) {
+    return dayjs(result);
+  }
+  return result;
+}
