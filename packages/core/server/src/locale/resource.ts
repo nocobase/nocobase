@@ -10,7 +10,7 @@ const arr2obj = (items: any[]) => {
 
 export const getResource = (packageName: string, lang: string) => {
   const resources = [];
-  const prefixes = ['src', 'dist'];
+  const prefixes = ['src', packageName === '@nocobase/client' ? 'lib' : 'dist'];
   for (const prefix of prefixes) {
     try {
       const file = `${packageName}/${prefix}/locale/${lang}`;
