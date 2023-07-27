@@ -62,6 +62,7 @@ export const TableColumnDesigner = (props) => {
   const defaultFilter = fieldSchema?.['x-component-props']?.service?.params?.filter || {};
   const dataSource = useCollectionFilterOptions(collectionField?.target);
   const isDateField = ['datetime', 'createdAt', 'updatedAt'].includes(collectionField?.interface);
+  const fieldMode = fieldSchema?.['x-component-props']?.['mode'] || 'Select';
   let readOnlyMode = 'editable';
   if (fieldSchema['x-disabled'] === true) {
     readOnlyMode = 'readonly';
