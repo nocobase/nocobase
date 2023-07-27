@@ -292,14 +292,21 @@ export class OptionsParser {
         delete queryParams['include'][existIncludeIndex]['fromFilter'];
 
         // set include attributes to all attributes
-        if (Array.isArray(queryParams['include'][existIncludeIndex]['attributes'])) {
+        if (
+          Array.isArray(queryParams['include'][existIncludeIndex]['attributes']) &&
+          queryParams['include'][existIncludeIndex]['attributes'].length == 0
+        ) {
           queryParams['include'][existIncludeIndex]['attributes'] = {
             include: [],
           };
         }
       }
 
-      if (lastLevel && existIncludeIndex != -1) {
+      if (
+        lastLevel &&
+        existIncludeIndex != -1 &&
+        lodash.get(queryParams, ['include', existIncludeIndex, 'attributes', 'include'])?.length == 0
+      ) {
         // if append is last level and association exists, ignore it
         return;
       }
