@@ -54,8 +54,6 @@ module.exports = (cli) => {
         });
       }
 
-      await runAppCommand('install', ['--silent']);
-
       if (server || !client) {
         console.log('starting server', serverPort);
 
