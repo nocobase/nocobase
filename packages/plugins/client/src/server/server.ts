@@ -1,4 +1,4 @@
-import { Plugin, PluginManager } from '@nocobase/server';
+import { Plugin, PluginManager, getPackageClientStaticUrl } from '@nocobase/server';
 import fs from 'fs';
 import send from 'koa-send';
 import serve from 'koa-static';
@@ -167,15 +167,20 @@ export class ClientPlugin extends Plugin {
             },
           });
           ctx.body = items
-            .filter((item) => {
+            .map((item) => {
               try {
                 const packageName = PluginManager.getPackageName(item.name);
                 require.resolve(`${packageName}/client`);
-                return true;
-              } catch (error) {}
-              return false;
+                return {
+                  ...item.toJSON(),
+                  packageName,
+                  url: getPackageClientStaticUrl(packageName, 'index'),
+                };
+              } catch {
+                return false;
+              }
             })
-            .map((item) => item.name);
+            .filter(Boolean);
           await next();
         },
         async clearCache(ctx, next) {
