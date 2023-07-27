@@ -25,6 +25,7 @@
     "axios": "^0.26.1",
     "chalk": "^4.1.1",
     "commander": "^9.2.0",
+    "cronstrue": "^2.11.0",
     "dayjs": "^1.11.8",
     "find-package-json": "^1.2.0",
     "i18next": "^22.4.9",

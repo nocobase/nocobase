@@ -1,25 +1,26 @@
-import fs from 'fs-extra';
-import chalk from 'chalk';
 import ncc from '@vercel/ncc';
+import react from '@vitejs/plugin-react';
+import chalk from 'chalk';
+import fg from 'fast-glob';
+import fs from 'fs-extra';
 import path from 'path';
-import react from '@vitejs/plugin-react'
-import { build as tsupBuild } from 'tsup'
-import { build as viteBuild } from 'vite'
-import fg from 'fast-glob'
-import { buildCheck, formatFileSize, getExcludePackages, getFileSize, getIncludePackages, getPackageJson, getSourcePackages } from './utils/buildPluginUtils';
-import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js'
+import { build as tsupBuild } from 'tsup';
+import { build as viteBuild } from 'vite';
+import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js';
+import {
+  buildCheck,
+  formatFileSize,
+  getExcludePackages,
+  getFileSize,
+  getIncludePackages,
+  getPackageJson,
+  getSourcePackages,
+} from './utils/buildPluginUtils';
 import { getDepsConfig } from './utils/getDepsConfig';
 
-const serverGlobalFiles: string[] = [
-  'src/**',
-  '!src/**/__tests__',
-  '!src/client/**'
-]
+const serverGlobalFiles: string[] = ['src/**', '!src/**/__tests__', '!src/client/**'];
 
-const clientGlobalFiles: string[] = [
-  'src/client/**',
-  '!src/**/__tests__',
-]
+const clientGlobalFiles: string[] = ['src/client/**', '!src/**/__tests__'];
 
 const external = [
   // nocobase
@@ -114,40 +115,48 @@ const external = [
   '@emotion/css',
   'ahooks',
   'lodash',
-  'china-division'
-]
-const pluginPrefix = (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro-').split(
-  ',');
+  'china-division',
+  'cronstrue',
+];
+const pluginPrefix = (
+  process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro-'
+).split(',');
 
 type Log = (msg: string, ...args: any) => void;
 
-
-const target_dir = 'dist'
+const target_dir = 'dist';
 
 export function deleteJsFiles(cwd: string, log: Log) {
-  log('delete babel js files')
-  const jsFiles = fg.globSync(['**/*', '!**/*.d.ts', '!node_modules'], { cwd: path.join(cwd, target_dir), absolute: true })
-  jsFiles.forEach(item => {
+  log('delete babel js files');
+  const jsFiles = fg.globSync(['**/*', '!**/*.d.ts', '!node_modules'], {
+    cwd: path.join(cwd, target_dir),
+    absolute: true,
+  });
+  jsFiles.forEach((item) => {
     fs.unlinkSync(item);
-  })
+  });
 }
 
 export async function buildServerDeps(cwd: string, serverFiles: string[], log: Log) {
-  log('build server dependencies')
+  log('build server dependencies');
   const outDir = path.join(cwd, target_dir, 'node_modules');
-  const sourcePackages = getSourcePackages(serverFiles)
+  const sourcePackages = getSourcePackages(serverFiles);
   const includePackages = getIncludePackages(sourcePackages, external, pluginPrefix);
-  const excludePackages = getExcludePackages(sourcePackages, external, pluginPrefix)
+  const excludePackages = getExcludePackages(sourcePackages, external, pluginPrefix);
 
   let tips = [];
   if (includePackages.length) {
-    tips.push(`These packages ${chalk.yellow(includePackages.join(', '))} will be ${chalk.bold('bundled')} to dist/node_modules.`)
+    tips.push(
+      `These packages ${chalk.yellow(includePackages.join(', '))} will be ${chalk.bold(
+        'bundled',
+      )} to dist/node_modules.`,
+    );
   }
   if (excludePackages.length) {
-    tips.push(`These packages ${chalk.yellow(excludePackages.join(', '))} will be ${chalk.bold('exclude')}.`)
+    tips.push(`These packages ${chalk.yellow(excludePackages.join(', '))} will be ${chalk.bold('exclude')}.`);
   }
-  tips.push(`For more information, please refer to: ${chalk.blue('https://docs.nocobase.com/development/deps')}.`)
-  log(tips.join(' '))
+  tips.push(`For more information, please refer to: ${chalk.blue('https://docs.nocobase.com/development/deps')}.`);
+  log(tips.join(' '));
 
   if (!includePackages.length) return;
 
@@ -170,35 +179,32 @@ export async function buildServerDeps(cwd: string, serverFiles: string[], log: L
     await fs.copy(depDir, outputDir, { errorOnExist: false });
 
     // delete files
-    const deleteFiles = fg.sync([
-      './**/*.map',
-      './**/*.js.map',
-      './**/*.md',
-      './**/*.mjs',
-      './**/*.png',
-      './**/*.jpg',
-      './**/*.jpeg',
-      './**/*.gif',
-      './**/*/.bin',
-      './**/*/bin',
-      './**/*/LICENSE',
-      './**/*/tsconfig.json'
-    ], { cwd: outputDir, absolute: true });
+    const deleteFiles = fg.sync(
+      [
+        './**/*.map',
+        './**/*.js.map',
+        './**/*.md',
+        './**/*.mjs',
+        './**/*.png',
+        './**/*.jpg',
+        './**/*.jpeg',
+        './**/*.gif',
+        './**/*/.bin',
+        './**/*/bin',
+        './**/*/LICENSE',
+        './**/*/tsconfig.json',
+      ],
+      { cwd: outputDir, absolute: true },
+    );
 
-    console.log('deleteFiles', deleteFiles)
+    console.log('deleteFiles', deleteFiles);
 
     deleteFiles.forEach((file) => {
       fs.unlinkSync(file);
     });
 
     await ncc(dep, nccConfig).then(
-      ({
-        code,
-        assets,
-      }: {
-        code: string;
-        assets: Record<string, { source: string; permissions: number }>;
-      }) => {
+      ({ code, assets }: { code: string; assets: Record<string, { source: string; permissions: number }> }) => {
         // emit dist file
         fs.writeFileSync(mainFile, code, 'utf-8');
 
@@ -225,10 +231,10 @@ export async function buildServerDeps(cwd: string, serverFiles: string[], log: L
 }
 
 export async function buildPluginServer(cwd: string, log: Log) {
-  log('build server source')
+  log('build server source');
   const packageJson = getPackageJson(cwd);
-  const serverFiles = fg.globSync(serverGlobalFiles, { cwd, absolute: true })
-  buildCheck({ cwd, packageJson, entry: 'server', files: serverFiles, log })
+  const serverFiles = fg.globSync(serverGlobalFiles, { cwd, absolute: true });
+  buildCheck({ cwd, packageJson, entry: 'server', files: serverFiles, log });
 
   await tsupBuild({
     entry: serverFiles,
@@ -240,21 +246,21 @@ export async function buildPluginServer(cwd: string, log: Log) {
     target: 'node16',
     outDir: path.join(cwd, target_dir),
     format: 'cjs',
-    skipNodeModulesBundle: true
-  })
+    skipNodeModulesBundle: true,
+  });
 
-  await buildServerDeps(cwd, serverFiles, log)
+  await buildServerDeps(cwd, serverFiles, log);
 }
 
 export function buildPluginClient(cwd: string, log: Log) {
-  log('build client')
+  log('build client');
 
   const packageJson = getPackageJson(cwd);
-  const clientFiles = fg.globSync(clientGlobalFiles, { cwd, absolute: true })
-  const sourcePackages = getSourcePackages(clientFiles)
-  const excludePackages = getExcludePackages(sourcePackages, external, pluginPrefix)
+  const clientFiles = fg.globSync(clientGlobalFiles, { cwd, absolute: true });
+  const sourcePackages = getSourcePackages(clientFiles);
+  const excludePackages = getExcludePackages(sourcePackages, external, pluginPrefix);
 
-  buildCheck({ cwd, packageJson, entry: 'client', files: clientFiles, log })
+  buildCheck({ cwd, packageJson, entry: 'client', files: clientFiles, log });
 
   const outDir = path.join(cwd, target_dir, 'client');
 
@@ -264,9 +270,9 @@ export function buildPluginClient(cwd: string, log: Log) {
     }
     prev[curr] = curr;
     return prev;
-  }, {})
+  }, {});
 
-  const entry = fg.globSync('src/client/index.{ts,tsx,js,jsx}', { cwd, })
+  const entry = fg.globSync('src/client/index.{ts,tsx,js,jsx}', { cwd });
   const outputFileName = 'index.js';
   return viteBuild({
     mode: 'production',
@@ -292,7 +298,7 @@ export function buildPluginClient(cwd: string, log: Log) {
           exports: 'named',
           globals,
         },
-      }
+      },
     },
     plugins: [
       react(),
@@ -307,7 +313,7 @@ export function buildPluginClient(cwd: string, log: Log) {
             log('The bundle file size exceeds 1MB %s. ', chalk.red(formatFileSize(fileSize)));
           }
         },
-      }
+      },
     ],
-  })
+  });
 }
