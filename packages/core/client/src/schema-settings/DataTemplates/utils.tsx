@@ -1,5 +1,5 @@
 import { ArrayBase } from '@formily/antd-v5';
-import { useField, useForm } from '@formily/react';
+import { useForm } from '@formily/react';
 import { message } from 'antd';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -8,6 +8,7 @@ import { useCollectionManager } from '../../collection-manager';
 import { useCompile } from '../../schema-component';
 import { TreeNode } from './TreeLabel';
 import { systemKeys } from './hooks/useCollectionState';
+import LRUCache from 'lru-cache';
 
 export const useSyncFromForm = (fieldSchema, collection?, callBack?) => {
   const { getCollectionJoinField, getCollectionFields } = useCollectionManager();
@@ -18,107 +19,134 @@ export const useSyncFromForm = (fieldSchema, collection?, callBack?) => {
   const { t } = useTranslation();
   const from = useForm();
 
-  /**
-   * maxDepth: 从 0 开始，0 表示一层，1 表示两层，以此类推
-   */
-  const traverseFields = (collectionName, { exclude = [], depth = 0, maxDepth, prefix = '' }, formData) => {
-    if (depth > maxDepth) {
-      return [];
-    }
-    return getCollectionFields(collectionName)
-      .map((field) => {
-        if (exclude.includes(field.name)) {
-          return;
-        }
-        if (!field.interface) {
-          return;
-        }
-        if (['sort', 'password', 'sequence'].includes(field.type)) {
-          return;
-        }
-        const node = {
-          type: 'duplicate',
-          tag: compile(field.uiSchema?.title) || field.name,
-        };
-        const option = {
-          ...node,
-          title: React.createElement(TreeNode, node),
-          key: prefix ? `${prefix}.${field.name}` : field.name,
-          isLeaf: true,
-          field,
-        };
-        const tatgetFormField = formData.find((v) => v.name === field.name);
-        // 多对多和多对一只展示关系字段
-        if (
-          ['belongsTo', 'belongsToMany'].includes(field.type) &&
-          (!tatgetFormField || ['Select', 'Picker'].includes(tatgetFormField?.fieldMode))
-        ) {
-          node['type'] = 'reference';
-          option['type'] = 'reference';
-          option['title'] = React.createElement(TreeNode, { ...node, type: 'reference' });
-          option.isLeaf = false;
-          option['children'] = traverseAssociations(field.target, {
-            depth: depth + 1,
-            maxDepth,
-            prefix: option.key,
-            exclude: systemKeys,
-          });
-        } else if (
-          ['hasOne', 'hasMany'].includes(field.type) ||
-          ['Nester', 'SubTable'].includes(tatgetFormField?.fieldMode)
-        ) {
-          option.isLeaf = false;
-          option['children'] = traverseFields(
-            field.target,
-            {
+  const traverseFields = ((cache) => {
+    return (collectionName, { exclude = [], depth = 0, maxDepth, prefix = '' }, formData) => {
+      const cacheKey = `${collectionName}-${exclude.join(',')}-${depth}-${maxDepth}-${prefix}`;
+      const cachedResult = cache.get(cacheKey);
+      if (cachedResult) {
+        return cachedResult;
+      }
+
+      if (depth > maxDepth) {
+        return [];
+      }
+
+      const result = getCollectionFields(collectionName)
+        .map((field) => {
+          if (exclude.includes(field.name)) {
+            return;
+          }
+          if (!field.interface) {
+            return;
+          }
+          if (['sort', 'password', 'sequence'].includes(field.type)) {
+            return;
+          }
+
+          const node = {
+            type: 'duplicate',
+            tag: compile(field.uiSchema?.title) || field.name,
+          };
+
+          const option = {
+            ...node,
+            title: React.createElement(TreeNode, node),
+            key: prefix ? `${prefix}.${field.name}` : field.name,
+            isLeaf: true,
+            field,
+          };
+
+          const tatgetFormField = formData.find((v) => v.name === field.name);
+          if (
+            ['belongsTo', 'belongsToMany'].includes(field.type) &&
+            (!tatgetFormField || ['Select', 'Picker'].includes(tatgetFormField?.fieldMode))
+          ) {
+            node['type'] = 'reference';
+            option['type'] = 'reference';
+            option['title'] = React.createElement(TreeNode, { ...node, type: 'reference' });
+            option.isLeaf = false;
+            option['children'] = traverseAssociations(field.target, {
               depth: depth + 1,
               maxDepth,
               prefix: option.key,
-              exclude: ['id', ...systemKeys],
-            },
-            formData,
-          );
-        }
-        return option;
-      })
-      .filter(Boolean);
-  };
+              exclude: systemKeys,
+            });
+          } else if (
+            ['hasOne', 'hasMany'].includes(field.type) ||
+            ['Nester', 'SubTable'].includes(tatgetFormField?.fieldMode)
+          ) {
+            option.isLeaf = false;
+            option['children'] = traverseFields(
+              field.target,
+              {
+                depth: depth + 1,
+                maxDepth,
+                prefix: option.key,
+                exclude: ['id', ...systemKeys],
+              },
+              formData,
+            );
+          }
+          return option;
+        })
+        .filter(Boolean);
 
-  const traverseAssociations = (collectionName, { prefix, maxDepth, depth = 0, exclude = [] }) => {
-    // if (depth > maxDepth) {
-    //   return [];
-    // }
-    return getCollectionFields(collectionName)
-      .map((field) => {
-        if (!field.target || !field.interface) {
-          return;
-        }
-        if (exclude.includes(field.name)) {
-          return;
-        }
-        const option = {
-          type: 'preloading',
-          tag: compile(field.uiSchema?.title) || field.name,
-        };
-        const value = prefix ? `${prefix}.${field.name}` : field.name;
-        return {
-          type: 'preloading',
-          tag: compile(field.uiSchema?.title) || field.name,
-          title: React.createElement(TreeNode, option),
-          key: value,
-          isLeaf: false,
-          field,
-          children: traverseAssociations(field.target, {
-            prefix: value,
-            depth: depth + 1,
-            maxDepth,
-            exclude,
-          }),
-        };
-      })
-      .filter(Boolean);
-  };
+      cache.set(cacheKey, result);
+      return result;
+    };
+  })(
+    new LRUCache<string, any>({ max: 100 }),
+  );
 
+  const traverseAssociations = ((cache) => {
+    return (collectionName, { prefix, maxDepth, depth = 0, exclude = [] }) => {
+      const cacheKey = `${collectionName}-${exclude.join(',')}-${depth}-${maxDepth}-${prefix}`;
+      const cachedResult = cache.get(cacheKey);
+      if (cachedResult) {
+        return cachedResult;
+      }
+
+      if (depth > maxDepth) {
+        return [];
+      }
+
+      const result = getCollectionFields(collectionName)
+        .map((field) => {
+          if (!field.target || !field.interface) {
+            return;
+          }
+          if (exclude.includes(field.name)) {
+            return;
+          }
+
+          const option = {
+            type: 'preloading',
+            tag: compile(field.uiSchema?.title) || field.name,
+          };
+          const value = prefix ? `${prefix}.${field.name}` : field.name;
+          return {
+            type: 'preloading',
+            tag: compile(field.uiSchema?.title) || field.name,
+            title: React.createElement(TreeNode, option),
+            key: value,
+            isLeaf: false,
+            field,
+            children: traverseAssociations(field.target, {
+              prefix: value,
+              depth: depth + 1,
+              maxDepth,
+              exclude,
+            }),
+          };
+        })
+        .filter(Boolean);
+
+      cache.set(cacheKey, result);
+      return result;
+    };
+  })(
+    new LRUCache<string, any>({ max: 100 }),
+  );
   const getEnableFieldTree = useCallback((collectionName: string, formData) => {
     if (!collectionName) {
       return [];
