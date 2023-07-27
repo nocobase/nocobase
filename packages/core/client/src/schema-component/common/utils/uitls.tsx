@@ -14,7 +14,7 @@ type VariablesCtx = {
 };
 
 function flattenDeep(data, result = []) {
-  for (let i = 0; i < data.length; i++) {
+  for (let i = 0; i < data?.length; i++) {
     const { children, ...rest } = data[i];
     result.push(rest);
     if (children) {
