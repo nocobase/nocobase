@@ -8,9 +8,12 @@ const arr2obj = (items: any[]) => {
   return obj;
 };
 
-export const getResource = (packageName: string, lang: string) => {
+export const getResource = (packageName: string, lang: string, isPlugin = true) => {
   const resources = [];
-  const prefixes = ['src', packageName === '@nocobase/client' ? 'lib' : 'dist'];
+  const prefixes = [isPlugin ? 'dist' : 'lib'];
+  if (process.env.APP_ENV !== 'production') {
+    prefixes.push('src');
+  }
   for (const prefix of prefixes) {
     try {
       const file = `${packageName}/${prefix}/locale/${lang}`;

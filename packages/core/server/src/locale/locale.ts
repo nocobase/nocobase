@@ -57,9 +57,11 @@ export class Locale {
         if (res) {
           resources[name] = { ...res };
         }
-      } catch (err) {}
+      } catch (err) {
+        // empty
+      }
     }
-    const res = getResource('@nocobase/client', lang);
+    const res = getResource('@nocobase/client', lang, false);
     if (res) {
       resources['client'] = { ...(resources['client'] || {}), ...res };
     }
