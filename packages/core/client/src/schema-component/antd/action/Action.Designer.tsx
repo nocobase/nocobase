@@ -1,4 +1,4 @@
-import { connect, ISchema, mapProps, useField, useFieldSchema } from '@formily/react';
+import { connect, ISchema, mapProps, useField, useFieldSchema, useForm } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
 import { Tree as AntdTree } from 'antd';
 import { cloneDeep } from 'lodash';
@@ -235,6 +235,17 @@ const findFormBlock = (schema) => {
   return formSchema;
 };
 
+const getAllkeys = (data, result) => {
+  for (let i = 0; i < data?.length; i++) {
+    const { children, ...rest } = data[i];
+    result.push(rest.key);
+    if (children) {
+      getAllkeys(children, result);
+    }
+  }
+  return result;
+};
+
 function DuplicationMode() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
@@ -253,7 +264,18 @@ function DuplicationMode() {
       form.setValues({ ...form.values, treeData });
     });
   }, []);
-
+  const useSelectAllFields = (form) => {
+    return {
+      async run() {
+        form.query('duplicateFields').take((f) => {
+          const selectFields = getAllkeys(f.componentProps.treeData, []);
+          f.componentProps.defaultCheckedKeys = selectFields;
+          f.setInitialValue(selectFields);
+          f?.onCheck(selectFields);
+        });
+      },
+    };
+  };
   return (
     <SchemaSettings.ModalItem
       title={t('Duplicate mode')}
@@ -319,6 +341,39 @@ function DuplicationMode() {
                     fieldSchema['x-component-props']?.duplicateCollection || record?.__collection || name,
                     syncCallBack,
                   );
+                },
+              },
+              'x-reactions': [
+                {
+                  dependencies: ['.duplicateMode'],
+                  fulfill: {
+                    state: {
+                      visible: `{{ $deps[0]!=="quickDulicate" }}`,
+                    },
+                  },
+                },
+              ],
+            },
+            selectAll: {
+              type: 'void',
+              title: '{{ t("Select all") }}',
+              'x-component': 'Action.Link',
+              'x-reactions': [
+                {
+                  dependencies: ['.duplicateMode'],
+                  fulfill: {
+                    state: {
+                      visible: `{{ $deps[0]==="quickDulicate" }}`,
+                    },
+                  },
+                },
+              ],
+              'x-component-props': {
+                type: 'primary',
+                style: { float: 'right', position: 'relative', zIndex: 1200 },
+                useAction: () => {
+                  const from = useForm();
+                  return useSelectAllFields(from);
                 },
               },
             },
