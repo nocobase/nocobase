@@ -28,7 +28,7 @@ export class LocalePlugin extends Plugin {
       loadConstrueLocale(data?.data);
       const dayjsLang = dayjsLocale[data?.data?.lang] || 'en';
       await import(`dayjs/locale/${dayjsLang}`);
-      dayjs.locale(data?.data?.moment);
+      dayjs.locale(dayjsLang);
       window['cronLocale'] = data?.data?.cron;
     } catch (error) {
       (() => {})();
