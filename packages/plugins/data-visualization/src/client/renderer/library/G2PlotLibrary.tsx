@@ -42,6 +42,7 @@ const useProps: usePropsFunc = ({ data, fieldProps, general, advanced }) => {
   return {
     data,
     meta,
+    animation: false,
     ...general,
     ...advanced,
   };
