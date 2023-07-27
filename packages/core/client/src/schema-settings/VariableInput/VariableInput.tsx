@@ -26,7 +26,6 @@ export const VariableInput = (props: Props) => {
     style,
     schema,
     className,
-    collectionField,
     contextCollectionName,
   } = props;
   const compile = useCompile();
@@ -34,6 +33,7 @@ export const VariableInput = (props: Props) => {
   const contextVariable = useContextAssociationFields({ schema, maxDepth: 2, contextCollectionName });
   const scope = useMemo(() => {
     const data = [
+      userVariable,
       compile({
         label: `{{t("Date variables")}}`,
         value: '$date',
@@ -48,14 +48,11 @@ export const VariableInput = (props: Props) => {
         ],
       }),
     ];
-    if (collectionField?.target === 'users') {
-      data.unshift(userVariable);
-    }
     if (contextCollectionName) {
       data.unshift(contextVariable);
     }
     return data;
-  }, []);
+  }, [compile, contextCollectionName, contextVariable, schema, userVariable]);
 
   return (
     <Variable.Input
@@ -64,7 +61,7 @@ export const VariableInput = (props: Props) => {
       onChange={onChange}
       scope={scope}
       style={style}
-      changeOnSelect={contextCollectionName!==null}
+      changeOnSelect={contextCollectionName !== null}
     >
       <RenderSchemaComponent value={value} onChange={onChange} />
     </Variable.Input>
