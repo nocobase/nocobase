@@ -28,8 +28,8 @@ function getUmiConfig() {
 
   return {
     alias: getPackagePaths().reduce((memo, item) => {
-      memo[item[0]] = item[1]
-      return memo
+      memo[item[0]] = item[1];
+      return memo;
     }, {}),
     define: {
       'process.env.API_BASE_URL': API_BASE_URL || API_BASE_PATH,
@@ -74,7 +74,10 @@ function getPackagePaths() {
           const dirname = resolve(process.cwd(), file);
           if (existsSync(dirname)) {
             const re = new RegExp(dir.replace('*', '(.+)'));
-            const p = dirname.substring(process.cwd().length + 1).split(sep).join('/');
+            const p = dirname
+              .substring(process.cwd().length + 1)
+              .split(sep)
+              .join('/');
             const match = re.exec(p);
             pkgs.push([key.replace('*', match?.[1]), dirname]);
           }
@@ -108,12 +111,12 @@ class IndexGenerator {
     this.pluginsPath.forEach((pluginPath) => {
       fs.watch(pluginPath, { recursive: false }, () => {
         this.generatePluginIndex();
-      })
+      });
     });
   }
 
   generatePluginIndex() {
-    const validPluginPaths = this.pluginsPath.filter((pluginPath) => fs.existsSync(pluginPath))
+    const validPluginPaths = this.pluginsPath.filter((pluginPath) => fs.existsSync(pluginPath));
     if (!validPluginPaths.length) {
       return;
     }
@@ -124,7 +127,7 @@ class IndexGenerator {
       fs.writeFileSync(this.outputPath, 'export default {}');
       return;
     }
-    const pluginInfo = validPluginPaths.map(pluginPath => this.getContent(pluginPath));
+    const pluginInfo = validPluginPaths.map((pluginPath) => this.getContent(pluginPath));
     const importContent = pluginInfo.map(({ indexContent }) => indexContent).join('\n');
     const exportContent = pluginInfo.map(({ exportContent }) => exportContent).join('\n');
 
@@ -135,22 +138,24 @@ class IndexGenerator {
 
   getContent(pluginPath) {
     const pluginFolders = fs.readdirSync(pluginPath);
-    const pluginImports = pluginFolders.filter((folder) => {
-      const pluginPackageJsonPath = path.join(pluginPath, folder, 'package.json');
-      const pluginSrcClientPath = path.join(pluginPath, folder, 'src', 'client');
-      return fs.existsSync(pluginPackageJsonPath) && fs.existsSync(pluginSrcClientPath);
-    }).map((folder, index) => {
-      const pluginPackageJsonPath = path.join(pluginPath, folder, 'package.json');
-      const pluginPackageJson = require(pluginPackageJsonPath);
-      const pluginSrcClientPath = path.relative(path.dirname(this.outputPath), path.join(pluginPath, folder, 'src', 'client')).replaceAll('\\', '/');
-      const pluginName = `${folder.replaceAll('-', '_')}${index}`
-      const importStatement = `import ${pluginName} from '${pluginSrcClientPath}';`;
-      return { importStatement, pluginName, packageJsonName: pluginPackageJson.name };
-    });
+    const pluginImports = pluginFolders
+      .filter((folder) => {
+        const pluginPackageJsonPath = path.join(pluginPath, folder, 'package.json');
+        const pluginSrcClientPath = path.join(pluginPath, folder, 'src', 'client');
+        return fs.existsSync(pluginPackageJsonPath) && fs.existsSync(pluginSrcClientPath);
+      })
+      .map((folder, index) => {
+        const pluginPackageJsonPath = path.join(pluginPath, folder, 'package.json');
+        const pluginPackageJson = require(pluginPackageJsonPath);
+        const pluginSrcClientPath = path
+          .relative(path.dirname(this.outputPath), path.join(pluginPath, folder, 'src', 'client'))
+          .replaceAll('\\', '/');
+        const pluginName = `${folder.replaceAll('-', '_')}${index}`;
+        const importStatement = `const ${pluginName} = import('${pluginSrcClientPath}');`;
+        return { importStatement, pluginName, packageJsonName: pluginPackageJson.name };
+      });
 
-    const indexContent = pluginImports
-      .map(({ importStatement }) => importStatement)
-      .join('\n');
+    const indexContent = pluginImports.map(({ importStatement }) => importStatement).join('\n');
 
     const exportContent = pluginImports
       .map(({ pluginName, packageJsonName }) => `  "${packageJsonName}": ${pluginName},`)
@@ -159,7 +164,7 @@ class IndexGenerator {
     return {
       indexContent,
       exportContent,
-    }
+    };
   }
 }
 
