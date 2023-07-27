@@ -219,10 +219,20 @@ export const querySchema: ISchema = {
                           'x-component': 'Input',
                           'x-component-props': {
                             placeholder: '{{t("Alias")}}',
+                            style: {
+                              minWidth: '100px',
+                            },
                           },
                         },
                       },
-                      { required: true },
+                      {
+                        required: true,
+                        'x-component-props': {
+                          style: {
+                            overflow: 'auto',
+                          },
+                        },
+                      },
                     ),
                   },
                 },
@@ -234,44 +244,56 @@ export const querySchema: ISchema = {
                     key: 'dimensions',
                   },
                   properties: {
-                    dimensions: getArraySchema({
-                      field: {
-                        type: 'string',
-                        'x-decorator': 'FormItem',
-                        'x-component': 'Cascader',
-                        'x-component-props': {
-                          placeholder: '{{t("Field")}}',
-                          fieldNames: {
-                            label: 'title',
-                            value: 'name',
-                            children: 'children',
+                    dimensions: getArraySchema(
+                      {
+                        field: {
+                          type: 'string',
+                          'x-decorator': 'FormItem',
+                          'x-component': 'Cascader',
+                          'x-component-props': {
+                            placeholder: '{{t("Field")}}',
+                            fieldNames: {
+                              label: 'title',
+                              value: 'name',
+                              children: 'children',
+                            },
+                          },
+                          enum: '{{ fieldOptions }}',
+                          required: true,
+                        },
+                        format: {
+                          type: 'string',
+                          'x-decorator': 'FormItem',
+                          'x-component': 'Select',
+                          'x-component-props': {
+                            placeholder: '{{t("Format")}}',
+                            style: {
+                              maxWidth: '120px',
+                            },
+                          },
+                          'x-reactions': '{{ useFormatterOptions }}',
+                          'x-visible': '{{ $self.dataSource && $self.dataSource.length }}',
+                        },
+                        alias: {
+                          type: 'string',
+                          'x-decorator': 'FormItem',
+                          'x-component': 'Input',
+                          'x-component-props': {
+                            placeholder: '{{t("Alias")}}',
+                            style: {
+                              minWidth: '100px',
+                            },
                           },
                         },
-                        enum: '{{ fieldOptions }}',
-                        required: true,
                       },
-                      format: {
-                        type: 'string',
-                        'x-decorator': 'FormItem',
-                        'x-component': 'Select',
+                      {
                         'x-component-props': {
-                          placeholder: '{{t("Format")}}',
                           style: {
-                            maxWidth: '120px',
+                            overflow: 'auto',
                           },
                         },
-                        'x-reactions': '{{ useFormatterOptions }}',
-                        'x-visible': '{{ $self.dataSource && $self.dataSource.length }}',
                       },
-                      alias: {
-                        type: 'string',
-                        'x-decorator': 'FormItem',
-                        'x-component': 'Input',
-                        'x-component-props': {
-                          placeholder: '{{t("Alias")}}',
-                        },
-                      },
-                    }),
+                    ),
                   },
                 },
                 pane3: {
@@ -325,12 +347,20 @@ export const querySchema: ISchema = {
                           'x-component-props': {
                             defaultValue: 'ASC',
                             optionType: 'button',
+                            style: {
+                              width: '128px',
+                            },
                           },
                           enum: ['ASC', 'DESC'],
                         },
                       },
                       {
                         'x-reactions': '{{ useOrderReaction }}',
+                        'x-component-props': {
+                          style: {
+                            overflow: 'auto',
+                          },
+                        },
                       },
                     ),
                   },
