@@ -60,8 +60,9 @@ module.exports = (cli) => {
       // }
       if (server || !client) {
         console.log('starting server', serverPort);
+
         const argv = [
-          '-P',
+          '--tsconfig',
           './tsconfig.server.json',
           '-r',
           'tsconfig-paths/register',
@@ -74,8 +75,9 @@ module.exports = (cli) => {
         if (opts.dbSync) {
           argv.push('--db-sync');
         }
+
         const runDevServer = () => {
-          run('ts-node-dev', argv, {
+          run('tsx', argv, {
             env: {
               APP_PORT: serverPort,
             },
@@ -91,6 +93,7 @@ module.exports = (cli) => {
 
         runDevServer();
       }
+
       if (client || !server) {
         console.log('starting client', 1 * clientPort);
         run('umi', ['dev'], {
