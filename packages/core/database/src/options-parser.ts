@@ -140,6 +140,15 @@ export class OptionsParser {
     return filterParams;
   }
 
+  private mergeField(arr: string[]) {
+    const baseItems = arr.filter((item) => !item.includes('.'));
+
+    return arr.filter((item) => {
+      const splitItem = item.split('.');
+      return splitItem.length === 1 || !baseItems.includes(splitItem[0]);
+    });
+  }
+
   protected parseFields(filterParams: any) {
     const appends = this.options?.appends || [];
     const except = [];
@@ -160,6 +169,8 @@ export class OptionsParser {
     }
 
     if (this.options?.fields) {
+      this.options.fields = this.mergeField(this.options.fields);
+
       attributes = [];
 
       if (this.collection.isParent()) {
