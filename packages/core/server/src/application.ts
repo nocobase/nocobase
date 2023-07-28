@@ -2,17 +2,16 @@ import { ACL } from '@nocobase/acl';
 import { registerActions } from '@nocobase/actions';
 import { actions as authActions, AuthManager } from '@nocobase/auth';
 import { Cache, createCache, ICacheConfig } from '@nocobase/cache';
-import Database, { Collection, CollectionOptions, IDatabaseOptions } from '@nocobase/database';
+import Database, { CollectionOptions, IDatabaseOptions } from '@nocobase/database';
 import { AppLoggerOptions, createAppLogger, Logger } from '@nocobase/logger';
 import Resourcer, { ResourceOptions } from '@nocobase/resourcer';
 import { applyMixins, AsyncEmitter, Toposort, ToposortOptions } from '@nocobase/utils';
 import chalk from 'chalk';
 import { Command, CommandOptions, ParseOptions } from 'commander';
-import { Server } from 'http';
+import { IncomingMessage, Server, ServerResponse } from 'http';
 import { i18n, InitOptions } from 'i18next';
 import Koa, { DefaultContext as KoaDefaultContext, DefaultState as KoaDefaultState } from 'koa';
 import compose from 'koa-compose';
-import semver from 'semver';
 import { promisify } from 'util';
 import { createACL } from './acl';
 import { AppManager } from './app-manager';
@@ -21,6 +20,8 @@ import { createI18n, createResourcer, registerMiddlewares } from './helper';
 import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
+import { ApplicationVersion } from './helpers/application-version';
+import { AppSupervisor } from './app-supervisor';
 
 const packageJson = require('../package.json');
 
@@ -95,240 +96,109 @@ interface StartOptions {
   listen?: ListenOptions;
 }
 
-export class ApplicationVersion {
-  protected app: Application;
-  protected collection: Collection;
-
-  constructor(app: Application) {
-    this.app = app;
-    if (!app.db.hasCollection('applicationVersion')) {
-      app.db.collection({
-        name: 'applicationVersion',
-        namespace: 'core.applicationVersion',
-        duplicator: 'required',
-        timestamps: false,
-        fields: [{ name: 'value', type: 'string' }],
-      });
-    }
-    this.collection = this.app.db.getCollection('applicationVersion');
-  }
-
-  async get() {
-    if (await this.app.db.collectionExistsInDb('applicationVersion')) {
-      const model = await this.collection.model.findOne();
-      if (!model) {
-        return null;
-      }
-      return model.get('value') as any;
-    }
-    return null;
-  }
-
-  async update() {
-    await this.collection.sync();
-    await this.collection.model.destroy({
-      truncate: true,
-    });
-
-    await this.collection.model.create({
-      value: this.app.getVersion(),
-    });
-  }
-
-  async satisfies(range: string) {
-    if (await this.app.db.collectionExistsInDb('applicationVersion')) {
-      const model: any = await this.collection.model.findOne();
-      const version = model?.value as any;
-      if (!version) {
-        return true;
-      }
-      return semver.satisfies(version, range, { includePrerelease: true });
-    }
-    return true;
-  }
-}
-
 export class Application<StateT = DefaultState, ContextT = DefaultContext> extends Koa implements AsyncEmitter {
-  protected _db: Database;
-  protected _logger: Logger;
-
-  protected _resourcer: Resourcer;
-
-  protected _cache: Cache;
-
-  protected _cli: Command;
-
-  protected _i18n: i18n;
-
-  protected _pm: PluginManager;
-
-  protected _acl: ACL;
-
-  protected _appManager: AppManager;
-
-  protected _authManager: AuthManager;
-
-  protected _locales: Locale;
-
-  protected _version: ApplicationVersion;
-
-  protected plugins = new Map<string, Plugin>();
-
   public listenServer: Server;
-
   declare middleware: any;
-
   stopped = false;
+  declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
+  protected plugins = new Map<string, Plugin>();
+  protected _appSupervisor: AppSupervisor = AppSupervisor.getInstance();
 
   constructor(public options: ApplicationOptions) {
     super();
     this.init();
+    this._appSupervisor.addApp(this);
   }
+
+  private _workingMessage: string = null;
+
+  get workingMessage() {
+    return this._workingMessage;
+  }
+
+  protected _db: Database;
 
   get db() {
     return this._db;
   }
 
-  get cache() {
-    return this._cache;
+  protected _logger: Logger;
+
+  get logger() {
+    return this._logger;
   }
+
+  protected _resourcer: Resourcer;
 
   get resourcer() {
     return this._resourcer;
   }
 
+  protected _cache: Cache;
+
+  get cache() {
+    return this._cache;
+  }
+
+  protected _cli: Command;
+
   get cli() {
     return this._cli;
   }
 
-  get acl() {
-    return this._acl;
-  }
+  protected _i18n: i18n;
 
   get i18n() {
     return this._i18n;
   }
 
+  protected _pm: PluginManager;
+
   get pm() {
     return this._pm;
   }
 
-  get version() {
-    return this._version;
+  protected _acl: ACL;
+
+  get acl() {
+    return this._acl;
   }
+
+  protected _appManager: AppManager;
 
   get appManager() {
     return this._appManager;
   }
 
+  protected _authManager: AuthManager;
+
   get authManager() {
     return this._authManager;
   }
 
-  get logger() {
-    return this._logger;
+  protected _locales: Locale;
+
+  get locales() {
+    return this._locales;
+  }
+
+  protected _version: ApplicationVersion;
+
+  get version() {
+    return this._version;
   }
 
   get log() {
     return this._logger;
   }
 
-  get locales() {
-    return this._locales;
-  }
-
   get name() {
     return this.options.name || 'main';
   }
 
-  protected init() {
-    const options = this.options;
-
-    const logger = createAppLogger(options.logger);
-    this._logger = logger.instance;
-
-    // @ts-ignore
-    this._events = [];
-    // @ts-ignore
-    this._eventsCount = [];
-
-    this.removeAllListeners();
-
-    this.middleware = new Toposort<any>();
-    this.plugins = new Map<string, Plugin>();
-    this._acl = createACL();
-
-    this.use(logger.middleware, { tag: 'logger' });
-
-    if (this._db) {
-      // MaxListenersExceededWarning
-      this._db.removeAllListeners();
-    }
-
-    this._db = this.createDatabase(options);
-
-    this._resourcer = createResourcer(options);
-    this._cli = new Command('nocobase').usage('[command] [options]');
-    this._i18n = createI18n(options);
-    this._cache = createCache(options.cache);
-    this.context.db = this._db;
-    this.context.logger = this._logger;
-    this.context.resourcer = this._resourcer;
-    this.context.cache = this._cache;
-
-    if (this._pm) {
-      this._pm = this._pm.clone();
-    } else {
-      this._pm = new PluginManager({
-        app: this,
-        plugins: options.plugins,
-      });
-    }
-
-    if (this._appManager) {
-      this._appManager.bindMainApplication(this);
-    } else {
-      this._appManager = new AppManager(this);
-    }
-
-    this._authManager = new AuthManager({
-      authKey: 'X-Authenticator',
-      default: 'basic',
-    });
-    this.resource({
-      name: 'auth',
-      actions: authActions,
-    });
-    this._resourcer.use(this._authManager.middleware(), { tag: 'auth' });
-
-    if (this.options.acl !== false) {
-      this._resourcer.use(this._acl.middleware(), { tag: 'acl', after: ['auth'] });
-    }
-
-    this._locales = new Locale(this);
-
-    registerMiddlewares(this, options);
-
-    if (options.registerActions !== false) {
-      registerActions(this);
-    }
-
-    registerCli(this);
-
-    this._version = new ApplicationVersion(this);
-  }
-
-  private createDatabase(options: ApplicationOptions) {
-    const db = new Database({
-      ...(options.database instanceof Database ? options.database.options : options.database),
-      migrator: {
-        context: { app: this },
-      },
-    });
-
-    db.setLogger(this._logger);
-
-    return db;
+  setWorkingMessage(message: string) {
+    this._workingMessage = message;
+    this.emit('workingMessageChanged', this._workingMessage);
   }
 
   getVersion() {
@@ -336,7 +206,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   plugin<O = any>(pluginClass: any, options?: O): Plugin {
+    this.log.debug(`add plugin ${pluginClass.name}`);
     return this.pm.addStatic(pluginClass, options);
+  }
+
+  async isAlive() {
+    return true;
   }
 
   // @ts-ignore
@@ -353,14 +228,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     if (!this.listenerCount('error')) this.on('error', this.onerror);
 
-    const handleRequest = (req, res) => {
+    return (req: IncomingMessage, res: ServerResponse) => {
       const ctx = this.createContext(req, res);
 
       // @ts-ignore
       return this.handleRequest(ctx, fn);
     };
-
-    return handleRequest;
   }
 
   collection(options: CollectionOptions) {
@@ -380,29 +253,35 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   findCommand(name: string): Command {
-    return (<any>this.cli)._findCommand(name);
+    return (this.cli as any)._findCommand(name);
   }
 
   async load(options?: any) {
+    this.setWorkingMessage('start load');
     if (options?.reload) {
-      console.log(`Reload the ${this.name} application configuration`);
+      this.log.info(`Reload application configuration`);
       const oldDb = this._db;
       this.init();
       await oldDb.close();
     }
 
     await this.emitAsync('beforeLoad', this, options);
+
     await this.pm.load(options);
+
     await this.emitAsync('afterLoad', this, options);
   }
 
   async reload(options?: any) {
+    this.log.debug(`start reload`);
     await this.load({
       ...options,
       reload: true,
     });
 
+    this.log.debug('emit afterReload');
     await this.emitAsync('afterReload', this, options);
+    this.log.debug(`finish reload`);
   }
 
   getPlugin<P extends Plugin>(name: string) {
@@ -435,53 +314,27 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async start(options: StartOptions = {}) {
+    this.setWorkingMessage('starting app...');
+
     if (this.db.closed()) {
       await this.db.reconnect();
     }
 
     if (options.dbSync) {
-      console.log('db sync...');
+      this.log.info(`sync db`);
+      this.setWorkingMessage('sync db');
       await this.db.sync();
     }
 
     await this.emitAsync('beforeStart', this, options);
 
-    if (options?.listen?.port) {
-      const pmServer = await this.pm.listen();
-
-      const listen = () =>
-        new Promise((resolve, reject) => {
-          const Server = this.listen(options?.listen, () => {
-            resolve(Server);
-          });
-
-          Server.on('error', (err) => {
-            reject(err);
-          });
-
-          Server.on('close', () => {
-            pmServer.close();
-          });
-        });
-
-      try {
-        //@ts-ignore
-        this.listenServer = await listen();
-      } catch (e) {
-        console.error(e);
-        process.exit(1);
-      }
-    }
-
     await this.emitAsync('afterStart', this, options);
     this.stopped = false;
-  }
-
-  listen(...args): Server {
-    return this.appManager.listen(...args);
+    this.setWorkingMessage('started');
   }
 
   async stop(options: any = {}) {
+    this.log.debug('stop app...');
     if (this.stopped) {
       this.log.warn(`Application ${this.name} already stopped`);
       return;
@@ -489,31 +342,32 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     await this.emitAsync('beforeStop', this, options);
 
-    // close http server
-    if (this.listenServer) {
-      await promisify(this.listenServer.close).call(this.listenServer);
-      this.listenServer = null;
-    }
-
     try {
       // close database connection
       // silent if database already closed
       if (!this.db.closed()) {
+        this.logger.info(`close db`);
         await this.db.close();
       }
     } catch (e) {
-      console.log(e);
+      this.log.error(e);
     }
 
     await this.emitAsync('afterStop', this, options);
     this.stopped = true;
-    console.log(`${this.name} is stopped`);
+    this.log.info(`${this.name} is stopped`);
   }
 
   async destroy(options: any = {}) {
+    this.logger.debug('start destroy app');
+
     await this.emitAsync('beforeDestroy', this, options);
     await this.stop(options);
+
+    this.logger.debug('emit afterDestroy');
     await this.emitAsync('afterDestroy', this, options);
+
+    this.logger.debug('finish destroy app');
   }
 
   async dbVersionCheck(options?: { exit?: boolean }) {
@@ -583,12 +437,126 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.emitAsync('afterUpgrade', this, options);
   }
 
-  declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
-
   toJSON() {
     return {
       appName: this.name,
     };
+  }
+
+  protected init() {
+    const options = this.options;
+
+    const logger = createAppLogger({
+      ...options.logger,
+      defaultMeta: {
+        app: this.name,
+      },
+    });
+
+    this._logger = logger.instance;
+
+    const alwaysRebindEvents = [];
+
+    // @ts-ignore
+    for (const event of Object.keys(this._events)) {
+      // @ts-ignore
+      const events = lodash.castArray(this._events[event] || []);
+
+      events
+        .filter((listener: any) => listener.alwaysBind)
+        .forEach((listener: any) => {
+          alwaysRebindEvents.push([event, listener]);
+        });
+    }
+
+    // @ts-ignore
+    this._events = [];
+    // @ts-ignore
+    this._eventsCount = [];
+
+    this.removeAllListeners();
+
+    this.middleware = new Toposort<any>();
+    this.plugins = new Map<string, Plugin>();
+    this._acl = createACL();
+
+    this.use(logger.middleware, { tag: 'logger' });
+
+    if (this._db) {
+      // MaxListenersExceededWarning
+      this._db.removeAllListeners();
+    }
+
+    this._db = this.createDatabase(options);
+
+    this._resourcer = createResourcer(options);
+    this._cli = new Command('nocobase').usage('[command] [options]');
+    this._i18n = createI18n(options);
+    this._cache = createCache(options.cache);
+    this.context.db = this._db;
+    this.context.logger = this._logger;
+    this.context.resourcer = this._resourcer;
+    this.context.cache = this._cache;
+
+    if (this._pm) {
+      this._pm = this._pm.clone();
+    } else {
+      this._pm = new PluginManager({
+        app: this,
+        plugins: options.plugins,
+      });
+    }
+
+    if (this._appManager) {
+      this._appManager.bindMainApplication(this);
+    } else {
+      this._appManager = new AppManager(this);
+    }
+
+    this._authManager = new AuthManager({
+      authKey: 'X-Authenticator',
+      default: 'basic',
+    });
+
+    this.resource({
+      name: 'auth',
+      actions: authActions,
+    });
+
+    this._resourcer.use(this._authManager.middleware(), { tag: 'auth' });
+
+    if (this.options.acl !== false) {
+      this._resourcer.use(this._acl.middleware(), { tag: 'acl', after: ['auth'] });
+    }
+
+    this._locales = new Locale(this);
+
+    registerMiddlewares(this, options);
+
+    if (options.registerActions !== false) {
+      registerActions(this);
+    }
+
+    registerCli(this);
+
+    this._version = new ApplicationVersion(this);
+
+    for (const [event, listener] of alwaysRebindEvents) {
+      this.on(event, listener);
+    }
+  }
+
+  private createDatabase(options: ApplicationOptions) {
+    const db = new Database({
+      ...(options.database instanceof Database ? options.database.options : options.database),
+      migrator: {
+        context: { app: this },
+      },
+    });
+
+    db.setLogger(this._logger);
+
+    return db;
   }
 }
 
