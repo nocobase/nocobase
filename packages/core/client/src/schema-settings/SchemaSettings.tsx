@@ -1462,12 +1462,12 @@ SchemaSettings.DefaultValue = function DefaultvalueConfigure(props) {
       `${collectionField.target}.${fieldSchema['x-component-props']?.fieldNames?.label || 'id'}`,
     );
   }
-  const parentFieldSchema = collectionField.interface === 'm2o' && findParentFieldSchema(fieldSchema);
+  const parentFieldSchema = collectionField?.interface === 'm2o' && findParentFieldSchema(fieldSchema);
   const parentCollectionField = parentFieldSchema && getCollectionJoinField(parentFieldSchema?.['x-collection-field']);
   const tableCtx = useTableBlockContext();
   const isAllowContexVariable =
-    collectionField.interface === 'm2m' ||
-    (parentCollectionField?.type === 'hasMany' && collectionField.interface === 'm2o');
+    collectionField?.interface === 'm2m' ||
+    (parentCollectionField?.type === 'hasMany' && collectionField?.interface === 'm2o');
   return (
     <SchemaSettings.ModalItem
       title={t('Set default value')}
