@@ -47,13 +47,14 @@ export default class FormTrigger extends Trigger {
     const workflowRepo = this.plugin.db.getRepository('workflows');
     const workflows = await workflowRepo.find({
       filter: {
-        id: triggers.map((trigger) => trigger[0]),
+        key: triggers.map((trigger) => trigger[0]),
+        current: true,
         type: 'form',
         enabled: true,
       },
     });
     workflows.forEach((workflow) => {
-      const trigger = triggers.find((trigger) => trigger[0] == workflow.id);
+      const trigger = triggers.find((trigger) => trigger[0] == workflow.key);
       this.plugin.trigger(workflow, { data: trigger[1] ? get(values, trigger[1]) : values });
     });
   }

@@ -1,11 +1,11 @@
 import { ArrayTable } from '@formily/antd-v5';
 import { connect, ISchema, mapProps, useField, useFieldSchema } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
-import { Alert, Tree as AntdTree, Select } from 'antd';
+import { Alert, Tree as AntdTree } from 'antd';
 import { cloneDeep } from 'lodash';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AppendsTreeSelect, useCompile, useDesignable } from '../..';
+import { useCompile, useDesignable } from '../..';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { useRecord } from '../../../record-provider';
 import { OpenModeSchemaItems } from '../../../schema-items';
@@ -549,6 +549,7 @@ function WorkflowConfig() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
+  const { name: collection } = useCollection();
   const description = {
     submit: t('Workflow will be triggered after submitting succeeded.', { ns: 'workflow' }),
     'customize:save': t('Workflow will be triggered after saving succeeded.', { ns: 'workflow' }),
@@ -559,9 +560,8 @@ function WorkflowConfig() {
     <SchemaSettings.ModalItem
       title={t('Bind workflows', { ns: 'workflow' })}
       scope={{
-        useCollection() {
-          const collection = useCollection();
-          return collection.name;
+        fieldFilter(field) {
+          return ['belongsTo', 'hasOne'].includes(field.type);
         },
       }}
       components={{
@@ -606,7 +606,7 @@ function WorkflowConfig() {
                           placeholder: t('Select workflow', { ns: 'workflow' }),
                           fieldNames: {
                             label: 'title',
-                            value: 'id',
+                            value: 'key',
                           },
                           service: {
                             resource: 'workflows',
@@ -616,6 +616,8 @@ function WorkflowConfig() {
                                 $and: [
                                   {
                                     type: 'form',
+                                    current: true,
+                                    'config.collection': collection,
                                   },
                                 ],
                               },
@@ -640,7 +642,8 @@ function WorkflowConfig() {
                         'x-component-props': {
                           placeholder: t('Select context', { ns: 'workflow' }),
                           popupMatchSelectWidth: false,
-                          useCollection: '{{ useCollection }}',
+                          collection,
+                          filter: '{{ fieldFilter }}',
                         },
                       },
                     },

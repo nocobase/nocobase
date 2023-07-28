@@ -28,6 +28,8 @@ export default {
   fieldset: {
     collection: {
       ...collection,
+      title: `{{t("Form data model", { ns: "${NAMESPACE}" })}}`,
+      description: `{{t("Use a collection to match form data.", { ns: "${NAMESPACE}" })}}`,
       ['x-reactions']: [
         ...collection['x-reactions'],
         {
@@ -41,7 +43,10 @@ export default {
         },
       ],
     },
-    appends,
+    appends: {
+      ...appends,
+      title: `{{t("Associations to use", { ns: "${NAMESPACE}" })}}`,
+    },
   },
   scope: {
     useCollectionDataSource,
