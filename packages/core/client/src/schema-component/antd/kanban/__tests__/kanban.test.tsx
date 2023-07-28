@@ -2,8 +2,7 @@ import React from 'react';
 import { render, screen, waitFor } from 'testUtils';
 import App1 from '../demos/demo1';
 
-// TODO: 等 @Testing-Library 升级到 14.x
-describe.skip('Kanban', () => {
+describe('Kanban', () => {
   it('should render correctly', async () => {
     render(<App1 />);
 
