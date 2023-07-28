@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen, sleep, userEvent } from 'testUtils';
+import { fireEvent, render, screen, userEvent, waitFor } from 'testUtils';
 import App1 from '../demos/demo1';
 import App2 from '../demos/demo2';
 import App3 from '../demos/demo3';
@@ -10,9 +10,10 @@ describe('Action', () => {
     const { getByText } = render(<App1 />);
 
     await userEvent.click(getByText('Open'));
-    await sleep(300);
-    // drawer
-    expect(document.querySelector('.ant-drawer')).toBeInTheDocument();
+    await waitFor(() => {
+      // drawer
+      expect(document.querySelector('.ant-drawer')).toBeInTheDocument();
+    });
     // mask
     expect(document.querySelector('.ant-drawer-mask')).toBeInTheDocument();
     // title
@@ -22,22 +23,29 @@ describe('Action', () => {
 
     // close button
     await userEvent.click(getByText('Close'));
-    await sleep(300);
-    expect(document.querySelector('.ant-drawer')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(document.querySelector('.ant-drawer')).not.toBeInTheDocument();
+    });
 
     // should also close when click the mask
     await userEvent.click(getByText('Open'));
-    await sleep(300);
-    expect(document.querySelector('.ant-drawer')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(document.querySelector('.ant-drawer')).toBeInTheDocument();
+    });
     await userEvent.click(document.querySelector('.ant-drawer-mask') as HTMLElement);
-    expect(document.querySelector('.ant-drawer')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(document.querySelector('.ant-drawer')).not.toBeInTheDocument();
+    });
 
     // should also close when click the close icon
     await userEvent.click(getByText('Open'));
-    await sleep(300);
-    expect(document.querySelector('.ant-drawer')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(document.querySelector('.ant-drawer')).toBeInTheDocument();
+    });
     await userEvent.click(document.querySelector('.ant-drawer-close') as HTMLElement);
-    expect(document.querySelector('.ant-drawer')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(document.querySelector('.ant-drawer')).not.toBeInTheDocument();
+    });
   });
 
   it('openMode', async () => {
@@ -50,31 +58,36 @@ describe('Action', () => {
     // drawer
     await userEvent.click(getByText('Drawer'));
     await userEvent.click(getByText('Open'));
-    await sleep(300);
 
-    expect(document.querySelector('.ant-drawer')).toBeInTheDocument();
-    expect(document.querySelector('.ant-modal')).not.toBeInTheDocument();
-    expect(document.querySelector('.nb-action-page')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(document.querySelector('.ant-drawer')).toBeInTheDocument();
+      expect(document.querySelector('.ant-modal')).not.toBeInTheDocument();
+      expect(document.querySelector('.nb-action-page')).not.toBeInTheDocument();
+    });
+
     await userEvent.click(getByText('Close'));
 
     // modal
     await userEvent.click(getByText('Modal'));
     await userEvent.click(getByText('Open'));
-    await sleep(300);
 
-    expect(document.querySelector('.ant-drawer')).not.toBeInTheDocument();
-    expect(document.querySelector('.ant-modal')).toBeInTheDocument();
-    expect(document.querySelector('.nb-action-page')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(document.querySelector('.ant-drawer')).not.toBeInTheDocument();
+      expect(document.querySelector('.ant-modal')).toBeInTheDocument();
+      expect(document.querySelector('.nb-action-page')).not.toBeInTheDocument();
+    });
+
     await userEvent.click(getByText('Close'));
 
     // page
     await userEvent.click(getByText('Page'));
     await userEvent.click(getByText('Open'));
-    await sleep(300);
 
-    expect(document.querySelector('.ant-drawer')).not.toBeInTheDocument();
-    expect(document.querySelector('.ant-modal')).not.toBeInTheDocument();
-    expect(document.querySelector('.nb-action-page')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(document.querySelector('.ant-drawer')).not.toBeInTheDocument();
+      expect(document.querySelector('.ant-modal')).not.toBeInTheDocument();
+      expect(document.querySelector('.nb-action-page')).toBeInTheDocument();
+    });
     await userEvent.click(getByText('Close'));
 
     // TODO: 点击关闭按钮时应该消失
@@ -87,38 +100,45 @@ describe('Action.Drawer without Action', () => {
     const { getByText } = render(<App2 />);
 
     await userEvent.click(getByText('Open'));
-    await sleep(300);
-    // drawer
-    expect(document.querySelector('.ant-drawer')).toBeInTheDocument();
-    // mask
-    expect(document.querySelector('.ant-drawer-mask')).toBeInTheDocument();
-    // title
-    expect(getByText('Drawer Title')).toBeInTheDocument();
-    // content
-    expect(getByText('Hello')).toBeInTheDocument();
+    await waitFor(() => {
+      // drawer
+      expect(document.querySelector('.ant-drawer')).toBeInTheDocument();
+      // mask
+      expect(document.querySelector('.ant-drawer-mask')).toBeInTheDocument();
+      // title
+      expect(getByText('Drawer Title')).toBeInTheDocument();
+      // content
+      expect(getByText('Hello')).toBeInTheDocument();
+    });
 
     // close button
     await userEvent.click(getByText('Close'));
-    await sleep(300);
-    expect(document.querySelector('.ant-drawer')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(document.querySelector('.ant-drawer')).not.toBeInTheDocument();
+    });
 
     // should also close when click the mask
     await userEvent.click(getByText('Open'));
-    await sleep(300);
-    expect(document.querySelector('.ant-drawer')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(document.querySelector('.ant-drawer')).toBeInTheDocument();
+    });
     await userEvent.click(document.querySelector('.ant-drawer-mask') as HTMLElement);
-    await sleep(300);
-    expect(document.querySelector('.ant-drawer')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(document.querySelector('.ant-drawer')).not.toBeInTheDocument();
+    });
 
     // should also close when click the close icon
     await userEvent.click(getByText('Open'));
-    await sleep(300);
 
-    expect(document.querySelector('.ant-drawer')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(document.querySelector('.ant-drawer')).toBeInTheDocument();
+    });
+
     await userEvent.click(document.querySelector('.ant-drawer-close') as HTMLElement);
-    await sleep(300);
 
-    expect(document.querySelector('.ant-drawer')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(document.querySelector('.ant-drawer')).not.toBeInTheDocument();
+    });
   });
 });
 
@@ -129,16 +149,16 @@ describe('Action.Popover', () => {
 
     fireEvent.mouseEnter(btn);
 
-    // wait for the popover to show
-    await sleep(300);
-    // popover
-    expect(document.querySelector('.ant-popover')).toBeInTheDocument();
-    // content
-    expect(screen.getByText('Hello')).toBeInTheDocument();
+    await waitFor(() => {
+      // popover
+      expect(document.querySelector('.ant-popover')).toBeInTheDocument();
+      // content
+      expect(screen.getByText('Hello')).toBeInTheDocument();
+    });
 
     fireEvent.mouseLeave(btn);
-    // wait for the popover to hide
-    await sleep(300);
-    expect(document.querySelector('.ant-popover')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(document.querySelector('.ant-popover')).not.toBeInTheDocument();
+    });
   });
 });
