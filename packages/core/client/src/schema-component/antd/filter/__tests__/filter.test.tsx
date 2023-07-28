@@ -7,8 +7,7 @@ import App5 from '../demos/demo5';
 import App6 from '../demos/demo6';
 
 describe('Filter', () => {
-  // TODO: 等 @Testing-Library 升级到 14.x
-  it.skip('Filter & Action', async () => {
+  it('Filter & Action', async () => {
     render(<App3 />);
 
     await waitFor(
