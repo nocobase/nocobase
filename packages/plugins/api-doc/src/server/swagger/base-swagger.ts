@@ -22,6 +22,25 @@ export default {
         scheme: 'bearer',
       },
     },
+    schemas: {
+      error: {
+        type: 'object',
+        properties: {
+          errors: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                message: {
+                  description: '错误信息',
+                  type: 'string',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   },
   security: [
     {

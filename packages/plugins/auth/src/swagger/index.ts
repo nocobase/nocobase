@@ -1,147 +1,3 @@
-const user = {
-  type: 'object',
-  description: '用户',
-  properties: {
-    id: {
-      type: 'integer',
-      description: 'ID',
-    },
-    nickname: {
-      type: 'string',
-      description: '昵称',
-    },
-    email: {
-      type: 'string',
-      description: '邮箱',
-    },
-    phone: {
-      type: 'string',
-      description: '手机号',
-    },
-    appLang: {
-      type: 'string',
-      description: '用户使用语言',
-    },
-    systemSettings: {
-      type: 'object',
-      description: '系统设置',
-      properties: {
-        theme: {
-          type: 'string',
-          description: '用户使用主题',
-        },
-      },
-    },
-    createdAt: {
-      type: 'string',
-      format: 'date-time',
-      description: '创建时间',
-    },
-    updatedAt: {
-      type: 'string',
-      format: 'date-time',
-      description: '更新时间',
-    },
-    createdById: {
-      type: 'integer',
-      description: '创建人',
-    },
-    updatedById: {
-      type: 'integer',
-      description: '更新人',
-    },
-  },
-};
-
-const roles = {
-  type: 'array',
-  description: '角色',
-  items: {
-    type: 'object',
-    properties: {
-      title: {
-        type: 'string',
-        description: '角色名称',
-      },
-      name: {
-        type: 'string',
-        description: '角色标识',
-      },
-      description: {
-        type: 'string',
-        description: '角色描述',
-      },
-      hidden: {
-        type: 'boolean',
-        description: '是否隐藏',
-      },
-      default: {
-        type: 'boolean',
-        description: '是否默认',
-      },
-      allowConfigure: {
-        type: 'boolean',
-        description: '是否允许配置',
-      },
-      allowNewMenu: {
-        type: 'boolean',
-        description: '是否允许新建菜单',
-      },
-      snippets: {
-        type: 'array',
-        items: {
-          type: 'string',
-        },
-        description: '接口权限',
-      },
-      strategy: {
-        type: 'array',
-        description: '数据表权限策略',
-        items: {
-          type: 'object',
-          properties: {
-            actions: {
-              type: 'array',
-              items: {
-                type: 'string',
-              },
-              description: '操作',
-            },
-          },
-        },
-      },
-      createdAt: {
-        type: 'string',
-        format: 'date-time',
-        description: '创建时间',
-      },
-      updatedAt: {
-        type: 'string',
-        format: 'date-time',
-        description: '更新时间',
-      },
-    },
-  },
-};
-
-const error = {
-  type: 'object',
-  properties: {
-    errors: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          message: {
-            description: '错误信息',
-            type: 'string',
-          },
-        },
-      },
-    },
-  },
-};
-
 export default {
   info: {
     title: 'NocoBase API - Auth plugin',
@@ -169,11 +25,19 @@ export default {
             content: {
               'application/json': {
                 schema: {
-                  type: 'object',
-                  properties: {
-                    ...user.properties,
-                    roles,
-                  },
+                  allOf: [
+                    {
+                      $ref: '#/components/schemas/user',
+                    },
+                    {
+                      type: 'object',
+                      properties: {
+                        roles: {
+                          $ref: '#/components/schemas/roles',
+                        },
+                      },
+                    },
+                  ],
                 },
               },
             },
@@ -227,7 +91,9 @@ export default {
                     token: {
                       type: 'string',
                     },
-                    user,
+                    user: {
+                      $ref: '#/components/schemas/user',
+                    },
                   },
                 },
               },
@@ -237,7 +103,9 @@ export default {
             description: 'Unauthorized',
             content: {
               'application/json': {
-                schema: error,
+                schema: {
+                  $ref: '#/components/schemas/error',
+                },
               },
             },
           },
@@ -317,13 +185,20 @@ export default {
             content: {
               'application/json': {
                 schema: {
-                  type: 'object',
-                  properties: {
-                    ...user.properties,
-                    resetToken: {
-                      type: 'string',
+                  allOf: [
+                    {
+                      $ref: '#/components/schemas/user',
                     },
-                  },
+                    {
+                      type: 'object',
+                      properties: {
+                        resetToken: {
+                          type: 'string',
+                          description: '重置密码的token',
+                        },
+                      },
+                    },
+                  ],
                 },
               },
             },
@@ -332,7 +207,9 @@ export default {
             description: 'Please fill in your email address',
             content: {
               'application/json': {
-                schema: error,
+                schema: {
+                  $ref: '#/components/schemas/error',
+                },
               },
             },
           },
@@ -340,7 +217,9 @@ export default {
             description: 'The email is incorrect, please re-enter',
             content: {
               'application/json': {
-                schema: error,
+                schema: {
+                  $ref: '#/components/schemas/error',
+                },
               },
             },
           },
@@ -380,7 +259,9 @@ export default {
             description: 'successful operation',
             content: {
               'application/json': {
-                schema: user,
+                schema: {
+                  $ref: '#/components/schemas/user',
+                },
               },
             },
           },
@@ -388,7 +269,9 @@ export default {
             description: 'User not found',
             content: {
               'application/json': {
-                schema: error,
+                schema: {
+                  $ref: '#/components/schemas/error',
+                },
               },
             },
           },
@@ -416,7 +299,9 @@ export default {
             description: 'ok',
             content: {
               'application/json': {
-                schema: user,
+                schema: {
+                  $ref: '#/components/schemas/user',
+                },
               },
             },
           },
@@ -424,7 +309,9 @@ export default {
             description: 'Unauthorized',
             content: {
               'application/json': {
-                schema: error,
+                schema: {
+                  $ref: '#/components/schemas/error',
+                },
               },
             },
           },
@@ -646,8 +533,130 @@ export default {
   },
   components: {
     schemas: {
-      user,
-      roles,
+      user: {
+        type: 'object',
+        description: '用户',
+        properties: {
+          id: {
+            type: 'integer',
+            description: 'ID',
+          },
+          nickname: {
+            type: 'string',
+            description: '昵称',
+          },
+          email: {
+            type: 'string',
+            description: '邮箱',
+          },
+          phone: {
+            type: 'string',
+            description: '手机号',
+          },
+          appLang: {
+            type: 'string',
+            description: '用户使用语言',
+          },
+          systemSettings: {
+            type: 'object',
+            description: '系统设置',
+            properties: {
+              theme: {
+                type: 'string',
+                description: '用户使用主题',
+              },
+            },
+          },
+          createdAt: {
+            type: 'string',
+            format: 'date-time',
+            description: '创建时间',
+          },
+          updatedAt: {
+            type: 'string',
+            format: 'date-time',
+            description: '更新时间',
+          },
+          createdById: {
+            type: 'integer',
+            description: '创建人',
+          },
+          updatedById: {
+            type: 'integer',
+            description: '更新人',
+          },
+        },
+      },
+      roles: {
+        type: 'array',
+        description: '角色',
+        items: {
+          type: 'object',
+          properties: {
+            title: {
+              type: 'string',
+              description: '角色名称',
+            },
+            name: {
+              type: 'string',
+              description: '角色标识',
+            },
+            description: {
+              type: 'string',
+              description: '角色描述',
+            },
+            hidden: {
+              type: 'boolean',
+              description: '是否隐藏',
+            },
+            default: {
+              type: 'boolean',
+              description: '是否默认',
+            },
+            allowConfigure: {
+              type: 'boolean',
+              description: '是否允许配置',
+            },
+            allowNewMenu: {
+              type: 'boolean',
+              description: '是否允许新建菜单',
+            },
+            snippets: {
+              type: 'array',
+              items: {
+                type: 'string',
+              },
+              description: '接口权限',
+            },
+            strategy: {
+              type: 'array',
+              description: '数据表权限策略',
+              items: {
+                type: 'object',
+                properties: {
+                  actions: {
+                    type: 'array',
+                    items: {
+                      type: 'string',
+                    },
+                    description: '操作',
+                  },
+                },
+              },
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+              description: '创建时间',
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time',
+              description: '更新时间',
+            },
+          },
+        },
+      },
       authenticator: {
         type: 'object',
         properties: {
