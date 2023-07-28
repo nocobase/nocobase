@@ -4,7 +4,7 @@ import { ReactNode } from 'react';
 export interface CollectionManagerOptions {
   service?: any;
   interfaces?: any;
-  collections?: any[];
+  collections?: CollectionOptions[];
   templates?: any;
   refreshCM?: () => Promise<void>;
   children?: ReactNode;

@@ -14,7 +14,7 @@ type VariablesCtx = {
 };
 
 export const useVariablesCtx = (): VariablesCtx => {
-  const { data } = useCurrentUserContext() || {};
+  const { data } = useCurrentUserContext();
   const { field, service, rowKey } = useTableBlockContext();
   const contextData = service?.data?.data?.filter((v) => (field?.data?.selectedRowKeys || [])?.includes(v[rowKey]));
   return useMemo(() => {

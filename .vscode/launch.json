@@ -5,21 +5,9 @@
       "type": "node",
       "request": "launch",
       "name": "Debug Server",
-      "runtimeArgs": [
-        "-r",
-        "dotenv/config",
-        "-r",
-        "tsconfig-paths/register",
-        "-r",
-        "ts-node/register"
-      ],
-      "args": [
-        "${workspaceRoot}/packages/app/server/src/index.ts",
-        "start"
-      ],
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
+      "runtimeArgs": ["-r", "dotenv/config", "-r", "tsconfig-paths/register", "-r", "ts-node/register"],
+      "args": ["${workspaceRoot}/packages/app/server/src/index.ts", "start"],
+      "skipFiles": ["<node_internals>/**"],
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen"
     },
@@ -28,26 +16,12 @@
       "request": "launch",
       "name": "Debug Jest Tests",
       "runtimeExecutable": "yarn",
-      "runtimeArgs": [
-        "run",
-        "--inspect-brk",
-        "test",
-        "--runInBand",
-        "${file}"
-      ],
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
+      "runtimeArgs": ["run", "--inspect-brk", "test", "--runInBand", "${file}"],
+      "skipFiles": ["<node_internals>/**"],
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
       "windows": {
-        "runtimeArgs": [
-          "run",
-          "--inspect-brk",
-          "test",
-          "--runInBand",
-          "/${fileBasename}"
-        ],
+        "runtimeArgs": ["run", "--inspect-brk", "test", "--runInBand", "/${fileBasename}"]
       }
     },
     {
@@ -55,22 +29,12 @@
       "request": "launch",
       "name": "Debug Client Tests",
       "runtimeExecutable": "yarn",
-      "runtimeArgs": [
-        "run",
-        "test:client",
-        "${file}"
-      ],
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
+      "runtimeArgs": ["run", "test:client", "${file}"],
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**", "**/dist/**", "**/lib/**", "**/es/**"],
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
       "windows": {
-        "runtimeArgs": [
-          "run",
-          "test:client",
-          "${relativeFile}"
-        ],
+        "runtimeArgs": ["run", "test:client", "${relativeFile}"]
       }
     },
     {
@@ -78,18 +42,10 @@
       "request": "launch",
       "name": "Debug Migration",
       "runtimeExecutable": "yarn",
-      "runtimeArgs": [
-        "run",
-        "--inspect-brk",
-        "nocobase",
-        "migrator",
-        "up",
-      ],
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
+      "runtimeArgs": ["run", "--inspect-brk", "nocobase", "migrator", "up"],
+      "skipFiles": ["<node_internals>/**"],
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen"
-    },
+    }
   ]
 }
