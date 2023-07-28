@@ -1,26 +1,22 @@
 import { PluginManager } from '@nocobase/server';
-import { merge } from '@nocobase/utils';
+import { merge, requireModule } from '@nocobase/utils';
 
 export const loadSwagger = (packageName: string) => {
-  let swaggers = {};
   const prefixes = ['src', 'lib'];
-  const targets = ['swagger.ts', 'swagger', 'swagger.json', 'swagger/index.json'];
+  const targets = ['swagger.json', 'swagger/index.json', 'swagger.ts', 'swagger'];
   for (const prefix of prefixes) {
     for (const dict of targets) {
       try {
         const file = `${packageName}/${prefix}/${dict}`;
-        require.resolve(file);
-        const content = require(file).default;
-        swaggers = merge(swaggers, content);
+        const filePath = require.resolve(file);
+        delete require.cache[filePath];
+        return requireModule(file);
       } catch (error) {
         //
       }
     }
-    if (Object.keys(swaggers).length) {
-      break;
-    }
   }
-  return swaggers;
+  return {};
 };
 
 export const getPluginsSwagger = async (db: any, pluginNames?: string[]) => {

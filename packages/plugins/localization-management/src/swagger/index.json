@@ -1,0 +1,57 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "NocoBase API - Localization management plugin"
+  },
+  "tags": [],
+  "paths": {
+    "/localization:sync": {
+      "post": {
+        "tags": ["localization"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/localization:publish": {
+      "post": {
+        "tags": ["localization"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/localizationTexts:list": {
+      "get": {
+        "tags": ["localizationTexts"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/localizationTranslations:updateOrCreate": {
+      "post": {
+        "tags": ["localizationTranslations"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,153 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "NocoBase API - Core"
+  },
+  "tags": [],
+  "paths": {
+    "/{collectionName}:list": {
+      "get": {
+        "tags": ["$collection"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/{collectionName}:get": {
+      "get": {
+        "tags": ["$collection"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/{collectionName}:create": {
+      "post": {
+        "tags": ["$collection"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/{collectionName}:update": {
+      "post": {
+        "tags": ["$collection"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/{collectionName}:destroy": {
+      "post": {
+        "tags": ["$collection"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/{collectionName}:move": {
+      "post": {
+        "tags": ["$collection"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/{collectionName}/{collectionIndex}/{associationName}:list": {
+      "get": {
+        "tags": ["$collection.$association"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/{collectionName}/{collectionIndex}/{associationName}:get": {
+      "get": {
+        "tags": ["$collection.$association"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/{collectionName}/{collectionIndex}/{associationName}:create": {
+      "post": {
+        "tags": ["$collection.$association"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/{collectionName}/{collectionIndex}/{associationName}:update": {
+      "post": {
+        "tags": ["$collection.$association"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/{collectionName}/{collectionIndex}/{associationName}:destroy": {
+      "post": {
+        "tags": ["$collection.$association"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/{collectionName}/{collectionIndex}/{associationName}:move": {
+      "post": {
+        "tags": ["$collection.$association"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  }
+}

@@ -126,7 +126,10 @@ export class SwaggerManager {
   }
 
   async generateSwagger(options: { plugins?: string[] } = {}) {
-    return merge(await this.getBaseSwagger(), await this.loadSwaggers(options.plugins));
+    const base = await this.getBaseSwagger();
+    const core = await loadSwagger('@nocobase/server');
+    const plugins = await this.loadSwaggers(options.plugins);
+    return merge(merge(core, plugins), base);
   }
 
   async getSwagger() {

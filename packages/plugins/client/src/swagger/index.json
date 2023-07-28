@@ -1,0 +1,68 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "NocoBase API - Client plugin"
+  },
+  "paths": {
+    "/app:getLang": {
+      "get": {
+        "tags": ["app"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/app:getInfo": {
+      "get": {
+        "tags": ["app"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/app:getPlugins": {
+      "get": {
+        "tags": ["app"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/app:reboot": {
+      "get": {
+        "tags": ["app"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/app:clearCache": {
+      "get": {
+        "tags": ["app"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  }
+}
