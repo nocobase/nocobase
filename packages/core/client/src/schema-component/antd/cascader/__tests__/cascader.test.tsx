@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen, sleep, userEvent } from 'testUtils';
+import { fireEvent, render, screen, userEvent, waitFor } from 'testUtils';
 import App1 from '../demos/demo1';
 import App2 from '../demos/demo2';
 
@@ -33,8 +33,9 @@ describe('Cascader', () => {
 
     // 因为是异步加载，所以需要等待一下
     expect(screen.queryByText('Zhejiang Dynamic 1')).not.toBeInTheDocument();
-    await sleep(300);
-    expect(screen.getByText('Zhejiang Dynamic 1')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Zhejiang Dynamic 1')).toBeInTheDocument();
+    });
 
     fireEvent.click(screen.getByText('Zhejiang Dynamic 1'));
 
