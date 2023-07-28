@@ -17,6 +17,7 @@ export * from './CreateFormBulkEditBlockInitializer';
 export * from './CreateResetActionInitializer';
 export * from './CreateSubmitActionInitializer';
 export * from './CustomizeActionInitializer';
+export * from './CustomizeAddRecordActionInitializer';
 export * from './CustomizeBulkEditActionInitializer';
 export * from './DataBlockInitializer';
 export * from './DeleteEventActionInitializer';
@@ -53,4 +54,3 @@ export * from './TableSelectorInitializer';
 export * from './UpdateActionInitializer';
 export * from './UpdateSubmitActionInitializer';
 export * from './ViewActionInitializer';
-

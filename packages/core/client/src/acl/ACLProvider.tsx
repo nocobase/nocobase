@@ -233,7 +233,10 @@ export const useACLFieldWhitelist = () => {
     .concat(params?.appends || []);
   return {
     whitelist,
-    schemaInWhitelist(fieldSchema: Schema) {
+    schemaInWhitelist(fieldSchema: Schema, isSkip?) {
+      if (isSkip) {
+        return true;
+      }
       if (whitelist.length === 0) {
         return true;
       }

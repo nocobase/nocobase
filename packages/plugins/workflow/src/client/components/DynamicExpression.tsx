@@ -1,5 +1,5 @@
 import { onFieldInputValueChange, onFormInitialValuesChange } from '@formily/core';
-import { connect, mapReadPretty, observer, useForm, useFormEffects } from '@formily/react';
+import { connect, mapReadPretty, observer, useField, useForm, useFormEffects } from '@formily/react';
 import { Tag } from 'antd';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -12,16 +12,20 @@ import { getCollectionFieldOptions } from '../variable';
 const InternalExpression = observer(
   (props: any) => {
     const { onChange } = props;
-    const { values } = useForm();
-    const [collection, setCollection] = useState(values?.sourceCollection);
+    const field = useField<any>();
+    // TODO(refactor): better to provide another context like useFieldset()
+    const form = useForm();
+    const basePath = field.path.segments.slice(0, -1);
+    const collectionPath = [...basePath, 'sourceCollection'].join('.');
+    const [collection, setCollection] = useState(form.getValuesIn(collectionPath));
     const compile = useCompile();
     const { getCollectionFields } = useCollectionManager();
 
     useFormEffects(() => {
       onFormInitialValuesChange((form) => {
-        setCollection(form.values.sourceCollection);
+        setCollection(form.getValuesIn(collectionPath));
       });
-      onFieldInputValueChange('sourceCollection', (f) => {
+      onFieldInputValueChange(collectionPath, (f) => {
         setCollection(f.value);
         onChange(null);
       });

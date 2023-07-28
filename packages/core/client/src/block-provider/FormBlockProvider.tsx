@@ -66,7 +66,7 @@ export const useIsEmptyRecord = () => {
 
 export const FormBlockProvider = (props) => {
   const record = useRecord();
-  const { collection } = props;
+  const { collection, isCusomeizeCreate } = props;
   const { __collection } = record;
   const currentCollection = useCollection();
   const { designable } = useDesignable();
@@ -81,9 +81,9 @@ export const FormBlockProvider = (props) => {
   const createFlag =
     (currentCollection.name === (collection?.name || collection) && !isEmptyRecord) || !currentCollection.name;
   return (
-    (detailFlag || createFlag) && (
-      <BlockProvider {...props} block={'form'} params={{ ...props?.params, targetCollection: collection }}>
-        <InternalFormBlockProvider {...props} params={{ ...props?.params, targetCollection: collection }} />
+    (detailFlag || createFlag || isCusomeizeCreate) && (
+      <BlockProvider {...props} block={'form'}>
+        <InternalFormBlockProvider {...props} />
       </BlockProvider>
     )
   );
