@@ -38,9 +38,12 @@ describe('Form', () => {
 
     expect(submit).toBeInTheDocument();
     expect(input).toBeInTheDocument();
-    expect(input).toHaveValue('aaa');
-    expect(screen.getByText('T1')).toBeInTheDocument();
-    expect(screen.getByText(/\{ "field1": "aaa" \}/i)).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(input).toHaveValue('aaa');
+      expect(screen.getByText('T1')).toBeInTheDocument();
+      expect(screen.getByText(/\{ "field1": "aaa" \}/i)).toBeInTheDocument();
+    });
 
     await userEvent.type(input, '123');
     expect(screen.getByText(/\{ "field1": "aaa123" \}/i)).toBeInTheDocument();
