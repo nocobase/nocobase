@@ -27,7 +27,8 @@ RUN cd /app \
   && yarn config set network-timeout 600000 -g \
   && yarn create nocobase-app my-nocobase-app -a -e APP_ENV=production -e APPEND_PRESET_LOCAL_PLUGINS=$APPEND_PRESET_LOCAL_PLUGINS \
   && cd /app/my-nocobase-app \
-  && yarn install --production
+  && yarn install --production \
+  && yarn build
 
 WORKDIR /app/my-nocobase-app
 RUN $BEFORE_PACK_NOCOBASE
@@ -60,4 +61,3 @@ RUN mkdir -p /app/nocobase/storage/uploads/ && echo "$COMMIT_HASH" >> /app/nocob
 COPY ./docker/nocobase/docker-entrypoint.sh /app/
 
 CMD ["/app/docker-entrypoint.sh"]
-
