@@ -26,11 +26,9 @@ export const useSyncFromForm = (fieldSchema, collection?, callBack?) => {
       if (cachedResult) {
         return cachedResult;
       }
-
       if (depth > maxDepth) {
         return [];
       }
-
       const result = getCollectionFields(collectionName)
         .map((field) => {
           if (exclude.includes(field.name)) {
@@ -47,7 +45,6 @@ export const useSyncFromForm = (fieldSchema, collection?, callBack?) => {
             type: 'duplicate',
             tag: compile(field.uiSchema?.title) || field.name,
           };
-
           const option = {
             ...node,
             title: React.createElement(TreeNode, node),
@@ -56,7 +53,6 @@ export const useSyncFromForm = (fieldSchema, collection?, callBack?) => {
             field,
             disabled,
           };
-
           const tatgetFormField = formData.find((v) => v.name === field.name);
           if (
             ['belongsTo', 'belongsToMany'].includes(field.type) &&
@@ -148,7 +144,6 @@ export const useSyncFromForm = (fieldSchema, collection?, callBack?) => {
           };
         })
         .filter(Boolean);
-
       cache.set(cacheKey, result);
       return result;
     };
