@@ -1,7 +1,8 @@
 import { EventEmitter } from 'events';
 import http, { IncomingMessage, ServerResponse } from 'http';
-import { AppSupervisor } from './app-supervisor';
-import Application from './application';
+import { AppSupervisor } from '../app-supervisor';
+import Application from '../application';
+import { WSServer } from './ws-server';
 
 type AppSelectorReturn = Application | string | undefined | null;
 
@@ -21,6 +22,7 @@ export class Gateway extends EventEmitter {
   public server: http.Server | null = null;
   private port: number = process.env.APP_PORT ? parseInt(process.env.APP_PORT) : null;
   private host = '0.0.0.0';
+  private wsServer: WSServer;
 
   private constructor() {
     super();
@@ -99,6 +101,8 @@ export class Gateway extends EventEmitter {
     }
 
     this.server = http.createServer(this.getCallback());
+
+    this.wsServer = new WSServer(this);
 
     this.server.listen(this.port, this.host, () => {
       console.log(`Gateway Server running at http://${this.host}:${this.port}/`);
