@@ -67,7 +67,7 @@ NocoBase 采用插件化架构，所有新功能都可以通过开发和安装�
 
 如果你需要商业版本和商业服务，欢迎通过邮件联系我们：hello@nocobase.com  
 
-也可以添加我们的微信，沟通商业合作或者加入微信群：  
+也可以添加我们的微信，沟通商业合作或者加入用户交流群：  
 
 ![](https://www.nocobase.com/images/wechat.png)  
 
