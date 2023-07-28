@@ -3,6 +3,7 @@
   "version": "0.11.1-alpha.3",
   "license": "AGPL-3.0",
   "devDependencies": {
+    "@nocobase/build": "0.11.1-alpha.3",
     "@nocobase/client": "0.11.1-alpha.3"
   },
   "repository": {

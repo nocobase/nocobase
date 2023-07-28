@@ -3,3 +3,4 @@ node_modules
 src/.umi
 src/.umi-production
 src/.umi-test
+src/.plugins

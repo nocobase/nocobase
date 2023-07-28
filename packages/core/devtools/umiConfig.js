@@ -116,12 +116,13 @@ class IndexGenerator {
   }
 
   generatePluginIndex() {
+    if (!fs.existsSync(this.outputPath)) {
+      fs.mkdirSync(path.dirname(this.outputPath), { recursive: true });
+      fs.writeFileSync(this.outputPath, 'export default {}');
+    }
     const validPluginPaths = this.pluginsPath.filter((pluginPath) => fs.existsSync(pluginPath));
     if (!validPluginPaths.length) {
       return;
-    }
-    if (!fs.existsSync(this.outputPath)) {
-      fs.mkdirSync(path.dirname(this.outputPath), { recursive: true });
     }
     if (process.env.NODE_ENV === 'production') {
       fs.writeFileSync(this.outputPath, 'export default {}');

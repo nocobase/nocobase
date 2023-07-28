@@ -1,6 +1,6 @@
 import { getUmiConfig, IndexGenerator } from '@nocobase/devtools/umiConfig';
-import { defineConfig } from 'umi';
 import path from 'path';
+import { defineConfig } from 'umi';
 
 const umiConfig = getUmiConfig();
 
@@ -9,11 +9,11 @@ process.env.DID_YOU_KNOW = 'none';
 
 const pluginPrefix = (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro-')
   .split(',')
-  .filter(item => !item.includes('preset')); // 因为现在 preset 是直接引入的，所以不能忽略，如果以后 preset 也是动态插件的形式引入，那么这里可以去掉
-
+  .filter((item) => !item.includes('preset')); // 因为现在 preset 是直接引入的，所以不能忽略，如果以后 preset 也是动态插件的形式引入，那么这里可以去掉
 
 const pluginDirs = (process.env.PLUGIN_PACKAGE_PREFIX || 'packages/plugins/,packages/samples/')
-  .split(',').map(item => path.join(process.cwd(), item));
+  .split(',')
+  .map((item) => path.join(process.cwd(), item));
 
 const outputPluginPath = path.join(__dirname, 'src', '.plugins', 'index.ts');
 const indexGenerator = new IndexGenerator(outputPluginPath, pluginDirs);
@@ -22,9 +22,7 @@ indexGenerator.generate();
 export default defineConfig({
   title: 'Loading...',
   favicons: ['/favicon/favicon.ico'],
-  metas: [
-    { name: 'viewport', content: 'initial-scale=0.1' },
-  ],
+  metas: [{ name: 'viewport', content: 'initial-scale=0.1' }],
   links: [
     { rel: 'apple-touch-icon', size: '180x180', ref: '/favicon/apple-touch-icon.png' },
     { rel: 'icon', type: 'image/png', size: '32x32', ref: '/favicon/favicon-32x32.png' },
@@ -32,9 +30,7 @@ export default defineConfig({
     { rel: 'manifest', href: '/favicon/site.webmanifest' },
     { rel: 'stylesheet', href: '/global.css' },
   ],
-  headScripts: [
-    '/browser-checker.js'
-  ],
+  headScripts: ['/browser-checker.js'],
   hash: true,
   alias: {
     ...umiConfig.alias,
@@ -61,12 +57,11 @@ export default defineConfig({
   },
   chainWebpack(config, { env }) {
     if (env === 'production') {
-      config.plugin('ignore nocobase plugins')
-        .use(require('webpack').IgnorePlugin, [
-          {
-            resourceRegExp: new RegExp(pluginPrefix.join('|')),
-          },
-        ]);
+      config.plugin('ignore nocobase plugins').use(require('webpack').IgnorePlugin, [
+        {
+          resourceRegExp: new RegExp(pluginPrefix.join('|')),
+        },
+      ]);
     }
     return config;
   },
