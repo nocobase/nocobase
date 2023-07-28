@@ -22,8 +22,7 @@ import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
 import { ApplicationVersion } from './helpers/application-version';
 import { AppSupervisor } from './app-supervisor';
-
-const packageJson = require('../package.json');
+import packageJson from '../package.json';
 
 export type PluginConfiguration = string | [string, any];
 
@@ -60,14 +59,6 @@ export interface DefaultContext extends KoaDefaultContext {
   i18n: any;
 
   [key: string]: any;
-}
-
-interface MiddlewareOptions {
-  name?: string;
-  resourceName?: string;
-  resourceNames?: string[];
-  insertBefore?: string;
-  insertAfter?: string;
 }
 
 interface ActionsOptions {
