@@ -1,13 +1,12 @@
 {
   "openapi": "3.0.2",
   "info": {
-    "title": "NocoBase API - Users plugin"
+    "title": "NocoBase API - ACL plugin"
   },
-  "tags": [],
   "paths": {
-    "/users:list": {
+    "/roles:list": {
       "get": {
-        "tags": ["users"],
+        "tags": ["roles"],
         "description": "",
         "parameters": [],
         "responses": {
@@ -17,9 +16,9 @@
         }
       }
     },
-    "/users:get": {
+    "/roles:get": {
       "get": {
-        "tags": ["users"],
+        "tags": ["roles"],
         "description": "",
         "parameters": [],
         "responses": {
@@ -29,9 +28,9 @@
         }
       }
     },
-    "/users:create": {
+    "/roles:create": {
       "post": {
-        "tags": ["users"],
+        "tags": ["roles"],
         "description": "",
         "parameters": [],
         "responses": {
@@ -41,9 +40,9 @@
         }
       }
     },
-    "/users:update": {
+    "/roles:update": {
       "post": {
-        "tags": ["users"],
+        "tags": ["roles"],
         "description": "",
         "parameters": [],
         "responses": {
@@ -53,9 +52,9 @@
         }
       }
     },
-    "/users:updateProfile": {
+    "/roles:destroy": {
       "post": {
-        "tags": ["users"],
+        "tags": ["roles"],
         "description": "",
         "parameters": [],
         "responses": {
@@ -65,9 +64,9 @@
         }
       }
     },
-    "/users:changePassword": {
-      "post": {
-        "tags": ["users"],
+    "/roles:check": {
+      "get": {
+        "tags": ["roles"],
         "description": "",
         "parameters": [],
         "responses": {
@@ -77,9 +76,9 @@
         }
       }
     },
-    "/users:destroy": {
+    "/roles:setDefaultRole": {
       "post": {
-        "tags": ["users"],
+        "tags": ["roles"],
         "description": "",
         "parameters": [],
         "responses": {
@@ -89,9 +88,9 @@
         }
       }
     },
-    "/{collectionName}/{collectionIndex}/createdBy:get": {
-      "post": {
-        "tags": ["$collection.createdBy"],
+    "/roles/{roleName}/collections:list": {
+      "get": {
+        "tags": ["roles.collections"],
         "description": "",
         "parameters": [],
         "responses": {
@@ -101,9 +100,9 @@
         }
       }
     },
-    "/{collectionName}/{collectionIndex}/updatedBy:get": {
-      "post": {
-        "tags": ["$collection.updatedBy"],
+    "/availableActions:list": {
+      "get": {
+        "tags": ["availableActions"],
         "description": "",
         "parameters": [],
         "responses": {

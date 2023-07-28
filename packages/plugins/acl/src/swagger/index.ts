@@ -4,63 +4,117 @@ export default {
   },
   tags: [
     {
-      name: 'acl',
-      description: 'ACL',
+      name: 'roles',
+      description: 'roles',
     },
   ],
   paths: {
     '/roles:list': {
       get: {
-        tags: ['acl'],
-        responses: null,
+        tags: ['chinaRegions'],
+        description: '',
+        parameters: [],
+        responses: {
+          '200': {
+            description: 'OK',
+          },
+        },
       },
     },
     '/roles:get': {
       get: {
-        tags: ['acl'],
-        responses: null,
+        tags: ['chinaRegions'],
+        description: '',
+        parameters: [],
+        responses: {
+          '200': {
+            description: 'OK',
+          },
+        },
       },
     },
     '/roles:create': {
-      post: {
-        tags: ['acl'],
-        responses: null,
+      get: {
+        tags: ['chinaRegions'],
+        description: '',
+        parameters: [],
+        responses: {
+          '200': {
+            description: 'OK',
+          },
+        },
       },
     },
     '/roles:update': {
-      post: {
-        tags: ['acl'],
-        responses: null,
+      get: {
+        tags: ['chinaRegions'],
+        description: '',
+        parameters: [],
+        responses: {
+          '200': {
+            description: 'OK',
+          },
+        },
       },
     },
     '/roles:destroy': {
-      post: {
-        tags: ['acl'],
-        responses: null,
+      get: {
+        tags: ['chinaRegions'],
+        description: '',
+        parameters: [],
+        responses: {
+          '200': {
+            description: 'OK',
+          },
+        },
       },
     },
     '/roles:check': {
-      post: {
-        tags: ['acl'],
-        responses: null,
+      get: {
+        tags: ['chinaRegions'],
+        description: '',
+        parameters: [],
+        responses: {
+          '200': {
+            description: 'OK',
+          },
+        },
       },
     },
     '/roles:setDefaultRole': {
-      post: {
-        tags: ['acl'],
-        responses: null,
+      get: {
+        tags: ['chinaRegions'],
+        description: '',
+        parameters: [],
+        responses: {
+          '200': {
+            description: 'OK',
+          },
+        },
       },
     },
     '/roles/{roleName}/collections:list': {
       get: {
-        tags: ['acl'],
-        responses: null,
+        tags: ['chinaRegions'],
+        description: '',
+        parameters: [],
+        responses: {
+          '200': {
+            description: 'OK',
+          },
+        },
       },
     },
     '/availableActions:list': {
       get: {
-        tags: ['acl'],
-        responses: null,
+        tags: ['chinaRegions'],
+        description: '',
+        parameters: [],
+        responses: {
+          '200': {
+            description: 'OK',
+          },
+        },
       },
     },
   },

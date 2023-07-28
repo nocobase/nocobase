@@ -1,5 +1,6 @@
 import { PluginManager } from '@nocobase/server';
-import { merge, requireModule } from '@nocobase/utils';
+import { requireModule } from '@nocobase/utils';
+import { merge } from './merge';
 
 export const loadSwagger = (packageName: string) => {
   const prefixes = ['src', 'lib'];
@@ -20,7 +21,7 @@ export const loadSwagger = (packageName: string) => {
 };
 
 export const getPluginsSwagger = async (db: any, pluginNames?: string[]) => {
-  const nameFilter = pluginNames ? { name: { $in: pluginNames } } : {};
+  const nameFilter = pluginNames?.length ? { name: { $in: pluginNames } } : {};
   const plugins = await db.getRepository('applicationPlugins').find({
     filter: {
       enabled: true,

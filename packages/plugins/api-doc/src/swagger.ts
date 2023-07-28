@@ -1,6 +1,6 @@
 export default {
   info: {
-    title: 'NocoBase API - Api-doc plugin',
+    title: 'NocoBase API - API doc plugin',
   },
   paths: {
     '/swagger:getUrls': {

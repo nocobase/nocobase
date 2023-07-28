@@ -3,7 +3,12 @@
   "info": {
     "title": "NocoBase API - Core"
   },
-  "tags": [],
+  "tags": [
+    { "name": "$collection" },
+    { "name": "$collection.$association" },
+    { "name": "app", "description": "app" },
+    { "name": "pm", "description": "pm" }
+  ],
   "paths": {
     "/{collectionName}:list": {
       "get": {
@@ -140,6 +145,102 @@
     "/{collectionName}/{collectionIndex}/{associationName}:move": {
       "post": {
         "tags": ["$collection.$association"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/app:getLang": {
+      "get": {
+        "tags": ["app"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/app:getInfo": {
+      "get": {
+        "tags": ["app"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/app:getPlugins": {
+      "get": {
+        "tags": ["app"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/app:reboot": {
+      "post": {
+        "tags": ["app"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/app:clearCache": {
+      "post": {
+        "tags": ["app"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/pm:enable": {
+      "post": {
+        "tags": ["pm"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/pm:disable": {
+      "post": {
+        "tags": ["pm"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/pm:remove": {
+      "post": {
+        "tags": ["pm"],
         "description": "",
         "parameters": [],
         "responses": {

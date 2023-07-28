@@ -7,6 +7,7 @@
   "paths": {
     "/themeConfig:list": {
       "get": {
+        "tags": ["themeConfig"],
         "description": "",
         "parameters": [],
         "responses": {
@@ -18,6 +19,7 @@
     },
     "/themeConfig:create": {
       "post": {
+        "tags": ["themeConfig"],
         "description": "",
         "parameters": [],
         "responses": {
@@ -29,6 +31,7 @@
     },
     "/themeConfig:update": {
       "post": {
+        "tags": ["themeConfig"],
         "description": "",
         "parameters": [],
         "responses": {
@@ -40,6 +43,7 @@
     },
     "/themeConfig:destroy": {
       "post": {
+        "tags": ["themeConfig"],
         "description": "",
         "parameters": [],
         "responses": {
