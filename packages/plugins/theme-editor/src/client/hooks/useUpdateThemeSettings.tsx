@@ -9,14 +9,14 @@ export function useUpdateThemeSettings() {
 
   const updateUserThemeSettings = useCallback(
     async (themeId: number | null) => {
-      if (themeId === currentUser.data.data.systemSettings.themeId) {
+      if (themeId === currentUser.data.data.systemSettings?.themeId) {
         return;
       }
       try {
         await api.resource('users').updateProfile({
           values: {
             systemSettings: {
-              ...currentUser.data.data.systemSettings,
+              ...(currentUser.data.data.systemSettings || {}),
               themeId,
             },
           },
@@ -25,7 +25,7 @@ export function useUpdateThemeSettings() {
           data: {
             ...currentUser.data.data,
             systemSettings: {
-              ...currentUser.data.data.systemSettings,
+              ...(currentUser.data.data.systemSettings || {}),
               themeId,
             },
           },
@@ -39,7 +39,7 @@ export function useUpdateThemeSettings() {
 
   const updateSystemThemeSettings = useCallback(
     async (themeId: number | null) => {
-      if (themeId === systemSettings.data.data.options.themeId) {
+      if (themeId === systemSettings.data.data.options?.themeId) {
         return;
       }
       await api.request({
@@ -47,7 +47,7 @@ export function useUpdateThemeSettings() {
         method: 'post',
         data: {
           options: {
-            ...systemSettings.data.data.options,
+            ...(systemSettings.data.data.options || {}),
             themeId,
           },
         },
@@ -56,7 +56,7 @@ export function useUpdateThemeSettings() {
         data: {
           ...systemSettings.data.data,
           options: {
-            ...systemSettings.data.data.options,
+            ...(systemSettings.data.data.options || {}),
             themeId,
           },
         },

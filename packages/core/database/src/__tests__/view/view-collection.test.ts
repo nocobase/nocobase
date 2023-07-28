@@ -18,131 +18,155 @@ pgOnly()('', () => {
     await db.close();
   });
 
-  it('should skip on delete on view collection', async () => {
-    const Order = db.collection({
-      name: 'orders',
-      fields: [
-        {
-          type: 'string',
-          name: 'name',
-        },
-        {
-          type: 'hasMany',
-          name: 'orderItems',
-          foreignKey: 'order_id',
-          target: 'orderItems',
-        },
-      ],
-    });
+  describe('view as through table', () => {
+    let Order;
+    let OrderItem;
+    let Item;
+    let OrderItemView;
 
-    const OrderItem = db.collection({
-      name: 'orderItems',
-      timestamps: false,
-      fields: [
-        {
-          type: 'integer',
-          name: 'count',
-        },
-        {
-          type: 'belongsTo',
-          name: 'item',
-          target: 'items',
-          foreignKey: 'item_id',
-        },
-        {
-          type: 'belongsTo',
-          name: 'order',
-          target: 'orders',
-          foreignKey: 'order_id',
-          onDelete: 'NO ACTION',
-        },
-      ],
-    });
-
-    const Item = db.collection({
-      name: 'items',
-      fields: [{ name: 'name', type: 'string' }],
-    });
-
-    await db.sync();
-
-    const viewName = 'order_item_view';
-
-    const dropViewSQL = `DROP VIEW IF EXISTS ${viewName}`;
-    await db.sequelize.query(dropViewSQL);
-
-    const viewSQL = `CREATE VIEW ${viewName} as SELECT orders.*, items.name as item_name FROM ${OrderItem.quotedTableName()} as orders INNER JOIN ${Item.quotedTableName()} as items ON orders.item_id = items.id`;
-
-    await db.sequelize.query(viewSQL);
-
-    const OrderItemView = db.collection({
-      name: viewName,
-      view: true,
-      schema: db.inDialect('postgres') ? 'public' : undefined,
-      fields: [
-        {
-          type: 'bigInt',
-          name: 'order_id',
-        },
-        {
-          type: 'bigInt',
-          name: 'item_id',
-          onDelete: 'CASCADE',
-        },
-      ],
-    });
-
-    await db.sync();
-
-    Order.setField('items', {
-      type: 'belongsToMany',
-      target: 'orderItems',
-      through: viewName,
-      foreignKey: 'order_id',
-      otherKey: 'item_id',
-      sourceKey: 'id',
-      targetKey: 'id',
-      onDelete: 'CASCADE',
-    });
-
-    await db.sync();
-
-    const order1 = await db.getRepository('orders').create({
-      values: {
-        name: 'order1',
-        orderItems: [
+    beforeEach(async () => {
+      Order = db.collection({
+        name: 'orders',
+        fields: [
           {
-            count: 1,
-            item: {
-              name: 'item1',
-            },
+            type: 'string',
+            name: 'name',
           },
           {
-            count: 2,
-            item: {
-              name: 'item2',
-            },
+            type: 'hasMany',
+            name: 'orderItems',
+            foreignKey: 'order_id',
+            target: 'orderItems',
           },
         ],
-      },
-    });
-
-    const item1 = await db.getRepository('items').findOne({
-      filter: {
-        name: 'item1',
-      },
-    });
-
-    let error;
-    try {
-      await db.getRepository('orders').destroy({
-        filterByTk: order1.get('id'),
       });
-    } catch (err) {
-      error = err;
-    }
 
-    expect(error).toBeUndefined();
+      OrderItem = db.collection({
+        name: 'orderItems',
+        timestamps: false,
+        fields: [
+          {
+            type: 'integer',
+            name: 'count',
+          },
+          {
+            type: 'belongsTo',
+            name: 'item',
+            target: 'items',
+            foreignKey: 'item_id',
+          },
+          {
+            type: 'belongsTo',
+            name: 'order',
+            target: 'orders',
+            foreignKey: 'order_id',
+            onDelete: 'NO ACTION',
+          },
+        ],
+      });
+
+      Item = db.collection({
+        name: 'items',
+        fields: [{ name: 'name', type: 'string' }],
+      });
+
+      await db.sync();
+
+      const viewName = 'order_item_view';
+
+      const dropViewSQL = `DROP VIEW IF EXISTS ${viewName}`;
+      await db.sequelize.query(dropViewSQL);
+
+      const viewSQL = `CREATE VIEW ${viewName} as SELECT order_item.order_id as order_id, order_item.item_id as item_id, items.name as item_name FROM ${OrderItem.quotedTableName()} as order_item INNER JOIN ${Item.quotedTableName()} as items ON order_item.item_id = items.id`;
+
+      await db.sequelize.query(viewSQL);
+
+      OrderItemView = db.collection({
+        name: viewName,
+        view: true,
+        schema: db.inDialect('postgres') ? 'public' : undefined,
+        fields: [
+          {
+            type: 'bigInt',
+            name: 'order_id',
+          },
+          {
+            type: 'bigInt',
+            name: 'item_id',
+            onDelete: 'CASCADE',
+          },
+        ],
+      });
+
+      await db.sync();
+
+      Order.setField('items', {
+        type: 'belongsToMany',
+        target: 'items',
+        through: viewName,
+        foreignKey: 'order_id',
+        otherKey: 'item_id',
+        sourceKey: 'id',
+        targetKey: 'id',
+        onDelete: 'CASCADE',
+      });
+
+      await db.sync();
+
+      await db.getRepository('orders').create({
+        values: {
+          name: 'order1',
+          orderItems: [
+            {
+              count: 1,
+              item: {
+                name: 'item1',
+              },
+            },
+            {
+              count: 2,
+              item: {
+                name: 'item2',
+              },
+            },
+          ],
+        },
+      });
+    });
+
+    it('should skip on delete on view collection', async () => {
+      const order1 = await db.getRepository('orders').findOne({});
+
+      const item1 = await db.getRepository('items').findOne({
+        filter: {
+          name: 'item1',
+        },
+      });
+
+      let error;
+      try {
+        await db.getRepository('orders').destroy({
+          filterByTk: order1.get('id'),
+        });
+      } catch (err) {
+        error = err;
+      }
+
+      expect(error).toBeUndefined();
+    });
+
+    it('should filter by view collection as through table', async () => {
+      const orders = await db.getRepository('orders').find({
+        appends: ['items'],
+        filter: {
+          items: {
+            name: 'not exists',
+          },
+        },
+      });
+
+      expect(orders).toHaveLength(0);
+    });
   });
 
   it('should update view collection', async () => {
@@ -196,7 +220,7 @@ pgOnly()('', () => {
     });
 
     // create INSTEAD OF INSERT trigger
-    await db.sequelize.query(`    
+    await db.sequelize.query(`
 CREATE OR REPLACE FUNCTION insert_users_with_group() RETURNS TRIGGER AS $$
 DECLARE
   new_group_id BIGINT;
