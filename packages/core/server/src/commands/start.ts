@@ -1,4 +1,5 @@
 import Application from '../application';
+import { Gateway } from '../gateway';
 
 export default (app: Application) => {
   app
@@ -9,20 +10,17 @@ export default (app: Application) => {
     .option('--db-sync')
     .action(async (...cliArgs) => {
       const [opts] = cliArgs;
-      const port = opts.port || process.env.APP_PORT || 13000;
-      const host = opts.host || process.env.APP_HOST || '0.0.0.0';
+      const port = opts.port || process.env['APP_PORT'] || 13000;
+      const host = opts.host || process.env['APP_HOST'] || '0.0.0.0';
+
+      Gateway.getInstance().start({
+        port,
+        host,
+      });
 
       await app.start({
         dbSync: opts?.dbSync,
         cliArgs,
-        listen: {
-          port,
-          host,
-        },
       });
-
-      if (!opts.silent) {
-        console.log(`🚀 NocoBase server running at: http://${host === '0.0.0.0' ? 'localhost' : host}:${port}/`);
-      }
     });
 };

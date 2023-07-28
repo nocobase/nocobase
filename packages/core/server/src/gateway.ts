@@ -84,9 +84,13 @@ export class Gateway extends EventEmitter {
     return this.requestHandler.bind(this);
   }
 
-  start(options?: { port: number; callback?: () => void }) {
+  start(options?: { port: number; host: string; callback?: () => void }) {
     if (options?.port) {
       this.port = options.port;
+    }
+
+    if (options?.host) {
+      this.host = options.host;
     }
 
     if (!this.port) {
@@ -96,7 +100,7 @@ export class Gateway extends EventEmitter {
 
     this.server = http.createServer(this.getCallback());
 
-    this.server.listen(this.port, () => {
+    this.server.listen(this.port, this.host, () => {
       console.log(`Gateway Server running at http://${this.host}:${this.port}/`);
       if (options?.callback) {
         options.callback();
