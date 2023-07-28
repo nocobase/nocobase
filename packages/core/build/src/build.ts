@@ -102,6 +102,9 @@ function isTypescriptFile(filePath) {
 function isPluginPackage(name: string) {
   const prefixes = (process.env.PLUGIN_PACKAGE_PREFIX || '').split(',');
   for (const prefix of prefixes) {
+    if (prefix.includes('preset')) {
+      return false;
+    }
     if (name.startsWith(prefix)) {
       return true;
     }
