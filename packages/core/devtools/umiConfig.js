@@ -109,6 +109,9 @@ class IndexGenerator {
     this.generatePluginIndex();
     if (process.env.NODE_ENV === 'production') return;
     this.pluginsPath.forEach((pluginPath) => {
+      if (!fs.existsSync(pluginPath)) {
+        return;
+      }
       fs.watch(pluginPath, { recursive: false }, () => {
         this.generatePluginIndex();
       });

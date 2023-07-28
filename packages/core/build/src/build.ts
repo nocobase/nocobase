@@ -99,6 +99,16 @@ function isTypescriptFile(filePath) {
   return filePath.endsWith('.ts') || filePath.endsWith('.tsx');
 }
 
+function isPluginPackage(name: string) {
+  const prefixes = (process.env.PLUGIN_PACKAGE_PREFIX || '').split(',');
+  for (const prefix of prefixes) {
+    if (name.startsWith(prefix)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 interface IExtraBuildOpts {
   pkg?: string | { name?: string };
 }
@@ -126,7 +136,7 @@ export async function build(opts: IOpts, extraOpts: IExtraBuildOpts = {}) {
 
   // Get user config
   const bundleOptsArray = getBundleOpts(opts);
-  const isPlugin = pkgName.startsWith('@nocobase/plugin');
+  const isPlugin = isPluginPackage(pkgName);
 
   // Clean dist
   if (clean && !isPlugin) {

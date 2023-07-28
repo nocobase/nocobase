@@ -17,6 +17,7 @@ const env = {
   LOCAL_STORAGE_DEST: 'storage/uploads',
   MFSU_AD: 'none',
   PM2_HOME: resolve(process.cwd(), './storage/.pm2'),
+  PLUGIN_PACKAGE_PREFIX: '@nocobase/plugin-,@nocobase/plugin-sample-,@nocobase/preset-',
 };
 
 if (!process.env.APP_ENV_PATH && process.argv[2] && process.argv[2] === 'test') {
