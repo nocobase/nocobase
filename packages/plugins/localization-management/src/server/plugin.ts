@@ -73,9 +73,6 @@ export class LocalizationManagementPlugin extends Plugin {
     });
 
     this.db.on('afterSave', async (instance: Model) => {
-      if (!this.enabled) {
-        return;
-      }
       const model = instance.constructor as typeof Model;
       const collection = model.collection;
       if (!collection) {
