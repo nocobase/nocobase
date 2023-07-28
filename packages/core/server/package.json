@@ -25,10 +25,12 @@
     "koa-static": "^5.0.0",
     "lodash": "^4.17.21",
     "semver": "^7.3.7",
-    "xpipe": "^1.0.5"
+    "xpipe": "^1.0.5",
+    "ws": "^8.13.0"
   },
   "devDependencies": {
-    "@types/semver": "^7.3.9"
+    "@types/semver": "^7.3.9",
+    "@types/ws": "^8.5.5"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
 }

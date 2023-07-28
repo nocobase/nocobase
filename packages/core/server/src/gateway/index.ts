@@ -3,6 +3,7 @@ import http, { IncomingMessage, ServerResponse } from 'http';
 import { AppSupervisor } from '../app-supervisor';
 import Application from '../application';
 import { WSServer } from './ws-server';
+import { parse } from 'url';
 
 type AppSelectorReturn = Application | string | undefined | null;
 
@@ -104,6 +105,18 @@ export class Gateway extends EventEmitter {
 
     this.wsServer = new WSServer(this);
 
+    this.server.on('upgrade', (request, socket, head) => {
+      const { pathname } = parse(request.url);
+
+      if (pathname === '/ws') {
+        this.wsServer.wss.handleUpgrade(request, socket, head, (ws) => {
+          this.wsServer.wss.emit('connection', ws, request);
+        });
+      } else {
+        socket.destroy();
+      }
+    });
+
     this.server.listen(this.port, this.host, () => {
       console.log(`Gateway Server running at http://${this.host}:${this.port}/`);
       if (options?.callback) {
@@ -114,5 +127,6 @@ export class Gateway extends EventEmitter {
 
   close() {
     this.server?.close();
+    this.wsServer?.close();
   }
 }
