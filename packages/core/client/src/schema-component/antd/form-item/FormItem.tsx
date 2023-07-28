@@ -112,7 +112,6 @@ export const FormItem: any = observer(
               });
             });
             const initValues = transformData(contextData);
-            console.log(initValues);
             field.setInitialValue?.(initValues);
           }
         }
