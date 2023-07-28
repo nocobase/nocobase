@@ -59,7 +59,13 @@ import {
 } from '..';
 import { useTableBlockContext } from '../block-provider';
 import { findFilterTargets, updateFilterTargets } from '../block-provider/hooks';
-import { FilterBlockType, isSameCollection, useSupportedBlocks } from '../filter-provider/utils';
+import {
+  FilterBlockType,
+  getSupportFieldsByAssociation,
+  getSupportFieldsByForeignKey,
+  isSameCollection,
+  useSupportedBlocks,
+} from '../filter-provider/utils';
 import { useCollectMenuItem, useCollectMenuItems, useMenuItem } from '../hooks/useMenuItem';
 import { getTargetKey } from '../schema-component/antd/association-filter/utilts';
 import { getFieldDefaultValue } from '../schema-component/antd/form-item';
@@ -550,6 +556,7 @@ SchemaSettings.ConnectDataBlocks = function ConnectDataBlocks(props: {
   // eslint-disable-next-line prefer-const
   let { targets = [], uid } = findFilterTargets(fieldSchema);
   const compile = useCompile();
+  const { getAllCollectionsInheritChain } = useCollectionManager();
 
   if (!inProvider) {
     return null;
@@ -614,14 +621,18 @@ SchemaSettings.ConnectDataBlocks = function ConnectDataBlocks(props: {
         title={title}
         value={target?.field || ''}
         options={[
-          ...block.associatedFields
-            .filter((field) => field.target === collection.name)
-            .map((field) => {
-              return {
-                label: compile(field.uiSchema.title) || field.name,
-                value: `${field.name}.${getTargetKey(field)}`,
-              };
-            }),
+          ...getSupportFieldsByAssociation(getAllCollectionsInheritChain(collection.name), block).map((field) => {
+            return {
+              label: compile(field.uiSchema.title) || field.name,
+              value: `${field.name}.${getTargetKey(field)}`,
+            };
+          }),
+          ...getSupportFieldsByForeignKey(collection, block).map((field) => {
+            return {
+              label: `${compile(field.uiSchema.title) || field.name} [${t('Foreign key')}]`,
+              value: field.name,
+            };
+          }),
           {
             label: t('Unconnected'),
             value: '',
@@ -1451,12 +1462,12 @@ SchemaSettings.DefaultValue = function DefaultvalueConfigure(props) {
       `${collectionField.target}.${fieldSchema['x-component-props']?.fieldNames?.label || 'id'}`,
     );
   }
-  const parentFieldSchema = collectionField.interface === 'm2o' && findParentFieldSchema(fieldSchema);
+  const parentFieldSchema = collectionField?.interface === 'm2o' && findParentFieldSchema(fieldSchema);
   const parentCollectionField = parentFieldSchema && getCollectionJoinField(parentFieldSchema?.['x-collection-field']);
   const tableCtx = useTableBlockContext();
   const isAllowContexVariable =
-    collectionField.interface === 'm2m' ||
-    (parentCollectionField?.type === 'hasMany' && collectionField.interface === 'm2o');
+    collectionField?.interface === 'm2m' ||
+    (parentCollectionField?.type === 'hasMany' && collectionField?.interface === 'm2o');
   return (
     <SchemaSettings.ModalItem
       title={t('Set default value')}

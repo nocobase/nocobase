@@ -1,5 +1,5 @@
-import multer from '@koa/multer';
 import { Context, Next } from '@nocobase/actions';
+import { koaMulter as multer } from '@nocobase/utils';
 
 export async function importMiddleware(ctx: Context, next: Next) {
   if (ctx.action.actionName !== 'importXlsx') {
