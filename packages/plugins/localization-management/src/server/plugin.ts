@@ -78,6 +78,9 @@ export class LocalizationManagementPlugin extends Plugin {
       }
       const model = instance.constructor as typeof Model;
       const collection = model.collection;
+      if (!collection) {
+        return;
+      }
       let texts = [];
       const fields = Array.from(collection.fields.values())
         .filter((field) => field.options?.translation && instance['_changed'].has(field.name))
