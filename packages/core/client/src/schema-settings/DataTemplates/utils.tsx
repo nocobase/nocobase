@@ -20,7 +20,7 @@ export const useSyncFromForm = (fieldSchema, collection?, callBack?) => {
   const from = useForm();
 
   const traverseFields = ((cache) => {
-    return (collectionName, { exclude = [], depth = 0, maxDepth, prefix = '' }, formData) => {
+    return (collectionName, { exclude = [], depth = 0, maxDepth, prefix = '', disabled = false }, formData) => {
       const cacheKey = `${collectionName}-${exclude.join(',')}-${depth}-${maxDepth}-${prefix}`;
       const cachedResult = cache.get(cacheKey);
       if (cachedResult) {
@@ -54,6 +54,7 @@ export const useSyncFromForm = (fieldSchema, collection?, callBack?) => {
             key: prefix ? `${prefix}.${field.name}` : field.name,
             isLeaf: true,
             field,
+            disabled,
           };
 
           const tatgetFormField = formData.find((v) => v.name === field.name);
@@ -75,6 +76,12 @@ export const useSyncFromForm = (fieldSchema, collection?, callBack?) => {
             ['hasOne', 'hasMany'].includes(field.type) ||
             ['Nester', 'SubTable'].includes(tatgetFormField?.fieldMode)
           ) {
+            if (
+              ['hasOne', 'hasMany'].includes(field.type) &&
+              ['Select', 'Picker'].includes(tatgetFormField?.fieldMode)
+            ) {
+              option.disabled = true;
+            }
             option.isLeaf = false;
             option['children'] = traverseFields(
               field.target,
@@ -83,6 +90,7 @@ export const useSyncFromForm = (fieldSchema, collection?, callBack?) => {
                 maxDepth,
                 prefix: option.key,
                 exclude: ['id', ...systemKeys],
+                disabled: option.disabled,
               },
               formData,
             );
@@ -153,7 +161,7 @@ export const useSyncFromForm = (fieldSchema, collection?, callBack?) => {
     }
 
     try {
-      return traverseFields(collectionName, { exclude: ['id', ...systemKeys], maxDepth: 1 }, formData);
+      return traverseFields(collectionName, { exclude: ['id', ...systemKeys], maxDepth: 1, disabled: false }, formData);
     } catch (error) {
       console.error(error);
       return [];
@@ -173,7 +181,13 @@ export const useSyncFromForm = (fieldSchema, collection?, callBack?) => {
             collectionfield && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionfield.type);
           const fieldPath = !isAssociationField && isAssociationSubfield ? getAssociationPath(s.name) : s.name;
           const path = prefix === '' || !prefix ? fieldPath : prefix + '.' + fieldPath;
-          if (collectionfield) {
+          if (
+            collectionfield &&
+            !(
+              ['hasOne', 'hasMany'].includes(collectionfield.type) &&
+              ['Select', 'Picker', undefined].includes(s['x-component-props']?.mode)
+            )
+          ) {
             selectFields.add(path);
           }
           if (collectionfield && (isAssociationField || isAssociationSubfield) && s['x-component'] !== 'TableField') {
