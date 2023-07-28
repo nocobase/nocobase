@@ -240,6 +240,9 @@ export class OptionsParser {
   protected parseAppends(appends: Appends, filterParams: any) {
     if (!appends) return filterParams;
 
+    // sort appends by path length
+    appends = lodash.sortBy(appends, (append) => append.split('.').length);
+
     /**
      * set include params
      * @param model
@@ -287,6 +290,25 @@ export class OptionsParser {
       // if include from filter, remove fromFilter attribute
       if (existIncludeIndex != -1) {
         delete queryParams['include'][existIncludeIndex]['fromFilter'];
+
+        // set include attributes to all attributes
+        if (
+          Array.isArray(queryParams['include'][existIncludeIndex]['attributes']) &&
+          queryParams['include'][existIncludeIndex]['attributes'].length == 0
+        ) {
+          queryParams['include'][existIncludeIndex]['attributes'] = {
+            include: [],
+          };
+        }
+      }
+
+      if (
+        lastLevel &&
+        existIncludeIndex != -1 &&
+        lodash.get(queryParams, ['include', existIncludeIndex, 'attributes', 'include'])?.length == 0
+      ) {
+        // if append is last level and association exists, ignore it
+        return;
       }
 
       // if association not exist, create it
