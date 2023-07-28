@@ -56,6 +56,7 @@ import {
   useFilterBlock,
   useGlobalTheme,
   useLinkageCollectionFilterOptions,
+  useActionContext,
 } from '..';
 import { useTableBlockContext } from '../block-provider';
 import { findFilterTargets, updateFilterTargets } from '../block-provider/hooks';
@@ -1452,6 +1453,7 @@ SchemaSettings.DefaultValue = function DefaultvalueConfigure(props) {
   const field = useField<Field>();
   const { dn } = useDesignable();
   const { t } = useTranslation();
+  const actionCtx = useActionContext();
   let targetField;
   const { getField } = useCollection();
   const { getCollectionJoinField } = useCollectionManager();
@@ -1466,8 +1468,9 @@ SchemaSettings.DefaultValue = function DefaultvalueConfigure(props) {
   const parentCollectionField = parentFieldSchema && getCollectionJoinField(parentFieldSchema?.['x-collection-field']);
   const tableCtx = useTableBlockContext();
   const isAllowContexVariable =
-    collectionField?.interface === 'm2m' ||
-    (parentCollectionField?.type === 'hasMany' && collectionField?.interface === 'm2o');
+    actionCtx?.fieldSchema?.['x-action'] === 'customize:create' &&
+    (collectionField?.interface === 'm2m' ||
+      (parentCollectionField?.type === 'hasMany' && collectionField?.interface === 'm2o'));
   return (
     <SchemaSettings.ModalItem
       title={t('Set default value')}
