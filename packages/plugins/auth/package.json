@@ -15,8 +15,8 @@
   ],
   "devDependencies": {
     "@ant-design/icons": "^5.1.4",
-    "@formily/react": "2.2.26",
-    "@formily/shared": "2.2.26",
+    "@formily/react": "^2.2.27",
+    "@formily/shared": "^2.2.27",
     "@nocobase/auth": "0.11.1-alpha.4",
     "@nocobase/test": "0.11.1-alpha.4",
     "@types/cron": "^2.0.1",

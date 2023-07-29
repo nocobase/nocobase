@@ -19,10 +19,10 @@
     "client.d.ts"
   ],
   "devDependencies": {
-    "@formily/antd-v5": "1.1.0-beta.4",
-    "@formily/core": "2.2.26",
-    "@formily/react": "2.2.26",
-    "@formily/reactive": "2.2.26",
+    "@formily/antd-v5": "^1.1.0",
+    "@formily/core": "^2.2.27",
+    "@formily/react": "^2.2.27",
+    "@formily/reactive": "^2.2.27",
     "@nocobase/client": "0.11.1-alpha.4",
     "@nocobase/database": "0.11.1-alpha.4",
     "@nocobase/evaluators": "0.11.1-alpha.4",
