@@ -103,9 +103,6 @@ const VariablesProvider = ({ children }) => {
                   });
               }
             }
-            if (associationField?.target) {
-              collectionName = associationField.target;
-            }
             return item[key];
           });
           current = _.flatten(await Promise.all(result));
@@ -115,15 +112,18 @@ const VariablesProvider = ({ children }) => {
           });
           current[key] = data.data.data;
           current = getValuesByPath(current, key);
-          collectionName = associationField.target;
         } else {
           current = getValuesByPath(current, key);
+        }
+
+        if (associationField?.target) {
+          collectionName = associationField.target;
         }
       }
 
       return compile(_.isFunction(current) ? current() : current);
     },
-    [api, ctx, getCollectionJoinField],
+    [ctx, getCollectionJoinField],
   );
 
   const parseVariable = useCallback(

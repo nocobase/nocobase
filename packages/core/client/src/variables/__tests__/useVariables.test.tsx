@@ -1,3 +1,4 @@
+import { SchemaExpressionScopeContext, SchemaOptionsContext } from '@formily/react';
 import React from 'react';
 import { act, renderHook, waitFor } from 'testUtils';
 import { APIClientProvider } from '../../api-client';
@@ -54,7 +55,7 @@ mockRequest.onGet('/users/0/belongsToField:get').reply(() => {
     {
       data: {
         id: 0,
-        name: 'name',
+        name: '$user.belongsToField',
       },
     },
   ];
@@ -66,7 +67,7 @@ mockRequest.onGet('/users/0/hasManyField:list').reply(() => {
       data: [
         {
           id: 0,
-          name: 'name',
+          name: '$user.hasManyField',
         },
       ],
     },
@@ -79,7 +80,7 @@ mockRequest.onGet('/test/0/hasManyField:list').reply(() => {
       data: [
         {
           id: 0,
-          name: 'name',
+          name: '$user.hasManyField.hasManyField',
         },
       ],
     },
@@ -90,7 +91,11 @@ const Providers = ({ children }) => {
   return (
     <APIClientProvider apiClient={apiClient}>
       <CurrentUserProvider>
-        <VariablesProvider>{children}</VariablesProvider>
+        <SchemaOptionsContext.Provider value={{}}>
+          <SchemaExpressionScopeContext.Provider value={{}}>
+            <VariablesProvider>{children}</VariablesProvider>
+          </SchemaExpressionScopeContext.Provider>
+        </SchemaOptionsContext.Provider>
       </CurrentUserProvider>
     </APIClientProvider>
   );
@@ -103,12 +108,17 @@ describe('useVariables', () => {
     });
 
     await waitFor(async () => {
-      expect(result.current.ctx).toEqual({
-        $user: {
-          id: 0,
-          nickname: 'from request',
-        },
-      });
+      expect(result.current.ctx).toMatchInlineSnapshot(`
+        {
+          "$date": {
+            "now": [Function],
+          },
+          "$user": {
+            "id": 0,
+            "nickname": "from request",
+          },
+        }
+      `);
     });
 
     act(() => {
@@ -142,7 +152,7 @@ describe('useVariables', () => {
     await waitFor(async () => {
       expect(await result.current.parseVariable('{{ $user.belongsToField }}')).toEqual({
         id: 0,
-        name: 'name',
+        name: '$user.belongsToField',
       });
     });
   });
@@ -153,7 +163,7 @@ describe('useVariables', () => {
     });
 
     await waitFor(async () => {
-      expect(await result.current.parseVariable('{{ $user.belongsToField.name }}')).toBe('name');
+      expect(await result.current.parseVariable('{{ $user.belongsToField.name }}')).toBe('$user.belongsToField');
     });
   });
 
@@ -166,13 +176,13 @@ describe('useVariables', () => {
       expect(await result.current.parseVariable('{{ $user.hasManyField }}')).toEqual([
         {
           id: 0,
-          name: 'name',
+          name: '$user.hasManyField',
         },
       ]);
     });
 
     await waitFor(async () => {
-      expect(await result.current.parseVariable('{{ $user.hasManyField.name }}')).toEqual(['name']);
+      expect(await result.current.parseVariable('{{ $user.hasManyField.name }}')).toEqual(['$user.hasManyField']);
     });
   });
 
@@ -185,7 +195,7 @@ describe('useVariables', () => {
       expect(await result.current.parseVariable('{{ $user.hasManyField.hasManyField }}')).toEqual([
         {
           id: 0,
-          name: 'name',
+          name: '$user.hasManyField.hasManyField',
         },
       ]);
     });
@@ -197,7 +207,9 @@ describe('useVariables', () => {
     });
 
     await waitFor(async () => {
-      expect(await result.current.parseVariable('{{ $user.hasManyField.hasManyField.name }}')).toEqual(['name']);
+      expect(await result.current.parseVariable('{{ $user.hasManyField.hasManyField.name }}')).toEqual([
+        '$user.hasManyField.hasManyField',
+      ]);
     });
   });
 
@@ -214,6 +226,30 @@ describe('useVariables', () => {
       } catch (error) {
         expect(error.message).toBe('VariablesProvider: $some is not found');
       }
+    });
+  });
+
+  it('should not error when changing the variable path', async () => {
+    const { result } = renderHook(() => useVariables(), {
+      wrapper: Providers,
+    });
+
+    await waitFor(async () => {
+      expect(await result.current.parseVariable('{{ $user.hasManyField }}')).toEqual([
+        {
+          id: 0,
+          name: '$user.hasManyField',
+        },
+      ]);
+    });
+
+    await waitFor(async () => {
+      expect(await result.current.parseVariable('{{ $user.hasManyField.hasManyField }}')).toEqual([
+        {
+          id: 0,
+          name: '$user.hasManyField.hasManyField',
+        },
+      ]);
     });
   });
 });
