@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-sample-custom-block",
-  "version": "0.11.1-alpha.4",
+  "version": "0.11.1-alpha.5",
   "main": "./lib/server/index.js",
   "files": [
     "lib",
@@ -16,9 +16,9 @@
   "devDependencies": {
     "@ant-design/icons": "^5.1.4",
     "@formily/react": "^2.2.27",
-    "@nocobase/client": "0.11.1-alpha.4",
-    "@nocobase/server": "0.11.1-alpha.4",
-    "@nocobase/test": "0.11.1-alpha.4",
+    "@nocobase/client": "0.11.1-alpha.5",
+    "@nocobase/server": "0.11.1-alpha.5",
+    "@nocobase/test": "0.11.1-alpha.5",
     "react": "^18.2.0",
     "react-i18next": "^11.15.1"
   },
