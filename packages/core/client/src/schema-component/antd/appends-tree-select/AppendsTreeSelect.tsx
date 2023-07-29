@@ -81,11 +81,11 @@ export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
   const [optionsMap, setOptionsMap] = useState({});
   const baseCollection = useCollection({ collection });
   const treeData = Object.values(optionsMap);
-  const value: DefaultOptionType | DefaultOptionType[] = useMemo(() => {
+  const value: string | DefaultOptionType[] = useMemo(() => {
     if (props.multiple) {
       return ((propsValue as string[]) || []).map((v) => optionsMap[v]).filter(Boolean);
     }
-    return optionsMap[propsValue as string];
+    return propsValue;
   }, [propsValue, props.multiple, optionsMap]);
 
   const loadData = useCallback(
@@ -113,7 +113,7 @@ export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
     const loaded = [];
 
     arr.forEach((v) => {
-      const paths = (v.value as string).split('.');
+      const paths = (props.multiple ? (v.value as string) : v).split('.');
       let option = optionsMap[paths[0]];
       for (let i = 1; i < paths.length; i++) {
         if (!option) {
@@ -147,7 +147,7 @@ export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
 
       const newValue = (next as DefaultOptionType[]).map((i) => i.value).filter(Boolean) as string[];
       const valueSet = new Set(newValue);
-      const delValue = value.find((i) => !valueSet.has(i.value));
+      const delValue = (value as DefaultOptionType[]).find((i) => !valueSet.has(i.value as string));
 
       if (delValue) {
         const prefix = `${delValue.value}.`;
