@@ -19,7 +19,7 @@
     "client.d.ts"
   ],
   "devDependencies": {
-    "@formily/json-schema": "2.2.26",
+    "@formily/json-schema": "^2.2.27",
     "@nocobase/client": "0.11.1-alpha.4",
     "@nocobase/database": "0.11.1-alpha.4",
     "@nocobase/server": "0.11.1-alpha.4",
