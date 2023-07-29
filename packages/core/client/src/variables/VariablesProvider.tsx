@@ -1,10 +1,11 @@
-import { getValuesByPath } from '@nocobase/utils/client';
+import { dayjs, getValuesByPath } from '@nocobase/utils/client';
 import _ from 'lodash';
 import type { Dispatch, SetStateAction } from 'react';
 import React, { createContext, useCallback, useEffect, useMemo, useState } from 'react';
 import { useAPIClient } from '../api-client';
 import type { CollectionFieldOptions } from '../collection-manager';
 import { useCollectionManager } from '../collection-manager';
+import { useCompile } from '../schema-component';
 import { useCurrentUserContext } from '../user';
 
 export interface VariablesContextType {
@@ -47,9 +48,14 @@ const getFieldPath = (variablePath: string) => {
 
 const VariablesProvider = ({ children }) => {
   const currentUser = useCurrentUserContext();
-  const [ctx, setCtx] = useState<Record<string, any>>({});
+  const [ctx, setCtx] = useState<Record<string, any>>({
+    $date: {
+      now: () => dayjs().toISOString(),
+    },
+  });
   const api = useAPIClient();
   const { getCollectionJoinField } = useCollectionManager();
+  const compile = useCompile();
 
   useEffect(() => {
     setCtx((prev) => ({
@@ -115,7 +121,7 @@ const VariablesProvider = ({ children }) => {
         }
       }
 
-      return current;
+      return compile(_.isFunction(current) ? current() : current);
     },
     [api, ctx, getCollectionJoinField],
   );

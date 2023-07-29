@@ -20,6 +20,7 @@ import { isTitleField } from '../../../collection-manager/Configuration/Collecti
 import { GeneralSchemaItems } from '../../../schema-items/GeneralSchemaItems';
 import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isShowDefaultValue } from '../../../schema-settings';
 import { useIsShowMultipleSwitch } from '../../../schema-settings/hooks/useIsShowMultipleSwitch';
+import { useVariables } from '../../../variables';
 import { isVariable, parseVariables, useVariablesCtx } from '../../common/utils/uitls';
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
 import { BlockItem } from '../block-item';
@@ -30,13 +31,13 @@ import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
 import { useEnsureOperatorsValid } from './SchemaSettingOptions';
 
 export const findColumnFieldSchema = (fieldSchema, getCollectionJoinField) => {
-  const childsSchema = new Set();
+  const childrenSchema = new Set();
   const getAssociationAppends = (schema) => {
     schema.reduceProperties((_, s) => {
-      const collectionfield = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
-      const isAssociationField = collectionfield && ['belongsTo'].includes(collectionfield.type);
-      if (collectionfield && isAssociationField && s.default?.includes?.('$context')) {
-        childsSchema.add(JSON.stringify({ name: s.name, default: s.default }));
+      const collectionField = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
+      const isAssociationField = collectionField && ['belongsTo'].includes(collectionField.type);
+      if (collectionField && isAssociationField && s.default?.includes?.('$context')) {
+        childrenSchema.add(JSON.stringify({ name: s.name, default: s.default }));
       } else {
         getAssociationAppends(s);
       }
@@ -44,7 +45,7 @@ export const findColumnFieldSchema = (fieldSchema, getCollectionJoinField) => {
   };
 
   getAssociationAppends(fieldSchema);
-  return [...childsSchema];
+  return [...childrenSchema];
 };
 
 export const FormItem: any = observer(
@@ -56,48 +57,62 @@ export const FormItem: any = observer(
     const variablesCtx = useVariablesCtx();
     const { getCollectionJoinField } = useCollectionManager();
     const collectionField = getCollectionJoinField(schema['x-collection-field']);
+    const variables = useVariables();
+
     useEffect(() => {
-      if (ctx?.block === 'form') {
-        ctx.field.data = ctx.field.data || {};
-        ctx.field.data.activeFields = ctx.field.data.activeFields || new Set();
-        ctx.field.data.activeFields.add(schema.name);
-        // 如果默认值是一个变量，则需要解析之后再显示出来
-        if (isVariable(schema?.default) && !schema?.default.includes('$context')) {
-          field.setInitialValue?.(parseVariables(schema.default, variablesCtx));
-        } else if (
-          isVariable(schema?.default) &&
-          schema?.default?.includes('$context') &&
-          collectionField?.interface === 'm2m'
-        ) {
-          // 直接对多
-          const contextData = parseVariables('{{$context}}', variablesCtx);
-          let iniValues = [];
-          contextData?.map((v) => {
-            const data = parseVariables(schema.default, { $context: v });
-            iniValues = iniValues.concat(data);
-          });
-          field.setInitialValue?.(_.uniqBy(iniValues, 'id'));
-        } else if (
-          collectionField?.interface === 'o2m' &&
-          ['SubTable', 'Nester'].includes(schema?.['x-component-props']?.['mode']) // 间接对多
-        ) {
-          const childrenFieldWithDefault = findColumnFieldSchema(schema, getCollectionJoinField);
-          // 子表格/子表单中找出所有belongsTo字段的上下文默认值
-          if (childrenFieldWithDefault.length > 0) {
+      const run = async () => {
+        if (ctx?.block === 'form') {
+          ctx.field.data = ctx.field.data || {};
+          ctx.field.data.activeFields = ctx.field.data.activeFields || new Set();
+          ctx.field.data.activeFields.add(schema.name);
+          // 如果默认值是一个变量，则需要解析之后再显示出来
+          if (
+            isVariable(schema?.default) &&
+            !schema?.default.includes('$context') &&
+            variables &&
+            field.setInitialValue
+          ) {
+            field.setInitialValue(' ');
+            field.loading = true;
+            field.setInitialValue(await variables.parseVariable(schema.default));
+            field.loading = false;
+          } else if (
+            isVariable(schema?.default) &&
+            schema?.default?.includes('$context') &&
+            collectionField?.interface === 'm2m'
+          ) {
+            // 直接对多
             const contextData = parseVariables('{{$context}}', variablesCtx);
-            const initValues = contextData?.map((v) => {
-              const obj = {};
-              childrenFieldWithDefault.forEach((s: any) => {
-                const child = JSON.parse(s);
-                obj[child.name] = parseVariables(child.default, { $context: v });
-              });
-              return obj;
+            let iniValues = [];
+            contextData?.map((v) => {
+              const data = parseVariables(schema.default, { $context: v });
+              iniValues = iniValues.concat(data);
             });
-            field.setInitialValue?.(initValues);
+            field.setInitialValue?.(_.uniqBy(iniValues, 'id'));
+          } else if (
+            collectionField?.interface === 'o2m' &&
+            ['SubTable', 'Nester'].includes(schema?.['x-component-props']?.['mode']) // 间接对多
+          ) {
+            const childrenFieldWithDefault = findColumnFieldSchema(schema, getCollectionJoinField);
+            // 子表格/子表单中找出所有belongsTo字段的上下文默认值
+            if (childrenFieldWithDefault.length > 0) {
+              const contextData = parseVariables('{{$context}}', variablesCtx);
+              const initValues = contextData?.map((v) => {
+                const obj = {};
+                childrenFieldWithDefault.forEach((s: any) => {
+                  const child = JSON.parse(s);
+                  obj[child.name] = parseVariables(child.default, { $context: v });
+                });
+                return obj;
+              });
+              field.setInitialValue?.(initValues);
+            }
           }
         }
-      }
-    }, []);
+      };
+
+      run();
+    }, [schema.default]);
     const showTitle = schema['x-decorator-props']?.showTitle ?? true;
     return (
       <ACLCollectionFieldProvider>
