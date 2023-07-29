@@ -4,7 +4,7 @@
   "displayName.zh-CN": "SAML",
   "description": "Provides SAML authentication and authorization functionality for applications or authentication systems.",
   "description.zh-CN": "为应用程序或身份验证系统提供SAML认证和授权功能。",
-  "version": "0.11.1-alpha.4",
+  "version": "0.11.1-alpha.5",
   "license": "AGPL-3.0",
   "main": "./lib/server/index.js",
   "files": [
@@ -21,12 +21,12 @@
   "devDependencies": {
     "@ant-design/icons": "^5.1.4",
     "@formily/react": "^2.2.27",
-    "@nocobase/actions": "0.11.1-alpha.4",
-    "@nocobase/auth": "0.11.1-alpha.4",
-    "@nocobase/client": "0.11.1-alpha.4",
-    "@nocobase/database": "0.11.1-alpha.4",
-    "@nocobase/server": "0.11.1-alpha.4",
-    "@nocobase/test": "0.11.1-alpha.4",
+    "@nocobase/actions": "0.11.1-alpha.5",
+    "@nocobase/auth": "0.11.1-alpha.5",
+    "@nocobase/client": "0.11.1-alpha.5",
+    "@nocobase/database": "0.11.1-alpha.5",
+    "@nocobase/server": "0.11.1-alpha.5",
+    "@nocobase/test": "0.11.1-alpha.5",
     "antd": "^5.6.4",
     "react": "18.x",
     "react-i18next": "^11.15.1"
