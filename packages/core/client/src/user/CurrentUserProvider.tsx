@@ -8,13 +8,7 @@ import { useCompile } from '../schema-component';
 export const CurrentUserContext = createContext<ReturnTypeOfUseRequest>(null);
 
 export const useCurrentUserContext = () => {
-  const result = useContext(CurrentUserContext);
-
-  if (!result) {
-    throw new Error('useCurrentUserContext must be used within a CurrentUserProvider');
-  }
-
-  return result;
+  return useContext(CurrentUserContext);
 };
 
 export const useCurrentRoles = () => {

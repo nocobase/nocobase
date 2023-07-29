@@ -166,7 +166,7 @@ FormItem.Designer = function Designer() {
   const fieldModeOptions = useFieldModeOptions();
   const isAssociationField = ['obo', 'oho', 'o2o', 'o2m', 'm2m', 'm2o'].includes(collectionField?.interface);
   const isTableField = fieldSchema['x-component'] === 'TableField';
-  const isFileField = isFileCollection(targetCollection);
+  const isFileField = isFileCollection(targetCollection as any);
   const initialValue = {
     title: field.title === originalTitle ? undefined : field.title,
   };

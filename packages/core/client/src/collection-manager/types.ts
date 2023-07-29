@@ -30,6 +30,8 @@ export interface CollectionOptions {
   tree?: string;
   template?: string;
   writableView?: boolean;
+
+  [key: string]: any;
 }
 
 export interface ICollectionProviderProps {
