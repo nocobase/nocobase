@@ -1,7 +1,7 @@
-import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
+import { Application } from '@nocobase/server';
 import { getApp, sleep } from '..';
-import { EXECUTION_STATUS, BRANCH_INDEX } from '../../constants';
+import { BRANCH_INDEX, EXECUTION_STATUS } from '../../constants';
 
 describe('workflow > instructions > condition', () => {
   let app: Application;
@@ -243,51 +243,150 @@ describe('workflow > instructions > condition', () => {
   });
 
   describe('engines', () => {
-    it('default as basic', async () => {
-      const n1 = await workflow.createNode({
-        title: 'condition',
-        type: 'condition',
-        config: {
-          calculation: {
-            calculator: 'equal',
-            operands: [1, '{{$context.data.read}}'],
+    describe('basic', () => {
+      it('default as basic', async () => {
+        const n1 = await workflow.createNode({
+          title: 'condition',
+          type: 'condition',
+          config: {
+            calculation: {
+              calculator: 'equal',
+              operands: [1, '{{$context.data.read}}'],
+            },
           },
-        },
+        });
+
+        const post = await PostRepo.create({ values: { read: 1 } });
+
+        await sleep(500);
+
+        const [execution] = await workflow.getExecutions();
+        expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
+
+        const [job] = await execution.getJobs();
+        expect(job.result).toEqual(true);
       });
 
-      const post = await PostRepo.create({ values: { read: 1 } });
-
-      await sleep(500);
-
-      const [execution] = await workflow.getExecutions();
-      expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
-
-      const [job] = await execution.getJobs();
-      expect(job.result).toEqual(true);
-    });
-
-    it('basic engine', async () => {
-      const n1 = await workflow.createNode({
-        title: 'condition',
-        type: 'condition',
-        config: {
-          engine: 'basic',
-          calculation: {
-            calculator: 'equal',
-            operands: [1, '{{$context.data.read}}'],
+      it('equal: 0 != null', async () => {
+        const n1 = await workflow.createNode({
+          title: 'condition',
+          type: 'condition',
+          config: {
+            engine: 'basic',
+            calculation: {
+              calculator: 'equal',
+              operands: [0, '{{$context.data.title}}'],
+            },
+            rejectOnFalse: false,
           },
-        },
+        });
+
+        const post = await PostRepo.create({ values: {} });
+
+        await sleep(500);
+
+        const [execution] = await workflow.getExecutions();
+        expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
+
+        const [job] = await execution.getJobs();
+        expect(job.result).toEqual(false);
       });
 
-      const post = await PostRepo.create({ values: { read: 1 } });
+      it('equal: 0 == false', async () => {
+        const n1 = await workflow.createNode({
+          title: 'condition',
+          type: 'condition',
+          config: {
+            engine: 'basic',
+            calculation: {
+              calculator: 'equal',
+              operands: [false, '{{$context.data.read}}'],
+            },
+          },
+        });
 
-      await sleep(500);
+        const post = await PostRepo.create({ values: {} });
 
-      const [execution] = await workflow.getExecutions();
-      expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
+        await sleep(500);
 
-      const [job] = await execution.getJobs();
-      expect(job.result).toEqual(true);
+        const [execution] = await workflow.getExecutions();
+        expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
+
+        const [job] = await execution.getJobs();
+        expect(job.result).toEqual(true);
+      });
+
+      it('equal: number == number', async () => {
+        const n1 = await workflow.createNode({
+          title: 'condition',
+          type: 'condition',
+          config: {
+            engine: 'basic',
+            calculation: {
+              calculator: 'equal',
+              operands: [1, '{{$context.data.read}}'],
+            },
+          },
+        });
+
+        const post = await PostRepo.create({ values: { read: 1 } });
+
+        await sleep(500);
+
+        const [execution] = await workflow.getExecutions();
+        expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
+
+        const [job] = await execution.getJobs();
+        expect(job.result).toEqual(true);
+      });
+
+      it('equal: string == number', async () => {
+        const n1 = await workflow.createNode({
+          title: 'condition',
+          type: 'condition',
+          config: {
+            engine: 'basic',
+            calculation: {
+              calculator: 'equal',
+              operands: ['1', '{{$context.data.read}}'],
+            },
+          },
+        });
+
+        const post = await PostRepo.create({ values: { read: 1 } });
+
+        await sleep(500);
+
+        const [execution] = await workflow.getExecutions();
+        expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
+
+        const [job] = await execution.getJobs();
+        expect(job.result).toEqual(true);
+      });
+
+      it('equal: undefined == null', async () => {
+        const n1 = await workflow.createNode({
+          title: 'condition',
+          type: 'condition',
+          config: {
+            engine: 'basic',
+            calculation: {
+              calculator: 'equal',
+              operands: ['{{$context.data.category.id}}', null],
+            },
+          },
+        });
+
+        const post = await PostRepo.create({ values: {} });
+
+        await sleep(500);
+
+        const [execution] = await workflow.getExecutions();
+        expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
+
+        const [job] = await execution.getJobs();
+        expect(job.result).toEqual(true);
+      });
     });
 
     it('math.js', async () => {
