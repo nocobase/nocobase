@@ -591,14 +591,14 @@ function WorkflowConfig() {
               items: {
                 type: 'object',
                 properties: {
-                  workflowId: {
+                  workflowKey: {
                     type: 'void',
                     'x-component': 'ArrayTable.Column',
                     'x-component-props': {
                       title: t('Workflow', { ns: 'workflow' }),
                     },
                     properties: {
-                      workflowId: {
+                      workflowKey: {
                         type: 'number',
                         'x-decorator': 'FormItem',
                         'x-component': 'RemoteSelect',
@@ -617,7 +617,6 @@ function WorkflowConfig() {
                                   {
                                     type: 'form',
                                     current: true,
-                                    'config.collection': collection,
                                   },
                                 ],
                               },

@@ -170,7 +170,7 @@ export const useCreateActionProps = () => {
           filterKeys: filterKeys,
           // TODO(refactor): should change to inject by plugin
           triggerWorkflows: triggerWorkflows?.length
-            ? triggerWorkflows.map((row) => [row.workflowId, row.context].filter(Boolean).join('!')).join(',')
+            ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
             : undefined,
         });
         actionField.data.loading = false;
@@ -742,7 +742,7 @@ export const useUpdateActionProps = () => {
           updateAssociationValues,
           // TODO(refactor): should change to inject by plugin
           triggerWorkflows: triggerWorkflows?.length
-            ? triggerWorkflows.map((row) => [row.workflowId, row.context].filter(Boolean).join('!')).join(',')
+            ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
             : undefined,
         });
         actionField.data.loading = false;
