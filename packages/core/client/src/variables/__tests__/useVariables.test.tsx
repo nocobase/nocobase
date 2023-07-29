@@ -252,4 +252,84 @@ describe('useVariables', () => {
       ]);
     });
   });
+
+  it('register variable', async () => {
+    const { result } = renderHook(() => useVariables(), {
+      wrapper: Providers,
+    });
+
+    await waitFor(async () => {
+      expect(result.current.ctx).toMatchInlineSnapshot(`
+        {
+          "$date": {
+            "now": [Function],
+          },
+          "$user": {
+            "id": 0,
+            "nickname": "from request",
+          },
+        }
+      `);
+    });
+
+    act(() => {
+      result.current.registerVariable({
+        name: '$new',
+        collectionName: 'new',
+        ctx: {
+          name: 'new variable',
+        },
+      });
+    });
+
+    await waitFor(async () => {
+      expect(result.current.ctx).toMatchInlineSnapshot(`
+        {
+          "$date": {
+            "now": [Function],
+          },
+          "$new": {
+            "name": "new variable",
+          },
+          "$user": {
+            "id": 0,
+            "nickname": "from request",
+          },
+        }
+      `);
+    });
+
+    await waitFor(async () => {
+      expect(result.current.getVariable('$new')).toEqual({
+        name: '$new',
+        collectionName: 'new',
+        ctx: {
+          name: 'new variable',
+        },
+      });
+    });
+
+    await waitFor(async () => {
+      expect(await result.current.parseVariable('{{ $new.name }}')).toBe('new variable');
+    });
+  });
+
+  it('$new.noExist', async () => {
+    const { result } = renderHook(() => useVariables(), {
+      wrapper: Providers,
+    });
+
+    await waitFor(async () => {
+      result.current.registerVariable({
+        name: '$new',
+        ctx: {
+          name: 'new variable',
+        },
+      });
+    });
+
+    await waitFor(async () => {
+      expect(await result.current.parseVariable('{{ $new.noExist }}')).toBe(undefined);
+    });
+  });
 });

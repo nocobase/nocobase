@@ -12,6 +12,17 @@ export interface VariablesContextType {
   ctx: Record<string, any>;
   setCtx: Dispatch<SetStateAction<Record<string, any>>>;
   parseVariable: (str: string) => Promise<any>;
+  registerVariable: (variableOption: VariableOption) => void;
+  getVariable: (variableName: string) => VariableOption;
+}
+
+interface VariableOption {
+  /** 变量的表示，例如：`$user` */
+  name: string;
+  /** 变量的值 */
+  ctx: Record<string, any>;
+  /** 变量所对应的数据表的名称 */
+  collectionName?: string;
 }
 
 export const VariablesContext = createContext<VariablesContextType>(null);
@@ -140,13 +151,36 @@ const VariablesProvider = ({ children }) => {
     [getValue],
   );
 
+  const registerVariable = useCallback((variableOption: VariableOption) => {
+    setCtx((prev) => ({
+      ...prev,
+      [variableOption.name]: variableOption.ctx,
+    }));
+    if (variableOption.collectionName) {
+      VARIABLE_TO_COLLECTION_NAME[variableOption.name] = variableOption.collectionName;
+    }
+  }, []);
+
+  const getVariable = useCallback(
+    (variableName: string): VariableOption => {
+      return {
+        name: variableName,
+        ctx: ctx[variableName],
+        collectionName: VARIABLE_TO_COLLECTION_NAME[variableName],
+      };
+    },
+    [ctx],
+  );
+
   const value = useMemo(
     () => ({
       ctx,
       setCtx,
       parseVariable,
+      registerVariable,
+      getVariable,
     }),
-    [ctx, parseVariable],
+    [ctx, getVariable, parseVariable, registerVariable],
   );
 
   return <VariablesContext.Provider value={value}>{children}</VariablesContext.Provider>;
