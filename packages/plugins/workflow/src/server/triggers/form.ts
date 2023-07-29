@@ -8,7 +8,7 @@ export default class FormTrigger extends Trigger {
   constructor(plugin: Plugin) {
     super(plugin);
 
-    plugin.app.resourcer.use(this.middleware, { before: 'restApi' });
+    plugin.app.resourcer.use(this.middleware);
     plugin.app.actions({
       ['workflows:trigger']: this.triggerAction,
     });
@@ -24,7 +24,7 @@ export default class FormTrigger extends Trigger {
     context.status = 202;
     await next();
 
-    this.trigger(context.action.params);
+    this.trigger(context);
   };
 
   middleware = async (context, next) => {
@@ -32,17 +32,19 @@ export default class FormTrigger extends Trigger {
 
     const { resourceName, actionName } = context.action;
 
-    if (resourceName === 'workflows' && actionName === 'trigger') {
+    if ((resourceName === 'workflows' && actionName === 'trigger') || !['create', 'update'].includes(actionName)) {
       return;
     }
 
-    this.trigger(context.action.params);
+    this.trigger(context);
   };
 
-  async trigger({ triggerWorkflows, values }) {
+  async trigger(context) {
+    const { triggerWorkflows, values } = context.action.params;
     if (!triggerWorkflows) {
       return;
     }
+
     const triggers = triggerWorkflows.split(',').map((trigger) => trigger.split('!'));
     const workflowRepo = this.plugin.db.getRepository('workflows');
     const workflows = await workflowRepo.find({
@@ -55,7 +57,14 @@ export default class FormTrigger extends Trigger {
     });
     workflows.forEach((workflow) => {
       const trigger = triggers.find((trigger) => trigger[0] == workflow.key);
-      this.plugin.trigger(workflow, { data: trigger[1] ? get(values, trigger[1]) : values });
+      const payload = context.body?.data ?? values;
+      if (Array.isArray(payload)) {
+        payload.forEach((row) => {
+          this.plugin.trigger(workflow, { data: trigger[1] ? get(row, trigger[1]) : row });
+        });
+      } else {
+        this.plugin.trigger(workflow, { data: trigger[1] ? get(payload, trigger[1]) : payload });
+      }
     });
   }
 

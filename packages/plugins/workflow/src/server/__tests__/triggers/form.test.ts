@@ -16,7 +16,7 @@ describe('workflow > triggers > form', () => {
 
   beforeEach(async () => {
     app = await getApp({
-      plugins: ['users', 'acl', 'auth'],
+      plugins: ['users', 'auth'],
     });
     await app.getPlugin('auth').install();
     agent = app.agent();
@@ -34,7 +34,7 @@ describe('workflow > triggers > form', () => {
     userAgents = users.map((user) => app.agent().login(user));
   });
 
-  afterEach(() => db.close());
+  afterEach(() => app.stop());
 
   describe('create', () => {
     it('enabled / disabled', async () => {
@@ -131,6 +131,29 @@ describe('workflow > triggers > form', () => {
       expect(e2[1].status).toBe(EXECUTION_STATUS.RESOLVED);
       expect(e2[1].context.data).toMatchObject({ title: 't2' });
     });
+
+    it('system fields could be accessed', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'form',
+        config: {
+          collection: 'posts',
+        },
+      });
+
+      const res1 = await userAgents[0].resource('posts').create({
+        values: { title: 't1' },
+        triggerWorkflows: `${workflow.key}`,
+      });
+      expect(res1.status).toBe(200);
+
+      await sleep(500);
+
+      const e1 = await workflow.getExecutions();
+      expect(e1.length).toBe(1);
+      expect(e1[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e1[0].context.data).toHaveProperty('createdAt');
+    });
   });
 
   describe('update', () => {
@@ -156,9 +179,11 @@ describe('workflow > triggers > form', () => {
         triggerWorkflows: `${workflow.key}`,
       });
 
+      await sleep(500);
+
       const [e2] = await workflow.getExecutions();
       expect(e2.status).toBe(EXECUTION_STATUS.RESOLVED);
-      expect(e2.context.data).toMatchObject({ title: 't2' });
+      expect(e2.context.data).toHaveProperty('title', 't2');
     });
   });
 
