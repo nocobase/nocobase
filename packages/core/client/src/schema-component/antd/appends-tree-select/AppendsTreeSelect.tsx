@@ -41,6 +41,10 @@ function isAssociation(field) {
   return field.target && field.interface;
 }
 
+function trueFilter(field) {
+  return true;
+}
+
 function getCollectionFieldOptions(this: CallScope, collection, parentNode?): TreeOptionType[] {
   const fields = this.getCollectionFields(collection).filter(isAssociation);
   const boundLoadChildren = loadChildren.bind(this);
@@ -68,7 +72,7 @@ export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
     onChange,
     collection,
     useCollection = usePropsCollection,
-    filter = (f) => true,
+    filter = trueFilter,
     ...restProps
   } = props;
   const { getCollectionFields } = useCollectionManager();
@@ -77,7 +81,12 @@ export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
   const [optionsMap, setOptionsMap] = useState({});
   const baseCollection = useCollection({ collection });
   const treeData = Object.values(optionsMap);
-  const value = useMemo(() => propsValue ?? (props.multiple ? [] : undefined), [propsValue, props.multiple]);
+  const value: DefaultOptionType | DefaultOptionType[] = useMemo(() => {
+    if (props.multiple) {
+      return ((propsValue as string[]) || []).map((v) => optionsMap[v]).filter(Boolean);
+    }
+    return optionsMap[propsValue as string];
+  }, [propsValue, props.multiple, optionsMap]);
 
   const loadData = useCallback(
     async (option) => {
@@ -97,14 +106,14 @@ export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
   }, [collection, baseCollection, filter]);
 
   useEffect(() => {
-    const arr = (props.multiple ? value : value ? [value] : []) as string[];
-    if (!arr?.length || arr.every((v) => Boolean(optionsMap[v]))) {
+    const arr = (props.multiple ? value : value ? [value] : []) as DefaultOptionType[];
+    if (!arr?.length || arr.every((v) => Boolean(optionsMap[v.value]))) {
       return;
     }
     const loaded = [];
 
     arr.forEach((v) => {
-      const paths = v.split('.');
+      const paths = (v.value as string).split('.');
       let option = optionsMap[paths[0]];
       for (let i = 1; i < paths.length; i++) {
         if (!option) {
@@ -138,11 +147,10 @@ export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
 
       const newValue = (next as DefaultOptionType[]).map((i) => i.value).filter(Boolean) as string[];
       const valueSet = new Set(newValue);
-      const delValue = (value as string[]).find((i) => !newValue.includes(i));
+      const delValue = value.find((i) => !valueSet.has(i.value));
 
       if (delValue) {
-        const delNode = optionsMap[delValue];
-        const prefix = `${delNode.value}.`;
+        const prefix = `${delValue.value}.`;
         Object.keys(optionsMap).forEach((key) => {
           if (key.startsWith(prefix)) {
             valueSet.delete(key);
@@ -152,7 +160,7 @@ export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
         newValue.forEach((v) => {
           const paths = v.split('.');
           if (paths.length) {
-            for (let i = 1; i < paths.length; i++) {
+            for (let i = 1; i <= paths.length; i++) {
               valueSet.add(paths.slice(0, i).join('.'));
             }
           }
@@ -179,14 +187,15 @@ export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
     [optionsMap],
   );
 
-  const filteredValue = Array.isArray(value) ? value.filter((i) => i in optionsMap) : value;
+  const filteredValue = Array.isArray(value) ? value.filter((i) => i.value in optionsMap) : value;
+  const valueKeys: string[] = props.multiple ? (propsValue as string[]) : propsValue ? [propsValue as string] : [];
 
   return (
     <TreeSelect
       value={filteredValue}
       placeholder={t('Select field')}
       showCheckedStrategy={TreeSelect.SHOW_ALL}
-      treeDefaultExpandedKeys={Array.isArray(filteredValue) ? filteredValue : filteredValue && [filteredValue]}
+      treeDefaultExpandedKeys={valueKeys}
       allowClear
       treeCheckStrictly={props.multiple}
       treeCheckable={props.multiple}
