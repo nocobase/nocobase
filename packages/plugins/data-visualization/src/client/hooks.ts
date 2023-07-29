@@ -1,14 +1,14 @@
 import { ArrayField } from '@formily/core';
-import { ISchema, Schema } from '@formily/react';
+import { ISchema, Schema, useForm } from '@formily/react';
 import { useACLRoleContext, useCollectionManager } from '@nocobase/client';
 import { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChartConfigContext } from './block/ChartConfigure';
 import formatters from './block/formatters';
 import transformers from './block/transformers';
-import { lang } from './locale';
-import { ChartRendererProps } from './renderer';
-import { getField, getSelectedFields, parseField } from './utils';
+import { lang, useChartsTranslation } from './locale';
+import { ChartRendererContext, ChartRendererProps } from './renderer';
+import { getField, getSelectedFields, parseField, processData } from './utils';
 
 export type FieldOption = {
   value: string;
@@ -236,4 +236,13 @@ export const useOrderReaction = (defaultOptions: any[], fields: FieldOption[]) =
     return newOrders;
   }, []);
   field.setValue(newOrders);
+};
+
+export const useData = (data?: any[]) => {
+  const { t } = useChartsTranslation();
+  const { service, query, collection } = useContext(ChartRendererContext);
+  const fields = useFieldsWithAssociation(collection);
+  const form = useForm();
+  const selectedFields = getSelectedFields(fields, form?.values?.query || query);
+  return processData(selectedFields, service?.data || data || [], { t });
 };
