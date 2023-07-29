@@ -32,14 +32,6 @@ function AssociationInput(props) {
   return <Input {...props} value={value} onChange={onChange} />;
 }
 
-export function useCollectionUIFields(collection) {
-  const { getCollectionFields } = useCollectionManager();
-
-  return getCollectionFields(collection).filter(
-    (field) => !field.hidden && (field.uiSchema ? !field.uiSchema['x-read-pretty'] : false),
-  );
-}
-
 // NOTE: observer for watching useProps
 const CollectionFieldSet = observer(
   ({ value, disabled, onChange, filter }: any) => {
@@ -47,11 +39,11 @@ const CollectionFieldSet = observer(
     const { t } = useTranslation();
     const compile = useCompile();
     const form = useForm();
-    const { getCollection } = useCollectionManager();
+    const { getCollection, getCollectionFields } = useCollectionManager();
     const scope = useWorkflowVariableOptions();
     const { values: config } = form;
     const collectionName = config?.collection;
-    const collectionFields = useCollectionUIFields(collectionName);
+    const collectionFields = getCollectionFields(collectionName);
     const fields = filter ? collectionFields.filter(filter.bind(config)) : collectionFields;
 
     const unassignedFields = useMemo(() => fields.filter((field) => !value || !(field.name in value)), [fields, value]);

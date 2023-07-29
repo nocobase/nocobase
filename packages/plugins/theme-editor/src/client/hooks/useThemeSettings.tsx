@@ -68,11 +68,6 @@ function Label() {
     return null;
   }
 
-  if (!systemSettings?.data?.data?.options) {
-    error('Please check if provide `SystemSettingsProvider` in your app.');
-    throw new Error('Please check if provide `SystemSettingsProvider` in your app.');
-  }
-
   return (
     <div
       style={{
