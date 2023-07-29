@@ -238,9 +238,9 @@ export const useOrderReaction = (defaultOptions: any[], fields: FieldOption[]) =
   field.setValue(newOrders);
 };
 
-export const useData = (data?: any[]) => {
+export const useData = (data?: any[], collection?: string) => {
   const { t } = useChartsTranslation();
-  const { service, query, collection } = useContext(ChartRendererContext);
+  const { service, query } = useContext(ChartRendererContext);
   const fields = useFieldsWithAssociation(collection);
   const form = useForm();
   const selectedFields = getSelectedFields(fields, form?.values?.query || query);

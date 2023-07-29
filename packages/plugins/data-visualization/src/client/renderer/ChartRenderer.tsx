@@ -25,7 +25,7 @@ export const ChartRenderer: React.FC & {
   const ctx = useContext(ChartRendererContext);
   const { config, transform, collection, service, data: _data } = ctx;
   const fields = useFieldsWithAssociation(collection);
-  const data = useData(_data);
+  const data = useData(_data, collection);
   const general = config?.general || {};
   const advanced = config?.advanced || {};
   const api = useAPIClient();
