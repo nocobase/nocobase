@@ -49,17 +49,12 @@ export type ChartRendererProps = {
   mode?: 'builder' | 'sql';
 };
 
-export const ChartRendererContext = createContext<{
-  collection: string;
-  config?: {
-    chartType: string;
-    general: any;
-    advanced: any;
-  };
-  transform?: TransformProps[];
-  service: any;
-  data?: any[];
-}>({} as any);
+export const ChartRendererContext = createContext<
+  {
+    service: any;
+    data?: any[];
+  } & ChartRendererProps
+>({} as any);
 
 export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
   const { query, config, collection, transform } = props;
@@ -114,7 +109,7 @@ export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
           }
         `}
       >
-        <ChartRendererContext.Provider value={{ collection, config, transform, service }}>
+        <ChartRendererContext.Provider value={{ collection, config, transform, service, query }}>
           {props.children}
         </ChartRendererContext.Provider>
       </div>
