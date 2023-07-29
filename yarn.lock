@@ -3234,7 +3234,7 @@
     "@formily/shared" "2.2.26"
     "@formily/validator" "2.2.26"
 
-"@formily/grid@^2.2.0":
+"@formily/grid@2.2.26", "@formily/grid@^2.2.0":
   version "2.2.26"
   resolved "https://registry.npmmirror.com/@formily/grid/-/grid-2.2.26.tgz#1bf523693f9d38fb2a9e0fd9e0e135b9c27fc136"
   dependencies:
