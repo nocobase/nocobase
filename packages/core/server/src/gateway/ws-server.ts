@@ -2,6 +2,7 @@ import { Gateway, IncomingRequest } from '../gateway';
 import WebSocket from 'ws';
 import { nanoid } from 'nanoid';
 import { IncomingMessage } from 'http';
+import { AppSupervisor } from '@nocobase/server';
 
 declare class WebSocketWithId extends WebSocket {
   id: string;
@@ -12,13 +13,14 @@ interface WebSocketClient {
   tags: string[];
   url: string;
   headers: any;
+  app?: string;
 }
 
 export class WSServer {
   wss: WebSocket.Server;
   webSocketClients = new Map<string, WebSocketClient>();
 
-  constructor(private gateway: Gateway) {
+  constructor() {
     this.wss = new WebSocket.Server({ noServer: true });
 
     this.wss.on('connection', (ws: WebSocketWithId, request: IncomingMessage) => {
@@ -34,6 +36,15 @@ export class WSServer {
         this.removeConnection(ws.id);
       });
     });
+
+    AppSupervisor.getInstance().on('workingMessageChanged', ({ appName, message }) => {
+      this.sendToConnectionsByTag('app', appName, {
+        type: 'appStatusChanged',
+        payload: {
+          message,
+        },
+      });
+    });
   }
 
   addNewConnection(ws: WebSocketWithId, request: IncomingMessage) {
@@ -43,10 +54,45 @@ export class WSServer {
 
     this.webSocketClients.set(id, {
       ws,
-      tags: [`app#${process.env['STARTUP_SUBAPP'] || 'main'}`],
+      tags: [],
       url: request.url,
       headers: request.headers,
     });
+
+    this.setClientApp(this.webSocketClients.get(id));
+  }
+
+  async setClientApp(client: WebSocketClient) {
+    const req: IncomingRequest = {
+      url: client.url,
+      headers: client.headers,
+    };
+
+    const appSupervisor = AppSupervisor.getInstance();
+
+    const handleAppName = await Gateway.getInstance().getRequestHandleAppName(req);
+
+    client.app = handleAppName;
+    client.tags.push(`app#${handleAppName}`);
+
+    if (appSupervisor.hasApp(handleAppName)) {
+      const app = await appSupervisor.getApp(handleAppName, { withOutBootStrap: false });
+      this.sendMessageToConnection(client, {
+        type: 'appStatusChanged',
+        payload: {
+          message: app.workingMessage,
+        },
+      });
+    } else {
+      this.sendMessageToConnection(client, {
+        type: 'appStatusChanged',
+        payload: {
+          message: 'app not ready, try booting app',
+        },
+      });
+
+      appSupervisor.bootStrapApp(handleAppName);
+    }
   }
 
   removeConnection(id: string) {
@@ -56,6 +102,20 @@ export class WSServer {
 
   sendMessageToConnection(client: WebSocketClient, sendMessage: object) {
     client.ws.send(JSON.stringify(sendMessage));
+  }
+
+  sendToConnectionsByTag(tagName: string, tagValue: string, sendMessage: object) {
+    this.loopThroughConnections((client: WebSocketClient) => {
+      if (client.tags.includes(`${tagName}#${tagValue}`)) {
+        this.sendMessageToConnection(client, sendMessage);
+      }
+    });
+  }
+
+  loopThroughConnections(callback: (client: WebSocketClient) => void) {
+    this.webSocketClients.forEach((client) => {
+      callback(client);
+    });
   }
 
   close() {

@@ -105,28 +105,6 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return app;
   }
 
-  private bindAppEvents(app: Application) {
-    // listen afterDestroy event, after app destroyed, remove it from supervisor
-    const afterDestroy = () => {
-      delete this.apps[app.name];
-    };
-
-    // set alwaysBind to true, so that afterDestroy will always be listened after application reload
-    afterDestroy.alwaysBind = true;
-
-    app.on('afterDestroy', afterDestroy);
-
-    const listenWorkingMessageChanged = (message) => {
-      this.emit('workingMessageChanged', {
-        appName: app.name,
-        message,
-      });
-    };
-
-    listenWorkingMessageChanged.alwaysBind = true;
-    app.on('workingMessageChanged', listenWorkingMessageChanged);
-  }
-
   // get registered app names
   async getAppsNames() {
     const apps = Object.values(this.apps);
@@ -161,6 +139,28 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     }
 
     return super.on(eventName, listener);
+  }
+
+  private bindAppEvents(app: Application) {
+    // listen afterDestroy event, after app destroyed, remove it from supervisor
+    const afterDestroy = () => {
+      delete this.apps[app.name];
+    };
+
+    // set alwaysBind to true, so that afterDestroy will always be listened after application reload
+    afterDestroy.alwaysBind = true;
+
+    app.on('afterDestroy', afterDestroy);
+
+    const listenWorkingMessageChanged = (message: string) => {
+      this.emit('workingMessageChanged', {
+        appName: app.name,
+        message,
+      });
+    };
+
+    listenWorkingMessageChanged.alwaysBind = true;
+    app.on('workingMessageChanged', listenWorkingMessageChanged);
   }
 }
 

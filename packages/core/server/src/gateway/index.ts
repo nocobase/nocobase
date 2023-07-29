@@ -5,14 +5,12 @@ import Application from '../application';
 import { WSServer } from './ws-server';
 import { parse } from 'url';
 
-type AppSelectorReturn = Application | string | undefined | null;
-
 export interface IncomingRequest {
   url: string;
   headers: any;
 }
 
-export type AppSelector = (req: IncomingRequest) => AppSelectorReturn | Promise<AppSelectorReturn>;
+export type AppSelector = (req: IncomingRequest) => string | Promise<string>;
 
 export class Gateway extends EventEmitter {
   private static instance: Gateway;
@@ -61,10 +59,8 @@ export class Gateway extends EventEmitter {
   }
 
   async requestHandler(req: IncomingMessage, res: ServerResponse) {
-    const handleApp = (await this.appSelector(req as IncomingRequest)) || 'main';
-
-    const app: Application =
-      typeof handleApp === 'string' ? await AppSupervisor.getInstance().getApp(handleApp) : handleApp;
+    const handleApp = await this.getRequestHandleAppName(req as IncomingRequest);
+    const app: Application = await AppSupervisor.getInstance().getApp(handleApp);
 
     if (!app) {
       console.log(`app ${handleApp} not found`);
@@ -81,6 +77,11 @@ export class Gateway extends EventEmitter {
     }
 
     app.callback()(req, res);
+  }
+
+  async getRequestHandleAppName(req: IncomingRequest) {
+    const defaultAppName = process.env['STARTUP_SUBAPP'] || 'main';
+    return (await this.appSelector(req)) || defaultAppName;
   }
 
   getCallback() {
@@ -103,7 +104,7 @@ export class Gateway extends EventEmitter {
 
     this.server = http.createServer(this.getCallback());
 
-    this.wsServer = new WSServer(this);
+    this.wsServer = new WSServer();
 
     this.server.on('upgrade', (request, socket, head) => {
       const { pathname } = parse(request.url);

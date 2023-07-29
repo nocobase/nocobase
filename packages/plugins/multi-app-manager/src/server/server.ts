@@ -101,6 +101,7 @@ export class PluginMultiAppManager extends Plugin {
       if (req.headers['x-app']) {
         return req.headers['x-app'];
       }
+
       if (req.headers['x-hostname']) {
         const repository = this.db.getRepository('applications');
         if (!repository) {
@@ -111,10 +112,12 @@ export class PluginMultiAppManager extends Plugin {
             cname: req.headers['x-hostname'],
           },
         });
+
         if (appInstance) {
           return appInstance.name;
         }
       }
+
       return null;
     });
 
