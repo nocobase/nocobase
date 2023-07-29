@@ -8,11 +8,13 @@ describe('FormV2', () => {
   it('basic', async () => {
     render(<App1 />);
 
-    const input = document.querySelector('.ant-input') as HTMLInputElement;
-    const submit = screen.getByText('Submit');
-
-    expect(input).toBeInTheDocument();
-    expect(screen.getByText('Nickname')).toBeInTheDocument();
+    let input, submit;
+    await waitFor(() => {
+      input = document.querySelector('.ant-input') as HTMLInputElement;
+      submit = screen.getByText('Submit');
+      expect(input).toBeInTheDocument();
+      expect(screen.queryByText('Nickname')).toBeInTheDocument();
+    });
 
     await userEvent.type(input, '李四');
     await userEvent.click(submit);
@@ -41,8 +43,7 @@ describe('FormV2', () => {
     });
   });
 
-  // TODO: 等 @Testing-Library 升级到 14.x
-  it.skip('read pretty', async () => {
+  it('read pretty', async () => {
     render(<App3 />);
 
     await waitFor(() => {

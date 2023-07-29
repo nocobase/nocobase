@@ -1,7 +1,23 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { Form, FormItem, Grid, Input, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import {
+  APIClientProvider,
+  CurrentUserProvider,
+  Form,
+  FormItem,
+  Grid,
+  Input,
+  SchemaComponent,
+  SchemaComponentProvider,
+} from '@nocobase/client';
 import React from 'react';
+
+import { mockAPIClient } from '../../../../test';
+
+const { apiClient, mockRequest } = mockAPIClient();
+mockRequest.onGet('/auth:check').reply(() => {
+  return [200, { data: {} }];
+});
 
 const schema: ISchema = {
   type: 'void',
@@ -54,8 +70,12 @@ const schema: ISchema = {
 
 export default function App() {
   return (
-    <SchemaComponentProvider components={{ Form, Grid, Input, FormItem }}>
-      <SchemaComponent schema={schema} />
-    </SchemaComponentProvider>
+    <APIClientProvider apiClient={apiClient}>
+      <CurrentUserProvider>
+        <SchemaComponentProvider components={{ Form, Grid, Input, FormItem }}>
+          <SchemaComponent schema={schema} />
+        </SchemaComponentProvider>
+      </CurrentUserProvider>
+    </APIClientProvider>
   );
 }
