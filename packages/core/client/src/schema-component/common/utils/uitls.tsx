@@ -14,18 +14,18 @@ type VariablesCtx = {
 };
 
 export const useVariablesCtx = (): VariablesCtx => {
-  const { data } = useCurrentUserContext();
+  const currentUser = useCurrentUserContext();
   const { field, service, rowKey } = useTableBlockContext();
   const contextData = service?.data?.data?.filter((v) => (field?.data?.selectedRowKeys || [])?.includes(v[rowKey]));
   return useMemo(() => {
     return {
-      $user: data?.data || {},
+      $user: currentUser?.data?.data || {},
       $date: {
         now: () => dayjs().toISOString(),
       },
       $context: contextData,
     };
-  }, [contextData, data?.data]);
+  }, [contextData, currentUser?.data?.data]);
 };
 
 export const isVariable = (str: unknown) => {
