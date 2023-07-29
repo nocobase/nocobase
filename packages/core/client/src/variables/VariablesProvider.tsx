@@ -1,3 +1,5 @@
+import { getValuesByPath } from '@nocobase/utils/client';
+import _ from 'lodash';
 import type { Dispatch, SetStateAction } from 'react';
 import React, { createContext, useCallback, useEffect, useMemo, useState } from 'react';
 import { useAPIClient } from '../api-client';
@@ -65,11 +67,10 @@ const VariablesProvider = ({ children }) => {
     async (variablePath: string) => {
       const list = variablePath.split('.');
       const variableName = list[0];
-      const collectionName = getFieldPath(variableName);
-      const variable = ctx[variableName];
       let current = ctx;
+      let collectionName = getFieldPath(variableName);
 
-      if (!variable) {
+      if (!ctx[variableName]) {
         throw new Error(`VariablesProvider: ${variableName} is not found`);
       }
 
@@ -78,19 +79,39 @@ const VariablesProvider = ({ children }) => {
           return current;
         }
 
-        const item = list[index];
-        let associationField: CollectionFieldOptions = null;
-        if (
-          current[item] === undefined &&
-          (associationField = getCollectionJoinField(getFieldPath(list.slice(0, index + 1).join('.'))))?.target
-        ) {
-          const data = await api.request({
-            url: `/${collectionName}/${variable.id}/${item}:${getAction(associationField.type)}`,
+        const key = list[index];
+        const associationField: CollectionFieldOptions = getCollectionJoinField(
+          getFieldPath(list.slice(0, index + 1).join('.')),
+        );
+        if (Array.isArray(current)) {
+          const result = current.map((item) => {
+            if (item[key] === undefined) {
+              if (associationField?.target) {
+                return api
+                  .request({
+                    url: `/${collectionName}/${item.id}/${key}:${getAction(associationField.type)}`,
+                  })
+                  .then((data) => {
+                    item[key] = data.data.data;
+                    return item[key];
+                  });
+              }
+            }
+            if (associationField?.target) {
+              collectionName = associationField.target;
+            }
+            return item[key];
           });
-          current[item] = data.data.data;
-          current = current[item];
+          current = _.flatten(await Promise.all(result));
+        } else if (current[key] === undefined && associationField?.target) {
+          const data = await api.request({
+            url: `/${collectionName}/${current.id}/${key}:${getAction(associationField.type)}`,
+          });
+          current[key] = data.data.data;
+          current = getValuesByPath(current, key);
+          collectionName = associationField.target;
         } else {
-          current = current[item];
+          current = getValuesByPath(current, key);
         }
       }
 
