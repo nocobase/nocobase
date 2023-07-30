@@ -3,7 +3,7 @@ import { ThemeItem } from '../types';
 /** antd 默认主题 */
 export const antd: Omit<ThemeItem, 'id'> = {
   config: {
-    name: 'Default',
+    name: 'Default theme of antd',
   },
   optional: true,
   isBuiltIn: true,
