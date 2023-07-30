@@ -3,6 +3,11 @@ import { BaseColumnFieldOptions, Field } from './field';
 
 export class JsonField extends Field {
   get dataType() {
+    const dialect = this.context.database.sequelize.getDialect();
+    const { jsonb } = this.options;
+    if (dialect === 'postgres' && jsonb) {
+      return DataTypes.JSONB;
+    }
     return DataTypes.JSON;
   }
 }
