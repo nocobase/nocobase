@@ -1,6 +1,5 @@
 import { Collection } from '@nocobase/database';
 import { InstallOptions, Plugin } from '@nocobase/server';
-import { resolve } from 'path';
 import { antd, compact, compactDark, dark } from './builtinThemes';
 
 export class ThemeEditorPlugin extends Plugin {
@@ -8,15 +7,7 @@ export class ThemeEditorPlugin extends Plugin {
 
   afterAdd() {}
 
-  beforeLoad() {
-    this.db.addMigrations({
-      namespace: 'theme-editor',
-      directory: resolve(__dirname, './migrations'),
-      context: {
-        plugin: this,
-      },
-    });
-  }
+  beforeLoad() {}
 
   async load() {
     this.theme = this.db.collection({
