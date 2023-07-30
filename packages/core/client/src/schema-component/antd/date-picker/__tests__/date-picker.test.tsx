@@ -141,12 +141,14 @@ describe('RangePicker', () => {
     await userEvent.click(document.querySelector('[title="2023-05-01"]') as HTMLElement);
     await userEvent.click(document.querySelector('[title="2023-05-02"]') as HTMLElement);
 
-    expect(startInput).toHaveValue('2023-05-01');
-    expect(endInput).toHaveValue('2023-05-02');
-    // Read pretty
-    expect(screen.getByText('2023-05-01~2023-05-02', { selector: '.ant-description-text' })).toBeInTheDocument();
-    // Value
-    expect(screen.getByText('2023-05-01 ~ 2023-05-02')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(startInput).toHaveValue('2023-05-01');
+      expect(endInput).toHaveValue('2023-05-02');
+      // Read pretty
+      expect(screen.getByText('2023-05-01~2023-05-02', { selector: '.ant-description-text' })).toBeInTheDocument();
+      // Value
+      expect(screen.getByText('2023-05-01 ~ 2023-05-02')).toBeInTheDocument();
+    });
   });
 
   it('showTime=false,gmt=true,utc=true', async () => {
