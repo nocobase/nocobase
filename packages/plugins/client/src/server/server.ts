@@ -1,4 +1,4 @@
-import { Plugin, PluginManager } from '@nocobase/server';
+import { AppSupervisor, Plugin, PluginManager } from '@nocobase/server';
 import fs from 'fs';
 import send from 'koa-send';
 import serve from 'koa-static';
@@ -172,7 +172,9 @@ export class ClientPlugin extends Plugin {
                 const packageName = PluginManager.getPackageName(item.name);
                 require.resolve(`${packageName}/client`);
                 return true;
-              } catch (error) {}
+              } catch (error) {
+                console.log(error);
+              }
               return false;
             })
             .map((item) => item.name);
@@ -183,18 +185,8 @@ export class ClientPlugin extends Plugin {
           await next();
         },
         reboot(ctx) {
-          const RESTART_CODE = 100;
-          process.on('exit', (code) => {
-            if (code === RESTART_CODE && process.env.APP_ENV === 'production') {
-              fs.writeFileSync(restartMark, '1');
-              console.log('Restart mark created.');
-            }
-          });
-          ctx.app.on('afterStop', () => {
-            // Exit with code 100 will restart the process
-            process.exit(RESTART_CODE);
-          });
-          ctx.app.stop();
+          const appName = ctx.app.name;
+          AppSupervisor.getInstance().restartApp(appName);
         },
       },
     });

@@ -93,11 +93,13 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   ready = false;
   startMode = false;
   declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
+  public rawOptions: ApplicationOptions;
   protected plugins = new Map<string, Plugin>();
   protected _appSupervisor: AppSupervisor = AppSupervisor.getInstance();
 
   constructor(public options: ApplicationOptions) {
     super();
+    this.rawOptions = lodash.cloneDeep(options);
     this.init();
     this._appSupervisor.addApp(this);
   }
@@ -327,6 +329,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   async stop(options: any = {}) {
     this.log.debug('stop app...');
+    this.setWorkingMessage('stopping app...');
     if (this.stopped) {
       this.log.warn(`Application ${this.name} already stopped`);
       return;
@@ -348,11 +351,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.emitAsync('afterStop', this, options);
     this.stopped = true;
     this.log.info(`${this.name} is stopped`);
+    this.setWorkingMessage('stopped');
   }
 
   async destroy(options: any = {}) {
     this.logger.debug('start destroy app');
-
+    this.setWorkingMessage('destroying app...');
     await this.emitAsync('beforeDestroy', this, options);
     await this.stop(options);
 
@@ -360,6 +364,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.emitAsync('afterDestroy', this, options);
 
     this.logger.debug('finish destroy app');
+    this.setWorkingMessage('destroyed');
   }
 
   async dbVersionCheck(options?: { exit?: boolean }) {
