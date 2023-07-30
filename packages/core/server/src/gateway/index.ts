@@ -83,7 +83,7 @@ export class Gateway extends EventEmitter {
     // if app is not ready, return 503
     if (app.workingMessage !== 'started') {
       res.statusCode = 503;
-      res.end(`app ${handleApp} is not ready yet`);
+      res.end(`app ${handleApp} is not ready yet, last working message: ${app.workingMessage}`);
       return;
     }
 

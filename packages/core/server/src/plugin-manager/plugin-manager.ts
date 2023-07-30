@@ -22,6 +22,19 @@ export interface InstallOptions {
   sync?: SyncOptions;
 }
 
+function SwitchAppReadyStatus(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+  const originalMethod = descriptor.value;
+
+  descriptor.value = function (...args: any[]) {
+    this.app.setReadyStatus(false);
+    const result = originalMethod.apply(this, args);
+    this.app.setReadyStatus(true);
+    return result;
+  };
+
+  return descriptor;
+}
+
 export class PluginManager {
   app: Application;
   collection: Collection;
@@ -359,6 +372,7 @@ export class PluginManager {
     }
   }
 
+  @SwitchAppReadyStatus
   async enable(name: string | string[]) {
     this.app.log.debug(`enabling plugin ${name}`);
 
@@ -384,6 +398,7 @@ export class PluginManager {
     this.app.log.debug(`afterEnablePlugin event emitted`);
   }
 
+  @SwitchAppReadyStatus
   async disable(name: string | string[]) {
     try {
       const pluginNames = await this.repository.disable(name);
@@ -402,6 +417,7 @@ export class PluginManager {
     }
   }
 
+  @SwitchAppReadyStatus
   async remove(name: string | string[]) {
     const pluginNames = typeof name === 'string' ? [name] : name;
     for (const pluginName of pluginNames) {

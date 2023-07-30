@@ -90,10 +90,10 @@ class SubAppPlugin extends Plugin {
       await subApp.db.sequelize.query(`TRUNCATE ${subAppPluginsCollection.quotedTableName()}`);
 
       await subApp.db.sequelize.query(`
-        INSERT INTO ${subAppPluginsCollection.quotedTableName()}
-        SELECT *
-        FROM ${mainAppPluginsCollection.quotedTableName()}
-        WHERE "name" not in ('multi-app-manager', 'multi-app-share-collection');
+          INSERT INTO ${subAppPluginsCollection.quotedTableName()}
+          SELECT *
+          FROM ${mainAppPluginsCollection.quotedTableName()}
+          WHERE "name" not in ('multi-app-manager', 'multi-app-share-collection')gom,;
       `);
 
       const sequenceNameSql = `SELECT pg_get_serial_sequence('"${subAppPluginsCollection.collectionSchema()}"."${
@@ -102,9 +102,9 @@ class SubAppPlugin extends Plugin {
 
       const sequenceName = (await subApp.db.sequelize.query(sequenceNameSql, { type: 'SELECT' })) as any;
       await subApp.db.sequelize.query(`
-        SELECT setval('${
-          sequenceName[0]['pg_get_serial_sequence']
-        }', (SELECT max("id") FROM ${subAppPluginsCollection.quotedTableName()}));
+          SELECT setval('${
+            sequenceName[0]['pg_get_serial_sequence']
+          }', (SELECT max("id") FROM ${subAppPluginsCollection.quotedTableName()}));
       `);
 
       console.log(`sync plugins from ${mainApp.name} app to sub app ${subApp.name}`);

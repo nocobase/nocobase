@@ -90,6 +90,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   public listenServer: Server;
   declare middleware: any;
   stopped = false;
+  ready = false;
+  startMode = false;
   declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
   protected plugins = new Map<string, Plugin>();
   protected _appSupervisor: AppSupervisor = AppSupervisor.getInstance();
@@ -298,6 +300,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async start(options: StartOptions = {}) {
+    this.startMode = true;
     this.setWorkingMessage('starting app...');
 
     if (this.db.closed()) {
@@ -309,6 +312,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.emitAsync('afterStart', this, options);
     this.stopped = false;
     this.setWorkingMessage('started');
+    this.ready = true;
+  }
+
+  setReadyStatus(status: boolean) {
+    this.ready = status;
   }
 
   async stop(options: any = {}) {
