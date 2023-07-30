@@ -9,10 +9,10 @@ import { ThemeItem } from '../../types';
  */
 export function changeAlgorithmFromStringToFunction(themeConfig: ThemeItem) {
   themeConfig = _.cloneDeep(themeConfig);
-  if (isString(themeConfig.config.algorithm)) {
+  if (isString(themeConfig.config?.algorithm)) {
     themeConfig.config.algorithm = theme[themeConfig.config.algorithm];
   }
-  if (Array.isArray(themeConfig.config.algorithm)) {
+  if (Array.isArray(themeConfig.config?.algorithm)) {
     themeConfig.config.algorithm = themeConfig.config.algorithm.map((item) => {
       if (isString(item)) {
         return theme[item];
