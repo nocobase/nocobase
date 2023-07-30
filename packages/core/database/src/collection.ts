@@ -24,6 +24,7 @@ type dumpable = 'required' | 'optional' | 'skip';
 
 export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> {
   name: string;
+  title?: string;
   namespace?: string;
   /**
    * Used for @nocobase/plugin-duplicator
@@ -62,6 +63,8 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> 
 
   tree?: string;
 
+  template?: string;
+
   [key: string]: any;
 }
 
@@ -71,7 +74,7 @@ export interface CollectionContext {
 
 export class Collection<
   TModelAttributes extends {} = any,
-  TCreationAttributes extends {} = TModelAttributes,
+  TCreationAttributes extends {} = TModelAttributes
 > extends EventEmitter {
   options: CollectionOptions;
   context: CollectionContext;

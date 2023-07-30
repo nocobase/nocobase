@@ -1,5 +1,8 @@
 import { ISchema } from '@formily/react';
+import type { CollectionOptions } from '@nocobase/database';
 import { ReactNode } from 'react';
+
+export { CollectionOptions };
 
 export interface CollectionManagerOptions {
   service?: any;
@@ -11,28 +14,7 @@ export interface CollectionManagerOptions {
   updateCollection?: (collection: any) => void;
 }
 
-export interface FieldOptions {
-  type: string;
-  interface?: string;
-  uiSchema?: ISchema;
-
-  [key: string]: any;
-}
-
-export interface CollectionOptions {
-  name?: string;
-  title?: string;
-  filterTargetKey?: string;
-  targetKey?: string;
-  sortable?: any;
-  fields?: FieldOptions[];
-  inherits?: string[];
-  tree?: string;
-  template?: string;
-  writableView?: boolean;
-
-  [key: string]: any;
-}
+export type FieldOptions = CollectionOptions['fields'][0];
 
 export interface ICollectionProviderProps {
   name?: string;
