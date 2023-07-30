@@ -1,4 +1,5 @@
 import Application from '../application';
+import { Gateway } from '@nocobase/server';
 
 export default (app: Application) => {
   app
@@ -13,6 +14,6 @@ export default (app: Application) => {
         await run('yarn', ['install']);
       }
 
-      app.pm.clientWrite({ method, plugins });
+      await Gateway.getInstance().callAppFromCli('main', `pm.${method}`, plugins);
     });
 };

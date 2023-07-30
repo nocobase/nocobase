@@ -4,6 +4,9 @@ import { AppSupervisor } from '../app-supervisor';
 import Application from '../application';
 import { WSServer } from './ws-server';
 import { parse } from 'url';
+import { resolve } from 'path';
+import { IPCSocketServer } from './ipc-socket-server';
+import { IPCSocketClient } from './ipc-socket-client';
 
 export interface IncomingRequest {
   url: string;
@@ -12,6 +15,12 @@ export interface IncomingRequest {
 
 export type AppSelector = (req: IncomingRequest) => string | Promise<string>;
 
+interface StartHttpServerOptions {
+  port: number;
+  host: string;
+  callback?: () => void;
+}
+
 export class Gateway extends EventEmitter {
   private static instance: Gateway;
   /**
@@ -19,9 +28,11 @@ export class Gateway extends EventEmitter {
    */
   appSelector: AppSelector;
   public server: http.Server | null = null;
+  public ipcSocketServer: IPCSocketServer | null = null;
   private port: number = process.env.APP_PORT ? parseInt(process.env.APP_PORT) : null;
   private host = '0.0.0.0';
   private wsServer: WSServer;
+  private socketPath = resolve(process.cwd(), 'storage', 'gateway.sock');
 
   private constructor() {
     super();
@@ -88,7 +99,16 @@ export class Gateway extends EventEmitter {
     return this.requestHandler.bind(this);
   }
 
-  start(options?: { port: number; host: string; callback?: () => void }) {
+  start(options?: StartHttpServerOptions) {
+    this.startHttpServer(options);
+    this.startIPCSocketServer();
+  }
+
+  startIPCSocketServer() {
+    this.ipcSocketServer = IPCSocketServer.buildServer(this.socketPath);
+  }
+
+  startHttpServer(options: StartHttpServerOptions) {
     if (options?.port) {
       this.port = options.port;
     }
@@ -119,11 +139,52 @@ export class Gateway extends EventEmitter {
     });
 
     this.server.listen(this.port, this.host, () => {
-      console.log(`Gateway Server running at http://${this.host}:${this.port}/`);
+      console.log(`Gateway HTTP Server running at http://${this.host}:${this.port}/`);
       if (options?.callback) {
         options.callback();
       }
     });
+  }
+
+  // if socket server is not ready, send request to socket server
+  // otherwise, create an application instance to handle request
+  async callAppFromCli(appName: string, method: string, ...args: any[]) {
+    try {
+      const ipcClient = await this.getIPCSocketClient();
+
+      const payload = {
+        appName,
+        method,
+        args,
+      };
+
+      console.log(payload);
+      ipcClient.write({
+        type: 'callApp',
+        payload,
+      });
+
+      ipcClient.close();
+    } catch (e) {
+      console.log(e);
+      console.log(`socket server is not ready, create app instance to handle request: ${appName}.${method}`);
+
+      await this.callApp(appName, method, ...args);
+    }
+  }
+
+  async callApp(appName: string, method: string, ...args: any[]) {
+    const app = await AppSupervisor.getInstance().getApp(appName);
+
+    if (!app) {
+      throw new Error(`app ${appName} not found`);
+    }
+
+    await app.handleDynamicCall(method, ...args);
+  }
+
+  async getIPCSocketClient() {
+    return await IPCSocketClient.getConnection(this.socketPath);
   }
 
   close() {

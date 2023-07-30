@@ -21,6 +21,7 @@ import { InstallOptions, PluginManager } from './plugin-manager';
 import { ApplicationVersion } from './helpers/application-version';
 import { AppSupervisor } from './app-supervisor';
 import packageJson from '../package.json';
+import lodash from 'lodash';
 
 export type PluginConfiguration = string | [string, any];
 
@@ -418,6 +419,19 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return {
       appName: this.name,
     };
+  }
+
+  public async handleDynamicCall(method: string, ...args: any[]): Promise<{ result: any }> {
+    const target = lodash.get(this, method);
+    let result = target;
+
+    if (typeof target === 'function') {
+      const methodPaths: Array<string> = method.split('.');
+      methodPaths.pop();
+      result = await target.apply(methodPaths.length > 0 ? lodash.get(this, methodPaths.join('.')) : this, args);
+    }
+
+    return JSON.parse(JSON.stringify({ result }));
   }
 
   protected init() {
