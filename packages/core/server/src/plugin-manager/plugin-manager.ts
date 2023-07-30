@@ -333,6 +333,8 @@ export class PluginManager {
       await this.app.emitAsync('afterLoadPlugin', plugin, options);
       this.app.logger.debug(`after load plugin [${name}]...`);
     }
+
+    this.app.setWorkingMessage('loaded plugins');
   }
 
   async install(options: InstallOptions = {}) {
