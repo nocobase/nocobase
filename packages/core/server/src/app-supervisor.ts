@@ -1,6 +1,7 @@
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import { EventEmitter } from 'events';
 import type Application from './application';
+import App from '../../client/src/board/demos/demo2';
 
 type BootOptions = {
   appName: string;
@@ -10,6 +11,21 @@ type BootOptions = {
 
 type AppBootstrapper = (bootOptions: BootOptions) => Promise<void>;
 
+export function supervisedAppCall(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+  const originalMethod = descriptor.value;
+
+  descriptor.value = async function (...args: any[]) {
+    try {
+      const result = await originalMethod.apply(this, args);
+      return result;
+    } catch (error) {
+      AppSupervisor.getInstance().setAppError(this.name, error);
+    }
+  };
+
+  return descriptor;
+}
+
 export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   private static instance: AppSupervisor;
   public runningMode: 'single' | 'multiple' = 'multiple';
@@ -18,6 +34,10 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
   public apps: {
     [key: string]: Application;
+  } = {};
+
+  public appErrors: {
+    [key: string]: Error;
   } = {};
 
   private appBootstrapper: AppBootstrapper = null;
@@ -37,6 +57,11 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     }
 
     return AppSupervisor.instance;
+  }
+
+  setAppError(appName: string, error: Error) {
+    console.log(`setAppError ${appName}`, error);
+    this.appErrors[appName] = error;
   }
 
   async reset() {

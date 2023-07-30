@@ -19,7 +19,7 @@ import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
 import { ApplicationVersion } from './helpers/application-version';
-import { AppSupervisor } from './app-supervisor';
+import { AppSupervisor, supervisedAppCall } from './app-supervisor';
 import packageJson from '../package.json';
 import lodash from 'lodash';
 
@@ -102,7 +102,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._appSupervisor.addApp(this);
   }
 
-  private _workingMessage: string = null;
+  private _workingMessage: string = 'idle' as string;
 
   get workingMessage() {
     return this._workingMessage;
@@ -242,6 +242,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return (this.cli as any)._findCommand(name);
   }
 
+  @supervisedAppCall
   async load(options?: any) {
     this.setWorkingMessage('start load');
     if (options?.reload) {
@@ -299,9 +300,14 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this.cli.parseAsync(argv, options);
   }
 
+  @supervisedAppCall
   async start(options: StartOptions = {}) {
     this.startMode = true;
     this.setWorkingMessage('starting app...');
+
+    if (!(await this.isInstalled())) {
+      throw new Error('Please install the application first');
+    }
 
     if (this.db.closed()) {
       await this.db.reconnect();

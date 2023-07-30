@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import Application from '../application';
-
+import { Gateway } from '../gateway';
 export default (app: Application) => {
   app
     .command('install')
@@ -36,16 +36,11 @@ export default (app: Application) => {
         app.logger.info(`Start installing NocoBase`);
       }
 
-      await app.install({
-        cliArgs,
+      await Gateway.getInstance().callAppFromCli('main', 'install', {
         clean: opts.clean,
         sync: {
           force: opts.force,
         },
-      });
-
-      await app.stop({
-        cliArgs,
       });
     });
 };
