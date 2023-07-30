@@ -1,4 +1,9 @@
-import { SchemaInitializerItemOptions, useCollectionDataSource, useCollectionManager, useCompile } from '@nocobase/client';
+import {
+  SchemaInitializerItemOptions,
+  useCollectionDataSource,
+  useCollectionManager,
+  useCompile,
+} from '@nocobase/client';
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
 import { FieldsSelect } from '../components/FieldsSelect';
 import { NAMESPACE, lang } from '../locale';
@@ -63,9 +68,10 @@ export default {
       'x-component': 'Select',
       'x-component-props': {
         popupMatchSelectWidth: false,
-        options: collectionModeOptions,
         placeholder: `{{t("Trigger on", { ns: "${NAMESPACE}" })}}`,
+        className: 'auto-width',
       },
+      enum: collectionModeOptions,
       required: true,
       'x-reactions': [
         {
@@ -85,7 +91,6 @@ export default {
       'x-decorator': 'FormItem',
       'x-component': 'FieldsSelect',
       'x-component-props': {
-        className: 'full-width',
         mode: 'multiple',
         placeholder: '{{t("Select field")}}',
         filter(field) {
