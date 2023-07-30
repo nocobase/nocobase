@@ -797,5 +797,6 @@ export default {
   "Assign  data scope for the template":"为模板指定数据范围",
   "Table selected records":"表格中选中的记录",
   "Sync successfully":"同步成功",
-  "Sync from form fields":"同步表单字段"
+  "Sync from form fields":"同步表单字段",
+  "Select all":"全选"
 }

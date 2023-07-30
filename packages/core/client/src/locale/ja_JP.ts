@@ -622,5 +622,6 @@ export default {
   "Date display format":"日付表示形式",
   "Assign  data scope for the template":"テンプレートのデータ範囲の指定",
   "Sync successfully":"同期成功",
-  "Sync from form fields":"フォームフィールドの同期"
+  "Sync from form fields":"フォームフィールドの同期",
+  "Select all":"すべて選択"
 }
