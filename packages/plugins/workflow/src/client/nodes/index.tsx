@@ -34,8 +34,8 @@ import manual from './manual';
 import parallel from './parallel';
 import query from './query';
 import request from './request';
-import update from './update';
 import sql from './sql';
+import update from './update';
 
 export interface Instruction {
   title: string;
@@ -447,17 +447,9 @@ export function NodeDefaultView(props) {
                           .ant-picker,
                           .ant-input-number,
                           .ant-input-affix-wrapper {
-                            &:not(.full-width) {
+                            &.auto-width {
                               width: auto;
                               min-width: 6em;
-                            }
-                          }
-                          .ant-input-affix-wrapper {
-                            &:not(.full-width) {
-                              .ant-input {
-                                width: auto;
-                                min-width: 6em;
-                              }
                             }
                           }
                         `,
