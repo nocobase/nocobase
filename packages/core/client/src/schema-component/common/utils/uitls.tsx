@@ -1,9 +1,5 @@
-import { dayjs } from '@nocobase/utils/client';
 import flat from 'flat';
 import _, { every, findIndex, isArray, some } from 'lodash';
-import { useMemo } from 'react';
-import { useTableBlockContext } from '../../../block-provider';
-import { useCurrentUserContext } from '../../../user';
 import jsonLogic from '../../common/utils/logic';
 
 type VariablesCtx = {
@@ -11,21 +7,6 @@ type VariablesCtx = {
   $user?: Record<string, any>;
   $date?: Record<string, any>;
   $form?: Record<string, any>;
-};
-
-export const useVariablesCtx = (): VariablesCtx => {
-  const currentUser = useCurrentUserContext();
-  const { field, service, rowKey } = useTableBlockContext();
-  const contextData = service?.data?.data?.filter((v) => (field?.data?.selectedRowKeys || [])?.includes(v[rowKey]));
-  return useMemo(() => {
-    return {
-      $user: currentUser?.data?.data || {},
-      $date: {
-        now: () => dayjs().toISOString(),
-      },
-      $context: contextData,
-    };
-  }, [contextData, currentUser?.data?.data]);
 };
 
 export const isVariable = (str: unknown) => {
