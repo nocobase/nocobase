@@ -16,7 +16,7 @@ export interface VariablesContextType {
   getVariable: (variableName: string) => VariableOption;
 }
 
-interface VariableOption {
+export interface VariableOption {
   /** 变量的表示，例如：`$user` */
   name: string;
   /** 变量的值 */

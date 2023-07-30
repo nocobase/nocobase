@@ -68,7 +68,6 @@ import {
 } from '../filter-provider/utils';
 import { useCollectMenuItem, useCollectMenuItems, useMenuItem } from '../hooks/useMenuItem';
 import { getTargetKey } from '../schema-component/antd/association-filter/utilts';
-import { parseVariables, useVariablesCtx } from '../schema-component/common/utils/uitls';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
 import { FormDataTemplates } from './DataTemplates';
@@ -1444,16 +1443,15 @@ export const findParentFieldSchema = (fieldSchema: Schema) => {
   }
 };
 
-SchemaSettings.DefaultValue = function DefaultvalueConfigure(props) {
-  const variablesCtx = useVariablesCtx();
+SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
   const currentSchema = useFieldSchema();
   const fieldSchema = props?.fieldSchema ?? currentSchema;
-  const field = useField<Field>();
   const { dn } = useDesignable();
   const { t } = useTranslation();
   let targetField;
   const { getField } = useCollection();
   const { getCollectionJoinField } = useCollectionManager();
+
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
   const fieldSchemaWithoutRequired = _.omit(fieldSchema, 'required');
   if (collectionField?.target) {
@@ -1467,6 +1465,7 @@ SchemaSettings.DefaultValue = function DefaultvalueConfigure(props) {
   const isAllowContexVariable =
     collectionField?.interface === 'm2m' ||
     (parentCollectionField?.type === 'hasMany' && collectionField?.interface === 'm2o');
+
   return (
     <SchemaSettings.ModalItem
       title={t('Set default value')}
@@ -1526,9 +1525,6 @@ SchemaSettings.DefaultValue = function DefaultvalueConfigure(props) {
         const schema: ISchema = {
           ['x-uid']: fieldSchema['x-uid'],
         };
-        if (field.value !== v.default) {
-          field.value = parseVariables(v.default, variablesCtx);
-        }
         fieldSchema.default = v.default;
         schema.default = v.default;
         dn.emit('patch', {
