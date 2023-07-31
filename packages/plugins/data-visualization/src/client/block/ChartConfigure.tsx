@@ -17,6 +17,7 @@ import React, { createContext, useContext, useMemo, useRef } from 'react';
 import {
   useChartFields,
   useCollectionOptions,
+  useData,
   useFieldTypes,
   useFieldsWithAssociation,
   useFormatters,
@@ -26,7 +27,7 @@ import {
 } from '../hooks';
 import { useChartsTranslation } from '../locale';
 import { ChartRenderer, ChartRendererContext, useChartTypes, useCharts, useDefaultChartType } from '../renderer';
-import { createRendererSchema, getField, getSelectedFields, processData } from '../utils';
+import { createRendererSchema, getField, getSelectedFields } from '../utils';
 import { getConfigSchema, querySchema, transformSchema } from './schemas/configure';
 const { Paragraph, Text } = Typography;
 
@@ -409,11 +410,10 @@ ChartConfigure.Transform = function Transform() {
 };
 
 ChartConfigure.Data = function Data() {
-  const { t } = useChartsTranslation();
-  const { current } = useContext(ChartConfigContext);
   const { service } = useContext(ChartRendererContext);
+  const { current } = useContext(ChartConfigContext);
   const fields = useFieldsWithAssociation();
-  const data = processData(fields, service?.data || current?.data || [], { t });
+  const data = useData(current?.data);
   const error = service?.error;
   return !error ? (
     <div

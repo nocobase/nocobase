@@ -71,7 +71,7 @@ export const getSelectedFields = (fields: FieldOption[], query: QueryProps) => {
   return selectedFields;
 };
 
-export const processData = (fields: FieldOption[], data: any[], scope: any) => {
+export const processData = (selectedFields: FieldOption[], data: any[], scope: any) => {
   const parseEnum = (field: FieldOption, value: any) => {
     const options = field.uiSchema?.enum as { value: string; label: string }[];
     if (!options || !Array.isArray(options)) {
@@ -83,7 +83,7 @@ export const processData = (fields: FieldOption[], data: any[], scope: any) => {
   return data.map((record) => {
     const processed = {};
     Object.entries(record).forEach(([key, value]) => {
-      const field = getField(fields, key.split('.'));
+      const field = selectedFields.find((field) => field.value === key);
       if (!field) {
         processed[key] = value;
         return;
