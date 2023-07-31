@@ -72,12 +72,14 @@ export const useSyncFromForm = (fieldSchema, collection?, callBack?) => {
             ['hasOne', 'hasMany'].includes(field.type) ||
             ['Nester', 'SubTable'].includes(tatgetFormField?.fieldMode)
           ) {
+            let childrenDisabled = false;
             if (
               ['hasOne', 'hasMany'].includes(field.type) &&
               ['Select', 'Picker'].includes(tatgetFormField?.fieldMode)
             ) {
-              option.disabled = true;
+              childrenDisabled = true;
             }
+            option.disabled = true;
             option.isLeaf = false;
             option['children'] = traverseFields(
               field.target,
@@ -86,7 +88,7 @@ export const useSyncFromForm = (fieldSchema, collection?, callBack?) => {
                 maxDepth,
                 prefix: option.key,
                 exclude: ['id', ...systemKeys],
-                disabled: option.disabled,
+                disabled: childrenDisabled,
               },
               formData,
             );
@@ -179,8 +181,8 @@ export const useSyncFromForm = (fieldSchema, collection?, callBack?) => {
           if (
             collectionfield &&
             !(
-              ['hasOne', 'hasMany'].includes(collectionfield.type) &&
-              ['Select', 'Picker', undefined].includes(s['x-component-props']?.mode)
+              ['hasOne', 'hasMany'].includes(collectionfield.type) ||
+              ['SubForm', 'Nester'].includes(s['x-component-props']?.mode)
             )
           ) {
             selectFields.add(path);

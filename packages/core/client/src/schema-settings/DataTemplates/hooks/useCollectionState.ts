@@ -15,6 +15,8 @@ export const systemKeys = [
   'updatedById',
   'updatedBy',
   'updatedAt',
+  'password',
+  'sequence',
 ];
 export const useCollectionState = (currentCollectionName: string) => {
   const { getCollectionFields, getAllCollectionsInheritChain, getCollection, getInterface } = useCollectionManager();
