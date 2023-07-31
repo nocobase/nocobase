@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-sample-custom-signup-page",
-  "version": "0.11.1-alpha.3",
+  "version": "0.11.1-alpha.5",
   "main": "./lib/server/index.js",
   "files": [
     "lib",
@@ -14,10 +14,10 @@
     "client.d.ts"
   ],
   "devDependencies": {
-    "@formily/react": "2.2.26",
-    "@nocobase/client": "0.11.1-alpha.3",
-    "@nocobase/server": "0.11.1-alpha.3",
-    "@nocobase/test": "0.11.1-alpha.3",
+    "@formily/react": "^2.2.27",
+    "@nocobase/client": "0.11.1-alpha.5",
+    "@nocobase/server": "0.11.1-alpha.5",
+    "@nocobase/test": "0.11.1-alpha.5",
     "react": "^18.2.0"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"

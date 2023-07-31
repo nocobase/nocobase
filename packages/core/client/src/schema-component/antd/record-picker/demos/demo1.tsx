@@ -9,6 +9,7 @@ import {
   BlockItem,
   CollectionField,
   CollectionManagerProvider,
+  CurrentUserProvider,
   FormItem,
   Input,
   RecordPicker,
@@ -23,6 +24,9 @@ import data from './mockData';
 
 const { apiClient, mockRequest } = mockAPIClient();
 
+mockRequest.onGet('/auth:check').reply(() => {
+  return [200, { data: {} }];
+});
 mockRequest.onGet('/tt_bd_range:list').reply(({ params }) => {
   // 已选中的 id
   const ids = JSON.parse(params.filter).$and?.[0]?.['id.$ne'] || [];
@@ -172,11 +176,13 @@ export default () => {
 
   return (
     <APIClientProvider apiClient={apiClient}>
-      <CollectionManagerProvider collections={mainCollections}>
-        <SchemaComponentProvider components={components}>
-          <SchemaComponent schema={schema} />
-        </SchemaComponentProvider>
-      </CollectionManagerProvider>
+      <CurrentUserProvider>
+        <CollectionManagerProvider collections={mainCollections}>
+          <SchemaComponentProvider components={components}>
+            <SchemaComponent schema={schema} />
+          </SchemaComponentProvider>
+        </CollectionManagerProvider>
+      </CurrentUserProvider>
     </APIClientProvider>
   );
 };

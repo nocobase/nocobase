@@ -11,11 +11,11 @@ export const calculators = new Registry<Comparer>();
 
 // built-in functions
 function equal(a, b) {
-  return a === b;
+  return a == b;
 }
 
 function notEqual(a, b) {
-  return a !== b;
+  return a != b;
 }
 
 function gt(a, b) {
@@ -41,8 +41,8 @@ calculators.register('gte', gte);
 calculators.register('lt', lt);
 calculators.register('lte', lte);
 
-calculators.register('===', equal);
-calculators.register('!==', notEqual);
+calculators.register('==', equal);
+calculators.register('!=', notEqual);
 calculators.register('>', gt);
 calculators.register('>=', gte);
 calculators.register('<', lt);

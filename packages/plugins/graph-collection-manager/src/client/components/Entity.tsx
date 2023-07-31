@@ -59,7 +59,9 @@ const Entity: React.FC<{
     },
     id,
   } = node;
-  const database = useCurrentAppInfo();
+  const {
+    data: { database },
+  } = useCurrentAppInfo();
   const collectionData = useRef();
   const categoryData = useContext(CollectionCategroriesContext);
   collectionData.current = { ...item, title, inherits: item.inherits && new Proxy(item.inherits, {}) };
@@ -184,7 +186,9 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
   const [collapse, setCollapse] = useState(false);
   const { t } = useGCMTranslation();
   const compile = useCompile();
-  const database = useCurrentAppInfo();
+  const {
+    data: { database },
+  } = useCurrentAppInfo();
   const portsData = lodash.groupBy(ports.items, (v) => {
     if (
       v.isForeignKey ||

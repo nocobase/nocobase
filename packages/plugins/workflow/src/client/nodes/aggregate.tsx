@@ -1,22 +1,21 @@
-import React, { useCallback } from 'react';
-import { Cascader } from 'antd';
 import { useForm } from '@formily/react';
+import { Cascader } from 'antd';
+import React, { useCallback } from 'react';
 
 import {
+  SchemaComponentContext,
   SchemaInitializerItemOptions,
   useCollectionDataSource,
-  useCompile,
-  SchemaComponentContext,
   useCollectionManager,
+  useCompile,
 } from '@nocobase/client';
 
-import { collection, filter } from '../schemas/collection';
-import { NAMESPACE, lang } from '../locale';
-import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
-import { BaseTypeSets, defaultFieldNames, nodesOptions, triggerOptions, useWorkflowVariableOptions } from '../variable';
 import { FieldsSelect } from '../components/FieldsSelect';
+import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
 import { ValueBlock } from '../components/ValueBlock';
-import { useNodeContext } from '.';
+import { NAMESPACE, lang } from '../locale';
+import { collection, filter } from '../schemas/collection';
+import { BaseTypeSets, defaultFieldNames, nodesOptions, triggerOptions } from '../variable';
 
 function matchToManyField(field, appends): boolean {
   const fieldPrefix = `${field.name}.`;
@@ -163,7 +162,7 @@ export default {
                   title: `{{t("Data of collection", { ns: "${NAMESPACE}" })}}`,
                   'x-component-props': {
                     ...collection['x-component-props'],
-                    className: 'full-width',
+                    className: null,
                   },
                   'x-reactions': [
                     ...collection['x-reactions'],
@@ -200,9 +199,6 @@ export default {
                   title: `{{t("Data of associated collection", { ns: "${NAMESPACE}" })}}`,
                   'x-decorator': 'FormItem',
                   'x-component': 'AssociatedConfig',
-                  'x-component-props': {
-                    className: 'full-width',
-                  },
                   'x-reactions': [
                     {
                       dependencies: ['associated'],
