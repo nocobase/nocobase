@@ -1100,8 +1100,7 @@ export const useAssociationFilterBlockProps = () => {
     labelKey,
   };
 };
-
-function getAssociationPath(str) {
+export function getAssociationPath(str) {
   const lastIndex = str.lastIndexOf('.');
   if (lastIndex !== -1) {
     return str.substring(0, lastIndex);
