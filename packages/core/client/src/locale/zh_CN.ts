@@ -795,5 +795,8 @@ export default {
   "Allow add new, update and delete actions":"允许增删改操作",
   "Date display format":"日期显示格式",
   "Assign  data scope for the template":"为模板指定数据范围",
-  "Table selected records":"表格中选中的记录"
+  "Table selected records":"表格中选中的记录",
+  "Sync successfully":"同步成功",
+  "Sync from form fields":"同步表单字段",
+  "Select all":"全选"
 }

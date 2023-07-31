@@ -163,7 +163,7 @@ export const Templates = ({ style = {}, form }) => {
         {targetTemplate !== 'none' && (
           <RemoteSelect
             style={{ width: 220 }}
-            fieldNames={{ label: template.titleField, value: 'id' }}
+            fieldNames={{ label: template?.titleField, value: 'id' }}
             target={template?.collection}
             value={targetTemplateData}
             objectValue
