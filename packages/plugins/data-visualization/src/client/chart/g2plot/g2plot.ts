@@ -58,6 +58,7 @@ export class G2PlotChart extends Chart {
 
   getProps({ data, general, advanced, fieldProps }: RenderProps) {
     const meta = {};
+    // Some charts render wrong when the field name contains a dot in G2Plot
     const replace = (key: string) => key.replace(/\./g, '_');
     Object.entries(fieldProps).forEach(([key, props]) => {
       if (key.includes('.')) {
