@@ -1,4 +1,5 @@
 import { BelongsToManyRepository, Database } from '@nocobase/database';
+import { AppSupervisor } from '@nocobase/server';
 import { MockServer, mockServer, pgOnly } from '@nocobase/test';
 import * as process from 'process';
 
@@ -79,7 +80,7 @@ pgOnly()('collection sync', () => {
       },
     });
 
-    const sub1 = await mainApp.appManager.getApplication('sub1');
+    const sub1 = await AppSupervisor.getInstance().getApp('sub1');
 
     await mainApp.db.getRepository('users').create({
       values: {
@@ -109,7 +110,7 @@ pgOnly()('collection sync', () => {
       },
     });
 
-    const sub2 = await mainApp.appManager.getApplication('sub2');
+    const sub2 = await AppSupervisor.getInstance().getApp('sub2');
 
     const defaultRoleInSub2 = await sub2.db.getRepository('roles').findOne({
       filter: {
@@ -134,9 +135,9 @@ pgOnly()('collection sync', () => {
       },
     });
 
-    await mainApp.appManager.removeApplication('sub1');
+    await AppSupervisor.getInstance().removeApp('sub1');
 
-    const sub1 = await mainApp.appManager.getApplication('sub1');
+    const sub1 = await AppSupervisor.getInstance().getApp('sub1');
 
     expect(sub1.db.options.schema).toBe('sub1');
   });
@@ -148,11 +149,11 @@ pgOnly()('collection sync', () => {
       },
     });
 
-    await mainApp.appManager.removeApplication('sub1');
+    await AppSupervisor.getInstance().removeApp('sub1');
 
     await mainApp.pm.enable('map');
 
-    const sub1 = await mainApp.appManager.getApplication('sub1');
+    const sub1 = await AppSupervisor.getInstance().getApp('sub1');
 
     await sub1.reload();
 
@@ -175,7 +176,7 @@ pgOnly()('collection sync', () => {
       },
     });
 
-    const sub1 = await mainApp.appManager.getApplication('sub1');
+    const sub1 = await AppSupervisor.getInstance().getApp('sub1');
 
     const getSubAppMapRecord = async (app) => {
       return await app.db.getRepository('applicationPlugins').findOne({
@@ -196,7 +197,7 @@ pgOnly()('collection sync', () => {
       },
     });
 
-    const sub2 = await mainApp.appManager.getApplication('sub2');
+    const sub2 = await AppSupervisor.getInstance().getApp('sub2');
     expect((await getSubAppMapRecord(sub2)).get('enabled')).toBeTruthy();
     expect(sub2.pm.plugins.get('map').options.enabled).toBeTruthy();
   });
@@ -208,7 +209,7 @@ pgOnly()('collection sync', () => {
       },
     });
 
-    const subApp1 = await mainApp.appManager.getApplication('sub1');
+    const subApp1 = await AppSupervisor.getInstance().getApp('sub1');
 
     await mainDb.getRepository('roles').create({
       values: {
@@ -232,7 +233,7 @@ pgOnly()('collection sync', () => {
       },
     });
 
-    const subApp1 = await mainApp.appManager.getApplication(subApp1Record.name);
+    const subApp1 = await AppSupervisor.getInstance().getApp(subApp1Record.name);
 
     expect(subApp1.db.getCollection('users').options.schema).toBe(mainDb.options.schema || 'public');
 
@@ -263,7 +264,7 @@ pgOnly()('collection sync', () => {
       },
     });
 
-    const subApp1 = await mainApp.appManager.getApplication(subApp1Record.name);
+    const subApp1 = await AppSupervisor.getInstance().getApp(subApp1Record.name);
 
     await mainApp.db.getRepository('collections').create({
       values: {
@@ -286,14 +287,14 @@ pgOnly()('collection sync', () => {
         name: 'sub1',
       },
     });
-    const subApp1 = await mainApp.appManager.getApplication(subApp1Record.name);
+    const subApp1 = await AppSupervisor.getInstance().getApp(subApp1Record.name);
 
     const subApp2Record = await mainDb.getRepository('applications').create({
       values: {
         name: 'sub2',
       },
     });
-    const subApp2 = await mainApp.appManager.getApplication(subApp2Record.name);
+    const subApp2 = await AppSupervisor.getInstance().getApp(subApp2Record.name);
 
     const mainCollection = await mainDb.getRepository('collections').create({
       values: {
@@ -327,7 +328,7 @@ pgOnly()('collection sync', () => {
       },
     });
 
-    const subApp1 = await mainApp.appManager.getApplication(subApp1Record.name);
+    const subApp1 = await AppSupervisor.getInstance().getApp(subApp1Record.name);
 
     const mainCollection = await mainDb.getRepository('collections').create({
       values: {
@@ -450,7 +451,7 @@ pgOnly()('collection sync', () => {
       },
     });
 
-    const sub1 = await mainApp.appManager.getApplication('sub1');
+    const sub1 = await AppSupervisor.getInstance().getApp('sub1');
 
     await mainApp.db.getRepository('collections').create({
       values: {

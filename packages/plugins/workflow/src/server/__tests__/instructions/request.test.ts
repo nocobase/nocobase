@@ -55,7 +55,7 @@ describe('workflow > instructions > request', () => {
     });
   });
 
-  afterEach(() => app.stop());
+  afterEach(() => app.destroy());
 
   describe('request', () => {
     it('request', async () => {
@@ -214,7 +214,7 @@ describe('workflow > instructions > request', () => {
       expect(job.result.data).toEqual({ title });
     });
 
-    it('request inside loop',async () => {
+    it('request inside loop', async () => {
       const n1 = await workflow.createNode({
         type: 'loop',
         config: {
@@ -229,7 +229,7 @@ describe('workflow > instructions > request', () => {
         config: {
           url: URL_DATA,
           method: 'GET',
-        }
+        },
       });
 
       await PostRepo.create({ values: { title: 't1' } });
@@ -240,7 +240,7 @@ describe('workflow > instructions > request', () => {
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
       expect(jobs.length).toBe(3);
-      expect(jobs.map(item => item.status)).toEqual(Array(3).fill(JOB_STATUS.RESOLVED));
+      expect(jobs.map((item) => item.status)).toEqual(Array(3).fill(JOB_STATUS.RESOLVED));
       expect(jobs[0].result).toBe(2);
     });
   });

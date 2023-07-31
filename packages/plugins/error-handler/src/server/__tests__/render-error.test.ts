@@ -10,6 +10,7 @@ describe('create with exception', () => {
     });
     await app.cleanDb();
     app.plugin(PluginErrorHandler, { name: 'error-handler' });
+    await app.start();
   });
 
   afterEach(async () => {

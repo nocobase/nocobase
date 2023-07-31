@@ -25,11 +25,12 @@ describe('actions', () => {
       db = app.db;
       repo = db.getRepository('localizationTexts');
 
+      await app.start();
       agent = app.agent();
     });
 
     afterAll(async () => {
-      await db.close();
+      await app.destroy();
     });
 
     describe('list', () => {

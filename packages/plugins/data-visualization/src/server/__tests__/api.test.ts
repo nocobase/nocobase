@@ -48,7 +48,7 @@ describe('api', () => {
   });
 
   afterAll(async () => {
-    await db.close();
+    await app.destroy();
   });
 
   test('query', async () => {

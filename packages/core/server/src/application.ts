@@ -307,7 +307,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.startMode = true;
     this.setWorkingMessage('starting app...');
 
-    if (!(await this.isInstalled())) {
+    if (!process.env.JEST_WORKER_ID && !(await this.isInstalled())) {
       throw new Error('Please install the application first');
     }
 

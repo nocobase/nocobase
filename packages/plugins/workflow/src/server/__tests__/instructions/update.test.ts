@@ -27,7 +27,7 @@ describe('workflow > instructions > update', () => {
     });
   });
 
-  afterEach(() => db.close());
+  afterEach(() => app.destroy());
 
   describe('update one', () => {
     it('params: from context', async () => {

@@ -47,7 +47,7 @@ describe('application', () => {
   });
 
   afterEach(async () => {
-    return app.db.close();
+    return app.app.destroy();
   });
 
   it('resourcer.define', async () => {

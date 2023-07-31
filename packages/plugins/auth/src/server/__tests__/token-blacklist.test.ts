@@ -19,7 +19,7 @@ describe('token-blacklist', () => {
   });
 
   afterAll(async () => {
-    await db.close();
+    await app.destroy();
   });
 
   afterEach(async () => {

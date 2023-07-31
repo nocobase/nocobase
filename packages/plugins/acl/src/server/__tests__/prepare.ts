@@ -16,5 +16,6 @@ export async function prepareApp(): Promise<MockServer> {
 
   await app.db.sync();
 
+  await app.start();
   return app;
 }
