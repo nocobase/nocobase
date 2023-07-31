@@ -3,6 +3,8 @@ import { G2PlotChart } from './g2plot';
 import { RenderProps } from '../chart';
 import React from 'react';
 import { DualAxes as G2DualAxes } from '@ant-design/plots';
+import { FieldOption } from '../../hooks';
+import { QueryProps } from '../../renderer';
 
 export class DualAxes extends G2PlotChart {
   schema: ISchema = {
@@ -64,12 +66,31 @@ export class DualAxes extends G2PlotChart {
     super('dualAxes', 'Dual Axes Chart', G2DualAxes);
   }
 
+  init(
+    fields: FieldOption[],
+    {
+      measures,
+      dimensions,
+    }: {
+      measures?: QueryProps['measures'];
+      dimensions?: QueryProps['dimensions'];
+    },
+  ) {
+    const { xField, yFields } = this.infer(fields, { measures, dimensions });
+    return {
+      general: {
+        xField: xField?.value,
+        yField: yFields?.map((f) => f.value).slice(0, 2) || [],
+      },
+    };
+  }
+
   render({ data, general, advanced, fieldProps }: RenderProps) {
     const props = this.getProps({ data, general, advanced, fieldProps });
     const { data: _data } = props;
     return () =>
       React.createElement(this.component, {
-        ...this.getProps({ data, general, advanced, fieldProps }),
+        ...props,
         data: [_data, _data],
       });
   }

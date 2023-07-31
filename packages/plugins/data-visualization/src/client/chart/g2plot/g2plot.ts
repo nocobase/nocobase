@@ -69,10 +69,13 @@ export class G2PlotChart extends Chart {
       };
     });
     general = Object.entries(general).reduce((obj, [key, value]) => {
-      if (typeof value === 'string' && key.includes('Field') && value.includes('.')) {
-        obj[key] = replace(value);
-      } else {
-        obj[key] = value;
+      obj[key] = value;
+      if (key.includes('Field')) {
+        if (Array.isArray(value)) {
+          obj[key] = value.map((v) => (v.includes('.') ? replace(v) : v));
+        } else if (typeof value === 'string' && value.includes('.')) {
+          obj[key] = replace(value);
+        }
       }
       return obj;
     }, {});
