@@ -98,8 +98,6 @@ interface SchemaSettingsContextProps {
   collectionName?: any;
 }
 
-const mouseEnterDelay = 150;
-
 const SchemaSettingsContext = createContext<SchemaSettingsContextProps>(null);
 
 export const useSchemaSettings = () => {
@@ -1445,7 +1443,7 @@ export const findParentFieldSchema = (fieldSchema: Schema) => {
   }
 };
 
-SchemaSettings.DefaultValue = function DefaultvalueConfigure(props) {
+SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
   const variablesCtx = useVariablesCtx();
   const currentSchema = useFieldSchema();
   const fieldSchema = props?.fieldSchema ?? currentSchema;
@@ -1465,9 +1463,10 @@ SchemaSettings.DefaultValue = function DefaultvalueConfigure(props) {
   const parentFieldSchema = collectionField?.interface === 'm2o' && findParentFieldSchema(fieldSchema);
   const parentCollectionField = parentFieldSchema && getCollectionJoinField(parentFieldSchema?.['x-collection-field']);
   const tableCtx = useTableBlockContext();
-  const isAllowContexVariable =
+  const isAllowContextVariable =
     collectionField?.interface === 'm2m' ||
     (parentCollectionField?.type === 'hasMany' && collectionField?.interface === 'm2o');
+
   return (
     <SchemaSettings.ModalItem
       title={t('Set default value')}
@@ -1479,44 +1478,43 @@ SchemaSettings.DefaultValue = function DefaultvalueConfigure(props) {
           title: t('Set default value'),
           properties: {
             default: {
-              ...(fieldSchemaWithoutRequired || {}),
               'x-decorator': 'FormItem',
               'x-component': 'VariableInput',
               'x-component-props': {
                 ...(fieldSchema?.['x-component-props'] || {}),
                 collectionField,
-                targetField,
-                collectionName: collectionField?.collectionName,
-                contextCollectionName: isAllowContexVariable && tableCtx.collection,
+                contextCollectionName: isAllowContextVariable && tableCtx.collection,
                 schema: collectionField?.uiSchema,
                 className: defaultInputStyle,
                 renderSchemaComponent: function Com(props) {
                   const s = _.cloneDeep(fieldSchemaWithoutRequired) || ({} as Schema);
                   s.title = '';
+
+                  // 任何一个非空字符串都可以
+                  s.name = 'default';
+
                   s['x-read-pretty'] = false;
                   s['x-disabled'] = false;
 
-                  return (
-                    <SchemaComponent
-                      schema={{
-                        ...(s || {}),
-                        'x-component-props': {
-                          ...s['x-component-props'],
-                          onChange: props.onChange,
-                          value: props.value,
-                          defaultValue: getFieldDefaultValue(s, collectionField),
-                          style: {
-                            width: '100%',
-                            verticalAlign: 'top',
-                            minWidth: '200px',
-                          },
-                        },
-                      }}
-                    />
-                  );
+                  const schema = {
+                    ...(s || {}),
+                    'x-component-props': {
+                      ...s['x-component-props'],
+                      collectionName: collectionField?.collectionName,
+                      targetField,
+                      onChange: props.onChange,
+                      defaultValue: getFieldDefaultValue(s, collectionField),
+                      style: {
+                        width: '100%',
+                        verticalAlign: 'top',
+                        minWidth: '200px',
+                      },
+                    },
+                  };
+
+                  return <SchemaComponent schema={schema} />;
                 },
               },
-              name: 'default',
               title: t('Default value'),
               default: getFieldDefaultValue(fieldSchema, collectionField),
             },
