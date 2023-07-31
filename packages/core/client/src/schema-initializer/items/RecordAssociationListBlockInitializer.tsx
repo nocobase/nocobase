@@ -4,7 +4,7 @@ import { TableOutlined } from '@ant-design/icons';
 import { useCollectionManager } from '../../collection-manager';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { SchemaInitializer } from '../SchemaInitializer';
-import { createGridCardBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
+import { createListBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
 
 export const RecordAssociationListBlockInitializer = (props) => {
   const { item, onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
@@ -24,7 +24,7 @@ export const RecordAssociationListBlockInitializer = (props) => {
           insert(s);
         } else {
           insert(
-            createGridCardBlockSchema({
+            createListBlockSchema({
               rowKey: collection.filterTargetKey,
               collection: field.target,
               resource,
