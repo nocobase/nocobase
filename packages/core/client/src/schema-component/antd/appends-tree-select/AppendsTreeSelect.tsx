@@ -106,14 +106,14 @@ export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
   }, [collection, baseCollection, filter]);
 
   useEffect(() => {
-    const arr = (props.multiple ? value : value ? [value] : []) as DefaultOptionType[];
-    if (!arr?.length || arr.every((v) => Boolean(optionsMap[v.value]))) {
+    const arr = (props.multiple ? propsValue : propsValue ? [value] : []) as DefaultOptionType[];
+    if (!arr?.length || arr.every((v) => Boolean(optionsMap[v]))) {
       return;
     }
     const loaded = [];
 
     arr.forEach((v) => {
-      const paths = (props.multiple ? (v.value as string) : v).split('.');
+      const paths = v.split('.');
       let option = optionsMap[paths[0]];
       for (let i = 1; i < paths.length; i++) {
         if (!option) {
@@ -136,7 +136,7 @@ export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
     setOptionsMap((prev) => {
       return loaded.reduce((result, item) => Object.assign(result, { [item.value]: item }), { ...prev });
     });
-  }, [value, treeData.length, props.multiple]);
+  }, [propsValue, treeData.length, props.multiple]);
 
   const handleChange = useCallback(
     (next: DefaultOptionType[] | string) => {
