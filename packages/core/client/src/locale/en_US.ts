@@ -711,6 +711,8 @@ export default {
   "Date display format":"Date display format",
   "Assign  data scope for the template":"Assign  data scope for the template",
   "Table selected records":"Table selected records",
+  "Tag":"Tag",
+  "Tag color field":"Tag color field",
   "Sync successfully":"Sync successfully",
   "Sync from form fields":"Sync from form fields",
   "Select all":"Select all"

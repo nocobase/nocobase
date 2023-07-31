@@ -621,6 +621,8 @@ export default {
   "Allow add new, update and delete actions":"削除変更操作の許可",
   "Date display format":"日付表示形式",
   "Assign  data scope for the template":"テンプレートのデータ範囲の指定",
+  "Tag":"タブ",
+  "Tag color field":"ラベルの色フィールド",
   "Sync successfully":"同期成功",
   "Sync from form fields":"フォームフィールドの同期",
   "Select all":"すべて選択"
