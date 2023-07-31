@@ -52,7 +52,7 @@ export const useCollectionState = (currentCollectionName: string) => {
           type: 'duplicate',
           tag: compile(field.uiSchema?.title) || field.name,
         };
-        const option = {
+        const option: any = {
           ...node,
           title: React.createElement(TreeNode, node),
           key: prefix ? `${prefix}.${field.name}` : field.name,
@@ -73,6 +73,7 @@ export const useCollectionState = (currentCollectionName: string) => {
           });
         } else if (['hasOne', 'hasMany'].includes(field.type)) {
           option.isLeaf = false;
+          option.disabled = true;
           option['children'] = traverseFields(field.target, {
             depth: depth + 1,
             maxDepth,
