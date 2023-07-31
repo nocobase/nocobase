@@ -1,4 +1,4 @@
-const { resolve } = require('path');
+const { resolve, dirname } = require('path');
 const { Command } = require('commander');
 const { run, nodeCheck, isPackageValid, promptForTs } = require('../util');
 
@@ -8,7 +8,7 @@ const { run, nodeCheck, isPackageValid, promptForTs } = require('../util');
  */
 module.exports = (cli) => {
   const { APP_PACKAGE_ROOT } = process.env;
-  const clientPackage = `${APP_PACKAGE_ROOT}/client`;
+  const clientPackage = `core/app`;
   cli
     .command('build')
     .allowUnknownOption()
@@ -24,13 +24,12 @@ module.exports = (cli) => {
           });
         }
       }
-      if (!pkgs.length || !pkgs.includes(clientPackage) || (pkgs.includes(clientPackage) && pkgs.length > 1)) {
-        await run('nocobase-build', process.argv.slice(3));
-      }
+      await run('nocobase-build', process.argv.slice(3));
       if (!pkgs.length || pkgs.includes(clientPackage)) {
+        const file = require.resolve('@nocobase/app');
         await run('umi', ['build'], {
           env: {
-            APP_ROOT: `packages/${APP_PACKAGE_ROOT}/client`,
+            APP_ROOT: `${dirname(dirname(file))}/client`,
             NODE_ENV: 'production',
           },
         });

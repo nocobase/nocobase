@@ -26,6 +26,7 @@ export default defineConfig({
     { rel: 'stylesheet', href: '/global.css' },
   ],
   headScripts: ['/browser-checker.js'],
+  outputPath: path.resolve(__dirname, '../dist'),
   hash: true,
   alias: {
     ...umiConfig.alias,

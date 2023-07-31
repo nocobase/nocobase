@@ -32,7 +32,7 @@ exports.isDev = function isDev() {
 
 const isProd = () => {
   const { APP_PACKAGE_ROOT } = process.env;
-  const file = `./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`;
+  const file = `${APP_PACKAGE_ROOT}/lib/index.js`;
   if (!existsSync(resolve(process.cwd(), file))) {
     console.log('For production environment, please build the code first.');
     console.log();
@@ -110,13 +110,13 @@ exports.runInstall = async () => {
       './tsconfig.server.json',
       '-r',
       'tsconfig-paths/register',
-      `./packages/${APP_PACKAGE_ROOT}/server/src/index.ts`,
+      `${APP_PACKAGE_ROOT}/src/index.ts`,
       'install',
       '-s',
     ];
     await exports.run('tsx', argv);
   } else if (isProd()) {
-    const file = `./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`;
+    const file = `${APP_PACKAGE_ROOT}/lib/index.js`;
     const argv = [file, 'install', '-s'];
     await exports.run('node', argv);
   }
@@ -131,13 +131,13 @@ exports.runAppCommand = async (command, args = []) => {
       './tsconfig.server.json',
       '-r',
       'tsconfig-paths/register',
-      `./packages/${APP_PACKAGE_ROOT}/server/src/index.ts`,
+      `${APP_PACKAGE_ROOT}/src/index.ts`,
       command,
       ...args,
     ];
     await exports.run('tsx', argv);
   } else if (isProd()) {
-    const argv = [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, command, ...args];
+    const argv = [`${APP_PACKAGE_ROOT}/lib/index.js`, command, ...args];
     await exports.run('node', argv);
   }
 };

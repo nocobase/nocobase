@@ -25,25 +25,14 @@ module.exports = (cli) => {
         await runAppCommand('upgrade');
         return;
       }
-      await runAppCommand('upgrade');
-      // If ts-node is not installed, do not do the following
+      // await runAppCommand('upgrade');
       if (!hasTsNode()) {
+        await runAppCommand('upgrade');
         return;
       }
-      const version = await getVersion();
+      // If ts-node is not installed, do not do the following
       await run('yarn', ['add', '@nocobase/cli', '@nocobase/devtools', '-W']);
-      const clientPackage = resolve(process.cwd(), `packages/${APP_PACKAGE_ROOT}/client/package.json`);
-      const serverPackage = resolve(process.cwd(), `packages/${APP_PACKAGE_ROOT}/server/package.json`);
-      await updateJsonFile(clientPackage, (data) => {
-        data.devDependencies['@nocobase/client'] = version;
-        return data;
-      });
-      await updateJsonFile(serverPackage, (data) => {
-        data.dependencies['@nocobase/preset-nocobase'] = version;
-        return data;
-      });
       await run('yarn', ['install']);
-      await run('nocobase', ['build']);
       await runAppCommand('upgrade');
     });
 };
