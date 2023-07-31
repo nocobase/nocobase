@@ -31,5 +31,7 @@ export default defineConfig({
     deps: {
       inline: ['@juggle/resize-observer', 'clsx'],
     },
+    // 在 GitHub Actions 中不输出日志
+    silent: !!process.env.GITHUB_ACTIONS,
   },
 });

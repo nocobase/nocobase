@@ -360,6 +360,9 @@ export const useParamsFromRecord = () => {
   const obj = {
     filterByTk: filterByTk,
   };
+  if (record.__collection) {
+    obj['targetCollection'] = record.__collection;
+  }
   if (!filterByTk) {
     obj['filter'] = filter;
   }
