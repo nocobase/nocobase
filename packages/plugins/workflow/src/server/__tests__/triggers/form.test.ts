@@ -154,6 +154,30 @@ describe('workflow > triggers > form', () => {
       expect(e1[0].status).toBe(EXECUTION_STATUS.RESOLVED);
       expect(e1[0].context.data).toHaveProperty('createdAt');
     });
+
+    it('appends', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'form',
+        config: {
+          collection: 'posts',
+          appends: ['createdBy'],
+        },
+      });
+
+      const res1 = await userAgents[0].resource('posts').create({
+        values: { title: 't1' },
+        triggerWorkflows: `${workflow.key}`,
+      });
+      expect(res1.status).toBe(200);
+
+      await sleep(500);
+
+      const e1 = await workflow.getExecutions();
+      expect(e1.length).toBe(1);
+      expect(e1[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e1[0].context.data).toHaveProperty('createdBy');
+    });
   });
 
   describe('update', () => {

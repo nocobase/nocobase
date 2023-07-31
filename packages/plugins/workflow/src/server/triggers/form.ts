@@ -3,6 +3,8 @@ import { get } from 'lodash';
 import { Trigger } from '.';
 import Plugin from '..';
 import { WorkflowModel } from '../types';
+import { Model, modelAssociationByKey } from '@nocobase/database';
+import { BelongsTo, HasOne } from 'sequelize';
 
 export default class FormTrigger extends Trigger {
   constructor(plugin: Plugin) {
@@ -57,13 +59,33 @@ export default class FormTrigger extends Trigger {
     });
     workflows.forEach((workflow) => {
       const trigger = triggers.find((trigger) => trigger[0] == workflow.key);
-      const payload = context.body?.data ?? values;
-      if (Array.isArray(payload)) {
-        payload.forEach((row) => {
-          this.plugin.trigger(workflow, { data: trigger[1] ? get(row, trigger[1]) : row });
+      if (context.body?.data) {
+        const { data } = context.body;
+        (Array.isArray(data) ? data : [data]).forEach(async (row: Model) => {
+          let payload = row;
+          if (trigger[1]) {
+            const paths = trigger[1].split('.');
+            for await (const field of paths) {
+              if (payload.get(field)) {
+                payload = payload.get(field);
+              } else {
+                const association = <HasOne | BelongsTo>modelAssociationByKey(payload, field);
+                payload = await payload[association.accessors.get]();
+              }
+            }
+          }
+          const { appends = [] } = workflow.config;
+          if (appends.length) {
+            const model = <typeof Model>payload.constructor;
+            payload = await model.collection.repository.findOne({
+              filterByTk: payload.get(model.primaryKeyAttribute),
+              appends,
+            });
+          }
+          this.plugin.trigger(workflow, { data: payload });
         });
       } else {
-        this.plugin.trigger(workflow, { data: trigger[1] ? get(payload, trigger[1]) : payload });
+        this.plugin.trigger(workflow, { data: trigger[1] ? get(values, trigger[1]) : values });
       }
     });
   }
