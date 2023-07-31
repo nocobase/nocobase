@@ -220,9 +220,7 @@ const useStyles = createStyles(({ css, token }) => {
         font-weight: bold;
 
         &:not(:focus) {
-          transition:
-            background-color 0.3s ease,
-            border-color 0.3s ease;
+          transition: background-color 0.3s ease, border-color 0.3s ease;
           border-color: ${token.colorBorderBg};
           background-color: ${token.colorBgContainerDisabled};
 

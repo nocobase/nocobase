@@ -1,15 +1,15 @@
 {
   "name": "@nocobase/plugin-localization-management",
-  "version": "0.11.1-alpha.3",
+  "version": "0.11.1-alpha.5",
   "main": "dist/server/index.js",
   "devDependencies": {
-    "@nocobase/cache": "0.11.1-alpha.3",
-    "@nocobase/client": "0.11.1-alpha.3",
-    "@nocobase/database": "0.11.1-alpha.3",
-    "@nocobase/plugin-client": "0.11.1-alpha.3",
-    "@nocobase/plugin-ui-schema-storage": "0.11.1-alpha.3",
-    "@nocobase/server": "0.11.1-alpha.3",
-    "@nocobase/test": "0.11.1-alpha.3",
+    "@nocobase/cache": "0.11.1-alpha.5",
+    "@nocobase/client": "0.11.1-alpha.5",
+    "@nocobase/database": "0.11.1-alpha.5",
+    "@nocobase/plugin-client": "0.11.1-alpha.5",
+    "@nocobase/plugin-ui-schema-storage": "0.11.1-alpha.5",
+    "@nocobase/server": "0.11.1-alpha.5",
+    "@nocobase/test": "0.11.1-alpha.5",
     "deepmerge": "^4.3.1"
   },
   "displayName": "Localization management",

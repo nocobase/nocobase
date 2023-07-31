@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from 'testUtils';
+import { render, screen, waitFor } from 'testUtils';
 import App1 from '../demos/demo1';
 import App2 from '../demos/demo2';
 import App3 from '../demos/demo3';
@@ -14,12 +14,13 @@ describe('Grid', () => {
     expect(screen.getByText('Block 1')).toBeInTheDocument();
   });
 
-  it('input', () => {
+  it('input', async () => {
     render(<App2 />);
 
-    const inputs = document.querySelectorAll('.ant-input');
-
-    expect(inputs.length).toBe(3);
+    await waitFor(() => {
+      const inputs = document.querySelectorAll('.ant-input');
+      expect(inputs.length).toBe(3);
+    });
   });
 
   it('initializer', () => {

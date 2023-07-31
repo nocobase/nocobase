@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-china-region",
-  "version": "0.11.1-alpha.3",
+  "version": "0.11.1-alpha.5",
   "displayName": "china-region",
   "displayName.zh-CN": "中国行政区",
   "description": "Chinese Administrative Division Plugin, including all administrative regions of China.",
@@ -19,12 +19,12 @@
   ],
   "license": "AGPL-3.0",
   "devDependencies": {
-    "@formily/core": "2.2.26",
-    "@formily/react": "2.2.26",
-    "@nocobase/client": "0.11.1-alpha.3",
-    "@nocobase/database": "0.11.1-alpha.3",
-    "@nocobase/server": "0.11.1-alpha.3",
-    "@nocobase/test": "0.11.1-alpha.3",
+    "@formily/core": "2.2.27",
+    "@formily/react": "2.2.27",
+    "@nocobase/client": "0.11.1-alpha.5",
+    "@nocobase/database": "0.11.1-alpha.5",
+    "@nocobase/server": "0.11.1-alpha.5",
+    "@nocobase/test": "0.11.1-alpha.5",
     "@types/cross-spawn": "^6.0.2",
     "china-division": "^2.4.0",
     "cross-spawn": "^7.0.3"
