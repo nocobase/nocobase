@@ -82,6 +82,7 @@ pgOnly()('collection sync', () => {
 
     const sub1 = await AppSupervisor.getInstance().getApp('sub1');
 
+    // create user at main app
     await mainApp.db.getRepository('users').create({
       values: {
         email: 'test@qq.com',

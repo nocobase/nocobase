@@ -93,7 +93,7 @@ class SubAppPlugin extends Plugin {
           INSERT INTO ${subAppPluginsCollection.quotedTableName()}
           SELECT *
           FROM ${mainAppPluginsCollection.quotedTableName()}
-          WHERE "name" not in ('multi-app-manager', 'multi-app-share-collection')gom,;
+          WHERE "name" not in ('multi-app-manager', 'multi-app-share-collection');
       `);
 
       const sequenceNameSql = `SELECT pg_get_serial_sequence('"${subAppPluginsCollection.collectionSchema()}"."${
@@ -149,20 +149,34 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       }
     };
 
-    this.app.on('afterSubAppAdded', (subApp) => {
-      subApp.plugin(SubAppPlugin, { name: 'sub-app', mainApp: this.app });
-    });
+    const mainApp = this.app;
+
+    function addPluginToSubApp(app) {
+      if (app.name !== 'main') {
+        app.plugin(SubAppPlugin, { name: 'sub-app', mainApp });
+      }
+    }
+
+    // if supervisor not has listen event, add listener
+    if (
+      AppSupervisor.getInstance()
+        .listeners('afterAppAdded')
+        .filter((f) => f.name == addPluginToSubApp.name).length == 0
+    ) {
+      AppSupervisor.getInstance().on('afterAppAdded', addPluginToSubApp);
+    }
 
     this.app.db.on('users.afterCreateWithAssociations', async (model, options) => {
       await traverseSubApps(async (subApp) => {
         const { transaction } = options;
         const repository = subApp.db.getRepository('roles');
-        const subAppModel = await subApp.db.getCollection('users').repository.findOne({
+        const subAppUserModel = await subApp.db.getCollection('users').repository.findOne({
           filter: {
             id: model.get('id'),
           },
           transaction,
         });
+
         const defaultRole = await repository.findOne({
           filter: {
             default: true,
@@ -170,8 +184,8 @@ export class MultiAppShareCollectionPlugin extends Plugin {
           transaction,
         });
 
-        if (defaultRole && (await subAppModel.countRoles({ transaction })) == 0) {
-          await subAppModel.addRoles(defaultRole, { transaction });
+        if (defaultRole && (await subAppUserModel.countRoles({ transaction })) == 0) {
+          await subAppUserModel.addRoles(defaultRole, { transaction });
         }
       });
     });
@@ -261,11 +275,6 @@ export class MultiAppShareCollectionPlugin extends Plugin {
     await this.db.import({
       directory: resolve(__dirname, 'collections'),
     });
-
-    // this.db.addMigrations({
-    //   namespace: 'multi-app-share-collection',
-    //   directory: resolve(__dirname, './migrations'),
-    // });
 
     this.app.resourcer.registerActionHandlers({
       'applications:shareCollections': async (ctx, next) => {

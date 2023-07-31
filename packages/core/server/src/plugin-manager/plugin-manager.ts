@@ -247,6 +247,7 @@ export class PluginManager {
       'client/src/plugins',
       `${plugin}.ts`,
     );
+
     if (!fs.existsSync(file)) {
       try {
         require.resolve(`${packageName}/client`);
@@ -254,7 +255,7 @@ export class PluginManager {
         const { run } = require('@nocobase/cli/src/util');
         await run('yarn', ['nocobase', 'postinstall']);
       } catch (error) {
-        console.log(error);
+        console.log(`${packageName} plugin client not found`);
       }
     }
   }
