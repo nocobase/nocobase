@@ -35,6 +35,30 @@ Because the dependencies of the plugin itself will be packaged into the product 
 
 More information about updates and global plugin lists, see: [Plugin dependency management](/development/deps).
 
+### Upgrade formily version from 2.2.6 to 2.2.7
+
+All `@formily/xx` are upgraded from `2.2.6` to `2.2.7`, please update the dependencies. For example:
+
+```diff
+{
+  "dependencies": {
+-   "@formily/antd": "2.2.26",
++   "@formily/antd": "2.2.27",
+  }
+}
+```
+
+### The bundle of plugin has changed from `lib` to `dist`
+
+The plugin bundle has changed from `lib` to `dist`, so you need to:
+
+```diff
+{
+  - "main": "./lib/server/index.js",
+  + "main": "./dist/server/index.js",
+}
+```
+
 ### plugin directory must have both `src/client` and `src/server` directories
 
 ```js
