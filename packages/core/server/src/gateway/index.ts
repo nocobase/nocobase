@@ -91,6 +91,13 @@ export class Gateway extends EventEmitter {
       return;
     }
 
+    // if request health check, return 200
+    if (req.url === '/__health_check') {
+      res.statusCode = 200;
+      res.end('ok');
+      return;
+    }
+
     app.callback()(req, res);
   }
 
