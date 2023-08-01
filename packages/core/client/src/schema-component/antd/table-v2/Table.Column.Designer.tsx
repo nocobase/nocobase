@@ -62,9 +62,11 @@ export const TableColumnDesigner = (props) => {
   const defaultFilter = fieldSchema?.['x-component-props']?.service?.params?.filter || {};
   const dataSource = useCollectionFilterOptions(collectionField?.target);
   const isDateField = ['datetime', 'createdAt', 'updatedAt'].includes(collectionField?.interface);
-  const isAssociationField = ['obo', 'oho', 'o2o', 'o2m', 'm2m', 'm2o'].includes(collectionField?.interface);
+  const isAssociationField = ['obo', 'oho', 'o2o', 'o2m', 'm2m', 'm2o', 'snapshot'].includes(
+    collectionField?.interface,
+  );
   const fieldModeOptions = useFieldModeOptions({ fieldSchema });
-  const fieldMode = field?.componentProps?.['mode'] || (isFileField ? 'FileManager' : 'Select');
+  const fieldMode = fieldSchema?.['x-component-props']?.['mode'] || 'Select';
   let readOnlyMode = 'editable';
   if (fieldSchema['x-disabled'] === true) {
     readOnlyMode = 'readonly';
@@ -252,32 +254,35 @@ export const TableColumnDesigner = (props) => {
           }}
         />
       )}
-      {readOnlyMode === 'read-pretty' &&
-        ['linkTo', 'm2m', 'm2o', 'o2m', 'obo', 'oho', 'snapshot'].includes(collectionField?.interface) && (
-          <SchemaSettings.SelectItem
-            key="field-mode"
-            title={t('Field component')}
-            options={[
-              { label: t('Title'), value: 'Select' },
-              { label: t('Tag'), value: 'Tag' },
-            ]}
-            value={fieldMode}
-            onChange={(mode) => {
-              const schema = {
-                ['x-uid']: fieldSchema['x-uid'],
-              };
-              fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-              fieldSchema['x-component-props']['mode'] = mode;
-              schema['x-component-props'] = fieldSchema['x-component-props'];
-              field.componentProps = field.componentProps || {};
-              field.componentProps.mode = mode;
-              dn.emit('patch', {
-                schema,
-              });
-              dn.refresh();
-            }}
-          />
-        )}
+      {isAssociationField && (
+        <SchemaSettings.SelectItem
+          key="field-mode"
+          title={t('Field component')}
+          options={
+            readOnlyMode === 'read-pretty'
+              ? [
+                  { label: t('Title'), value: 'Select' },
+                  { label: t('Tag'), value: 'Tag' },
+                ]
+              : fieldModeOptions
+          }
+          value={fieldMode}
+          onChange={(mode) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props']['mode'] = mode;
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            field.componentProps = field.componentProps || {};
+            field.componentProps.mode = mode;
+            dn.emit('patch', {
+              schema,
+            });
+            dn.refresh();
+          }}
+        />
+      )}
 
       {['Tag'].includes(fieldMode) && (
         <SchemaSettings.SelectItem
@@ -301,29 +306,6 @@ export const TableColumnDesigner = (props) => {
           }}
         />
       )}
-      {isAssociationField && isSubTableColumn && !field.readPretty && (
-        <SchemaSettings.SelectItem
-          key="field-mode"
-          title={t('Field component')}
-          options={fieldModeOptions}
-          value={fieldMode}
-          onChange={(mode) => {
-            const schema = {
-              ['x-uid']: fieldSchema['x-uid'],
-            };
-            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-            fieldSchema['x-component-props']['mode'] = mode;
-            schema['x-component-props'] = fieldSchema['x-component-props'];
-            field.componentProps = field.componentProps || {};
-            field.componentProps.mode = mode;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          }}
-        />
-      )}
-
       {isSubTableColumn && !field.readPretty && !uiSchema?.['x-read-pretty'] && (
         <SchemaSettings.SwitchItem
           key="required"
