@@ -1,9 +1,8 @@
-import { Collection } from '@nocobase/database';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { antd, compact, compactDark, dark } from './builtinThemes';
 
 export class ThemeEditorPlugin extends Plugin {
-  theme: Collection<any, any>;
+  theme: any;
 
   afterAdd() {}
 

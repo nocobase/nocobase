@@ -48,10 +48,9 @@ const DataTemplateTitle = observer<{ index: number; item: any }>((props) => {
 export interface IArrayCollapseProps extends CollapseProps {
   defaultOpenPanelCount?: number;
 }
-type ComposedArrayCollapse =
-  | React.FC<React.PropsWithChildren<IArrayCollapseProps>> & {
-      CollapsePanel?: React.FC<React.PropsWithChildren<CollapsePanelProps>>;
-    };
+type ComposedArrayCollapse = React.FC<React.PropsWithChildren<IArrayCollapseProps>> & {
+  CollapsePanel?: React.FC<React.PropsWithChildren<CollapsePanelProps>>;
+};
 
 const isAdditionComponent = (schema: ISchema) => {
   return schema['x-component']?.indexOf?.('Addition') > -1;
@@ -217,6 +216,9 @@ export const ArrayCollapse: ComposedArrayCollapse = observer(
       <ArrayBase
         onAdd={(index) => {
           setActiveKeys(insertActiveKeys(activeKeys, index));
+        }}
+        onRemove={() => {
+          field.initialValue = field.value;
         }}
       >
         {renderEmpty()}

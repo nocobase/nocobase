@@ -26,9 +26,10 @@ import {
   useTransformers,
 } from '../hooks';
 import { useChartsTranslation } from '../locale';
-import { ChartRenderer, ChartRendererContext, useChartTypes, useCharts, useDefaultChartType } from '../renderer';
+import { ChartRenderer, ChartRendererContext } from '../renderer';
 import { createRendererSchema, getField, getSelectedFields } from '../utils';
 import { getConfigSchema, querySchema, transformSchema } from './schemas/configure';
+import { useChartTypes, useCharts, useDefaultChartType } from '../chart/library';
 const { Paragraph, Text } = Typography;
 
 export type ChartConfigCurrent = {
@@ -98,7 +99,7 @@ export const ChartConfigure: React.FC<{
     }
     const query = form.values.query;
     const selectedFields = getSelectedFields(fields, query);
-    const { general, advanced } = init(selectedFields, query);
+    const { general, advanced } = chart.init(selectedFields, query);
     if (general || overwrite) {
       form.values.config.general = general;
     }
@@ -364,7 +365,7 @@ ChartConfigure.Config = function Config() {
   const charts = useCharts();
   const getChartFields = useChartFields(fields);
   const getReference = (chartType: string) => {
-    const reference = charts[chartType]?.reference;
+    const reference = charts[chartType]?.getReference?.();
     if (!reference) return '';
     const { title, link } = reference;
     return (

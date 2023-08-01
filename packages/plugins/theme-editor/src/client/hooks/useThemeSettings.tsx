@@ -68,6 +68,14 @@ function Label() {
     return null;
   }
 
+  if (process.env.NODE_ENV !== 'production' && !currentUser) {
+    throw new Error('Please check if provide `CurrentUserProvider` in your app.');
+  }
+
+  if (process.env.NODE_ENV !== 'production' && !systemSettings) {
+    throw new Error('Please check if provide `SystemSettingsProvider` in your app.');
+  }
+
   return (
     <div
       style={{

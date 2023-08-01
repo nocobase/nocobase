@@ -1,8 +1,8 @@
 import { Tabs } from 'antd';
-import type { Theme } from 'antd-token-previewer';
 import classNames from 'classnames';
 import type { FC } from 'react';
 import React, { useEffect, useMemo, useState } from 'react';
+import { Theme } from '../../../types';
 import type { SelectedToken } from '../interface';
 import { useLocale } from '../locale';
 import { tokenCategory } from '../meta';
