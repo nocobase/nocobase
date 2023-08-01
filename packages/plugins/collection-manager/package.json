@@ -6,17 +6,6 @@
   "description.zh-CN": "可以与多种关系型数据库系统（如MySQL、PostgreSQL）无缝集成，并提供直观的用户界面来执行各种数据库任务。",
   "version": "0.11.1-alpha.5",
   "main": "./dist/server/index.js",
-  "files": [
-    "dist",
-    "src",
-    "README.md",
-    "README.zh-CN.md",
-    "CHANGELOG.md",
-    "server.js",
-    "server.d.ts",
-    "client.js",
-    "client.d.ts"
-  ],
   "license": "AGPL-3.0",
   "devDependencies": {
     "@hapi/topo": "^6.0.0",

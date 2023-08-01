@@ -7,17 +7,6 @@
   "version": "0.11.1-alpha.5",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
-  "files": [
-    "dist",
-    "src",
-    "README.md",
-    "README.zh-CN.md",
-    "CHANGELOG.md",
-    "server.js",
-    "server.d.ts",
-    "client.js",
-    "client.d.ts"
-  ],
   "devDependencies": {
     "@nocobase/acl": "0.11.1-alpha.5",
     "@nocobase/actions": "0.11.1-alpha.5",

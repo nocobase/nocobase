@@ -7,17 +7,6 @@
   "description.zh-CN": "提供地图字段和区块",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
-  "files": [
-    "dist",
-    "src",
-    "README.md",
-    "README.zh-CN.md",
-    "CHANGELOG.md",
-    "server.js",
-    "server.d.ts",
-    "client.js",
-    "client.d.ts"
-  ],
   "devDependencies": {
     "@amap/amap-jsapi-loader": "^1.0.1",
     "@amap/amap-jsapi-types": "^0.0.10",

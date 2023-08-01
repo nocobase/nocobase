@@ -6,17 +6,6 @@
   "description": "Chinese Administrative Division Plugin, including all administrative regions of China.",
   "description.zh-CN": "中国行政区划插件，内含所有中国行政区域。",
   "main": "./dist/server/index.js",
-  "files": [
-    "dist",
-    "src",
-    "README.md",
-    "README.zh-CN.md",
-    "CHANGELOG.md",
-    "server.js",
-    "server.d.ts",
-    "client.js",
-    "client.d.ts"
-  ],
   "license": "AGPL-3.0",
   "devDependencies": {
     "@formily/core": "2.2.27",

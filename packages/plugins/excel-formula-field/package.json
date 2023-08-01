@@ -4,17 +4,6 @@
   "description": "",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
-  "files": [
-    "dist",
-    "src",
-    "README.md",
-    "README.zh-CN.md",
-    "CHANGELOG.md",
-    "server.js",
-    "server.d.ts",
-    "client.js",
-    "client.d.ts"
-  ],
   "devDependencies": {
     "@formily/react": "2.2.27",
     "@formulajs/formulajs": "^4.2.0",

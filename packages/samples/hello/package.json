@@ -2,17 +2,6 @@
   "name": "@nocobase/plugin-sample-hello",
   "version": "0.11.1-alpha.5",
   "main": "./dist/server/index.js",
-  "files": [
-    "dist",
-    "src",
-    "README.md",
-    "README.zh-CN.md",
-    "CHANGELOG.md",
-    "server.js",
-    "server.d.ts",
-    "client.js",
-    "client.d.ts"
-  ],
   "displayName": "Sample-Hello",
   "displayName.zh-CN": "插件demo-hello",
   "description": "simple plugin demo",

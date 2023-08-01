@@ -6,17 +6,6 @@
   "description": "audit logs plugin",
   "description.zh-CN": "审计日志。",
   "main": "./dist/server/index.js",
-  "files": [
-    "dist",
-    "src",
-    "README.md",
-    "README.zh-CN.md",
-    "CHANGELOG.md",
-    "server.js",
-    "server.d.ts",
-    "client.js",
-    "client.d.ts"
-  ],
   "license": "AGPL-3.0",
   "devDependencies": {
     "@ant-design/icons": "^5.1.4",

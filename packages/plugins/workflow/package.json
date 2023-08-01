@@ -7,17 +7,6 @@
   "version": "0.11.1-alpha.5",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
-  "files": [
-    "dist",
-    "src",
-    "README.md",
-    "README.zh-CN.md",
-    "CHANGELOG.md",
-    "server.js",
-    "server.d.ts",
-    "client.js",
-    "client.d.ts"
-  ],
   "devDependencies": {
     "@ant-design/icons": "^5.1.4",
     "@emotion/css": "^11.7.1",

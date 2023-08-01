@@ -7,17 +7,6 @@
   "description.zh-CN": "文件管理。",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
-  "files": [
-    "dist",
-    "src",
-    "README.md",
-    "README.zh-CN.md",
-    "CHANGELOG.md",
-    "server.js",
-    "server.d.ts",
-    "client.js",
-    "client.d.ts"
-  ],
   "devDependencies": {
     "@aws-sdk/client-s3": "^3.245.0",
     "@formily/antd-v5": "1.1.0",
