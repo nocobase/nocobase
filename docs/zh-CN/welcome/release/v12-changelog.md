@@ -37,6 +37,9 @@ yarn clean # 清除缓存
 
 ```diff
 server {
+- root /app/nocobase/packages/app/client/dist;
++ root /app/nocobase/node_modules/@nocobase/app/dist/client;
+
   location / {
 -       root /app/nocobase/packages/app/client/dist;
 +       root /app/nocobase/node_modules/@nocobase/app/dist/client;
