@@ -9,7 +9,6 @@
   "dependencies": {
     "@arvinxu/layout-kit": "^1",
     "@ctrl/tinycolor": "^3.6.0",
-    "antd-token-previewer": "2.0.0-alpha.8",
     "classnames": "^2.3.1",
     "rc-util": "^5.32.0",
     "react-colorful": "^5.5.1",
@@ -26,7 +25,7 @@
     "@nocobase/server": "0.11.1-alpha.5",
     "@nocobase/test": "0.11.1-alpha.5",
     "@nocobase/utils": "0.11.1-alpha.5",
-    "antd": "^5.6.4",
+    "antd": "^5.7.3",
     "lodash": "4.17.21",
     "react": "^18.2.0"
   }
