@@ -8,16 +8,18 @@
   "main": "./dist/server/index.js",
   "devDependencies": {
     "@formily/react": "2.x",
-    "@nocobase/actions": "0.11.1-alpha.5",
-    "@nocobase/auth": "0.11.1-alpha.5",
-    "@nocobase/client": "0.11.1-alpha.5",
-    "@nocobase/database": "0.11.1-alpha.5",
-    "@nocobase/plugin-auth": "0.11.1-alpha.5",
-    "@nocobase/plugin-verification": "0.11.1-alpha.5",
-    "@nocobase/server": "0.11.1-alpha.5",
-    "@nocobase/test": "0.11.1-alpha.5",
     "antd": "5.x",
     "react": "18.x",
     "react-i18next": "^11.15.1"
+  },
+  "peerDependencies": {
+    "@nocobase/actions": "0.x",
+    "@nocobase/auth": "0.x",
+    "@nocobase/client": "0.x",
+    "@nocobase/database": "0.x",
+    "@nocobase/plugin-auth": "0.x",
+    "@nocobase/plugin-verification": "0.x",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x"
   }
 }

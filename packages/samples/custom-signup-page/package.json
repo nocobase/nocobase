@@ -4,10 +4,12 @@
   "main": "./dist/server/index.js",
   "devDependencies": {
     "@formily/react": "2.x",
-    "@nocobase/client": "0.11.1-alpha.5",
-    "@nocobase/server": "0.11.1-alpha.5",
-    "@nocobase/test": "0.11.1-alpha.5",
     "react": "^18.2.0"
+  },
+  "peerDependencies": {
+    "@nocobase/client": "0.x",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
 }

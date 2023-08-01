@@ -10,13 +10,15 @@
   "devDependencies": {
     "@formily/core": "2.x",
     "@formily/react": "2.x",
-    "@nocobase/client": "0.11.1-alpha.5",
-    "@nocobase/database": "0.11.1-alpha.5",
-    "@nocobase/server": "0.11.1-alpha.5",
-    "@nocobase/test": "0.11.1-alpha.5",
     "@types/cross-spawn": "^6.0.2",
     "china-division": "^2.4.0",
     "cross-spawn": "^7.0.3"
+  },
+  "peerDependencies": {
+    "@nocobase/client": "0.x",
+    "@nocobase/database": "0.x",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
 }

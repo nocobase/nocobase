@@ -8,17 +8,19 @@
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "devDependencies": {
-    "@nocobase/actions": "0.11.1-alpha.5",
-    "@nocobase/client": "0.11.1-alpha.5",
-    "@nocobase/database": "0.11.1-alpha.5",
-    "@nocobase/plugin-acl": "0.11.1-alpha.5",
-    "@nocobase/plugin-auth": "0.11.1-alpha.5",
-    "@nocobase/resourcer": "0.11.1-alpha.5",
-    "@nocobase/server": "0.11.1-alpha.5",
-    "@nocobase/test": "0.11.1-alpha.5",
-    "@nocobase/utils": "0.11.1-alpha.5",
     "@types/jsonwebtoken": "^8.5.8",
     "jsonwebtoken": "^8.5.1"
+  },
+  "peerDependencies": {
+    "@nocobase/actions": "0.x",
+    "@nocobase/client": "0.x",
+    "@nocobase/database": "0.x",
+    "@nocobase/plugin-acl": "0.x",
+    "@nocobase/plugin-auth": "0.x",
+    "@nocobase/resourcer": "0.x",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x",
+    "@nocobase/utils": "0.x"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
 }
