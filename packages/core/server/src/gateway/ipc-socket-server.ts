@@ -1,6 +1,6 @@
 import net from 'net';
 import fs from 'fs';
-import { Gateway } from '@nocobase/server';
+import { Gateway } from '../gateway';
 
 export class IPCSocketServer {
   socketServer: net.Server;

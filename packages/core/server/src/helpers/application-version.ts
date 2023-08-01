@@ -1,6 +1,6 @@
 import { Collection } from '@nocobase/database';
 import semver from 'semver';
-import Application from '@nocobase/server';
+import Application from '../application';
 
 export class ApplicationVersion {
   protected app: Application;

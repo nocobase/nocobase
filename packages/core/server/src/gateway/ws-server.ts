@@ -2,7 +2,7 @@ import { Gateway, IncomingRequest } from '../gateway';
 import WebSocket from 'ws';
 import { nanoid } from 'nanoid';
 import { IncomingMessage } from 'http';
-import { AppSupervisor } from '@nocobase/server';
+import { AppSupervisor } from '../app-supervisor';
 
 declare class WebSocketWithId extends WebSocket {
   id: string;

@@ -20,8 +20,9 @@ import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
 import { ApplicationVersion } from './helpers/application-version';
 import { AppSupervisor, supervisedAppCall } from './app-supervisor';
-import packageJson from '../package.json';
 import lodash from 'lodash';
+
+const packageJson = require('../package.json');
 
 export type PluginConfiguration = string | [string, any];
 

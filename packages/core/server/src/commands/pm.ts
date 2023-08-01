@@ -1,5 +1,5 @@
 import Application from '../application';
-import { Gateway } from '@nocobase/server';
+import { Gateway } from '../gateway';
 
 export default (app: Application) => {
   app
