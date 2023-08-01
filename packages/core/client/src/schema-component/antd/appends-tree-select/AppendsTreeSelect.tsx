@@ -106,7 +106,7 @@ export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
   }, [collection, baseCollection, filter]);
 
   useEffect(() => {
-    const arr = (props.multiple ? propsValue : propsValue ? [value] : []) as DefaultOptionType[];
+    const arr = (props.multiple ? propsValue : propsValue ? [propsValue] : []) as string[];
     if (!arr?.length || arr.every((v) => Boolean(optionsMap[v]))) {
       return;
     }
