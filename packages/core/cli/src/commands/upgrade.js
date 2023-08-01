@@ -1,7 +1,8 @@
 const chalk = require('chalk');
 const { Command } = require('commander');
 const { resolve } = require('path');
-const { getVersion, run, promptForTs, runAppCommand, hasCorePackages, updateJsonFile, hasTsNode } = require('../util');
+const { run, promptForTs, runAppCommand, hasCorePackages, updateJsonFile, hasTsNode } = require('../util');
+const { existsSync, rmSync } = require('fs');
 
 /**
  *
@@ -31,6 +32,10 @@ module.exports = (cli) => {
         return;
       }
       // If ts-node is not installed, do not do the following
+      const appDevDir = resolve(process.cwd(), './storage/.app-dev');
+      if (existsSync(appDevDir)) {
+        rmSync(appDevDir, { recursive: true, force: true });
+      }
       await run('yarn', ['add', '@nocobase/cli', '@nocobase/devtools', '-W']);
       await run('yarn', ['install']);
       await runAppCommand('upgrade');

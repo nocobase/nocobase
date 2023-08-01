@@ -22,6 +22,6 @@
   },
   "displayName": "Authentication",
   "displayName.zh-CN": "用户认证",
-  "description": "Basic authentication and authenticator management.",
-  "description.zh-CN": "提供基础认证功能和扩展认证器管理功能。"
+  "description": "Basic authentication and authenticator management",
+  "description.zh-CN": "提供基础认证功能和扩展认证器管理功能"
 }

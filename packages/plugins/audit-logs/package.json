@@ -1,10 +1,10 @@
 {
   "name": "@nocobase/plugin-audit-logs",
   "version": "0.11.1-alpha.5",
-  "displayName": "audit-logs",
+  "displayName": "Audit logs",
   "displayName.zh-CN": "审计日志",
-  "description": "audit logs plugin",
-  "description.zh-CN": "审计日志。",
+  "description": "Data addition, modification, deletion logs",
+  "description.zh-CN": "数据的增删改日志",
   "main": "./dist/server/index.js",
   "license": "AGPL-3.0",
   "devDependencies": {

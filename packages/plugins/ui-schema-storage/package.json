@@ -1,9 +1,9 @@
 {
   "name": "@nocobase/plugin-ui-schema-storage",
   "displayName": "UI schema storage",
-  "displayName.zh-CN": "UI schema",
-  "description": "A plugin used for managing page UI schemas.",
-  "description.zh-CN": "UI schema 配置。",
+  "displayName.zh-CN": "UI schema 存储服务",
+  "description": "用于存储用户动态自定义的 UI schema",
+  "description.zh-CN": "用于存储用户动态自定义的 UI schema",
   "version": "0.11.1-alpha.5",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",

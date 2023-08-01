@@ -1,9 +1,9 @@
 {
   "name": "@nocobase/plugin-collection-manager",
-  "displayName": "collection manager plugin",
-  "displayName.zh-CN": "数据库管理",
-  "description": " database management plugin designed to simplify the process of managing and operating databases. It seamlessly integrates with various relational database systems such as MySQL and PostgreSQL, and provides an intuitive user interface for performing various database tasks.",
-  "description.zh-CN": "可以与多种关系型数据库系统（如MySQL、PostgreSQL）无缝集成，并提供直观的用户界面来执行各种数据库任务。",
+  "displayName": "Collection manager",
+  "displayName.zh-CN": "数据表管理",
+  "description": "Provide convenient collection management capabilities",
+  "description.zh-CN": "提供便捷的数据表管理能力",
   "version": "0.11.1-alpha.5",
   "main": "./dist/server/index.js",
   "license": "AGPL-3.0",

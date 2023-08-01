@@ -1,9 +1,9 @@
 {
   "name": "@nocobase/plugin-sequence-field",
   "displayName": "sequence field",
-  "displayName.zh-CN": "字段序列",
-  "description": "provide the functionality of automatically generating unique sequence values for databases or data management systems.",
-  "description.zh-CN": "为数据库或数据管理系统提供自动生成唯一序列值的功能。",
+  "displayName.zh-CN": "自动编码字段",
+  "description": "",
+  "description.zh-CN": "",
   "version": "0.11.1-alpha.5",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",

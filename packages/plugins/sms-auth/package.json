@@ -1,9 +1,9 @@
 {
   "name": "@nocobase/plugin-sms-auth",
-  "displayName": "SMS Auth",
+  "displayName": "SMS auth",
   "displayName.zh-CN": "短信登录",
   "description": "SMS authentication function",
-  "description.zh-CN": "提供短信登录认证功能。",
+  "description.zh-CN": "提供短信登录认证功能",
   "version": "0.11.1-alpha.5",
   "main": "./dist/server/index.js",
   "devDependencies": {
