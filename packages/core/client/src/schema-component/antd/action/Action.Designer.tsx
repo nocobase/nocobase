@@ -722,6 +722,7 @@ function WorkflowConfig() {
                             },
                           },
                         },
+                        required: true,
                       },
                     },
                   },
