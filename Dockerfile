@@ -27,9 +27,6 @@ RUN cd /app \
   && yarn config set network-timeout 600000 -g \
   && yarn create nocobase-app my-nocobase-app -a -e APP_ENV=production -e APPEND_PRESET_LOCAL_PLUGINS=$APPEND_PRESET_LOCAL_PLUGINS \
   && cd /app/my-nocobase-app \
-  && yarn install \
-  && yarn build \
-  && rm -rf node_modules \
   && yarn install --production
 
 WORKDIR /app/my-nocobase-app
