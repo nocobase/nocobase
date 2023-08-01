@@ -9,6 +9,7 @@ export interface ThemeItem {
   /** 主题是否可选 */
   optional: boolean;
   isBuiltIn?: boolean;
+  uid?: string;
 }
 
 export type Theme = {

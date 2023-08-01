@@ -7,6 +7,7 @@ export const antd: Omit<ThemeItem, 'id'> = {
   },
   optional: true,
   isBuiltIn: true,
+  uid: 'default',
 };
 
 export const dark: Omit<ThemeItem, 'id'> = {
@@ -17,6 +18,7 @@ export const dark: Omit<ThemeItem, 'id'> = {
   },
   optional: true,
   isBuiltIn: true,
+  uid: 'dark',
 };
 
 export const compact: Omit<ThemeItem, 'id'> = {
@@ -27,6 +29,7 @@ export const compact: Omit<ThemeItem, 'id'> = {
   },
   optional: true,
   isBuiltIn: true,
+  uid: 'compact',
 };
 
 /** 同时包含 `紧凑` 和 `暗黑` 两种模式 */
@@ -38,4 +41,5 @@ export const compactDark: Omit<ThemeItem, 'id'> = {
   },
   optional: true,
   isBuiltIn: true,
+  uid: 'compactDark',
 };

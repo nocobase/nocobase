@@ -35,6 +35,10 @@ export class ThemeEditorPlugin extends Plugin {
           type: 'boolean',
           name: 'isBuiltIn',
         },
+        {
+          type: 'string',
+          name: 'uid',
+        },
       ],
     });
   }

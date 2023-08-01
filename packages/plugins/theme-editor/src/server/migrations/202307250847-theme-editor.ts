@@ -4,9 +4,55 @@ import { antd, compact, compactDark, dark } from '../builtinThemes';
 export default class ThemeEditorMigration extends Migration {
   async up() {
     const theme = this.db.getCollection('themeConfig');
-    if (theme) {
+    if (!theme) {
+      return;
+    }
+
+    if (
+      !(await theme.repository.find({
+        filter: {
+          uid: 'default',
+        },
+      }))
+    ) {
       await theme.repository.create({
-        values: [antd, dark, compact, compactDark],
+        values: [antd],
+      });
+    }
+
+    if (
+      !(await theme.repository.find({
+        filter: {
+          uid: 'dark',
+        },
+      }))
+    ) {
+      await theme.repository.create({
+        values: [dark],
+      });
+    }
+
+    if (
+      !(await theme.repository.find({
+        filter: {
+          uid: 'compact',
+        },
+      }))
+    ) {
+      await theme.repository.create({
+        values: [compact],
+      });
+    }
+
+    if (
+      !(await theme.repository.find({
+        filter: {
+          uid: 'compactDark',
+        },
+      }))
+    ) {
+      await theme.repository.create({
+        values: [compactDark],
       });
     }
   }
