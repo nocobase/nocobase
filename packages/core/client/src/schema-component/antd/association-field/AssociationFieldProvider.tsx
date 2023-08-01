@@ -52,7 +52,7 @@ export const AssociationFieldProvider = observer(
         return;
       }
       // 如果是表单模板数据，使用子表单和子表格组件时，过滤掉关系 ID
-      if (field.value && field.form['__template'] && ['Nester', 'SubTable'].includes(currentMode)) {
+      if (field.value && field.form['__template'] && ['Nester', 'SubTable', 'PopoverNester'].includes(currentMode)) {
         if (['belongsTo', 'hasOne'].includes(collectionField.type)) {
           if (field.value?.[collectionField.targetKey]) {
             delete field.value[collectionField.targetKey];
@@ -69,7 +69,7 @@ export const AssociationFieldProvider = observer(
       }
       if (field.value !== null && field.value !== undefined) {
         // Nester 子表单时，如果没数据初始化一个 [null] 的占位
-        if (currentMode === 'Nester' && Array.isArray(field.value)) {
+        if (['Nester', 'PopoverNester'].includes(currentMode) && Array.isArray(field.value)) {
           if (field.value.length === 0 && ['belongsToMany', 'hasMany'].includes(collectionField.type)) {
             field.value = [{}];
           }
@@ -77,7 +77,7 @@ export const AssociationFieldProvider = observer(
         setLoading(false);
         return;
       }
-      if (currentMode === 'Nester') {
+      if (['Nester', 'PopoverNester'].includes(currentMode)) {
         if (['belongsTo', 'hasOne'].includes(collectionField.type)) {
           field.value = {};
         } else if (['belongsToMany', 'hasMany'].includes(collectionField.type)) {

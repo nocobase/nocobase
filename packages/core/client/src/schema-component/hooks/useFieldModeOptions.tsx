@@ -44,6 +44,7 @@ export const useFieldModeOptions = () => {
               { label: t('Select'), value: 'Select' },
               { label: t('Record picker'), value: 'Picker' },
               { label: t('Sub-form'), value: 'Nester' },
+              { label: t('Sub-form(Popover)'), value: 'PopoverNester' },
               { label: t('Sub-table'), value: 'SubTable' },
             ];
       case 'm2m':
@@ -51,6 +52,7 @@ export const useFieldModeOptions = () => {
           ? [
               { label: t('Title'), value: 'Select' },
               { label: t('Sub-details'), value: 'Nester' },
+              { label: t('Sub-form(Popover)'), value: 'PopoverNester' },
               { label: t('Sub-table'), value: 'SubTable' },
             ]
           : [
@@ -58,18 +60,20 @@ export const useFieldModeOptions = () => {
               { label: t('Record picker'), value: 'Picker' },
               { label: t('Sub-table'), value: 'SubTable' },
               { label: t('Sub-form'), value: 'Nester' },
+              { label: t('Sub-form(Popover)'), value: 'PopoverNester' },
             ];
       case 'm2o':
       case 'linkTo':
         return isReadPretty
           ? [
-              { label: t('Title'), value: 'Select' },
               { label: t('Sub-details'), value: 'Nester' },
+              { label: t('Sub-form(Popover)'), value: 'PopoverNester' },
             ]
           : [
               { label: t('Select'), value: 'Select' },
               { label: t('Record picker'), value: 'Picker' },
               { label: t('Sub-form'), value: 'Nester' },
+              { label: t('Sub-form(Popover)'), value: 'PopoverNester' },
             ];
 
       default:
@@ -82,6 +86,7 @@ export const useFieldModeOptions = () => {
               { label: t('Select'), value: 'Select' },
               { label: t('Record picker'), value: 'Picker' },
               { label: t('Sub-form'), value: 'Nester' },
+              { label: t('Sub-form(Popover)'), value: 'PopoverNester' },
             ];
     }
   }, [t, collectionField?.interface, label]);

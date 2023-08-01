@@ -9,6 +9,7 @@ import { InternalFileManager } from './FileManager';
 import { InternalNester } from './InternalNester';
 import { InternalPicker } from './InternalPicker';
 import { InternalSubTable } from './InternalSubTable';
+import { InternaPopoverNester } from './InternaPopoverNester';
 import { CreateRecordAction } from './components/CreateRecordAction';
 import { useAssociationFieldContext } from './hooks';
 
@@ -45,6 +46,7 @@ const EditableAssociationField = observer(
       <SchemaComponentOptions scope={{ useCreateActionProps }} components={{ CreateRecordAction }}>
         {currentMode === 'Picker' && <InternalPicker {...props} />}
         {currentMode === 'Nester' && <InternalNester {...props} />}
+        {currentMode === 'PopoverNester' && <InternaPopoverNester {...props} />}
         {currentMode === 'Select' && <AssociationSelect {...props} />}
         {currentMode === 'SubTable' && <InternalSubTable {...props} />}
         {currentMode === 'FileManager' && <InternalFileManager {...props} />}

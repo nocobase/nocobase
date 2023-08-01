@@ -53,7 +53,7 @@ export const ReadPrettyInternalViewer: React.FC = observer(
             <span>
               {snapshot ? (
                 text
-              ) : enableLink !== false ? (
+              ) : enableLink !== false && !props.enableLink ? (
                 <a
                   onClick={(e) => {
                     e.stopPropagation();
