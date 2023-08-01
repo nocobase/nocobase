@@ -1,6 +1,6 @@
 import { DeleteOutlined, MenuOutlined } from '@ant-design/icons';
 import { TinyColor } from '@ctrl/tinycolor';
-import { SortableContext, useSortable } from '@dnd-kit/sortable';
+import { SortableContext, SortableContextProps, useSortable } from '@dnd-kit/sortable';
 import { css } from '@emotion/css';
 import { ArrayField, Field } from '@formily/core';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
@@ -449,14 +449,14 @@ export const Table: any = observer(
     const SortableWrapper = useCallback<React.FC>(
       ({ children }) => {
         return dragSort
-          ? React.createElement(
+          ? React.createElement<Omit<SortableContextProps, 'children'>>(
               SortableContext,
               {
                 items: field.value?.map?.(getRowKey) || [],
               },
               children,
             )
-          : React.createElement(React.Fragment, children);
+          : React.createElement(React.Fragment, {}, children);
       },
       [field, dragSort],
     );
