@@ -4,7 +4,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollectionFilterOptions, useCollectionManager } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isShowDefaultValue } from '../../../schema-settings';
-import { useCompile, useDesignable } from '../../hooks';
+import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
 import { useAssociationFieldContext } from '../association-field/hooks';
 import { removeNullCondition } from '../filter';
 import { FilterDynamicComponent } from './FilterDynamicComponent';
@@ -45,6 +45,9 @@ export const TableColumnDesigner = (props) => {
   const defaultFilter = fieldSchema?.['x-component-props']?.service?.params?.filter || {};
   const dataSource = useCollectionFilterOptions(collectionField?.target);
   const isDateField = ['datetime', 'createdAt', 'updatedAt'].includes(collectionField?.interface);
+  const isAssociationField = ['obo', 'oho', 'o2o', 'o2m', 'm2m', 'm2o'].includes(collectionField?.interface);
+  const fieldModeOptions = useFieldModeOptions({ fieldSchema });
+  const fieldMode = field?.componentProps?.['mode'] || (isFileField ? 'FileManager' : 'Select');
   let readOnlyMode = 'editable';
   if (fieldSchema['x-disabled'] === true) {
     readOnlyMode = 'readonly';
@@ -227,6 +230,28 @@ export const TableColumnDesigner = (props) => {
                   ...fieldSchema['x-component-props'],
                 },
               },
+            });
+            dn.refresh();
+          }}
+        />
+      )}
+      {isAssociationField && isSubTableColumn && !field.readPretty && (
+        <SchemaSettings.SelectItem
+          key="field-mode"
+          title={t('Field component')}
+          options={fieldModeOptions}
+          value={fieldMode}
+          onChange={(mode) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props']['mode'] = mode;
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            field.componentProps = field.componentProps || {};
+            field.componentProps.mode = mode;
+            dn.emit('patch', {
+              schema,
             });
             dn.refresh();
           }}
