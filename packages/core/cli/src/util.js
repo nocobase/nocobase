@@ -159,7 +159,7 @@ exports.getVersion = async () => {
 };
 
 exports.generateAppDir = function generateAppDir() {
-  const appPkgPath = dirname(dirname(require.resolve('@nocobase/app')));
+  const appPkgPath = dirname(dirname(require.resolve('@nocobase/app/src/index.ts')));
   const appDevDir = resolve(process.cwd(), './storage/app-dev');
   if (exports.isDev() && !exports.hasCorePackages() && appPkgPath.includes('node_modules')) {
     if (!existsSync(appDevDir)) {

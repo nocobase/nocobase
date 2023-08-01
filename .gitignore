@@ -25,4 +25,4 @@ storage/duplicator/*
 **/.dumi/tmp-test
 **/.dumi/tmp-production
 packages/core/client/docs/contributing.md
-packages/app/client/src/.plugins
+packages/core/app/client/src/.plugins
