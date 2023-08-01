@@ -1,7 +1,7 @@
 import { ConfigProvider, Segmented, Space, theme as antdTheme } from 'antd';
-import type { MutableTheme } from 'antd-token-previewer';
 import type { FC } from 'react';
 import React from 'react';
+import { MutableTheme } from '../../../types';
 import ComponentDemoGroup from '../component-panel/ComponentDemoGroup';
 import { useLocale } from '../locale';
 import { Error, Primary, Success, Warning } from '../overviews';

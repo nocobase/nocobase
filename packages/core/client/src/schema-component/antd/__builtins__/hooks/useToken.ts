@@ -1,14 +1,12 @@
 import { theme } from 'antd';
 import { CustomToken } from '../../../../global-theme';
 
-const { useToken: useAntdToken } = theme;
-
-interface Result extends ReturnType<typeof useAntdToken> {
+interface Result extends ReturnType<typeof theme.useToken> {
   token: CustomToken;
 }
 
 const useToken = () => {
-  const result = useAntdToken();
+  const result = theme.useToken();
   return result as Result;
 };
 
