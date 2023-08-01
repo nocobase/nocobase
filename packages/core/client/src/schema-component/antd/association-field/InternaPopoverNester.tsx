@@ -35,7 +35,7 @@ export const InternaPopoverNester = (props) => {
         }
       }}
     >
-      <span style={{ cursor: 'pointer' }}>
+      <span style={{ cursor: 'pointer', display: 'inline-block', width: '100%' }}>
         {!isEmptyObject(value) ? <ReadPrettyInternalViewer {...props} enableLink={true} /> : <EditOutlined />}
       </span>
     </Popover>

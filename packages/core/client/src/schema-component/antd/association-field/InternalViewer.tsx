@@ -39,7 +39,6 @@ export const ReadPrettyInternalViewer: React.FC = observer(
     const { designable } = useDesignable();
     const { snapshot } = useActionContext();
     const ellipsisWithTooltipRef = useRef<IEllipsisWithTooltipRef>();
-
     const renderRecords = () =>
       toArr(props.value).map((record, index, arr) => {
         const val = toValue(compile(record?.[fieldNames?.label || 'label']), 'N/A');
@@ -76,7 +75,6 @@ export const ReadPrettyInternalViewer: React.FC = observer(
           </Fragment>
         );
       });
-
     const renderWithoutTableFieldResourceProvider = () => (
       <WithoutTableFieldResource.Provider value={true}>
         <FormProvider>
