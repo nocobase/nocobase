@@ -1,4 +1,5 @@
-import { dayjs, moment2str } from '@nocobase/utils';
+import { moment2str } from '@nocobase/utils';
+import dayjs from 'dayjs';
 import { getJsDateFromExcel } from 'excel-date-to-js';
 import { BaseValueParser } from './base-value-parser';
 

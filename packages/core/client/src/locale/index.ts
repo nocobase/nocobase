@@ -2,8 +2,6 @@ export type LocaleOptions = {
   label: string;
 };
 
-export { default as cron } from '../schema-component/antd/cron/locale';
-
 export const dayjsLocale = {
   'ar-EG': 'ar',
   'az-AZ': 'az',

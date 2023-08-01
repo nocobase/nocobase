@@ -1,6 +1,6 @@
 import { useField, useFieldSchema } from '@formily/react';
 import { useDesignable } from '@nocobase/client';
-import { lodash } from '@nocobase/utils/client';
+import lodash from 'lodash';
 import { useCallback } from 'react';
 
 export const useSchemaPatch = () => {

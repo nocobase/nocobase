@@ -41,7 +41,8 @@
     "@nocobase/plugin-users": "0.11.1-alpha.5",
     "@nocobase/plugin-verification": "0.11.1-alpha.5",
     "@nocobase/plugin-workflow": "0.11.1-alpha.5",
-    "@nocobase/server": "0.11.1-alpha.5"
+    "@nocobase/server": "0.11.1-alpha.5",
+    "cronstrue": "^2.11.0"
   },
   "repository": {
     "type": "git",

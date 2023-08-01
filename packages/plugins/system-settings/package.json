@@ -1,28 +1,18 @@
 {
   "name": "@nocobase/plugin-system-settings",
-  "displayName": "system settings",
-  "displayName.zh-CN": "系统配置",
-  "description": "A plugin specifically designed to adjust the system-level settings of NocoBase.",
-  "description.zh-CN": "用于调整 nocobase 的系统级设置。",
+  "displayName": "System settings",
+  "displayName.zh-CN": "系统设置",
+  "description": "Used to adjust the system title, logo, etc",
+  "description.zh-CN": "用于调整系统的标题、LOGO 等",
   "version": "0.11.1-alpha.5",
   "license": "AGPL-3.0",
-  "main": "./lib/server/index.js",
-  "files": [
-    "lib",
-    "src",
-    "README.md",
-    "README.zh-CN.md",
-    "CHANGELOG.md",
-    "server.js",
-    "server.d.ts",
-    "client.js",
-    "client.d.ts"
-  ],
-  "devDependencies": {
-    "@nocobase/client": "0.11.1-alpha.5",
-    "@nocobase/database": "0.11.1-alpha.5",
-    "@nocobase/server": "0.11.1-alpha.5",
-    "@nocobase/test": "0.11.1-alpha.5"
+  "main": "./dist/server/index.js",
+  "devDependencies": {},
+  "peerDependencies": {
+    "@nocobase/client": "0.x",
+    "@nocobase/database": "0.x",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
 }

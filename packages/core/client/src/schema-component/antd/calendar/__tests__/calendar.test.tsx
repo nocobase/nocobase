@@ -1,4 +1,4 @@
-import { dayjs } from '@nocobase/utils/client';
+import dayjs from 'dayjs';
 import React from 'react';
 import { render, screen } from 'testUtils';
 import App1 from '../demos/demo1';
