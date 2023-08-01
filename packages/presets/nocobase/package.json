@@ -42,7 +42,6 @@
     "@nocobase/plugin-verification": "0.11.1-alpha.5",
     "@nocobase/plugin-workflow": "0.11.1-alpha.5",
     "@nocobase/server": "0.11.1-alpha.5",
-    "china-division": "^2.4.0",
     "cronstrue": "^2.11.0"
   },
   "repository": {
