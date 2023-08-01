@@ -27,7 +27,7 @@ export type TokenWithCommonCls<T> = T & {
 
 export type GenerateStyle<
   ComponentToken extends object = TokenWithCommonCls<GlobalToken>,
-  ReturnType = CSSInterpolation,
+  ReturnType = CSSInterpolation
 > = (token: ComponentToken, options?: any) => ReturnType;
 
 export const genCommonStyle = (token: any, componentPrefixCls: string): CSSObject => {
@@ -75,7 +75,7 @@ export const genStyleHook = <ComponentName extends OverrideComponent>(
     return {
       wrapSSR: useStyleRegister(
         {
-          theme,
+          theme: theme as any,
           token,
           hashId,
           path: ['formily-antd', component, prefixCls, iconPrefixCls],
