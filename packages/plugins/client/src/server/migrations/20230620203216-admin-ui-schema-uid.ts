@@ -5,6 +5,9 @@ export default class extends Migration {
   async up() {
     const systemSettings = this.db.getRepository('systemSettings');
     let instance: Model = await systemSettings.findOne();
+    if (instance?.options?.adminSchemaUid) {
+      return;
+    }
     const uiRoutes = this.db.getRepository('uiRoutes');
     const routes = await uiRoutes.find();
     for (const route of routes) {

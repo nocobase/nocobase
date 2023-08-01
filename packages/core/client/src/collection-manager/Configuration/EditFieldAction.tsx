@@ -8,10 +8,11 @@ import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
+import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction, useUpdateAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
+import useDialect from '../hooks/useDialect';
 import { IField } from '../interfaces/types';
-import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import * as components from './components';
 
 const getSchema = (schema: IField, record: any, compile, getContainer): ISchema => {
@@ -144,6 +145,8 @@ export const EditFieldAction = (props) => {
   const { t } = useTranslation();
   const compile = useCompile();
   const [data, setData] = useState<any>({});
+  const { isDialect } = useDialect();
+
   const currentCollections = useMemo(() => {
     return collections.map((v) => {
       return {
@@ -194,6 +197,8 @@ export const EditFieldAction = (props) => {
             useCancelAction,
             showReverseFieldConfig: !data?.reverseField,
             collections: currentCollections,
+            isDialect,
+            disabledJSONB: true,
             ...scope,
           }}
         />
