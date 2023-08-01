@@ -1,5 +1,6 @@
 import { Repository } from '@nocobase/database';
-import { CollectionsGraph, lodash } from '@nocobase/utils';
+import { CollectionsGraph } from '@nocobase/utils';
+import lodash from 'lodash';
 import { CollectionModel } from '../models/collection';
 
 interface LoadOptions {

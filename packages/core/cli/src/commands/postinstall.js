@@ -31,7 +31,7 @@ module.exports = (cli) => {
       run('umi', ['generate', 'tmp'], {
         stdio: 'pipe',
         env: {
-          APP_ROOT: `packages/${APP_PACKAGE_ROOT}/client`,
+          APP_ROOT: `${APP_PACKAGE_ROOT}/client`,
         },
       });
     });

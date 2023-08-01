@@ -1,4 +1,4 @@
-import { dayjs } from '@nocobase/utils/client';
+import dayjs from 'dayjs';
 import { get } from 'lodash';
 import solarLunar from 'solarlunar-es';
 import { i18n } from '../../../i18n';

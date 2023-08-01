@@ -1,7 +1,8 @@
 import { ISchema } from '@formily/react';
 import { isArr } from '@formily/shared';
-import { dayjs, getDefaultFormat, str2moment } from '@nocobase/utils/client';
+import { getDefaultFormat, str2moment } from '@nocobase/utils/client';
 import { Tag } from 'antd';
+import dayjs from 'dayjs';
 import React from 'react';
 import { CollectionFieldOptions, useCollectionManager } from '../../../collection-manager';
 
