@@ -14,8 +14,9 @@
     "client.d.ts"
   ],
   "dependencies": {},
-  "devDependencies": {
-    "@nocobase/server": "{{{nocobaseVersion}}}",
-    "@nocobase/test": "{{{nocobaseVersion}}}"
+  "peerDependencies": {
+    "@nocobase/client": "0.x",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x"
   }
 }
