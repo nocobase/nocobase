@@ -9,7 +9,6 @@
   "dependencies": {
     "@arvinxu/layout-kit": "^1",
     "@ctrl/tinycolor": "^3.6.0",
-    "antd-token-previewer": "2.0.0-alpha.8",
     "classnames": "^2.3.1",
     "rc-util": "^5.32.0",
     "react-colorful": "^5.5.1",

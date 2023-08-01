@@ -7609,7 +7609,7 @@ antd-style@^3.3.0:
     "@emotion/utils" "^1"
     use-merge-value "^1"
 
-antd-token-previewer@2.0.0-alpha.8, antd-token-previewer@^2.0.0-alpha.6:
+antd-token-previewer@^2.0.0-alpha.6:
   version "2.0.0-alpha.8"
   resolved "https://registry.npmmirror.com/antd-token-previewer/-/antd-token-previewer-2.0.0-alpha.8.tgz#9f47bc531d8bf6907f0e7e5cfbacf50d15619d86"
   dependencies:
