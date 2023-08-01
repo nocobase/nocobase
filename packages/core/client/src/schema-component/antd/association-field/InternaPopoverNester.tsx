@@ -1,8 +1,7 @@
 import { Popover } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
 import { useField, useFieldSchema } from '@formily/react';
-import React from 'react';
-import { useDesignable } from '../../../';
+import React, { useEffect, useState } from 'react';
 import { ReadPrettyInternalViewer } from './InternalViewer';
 import { InternalNester } from './InternalNester';
 
@@ -18,12 +17,12 @@ function isEmptyObject(obj) {
 
 export const InternaPopoverNester = (props) => {
   const field: any = useField();
-  const { dn } = useDesignable();
   const content = (
     <div style={{ minWidth: '400px', maxHeight: '440px', overflow: 'auto' }}>
       <InternalNester {...props} />
     </div>
   );
+  const [value, setValue] = useState(field.value);
   return (
     <Popover
       content={content}
@@ -31,12 +30,13 @@ export const InternaPopoverNester = (props) => {
       placement="topLeft"
       onOpenChange={(open) => {
         if (!open) {
-          dn.refresh();
+          const data = Array.isArray(field.value) ? [...field.value] : { ...field.value };
+          setValue(data);
         }
       }}
     >
       <span style={{ cursor: 'pointer' }}>
-        {!isEmptyObject(field.value) ? <ReadPrettyInternalViewer {...props} enableLink={true} /> : <EditOutlined />}
+        {!isEmptyObject(value) ? <ReadPrettyInternalViewer {...props} enableLink={true} /> : <EditOutlined />}
       </span>
     </Popover>
   );
