@@ -27,7 +27,7 @@ export type TokenWithCommonCls<T> = T & {
 
 export type GenerateStyle<
   ComponentToken extends object = TokenWithCommonCls<GlobalToken>,
-  ReturnType = CSSInterpolation,
+  ReturnType = CSSInterpolation
 > = (token: ComponentToken, options?: any) => ReturnType;
 
 export const genCommonStyle = (token: any, componentPrefixCls: string): CSSObject => {

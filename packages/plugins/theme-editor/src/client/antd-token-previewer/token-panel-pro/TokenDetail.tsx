@@ -1,8 +1,8 @@
 import { Tooltip } from 'antd';
-import type { MutableTheme } from 'antd-token-previewer';
 import classNames from 'classnames';
 import type { FC } from 'react';
 import React, { useMemo } from 'react';
+import { MutableTheme } from '../../../types';
 import TokenInput from '../TokenInput';
 import type { TokenValue } from '../interface';
 import { useLocale } from '../locale';
