@@ -1443,6 +1443,7 @@ export const findParentFieldSchema = (fieldSchema: Schema) => {
 SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
   const currentSchema = useFieldSchema();
   const fieldSchema = props?.fieldSchema ?? currentSchema;
+  const field: Field = useField();
   const { dn } = useDesignable();
   const { t } = useTranslation();
   let targetField;
@@ -1485,10 +1486,7 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
                 renderSchemaComponent: function Com(props) {
                   const s = _.cloneDeep(fieldSchemaWithoutRequired) || ({} as Schema);
                   s.title = '';
-
-                  // 任何一个非空字符串都可以
                   s.name = 'default';
-
                   s['x-read-pretty'] = false;
                   s['x-disabled'] = false;
 
@@ -1507,9 +1505,13 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
                         minWidth: '200px',
                       },
                     },
-                  };
+                  } as ISchema;
 
-                  return <SchemaComponent schema={schema} />;
+                  return (
+                    <FormProvider>
+                      <SchemaComponent schema={schema} />
+                    </FormProvider>
+                  );
                 },
               },
               title: t('Default value'),
@@ -1523,6 +1525,7 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
           ['x-uid']: fieldSchema['x-uid'],
         };
         fieldSchema.default = v.default;
+        field.value = v.default;
         schema.default = v.default;
         dn.emit('patch', {
           schema,

@@ -24,6 +24,7 @@ export const RichText = connect(
       'image',
     ];
     const { value, onChange, disabled } = props;
+
     return wrapSSR(
       <ReactQuill
         className={`${componentCls} ${hashId}`}
