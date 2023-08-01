@@ -8,8 +8,8 @@
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "devDependencies": {
-    "@ant-design/icons": "^5.1.4",
-    "@formily/react": "2.2.27",
+    "@ant-design/icons": "5.x",
+    "@formily/react": "2.x",
     "@nocobase/actions": "0.11.1-alpha.5",
     "@nocobase/auth": "0.11.1-alpha.5",
     "@nocobase/client": "0.11.1-alpha.5",
@@ -17,7 +17,7 @@
     "@nocobase/server": "0.11.1-alpha.5",
     "@nocobase/test": "0.11.1-alpha.5",
     "@node-saml/node-saml": "^4.0.2",
-    "antd": "^5.7.3",
+    "antd": "5.x",
     "react": "18.x",
     "react-i18next": "^11.15.1"
   }

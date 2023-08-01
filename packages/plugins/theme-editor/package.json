@@ -8,7 +8,7 @@
   "description.zh-CN": "允许你自定义 UI 的颜色、尺寸等。",
   "devDependencies": {
     "@ant-design/cssinjs": "^1.11.1",
-    "@ant-design/icons": "^5.1.4",
+    "@ant-design/icons": "5.x",
     "@arvinxu/layout-kit": "^1",
     "@ctrl/tinycolor": "^3.6.0",
     "@emotion/css": "^11.11.2",
@@ -17,7 +17,7 @@
     "@nocobase/server": "0.11.1-alpha.5",
     "@nocobase/test": "0.11.1-alpha.5",
     "@nocobase/utils": "0.11.1-alpha.5",
-    "antd": "^5.7.3",
+    "antd": "5.x",
     "antd-token-previewer": "2.0.0-alpha.8",
     "classnames": "^2.3.1",
     "lodash": "4.17.21",

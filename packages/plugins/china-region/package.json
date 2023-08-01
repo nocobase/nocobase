@@ -8,8 +8,8 @@
   "main": "./dist/server/index.js",
   "license": "AGPL-3.0",
   "devDependencies": {
-    "@formily/core": "2.2.27",
-    "@formily/react": "2.2.27",
+    "@formily/core": "2.x",
+    "@formily/react": "2.x",
     "@nocobase/client": "0.11.1-alpha.5",
     "@nocobase/database": "0.11.1-alpha.5",
     "@nocobase/server": "0.11.1-alpha.5",

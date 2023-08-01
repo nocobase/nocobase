@@ -8,9 +8,9 @@
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "devDependencies": {
-    "@formily/antd-v5": "1.1.0",
-    "@formily/react": "2.2.27",
-    "@formily/shared": "2.2.27",
+    "@formily/antd-v5": "1.x",
+    "@formily/react": "2.x",
+    "@formily/shared": "2.x",
     "@nocobase/actions": "0.11.1-alpha.5",
     "@nocobase/client": "0.11.1-alpha.5",
     "@nocobase/database": "0.11.1-alpha.5",

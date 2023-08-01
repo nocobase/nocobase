@@ -7,7 +7,7 @@
   "version": "0.11.1-alpha.5",
   "main": "./dist/server/index.js",
   "devDependencies": {
-    "@formily/react": "^2.2.27",
+    "@formily/react": "2.x",
     "@nocobase/client": "0.11.1-alpha.5",
     "@nocobase/database": "0.11.1-alpha.5",
     "@nocobase/plugin-collection-manager": "0.11.1-alpha.5",
@@ -17,7 +17,7 @@
     "@nocobase/server": "0.11.1-alpha.5",
     "@nocobase/test": "0.11.1-alpha.5",
     "@nocobase/utils": "0.11.1-alpha.5",
-    "antd": "^5.7.3",
+    "antd": "5.x",
     "react": "18.x",
     "react-i18next": "^11.15.1"
   }

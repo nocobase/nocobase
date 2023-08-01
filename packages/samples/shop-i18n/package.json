@@ -6,7 +6,7 @@
     "@nocobase/client": "0.11.1-alpha.5",
     "@nocobase/server": "0.11.1-alpha.5",
     "@nocobase/test": "0.11.1-alpha.5",
-    "antd": "^5.7.3",
+    "antd": "5.x",
     "nodejs-snowflake": "2.0.1",
     "react": "^18.2.0",
     "react-i18next": "^11.15.1"
