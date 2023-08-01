@@ -16,6 +16,7 @@
   "peerDependencies": {
     "@nocobase/acl": "0.x",
     "@nocobase/actions": "0.x",
+    "@nocobase/client": "0.x",
     "@nocobase/database": "0.x",
     "@nocobase/server": "0.x",
     "@nocobase/test": "0.x",
