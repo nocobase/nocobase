@@ -251,8 +251,18 @@ export const cacheWrap = async (
 };
 
 export const query = async (ctx: Context, next: Next) => {
-  const { uid, collection, measures, dimensions, orders, filter, limit, sql, cache: cacheConfig, refresh } = ctx.action
-    .params.values as QueryParams;
+  const {
+    uid,
+    collection,
+    measures,
+    dimensions,
+    orders,
+    filter,
+    limit,
+    sql,
+    cache: cacheConfig,
+    refresh,
+  } = ctx.action.params.values as QueryParams;
   const roleName = ctx.state.currentRole || 'anonymous';
   const can = ctx.app.acl.can({ role: roleName, resource: collection, action: 'list' });
   if (!can && roleName !== 'root') {

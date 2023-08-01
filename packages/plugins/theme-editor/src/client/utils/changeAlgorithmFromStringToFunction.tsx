@@ -1,4 +1,3 @@
-import { isString } from '@nocobase/utils/client';
 import { theme } from 'antd';
 import _ from 'lodash';
 import { ThemeItem } from '../../types';
@@ -9,13 +8,13 @@ import { ThemeItem } from '../../types';
  */
 export function changeAlgorithmFromStringToFunction(themeConfig: ThemeItem) {
   themeConfig = _.cloneDeep(themeConfig);
-  if (isString(themeConfig.config.algorithm)) {
-    themeConfig.config.algorithm = theme[themeConfig.config.algorithm as any];
+  if (_.isString(themeConfig.config.algorithm)) {
+    themeConfig.config.algorithm = theme[themeConfig.config.algorithm];
   }
   if (Array.isArray(themeConfig.config.algorithm)) {
     themeConfig.config.algorithm = themeConfig.config.algorithm.map((item) => {
-      if (isString(item)) {
-        return theme[item as any];
+      if (_.isString(item)) {
+        return theme[item];
       }
       return item;
     });
