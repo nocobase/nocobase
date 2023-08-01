@@ -8,7 +8,7 @@
     "nocobase": "./bin/index.js"
   },
   "dependencies": {
-    "@nocobase/app": "0.11.1-alpha.10",
+    "@nocobase/app": "0.11.1-alpha.5",
     "@types/fs-extra": "^11.0.1",
     "@umijs/utils": "3.5.20",
     "chalk": "^4.1.1",
