@@ -56,7 +56,6 @@ export const FormItem: any = observer(
     const field = useField<Field>();
     const ctx = useBlockRequestContext();
     const schema = useFieldSchema();
-    const { getCollectionJoinField } = useCollectionManager();
     const contextVariable = useContextVariable();
     const variables = useVariables();
 
@@ -70,12 +69,15 @@ export const FormItem: any = observer(
           ctx.field.data = ctx.field.data || {};
           ctx.field.data.activeFields = ctx.field.data.activeFields || new Set();
           ctx.field.data.activeFields.add(schema.name);
+
           // 如果默认值是一个变量，则需要解析之后再显示出来
-          if (isVariable(schema?.default) && variables && field.setInitialValue) {
+          if (isVariable(schema?.default)) {
             field.setInitialValue(' ');
             field.loading = true;
-            field.setInitialValue(await variables.parseVariable(schema.default));
+            field.setInitialValue(await variables?.parseVariable(schema.default));
             field.loading = false;
+          } else {
+            field.setInitialValue(schema?.default);
           }
         }
       };
