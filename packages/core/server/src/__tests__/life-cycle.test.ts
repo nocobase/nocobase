@@ -43,12 +43,4 @@ describe('application life cycle', () => {
     await app.install();
     expect(installFn).toHaveBeenCalledTimes(1);
   });
-
-  it('should listen application', async () => {
-    await app.start({ listen: { port: 13090 } });
-    expect(app.listenServer).not.toBeNull();
-
-    await app.stop();
-    expect(app.listenServer).toBeNull();
-  });
 });

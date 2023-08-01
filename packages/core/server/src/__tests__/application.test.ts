@@ -47,7 +47,7 @@ describe('application', () => {
   });
 
   afterEach(async () => {
-    return app.app.destroy();
+    return app.destroy();
   });
 
   it('resourcer.define', async () => {
