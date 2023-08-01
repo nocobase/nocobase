@@ -242,7 +242,7 @@ export class ClientPlugin extends Plugin {
         },
       },
     });
-    let root = this.options.dist || `${process.env.APP_PACKAGE_ROOT}/dist`;
+    let root = this.options.dist || `${process.env.APP_PACKAGE_ROOT}/dist/client`;
     if (!isAbsolute(root)) {
       root = resolve(process.cwd(), root);
     }
