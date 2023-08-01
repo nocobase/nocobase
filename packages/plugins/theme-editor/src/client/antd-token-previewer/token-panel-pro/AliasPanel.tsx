@@ -1,10 +1,10 @@
 import { CaretRightOutlined, QuestionCircleOutlined, RightOutlined, ShrinkOutlined } from '@ant-design/icons';
 import { Button, Collapse, Empty, Tooltip } from 'antd';
-import type { MutableTheme } from 'antd-token-previewer';
 import classNames from 'classnames';
 import useMergedState from 'rc-util/es/hooks/useMergedState';
 import type { FC } from 'react';
 import React, { useMemo } from 'react';
+import { MutableTheme } from '../../../types';
 import { Pick } from '../icons';
 import type { AliasToken, SelectedToken } from '../interface';
 import { mapRelatedAlias, seedRelatedAlias } from '../meta/TokenRelation';
@@ -41,10 +41,9 @@ const useStyle = makeStyle('TokenPanelProAlias', (token) => ({
     },
 
     [`.token-panel-pro-alias-collapse${token.rootCls}-collapse`]: {
-      [`> ${token.rootCls}-collapse-item > ${token.rootCls}-collapse-content > ${token.rootCls}-collapse-content-box`]:
-        {
-          paddingBlock: '0',
-        },
+      [`> ${token.rootCls}-collapse-item > ${token.rootCls}-collapse-content > ${token.rootCls}-collapse-content-box`]: {
+        paddingBlock: '0',
+      },
 
       [`> ${token.rootCls}-collapse-item`]: {
         [`> ${token.rootCls}-collapse-header`]: {

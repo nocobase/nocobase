@@ -27,6 +27,22 @@ const useLabelFields = (collectionName?: any) => {
     });
 };
 
+export const useColorFields = (collectionName?: any) => {
+  const compile = useCompile();
+  const { getCollectionFields } = useCollectionManager();
+  if (!collectionName) {
+    return [];
+  }
+  const targetFields = getCollectionFields(collectionName);
+  return targetFields
+    ?.filter?.((field) => field?.interface === 'color')
+    ?.map?.((field) => {
+      return {
+        value: field.name,
+        label: compile(field?.uiSchema?.title || field.name),
+      };
+    });
+};
 export const TableColumnDesigner = (props) => {
   const { uiSchema, fieldSchema, collectionField } = props;
   const { getInterface, getCollection } = useCollectionManager();
@@ -37,6 +53,7 @@ export const TableColumnDesigner = (props) => {
   const fieldNames =
     fieldSchema?.['x-component-props']?.['fieldNames'] || uiSchema?.['x-component-props']?.['fieldNames'];
   const options = useLabelFields(collectionField?.target ?? collectionField?.targetCollection);
+  const colorFieldOptions = useColorFields(collectionField?.target ?? collectionField?.targetCollection);
   const intefaceCfg = getInterface(collectionField?.interface);
   const targetCollection = getCollection(collectionField?.target);
   const isFileField = isFileCollection(targetCollection);
@@ -230,6 +247,55 @@ export const TableColumnDesigner = (props) => {
                   ...fieldSchema['x-component-props'],
                 },
               },
+            });
+            dn.refresh();
+          }}
+        />
+      )}
+      {readOnlyMode === 'read-pretty' &&
+        ['linkTo', 'm2m', 'm2o', 'o2m', 'obo', 'oho', 'snapshot'].includes(collectionField?.interface) && (
+          <SchemaSettings.SelectItem
+            key="field-mode"
+            title={t('Field component')}
+            options={[
+              { label: t('Title'), value: 'Select' },
+              { label: t('Tag'), value: 'Tag' },
+            ]}
+            value={fieldMode}
+            onChange={(mode) => {
+              const schema = {
+                ['x-uid']: fieldSchema['x-uid'],
+              };
+              fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+              fieldSchema['x-component-props']['mode'] = mode;
+              schema['x-component-props'] = fieldSchema['x-component-props'];
+              field.componentProps = field.componentProps || {};
+              field.componentProps.mode = mode;
+              dn.emit('patch', {
+                schema,
+              });
+              dn.refresh();
+            }}
+          />
+        )}
+
+      {['Tag'].includes(fieldMode) && (
+        <SchemaSettings.SelectItem
+          key="title-field"
+          title={t('Tag color field')}
+          options={colorFieldOptions}
+          value={fieldSchema?.['x-component-props']?.tagColorField}
+          onChange={(tagColorField) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props']['tagColorField'] = tagColorField;
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            field.componentProps.tagColorField = tagColorField;
+            dn.emit('patch', {
+              schema,
             });
             dn.refresh();
           }}

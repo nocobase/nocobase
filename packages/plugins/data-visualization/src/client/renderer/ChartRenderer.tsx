@@ -14,7 +14,7 @@ import { ChartConfigContext } from '../block';
 import { useData, useFieldTransformer, useFieldsWithAssociation } from '../hooks';
 import { useChartsTranslation } from '../locale';
 import { createRendererSchema, getField } from '../utils';
-import { useCharts } from './ChartLibrary';
+import { useCharts } from '../chart/library';
 import { ChartRendererContext } from './ChartRendererProvider';
 const { Paragraph, Text } = Typography;
 
@@ -32,10 +32,9 @@ export const ChartRenderer: React.FC & {
 
   const charts = useCharts();
   const chart = charts[config?.chartType];
-  const Component = chart?.component;
   const locale = api.auth.getLocale();
   const transformers = useFieldTransformer(transform, locale);
-  const info = {
+  const Component = chart?.render({
     data,
     general,
     advanced,
@@ -47,18 +46,17 @@ export const ChartRenderer: React.FC & {
       }
       return props;
     }, {}),
-    locale,
-  };
-  const componentProps = chart?.useProps?.(info) || info;
+  });
+
   const C = () =>
-    Component ? (
+    chart ? (
       <ErrorBoundary
         onError={(error) => {
           console.error(error);
         }}
         FallbackComponent={ErrorFallback}
       >
-        <Component {...componentProps} />
+        <Component />
       </ErrorBoundary>
     ) : (
       <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('Please configure chart')} />
