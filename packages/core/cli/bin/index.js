@@ -1,13 +1,10 @@
 #!/usr/bin/env node
 
 const dotenv = require('dotenv');
-const { dirname, resolve } = require('path');
+const { resolve } = require('path');
 const { existsSync } = require('fs');
 
-const appPackageEntry = require.resolve('@nocobase/app');
-
 const env = {
-  APP_PACKAGE_ROOT: dirname(dirname(appPackageEntry)),
   APP_ENV: 'development',
   APP_KEY: 'test-jwt-secret',
   APP_PORT: 13000,

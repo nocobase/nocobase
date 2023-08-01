@@ -1,9 +1,9 @@
 const net = require('net');
 const chalk = require('chalk');
 const execa = require('execa');
-const { resolve } = require('path');
+const { dirname, resolve } = require('path');
 const { readFile, writeFile } = require('fs').promises;
-const { existsSync } = require('fs');
+const { existsSync, mkdirSync, cpSync } = require('fs');
 
 exports.isPackageValid = (package) => {
   try {
@@ -156,4 +156,21 @@ exports.getVersion = async () => {
   const { stdout } = await execa('npm', ['v', '@nocobase/app-server', 'versions']);
   const versions = new Function(`return (${stdout})`)();
   return versions[versions.length - 1];
+};
+
+exports.generateAppDir = function generateAppDir() {
+  const appPkgPath = dirname(dirname(require.resolve('@nocobase/app')));
+  const appDevDir = resolve(process.cwd(), './storage/app-dev');
+  if (exports.isDev() && !exports.hasCorePackages() && appPkgPath.includes('node_modules')) {
+    if (!existsSync(appDevDir)) {
+      mkdirSync(appDevDir, { force: true, recursive: true });
+      cpSync(appPkgPath, appDevDir, {
+        recursive: true,
+        force: true,
+      });
+    }
+    process.env.APP_PACKAGE_ROOT = appDevDir;
+  } else {
+    process.env.APP_PACKAGE_ROOT = appPkgPath;
+  }
 };
