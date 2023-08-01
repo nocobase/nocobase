@@ -68,6 +68,7 @@ import {
 } from '../filter-provider/utils';
 import { useCollectMenuItem, useCollectMenuItems, useMenuItem } from '../hooks/useMenuItem';
 import { getTargetKey } from '../schema-component/antd/association-filter/utilts';
+import { isVariable } from '../schema-component/common/utils/uitls';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
 import { FormDataTemplates } from './DataTemplates';
@@ -1491,6 +1492,7 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
                   s['x-read-pretty'] = false;
                   s['x-disabled'] = false;
 
+                  const defaultValue = getFieldDefaultValue(s, collectionField);
                   const schema = {
                     ...(s || {}),
                     'x-component-props': {
@@ -1498,7 +1500,7 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
                       collectionName: collectionField?.collectionName,
                       targetField,
                       onChange: props.onChange,
-                      defaultValue: getFieldDefaultValue(s, collectionField),
+                      defaultValue: isVariable(defaultValue) ? '' : defaultValue,
                       style: {
                         width: '100%',
                         verticalAlign: 'top',
