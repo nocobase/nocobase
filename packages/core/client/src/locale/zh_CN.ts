@@ -798,4 +798,9 @@ export default {
   "Table selected records":"表格中选中的记录",
 
   "After operation succeeded": "操作成功后",
+  "Tag":"标签",
+  "Tag color field":"标签颜色字段",
+  "Sync successfully":"同步成功",
+  "Sync from form fields":"同步表单字段",
+  "Select all":"全选"
 }

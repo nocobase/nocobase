@@ -1,27 +1,33 @@
 import { ArrayTable } from '@formily/antd-v5';
-import { connect, ISchema, mapProps, useField, useFieldSchema } from '@formily/react';
+import { connect, ISchema, mapProps, useField, useFieldSchema, useForm } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
 import { Alert, Tree as AntdTree } from 'antd';
 import { cloneDeep } from 'lodash';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile, useDesignable } from '../..';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
-import { useRecord } from '../../../record-provider';
 import { OpenModeSchemaItems } from '../../../schema-items';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useCollectionState } from '../../../schema-settings/DataTemplates/hooks/useCollectionState';
 import { useLinkageAction } from './hooks';
 import { requestSettingsSchema } from './utils';
+import { useRecord } from '../../../record-provider';
+import { useSyncFromForm } from '../../../schema-settings/DataTemplates/utils';
 
 const Tree = connect(
   AntdTree,
   mapProps((props, field: any) => {
+    const [checkedKeys, setCheckedKeys] = useState(props.defaultCheckedKeys || []);
+    const onCheck = (checkedKeys) => {
+      setCheckedKeys(checkedKeys);
+      field.value = checkedKeys;
+    };
+    field.onCheck = onCheck;
     return {
       ...props,
-      onCheck: (checkedKeys) => {
-        field.value = checkedKeys;
-      },
+      checkedKeys,
+      onCheck,
     };
   }),
 );
@@ -204,6 +210,28 @@ function SaveMode() {
   );
 }
 
+const findFormBlock = (schema) => {
+  const formSchema = schema.reduceProperties((_, s) => {
+    if (s['x-decorator'] === 'FormBlockProvider') {
+      return s;
+    } else {
+      return findFormBlock(s);
+    }
+  }, null);
+  return formSchema;
+};
+
+const getAllkeys = (data, result) => {
+  for (let i = 0; i < data?.length; i++) {
+    const { children, ...rest } = data[i];
+    result.push(rest.key);
+    if (children) {
+      getAllkeys(children, result);
+    }
+  }
+  return result;
+};
+
 function DuplicationMode() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
@@ -213,7 +241,27 @@ function DuplicationMode() {
   const { collectionList, getEnableFieldTree, getOnLoadData, getOnCheck } = useCollectionState(name);
   const duplicateValues = cloneDeep(fieldSchema['x-component-props'].duplicateFields || []);
   const record = useRecord();
-
+  const syncCallBack = useCallback((treeData, selectFields, form) => {
+    form.query('duplicateFields').take((f) => {
+      f.componentProps.treeData = treeData;
+      f.componentProps.defaultCheckedKeys = selectFields;
+      f.setInitialValue(selectFields);
+      f?.onCheck(selectFields);
+      form.setValues({ ...form.values, treeData });
+    });
+  }, []);
+  const useSelectAllFields = (form) => {
+    return {
+      async run() {
+        form.query('duplicateFields').take((f) => {
+          const selectFields = getAllkeys(f.componentProps.treeData, []);
+          f.componentProps.defaultCheckedKeys = selectFields;
+          f.setInitialValue(selectFields);
+          f?.onCheck(selectFields);
+        });
+      },
+    };
+  };
   return (
     <SchemaSettings.ModalItem
       title={t('Duplicate mode')}
@@ -224,6 +272,7 @@ function DuplicationMode() {
         currentCollection: record?.__collection || name,
         getOnLoadData,
         getOnCheck,
+        treeData: fieldSchema['x-component-props']?.treeData,
       }}
       schema={
         {
@@ -264,11 +313,60 @@ function DuplicationMode() {
                 },
               ],
             },
+            syncFromForm: {
+              type: 'void',
+              title: '{{ t("Sync from form fields") }}',
+              'x-component': 'Action.Link',
+              'x-component-props': {
+                type: 'primary',
+                style: { float: 'right', position: 'relative', zIndex: 1200 },
+                useAction: () => {
+                  const formSchema = useMemo(() => findFormBlock(fieldSchema), [fieldSchema]);
+                  return useSyncFromForm(
+                    formSchema,
+                    fieldSchema['x-component-props']?.duplicateCollection || record?.__collection || name,
+                    syncCallBack,
+                  );
+                },
+              },
+              'x-reactions': [
+                {
+                  dependencies: ['.duplicateMode'],
+                  fulfill: {
+                    state: {
+                      visible: `{{ $deps[0]!=="quickDulicate" }}`,
+                    },
+                  },
+                },
+              ],
+            },
+            selectAll: {
+              type: 'void',
+              title: '{{ t("Select all") }}',
+              'x-component': 'Action.Link',
+              'x-reactions': [
+                {
+                  dependencies: ['.duplicateMode'],
+                  fulfill: {
+                    state: {
+                      visible: `{{ $deps[0]==="quickDulicate" }}`,
+                    },
+                  },
+                },
+              ],
+              'x-component-props': {
+                type: 'primary',
+                style: { float: 'right', position: 'relative', zIndex: 1200 },
+                useAction: () => {
+                  const from = useForm();
+                  return useSelectAllFields(from);
+                },
+              },
+            },
             duplicateFields: {
               type: 'array',
               title: '{{ t("Data fields") }}',
               required: true,
-              default: duplicateValues,
               description: t('Only the selected fields will be used as the initialization data for the form'),
               'x-decorator': 'FormItem',
               'x-component': Tree,
@@ -296,7 +394,7 @@ function DuplicationMode() {
                     state: {
                       disabled: '{{ !$deps[0] }}',
                       componentProps: {
-                        treeData: '{{ getEnableFieldTree($deps[0], $self) }}',
+                        treeData: '{{ getEnableFieldTree($deps[0], $self,treeData) }}',
                       },
                     },
                   },
@@ -306,7 +404,7 @@ function DuplicationMode() {
           },
         } as ISchema
       }
-      onSubmit={({ duplicateMode, collection, duplicateFields }) => {
+      onSubmit={({ duplicateMode, collection, duplicateFields, treeData }) => {
         const fields = Array.isArray(duplicateFields) ? duplicateFields : duplicateFields.checked || [];
         field.componentProps.duplicateMode = duplicateMode;
         field.componentProps.duplicateFields = fields;
@@ -314,6 +412,7 @@ function DuplicationMode() {
         fieldSchema['x-component-props'].duplicateMode = duplicateMode;
         fieldSchema['x-component-props'].duplicateFields = fields;
         fieldSchema['x-component-props'].duplicateCollection = collection;
+        fieldSchema['x-component-props'].treeData = treeData;
         dn.emit('patch', {
           schema: {
             ['x-uid']: fieldSchema['x-uid'],

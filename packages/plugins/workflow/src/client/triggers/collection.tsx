@@ -69,9 +69,10 @@ export default {
       'x-component': 'Select',
       'x-component-props': {
         popupMatchSelectWidth: false,
-        options: collectionModeOptions,
         placeholder: `{{t("Trigger on", { ns: "${NAMESPACE}" })}}`,
+        className: 'auto-width',
       },
+      enum: collectionModeOptions,
       required: true,
       'x-reactions': [
         {
@@ -91,7 +92,6 @@ export default {
       'x-decorator': 'FormItem',
       'x-component': 'FieldsSelect',
       'x-component-props': {
-        className: 'full-width',
         mode: 'multiple',
         placeholder: '{{t("Select field")}}',
         filter(field) {

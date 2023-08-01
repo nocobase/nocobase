@@ -11,10 +11,10 @@ import { Empty, Result, Spin, Typography } from 'antd';
 import React, { useContext } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { ChartConfigContext } from '../block';
-import { useFieldTransformer, useFieldsWithAssociation } from '../hooks';
+import { useData, useFieldTransformer, useFieldsWithAssociation } from '../hooks';
 import { useChartsTranslation } from '../locale';
-import { createRendererSchema, getField, processData } from '../utils';
-import { useCharts } from './ChartLibrary';
+import { createRendererSchema, getField } from '../utils';
+import { useCharts } from '../chart/library';
 import { ChartRendererContext } from './ChartRendererProvider';
 const { Paragraph, Text } = Typography;
 
@@ -25,17 +25,16 @@ export const ChartRenderer: React.FC & {
   const ctx = useContext(ChartRendererContext);
   const { config, transform, collection, service, data: _data } = ctx;
   const fields = useFieldsWithAssociation(collection);
-  const data = processData(fields, service?.data || _data || [], { t });
+  const data = useData(_data, collection);
   const general = config?.general || {};
   const advanced = config?.advanced || {};
   const api = useAPIClient();
 
   const charts = useCharts();
   const chart = charts[config?.chartType];
-  const Component = chart?.component;
   const locale = api.auth.getLocale();
   const transformers = useFieldTransformer(transform, locale);
-  const info = {
+  const Component = chart?.render({
     data,
     general,
     advanced,
@@ -47,18 +46,17 @@ export const ChartRenderer: React.FC & {
       }
       return props;
     }, {}),
-    locale,
-  };
-  const componentProps = chart?.useProps?.(info) || info;
+  });
+
   const C = () =>
-    Component ? (
+    chart ? (
       <ErrorBoundary
         onError={(error) => {
           console.error(error);
         }}
         FallbackComponent={ErrorFallback}
       >
-        <Component {...componentProps} />
+        <Component />
       </ErrorBoundary>
     ) : (
       <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('Please configure chart')} />

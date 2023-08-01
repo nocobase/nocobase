@@ -276,7 +276,7 @@ export const TriggerConfig = () => {
                     'x-component': 'fieldset',
                     'x-component-props': {
                       className: css`
-                        .ant-select:not(.full-width) {
+                        .ant-select.auto-width {
                           width: auto;
                           min-width: 6em;
                         }

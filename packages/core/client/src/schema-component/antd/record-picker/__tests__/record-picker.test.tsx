@@ -6,15 +6,18 @@ describe('RecordPicker', () => {
   it('should show selected options', async () => {
     render(<App1 />);
 
-    const selector = document.querySelector('.ant-select-selector') as HTMLElement;
-    expect(selector).toBeInTheDocument();
+    let selector;
+    await waitFor(() => {
+      selector = document.querySelector('.ant-select-selector') as HTMLElement;
+      expect(selector).toBeInTheDocument();
+    });
 
     await userEvent.click(selector);
-
     await waitFor(() => {
       // 弹窗标题
-      expect(screen.getByText(/select record/i)).toBeInTheDocument();
+      expect(screen.queryByText(/select record/i)).toBeInTheDocument();
     });
+
     const checkboxes = document.querySelectorAll('.ant-checkbox');
 
     // 第 3 个选项的内容是： “软件开发”
@@ -22,8 +25,8 @@ describe('RecordPicker', () => {
     await userEvent.click(screen.getByText(/submit/i));
 
     await waitFor(() => {
-      expect(within(selector).getByText(/软件开发/i)).toBeInTheDocument();
-      expect(screen.getByText(/软件开发/i, { selector: '.test-record-picker-read-pretty-item' })).toBeInTheDocument();
+      expect(within(selector).queryByText(/软件开发/i)).toBeInTheDocument();
+      expect(screen.queryByText(/软件开发/i, { selector: '.test-record-picker-read-pretty-item' })).toBeInTheDocument();
     });
   });
 });

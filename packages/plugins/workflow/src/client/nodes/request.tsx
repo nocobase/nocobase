@@ -20,6 +20,7 @@ export default {
       'x-component-props': {
         showSearch: false,
         allowClear: false,
+        className: 'auto-width',
       },
       enum: [
         { label: 'GET', value: 'GET' },
@@ -39,7 +40,6 @@ export default {
       'x-component': 'Input',
       'x-component-props': {
         placeholder: 'https://www.nocobase.com',
-        className: 'full-width',
       },
     },
     headers: {
@@ -147,7 +147,6 @@ export default {
           minRows: 10,
         },
         placeholder: `{{t("Input request data", { ns: "${NAMESPACE}" })}}`,
-        className: 'full-width',
       },
       description: `{{t("Only support standard JSON data", { ns: "${NAMESPACE}" })}}`,
     },

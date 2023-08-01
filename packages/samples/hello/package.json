@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-sample-hello",
-  "version": "0.11.1-alpha.3",
+  "version": "0.11.1-alpha.5",
   "main": "./lib/server/index.js",
   "files": [
     "lib",
@@ -19,10 +19,10 @@
   "description.zh-CN": "这就是一个简单的插件demo",
   "devDependencies": {
     "@ant-design/icons": "^5.1.4",
-    "@formily/react": "2.2.26",
-    "@nocobase/client": "0.11.1-alpha.3",
-    "@nocobase/server": "0.11.1-alpha.3",
-    "@nocobase/test": "0.11.1-alpha.3",
+    "@formily/react": "^2.2.27",
+    "@nocobase/client": "0.11.1-alpha.5",
+    "@nocobase/server": "0.11.1-alpha.5",
+    "@nocobase/test": "0.11.1-alpha.5",
     "antd": "^5.6.4",
     "react": "^18.2.0",
     "react-i18next": "^11.15.1"

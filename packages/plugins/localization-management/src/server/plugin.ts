@@ -69,7 +69,7 @@ export class LocalizationManagementPlugin extends Plugin {
 
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.localization`,
-      actions: ['localization:*', 'localizationTexts:*'],
+      actions: ['localization:*', 'localizationTexts:*', 'localizationTranslations:*'],
     });
 
     this.db.on('afterSave', async (instance: Model) => {

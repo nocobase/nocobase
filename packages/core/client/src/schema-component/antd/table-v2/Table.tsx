@@ -297,7 +297,6 @@ export const Table: any = observer(
                     console.warn('move cancel');
                     return;
                   }
-
                   const fromIndex = e.active?.data.current?.sortable?.index;
                   const toIndex = e.over?.data.current?.sortable?.index;
                   const from = field.value[fromIndex];
@@ -323,6 +322,11 @@ export const Table: any = observer(
                   white-space: nowrap;
                   .nb-read-pretty-input-number {
                     text-align: right;
+                  }
+                  .ant-color-picker-trigger {
+                    position: absolute;
+                    top: 50%;
+                    transform: translateY(-50%);
                   }
                 `,
               )}
@@ -445,13 +449,14 @@ export const Table: any = observer(
     const SortableWrapper = useCallback<React.FC>(
       ({ children }) => {
         return dragSort
-          ? React.createElement(SortableContext, {
-              items: field.value?.map?.(getRowKey) || [],
+          ? React.createElement(
+              SortableContext,
+              {
+                items: field.value?.map?.(getRowKey) || [],
+              },
               children,
-            })
-          : React.createElement(React.Fragment, {
-              children,
-            });
+            )
+          : React.createElement(React.Fragment, children);
       },
       [field, dragSort],
     );
@@ -521,7 +526,7 @@ export const Table: any = observer(
         {field.errors.length > 0 && (
           <div className="ant-formily-item-error-help ant-formily-item-help ant-formily-item-help-enter ant-formily-item-help-enter-active">
             {field.errors.map((error) => {
-              return error.messages.map((message) => <div>{message}</div>);
+              return error.messages.map((message) => <div key={message}>{message}</div>);
             })}
           </div>
         )}

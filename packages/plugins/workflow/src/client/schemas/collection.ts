@@ -10,7 +10,7 @@ export const collection = {
   'x-decorator': 'FormItem',
   'x-component': 'CollectionSelect',
   'x-component-props': {
-    popupMatchSelectWidth: false,
+    className: 'auto-width',
   },
 };
 
@@ -61,7 +61,6 @@ export const appends = {
       const { values } = useForm();
       return values?.collection;
     },
-    className: 'full-width',
   },
   'x-reactions': [
     {
