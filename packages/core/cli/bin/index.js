@@ -5,7 +5,6 @@ const { resolve } = require('path');
 const { existsSync } = require('fs');
 
 const env = {
-  APP_PACKAGE_ROOT: 'app',
   APP_ENV: 'development',
   APP_KEY: 'test-jwt-secret',
   APP_PORT: 13000,
@@ -17,6 +16,7 @@ const env = {
   LOCAL_STORAGE_DEST: 'storage/uploads',
   MFSU_AD: 'none',
   PM2_HOME: resolve(process.cwd(), './storage/.pm2'),
+  PLUGIN_PACKAGE_PREFIX: '@nocobase/plugin-,@nocobase/plugin-sample-,@nocobase/preset-',
 };
 
 if (!process.env.APP_ENV_PATH && process.argv[2] && process.argv[2] === 'test') {

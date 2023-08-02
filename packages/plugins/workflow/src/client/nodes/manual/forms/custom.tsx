@@ -17,7 +17,8 @@ import {
   useCollectionManager,
   useRecord,
 } from '@nocobase/client';
-import { lodash, merge, uid } from '@nocobase/utils/client';
+import { merge, uid } from '@nocobase/utils/client';
+import lodash from 'lodash';
 import { JOB_STATUS } from '../../../constants';
 import { NAMESPACE, lang } from '../../../locale';
 import { ManualFormType } from '../SchemaConfig';

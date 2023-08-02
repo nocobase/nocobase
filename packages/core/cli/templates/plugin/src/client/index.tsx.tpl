@@ -2,7 +2,7 @@ import { Plugin } from '@nocobase/client';
 
 export class {{{pascalCaseName}}}Plugin extends Plugin {
   async afterAdd() {
-    // this.app.pm.add()
+    // await this.app.pm.add()
   }
 
   async beforeLoad() {}

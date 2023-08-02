@@ -6,7 +6,7 @@ import {
   useCollectionManager,
   useCompile,
 } from '@nocobase/client';
-import { lodash } from '@nocobase/utils/client';
+import lodash from 'lodash';
 import { saveAs } from 'file-saver';
 import { useTranslation } from 'react-i18next';
 

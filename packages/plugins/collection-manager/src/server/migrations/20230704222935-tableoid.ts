@@ -1,5 +1,5 @@
 import { Migration } from '@nocobase/server';
-import { lodash as _ } from '@nocobase/utils';
+import _ from 'lodash';
 
 export default class extends Migration {
   async up() {

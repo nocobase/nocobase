@@ -1,6 +1,6 @@
 import { ApplicationOptions } from '@nocobase/server';
 import { MockServer, mockServer } from '@nocobase/test';
-import { lodash } from '@nocobase/utils';
+import lodash from 'lodash';
 import path from 'path';
 import Plugin from '..';
 import { JOB_STATUS } from '../constants';

@@ -1,6 +1,6 @@
 import { dayjsable, formatDayjsValue } from '@formily/antd-v5/esm/__builtins__';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
-import { dayjs } from '@nocobase/utils/client';
+import dayjs from 'dayjs';
 import { TimePicker as AntdTimePicker } from 'antd';
 import { TimePickerProps as AntdTimePickerProps, TimeRangePickerProps } from 'antd/es/time-picker';
 import { ReadPretty } from './ReadPretty';

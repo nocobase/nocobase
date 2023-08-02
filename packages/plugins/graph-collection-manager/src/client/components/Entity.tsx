@@ -25,7 +25,7 @@ import {
   useCurrentAppInfo,
   useRecord,
 } from '@nocobase/client';
-import { lodash } from '@nocobase/utils/client';
+import lodash from 'lodash';
 import { Badge, Dropdown, Popover, Tag } from 'antd';
 import React, { useContext, useRef, useState } from 'react';
 import {
