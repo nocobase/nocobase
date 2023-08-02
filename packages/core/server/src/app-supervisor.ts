@@ -61,8 +61,12 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   setAppError(appName: string, error: Error) {
-    console.log(`setAppError ${appName}`, error);
+    console.log(error);
     this.appErrors[appName] = error;
+  }
+
+  clearAppError(appName: string) {
+    delete this.appErrors[appName];
   }
 
   async reset() {
@@ -200,6 +204,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     app.on('afterDestroy', afterDestroy);
 
     const listenWorkingMessageChanged = ({ message, ready }) => {
+      this.clearAppError(app.name);
       this.emit('workingMessageChanged', {
         appName: app.name,
         message,

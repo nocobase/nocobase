@@ -77,6 +77,7 @@ export class Gateway extends EventEmitter {
       status: number;
     },
   ) {
+    res.setHeader('Content-Type', 'application/json');
     res.statusCode = error.status;
     res.end(JSON.stringify([error]));
   }
@@ -96,18 +97,21 @@ export class Gateway extends EventEmitter {
 
     // if app is not ready, return 503
     if (app.ready !== true) {
-      let detail = `last working message: ${app.workingMessage}`;
       const errorMessage = AppSupervisor.getInstance().appErrors[handleApp]?.message;
 
       if (errorMessage) {
-        detail += `, last error message: ${errorMessage}`;
+        this.responseError(res, {
+          title: `The '${handleApp}' app is in an error status`,
+          detail: errorMessage,
+          status: 503,
+        });
+      } else {
+        this.responseError(res, {
+          title: `app ${handleApp} is not ready yet`,
+          detail: `last working message: ${app.workingMessage}`,
+          status: 503,
+        });
       }
-
-      this.responseError(res, {
-        title: `app ${handleApp} is not ready yet`,
-        detail,
-        status: 503,
-      });
 
       return;
     }

@@ -423,11 +423,17 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       await this.reload({ method: 'install' });
     }
 
+    this.log.debug('emit beforeInstall');
     await this.emitAsync('beforeInstall', this, options);
+    this.log.debug('call db.sync()');
     await this.db.sync();
+    this.log.debug('start install plugins');
     await this.pm.install(options);
+    this.log.debug('update version');
     await this.version.update();
+    this.log.debug('emit afterInstall');
     await this.emitAsync('afterInstall', this, options);
+    this.setReadyStatus(true, 'installed');
   }
 
   async upgrade(options: any = {}) {
