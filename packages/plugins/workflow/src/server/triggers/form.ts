@@ -74,9 +74,12 @@ export default class FormTrigger extends Trigger {
               }
             }
           }
-          const { appends = [] } = workflow.config;
+          const { collection, appends = [] } = workflow.config;
+          const model = <typeof Model>payload.constructor;
+          if (collection !== model.collection.name) {
+            return;
+          }
           if (appends.length) {
-            const model = <typeof Model>payload.constructor;
             payload = await model.collection.repository.findOne({
               filterByTk: payload.get(model.primaryKeyAttribute),
               appends,
