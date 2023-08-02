@@ -69,30 +69,51 @@ export class Gateway extends EventEmitter {
     this.emit('appSelectorChanged');
   }
 
+  responseError(
+    res: ServerResponse,
+    error: {
+      title: string;
+      detail?: string;
+      status: number;
+    },
+  ) {
+    res.statusCode = error.status;
+    res.end(JSON.stringify([error]));
+  }
+
   async requestHandler(req: IncomingMessage, res: ServerResponse) {
     const handleApp = await this.getRequestHandleAppName(req as IncomingRequest);
     const app: Application = await AppSupervisor.getInstance().getApp(handleApp);
 
     if (!app) {
-      console.log(`app ${handleApp} not found`);
-      res.statusCode = 404;
-      res.end(`app ${handleApp} not found`);
+      this.responseError(res, {
+        title: `app ${handleApp} not found`,
+        status: 404,
+      });
+
       return;
     }
 
     // if app is not ready, return 503
     if (app.ready !== true) {
-      res.statusCode = 503;
-      res.end(
-        `app ${handleApp} is not ready yet, last working message: ${app.workingMessage}, last error message: ${
-          AppSupervisor.getInstance().appErrors[handleApp]?.message
-        }`,
-      );
+      let detail = `last working message: ${app.workingMessage}`;
+      const errorMessage = AppSupervisor.getInstance().appErrors[handleApp]?.message;
+
+      if (errorMessage) {
+        detail += `, last error message: ${errorMessage}`;
+      }
+
+      this.responseError(res, {
+        title: `app ${handleApp} is not ready yet`,
+        detail,
+        status: 503,
+      });
+
       return;
     }
 
     // if request health check, return 200
-    if (req.url === '/__health_check') {
+    if (req.url.endsWith('/__health_check')) {
       res.statusCode = 200;
       res.end('ok');
       return;

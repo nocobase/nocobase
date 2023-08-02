@@ -258,10 +258,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       await oldDb.close();
     }
 
+    this.setWorkingMessage('emit beforeLoad');
     await this.emitAsync('beforeLoad', this, options);
 
     await this.pm.load(options);
 
+    this.setWorkingMessage('emit afterLoad');
     await this.emitAsync('afterLoad', this, options);
   }
 
@@ -273,6 +275,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     });
 
     this.log.debug('emit afterReload');
+    this.setWorkingMessage('emit afterReload');
     await this.emitAsync('afterReload', this, options);
     this.log.debug(`finish reload`);
   }
