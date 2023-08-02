@@ -2,7 +2,7 @@ import { NoPermissionError } from '@nocobase/acl';
 import { Context, utils as actionUtils } from '@nocobase/actions';
 import { Collection, RelationField, snakeCase } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
-import { lodash } from '@nocobase/utils';
+import lodash from 'lodash';
 import { resolve } from 'path';
 import { availableActionResource } from './actions/available-actions';
 import { checkAction } from './actions/role-check';

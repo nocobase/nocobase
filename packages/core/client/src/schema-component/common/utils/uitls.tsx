@@ -1,4 +1,4 @@
-import { dayjs } from '@nocobase/utils/client';
+import dayjs from 'dayjs';
 import flat from 'flat';
 import _, { every, findIndex, isArray, some } from 'lodash';
 import { useMemo } from 'react';

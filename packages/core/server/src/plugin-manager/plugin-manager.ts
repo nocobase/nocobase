@@ -1,12 +1,11 @@
 import { CleanOptions, Collection, SyncOptions } from '@nocobase/database';
 import { requireModule } from '@nocobase/utils';
 import execa from 'execa';
-import fs from 'fs';
 import net from 'net';
 import { resolve } from 'path';
-import xpipe from 'xpipe';
 import Application from '../application';
 import { Plugin } from '../plugin';
+import { clientStaticMiddleware } from './clientStaticMiddleware';
 import collectionOptions from './options/collection';
 import resourceOptions from './options/resource';
 import { PluginManagerRepository } from './plugin-manager-repository';
@@ -55,6 +54,8 @@ export class PluginManager {
     this.repository.setPluginManager(this);
     this.app.resourcer.define(resourceOptions);
 
+    this.app.use(clientStaticMiddleware);
+
     this.app.resourcer.use(async (ctx, next) => {
       await next();
       const { resourceName, actionName } = ctx.action;
@@ -102,58 +103,6 @@ export class PluginManager {
     });
 
     this.addStaticMultiple(options.plugins);
-  }
-
-  static getPackageJson(packageName: string) {
-    return require(`${packageName}/package.json`);
-  }
-
-  static getPackageName(name: string) {
-    const prefixes = this.getPluginPkgPrefix();
-    for (const prefix of prefixes) {
-      try {
-        require.resolve(`${prefix}${name}`);
-        return `${prefix}${name}`;
-      } catch (error) {
-        continue;
-      }
-    }
-    throw new Error(`${name} plugin does not exist`);
-  }
-
-  static getPluginPkgPrefix() {
-    return (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro-').split(
-      ',',
-    );
-  }
-
-  static async findPackage(name: string) {
-    try {
-      const packageName = this.getPackageName(name);
-      return packageName;
-    } catch (error) {
-      console.log(`\`${name}\` plugin not found locally`);
-      const prefixes = this.getPluginPkgPrefix();
-      for (const prefix of prefixes) {
-        try {
-          const packageName = `${prefix}${name}`;
-          console.log(`Try to find ${packageName}`);
-          await execa('npm', ['v', packageName, 'versions']);
-          console.log(`${packageName} downloading`);
-          await execa('yarn', ['add', packageName, '-W']);
-          console.log(`${packageName} downloaded`);
-          return packageName;
-        } catch (error) {
-          continue;
-        }
-      }
-    }
-    throw new Error(`No available packages found, ${name} plugin does not exist`);
-  }
-
-  static resolvePlugin(pluginName: string) {
-    const packageName = this.getPackageName(pluginName);
-    return requireModule(packageName);
   }
 
   addStaticMultiple(plugins: any) {
@@ -239,27 +188,6 @@ export class PluginManager {
     return instance;
   }
 
-  async generateClientFile(plugin: string, packageName: string) {
-    const file = resolve(
-      process.cwd(),
-      'packages',
-      process.env.APP_PACKAGE_ROOT || 'app',
-      'client/src/plugins',
-      `${plugin}.ts`,
-    );
-
-    if (!fs.existsSync(file)) {
-      try {
-        require.resolve(`${packageName}/client`);
-        await fs.promises.writeFile(file, `export { default } from '${packageName}/client';`);
-        const { run } = require('@nocobase/cli/src/util');
-        await run('yarn', ['nocobase', 'postinstall']);
-      } catch (error) {
-        console.log(`${packageName} plugin client not found`);
-      }
-    }
-  }
-
   async add(plugin: any, options: any = {}, transaction?: any) {
     if (Array.isArray(plugin)) {
       const t = transaction || (await this.app.db.sequelize.transaction());
@@ -279,8 +207,6 @@ export class PluginManager {
     }
 
     const packageName = await PluginManager.findPackage(plugin);
-
-    await this.generateClientFile(plugin, packageName);
 
     const instance = this.addStatic(plugin, {
       ...options,
@@ -435,6 +361,58 @@ export class PluginManager {
     }
     await this.repository.remove(name);
     this.app.reload();
+  }
+
+  static getPackageJson(packageName: string) {
+    return require(`${packageName}/package.json`);
+  }
+
+  static getPackageName(name: string) {
+    const prefixes = this.getPluginPkgPrefix();
+    for (const prefix of prefixes) {
+      try {
+        require.resolve(`${prefix}${name}`);
+        return `${prefix}${name}`;
+      } catch (error) {
+        continue;
+      }
+    }
+    throw new Error(`${name} plugin does not exist`);
+  }
+
+  static getPluginPkgPrefix() {
+    return (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro-').split(
+      ',',
+    );
+  }
+
+  static async findPackage(name: string) {
+    try {
+      const packageName = this.getPackageName(name);
+      return packageName;
+    } catch (error) {
+      console.log(`\`${name}\` plugin not found locally`);
+      const prefixes = this.getPluginPkgPrefix();
+      for (const prefix of prefixes) {
+        try {
+          const packageName = `${prefix}${name}`;
+          console.log(`Try to find ${packageName}`);
+          await execa('npm', ['v', packageName, 'versions']);
+          console.log(`${packageName} downloading`);
+          await execa('yarn', ['add', packageName, '-W']);
+          console.log(`${packageName} downloaded`);
+          return packageName;
+        } catch (error) {
+          continue;
+        }
+      }
+    }
+    throw new Error(`No available packages found, ${name} plugin does not exist`);
+  }
+
+  static resolvePlugin(pluginName: string) {
+    const packageName = this.getPackageName(pluginName);
+    return requireModule(packageName);
   }
 }
 

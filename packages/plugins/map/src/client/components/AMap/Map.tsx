@@ -310,12 +310,15 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
       };
     }
 
+    const _define = (window as any).define;
+    (window as any).define = undefined;
     AMapLoader.load({
       key: accessKey,
       version: '2.0',
       plugins: ['AMap.MouseTool', 'AMap.PolygonEditor', 'AMap.PolylineEditor', 'AMap.CircleEditor'],
     })
       .then((amap) => {
+        (window as any).define = _define;
         return requestIdleCallback(() => {
           map.current = new amap.Map(id.current, {
             resizeEnable: true,

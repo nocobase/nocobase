@@ -25,7 +25,7 @@ import {
   useCurrentAppInfo,
   useRecord,
 } from '@nocobase/client';
-import { lodash } from '@nocobase/utils/client';
+import lodash from 'lodash';
 import { Badge, Dropdown, Popover, Tag } from 'antd';
 import React, { useContext, useRef, useState } from 'react';
 import {
@@ -186,6 +186,7 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
   const [collapse, setCollapse] = useState(false);
   const { t } = useGCMTranslation();
   const compile = useCompile();
+  const { styles } = useStyles();
   const {
     data: { database },
   } = useCurrentAppInfo();
@@ -204,9 +205,7 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
     return `${prefix || ''}${uid()}`;
   };
   const CollectionConten = (data) => {
-    const { styles } = useStyles();
     const { type, name, primaryKey, allowNull, autoIncrement } = data;
-
     return (
       <div className={styles.collectionPopoverClass}>
         <div className="field-content">

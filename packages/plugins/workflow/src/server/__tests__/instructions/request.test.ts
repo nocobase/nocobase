@@ -97,7 +97,7 @@ describe('workflow > instructions > request', () => {
 
       expect(job.result).toMatchObject({
         code: 'ECONNABORTED',
-        name: 'AxiosError',
+        name: 'Error',
         status: null,
         message: 'timeout of 250ms exceeded',
       });
@@ -123,7 +123,7 @@ describe('workflow > instructions > request', () => {
       expect(job.status).toEqual(JOB_STATUS.RESOLVED);
       expect(job.result).toMatchObject({
         code: 'ECONNABORTED',
-        name: 'AxiosError',
+        name: 'Error',
         status: null,
         message: 'timeout of 250ms exceeded',
       });

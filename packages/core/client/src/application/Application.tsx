@@ -9,10 +9,20 @@ import { I18nextProvider } from 'react-i18next';
 import { Link, NavLink, Navigate } from 'react-router-dom';
 import { APIClient, APIClientProvider } from '../api-client';
 import { i18n } from '../i18n';
+import type { Plugin } from './Plugin';
 import { PluginManager, PluginType } from './PluginManager';
 import { ComponentTypeAndString, RouterManager, RouterOptions } from './RouterManager';
 import { AppComponent, BlankComponent, defaultAppComponents } from './components';
 import { compose, normalizeContainer } from './utils';
+import { defineGlobalDeps } from './utils/globalDeps';
+import { getRequireJs } from './utils/requirejs';
+import type { RequireJS } from './utils/requirejs';
+
+declare global {
+  interface Window {
+    define: RequireJS['define'];
+  }
+}
 
 export type ComponentAndProps<T = any> = [ComponentType, T];
 export interface ApplicationOptions {
@@ -23,7 +33,7 @@ export interface ApplicationOptions {
   components?: Record<string, ComponentType>;
   scopes?: Record<string, any>;
   router?: RouterOptions;
-  dynamicImport?: any;
+  devPlugins?: Record<string, Promise<{ default: typeof Plugin }>>;
 }
 
 export class Application {
@@ -34,8 +44,12 @@ export class Application {
   public apiClient: APIClient;
   public components: Record<string, ComponentType> = { ...defaultAppComponents };
   public pm: PluginManager;
+  public devPlugins: Record<string, Promise<{ default: typeof Plugin }>> = {};
+  public requirejs: RequireJS;
 
   constructor(protected options: ApplicationOptions = {}) {
+    this.initRequireJs();
+    this.devPlugins = options.devPlugins || {};
     this.scopes = merge(this.scopes, options.scopes);
     this.components = merge(this.components, options.components);
     this.apiClient = new APIClient(options.apiClient);
@@ -50,6 +64,12 @@ export class Application {
     this.addProviders(options.providers || []);
   }
 
+  private initRequireJs() {
+    this.requirejs = getRequireJs();
+    defineGlobalDeps(this.requirejs);
+    window.define = this.requirejs.define;
+  }
+
   private addDefaultProviders() {
     this.use(APIClientProvider, { apiClient: this.apiClient });
     this.use(I18nextProvider, { i18n: this.i18n });
@@ -61,10 +81,6 @@ export class Application {
       Navigate: Navigate as ComponentType,
       NavLink,
     });
-  }
-
-  get dynamicImport() {
-    return this.options.dynamicImport;
   }
 
   getComposeProviders() {

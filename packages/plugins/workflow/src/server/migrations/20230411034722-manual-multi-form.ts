@@ -1,5 +1,6 @@
 import { Migration } from '@nocobase/server';
-import { lodash, uid } from '@nocobase/utils';
+import { uid } from '@nocobase/utils';
+import lodash from 'lodash';
 
 function findSchema(root, filter, onlyLeaf = false) {
   const result = [];

@@ -1,6 +1,6 @@
 import PluginMultiAppManager from '@nocobase/plugin-multi-app-manager';
+import lodash from 'lodash';
 import { Application, AppSupervisor, Plugin } from '@nocobase/server';
-import { lodash } from '@nocobase/utils';
 import { resolve } from 'path';
 
 const subAppFilteredPlugins = ['multi-app-share-collection', 'multi-app-manager'];
@@ -90,10 +90,10 @@ class SubAppPlugin extends Plugin {
       await subApp.db.sequelize.query(`TRUNCATE ${subAppPluginsCollection.quotedTableName()}`);
 
       await subApp.db.sequelize.query(`
-          INSERT INTO ${subAppPluginsCollection.quotedTableName()}
-          SELECT *
-          FROM ${mainAppPluginsCollection.quotedTableName()}
-          WHERE "name" not in ('multi-app-manager', 'multi-app-share-collection');
+        INSERT INTO ${subAppPluginsCollection.quotedTableName()}
+        SELECT *
+        FROM ${mainAppPluginsCollection.quotedTableName()}
+        WHERE "name" not in ('multi-app-manager', 'multi-app-share-collection');
       `);
 
       const sequenceNameSql = `SELECT pg_get_serial_sequence('"${subAppPluginsCollection.collectionSchema()}"."${
@@ -102,9 +102,9 @@ class SubAppPlugin extends Plugin {
 
       const sequenceName = (await subApp.db.sequelize.query(sequenceNameSql, { type: 'SELECT' })) as any;
       await subApp.db.sequelize.query(`
-          SELECT setval('${
-            sequenceName[0]['pg_get_serial_sequence']
-          }', (SELECT max("id") FROM ${subAppPluginsCollection.quotedTableName()}));
+        SELECT setval('${
+          sequenceName[0]['pg_get_serial_sequence']
+        }', (SELECT max("id") FROM ${subAppPluginsCollection.quotedTableName()}));
       `);
 
       console.log(`sync plugins from ${mainApp.name} app to sub app ${subApp.name}`);
@@ -275,6 +275,11 @@ export class MultiAppShareCollectionPlugin extends Plugin {
     await this.db.import({
       directory: resolve(__dirname, 'collections'),
     });
+
+    // this.db.addMigrations({
+    //   namespace: 'multi-app-share-collection',
+    //   directory: resolve(__dirname, './migrations'),
+    // });
 
     this.app.resourcer.registerActionHandlers({
       'applications:shareCollections': async (ctx, next) => {

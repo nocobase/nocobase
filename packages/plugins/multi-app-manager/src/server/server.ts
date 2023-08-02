@@ -1,6 +1,6 @@
 import { Database, IDatabaseOptions, Transactionable } from '@nocobase/database';
 import Application, { AppSupervisor, Gateway, Plugin } from '@nocobase/server';
-import { lodash } from '@nocobase/utils';
+import lodash from 'lodash';
 import { Mutex } from 'async-mutex';
 import path, { resolve } from 'path';
 import { ApplicationModel } from '../server';

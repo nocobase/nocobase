@@ -1,5 +1,9 @@
 # `create-nocobase-app` 安装的升级
 
+<Alert>
+通过 create-nocobase-app 安装的应用不再有 packages/app 目录了，在 packages/app 里自定义的代码，需要移至自定义插件中。
+</Alert>
+
 ## 小版本升级
 
 执行 `nocobase upgrade` 升级命令即可
