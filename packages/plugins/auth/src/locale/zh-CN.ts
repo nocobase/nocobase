@@ -19,6 +19,7 @@ const locale = {
   SMS: '短信',
   'Username/Email': '用户名/邮箱',
   'Auth UID': '认证标识',
+  'The authentication allows users to sign in via username or email.': '该认证方式支持用户通过用户名或邮箱登录。',
 };
 
 export default locale;
