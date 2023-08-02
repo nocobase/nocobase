@@ -1505,6 +1505,7 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
                         minWidth: '200px',
                       },
                     },
+                    default: isVariable(defaultValue) ? '' : defaultValue,
                   } as ISchema;
 
                   return (

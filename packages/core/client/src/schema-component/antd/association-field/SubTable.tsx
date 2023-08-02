@@ -7,14 +7,12 @@ import { action } from '@formily/reactive';
 import { isArr } from '@formily/shared';
 import { Button } from 'antd';
 import React from 'react';
-import { useTranslation } from 'react-i18next';
 import { Table } from '../table-v2/Table';
 import { useAssociationFieldContext } from './hooks';
 
 export const SubTable: any = observer(
   (props: any) => {
     const { field } = useAssociationFieldContext<ArrayField>();
-    const { t } = useTranslation();
     const move = (fromIndex: number, toIndex: number) => {
       if (toIndex === undefined) return;
       if (!isArr(field.value)) return;

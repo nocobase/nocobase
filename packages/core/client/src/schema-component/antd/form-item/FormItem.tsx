@@ -71,13 +71,13 @@ export const FormItem: any = observer(
           ctx.field.data.activeFields.add(schema.name);
 
           // 如果默认值是一个变量，则需要解析之后再显示出来
-          if (isVariable(schema?.default)) {
+          if (isVariable(schema.default) && variables && field.setInitialValue) {
             field.setInitialValue(' ');
             field.loading = true;
-            field.setInitialValue(await variables?.parseVariable(schema.default));
+            field.setInitialValue(await variables.parseVariable(schema.default));
             field.loading = false;
-          } else {
-            field.setInitialValue(schema?.default);
+          } else if (field.setInitialValue) {
+            field.setInitialValue(schema.default);
           }
         }
       };
