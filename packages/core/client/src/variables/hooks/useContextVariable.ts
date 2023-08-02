@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useTableBlockContext } from '../../block-provider';
 import { useCollection } from '../../collection-manager';
-import { VariableOption } from '../VariablesProvider';
+import { VariableOption } from '../types';
 
 const useContextVariable = (): VariableOption => {
   const { name } = useCollection();
