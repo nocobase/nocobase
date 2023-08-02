@@ -60,7 +60,7 @@ export class WSServer {
       this.sendToConnectionsByTag('app', appName, {
         type: 'appStatusChanged',
         payload: {
-          error: error.message,
+          errors: [reportAppError(appName, error.message)],
         },
       });
     });
