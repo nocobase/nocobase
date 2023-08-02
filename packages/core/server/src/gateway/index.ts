@@ -109,7 +109,7 @@ export class Gateway extends EventEmitter {
 
       if (errorMessage) {
         this.responseError(res, {
-          titl: `The '${handleApp}' app is in an error status`,
+          title: `The '${handleApp}' app is in an error status`,
           detail: errorMessage,
           status: 503,
         });

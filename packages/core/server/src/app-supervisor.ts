@@ -1,7 +1,6 @@
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import { EventEmitter } from 'events';
 import Application from './application';
-import { AppLoadError } from './errors/app-load-error';
 
 type BootOptions = {
   appName: string;
