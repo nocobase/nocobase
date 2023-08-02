@@ -9,7 +9,6 @@ RUN cd /app \
   && yarn install --production
 
 RUN cd /app \
-  && rm -rf my-nocobase-app/packages/app/client/src/.umi \
   && rm -rf nocobase.tar.gz \
   && tar -zcf ./nocobase.tar.gz -C /app/my-nocobase-app .
 
