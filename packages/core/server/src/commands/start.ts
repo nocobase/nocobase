@@ -1,3 +1,4 @@
+import { AppSupervisor } from '../app-supervisor';
 import Application from '../application';
 import { Gateway } from '../gateway';
 
@@ -18,9 +19,11 @@ export default (app: Application) => {
         host,
       });
 
-      await app.start({
-        dbSync: opts?.dbSync,
-        cliArgs,
-      });
+      if (!AppSupervisor.getInstance().hasAppError(app.name)) {
+        await app.start({
+          dbSync: opts?.dbSync,
+          cliArgs,
+        });
+      }
     });
 };

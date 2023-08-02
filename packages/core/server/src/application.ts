@@ -323,7 +323,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
 
     await this.emitAsync('beforeStart', this, options);
-
     await this.emitAsync('afterStart', this, options);
     this.stopped = false;
     this.setWorkingMessage('started');

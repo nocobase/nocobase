@@ -18,6 +18,7 @@ export function supervisedAppCall(target: any, propertyKey: string, descriptor: 
       const result = await originalMethod.apply(this, args);
       return result;
     } catch (error) {
+      console.log(`handle error from ${originalMethod.name}`);
       AppSupervisor.getInstance().setAppError(this.name, error);
     }
   };
@@ -63,6 +64,10 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   setAppError(appName: string, error: Error) {
     console.log(error);
     this.appErrors[appName] = error;
+  }
+
+  hasAppError(appName: string) {
+    return !!this.appErrors[appName];
   }
 
   clearAppError(appName: string) {
