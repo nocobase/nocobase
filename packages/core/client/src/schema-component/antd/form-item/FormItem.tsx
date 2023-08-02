@@ -3,7 +3,6 @@ import { ArrayCollapse, ArrayItems, FormLayout, FormItem as Item } from '@formil
 import { Field } from '@formily/core';
 import { ISchema, observer, useField, useFieldSchema } from '@formily/react';
 import { Select } from 'antd';
-import dayjs from 'dayjs';
 import _ from 'lodash';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -70,16 +69,16 @@ export const FormItem: any = observer(
           ctx.field.data = ctx.field.data || {};
           ctx.field.data.activeFields = ctx.field.data.activeFields || new Set();
           ctx.field.data.activeFields.add(schema.name);
+        }
 
-          // 如果默认值是一个变量，则需要解析之后再显示出来
-          if (isVariable(schema.default) && variables && field.setInitialValue) {
-            field.setInitialValue(' ');
-            field.loading = true;
-            field.setInitialValue(await variables.parseVariable(schema.default));
-            field.loading = false;
-          } else if (field.setInitialValue) {
-            field.setInitialValue(schema.default);
-          }
+        // 如果默认值是一个变量，则需要解析之后再显示出来
+        if (isVariable(schema.default) && variables && field.setInitialValue) {
+          field.setInitialValue(' ');
+          field.loading = true;
+          field.setInitialValue(await variables.parseVariable(schema.default));
+          field.loading = false;
+        } else if (field.setInitialValue) {
+          field.setInitialValue(schema.default);
         }
       };
 
