@@ -113,7 +113,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   constructor(public options: ApplicationOptions) {
     super();
-    this.rawOptions = lodash.cloneDeep(options);
+    this.rawOptions = this.name == 'main' ? lodash.cloneDeep(options) : {};
     this.init();
     this._appSupervisor.addApp(this);
   }
