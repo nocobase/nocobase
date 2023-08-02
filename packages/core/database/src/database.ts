@@ -121,14 +121,14 @@ export const DialectVersionAccessors = {
       if (v.toLowerCase().includes('mariadb')) {
         return '';
       }
-      const m = /([\d+\.]+)/.exec(v);
+      const m = /([\d+.]+)/.exec(v);
       return m[0];
     },
   },
   postgres: {
     sql: 'select version() as version',
     get: (v: string) => {
-      const m = /([\d+\.]+)/.exec(v);
+      const m = /([\d+.]+)/.exec(v);
       return semver.minVersion(m[0]).version;
     },
   },
@@ -611,7 +611,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     this.operators = operators;
 
     this.registerOperators({
-      ...extendOperators,
+      ...((extendOperators as unknown) as MapOf<OperatorFunc>),
     });
   }
 
@@ -700,7 +700,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   async auth(options: Omit<QueryOptions, 'retry'> & { retry?: number | Pick<QueryOptions, 'retry'> } = {}) {
     const { retry = 10, ...others } = options;
-    const delay = (ms) => new Promise((yea) => setTimeout(yea, ms));
+    const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
     let count = 1;
     const authenticate = async () => {
       try {
