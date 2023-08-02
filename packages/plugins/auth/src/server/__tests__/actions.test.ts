@@ -87,6 +87,7 @@ describe('actions', () => {
     beforeAll(async () => {
       app = mockServer();
       process.env.INIT_ROOT_EMAIL = 'test@nocobase.com';
+      process.env.INT_ROOT_USERNAME = 'test';
       process.env.INIT_ROOT_PASSWORD = '123456';
       process.env.INIT_ROOT_NICKNAME = 'Test';
       app.plugin(AuthPlugin);
@@ -100,14 +101,17 @@ describe('actions', () => {
       await db.close();
     });
 
-    it('should sign in with email and password', async () => {
+    it('should sign in with password', async () => {
       let res = await agent.resource('auth').check();
       expect(res.body.data.id).toBeUndefined();
 
-      res = await agent.post('/auth:signIn').set({ 'X-Authenticator': 'basic' }).send({
-        email: process.env.INIT_ROOT_EMAIL,
-        password: process.env.INIT_ROOT_PASSWORD,
-      });
+      res = await agent
+        .post('/auth:signIn')
+        .set({ 'X-Authenticator': 'basic' })
+        .send({
+          account: process.env.INIT_ROOT_USERNAME || process.env.INIT_ROOT_EMAIL,
+          password: process.env.INIT_ROOT_PASSWORD,
+        });
       expect(res.statusCode).toEqual(200);
       const data = res.body.data;
       const token = data.token;
@@ -119,7 +123,7 @@ describe('actions', () => {
 
     it('should disable sign up', async () => {
       let res = await agent.post('/auth:signUp').set({ 'X-Authenticator': 'basic' }).send({
-        email: 'new',
+        username: 'new',
         password: 'new',
       });
       expect(res.statusCode).toEqual(200);
@@ -138,7 +142,7 @@ describe('actions', () => {
         },
       });
       res = await agent.post('/auth:signUp').set({ 'X-Authenticator': 'basic' }).send({
-        email: process.env.INIT_ROOT_EMAIL,
+        username: process.env.INIT_ROOT_USERNAME,
         password: process.env.INIT_ROOT_PASSWORD,
       });
       expect(res.statusCode).toEqual(403);

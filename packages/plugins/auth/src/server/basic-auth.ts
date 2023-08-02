@@ -12,15 +12,19 @@ export class BasicAuth extends BaseAuth {
   async validate() {
     const ctx = this.ctx;
     const {
-      values: { account, password },
+      values: {
+        account, // Username or email
+        email, // Old parameter, compatible with old api
+        password,
+      },
     } = ctx.action.params;
 
-    if (!account) {
+    if (!account && !email) {
       ctx.throw(400, ctx.t('Please enter your username or email', { ns: namespace }));
     }
     const user = await this.userRepository.findOne({
       filter: {
-        $or: [{ username: account }, { email: account }],
+        $or: [{ username: account || null }, { email: account || email }],
       },
     });
 

@@ -31,6 +31,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
     this.app.i18n.addResources('en-US', namespace, enUS);
     const cmd = this.app.findCommand('install');
     if (cmd) {
+      cmd.requiredOption('-u, --root-username <rootUsername>', '', process.env.INIT_ROOT_USERNAME);
       cmd.requiredOption('-e, --root-email <rootEmail>', '', process.env.INIT_ROOT_EMAIL);
       cmd.requiredOption('-p, --root-password <rootPassword>', '', process.env.INIT_ROOT_PASSWORD);
       cmd.option('-n, --root-nickname <rootNickname>');
@@ -137,21 +138,23 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
   }
 
   getInstallingData(options: any = {}) {
-    const { INIT_ROOT_NICKNAME, INIT_ROOT_PASSWORD, INIT_ROOT_EMAIL } = process.env;
+    const { INIT_ROOT_NICKNAME, INIT_ROOT_PASSWORD, INIT_ROOT_EMAIL, INIT_ROOT_USERNAME } = process.env;
     const {
       rootEmail = INIT_ROOT_EMAIL,
       rootPassword = INIT_ROOT_PASSWORD,
       rootNickname = INIT_ROOT_NICKNAME || 'Super Admin',
+      rootUsername = INIT_ROOT_USERNAME || 'admin',
     } = options.users || options?.cliArgs?.[0] || {};
     return {
       rootEmail,
       rootPassword,
       rootNickname,
+      rootUsername,
     };
   }
 
   async install(options) {
-    const { rootNickname, rootPassword, rootEmail } = this.getInstallingData(options);
+    const { rootNickname, rootPassword, rootEmail, rootUsername } = this.getInstallingData(options);
     const User = this.db.getCollection('users');
     if (await User.repository.findOne({ filter: { email: rootEmail } })) {
       return;
@@ -162,6 +165,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
         email: rootEmail,
         password: rootPassword,
         nickname: rootNickname,
+        username: rootUsername,
       },
     });
 
