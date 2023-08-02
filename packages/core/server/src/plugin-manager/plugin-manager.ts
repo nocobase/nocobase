@@ -305,6 +305,7 @@ export class PluginManager {
 
     this.app.setWorkingMessage(`enabling plugin ${name}`);
     const pluginNames = await this.repository.enable(name);
+
     await this.app.reload();
 
     this.app.log.debug(`syncing database in enable plugin ${name}...`);

@@ -1,6 +1,7 @@
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import { EventEmitter } from 'events';
 import Application from './application';
+import { AppLoadError } from './errors/app-load-error';
 
 type BootOptions = {
   appName: string;
@@ -20,6 +21,7 @@ export function supervisedAppCall(target: any, propertyKey: string, descriptor: 
     } catch (error) {
       console.log(`handle error from ${originalMethod.name}`);
       AppSupervisor.getInstance().setAppError(this.name, error);
+      throw error;
     }
   };
 
@@ -64,6 +66,11 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   setAppError(appName: string, error: Error) {
     console.log(error);
     this.appErrors[appName] = error;
+
+    this.emit('appError', {
+      appName: appName,
+      error,
+    });
   }
 
   hasAppError(appName: string) {

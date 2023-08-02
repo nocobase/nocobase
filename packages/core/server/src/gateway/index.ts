@@ -21,6 +21,14 @@ interface StartHttpServerOptions {
   callback?: () => void;
 }
 
+export function reportAppError(appName, errorMessage) {
+  return {
+    title: `The '${appName}' app is in an error status`,
+    detail: errorMessage,
+    status: 503,
+  };
+}
+
 export class Gateway extends EventEmitter {
   private static instance: Gateway;
   /**
@@ -101,7 +109,7 @@ export class Gateway extends EventEmitter {
 
       if (errorMessage) {
         this.responseError(res, {
-          title: `The '${handleApp}' app is in an error status`,
+          titl: `The '${handleApp}' app is in an error status`,
           detail: errorMessage,
           status: 503,
         });

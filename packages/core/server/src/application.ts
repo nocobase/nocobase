@@ -251,6 +251,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   @supervisedAppCall
   async load(options?: any) {
     this.setWorkingMessage('start load');
+
     if (options?.reload) {
       this.log.info(`Reload application configuration`);
       const oldDb = this._db;
@@ -269,6 +270,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   async reload(options?: any) {
     this.log.debug(`start reload`);
+
     await this.load({
       ...options,
       reload: true,
@@ -300,10 +302,16 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     await this.db.prepare();
 
-    if (argv?.[2] !== 'upgrade') {
-      await this.load({
-        method: argv?.[2],
-      });
+    const command = argv?.[2];
+
+    if (command !== 'upgrade') {
+      try {
+        await this.load({
+          method: command,
+        });
+      } catch (error) {
+        console.log(`ignore error ${error.message}`);
+      }
     }
 
     return this.cli.parseAsync(argv, options);

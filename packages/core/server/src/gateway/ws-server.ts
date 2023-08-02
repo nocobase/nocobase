@@ -1,4 +1,4 @@
-import { Gateway, IncomingRequest } from '../gateway';
+import { Gateway, IncomingRequest, reportAppError } from '../gateway';
 import WebSocket from 'ws';
 import { nanoid } from 'nanoid';
 import { IncomingMessage } from 'http';
@@ -55,6 +55,15 @@ export class WSServer {
         },
       });
     });
+
+    AppSupervisor.getInstance().on('appError', ({ appName, error }) => {
+      this.sendToConnectionsByTag('app', appName, {
+        type: 'appStatusChanged',
+        payload: {
+          error: error.message,
+        },
+      });
+    });
   }
 
   addNewConnection(ws: WebSocketWithId, request: IncomingMessage) {
@@ -91,6 +100,10 @@ export class WSServer {
         type: 'appStatusChanged',
         payload: {
           message: app.workingMessage,
+          ready: app.ready,
+          errors: appSupervisor.hasAppError(handleAppName)
+            ? [reportAppError(handleAppName, appSupervisor.appErrors[handleAppName].message)]
+            : null,
         },
       });
     } else {
