@@ -40,7 +40,7 @@ export const InternaPopoverNester = observer(
           }
         }}
       >
-        <span style={{ cursor: 'pointer', display: 'inline-block', width: '100%' }}>
+        <span style={{ cursor: 'pointer', display: 'inline-block', minWidth: '400px' }}>
           {!isEmptyObject(value) ? <ReadPrettyInternalViewer {...titleProps} /> : <EditOutlined />}
         </span>
       </Popover>
