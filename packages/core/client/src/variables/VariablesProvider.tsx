@@ -1,6 +1,6 @@
 import { getValuesByPath } from '@nocobase/utils/client';
 import _ from 'lodash';
-import React, { createContext, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAPIClient } from '../api-client';
 import type { CollectionFieldOptions } from '../collection-manager';
 import { useCollectionManager } from '../collection-manager';
@@ -20,7 +20,7 @@ const TYPE_TO_ACTION = {
 };
 
 const getAction = (type: string) => {
-  if (!(type in TYPE_TO_ACTION)) {
+  if (process.env.NODE_ENV !== 'production' && !(type in TYPE_TO_ACTION)) {
     throw new Error(`VariablesProvider: unknown type: ${type}`);
   }
 
@@ -39,11 +39,16 @@ const getFieldPath = (variablePath: string) => {
 };
 
 const VariablesProvider = ({ children }) => {
+  const ctxRef = useRef<Record<string, any>>({});
   const [ctx, setCtx] = useState<Record<string, any>>({});
   const api = useAPIClient();
   const { getCollectionJoinField } = useCollectionManager();
   const compile = useCompile();
   const { builtinVariables } = useBuildInVariables();
+
+  useEffect(() => {
+    ctxRef.current = ctx;
+  }, [ctx]);
 
   /**
    * 1. 从 `ctx` 中根据 `path` 取值
@@ -54,10 +59,10 @@ const VariablesProvider = ({ children }) => {
     async (variablePath: string) => {
       const list = variablePath.split('.');
       const variableName = list[0];
-      let current = ctx;
+      let current = ctxRef.current;
       let collectionName = getFieldPath(variableName);
 
-      if (!ctx[variableName]) {
+      if (process.env.NODE_ENV !== 'production' && !ctxRef.current[variableName]) {
         throw new Error(`VariablesProvider: ${variableName} is not found`);
       }
 
@@ -104,42 +109,84 @@ const VariablesProvider = ({ children }) => {
 
       return compile(_.isFunction(current) ? current() : current);
     },
-    [ctx, getCollectionJoinField],
+    [getCollectionJoinField],
   );
 
+  /**
+   * 注册一个全局变量
+   */
+  const registerVariable = useCallback((variableOption: VariableOption) => {
+    setCtx((prev) => {
+      return {
+        ...prev,
+        [variableOption.name]: variableOption.ctx,
+      };
+    });
+    ctxRef.current[variableOption.name] = variableOption.ctx;
+    if (variableOption.collectionName) {
+      variableToCollectionName[variableOption.name] = variableOption.collectionName;
+    }
+  }, []);
+
+  const getVariable = useCallback((variableName: string): VariableOption => {
+    if (!ctxRef.current[variableName]) {
+      return null;
+    }
+
+    return {
+      name: variableName,
+      ctx: ctxRef.current[variableName],
+      collectionName: variableToCollectionName[variableName],
+    };
+  }, []);
+
+  const removeVariable = useCallback((variableName: string) => {
+    setCtx((prev) => {
+      const next = { ...prev };
+      delete next[variableName];
+      return next;
+    });
+    delete ctxRef.current[variableName];
+    delete variableToCollectionName[variableName];
+  }, []);
+
   const parseVariable = useCallback(
-    async (str: string) => {
+    /**
+     * 将变量字符串解析为真正的值
+     * @param str 变量字符串
+     * @param localVariable 局部变量，解析完成后会被清除
+     * @returns
+     */
+    async (str: string, localVariable?: VariableOption) => {
       const matches = str.match(/\{\{\s*(.*?)\s*\}\}/g);
 
       if (!matches) {
         return str;
       }
 
+      let old = null;
+      if (localVariable) {
+        // 1. 如果有局部变量，先把全局中同名的变量取出来
+        old = getVariable(localVariable.name);
+        // 2. 把局部变量注册到全局，这样就可以使用了
+        registerVariable(localVariable);
+      }
+
       const path = matches[0].replace(/\{\{\s*(.*?)\s*\}\}/g, '$1');
-      return getValue(path);
-    },
-    [getValue],
-  );
+      const value = await getValue(path);
 
-  const registerVariable = useCallback((variableOption: VariableOption) => {
-    setCtx((prev) => ({
-      ...prev,
-      [variableOption.name]: variableOption.ctx,
-    }));
-    if (variableOption.collectionName) {
-      variableToCollectionName[variableOption.name] = variableOption.collectionName;
-    }
-  }, []);
+      // 3. 局部变量使用完成后，需要在全局中清除
+      if (localVariable) {
+        removeVariable(localVariable.name);
+      }
+      // 4. 如果有同名的全局变量，把它重新注册回去
+      if (old) {
+        registerVariable(old);
+      }
 
-  const getVariable = useCallback(
-    (variableName: string): VariableOption => {
-      return {
-        name: variableName,
-        ctx: ctx[variableName],
-        collectionName: variableToCollectionName[variableName],
-      };
+      return value;
     },
-    [ctx],
+    [getValue, getVariable, registerVariable, removeVariable],
   );
 
   const value = useMemo(
