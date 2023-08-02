@@ -1,26 +1,27 @@
-import ncc from '@vercel/ncc';
-import react from '@vitejs/plugin-react';
-import chalk from 'chalk';
-import fg from 'fast-glob';
 import fs from 'fs-extra';
+import chalk from 'chalk';
+import ncc from '@vercel/ncc';
 import path from 'path';
+import react from '@vitejs/plugin-react';
 import { build as tsupBuild } from 'tsup';
 import { build as viteBuild } from 'vite';
-import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js';
+import fg from 'fast-glob';
 import {
   buildCheck,
   formatFileSize,
   getExcludePackages,
   getFileSize,
   getIncludePackages,
-  getPackageJson,
   getSourcePackages,
 } from './utils/buildPluginUtils';
+import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js';
 import { getDepsConfig } from './utils/getDepsConfig';
+import { globExcludeFiles } from './constant';
+import { PkgLog, getPackageJson } from './utils';
 
-const serverGlobalFiles: string[] = ['src/**', '!src/**/__tests__', '!src/client/**'];
+const serverGlobalFiles: string[] = ['src/**', '!src/client/**', ...globExcludeFiles];
 
-const clientGlobalFiles: string[] = ['src/client/**', '!src/**/__tests__'];
+const clientGlobalFiles: string[] = ['src/client/**', '!src/**/__tests__', ...globExcludeFiles];
 
 const external = [
   // nocobase
@@ -116,17 +117,14 @@ const external = [
   'ahooks',
   'lodash',
   'china-division',
-  'cronstrue',
 ];
 const pluginPrefix = (
   process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro-'
 ).split(',');
 
-type Log = (msg: string, ...args: any) => void;
-
 const target_dir = 'dist';
 
-export function deleteJsFiles(cwd: string, log: Log) {
+export function deleteJsFiles(cwd: string, log: PkgLog) {
   log('delete babel js files');
   const jsFiles = fg.globSync(['**/*', '!**/*.d.ts', '!node_modules'], {
     cwd: path.join(cwd, target_dir),
@@ -137,8 +135,8 @@ export function deleteJsFiles(cwd: string, log: Log) {
   });
 }
 
-export async function buildServerDeps(cwd: string, serverFiles: string[], log: Log) {
-  log('build server dependencies');
+export async function buildServerDeps(cwd: string, serverFiles: string[], log: PkgLog) {
+  log('build plugin server dependencies');
   const outDir = path.join(cwd, target_dir, 'node_modules');
   const sourcePackages = getSourcePackages(serverFiles);
   const includePackages = getIncludePackages(sourcePackages, external, pluginPrefix);
@@ -147,13 +145,13 @@ export async function buildServerDeps(cwd: string, serverFiles: string[], log: L
   let tips = [];
   if (includePackages.length) {
     tips.push(
-      `These packages ${chalk.yellow(includePackages.join(', '))} will be ${chalk.bold(
+      `These packages ${chalk.yellow(includePackages.join(', '))} will be ${chalk.italic(
         'bundled',
       )} to dist/node_modules.`,
     );
   }
   if (excludePackages.length) {
-    tips.push(`These packages ${chalk.yellow(excludePackages.join(', '))} will be ${chalk.bold('exclude')}.`);
+    tips.push(`These packages ${chalk.yellow(excludePackages.join(', '))} will be ${chalk.italic('exclude')}.`);
   }
   tips.push(`For more information, please refer to: ${chalk.blue('https://docs.nocobase.com/development/deps')}.`);
   log(tips.join(' '));
@@ -228,8 +226,8 @@ export async function buildServerDeps(cwd: string, serverFiles: string[], log: L
   }
 }
 
-export async function buildPluginServer(cwd: string, log: Log) {
-  log('build server source');
+export async function buildPluginServer(cwd: string, sourcemap: boolean, log: PkgLog) {
+  log('build plugin server source');
   const packageJson = getPackageJson(cwd);
   const serverFiles = fg.globSync(serverGlobalFiles, { cwd, absolute: true });
   buildCheck({ cwd, packageJson, entry: 'server', files: serverFiles, log });
@@ -242,6 +240,7 @@ export async function buildPluginServer(cwd: string, log: Log) {
     silent: true,
     treeshake: true,
     target: 'node16',
+    sourcemap,
     outDir: path.join(cwd, target_dir),
     format: 'cjs',
     skipNodeModulesBundle: true,
@@ -250,9 +249,8 @@ export async function buildPluginServer(cwd: string, log: Log) {
   await buildServerDeps(cwd, serverFiles, log);
 }
 
-export function buildPluginClient(cwd: string, log: Log) {
-  log('build client');
-
+export function buildPluginClient(cwd: string, sourcemap: boolean, log: PkgLog) {
+  log('build plugin client');
   const packageJson = getPackageJson(cwd);
   const clientFiles = fg.globSync(clientGlobalFiles, { cwd, absolute: true });
   const sourcePackages = getSourcePackages(clientFiles);
@@ -270,7 +268,7 @@ export function buildPluginClient(cwd: string, log: Log) {
     return prev;
   }, {});
 
-  const entry = fg.globSync('src/client/index.{ts,tsx,js,jsx}', { cwd });
+  const entry = fg.globSync('src/client/index.{ts,tsx,js,jsx}', { absolute: true, cwd });
   const outputFileName = 'index.js';
   return viteBuild({
     mode: 'production',
@@ -283,6 +281,7 @@ export function buildPluginClient(cwd: string, log: Log) {
       outDir,
       cssCodeSplit: false,
       emptyOutDir: false,
+      sourcemap,
       lib: {
         entry,
         formats: ['umd'],
@@ -314,4 +313,18 @@ export function buildPluginClient(cwd: string, log: Log) {
       },
     ],
   });
+}
+
+export async function buildPlugin(cwd: string, sourcemap: boolean, log: PkgLog) {
+  await buildPluginClient(cwd, sourcemap, log);
+  await buildPluginServer(cwd, sourcemap, log);
+  const buildFile = path.join(cwd, 'build.js');
+  if (fs.existsSync(buildFile)) {
+    log('build others');
+    try {
+      await require(buildFile).run(log);
+    } catch (error) {
+      console.error(error);
+    }
+  }
 }
