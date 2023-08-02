@@ -25,10 +25,10 @@ export interface InstallOptions {
 function SwitchAppReadyStatus(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
   const originalMethod = descriptor.value;
 
-  descriptor.value = function (...args: any[]) {
-    this.app.setReadyStatus(false);
-    const result = originalMethod.apply(this, args);
-    this.app.setReadyStatus(true);
+  descriptor.value = async function (...args: any[]) {
+    this.app.setReadyStatus(false, `start ${originalMethod.name}`);
+    const result = await originalMethod.apply(this, args);
+    this.app.setReadyStatus(true, `end ${originalMethod.name}`);
     return result;
   };
 
@@ -377,11 +377,13 @@ export class PluginManager {
   async enable(name: string | string[]) {
     this.app.log.debug(`enabling plugin ${name}`);
 
+    this.app.setWorkingMessage(`enabling plugin ${name}`);
     const pluginNames = await this.repository.enable(name);
     await this.app.reload();
 
     this.app.log.debug(`syncing database in enable plugin ${name}...`);
 
+    this.app.setWorkingMessage(`sync database`);
     await this.app.db.sync();
 
     for (const pluginName of pluginNames) {
@@ -390,6 +392,7 @@ export class PluginManager {
         throw new Error(`${name} plugin does not exist`);
       }
       this.app.log.debug(`installing plugin ${pluginName}...`);
+      this.app.setWorkingMessage(`install plugin ${pluginName}...`);
       await plugin.install();
       await plugin.afterEnable();
     }
@@ -402,6 +405,7 @@ export class PluginManager {
   @SwitchAppReadyStatus
   async disable(name: string | string[]) {
     try {
+      this.app.setWorkingMessage(`disabling plugin ${name}`);
       const pluginNames = await this.repository.disable(name);
       await this.app.reload();
       for (const pluginName of pluginNames) {
@@ -413,6 +417,7 @@ export class PluginManager {
       }
 
       await this.app.emitAsync('afterDisablePlugin', name);
+      this.app.setWorkingMessage(`plugin ${name} disabled`);
     } catch (error) {
       throw error;
     }

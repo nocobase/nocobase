@@ -187,7 +187,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   setWorkingMessage(message: string) {
     this._workingMessage = message;
-    this.emit('workingMessageChanged', this._workingMessage);
+    this.emit('workingMessageChanged', {
+      message: this._workingMessage,
+      ready: this.ready,
+    });
   }
 
   getVersion() {
@@ -321,11 +324,14 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.emitAsync('afterStart', this, options);
     this.stopped = false;
     this.setWorkingMessage('started');
-    this.ready = true;
+    this.setReadyStatus(true, 'started');
   }
 
-  setReadyStatus(status: boolean) {
+  setReadyStatus(status: boolean, reason: string) {
     this.ready = status;
+
+    this.logger.debug(`set ready status to ${status} because ${reason}`);
+    this.emit('readyStatusChanged', this.ready);
   }
 
   async stop(options: any = {}) {

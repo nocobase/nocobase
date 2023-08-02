@@ -45,6 +45,15 @@ export class WSServer {
         },
       });
     });
+
+    AppSupervisor.getInstance().on('readyStatusChanged', ({ appName, ready }) => {
+      this.sendToConnectionsByTag('app', appName, {
+        type: 'appStatusChanged',
+        payload: {
+          ready,
+        },
+      });
+    });
   }
 
   addNewConnection(ws: WebSocketWithId, request: IncomingMessage) {
