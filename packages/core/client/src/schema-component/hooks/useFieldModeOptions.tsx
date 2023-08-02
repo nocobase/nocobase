@@ -55,7 +55,6 @@ export const useFieldModeOptions = (props?) => {
               { label: t('Title'), value: 'Select' },
               { label: t('Tag'), value: 'Tag' },
               { label: t('Sub-details'), value: 'Nester' },
-              { label: t('Sub-form(Popover)'), value: 'PopoverNester' },
               { label: t('Sub-table'), value: 'SubTable' },
             ]
           : [
@@ -72,7 +71,6 @@ export const useFieldModeOptions = (props?) => {
               { label: t('Title'), value: 'Select' },
               { label: t('Tag'), value: 'Tag' },
               { label: t('Sub-details'), value: 'Nester' },
-              { label: t('Sub-form(Popover)'), value: 'PopoverNester' },
             ]
           : [
               { label: t('Select'), value: 'Select' },
