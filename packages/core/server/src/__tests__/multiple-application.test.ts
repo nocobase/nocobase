@@ -1,8 +1,6 @@
-import { Gateway } from '@nocobase/server';
+import { AppSupervisor } from '@nocobase/server';
 import { mockServer, MockServer } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
-import { IncomingMessage } from 'http';
-import * as url from 'url';
 import Application from '../application';
 
 describe('multiple application', () => {
@@ -52,29 +50,8 @@ describe('multiple application', () => {
       },
     });
 
-    let response = await app.agent().resource('test').test();
-    expect(response.statusCode).toEqual(404);
-
-    Gateway.getInstance().setAppSelector((req) => {
-      const queryObject = url.parse(req.url, true).query;
-      return queryObject['app'] as string;
-    });
-
-    response = await app.agent().resource('test').test({
-      app: sub1,
-    });
-
-    expect(response.statusCode).toEqual(200);
-
-    response = await app.agent().resource('test').test({
-      app: sub2,
-    });
-    expect(response.statusCode).toEqual(200);
-
-    response = await app.agent().resource('test').test({
-      app: sub3,
-    });
-
-    expect(response.statusCode).toEqual(404);
+    expect(AppSupervisor.getInstance().hasApp(sub1)).toBeTruthy();
+    expect(AppSupervisor.getInstance().hasApp(sub2)).toBeTruthy();
+    expect(AppSupervisor.getInstance().hasApp(sub3)).toBeFalsy();
   });
 });
