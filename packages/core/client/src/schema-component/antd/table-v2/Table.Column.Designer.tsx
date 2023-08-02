@@ -393,6 +393,7 @@ export const TableColumnDesigner = (props) => {
             onSubmitCallBack={(sortArr) => {
               const path = field.path?.splice(field.path?.length - 1, 1);
               field.form.query(`${path.concat(`*.` + fieldSchema.name)}`).forEach((f) => {
+                f.componentProps.service = f.componentProps.service || { params: {} };
                 f.componentProps.service.params.sort = sortArr;
               });
             }}
