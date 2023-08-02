@@ -151,12 +151,8 @@ export const useCreateActionProps = () => {
   return {
     async onClick() {
       const fieldNames = fields.map((field) => field.name);
-      const {
-        assignedValues: originalAssignedValues = {},
-        onSuccess,
-        overwriteValues,
-        skipValidator,
-      } = actionSchema?.['x-action-settings'] ?? {};
+      const { assignedValues: originalAssignedValues = {}, onSuccess, overwriteValues, skipValidator } =
+        actionSchema?.['x-action-settings'] ?? {};
       const addChild = fieldSchema?.['x-component-props']?.addChild;
       const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentRecord, currentUser });
       if (!skipValidator) {
@@ -226,12 +222,8 @@ export const useAssociationCreateActionProps = () => {
   return {
     async onClick() {
       const fieldNames = fields.map((field) => field.name);
-      const {
-        assignedValues: originalAssignedValues = {},
-        onSuccess,
-        overwriteValues,
-        skipValidator,
-      } = actionSchema?.['x-action-settings'] ?? {};
+      const { assignedValues: originalAssignedValues = {}, onSuccess, overwriteValues, skipValidator } =
+        actionSchema?.['x-action-settings'] ?? {};
       const addChild = fieldSchema?.['x-component-props']?.addChild;
       const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentRecord, currentUser });
       if (!skipValidator) {
@@ -415,11 +407,8 @@ export const useCustomizeUpdateActionProps = () => {
 
   return {
     async onClick() {
-      const {
-        assignedValues: originalAssignedValues = {},
-        onSuccess,
-        skipValidator,
-      } = actionSchema?.['x-action-settings'] ?? {};
+      const { assignedValues: originalAssignedValues = {}, onSuccess, skipValidator } =
+        actionSchema?.['x-action-settings'] ?? {};
       const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentRecord, currentUser });
       if (skipValidator === false) {
         await form.submit();
@@ -473,11 +462,8 @@ export const useCustomizeBulkUpdateActionProps = () => {
 
   return {
     async onClick() {
-      const {
-        assignedValues: originalAssignedValues = {},
-        onSuccess,
-        updateMode,
-      } = actionSchema?.['x-action-settings'] ?? {};
+      const { assignedValues: originalAssignedValues = {}, onSuccess, updateMode } =
+        actionSchema?.['x-action-settings'] ?? {};
       actionField.data = field.data || {};
       actionField.data.loading = true;
       const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentUser });
@@ -732,12 +718,8 @@ export const useUpdateActionProps = () => {
 
   return {
     async onClick() {
-      const {
-        assignedValues: originalAssignedValues = {},
-        onSuccess,
-        overwriteValues,
-        skipValidator,
-      } = actionSchema?.['x-action-settings'] ?? {};
+      const { assignedValues: originalAssignedValues = {}, onSuccess, overwriteValues, skipValidator } =
+        actionSchema?.['x-action-settings'] ?? {};
       const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentRecord, currentUser });
       if (!skipValidator) {
         await form.submit();
@@ -1124,7 +1106,7 @@ export const useAssociationNames = () => {
         const fieldPath = !isAssociationField && isAssociationSubfield ? getAssociationPath(s.name) : s.name;
         const path = prefix === '' || !prefix ? fieldPath : prefix + '.' + fieldPath;
         appends.add(path);
-        if (['Nester', 'SubTable'].includes(s['x-component-props']?.mode)) {
+        if (['Nester', 'SubTable', 'PopoverNester'].includes(s['x-component-props']?.mode)) {
           updateAssociationValues.add(path);
           const bufPrefix = prefix && prefix !== '' ? prefix + '.' + s.name : s.name;
           getAssociationAppends(s, bufPrefix);
