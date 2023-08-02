@@ -3,7 +3,7 @@ import { ArrayCollapse, ArrayItems, FormItem, FormLayout, Input } from '@formily
 import { Field, GeneralField, createForm } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import { dayjs, error } from '@nocobase/utils/client';
+import { error } from '@nocobase/utils/client';
 import {
   Alert,
   App,
@@ -71,6 +71,7 @@ import { getTargetKey } from '../schema-component/antd/association-filter/utilts
 import { isVariable } from '../schema-component/common/utils/uitls';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
+import { useVariables } from '../variables';
 import { FormDataTemplates } from './DataTemplates';
 import { DateFormatCom, ExpiresRadio } from './DateFormat/ExpiresRadio';
 import { EnableChildCollections } from './EnableChildCollections';
@@ -1449,6 +1450,7 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
   let targetField;
   const { getField } = useCollection();
   const { getCollectionJoinField } = useCollectionManager();
+  const variables = useVariables();
 
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
   const fieldSchemaWithoutRequired = _.omit(fieldSchema, 'required');
@@ -1463,6 +1465,9 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
   const isAllowContextVariable =
     collectionField?.interface === 'm2m' ||
     (parentCollectionField?.type === 'hasMany' && collectionField?.interface === 'm2o');
+
+  const defaultV = getFieldDefaultValue(fieldSchema, collectionField);
+  console.log('defaultV', defaultV);
 
   return (
     <SchemaSettings.ModalItem
@@ -1526,7 +1531,13 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
           ['x-uid']: fieldSchema['x-uid'],
         };
         fieldSchema.default = v.default;
-        field.value = v.default;
+        if (isVariable(v.default)) {
+          variables?.parseVariable(v.default).then((result) => {
+            field.value = result;
+          });
+        } else {
+          field.value = v.default;
+        }
         schema.default = v.default;
         dn.emit('patch', {
           schema,
@@ -1557,8 +1568,5 @@ export const isPatternDisabled = (fieldSchema: Schema) => {
 
 function getFieldDefaultValue(fieldSchema: ISchema, collectionField: CollectionFieldOptions) {
   const result = fieldSchema?.default ?? collectionField?.defaultValue;
-  if (collectionField?.uiSchema?.['x-component'] === 'DatePicker' && result) {
-    return dayjs(result);
-  }
   return result;
 }
