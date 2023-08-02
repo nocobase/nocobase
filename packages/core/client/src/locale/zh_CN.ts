@@ -245,6 +245,7 @@ export default {
   "Long text": "多行文本",
   "Phone": "手机号码",
   "Email": "电子邮箱",
+  "Username": "用户名",
   'Null': '空值',
   "Boolean": "逻辑值",
   "Number": "数字",
@@ -469,6 +470,7 @@ export default {
   "Verification code": "验证码",
   "Send code": "发送验证码",
   "Retry after {{count}} seconds": "{{count}} 秒后重试",
+  "2 to 16 characters (excluding '@' and '.')": "2到16个字符（不包含'@'和'.'）",
 
   "Roles": "角色",
   "Add role": "添加角色",

@@ -47,6 +47,7 @@ export class AuthPlugin extends Plugin {
 
     this.app.authManager.registerTypes(presetAuthType, {
       auth: BasicAuth,
+      title: 'Password',
     });
     // Register actions
     Object.entries(authActions).forEach(([action, handler]) =>

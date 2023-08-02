@@ -30,7 +30,7 @@ export const AuthProvider: FC = (props) => {
       }}
     >
       <OptionsComponentProvider authType={presetAuthType} component={Options}>
-        <SigninPageProvider authType={presetAuthType} tabTitle={t('Sign in via email')} component={SigninPage}>
+        <SigninPageProvider authType={presetAuthType} tabTitle={t('Sign in via password')} component={SigninPage}>
           <SignupPageProvider authType={presetAuthType} component={SignupPage}>
             {props.children}
           </SignupPageProvider>

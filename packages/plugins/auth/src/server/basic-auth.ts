@@ -11,23 +11,25 @@ export class BasicAuth extends BaseAuth {
 
   async validate() {
     const ctx = this.ctx;
-    const { uniqueField = 'email', values } = ctx.action.params;
+    const {
+      values: { account, password },
+    } = ctx.action.params;
 
-    if (!values[uniqueField]) {
-      ctx.throw(400, ctx.t('Please fill in your email address', { ns: namespace }));
+    if (!account) {
+      ctx.throw(400, ctx.t('Please enter your username or email', { ns: namespace }));
     }
     const user = await this.userRepository.findOne({
-      where: {
-        [uniqueField]: values[uniqueField],
+      filter: {
+        $or: [{ username: account }, { email: account }],
       },
     });
 
     if (!user) {
-      ctx.throw(401, ctx.t('The email is incorrect, please re-enter', { ns: namespace }));
+      ctx.throw(401, ctx.t('The username or email is incorrect, please re-enter', { ns: namespace }));
     }
 
     const field = this.userCollection.getField<PasswordField>('password');
-    const valid = await field.verify(values.password, user.password);
+    const valid = await field.verify(password, user.password);
     if (!valid) {
       ctx.throw(401, ctx.t('The password is incorrect, please re-enter', { ns: namespace }));
     }

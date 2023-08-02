@@ -32,7 +32,12 @@ describe('actions', () => {
 
     it('should list authenticator types', async () => {
       const res = await agent.resource('authenticators').listTypes();
-      expect(res.body.data).toEqual(['Email/Password']);
+      expect(res.body.data).toEqual([
+        {
+          name: 'Email/Password',
+          title: 'Password',
+        },
+      ]);
     });
 
     it('should return enabled authenticators with public options', async () => {

@@ -17,6 +17,7 @@ type AuthManagerOptions = {
 
 type AuthConfig = {
   auth: AuthExtend<Auth>; // The authentication class.
+  title?: string; // The display name of the authentication type.
 };
 
 export class AuthManager {
@@ -52,7 +53,10 @@ export class AuthManager {
   }
 
   listTypes() {
-    return Array.from(this.authTypes.getKeys());
+    return Array.from(this.authTypes.getEntities()).map(([authType, authConfig]) => ({
+      name: authType,
+      title: authConfig.title,
+    }));
   }
 
   getAuthConfig(authType: string) {

@@ -1,19 +1,30 @@
 import { ISchema } from '@formily/react';
 import { Authenticator, SchemaComponent, SignupPageContext, useSignIn } from '@nocobase/client';
 import React, { useContext } from 'react';
+import { useAuthTranslation } from '../locale';
 
 const passwordForm: ISchema = {
   type: 'object',
   name: 'passwordForm',
   'x-component': 'FormV2',
   properties: {
-    email: {
+    account: {
       type: 'string',
-      required: true,
       'x-component': 'Input',
-      'x-validator': 'email',
+      'x-validator': `{{(value) => {
+        if (!value) {
+          return t("Please enter your username or email");
+        }
+        if (value.includes('@')) {
+          if (!/^[\\w-]+(\\.[\\w-]+)*@[\\w-]+(\\.[\\w-]+)+$/.test(value)) {
+            return t("Please enter a valid email");
+          }
+        } else {
+          return /^[^@.]{2,16}$/.test(value) || t("Please enter a valid username");
+        }
+      }}}`,
       'x-decorator': 'FormItem',
-      'x-component-props': { placeholder: '{{t("Email")}}', style: {} },
+      'x-component-props': { placeholder: '{{t("Username/Email")}}', style: {} },
     },
     password: {
       type: 'string',
@@ -52,6 +63,7 @@ const passwordForm: ISchema = {
   },
 };
 export default (props: { authenticator: Authenticator }) => {
+  const { t } = useAuthTranslation();
   const authenticator = props.authenticator;
   const { authType, name, options } = authenticator;
   const signupPages = useContext(SignupPageContext);
@@ -61,5 +73,5 @@ export default (props: { authenticator: Authenticator }) => {
   const useBasicSignIn = () => {
     return useSignIn(name);
   };
-  return <SchemaComponent schema={passwordForm} scope={{ useBasicSignIn, allowSignUp, signupLink }} />;
+  return <SchemaComponent schema={passwordForm} scope={{ useBasicSignIn, allowSignUp, signupLink, t }} />;
 };
