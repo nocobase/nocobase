@@ -61,6 +61,7 @@ export class WSServer {
         type: 'appStatusChanged',
         payload: {
           errors: [reportAppError(appName, error.message)],
+          ready: false,
         },
       });
     });
