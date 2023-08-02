@@ -54,4 +54,8 @@ export class IPCSocketServer {
       Gateway.getInstance().callApp(appName, method, ...args);
     }
   }
+
+  close() {
+    this.socketServer.close();
+  }
 }

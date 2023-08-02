@@ -1,4 +1,4 @@
-import { Application } from '@nocobase/server';
+import { Application, Gateway } from '@nocobase/server';
 import Database from '@nocobase/database';
 import { getApp, sleep } from '..';
 import { RequestConfig } from '../../instructions/request';
@@ -38,7 +38,12 @@ describe('workflow > instructions > request', () => {
       next();
     });
 
-    await app.start({ listen: { port: PORT } });
+    await Gateway.getInstance().start({
+      port: PORT,
+      host: 'localhost',
+    });
+
+    await app.start();
 
     db = app.db;
     WorkflowModel = db.getCollection('workflows').model;
