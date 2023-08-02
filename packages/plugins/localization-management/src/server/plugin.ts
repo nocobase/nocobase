@@ -69,15 +69,15 @@ export class LocalizationManagementPlugin extends Plugin {
 
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.localization`,
-      actions: ['localization:*', 'localizationTexts:*'],
+      actions: ['localization:*', 'localizationTexts:*', 'localizationTranslations:*'],
     });
 
     this.db.on('afterSave', async (instance: Model) => {
-      if (!this.enabled) {
-        return;
-      }
       const model = instance.constructor as typeof Model;
       const collection = model.collection;
+      if (!collection) {
+        return;
+      }
       let texts = [];
       const fields = Array.from(collection.fields.values())
         .filter((field) => field.options?.translation && instance['_changed'].has(field.name))

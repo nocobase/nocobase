@@ -8,7 +8,7 @@ const App = () => {
 
 export default () => {
   return (
-    <ErrorBoundary FallbackComponent={ErrorFallback}>
+    <ErrorBoundary FallbackComponent={ErrorFallback} onError={console.error}>
       <App />
     </ErrorBoundary>
   );

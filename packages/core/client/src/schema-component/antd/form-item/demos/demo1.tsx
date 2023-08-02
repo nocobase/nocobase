@@ -1,5 +1,18 @@
-import { FormItem, FormProvider, Input, SchemaComponent } from '@nocobase/client';
+import {
+  APIClientProvider,
+  CurrentUserProvider,
+  FormItem,
+  FormProvider,
+  Input,
+  SchemaComponent,
+} from '@nocobase/client';
 import React from 'react';
+import { mockAPIClient } from '../../../../test';
+
+const { apiClient, mockRequest } = mockAPIClient();
+mockRequest.onGet('/auth:check').reply(() => {
+  return [200, { data: {} }];
+});
 
 const schema = {
   type: 'object',
@@ -15,8 +28,12 @@ const schema = {
 
 export default () => {
   return (
-    <FormProvider>
-      <SchemaComponent components={{ FormItem, Input }} schema={schema} />
-    </FormProvider>
+    <APIClientProvider apiClient={apiClient}>
+      <CurrentUserProvider>
+        <FormProvider>
+          <SchemaComponent components={{ FormItem, Input }} schema={schema} />
+        </FormProvider>
+      </CurrentUserProvider>
+    </APIClientProvider>
   );
 };

@@ -1,4 +1,4 @@
-import { lodash } from '@nocobase/utils';
+import lodash from 'lodash';
 import * as transforms from './transform';
 
 function getTransform(name: string): Function {

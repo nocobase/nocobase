@@ -13,6 +13,7 @@ import { AsDefaultTemplate } from './components/AsDefaultTemplate';
 import { ArrayCollapse } from './components/DataTemplateTitle';
 import { getSelectedIdFilter } from './components/Designer';
 import { useCollectionState } from './hooks/useCollectionState';
+import { useSyncFromForm } from './utils';
 
 const Tree = connect(
   AntdTree,
@@ -48,7 +49,6 @@ export const FormDataTemplates = observer(
     } = useCollectionState(collectionName);
     const { getCollection, getCollectionField } = useCollectionManager();
     const { t } = useTranslation();
-
     // 不要在后面的数组中依赖 defaultValues，否则会因为 defaultValues 的变化导致 activeData 响应性丢失
     const activeData = useMemo<ITemplate>(
       () =>
@@ -61,7 +61,6 @@ export const FormDataTemplates = observer(
         ),
       [],
     );
-    console.log(activeData);
     const getTargetField = (collectionName: string) => {
       const collection = getCollection(collectionName);
       return getCollectionField(
@@ -169,6 +168,16 @@ export const FormDataTemplates = observer(
                       'x-component': 'Select',
                       required: true,
                       'x-reactions': '{{useTitleFieldDataSource}}',
+                    },
+                    syncFromForm: {
+                      type: 'void',
+                      title: '{{ t("Sync from form fields") }}',
+                      'x-component': 'Action.Link',
+                      'x-component-props': {
+                        type: 'primary',
+                        style: { float: 'right', position: 'relative', zIndex: 1200 },
+                        useAction: () => useSyncFromForm(formSchema),
+                      },
                     },
                     fields: {
                       type: 'array',

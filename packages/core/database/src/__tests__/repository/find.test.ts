@@ -378,23 +378,33 @@ describe('repository find', () => {
     });
   });
 
-  it('should only output filed in fields args', async () => {
-    const resp = await User.model.findOne({
-      attributes: [],
-      include: [
-        {
-          association: 'profile',
-          attributes: ['salary'],
-        },
-      ],
+  describe('find with fields', () => {
+    it('should only output filed in fields args', async () => {
+      const users = await User.repository.find({
+        fields: ['profile.salary'],
+      });
+
+      const firstUser = users[0].toJSON();
+      expect(Object.keys(firstUser)).toEqual(['profile']);
+      expect(Object.keys(firstUser.profile)).toEqual(['salary']);
     });
 
-    const users = await User.repository.find({
-      fields: ['profile', 'profile.salary', 'profile.id'],
-    });
+    it('should output all fields when field has relation field', async () => {
+      const users = await User.repository.find({
+        fields: ['profile.salary', 'profile'],
+      });
 
-    const firstUser = users[0].toJSON();
-    expect(Object.keys(firstUser)).toEqual(['profile']);
+      const firstUser = users[0].toJSON();
+      expect(Object.keys(firstUser)).toEqual(['profile']);
+      expect(Object.keys(firstUser.profile)).toEqual([
+        'id',
+        'createdAt',
+        'updatedAt',
+        'salary',
+        'userId',
+        'description',
+      ]);
+    });
   });
 
   it('append with associations', async () => {

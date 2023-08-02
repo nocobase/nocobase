@@ -64,6 +64,18 @@ describe('hooks', () => {
             },
           ],
         }[name]),
+      getInterface: (i: string) => {
+        switch (i) {
+          case 'm2o':
+            return {
+              filterable: {
+                nested: true,
+              },
+            };
+          default:
+            return {};
+        }
+      },
     } as any);
   });
 

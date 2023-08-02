@@ -1,6 +1,5 @@
-import { RemoteSelect } from '@nocobase/client';
+import { RemoteSelect, Variable } from '@nocobase/client';
 import React from 'react';
-import { Variable } from '@nocobase/client';
 import { useWorkflowVariableOptions } from '../../variable';
 
 export function AssigneesSelect({ multiple = false, value = [], onChange }) {
@@ -27,6 +26,7 @@ export function AssigneesSelect({ multiple = false, value = [], onChange }) {
         onChange={(v) => {
           onChange(v != null ? [v] : []);
         }}
+        className="auto-width"
       />
     </Variable.Input>
   );

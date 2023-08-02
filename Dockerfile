@@ -35,14 +35,6 @@ RUN $BEFORE_PACK_NOCOBASE
 RUN cd /app \
   && rm -rf my-nocobase-app/packages/app/client/src/.umi \
   && rm -rf nocobase.tar.gz \
-  && rm -rf ./my-nocobase-app/node_modules/@antv \
-  && rm -rf ./my-nocobase-app/node_modules/antd/dist \
-  && rm -rf ./my-nocobase-app/node_modules/antd/es \
-  && rm -rf ./my-nocobase-app/node_modules/antd/node_modules \
-  && rm -rf ./my-nocobase-app/node_modules/@ant-design \
-  && rm -rf ./my-nocobase-app/node_modules/china-division/dist/villages.json \
-  && find ./my-nocobase-app/node_modules/china-division/dist -name '*.csv' -delete \
-  && find ./my-nocobase-app/node_modules/china-division/dist -name '*.sqlite' -delete \
   && tar -zcf ./nocobase.tar.gz -C /app/my-nocobase-app .
 
 
@@ -60,4 +52,3 @@ RUN mkdir -p /app/nocobase/storage/uploads/ && echo "$COMMIT_HASH" >> /app/nocob
 COPY ./docker/nocobase/docker-entrypoint.sh /app/
 
 CMD ["/app/docker-entrypoint.sh"]
-

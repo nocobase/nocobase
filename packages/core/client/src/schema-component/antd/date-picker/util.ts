@@ -1,5 +1,6 @@
-import { dayjs, getDefaultFormat, str2moment, toGmt, toLocal } from '@nocobase/utils/client';
+import { getDefaultFormat, str2moment, toGmt, toLocal } from '@nocobase/utils/client';
 import type { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 
 const toStringByPicker = (value, picker, timezone: 'gmt' | 'local') => {
   if (!dayjs.isDayjs(value)) return value;

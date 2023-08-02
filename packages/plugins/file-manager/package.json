@@ -1,28 +1,22 @@
 {
   "name": "@nocobase/plugin-file-manager",
-  "version": "0.11.1-alpha.3",
-  "displayName": "file manager",
-  "displayName.zh-CN": "文件管理",
+  "version": "0.12.0-alpha.2",
+  "displayName": "File manager",
+  "displayName.zh-CN": "文件管理器",
   "description": "file management plugin.",
-  "description.zh-CN": "文件管理。",
+  "description.zh-CN": "提供文件存储服务，并拓展了文件表模板和附件字段",
   "license": "AGPL-3.0",
-  "main": "./lib/server/index.js",
-  "files": [
-    "lib",
-    "src",
-    "README.md",
-    "README.zh-CN.md",
-    "CHANGELOG.md",
-    "server.js",
-    "server.d.ts",
-    "client.js",
-    "client.d.ts"
-  ],
-  "dependencies": {
+  "main": "./dist/server/index.js",
+  "devDependencies": {
     "@aws-sdk/client-s3": "^3.245.0",
+    "@formily/antd-v5": "1.x",
+    "@formily/core": "2.x",
+    "@formily/react": "2.x",
+    "@formily/shared": "2.x",
     "@koa/multer": "^3.0.0",
     "@types/koa-multer": "^1.0.1",
     "@types/multer": "^1.4.5",
+    "antd": "5.x",
     "cos-nodejs-sdk-v5": "^2.11.14",
     "koa-static": "^5.0.0",
     "mime-match": "^1.0.2",
@@ -30,23 +24,18 @@
     "multer": "^1.4.2",
     "multer-aliyun-oss": "2.1.1",
     "multer-cos": "^1.0.3",
-    "multer-s3": "^3.0.1"
-  },
-  "devDependencies": {
-    "@formily/antd-v5": "1.1.0-beta.4",
-    "@formily/core": "2.2.26",
-    "@formily/react": "2.2.26",
-    "@formily/shared": "2.2.26",
-    "@nocobase/actions": "0.11.1-alpha.3",
-    "@nocobase/client": "0.11.1-alpha.3",
-    "@nocobase/database": "0.11.1-alpha.3",
-    "@nocobase/server": "0.11.1-alpha.3",
-    "@nocobase/test": "0.11.1-alpha.3",
-    "@nocobase/utils": "0.11.1-alpha.3",
-    "antd": "^5.6.4",
+    "multer-s3": "^3.0.1",
     "react": "^18.2.0",
     "react-i18next": "^11.15.1",
     "supertest": "^6.1.6"
+  },
+  "peerDependencies": {
+    "@nocobase/actions": "0.x",
+    "@nocobase/client": "0.x",
+    "@nocobase/database": "0.x",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x",
+    "@nocobase/utils": "0.x"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
 }

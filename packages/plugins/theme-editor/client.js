@@ -39,7 +39,7 @@ function _interopRequireWildcard(obj, nodeInterop) {
   return newObj;
 }
 
-var _index = _interopRequireWildcard(require('./lib/client'));
+var _index = _interopRequireWildcard(require('./dist/client'));
 
 Object.defineProperty(exports, '__esModule', {
   value: true,

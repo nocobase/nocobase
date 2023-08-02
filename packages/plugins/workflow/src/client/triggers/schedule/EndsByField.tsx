@@ -1,5 +1,5 @@
 import { css } from '@nocobase/client';
-import { dayjs } from '@nocobase/utils/client';
+import dayjs from 'dayjs';
 import { DatePicker, Select } from 'antd';
 import React from 'react';
 import { useWorkflowTranslation } from '../../locale';

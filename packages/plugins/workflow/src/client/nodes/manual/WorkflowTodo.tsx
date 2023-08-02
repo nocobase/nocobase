@@ -1,6 +1,6 @@
 import { css } from '@emotion/css';
 import { observer, useField, useFieldSchema, useForm } from '@formily/react';
-import { dayjs } from '@nocobase/utils/client';
+import dayjs from 'dayjs';
 import { Space, Spin, Tag } from 'antd';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 

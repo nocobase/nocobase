@@ -1,6 +1,6 @@
 import { observer } from '@formily/react';
-import { dayjs } from '@nocobase/utils/client';
 import { Modal, Radio, Space, Typography } from 'antd';
+import dayjs from 'dayjs';
 import React, { useContext, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';

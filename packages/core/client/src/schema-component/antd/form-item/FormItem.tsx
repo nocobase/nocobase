@@ -1,9 +1,9 @@
 import { css, cx } from '@emotion/css';
-import { ArrayCollapse, ArrayItems, FormItem as Item, FormLayout } from '@formily/antd-v5';
+import { ArrayCollapse, ArrayItems, FormLayout, FormItem as Item } from '@formily/antd-v5';
 import { Field } from '@formily/core';
-import { ISchema, observer, Schema, useField, useFieldSchema } from '@formily/react';
-import { dayjs } from '@nocobase/utils/client';
+import { ISchema, observer, useField, useFieldSchema } from '@formily/react';
 import { Select } from 'antd';
+import dayjs from 'dayjs';
 import _ from 'lodash';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -19,7 +19,7 @@ import {
 } from '../../../collection-manager';
 import { isTitleField } from '../../../collection-manager/Configuration/CollectionFields';
 import { GeneralSchemaItems } from '../../../schema-items/GeneralSchemaItems';
-import { GeneralSchemaDesigner, isPatternDisabled, isShowDefaultValue, SchemaSettings } from '../../../schema-settings';
+import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isShowDefaultValue } from '../../../schema-settings';
 import { useIsShowMultipleSwitch } from '../../../schema-settings/hooks/useIsShowMultipleSwitch';
 import { isVariable, parseVariables, useVariablesCtx } from '../../common/utils/uitls';
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
@@ -27,6 +27,7 @@ import { BlockItem } from '../block-item';
 import { removeNullCondition } from '../filter';
 import { HTMLEncode } from '../input/shared';
 import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
+import { useColorFields } from '../table-v2/Table.Column.Designer';
 import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
 import { useEnsureOperatorsValid } from './SchemaSettingOptions';
 
@@ -182,6 +183,7 @@ FormItem.Designer = function Designer() {
       value: field?.name,
       label: compile(field?.uiSchema?.title) || field?.name,
     }));
+  const colorFieldOptions = useColorFields(collectionField?.target ?? collectionField?.targetCollection);
 
   let readOnlyMode = 'editable';
   if (fieldSchema['x-disabled'] === true) {
@@ -424,10 +426,6 @@ FormItem.Designer = function Designer() {
             schema['x-component-props'] = fieldSchema['x-component-props'];
             field.componentProps = field.componentProps || {};
             field.componentProps.mode = mode;
-            // if (mode === 'Nester') {
-            //   const initValue = ['hasMany', 'belongsToMany'].includes(collectionField?.type) ? [{}] : {};
-            //   field.value = field.value || initValue;
-            // }
             dn.emit('patch', {
               schema,
             });
@@ -706,6 +704,29 @@ FormItem.Designer = function Designer() {
         />
       )}
       {isDateField && <SchemaSettings.DataFormat fieldSchema={fieldSchema} />}
+
+      {isAssociationField && ['Tag'].includes(fieldMode) && (
+        <SchemaSettings.SelectItem
+          key="title-field"
+          title={t('Tag color field')}
+          options={colorFieldOptions}
+          value={field?.componentProps?.tagColorField}
+          onChange={(tagColorField) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props']['tagColorField'] = tagColorField;
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            field.componentProps.tagColorField = tagColorField;
+            dn.emit('patch', {
+              schema,
+            });
+            dn.refresh();
+          }}
+        />
+      )}
       {collectionField && <SchemaSettings.Divider />}
       <SchemaSettings.Remove
         key="remove"

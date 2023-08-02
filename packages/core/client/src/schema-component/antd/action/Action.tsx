@@ -1,7 +1,7 @@
 import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
-import { lodash } from '@nocobase/utils';
 import { App, Button, Popover } from 'antd';
 import classnames from 'classnames';
+import lodash from 'lodash';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useActionContext } from '../..';

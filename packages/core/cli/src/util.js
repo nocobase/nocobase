@@ -1,9 +1,9 @@
 const net = require('net');
 const chalk = require('chalk');
 const execa = require('execa');
-const { resolve } = require('path');
+const { dirname, resolve } = require('path');
 const { readFile, writeFile } = require('fs').promises;
-const { existsSync } = require('fs');
+const { existsSync, mkdirSync, cpSync } = require('fs');
 
 exports.isPackageValid = (package) => {
   try {
@@ -32,7 +32,7 @@ exports.isDev = function isDev() {
 
 const isProd = () => {
   const { APP_PACKAGE_ROOT } = process.env;
-  const file = `./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`;
+  const file = `${APP_PACKAGE_ROOT}/lib/index.js`;
   if (!existsSync(resolve(process.cwd(), file))) {
     console.log('For production environment, please build the code first.');
     console.log();
@@ -110,13 +110,13 @@ exports.runInstall = async () => {
       './tsconfig.server.json',
       '-r',
       'tsconfig-paths/register',
-      `./packages/${APP_PACKAGE_ROOT}/server/src/index.ts`,
+      `${APP_PACKAGE_ROOT}/src/index.ts`,
       'install',
       '-s',
     ];
     await exports.run('tsx', argv);
   } else if (isProd()) {
-    const file = `./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`;
+    const file = `${APP_PACKAGE_ROOT}/lib/index.js`;
     const argv = [file, 'install', '-s'];
     await exports.run('node', argv);
   }
@@ -131,13 +131,13 @@ exports.runAppCommand = async (command, args = []) => {
       './tsconfig.server.json',
       '-r',
       'tsconfig-paths/register',
-      `./packages/${APP_PACKAGE_ROOT}/server/src/index.ts`,
+      `${APP_PACKAGE_ROOT}/src/index.ts`,
       command,
       ...args,
     ];
     await exports.run('tsx', argv);
   } else if (isProd()) {
-    const argv = [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, command, ...args];
+    const argv = [`${APP_PACKAGE_ROOT}/lib/index.js`, command, ...args];
     await exports.run('node', argv);
   }
 };
@@ -156,4 +156,21 @@ exports.getVersion = async () => {
   const { stdout } = await execa('npm', ['v', '@nocobase/app-server', 'versions']);
   const versions = new Function(`return (${stdout})`)();
   return versions[versions.length - 1];
+};
+
+exports.generateAppDir = function generateAppDir() {
+  const appPkgPath = dirname(dirname(require.resolve('@nocobase/app/src/index.ts')));
+  const appDevDir = resolve(process.cwd(), './storage/.app-dev');
+  if (exports.isDev() && !exports.hasCorePackages() && appPkgPath.includes('node_modules')) {
+    if (!existsSync(appDevDir)) {
+      mkdirSync(appDevDir, { force: true, recursive: true });
+      cpSync(appPkgPath, appDevDir, {
+        recursive: true,
+        force: true,
+      });
+    }
+    process.env.APP_PACKAGE_ROOT = appDevDir;
+  } else {
+    process.env.APP_PACKAGE_ROOT = appPkgPath;
+  }
 };

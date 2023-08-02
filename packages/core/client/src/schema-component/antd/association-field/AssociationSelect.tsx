@@ -2,7 +2,7 @@ import { LoadingOutlined, PlusOutlined } from '@ant-design/icons';
 import { RecursionField, connect, mapProps, observer, useField, useFieldSchema, useForm } from '@formily/react';
 import { Space, message } from 'antd';
 import { isFunction } from 'mathjs';
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RecordProvider, useAPIClient } from '../../../';
 import { isVariable } from '../../common/utils/uitls';
@@ -22,6 +22,10 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
   const { options: collectionField } = useAssociationFieldContext();
   const initValue = isVariable(props.value) ? undefined : props.value;
   const value = Array.isArray(initValue) ? initValue.filter(Boolean) : initValue;
+
+  // 因为通过 Schema 的形式书写的组件，在值变更的时候 `value` 的值没有改变，所以需要维护一个 `innerValue` 来变更值
+  const [innerValue, setInnerValue] = useState(value);
+
   const addMode = fieldSchema['x-component-props']?.addMode;
   const isAllowAddNew = fieldSchema['x-add-new'];
   const { t } = useTranslation();
@@ -29,6 +33,7 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
   const form = useForm();
   const api = useAPIClient();
   const resource = api.resource(collectionField.target);
+
   const handleCreateAction = async (props) => {
     const { search: value, callBack } = props;
     const {
@@ -63,6 +68,7 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
       </div>
     );
   };
+
   return (
     <div key={fieldSchema.name}>
       <Space.Compact style={{ display: 'flex', lineHeight: '32px' }}>
@@ -71,8 +77,12 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
           {...props}
           size={'middle'}
           objectValue={objectValue}
-          value={value}
+          value={value || innerValue}
           service={service}
+          onChange={(value) => {
+            setInnerValue(value);
+            props.onChange?.(value);
+          }}
           CustomDropdownRender={addMode === 'quickAdd' && QuickAddContent}
         ></RemoteSelect>
 
@@ -99,7 +109,7 @@ interface AssociationSelectInterface {
   FilterDesigner: React.FC;
 }
 
-export const AssociationSelect = InternalAssociationSelect as unknown as AssociationSelectInterface;
+export const AssociationSelect = (InternalAssociationSelect as unknown) as AssociationSelectInterface;
 
 export const AssociationSelectReadPretty = connect(
   (props: any) => {
