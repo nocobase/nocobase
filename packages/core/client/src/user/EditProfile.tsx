@@ -70,7 +70,6 @@ const schema: ISchema = {
           title: "{{t('Nickname')}}",
           'x-decorator': 'FormItem',
           'x-component': 'Input',
-          required: true,
         },
         username: {
           type: 'string',

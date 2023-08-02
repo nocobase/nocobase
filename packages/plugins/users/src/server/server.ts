@@ -143,7 +143,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
       rootEmail = INIT_ROOT_EMAIL,
       rootPassword = INIT_ROOT_PASSWORD,
       rootNickname = INIT_ROOT_NICKNAME || 'Super Admin',
-      rootUsername = INIT_ROOT_USERNAME || 'admin',
+      rootUsername = INIT_ROOT_USERNAME || 'nocobase',
     } = options.users || options?.cliArgs?.[0] || {};
     return {
       rootEmail,

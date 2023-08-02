@@ -77,7 +77,7 @@ export class AuthPlugin extends Plugin {
       values: {
         name: presetAuthenticator,
         authType: presetAuthType,
-        description: 'Sign in with email and password.',
+        description: 'Sign in with username/email.',
         enabled: true,
         options: {
           public: {
