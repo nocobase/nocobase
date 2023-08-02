@@ -55,7 +55,7 @@ describe('multiple application', () => {
     let response = await app.agent().resource('test').test();
     expect(response.statusCode).toEqual(404);
 
-    Gateway.getInstance().setAppSelector((req: IncomingMessage) => {
+    Gateway.getInstance().setAppSelector((req) => {
       const queryObject = url.parse(req.url, true).query;
       return queryObject['app'] as string;
     });
