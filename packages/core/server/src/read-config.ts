@@ -47,7 +47,7 @@ export async function loadConfiguration(configurationDir: string, repository: Co
 
         const filePath = path.join(dir, file.name);
         const keyName = path.parse(filePath).name;
-        const configuration = require(filePath).default;
+        const configuration = require(filePath);
 
         repository.set([...prefix, keyName].join('.'), configuration);
       }

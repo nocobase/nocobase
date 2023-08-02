@@ -4,7 +4,7 @@ const { existsSync } = require('fs');
 const { join } = require('path');
 const yParser = require('yargs-parser');
 const chalk = require('chalk');
-const { build } = require('../lib/v2');
+const { build } = require('../lib');
 
 // print version and @local
 const args = yParser(process.argv.slice(2), {

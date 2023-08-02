@@ -11,7 +11,7 @@ export const globExcludeFiles = [
   '!src/**/*.+(test|e2e|spec).+(js|jsx|ts|tsx)',
 ];
 
-export const ROOT_PATH = path.join(__dirname, '../../../../..');
+export const ROOT_PATH = path.join(__dirname, '../../../../');
 export const PACKAGES_PATH = path.join(ROOT_PATH, 'packages');
 export const PLUGINS_DIR = [path.join(PACKAGES_PATH, 'plugins'), path.join(PACKAGES_PATH, 'samples')];
 export const PRESETS_DIR = path.join(PACKAGES_PATH, 'presets');
@@ -19,15 +19,12 @@ export const getPluginPackages = (packages: Package[]) =>
   packages.filter((item) => PLUGINS_DIR.some((pluginDir) => item.location.startsWith(pluginDir)));
 export const getPresetsPackages = (packages: Package[]) =>
   packages.filter((item) => item.location.startsWith(PRESETS_DIR));
-export const APP_CLIENT = path.join(PACKAGES_PATH, 'app/client');
-export const APP_SERVER = path.join(PACKAGES_PATH, 'app/server');
+export const CORE_APP = path.join(PACKAGES_PATH, 'core/app');
 export const CORE_CLIENT = path.join(PACKAGES_PATH, 'core/client');
 export const CJS_EXCLUDE_PACKAGES = [
   path.join(PACKAGES_PATH, 'core/build'),
   path.join(PACKAGES_PATH, 'core/cli'),
   CORE_CLIENT,
-  APP_CLIENT,
-  APP_SERVER,
 ];
 export const getCjsPackages = (packages: Package[]) =>
   packages

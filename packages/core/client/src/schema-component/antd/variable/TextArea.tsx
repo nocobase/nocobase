@@ -3,7 +3,7 @@ import { useForm } from '@formily/react';
 import { Input } from 'antd';
 import { cloneDeep } from 'lodash';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import * as sanitizeHTML from 'sanitize-html';
+import sanitizeHTML from 'sanitize-html';
 
 import { error } from '@nocobase/utils/client';
 

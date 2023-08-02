@@ -1,14 +1,14 @@
 import execa from 'execa';
 import chalk from 'chalk';
+import path from 'path';
 import {
   PACKAGES_PATH,
   getPluginPackages,
   CORE_CLIENT,
-  APP_CLIENT,
-  APP_SERVER,
+  CORE_APP,
   getCjsPackages,
-  ROOT_PATH,
   getPresetsPackages,
+  ROOT_PATH,
 } from './constant';
 import { buildClient } from './buildClient';
 import { buildCjs } from './buildCjs';
@@ -37,16 +37,12 @@ export async function build(pkgs: string[]) {
   // presets/*
   await buildPackages(presetsPackages, 'lib', buildCjs);
 
-  // app/server
-  const appServer = packages.find((item) => item.location === APP_SERVER);
-  if (appServer) {
-    await buildPackage(appServer, 'dist', buildCjs);
-  }
-
-  // app/client
-  const appClient = packages.find((item) => item.location === APP_CLIENT);
+  // core/app
+  const appClient = packages.find((item) => item.location === CORE_APP);
   if (appClient) {
-    await selfControlBuild(appClient, APP_CLIENT);
+    await runScript(['umi', 'build'], ROOT_PATH, {
+      APP_ROOT: path.join(CORE_APP, 'client'),
+    });
   }
 }
 
@@ -94,20 +90,13 @@ export async function buildPackage(
   }
 }
 
-export async function selfControlBuild(pkg: Package, cwd: string) {
-  const log = getPkgLog(pkg.name);
-
-  log('build start');
-
-  await runScript(['build'], cwd);
-}
-
-function runScript(args: string[], cwd: string) {
+function runScript(args: string[], cwd: string, envs: Record<string, string> = {}) {
   return execa('yarn', args, {
     cwd,
     stdio: 'inherit',
     env: {
       ...process.env,
+      ...envs,
       NODE_ENV: 'production',
     },
   });
