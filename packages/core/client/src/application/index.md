@@ -323,7 +323,7 @@ import { Plugin } from '@nocobase/client';
 class MyPlugin extends Plugin {
   async afterAdd() {
     // You can load other plugins here.
-    // this.app.pm.add(OtherPlugin)
+    // await this.app.pm.add(OtherPlugin)
   }
 
   async load() {
@@ -364,8 +364,8 @@ class WorldPlugin extends Plugin {
 
 class MyPlugin extends Plugin {
   async afterAdd() {
-    this.app.pm.add(HelloPlugin);
-    this.app.pm.add(WorldPlugin);
+    await this.app.pm.add(HelloPlugin);
+    await this.app.pm.add(WorldPlugin);
   }
 }
 ```

@@ -3,6 +3,7 @@ const { resolve, sep } = require('path');
 const packageJson = require('./package.json');
 const fs = require('fs');
 const glob = require('glob');
+const path = require('path');
 
 console.log('VERSION: ', packageJson.version);
 
@@ -27,8 +28,8 @@ function getUmiConfig() {
 
   return {
     alias: getPackagePaths().reduce((memo, item) => {
-      memo[item[0]] = item[1]
-      return memo
+      memo[item[0]] = item[1];
+      return memo;
     }, {}),
     define: {
       'process.env.API_BASE_URL': API_BASE_URL || API_BASE_PATH,
@@ -73,7 +74,10 @@ function getPackagePaths() {
           const dirname = resolve(process.cwd(), file);
           if (existsSync(dirname)) {
             const re = new RegExp(dir.replace('*', '(.+)'));
-            const p = dirname.substring(process.cwd().length + 1).split(sep).join('/');
+            const p = dirname
+              .substring(process.cwd().length + 1)
+              .split(sep)
+              .join('/');
             const match = re.exec(p);
             pkgs.push([key.replace('*', match?.[1]), dirname]);
           }
@@ -95,5 +99,79 @@ function resolveNocobasePackagesAlias(config) {
   }
 }
 
+class IndexGenerator {
+  constructor(outputPath, pluginsPath) {
+    this.outputPath = outputPath;
+    this.pluginsPath = pluginsPath;
+  }
+
+  generate() {
+    this.generatePluginIndex();
+    if (process.env.NODE_ENV === 'production') return;
+    this.pluginsPath.forEach((pluginPath) => {
+      if (!fs.existsSync(pluginPath)) {
+        return;
+      }
+      fs.watch(pluginPath, { recursive: false }, () => {
+        this.generatePluginIndex();
+      });
+    });
+  }
+
+  generatePluginIndex() {
+    if (!fs.existsSync(this.outputPath)) {
+      fs.mkdirSync(path.dirname(this.outputPath), { recursive: true });
+      fs.writeFileSync(this.outputPath, 'export default {}');
+    }
+    const validPluginPaths = this.pluginsPath.filter((pluginPath) => fs.existsSync(pluginPath));
+    if (!validPluginPaths.length) {
+      return;
+    }
+    if (process.env.NODE_ENV === 'production') {
+      fs.writeFileSync(this.outputPath, 'export default {}');
+      return;
+    }
+    const pluginInfo = validPluginPaths.map((pluginPath) => this.getContent(pluginPath));
+    const importContent = pluginInfo.map(({ indexContent }) => indexContent).join('\n');
+    const exportContent = pluginInfo.map(({ exportContent }) => exportContent).join('\n');
+
+    const fileContent = `${importContent}\n\nexport default {\n${exportContent}\n}`;
+
+    fs.writeFileSync(this.outputPath, fileContent);
+  }
+
+  getContent(pluginPath) {
+    const pluginFolders = fs.readdirSync(pluginPath);
+    const pluginImports = pluginFolders
+      .filter((folder) => {
+        const pluginPackageJsonPath = path.join(pluginPath, folder, 'package.json');
+        const pluginSrcClientPath = path.join(pluginPath, folder, 'src', 'client');
+        return fs.existsSync(pluginPackageJsonPath) && fs.existsSync(pluginSrcClientPath);
+      })
+      .map((folder, index) => {
+        const pluginPackageJsonPath = path.join(pluginPath, folder, 'package.json');
+        const pluginPackageJson = require(pluginPackageJsonPath);
+        const pluginSrcClientPath = path
+          .relative(path.dirname(this.outputPath), path.join(pluginPath, folder, 'src', 'client'))
+          .replaceAll('\\', '/');
+        const pluginName = `${folder.replaceAll('-', '_')}${index}`;
+        const importStatement = `const ${pluginName} = import('${pluginSrcClientPath}');`;
+        return { importStatement, pluginName, packageJsonName: pluginPackageJson.name };
+      });
+
+    const indexContent = pluginImports.map(({ importStatement }) => importStatement).join('\n');
+
+    const exportContent = pluginImports
+      .map(({ pluginName, packageJsonName }) => `  "${packageJsonName}": ${pluginName},`)
+      .join('\n');
+
+    return {
+      indexContent,
+      exportContent,
+    };
+  }
+}
+
 exports.getUmiConfig = getUmiConfig;
 exports.resolveNocobasePackagesAlias = resolveNocobasePackagesAlias;
+exports.IndexGenerator = IndexGenerator;

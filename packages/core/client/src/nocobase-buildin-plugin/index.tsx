@@ -50,7 +50,7 @@ export class NocoBaseBuildInPlugin extends Plugin {
       AppSpin,
       AppError,
     });
-    this.addPlugins();
+    await this.addPlugins();
   }
 
   async load() {
@@ -103,11 +103,11 @@ export class NocoBaseBuildInPlugin extends Plugin {
       BlockTemplateDetails,
     });
   }
-  addPlugins() {
-    this.app.pm.add(LocalePlugin, { name: 'locale' });
-    this.app.pm.add(AdminLayoutPlugin, { name: 'admin-layout' });
-    this.app.pm.add(SystemSettingsPlugin, { name: 'system-setting' });
-    this.app.pm.add(PinnedListPlugin, {
+  async addPlugins() {
+    await this.app.pm.add(LocalePlugin, { name: 'locale' });
+    await this.app.pm.add(AdminLayoutPlugin, { name: 'admin-layout' });
+    await this.app.pm.add(SystemSettingsPlugin, { name: 'system-setting' });
+    await this.app.pm.add(PinnedListPlugin, {
       name: 'pinned-list',
       config: {
         items: {
@@ -117,8 +117,8 @@ export class NocoBaseBuildInPlugin extends Plugin {
         },
       },
     });
-    this.app.pm.add(SchemaComponentPlugin, { name: 'schema-component' });
-    this.app.pm.add(SchemaInitializerPlugin, {
+    await this.app.pm.add(SchemaComponentPlugin, { name: 'schema-component' });
+    await this.app.pm.add(SchemaInitializerPlugin, {
       name: 'schema-initializer',
       config: {
         initializers: {
@@ -126,11 +126,11 @@ export class NocoBaseBuildInPlugin extends Plugin {
         },
       },
     });
-    this.app.pm.add(BlockSchemaComponentPlugin, { name: 'block-schema-component' });
-    this.app.pm.add(AntdSchemaComponentPlugin, { name: 'antd-schema-component' });
-    this.app.pm.add(SigninPageExtensionPlugin, { name: 'signin-page-extension' });
-    this.app.pm.add(ACLPlugin, { name: 'acl' });
-    this.app.pm.add(RemoteDocumentTitlePlugin, { name: 'remote-document-title' });
-    this.app.pm.add(PMPlugin, { name: 'pm' });
+    await this.app.pm.add(BlockSchemaComponentPlugin, { name: 'block-schema-component' });
+    await this.app.pm.add(AntdSchemaComponentPlugin, { name: 'antd-schema-component' });
+    await this.app.pm.add(SigninPageExtensionPlugin, { name: 'signin-page-extension' });
+    await this.app.pm.add(ACLPlugin, { name: 'acl' });
+    await this.app.pm.add(RemoteDocumentTitlePlugin, { name: 'remote-document-title' });
+    await this.app.pm.add(PMPlugin, { name: 'pm' });
   }
 }

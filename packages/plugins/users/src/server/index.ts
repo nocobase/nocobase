@@ -1,3 +1,5 @@
+// @ts-ignore
+import { name } from '../../package.json';
 export { default } from './server';
 
-export const namespace = require('../../package.json').name;
+export const namespace = name;

@@ -1,4 +1,4 @@
-import { lodash } from '@nocobase/utils/client';
+import lodash from 'lodash';
 
 export const defaultFieldNames = {
   label: 'label',

@@ -197,8 +197,6 @@ export function mockServer(options: ApplicationOptions = {}) {
     database,
   });
 
-  app.pm.generateClientFile = async () => {};
-
   return app;
 }
 

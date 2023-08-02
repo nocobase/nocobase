@@ -1,4 +1,4 @@
-import { lodash } from '@nocobase/utils/client';
+import lodash from 'lodash';
 import { useTranslation } from 'react-i18next';
 
 const { groupBy, reduce, uniq, uniqBy } = lodash;
