@@ -54,6 +54,8 @@ export const VariableInput = (props: Props) => {
     return data;
   }, [compile, contextCollectionName, contextVariable, schema, userVariable]);
 
+  console.log('scope', scope);
+
   return (
     <Variable.Input
       className={className}

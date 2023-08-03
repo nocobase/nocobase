@@ -2,6 +2,7 @@ import { css } from '@emotion/css';
 import { Field } from '@formily/core';
 import { connect, useField, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
+import _ from 'lodash';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../../block-provider';
@@ -12,6 +13,7 @@ import {
   useCollectionFilterOptions,
 } from '../../../collection-manager';
 import { Variable, useCompile, useComponent, useVariableScope } from '../../../schema-component';
+import { useUserVariable } from '../../../schema-settings/VariableInput/hooks/useUserVariable';
 import { DeletedField } from '../DeletedField';
 
 const InternalField: React.FC = (props) => {
@@ -92,31 +94,30 @@ export const AssignedField = (props: any) => {
   const [options, setOptions] = useState<any[]>([]);
   const collection = useCollection();
   const fields = compile(useCollectionFilterOptions(collection));
-  const userFields = compile(useCollectionFilterOptions('users'));
   const scope = useVariableScope();
+  const userVariable = useUserVariable({ schema: collectionField.uiSchema });
+
+  userVariable.value = getNameOfUserVariable(value);
+
   useEffect(() => {
     const opt = [
       {
-        name: 'currentRecord',
-        title: t('Current record'),
+        value: getNameOfRecordVariable(value),
+        label: t('Current record'),
         children: fields,
       },
-      {
-        name: 'currentUser',
-        title: t('Current user'),
-        children: userFields,
-      },
+      userVariable,
     ];
     if (['createdAt', 'datetime', 'time', 'updatedAt'].includes(collectionField?.interface)) {
       opt.unshift({
-        name: 'currentTime',
-        title: t('Current time'),
+        value: 'currentTime',
+        label: t('Current time'),
         children: null,
       });
     }
     const next = opt.concat(scope);
     setOptions(next);
-  }, [fields, userFields, scope]);
+  }, [fields, scope]);
 
   return (
     <Variable.Input
@@ -128,12 +129,48 @@ export const AssignedField = (props: any) => {
           width: 100%;
         }
       `}
-      fieldNames={{
-        label: 'title',
-        value: 'name',
-      }}
+      // fieldNames={{
+      //   label: 'title',
+      //   value: 'name',
+      // }}
     >
       <CollectionField value={value} onChange={onChange} />
     </Variable.Input>
   );
 };
+
+/**
+ * 为了兼容老版本的变量字符串（`currentRecord` -> `$record`）
+ * @param value
+ * @returns
+ */
+function getNameOfRecordVariable(value: any) {
+  if (!_.isString(value)) {
+    return '$record';
+  }
+
+  // 兼容老版本
+  if (value.includes('currentRecord')) {
+    return 'currentRecord';
+  }
+
+  return '$record';
+}
+
+/**
+ * `currentUser` -> `$user`
+ * @param value
+ * @returns
+ */
+function getNameOfUserVariable(value: any) {
+  if (!_.isString(value)) {
+    return '$user';
+  }
+
+  // 兼容老版本
+  if (value.includes('currentUser')) {
+    return 'currentUser';
+  }
+
+  return '$user';
+}
