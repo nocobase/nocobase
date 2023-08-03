@@ -31,6 +31,7 @@ export default {
   'Add workflow': '添加工作流',
   'Select workflow': '选择工作流',
   'Trigger data context': '触发数据上下文',
+  'Full form data': '完整表单数据',
   'Leave context unselected will use full form data as context.': '触发数据上下文留空时将使用完整表单数据作为上下文。',
   'Select context': '选择上下文',
   'Collection event': '数据表事件',

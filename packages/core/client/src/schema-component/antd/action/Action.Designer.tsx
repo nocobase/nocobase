@@ -1,11 +1,11 @@
 import { ArrayTable } from '@formily/antd-v5';
-import { connect, ISchema, mapProps, useField, useFieldSchema, useForm } from '@formily/react';
+import { connect, ISchema, mapProps, useField, useFieldSchema, useForm, useFormEffects } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
 import { Alert, Tree as AntdTree } from 'antd';
 import { cloneDeep } from 'lodash';
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCompile, useDesignable } from '../..';
+import { RemoteSelect, useCompile, useDesignable } from '../..';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { OpenModeSchemaItems } from '../../../schema-items';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
@@ -14,6 +14,7 @@ import { useLinkageAction } from './hooks';
 import { requestSettingsSchema } from './utils';
 import { useRecord } from '../../../record-provider';
 import { useSyncFromForm } from '../../../schema-settings/DataTemplates/utils';
+import { onFieldValueChange } from '@formily/core';
 
 const Tree = connect(
   AntdTree,
@@ -644,6 +645,48 @@ function RemoveButton() {
   );
 }
 
+function FormWorkflowSelect(props) {
+  const index = ArrayTable.useIndex();
+  const { setValuesIn } = useForm();
+  const baseCollection = useCollection();
+  const { getCollection } = useCollectionManager();
+  const [workflowCollection, setWorkflowCollection] = useState(baseCollection.name);
+  useFormEffects(() => {
+    onFieldValueChange(`group[${index}].context`, (field) => {
+      let collection = baseCollection;
+      if (field.value) {
+        const paths = field.value.split('.');
+        for (let i = 0; i < paths.length && collection; i++) {
+          const path = paths[i];
+          const associationField = collection.fields.find((f) => f.name === path);
+          if (associationField) {
+            collection = getCollection(associationField.target);
+          }
+        }
+      }
+      setWorkflowCollection(collection.name);
+      setValuesIn(`group[${index}].workflowKey`, null);
+    });
+  });
+
+  return (
+    <RemoteSelect
+      {...props}
+      service={{
+        resource: 'workflows',
+        action: 'list',
+        params: {
+          filter: {
+            type: 'form',
+            enabled: true,
+            'config.collection': workflowCollection,
+          },
+        },
+      }}
+    />
+  );
+}
+
 function WorkflowConfig() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
@@ -666,6 +709,7 @@ function WorkflowConfig() {
       components={{
         Alert,
         ArrayTable,
+        FormWorkflowSelect,
       }}
       schema={
         {
@@ -690,48 +734,12 @@ function WorkflowConfig() {
               items: {
                 type: 'object',
                 properties: {
-                  workflowKey: {
-                    type: 'void',
-                    'x-component': 'ArrayTable.Column',
-                    'x-component-props': {
-                      title: t('Workflow', { ns: 'workflow' }),
-                    },
-                    properties: {
-                      workflowKey: {
-                        type: 'number',
-                        'x-decorator': 'FormItem',
-                        'x-component': 'RemoteSelect',
-                        'x-component-props': {
-                          placeholder: t('Select workflow', { ns: 'workflow' }),
-                          fieldNames: {
-                            label: 'title',
-                            value: 'key',
-                          },
-                          service: {
-                            resource: 'workflows',
-                            action: 'list',
-                            params: {
-                              filter: {
-                                $and: [
-                                  {
-                                    type: 'form',
-                                    current: true,
-                                  },
-                                ],
-                              },
-                            },
-                          },
-                        },
-                        required: true,
-                      },
-                    },
-                  },
                   context: {
                     type: 'void',
                     'x-component': 'ArrayTable.Column',
                     'x-component-props': {
                       title: t('Trigger data context', { ns: 'workflow' }),
-                      width: 160,
+                      width: 200,
                     },
                     properties: {
                       context: {
@@ -743,7 +751,35 @@ function WorkflowConfig() {
                           popupMatchSelectWidth: false,
                           collection,
                           filter: '{{ fieldFilter }}',
+                          rootOption: {
+                            label: t('Full form data', { ns: 'workflow' }),
+                            value: '',
+                          },
+                          allowClear: false,
                         },
+                        default: '',
+                      },
+                    },
+                  },
+                  workflowKey: {
+                    type: 'void',
+                    'x-component': 'ArrayTable.Column',
+                    'x-component-props': {
+                      title: t('Workflow', { ns: 'workflow' }),
+                    },
+                    properties: {
+                      workflowKey: {
+                        type: 'number',
+                        'x-decorator': 'FormItem',
+                        'x-component': 'FormWorkflowSelect',
+                        'x-component-props': {
+                          placeholder: t('Select workflow', { ns: 'workflow' }),
+                          fieldNames: {
+                            label: 'title',
+                            value: 'key',
+                          },
+                        },
+                        required: true,
                       },
                     },
                   },
