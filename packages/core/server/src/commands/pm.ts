@@ -14,6 +14,6 @@ export default (app: Application) => {
         await run('yarn', ['install']);
       }
 
-      await Gateway.getInstance().callAppFromCli('main', `pm.${method}`, plugins);
+      await app.pm[method](plugins);
     });
 };
