@@ -1132,5 +1132,3 @@ export const useAssociationNames = () => {
   getAssociationAppends(fieldSchema, '');
   return { appends: [...appends], updateAssociationValues: [...updateAssociationValues] };
 };
-
-export { default as useLazyLoadAssociation } from './useLazyLoadAssociation';
