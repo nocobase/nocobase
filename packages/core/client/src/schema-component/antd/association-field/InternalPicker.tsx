@@ -1,7 +1,7 @@
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Input, Select } from 'antd';
 import { differenceBy, unionBy } from 'lodash';
-import React, { useContext, useMemo, useState } from 'react';
+import React, { useContext, useMemo, useRef, useState } from 'react';
 import {
   FormProvider,
   RecordPickerContext,
@@ -23,13 +23,9 @@ import { flatData, getLabelFormatValue, useLabelUiSchema } from './util';
 
 const useTableSelectorProps = () => {
   const field: any = useField();
-  const {
-    multiple,
-    options = [],
-    setSelectedRows,
-    selectedRows: rcSelectRows = [],
-    onChange,
-  } = useContext(RecordPickerContext);
+  const { multiple, options = [], setSelectedRows, selectedRows: rcSelectRows = [], onChange } = useContext(
+    RecordPickerContext,
+  );
   const { onRowSelectionChange, rowKey = 'id', ...others } = useTsp();
   const { setVisible } = useActionContext();
   return {
@@ -68,6 +64,7 @@ export const InternalPicker = observer(
     const [visibleSelector, setVisibleSelector] = useState(false);
     const fieldSchema = useFieldSchema();
     const insertSelector = useInsertSchema('Selector');
+    const ref = useRef();
     const { options: collectionField } = useAssociationFieldContext();
     const compile = useCompile();
     const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
@@ -113,6 +110,9 @@ export const InternalPicker = observer(
       const filter = list.length ? { $and: [{ [`${targetKey}.$ne`]: list }] } : {};
       return filter;
     };
+    const getContainer = () => {
+      return ref.current;
+    };
     const usePickActionProps = () => {
       const { setVisible } = useActionContext();
       const { multiple, selectedRows, onChange, options, collectionField } = useContext(RecordPickerContext);
@@ -130,7 +130,7 @@ export const InternalPicker = observer(
     return (
       <>
         <Input.Group compact style={{ display: 'flex', lineHeight: '32px' }}>
-          <div style={{ width: '100%' }}>
+          <div style={{ width: '100%' }} ref={ref}>
             <Select
               style={{ width: '100%' }}
               popupMatchSelectWidth={false}
@@ -176,7 +176,14 @@ export const InternalPicker = observer(
             </RecordProvider>
           )}
         </Input.Group>
-        <ActionContextProvider value={{ openMode: 'drawer', visible: visibleSelector, setVisible: setVisibleSelector }}>
+        <ActionContextProvider
+          value={{
+            openMode: 'drawer',
+            visible: visibleSelector,
+            setVisible: setVisibleSelector,
+            drawerProps: { getContainer },
+          }}
+        >
           <RecordPickerProvider {...pickerProps}>
             <CollectionProvider name={collectionField?.target}>
               <FormProvider>
