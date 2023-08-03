@@ -65,7 +65,7 @@ export const InternaPopoverNester = observer(
               width: 100%;
               height: 100%;
               background-color: transparent;
-              z-index: 10001;
+              z-index: 9999;
             `}
           />
         )}
