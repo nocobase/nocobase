@@ -36,7 +36,8 @@ export default (app: Application) => {
         app.logger.info(`Start installing NocoBase`);
       }
 
-      await Gateway.getInstance().callAppFromCli('main', 'install', {
+      await app.install({
+        cliArgs,
         clean: opts.clean,
         sync: {
           force: opts.force,

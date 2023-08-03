@@ -1,12 +1,13 @@
 import { EventEmitter } from 'events';
 import http, { IncomingMessage, ServerResponse } from 'http';
 import { AppSupervisor } from '../app-supervisor';
-import Application from '../application';
+import Application, { ApplicationOptions } from '../application';
 import { WSServer } from './ws-server';
 import { parse } from 'url';
 import { resolve } from 'path';
 import { IPCSocketServer } from './ipc-socket-server';
 import { IPCSocketClient } from './ipc-socket-client';
+import { Command } from 'commander';
 
 export interface IncomingRequest {
   url: string;
@@ -19,6 +20,10 @@ interface StartHttpServerOptions {
   port: number;
   host: string;
   callback?: () => void;
+}
+
+interface RunOptions {
+  mainAppOptions: ApplicationOptions;
 }
 
 export function reportAppError(appName, errorMessage) {
@@ -50,9 +55,6 @@ export class Gateway extends EventEmitter {
   public static getInstance(options: any = {}): Gateway {
     if (!Gateway.instance) {
       Gateway.instance = new Gateway();
-      if (options.afterCreate) {
-        options.afterCreate(Gateway.instance);
-      }
     }
 
     return Gateway.instance;
@@ -147,7 +149,53 @@ export class Gateway extends EventEmitter {
     return this.requestHandler.bind(this);
   }
 
-  start(options?: StartHttpServerOptions) {
+  async run(options: RunOptions) {
+    const isStart = this.isStart();
+    if (isStart) {
+      const startOptions = this.getStartOptions();
+      const port = startOptions.port || process.env.APP_PORT || 13000;
+      const host = startOptions.host || process.env.APP_HOST || '0.0.0.0';
+
+      this.start({
+        port,
+        host,
+      });
+    } else {
+      const ipcClient = await this.tryConnectToIPCServer();
+
+      if (ipcClient) {
+        ipcClient.write({ type: 'passCliArgv', payload: { argv: process.argv } });
+        ipcClient.close();
+        return;
+      }
+    }
+
+    const mainApp = AppSupervisor.getInstance().bootMainApp(options.mainAppOptions);
+    mainApp.runAsCLI();
+  }
+
+  isStart() {
+    const argv = process.argv;
+    return argv[2] === 'start';
+  }
+
+  getStartOptions() {
+    const argv = process.argv;
+    const program = new Command();
+
+    program
+      .allowUnknownOption()
+      .option('-s, --silent')
+      .option('-p, --port [post]')
+      .option('-h, --host [host]')
+      .option('--db-sync')
+      .parse(process.argv);
+    const options = program.opts();
+
+    return options;
+  }
+
+  start(options: StartHttpServerOptions) {
     this.startHttpServer(options);
     this.startIPCSocketServer();
   }
@@ -194,41 +242,14 @@ export class Gateway extends EventEmitter {
     });
   }
 
-  // if socket server is not ready, send request to socket server
-  // otherwise, create an application instance to handle request
-  async callAppFromCli(appName: string, method: string, ...args: any[]) {
+  async tryConnectToIPCServer() {
     try {
       const ipcClient = await this.getIPCSocketClient();
-
-      const payload = {
-        appName,
-        method,
-        args,
-      };
-
-      console.log(payload);
-      ipcClient.write({
-        type: 'callApp',
-        payload,
-      });
-
-      ipcClient.close();
+      return ipcClient;
     } catch (e) {
       console.log(e);
-      console.log(`socket server is not ready, create app instance to handle request: ${appName}.${method}`);
-
-      await this.callApp(appName, method, ...args);
+      return false;
     }
-  }
-
-  async callApp(appName: string, method: string, ...args: any[]) {
-    const app = await AppSupervisor.getInstance().getApp(appName);
-
-    if (!app) {
-      throw new Error(`app ${appName} not found`);
-    }
-
-    await app.handleDynamicCall(method, ...args);
   }
 
   async getIPCSocketClient() {

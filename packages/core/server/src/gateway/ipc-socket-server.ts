@@ -1,6 +1,7 @@
 import net from 'net';
 import fs from 'fs';
 import { Gateway } from '../gateway';
+import { AppSupervisor } from '../app-supervisor';
 
 export class IPCSocketServer {
   socketServer: net.Server;
@@ -45,13 +46,15 @@ export class IPCSocketServer {
     return new IPCSocketServer(socketServer);
   }
 
-  static handleClientMessage({ type, payload }) {
+  static async handleClientMessage({ type, payload }) {
     console.log(`cli received message ${type}`);
 
-    if (type === 'callApp') {
-      const { appName, method, args } = payload;
+    if (type === 'passCliArgv') {
+      // AppSupervisor.getInstance().getApp('main');
+      const argv = payload.argv;
 
-      Gateway.getInstance().callApp(appName, method, ...args);
+      const mainApp = await AppSupervisor.getInstance().getApp('main');
+      mainApp.runAsCLI(argv);
     }
   }
 

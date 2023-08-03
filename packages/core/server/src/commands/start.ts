@@ -11,13 +11,13 @@ export default (app: Application) => {
     .option('--db-sync')
     .action(async (...cliArgs) => {
       const [opts] = cliArgs;
-      const port = opts.port || process.env['APP_PORT'] || 13000;
-      const host = opts.host || process.env['APP_HOST'] || '0.0.0.0';
 
-      Gateway.getInstance().start({
-        port,
-        host,
-      });
+      if (!(await app.isInstalled())) {
+        AppSupervisor.getInstance().setAppError(
+          app.name,
+          new Error('App is not installed, please run `yarn run nocobase install` first'),
+        );
+      }
 
       if (!AppSupervisor.getInstance().hasAppError(app.name)) {
         await app.start({

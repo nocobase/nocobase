@@ -1,6 +1,6 @@
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import { EventEmitter } from 'events';
-import Application from './application';
+import Application, { ApplicationOptions } from './application';
 
 type BootOptions = {
   appName: string;
@@ -43,7 +43,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
   private appBootstrapper: AppBootstrapper = null;
 
-  private rootApp = 'main';
+  private mainAppName = 'main';
 
   private constructor() {
     super();
@@ -135,7 +135,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     await app.destroy();
 
     // create new app instance
-    if (app.name === this.rootApp) {
+    if (app.name === this.mainAppName) {
       const rawAttribute = app.rawOptions;
       const newApp = new Application(rawAttribute);
       await newApp.load();
@@ -143,6 +143,10 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     } else {
       await this.bootStrapApp(name);
     }
+  }
+
+  bootMainApp(options: ApplicationOptions) {
+    return new Application(options);
   }
 
   hasApp(appName: string): boolean {
