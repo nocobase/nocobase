@@ -5,9 +5,6 @@ import { Gateway } from '../gateway';
 export default (app: Application) => {
   app
     .command('start')
-    .option('-s, --silent')
-    .option('-p, --port [post]')
-    .option('-h, --host [host]')
     .option('--db-sync')
     .action(async (...cliArgs) => {
       const [opts] = cliArgs;
