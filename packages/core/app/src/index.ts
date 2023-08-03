@@ -1,4 +1,4 @@
-import { Application, Gateway } from '@nocobase/server';
+import { Gateway } from '@nocobase/server';
 import config from './config';
 
 Gateway.getInstance().run({

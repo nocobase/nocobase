@@ -200,6 +200,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   setWorkingMessage(message: string) {
     this._workingMessage = message;
+
     this.emit('workingMessageChanged', {
       message: this._workingMessage,
       ready: this.ready,
@@ -450,7 +451,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.version.update();
     this.log.debug('emit afterInstall');
     await this.emitAsync('afterInstall', this, options);
-    this.setReadyStatus(true, 'installed');
   }
 
   async upgrade(options: any = {}) {

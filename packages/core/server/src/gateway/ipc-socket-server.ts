@@ -50,7 +50,6 @@ export class IPCSocketServer {
     console.log(`cli received message ${type}`);
 
     if (type === 'passCliArgv') {
-      // AppSupervisor.getInstance().getApp('main');
       const argv = payload.argv;
 
       const mainApp = await AppSupervisor.getInstance().getApp('main');
