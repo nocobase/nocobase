@@ -5,8 +5,8 @@
       "type": "node",
       "request": "launch",
       "name": "Debug Server",
-      "runtimeArgs": ["-r", "dotenv/config", "-r", "tsconfig-paths/register", "-r", "ts-node/register"],
-      "args": ["${workspaceRoot}/packages/app/server/src/index.ts", "start"],
+      "runtimeExecutable": "yarn",
+      "runtimeArgs": ["dev", "--server"],
       "skipFiles": ["<node_internals>/**"],
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen"

@@ -76,6 +76,20 @@ const useRelationFields = () => {
               component: 'RecordAssociationDetailsBlockInitializer',
             },
             {
+              key: `${field.name}_list`,
+              type: 'item',
+              title: '{{t("List")}}',
+              field,
+              component: 'RecordAssociationListBlockInitializer',
+            },
+            {
+              key: `${field.name}_grid_card`,
+              type: 'item',
+              title: '{{t("Grid Card")}}',
+              field,
+              component: 'RecordAssociationGridCardBlockInitializer',
+            },
+            {
               key: `${field.name}_form`,
               type: 'item',
               title: '{{t("Form")}}',
