@@ -58,16 +58,26 @@ export interface ChartType {
   render: (props: RenderProps) => React.FC<any>;
 }
 
+export type ChartProps = {
+  name: string;
+  title: string;
+  component: React.FC<any>;
+};
+
 export class Chart implements ChartType {
   name: string;
   title: string;
   component: React.FC<any>;
-  schema = {};
+  _schema = {};
 
-  constructor(name: string, title: string, component: React.FC<any>) {
+  constructor({ name, title, component }: ChartProps) {
     this.name = name;
     this.title = title;
     this.component = component;
+  }
+
+  get schema() {
+    return this._schema;
   }
 
   infer(

@@ -7,7 +7,7 @@ import { QueryProps } from '../../renderer';
 import { RenderProps } from '../chart';
 
 export class Statistic extends AntdChart {
-  schema: ISchema = {
+  _schema: ISchema = {
     type: 'object',
     properties: {
       field: {
@@ -28,7 +28,7 @@ export class Statistic extends AntdChart {
   };
 
   constructor() {
-    super('statistic', 'Statistic', AntdStatistic);
+    super({ name: 'statistic', title: 'Statistic', component: AntdStatistic });
   }
 
   init(

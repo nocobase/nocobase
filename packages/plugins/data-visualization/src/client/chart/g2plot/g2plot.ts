@@ -1,37 +1,48 @@
-import { Chart, RenderProps } from '../chart';
+import { Chart, ChartProps, RenderProps } from '../chart';
 import { FieldOption } from '../../hooks';
 import { QueryProps } from '../../renderer';
-import { ISchema } from '@formily/react';
+import config, { ConfigProps } from './config';
+
+type G2PlotConfig = (
+  | (ConfigProps & {
+      property: string;
+    })
+  | string
+)[];
 
 export class G2PlotChart extends Chart {
-  schema: ISchema = {
-    type: 'object',
-    properties: {
-      xField: {
-        title: '{{t("xField")}}',
-        type: 'string',
-        'x-decorator': 'FormItem',
-        'x-component': 'Select',
-        'x-reactions': '{{ useChartFields }}',
-        required: true,
-      },
-      yField: {
-        title: '{{t("yField")}}',
-        type: 'string',
-        'x-decorator': 'FormItem',
-        'x-component': 'Select',
-        'x-reactions': '{{ useChartFields }}',
-        required: true,
-      },
-      seriesField: {
-        title: '{{t("seriesField")}}',
-        type: 'string',
-        'x-decorator': 'FormItem',
-        'x-component': 'Select',
-        'x-reactions': '{{ useChartFields }}',
-      },
-    },
-  };
+  config: G2PlotConfig;
+
+  constructor({
+    name,
+    title,
+    component,
+    config,
+  }: ChartProps & {
+    config?: G2PlotConfig;
+  }) {
+    super({ name, title, component });
+    this.config = ['xField', 'yField', 'seriesField', ...(config || [])];
+  }
+
+  get schema() {
+    const properties = this.config.reduce((properties, conf) => {
+      let schema = {};
+      if (typeof conf === 'string') {
+        schema = config[conf]();
+      } else {
+        schema = config[conf.property](conf);
+      }
+      return {
+        ...properties,
+        ...schema,
+      };
+    }, {});
+    return {
+      type: 'object',
+      properties,
+    };
+  }
 
   init(
     fields: FieldOption[],
@@ -101,7 +112,7 @@ export class G2PlotChart extends Chart {
   getReference() {
     return {
       title: this.title,
-      link: `https://g2plot.antv.antgroup.com/api/plots/${this.name}`,
+      link: `https://charts.ant.design/api/plots/${this.name}`,
     };
   }
 }

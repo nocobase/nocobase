@@ -1,16 +1,20 @@
 import { Area, Column, Line, Scatter } from '@ant-design/plots';
-import { Chart } from '../chart';
 import { Bar } from './bar';
 import { Pie } from './pie';
 import { DualAxes } from './dualAxes';
 import { G2PlotChart } from './g2plot';
 
 export default [
-  new G2PlotChart('line', 'Line Chart', Line),
-  new G2PlotChart('area', 'Area Chart', Area),
-  new G2PlotChart('column', 'Column Chart', Column),
+  new G2PlotChart({ name: 'line', title: 'Line Chart', component: Line, config: ['smooth', 'isStack'] }),
+  new G2PlotChart({ name: 'area', title: 'Area Chart', component: Area, config: ['smooth', 'isStack', 'isPercent'] }),
+  new G2PlotChart({
+    name: 'column',
+    title: 'Column Chart',
+    component: Column,
+    config: ['isGroup', 'isStack', 'isPercent'],
+  }),
   new Bar(),
   new Pie(),
   new DualAxes(),
-  new G2PlotChart('scatter', 'Scatter Chart', Scatter),
+  new G2PlotChart({ name: 'scatter', title: 'Scatter Chart', component: Scatter }),
 ];
