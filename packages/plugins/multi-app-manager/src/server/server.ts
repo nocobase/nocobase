@@ -217,6 +217,7 @@ export class PluginMultiAppManager extends Plugin {
             appOptionsFactory: this.appOptionsFactory,
           });
           await registeredApp.load();
+          await registeredApp.start();
         } catch (err) {
           console.error('Auto register sub application in single mode failed: ', appSupervisor.singleAppName, err);
         }
@@ -229,13 +230,22 @@ export class PluginMultiAppManager extends Plugin {
           },
         });
 
-        for (const subApp of subApps) {
-          const registeredApp = await subApp.registerToSupervisor(this.app, {
-            appOptionsFactory: this.appOptionsFactory,
-          });
+        const promises = [];
 
-          await registeredApp.load();
+        for (const subApp of subApps) {
+          promises.push(
+            (async () => {
+              const registeredApp = await subApp.registerToSupervisor(this.app, {
+                appOptionsFactory: this.appOptionsFactory,
+              });
+
+              await registeredApp.load();
+              await registeredApp.start();
+            })(),
+          );
         }
+
+        await Promise.all(promises);
       } catch (err) {
         console.error('Auto register sub applications failed: ', err);
       }

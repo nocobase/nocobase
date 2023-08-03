@@ -259,6 +259,7 @@ export class PluginManager {
     }
 
     current = 0;
+
     for (const [name, plugin] of this.plugins) {
       current += 1;
       this.app.setWorkingMessage(`load plugin [${name}], ${current}/${total}`);
