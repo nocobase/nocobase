@@ -9,7 +9,7 @@ import { InternalFileManager } from './FileManager';
 import { InternalNester } from './InternalNester';
 import { InternalPicker } from './InternalPicker';
 import { InternalSubTable } from './InternalSubTable';
-import { InternaPopoverNester } from './InternaPopoverNester';
+import { InternaPopoverNester } from './InternalPopoverNester';
 import { CreateRecordAction } from './components/CreateRecordAction';
 import { useAssociationFieldContext } from './hooks';
 
