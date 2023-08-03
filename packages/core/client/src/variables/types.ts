@@ -1,4 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react';
+import { CollectionFieldOptions } from '../collection-manager';
 
 export interface VariablesContextType {
   /**
@@ -52,6 +53,7 @@ export interface VariablesContextType {
    * @returns 变量的配置
    */
   getVariable: (variableName: string) => VariableOption;
+  getCollectionField: (collectionName: string) => CollectionFieldOptions;
 }
 
 export interface VariableOption {

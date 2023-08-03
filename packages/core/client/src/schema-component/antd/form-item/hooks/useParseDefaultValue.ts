@@ -15,7 +15,18 @@ const useParseDefaultValue = () => {
       if (isVariable(schema.default) && variables && field.setInitialValue) {
         field.setInitialValue(' ');
         field.loading = true;
-        field.setInitialValue(await variables.parseVariable(schema.default));
+
+        let value = await variables.parseVariable(schema.default);
+        if (Array.isArray(value)) {
+          const collectionField = variables.getCollectionField(schema.default);
+          if (collectionField?.uiSchema?.['x-component'] === 'DatePicker') {
+            value = value.filter(Boolean)[0];
+          } else if (!collectionField?.target) {
+            value = value.filter(Boolean).join(',');
+          }
+        }
+
+        field.setInitialValue(value);
         field.loading = false;
       } else if (field.setInitialValue) {
         field.setInitialValue(schema.default);

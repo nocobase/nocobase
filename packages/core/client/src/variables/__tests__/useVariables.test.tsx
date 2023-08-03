@@ -419,4 +419,17 @@ describe('useVariables', () => {
       expect(await result.current.parseVariable('{{ $some.belongsToField.belongsToField }}')).toBe(undefined);
     });
   });
+
+  it('getCollectionField', async () => {
+    const { result } = renderHook(() => useVariables(), {
+      wrapper: Providers,
+    });
+
+    await waitFor(() => {
+      expect(result.current.getCollectionField('{{ $user.belongsToField }}')).toEqual({
+        type: 'belongsTo',
+        target: 'test',
+      });
+    });
+  });
 });

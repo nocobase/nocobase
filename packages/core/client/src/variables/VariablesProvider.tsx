@@ -189,6 +189,18 @@ const VariablesProvider = ({ children }) => {
     [getValue, getVariable, registerVariable, removeVariable],
   );
 
+  const getCollectionField = useCallback((variableString: string) => {
+    const matches = variableString.match(/\{\{\s*(.*?)\s*\}\}/g);
+
+    if (process.env.NODE_ENV !== 'production' && !matches) {
+      throw new Error(`VariablesProvider: ${variableString} is not a variable string`);
+    }
+
+    const path = matches[0].replace(/\{\{\s*(.*?)\s*\}\}/g, '$1');
+
+    return getCollectionJoinField(getFieldPath(path));
+  }, []);
+
   const value = useMemo(
     () => ({
       ctx,
@@ -196,8 +208,9 @@ const VariablesProvider = ({ children }) => {
       parseVariable,
       registerVariable,
       getVariable,
+      getCollectionField,
     }),
-    [ctx, getVariable, parseVariable, registerVariable],
+    [ctx, getCollectionField, getVariable, parseVariable, registerVariable],
   );
 
   useEffect(() => {
