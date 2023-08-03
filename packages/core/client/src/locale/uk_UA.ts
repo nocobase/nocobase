@@ -710,4 +710,10 @@ export default {
   "Try again": "Спробуйте ще раз",
   "Data template": "Шаблон даних",
   "Template fields have been removed and need to be reconfigured": "Поля шаблону були видалені і потребують повторної конфігурації"
-};
+  "Table selected records": "Таблиця вибраних записів",
+  "Tag": "Тег",
+  "Tag color field": "Поле кольору тегу",
+  "Sync successfully": "Синхронізація успішна",
+  "Sync from form fields": "Синхронізація з полів форми",
+  "Select all": "Вибрати все"
+  };
