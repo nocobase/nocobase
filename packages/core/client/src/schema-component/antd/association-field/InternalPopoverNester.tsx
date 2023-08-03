@@ -15,7 +15,7 @@ export const InternaPopoverNester = observer(
     const { t } = useTranslation();
     const content = (
       <div
-        style={{ minWidth: '600px', maxHeight: '440px', overflow: 'auto' }}
+        style={{ minWidth: '600px', maxWidth: '800px', maxHeight: '440px', overflow: 'auto' }}
         className={css`
           min-width: 600px;
           max-height: 440px;
