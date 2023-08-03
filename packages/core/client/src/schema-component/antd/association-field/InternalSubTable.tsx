@@ -22,7 +22,6 @@ export const InternalSubTable = observer(
     const option = useSchemaOptionsContext();
     const components = {
       ...option.components,
-      // FormItem: (props) => <FormItem {...props} />,
       'Radio.Group': Select,
       'Checkbox.Group': (props) => <Select multiple={true} mode="multiple" {...props} />,
     };
@@ -38,9 +37,8 @@ export const InternalSubTable = observer(
               .ant-checkbox-wrapper {
                 margin-left: 8px;
               }
-              .ant-btn {
-                border: none !important;
-                box-shadow: none;
+              .ant-table {
+                margin: 0px !important;
               }
             }
           `}
