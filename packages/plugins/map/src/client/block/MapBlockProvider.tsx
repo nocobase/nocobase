@@ -36,7 +36,7 @@ export const MapBlockProvider = (props) => {
   const { params, fieldNames } = props;
   const appends = params.appends || [];
   const { field } = fieldNames || {};
-  if (Array.isArray(field)) {
+  if (Array.isArray(field) && field.length > 1) {
     appends.push(field[0]);
   }
   return (

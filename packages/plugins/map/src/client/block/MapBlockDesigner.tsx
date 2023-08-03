@@ -35,7 +35,7 @@ export const MapBlockDesigner = () => {
   const template = useSchemaTemplate();
 
   const mapFieldOptions = getCollectionFieldsOptions(collection?.name, ['point', 'lineString', 'polygon'], {
-    association: ['o2o', 'obo', 'oho', 'o2m', 'm2o'],
+    association: ['o2o', 'obo', 'oho', 'o2m', 'm2o', 'm2m'],
   });
   const markerFieldOptions = getCollectionFieldsOptions(collection?.name, 'string');
   const isPointField = findNestedOption(fieldNames.field, mapFieldOptions)?.type === 'point';
