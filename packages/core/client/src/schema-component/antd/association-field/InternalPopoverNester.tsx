@@ -44,10 +44,10 @@ export const InternaPopoverNester = observer(
           onOpenChange={(open) => setVisible(open)}
           title={t(options?.uiSchema?.rawTitle)}
         >
-          <span style={{ cursor: 'pointer', display: 'inline-block', minWidth: '400px' }}>
+          <span style={{ cursor: 'pointer', display: 'flex' }}>
             <div
               className={css`
-                display: inline-flex;
+                max-width: 95%;
               `}
             >
               <ReadPrettyInternalViewer {...titleProps} />
