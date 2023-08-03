@@ -120,8 +120,9 @@ const ConstantTypes = {
 
 function getTypedConstantOption(type: string, types: true | string[], fieldNames) {
   const allTypes = Object.values(ConstantTypes);
-  const children = (
-    types ? allTypes.filter((item) => (Array.isArray(types) && types.includes(item.value)) || types === true) : allTypes
+  const children = (types
+    ? allTypes.filter((item) => (Array.isArray(types) && types.includes(item.value)) || types === true)
+    : allTypes
   ).map((item) =>
     Object.keys(item).reduce(
       (result, key) =>
@@ -181,27 +182,29 @@ export function Input(props) {
     fieldNames ?? {},
   );
 
-  const { component: ConstantComponent, ...constantOption }: DefaultOptionType & { component?: React.FC<any> } =
-    useMemo(() => {
-      if (children) {
-        return {
-          value: '',
-          label: t('Constant'),
-          [names.value]: '',
-          [names.label]: t('Constant'),
-        };
-      }
-      if (useTypedConstant) {
-        return getTypedConstantOption(type, useTypedConstant, names);
-      }
+  const {
+    component: ConstantComponent,
+    ...constantOption
+  }: DefaultOptionType & { component?: React.FC<any> } = useMemo(() => {
+    if (children) {
       return {
         value: '',
-        label: t('Null'),
+        label: t('Constant'),
         [names.value]: '',
-        [names.label]: t('Null'),
-        component: ConstantTypes.null.component,
+        [names.label]: t('Constant'),
       };
-    }, [type, useTypedConstant]);
+    }
+    if (useTypedConstant) {
+      return getTypedConstantOption(type, useTypedConstant, names);
+    }
+    return {
+      value: '',
+      label: t('Null'),
+      [names.value]: '',
+      [names.label]: t('Null'),
+      component: ConstantTypes.null.component,
+    };
+  }, [type, useTypedConstant]);
 
   useEffect(() => {
     setOptions([compile(constantOption), ...(scope ? cloneDeep(scope) : [])]);
@@ -209,7 +212,7 @@ export function Input(props) {
 
   const loadData = async (selectedOptions: DefaultOptionType[]) => {
     const option = selectedOptions[selectedOptions.length - 1];
-    if (!option.children && !option.isLeaf && option.loadChildren) {
+    if (!option.children?.length && !option.isLeaf && option.loadChildren) {
       await option.loadChildren(option);
       setOptions((prev) => [...prev]);
     }
