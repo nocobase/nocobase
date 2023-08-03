@@ -276,6 +276,21 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.context.resourcer = this._resourcer;
     this.context.cache = this._cache;
 
+    this.on('beforeLoad', async (app: Application, options) => {
+      const cmd: Command = options?.command;
+      if (!cmd) {
+        return;
+      }
+      const name = cmd.name();
+      const opts = cmd.opts();
+      if (name === 'install') {
+        if (opts.force || opts.clean) {
+          console.log('db clean...');
+          await app.db.clean({ drop: true });
+        }
+      }
+    });
+
     if (this._pm) {
       this._pm = this._pm.clone();
     } else {
@@ -425,13 +440,14 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     await this.db.prepare();
 
-    if (argv?.[2] !== 'upgrade') {
-      await this.load({
-        method: argv?.[2],
-      });
-    }
-
-    return this.cli.parseAsync(argv, options);
+    return this.cli
+      .hook('preAction', async (thisCommand, actionCommand) => {
+        await this.load({
+          method: actionCommand.name(),
+          command: actionCommand,
+        });
+      })
+      .parseAsync(argv, options);
   }
 
   async start(options: StartOptions = {}) {
@@ -554,14 +570,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async install(options: InstallOptions = {}) {
-    console.log('Database dialect: ' + this.db.sequelize.getDialect());
-
-    if (options?.clean || options?.sync?.force) {
-      console.log('Truncate database and reload app configuration');
-      await this.db.clean({ drop: true });
-      await this.reload({ method: 'install' });
-    }
-
     await this.emitAsync('beforeInstall', this, options);
     await this.db.sync();
     await this.pm.install(options);

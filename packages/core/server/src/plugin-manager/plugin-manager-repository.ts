@@ -66,6 +66,8 @@ export class PluginManagerRepository extends Repository {
       sort: 'id',
     });
 
+    console.log('repository.load');
+
     for (const item of items) {
       await this.pm.addStatic(item.get('name'), {
         ...item.get('options'),

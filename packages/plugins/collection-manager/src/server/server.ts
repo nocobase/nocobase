@@ -213,18 +213,10 @@ export class CollectionManagerPlugin extends Plugin {
         return;
       }
       if (options?.method === 'upgrade') {
+        await this.app.db.sync();
         return;
       }
-      const exists = await this.app.db.collectionExistsInDb('collections');
-      if (exists) {
-        try {
-          await this.app.db.getRepository<CollectionRepository>('collections').load();
-        } catch (error) {
-          this.app.logger.warn(error);
-          await this.app.db.sync();
-          await this.app.db.getRepository<CollectionRepository>('collections').load();
-        }
-      }
+      await this.app.db.getRepository<CollectionRepository>('collections').load();
     });
 
     this.app.resourcer.use(async (ctx, next) => {

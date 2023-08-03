@@ -74,47 +74,29 @@ export class PresetNocoBase extends Plugin {
     await this.app.reload({ method: options.method });
   }
 
+  get allPlugins() {
+    return this.builtInPlugins
+      .map((name) => {
+        return { name, enabled: true, builtIn: true } as any;
+      })
+      .concat(this.localPlugins.map((name) => ({ name })));
+  }
+
   afterAdd() {
+    // TODO: 这段代码最好可以直接写到 afterAdd 里
     this.app.on('beforeLoad', async (app, options) => {
-      if (options?.method !== 'upgrade') {
+      const repository = this.app.db.getRepository('applicationPlugins');
+      console.log('options?.method', options?.method);
+      if (options?.method === 'install') {
+        console.log('installing all plugins');
+        await repository.create({ values: this.allPlugins });
         return;
       }
-      const version = await this.app.version.get();
-      console.log(`The version number before upgrade is ${version}`);
-    });
-
-    this.app.on('beforeUpgrade', async () => {
-      const result = await this.app.version.satisfies('<0.8.0-alpha.1');
-
-      if (result) {
-        console.log(`Initialize all built-in plugins beforeUpgrade`);
-        await this.addBuiltInPlugins({ method: 'upgrade' });
+      if (options?.method === 'upgrade') {
+        const version = await this.app.version.get();
+        console.log(`The version number before upgrade is ${version}`);
+        return;
       }
-
-      const builtInPlugins = this.getBuiltInPlugins();
-      const plugins = await this.app.db.getRepository('applicationPlugins').find();
-      const pluginNames = plugins.map((p) => p.name);
-      await this.app.pm.add(
-        builtInPlugins.filter((plugin) => !pluginNames.includes(plugin)),
-        {
-          enabled: true,
-          builtIn: true,
-          installed: true,
-        },
-      );
-      const localPlugins = this.getLocalPlugins();
-      await this.app.pm.add(
-        localPlugins.filter((plugin) => !pluginNames.includes(plugin)),
-        {},
-      );
-      await this.app.reload({ method: 'upgrade' });
-      await this.app.db.sync();
-      await this.app.db.getRepository<any>('collections').load();
-    });
-
-    this.app.on('beforeInstall', async () => {
-      console.log(`Initialize all built-in plugins beforeInstall in ${this.app.name}`);
-      await this.addBuiltInPlugins({ method: 'install' });
     });
   }
 

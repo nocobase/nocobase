@@ -75,23 +75,9 @@ export class PluginManager {
 
     this.app.on('beforeLoad', async (app, options) => {
       if (options?.method && ['install', 'upgrade'].includes(options.method)) {
+        console.log('applicationPlugins db.sync');
         await this.collection.sync();
       }
-
-      const exists = await this.app.db.collectionExistsInDb('applicationPlugins');
-
-      if (!exists) {
-        this.app.log.warn(`applicationPlugins collection not exists in ${this.app.name}`);
-        return;
-      }
-
-      if (options?.method !== 'install' || options.reload) {
-        await this.repository.load();
-      }
-    });
-
-    this.app.on('beforeUpgrade', async () => {
-      await this.collection.sync();
     });
 
     this.addStaticMultiple(options.plugins);
@@ -282,6 +268,9 @@ export class PluginManager {
   }
 
   async load(options: any = {}) {
+    // TODO：preset 插件的 Add 应该放这里，并且需要支持 async
+    await this.repository.load();
+    console.log('load plugins');
     for (const [name, plugin] of this.plugins) {
       if (!plugin.enabled) {
         continue;
