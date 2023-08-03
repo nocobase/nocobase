@@ -12,11 +12,12 @@ import { i18n } from '../i18n';
 import type { Plugin } from './Plugin';
 import { PluginManager, PluginType } from './PluginManager';
 import { ComponentTypeAndString, RouterManager, RouterOptions } from './RouterManager';
+import { WebSocketClient, WebSocketClientOptions } from './WebSocketClient';
 import { AppComponent, BlankComponent, defaultAppComponents } from './components';
 import { compose, normalizeContainer } from './utils';
 import { defineGlobalDeps } from './utils/globalDeps';
-import { getRequireJs } from './utils/requirejs';
 import type { RequireJS } from './utils/requirejs';
+import { getRequireJs } from './utils/requirejs';
 
 declare global {
   interface Window {
@@ -27,6 +28,7 @@ declare global {
 export type ComponentAndProps<T = any> = [ComponentType, T];
 export interface ApplicationOptions {
   apiClient?: APIClientOptions;
+  ws?: WebSocketClientOptions | boolean;
   i18n?: i18next;
   providers?: (ComponentType | ComponentAndProps)[];
   plugins?: PluginType[];
@@ -41,6 +43,7 @@ export class Application {
   public router: RouterManager;
   public scopes: Record<string, any> = {};
   public i18n: i18next;
+  public ws: WebSocketClient;
   public apiClient: APIClient;
   public components: Record<string, ComponentType> = { ...defaultAppComponents };
   public pm: PluginManager;
@@ -62,6 +65,7 @@ export class Application {
     this.addDefaultProviders();
     this.addReactRouterComponents();
     this.addProviders(options.providers || []);
+    this.ws = new WebSocketClient(options.ws);
   }
 
   private initRequireJs() {
@@ -108,6 +112,7 @@ export class Application {
   }
 
   async load() {
+    this.ws.connect();
     return this.pm.load();
   }
 

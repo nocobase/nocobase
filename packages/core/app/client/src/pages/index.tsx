@@ -8,6 +8,7 @@ export const app = new Application({
   },
   plugins: [NocoBaseClientPresetPlugin],
   devPlugins,
+  ws: true,
 });
 
 export default app.getRootComponent();
