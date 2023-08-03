@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { FormItem, FormLayout } from '@formily/antd-v5';
+import { FormLayout } from '@formily/antd-v5';
 import { RecursionField, observer, useField, useFieldSchema, SchemaOptionsContext } from '@formily/react';
 import React, { useEffect } from 'react';
 import { CollectionProvider } from '../../../collection-manager';
@@ -22,7 +22,7 @@ export const InternalSubTable = observer(
     const option = useSchemaOptionsContext();
     const components = {
       ...option.components,
-      FormItem: (props) => <FormItem {...props} />,
+      // FormItem: (props) => <FormItem {...props} />,
       'Radio.Group': Select,
       'Checkbox.Group': (props) => <Select multiple={true} mode="multiple" {...props} />,
     };
