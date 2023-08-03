@@ -2,19 +2,26 @@ import { Popover } from 'antd';
 import { css } from '@emotion/css';
 import { EditOutlined } from '@ant-design/icons';
 import { observer } from '@formily/react';
-import React, { useState } from 'react';
+import React, { useContext, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ReadPrettyInternalViewer } from './InternalViewer';
 import { InternalNester } from './InternalNester';
 import { useAssociationFieldContext } from './hooks';
+import { ActionContextProvider, ActionContext } from '../action/context';
 
 export const InternaPopoverNester = observer(
   (props) => {
     const { options } = useAssociationFieldContext();
     const [visible, setVisible] = useState(false);
     const { t } = useTranslation();
+    const ref = useRef();
+    const nesterProps = {
+      ...props,
+      shouldMountElement: true,
+    };
     const content = (
       <div
+        ref={ref}
         style={{ minWidth: '600px', maxWidth: '800px', maxHeight: '440px', overflow: 'auto' }}
         className={css`
           min-width: 600px;
@@ -25,16 +32,20 @@ export const InternaPopoverNester = observer(
           }
         `}
       >
-        <InternalNester {...props} />
+        <InternalNester {...nesterProps} />
       </div>
     );
     const titleProps = {
       ...props,
       enableLink: true,
     };
-
+    const getContainer = () => ref.current;
+    const ctx = useContext(ActionContext);
+    const modalProps = {
+      getContainer: getContainer,
+    };
     return (
-      <>
+      <ActionContextProvider value={{ ...ctx, modalProps }}>
         <Popover
           overlayStyle={{ padding: '0px' }}
           content={content}
@@ -69,7 +80,7 @@ export const InternaPopoverNester = observer(
             `}
           />
         )}
-      </>
+      </ActionContextProvider>
     );
   },
   { displayName: 'InternaPopoverNester' },

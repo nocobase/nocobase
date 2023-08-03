@@ -28,19 +28,6 @@ export const AssociationFieldProvider = observer(
       [fieldSchema['x-component-props']?.mode],
     );
 
-    // const targetKeyValue = useMemo(() => {
-    //   if (!field.value) return '';
-    //   if (['belongsTo', 'hasOne'].includes(collectionField.type)) {
-    //     return field.value[collectionField.targetKey] ?? '';
-    //   }
-    //   if (['belongsToMany', 'hasMany'].includes(collectionField.type)) {
-    //     if (Array.isArray(field.value)) {
-    //       return field.value.map((v) => v[collectionField.targetKey] ?? '').join(',');
-    //     }
-    //   }
-    //   return '';
-    // }, [collectionField, field.value]);
-
     const fieldValue = useMemo(() => JSON.stringify(field.value), [field.value]);
 
     const [loading, setLoading] = useState(true);
