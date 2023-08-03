@@ -1,5 +1,5 @@
 import { ISchema } from '@formily/react';
-import { lodash } from '@nocobase/utils/client';
+import lodash from 'lodash';
 
 export const json: ISchema = {
   type: 'object',

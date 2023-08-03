@@ -11,7 +11,7 @@ import {
   useDesignable,
   useSchemaTemplate,
 } from '@nocobase/client';
-import { lodash } from '@nocobase/utils/client';
+import lodash from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMapTranslation } from '../locale';

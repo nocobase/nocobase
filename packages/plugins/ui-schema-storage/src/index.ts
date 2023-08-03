@@ -1,2 +1,4 @@
 export * from './server';
-export { default } from './server';
+import { UiSchemaStoragePlugin } from './server';
+
+export default UiSchemaStoragePlugin;

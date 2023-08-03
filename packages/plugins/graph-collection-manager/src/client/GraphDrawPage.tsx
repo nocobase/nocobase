@@ -28,7 +28,7 @@ import {
   useCurrentAppInfo,
   useGlobalTheme,
 } from '@nocobase/client';
-import { lodash } from '@nocobase/utils/client';
+import lodash from 'lodash';
 import { useFullscreen } from 'ahooks';
 import { Button, ConfigProvider, Input, Layout, Menu, Popover, Switch, Tooltip } from 'antd';
 import dagre from 'dagre';

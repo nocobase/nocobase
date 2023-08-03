@@ -84,8 +84,9 @@ const sidebar = {
         },
         // '/welcome/release/index',
         // '/welcome/release/v08-changelog',
-        '/welcome/release/v10-changelog',
+        '/welcome/release/v12-changelog',
         '/welcome/release/v11-changelog',
+        '/welcome/release/v10-changelog',
       ],
     },
     {

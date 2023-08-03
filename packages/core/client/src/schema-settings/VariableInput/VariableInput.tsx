@@ -64,7 +64,7 @@ export const VariableInput = (props: Props) => {
       onChange={onChange}
       scope={scope}
       style={style}
-      changeOnSelect={contextCollectionName!==null}
+      changeOnSelect={contextCollectionName !== null}
     >
       <RenderSchemaComponent value={value} onChange={onChange} />
     </Variable.Input>
