@@ -2,7 +2,7 @@ import { Popover } from 'antd';
 import { css } from '@emotion/css';
 import { EditOutlined } from '@ant-design/icons';
 import { observer } from '@formily/react';
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ReadPrettyInternalViewer } from './InternalViewer';
 import { InternalNester } from './InternalNester';
@@ -11,6 +11,7 @@ import { useAssociationFieldContext } from './hooks';
 export const InternaPopoverNester = observer(
   (props) => {
     const { options } = useAssociationFieldContext();
+    const [visible, setVisible] = useState(false);
     const { t } = useTranslation();
     const content = (
       <div
@@ -33,24 +34,42 @@ export const InternaPopoverNester = observer(
     };
 
     return (
-      <Popover
-        overlayStyle={{ padding: '0px' }}
-        content={content}
-        trigger="click"
-        placement="topLeft"
-        title={t(options?.uiSchema?.rawTitle)}
-      >
-        <span style={{ cursor: 'pointer', display: 'inline-block', minWidth: '400px' }}>
+      <>
+        <Popover
+          overlayStyle={{ padding: '0px' }}
+          content={content}
+          trigger="click"
+          placement="topLeft"
+          open={visible}
+          onOpenChange={(open) => setVisible(open)}
+          title={t(options?.uiSchema?.rawTitle)}
+        >
+          <span style={{ cursor: 'pointer', display: 'inline-block', minWidth: '400px' }}>
+            <div
+              className={css`
+                display: inline-flex;
+              `}
+            >
+              <ReadPrettyInternalViewer {...titleProps} />
+            </div>
+            <EditOutlined style={{ display: 'inline-flex', marginLeft: '5px' }} />
+          </span>
+        </Popover>
+        {visible && (
           <div
+            onClick={() => setVisible(false)}
             className={css`
-              display: inline-flex;
+              position: fixed;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              background-color: transparent;
+              z-index: 10001;
             `}
-          >
-            <ReadPrettyInternalViewer {...titleProps} />
-          </div>
-          <EditOutlined style={{ display: 'inline-flex', marginLeft: '5px' }} />
-        </span>
-      </Popover>
+          />
+        )}
+      </>
     );
   },
   { displayName: 'InternaPopoverNester' },
