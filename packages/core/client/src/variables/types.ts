@@ -58,7 +58,10 @@ export interface VariableOption {
   /** 变量的表示，例如：`$user` */
   name: string;
   /** 变量的值 */
-  ctx: Record<string, any>;
+  ctx: {
+    id?: number | string;
+    [key: string]: any;
+  };
   /** 变量所对应的数据表的名称 */
   collectionName?: string;
 }

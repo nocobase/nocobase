@@ -27,6 +27,7 @@ const InternalFormBlockProvider = (props) => {
   if (service.loading && Object.keys(form?.initialValues)?.length === 0 && action) {
     return <Spin />;
   }
+
   return (
     <FormBlockContext.Provider
       value={{

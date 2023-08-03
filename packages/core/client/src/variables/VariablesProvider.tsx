@@ -77,7 +77,7 @@ const VariablesProvider = ({ children }) => {
         );
         if (Array.isArray(current)) {
           const result = current.map((item) => {
-            if (item[key] === undefined) {
+            if (item[key] == null && item.id != null) {
               if (associationField?.target) {
                 return api
                   .request({
@@ -92,7 +92,7 @@ const VariablesProvider = ({ children }) => {
             return item[key];
           });
           current = _.flatten(await Promise.all(result));
-        } else if (current[key] === undefined && associationField?.target) {
+        } else if (current[key] == null && current.id != null && associationField?.target) {
           const data = await api.request({
             url: `/${collectionName}/${current.id}/${key}:${getAction(associationField.type)}`,
           });

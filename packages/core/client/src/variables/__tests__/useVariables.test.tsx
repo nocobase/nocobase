@@ -18,6 +18,18 @@ vi.mock('../../collection-manager', async () => {
               target: 'test',
             };
           }
+          if (path === 'some.belongsToField') {
+            return {
+              type: 'belongsTo',
+              target: 'someBelongsToField',
+            };
+          }
+          if (path === 'some.belongsToField.belongsToField') {
+            return {
+              type: 'belongsTo',
+              target: 'someBelongsToField',
+            };
+          }
           if (path === 'users.hasManyField') {
             return {
               type: 'hasMany',
@@ -83,6 +95,18 @@ mockRequest.onGet('/test/0/hasManyField:list').reply(() => {
           name: '$user.hasManyField.hasManyField',
         },
       ],
+    },
+  ];
+});
+
+mockRequest.onGet('/someBelongsToField/0/belongsToField:get').reply(() => {
+  return [
+    200,
+    {
+      data: {
+        id: 0,
+        name: '$some.belongsToField.belongsToField',
+      },
     },
   ];
 });
@@ -353,5 +377,46 @@ describe('useVariables', () => {
 
     // 由于 $local 是一个局部变量，所以不会被缓存到 ctx 中
     expect(result.current.getVariable('$local')).toBe(null);
+  });
+
+  it('no id', async () => {
+    const { result } = renderHook(() => useVariables(), {
+      wrapper: Providers,
+    });
+
+    await waitFor(async () => {
+      result.current.registerVariable({
+        name: '$some',
+        ctx: {
+          name: 'new variable',
+          belongsToField: {
+            id: 0,
+          },
+        },
+        collectionName: 'some',
+      });
+    });
+
+    await waitFor(async () => {
+      expect(await result.current.parseVariable('{{ $some.belongsToField.belongsToField }}')).toEqual({
+        id: 0,
+        name: '$some.belongsToField.belongsToField',
+      });
+    });
+
+    // 会覆盖之前的 $some
+    result.current.registerVariable({
+      name: '$some',
+      ctx: {
+        name: 'new variable',
+        belongsToField: null,
+      },
+      collectionName: 'some',
+    });
+
+    await waitFor(async () => {
+      // 因为 $some 的 ctx 没有 id 所以无法获取关系字段的数据
+      expect(await result.current.parseVariable('{{ $some.belongsToField.belongsToField }}')).toBe(undefined);
+    });
   });
 });

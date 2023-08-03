@@ -1466,9 +1466,6 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
     collectionField?.interface === 'm2m' ||
     (parentCollectionField?.type === 'hasMany' && collectionField?.interface === 'm2o');
 
-  const defaultV = getFieldDefaultValue(fieldSchema, collectionField);
-  console.log('defaultV', defaultV);
-
   return (
     <SchemaSettings.ModalItem
       title={t('Set default value')}

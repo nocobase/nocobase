@@ -22,7 +22,6 @@ import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isShowDefault
 import { useIsShowMultipleSwitch } from '../../../schema-settings/hooks/useIsShowMultipleSwitch';
 import { useVariables } from '../../../variables';
 import useContextVariable from '../../../variables/hooks/useContextVariable';
-import { isVariable } from '../../common/utils/uitls';
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
 import { BlockItem } from '../block-item';
 import { removeNullCondition } from '../filter';
@@ -31,6 +30,8 @@ import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
 import { useColorFields } from '../table-v2/Table.Column.Designer';
 import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
 import { useEnsureOperatorsValid } from './SchemaSettingOptions';
+import useLazyLoadAssociationField from './hooks/useLazyLoadAssociationField';
+import useParseDefaultValue from './hooks/useParseDefaultValue';
 
 export const findColumnFieldSchema = (fieldSchema, getCollectionJoinField) => {
   const childrenSchema = new Set();
@@ -63,27 +64,18 @@ export const FormItem: any = observer(
       variables?.registerVariable(contextVariable);
     }, [contextVariable]);
 
+    // 需要放在注冊完变量之后
+    useParseDefaultValue();
+    useLazyLoadAssociationField();
+
     useEffect(() => {
-      const run = async () => {
-        if (ctx?.block === 'form') {
-          ctx.field.data = ctx.field.data || {};
-          ctx.field.data.activeFields = ctx.field.data.activeFields || new Set();
-          ctx.field.data.activeFields.add(schema.name);
-        }
+      if (ctx?.block === 'form') {
+        ctx.field.data = ctx.field.data || {};
+        ctx.field.data.activeFields = ctx.field.data.activeFields || new Set();
+        ctx.field.data.activeFields.add(schema.name);
+      }
+    }, []);
 
-        // 如果默认值是一个变量，则需要解析之后再显示出来
-        if (isVariable(schema.default) && variables && field.setInitialValue) {
-          field.setInitialValue(' ');
-          field.loading = true;
-          field.setInitialValue(await variables.parseVariable(schema.default));
-          field.loading = false;
-        } else if (field.setInitialValue) {
-          field.setInitialValue(schema.default);
-        }
-      };
-
-      run();
-    }, [schema.default]);
     const showTitle = schema['x-decorator-props']?.showTitle ?? true;
     return (
       <ACLCollectionFieldProvider>
