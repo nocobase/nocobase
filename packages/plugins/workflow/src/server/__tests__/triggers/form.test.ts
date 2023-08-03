@@ -41,6 +41,9 @@ describe('workflow > triggers > form', () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
         type: 'form',
+        config: {
+          collection: 'posts',
+        },
       });
 
       const res1 = await userAgents[0].resource('posts').create({
@@ -89,7 +92,7 @@ describe('workflow > triggers > form', () => {
       expect(e3[1].context.data).toMatchObject({ title: 't3' });
     });
 
-    it('whatever collection, always trigger if params provided', async () => {
+    it('only trigger if params provided matching collection config', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
         type: 'form',
@@ -113,7 +116,6 @@ describe('workflow > triggers > form', () => {
 
       await workflow.update({
         config: {
-          ...workflow.config,
           collection: 'comments',
         },
       });
@@ -127,9 +129,9 @@ describe('workflow > triggers > form', () => {
       await sleep(500);
 
       const e2 = await workflow.getExecutions({ order: [['id', 'ASC']] });
-      expect(e2.length).toBe(2);
-      expect(e2[1].status).toBe(EXECUTION_STATUS.RESOLVED);
-      expect(e2[1].context.data).toMatchObject({ title: 't2' });
+      expect(e2.length).toBe(1);
+      // expect(e2[1].status).toBe(EXECUTION_STATUS.RESOLVED);
+      // expect(e2[1].context.data).toMatchObject({ title: 't2' });
     });
 
     it('system fields could be accessed', async () => {
@@ -185,6 +187,9 @@ describe('workflow > triggers > form', () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
         type: 'form',
+        config: {
+          collection: 'posts',
+        },
       });
 
       const res1 = await userAgents[0].resource('posts').create({
