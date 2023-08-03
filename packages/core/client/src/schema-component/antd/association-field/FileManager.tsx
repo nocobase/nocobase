@@ -1,6 +1,6 @@
 import { RecursionField, connect, useField, useFieldSchema } from '@formily/react';
 import { differenceBy, unionBy } from 'lodash';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import {
   FormProvider,
   RecordPickerContext,
@@ -23,13 +23,9 @@ import { flatData, getLabelFormatValue, isShowFilePicker, useLabelUiSchema } fro
 
 const useTableSelectorProps = () => {
   const field: any = useField();
-  const {
-    multiple,
-    options = [],
-    setSelectedRows,
-    selectedRows: rcSelectRows = [],
-    onChange,
-  } = useContext(RecordPickerContext);
+  const { multiple, options = [], setSelectedRows, selectedRows: rcSelectRows = [], onChange } = useContext(
+    RecordPickerContext,
+  );
   const { onRowSelectionChange, rowKey = 'id', ...others } = useTsp();
   const { setVisible } = useActionContext();
   return {
@@ -72,6 +68,7 @@ const InternalFileManager = (props) => {
   const collectionField = getField(field.props.name);
   const labelUiSchema = useLabelUiSchema(collectionField?.target, fieldNames?.label || 'label');
   const compile = useCompile();
+  const ref = useRef();
   const getFilter = () => {
     const targetKey = collectionField?.targetKey || 'id';
     const list = options.map((option) => option[targetKey]).filter(Boolean);
@@ -132,8 +129,11 @@ const InternalFileManager = (props) => {
       },
     };
   };
+  const getContainer = () => {
+    return ref.current;
+  };
   return (
-    <div style={{ width: '100%', overflow: 'auto' }}>
+    <div style={{ width: '100%', overflow: 'auto' }} ref={ref}>
       <FileSelector
         value={options}
         multiple={multiple}
@@ -159,7 +159,7 @@ const InternalFileManager = (props) => {
           visible: visibleSelector,
           setVisible: setVisibleSelector,
           modalProps: {
-            getContainer: others?.getContainer,
+            getContainer: others?.getContainer || getContainer,
           },
           formValueChanged: false,
         }}
