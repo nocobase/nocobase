@@ -13,13 +13,14 @@ const useParseDefaultValue = () => {
     const run = async () => {
       // 如果默认值是一个变量，则需要解析之后再显示出来
       if (isVariable(schema.default) && variables && field.setInitialValue) {
-        field.setInitialValue(' ');
+        field.setInitialValue(null);
         field.loading = true;
 
         let value = await variables.parseVariable(schema.default);
         if (Array.isArray(value)) {
           const collectionField = variables.getCollectionField(schema.default);
-          if (collectionField?.uiSchema?.['x-component'] === 'DatePicker') {
+          const isDate = collectionField?.uiSchema?.['x-component'] === 'DatePicker';
+          if (isDate) {
             value = value.filter(Boolean)[0];
           } else if (!collectionField?.target) {
             value = value.filter(Boolean).join(',');

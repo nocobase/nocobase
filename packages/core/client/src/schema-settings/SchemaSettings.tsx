@@ -1528,12 +1528,8 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
           ['x-uid']: fieldSchema['x-uid'],
         };
         fieldSchema.default = v.default;
-        if (isVariable(v.default)) {
-          variables?.parseVariable(v.default).then((result) => {
-            field.value = result;
-          });
-        } else {
-          field.value = v.default;
+        if (!v.default && v.default !== 0) {
+          field.value = null;
         }
         schema.default = v.default;
         dn.emit('patch', {
