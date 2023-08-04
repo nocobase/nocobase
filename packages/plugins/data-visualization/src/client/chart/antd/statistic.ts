@@ -7,28 +7,28 @@ import { QueryProps } from '../../renderer';
 import { RenderProps } from '../chart';
 
 export class Statistic extends AntdChart {
-  _schema: ISchema = {
-    type: 'object',
-    properties: {
-      field: {
-        title: lang('Field'),
-        type: 'string',
-        'x-decorator': 'FormItem',
-        'x-component': 'Select',
-        'x-reactions': '{{ useChartFields }}',
-        required: true,
-      },
-      title: {
-        title: lang('Title'),
-        type: 'string',
-        'x-decorator': 'FormItem',
-        'x-component': 'Input',
-      },
-    },
-  };
-
   constructor() {
-    super({ name: 'statistic', title: 'Statistic', component: AntdStatistic });
+    super({
+      name: 'statistic',
+      title: 'Statistic',
+      component: AntdStatistic,
+      config: [
+        {
+          property: 'field',
+          name: 'field',
+          title: 'Field',
+          required: true,
+        },
+        {
+          title: {
+            title: lang('Title'),
+            type: 'string',
+            'x-decorator': 'FormItem',
+            'x-component': 'Input',
+          },
+        },
+      ],
+    });
   }
 
   init(

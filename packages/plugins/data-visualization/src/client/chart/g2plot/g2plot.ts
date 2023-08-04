@@ -1,47 +1,17 @@
 import { Chart, ChartProps, RenderProps } from '../chart';
 import { FieldOption } from '../../hooks';
 import { QueryProps } from '../../renderer';
-import config, { ConfigProps } from './config';
-
-type G2PlotConfig = (
-  | (ConfigProps & {
-      property: string;
-    })
-  | string
-)[];
+import configs from './configs';
 
 export class G2PlotChart extends Chart {
-  config: G2PlotConfig;
-
-  constructor({
-    name,
-    title,
-    component,
-    config,
-  }: ChartProps & {
-    config?: G2PlotConfig;
-  }) {
-    super({ name, title, component });
-    this.config = ['xField', 'yField', 'seriesField', ...(config || [])];
-  }
-
-  get schema() {
-    const properties = this.config.reduce((properties, conf) => {
-      let schema = {};
-      if (typeof conf === 'string') {
-        schema = config[conf]();
-      } else {
-        schema = config[conf.property](conf);
-      }
-      return {
-        ...properties,
-        ...schema,
-      };
-    }, {});
-    return {
-      type: 'object',
-      properties,
-    };
+  constructor({ name, title, component, config }: ChartProps) {
+    super({
+      name,
+      title,
+      component,
+      config: ['xField', 'yField', 'seriesField', ...(config || [])],
+    });
+    this.addConfigs(configs);
   }
 
   init(
@@ -84,7 +54,7 @@ export class G2PlotChart extends Chart {
       obj[key] = value;
       if (key.includes('Field')) {
         if (Array.isArray(value)) {
-          obj[key] = value.map((v) => (v.includes('.') ? replace(v) : v));
+          obj[key] = value.map((v) => (v?.includes('.') ? replace(v) : v));
         } else if (typeof value === 'string' && value.includes('.')) {
           obj[key] = replace(value);
         }

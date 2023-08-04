@@ -3,6 +3,7 @@ import { FieldOption } from '../hooks';
 import { QueryProps } from '../renderer';
 import { parseField } from '../utils';
 import { ISchema } from '@formily/react';
+import configs, { AnySchemaProperties, ConfigProps } from './configs';
 
 export type RenderProps = {
   data: any[];
@@ -58,26 +59,77 @@ export interface ChartType {
   render: (props: RenderProps) => React.FC<any>;
 }
 
+type Config = (
+  | (ConfigProps & {
+      property?: string;
+    })
+  | string
+)[];
+
 export type ChartProps = {
   name: string;
   title: string;
   component: React.FC<any>;
+  config?: Config;
 };
 
 export class Chart implements ChartType {
   name: string;
   title: string;
   component: React.FC<any>;
-  _schema = {};
+  config: Config;
+  configs = new Map<string, Function>();
 
-  constructor({ name, title, component }: ChartProps) {
+  constructor({ name, title, component, config }: ChartProps) {
     this.name = name;
     this.title = title;
     this.component = component;
+    this.config = config;
+    this.addConfigs(configs);
   }
 
+  /*
+   * Generate config schema according to this.config
+   * How to set up this.config:
+   * 1. string - the config function name in config.ts
+   * 2. object - { property: string, ...props }
+   *    - property is the config function name in config.ts, and the other props are the arguments of the function
+   * 3. function - use the custom function to return the properties of the schema
+   */
   get schema() {
-    return this._schema;
+    if (!this.config) {
+      return {};
+    }
+    const properties = this.config.reduce((properties, conf) => {
+      let schema: AnySchemaProperties = {};
+      if (typeof conf === 'string') {
+        const func = this.configs.get(conf);
+        schema = func?.() || {};
+      } else if (typeof conf === 'function') {
+        schema = conf();
+      } else {
+        if (conf.property) {
+          const func = this.configs.get(conf.property);
+          schema = func?.(conf) || {};
+        } else {
+          schema = conf as AnySchemaProperties;
+        }
+      }
+      return {
+        ...properties,
+        ...schema,
+      };
+    }, {} as AnySchemaProperties);
+    return {
+      type: 'object',
+      properties,
+    };
+  }
+
+  addConfigs(configs: { [key: string]: Function }) {
+    Object.entries(configs).forEach(([key, func]) => {
+      this.configs.set(key, func);
+    });
   }
 
   infer(

@@ -12,47 +12,44 @@ export class DualAxes extends G2PlotChart {
     this.config = [
       'xField',
       {
-        property: 'extend',
-        schema: {
-          yField: {
-            title: '{{t("yField")}}',
-            type: 'array',
-            'x-decorator': 'FormItem',
-            'x-component': 'ArrayItems',
-            items: {
-              type: 'void',
-              'x-component': 'Space',
-              properties: {
-                sort: {
-                  type: 'void',
-                  'x-decorator': 'FormItem',
-                  'x-component': 'ArrayItems.SortHandle',
-                },
-                input: {
-                  type: 'string',
-                  'x-decorator': 'FormItem',
-                  'x-component': 'Select',
-                  'x-reactions': '{{ useChartFields }}',
-                  'x-component-props': {
-                    style: {
-                      minWidth: '200px',
-                    },
+        yField: {
+          title: '{{t("yField")}}',
+          type: 'array',
+          'x-decorator': 'FormItem',
+          'x-component': 'ArrayItems',
+          items: {
+            type: 'void',
+            'x-component': 'Space',
+            properties: {
+              sort: {
+                type: 'void',
+                'x-decorator': 'FormItem',
+                'x-component': 'ArrayItems.SortHandle',
+              },
+              input: {
+                type: 'string',
+                'x-decorator': 'FormItem',
+                'x-component': 'Select',
+                'x-reactions': '{{ useChartFields }}',
+                'x-component-props': {
+                  style: {
+                    minWidth: '200px',
                   },
-                  required: true,
                 },
-                remove: {
-                  type: 'void',
-                  'x-decorator': 'FormItem',
-                  'x-component': 'ArrayItems.Remove',
-                },
+                required: true,
+              },
+              remove: {
+                type: 'void',
+                'x-decorator': 'FormItem',
+                'x-component': 'ArrayItems.Remove',
               },
             },
-            properties: {
-              add: {
-                type: 'void',
-                title: '{{t("Add")}}',
-                'x-component': 'ArrayItems.Addition',
-              },
+          },
+          properties: {
+            add: {
+              type: 'void',
+              title: '{{t("Add")}}',
+              'x-component': 'ArrayItems.Addition',
             },
           },
         },
