@@ -208,24 +208,14 @@ export class CollectionManagerPlugin extends Plugin {
       });
     });
 
-    this.app.on('afterLoad', async (app, options) => {
-      if (options?.method === 'install') {
-        return;
-      }
-      if (options?.method === 'upgrade') {
-        return;
-      }
-      const exists = await this.app.db.collectionExistsInDb('collections');
-      if (exists) {
-        try {
-          await this.app.db.getRepository<CollectionRepository>('collections').load();
-        } catch (error) {
-          this.app.logger.warn(error);
-          await this.app.db.sync();
-          await this.app.db.getRepository<CollectionRepository>('collections').load();
-        }
-      }
-    });
+    const loadCollections = async (app, options) => {
+      this.app.log.debug('load custom collections');
+      await this.app.db.getRepository<CollectionRepository>('collections').load();
+    };
+
+    this.app.on('afterStart', loadCollections);
+    this.app.on('afterInstall', loadCollections);
+    this.app.on('afterUpgrade', loadCollections);
 
     this.app.resourcer.use(async (ctx, next) => {
       const { resourceName, actionName } = ctx.action;
@@ -246,7 +236,7 @@ export class CollectionManagerPlugin extends Plugin {
   async load() {
     await this.importCollections(path.resolve(__dirname, './collections'));
 
-    const errorHandlerPlugin = <PluginErrorHandler>this.app.getPlugin('error-handler');
+    const errorHandlerPlugin = this.app.getPlugin<PluginErrorHandler>('error-handler');
     errorHandlerPlugin.errorHandler.register(
       (err) => {
         return err instanceof UniqueConstraintError;

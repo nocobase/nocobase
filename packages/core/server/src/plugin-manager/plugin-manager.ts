@@ -38,11 +38,11 @@ export class PluginManager {
   app: Application;
   collection: Collection;
   repository: PluginManagerRepository;
-  plugins = new Map<string, Plugin>();
+  pluginInstances = new Map<typeof Plugin, Plugin>();
+  pluginAliases = new Map<string, Plugin>();
   server: net.Server;
-  _tmpPluginArgs = [];
 
-  constructor(options: PluginManagerOptions) {
+  constructor(protected options: PluginManagerOptions) {
     this.app = options.app;
     this.app.db.registerRepositories({
       PluginManagerRepository,
@@ -80,51 +80,38 @@ export class PluginManager {
       name: 'pm',
       actions: ['pm:*', 'applicationPlugins:list'],
     });
-
-    this.app.on('beforeLoad', async (app, options) => {
-      if (options?.method && ['install', 'upgrade'].includes(options.method)) {
-        await this.collection.sync();
-      }
-
-      const exists = await this.app.db.collectionExistsInDb('applicationPlugins');
-
-      if (!exists) {
-        this.app.log.warn(`applicationPlugins collection not exists in ${this.app.name}`);
-        return;
-      }
-
-      if (options?.method !== 'install' || options.reload) {
-        await this.repository.load();
-      }
-    });
-
-    this.app.on('beforeUpgrade', async () => {
-      await this.collection.sync();
-    });
-
-    this.addStaticMultiple(options.plugins);
   }
 
-  addStaticMultiple(plugins: any) {
-    for (const plugin of plugins || []) {
-      if (typeof plugin == 'string') {
-        this.addStatic(plugin);
-      } else {
-        this.addStatic(...plugin);
-      }
+  addPreset(plugin, options) {
+    if (!this.options.plugins) {
+      this.options.plugins = [];
+    }
+    this.options.plugins.push([plugin, options]);
+  }
+
+  async addPresetPlugins() {
+    for (const plugin of this.options.plugins) {
+      const [p, opts = {}] = Array.isArray(plugin) ? plugin : [plugin];
+      await this.add(p, { ...opts, enabled: true, isPreset: true });
     }
   }
 
   getPlugins() {
-    return this.plugins;
+    return this.pluginInstances;
   }
 
-  get(name: string) {
-    return this.plugins.get(name);
+  get(name: string | typeof Plugin) {
+    if (typeof name === 'string') {
+      return this.pluginAliases.get(name);
+    }
+    return this.pluginInstances.get(name);
   }
 
-  has(name: string) {
-    return this.plugins.has(name);
+  has(name: string | typeof Plugin) {
+    if (typeof name === 'string') {
+      return this.pluginAliases.has(name);
+    }
+    return this.pluginInstances.has(name);
   }
 
   async create(name: string | string[]) {
@@ -146,121 +133,82 @@ export class PluginManager {
     await run('yarn', ['install']);
   }
 
-  clone() {
-    const pm = new PluginManager({
-      app: this.app,
-    });
-    for (const arg of this._tmpPluginArgs) {
-      pm.addStatic(...arg);
-    }
-    return pm;
-  }
-
-  addStatic(plugin?: any, options?: any) {
-    if (!options?.async) {
-      this._tmpPluginArgs.push([plugin, options]);
-    }
-
-    let name: string;
+  makePluginInstance(plugin: string | typeof Plugin) {
     if (typeof plugin === 'string') {
-      name = plugin;
-      plugin = PluginManager.resolvePlugin(plugin);
-    } else {
-      name = plugin.name;
-      if (!name) {
-        throw new Error(`plugin name invalid`);
+      try {
+        return;
+      } catch (error) {
+        this.app.log.error(`plugin [${plugin}] not found`, error);
+        return;
       }
     }
-
-    const instance = new plugin(this.app, {
-      name,
-      enabled: true,
-      ...options,
-    });
-
-    const pluginName = instance.getName();
-
-    if (this.plugins.has(pluginName)) {
-      throw new Error(`plugin name [${pluginName}] already exists`);
-    }
-
-    this.plugins.set(pluginName, instance);
-    return instance;
+    return plugin;
   }
 
-  async add(plugin: any, options: any = {}, transaction?: any) {
-    if (Array.isArray(plugin)) {
-      const t = transaction || (await this.app.db.sequelize.transaction());
-      try {
-        const items = [];
-
-        for (const p of plugin) {
-          items.push(await this.add(p, options, t));
-        }
-
-        await t.commit();
-        return items;
-      } catch (error) {
-        await t.rollback();
-        throw error;
-      }
+  async add(plugin?: any, options: any = {}) {
+    if (this.has(plugin)) {
+      const name = typeof plugin === 'string' ? plugin : plugin.name;
+      this.app.log.warn(`plugin [${name}] added`);
+      return;
     }
-
-    const packageName = await PluginManager.findPackage(plugin);
-
-    const instance = this.addStatic(plugin, {
-      ...options,
-      async: true,
-    });
-
-    const model = await this.repository.findOne({
-      transaction,
-      filter: { name: plugin },
-    });
-
-    const packageJson = PluginManager.getPackageJson(packageName);
-
-    if (!model) {
-      const { enabled, builtIn, installed, ...others } = options;
-      await this.repository.create({
-        transaction,
-        values: {
-          name: plugin,
-          version: packageJson.version,
-          enabled: !!enabled,
-          builtIn: !!builtIn,
-          installed: !!installed,
-          options: {
-            ...others,
-          },
-        },
+    if (!options.name && typeof plugin === 'string') {
+      options.name = plugin;
+    }
+    let P: any;
+    try {
+      P = PluginManager.resolvePlugin(plugin);
+    } catch (error) {
+      this.app.log.warn('plugin not found', error);
+      return;
+    }
+    const instance: Plugin = new P(this.app, options);
+    if (!options.isPreset) {
+      const model = await this.repository.firstOrCreate({
+        values: { ...options, name: plugin },
+        filterKeys: ['name'],
       });
+      instance.model = model;
     }
-    return instance;
+    this.pluginInstances.set(P, instance);
+    if (options.name) {
+      this.pluginAliases.set(options.name, instance);
+    }
+    await instance.afterAdd();
   }
 
   async load(options: any = {}) {
     this.app.setWorkingMessage('loading plugins...');
 
-    const total = this.plugins.size;
+    await this.addPresetPlugins();
+    await this.repository.load();
+
+    const total = this.pluginInstances.size;
 
     let current = 0;
 
-    for (const [name, plugin] of this.plugins) {
+    for (const [P, plugin] of this.pluginInstances) {
+      if (plugin.state.loaded) {
+        continue;
+      }
+
+      const name = P.name;
       current += 1;
 
       this.app.setWorkingMessage(`before load plugin [${name}], ${current}/${total}`);
       if (!plugin.enabled) {
         continue;
       }
-
       this.app.logger.debug(`before load plugin [${name}]...`);
       await plugin.beforeLoad();
     }
 
     current = 0;
 
-    for (const [name, plugin] of this.plugins) {
+    for (const [P, plugin] of this.pluginInstances) {
+      if (plugin.state.loaded) {
+        continue;
+      }
+      const name = P.name;
       current += 1;
       this.app.setWorkingMessage(`load plugin [${name}], ${current}/${total}`);
 
@@ -271,6 +219,7 @@ export class PluginManager {
       await this.app.emitAsync('beforeLoadPlugin', plugin, options);
       this.app.logger.debug(`loading plugin [${name}]...`);
       await plugin.load();
+      plugin.state.loaded = true;
       await this.app.emitAsync('afterLoadPlugin', plugin, options);
       this.app.logger.debug(`after load plugin [${name}]...`);
     }
@@ -280,21 +229,31 @@ export class PluginManager {
 
   async install(options: InstallOptions = {}) {
     this.app.setWorkingMessage('install plugins...');
-    const total = this.plugins.size;
-
+    const total = this.pluginInstances.size;
     let current = 0;
 
-    for (const [name, plugin] of this.plugins) {
+    this.app.log.debug('call db.sync()');
+    await this.app.db.sync();
+
+    for (const [P, plugin] of this.pluginInstances) {
+      if (plugin.state.installing || plugin.state.installed) {
+        continue;
+      }
+
+      const name = P.name;
       current += 1;
 
       if (!plugin.enabled) {
         continue;
       }
 
+      plugin.state.installing = true;
       this.app.setWorkingMessage(`before install plugin [${name}], ${current}/${total}`);
       await this.app.emitAsync('beforeInstallPlugin', plugin, options);
       this.app.logger.debug(`install plugin [${name}]...`);
       await plugin.install(options);
+      plugin.state.installing = false;
+      plugin.state.installed = true;
       this.app.setWorkingMessage(`after install plugin [${name}], ${current}/${total}`);
       await this.app.emitAsync('afterInstallPlugin', plugin, options);
     }
@@ -412,9 +371,13 @@ export class PluginManager {
     throw new Error(`No available packages found, ${name} plugin does not exist`);
   }
 
-  static resolvePlugin(pluginName: string) {
-    const packageName = this.getPackageName(pluginName);
-    return requireModule(packageName);
+  static resolvePlugin(pluginName: string | typeof Plugin) {
+    if (typeof pluginName === 'string') {
+      const packageName = this.getPackageName(pluginName);
+      return requireModule(packageName);
+    } else {
+      return pluginName;
+    }
   }
 }
 
