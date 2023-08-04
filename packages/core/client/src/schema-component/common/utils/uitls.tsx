@@ -28,8 +28,8 @@ export const useVariablesCtx = (): VariablesCtx => {
   const currentUser = useCurrentUserContext();
   const { field, service, rowKey } = useTableBlockContext();
   const tableData = flattenDeep(service?.data?.data);
+  const contextData = tableData?.filter((v) => (field?.data?.selectedRowKeys || [])?.includes(v[rowKey]));
   return useMemo(() => {
-    const contextData = tableData?.filter((v) => (field?.data?.selectedRowKeys || [])?.includes(v[rowKey]));
     return {
       $user: currentUser?.data?.data || {},
       $date: {
