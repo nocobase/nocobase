@@ -21,6 +21,7 @@ import { InstallOptions, PluginManager } from './plugin-manager';
 import { ApplicationVersion } from './helpers/application-version';
 import { AppSupervisor, supervisedAppCall } from './app-supervisor';
 import lodash from 'lodash';
+import { ApplicationFsm } from './helpers/application-fsm';
 
 const packageJson = require('../package.json');
 
@@ -84,7 +85,7 @@ interface ListenOptions {
 interface StartOptions {
   cliArgs?: any[];
   dbSync?: boolean;
-  listen?: ListenOptions;
+  checkInstall?: boolean;
 }
 
 function SwitchAppReadyStatus(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
@@ -111,9 +112,14 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   protected plugins = new Map<string, Plugin>();
   protected _appSupervisor: AppSupervisor = AppSupervisor.getInstance();
 
+  private _fsm;
+  private _fsmInterpret;
+
   constructor(public options: ApplicationOptions) {
     super();
     this.rawOptions = this.name == 'main' ? lodash.cloneDeep(options) : {};
+    this._fsm = ApplicationFsm.buildFsm(this);
+
     this.init();
     this._appSupervisor.addApp(this);
   }
@@ -196,6 +202,18 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   get name() {
     return this.options.name || 'main';
+  }
+
+  getStateMachine() {
+    return this._fsm;
+  }
+
+  getFsmInterpreter() {
+    if (!this._fsmInterpret) {
+      this._fsmInterpret = ApplicationFsm.getInterpreter(this);
+    }
+
+    return this._fsmInterpret;
   }
 
   setWorkingMessage(message: string) {
@@ -333,6 +351,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   @supervisedAppCall
   async start(options: StartOptions = {}) {
+    if (options.checkInstall && !(await this.isInstalled())) {
+      throw new Error(
+        `Application ${this.name} is not installed, Please run 'yarn run nocobase install' command first`,
+      );
+    }
+
     this.startMode = true;
     this.setWorkingMessage('starting app...');
 

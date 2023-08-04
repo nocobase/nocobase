@@ -9,18 +9,10 @@ export default (app: Application) => {
     .action(async (...cliArgs) => {
       const [opts] = cliArgs;
 
-      if (!(await app.isInstalled())) {
-        AppSupervisor.getInstance().setAppError(
-          app.name,
-          new Error('App is not installed, please run `yarn run nocobase install` first'),
-        );
-      }
-
-      if (!AppSupervisor.getInstance().hasAppError(app.name)) {
-        await app.start({
-          dbSync: opts?.dbSync,
-          cliArgs,
-        });
-      }
+      app.getFsmInterpreter().send('start', {
+        dbSync: opts?.dbSync,
+        cliArgs,
+        checkInstall: true,
+      });
     });
 };
