@@ -4,7 +4,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollectionFilterOptions, useCollectionManager } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isShowDefaultValue } from '../../../schema-settings';
-import { useCompile, useDesignable } from '../../hooks';
+import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
 import { useAssociationFieldContext } from '../association-field/hooks';
 import { removeNullCondition } from '../filter';
 import { FilterDynamicComponent } from './FilterDynamicComponent';
@@ -62,6 +62,10 @@ export const TableColumnDesigner = (props) => {
   const defaultFilter = fieldSchema?.['x-component-props']?.service?.params?.filter || {};
   const dataSource = useCollectionFilterOptions(collectionField?.target);
   const isDateField = ['datetime', 'createdAt', 'updatedAt'].includes(collectionField?.interface);
+  const isAssociationField = ['obo', 'oho', 'o2o', 'o2m', 'm2m', 'm2o', 'snapshot'].includes(
+    collectionField?.interface,
+  );
+  const fieldModeOptions = useFieldModeOptions({ fieldSchema });
   const fieldMode = fieldSchema?.['x-component-props']?.['mode'] || 'Select';
   let readOnlyMode = 'editable';
   if (fieldSchema['x-disabled'] === true) {
@@ -250,32 +254,35 @@ export const TableColumnDesigner = (props) => {
           }}
         />
       )}
-      {readOnlyMode === 'read-pretty' &&
-        ['linkTo', 'm2m', 'm2o', 'o2m', 'obo', 'oho', 'snapshot'].includes(collectionField?.interface) && (
-          <SchemaSettings.SelectItem
-            key="field-mode"
-            title={t('Field component')}
-            options={[
-              { label: t('Title'), value: 'Select' },
-              { label: t('Tag'), value: 'Tag' },
-            ]}
-            value={fieldMode}
-            onChange={(mode) => {
-              const schema = {
-                ['x-uid']: fieldSchema['x-uid'],
-              };
-              fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-              fieldSchema['x-component-props']['mode'] = mode;
-              schema['x-component-props'] = fieldSchema['x-component-props'];
-              field.componentProps = field.componentProps || {};
-              field.componentProps.mode = mode;
-              dn.emit('patch', {
-                schema,
-              });
-              dn.refresh();
-            }}
-          />
-        )}
+      {isAssociationField && (
+        <SchemaSettings.SelectItem
+          key="field-mode"
+          title={t('Field component')}
+          options={
+            readOnlyMode === 'read-pretty'
+              ? [
+                  { label: t('Title'), value: 'Select' },
+                  { label: t('Tag'), value: 'Tag' },
+                ]
+              : fieldModeOptions
+          }
+          value={fieldMode}
+          onChange={(mode) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props']['mode'] = mode;
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            field.componentProps = field.componentProps || {};
+            field.componentProps.mode = mode;
+            dn.emit('patch', {
+              schema,
+            });
+            dn.refresh();
+          }}
+        />
+      )}
 
       {['Tag'].includes(fieldMode) && (
         <SchemaSettings.SelectItem
@@ -299,7 +306,6 @@ export const TableColumnDesigner = (props) => {
           }}
         />
       )}
-
       {isSubTableColumn && !field.readPretty && !uiSchema?.['x-read-pretty'] && (
         <SchemaSettings.SwitchItem
           key="required"
