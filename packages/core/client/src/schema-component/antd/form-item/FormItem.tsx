@@ -14,7 +14,6 @@ import {
   useCollection,
   useCollectionFilterOptions,
   useCollectionManager,
-  useSortFields,
 } from '../../../collection-manager';
 import { isTitleField } from '../../../collection-manager/Configuration/CollectionFields';
 import { GeneralSchemaItems } from '../../../schema-items/GeneralSchemaItems';
@@ -170,21 +169,8 @@ FormItem.Designer = function Designer() {
   }
   const dataSource = useCollectionFilterOptions(collectionField?.target);
   const defaultFilter = fieldSchema?.['x-component-props']?.service?.params?.filter || {};
-  const sortFields = useSortFields(collectionField?.target);
-  const defaultSort = field.componentProps?.service?.params?.sort || [];
   const fieldMode = field?.componentProps?.['mode'] || (isFileField ? 'FileManager' : 'Select');
   const isSelectFieldMode = isAssociationField && fieldMode === 'Select';
-  const sort = defaultSort?.map((item: string) => {
-    return item?.startsWith('-')
-      ? {
-          field: item.substring(1),
-          direction: 'desc',
-        }
-      : {
-          field: item,
-          direction: 'asc',
-        };
-  });
   const isSubFormMode = fieldSchema['x-component-props']?.mode === 'Nester';
   const isPickerMode = fieldSchema['x-component-props']?.mode === 'Picker';
   const showFieldMode = isAssociationField && fieldModeOptions && !isTableField;
@@ -399,98 +385,7 @@ FormItem.Designer = function Designer() {
           }}
         />
       )}
-      {isSelectFieldMode && !field.readPretty && (
-        <SchemaSettings.ModalItem
-          title={t('Set default sorting rules')}
-          components={{ ArrayItems }}
-          schema={
-            {
-              type: 'object',
-              title: t('Set default sorting rules'),
-              properties: {
-                sort: {
-                  type: 'array',
-                  default: sort,
-                  'x-component': 'ArrayItems',
-                  'x-decorator': 'FormItem',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      space: {
-                        type: 'void',
-                        'x-component': 'Space',
-                        properties: {
-                          sort: {
-                            type: 'void',
-                            'x-decorator': 'FormItem',
-                            'x-component': 'ArrayItems.SortHandle',
-                          },
-                          field: {
-                            type: 'string',
-                            enum: sortFields,
-                            required: true,
-                            'x-decorator': 'FormItem',
-                            'x-component': 'Select',
-                            'x-component-props': {
-                              style: {
-                                width: 260,
-                              },
-                            },
-                          },
-                          direction: {
-                            type: 'string',
-                            'x-decorator': 'FormItem',
-                            'x-component': 'Radio.Group',
-                            'x-component-props': {
-                              optionType: 'button',
-                            },
-                            enum: [
-                              {
-                                label: t('ASC'),
-                                value: 'asc',
-                              },
-                              {
-                                label: t('DESC'),
-                                value: 'desc',
-                              },
-                            ],
-                          },
-                          remove: {
-                            type: 'void',
-                            'x-decorator': 'FormItem',
-                            'x-component': 'ArrayItems.Remove',
-                          },
-                        },
-                      },
-                    },
-                  },
-                  properties: {
-                    add: {
-                      type: 'void',
-                      title: t('Add sort field'),
-                      'x-component': 'ArrayItems.Addition',
-                    },
-                  },
-                },
-              },
-            } as ISchema
-          }
-          onSubmit={({ sort }) => {
-            const sortArr = sort.map((item) => {
-              return item.direction === 'desc' ? `-${item.field}` : item.field;
-            });
-
-            _.set(field.componentProps, 'service.params.sort', sortArr);
-            fieldSchema['x-component-props'] = field.componentProps;
-            dn.emit('patch', {
-              schema: {
-                ['x-uid']: fieldSchema['x-uid'],
-                'x-component-props': field.componentProps,
-              },
-            });
-          }}
-        />
-      )}
+      {isSelectFieldMode && !field.readPretty && <SchemaSettings.SortingRule />}
       {showFieldMode && (
         <SchemaSettings.SelectItem
           key="field-mode"

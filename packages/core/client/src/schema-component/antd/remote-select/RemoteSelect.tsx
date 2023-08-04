@@ -199,7 +199,7 @@ const InternalRemoteSelect = connect(
         },
       },
       {
-        manual,
+        manual: manual && Object.prototype.toString.call(value) === '[object Object]',
         debounceWait: wait,
       },
     );
@@ -254,7 +254,8 @@ const InternalRemoteSelect = connect(
       if (!data?.data?.length) {
         return v != null ? (Array.isArray(v) ? v : [v]) : [];
       }
-      const valueOptions = (v != null && (Array.isArray(v) ? v : [v])) || [];
+      const valueOptions =
+        (v != null && (Array.isArray(v) ? v : [{ ...v, [fieldNames.value]: v[fieldNames.value] || v }])) || [];
       return uniqBy(data?.data?.concat(valueOptions) || [], fieldNames.value);
     }, [value, defaultValue, data?.data, fieldNames.value]);
 
@@ -324,7 +325,7 @@ const InternalRemoteSelect = connect(
   mapReadPretty(ReadPretty),
 );
 
-export const RemoteSelect = InternalRemoteSelect as unknown as typeof InternalRemoteSelect & {
+export const RemoteSelect = (InternalRemoteSelect as unknown) as typeof InternalRemoteSelect & {
   ReadPretty: typeof ReadPretty;
 };
 
