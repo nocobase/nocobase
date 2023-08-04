@@ -1,6 +1,9 @@
 export default {
   Workflow: '工作流',
   'Execution history': '执行历史',
+  'Clear all executions': '清除所有执行记录',
+  'Clear executions will not reset executed count, and started executions will not be deleted, are you sure you want to delete them all?':
+    '清空执行记录不会重置执行次数，且执行中的也不会被删除，确定要删除所有执行记录吗？',
   Executed: '已执行',
   Reload: '重载',
   'Trigger type': '触发方式',
