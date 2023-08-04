@@ -4,7 +4,7 @@ import { Table as AntdTable } from 'antd';
 
 export class Table extends AntdChart {
   constructor() {
-    super('table', 'Table', AntdTable);
+    super({ name: 'table', title: 'Table', component: AntdTable });
   }
 
   getProps({ data, fieldProps, general, advanced }: RenderProps) {
