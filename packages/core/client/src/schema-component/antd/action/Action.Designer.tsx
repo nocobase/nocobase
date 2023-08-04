@@ -730,7 +730,6 @@ function WorkflowConfig() {
               type: 'array',
               'x-component': 'ArrayTable',
               'x-decorator': 'FormItem',
-              description: t('Leave context unselected will use full form data as context.', { ns: 'workflow' }),
               items: {
                 type: 'object',
                 properties: {
