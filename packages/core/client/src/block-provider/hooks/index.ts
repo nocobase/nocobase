@@ -1106,7 +1106,7 @@ export const useAssociationNames = () => {
         const fieldPath = !isAssociationField && isAssociationSubfield ? getAssociationPath(s.name) : s.name;
         const path = prefix === '' || !prefix ? fieldPath : prefix + '.' + fieldPath;
         appends.add(path);
-        if (['Nester', 'SubTable'].includes(s['x-component-props']?.mode)) {
+        if (['Nester', 'SubTable', 'PopoverNester'].includes(s['x-component-props']?.mode)) {
           updateAssociationValues.add(path);
           const bufPrefix = prefix && prefix !== '' ? prefix + '.' + s.name : s.name;
           getAssociationAppends(s, bufPrefix);

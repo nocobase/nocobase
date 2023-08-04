@@ -23,13 +23,9 @@ import { flatData, getLabelFormatValue, isShowFilePicker, useLabelUiSchema } fro
 
 const useTableSelectorProps = () => {
   const field: any = useField();
-  const {
-    multiple,
-    options = [],
-    setSelectedRows,
-    selectedRows: rcSelectRows = [],
-    onChange,
-  } = useContext(RecordPickerContext);
+  const { multiple, options = [], setSelectedRows, selectedRows: rcSelectRows = [], onChange } = useContext(
+    RecordPickerContext,
+  );
   const { onRowSelectionChange, rowKey = 'id', ...others } = useTsp();
   const { setVisible } = useActionContext();
   return {
@@ -72,6 +68,7 @@ const InternalFileManager = (props) => {
   const collectionField = getField(field.props.name);
   const labelUiSchema = useLabelUiSchema(collectionField?.target, fieldNames?.label || 'label');
   const compile = useCompile();
+  const { setVisible, modalProps } = useActionContext();
   const getFilter = () => {
     const targetKey = collectionField?.targetKey || 'id';
     const list = options.map((option) => option[targetKey]).filter(Boolean);
@@ -119,7 +116,6 @@ const InternalFileManager = (props) => {
     collectionField,
   };
   const usePickActionProps = () => {
-    const { setVisible } = useActionContext();
     const { multiple, selectedRows, onChange, options, collectionField } = useContext(RecordPickerContext);
     return {
       onClick() {
@@ -159,7 +155,7 @@ const InternalFileManager = (props) => {
           visible: visibleSelector,
           setVisible: setVisibleSelector,
           modalProps: {
-            getContainer: others?.getContainer,
+            getContainer: others?.getContainer || modalProps?.getContainer,
           },
           formValueChanged: false,
         }}

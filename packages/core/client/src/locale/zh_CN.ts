@@ -317,6 +317,7 @@ export default {
   "Select file": "选择文件",
   "Subtable": "子表格",
   "Sub-form": "子表单",
+  "Sub-form(Popover)":"子表单(弹窗)",
   "Sub-details":"子详情",
   "Record picker": "数据选择器",
   "Toggles the subfield mode": "切换子字段模式",

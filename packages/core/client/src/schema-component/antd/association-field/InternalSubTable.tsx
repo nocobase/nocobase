@@ -38,9 +38,8 @@ export const InternalSubTable = observer(
               .ant-checkbox-wrapper {
                 margin-left: 8px;
               }
-              .ant-btn {
-                border: none !important;
-                box-shadow: none;
+              .ant-table {
+                margin: 0px !important;
               }
             }
           `}
