@@ -290,6 +290,17 @@ export class Database extends EventEmitter implements AsyncEmitter {
       }),
     });
 
+    this.migrator = new Umzug({
+      logger: migratorOptions.logger || console,
+      migrations: this.migrations.callback(),
+      context,
+      storage: new SequelizeStorage({
+        modelName: `${this.options.tablePrefix || ''}migrations`,
+        ...migratorOptions.storage,
+        sequelize: this.sequelize,
+      }),
+    });
+
     this.initListener();
     patchSequelizeQueryInterface(this);
   }
