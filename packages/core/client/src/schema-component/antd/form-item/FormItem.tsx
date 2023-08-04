@@ -48,7 +48,20 @@ export const findColumnFieldSchema = (fieldSchema, getCollectionJoinField) => {
   getAssociationAppends(fieldSchema);
   return [...childsSchema];
 };
+function transformData(inputData) {
+  const transformedData = [];
+  const keys = Object.keys(inputData) || [];
+  const values: any[] = Object.values(inputData) || [];
+  for (let i = 0; i < values[0]?.length; i++) {
+    const newObj = {};
+    keys.forEach((key, index) => {
+      newObj[key] = values[index][i];
+    });
+    transformedData.push(newObj);
+  }
 
+  return transformedData;
+}
 export const FormItem: any = observer(
   (props: any) => {
     useEnsureOperatorsValid();
@@ -78,7 +91,8 @@ export const FormItem: any = observer(
             const data = parseVariables(schema.default, { $context: v });
             iniValues = iniValues.concat(data);
           });
-          field.setInitialValue?.(_.uniqBy(iniValues, 'id'));
+          const data = _.uniqBy(iniValues, 'id');
+          field.setInitialValue?.(data.length > 0 ? data : [{}]);
         } else if (
           collectionField?.interface === 'o2m' &&
           ['SubTable', 'Nester'].includes(schema?.['x-component-props']?.['mode']) // 间接对多
@@ -86,15 +100,19 @@ export const FormItem: any = observer(
           const childrenFieldWithDefault = findColumnFieldSchema(schema, getCollectionJoinField);
           // 子表格/子表单中找出所有belongsTo字段的上下文默认值
           if (childrenFieldWithDefault.length > 0) {
-            const contextData = parseVariables('{{$context}}', variablesCtx);
-            const initValues = contextData?.map((v) => {
-              const obj = {};
-              childrenFieldWithDefault.forEach((s: any) => {
-                const child = JSON.parse(s);
-                obj[child.name] = parseVariables(child.default, { $context: v });
+            const tableData = parseVariables('{{$context}}', variablesCtx);
+            const contextData = {};
+            // 将数据拍平
+            childrenFieldWithDefault?.forEach((s: any) => {
+              const child = JSON.parse(s);
+              tableData?.map((v) => {
+                contextData[child.name] = _.uniqBy(
+                  (contextData[child.name] || []).concat(parseVariables(child.default, { $context: v })),
+                  'id',
+                );
               });
-              return obj;
             });
+            const initValues = transformData(contextData);
             field.setInitialValue?.(initValues);
           }
         }
