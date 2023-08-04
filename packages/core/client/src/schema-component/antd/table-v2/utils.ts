@@ -19,10 +19,10 @@ export function extractIndex(str) {
 }
 
 /**
- * 判断一个 DOM 对象是否是由 createPortal 创建的
+ * 判断一个 DOM 对象是否是由 createPortal 挂在到了 body 上
  * @param domNode DOM 对象
  */
-export const isPortal = (dom: HTMLElement) => {
+export const isPortalInBody = (dom: HTMLElement) => {
   while (dom) {
     if (dom.id === 'root') {
       return false;

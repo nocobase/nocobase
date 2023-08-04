@@ -22,7 +22,7 @@ import {
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
 import { useToken } from '../__builtins__';
 import { ColumnFieldProvider } from './components/ColumnFieldProvider';
-import { extractIndex, isCollectionFieldComponent, isColumnComponent, isPortal } from './utils';
+import { extractIndex, isCollectionFieldComponent, isColumnComponent, isPortalInBody } from './utils';
 
 const useArrayField = (props) => {
   const field = useField<ArrayField>();
@@ -240,7 +240,7 @@ export const Table: any = observer(
       onRow = (record) => {
         return {
           onClick: (e) => {
-            if (isPortal(e.target)) {
+            if (isPortalInBody(e.target)) {
               return;
             }
             onClickRow(record, setSelectedRow, selectedRow);
