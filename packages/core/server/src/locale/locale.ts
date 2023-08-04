@@ -57,8 +57,8 @@ export class Locale {
 
   getResources(lang: string) {
     const resources = {};
-    const plugins = this.app.pm.getPlugins();
-    for (const name of plugins.keys()) {
+    const names = this.app.pm.getAliases();
+    for (const name of names) {
       try {
         const packageName = PluginManager.getPackageName(name);
         const res = getResource(packageName, lang);
@@ -68,10 +68,6 @@ export class Locale {
       } catch (err) {
         // empty
       }
-    }
-    const res = getResource('@nocobase/client', lang, false);
-    if (res) {
-      resources['client'] = { ...(resources['client'] || {}), ...res };
     }
     return resources;
   }

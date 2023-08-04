@@ -60,7 +60,7 @@ export class PluginManagerRepository extends Repository {
     return pluginNames;
   }
 
-  async load() {
+  async init() {
     const exists = await this.collection.existsInDb();
     if (!exists) {
       return;

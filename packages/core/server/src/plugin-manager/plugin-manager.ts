@@ -82,6 +82,13 @@ export class PluginManager {
     });
   }
 
+  protected async initPresetPlugins() {
+    for (const plugin of this.options.plugins) {
+      const [p, opts = {}] = Array.isArray(plugin) ? plugin : [plugin];
+      await this.add(p, { ...opts, enabled: true, isPreset: true });
+    }
+  }
+
   addPreset(plugin, options) {
     if (!this.options.plugins) {
       this.options.plugins = [];
@@ -89,15 +96,12 @@ export class PluginManager {
     this.options.plugins.push([plugin, options]);
   }
 
-  async addPresetPlugins() {
-    for (const plugin of this.options.plugins) {
-      const [p, opts = {}] = Array.isArray(plugin) ? plugin : [plugin];
-      await this.add(p, { ...opts, enabled: true, isPreset: true });
-    }
-  }
-
   getPlugins() {
     return this.pluginInstances;
+  }
+
+  getAliases() {
+    return this.pluginAliases.keys();
   }
 
   get(name: string | typeof Plugin) {
@@ -131,18 +135,6 @@ export class PluginManager {
     };
     await Promise.all(pluginNames.map((pluginName) => createPlugin(pluginName)));
     await run('yarn', ['install']);
-  }
-
-  makePluginInstance(plugin: string | typeof Plugin) {
-    if (typeof plugin === 'string') {
-      try {
-        return;
-      } catch (error) {
-        this.app.log.error(`plugin [${plugin}] not found`, error);
-        return;
-      }
-    }
-    return plugin;
   }
 
   async add(plugin?: any, options: any = {}) {
@@ -179,8 +171,8 @@ export class PluginManager {
   async load(options: any = {}) {
     this.app.setWorkingMessage('loading plugins...');
 
-    await this.addPresetPlugins();
-    await this.repository.load();
+    await this.initPresetPlugins();
+    await this.repository.init();
 
     const total = this.pluginInstances.size;
 
