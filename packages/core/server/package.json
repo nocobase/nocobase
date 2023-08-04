@@ -36,7 +36,9 @@
     "lodash": "^4.17.21",
     "multer": "^1.4.2",
     "semver": "^7.3.7",
-    "xpipe": "^1.0.5"
+    "xpipe": "^1.0.5",
+    "download": "8.0.0",
+    "@types/download": "8.0.2"
   },
   "devDependencies": {
     "@types/semver": "^7.3.9"

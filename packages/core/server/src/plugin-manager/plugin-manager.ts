@@ -11,6 +11,8 @@ import { clientStaticMiddleware } from './clientStaticMiddleware';
 import collectionOptions from './options/collection';
 import resourceOptions from './options/resource';
 import { PluginManagerRepository } from './plugin-manager-repository';
+import { addOrUpdatePluginByNpm } from './utils';
+import { NODE_MODULES_PATH } from './constants';
 
 export interface PluginManagerOptions {
   app: Application;
@@ -198,6 +200,16 @@ export class PluginManager {
     return pm;
   }
 
+  async addByNpm(options: { name: string; packageName: string; registry: string }) {
+    const { name, registry, packageName } = options;
+    if (this.plugins.has(name)) {
+      throw new Error(`plugin name [${name}] already exists`);
+    }
+
+    await addOrUpdatePluginByNpm({ name: packageName, registry });
+    await this.add(name);
+  }
+
   addStatic(plugin?: any, options?: any) {
     if (!options?.async) {
       this._tmpPluginArgs.push([plugin, options]);
@@ -369,12 +381,12 @@ export class PluginManager {
     return require(`${packageName}/package.json`);
   }
 
-  static getPackageName(name: string) {
+  static getPackageName(name: string, isAbsolute = false) {
     const prefixes = this.getPluginPkgPrefix();
     for (const prefix of prefixes) {
       try {
-        require.resolve(`${prefix}${name}`);
-        return `${prefix}${name}`;
+        const absolutePath = require.resolve(`${prefix}${name}`, { paths: [process.cwd(), NODE_MODULES_PATH] });
+        return isAbsolute ? absolutePath : `${prefix}${name}`;
       } catch (error) {
         continue;
       }
@@ -413,7 +425,7 @@ export class PluginManager {
   }
 
   static resolvePlugin(pluginName: string) {
-    const packageName = this.getPackageName(pluginName);
+    const packageName = this.getPackageName(pluginName, true);
     return requireModule(packageName);
   }
 }

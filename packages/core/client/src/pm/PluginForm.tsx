@@ -52,6 +52,13 @@ const npmSchema: ISchema = {
             help: 'Example: https://registry.npmjs.org/',
           },
         },
+        name: {
+          type: 'string',
+          title: "{{t('Name')}}",
+          'x-decorator': 'FormItem',
+          'x-component': 'Input',
+          required: true,
+        },
         packageName: {
           type: 'string',
           title: "{{t('Npm package name')}}",
@@ -113,11 +120,11 @@ export const PluginForm: FC<IPluginFormProps> = ({ onClose, isShow }) => {
     return {
       async run() {
         await form.submit();
-        // await api.request({
-        //   url: 'systemSettings:update/1',
-        //   method: 'post',
-        //   data: form.values,
-        // });
+        await api.request({
+          url: 'pm:addByNpm',
+          method: 'post',
+          data: form.values,
+        });
         message.success(t('Saved successfully, page will reload after 2 seconds'), 2, () => {
           window.location.reload();
         });

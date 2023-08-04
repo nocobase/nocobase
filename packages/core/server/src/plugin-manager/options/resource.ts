@@ -11,6 +11,21 @@ export default {
       ctx.body = filterByTk;
       await next();
     },
+    async addByNpm(ctx, next) {
+      const pm = ctx.app.pm;
+      const { values } = ctx.action.params;
+      if (!values['name']) {
+        ctx.throw(400, 'plugin name is required');
+      }
+      if (!values['packageName']) {
+        ctx.throw(400, 'plugin packageName is required');
+      }
+      if (!values['registry']) {
+        ctx.throw(400, 'plugin registry is required');
+      }
+      ctx.body = await pm.addByNpm(values);
+      await next();
+    },
     async enable(ctx, next) {
       const pm = ctx.app.pm;
       const { filterByTk } = ctx.action.params;

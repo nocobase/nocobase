@@ -26,3 +26,4 @@ storage/duplicator/*
 **/.dumi/tmp-production
 packages/core/client/docs/contributing.md
 packages/core/app/client/src/.plugins
+storage/plugins
