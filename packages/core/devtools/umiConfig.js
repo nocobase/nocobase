@@ -153,8 +153,8 @@ class IndexGenerator {
         const pluginPackageJson = require(pluginPackageJsonPath);
         const pluginSrcClientPath = path
           .relative(path.dirname(this.outputPath), path.join(pluginPath, folder, 'src', 'client'))
-          .replaceAll('\\', '/');
-        const pluginName = `${folder.replaceAll('-', '_')}${index}`;
+          .replace(/\\/g, '/');
+        const pluginName = `${folder.replace(/-/g, '_')}${index}`;
         const importStatement = `const ${pluginName} = import('${pluginSrcClientPath}');`;
         return { importStatement, pluginName, packageJsonName: pluginPackageJson.name };
       });
