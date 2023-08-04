@@ -17,6 +17,7 @@ import { createACL } from './acl';
 import { AppSupervisor, supervisedAppCall } from './app-supervisor';
 import { registerCli } from './commands';
 import { createI18n, createResourcer, registerMiddlewares } from './helper';
+import { ApplicationFsm } from './helpers/application-fsm';
 import { ApplicationVersion } from './helpers/application-version';
 import { Locale } from './locale';
 import { Plugin } from './plugin';
@@ -84,7 +85,7 @@ interface ListenOptions {
 interface StartOptions {
   cliArgs?: any[];
   dbSync?: boolean;
-  listen?: ListenOptions;
+  checkInstall?: boolean;
 }
 
 function SwitchAppReadyStatus(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
@@ -112,9 +113,14 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   protected plugins = new Map<string, Plugin>();
   protected _appSupervisor: AppSupervisor = AppSupervisor.getInstance();
 
+  private _fsm;
+  private _fsmInterpret;
+
   constructor(public options: ApplicationOptions) {
     super();
     this.rawOptions = this.name == 'main' ? lodash.cloneDeep(options) : {};
+    this._fsm = ApplicationFsm.buildFsm(this);
+
     this.init();
     this._appSupervisor.addApp(this);
   }
@@ -197,6 +203,18 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   get name() {
     return this.options.name || 'main';
+  }
+
+  getStateMachine() {
+    return this._fsm;
+  }
+
+  getFsmInterpreter() {
+    if (!this._fsmInterpret) {
+      this._fsmInterpret = ApplicationFsm.getInterpreter(this);
+    }
+
+    return this._fsmInterpret;
   }
 
   setWorkingMessage(message: string) {
@@ -335,6 +353,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   @supervisedAppCall
   async start(options: StartOptions = {}) {
+    if (options.checkInstall && !(await this.isInstalled())) {
+      throw new Error(
+        `Application ${this.name} is not installed, Please run 'yarn run nocobase install' command first`,
+      );
+    }
+
     this.startMode = true;
     this.setWorkingMessage('starting app...');
 
