@@ -15,12 +15,12 @@ export type VariableOption = {
 export type VariableOptions = VariableOption[] | null;
 
 export type VariableDataType =
-  string |
-  {
-    type: string;
-    options?: { entity?: boolean; collection?: string }
-  } |
-  ((field: any, appends?: string[]) => boolean);
+  | string
+  | {
+      type: string;
+      options?: { entity?: boolean; collection?: string };
+    }
+  | ((field: any, appends?: string[]) => boolean);
 
 export type OptionsOfUseVariableOptions = {
   types?: VariableDataType[];
@@ -29,7 +29,7 @@ export type OptionsOfUseVariableOptions = {
     value?: string;
     children?: string;
   };
-}
+};
 
 export const defaultFieldNames = { label: 'label', value: 'value', children: 'children' } as const;
 
@@ -283,7 +283,15 @@ async function loadChildren(option) {
 }
 
 export function getCollectionFieldOptions(options): VariableOption[] {
-  const { fields, collection, types, appends = [], compile, getCollectionFields, fieldNames = defaultFieldNames } = options;
+  const {
+    fields,
+    collection,
+    types,
+    appends = [],
+    compile,
+    getCollectionFields,
+    fieldNames = defaultFieldNames,
+  } = options;
   const normalizedFields = getNormalizedFields(collection, { compile, getCollectionFields });
   const computedFields = fields ?? normalizedFields;
   const boundLoadChildren = loadChildren.bind({ compile, getCollectionFields, fieldNames });

@@ -2,8 +2,15 @@ import { RemoteSelect, Variable } from '@nocobase/client';
 import React from 'react';
 import { useWorkflowVariableOptions } from '../../variable';
 
+function isUserKeyField(field) {
+  if (field.isForeignKey) {
+    return field.target === 'users';
+  }
+  return field.collectionName === 'users' && field.name === 'id';
+}
+
 export function AssigneesSelect({ multiple = false, value = [], onChange }) {
-  const scope = useWorkflowVariableOptions({ types: [{ type: 'reference', options: { collection: 'users' } }] });
+  const scope = useWorkflowVariableOptions({ types: [isUserKeyField] });
 
   return (
     <Variable.Input
