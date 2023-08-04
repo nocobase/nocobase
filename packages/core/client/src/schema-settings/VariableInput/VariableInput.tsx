@@ -1,5 +1,7 @@
 import React, { useMemo } from 'react';
-import { Variable, useCompile } from '../../schema-component';
+import { CollectionFieldOptions } from '../../collection-manager';
+import { useCompile, Variable } from '../../schema-component';
+import { useContextAssociationFields, useIsSameOrChildCollection } from './hooks/useContextAssociationFields';
 import { useUserVariable } from './hooks/useUserVariable';
 
 type Props = {
@@ -12,15 +14,28 @@ type Props = {
   children?: any;
   className?: string;
   style?: React.CSSProperties;
+  collectionField?: CollectionFieldOptions;
+  contextCollectionName?: string;
 };
 
 export const VariableInput = (props: Props) => {
-  const { value, onChange, renderSchemaComponent: RenderSchemaComponent, style, schema, className } = props;
+  const {
+    value,
+    onChange,
+    renderSchemaComponent: RenderSchemaComponent,
+    style,
+    schema,
+    className,
+    collectionField,
+    contextCollectionName,
+  } = props;
   const compile = useCompile();
   const userVariable = useUserVariable({ schema, maxDepth: 1 });
+  const contextVariable = useContextAssociationFields({ schema, maxDepth: 2, contextCollectionName, collectionField });
+  const getIsSameOrChildCollection = useIsSameOrChildCollection();
+  const isAllowTableContext = getIsSameOrChildCollection(contextCollectionName, collectionField?.target);
   const scope = useMemo(() => {
-    return [
-      userVariable,
+    const data = [
       compile({
         label: `{{t("Date variables")}}`,
         value: '$date',
@@ -35,10 +50,24 @@ export const VariableInput = (props: Props) => {
         ],
       }),
     ];
+    if (collectionField?.target === 'users') {
+      data.unshift(userVariable);
+    }
+    if (contextCollectionName) {
+      data.unshift(contextVariable);
+    }
+    return data;
   }, []);
 
   return (
-    <Variable.Input className={className} value={value} onChange={onChange} scope={scope} style={style}>
+    <Variable.Input
+      className={className}
+      value={value}
+      onChange={onChange}
+      scope={scope}
+      style={style}
+      changeOnSelect={isAllowTableContext}
+    >
       <RenderSchemaComponent value={value} onChange={onChange} />
     </Variable.Input>
   );

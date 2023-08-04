@@ -1,11 +1,11 @@
 import { Button, Result, Typography } from 'antd';
-import React from 'react';
-import { useErrorBoundary } from 'react-error-boundary';
+import React, { FC } from 'react';
+import { FallbackProps, useErrorBoundary } from 'react-error-boundary';
 import { Trans, useTranslation } from 'react-i18next';
 
 const { Paragraph, Text, Link } = Typography;
 
-export const ErrorFallback = ({ error }) => {
+export const ErrorFallback: FC<FallbackProps> = ({ error }) => {
   const { resetBoundary } = useErrorBoundary();
   const { t } = useTranslation();
 

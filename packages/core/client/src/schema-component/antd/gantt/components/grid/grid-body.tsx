@@ -1,9 +1,9 @@
-import React, { ReactChild } from 'react';
 import { cx } from '@emotion/css';
-import { Task } from '../../types/public-types';
-import { addToDate } from '../../helpers/date-helper';
-import { gridRowLine, gridRow, gridTick, gridHeightRow } from './style';
 import { uid } from '@nocobase/utils/client';
+import React, { ReactChild } from 'react';
+import { addToDate } from '../../helpers/date-helper';
+import { Task } from '../../types/public-types';
+import useStyles from './style';
 
 export type GridBodyProps = {
   tasks: Task[];
@@ -26,11 +26,13 @@ export const GridBody: React.FC<GridBodyProps> = ({
   rtl,
   selectedRowKeys,
 }) => {
+  const { wrapSSR, componentCls, hashId } = useStyles();
+
   const data = tasks.length ? tasks : empty;
   let y = 0;
   const gridRows: ReactChild[] = [];
   const rowLines: ReactChild[] = [
-    <line key="RowLineFirst" x="0" y1={0} x2={svgWidth} y2={0} className={cx(gridRowLine)} />,
+    <line key="RowLineFirst" x="0" y1={0} x2={svgWidth} y2={0} className={cx('gridRowLine')} />,
   ];
   for (const task of data) {
     gridRows.push(
@@ -40,7 +42,7 @@ export const GridBody: React.FC<GridBodyProps> = ({
         y={y}
         width={svgWidth}
         height={rowHeight}
-        className={selectedRowKeys?.includes(+task.id) ? cx(gridHeightRow) : cx(gridRow)}
+        className={selectedRowKeys?.includes(+task.id) ? cx('gridHeightRow') : cx('gridRow')}
       />,
     );
     rowLines.push(
@@ -50,7 +52,7 @@ export const GridBody: React.FC<GridBodyProps> = ({
         y1={y + rowHeight}
         x2={svgWidth}
         y2={y + rowHeight}
-        className={cx(gridRowLine)}
+        className={cx('gridRowLine')}
       />,
     );
     y += rowHeight;
@@ -62,7 +64,7 @@ export const GridBody: React.FC<GridBodyProps> = ({
   let today: ReactChild = <rect />;
   for (let i = 0; i < dates.length; i++) {
     const date = dates[i];
-    ticks.push(<line key={date.getTime()} x1={tickX} y1={0} x2={tickX} y2={y} className={cx(gridTick)} />);
+    ticks.push(<line key={date.getTime()} x1={tickX} y1={0} x2={tickX} y2={y} className={cx('gridTick')} />);
     if (
       (i + 1 !== dates.length && date.getTime() < now.getTime() && dates[i + 1].getTime() >= now.getTime()) ||
       // if current date is last
@@ -79,12 +81,12 @@ export const GridBody: React.FC<GridBodyProps> = ({
     }
     tickX += columnWidth;
   }
-  return (
-    <g className="gridBody">
+  return wrapSSR(
+    <g className={`gridBody ${componentCls} ${hashId}`}>
       <g className="rows">{gridRows}</g>
       <g className="rowLines">{rowLines}</g>
       <g className="ticks">{ticks}</g>
       <g className="today">{today}</g>
-    </g>
+    </g>,
   );
 };

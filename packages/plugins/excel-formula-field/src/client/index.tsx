@@ -1,38 +1,10 @@
-import { CollectionManagerContext, registerField, SchemaComponentOptions } from '@nocobase/client';
-import React, { useContext } from 'react';
-import { useTranslation } from 'react-i18next';
-import { excelFormula } from './excel-formula';
-import { ExcelFormula } from './ExcelFormula';
+import { Plugin } from '@nocobase/client';
+import { ExcelFormulaFieldProvider } from './ExcelFormulaFieldProvider';
 
-registerField(excelFormula.group, 'excelFormula', excelFormula);
+export class ExcelFormulaFieldPlugin extends Plugin {
+  async load() {
+    this.app.use(ExcelFormulaFieldProvider);
+  }
+}
 
-const excelFormulaField = React.memo((props) => {
-  const ctx = useContext(CollectionManagerContext);
-  const { t } = useTranslation();
-
-  return (
-    <SchemaComponentOptions
-      scope={{
-        excelExpressionDescription: (
-          <div>
-            {t('Syntax see', { ns: 'math-formula-field' })}{' '}
-            <a target={'_blank'} href={'https://formulajs.info/functions/'} rel="noreferrer">
-              formula.js
-            </a>
-          </div>
-        ),
-      }}
-      components={{
-        ExcelFormula,
-      }}
-    >
-      <CollectionManagerContext.Provider value={{ ...ctx, interfaces: { ...ctx.interfaces, excelFormula } }}>
-        {props.children}
-      </CollectionManagerContext.Provider>
-    </SchemaComponentOptions>
-  );
-});
-
-excelFormulaField.displayName = 'excelFormulaField';
-
-export default excelFormulaField;
+export default ExcelFormulaFieldPlugin;

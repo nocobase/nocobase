@@ -1,6 +1,5 @@
 import { DeleteOutlined, DownOutlined, EditOutlined, UpOutlined } from '@ant-design/icons';
 import '@antv/x6-react-shape';
-import { css, cx } from '@emotion/css';
 import { uid } from '@formily/shared';
 import {
   Action,
@@ -20,13 +19,14 @@ import {
   SchemaComponentProvider,
   Select,
   collection,
+  css,
   useCollectionManager,
   useCompile,
   useCurrentAppInfo,
   useRecord,
 } from '@nocobase/client';
+import lodash from 'lodash';
 import { Badge, Dropdown, Popover, Tag } from 'antd';
-import { groupBy } from 'lodash';
 import React, { useContext, useRef, useState } from 'react';
 import {
   useAsyncDataSource,
@@ -36,7 +36,7 @@ import {
   useUpdateCollectionActionAndRefreshCM,
   useValuesFromRecord,
 } from '../action-hooks';
-import { collectiionPopoverClass, entityContainer, headClass, tableBtnClass, tableNameClass } from '../style';
+import useStyles from '../style';
 import { getPopupContainer, useGCMTranslation } from '../utils';
 import { AddFieldAction } from './AddFieldAction';
 import { CollectionNodeProvder } from './CollectionNodeProvder';
@@ -51,6 +51,7 @@ const Entity: React.FC<{
   setTargetNode: Function | any;
   targetGraph: any;
 }> = (props) => {
+  const { styles } = useStyles();
   const { node, setTargetNode, targetGraph } = props;
   const {
     store: {
@@ -58,7 +59,9 @@ const Entity: React.FC<{
     },
     id,
   } = node;
-  const database = useCurrentAppInfo();
+  const {
+    data: { database },
+  } = useCurrentAppInfo();
   const collectionData = useRef();
   const categoryData = useContext(CollectionCategroriesContext);
   collectionData.current = { ...item, title, inherits: item.inherits && new Proxy(item.inherits, {}) };
@@ -85,12 +88,13 @@ const Entity: React.FC<{
   };
   return (
     <div
-      className={cx(entityContainer)}
+      className={styles.entityContainer}
       style={{ boxShadow: attrs?.boxShadow, border: select ? '2px dashed #f5a20a' : 0 }}
     >
       {category.map((v, index) => {
         return (
           <Badge.Ribbon
+            key={index}
             color={v.color}
             style={{ width: '103%', height: '3px', marginTop: index * 5 - 8, borderRadius: 0 }}
             placement="start"
@@ -98,12 +102,12 @@ const Entity: React.FC<{
         );
       })}
       <div
-        className={headClass}
+        className={styles.headClass}
         style={{ background: attrs?.hightLight ? '#1890ff' : null, paddingTop: category.length * 3 }}
       >
-        <span className={tableNameClass}>{compile(title)}</span>
+        <span className={styles.tableNameClass}>{compile(title)}</span>
 
-        <div className={tableBtnClass}>
+        <div className={styles.tableBtnClass}>
           <SchemaComponentProvider>
             <CollectionNodeProvder setTargetNode={setTargetNode} node={node}>
               <CollectionProvider collection={collection}>
@@ -139,6 +143,7 @@ const Entity: React.FC<{
                         'x-component-props': {
                           type: 'primary',
                           item: collectionData.current,
+                          className: 'btn-edit-in-head',
                         },
                       },
                       delete: {
@@ -148,16 +153,7 @@ const Entity: React.FC<{
                         'x-component-props': {
                           component: DeleteOutlined,
                           icon: 'DeleteOutlined',
-                          className: css`
-                            background-color: rgb(255 236 232);
-                            border-color: transparent;
-                            color: #e31c1c;
-                            height: 20px;
-                            padding: 5px;
-                            &:hover {
-                              background-color: rgb(253 205 197);
-                            }
-                          `,
+                          className: 'btn-del',
 
                           confirm: {
                             title: "{{t('Delete record')}}",
@@ -190,7 +186,11 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
   const [collapse, setCollapse] = useState(false);
   const { t } = useGCMTranslation();
   const compile = useCompile();
-  const portsData = groupBy(ports.items, (v) => {
+  const { styles } = useStyles();
+  const {
+    data: { database },
+  } = useCurrentAppInfo();
+  const portsData = lodash.groupBy(ports.items, (v) => {
     if (
       v.isForeignKey ||
       v.primaryKey ||
@@ -207,7 +207,7 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
   const CollectionConten = (data) => {
     const { type, name, primaryKey, allowNull, autoIncrement } = data;
     return (
-      <div className={cx(collectiionPopoverClass)}>
+      <div className={styles.collectionPopoverClass}>
         <div className="field-content">
           <div>
             <span>name</span>: <span className="field-type">{name}</span>
@@ -243,7 +243,9 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
             Input,
             Form,
             ResourceActionProvider,
-            Select: (props) => <Select {...props} getPopupContainer={getPopupContainer} />,
+            Select: (props) => (
+              <Select popupMatchSelectWidth={false} {...props} getPopupContainer={getPopupContainer} />
+            ),
             Checkbox,
             Radio,
             InputNumber,
@@ -290,6 +292,7 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
                         ...property,
                         title,
                       },
+                      database,
                     },
                   },
                   update: {
@@ -313,17 +316,7 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
                     'x-component-props': {
                       component: DeleteOutlined,
                       icon: 'DeleteOutlined',
-                      className: css`
-                        background-color: rgb(255 236 232);
-                        border-color: transparent;
-                        color: #e31c1c;
-                        height: 20px;
-                        width: 20px;
-                        padding: 5px;
-                        &:hover {
-                          background-color: rgb(253 205 197);
-                        }
-                      `,
+                      className: 'btn-del',
                       confirm: {
                         title: "{{t('Delete record')}}",
                         getContainer: getPopupContainer,

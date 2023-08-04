@@ -1,4 +1,3 @@
-import { css } from '@emotion/css';
 import { ISchema, observer, useForm } from '@formily/react';
 import { error, isString } from '@nocobase/utils/client';
 import { Button, Dropdown, MenuProps, Switch } from 'antd';
@@ -9,26 +8,13 @@ import { useCollectMenuItem, useMenuItem } from '../hooks/useMenuItem';
 import { Icon } from '../icon';
 import { SchemaComponent, useActionContext } from '../schema-component';
 import { useCompile, useDesignable } from '../schema-component/hooks';
-import './style.less';
+import { useStyles } from './style';
 import {
   SchemaInitializerButtonProps,
   SchemaInitializerItemComponent,
   SchemaInitializerItemOptions,
   SchemaInitializerItemProps,
 } from './types';
-
-const overlayClassName = css`
-  .ant-dropdown-menu-item-group-list {
-    max-height: 40vh;
-    overflow: auto;
-  }
-`;
-/**
- * 用于去除菜单的消失动画，优化操作体验
- */
-const hidden = css`
-  display: none;
-`;
 
 const defaultWrap = (s: ISchema) => s;
 
@@ -41,8 +27,6 @@ export const SchemaInitializerButtonContext = createContext<{
 }>({});
 
 export const SchemaInitializer = () => null;
-
-const menuItemGroupCss = 'nb-menu-item-group';
 
 SchemaInitializer.Button = observer(
   (props: SchemaInitializerButtonProps) => {
@@ -66,8 +50,10 @@ SchemaInitializer.Button = observer(
     const [searchValue, setSearchValue] = useState('');
     const [isPending, startTransition] = useTransition();
     const menuItems = useRef([]);
+    const { styles } = useStyles();
 
     const changeMenu = (v: boolean) => {
+      // 这里是为了防止当鼠标快速滑过时，终止菜单的渲染，防止卡顿
       startTransition(() => {
         setVisible(v);
       });
@@ -83,8 +69,8 @@ SchemaInitializer.Button = observer(
       <Button
         type={'dashed'}
         style={{
-          borderColor: '#f18b62',
-          color: '#f18b62',
+          borderColor: 'var(--colorSettings)',
+          color: 'var(--colorSettings)',
           ...style,
         }}
         {...others}
@@ -144,7 +130,7 @@ SchemaInitializer.Button = observer(
             });
           }
           if (item.type === 'itemGroup') {
-            const label = compile(item.title);
+            const label = isString(item.title) ? compile(item.title) : item.title;
             return (
               !!item.children?.length && {
                 type: 'group',
@@ -162,7 +148,7 @@ SchemaInitializer.Button = observer(
                 key: item.key || `item-group-${indexA}`,
                 label,
                 title: label,
-                popupClassName: menuItemGroupCss,
+                popupClassName: styles.nbMenuItemSubMenu,
                 children: renderItems(item.children),
               }
             );
@@ -181,19 +167,17 @@ SchemaInitializer.Button = observer(
         <Dropdown
           className={classNames('nb-schema-initializer-button')}
           openClassName={`nb-schema-initializer-button-open`}
-          overlayClassName={classNames('nb-schema-initializer-button-overlay', overlayClassName)}
           open={visible}
-          onOpenChange={() => {
+          onOpenChange={(open) => {
             // 如果不清空输入框的值，那么下次打开的时候会出现上次输入的值
             setSearchValue('');
-            changeMenu(!visible);
+            changeMenu(open);
           }}
           menu={{
             style: {
-              maxHeight: '60vh',
+              maxHeight: '50vh',
               overflowY: 'auto',
             },
-            className: classNames({ [hidden]: !visible }),
             items: menuItems.current,
           }}
           {...dropdown}
@@ -207,6 +191,7 @@ SchemaInitializer.Button = observer(
 );
 
 SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
+  const { styles } = useStyles();
   const { info } = useContext(SchemaInitializerItemContext);
   const compile = useCompile();
   const { items = [], children = info?.title, icon, onClick } = props;
@@ -218,7 +203,7 @@ SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
   }
 
   if (items?.length > 0) {
-    const renderMenuItem = (items: SchemaInitializerItemOptions[]) => {
+    const renderMenuItem = (items: SchemaInitializerItemOptions[], parentKey: string) => {
       if (!items?.length) {
         return null;
       }
@@ -227,28 +212,30 @@ SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
           return { type: 'divider', key: `divider-${indexA}` };
         }
         if (item.type === 'itemGroup') {
-          const label = compile(item.title);
+          const label = isString(item.title) ? compile(item.title) : item.title;
+          const key = `${parentKey}-item-group-${indexA}`;
           return {
             type: 'group',
-            key: item.key || `item-group-${indexA}`,
+            key,
             label,
             title: label,
-            className: menuItemGroupCss,
-            children: renderMenuItem(item.children),
+            className: styles.nbMenuItemGroup,
+            children: renderMenuItem(item.children, key),
           } as MenuProps['items'][0];
         }
         if (item.type === 'subMenu') {
           const label = compile(item.title);
+          const key = `${parentKey}-sub-menu-${indexA}`;
           return {
-            key: item.key || `sub-menu-${indexA}`,
+            key,
             label,
             title: label,
-            children: renderMenuItem(item.children),
+            children: renderMenuItem(item.children, key),
           };
         }
         const label = compile(item.title);
         return {
-          key: item.key || `${info.key}-${item.title}-${indexA}`,
+          key: `${parentKey}-${item.title}-${indexA}`,
           label,
           title: label,
           onClick: (info) => {
@@ -267,7 +254,7 @@ SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
       key: info.key,
       label: isString(children) ? compile(children) : children,
       icon: typeof icon === 'string' ? <Icon type={icon as string} /> : icon,
-      children: renderMenuItem(items),
+      children: renderMenuItem(items, info.key),
     };
 
     collectMenuItem(item);
@@ -342,8 +329,8 @@ SchemaInitializer.ActionModal = function ActionModal(props: SchemaInitializerAct
           'x-component-props': {
             icon: 'PlusOutlined',
             style: {
-              borderColor: 'rgb(241, 139, 98)',
-              color: 'rgb(241, 139, 98)',
+              borderColor: 'var(--colorSettings)',
+              color: 'var(--colorSettings)',
             },
             title: buttonText,
             type: 'dashed',

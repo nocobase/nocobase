@@ -4,17 +4,27 @@
   "displayName.zh-CN": "数据库可视化管理",
   "description": "database collection manage",
   "description.zh-CN": "数据库管理。",
-  "version": "0.10.0-alpha.3",
+  "version": "0.12.0-alpha.3",
   "license": "AGPL-3.0",
-  "main": "./lib/index.js",
-  "types": "./lib/index.d.ts",
-  "dependencies": {
+  "main": "./dist/server/index.js",
+  "devDependencies": {
+    "@ant-design/icons": "5.x",
     "@antv/x6": "^1.9.0",
     "@antv/x6-react-shape": "^1.6.2",
-    "dagre": "^0.8.5"
+    "@formily/react": "2.x",
+    "@formily/reactive": "2.x",
+    "@formily/shared": "2.x",
+    "ahooks": "^3.7.2",
+    "antd": "5.x",
+    "dagre": "^0.8.5",
+    "react": "^18.2.0",
+    "react-i18next": "^11.15.1"
   },
-  "devDependencies": {
-    "@nocobase/client": "0.10.0-alpha.3",
-    "@nocobase/test": "0.10.0-alpha.3"
+  "peerDependencies": {
+    "@nocobase/client": "0.x",
+    "@nocobase/database": "0.x",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x",
+    "@nocobase/utils": "0.x"
   }
 }

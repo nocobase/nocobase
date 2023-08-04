@@ -1,4 +1,4 @@
-import { ArrayTable } from '@formily/antd';
+import { ArrayTable } from '@formily/antd-v5';
 import { observer, useField } from '@formily/react';
 import {
   CollectionManagerContext,

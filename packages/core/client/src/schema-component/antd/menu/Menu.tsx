@@ -48,7 +48,7 @@ const subMenuDesignerCss = css`
     left: 0;
     right: 0;
     display: none;
-    background: rgba(241, 139, 98, 0.06);
+    background: var(--colorBgSettingsHover);
     border: 0;
     pointer-events: none;
     > .general-schema-designer-icons {
@@ -58,11 +58,12 @@ const subMenuDesignerCss = css`
       line-height: 16px;
       pointer-events: all;
       .ant-space-item {
-        background-color: #f18b62;
+        background-color: var(--colorSettings);
         color: #fff;
         line-height: 16px;
         width: 16px;
         padding-left: 1px;
+        align-self: stretch;
       }
     }
   }
@@ -98,7 +99,7 @@ const designerCss = css`
     left: 0;
     right: 0;
     display: none;
-    background: rgba(241, 139, 98, 0.06);
+    background: var(--colorBgSettingsHover);
     border: 0;
     pointer-events: none;
     > .general-schema-designer-icons {
@@ -108,11 +109,12 @@ const designerCss = css`
       line-height: 16px;
       pointer-events: all;
       .ant-space-item {
-        background-color: #f18b62;
+        background-color: var(--colorSettings);
         color: #fff;
         line-height: 16px;
         width: 16px;
         padding-left: 1px;
+        align-self: stretch;
       }
     }
   }
@@ -217,11 +219,11 @@ const HeaderMenu = ({
           const s = schema.properties[info.key];
           if (mode === 'mix') {
             if (s['x-component'] !== 'Menu.SubMenu') {
-              onSelect && onSelect(info);
+              onSelect?.(info);
             } else {
               const menuItemSchema = findMenuItem(s);
               if (!menuItemSchema) {
-                return onSelect && onSelect(info);
+                return onSelect?.(info);
               }
               // TODO
               setLoading(true);
@@ -230,18 +232,17 @@ const HeaderMenu = ({
               setTimeout(() => {
                 setLoading(false);
               }, 100);
-              onSelect &&
-                onSelect({
-                  key: menuItemSchema.name,
-                  item: {
-                    props: {
-                      schema: menuItemSchema,
-                    },
+              onSelect?.({
+                key: menuItemSchema.name,
+                item: {
+                  props: {
+                    schema: menuItemSchema,
                   },
-                });
+                },
+              });
             }
           } else {
-            onSelect && onSelect(info);
+            onSelect?.(info);
           }
         }}
         mode={mode === 'mix' ? 'horizontal' : mode}
@@ -315,7 +316,7 @@ const SideMenu = ({
           defaultOpenKeys={defaultOpenKeys}
           defaultSelectedKeys={defaultSelectedKeys}
           onSelect={(info) => {
-            onSelect && onSelect(info);
+            onSelect?.(info);
           }}
           className={sideMenuClass}
           items={items as MenuProps['items']}
@@ -393,7 +394,8 @@ export const Menu: ComposedMenu = observer(
 
       if (mode === 'mix' && key) {
         const s = schema.properties?.[key];
-        if (s['x-component'] === 'Menu.SubMenu') {
+        // fix T-934
+        if (s?.['x-component'] === 'Menu.SubMenu') {
           return s;
         }
       }
@@ -461,6 +463,7 @@ export const Menu: ComposedMenu = observer(
 
 Menu.Item = observer(
   (props) => {
+    const { t } = useTranslation();
     const { pushMenuItem } = useCollectMenuItems();
     const { icon, children, ...others } = props;
     const schema = useFieldSchema();
@@ -487,15 +490,15 @@ Menu.Item = observer(
                     verticalAlign: 'middle',
                   }}
                 >
-                  {field.title}
+                  {t(field.title)}
                 </span>
-                {Designer && <Designer />}
+                <Designer />
               </SortableItem>
             </FieldContext.Provider>
           </SchemaContext.Provider>
         ),
       };
-    }, [field.title, icon, schema]);
+    }, [field.title, icon, schema, Designer]);
 
     if (!pushMenuItem) {
       error('Menu.Item must be wrapped by GetMenuItemsContext.Provider');
@@ -510,6 +513,7 @@ Menu.Item = observer(
 
 Menu.URL = observer(
   (props) => {
+    const { t } = useTranslation();
     const { pushMenuItem } = useCollectMenuItems();
     const { icon, children, ...others } = props;
     const schema = useFieldSchema();
@@ -545,15 +549,15 @@ Menu.URL = observer(
                     verticalAlign: 'middle',
                   }}
                 >
-                  {field.title}
+                  {t(field.title)}
                 </span>
-                {Designer && <Designer />}
+                <Designer />
               </SortableItem>
             </FieldContext.Provider>
           </SchemaContext.Provider>
         ),
       };
-    }, [field.title, icon, props.href, schema]);
+    }, [field.title, icon, props.href, schema, Designer]);
 
     pushMenuItem(item);
     return null;
@@ -563,6 +567,7 @@ Menu.URL = observer(
 
 Menu.SubMenu = observer(
   (props) => {
+    const { t } = useTranslation();
     const { Component, getMenuItems } = useMenuItem();
     const { pushMenuItem } = useCollectMenuItems();
     const { icon, children, ...others } = props;
@@ -581,8 +586,8 @@ Menu.SubMenu = observer(
             <FieldContext.Provider value={field}>
               <SortableItem className={subMenuDesignerCss} removeParentsIfNoChildren={false}>
                 <Icon type={icon} />
-                {field.title}
-                {Designer && <Designer />}
+                {t(field.title)}
+                <Designer />
               </SortableItem>
             </FieldContext.Provider>
           </SchemaContext.Provider>
@@ -591,7 +596,7 @@ Menu.SubMenu = observer(
           return <RecursionField schema={schema} onlyRenderProperties />;
         }),
       };
-    }, [field.title, icon, schema, children]);
+    }, [field.title, icon, schema, children, Designer]);
 
     if (!pushMenuItem) {
       error('Menu.SubMenu must be wrapped by GetMenuItemsContext.Provider');

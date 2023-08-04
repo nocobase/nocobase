@@ -21,6 +21,7 @@ class SubAppPlugin extends Plugin {
       'sequence-field',
       'snapshot-field',
       'verification',
+      'localization-management',
     ];
 
     const collectionGroups = mainApp.db.collectionGroupManager.getGroups();

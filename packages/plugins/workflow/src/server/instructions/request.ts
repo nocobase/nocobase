@@ -3,7 +3,7 @@ import axios, { AxiosRequestConfig } from 'axios';
 import { Instruction } from './index';
 import { JOB_STATUS } from '../constants';
 import Processor from '../Processor';
-import FlowNodeModel from '../models/FlowNode';
+import type { FlowNodeModel } from '../types';
 
 export interface Header {
   name: string;
@@ -45,14 +45,16 @@ async function request(config) {
 export default class implements Instruction {
   constructor(public plugin) {}
 
-  async run(node: FlowNodeModel, input, processor: Processor) {
+  async run(node: FlowNodeModel, prevJob, processor: Processor) {
     const job = await processor.saveJob({
       status: JOB_STATUS.PENDING,
       nodeId: node.id,
+      upstreamId: prevJob?.id ?? null,
     });
 
     const config = processor.getParsedValue(node.config, node) as RequestConfig;
 
+    // eslint-disable-next-line promise/catch-or-return
     request(config)
       .then((response) => {
         job.set({

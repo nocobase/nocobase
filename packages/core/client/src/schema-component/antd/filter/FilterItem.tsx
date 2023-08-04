@@ -5,8 +5,8 @@ import { Cascader, Select, Space } from 'antd';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../..';
-import { DynamicComponent } from './DynamicComponent';
 import { RemoveConditionContext } from './context';
+import { DynamicComponent } from './DynamicComponent';
 import { useValues } from './useValues';
 
 export const FilterItem = observer(
@@ -40,6 +40,7 @@ export const FilterItem = observer(
             className={css`
               min-width: 110px;
             `}
+            popupMatchSelectWidth={false}
             value={operator?.value}
             options={compile(operators)}
             onChange={(value) => {

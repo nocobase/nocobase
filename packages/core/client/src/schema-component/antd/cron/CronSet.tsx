@@ -1,10 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Select, SelectProps } from 'antd';
-import Cron from './Cron';
 import { connect, mapReadPretty, useFieldSchema } from '@formily/react';
+import { Select, SelectProps } from 'antd';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useCollection } from '../../../collection-manager';
 import { useCompile } from '../../hooks';
 import { EllipsisWithTooltip } from '../input';
+import Cron from './Cron';
 
 interface CronSetProps extends SelectProps {
   onChange: (v: string) => void;
@@ -63,7 +63,14 @@ const CronSetInternal = (props: CronSetProps) => {
 
   return (
     <fieldset>
-      <Select allowClear {...props} value={value} options={options} onChange={(value) => onCronChange(value)}></Select>
+      <Select
+        popupMatchSelectWidth={false}
+        allowClear
+        {...props}
+        value={value}
+        options={options}
+        onChange={(value) => onCronChange(value)}
+      ></Select>
       {isCustomize ? (
         <Cron
           value={value}

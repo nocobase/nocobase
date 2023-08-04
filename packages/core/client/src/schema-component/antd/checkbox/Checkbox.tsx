@@ -7,7 +7,9 @@ import uniq from 'lodash/uniq';
 import React from 'react';
 import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
 
-type ComposedCheckbox = React.FC<CheckboxProps> & {
+type ComposedCheckbox = React.ForwardRefExoticComponent<
+  Pick<Partial<any>, string | number | symbol> & React.RefAttributes<unknown>
+> & {
   Group?: React.FC<CheckboxGroupProps>;
   __ANT_CHECKBOX?: boolean;
   ReadPretty?: React.FC<CheckboxProps>;

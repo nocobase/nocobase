@@ -24,7 +24,9 @@ mock.onGet('/users:list').reply(async () => {
 
 const ComponentA = () => {
   console.log('ComponentA');
-  const { data, loading } = useRequest(
+  const { data, loading } = useRequest<{
+    data: any;
+  }>(
     {
       url: 'users:list',
       method: 'get',

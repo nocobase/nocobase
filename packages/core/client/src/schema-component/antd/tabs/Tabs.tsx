@@ -25,27 +25,19 @@ export const Tabs: any = observer(
           key,
           label: <RecursionField name={key} schema={schema} onlyRenderSelf />,
           children: (
-            <PaneRoot active={key === contextProps.activeKey}>
+            <PaneRoot {...(PaneRoot !== React.Fragment ? { active: key === contextProps.activeKey } : {})}>
               <RecursionField name={key} schema={schema} onlyRenderProperties />
             </PaneRoot>
           ),
         };
       });
 
-      if (designable) {
-        result.push({
-          key: 'designer',
-          label: render(),
-          children: null,
-        });
-      }
-
       return result;
     }, [fieldSchema.mapProperties((s, key) => key).join()]);
 
     return (
       <DndContext>
-        <AntdTabs {...contextProps} style={props.style} items={items} />
+        <AntdTabs {...contextProps} tabBarExtraContent={render()} style={props.style} items={items} />
       </DndContext>
     );
   },
@@ -75,7 +67,7 @@ const designerCss = css`
     left: 0;
     right: 0;
     display: none;
-    background: rgba(241, 139, 98, 0.06);
+    background: var(--colorBgSettingsHover);
     border: 0;
     top: 0;
     bottom: 0;
@@ -89,11 +81,12 @@ const designerCss = css`
       line-height: 16px;
       pointer-events: all;
       .ant-space-item {
-        background-color: #f18b62;
+        background-color: var(--colorSettings);
         color: #fff;
         line-height: 16px;
         width: 16px;
         padding-left: 1px;
+        align-self: stretch;
       }
     }
   }

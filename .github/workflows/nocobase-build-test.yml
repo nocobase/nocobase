@@ -31,4 +31,4 @@ jobs:
           cache: 'yarn'
       - run: yarn install
       - run: yarn build
-    timeout-minutes: 15
+    timeout-minutes: 30

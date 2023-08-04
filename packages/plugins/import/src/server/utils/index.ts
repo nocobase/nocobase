@@ -1,4 +1,4 @@
-import { set } from 'lodash';
+import lodash from 'lodash';
 import * as transforms from './transform';
 
 function getTransform(name: string): Function {
@@ -14,7 +14,7 @@ export async function transform({ ctx, record, columns, fields }) {
     const field = fields.find((f) => f.name === dataIndex[0]);
     const t = getTransform(field.options.interface);
     const value = await t({ ctx, column, value: cell, field });
-    set(newRecord, dataIndex[0], value);
+    lodash.set(newRecord, dataIndex[0], value);
   }
   return newRecord;
 }

@@ -1,18 +1,18 @@
 import { CloseCircleOutlined, PlusOutlined } from '@ant-design/icons';
-import { css } from '@emotion/css';
 import { observer, useField, useForm } from '@formily/react';
-import { Button, Dropdown, Form, Input, MenuProps } from 'antd';
-import React, { useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
-
 import {
   CollectionField,
   CollectionProvider,
   SchemaComponent,
   Variable,
+  css,
   useCollectionManager,
   useCompile,
+  useToken,
 } from '@nocobase/client';
+import { Button, Dropdown, Form, Input, MenuProps } from 'antd';
+import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { lang } from '../locale';
 import { useWorkflowVariableOptions } from '../variable';
 
@@ -32,25 +32,18 @@ function AssociationInput(props) {
   return <Input {...props} value={value} onChange={onChange} />;
 }
 
-export function useCollectionUIFields(collection) {
-  const { getCollectionFields } = useCollectionManager();
-
-  return getCollectionFields(collection).filter(
-    (field) => !field.hidden && (field.uiSchema ? !field.uiSchema['x-read-pretty'] : false),
-  );
-}
-
 // NOTE: observer for watching useProps
 const CollectionFieldSet = observer(
   ({ value, disabled, onChange, filter }: any) => {
+    const { token } = useToken();
     const { t } = useTranslation();
     const compile = useCompile();
     const form = useForm();
-    const { getCollection } = useCollectionManager();
+    const { getCollection, getCollectionFields } = useCollectionManager();
     const scope = useWorkflowVariableOptions();
     const { values: config } = form;
     const collectionName = config?.collection;
-    const collectionFields = useCollectionUIFields(collectionName);
+    const collectionFields = getCollectionFields(collectionName);
     const fields = filter ? collectionFields.filter(filter.bind(config)) : collectionFields;
 
     const unassignedFields = useMemo(() => fields.filter((field) => !value || !(field.name in value)), [fields, value]);
@@ -148,7 +141,7 @@ const CollectionFieldSet = observer(
             ) : null}
           </CollectionProvider>
         ) : (
-          <p>{lang('Please select collection first')}</p>
+          <p style={{ color: token.colorText }}>{lang('Please select collection first')}</p>
         )}
       </fieldset>
     );

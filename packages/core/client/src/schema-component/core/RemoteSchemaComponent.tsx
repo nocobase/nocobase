@@ -37,7 +37,9 @@ const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => 
     url: `/uiSchemas:${onlyRenderProperties ? 'getProperties' : 'getJsonSchema'}/${uid}`,
   };
   const form = useMemo(() => createForm(), [uid]);
-  const { data, loading } = useRequest(conf, {
+  const { data, loading } = useRequest<{
+    data: any;
+  }>(conf, {
     refreshDeps: [uid],
     onSuccess(data) {
       onSuccess && onSuccess(data);

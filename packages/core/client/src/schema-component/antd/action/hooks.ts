@@ -1,9 +1,9 @@
-import { useForm, useFieldSchema } from '@formily/react';
-import { Modal as AntdModal } from 'antd';
+import { useFieldSchema, useForm } from '@formily/react';
+import { App } from 'antd';
 import { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActionContext } from './context';
 import { useIsEmptyRecord } from '../../../block-provider/FormBlockProvider';
+import { ActionContext } from './context';
 
 export const useA = () => {
   return {
@@ -14,6 +14,7 @@ export const useA = () => {
 export const useActionContext = () => {
   const ctx = useContext(ActionContext);
   const { t } = useTranslation();
+  const { modal } = App.useApp();
 
   return {
     ...ctx,
@@ -21,7 +22,7 @@ export const useActionContext = () => {
       if (ctx?.openMode !== 'page') {
         if (!visible) {
           if (confirm && ctx.formValueChanged) {
-            AntdModal.confirm({
+            modal.confirm({
               title: t('Unsaved changes'),
               content: t("Are you sure you don't want to save?"),
               async onOk() {

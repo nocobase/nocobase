@@ -1,6 +1,5 @@
 import { CloseCircleOutlined } from '@ant-design/icons';
-import { css, cx } from '@emotion/css';
-import { Variable, useCompile } from '@nocobase/client';
+import { css, cx, useCompile, Variable } from '@nocobase/client';
 import { evaluators } from '@nocobase/evaluators/client';
 import { Registry } from '@nocobase/utils/client';
 import { Button, Select } from 'antd';
@@ -8,11 +7,11 @@ import React from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { NodeDefaultView } from '.';
 import { Branch } from '../Branch';
-import { useFlowContext } from '../FlowContext';
 import { RadioWithTooltip, RadioWithTooltipOption } from '../components/RadioWithTooltip';
 import { renderEngineReference } from '../components/renderEngineReference';
-import { NAMESPACE, lang } from '../locale';
-import { branchBlockClass, nodeSubtreeClass } from '../style';
+import { useFlowContext } from '../FlowContext';
+import { lang, NAMESPACE } from '../locale';
+import useStyles from '../style';
 import { useWorkflowVariableOptions } from '../variable';
 
 interface Calculator {
@@ -161,7 +160,8 @@ function Calculation({ calculator, operands = [], onChange }) {
         value={calculator}
         onChange={(v) => onChange({ operands, calculator: v })}
         placeholder={lang('Calculator')}
-        dropdownMatchSelectWidth={false}
+        popupMatchSelectWidth={false}
+        className="auto-width"
       >
         {calculatorGroups
           .filter((group) => Boolean(getGroupCalculators(group.value).length))
@@ -371,10 +371,7 @@ export default {
       type: 'string',
       title: `{{t("Condition expression", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
-      'x-component': 'Variable.TextArea',
-      'x-component-props': {
-        scope: '{{useWorkflowVariableOptions}}',
-      },
+      'x-component': 'CalculationExpression',
       ['x-validator'](value, rules, { form }) {
         const { values } = form;
         const { evaluate } = evaluators.get(values.engine);
@@ -416,6 +413,7 @@ export default {
   component: function Component({ data }) {
     const { t } = useTranslation();
     const { nodes } = useFlowContext();
+    const { styles } = useStyles();
     const {
       id,
       config: { rejectOnFalse },
@@ -425,10 +423,10 @@ export default {
     return (
       <NodeDefaultView data={data}>
         {rejectOnFalse ? null : (
-          <div className={cx(nodeSubtreeClass)}>
+          <div className={cx(styles.nodeSubtreeClass)}>
             <div
               className={cx(
-                branchBlockClass,
+                styles.branchBlockClass,
                 css`
                   > * > .workflow-branch-lines {
                     > button {
@@ -441,36 +439,9 @@ export default {
               <Branch from={data} entry={falseEntry} branchIndex={0} />
               <Branch from={data} entry={trueEntry} branchIndex={1} />
             </div>
-            <div
-              className={css`
-                position: relative;
-                height: 2em;
-                overflow: visible;
-
-                > span {
-                  position: absolute;
-                  top: calc(1.5em - 1px);
-                  line-height: 1em;
-                  color: #999;
-                  background-color: #f0f2f5;
-                  padding: 1px;
-                }
-              `}
-            >
-              <span
-                className={css`
-                  right: 4em;
-                `}
-              >
-                {t('No')}
-              </span>
-              <span
-                className={css`
-                  left: 4em;
-                `}
-              >
-                {t('Yes')}
-              </span>
+            <div className={styles.conditionClass}>
+              <span style={{ right: '4em' }}>{t('No')}</span>
+              <span style={{ left: '4em' }}>{t('Yes')}</span>
             </div>
           </div>
         )}
@@ -483,6 +454,11 @@ export default {
   },
   components: {
     CalculationConfig,
+    CalculationExpression(props) {
+      const scope = useWorkflowVariableOptions();
+
+      return <Variable.TextArea scope={scope} {...props} />;
+    },
     RadioWithTooltip,
   },
 };

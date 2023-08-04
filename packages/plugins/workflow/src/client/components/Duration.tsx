@@ -1,6 +1,6 @@
-import React from 'react';
+import { css } from '@nocobase/client';
 import { InputNumber, Select } from 'antd';
-import { css } from '@emotion/css';
+import React from 'react';
 import { lang } from '../locale';
 
 const UnitOptions = [
@@ -28,8 +28,18 @@ export default function ({ value = 60000, onChange }) {
         gap: 0.5em;
       `}
     >
-      <InputNumber min={1} value={quantity} onChange={(v) => onChange(Math.round(v * option.value))} />
-      <Select value={option.value} onChange={(unit) => onChange(Math.round(quantity * unit))}>
+      <InputNumber
+        min={1}
+        value={quantity}
+        onChange={(v) => onChange(Math.round(v * option.value))}
+        className="auto-width"
+      />
+      <Select
+        popupMatchSelectWidth={false}
+        value={option.value}
+        onChange={(unit) => onChange(Math.round(quantity * unit))}
+        className="auto-width"
+      >
         {UnitOptions.map((item) => (
           <Select.Option key={item.value} value={item.value}>
             {lang(item.label)}

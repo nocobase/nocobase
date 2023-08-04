@@ -1,29 +1,8 @@
 import { MenuProps, Select } from 'antd';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useACLRoleContext } from '../acl';
 import { useAPIClient } from '../api-client';
-import { useCompile } from '../schema-component';
-import { useCurrentUserContext } from './CurrentUserProvider';
-
-const useCurrentRoles = () => {
-  const { allowAnonymous } = useACLRoleContext();
-  const { data } = useCurrentUserContext();
-  const compile = useCompile();
-  const options = (data?.data?.roles || []).map((item) => {
-    return {
-      title: item.title,
-      name: item.name,
-    };
-  });
-  if (allowAnonymous) {
-    options.push({
-      title: 'Anonymous',
-      name: 'anonymous',
-    });
-  }
-  return compile(options);
-};
+import { useCurrentRoles } from './CurrentUserProvider';
 
 export const useSwitchRole = () => {
   const api = useAPIClient();
@@ -45,6 +24,7 @@ export const useSwitchRole = () => {
           <Select
             style={{ minWidth: 100 }}
             bordered={false}
+            popupMatchSelectWidth={false}
             fieldNames={{
               label: 'title',
               value: 'name',

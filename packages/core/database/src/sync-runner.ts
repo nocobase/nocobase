@@ -20,7 +20,9 @@ export class SyncRunner {
 
     if (!parents) {
       throw new Error(
-        `Inherit model ${inheritedCollection.name} can't be created without parents, parents option is ${lodash
+        `Inherit model ${
+          inheritedCollection.name
+        } can't be created without parents, parents option is ${lodash
           .castArray(inheritedCollection.options.inherits)
           .join(', ')}`,
       );
@@ -58,7 +60,7 @@ export class SyncRunner {
         const columnDefault = sequenceNameResult[0][0]['column_default'];
 
         if (!columnDefault) {
-          throw new Error(`Can't find sequence name of ${parent}`);
+          throw new Error(`Can't find sequence name of parent collection ${parent.options.name}`);
         }
 
         const regex = new RegExp(/nextval\('(.*)'::regclass\)/);

@@ -1,28 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import { css, cx } from '@emotion/css';
-import { ISchema, useForm } from '@formily/react';
-import { Registry } from '@nocobase/utils/client';
-import { message, Tag, Alert, Button, Input } from 'antd';
-import { useTranslation } from 'react-i18next';
 import { InfoOutlined } from '@ant-design/icons';
-
+import { createForm } from '@formily/core';
+import { ISchema, useForm } from '@formily/react';
 import {
   ActionContextProvider,
   SchemaComponent,
   SchemaInitializerItemOptions,
-  useActionContext,
+  css,
+  cx,
   useAPIClient,
+  useActionContext,
   useCompile,
-  useRequest,
   useResourceActionContext,
 } from '@nocobase/client';
-
-import { nodeCardClass, nodeJobButtonClass, nodeMetaClass, nodeTitleClass } from '../style';
+import { Registry } from '@nocobase/utils/client';
+import { Alert, Button, Input, Tag, message } from 'antd';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useFlowContext } from '../FlowContext';
+import { NAMESPACE, lang } from '../locale';
+import useStyles from '../style';
+import { VariableOptions } from '../variable';
 import collection from './collection';
 import schedule from './schedule/';
-import { lang, NAMESPACE } from '../locale';
-import { VariableOptions } from '../variable';
 
 function useUpdateConfigAction() {
   const form = useForm();
@@ -70,6 +68,8 @@ triggers.register(schedule.type, schedule);
 function TriggerExecution() {
   const compile = useCompile();
   const { workflow, execution } = useFlowContext();
+  const { styles } = useStyles();
+
   if (!execution) {
     return null;
   }
@@ -85,7 +85,8 @@ function TriggerExecution() {
         'x-component-props': {
           title: <InfoOutlined />,
           shape: 'circle',
-          className: nodeJobButtonClass,
+          size: 'small',
+          className: styles.nodeJobButtonClass,
           type: 'primary',
         },
         properties: {
@@ -97,7 +98,7 @@ function TriggerExecution() {
             },
             'x-component': 'Action.Modal',
             title: (
-              <div className={cx(nodeTitleClass)}>
+              <div className={cx(styles.nodeTitleClass)}>
                 <Tag>{compile(trigger.title)}</Tag>
                 <strong>{workflow.title}</strong>
                 <span className="workflow-node-id">#{execution.id}</span>
@@ -141,6 +142,7 @@ export const TriggerConfig = () => {
   const { workflow, refresh } = useFlowContext();
   const [editingTitle, setEditingTitle] = useState<string>('');
   const [editingConfig, setEditingConfig] = useState(false);
+  const { styles } = useStyles();
   let typeTitle = '';
   useEffect(() => {
     if (workflow) {
@@ -148,10 +150,20 @@ export const TriggerConfig = () => {
     }
   }, [workflow]);
 
+  const form = useMemo(
+    () =>
+      createForm({
+        initialValues: workflow?.config,
+        values: workflow?.config,
+        disabled: workflow?.executed,
+      }),
+    [workflow],
+  );
+
   if (!workflow || !workflow.type) {
     return null;
   }
-  const { title, type, config, executed } = workflow;
+  const { title, type, executed } = workflow;
   const trigger = triggers.get(type);
   const { fieldset, scope, components } = trigger;
   typeTitle = trigger.title;
@@ -189,8 +201,8 @@ export const TriggerConfig = () => {
   }
 
   return (
-    <div className={cx(nodeCardClass)} onClick={onOpenDrawer}>
-      <div className={cx(nodeMetaClass, 'workflow-node-meta')}>
+    <div className={cx(styles.nodeCardClass)} onClick={onOpenDrawer}>
+      <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
         <Tag color="gold">{titleText}</Tag>
       </div>
       <div>
@@ -205,6 +217,7 @@ export const TriggerConfig = () => {
       <ActionContextProvider value={{ visible: editingConfig, setVisible: setEditingConfig }}>
         <SchemaComponent
           schema={{
+            name: `workflow-trigger-${workflow.id}`,
             type: 'void',
             properties: {
               config: {
@@ -220,18 +233,9 @@ export const TriggerConfig = () => {
                 type: 'void',
                 title: titleText,
                 'x-component': 'Action.Drawer',
-                'x-decorator': 'Form',
+                'x-decorator': 'FormV2',
                 'x-decorator-props': {
-                  disabled: workflow.executed,
-                  useValues(options) {
-                    return useRequest(
-                      () =>
-                        Promise.resolve({
-                          data: config,
-                        }),
-                      options,
-                    );
-                  },
+                  form,
                 },
                 properties: {
                   ...(executed
@@ -256,7 +260,7 @@ export const TriggerConfig = () => {
                     'x-component': 'fieldset',
                     'x-component-props': {
                       className: css`
-                        .ant-select:not(.full-width) {
+                        .ant-select.auto-width {
                           width: auto;
                           min-width: 6em;
                         }

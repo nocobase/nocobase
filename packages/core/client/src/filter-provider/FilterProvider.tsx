@@ -3,9 +3,19 @@ import { uniqBy } from 'lodash';
 import React, { createContext, useEffect, useRef } from 'react';
 import { useBlockRequestContext } from '../block-provider/BlockProvider';
 import { SharedFilter, mergeFilter } from '../block-provider/SharedFilterProvider';
-import { CollectionFieldOptions, useCollection } from '../collection-manager';
+import { CollectionFieldOptions, FieldOptions, useCollection } from '../collection-manager';
 import { removeNullCondition } from '../schema-component';
 import { useAssociatedFields } from './utils';
+
+export interface ForeignKeyField extends FieldOptions {
+  /** 外键字段所在的数据表的名称 */
+  collectionName: string;
+  isForeignKey: boolean;
+  key: string;
+  name: string;
+  parentKey: null | string;
+  reverseKey: null | string;
+}
 
 type Collection = ReturnType<typeof useCollection>;
 
@@ -14,7 +24,7 @@ export interface DataBlock {
   uid: string;
   /** 用户自行设置的区块名称 */
   title?: string;
-  /** 与当前区块相关的数据表信息 */
+  /** 与数据区块相关的数据表信息 */
   collection: Collection;
   /** 根据提供的参数执行该方法即可刷新数据区块的数据 */
   doFilter: (params: any, params2?: any) => Promise<void>;
@@ -22,10 +32,13 @@ export interface DataBlock {
   clearFilter: (uid: string) => void;
   /** 数据区块表中所有的关系字段 */
   associatedFields?: CollectionFieldOptions[];
-  /** 通过右上角菜单设置的过滤条件 */
+  /** 数据区块表中所有的外键字段 */
+  foreignKeyFields?: ForeignKeyField[];
+  /** 数据区块已经存在的过滤条件（通过 `设置数据范围` 或者其它能设置筛选条件的功能） */
   defaultFilter?: SharedFilter;
+  /** 数据区块用于请求数据的接口 */
   service?: any;
-  /** 区块所对应的 DOM 容器 */
+  /** 数据区块所的 DOM 容器 */
   dom: HTMLElement;
 }
 
@@ -73,6 +86,7 @@ export const FilterBlockRecord = ({
       doFilter: service.runAsync,
       collection,
       associatedFields,
+      foreignKeyFields: collection.foreignKeyFields as ForeignKeyField[],
       defaultFilter: params?.filter || {},
       service,
       dom: container.current,

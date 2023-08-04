@@ -8,6 +8,11 @@ NocoBase, geliştirmenin ilk aşamasındadır ve sık sık değişiklik yaparak 
 
 NocoBase v0.10 has been released, see [v0.10: update instructions](http://docs.nocobase.com/welcome/release/v10-changelog) for details.
 
+## Recent major updates
+
+- [v0.11: New client application, plugin and router - 2023/07/08](http://docs.nocobase.com/welcome/release/v11-changelog)
+- [v0.10: Update instructions - 2023/06/23](http://docs.nocobase.com/welcome/release/v10-changelog)
+
 ## Çalışma arkadaşımız olabilirsiniz
 
 Takıma katılacak tam zamanlı, uzaktan ürün tasarımı ve geliştirme arkadaşları arıyoruz. NocoBase'e güçlü bir ilginiz varsa, lütfen bize hello@nocobase.com adresinden e-posta göndermekten çekinmeyin.

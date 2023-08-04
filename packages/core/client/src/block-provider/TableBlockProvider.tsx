@@ -3,31 +3,51 @@ import { FormContext, useField, useFieldSchema } from '@formily/react';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useCollectionManager } from '../collection-manager';
 import { useFilterBlock } from '../filter-provider/FilterProvider';
-import { useRecord } from '../record-provider';
 import { FixedBlockWrapper, SchemaComponentOptions, removeNullCondition } from '../schema-component';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
 import { mergeFilter } from './SharedFilterProvider';
 import { findFilterTargets } from './hooks';
 
 export const TableBlockContext = createContext<any>({});
-
+export function getIdsWithChildren(nodes) {
+  const ids = [];
+  if (nodes) {
+    for (const node of nodes) {
+      if (node?.children && node.children.length > 0) {
+        ids.push(node.id);
+        ids.push(...getIdsWithChildren(node?.children));
+      }
+    }
+  }
+  return ids;
+}
 interface Props {
   params?: any;
   showIndex?: boolean;
   dragSort?: boolean;
   rowKey?: string;
   childrenColumnName: any;
+  fieldNames?: any;
 }
 
 const InternalTableBlockProvider = (props: Props) => {
-  const { params, showIndex, dragSort, rowKey, childrenColumnName } = props;
+  const { params, showIndex, dragSort, rowKey, childrenColumnName, fieldNames, ...others } = props;
   const field: any = useField();
   const { resource, service } = useBlockRequestContext();
-  const [expandFlag, setExpandFlag] = useState(false);
+  const fieldSchema = useFieldSchema();
+  const { treeTable } = fieldSchema?.['x-decorator-props'] || {};
+  const [expandFlag, setExpandFlag] = useState(fieldNames ? true : false);
+  const allIncludesChildren = useMemo(() => {
+    if (treeTable !== false) {
+      const keys = getIdsWithChildren(service?.data?.data);
+      return keys || [];
+    }
+  }, [service?.loading]);
   return (
     <FixedBlockWrapper>
       <TableBlockContext.Provider
         value={{
+          ...others,
           field,
           service,
           resource,
@@ -37,6 +57,7 @@ const InternalTableBlockProvider = (props: Props) => {
           rowKey,
           expandFlag,
           childrenColumnName,
+          allIncludesChildren,
           setExpandFlag: () => setExpandFlag(!expandFlag),
         }}
       >
@@ -46,60 +67,9 @@ const InternalTableBlockProvider = (props: Props) => {
   );
 };
 
-// export const useAssociationNames = (collection) => {
-//   const { getCollectionFields } = useCollectionManager();
-//   const collectionFields = getCollectionFields(collection);
-//   const associationFields = new Set();
-//   for (const collectionField of collectionFields) {
-//     if (collectionField.target) {
-//       associationFields.add(collectionField.name);
-//       const fields = getCollectionFields(collectionField.target);
-//       for (const field of fields) {
-//         if (field.target) {
-//           associationFields.add(`${collectionField.name}.${field.name}`);
-//         }
-//       }
-//     }
-//   }
-//   const fieldSchema = useFieldSchema();
-//   const tableSchema = fieldSchema.reduceProperties((buf, schema) => {
-//     if (schema['x-component'] === 'TableV2') {
-//       return schema;
-//     }
-//     if (schema['x-component'] === 'Gantt') {
-//       return schema.properties?.table;
-//     }
-//     return buf;
-//   }, new Schema({}));
-//   return uniq(
-//     tableSchema.reduceProperties((buf, schema) => {
-//       if (schema['x-component'] === 'TableV2.Column') {
-//         const s = schema.reduceProperties((buf, s) => {
-//           const [name] = (s.name as string).split('.');
-//           if (s['x-collection-field'] && associationFields.has(name)) {
-//             return s;
-//           }
-//           return buf;
-//         }, null);
-//         if (s) {
-//           // 关联字段和关联的关联字段
-//           const [firstName] = s.name.split('.');
-//           if (associationFields.has(s.name)) {
-//             buf.push(s.name);
-//           } else if (associationFields.has(firstName)) {
-//             buf.push(firstName);
-//           }
-//         }
-//       }
-//       return buf;
-//     }, []),
-//   );
-// };
-
 export const TableBlockProvider = (props) => {
   const resourceName = props.resource;
   const params = { ...props.params };
-  const record = useRecord();
   const fieldSchema = useFieldSchema();
   const { getCollection, getCollectionField } = useCollectionManager();
   const collection = getCollection(props.collection);
@@ -128,7 +98,11 @@ export const TableBlockProvider = (props) => {
     <SchemaComponentOptions scope={{ treeTable }}>
       <FormContext.Provider value={form}>
         <BlockProvider {...props} params={params} runWhenParamsChanged>
-          <InternalTableBlockProvider {...props} childrenColumnName={childrenColumnName} params={params} />
+          <InternalTableBlockProvider
+            {...props}
+            childrenColumnName={childrenColumnName}
+            params={params}
+          />
         </BlockProvider>
       </FormContext.Provider>
     </SchemaComponentOptions>
@@ -148,6 +122,7 @@ export const useTableBlockProps = () => {
 
   useEffect(() => {
     if (!ctx?.service?.loading) {
+      field.value = [];
       field.value = ctx?.service?.data?.data;
       field.data = field.data || {};
       field.data.selectedRowKeys = ctx?.field?.data?.selectedRowKeys;

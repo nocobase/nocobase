@@ -1,6 +1,6 @@
 import { Database } from '@nocobase/database';
 import { MockServer, mockServer } from '@nocobase/test';
-import OIDCPlugin from '@nocobase/plugin-oidc';
+import OIDCPlugin from '../index';
 import { authType } from '../../constants';
 import { OIDCAuth } from '../oidc-auth';
 

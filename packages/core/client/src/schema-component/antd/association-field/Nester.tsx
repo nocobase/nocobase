@@ -2,13 +2,15 @@ import { CloseOutlined, PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { ArrayField } from '@formily/core';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
-import { RecursionField, observer, useFieldSchema } from '@formily/react';
+import { observer, RecursionField, useFieldSchema } from '@formily/react';
 import { action } from '@formily/reactive';
+import { each } from '@formily/shared';
 import { Button, Card, Divider, Tooltip } from 'antd';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AssociationFieldContext } from './context';
 import { useAssociationFieldContext } from './hooks';
+import { RecordProvider, useRecord } from '../../../record-provider';
 
 export const Nester = (props) => {
   const { options } = useContext(AssociationFieldContext);
@@ -62,6 +64,11 @@ const ToManyNester = observer(
                             insertCount: 1,
                           });
                           field.value.splice(index + 1, 0, {});
+                          each(field.form.fields, (targetField, key) => {
+                            if (!targetField) {
+                              delete field.form.fields[key];
+                            }
+                          });
                           return field.onInput(field.value);
                         });
                       }}
@@ -86,7 +93,9 @@ const ToManyNester = observer(
                   </Tooltip>
                 )}
               </div>
-              <RecursionField onlyRenderProperties basePath={field.address.concat(index)} schema={fieldSchema} />
+              <RecordProvider record={value}>
+                <RecursionField onlyRenderProperties basePath={field.address.concat(index)} schema={fieldSchema} />
+              </RecordProvider>
               <Divider />
             </React.Fragment>
           );

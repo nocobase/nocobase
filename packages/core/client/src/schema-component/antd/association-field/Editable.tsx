@@ -1,5 +1,5 @@
 import { Field } from '@formily/core';
-import { observer, useField, useFieldSchema, useForm } from '@formily/react';
+import { observer, useField, useForm } from '@formily/react';
 import React from 'react';
 import { SchemaComponentOptions } from '../../';
 import { useAssociationCreateActionProps as useCAP } from '../../../block-provider/hooks';
@@ -9,6 +9,7 @@ import { InternalFileManager } from './FileManager';
 import { InternalNester } from './InternalNester';
 import { InternalPicker } from './InternalPicker';
 import { InternalSubTable } from './InternalSubTable';
+import { InternaPopoverNester } from './InternalPopoverNester';
 import { CreateRecordAction } from './components/CreateRecordAction';
 import { useAssociationFieldContext } from './hooks';
 
@@ -17,7 +18,6 @@ const EditableAssociationField = observer(
     const { multiple } = props;
     const field: Field = useField();
     const form = useForm();
-    const fieldSchema = useFieldSchema();
     const { options: collectionField, currentMode } = useAssociationFieldContext();
 
     const useCreateActionProps = () => {
@@ -46,6 +46,7 @@ const EditableAssociationField = observer(
       <SchemaComponentOptions scope={{ useCreateActionProps }} components={{ CreateRecordAction }}>
         {currentMode === 'Picker' && <InternalPicker {...props} />}
         {currentMode === 'Nester' && <InternalNester {...props} />}
+        {currentMode === 'PopoverNester' && <InternaPopoverNester {...props} />}
         {currentMode === 'Select' && <AssociationSelect {...props} />}
         {currentMode === 'SubTable' && <InternalSubTable {...props} />}
         {currentMode === 'FileManager' && <InternalFileManager {...props} />}

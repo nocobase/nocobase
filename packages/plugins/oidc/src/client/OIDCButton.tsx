@@ -1,9 +1,9 @@
 import { LoginOutlined } from '@ant-design/icons';
-import { css } from '@emotion/css';
-import { Authenticator, useAPIClient, useRedirect } from '@nocobase/client';
+import { Authenticator, css, useAPIClient, useRedirect } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
 import { Button, Space } from 'antd';
 import React, { useEffect, useState } from 'react';
+import { useOidcTranslation } from './locale';
 
 export interface OIDCProvider {
   clientId: string;
@@ -11,6 +11,7 @@ export interface OIDCProvider {
 }
 
 export const OIDCButton = (props: { authenticator: Authenticator }) => {
+  const { t } = useOidcTranslation();
   const [windowHandler, setWindowHandler] = useState<Window | undefined>();
   const api = useAPIClient();
   const redirect = useRedirect();
@@ -78,7 +79,7 @@ export const OIDCButton = (props: { authenticator: Authenticator }) => {
       `}
     >
       <Button shape="round" block icon={<LoginOutlined />} onClick={() => handleOpen(authenticator.name)}>
-        {authenticator.title}
+        {t(authenticator.title)}
       </Button>
     </Space>
   );

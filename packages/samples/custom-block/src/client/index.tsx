@@ -1,5 +1,5 @@
 import { TableOutlined } from '@ant-design/icons';
-import { SchemaComponentOptions, SchemaInitializer, SchemaInitializerContext } from '@nocobase/client';
+import { Plugin, SchemaInitializer, SchemaInitializerContext } from '@nocobase/client';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { HelloDesigner } from './HelloDesigner';
@@ -30,7 +30,7 @@ export const HelloBlockInitializer = (props) => {
   );
 };
 
-const CustomBlock = React.memo((props) => {
+const CustomBlockProvider = React.memo((props) => {
   const items = useContext<any>(SchemaInitializerContext);
   const children = items.BlockInitializers.items[2].children;
   children.push({
@@ -39,12 +39,18 @@ const CustomBlock = React.memo((props) => {
     title: '{{t("Hello block")}}',
     component: 'HelloBlockInitializer',
   });
-  return (
-    <SchemaComponentOptions components={{ HelloDesigner, HelloBlockInitializer }}>
-      <SchemaInitializerContext.Provider value={items}>{props.children}</SchemaInitializerContext.Provider>
-    </SchemaComponentOptions>
-  );
+  return <SchemaInitializerContext.Provider value={items}>{props.children}</SchemaInitializerContext.Provider>;
 });
-CustomBlock.displayName = 'CustomBlock';
+CustomBlockProvider.displayName = 'CustomBlockProvider';
 
-export default CustomBlock;
+class CustomBlockPlugin extends Plugin {
+  async load() {
+    this.app.addComponents({
+      HelloDesigner,
+      HelloBlockInitializer,
+    });
+    this.app.addProvider(CustomBlockProvider);
+  }
+}
+
+export default CustomBlockPlugin;

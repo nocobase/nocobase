@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { useField, observer } from '@formily/react';
+import { observer } from '@formily/react';
+import React from 'react';
 import { AssociationFieldProvider } from './AssociationFieldProvider';
-import { InternalNester } from './InternalNester';
-import { ReadPrettyInternalViewer } from './InternalViewer';
-import { InternalSubTable } from './InternalSubTable';
 import { FileManageReadPretty } from './FileManager';
 import { useAssociationFieldContext } from './hooks';
+import { InternalNester } from './InternalNester';
+import { InternalSubTable } from './InternalSubTable';
+import { ReadPrettyInternalTag } from './InternalTag';
+import { ReadPrettyInternalViewer } from './InternalViewer';
 
 const ReadPrettyAssociationField = observer(
   (props: any) => {
@@ -14,6 +15,7 @@ const ReadPrettyAssociationField = observer(
     return (
       <>
         {['Select', 'Picker'].includes(currentMode) && <ReadPrettyInternalViewer {...props} />}
+        {currentMode === 'Tag' && <ReadPrettyInternalTag {...props} />}
         {currentMode === 'Nester' && <InternalNester {...props} />}
         {currentMode === 'SubTable' && <InternalSubTable {...props} />}
         {currentMode === 'FileManager' && <FileManageReadPretty {...props} />}

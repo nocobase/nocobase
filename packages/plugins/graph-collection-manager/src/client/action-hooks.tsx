@@ -1,15 +1,16 @@
 import { observer, useForm } from '@formily/react';
 import { action } from '@formily/reactive';
 import {
-  useActionContext,
   useAPIClient,
+  useActionContext,
   useCollectionFieldFormValues,
   useCollectionManager,
   useCompile,
   useRequest,
 } from '@nocobase/client';
-import { message, Select } from 'antd';
-import omit from 'lodash/omit';
+import { error } from '@nocobase/utils/client';
+import { Select, message } from 'antd';
+import { lodash } from '@nocobase/utils/client'
 import React, { useContext, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { GraphCollectionContext } from './components/CollectionNodeProvder';
@@ -34,7 +35,12 @@ export const SourceCollection = observer(
     const compile = useCompile();
     return (
       <div>
-        <Select disabled value={record.name} options={[{ value: record.name, label: compile(record.title) }]} />
+        <Select
+          popupMatchSelectWidth={false}
+          disabled
+          value={record.name}
+          options={[{ value: record.name, label: compile(record.title) }]}
+        />
       </div>
     );
   },
@@ -82,7 +88,7 @@ export const useCreateAction = (collectionName, targetId?) => {
     async run() {
       await form.submit();
       const values = getValues();
-      const formValues = omit(values, [
+      const formValues = lodash.omit(values, [
         'key',
         'uiSchemaUid',
         'collectionName',
@@ -150,7 +156,7 @@ export const useUpdateCollectionActionAndRefreshCM = () => {
       await form.submit();
       await api.resource('collections').update({
         filterByTk: name,
-        values: { ...omit(form.values, ['fields']) },
+        values: { ...lodash.omit(form.values, ['fields']) },
       });
       ctx.setVisible(false);
       message.success(t('Saved successfully'));
@@ -217,11 +223,15 @@ export const useDestroyFieldActionAndRefreshCM = (props) => {
 export const useAsyncDataSource = (service: any) => {
   return (field: any, { targetScope }) => {
     field.loading = true;
-    service(targetScope).then(
-      action.bound((data: any) => {
-        field.dataSource = data;
-        field.loading = false;
-      }),
-    );
+    service(targetScope)
+      .then(
+        action.bound((data: any) => {
+          field.dataSource = data;
+          field.loading = false;
+        }),
+      )
+      .catch((err) => {
+        error(err);
+      });
   };
 };

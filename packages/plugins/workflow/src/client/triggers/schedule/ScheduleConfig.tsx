@@ -1,16 +1,13 @@
-import React, { useState } from 'react';
 import { onFieldValueChange } from '@formily/core';
-import { useForm, useFormEffects } from '@formily/react';
-import { css } from '@emotion/css';
-
-import { SchemaComponent } from '@nocobase/client';
-
-import { collection } from '../../schemas/collection';
-import { OnField } from './OnField';
-import { EndsByField } from './EndsByField';
-import { RepeatField } from './RepeatField';
-import { SCHEDULE_MODE } from './constants';
+import { useForm, useFormEffects, ISchema } from '@formily/react';
+import { css, SchemaComponent } from '@nocobase/client';
+import React, { useState } from 'react';
 import { NAMESPACE } from '../../locale';
+import { appends, collection } from '../../schemas/collection';
+import { SCHEDULE_MODE } from './constants';
+import { EndsByField } from './EndsByField';
+import { OnField } from './OnField';
+import { RepeatField } from './RepeatField';
 
 const ModeFieldsets = {
   [SCHEDULE_MODE.STATIC]: {
@@ -141,6 +138,19 @@ const ModeFieldsets = {
         min: 0,
       },
     },
+    appends: {
+      ...appends,
+      'x-reactions': [
+        {
+          dependencies: ['mode', 'collection'],
+          fulfill: {
+            state: {
+              visible: `{{$deps[0] === ${SCHEDULE_MODE.COLLECTION_FIELD} && $deps[1]}}`,
+            },
+          },
+        },
+      ],
+    },
   },
 };
 
@@ -183,27 +193,29 @@ export const ScheduleConfig = () => {
         }}
       />
       <SchemaComponent
-        schema={{
-          type: 'void',
-          properties: {
-            [`mode-${mode}`]: {
-              type: 'void',
-              'x-component': 'fieldset',
-              'x-component-props': {
-                className: css`
-                  .ant-input-number {
-                    width: 4em;
-                  }
+        schema={
+          {
+            type: 'void',
+            properties: {
+              [`mode-${mode}`]: {
+                type: 'void',
+                'x-component': 'fieldset',
+                'x-component-props': {
+                  className: css`
+                    .ant-input-number {
+                      width: 4em;
+                    }
 
-                  .ant-picker {
-                    width: auto;
-                  }
-                `,
+                    .ant-picker {
+                      width: auto;
+                    }
+                  `,
+                },
+                properties: ModeFieldsets[mode],
               },
-              properties: ModeFieldsets[mode],
             },
-          },
-        }}
+          } as ISchema
+        }
         components={{
           OnField,
           RepeatField,
