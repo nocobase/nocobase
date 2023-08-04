@@ -1,5 +1,5 @@
 import { SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
-import { parse } from '@nocobase/utils/client';
+import { dayjs, parse } from '@nocobase/utils/client';
 import { App, message } from 'antd';
 import { cloneDeep } from 'lodash';
 import get from 'lodash/get';
@@ -15,8 +15,10 @@ import { useFilterBlock } from '../../filter-provider/FilterProvider';
 import { transformToFilter } from '../../filter-provider/utils';
 import { useRecord } from '../../record-provider';
 import { removeNullCondition, useActionContext, useCompile } from '../../schema-component';
+import { isVariable } from '../../schema-component/common/utils/uitls';
 import { BulkEditFormItemValueType } from '../../schema-initializer/components';
 import { useCurrentUserContext } from '../../user';
+import { useVariables } from '../../variables';
 import { useBlockRequestContext, useFilterByTk, useParamsFromRecord } from '../BlockProvider';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { mergeFilter } from '../SharedFilterProvider';
@@ -84,7 +86,6 @@ function getFormValues(filterByTk, field, form, fieldNames, getField, resource) 
       return omit({ ...form.values }, keys);
     }
   }
-  console.log('form.values', form.values);
   return form.values;
   const values = {};
   for (const key in form.values) {
@@ -134,19 +135,47 @@ export const useCreateActionProps = () => {
   const { field, resource, __parent } = useBlockRequestContext();
   const { setVisible, fieldSchema } = useActionContext();
   const navigate = useNavigate();
-  const { t } = useTranslation();
   const actionSchema = useFieldSchema();
   const actionField = useField();
-  const { fields, getField, getTreeParentField } = useCollection();
+  const { fields, getField, getTreeParentField, name } = useCollection();
   const compile = useCompile();
   const filterByTk = useFilterByTk();
   const currentRecord = useRecord();
   const currentUserContext = useCurrentUserContext();
   const { modal } = App.useApp();
+  const variables = useVariables();
 
   const currentUser = currentUserContext?.data?.data;
   const action = actionField.componentProps.saveMode || 'create';
   const filterKeys = actionField.componentProps.filterKeys || [];
+  const localVariables = [
+    {
+      name: '$user',
+      ctx: currentUser,
+      collectionName: 'users',
+    },
+    // 兼容老版本
+    {
+      name: 'currentUser',
+      ctx: currentUser,
+      collectionName: 'users',
+    },
+    {
+      name: 'currentTime',
+      ctx: () => dayjs().toISOString(),
+    },
+    // 兼容老版本
+    {
+      name: 'currentRecord',
+      ctx: form.values,
+      collectionName: name,
+    },
+    {
+      name: '$record',
+      ctx: form.values,
+      collectionName: name,
+    },
+  ];
 
   return {
     async onClick() {
@@ -154,7 +183,18 @@ export const useCreateActionProps = () => {
       const { assignedValues: originalAssignedValues = {}, onSuccess, overwriteValues, skipValidator } =
         actionSchema?.['x-action-settings'] ?? {};
       const addChild = fieldSchema?.['x-component-props']?.addChild;
-      const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentRecord, currentUser });
+
+      const assignedValues = {};
+      const waitList = Object.keys(originalAssignedValues).map(async (key) => {
+        const value = originalAssignedValues[key];
+        if (isVariable(value)) {
+          assignedValues[key] = await variables?.parseVariable(value, localVariables);
+        } else {
+          assignedValues[key] = value;
+        }
+      });
+      await Promise.all(waitList);
+
       if (!skipValidator) {
         await form.submit();
       }
@@ -213,19 +253,60 @@ export const useAssociationCreateActionProps = () => {
   const { setVisible, fieldSchema } = useActionContext();
   const actionSchema = useFieldSchema();
   const actionField = useField();
-  const { fields, getField, getTreeParentField } = useCollection();
+  const { fields, getField, getTreeParentField, name } = useCollection();
   const compile = useCompile();
   const filterByTk = useFilterByTk();
   const currentRecord = useRecord();
   const currentUserContext = useCurrentUserContext();
   const currentUser = currentUserContext?.data?.data;
+  const variables = useVariables();
+  const localVariables = [
+    {
+      name: '$user',
+      ctx: currentUser,
+      collectionName: 'users',
+    },
+    // 兼容老版本
+    {
+      name: 'currentUser',
+      ctx: currentUser,
+      collectionName: 'users',
+    },
+    {
+      name: 'currentTime',
+      ctx: () => dayjs().toISOString(),
+    },
+    // 兼容老版本
+    {
+      name: 'currentRecord',
+      ctx: form.values,
+      collectionName: name,
+    },
+    {
+      name: '$record',
+      ctx: form.values,
+      collectionName: name,
+    },
+  ];
+
   return {
     async onClick() {
       const fieldNames = fields.map((field) => field.name);
       const { assignedValues: originalAssignedValues = {}, onSuccess, overwriteValues, skipValidator } =
         actionSchema?.['x-action-settings'] ?? {};
       const addChild = fieldSchema?.['x-component-props']?.addChild;
-      const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentRecord, currentUser });
+
+      const assignedValues = {};
+      const waitList = Object.keys(originalAssignedValues).map(async (key) => {
+        const value = originalAssignedValues[key];
+        if (isVariable(value)) {
+          assignedValues[key] = await variables?.parseVariable(value, localVariables);
+        } else {
+          assignedValues[key] = value;
+        }
+      });
+      await Promise.all(waitList);
+
       if (!skipValidator) {
         await form.submit();
       }
@@ -404,12 +485,53 @@ export const useCustomizeUpdateActionProps = () => {
   const compile = useCompile();
   const form = useForm();
   const { modal } = App.useApp();
+  const { name } = useCollection();
+  const variables = useVariables();
+  const localVariables = [
+    {
+      name: '$user',
+      ctx: currentUser,
+      collectionName: 'users',
+    },
+    // 兼容老版本
+    {
+      name: 'currentUser',
+      ctx: currentUser,
+      collectionName: 'users',
+    },
+    {
+      name: 'currentTime',
+      ctx: () => dayjs().toISOString(),
+    },
+    // 兼容老版本
+    {
+      name: 'currentRecord',
+      ctx: form.values,
+      collectionName: name,
+    },
+    {
+      name: '$record',
+      ctx: form.values,
+      collectionName: name,
+    },
+  ];
 
   return {
     async onClick() {
       const { assignedValues: originalAssignedValues = {}, onSuccess, skipValidator } =
         actionSchema?.['x-action-settings'] ?? {};
-      const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentRecord, currentUser });
+
+      const assignedValues = {};
+      const waitList = Object.keys(originalAssignedValues).map(async (key) => {
+        const value = originalAssignedValues[key];
+        if (isVariable(value)) {
+          assignedValues[key] = await variables?.parseVariable(value, localVariables);
+        } else {
+          assignedValues[key] = value;
+        }
+      });
+      await Promise.all(waitList);
+
       if (skipValidator === false) {
         await form.submit();
       }
@@ -445,6 +567,7 @@ export const useCustomizeUpdateActionProps = () => {
 };
 
 export const useCustomizeBulkUpdateActionProps = () => {
+  const form = useForm();
   const { field, resource, __parent, service } = useBlockRequestContext();
   const expressionScope = useContext(SchemaExpressionScopeContext);
   const actionSchema = useFieldSchema();
@@ -459,6 +582,37 @@ export const useCustomizeBulkUpdateActionProps = () => {
   const { t } = useTranslation();
   const actionField = useField();
   const { modal } = App.useApp();
+  const currentRecord = useRecord();
+  const { name } = useCollection();
+  const variables = useVariables();
+  const localVariables = [
+    {
+      name: '$user',
+      ctx: currentUser,
+      collectionName: 'users',
+    },
+    // 兼容老版本
+    {
+      name: 'currentUser',
+      ctx: currentUser,
+      collectionName: 'users',
+    },
+    {
+      name: 'currentTime',
+      ctx: () => dayjs().toISOString(),
+    },
+    // 兼容老版本
+    {
+      name: 'currentRecord',
+      ctx: form.values,
+      collectionName: name,
+    },
+    {
+      name: '$record',
+      ctx: form.values,
+      collectionName: name,
+    },
+  ];
 
   return {
     async onClick() {
@@ -466,7 +620,18 @@ export const useCustomizeBulkUpdateActionProps = () => {
         actionSchema?.['x-action-settings'] ?? {};
       actionField.data = field.data || {};
       actionField.data.loading = true;
-      const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentUser });
+
+      const assignedValues = {};
+      const waitList = Object.keys(originalAssignedValues).map(async (key) => {
+        const value = originalAssignedValues[key];
+        if (isVariable(value)) {
+          assignedValues[key] = await variables?.parseVariable(value, localVariables);
+        } else {
+          assignedValues[key] = value;
+        }
+      });
+      await Promise.all(waitList);
+
       modal.confirm({
         title: t('Bulk update'),
         content: updateMode === 'selected' ? t('Update selected data?') : t('Update all data?'),
@@ -712,15 +877,57 @@ export const useUpdateActionProps = () => {
   const currentRecord = useRecord();
   const currentUserContext = useCurrentUserContext();
   const { modal } = App.useApp();
+  const { name } = useCollection();
 
   const currentUser = currentUserContext?.data?.data;
   const data = useParamsFromRecord();
+
+  const variables = useVariables();
+  const localVariables = [
+    {
+      name: '$user',
+      ctx: currentUser,
+      collectionName: 'users',
+    },
+    // 兼容老版本
+    {
+      name: 'currentUser',
+      ctx: currentUser,
+      collectionName: 'users',
+    },
+    {
+      name: 'currentTime',
+      ctx: () => dayjs().toISOString(),
+    },
+    // 兼容老版本
+    {
+      name: 'currentRecord',
+      ctx: form.values,
+      collectionName: name,
+    },
+    {
+      name: '$record',
+      ctx: form.values,
+      collectionName: name,
+    },
+  ];
 
   return {
     async onClick() {
       const { assignedValues: originalAssignedValues = {}, onSuccess, overwriteValues, skipValidator } =
         actionSchema?.['x-action-settings'] ?? {};
-      const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentRecord, currentUser });
+
+      const assignedValues = {};
+      const waitList = Object.keys(originalAssignedValues).map(async (key) => {
+        const value = originalAssignedValues[key];
+        if (isVariable(value)) {
+          assignedValues[key] = await variables?.parseVariable(value, localVariables);
+        } else {
+          assignedValues[key] = value;
+        }
+      });
+      await Promise.all(waitList);
+
       if (!skipValidator) {
         await form.submit();
       }

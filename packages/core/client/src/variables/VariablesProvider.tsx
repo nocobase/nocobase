@@ -191,7 +191,7 @@ const VariablesProvider = ({ children }) => {
       // 4. 如果有同名的全局变量，把它重新注册回去
       if (old) {
         if (Array.isArray(old)) {
-          old.forEach((item) => registerVariable(item));
+          old.filter(Boolean).forEach((item) => registerVariable(item));
         } else {
           registerVariable(old);
         }
