@@ -91,7 +91,8 @@ export const FormItem: any = observer(
             const data = parseVariables(schema.default, { $context: v });
             iniValues = iniValues.concat(data);
           });
-          field.setInitialValue?.(_.uniqBy(iniValues, 'id'));
+          const data = _.uniqBy(iniValues, 'id');
+          field.setInitialValue?.(data.length > 0 ? data : [{}]);
         } else if (
           collectionField?.interface === 'o2m' &&
           ['SubTable', 'Nester'].includes(schema?.['x-component-props']?.['mode']) // 间接对多

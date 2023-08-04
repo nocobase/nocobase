@@ -29,7 +29,6 @@ const ToOneNester = (props) => {
 
 const ToManyNester = observer(
   (props) => {
-    console.log(props);
     const fieldSchema = useFieldSchema();
     const { options, field, allowMultiple, allowDissociate } = useAssociationFieldContext<ArrayField>();
     const { t } = useTranslation();
