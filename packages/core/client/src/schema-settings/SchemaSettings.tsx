@@ -1484,7 +1484,7 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
               'x-component-props': {
                 ...(fieldSchema?.['x-component-props'] || {}),
                 collectionField,
-                contextCollectionName: isAllowContextVariable && tableCtx.collection,
+                contextCollectionName: isAllowContexVariable && tableCtx.collection,
                 schema: collectionField?.uiSchema,
                 className: defaultInputStyle,
                 renderSchemaComponent: function Com(props) {
