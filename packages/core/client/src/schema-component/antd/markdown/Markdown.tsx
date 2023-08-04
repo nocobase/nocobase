@@ -25,7 +25,7 @@ export const Markdown: any = connect(
 
 export const MarkdownReadPretty = (props) => {
   const { isDarkTheme } = useGlobalTheme();
-  const { wrapSSR, hashId, componentCls: className } = useStyles(isDarkTheme);
+  const { wrapSSR, hashId, componentCls: className } = useStyles({ isDarkTheme });
   const { html = '', loading } = useParseMarkdown(props.value);
   const text = convertToText(html);
   const value = (
