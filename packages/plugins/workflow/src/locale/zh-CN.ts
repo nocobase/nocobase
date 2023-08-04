@@ -2,6 +2,7 @@ export default {
   Workflow: '工作流',
   'Execution history': '执行历史',
   Executed: '已执行',
+  Reload: '重载',
   'Trigger type': '触发方式',
   Status: '状态',
   On: '启用',
@@ -244,5 +245,5 @@ export default {
 
   'SQL action': 'SQL 操作',
   'Execute a SQL statement in database': '在数据库中执行一个 SQL 语句',
-  'Usage of SQL query result is not supported yet.': 'SQL 执行的结果暂不支持使用。'
+  'Usage of SQL query result is not supported yet.': 'SQL 执行的结果暂不支持使用。',
 };

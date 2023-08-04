@@ -113,18 +113,6 @@ export const workflowSchema: ISchema = {
             },
           },
           properties: {
-            delete: {
-              type: 'void',
-              title: '{{t("Delete")}}',
-              'x-component': 'Action',
-              'x-component-props': {
-                useAction: '{{ cm.useBulkDestroyAction }}',
-                confirm: {
-                  title: "{{t('Delete record')}}",
-                  content: "{{t('Are you sure you want to delete it?')}}",
-                },
-              },
-            },
             create: {
               type: 'void',
               title: '{{t("Add new")}}',
@@ -178,6 +166,26 @@ export const workflowSchema: ISchema = {
                       },
                     },
                   },
+                },
+              },
+            },
+            reload: {
+              type: 'void',
+              title: `{{t("Reload", { ns: "${NAMESPACE}" })}}`,
+              'x-component': 'Action',
+              'x-component-props': {
+                useAction: '{{ useWorkflowReloadAction }}',
+              },
+            },
+            delete: {
+              type: 'void',
+              title: '{{t("Delete")}}',
+              'x-component': 'Action',
+              'x-component-props': {
+                useAction: '{{ cm.useBulkDestroyAction }}',
+                confirm: {
+                  title: "{{t('Delete record')}}",
+                  content: "{{t('Are you sure you want to delete it?')}}",
                 },
               },
             },
