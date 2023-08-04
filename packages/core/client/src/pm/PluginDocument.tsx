@@ -5,13 +5,15 @@ import { useRequest } from '../api-client';
 import { useStyles as useMarkdownStyles } from '../schema-component/antd/markdown/style';
 import { useParseMarkdown } from '../schema-component/antd/markdown/util';
 import { useStyles } from './style';
+import { useGlobalTheme } from '../global-theme';
 
 interface PluginDocumentProps {
   url: string;
 }
 
 export const PluginDocument: React.FC<PluginDocumentProps> = memo((props) => {
-  const { hashId, componentCls } = useMarkdownStyles();
+  const { isDarkTheme } = useGlobalTheme();
+  const { componentCls, hashId } = useMarkdownStyles({ isDarkTheme });
   const { styles } = useStyles();
   const { url } = props;
   const [docUrl, setDocUrl] = useState(url);

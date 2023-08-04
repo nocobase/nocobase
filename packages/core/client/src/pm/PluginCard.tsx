@@ -109,7 +109,6 @@ function PluginBaseInfo(props: IPluginBaseInfo) {
           </Col>
           <Col span={8}>
             <Space direction="vertical" align="end" style={{ display: 'flex' }}>
-              {!props.installed && <Button loading>{t('Installing')}...</Button>}
               {props.installed && props.enabled && props.type === 'npm' && props.newVersion && (
                 <Button icon={<SyncOutlined style={{ color: 'red', fontWeight: 'bold' }} />} ghost type="primary">
                   {t('Upgrade plugin')}
