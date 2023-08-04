@@ -1,8 +1,21 @@
 import { error } from '@nocobase/utils/client';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useCollectionManager, CollectionFieldOptions } from '../../../collection-manager';
 import { useCompile, useGetFilterOptions } from '../../../schema-component';
 import { FieldOption, Option } from '../type';
+
+export const useIsSameOrChildCollection = () => {
+  const { getChildrenCollections } = useCollectionManager();
+  return (contextCollection, targetCollection) => {
+    console.log(contextCollection, targetCollection);
+    if (contextCollection === targetCollection) {
+      return true;
+    }
+    const childrens = getChildrenCollections(targetCollection);
+    return childrens?.some((v) => v.name === contextCollection);
+  };
+};
 
 interface GetOptionsParams {
   schema: any;
@@ -15,37 +28,40 @@ interface GetOptionsParams {
 const getChildren = (
   options: FieldOption[],
   { schema, depth, maxDepth, loadChildren, compile }: GetOptionsParams,
+  collectionField,
+  getIsSameOrChildCollection,
 ): Option[] => {
   const result = options
-    .map((option): Option => {
-      if (!option.target) {
+    .map(
+      (option): Option => {
+        const disabled = !getIsSameOrChildCollection(option.target, collectionField?.target);
+        if (!option.target) {
+          return {
+            key: option.name,
+            value: option.name,
+            label: compile(option.title),
+            disabled: disabled,
+            isLeaf: true,
+            depth,
+          };
+        }
+
+        if (depth >= maxDepth) {
+          return null;
+        }
         return {
           key: option.name,
           value: option.name,
           label: compile(option.title),
-          // TODO: 现在是通过组件的名称来过滤能够被选择的选项，这样的坏处是不够精确，后续可以优化
-          //   disabled: schema?.['x-component'] !== option.schema?.['x-component'],
+          disabled: disabled,
           isLeaf: true,
+          field: option,
           depth,
+          loadChildren,
         };
-      }
-
-      if (depth >= maxDepth) {
-        return null;
-      }
-
-      return {
-        key: option.name,
-        value: option.name,
-        label: compile(option.title),
-        isLeaf: true,
-        field: option,
-        depth,
-        loadChildren,
-      };
-    })
+      },
+    )
     .filter(Boolean);
-
   return result;
 };
 
@@ -53,15 +69,17 @@ export const useContextAssociationFields = ({
   schema,
   maxDepth = 3,
   contextCollectionName,
+  collectionField,
 }: {
   schema: any;
   maxDepth?: number;
   contextCollectionName: string;
+  collectionField: CollectionFieldOptions;
 }) => {
   const { t } = useTranslation();
   const compile = useCompile();
   const getFilterOptions = useGetFilterOptions();
-
+  const getIsSameOrChildCollection = useIsSameOrChildCollection();
   const loadChildren = (option: Option): Promise<void> => {
     if (!option.field?.target) {
       return new Promise((resolve) => {
@@ -87,6 +105,8 @@ export const useContextAssociationFields = ({
               loadChildren,
               compile,
             },
+            collectionField,
+            getIsSameOrChildCollection,
           ) || [];
 
         if (children.length === 0) {

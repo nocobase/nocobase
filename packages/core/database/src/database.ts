@@ -264,17 +264,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
     this.migrations = new Migrations(context);
 
-    this.migrator = new Umzug({
-      logger: migratorOptions.logger || console,
-      migrations: this.migrations.callback(),
-      context,
-      storage: new SequelizeStorage({
-        modelName: `${this.options.tablePrefix || ''}migrations`,
-        ...migratorOptions.storage,
-        sequelize: this.sequelize,
-      }),
-    });
-
     this.sequelize.beforeDefine((model, opts) => {
       if (this.options.tablePrefix) {
         opts.tableName = `${this.options.tablePrefix}${opts.tableName || opts.modelName || opts.name.plural}`;
@@ -287,7 +276,29 @@ export class Database extends EventEmitter implements AsyncEmitter {
       timestamps: false,
       namespace: 'core.migration',
       duplicator: 'required',
-      fields: [{ type: 'string', name: 'name' }],
+      fields: [{ type: 'string', name: 'name', primaryKey: true }],
+    });
+
+    this.migrator = new Umzug({
+      logger: migratorOptions.logger || console,
+      migrations: this.migrations.callback(),
+      context,
+      storage: new SequelizeStorage({
+        modelName: `${this.options.tablePrefix || ''}migrations`,
+        ...migratorOptions.storage,
+        sequelize: this.sequelize,
+      }),
+    });
+
+    this.migrator = new Umzug({
+      logger: migratorOptions.logger || console,
+      migrations: this.migrations.callback(),
+      context,
+      storage: new SequelizeStorage({
+        modelName: `${this.options.tablePrefix || ''}migrations`,
+        ...migratorOptions.storage,
+        sequelize: this.sequelize,
+      }),
     });
 
     this.initListener();
