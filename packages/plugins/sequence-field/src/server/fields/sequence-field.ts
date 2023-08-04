@@ -8,8 +8,10 @@ import {
   ValidationError,
   ValidationErrorItem,
 } from '@nocobase/database';
-import { Registry, dayjs, lodash } from '@nocobase/utils';
+import { Registry } from '@nocobase/utils';
 import parser from 'cron-parser';
+import dayjs from 'dayjs';
+import lodash from 'lodash';
 
 export interface Pattern {
   validate?(options): string | null;

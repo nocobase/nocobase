@@ -1,7 +1,8 @@
 import { ISchema } from '@formily/react';
 import { isArr } from '@formily/shared';
-import { dayjs, getDefaultFormat, str2moment } from '@nocobase/utils/client';
+import { getDefaultFormat, str2moment } from '@nocobase/utils/client';
 import { Tag } from 'antd';
+import dayjs from 'dayjs';
 import React from 'react';
 import { CollectionFieldOptions, useCollectionManager } from '../../../collection-manager';
 
@@ -45,6 +46,28 @@ export const getLabelFormatValue = (labelUiSchema: ISchema, value: any, isTag = 
       return getDatePickerLabels({ ...labelUiSchema?.['x-component-props'], value });
     default:
       return value;
+  }
+};
+
+export const getTabFormatValue = (labelUiSchema: ISchema, value: any, tagColor): any => {
+  const options = labelUiSchema?.enum;
+  if (Array.isArray(options) && value) {
+    const values = toArr(value).map((val) => {
+      const opt: any = options.find((option: any) => option.value === val);
+      return React.createElement(Tag, { color: tagColor||opt?.color }, opt?.label);
+    });
+    return values;
+  }
+  switch (labelUiSchema?.['x-component']) {
+    case 'DatePicker':
+      return React.createElement(
+        Tag,
+        { color: tagColor },
+        getDatePickerLabels({ ...labelUiSchema?.['x-component-props'], value }),
+      );
+
+    default:
+      return React.createElement(Tag, { color: tagColor }, value);
   }
 };
 

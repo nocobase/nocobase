@@ -1,20 +1,21 @@
+import { useField, useForm } from '@formily/react';
 import React from 'react';
-import { useForm, useField } from '@formily/react';
 
-import { useCollectionDataSource } from '@nocobase/client';
+import { useCollectionDataSource, useCollectionManager } from '@nocobase/client';
 
+import CollectionFieldset from '../components/CollectionFieldset';
 import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
-import CollectionFieldset, { useCollectionUIFields } from '../components/CollectionFieldset';
 
-import { isValidFilter } from '../utils';
+import { RadioWithTooltip } from '../components/RadioWithTooltip';
 import { NAMESPACE, lang } from '../locale';
 import { collection, filter, values } from '../schemas/collection';
-import { RadioWithTooltip } from '../components/RadioWithTooltip';
+import { isValidFilter } from '../utils';
 
 function IndividualHooksRadioWithTooltip({ onChange, ...props }) {
+  const { getCollectionFields } = useCollectionManager();
   const form = useForm();
   const { collection } = form.values;
-  const fields = useCollectionUIFields(collection);
+  const fields = getCollectionFields(collection);
   const field = useField<any>();
 
   function onValueChange({ target }) {

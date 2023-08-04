@@ -297,7 +297,6 @@ export const Table: any = observer(
                     console.warn('move cancel');
                     return;
                   }
-
                   const fromIndex = e.active?.data.current?.sortable?.index;
                   const toIndex = e.over?.data.current?.sortable?.index;
                   const from = field.value[fromIndex];
@@ -323,6 +322,11 @@ export const Table: any = observer(
                   white-space: nowrap;
                   .nb-read-pretty-input-number {
                     text-align: right;
+                  }
+                  .ant-color-picker-trigger{
+                    position:absolute;
+                    top:50%;
+                    transform: translateY(-50%);
                   }
                 `,
               )}

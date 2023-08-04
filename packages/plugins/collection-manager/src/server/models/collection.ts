@@ -1,5 +1,5 @@
 import Database, { Collection, MagicAttributeModel, SyncOptions, Transactionable } from '@nocobase/database';
-import { lodash } from '@nocobase/utils';
+import lodash from 'lodash';
 import { FieldModel } from './field';
 
 interface LoadOptions extends Transactionable {

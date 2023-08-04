@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       verdaccio:
-        image: verdaccio/verdaccio
+        image: verdaccio/verdaccio:latest
         ports:
           - 4873:4873
     steps:

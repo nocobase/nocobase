@@ -10,6 +10,7 @@ import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AssociationFieldContext } from './context';
 import { useAssociationFieldContext } from './hooks';
+import { RecordProvider, useRecord } from '../../../record-provider';
 
 export const Nester = (props) => {
   const { options } = useContext(AssociationFieldContext);
@@ -28,6 +29,7 @@ const ToOneNester = (props) => {
 
 const ToManyNester = observer(
   (props) => {
+    console.log(props);
     const fieldSchema = useFieldSchema();
     const { options, field, allowMultiple, allowDissociate } = useAssociationFieldContext<ArrayField>();
     const { t } = useTranslation();
@@ -92,7 +94,9 @@ const ToManyNester = observer(
                   </Tooltip>
                 )}
               </div>
-              <RecursionField onlyRenderProperties basePath={field.address.concat(index)} schema={fieldSchema} />
+              <RecordProvider record={value}>
+                <RecursionField onlyRenderProperties basePath={field.address.concat(index)} schema={fieldSchema} />
+              </RecordProvider>
               <Divider />
             </React.Fragment>
           );

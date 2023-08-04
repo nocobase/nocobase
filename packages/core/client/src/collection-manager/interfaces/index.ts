@@ -2,6 +2,7 @@ export * from './checkbox';
 export * from './checkboxGroup';
 export * from './chinaRegion';
 export * from './collection';
+export * from './color';
 export * from './createdAt';
 export * from './createdBy';
 export * from './datetime';

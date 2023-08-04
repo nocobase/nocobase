@@ -10,7 +10,7 @@ import {
   useDesignable,
   useFormBlockContext,
 } from '@nocobase/client';
-import { lodash } from '@nocobase/utils/client';
+import lodash from 'lodash';
 import React from 'react';
 import { useMapTranslation } from '../locale';
 

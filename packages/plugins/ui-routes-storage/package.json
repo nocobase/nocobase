@@ -4,29 +4,18 @@
   "displayName.zh-CN": "路由管理",
   "description": "manage the routes of nocobase",
   "description.zh-CN": "管理页面路由。",
-  "version": "0.11.1-alpha.3",
+  "version": "0.12.0-alpha.3",
   "license": "AGPL-3.0",
-  "main": "./lib/server/index.js",
-  "files": [
-    "lib",
-    "src",
-    "README.md",
-    "README.zh-CN.md",
-    "CHANGELOG.md",
-    "server.js",
-    "server.d.ts",
-    "client.js",
-    "client.d.ts"
-  ],
-  "dependencies": {
+  "main": "./dist/server/index.js",
+  "devDependencies": {
     "flat-to-nested": "^1.1.1"
   },
-  "devDependencies": {
-    "@nocobase/actions": "0.11.1-alpha.3",
-    "@nocobase/client": "0.11.1-alpha.3",
-    "@nocobase/database": "0.11.1-alpha.3",
-    "@nocobase/server": "0.11.1-alpha.3",
-    "@nocobase/test": "0.11.1-alpha.3"
+  "peerDependencies": {
+    "@nocobase/actions": "0.x",
+    "@nocobase/client": "0.x",
+    "@nocobase/database": "0.x",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
 }

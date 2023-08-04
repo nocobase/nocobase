@@ -2,6 +2,7 @@ import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { Input as AntdInput, Spin } from 'antd';
 import React from 'react';
+import { useGlobalTheme } from '../../../global-theme';
 import { ReadPretty as InputReadPretty } from '../input';
 import { MarkdownVoid } from './Markdown.Void';
 import { useStyles } from './style';
@@ -23,7 +24,8 @@ export const Markdown: any = connect(
 );
 
 export const MarkdownReadPretty = (props) => {
-  const { wrapSSR, hashId, componentCls: className } = useStyles();
+  const { isDarkTheme } = useGlobalTheme();
+  const { wrapSSR, hashId, componentCls: className } = useStyles({ isDarkTheme });
   const { html = '', loading } = useParseMarkdown(props.value);
   const text = convertToText(html);
   const value = (

@@ -1,3 +1,3 @@
-export * from './src/server';
-export { default } from './src/server';
-
+// @ts-nocheck
+export * from './dist/server';
+export { default } from './dist/server';

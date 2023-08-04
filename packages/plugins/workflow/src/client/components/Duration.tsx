@@ -28,11 +28,17 @@ export default function ({ value = 60000, onChange }) {
         gap: 0.5em;
       `}
     >
-      <InputNumber min={1} value={quantity} onChange={(v) => onChange(Math.round(v * option.value))} />
+      <InputNumber
+        min={1}
+        value={quantity}
+        onChange={(v) => onChange(Math.round(v * option.value))}
+        className="auto-width"
+      />
       <Select
         popupMatchSelectWidth={false}
         value={option.value}
         onChange={(unit) => onChange(Math.round(quantity * unit))}
+        className="auto-width"
       >
         {UnitOptions.map((item) => (
           <Select.Option key={item.value} value={item.value}>

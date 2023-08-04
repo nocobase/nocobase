@@ -1,9 +1,9 @@
 import { css, cx } from '@emotion/css';
-import { ArrayCollapse, ArrayItems, FormItem as Item, FormLayout } from '@formily/antd-v5';
+import { ArrayCollapse, ArrayItems, FormLayout, FormItem as Item } from '@formily/antd-v5';
 import { Field } from '@formily/core';
-import { ISchema, observer, Schema, useField, useFieldSchema } from '@formily/react';
-import { dayjs } from '@nocobase/utils/client';
+import { ISchema, observer, useField, useFieldSchema } from '@formily/react';
 import { Select } from 'antd';
+import dayjs from 'dayjs';
 import _ from 'lodash';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -16,11 +16,10 @@ import {
   useCollection,
   useCollectionFilterOptions,
   useCollectionManager,
-  useSortFields,
 } from '../../../collection-manager';
 import { isTitleField } from '../../../collection-manager/Configuration/CollectionFields';
 import { GeneralSchemaItems } from '../../../schema-items/GeneralSchemaItems';
-import { GeneralSchemaDesigner, isPatternDisabled, isShowDefaultValue, SchemaSettings } from '../../../schema-settings';
+import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isShowDefaultValue } from '../../../schema-settings';
 import { useIsShowMultipleSwitch } from '../../../schema-settings/hooks/useIsShowMultipleSwitch';
 import { isVariable, parseVariables, useVariablesCtx } from '../../common/utils/uitls';
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
@@ -28,6 +27,7 @@ import { BlockItem } from '../block-item';
 import { removeNullCondition } from '../filter';
 import { HTMLEncode } from '../input/shared';
 import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
+import { useColorFields } from '../table-v2/Table.Column.Designer';
 import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
 import { useEnsureOperatorsValid } from './SchemaSettingOptions';
 
@@ -200,6 +200,7 @@ FormItem.Designer = function Designer() {
       value: field?.name,
       label: compile(field?.uiSchema?.title) || field?.name,
     }));
+  const colorFieldOptions = useColorFields(collectionField?.target ?? collectionField?.targetCollection);
 
   let readOnlyMode = 'editable';
   if (fieldSchema['x-disabled'] === true) {
@@ -210,21 +211,8 @@ FormItem.Designer = function Designer() {
   }
   const dataSource = useCollectionFilterOptions(collectionField?.target);
   const defaultFilter = fieldSchema?.['x-component-props']?.service?.params?.filter || {};
-  const sortFields = useSortFields(collectionField?.target);
-  const defaultSort = field.componentProps?.service?.params?.sort || [];
   const fieldMode = field?.componentProps?.['mode'] || (isFileField ? 'FileManager' : 'Select');
   const isSelectFieldMode = isAssociationField && fieldMode === 'Select';
-  const sort = defaultSort?.map((item: string) => {
-    return item?.startsWith('-')
-      ? {
-          field: item.substring(1),
-          direction: 'desc',
-        }
-      : {
-          field: item,
-          direction: 'asc',
-        };
-  });
   const isSubFormMode = fieldSchema['x-component-props']?.mode === 'Nester';
   const isPickerMode = fieldSchema['x-component-props']?.mode === 'Picker';
   const showFieldMode = isAssociationField && fieldModeOptions && !isTableField;
@@ -439,98 +427,7 @@ FormItem.Designer = function Designer() {
           }}
         />
       )}
-      {isSelectFieldMode && !field.readPretty && (
-        <SchemaSettings.ModalItem
-          title={t('Set default sorting rules')}
-          components={{ ArrayItems }}
-          schema={
-            {
-              type: 'object',
-              title: t('Set default sorting rules'),
-              properties: {
-                sort: {
-                  type: 'array',
-                  default: sort,
-                  'x-component': 'ArrayItems',
-                  'x-decorator': 'FormItem',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      space: {
-                        type: 'void',
-                        'x-component': 'Space',
-                        properties: {
-                          sort: {
-                            type: 'void',
-                            'x-decorator': 'FormItem',
-                            'x-component': 'ArrayItems.SortHandle',
-                          },
-                          field: {
-                            type: 'string',
-                            enum: sortFields,
-                            required: true,
-                            'x-decorator': 'FormItem',
-                            'x-component': 'Select',
-                            'x-component-props': {
-                              style: {
-                                width: 260,
-                              },
-                            },
-                          },
-                          direction: {
-                            type: 'string',
-                            'x-decorator': 'FormItem',
-                            'x-component': 'Radio.Group',
-                            'x-component-props': {
-                              optionType: 'button',
-                            },
-                            enum: [
-                              {
-                                label: t('ASC'),
-                                value: 'asc',
-                              },
-                              {
-                                label: t('DESC'),
-                                value: 'desc',
-                              },
-                            ],
-                          },
-                          remove: {
-                            type: 'void',
-                            'x-decorator': 'FormItem',
-                            'x-component': 'ArrayItems.Remove',
-                          },
-                        },
-                      },
-                    },
-                  },
-                  properties: {
-                    add: {
-                      type: 'void',
-                      title: t('Add sort field'),
-                      'x-component': 'ArrayItems.Addition',
-                    },
-                  },
-                },
-              },
-            } as ISchema
-          }
-          onSubmit={({ sort }) => {
-            const sortArr = sort.map((item) => {
-              return item.direction === 'desc' ? `-${item.field}` : item.field;
-            });
-
-            _.set(field.componentProps, 'service.params.sort', sortArr);
-            fieldSchema['x-component-props'] = field.componentProps;
-            dn.emit('patch', {
-              schema: {
-                ['x-uid']: fieldSchema['x-uid'],
-                'x-component-props': field.componentProps,
-              },
-            });
-          }}
-        />
-      )}
+      {isSelectFieldMode && !field.readPretty && <SchemaSettings.SortingRule />}
       {showFieldMode && (
         <SchemaSettings.SelectItem
           key="field-mode"
@@ -546,10 +443,6 @@ FormItem.Designer = function Designer() {
             schema['x-component-props'] = fieldSchema['x-component-props'];
             field.componentProps = field.componentProps || {};
             field.componentProps.mode = mode;
-            // if (mode === 'Nester') {
-            //   const initValue = ['hasMany', 'belongsToMany'].includes(collectionField?.type) ? [{}] : {};
-            //   field.value = field.value || initValue;
-            // }
             dn.emit('patch', {
               schema,
             });
@@ -828,6 +721,29 @@ FormItem.Designer = function Designer() {
         />
       )}
       {isDateField && <SchemaSettings.DataFormat fieldSchema={fieldSchema} />}
+
+      {isAssociationField && ['Tag'].includes(fieldMode) && (
+        <SchemaSettings.SelectItem
+          key="title-field"
+          title={t('Tag color field')}
+          options={colorFieldOptions}
+          value={field?.componentProps?.tagColorField}
+          onChange={(tagColorField) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props']['tagColorField'] = tagColorField;
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            field.componentProps.tagColorField = tagColorField;
+            dn.emit('patch', {
+              schema,
+            });
+            dn.refresh();
+          }}
+        />
+      )}
       {collectionField && <SchemaSettings.Divider />}
       <SchemaSettings.Remove
         key="remove"
