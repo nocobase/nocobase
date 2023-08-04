@@ -6,13 +6,9 @@ import _ from 'lodash';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../../block-provider';
-import {
-  CollectionFieldProvider,
-  useCollection,
-  useCollectionField,
-  useCollectionFilterOptions,
-} from '../../../collection-manager';
+import { CollectionFieldProvider, useCollection, useCollectionField } from '../../../collection-manager';
 import { Variable, useCompile, useComponent, useVariableScope } from '../../../schema-component';
+import { useBaseVariable } from '../../../schema-settings/VariableInput/hooks/useBaseVariable';
 import { useUserVariable } from '../../../schema-settings/VariableInput/hooks/useUserVariable';
 import { DeletedField } from '../DeletedField';
 
@@ -87,37 +83,36 @@ export enum AssignedFieldValueType {
 export const AssignedField = (props: any) => {
   const { value, onChange } = props;
   const { t } = useTranslation();
-  const compile = useCompile();
   const fieldSchema = useFieldSchema();
   const { getField } = useCollection();
   const collectionField = getField(fieldSchema.name);
   const [options, setOptions] = useState<any[]>([]);
   const collection = useCollection();
-  const fields = compile(useCollectionFilterOptions(collection));
   const scope = useVariableScope();
   const userVariable = useUserVariable({ schema: collectionField.uiSchema });
+  const currentRecordVariable = useBaseVariable({
+    schema: collectionField.uiSchema,
+    name: getNameOfRecordVariable(value),
+    title: t('Current record'),
+    collectionName: collection.name,
+  });
 
   userVariable.value = getNameOfUserVariable(value);
 
   useEffect(() => {
     const opt = [
       {
-        value: getNameOfRecordVariable(value),
-        label: t('Current record'),
-        children: fields,
-      },
-      userVariable,
-    ];
-    if (['createdAt', 'datetime', 'time', 'updatedAt'].includes(collectionField?.interface)) {
-      opt.unshift({
         value: 'currentTime',
         label: t('Current time'),
         children: null,
-      });
-    }
+        disabled: collectionField.uiSchema?.['x-component'] !== 'DatePicker',
+      },
+      currentRecordVariable,
+      userVariable,
+    ];
     const next = opt.concat(scope);
     setOptions(next);
-  }, [fields, scope]);
+  }, [scope]);
 
   return (
     <Variable.Input
@@ -129,10 +124,6 @@ export const AssignedField = (props: any) => {
           width: 100%;
         }
       `}
-      // fieldNames={{
-      //   label: 'title',
-      //   value: 'name',
-      // }}
     >
       <CollectionField value={value} onChange={onChange} />
     </Variable.Input>
