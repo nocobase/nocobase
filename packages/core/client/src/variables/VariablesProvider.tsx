@@ -166,10 +166,15 @@ const VariablesProvider = ({ children }) => {
 
       let old = null;
       if (localVariable) {
-        // 1. 如果有局部变量，先把全局中同名的变量取出来
-        old = getVariable(localVariable.name);
-        // 2. 把局部变量注册到全局，这样就可以使用了
-        registerVariable(localVariable);
+        if (Array.isArray(localVariable)) {
+          old = localVariable.map((item) => getVariable(item.name));
+          localVariable.forEach((item) => registerVariable(item));
+        } else {
+          // 1. 如果有局部变量，先把全局中同名的变量取出来
+          old = getVariable(localVariable.name);
+          // 2. 把局部变量注册到全局，这样就可以使用了
+          registerVariable(localVariable);
+        }
       }
 
       const path = matches[0].replace(/\{\{\s*(.*?)\s*\}\}/g, '$1');
@@ -177,11 +182,19 @@ const VariablesProvider = ({ children }) => {
 
       // 3. 局部变量使用完成后，需要在全局中清除
       if (localVariable) {
-        removeVariable(localVariable.name);
+        if (Array.isArray(localVariable)) {
+          localVariable.forEach((item) => removeVariable(item.name));
+        } else {
+          removeVariable(localVariable.name);
+        }
       }
       // 4. 如果有同名的全局变量，把它重新注册回去
       if (old) {
-        registerVariable(old);
+        if (Array.isArray(old)) {
+          old.forEach((item) => registerVariable(item));
+        } else {
+          registerVariable(old);
+        }
       }
 
       return value;

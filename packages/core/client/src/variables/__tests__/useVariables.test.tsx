@@ -357,7 +357,7 @@ describe('useVariables', () => {
     });
   });
 
-  it('use local variable', async () => {
+  it('use object as local variable', async () => {
     const { result } = renderHook(() => useVariables(), {
       wrapper: Providers,
     });
@@ -373,6 +373,30 @@ describe('useVariables', () => {
           name: 'local variable',
         },
       }),
+    ).toBe('local variable');
+
+    // 由于 $local 是一个局部变量，所以不会被缓存到 ctx 中
+    expect(result.current.getVariable('$local')).toBe(null);
+  });
+
+  it('use array as local variables', async () => {
+    const { result } = renderHook(() => useVariables(), {
+      wrapper: Providers,
+    });
+
+    await waitFor(async () => {
+      expect(result.current.getVariable('$local')).toBe(null);
+    });
+
+    expect(
+      await result.current.parseVariable('{{ $local.name }}', [
+        {
+          name: '$local',
+          ctx: {
+            name: 'local variable',
+          },
+        },
+      ]),
     ).toBe('local variable');
 
     // 由于 $local 是一个局部变量，所以不会被缓存到 ctx 中
