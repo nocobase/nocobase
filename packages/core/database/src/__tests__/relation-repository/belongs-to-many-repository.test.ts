@@ -2,8 +2,9 @@ import { Collection } from '@nocobase/database';
 import Database from '../../database';
 import { BelongsToManyRepository } from '../../relation-repository/belongs-to-many-repository';
 import { mockDatabase } from '../index';
+import { pgOnly } from '@nocobase/test';
 
-describe('belongs to many with targetCollection', () => {
+pgOnly()('belongs to many with targetCollection', () => {
   let db: Database;
 
   let Org: Collection;
