@@ -176,3 +176,22 @@ export async function revision(context: Context, next) {
 
   await next();
 }
+
+export async function reload(context: Context, next) {
+  const plugin = context.app.getPlugin('workflow');
+  const repository = utils.getRepositoryFromParams(context);
+  const { filterByTk, filter = {} } = context.action.params;
+
+  const workflows = await repository.find({
+    filterByTk,
+    filter,
+  });
+
+  workflows.forEach((workflow) => {
+    plugin.toggle(workflow);
+  });
+
+  context.status = 205;
+
+  await next();
+}
