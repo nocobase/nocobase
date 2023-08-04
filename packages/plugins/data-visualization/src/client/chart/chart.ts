@@ -94,7 +94,8 @@ export class Chart implements ChartType {
    * 1. string - the config function name in config.ts
    * 2. object - { property: string, ...props }
    *    - property is the config function name in config.ts, and the other props are the arguments of the function
-   * 3. function - use the custom function to return the properties of the schema
+   * 3. object - use the object directly as the properties of the schema
+   * 4. function - use the custom function to return the properties of the schema
    */
   get schema() {
     if (!this.config) {

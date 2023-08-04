@@ -1,12 +1,12 @@
 import { SchemaProperties } from '@formily/react';
 import { lang } from '../locale';
 
-export type FieldConfigProps = {
+export type FieldConfigProps = Partial<{
   name: string;
   title: string;
-  required?: boolean;
-  defaultValue?: any;
-};
+  required: boolean;
+  defaultValue: any;
+}>;
 
 export type AnySchemaProperties = SchemaProperties<any, any, any, any, any, any, any, any>;
 export type ConfigProps = FieldConfigProps | AnySchemaProperties | (() => AnySchemaProperties);

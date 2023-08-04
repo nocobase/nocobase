@@ -15,7 +15,14 @@ export default [
     name: 'area',
     title: 'Area Chart',
     component: Area,
-    config: ['smooth', 'isStack', 'isPercent'],
+    config: [
+      'smooth',
+      {
+        property: 'isStack',
+        defaultValue: true,
+      },
+      'isPercent',
+    ],
   }),
   new G2PlotChart({
     name: 'column',
