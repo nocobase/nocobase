@@ -2,6 +2,7 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { set } from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { ArrayItems } from '@formily/antd-v5';
 import { useCollectionFilterOptions, useCollectionManager } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isShowDefaultValue } from '../../../schema-settings';
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
@@ -58,7 +59,7 @@ export const TableColumnDesigner = (props) => {
   const targetCollection = getCollection(collectionField?.target);
   const isFileField = isFileCollection(targetCollection);
   const isSubTableColumn = ['QuickEdit', 'FormItem'].includes(fieldSchema['x-decorator']);
-  const { currentMode, field: tableField } = useAssociationFieldContext();
+  const { currentMode } = useAssociationFieldContext();
   const defaultFilter = fieldSchema?.['x-component-props']?.service?.params?.filter || {};
   const dataSource = useCollectionFilterOptions(collectionField?.target);
   const isDateField = ['datetime', 'createdAt', 'updatedAt'].includes(collectionField?.interface);
@@ -132,10 +133,9 @@ export const TableColumnDesigner = (props) => {
             set(field.componentProps, 'service.params.filter', filter);
             fieldSchema['x-component-props'] = field.componentProps;
             const path = field.path?.splice(field.path?.length - 1, 1);
-            (tableField as any)?.value.map((_, index) => {
-              field.form.query(`${path.concat(`${index}.` + fieldSchema.name)}`).take((f) => {
-                set(f.componentProps, 'service.params.filter', filter);
-              });
+            field.form.query(`${path.concat(`*.` + fieldSchema.name)}`).forEach((f) => {
+              // set(f.componentProps, 'service.params.filter', filter);
+              f.componentProps.service.params.filter = filter;
             });
             dn.emit('patch', {
               schema: {
@@ -239,7 +239,8 @@ export const TableColumnDesigner = (props) => {
               label,
             };
             fieldSchema['x-component-props']['fieldNames'] = fieldNames;
-            field.query(`.*.${fieldSchema.name}`).take((f) => {
+            const path = field.path?.splice(field.path?.length - 1, 1);
+            field.form.query(`${path.concat(`*.` + fieldSchema.name)}`).forEach((f) => {
               f.componentProps.fieldNames = fieldNames;
             });
             dn.emit('patch', {
@@ -318,10 +319,8 @@ export const TableColumnDesigner = (props) => {
             fieldSchema['required'] = required;
             schema['required'] = required;
             const path = field.path?.splice(field.path?.length - 1, 1);
-            (tableField as any)?.value.map((_, index) => {
-              field.form.query(`${path.concat(`${index}.` + fieldSchema.name)}`).take((f) => {
-                f.required = required;
-              });
+            field.form.query(`${path.concat(`*.` + fieldSchema.name)}`).forEach((f) => {
+              f.required = required;
             });
             dn.emit('patch', {
               schema,
@@ -354,11 +353,9 @@ export const TableColumnDesigner = (props) => {
                   fieldSchema['x-disabled'] = true;
                   schema['x-read-pretty'] = false;
                   schema['x-disabled'] = true;
-                  (tableField as any)?.value.map((_, index) => {
-                    field.form.query(`${path.concat(`${index}.` + fieldSchema.name)}`).take((f) => {
-                      f.readonly = true;
-                      f.disabled = true;
-                    });
+                  field.form.query(`${path.concat(`*.` + fieldSchema.name)}`).forEach((f) => {
+                    f.readonly = true;
+                    f.disabled = true;
                   });
                   break;
                 }
@@ -367,10 +364,8 @@ export const TableColumnDesigner = (props) => {
                   fieldSchema['x-disabled'] = false;
                   schema['x-read-pretty'] = true;
                   schema['x-disabled'] = false;
-                  (tableField as any)?.value.map((_, index) => {
-                    field.form.query(`${path.concat(`${index}.` + fieldSchema.name)}`).take((f) => {
-                      f.readPretty = true;
-                    });
+                  field.form.query(`${path.concat(`*.` + fieldSchema.name)}`).forEach((f) => {
+                    f.readPretty = true;
                   });
                   break;
                 }
@@ -379,11 +374,9 @@ export const TableColumnDesigner = (props) => {
                   fieldSchema['x-disabled'] = false;
                   schema['x-read-pretty'] = false;
                   schema['x-disabled'] = false;
-                  (tableField as any)?.value.map((_, index) => {
-                    field.form.query(`${path.concat(`${index}.` + fieldSchema.name)}`).take((f) => {
-                      f.readPretty = false;
-                      f.disabled + false;
-                    });
+                  field.form.query(`${path.concat(`*.` + fieldSchema.name)}`).forEach((f) => {
+                    f.readPretty = false;
+                    f.disabled + false;
                   });
                   break;
                 }
@@ -398,7 +391,20 @@ export const TableColumnDesigner = (props) => {
           />
         )}
       {isDateField && <SchemaSettings.DataFormat fieldSchema={fieldSchema} />}
-
+      {isSubTableColumn &&
+        !field?.readPretty &&
+        ['obo', 'oho', 'o2o', 'o2m', 'm2m', 'm2o'].includes(collectionField?.interface) && (
+          <SchemaSettings.SortingRule
+            fieldSchema={fieldSchema}
+            onSubmitCallBack={(sortArr) => {
+              const path = field.path?.splice(field.path?.length - 1, 1);
+              field.form.query(`${path.concat(`*.` + fieldSchema.name)}`).forEach((f) => {
+                f.componentProps.service = f.componentProps.service || { params: {} };
+                f.componentProps.service.params.sort = sortArr;
+              });
+            }}
+          />
+        )}
       {isSubTableColumn && !field?.readPretty && isShowDefaultValue(collectionField, getInterface) && (
         <SchemaSettings.DefaultValue fieldSchema={fieldSchema} />
       )}
