@@ -23,8 +23,6 @@ export interface PluginOptions {
   [key: string]: any;
 }
 
-export type PluginType = typeof Plugin;
-
 export abstract class Plugin<O = any> implements PluginInterface {
   options: any;
   app: Application;
