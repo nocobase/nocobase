@@ -1488,6 +1488,27 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
                 contextCollectionName: isAllowContexVariable && tableCtx.collection,
                 schema: collectionField?.uiSchema,
                 className: defaultInputStyle,
+                shouldChange: (value) => {
+                  if (!isVariable(value) || !variables) {
+                    return true;
+                  }
+
+                  const collectionFieldOfVariable = variables.getCollectionField(value);
+                  // `一对一` 和 `一对多` 的不能用于设置默认值
+                  if (['o2o', 'o2m', 'oho'].includes(collectionFieldOfVariable?.interface)) {
+                    return false;
+                  }
+                  // 如果当前字段和所选的变量都是一个关系字段，且其 `target` 不相等，则不能用于设置默认值，因为其数据表的结构不同
+                  if (
+                    collectionField?.target &&
+                    collectionFieldOfVariable?.target &&
+                    collectionField.target !== collectionFieldOfVariable.target
+                  ) {
+                    return false;
+                  }
+
+                  return true;
+                },
                 renderSchemaComponent: function Com(props) {
                   const s = _.cloneDeep(fieldSchemaWithoutRequired) || ({} as Schema);
                   s.title = '';

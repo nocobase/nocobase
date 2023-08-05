@@ -5,6 +5,7 @@ import { useAPIClient } from '../api-client';
 import type { CollectionFieldOptions } from '../collection-manager';
 import { useCollectionManager } from '../collection-manager';
 import { useCompile } from '../schema-component';
+import { isVariable } from '../schema-component/common/utils/uitls';
 import useBuildInVariables from './hooks/useBuiltinVariables';
 import { VariableOption, VariablesContextType } from './types';
 
@@ -116,6 +117,12 @@ const VariablesProvider = ({ children }) => {
    * 注册一个全局变量
    */
   const registerVariable = useCallback((variableOption: VariableOption) => {
+    if (process.env.NODE_ENV !== 'production' && !isVariable(`{{${variableOption.name}}}`)) {
+      throw new Error(
+        `VariablesProvider: ${variableOption.name} is not a valid name, it should be like $user begin with $`,
+      );
+    }
+
     setCtx((prev) => {
       return {
         ...prev,
@@ -158,9 +165,7 @@ const VariablesProvider = ({ children }) => {
      * @returns
      */
     async (str: string, localVariable?: VariableOption) => {
-      const matches = str.match(/\{\{\s*(.*?)\s*\}\}/g);
-
-      if (!matches) {
+      if (!isVariable(str)) {
         return str;
       }
 
@@ -177,7 +182,9 @@ const VariablesProvider = ({ children }) => {
         }
       }
 
-      const path = matches[0].replace(/\{\{\s*(.*?)\s*\}\}/g, '$1');
+      const r = /\{\{\s*(.*?)\s*\}\}/g;
+      const matches = str.match(r);
+      const path = matches[0].replace(r, '$1');
       const value = await getValue(path);
 
       // 3. 局部变量使用完成后，需要在全局中清除
@@ -210,6 +217,13 @@ const VariablesProvider = ({ children }) => {
     }
 
     const path = matches[0].replace(/\{\{\s*(.*?)\s*\}\}/g, '$1');
+
+    // 当仅有一个例如 `$user` 这样的字符串时，需要拼一个假的 `collectionField` 返回
+    if (!path.includes('.')) {
+      return {
+        target: variableToCollectionName[path],
+      };
+    }
 
     return getCollectionJoinField(getFieldPath(path));
   }, []);
