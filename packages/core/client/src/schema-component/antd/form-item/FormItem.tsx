@@ -1,5 +1,5 @@
 import { css, cx } from '@emotion/css';
-import { ArrayCollapse, ArrayItems, FormLayout, FormItem as Item } from '@formily/antd-v5';
+import { ArrayCollapse, FormLayout, FormItem as Item } from '@formily/antd-v5';
 import { Field } from '@formily/core';
 import { ISchema, observer, useField, useFieldSchema } from '@formily/react';
 import { Select } from 'antd';
@@ -49,7 +49,20 @@ export const findColumnFieldSchema = (fieldSchema, getCollectionJoinField) => {
   getAssociationAppends(fieldSchema);
   return [...childrenSchema];
 };
+function transformData(inputData) {
+  const transformedData = [];
+  const keys = Object.keys(inputData) || [];
+  const values: any[] = Object.values(inputData) || [];
+  for (let i = 0; i < values[0]?.length; i++) {
+    const newObj = {};
+    keys.forEach((key, index) => {
+      newObj[key] = values[index][i];
+    });
+    transformedData.push(newObj);
+  }
 
+  return transformedData;
+}
 export const FormItem: any = observer(
   (props: any) => {
     useEnsureOperatorsValid();
