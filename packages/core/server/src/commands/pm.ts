@@ -14,6 +14,9 @@ export default (app: Application) => {
         await run('yarn', ['install']);
       }
 
-      await app.pm[method](plugins);
+      app.getFsmInterpreter().send('work', {
+        workingType: `pm-${method}`,
+        options: plugins,
+      });
     });
 };

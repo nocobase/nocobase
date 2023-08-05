@@ -91,6 +91,15 @@ export class ApplicationFsm {
               case 'install':
                 await application.install(event.options);
                 break;
+              case 'upgrade':
+                await application.upgrade(event.options);
+                break;
+              case 'pm-enable':
+                await application.pm.enable(event.options);
+                break;
+              case 'pm-disable':
+                await application.pm.disable(event.options);
+                break;
             }
           },
 

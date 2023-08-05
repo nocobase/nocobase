@@ -495,6 +495,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     });
     await this.version.update();
     await this.emitAsync('afterUpgrade', this, options);
+    this.log.debug(chalk.green(`✨  NocoBase has been upgraded to v${this.getVersion()}`));
   }
 
   toJSON() {
