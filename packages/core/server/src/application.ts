@@ -205,9 +205,43 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   getFsmInterpreter() {
     if (!this._fsmInterpret) {
       this._fsmInterpret = ApplicationFsm.getInterpreter(this);
+      this._fsmInterpret.onTransition((state) => {
+        if (state.matches('working')) {
+          this.emit('stateChanged', { status: state.context.workingName });
+        } else if (state.matches('error')) {
+          this.emit('stateChanged', {
+            status: 'error',
+            error: state.context.error,
+          });
+        } else {
+          this.emit('stateChanged', { status: state.value });
+        }
+      });
     }
 
     return this._fsmInterpret;
+  }
+
+  getFsmState() {
+    const state = this.getFsmInterpreter().state;
+
+    if (state.matches('working')) {
+      return state.context.workingName;
+    } else if (state.matches('error')) {
+      return 'error';
+    }
+
+    return state.value;
+  }
+
+  getFsmError() {
+    const state = this.getFsmInterpreter().state;
+
+    if (state.matches('error')) {
+      return state.context.error;
+    }
+
+    return null;
   }
 
   setWorkingMessage(message: string) {

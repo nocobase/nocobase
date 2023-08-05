@@ -26,10 +26,10 @@ interface RunOptions {
   mainAppOptions: ApplicationOptions;
 }
 
-export function reportAppError(appName, errorMessage) {
+export function reportAppError(appName, error) {
   return {
     title: `The '${appName}' app is in an error status`,
-    detail: errorMessage,
+    detail: error.message || error.toString(),
     status: 503,
   };
 }

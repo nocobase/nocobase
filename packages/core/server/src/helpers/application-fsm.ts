@@ -9,12 +9,27 @@ const onError = {
   }),
 };
 
+const workings = {
+  install: {
+    ing: 'installing',
+  },
+  upgrade: {
+    ing: 'upgrading',
+  },
+  'pm-enable': {
+    ing: 'pm-enabling',
+  },
+  'pm-disable': {
+    ing: 'pm-disabling',
+  },
+};
 export class ApplicationFsm {
   static buildFsm(application: Application) {
     return createMachine<{
       error: Error | null;
       tryStart: boolean;
       workingType: 'install' | 'upgrade' | 'pm-enable' | 'pm-disable' | null;
+      workingName: string;
     }>(
       {
         predictableActionArguments: true,
@@ -24,6 +39,7 @@ export class ApplicationFsm {
           error: null,
           tryStart: false,
           workingType: null,
+          workingName: null,
         },
         states: {
           idle: {
@@ -45,6 +61,7 @@ export class ApplicationFsm {
               (context, event) => {
                 console.log({ event });
                 context.workingType = event.workingType;
+                context.workingName = workings[event.workingType].ing;
               },
             ],
             invoke: {

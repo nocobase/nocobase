@@ -39,30 +39,25 @@ export class WSServer {
 
     AppSupervisor.getInstance().on('workingMessageChanged', ({ appName, message, ready }) => {
       this.sendToConnectionsByTag('app', appName, {
-        type: 'appStatusChanged',
+        type: 'appWorkingMessageChanged',
         payload: {
           message,
-          ready,
         },
       });
     });
 
-    AppSupervisor.getInstance().on('readyStatusChanged', ({ appName, ready }) => {
-      this.sendToConnectionsByTag('app', appName, {
-        type: 'appStatusChanged',
-        payload: {
-          ready,
-        },
-      });
-    });
+    AppSupervisor.getInstance().on('statusChanged', ({ appName, status, error }) => {
+      const payload = {
+        status,
+      };
 
-    AppSupervisor.getInstance().on('appError', ({ appName, error }) => {
+      if (error) {
+        payload['errors'] = [reportAppError(appName, error.message)];
+      }
+
       this.sendToConnectionsByTag('app', appName, {
         type: 'appStatusChanged',
-        payload: {
-          errors: [reportAppError(appName, error.message)],
-          ready: false,
-        },
+        payload,
       });
     });
   }
@@ -97,15 +92,17 @@ export class WSServer {
 
     if (appSupervisor.hasApp(handleAppName)) {
       const app = await appSupervisor.getApp(handleAppName, { withOutBootStrap: false });
+      const payload = {
+        status: app.getFsmState(),
+      };
+
+      if (payload.status === 'error') {
+        payload['errors'] = [reportAppError(handleAppName, app.getFsmError())];
+      }
+
       this.sendMessageToConnection(client, {
         type: 'appStatusChanged',
-        payload: {
-          message: app.workingMessage,
-          ready: app.ready,
-          errors: appSupervisor.hasAppError(handleAppName)
-            ? [reportAppError(handleAppName, appSupervisor.appErrors[handleAppName].message)]
-            : null,
-        },
+        payload,
       });
     } else {
       this.sendMessageToConnection(client, {

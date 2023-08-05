@@ -218,26 +218,25 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
     app.on('afterDestroy', afterDestroy);
 
-    const listenWorkingMessageChanged = ({ message, ready }) => {
+    const listenWorkingMessageChanged = ({ message }) => {
       this.clearAppError(app.name);
       this.emit('workingMessageChanged', {
         appName: app.name,
         message,
-        ready,
       });
     };
 
-    const listenReadyStatusChanged = (ready: boolean) => {
-      this.emit('readyStatusChanged', {
+    const listenStatusChanged = ({ status }) => {
+      this.emit('statusChanged', {
         appName: app.name,
-        ready,
+        status,
       });
     };
 
-    listenReadyStatusChanged.alwaysBind = true;
+    listenStatusChanged.alwaysBind = true;
     listenWorkingMessageChanged.alwaysBind = true;
     app.on('workingMessageChanged', listenWorkingMessageChanged);
-    app.on('readyStatusChanged', listenReadyStatusChanged);
+    app.on('stateChanged', listenStatusChanged);
   }
 }
 
