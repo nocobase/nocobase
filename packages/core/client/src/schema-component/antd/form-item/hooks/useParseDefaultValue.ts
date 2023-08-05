@@ -3,11 +3,13 @@ import { useField, useFieldSchema } from '@formily/react';
 import { useEffect } from 'react';
 import { useVariables } from '../../../../variables';
 import { isVariable } from '../../../common/utils/uitls';
+import { useCompile } from '../../../hooks';
 
 const useParseDefaultValue = () => {
   const field = useField<Field>();
   const schema = useFieldSchema();
   const variables = useVariables();
+  const compile = useCompile({ noCache: true });
 
   useEffect(() => {
     const run = async () => {
@@ -30,7 +32,7 @@ const useParseDefaultValue = () => {
         field.setInitialValue(value);
         field.loading = false;
       } else if (field.setInitialValue) {
-        field.setInitialValue(schema.default);
+        field.setInitialValue(compile(schema.default));
       }
     };
 

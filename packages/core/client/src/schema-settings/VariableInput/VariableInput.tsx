@@ -33,6 +33,7 @@ export const VariableInput = (props: Props) => {
     schema,
     className,
     contextCollectionName,
+    collectionField,
     shouldChange,
   } = props;
   const compile = useCompile();

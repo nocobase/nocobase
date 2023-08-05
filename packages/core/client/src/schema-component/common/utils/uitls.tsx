@@ -13,9 +13,22 @@ export const isVariable = (str: unknown) => {
   if (typeof str !== 'string') {
     return false;
   }
-  const regex = /{{(.*?)}}/;
-  const matches = str?.match?.(regex);
-  return matches ? true : false;
+  const regex = /\{\{\s*(.*?)\s*\}\}/g;
+  const matches = str.match(regex);
+
+  if (!matches) {
+    return false;
+  }
+
+  const path = matches[0].replace(regex, '$1');
+  const list = path.split('.');
+  const variableName = list[0];
+
+  if (variableName[0] !== '$' && variableName !== 'currentUser' && variableName !== 'currentRecord') {
+    return false;
+  }
+
+  return true;
 };
 
 export const parseVariables = (str: string, ctx: VariablesCtx | any) => {
