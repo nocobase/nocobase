@@ -1,6 +1,6 @@
 import { Database } from '@nocobase/database';
 import { AppSupervisor, Gateway } from '@nocobase/server';
-import { mockServer, MockServer } from '@nocobase/test';
+import { MockServer, mockServer } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
 import { PluginMultiAppManager } from '../server';
 
@@ -26,7 +26,7 @@ describe('multiple apps', () => {
   it('should register db creator', async () => {
     const fn = jest.fn();
 
-    const appPlugin = app.getPlugin<PluginMultiAppManager>('PluginMultiAppManager');
+    const appPlugin = app.getPlugin<PluginMultiAppManager>(PluginMultiAppManager);
     const defaultDbCreator = appPlugin.appDbCreator;
 
     appPlugin.setAppDbCreator(async (app) => {

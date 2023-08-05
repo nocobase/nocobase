@@ -322,7 +322,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.log.debug(`finish reload`);
   }
 
-  getPlugin<P extends Plugin>(name: string) {
+  getPlugin<P extends Plugin>(name: string | typeof Plugin) {
     return this.pm.get(name) as P;
   }
 

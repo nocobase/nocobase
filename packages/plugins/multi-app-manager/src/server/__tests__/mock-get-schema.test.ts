@@ -22,16 +22,20 @@ describe('test with start', () => {
       }
     }
 
-    const mockGetPluginByName = jest.fn();
-    mockGetPluginByName.mockReturnValue(TestPlugin);
-    PluginManager.resolvePlugin = mockGetPluginByName;
+    const resolvePlugin = PluginManager.resolvePlugin;
+
+    PluginManager.resolvePlugin = (name) => {
+      if (name === 'test-package') {
+        return TestPlugin;
+      }
+      return resolvePlugin(name);
+    };
 
     const app = mockServer();
-    await app.cleanDb();
 
     app.plugin(PluginMultiAppManager);
 
-    await app.loadAndInstall();
+    await app.loadAndInstall({ clean: true });
     await app.start();
 
     const db = app.db;
@@ -53,14 +57,14 @@ describe('test with start', () => {
     const subApp = await AppSupervisor.getInstance().getApp(name);
     await subApp.destroy();
     await app.destroy();
+    PluginManager.resolvePlugin = resolvePlugin;
   });
 
   it('should install into difference database', async () => {
     const app = mockServer();
-    await app.cleanDb();
     app.plugin(PluginMultiAppManager);
 
-    await app.loadAndInstall();
+    await app.loadAndInstall({ clean: true });
     await app.start();
 
     const db = app.db;
