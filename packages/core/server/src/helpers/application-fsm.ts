@@ -1,7 +1,6 @@
 import Application from '../application';
-import { createMachine, interpret, assign, actions, send } from 'xstate';
+import { createMachine, interpret, assign, actions, raise } from 'xstate';
 import { ApplicationNotInstall } from '../errors/application-not-install';
-import { sendTo } from 'xstate/lib/actions';
 
 const onError = {
   target: 'error',
@@ -42,7 +41,7 @@ export class ApplicationFsm {
               onDone: {
                 target: 'idle',
                 actions: [
-                  send((context) => {
+                  raise((context) => {
                     if (context.tryStart) {
                       return { type: 'start' };
                     }
