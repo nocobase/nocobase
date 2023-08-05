@@ -39,6 +39,7 @@ import {
   CollectionManagerContext,
   CollectionProvider,
   Designable,
+  FilterDynamicComponent,
   FormDialog,
   FormProvider,
   RemoteSchemaComponent,
@@ -48,8 +49,10 @@ import {
   createDesignable,
   findFormBlock,
   useAPIClient,
+  useActionContext,
   useBlockRequestContext,
   useCollection,
+  useCollectionFilterOptions,
   useCollectionManager,
   useCompile,
   useDesignable,
@@ -57,7 +60,6 @@ import {
   useGlobalTheme,
   useLinkageCollectionFilterOptions,
   useSortFields,
-  useActionContext,
 } from '..';
 import { useTableBlockContext } from '../block-provider';
 import { findFilterTargets, updateFilterTargets } from '../block-provider/hooks';
@@ -81,6 +83,7 @@ import { ChildDynamicComponent } from './EnableChildCollections/DynamicComponent
 import { FormLinkageRules } from './LinkageRules';
 import { useLinkageCollectionFieldOptions } from './LinkageRules/action-hooks';
 import { VariableInput } from './VariableInput/VariableInput';
+import { DataScopeProps } from './types';
 
 interface SchemaSettingsProps {
   title?: any;
@@ -119,6 +122,7 @@ type SchemaSettingsNested = {
   Popup?: React.FC<MenuItemProps & { schema?: ISchema }>;
   SwitchItem?: React.FC<SwitchItemProps>;
   CascaderItem?: React.FC<CascaderProps<any> & Omit<MenuItemProps, 'title'> & { title: any }>;
+  DataScope?: React.FC<DataScopeProps>;
   [key: string]: any;
 };
 
@@ -1681,6 +1685,37 @@ SchemaSettings.SortingRule = function SortRuleConfigure(props) {
     />
   );
 };
+
+SchemaSettings.DataScope = function DataScopeConfigure(props: DataScopeProps) {
+  const { t } = useTranslation();
+  const options = useCollectionFilterOptions(props.collectionName);
+  const dynamicComponent = (props) => FilterDynamicComponent({ ...props });
+
+  return (
+    <SchemaSettings.ModalItem
+      title={t('Set the data scope')}
+      schema={
+        {
+          type: 'object',
+          title: t('Set the data scope'),
+          properties: {
+            filter: {
+              default: props.defaultFilter,
+              enum: props.collectionFilterOption || options,
+              'x-component': 'Filter',
+              'x-component-props': {
+                collectionName: props.collectionName,
+                dynamicComponent: props.dynamicComponent || dynamicComponent,
+              },
+            },
+          },
+        } as ISchema
+      }
+      onSubmit={props.onSubmit}
+    />
+  );
+};
+
 // 是否显示默认值配置项
 export const isShowDefaultValue = (collectionField: CollectionFieldOptions, getInterface) => {
   return (

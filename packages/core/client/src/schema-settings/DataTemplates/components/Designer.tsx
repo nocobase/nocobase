@@ -7,11 +7,10 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { GeneralSchemaDesigner, SchemaSettings } from '../..';
 import { mergeFilter } from '../../../block-provider';
-import { useCollectionFilterOptions, useCollectionManager } from '../../../collection-manager';
+import { useCollectionManager } from '../../../collection-manager';
 import { isTitleField } from '../../../collection-manager/Configuration/CollectionFields';
 import { removeNullCondition, useCompile, useDesignable } from '../../../schema-component';
 import { ITemplate } from '../../../schema-component/antd/form-v2/Templates';
-import { FilterDynamicComponent } from '../../../schema-component/antd/table-v2/FilterDynamicComponent';
 
 export const Designer = observer(
   () => {
@@ -31,7 +30,6 @@ export const Designer = observer(
 
     const collection = getCollection(collectionName);
     const collectionFields = getCollectionFields(collectionName);
-    const dataSource = useCollectionFilterOptions(collectionName);
 
     if (!data) {
       error('data is required');
@@ -64,25 +62,9 @@ export const Designer = observer(
 
     return (
       <GeneralSchemaDesigner draggable={false}>
-        <SchemaSettings.ModalItem
-          title={t('Set the data scope')}
-          schema={
-            {
-              type: 'object',
-              title: t('Set the data scope'),
-              properties: {
-                filter: {
-                  default: getFilter(),
-                  // title: '数据范围',
-                  enum: dataSource,
-                  'x-component': 'Filter',
-                  'x-component-props': {
-                    dynamicComponent: (props) => FilterDynamicComponent({ ...props }),
-                  },
-                },
-              },
-            } as ISchema
-          }
+        <SchemaSettings.DataScope
+          collectionName={collectionName}
+          defaultFilter={getFilter()}
           onSubmit={({ filter }) => {
             setFilter(filter);
 

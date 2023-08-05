@@ -5,23 +5,20 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTableSelectorContext } from '../../../block-provider';
 import { useCollection } from '../../../collection-manager';
-import { useCollectionFilterOptions, useSortFields } from '../../../collection-manager/action-hooks';
+import { useSortFields } from '../../../collection-manager/action-hooks';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
-import { FilterDynamicComponent } from './FilterDynamicComponent';
 
 export const TableSelectorDesigner = () => {
   const { name, title } = useCollection();
   const field = useField();
   const fieldSchema = useFieldSchema();
-  const dataSource = useCollectionFilterOptions(name);
   const sortFields = useSortFields(name);
   const { service, extraFilter } = useTableSelectorContext();
   const { t } = useTranslation();
   const { dn } = useDesignable();
-  const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
   const sort = defaultSort?.map((item: string) => {
     return item.startsWith('-')
@@ -39,25 +36,9 @@ export const TableSelectorDesigner = () => {
   const { dragSort } = field.decoratorProps;
   return (
     <GeneralSchemaDesigner template={template} title={title || name} disableInitializer>
-      <SchemaSettings.ModalItem
-        title={t('Set the data scope')}
-        schema={
-          {
-            type: 'object',
-            title: t('Set the data scope'),
-            properties: {
-              filter: {
-                default: defaultFilter,
-                // title: '数据范围',
-                enum: dataSource,
-                'x-component': 'Filter',
-                'x-component-props': {
-                  dynamicComponent: (props) => FilterDynamicComponent({ ...props }),
-                },
-              },
-            },
-          } as ISchema
-        }
+      <SchemaSettings.DataScope
+        collectionName={name}
+        defaultFilter={fieldSchema?.['x-decorator-props']?.params?.filter || {}}
         onSubmit={({ filter }) => {
           filter = removeNullCondition(filter);
           const params = field.decoratorProps.params || {};

@@ -9,12 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { ACLCollectionFieldProvider } from '../../../acl/ACLProvider';
 import { useBlockRequestContext } from '../../../block-provider/BlockProvider';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
-import {
-  Collection,
-  useCollection,
-  useCollectionFilterOptions,
-  useCollectionManager,
-} from '../../../collection-manager';
+import { Collection, useCollection, useCollectionManager } from '../../../collection-manager';
 import { isTitleField } from '../../../collection-manager/Configuration/CollectionFields';
 import { GeneralSchemaItems } from '../../../schema-items/GeneralSchemaItems';
 import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isShowDefaultValue } from '../../../schema-settings';
@@ -180,8 +175,6 @@ FormItem.Designer = function Designer() {
   if (fieldSchema['x-read-pretty'] === true) {
     readOnlyMode = 'read-pretty';
   }
-  const dataSource = useCollectionFilterOptions(collectionField?.target);
-  const defaultFilter = fieldSchema?.['x-component-props']?.service?.params?.filter || {};
   const fieldMode = field?.componentProps?.['mode'] || (isFileField ? 'FileManager' : 'Select');
   const isSelectFieldMode = isAssociationField && fieldMode === 'Select';
   const isSubFormMode = fieldSchema['x-component-props']?.mode === 'Nester';
@@ -329,10 +322,6 @@ FormItem.Designer = function Designer() {
             const schema = {
               ['x-uid']: fieldSchema['x-uid'],
             };
-            // return;
-            // if (['number'].includes(collectionField?.interface) && collectionField?.uiSchema?.['x-component-props']?.['stringMode'] === true) {
-            //   rules['numberStringMode'] = true;
-            // }
             if (['percent'].includes(collectionField?.interface)) {
               for (const rule of rules) {
                 if (!!rule.maxValue || !!rule.minValue) {
@@ -360,30 +349,16 @@ FormItem.Designer = function Designer() {
         isShowDefaultValue(collectionField, getInterface) &&
         !isPatternDisabled(fieldSchema) && <SchemaSettings.DefaultValue />}
       {isSelectFieldMode && !field.readPretty && (
-        <SchemaSettings.ModalItem
-          title={t('Set the data scope')}
-          schema={
-            {
-              type: 'object',
-              title: t('Set the data scope'),
-              properties: {
-                filter: {
-                  defaultValue: defaultFilter,
-                  enum: dataSource,
-                  'x-component': 'Filter',
-                  'x-component-props': {
-                    collectionName: collectionField?.target,
-                    dynamicComponent: (props) =>
-                      FilterDynamicComponent({
-                        ...props,
-                        form,
-                        collectionField,
-                        rootCollection: ctx.props.collection || ctx.props.resource,
-                      }),
-                  },
-                },
-              },
-            } as ISchema
+        <SchemaSettings.DataScope
+          collectionName={collectionField?.target}
+          defaultFilter={fieldSchema?.['x-component-props']?.service?.params?.filter || {}}
+          dynamicComponent={(props) =>
+            FilterDynamicComponent({
+              ...props,
+              form,
+              collectionField,
+              rootCollection: ctx.props.collection || ctx.props.resource,
+            })
           }
           onSubmit={({ filter }) => {
             filter = removeNullCondition(filter);

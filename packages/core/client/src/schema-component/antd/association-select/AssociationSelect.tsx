@@ -7,12 +7,7 @@ import _ from 'lodash';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFilterByTk, useFormBlockContext } from '../../../block-provider';
-import {
-  useCollection,
-  useCollectionFilterOptions,
-  useCollectionManager,
-  useSortFields,
-} from '../../../collection-manager';
+import { useCollection, useCollectionManager, useSortFields } from '../../../collection-manager';
 import { isTitleField } from '../../../collection-manager/Configuration/CollectionFields';
 import { GeneralSchemaItems } from '../../../schema-items';
 import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isShowDefaultValue } from '../../../schema-settings';
@@ -21,7 +16,6 @@ import { useCompile, useDesignable, useFieldComponentOptions, useFieldTitle } fr
 import { removeNullCondition } from '../filter';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
 import { defaultFieldNames } from '../select';
-import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
 import { ReadPretty } from './ReadPretty';
 import useServiceOptions from './useServiceOptions';
 
@@ -92,7 +86,7 @@ interface AssociationSelectInterface {
   FilterDesigner: React.FC;
 }
 
-export const AssociationSelect = InternalAssociationSelect as unknown as AssociationSelectInterface;
+export const AssociationSelect = (InternalAssociationSelect as unknown) as AssociationSelectInterface;
 
 AssociationSelect.Designer = function Designer() {
   const { getCollectionFields, getInterface, getCollectionJoinField, getCollection } = useCollectionManager();
@@ -119,8 +113,6 @@ AssociationSelect.Designer = function Designer() {
   const sortFields = useSortFields(collectionField?.target);
 
   const defaultSort = field.componentProps?.service?.params?.sort || [];
-  const defaultFilter = field.componentProps?.service?.params?.filter || {};
-  const dataSource = useCollectionFilterOptions(collectionField?.target);
 
   // TODO: 这里 fieldSchema['x-read-pretty'] 的值为 true，但是 field.readPretty 的值却为 false，不知道什么原因
   useEffect(() => {
@@ -409,25 +401,9 @@ AssociationSelect.Designer = function Designer() {
           }}
         />
       ) : null}
-      <SchemaSettings.ModalItem
-        title={t('Set the data scope')}
-        schema={
-          {
-            type: 'object',
-            title: t('Set the data scope'),
-            properties: {
-              filter: {
-                default: defaultFilter,
-                // title: '数据范围',
-                enum: dataSource,
-                'x-component': 'Filter',
-                'x-component-props': {
-                  dynamicComponent: (props) => FilterDynamicComponent({ ...props }),
-                },
-              },
-            },
-          } as ISchema
-        }
+      <SchemaSettings.DataScope
+        collectionName={collectionField?.target}
+        defaultFilter={field.componentProps?.service?.params?.filter || {}}
         onSubmit={({ filter }) => {
           filter = removeNullCondition(filter);
           _.set(field.componentProps, 'service.params.filter', filter);
@@ -646,8 +622,6 @@ AssociationSelect.FilterDesigner = function FilterDesigner() {
   const sortFields = useSortFields(collectionField?.target);
 
   const defaultSort = field.componentProps?.service?.params?.sort || [];
-  const defaultFilter = field.componentProps?.service?.params?.filter || {};
-  const dataSource = useCollectionFilterOptions(collectionField?.target);
 
   const sort = defaultSort?.map((item: string) => {
     return item.startsWith('-')
@@ -839,25 +813,9 @@ AssociationSelect.FilterDesigner = function FilterDesigner() {
           }}
         />
       )}
-      <SchemaSettings.ModalItem
-        title={t('Set the data scope')}
-        schema={
-          {
-            type: 'object',
-            title: t('Set the data scope'),
-            properties: {
-              filter: {
-                default: defaultFilter,
-                // title: '数据范围',
-                enum: dataSource,
-                'x-component': 'Filter',
-                'x-component-props': {
-                  dynamicComponent: (props) => FilterDynamicComponent({ ...props }),
-                },
-              },
-            },
-          } as ISchema
-        }
+      <SchemaSettings.DataScope
+        collectionName={collectionField?.target}
+        defaultFilter={field.componentProps?.service?.params?.filter || {}}
         onSubmit={({ filter }) => {
           filter = removeNullCondition(filter);
           _.set(field.componentProps, 'service.params.filter', filter);
