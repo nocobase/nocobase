@@ -90,19 +90,6 @@ interface StartOptions {
   checkInstall?: boolean;
 }
 
-function SwitchAppReadyStatus(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
-  const originalMethod = descriptor.value;
-
-  descriptor.value = async function (...args: any[]) {
-    this.setReadyStatus(false, `start ${originalMethod.name}`);
-    const result = await originalMethod.apply(this, args);
-    this.setReadyStatus(true, `end ${originalMethod.name}`);
-    return result;
-  };
-
-  return descriptor;
-}
-
 export class Application<StateT = DefaultState, ContextT = DefaultContext> extends Koa implements AsyncEmitter {
   public listenServer: Server;
   declare middleware: any;
@@ -462,7 +449,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     );
   }
 
-  @SwitchAppReadyStatus
   async install(options: InstallOptions = {}) {
     this.log.debug('Database dialect: ' + this.db.sequelize.getDialect());
 

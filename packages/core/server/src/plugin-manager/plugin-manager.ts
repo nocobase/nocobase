@@ -21,19 +21,6 @@ export interface InstallOptions {
   sync?: SyncOptions;
 }
 
-function SwitchAppReadyStatus(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
-  const originalMethod = descriptor.value;
-
-  descriptor.value = async function (...args: any[]) {
-    this.app.setReadyStatus(false, `start ${originalMethod.name}`);
-    const result = await originalMethod.apply(this, args);
-    this.app.setReadyStatus(true, `end ${originalMethod.name}`);
-    return result;
-  };
-
-  return descriptor;
-}
-
 export class AddPresetError extends Error {}
 
 export class PluginManager {
@@ -256,7 +243,6 @@ export class PluginManager {
     }
   }
 
-  @SwitchAppReadyStatus
   async enable(name: string | string[]) {
     this.app.log.debug(`enabling plugin ${name}`);
 
@@ -286,7 +272,6 @@ export class PluginManager {
     this.app.log.debug(`afterEnablePlugin event emitted`);
   }
 
-  @SwitchAppReadyStatus
   async disable(name: string | string[]) {
     try {
       this.app.setWorkingMessage(`disabling plugin ${name}`);
@@ -307,7 +292,6 @@ export class PluginManager {
     }
   }
 
-  @SwitchAppReadyStatus
   async remove(name: string | string[]) {
     const pluginNames = typeof name === 'string' ? [name] : name;
     for (const pluginName of pluginNames) {
