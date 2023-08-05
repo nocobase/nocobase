@@ -38,7 +38,7 @@ describe('workflow > instructions > request', () => {
       next();
     });
 
-    await Gateway.getInstance().start({
+    Gateway.getInstance().start({
       port: PORT,
       host: 'localhost',
     });

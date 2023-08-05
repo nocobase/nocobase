@@ -123,7 +123,7 @@ export class ApplicationFsm {
           },
 
           async start(context, options) {
-            await application.start(options as any);
+            await application._start(options as any);
           },
         },
       },

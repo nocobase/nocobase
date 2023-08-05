@@ -23,6 +23,7 @@ import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
 import { ApplicationNotInstall } from './errors/application-not-install';
+import { waitFor } from 'xstate/lib/waitFor';
 
 const packageJson = require('../package.json');
 
@@ -378,7 +379,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this.cli.parseAsync(argv, options);
   }
 
-  async start(options: StartOptions = {}) {
+  async _start(options: StartOptions = {}) {
     if (options.checkInstall && !(await this.isInstalled())) {
       throw new ApplicationNotInstall(
         `Application ${this.name} is not installed, Please run 'yarn run nocobase install' command first`,
@@ -397,6 +398,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.stopped = false;
     this.setWorkingMessage('started');
     this.setReadyStatus(true, 'started');
+  }
+
+  async start(options: StartOptions = {}) {
+    this.getFsmInterpreter().send('start', options);
+    await waitFor(this.getFsmInterpreter(), (state) => state.matches('started'));
   }
 
   setReadyStatus(status: boolean, reason: string) {
