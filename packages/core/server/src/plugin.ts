@@ -1,3 +1,4 @@
+import { Model } from '@nocobase/database';
 import { Application } from './application';
 import { InstallOptions } from './plugin-manager';
 
@@ -27,13 +28,16 @@ export type PluginType = typeof Plugin;
 export abstract class Plugin<O = any> implements PluginInterface {
   options: any;
   app: Application;
+  model: Model;
+  state: any = {};
 
   constructor(app: Application, options?: any) {
-    this.setOptions(options);
-
     this.app = app;
     this.setOptions(options);
-    this.afterAdd();
+  }
+
+  get log() {
+    return this.app.log;
   }
 
   get name() {

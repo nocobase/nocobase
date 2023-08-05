@@ -18,12 +18,12 @@ export class PluginManagerRepository extends Repository {
 
   async enable(name: string | string[]) {
     const pluginNames = typeof name === 'string' ? [name] : name;
-    const plugins = pluginNames.map((name) => this.pm.plugins.get(name));
+    const plugins = pluginNames.map((name) => this.pm.get(name));
 
     for (const plugin of plugins) {
       const requiredPlugins = plugin.requiredPlugins();
       for (const requiredPluginName of requiredPlugins) {
-        const requiredPlugin = this.pm.plugins.get(requiredPluginName);
+        const requiredPlugin = this.pm.get(requiredPluginName);
         if (!requiredPlugin.enabled) {
           throw new Error(`${plugin.name} plugin need ${requiredPluginName} plugin enabled`);
         }
@@ -60,19 +60,22 @@ export class PluginManagerRepository extends Repository {
     return pluginNames;
   }
 
-  async load() {
+  async init() {
+    const exists = await this.collection.existsInDb();
+    if (!exists) {
+      return;
+    }
     // sort plugins by id
     const items = await this.find({
       sort: 'id',
     });
 
     for (const item of items) {
-      await this.pm.addStatic(item.get('name'), {
+      await this.pm.add(item.get('name'), {
         ...item.get('options'),
         name: item.get('name'),
         version: item.get('version'),
         enabled: item.get('enabled'),
-        async: true,
       });
     }
   }

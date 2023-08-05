@@ -12,16 +12,16 @@ import { IncomingMessage, Server, ServerResponse } from 'http';
 import { i18n, InitOptions } from 'i18next';
 import Koa, { DefaultContext as KoaDefaultContext, DefaultState as KoaDefaultState } from 'koa';
 import compose from 'koa-compose';
+import lodash from 'lodash';
 import { createACL } from './acl';
+import { AppSupervisor, supervisedAppCall } from './app-supervisor';
 import { registerCli } from './commands';
 import { createI18n, createResourcer, registerMiddlewares } from './helper';
+import { ApplicationFsm } from './helpers/application-fsm';
+import { ApplicationVersion } from './helpers/application-version';
 import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
-import { ApplicationVersion } from './helpers/application-version';
-import { AppSupervisor, supervisedAppCall } from './app-supervisor';
-import lodash from 'lodash';
-import { ApplicationFsm } from './helpers/application-fsm';
 
 const packageJson = require('../package.json');
 
@@ -107,6 +107,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   stopped = false;
   ready = false;
   startMode = false;
+  protected _loaded: boolean;
   declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
   public rawOptions: ApplicationOptions;
   protected plugins = new Map<string, Plugin>();
@@ -229,9 +230,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return packageJson.version;
   }
 
-  plugin<O = any>(pluginClass: any, options?: O): Plugin {
+  plugin<O = any>(pluginClass: any, options?: O) {
     this.log.debug(`add plugin ${pluginClass.name}`);
-    return this.pm.addStatic(pluginClass, options);
+    this.pm.addPreset(pluginClass, options);
   }
 
   async isAlive() {
@@ -282,10 +283,14 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   @supervisedAppCall
   async load(options?: any) {
+    if (this._loaded) {
+      return;
+    }
+
     this.setWorkingMessage('start load');
 
     if (options?.reload) {
-      this.log.info(`Reload application configuration`);
+      this.log.info(`app.reload()`);
       const oldDb = this._db;
       this.init();
       await oldDb.close();
@@ -298,10 +303,13 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this.setWorkingMessage('emit afterLoad');
     await this.emitAsync('afterLoad', this, options);
+    this._loaded = true;
   }
 
   async reload(options?: any) {
     this.log.debug(`start reload`);
+
+    this._loaded = false;
 
     await this.load({
       ...options,
@@ -314,7 +322,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.log.debug(`finish reload`);
   }
 
-  getPlugin<P extends Plugin>(name: string) {
+  getPlugin<P extends Plugin>(name: string | typeof Plugin) {
     return this.pm.get(name) as P;
   }
 
@@ -334,16 +342,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     await this.db.prepare();
 
-    const command = argv?.[2];
-
-    if (command !== 'upgrade') {
-      try {
-        await this.load({
-          method: command,
-        });
-      } catch (error) {
-        console.log(`ignore error ${error.message}`);
-      }
+    try {
+      await this.load();
+    } catch (error) {
+      console.log(`ignore error ${error.message}`);
     }
 
     return this.cli.parseAsync(argv, options);
@@ -457,18 +459,17 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   @SwitchAppReadyStatus
   async install(options: InstallOptions = {}) {
-    console.log('Database dialect: ' + this.db.sequelize.getDialect());
+    this.log.debug('Database dialect: ' + this.db.sequelize.getDialect());
 
     if (options?.clean || options?.sync?.force) {
-      console.log('Truncate database and reload app configuration');
+      this.log.debug('truncate database');
       await this.db.clean({ drop: true });
-      await this.reload({ method: 'install' });
+      this.log.debug('app reloading');
+      await this.reload();
     }
 
     this.log.debug('emit beforeInstall');
     await this.emitAsync('beforeInstall', this, options);
-    this.log.debug('call db.sync()');
-    await this.db.sync();
     this.log.debug('start install plugins');
     await this.pm.install(options);
     this.log.debug('update version');
@@ -565,14 +566,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.context.resourcer = this._resourcer;
     this.context.cache = this._cache;
 
-    if (this._pm) {
-      this._pm = this._pm.clone();
-    } else {
-      this._pm = new PluginManager({
-        app: this,
-        plugins: options.plugins,
-      });
-    }
+    const plugins = this._pm ? this._pm.options.plugins : options.plugins;
+
+    this._pm = new PluginManager({
+      app: this,
+      plugins: plugins || [],
+    });
 
     this._authManager = new AuthManager({
       authKey: 'X-Authenticator',

@@ -1,6 +1,6 @@
 import PluginMultiAppManager from '@nocobase/plugin-multi-app-manager';
-import lodash from 'lodash';
 import { Application, AppSupervisor, Plugin } from '@nocobase/server';
+import lodash from 'lodash';
 import { resolve } from 'path';
 
 const subAppFilteredPlugins = ['multi-app-share-collection', 'multi-app-manager'];
@@ -293,7 +293,7 @@ export class MultiAppShareCollectionPlugin extends Plugin {
     });
 
     // 子应用启动参数
-    multiAppManager.setAppOptionsFactory((appName, mainApp) => {
+    multiAppManager.setAppOptionsFactory((appName, mainApp: Application) => {
       const mainAppDbConfig = PluginMultiAppManager.getDatabaseConfig(mainApp);
 
       const databaseOptions = {
@@ -301,7 +301,7 @@ export class MultiAppShareCollectionPlugin extends Plugin {
         schema: appName,
       };
 
-      const plugins = [...mainApp.pm.getPlugins().keys()].filter(
+      const plugins = [...mainApp.pm.getAliases()].filter(
         (name) => name !== 'multi-app-manager' && name !== 'multi-app-share-collection',
       );
 

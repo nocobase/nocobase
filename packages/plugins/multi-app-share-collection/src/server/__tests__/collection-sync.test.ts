@@ -158,8 +158,7 @@ pgOnly()('collection sync', () => {
 
     await sub1.reload();
 
-    console.log(sub1.pm.plugins);
-    expect(sub1.pm.plugins.get('map').options.enabled).toBeTruthy();
+    expect(sub1.pm.get('map').options.enabled).toBeTruthy();
 
     const sub1MapPlugin = await sub1.db.getRepository('applicationPlugins').findOne({
       filter: {
@@ -200,7 +199,7 @@ pgOnly()('collection sync', () => {
 
     const sub2 = await AppSupervisor.getInstance().getApp('sub2');
     expect((await getSubAppMapRecord(sub2)).get('enabled')).toBeTruthy();
-    expect(sub2.pm.plugins.get('map').options.enabled).toBeTruthy();
+    expect(sub2.pm.get('map').options.enabled).toBeTruthy();
   });
 
   it('should not sync roles in sub app', async () => {
