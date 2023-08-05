@@ -5,7 +5,8 @@ export default {
   'Clear executions will not reset executed count, and started executions will not be deleted, are you sure you want to delete them all?':
     '清空执行记录不会重置执行次数，且执行中的也不会被删除，确定要删除所有执行记录吗？',
   Executed: '已执行',
-  Reload: '重载',
+  Sync: '同步',
+  'Sync enabled status of all workflows from database': '从数据库同步所有工作流的启用状态',
   'Trigger type': '触发方式',
   Status: '状态',
   On: '启用',
