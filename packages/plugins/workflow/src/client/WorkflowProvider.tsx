@@ -4,7 +4,7 @@ import {
   SchemaComponent,
   SettingsCenterProvider,
 } from '@nocobase/client';
-import { Card } from 'antd';
+import { Card, Tooltip } from 'antd';
 import React, { useContext } from 'react';
 import { ExecutionLink } from './ExecutionLink';
 import { ExecutionResourceProvider } from './ExecutionResourceProvider';
@@ -30,6 +30,7 @@ function WorkflowPane() {
       <SchemaComponent
         schema={workflowSchema}
         components={{
+          Tooltip,
           WorkflowLink,
           ExecutionResourceProvider,
           ExecutionLink,
