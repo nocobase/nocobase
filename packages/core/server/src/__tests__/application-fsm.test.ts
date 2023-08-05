@@ -1,4 +1,5 @@
 import Application from '../application';
+import { waitFor } from 'xstate/lib/waitFor';
 
 describe('application fsm', () => {
   let app: Application;
@@ -28,18 +29,25 @@ describe('application fsm', () => {
       jestFn();
     });
 
-    const started = new Promise((resolve) => {
-      app.getFsmInterpreter().onTransition((state) => {
-        if (state.matches('started')) {
-          resolve(true);
-        }
-      });
-    });
-
     app.getFsmInterpreter().send('start');
 
-    await started;
+    await waitFor(app.getFsmInterpreter(), (state) => state.matches('started'));
 
     expect(jestFn).toBeCalledTimes(1);
+  });
+
+  it('should transition to error state when application not start', async () => {
+    const fsmInterpreter = app.getFsmInterpreter();
+    fsmInterpreter.send('start', {
+      checkInstall: true,
+    });
+
+    await waitFor(fsmInterpreter, (state) => state.matches('error'));
+
+    expect(fsmInterpreter.state.value).toBe('error');
+
+    fsmInterpreter.send('install');
+
+    await waitFor(fsmInterpreter, (state) => state.matches('started'));
   });
 });

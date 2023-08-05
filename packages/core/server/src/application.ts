@@ -22,6 +22,7 @@ import { ApplicationVersion } from './helpers/application-version';
 import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
+import { ApplicationNotInstall } from './errors/application-not-install';
 
 const packageJson = require('../package.json');
 
@@ -356,10 +357,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this.cli.parseAsync(argv, options);
   }
 
-  @supervisedAppCall
   async start(options: StartOptions = {}) {
     if (options.checkInstall && !(await this.isInstalled())) {
-      throw new Error(
+      throw new ApplicationNotInstall(
         `Application ${this.name} is not installed, Please run 'yarn run nocobase install' command first`,
       );
     }

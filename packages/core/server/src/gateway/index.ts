@@ -109,11 +109,14 @@ export class Gateway extends EventEmitter {
       return;
     }
 
-    // if app is not ready, return 503
-    if (app.ready !== true) {
-      const errorMessage = AppSupervisor.getInstance().appErrors[handleApp]?.message;
+    const appInterpreter = app.getFsmInterpreter();
 
-      if (errorMessage) {
+    // if app is not ready, return 503
+    if (!appInterpreter.state.matches('started')) {
+      if (appInterpreter.state.matches('error')) {
+        const error = appInterpreter.state.context.error;
+        const errorMessage = error.message || error.toString();
+
         this.responseError(res, {
           title: `The '${handleApp}' app is in an error status`,
           detail: errorMessage,

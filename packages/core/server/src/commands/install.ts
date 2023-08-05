@@ -36,7 +36,7 @@ export default (app: Application) => {
         app.logger.info(`Start installing NocoBase`);
       }
 
-      await app.install({
+      app.getFsmInterpreter().send('install', {
         cliArgs,
         clean: opts.clean,
         sync: {
