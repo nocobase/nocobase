@@ -17,7 +17,11 @@ export class TokenBlacklistService implements ITokenBlacklistService {
   }
 
   createCronJob() {
-    const cronJob = new CronJob(
+    if (this.app['TokenBlacklistServiceCron']) {
+      this.app['TokenBlacklistServiceCron'].stop();
+    }
+
+    this.app['TokenBlacklistServiceCron'] = new CronJob(
       // every day at 03:00
       '0 3 * * *', //
       async () => {
@@ -28,15 +32,15 @@ export class TokenBlacklistService implements ITokenBlacklistService {
       null,
     );
 
-    this.app.once('beforeStart', () => {
-      cronJob.start();
+    this.app.on('beforeStart', () => {
+      this.app['TokenBlacklistServiceCron'].start();
     });
 
-    this.app.once('beforeStop', () => {
-      cronJob.stop();
+    this.app.on('beforeStop', () => {
+      this.app['TokenBlacklistServiceCron'].stop();
     });
 
-    return cronJob;
+    return this.app['TokenBlacklistServiceCron'];
   }
 
   async has(token: string) {
