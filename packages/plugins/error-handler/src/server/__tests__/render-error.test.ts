@@ -1,12 +1,11 @@
 import { Database } from '@nocobase/database';
 import { MockServer, mockServer } from '@nocobase/test';
-import supertest from 'supertest';
 describe('create with exception', () => {
   let app: MockServer;
   beforeEach(async () => {
     app = mockServer({
       acl: false,
-      plugins: ['auth', 'error-handler'],
+      plugins: ['error-handler'],
     });
     // app.plugin(PluginErrorHandler, { name: 'error-handler' });
     await app.loadAndInstall({ clean: true });
@@ -157,7 +156,7 @@ describe('create with exception', () => {
       },
     });
 
-    const agent = supertest.agent(app.callback());
+    const agent = app.agent();
 
     await agent.post('/test:test').send({
       name: 'u1',
