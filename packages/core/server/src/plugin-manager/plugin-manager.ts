@@ -34,6 +34,8 @@ function SwitchAppReadyStatus(target: any, propertyKey: string, descriptor: Prop
   return descriptor;
 }
 
+export class AddPresetError extends Error {}
+
 export class PluginManager {
   app: Application;
   collection: Collection;
@@ -89,7 +91,10 @@ export class PluginManager {
     }
   }
 
-  addPreset(plugin, options) {
+  addPreset(plugin: string | typeof Plugin, options: any = {}) {
+    if (this.app.loaded) {
+      throw new AddPresetError('must be added before executing app.load()');
+    }
     if (!this.options.plugins) {
       this.options.plugins = [];
     }
@@ -154,9 +159,9 @@ export class PluginManager {
       return;
     }
     const instance: Plugin = new P(this.app, options);
-    if (!options.isPreset) {
+    if (!options.isPreset && options.name) {
       const model = await this.repository.firstOrCreate({
-        values: { ...options, name: plugin },
+        values: { ...options },
         filterKeys: ['name'],
       });
       instance.model = model;
@@ -178,7 +183,7 @@ export class PluginManager {
 
     let current = 0;
 
-    for (const [P, plugin] of this.pluginInstances) {
+    for (const [P, plugin] of this.getPlugins()) {
       if (plugin.state.loaded) {
         continue;
       }
@@ -196,7 +201,7 @@ export class PluginManager {
 
     current = 0;
 
-    for (const [P, plugin] of this.pluginInstances) {
+    for (const [P, plugin] of this.getPlugins()) {
       if (plugin.state.loaded) {
         continue;
       }
@@ -227,7 +232,7 @@ export class PluginManager {
     this.app.log.debug('call db.sync()');
     await this.app.db.sync();
 
-    for (const [P, plugin] of this.pluginInstances) {
+    for (const [P, plugin] of this.getPlugins()) {
       if (plugin.state.installing || plugin.state.installed) {
         continue;
       }

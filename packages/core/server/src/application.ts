@@ -25,7 +25,8 @@ import { InstallOptions, PluginManager } from './plugin-manager';
 
 const packageJson = require('../package.json');
 
-export type PluginConfiguration = string | [string, any];
+export type PluginType = string | typeof Plugin;
+export type PluginConfiguration = PluginType | [PluginType, any];
 
 export interface ResourcerOptions {
   prefix?: string;
@@ -203,6 +204,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   get name() {
     return this.options.name || 'main';
+  }
+
+  get loaded() {
+    return this._loaded;
   }
 
   getStateMachine() {
