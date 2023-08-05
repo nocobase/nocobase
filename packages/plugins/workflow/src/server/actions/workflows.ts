@@ -98,7 +98,7 @@ function migrateConfig(config, oldToNew) {
 export async function revision(context: Context, next) {
   const { db } = context;
   const repository = utils.getRepositoryFromParams(context);
-  const { filterByTk, filter = {} } = context.action.params;
+  const { filterByTk, filter = {}, values = {} } = context.action.params;
 
   context.body = await db.sequelize.transaction(async (transaction) => {
     const origin = await repository.findOne({
@@ -115,7 +115,7 @@ export async function revision(context: Context, next) {
           title: origin.title,
           allExecuted: origin.allExecuted,
         }
-      : {};
+      : values;
 
     const instance = await repository.create({
       values: {
