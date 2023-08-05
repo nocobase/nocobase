@@ -351,7 +351,7 @@ export class PluginACL extends Plugin {
     };
 
     // sync database role data to acl
-    this.app.on('afterStart', writeRolesToACL);
+    this.app.on('afterLoad', writeRolesToACL);
     this.app.on('afterInstall', writeRolesToACL);
 
     this.app.on('afterInstallPlugin', async (plugin) => {

@@ -23,7 +23,7 @@ export async function createApp(
   if (options.beforeInstall) {
     await options.beforeInstall(app);
   }
-
+  await app.load();
   await app.install({ clean: true });
   await app.start();
   return app;

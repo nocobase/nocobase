@@ -8,8 +8,8 @@ describe('create with exception', () => {
     app = mockServer({
       acl: false,
     });
-    await app.cleanDb();
     app.plugin(PluginErrorHandler, { name: 'error-handler' });
+    app.loadAndInstall({ clean: true });
     await app.start();
   });
 

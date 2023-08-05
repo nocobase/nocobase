@@ -1,5 +1,5 @@
 import { Database, mockDatabase } from '@nocobase/database';
-import Application, { ApplicationOptions, AppSupervisor, Gateway, PluginManager } from '@nocobase/server';
+import Application, { AppSupervisor, ApplicationOptions, Gateway, PluginManager } from '@nocobase/server';
 import jwt from 'jsonwebtoken';
 import qs from 'qs';
 import supertest, { SuperAgentTest } from 'supertest';
