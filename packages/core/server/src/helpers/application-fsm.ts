@@ -56,6 +56,8 @@ export class ApplicationFsm {
                     if (context.tryStart) {
                       return { type: 'start' };
                     }
+
+                    return { type: 'idle' };
                   }),
                 ],
               },
