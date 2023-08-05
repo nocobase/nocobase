@@ -9,38 +9,10 @@ export class TokenBlacklistService implements ITokenBlacklistService {
 
   constructor(protected plugin: AuthPlugin) {
     this.repo = plugin.db.getRepository('tokenBlacklist');
-    this.cronJob = this.createCronJob();
   }
 
   get app() {
     return this.plugin.app;
-  }
-
-  createCronJob() {
-    if (this.app['TokenBlacklistServiceCron']) {
-      this.app['TokenBlacklistServiceCron'].stop();
-    }
-
-    this.app['TokenBlacklistServiceCron'] = new CronJob(
-      // every day at 03:00
-      '0 3 * * *', //
-      async () => {
-        this.app.logger.info(`${this.plugin.name}: Start delete expired blacklist token`);
-        await this.deleteByExpiration();
-        this.app.logger.info(`${this.plugin.name}: End delete expired blacklist token`);
-      },
-      null,
-    );
-
-    this.app.on('beforeStart', () => {
-      this.app['TokenBlacklistServiceCron'].start();
-    });
-
-    this.app.on('beforeStop', () => {
-      this.app['TokenBlacklistServiceCron'].stop();
-    });
-
-    return this.app['TokenBlacklistServiceCron'];
   }
 
   async has(token: string) {
@@ -50,7 +22,9 @@ export class TokenBlacklistService implements ITokenBlacklistService {
       },
     }));
   }
+
   async add(values) {
+    await this.deleteExpiredTokens();
     return this.repo.model.findOrCreate({
       defaults: values,
       where: {
@@ -58,7 +32,8 @@ export class TokenBlacklistService implements ITokenBlacklistService {
       },
     });
   }
-  async deleteByExpiration() {
+
+  async deleteExpiredTokens() {
     return this.repo.destroy({
       filter: {
         expiration: {
