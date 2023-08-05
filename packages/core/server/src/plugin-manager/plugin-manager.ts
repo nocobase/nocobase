@@ -42,7 +42,7 @@ export class PluginManager {
   pluginAliases = new Map<string, Plugin>();
   server: net.Server;
 
-  constructor(protected options: PluginManagerOptions) {
+  constructor(public options: PluginManagerOptions) {
     this.app = options.app;
     this.app.db.registerRepositories({
       PluginManagerRepository,

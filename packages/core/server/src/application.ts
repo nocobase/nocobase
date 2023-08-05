@@ -290,7 +290,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.setWorkingMessage('start load');
 
     if (options?.reload) {
-      this.log.info(`Reload application configuration`);
+      this.log.info(`app.reload()`);
       const oldDb = this._db;
       this.init();
       await oldDb.close();
@@ -566,9 +566,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.context.resourcer = this._resourcer;
     this.context.cache = this._cache;
 
+    const plugins = this._pm ? this._pm.options.plugins : options.plugins;
+
     this._pm = new PluginManager({
       app: this,
-      plugins: options.plugins,
+      plugins: plugins || [],
     });
 
     this._authManager = new AuthManager({

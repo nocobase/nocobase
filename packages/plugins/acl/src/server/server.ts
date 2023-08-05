@@ -343,9 +343,9 @@ export class PluginACL extends Plugin {
     });
 
     const writeRolesToACL = async (app, options) => {
-      this.log.debug('write roles to ACL');
       const exists = await this.app.db.collectionExistsInDb('roles');
       if (exists) {
+        this.log.info('write roles to ACL');
         await this.writeRolesToACL();
       }
     };
