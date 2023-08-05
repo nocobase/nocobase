@@ -198,6 +198,13 @@ const VariablesProvider = ({ children }) => {
 
     const path = matches[0].replace(/\{\{\s*(.*?)\s*\}\}/g, '$1');
 
+    // 当仅有一个例如 `$user` 这样的字符串时，需要拼一个假的 `collectionField` 返回
+    if (!path.includes('.')) {
+      return {
+        target: variableToCollectionName[path],
+      };
+    }
+
     return getCollectionJoinField(getFieldPath(path));
   }, []);
 

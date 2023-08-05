@@ -53,7 +53,7 @@ export interface VariablesContextType {
    * @returns 变量的配置
    */
   getVariable: (variableName: string) => VariableOption;
-  getCollectionField: (collectionName: string) => CollectionFieldOptions;
+  getCollectionField: (variableString: string) => CollectionFieldOptions;
 }
 
 export interface VariableOption {

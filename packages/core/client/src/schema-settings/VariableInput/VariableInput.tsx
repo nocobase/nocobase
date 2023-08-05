@@ -16,6 +16,12 @@ type Props = {
   style?: React.CSSProperties;
   collectionField?: CollectionFieldOptions;
   contextCollectionName?: string;
+  /**
+   * 根据 `onChange` 的第一个参数，判断是否需要触发 `onChange`
+   * @param value `onChange` 的第一个参数
+   * @returns 返回为 `true` 时，才会触发 `onChange`
+   */
+  shouldChange?: (value: any) => boolean;
 };
 
 export const VariableInput = (props: Props) => {
@@ -27,6 +33,7 @@ export const VariableInput = (props: Props) => {
     schema,
     className,
     contextCollectionName,
+    shouldChange,
   } = props;
   const compile = useCompile();
   const userVariable = useUserVariable({ schema, maxDepth: 3 });
@@ -56,11 +63,20 @@ export const VariableInput = (props: Props) => {
     return data;
   }, [compile, contextCollectionName, contextVariable, schema, userVariable]);
 
+  const handleChange = (value: any) => {
+    if (!shouldChange) {
+      return onChange(value);
+    }
+    if (shouldChange(value)) {
+      onChange(value);
+    }
+  };
+
   return (
     <Variable.Input
       className={className}
       value={value}
-      onChange={onChange}
+      onChange={handleChange}
       scope={scope}
       style={style}
       changeOnSelect={isAllowTableContext}
