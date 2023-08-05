@@ -57,6 +57,7 @@ import {
   useGlobalTheme,
   useLinkageCollectionFilterOptions,
   useSortFields,
+  useActionContext,
 } from '..';
 import { useTableBlockContext } from '../block-provider';
 import { findFilterTargets, updateFilterTargets } from '../block-provider/hooks';
@@ -1448,6 +1449,7 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
   const field: Field = useField();
   const { dn } = useDesignable();
   const { t } = useTranslation();
+  const actionCtx = useActionContext();
   let targetField;
   const { getField } = useCollection();
   const { getCollectionJoinField } = useCollectionManager();
@@ -1463,10 +1465,10 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
   const parentFieldSchema = collectionField?.interface === 'm2o' && findParentFieldSchema(fieldSchema);
   const parentCollectionField = parentFieldSchema && getCollectionJoinField(parentFieldSchema?.['x-collection-field']);
   const tableCtx = useTableBlockContext();
-  const isAllowContextVariable =
-    collectionField?.interface === 'm2m' ||
-    (parentCollectionField?.type === 'hasMany' && collectionField?.interface === 'm2o');
-
+  const isAllowContexVariable =
+    actionCtx?.fieldSchema?.['x-action'] === 'customize:create' &&
+    (collectionField?.interface === 'm2m' ||
+      (parentCollectionField?.type === 'hasMany' && collectionField?.interface === 'm2o'));
   return (
     <SchemaSettings.ModalItem
       title={t('Set default value')}
@@ -1483,7 +1485,7 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
               'x-component-props': {
                 ...(fieldSchema?.['x-component-props'] || {}),
                 collectionField,
-                contextCollectionName: isAllowContextVariable && tableCtx.collection,
+                contextCollectionName: isAllowContexVariable && tableCtx.collection,
                 schema: collectionField?.uiSchema,
                 className: defaultInputStyle,
                 renderSchemaComponent: function Com(props) {

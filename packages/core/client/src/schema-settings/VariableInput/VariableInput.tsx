@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { CollectionFieldOptions } from '../../collection-manager';
 import { useCompile, Variable } from '../../schema-component';
-import { useContextAssociationFields } from './hooks/useContextAssociationFields';
+import { useContextAssociationFields, useIsSameOrChildCollection } from './hooks/useContextAssociationFields';
 import { useUserVariable } from './hooks/useUserVariable';
 
 type Props = {
@@ -30,7 +30,9 @@ export const VariableInput = (props: Props) => {
   } = props;
   const compile = useCompile();
   const userVariable = useUserVariable({ schema, maxDepth: 3 });
-  const contextVariable = useContextAssociationFields({ schema, maxDepth: 2, contextCollectionName });
+  const contextVariable = useContextAssociationFields({ schema, maxDepth: 2, contextCollectionName, collectionField });
+  const getIsSameOrChildCollection = useIsSameOrChildCollection();
+  const isAllowTableContext = getIsSameOrChildCollection(contextCollectionName, collectionField?.target);
   const scope = useMemo(() => {
     const data = [
       userVariable,
@@ -63,7 +65,7 @@ export const VariableInput = (props: Props) => {
       onChange={onChange}
       scope={scope}
       style={style}
-      changeOnSelect={contextCollectionName !== null}
+      changeOnSelect={isAllowTableContext}
     >
       <RenderSchemaComponent value={value} onChange={onChange} />
     </Variable.Input>
