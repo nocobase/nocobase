@@ -124,7 +124,7 @@ export class Gateway extends EventEmitter {
         });
       } else {
         this.responseError(res, {
-          title: `app ${handleApp} is not ready yet`,
+          title: `app ${handleApp} is not ready yet, current status: ${app.getFsmState()}`,
           detail: `last working message: ${app.workingMessage}`,
           status: 503,
         });
