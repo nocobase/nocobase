@@ -177,7 +177,7 @@ export async function revision(context: Context, next) {
   await next();
 }
 
-export async function reload(context: Context, next) {
+export async function sync(context: Context, next) {
   const plugin = context.app.getPlugin('workflow');
   const repository = utils.getRepositoryFromParams(context);
   const { filterByTk, filter = {} } = context.action.params;
@@ -188,10 +188,11 @@ export async function reload(context: Context, next) {
   });
 
   workflows.forEach((workflow) => {
+    plugin.toggle(workflow, false);
     plugin.toggle(workflow);
   });
 
-  context.status = 205;
+  context.status = 204;
 
   await next();
 }

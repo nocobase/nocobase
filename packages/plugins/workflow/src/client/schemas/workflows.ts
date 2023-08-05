@@ -169,9 +169,13 @@ export const workflowSchema: ISchema = {
                 },
               },
             },
-            reload: {
+            sync: {
               type: 'void',
-              title: `{{t("Reload", { ns: "${NAMESPACE}" })}}`,
+              title: `{{t("Sync", { ns: "${NAMESPACE}" })}}`,
+              'x-decorator': 'Tooltip',
+              'x-decorator-props': {
+                title: `{{ t("Sync enabled status of all workflows from database", { ns: "${NAMESPACE}" }) }}`,
+              },
               'x-component': 'Action',
               'x-component-props': {
                 useAction() {
@@ -179,7 +183,7 @@ export const workflowSchema: ISchema = {
                   const { resource } = useResourceContext();
                   return {
                     async run() {
-                      await resource.reload();
+                      await resource.sync();
                       message.success(t('Operation succeeded'));
                     },
                   };
