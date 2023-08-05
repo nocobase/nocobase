@@ -11,7 +11,11 @@ const onError = {
 
 export class ApplicationFsm {
   static buildFsm(application: Application) {
-    return createMachine(
+    return createMachine<{
+      error: Error | null;
+      tryStart: boolean;
+      workingType: 'install' | 'upgrade' | 'pm-enable' | 'pm-disable' | null;
+    }>(
       {
         predictableActionArguments: true,
         id: 'application',
@@ -19,12 +23,13 @@ export class ApplicationFsm {
         context: {
           error: null,
           tryStart: false,
+          workingType: null,
         },
         states: {
           idle: {
             on: {
               start: 'starting',
-              install: 'installing',
+              work: 'working',
             },
           },
           starting: {
@@ -35,9 +40,15 @@ export class ApplicationFsm {
             },
             entry: assign({ tryStart: true }),
           },
-          installing: {
+          working: {
+            entry: [
+              (context, event) => {
+                console.log({ event });
+                context.workingType = event.workingType;
+              },
+            ],
             invoke: {
-              src: 'install',
+              src: 'working',
               onDone: {
                 target: 'idle',
                 actions: [
@@ -53,17 +64,13 @@ export class ApplicationFsm {
           },
           started: {
             on: {
-              install: 'installing',
+              work: 'working',
             },
           },
           error: {
             on: {
-              install: {
-                target: 'installing',
-                cond: {
-                  type: 'isError',
-                  errorType: ApplicationNotInstall,
-                },
+              work: {
+                target: 'working',
               },
             },
             entry: actions.log((context) => `${context.error}`),
@@ -79,12 +86,16 @@ export class ApplicationFsm {
         },
 
         services: {
-          async start(context, options) {
-            await application.start(options as any);
+          async working(context, event) {
+            switch (context.workingType) {
+              case 'install':
+                await application.install(event.options);
+                break;
+            }
           },
 
-          async install(context, options) {
-            await application.install(options as any);
+          async start(context, options) {
+            await application.start(options as any);
           },
         },
       },

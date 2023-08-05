@@ -46,8 +46,17 @@ describe('application fsm', () => {
 
     expect(fsmInterpreter.state.value).toBe('error');
 
-    fsmInterpreter.send('install');
+    const jestFn = jest.fn();
+    app.on('beforeInstall', async () => {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      jestFn();
+    });
+
+    fsmInterpreter.send('work', {
+      workingType: 'install',
+    });
 
     await waitFor(fsmInterpreter, (state) => state.matches('started'));
+    expect(jestFn).toBeCalledTimes(1);
   });
 });

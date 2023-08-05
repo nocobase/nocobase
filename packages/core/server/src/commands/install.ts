@@ -36,11 +36,14 @@ export default (app: Application) => {
         app.logger.info(`Start installing NocoBase`);
       }
 
-      app.getFsmInterpreter().send('install', {
-        cliArgs,
-        clean: opts.clean,
-        sync: {
-          force: opts.force,
+      app.getFsmInterpreter().send('work', {
+        workingType: 'install',
+        options: {
+          cliArgs,
+          clean: opts.clean,
+          sync: {
+            force: opts.force,
+          },
         },
       });
     });
