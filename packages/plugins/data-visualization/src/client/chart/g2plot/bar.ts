@@ -5,7 +5,7 @@ import { G2PlotChart } from './g2plot';
 
 export class Bar extends G2PlotChart {
   constructor() {
-    super('bar', 'Bar Chart', G2PlotBar);
+    super({ name: 'bar', title: 'Bar Chart', component: G2PlotBar, config: ['isGroup', 'isStack', 'isPercent'] });
   }
 
   init(

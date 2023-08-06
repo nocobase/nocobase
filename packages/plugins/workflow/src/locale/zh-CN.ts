@@ -1,7 +1,12 @@
 export default {
   Workflow: '工作流',
   'Execution history': '执行历史',
+  'Clear all executions': '清除所有执行记录',
+  'Clear executions will not reset executed count, and started executions will not be deleted, are you sure you want to delete them all?':
+    '清空执行记录不会重置执行次数，且执行中的也不会被删除，确定要删除所有执行记录吗？',
   Executed: '已执行',
+  Sync: '同步',
+  'Sync enabled status of all workflows from database': '从数据库同步所有工作流的启用状态',
   'Trigger type': '触发方式',
   Status: '状态',
   On: '启用',
@@ -9,6 +14,7 @@ export default {
   Version: '版本',
   'Copy to new version': '复制到新版本',
   Duplicate: '复制',
+  'Duplicate to new workflow': '复制为新工作流',
   'Delete a main version will cause all other revisions to be deleted too.': '删除主版本将导致其他版本一并被删除。',
   Loading: '加载中',
   'Load failed': '加载失败',
