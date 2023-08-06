@@ -98,7 +98,7 @@ function migrateConfig(config, oldToNew) {
 export async function revision(context: Context, next) {
   const { db } = context;
   const repository = utils.getRepositoryFromParams(context);
-  const { filterByTk, filter = {} } = context.action.params;
+  const { filterByTk, filter = {}, values = {} } = context.action.params;
 
   context.body = await db.sequelize.transaction(async (transaction) => {
     const origin = await repository.findOne({
@@ -115,7 +115,7 @@ export async function revision(context: Context, next) {
           title: origin.title,
           allExecuted: origin.allExecuted,
         }
-      : {};
+      : values;
 
     const instance = await repository.create({
       values: {
@@ -177,7 +177,7 @@ export async function revision(context: Context, next) {
   await next();
 }
 
-export async function reload(context: Context, next) {
+export async function sync(context: Context, next) {
   const plugin = context.app.getPlugin('workflow');
   const repository = utils.getRepositoryFromParams(context);
   const { filterByTk, filter = {} } = context.action.params;
@@ -188,10 +188,11 @@ export async function reload(context: Context, next) {
   });
 
   workflows.forEach((workflow) => {
+    plugin.toggle(workflow, false);
     plugin.toggle(workflow);
   });
 
-  context.status = 205;
+  context.status = 204;
 
   await next();
 }

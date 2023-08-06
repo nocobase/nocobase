@@ -3,9 +3,8 @@ import {
   PluginManagerContext,
   SchemaComponent,
   SettingsCenterProvider,
-  useResourceContext,
 } from '@nocobase/client';
-import { Card, message } from 'antd';
+import { Card, Tooltip } from 'antd';
 import React, { useContext } from 'react';
 import { ExecutionLink } from './ExecutionLink';
 import { ExecutionResourceProvider } from './ExecutionResourceProvider';
@@ -16,7 +15,6 @@ import { lang } from './locale';
 import { instructions } from './nodes';
 import { workflowSchema } from './schemas/workflows';
 import { triggers } from './triggers';
-import { useTranslation } from 'react-i18next';
 
 // registerField(expressionField.group, 'expression', expressionField);
 
@@ -26,26 +24,13 @@ export function useWorkflowContext() {
   return useContext(WorkflowContext);
 }
 
-function useWorkflowReloadAction() {
-  const { t } = useTranslation();
-  const { resource } = useResourceContext();
-  return {
-    async run() {
-      await resource.reload();
-      message.success(t('Operation succeeded'));
-    },
-  };
-}
-
 function WorkflowPane() {
   return (
     <Card bordered={false}>
       <SchemaComponent
         schema={workflowSchema}
-        scope={{
-          useWorkflowReloadAction,
-        }}
         components={{
+          Tooltip,
           WorkflowLink,
           ExecutionResourceProvider,
           ExecutionLink,

@@ -59,10 +59,6 @@ export const ActionModal: ComposedActionDrawer<ModalProps> = observer(
                 display: flex;
                 justify-content: flex-end;
                 width: 100%;
-
-                .ant-btn {
-                  margin-right: 8px;
-                }
               `}
             >
               <RecursionField
