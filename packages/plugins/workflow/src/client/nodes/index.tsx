@@ -36,6 +36,7 @@ import query from './query';
 import request from './request';
 import sql from './sql';
 import update from './update';
+import { StatusIcon } from '../components/StatusIcon';
 
 export interface Instruction {
   title: string;
@@ -238,11 +239,10 @@ export function RemoveButton() {
 
 function InnerJobButton({ job, ...props }) {
   const { styles } = useStyles();
-  const { icon, color } = JobStatusOptionsMap[job.status];
 
   return (
     <Button {...props} shape="circle" size="small" className={cx(styles.nodeJobButtonClass, props.className)}>
-      <Tag color={color}>{icon}</Tag>
+      <StatusIcon status={job.status} />
     </Button>
   );
 }
@@ -280,7 +280,6 @@ export function JobButton() {
     <Dropdown
       menu={{
         items: jobs.map((job) => {
-          const { icon, color } = JobStatusOptionsMap[job.status];
           return {
             key: job.id,
             label: (
@@ -296,9 +295,7 @@ export function JobButton() {
                   }
                 `}
               >
-                <span className={cx(styles.nodeJobButtonClass, 'inner')}>
-                  <Tag color={color}>{icon}</Tag>
-                </span>
+                <StatusIcon status={job.status} />
                 <time>{str2moment(job.updatedAt).format('YYYY-MM-DD HH:mm:ss')}</time>
               </div>
             ),
