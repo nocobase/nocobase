@@ -452,7 +452,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.logger.debug('start destroy app');
     this.setWorkingMessage('destroying app...');
     await this.emitAsync('beforeDestroy', this, options);
-    await this.stop(options);
+    await this._stop(options);
 
     this.logger.debug('emit afterDestroy');
     await this.emitAsync('afterDestroy', this, options);
