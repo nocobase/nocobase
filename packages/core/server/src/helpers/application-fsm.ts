@@ -84,6 +84,14 @@ export class ApplicationFsm {
           started: {
             on: {
               work: 'working',
+              stop: 'stopping',
+            },
+          },
+          stopping: {
+            invoke: {
+              src: 'stop',
+              onDone: 'idle',
+              onError,
             },
           },
           error: {
@@ -124,6 +132,10 @@ export class ApplicationFsm {
 
           async start(context, options) {
             await application._start(options as any);
+          },
+
+          async stop(context, options) {
+            await application._stop(options as any);
           },
         },
       },

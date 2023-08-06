@@ -36,6 +36,24 @@ describe('application fsm', () => {
     expect(jestFn).toBeCalledTimes(1);
   });
 
+  it('should stop application', async () => {
+    app.getFsmInterpreter().send('start');
+
+    await waitFor(app.getFsmInterpreter(), (state) => state.matches('started'));
+
+    const jestFn = jest.fn();
+    app.on('beforeStop', async () => {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      jestFn();
+    });
+
+    app.getFsmInterpreter().send('stop');
+
+    await waitFor(app.getFsmInterpreter(), (state) => state.matches('idle'));
+
+    expect(jestFn).toBeCalledTimes(1);
+  });
+
   it('should transition to error state when application not start', async () => {
     const fsmInterpreter = app.getFsmInterpreter();
     fsmInterpreter.send('start', {

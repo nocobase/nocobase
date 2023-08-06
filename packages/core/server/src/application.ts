@@ -412,7 +412,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.emit('readyStatusChanged', this.ready);
   }
 
-  async stop(options: any = {}) {
+  async _stop(options: any = {}) {
     this.log.debug('stop app...');
     this.setWorkingMessage('stopping app...');
     if (this.stopped) {
@@ -437,6 +437,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.stopped = true;
     this.log.info(`${this.name} is stopped`);
     this.setWorkingMessage('stopped');
+  }
+
+  async stop(options: any = {}) {
+    this.getFsmInterpreter().send('stop', options);
+    await waitFor(this.getFsmInterpreter(), (state) => state.matches('idle'));
   }
 
   async destroy(options: any = {}) {
