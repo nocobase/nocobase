@@ -85,6 +85,7 @@ export class PresetNocoBase extends Plugin {
     const plugins = this.allPlugins.filter((item) => !existPluginNames.includes(item.name));
     await repository.create({ values: plugins });
     this.log.debug('install preset plugins');
+    await repository.init();
     await this.app.pm.load();
     await this.app.pm.install();
   }

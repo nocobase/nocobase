@@ -13,17 +13,17 @@ import { i18n, InitOptions } from 'i18next';
 import Koa, { DefaultContext as KoaDefaultContext, DefaultState as KoaDefaultState } from 'koa';
 import compose from 'koa-compose';
 import lodash from 'lodash';
+import { waitFor } from 'xstate/lib/waitFor';
 import { createACL } from './acl';
 import { AppSupervisor, supervisedAppCall } from './app-supervisor';
 import { registerCli } from './commands';
-import { createI18n, createResourcer, registerMiddlewares } from './helper';
+import { ApplicationNotInstall } from './errors/application-not-install';
+import { createAppProxy, createI18n, createResourcer, registerMiddlewares } from './helper';
 import { ApplicationFsm } from './helpers/application-fsm';
 import { ApplicationVersion } from './helpers/application-version';
 import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
-import { ApplicationNotInstall } from './errors/application-not-install';
-import { waitFor } from 'xstate/lib/waitFor';
 
 const packageJson = require('../package.json');
 
@@ -315,14 +315,18 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       return;
     }
 
-    this.setWorkingMessage('start load');
-
     if (options?.reload) {
+      this.setWorkingMessage('app reload');
       this.log.info(`app.reload()`);
       const oldDb = this._db;
       this.init();
       await oldDb.close();
     }
+
+    this.setWorkingMessage('init plugins');
+    await this.pm.initPlugins();
+
+    this.setWorkingMessage('start load');
 
     this.setWorkingMessage('emit beforeLoad');
     await this.emitAsync('beforeLoad', this, options);
@@ -548,6 +552,17 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return JSON.parse(JSON.stringify({ result }));
   }
 
+  reInitEvents() {
+    for (const eventName of Object.keys(this['_events'])) {
+      const listeners = lodash.castArray(this['_events'][eventName] || []);
+      for (const listener of listeners) {
+        if (listener['_reinitializable']) {
+          this.removeListener(eventName, listener);
+        }
+      }
+    }
+  }
+
   protected init() {
     const options = this.options;
 
@@ -560,26 +575,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this._logger = logger.instance;
 
-    const alwaysRebindEvents = [];
-
-    // @ts-ignore
-    for (const event of Object.keys(this._events)) {
-      // @ts-ignore
-      const events = lodash.castArray(this._events[event] || []);
-
-      events
-        .filter((listener: any) => listener.alwaysBind)
-        .forEach((listener: any) => {
-          alwaysRebindEvents.push([event, listener]);
-        });
-    }
-
-    // @ts-ignore
-    this._events = [];
-    // @ts-ignore
-    this._eventsCount = [];
-
-    this.removeAllListeners();
+    this.reInitEvents();
 
     this.middleware = new Toposort<any>();
     this.plugins = new Map<string, Plugin>();
@@ -626,7 +622,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       this._resourcer.use(this._acl.middleware(), { tag: 'acl', after: ['auth'] });
     }
 
-    this._locales = new Locale(this);
+    this._locales = new Locale(createAppProxy(this));
 
     registerMiddlewares(this, options);
 
@@ -637,10 +633,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     registerCli(this);
 
     this._version = new ApplicationVersion(this);
-
-    for (const [event, listener] of alwaysRebindEvents) {
-      this.on(event, listener);
-    }
   }
 
   private createDatabase(options: ApplicationOptions) {

@@ -4,6 +4,7 @@ import execa from 'execa';
 import net from 'net';
 import { resolve } from 'path';
 import Application from '../application';
+import { createAppProxy } from '../helper';
 import { Plugin } from '../plugin';
 import { clientStaticMiddleware } from './clientStaticMiddleware';
 import collectionOptions from './options/collection';
@@ -145,7 +146,7 @@ export class PluginManager {
       this.app.log.warn('plugin not found', error);
       return;
     }
-    const instance: Plugin = new P(this.app, options);
+    const instance: Plugin = new P(createAppProxy(this.app), options);
     if (!options.isPreset && options.name) {
       const model = await this.repository.firstOrCreate({
         values: { ...options },
@@ -160,12 +161,13 @@ export class PluginManager {
     await instance.afterAdd();
   }
 
-  async load(options: any = {}) {
-    this.app.setWorkingMessage('loading plugins...');
-
+  async initPlugins() {
     await this.initPresetPlugins();
     await this.repository.init();
+  }
 
+  async load(options: any = {}) {
+    this.app.setWorkingMessage('loading plugins...');
     const total = this.pluginInstances.size;
 
     let current = 0;

@@ -78,3 +78,17 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
   app.use(db2resource, { tag: 'db2resource', after: 'dataWrapping' });
   app.use(app.resourcer.restApiMiddleware(), { tag: 'restApi', after: 'db2resource' });
 }
+
+export const createAppProxy = (app: Application) => {
+  return new Proxy(app, {
+    get(target, prop, ...args) {
+      if (typeof prop === 'string' && ['on', 'once', 'addListener'].includes(prop)) {
+        return (eventName: string, listener: any) => {
+          listener['_reinitializable'] = true;
+          return target[prop](eventName, listener);
+        };
+      }
+      return Reflect.get(target, prop, ...args);
+    },
+  });
+};
