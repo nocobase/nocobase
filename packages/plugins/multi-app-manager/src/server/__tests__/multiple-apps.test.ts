@@ -226,6 +226,7 @@ describe('multiple apps', () => {
     await AppSupervisor.getInstance().removeApp(subAppName);
 
     expect(AppSupervisor.getInstance().hasApp(subAppName)).toBeFalsy();
+    await app.stop();
 
     await app.start();
 
