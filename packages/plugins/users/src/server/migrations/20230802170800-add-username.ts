@@ -26,7 +26,7 @@ export default class AddUserNameMigration extends Migration {
             title: '{{t("Username")}}',
             'x-component': 'Input',
             'x-validator': { username: true },
-            require: true,
+            required: true,
           },
         },
         // NOTE: to trigger hook
