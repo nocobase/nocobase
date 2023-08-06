@@ -79,9 +79,7 @@ pgOnly()('collection sync', () => {
         name: 'sub1',
       },
     });
-
     const sub1 = await AppSupervisor.getInstance().getApp('sub1');
-
     // create user at main app
     await mainApp.db.getRepository('users').create({
       values: {
@@ -89,43 +87,35 @@ pgOnly()('collection sync', () => {
         password: 'test123',
       },
     });
-
     const defaultRole = await sub1.db.getRepository('roles').findOne({
       filter: {
         default: true,
       },
     });
-
     const user = await sub1.db.getRepository('users').findOne({
       filter: {
         email: 'test@qq.com',
       },
       appends: ['roles'],
     });
-
     expect(user.get('roles').map((item) => item.name)).toEqual([defaultRole.name]);
-
     await mainApp.db.getRepository('applications').create({
       values: {
         name: 'sub2',
       },
     });
-
     const sub2 = await AppSupervisor.getInstance().getApp('sub2');
-
     const defaultRoleInSub2 = await sub2.db.getRepository('roles').findOne({
       filter: {
         default: true,
       },
     });
-
     const userInSub2 = await sub2.db.getRepository('users').findOne({
       filter: {
         email: 'test@qq.com',
       },
       appends: ['roles'],
     });
-
     expect(userInSub2.get('roles').map((item) => item.name)).toContain(defaultRoleInSub2.name);
   });
 
