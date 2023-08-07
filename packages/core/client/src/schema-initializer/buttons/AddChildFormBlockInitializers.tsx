@@ -1,9 +1,36 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { gridRowColWrap } from '../utils';
-import { SchemaInitializer, useCollection, useCollectionManager } from '../..';
-import { getFormCollections } from './RecordBlockInitializers';
+import { SchemaInitializer, SchemaInitializerItemOptions, useCollection, useCollectionManager } from '../..';
 
+const getFormCollections = (props) => {
+  const { actionInitializers, childrenCollections, collection } = props;
+  const formCollections = [
+    {
+      key: collection.name,
+      type: 'item',
+      title: collection?.title || collection.name,
+      component: 'CreateFormBlockInitializer',
+      icon: false,
+      targetCollection: collection,
+      actionInitializers,
+    },
+  ].concat(
+    childrenCollections.map((c) => {
+      return {
+        key: c.name,
+        type: 'item',
+        title: c?.title || c.name,
+        component: 'CreateFormBlockInitializer',
+        icon: false,
+        targetCollection: c,
+        actionInitializers,
+      };
+    }),
+  ) as SchemaInitializerItemOptions[];
+
+  return formCollections;
+};
 export const AddChildFormBlockInitializers = (props: any) => {
   const { t } = useTranslation();
   const { insertPosition, component } = props;
@@ -39,7 +66,7 @@ export const AddChildFormBlockInitializers = (props: any) => {
                   key: 'form',
                   type: 'item',
                   title: '{{t("Form")}}',
-                  component: 'RecordFormBlockInitializer',
+                  component: 'CreateFormBlockInitializer',
                 },
           ],
         },
