@@ -17,10 +17,11 @@ const recursiveParent = (schema: Schema) => {
 const useRelationFields = () => {
   const fieldSchema = useFieldSchema();
   const { getCollectionFields } = useCollectionManager();
+  const currentCollection = useCollection();
   let fields = [];
 
   if (fieldSchema['x-initializer']) {
-    fields = useCollection().fields;
+    fields = currentCollection.fields;
   } else {
     const collection = recursiveParent(fieldSchema.parent);
     if (collection) {
@@ -118,7 +119,7 @@ const useRelationFields = () => {
   return relationFields;
 };
 
-const useDetailCollections = (props) => {
+const getDetailCollections = (props) => {
   const { actionInitializers, childrenCollections, collection } = props;
   const detailCollections = [
     {
@@ -146,7 +147,7 @@ const useDetailCollections = (props) => {
   return detailCollections;
 };
 
-const useFormCollections = (props) => {
+const getFormCollections = (props) => {
   const { actionInitializers, childrenCollections, collection } = props;
   const formCollections = [
     {
@@ -202,7 +203,7 @@ export const RecordBlockInitializers = (props: any) => {
                   key: 'details',
                   type: 'subMenu',
                   title: '{{t("Details")}}',
-                  children: useDetailCollections({
+                  children: getDetailCollections({
                     ...props,
                     childrenCollections: detailChildrenCollections,
                     collection,
@@ -220,7 +221,7 @@ export const RecordBlockInitializers = (props: any) => {
                   key: 'form',
                   type: 'subMenu',
                   title: '{{t("Form")}}',
-                  children: useFormCollections({
+                  children: getFormCollections({
                     ...props,
                     childrenCollections: formChildrenCollections,
                     collection,
