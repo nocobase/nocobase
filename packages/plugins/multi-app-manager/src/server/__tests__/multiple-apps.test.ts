@@ -207,7 +207,9 @@ describe('multiple apps', () => {
     const subApp = await app.db.getRepository('applications').create({
       values: {
         name: subAppName,
-        options: {},
+        options: {
+          plugins: [],
+        },
       },
     });
 
@@ -239,7 +241,9 @@ describe('multiple apps', () => {
     await app.db.getRepository('applications').create({
       values: {
         name: subAppName,
-        options: {},
+        options: {
+          plugins: [],
+        },
       },
     });
 

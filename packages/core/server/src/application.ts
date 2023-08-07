@@ -309,7 +309,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return (this.cli as any)._findCommand(name);
   }
 
-  @supervisedAppCall
   async load(options?: any) {
     if (this._loaded) {
       return;
