@@ -716,5 +716,6 @@ export default {
   "Tag color field":"Tag color field",
   "Sync successfully":"Sync successfully",
   "Sync from form fields":"Sync from form fields",
-  "Select all":"Select all"
+  "Select all":"Select all",
+  "All loaded, nothing more":"All loaded, nothing more",
 };
