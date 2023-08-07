@@ -1,5 +1,5 @@
-import Database from '../database';
 import { Model, Transactionable } from 'sequelize';
+import Database from '../database';
 
 interface ReferentialIntegrityCheckOptions extends Transactionable {
   db: Database;
@@ -23,6 +23,10 @@ export async function referentialIntegrityCheck(options: ReferentialIntegrityChe
     const { sourceCollectionName, sourceField, targetField, onDelete } = reference;
     const sourceCollection = db.collections.get(sourceCollectionName);
     const sourceRepository = sourceCollection.repository;
+
+    if (sourceCollection.isView()) {
+      continue;
+    }
 
     const filter = {
       [sourceField]: referencedInstance[targetField],

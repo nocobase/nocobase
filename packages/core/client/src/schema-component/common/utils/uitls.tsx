@@ -1,7 +1,8 @@
+import dayjs from 'dayjs';
 import flat from 'flat';
 import _, { every, findIndex, isArray, some } from 'lodash';
-import moment from 'moment';
 import { useMemo } from 'react';
+import { useTableBlockContext } from '../../../block-provider';
 import { useCurrentUserContext } from '../../../user';
 import jsonLogic from '../../common/utils/logic';
 
@@ -12,16 +13,31 @@ type VariablesCtx = {
   $form?: Record<string, any>;
 };
 
+function flattenDeep(data, result = []) {
+  for (let i = 0; i < data?.length; i++) {
+    const { children, ...rest } = data[i];
+    result.push(rest);
+    if (children) {
+      flattenDeep(children, result);
+    }
+  }
+  return result;
+}
+
 export const useVariablesCtx = (): VariablesCtx => {
-  const { data } = useCurrentUserContext() || {};
+  const currentUser = useCurrentUserContext();
+  const { field, service, rowKey } = useTableBlockContext();
+  const tableData = flattenDeep(service?.data?.data);
+  const contextData = tableData?.filter((v) => (field?.data?.selectedRowKeys || [])?.includes(v[rowKey]));
   return useMemo(() => {
     return {
-      $user: data?.data || {},
+      $user: currentUser?.data?.data || {},
       $date: {
-        now: () => moment().toISOString(),
+        now: () => dayjs().toISOString(),
       },
+      $context: contextData,
     };
-  }, [data]);
+  }, [contextData, currentUser?.data?.data]);
 };
 
 export const isVariable = (str: unknown) => {
@@ -33,7 +49,7 @@ export const isVariable = (str: unknown) => {
   return matches ? true : false;
 };
 
-export const parseVariables = (str: string, ctx: VariablesCtx) => {
+export const parseVariables = (str: string, ctx: VariablesCtx | any) => {
   const regex = /{{(.*?)}}/;
   const matches = str?.match?.(regex);
   if (matches) {
@@ -122,7 +138,8 @@ function getAllKeys(obj) {
   return keys;
 }
 
-export const conditionAnalyse = (rules, values) => {
+export const conditionAnalyse = (rules, scope) => {
+  const values = { ...scope, now: new Date() };
   const type = Object.keys(rules)[0] || '$and';
   const conditions = rules[type];
   const results = conditions.map((c) => {

@@ -1,30 +1,28 @@
-import React from 'react';
-import { Alert } from 'antd';
 import { ArrowUpOutlined } from '@ant-design/icons';
-import { cx, css } from '@emotion/css';
-
-import { useCompile } from '@nocobase/client';
-
+import { css, cx, useCompile } from '@nocobase/client';
+import React from 'react';
 import { NodeDefaultView } from '.';
-import { useFlowContext } from '../FlowContext';
-import { lang, NAMESPACE } from '../locale';
-import { useWorkflowVariableOptions, VariableOption, nodesOptions, triggerOptions } from '../variable';
-import { addButtonClass, branchBlockClass, branchClass, nodeSubtreeClass } from '../style';
 import { Branch } from '../Branch';
+import { useFlowContext } from '../FlowContext';
+import { NAMESPACE, lang } from '../locale';
+import useStyles from '../style';
+import { VariableOption, defaultFieldNames, nodesOptions, triggerOptions, useWorkflowVariableOptions } from '../variable';
 
 function findOption(options: VariableOption[], paths: string[]) {
-  let current = options;
+  let opts = options;
+  let option = null;
   for (let i = 0; i < paths.length; i++) {
     const path = paths[i];
-    const option = current.find((item) => item.value === path);
-    if (!option) {
-      return null;
+    const current = opts.find((item) => item.value === path);
+    if (!current) {
+      break;
     }
-    if (option.children) {
-      current = option.children;
+    option = current;
+    if (current.children) {
+      opts = current.children;
     }
   }
-  return current;
+  return option;
 }
 
 export default {
@@ -40,8 +38,20 @@ export default {
       'x-decorator': 'FormItem',
       'x-component': 'Variable.Input',
       'x-component-props': {
-        scope: '{{useWorkflowVariableOptions}}',
+        scope: '{{useWorkflowVariableOptions()}}',
+        changeOnSelect: true,
         useTypedConstant: ['string', 'number', 'null'],
+        className: css`
+          width: 100%;
+
+          .variable {
+            flex: 1;
+          }
+
+          .ant-input.null-value {
+            width: 100%;
+          }
+        `,
       },
       required: true,
     },
@@ -49,14 +59,15 @@ export default {
   view: {},
   component: function Component({ data }) {
     const { nodes } = useFlowContext();
+    const { styles } = useStyles();
     const entry = nodes.find((node) => node.upstreamId === data.id && node.branchIndex != null);
 
     return (
       <NodeDefaultView data={data}>
-        <div className={cx(nodeSubtreeClass)}>
+        <div className={styles.nodeSubtreeClass}>
           <div
             className={cx(
-              branchBlockClass,
+              styles.branchBlockClass,
               css`
                 padding-left: 20em;
               `,
@@ -64,28 +75,10 @@ export default {
           >
             <Branch from={data} entry={entry} branchIndex={entry?.branchIndex ?? 0} />
 
-            <div className={cx(branchClass)}>
+            <div className={styles.branchClass}>
               <div className="workflow-branch-lines" />
-              <div
-                className={cx(
-                  addButtonClass,
-                  css`
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    position: absolute;
-                    top: 50%;
-                    transform: translateY(-50%);
-                    width: 2em;
-                    height: 6em;
-                  `,
-                )}
-              >
-                <ArrowUpOutlined
-                  className={css`
-                    background-color: #f0f2f5;
-                  `}
-                />
+              <div className={cx(styles.addButtonClass, styles.loopLineClass)}>
+                <ArrowUpOutlined />
               </div>
             </div>
           </div>
@@ -110,13 +103,15 @@ export default {
       return null;
     }
 
+    const { fieldNames = defaultFieldNames } = options;
+
     // const { workflow } = useFlowContext();
     // const current = useNodeContext();
     // const upstreams = useAvailableUpstreams(current);
     // find target data model by path described in `config.target`
     // 1. get options from $context/$jobsMapByNodeId
     // 2. route to sub-options and use as loop target options
-    const targetOption: VariableOption = { key: 'item', value: 'item', label: lang('Loop target') };
+    let targetOption: VariableOption = { key: 'item', [fieldNames.value]: 'item', [fieldNames.label]: lang('Loop target') };
 
     if (typeof target === 'string' && target.startsWith('{{') && target.endsWith('}}')) {
       const paths = target
@@ -125,23 +120,25 @@ export default {
         .map((path) => path.trim());
 
       const targetOptions = [nodesOptions, triggerOptions].map((item: any) => {
-        const opts = typeof item.useOptions === 'function' ? item.useOptions(options).filter(Boolean) : null;
+        const opts = item.useOptions(options).filter(Boolean);
         return {
-          label: compile(item.title),
-          value: item.value,
+          [fieldNames.label]: compile(item.title),
+          [fieldNames.value]: item.value,
           key: item.value,
-          children: compile(opts),
+          [fieldNames.children]: opts,
           disabled: opts && !opts.length,
         };
       });
 
-      targetOption.children = findOption(targetOptions, paths);
+      const found = findOption(targetOptions, paths);
+
+      targetOption = Object.assign({ ...targetOption }, found, targetOption);
     }
 
     return [
       targetOption,
-      { key: 'index', value: 'index', label: lang('Loop index') },
-      { key: 'length', value: 'length', label: lang('Loop length') },
+      { key: 'index', [fieldNames.value]: 'index', [fieldNames.label]: lang('Loop index') },
+      { key: 'length', [fieldNames.value]: 'length', [fieldNames.label]: lang('Loop length') },
     ];
   },
 };

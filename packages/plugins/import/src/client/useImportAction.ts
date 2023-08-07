@@ -7,8 +7,8 @@ import {
   useCollectionManager,
   useCompile,
 } from '@nocobase/client';
+import lodash from 'lodash';
 import { saveAs } from 'file-saver';
-import { cloneDeep } from 'lodash';
 import { useTranslation } from 'react-i18next';
 import { NAMESPACE } from './constants';
 import { useImportContext } from './context';
@@ -40,7 +40,9 @@ export const useDownloadXlsxTemplateAction = () => {
   const { schema: importSchema } = useImportSchema(actionSchema);
   return {
     async run() {
-      const { importColumns, explain } = cloneDeep(importSchema?.['x-action-settings']?.['importSettings'] ?? {});
+      const { importColumns, explain } = lodash.cloneDeep(
+        importSchema?.['x-action-settings']?.['importSettings'] ?? {},
+      );
       const columns = toArr(importColumns)
         .map((column) => {
           const field = getCollectionField(`${name}.${column.dataIndex[0]}`);
@@ -94,7 +96,9 @@ export const useImportStartAction = () => {
   const { setImportModalVisible, setImportStatus, setImportResult } = useImportContext();
   return {
     async run() {
-      const { importColumns, explain } = cloneDeep(importSchema?.['x-action-settings']?.['importSettings'] ?? {});
+      const { importColumns, explain } = lodash.cloneDeep(
+        importSchema?.['x-action-settings']?.['importSettings'] ?? {},
+      );
       const columns = toArr(importColumns)
         .map((column) => {
           const field = getCollectionField(`${name}.${column.dataIndex[0]}`);

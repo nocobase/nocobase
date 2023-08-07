@@ -3,6 +3,7 @@ import { Model } from '@nocobase/database';
 import { Registry } from '@nocobase/utils';
 import { Auth, AuthExtend } from './auth';
 import { JwtOptions, JwtService } from './base/jwt-service';
+import { ITokenBlacklistService } from './base/token-blacklist-service';
 
 type Storer = {
   get: (name: string) => Promise<Model>;
@@ -32,6 +33,10 @@ export class AuthManager {
 
   setStorer(storer: Storer) {
     this.storer = storer;
+  }
+
+  setTokenBlacklistService(service: ITokenBlacklistService) {
+    this.jwt.blacklist = service;
   }
 
   /**
@@ -81,6 +86,11 @@ export class AuthManager {
    */
   middleware() {
     return async (ctx: Context & { auth: Auth }, next: Next) => {
+      const token = ctx.getBearerToken();
+      if (token && (await ctx.app.authManager.jwt.blacklist.has(token))) {
+        return ctx.throw(401, ctx.t('token is not available'));
+      }
+
       const name = ctx.get(this.options.authKey) || this.options.default;
       let authenticator: Auth;
       try {
@@ -88,7 +98,7 @@ export class AuthManager {
         ctx.auth = authenticator;
       } catch (err) {
         ctx.auth = {} as Auth;
-        ctx.app.logger.warn(`auth, ${err.message}, ${err.stack}`);
+        ctx.app.logger.warn(`auth, ${err.message}`);
         return next();
       }
       if (authenticator) {

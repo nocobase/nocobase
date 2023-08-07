@@ -1,21 +1,24 @@
-import React, { useContext } from 'react';
-import { FormDialog, FormLayout } from '@formily/antd';
 import { FormOutlined } from '@ant-design/icons';
+import { FormLayout } from '@formily/antd-v5';
 import { SchemaOptionsContext } from '@formily/react';
+import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useAPIClient } from '../../api-client';
 import { useCollectionManager } from '../../collection-manager';
+import { useGlobalTheme } from '../../global-theme';
+import { FormDialog, SchemaComponent, SchemaComponentOptions } from '../../schema-component';
 import { createKanbanBlockSchema } from '../utils';
 import { DataBlockInitializer } from './DataBlockInitializer';
-import { SchemaComponent, SchemaComponentOptions } from '../../schema-component';
 
 export const KanbanBlockInitializer = (props) => {
   const { insert } = props;
   const { t } = useTranslation();
-  const { getCollectionFields, getCollection } = useCollectionManager();
+  const { getCollectionFields } = useCollectionManager();
   const options = useContext(SchemaOptionsContext);
   const api = useAPIClient();
+  const { theme } = useGlobalTheme();
+
   return (
     <DataBlockInitializer
       {...props}
@@ -35,32 +38,36 @@ export const KanbanBlockInitializer = (props) => {
               },
             };
           });
-        const values = await FormDialog(t('Create kanban block'), () => {
-          return (
-            <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
-              <FormLayout layout={'vertical'}>
-                <SchemaComponent
-                  schema={{
-                    properties: {
-                      groupField: {
-                        title: t('Grouping field'),
-                        enum: fields,
-                        required: true,
-                        description: '{{t("Single select and radio fields can be used as the grouping field")}}',
-                        'x-component': 'Select',
-                        'x-component-props': {
-                          objectValue: true,
-                          fieldNames: { label: 'label', value: 'value' },
+        const values = await FormDialog(
+          t('Create kanban block'),
+          () => {
+            return (
+              <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
+                <FormLayout layout={'vertical'}>
+                  <SchemaComponent
+                    schema={{
+                      properties: {
+                        groupField: {
+                          title: t('Grouping field'),
+                          enum: fields,
+                          required: true,
+                          description: '{{t("Single select and radio fields can be used as the grouping field")}}',
+                          'x-component': 'Select',
+                          'x-component-props': {
+                            objectValue: true,
+                            fieldNames: { label: 'label', value: 'value' },
+                          },
+                          'x-decorator': 'FormItem',
                         },
-                        'x-decorator': 'FormItem',
                       },
-                    },
-                  }}
-                />
-              </FormLayout>
-            </SchemaComponentOptions>
-          );
-        }).open({
+                    }}
+                  />
+                </FormLayout>
+              </SchemaComponentOptions>
+            );
+          },
+          theme,
+        ).open({
           initialValues: {},
         });
         const sortName = `${values.groupField.value}_sort`;

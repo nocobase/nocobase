@@ -63,7 +63,9 @@ export const BlockTemplateDetails = () => {
   const params = useParams<any>();
   const key = params?.key;
   const value = useContext(SchemaComponentContext);
-  const { data, loading } = useRequest({
+  const { data, loading } = useRequest<{
+    data: any;
+  }>({
     resource: 'uiSchemaTemplates',
     action: 'get',
     params: {

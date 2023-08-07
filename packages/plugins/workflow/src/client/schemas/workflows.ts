@@ -1,7 +1,7 @@
-import { ISchema } from '@formily/react';
+import { ISchema, useForm } from '@formily/react';
 import { message } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useRecord, useResourceActionContext, useResourceContext } from '@nocobase/client';
+import { useActionContext, useRecord, useResourceActionContext, useResourceContext } from '@nocobase/client';
 import { NAMESPACE } from '../locale';
 import { triggers } from '../triggers';
 import { executionSchema } from './executions';
@@ -113,18 +113,6 @@ export const workflowSchema: ISchema = {
             },
           },
           properties: {
-            delete: {
-              type: 'void',
-              title: '{{t("Delete")}}',
-              'x-component': 'Action',
-              'x-component-props': {
-                useAction: '{{ cm.useBulkDestroyAction }}',
-                confirm: {
-                  title: "{{t('Delete record')}}",
-                  content: "{{t('Are you sure you want to delete it?')}}",
-                },
-              },
-            },
             create: {
               type: 'void',
               title: '{{t("Add new")}}',
@@ -178,6 +166,39 @@ export const workflowSchema: ISchema = {
                       },
                     },
                   },
+                },
+              },
+            },
+            sync: {
+              type: 'void',
+              title: `{{t("Sync", { ns: "${NAMESPACE}" })}}`,
+              'x-decorator': 'Tooltip',
+              'x-decorator-props': {
+                title: `{{ t("Sync enabled status of all workflows from database", { ns: "${NAMESPACE}" }) }}`,
+              },
+              'x-component': 'Action',
+              'x-component-props': {
+                useAction() {
+                  const { t } = useTranslation();
+                  const { resource } = useResourceContext();
+                  return {
+                    async run() {
+                      await resource.sync();
+                      message.success(t('Operation succeeded'));
+                    },
+                  };
+                },
+              },
+            },
+            delete: {
+              type: 'void',
+              title: '{{t("Delete")}}',
+              'x-component': 'Action',
+              'x-component-props': {
+                useAction: '{{ cm.useBulkDestroyAction }}',
+                confirm: {
+                  title: "{{t('Delete record')}}",
+                  content: "{{t('Are you sure you want to delete it?')}}",
                 },
               },
             },
@@ -325,18 +346,60 @@ export const workflowSchema: ISchema = {
                       title: `{{t("Duplicate", { ns: "${NAMESPACE}" })}}`,
                       'x-component': 'Action.Link',
                       'x-component-props': {
-                        useAction() {
-                          const { t } = useTranslation();
-                          const { refresh } = useResourceActionContext();
-                          const { resource, targetKey } = useResourceContext();
-                          const { [targetKey]: filterByTk } = useRecord();
-                          return {
-                            async run() {
-                              await resource.revision({ filterByTk });
-                              message.success(t('Operation succeeded'));
-                              refresh();
+                        openSize: 'small',
+                      },
+                      properties: {
+                        modal: {
+                          type: 'void',
+                          title: `{{t("Duplicate to new workflow", { ns: "${NAMESPACE}" })}}`,
+                          'x-decorator': 'FormV2',
+                          'x-component': 'Action.Modal',
+                          properties: {
+                            title: {
+                              type: 'string',
+                              title: '{{t("Title")}}',
+                              'x-decorator': 'FormItem',
+                              'x-component': 'Input',
                             },
-                          };
+                            footer: {
+                              type: 'void',
+                              'x-component': 'Action.Modal.Footer',
+                              properties: {
+                                submit: {
+                                  type: 'void',
+                                  title: '{{t("Submit")}}',
+                                  'x-component': 'Action',
+                                  'x-component-props': {
+                                    type: 'primary',
+                                    useAction() {
+                                      const { t } = useTranslation();
+                                      const { refresh } = useResourceActionContext();
+                                      const { resource, targetKey } = useResourceContext();
+                                      const { setVisible } = useActionContext();
+                                      const { [targetKey]: filterByTk } = useRecord();
+                                      const { values } = useForm();
+                                      return {
+                                        async run() {
+                                          await resource.revision({ filterByTk, values });
+                                          message.success(t('Operation succeeded'));
+                                          refresh();
+                                          setVisible(false);
+                                        },
+                                      };
+                                    },
+                                  },
+                                },
+                                cancel: {
+                                  type: 'void',
+                                  title: '{{t("Cancel")}}',
+                                  'x-component': 'Action',
+                                  'x-component-props': {
+                                    useAction: '{{ cm.useCancelAction }}',
+                                  },
+                                },
+                              },
+                            },
+                          },
                         },
                       },
                     },

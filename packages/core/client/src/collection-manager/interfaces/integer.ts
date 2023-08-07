@@ -38,6 +38,7 @@ export const integer: IField = {
   filterable: {
     operators: operators.number,
   },
+  titleUsable: true,
   validateSchema(fieldSchema) {
     return {
       maximum: {

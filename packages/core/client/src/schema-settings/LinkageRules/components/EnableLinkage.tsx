@@ -1,6 +1,6 @@
-import React from 'react';
+import { ArrayBase } from '@formily/antd-v5';
 import { Switch } from 'antd';
-import { ArrayBase } from '@formily/antd';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 export const EnableLinkage = React.forwardRef((props: any, ref) => {

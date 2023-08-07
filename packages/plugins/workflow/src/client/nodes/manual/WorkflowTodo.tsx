@@ -1,33 +1,31 @@
-import React, { useContext, createContext, useEffect, useState } from 'react';
-import { observer, useForm, useField, useFieldSchema } from '@formily/react';
-import { Spin, Tag } from 'antd';
 import { css } from '@emotion/css';
-import moment from 'moment';
+import { observer, useField, useFieldSchema, useForm } from '@formily/react';
+import dayjs from 'dayjs';
+import { Space, Spin, Tag } from 'antd';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 
 import {
   CollectionManagerProvider,
   SchemaComponent,
   SchemaComponentContext,
   TableBlockProvider,
-  useActionContext,
   useAPIClient,
+  useActionContext,
   useCollectionManager,
+  useCompile,
   useCurrentUserContext,
+  useFormBlockContext,
   useRecord,
   useTableBlockContext,
-  FormBlockContext,
-  useFormBlockContext,
 } from '@nocobase/client';
-import { uid, parse } from '@nocobase/utils/client';
-
+import { instructions, useAvailableUpstreams } from '..';
+import { FlowContext, useFlowContext } from '../../FlowContext';
 import { JobStatusOptions, JobStatusOptionsMap } from '../../constants';
 import { NAMESPACE } from '../../locale';
-import { FlowContext, useFlowContext } from '../../FlowContext';
-import { instructions, useAvailableUpstreams } from '..';
 import { linkNodes } from '../../utils';
-import { manualFormTypes } from './SchemaConfig';
-import { FormBlockProvider } from './FormBlockProvider';
 import { DetailsBlockProvider } from './DetailsBlockProvider';
+import { FormBlockProvider } from './FormBlockProvider';
+import { ManualFormType, manualFormTypes } from './SchemaConfig';
 
 const nodeCollection = {
   title: `{{t("Task", { ns: "${NAMESPACE}" })}}`,
@@ -178,7 +176,6 @@ const todoCollection = {
         'x-component-props': {
           showTime: true,
         },
-        'x-read-pretty': true,
       },
     },
   ],
@@ -218,8 +215,6 @@ export const WorkflowTodo: React.FC & { Drawer: React.FC; Decorator: React.FC } 
       }}
       schema={{
         type: 'void',
-        name: uid(),
-        'x-component': 'div',
         properties: {
           actions: {
             type: 'void',
@@ -294,7 +289,7 @@ export const WorkflowTodo: React.FC & { Drawer: React.FC; Decorator: React.FC } 
                 'x-component': 'TableV2.Column',
                 properties: {
                   createdAt: {
-                    type: 'number',
+                    type: 'string',
                     'x-component': 'CollectionField',
                     'x-read-pretty': true,
                   },
@@ -318,7 +313,6 @@ export const WorkflowTodo: React.FC & { Drawer: React.FC; Decorator: React.FC } 
                 'x-component': 'TableV2.Column',
                 properties: {
                   status: {
-                    type: 'number',
                     'x-component': 'CollectionField',
                     'x-read-pretty': true,
                   },
@@ -383,13 +377,14 @@ const ManualActionStatusContext = createContext<number | null>(null);
 function ManualActionStatusProvider({ value, children }) {
   const { userJob } = useFlowContext();
   const button = useField();
+  const buttonSchema = useFieldSchema();
 
   useEffect(() => {
     if (userJob.status) {
       button.disabled = true;
-      button.visible = userJob.status === value;
+      button.visible = userJob.status === value && userJob.result._ === buttonSchema.name;
     }
-  }, [userJob.status, value, button]);
+  }, [userJob, value, button]);
 
   return <ManualActionStatusContext.Provider value={value}>{children}</ManualActionStatusContext.Provider>;
 }
@@ -399,21 +394,21 @@ function useSubmit() {
   const { setVisible } = useActionContext();
   const { values, submit } = useForm();
   const buttonSchema = useFieldSchema();
-  const nextStatus = useContext(ManualActionStatusContext);
   const { service } = useTableBlockContext();
   const { userJob } = useFlowContext();
-  const { updateAssociationValues } = useContext(FormBlockContext);
+  const { name: actionKey } = buttonSchema;
+  const { name: formKey } = buttonSchema.parent.parent;
   return {
     async run() {
+      if (userJob.status) {
+        return;
+      }
       await submit();
-      const { name } = buttonSchema.parent.parent.toJSON();
       await api.resource('users_jobs').submit({
         filterByTk: userJob.id,
         values: {
-          status: nextStatus,
-          result: { [name]: values },
+          result: { [formKey]: values, _: actionKey },
         },
-        updateAssociationValues,
       });
       setVisible(false);
       service.refresh();
@@ -465,8 +460,9 @@ function FlowContextProvider(props) {
           DetailsBlockProvider,
           ActionBarProvider,
           ManualActionStatusProvider,
+          // @ts-ignore
           ...Array.from(manualFormTypes.getValues()).reduce(
-            (result, item) => Object.assign(result, item.block.components),
+            (result, item: ManualFormType) => Object.assign(result, item.block.components),
             {},
           ),
           ...nodeComponents,
@@ -475,8 +471,9 @@ function FlowContextProvider(props) {
           useSubmit,
           useFormBlockProps,
           useDetailsBlockProps,
+          // @ts-ignore
           ...Array.from(manualFormTypes.getValues()).reduce(
-            (result, item) => Object.assign(result, item.block.scope),
+            (result, item: ManualFormType) => Object.assign(result, item.block.scope),
             {},
           ),
         }}
@@ -519,40 +516,33 @@ function useDetailsBlockProps() {
   return { form };
 }
 
+function FooterStatus() {
+  const compile = useCompile();
+  const { status, updatedAt } = useRecord();
+  const statusOption = JobStatusOptionsMap[status];
+  return status ? (
+    <Space>
+      <time
+        className={css`
+          margin-right: 0.5em;
+        `}
+      >
+        {dayjs(updatedAt).format('YYYY-MM-DD HH:mm:ss')}
+      </time>
+      <Tag icon={statusOption.icon} color={statusOption.color}>{compile(statusOption.label)}</Tag>
+    </Space>
+  ) : null;
+}
+
 function Drawer() {
   const ctx = useContext(SchemaComponentContext);
-  const { id, node, workflow, status, updatedAt } = useRecord();
-
-  const statusOption = JobStatusOptionsMap[status];
-  const footerSchema = status
-    ? {
-        date: {
-          type: 'void',
-          'x-component': 'time',
-          'x-component-props': {
-            className: css`
-              margin-right: 0.5em;
-            `,
-          },
-          'x-content': moment(updatedAt).format('YYYY-MM-DD HH:mm:ss'),
-        },
-        status: {
-          type: 'void',
-          'x-component': 'Tag',
-          'x-component-props': {
-            icon: statusOption.icon,
-            color: statusOption.color,
-          },
-          'x-content': statusOption.label,
-        },
-      }
-    : null;
+  const { id, node, workflow, status } = useRecord();
 
   return (
     <SchemaComponentContext.Provider value={{ ...ctx, reset() {}, designable: false }}>
       <SchemaComponent
         components={{
-          Tag,
+          FooterStatus,
           FlowContextProvider,
         }}
         schema={{
@@ -571,7 +561,12 @@ function Drawer() {
             footer: {
               type: 'void',
               'x-component': 'Action.Drawer.Footer',
-              properties: footerSchema,
+              properties: {
+                content: {
+                  type: 'void',
+                  'x-component': 'FooterStatus',
+                }
+              },
             },
           },
         }}

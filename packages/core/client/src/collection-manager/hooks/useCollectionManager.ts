@@ -23,8 +23,9 @@ export const useCollectionManager = () => {
     return inheritedFields.filter(Boolean);
   };
 
-  const getCollectionFields = (name: string): CollectionFieldOptions[] => {
-    const currentFields = collections?.find((collection) => collection.name === name)?.fields || [];
+  const getCollectionFields = (name: any): CollectionFieldOptions[] => {
+    const collection = getCollection(name);
+    const currentFields = collection?.fields || [];
     const inheritedFields = getInheritedFields(name);
     const totalFields = unionBy(currentFields?.concat(inheritedFields) || [], 'name').filter((v: any) => {
       return !v.isForeignKey;
@@ -235,6 +236,34 @@ export const useCollectionManager = () => {
     return getInheritChain(collectionName);
   };
 
+  /**
+   * 获取继承的所有 collectionName，排列顺序为当前表往祖先表排列
+   * @param collectionName
+   * @returns
+   */
+  const getInheritCollectionsChain = (collectionName: string) => {
+    const collectionsInheritChain = [collectionName];
+    const getInheritChain = (name: string) => {
+      const collection = getCollection(name);
+      if (collection) {
+        const { inherits } = collection;
+        if (inherits) {
+          for (let index = 0; index < inherits.length; index++) {
+            const collectionKey = inherits[index];
+            if (collectionsInheritChain.includes(collectionKey)) {
+              continue;
+            }
+            collectionsInheritChain.push(collectionKey);
+            getInheritChain(collectionKey);
+          }
+        }
+      }
+      return collectionsInheritChain;
+    };
+
+    return getInheritChain(collectionName);
+  };
+
   return {
     service,
     interfaces,
@@ -298,5 +327,6 @@ export const useCollectionManager = () => {
       });
     },
     getAllCollectionsInheritChain,
+    getInheritCollectionsChain,
   };
 };

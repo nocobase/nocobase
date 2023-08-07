@@ -19,4 +19,5 @@ export const url: IField = {
   properties: {
     ...defaultProps,
   },
+  titleUsable: true,
 };

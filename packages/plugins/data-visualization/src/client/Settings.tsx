@@ -1,11 +1,11 @@
 import { CheckOutlined } from '@ant-design/icons';
-import { css } from '@emotion/css';
-import { Form, FormItem } from '@formily/antd';
+import { Form, FormItem } from '@formily/antd-v5';
+import { css } from '@nocobase/client';
 import { Button, Card } from 'antd';
 import cls from 'classnames';
 import React, { useContext } from 'react';
 import { useChartsTranslation } from './locale';
-import { ChartLibraryContext, useToggleChartLibrary } from './renderer';
+import { ChartLibraryContext, useToggleChartLibrary } from './chart/library';
 
 export const Settings = () => {
   const { t } = useChartsTranslation();

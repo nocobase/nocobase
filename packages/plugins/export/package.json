@@ -1,25 +1,29 @@
 {
   "name": "@nocobase/plugin-export",
-  "displayName": "export",
+  "displayName": "Export",
   "displayName.zh-CN": "导出",
-  "description": "export data",
-  "description.zh-CN": "导出数据。",
-  "version": "0.10.0-alpha.5",
+  "description": "Export collection records to Excel table",
+  "description.zh-CN": "导出数据表记录为 Excel 表格",
+  "version": "0.12.0-alpha.3",
   "license": "AGPL-3.0",
-  "main": "./lib/index.js",
-  "types": "./lib/index.d.ts",
-  "dependencies": {
-    "@nocobase/client": "0.10.0-alpha.5",
-    "@nocobase/server": "0.10.0-alpha.5",
-    "node-xlsx": "^0.16.1"
-  },
+  "main": "./dist/server/index.js",
   "devDependencies": {
-    "@types/node-xlsx": "^0.15.1"
+    "@formily/antd-v5": "1.x",
+    "@formily/react": "2.x",
+    "@formily/shared": "2.x",
+    "@types/node-xlsx": "^0.15.1",
+    "file-saver": "^2.0.5",
+    "node-xlsx": "^0.16.1",
+    "react": "^18.2.0",
+    "react-i18next": "^11.15.1"
   },
   "peerDependencies": {
-    "@nocobase/client": "*",
-    "@nocobase/server": "*",
-    "@nocobase/test": "*"
+    "@nocobase/actions": "0.x",
+    "@nocobase/client": "0.x",
+    "@nocobase/database": "0.x",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x",
+    "@nocobase/utils": "0.x"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
 }

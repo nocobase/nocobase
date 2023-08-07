@@ -1,5 +1,4 @@
-import { BaseFieldOptions, Field } from '@nocobase/database';
-import { DataTypes } from 'sequelize';
+import { BaseFieldOptions, DataTypes, Field } from '@nocobase/database';
 import { evaluate } from '../utils/evaluate';
 
 export class ExcelFormulaField extends Field {

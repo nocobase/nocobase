@@ -1,17 +1,16 @@
+import { Model } from '@nocobase/database';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
-import { BasicAuth } from './basic-auth';
-import { presetAuthType, presetAuthenticator } from '../preset';
+import { namespace, presetAuthenticator, presetAuthType } from '../preset';
 import authActions from './actions/auth';
 import authenticatorsActions from './actions/authenticators';
+import { BasicAuth } from './basic-auth';
 import { enUS, zhCN } from './locale';
-import { namespace } from '../preset';
 import { AuthModel } from './model/authenticator';
-import { Model } from '@nocobase/database';
+import { TokenBlacklistService } from './token-blacklist';
 
 export class AuthPlugin extends Plugin {
   afterAdd() {}
-
   async beforeLoad() {
     this.app.i18n.addResources('zh-CN', namespace, zhCN);
     this.app.i18n.addResources('en-US', namespace, enUS);
@@ -40,6 +39,12 @@ export class AuthPlugin extends Plugin {
         return authenticator || authenticators[0];
       },
     });
+
+    if (!this.app.authManager.jwt.blacklist) {
+      // If blacklist service is not set, should configure default blacklist service
+      this.app.authManager.setTokenBlacklistService(new TokenBlacklistService(this));
+    }
+
     this.app.authManager.registerTypes(presetAuthType, {
       auth: BasicAuth,
     });
@@ -81,11 +86,6 @@ export class AuthPlugin extends Plugin {
       },
     });
   }
-
-  async afterEnable() {}
-
-  async afterDisable() {}
-
   async remove() {}
 }
 

@@ -30,15 +30,17 @@ export async function submit(context: Context, next) {
   }
 
   const { forms = {} } = userJob.node.config;
-  const [formKey] = Object.keys(values.result ?? {});
+  const [formKey] = Object.keys(values.result ?? {}).filter(key => key !== '_');
+  const actionKey = values.result?._;
 
+  const actionItem = forms[formKey]?.actions?.find((item) => item.key === actionKey);
   // NOTE: validate status
   if (
     userJob.status !== JOB_STATUS.PENDING ||
     userJob.job.status !== JOB_STATUS.PENDING ||
     userJob.execution.status !== EXECUTION_STATUS.STARTED ||
     !userJob.workflow.enabled ||
-    !forms[formKey]?.actions?.includes(values.status)
+    !actionKey || actionItem?.status == null
   ) {
     return context.throw(400);
   }
@@ -52,10 +54,17 @@ export async function submit(context: Context, next) {
   if (!assignees.includes(currentUser.id) || userJob.userId !== currentUser.id) {
     return context.throw(403);
   }
+  const presetValues = processor.getParsedValue(actionItem.values ?? {}, null, {
+    currentUser: currentUser.toJSON(),
+    currentRecord: values.result[formKey],
+    currentTime: new Date(),
+  });
 
   userJob.set({
-    status: values.status,
-    result: values.status ? values.result : Object.assign(userJob.result ?? {}, values.result),
+    status: actionItem.status,
+    result: actionItem.status > JOB_STATUS.PENDING
+      ? { [formKey]: Object.assign(values.result[formKey], presetValues), _: actionKey }
+      : Object.assign(userJob.result ?? {}, values.result),
   });
 
   const handler = instruction.formTypes.get(forms[formKey].type);
@@ -72,8 +81,11 @@ export async function submit(context: Context, next) {
 
   await next();
 
+  userJob.job.execution = userJob.execution;
   userJob.job.latestUserJob = userJob;
 
   // NOTE: resume the process and no `await` for quick returning
+  processor.logger.info(`manual node (${userJob.nodeId}) action trigger execution (${userJob.execution.id}) to resume`);
+
   plugin.resume(userJob.job);
 }

@@ -1,11 +1,13 @@
-import { SchemaComponentOptions, SchemaInitializerContext, SchemaInitializerProvider } from '@nocobase/client';
+import { Plugin, SchemaComponentOptions, SchemaInitializerContext, SchemaInitializerProvider } from '@nocobase/client';
 import React, { useContext } from 'react';
 import { ChartInitializers, ChartV2Block, ChartV2BlockDesigner, ChartV2BlockInitializer } from './block';
 import { useChartsTranslation } from './locale';
-import { ChartRenderer, ChartRendererProvider, InternalLibrary } from './renderer';
-import { ChartLibraryProvider } from './renderer/ChartLibrary';
+import { ChartRenderer, ChartRendererProvider } from './renderer';
+import { ChartLibraryProvider } from './chart/library';
+import g2plot from './chart/g2plot';
+import antd from './chart/antd';
 
-const Chart: React.FC = (props) => {
+const DataVisualization: React.FC = (props) => {
   const { t } = useChartsTranslation();
   const initializers = useContext<any>(SchemaInitializerContext);
   const children = initializers.BlockInitializers.items[0].children;
@@ -14,7 +16,7 @@ const Chart: React.FC = (props) => {
     children.push({
       key: 'chart-v2',
       type: 'item',
-      title: t('Chart'),
+      title: t('Charts'),
       component: 'ChartV2BlockInitializer',
     });
   }
@@ -29,7 +31,7 @@ const Chart: React.FC = (props) => {
       }}
     >
       <SchemaInitializerProvider initializers={{ ...initializers, ChartInitializers }}>
-        <ChartLibraryProvider name="Built-in" charts={InternalLibrary}>
+        <ChartLibraryProvider name="Built-in" charts={[...g2plot, ...antd]}>
           {props.children}
         </ChartLibraryProvider>
       </SchemaInitializerProvider>
@@ -37,5 +39,13 @@ const Chart: React.FC = (props) => {
   );
 };
 
-export default Chart;
+class DataVisualizationPlugin extends Plugin {
+  async load() {
+    this.app.addProvider(DataVisualization);
+  }
+}
+
+export default DataVisualizationPlugin;
 export { ChartLibraryProvider };
+export { Chart } from './chart/chart';
+export type { ChartType } from './chart/chart';

@@ -4,6 +4,7 @@ import {
   Action,
   CollectionField,
   CollectionManagerProvider,
+  CurrentUserProvider,
   FormBlockProvider,
   FormItem,
   FormV2,
@@ -25,6 +26,9 @@ mockRequest.onPost('/users:update').reply((params) => {
     message: params.data,
   });
   return [200, JSON.parse(params.data)];
+});
+mockRequest.onGet('/auth:check').reply(() => {
+  return [200, { data: {} }];
 });
 
 function useAction() {
@@ -82,11 +86,13 @@ const schema: ISchema = {
 export default () => {
   return (
     <APIClientProvider apiClient={apiClient}>
-      <CollectionManagerProvider collections={collections}>
-        <SchemaComponentProvider components={{ FormBlockProvider, FormV2, FormItem, CollectionField, Action, Input }}>
-          <SchemaComponent schema={schema} />
-        </SchemaComponentProvider>
-      </CollectionManagerProvider>
+      <CurrentUserProvider>
+        <CollectionManagerProvider collections={collections}>
+          <SchemaComponentProvider components={{ FormBlockProvider, FormV2, FormItem, CollectionField, Action, Input }}>
+            <SchemaComponent schema={schema} />
+          </SchemaComponentProvider>
+        </CollectionManagerProvider>
+      </CurrentUserProvider>
     </APIClientProvider>
   );
 };

@@ -168,9 +168,6 @@ class AppGenerator extends Generator {
       target: this.cwd,
     });
 
-    await this.downloadServerPackage();
-    await this.downloadClientPackage();
-
     this.checkDbEnv();
 
     console.log('');

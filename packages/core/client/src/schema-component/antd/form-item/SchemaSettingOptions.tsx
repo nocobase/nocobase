@@ -1,4 +1,4 @@
-import { ArrayCollapse, FormLayout } from '@formily/antd';
+import { ArrayCollapse, FormLayout } from '@formily/antd-v5';
 import { Field } from '@formily/core';
 import { ISchema, Schema, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
@@ -7,7 +7,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../../block-provider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
-import { SchemaSettings, isPatternDisabled } from '../../../schema-settings';
+import { isPatternDisabled, SchemaSettings } from '../../../schema-settings';
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
 import { useOperatorList } from '../filter/useOperators';
 import { isFileCollection } from './FormItem';

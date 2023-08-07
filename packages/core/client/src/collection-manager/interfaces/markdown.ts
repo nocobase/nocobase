@@ -1,12 +1,12 @@
 import { ISchema } from '@formily/react';
+import { i18n } from '../../i18n';
 import { defaultProps } from './properties';
 import { IField } from './types';
-import { i18n } from '../../i18n';
 
 export const markdown: IField = {
   name: 'markdown',
   type: 'object',
-  title: 'Markdown',
+  title: '{{t("Markdown")}}',
   group: 'media',
   default: {
     type: 'text',

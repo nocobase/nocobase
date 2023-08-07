@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, userEvent, waitFor } from 'testUtils';
+import { render, screen, sleep, userEvent, waitFor } from 'testUtils';
 import App1 from '../demos/demo1';
 import App2 from '../demos/demo2';
 import App3 from '../demos/demo3';
@@ -13,6 +13,9 @@ import App9 from '../demos/demo9';
 describe('DatePicker', () => {
   it('basic', async () => {
     const { container, getByText } = render(<App1 />);
+
+    await sleep();
+
     const picker = container.querySelector('.ant-picker') as HTMLElement;
     const input = container.querySelector('input') as HTMLElement;
 
@@ -35,6 +38,9 @@ describe('DatePicker', () => {
 
   it('GMT', async () => {
     const { container, getByText } = render(<App2 />);
+
+    await sleep();
+
     const picker = container.querySelector('.ant-picker') as HTMLElement;
     const input = container.querySelector('input') as HTMLElement;
 
@@ -53,6 +59,9 @@ describe('DatePicker', () => {
 
   it('non-UTC', async () => {
     const { container } = render(<App3 />);
+
+    await sleep();
+
     const picker = container.querySelector('.ant-picker') as HTMLElement;
     const input = container.querySelector('input') as HTMLElement;
 
@@ -74,6 +83,9 @@ describe('DatePicker', () => {
 describe('RangePicker', () => {
   it('GMT', async () => {
     const { container, getByPlaceholderText } = render(<App4 />);
+
+    await sleep();
+
     const picker = container.querySelector('.ant-picker') as HTMLElement;
     const startInput = getByPlaceholderText('Start date');
     const endInput = getByPlaceholderText('End date');
@@ -82,8 +94,8 @@ describe('RangePicker', () => {
     await userEvent.click(document.querySelector('[title="2023-05-01"]') as HTMLElement);
     await userEvent.click(document.querySelector('[title="2023-05-02"]') as HTMLElement);
 
-    expect(startInput).toHaveValue('2023-05-01');
-    expect(endInput).toHaveValue('2023-05-02');
+    await waitFor(() => expect(startInput).toHaveValue('2023-05-01'));
+    await waitFor(() => expect(endInput).toHaveValue('2023-05-02'));
     // Read pretty
     expect(screen.getByText('2023-05-01~2023-05-02', { selector: '.ant-description-text' })).toBeInTheDocument();
     // Value
@@ -92,6 +104,9 @@ describe('RangePicker', () => {
 
   it('non-GMT', async () => {
     const { container, getByPlaceholderText } = render(<App5 />);
+
+    await sleep();
+
     const picker = container.querySelector('.ant-picker') as HTMLElement;
     const startInput = getByPlaceholderText('Start date');
     const endInput = getByPlaceholderText('End date');
@@ -115,6 +130,9 @@ describe('RangePicker', () => {
 
   it('non-UTC', async () => {
     const { container, getByPlaceholderText } = render(<App6 />);
+
+    await sleep();
+
     const picker = container.querySelector('.ant-picker') as HTMLElement;
     const startInput = getByPlaceholderText('Start date');
     const endInput = getByPlaceholderText('End date');
@@ -133,6 +151,9 @@ describe('RangePicker', () => {
 
   it('showTime=false,gmt=true,utc=true', async () => {
     const { container } = render(<App7 />);
+
+    await sleep();
+
     const picker = container.querySelector('.ant-picker') as HTMLElement;
     const input = container.querySelector('input') as HTMLElement;
 
@@ -152,6 +173,9 @@ describe('RangePicker', () => {
 
   it('showTime=false,gmt=false,utc=true', async () => {
     const { container } = render(<App8 />);
+
+    await sleep();
+
     const picker = container.querySelector('.ant-picker') as HTMLElement;
     const input = container.querySelector('input') as HTMLElement;
 
@@ -175,6 +199,9 @@ describe('RangePicker', () => {
   it('showTime=false,gmt=true,utc=true & not input', async () => {
     const currentDateString = new Date().toISOString().split('T')[0];
     const { container } = render(<App9 />);
+
+    await sleep();
+
     const picker = container.querySelector('.ant-picker') as HTMLElement;
 
     await userEvent.click(picker);

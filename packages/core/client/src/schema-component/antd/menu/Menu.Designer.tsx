@@ -1,4 +1,4 @@
-import { TreeSelect } from '@formily/antd';
+import { TreeSelect } from '@formily/antd-v5';
 import { Field, onFieldChange } from '@formily/core';
 import { ISchema, Schema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
@@ -47,6 +47,16 @@ const InsertMenuItems = (props) => {
   if (!isSubMenu && insertPosition === 'beforeEnd') {
     return null;
   }
+  const serverHooks = [
+    {
+      type: 'onSelfCreate',
+      method: 'bindMenuToRole',
+    },
+    {
+      type: 'onSelfSave',
+      method: 'extractTextToLocale',
+    },
+  ];
   return (
     <SchemaSettings.SubMenu eventKey={eventKey} title={title}>
       <SchemaSettings.ModalItem
@@ -82,12 +92,7 @@ const InsertMenuItems = (props) => {
             'x-component-props': {
               icon,
             },
-            'x-server-hooks': [
-              {
-                type: 'onSelfCreate',
-                method: 'bindMenuToRole',
-              },
-            ],
+            'x-server-hooks': serverHooks,
           });
         }}
       />
@@ -123,12 +128,7 @@ const InsertMenuItems = (props) => {
             'x-component-props': {
               icon,
             },
-            'x-server-hooks': [
-              {
-                type: 'onSelfCreate',
-                method: 'bindMenuToRole',
-              },
-            ],
+            'x-server-hooks': serverHooks,
             properties: {
               page: {
                 type: 'void',
@@ -184,12 +184,7 @@ const InsertMenuItems = (props) => {
               icon,
               href,
             },
-            'x-server-hooks': [
-              {
-                type: 'onSelfCreate',
-                method: 'bindMenuToRole',
-              },
-            ],
+            'x-server-hooks': serverHooks,
           });
         }}
       />
@@ -263,6 +258,12 @@ export const MenuDesigner = () => {
         onSubmit={({ title, icon, href }) => {
           const schema = {
             ['x-uid']: fieldSchema['x-uid'],
+            'x-server-hooks': [
+              {
+                type: 'onSelfSave',
+                method: 'extractTextToLocale',
+              },
+            ],
           };
           if (title) {
             fieldSchema.title = title;

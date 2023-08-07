@@ -1,6 +1,5 @@
-import { css } from '@emotion/css';
 import type { VoidField } from '@formily/core';
-import { useCollection, Cascader } from '@nocobase/client';
+import { Cascader, css, useCollection } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
 import { NAMESPACE } from './constants';
 import { useFields } from './useFields';
@@ -80,11 +79,11 @@ export const useShared = () => {
               'x-component': 'ArrayItems.Addition',
               'x-component-props': {
                 className: css`
-                  border-color: rgb(241, 139, 98);
-                  color: rgb(241, 139, 98);
+                  border-color: var(--colorSettings);
+                  color: var(--colorSettings);
                   &.ant-btn-dashed:hover {
-                    border-color: rgb(241, 139, 98);
-                    color: rgb(241, 139, 98);
+                    border-color: var(--colorSettings);
+                    color: var(--colorSettings);
                   }
                 `,
               },

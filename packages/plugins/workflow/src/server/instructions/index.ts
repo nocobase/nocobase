@@ -2,10 +2,10 @@ import path from 'path';
 
 import { requireModule } from '@nocobase/utils';
 
-import FlowNodeModel from '../models/FlowNode';
-
 import Plugin from '..';
 import Processor from '../Processor';
+
+import type { FlowNodeModel } from '../types';
 
 export type Job = {
   status: number;
@@ -46,6 +46,7 @@ export default function <T extends Instruction>(plugin, more: { [key: string]: T
     'destroy',
     'aggregate',
     'request',
+    'sql',
   ].reduce(
     (result, key) =>
       Object.assign(result, {

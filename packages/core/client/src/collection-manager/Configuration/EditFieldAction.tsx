@@ -1,4 +1,4 @@
-import { ArrayTable } from '@formily/antd';
+import { ArrayTable } from '@formily/antd-v5';
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import cloneDeep from 'lodash/cloneDeep';
@@ -10,6 +10,7 @@ import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useCancelAction, useUpdateAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
+import useDialect from '../hooks/useDialect';
 import { IField } from '../interfaces/types';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import * as components from './components';
@@ -25,6 +26,7 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
 
   if (schema.hasDefaultValue === true) {
     properties['defaultValue'] = cloneDeep(schema.default.uiSchema) || {};
+    properties.defaultValue.required = false;
     properties['defaultValue']['title'] = compile('{{ t("Default value") }}');
     properties['defaultValue']['x-decorator'] = 'FormItem';
     properties['defaultValue']['x-reactions'] = {
@@ -116,6 +118,7 @@ const useUpdateCollectionField = () => {
       await form.submit();
       const values = cloneDeep(form.values);
       if (values.autoCreateReverseField) {
+        /* empty */
       } else {
         delete values.reverseField;
       }
@@ -143,6 +146,8 @@ export const EditFieldAction = (props) => {
   const { t } = useTranslation();
   const compile = useCompile();
   const [data, setData] = useState<any>({});
+  const { isDialect } = useDialect();
+
   const currentCollections = useMemo(() => {
     return collections.map((v) => {
       return {
@@ -193,6 +198,8 @@ export const EditFieldAction = (props) => {
             useCancelAction,
             showReverseFieldConfig: !data?.reverseField,
             collections: currentCollections,
+            isDialect,
+            disabledJSONB: true,
             ...scope,
           }}
         />

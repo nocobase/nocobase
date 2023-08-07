@@ -11,9 +11,10 @@ import {
 } from '@dnd-kit/core';
 import { RecursionField, observer } from '@formily/react';
 import { uid } from '@formily/shared';
-import { Badge, Card, Dropdown, Modal, Tabs } from 'antd';
+import { App, Badge, Card, Dropdown, Tabs } from 'antd';
 import _ from 'lodash';
 import React, { useContext, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../api-client';
 import { SchemaComponent, SchemaComponentOptions, useCompile } from '../../schema-component';
 import { useResourceActionContext } from '../ResourceActionProvider';
@@ -67,11 +68,12 @@ const TabTitle = observer(
 );
 
 const TabBar = ({ item }) => {
+  const { t } = useTranslation();
   const compile = useCompile();
   return (
     <span>
       <Badge color={item.color} />
-      {compile(item.name)}
+      {t(compile(item.name))}
     </span>
   );
 };
@@ -118,12 +120,14 @@ const DndProvider = observer(
   { displayName: 'DndProvider' },
 );
 export const ConfigurationTabs = () => {
+  const { t } = useTranslation();
   const { data, refresh } = useContext(CollectionCategroriesContext);
   const { refresh: refreshCM, run, defaultRequest, setState } = useResourceActionContext();
   const [key, setKey] = useState('all');
   const [activeKey, setActiveKey] = useState('all');
   const compile = useCompile();
   const api = useAPIClient();
+  const { modal } = App.useApp();
 
   if (!data) return null;
 
@@ -160,7 +164,7 @@ export const ConfigurationTabs = () => {
   };
 
   const remove = (key: any) => {
-    Modal.confirm({
+    modal.confirm({
       title: compile("{{t('Delete category')}}"),
       content: compile("{{t('Are you sure you want to delete it?')}}"),
       onOk: async () => {
@@ -178,7 +182,7 @@ export const ConfigurationTabs = () => {
 
   const loadCategories = async () => {
     return data.map((item: any) => ({
-      label: compile(item.name),
+      label: t(compile(item.name)),
       value: item.id,
     }));
   };
