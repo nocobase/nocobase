@@ -1,36 +1,27 @@
 {
   "name": "@nocobase/plugin-snapshot-field",
   "displayName": "snapshot field",
-  "displayName.zh-CN": "关系数据库快照",
-  "description": "provide fast and reliable database backup and recovery functionality for database systems.",
-  "description.zh-CN": "为数据库系统提供快速、可靠的数据库备份和恢复功能。。",
-  "version": "0.11.1-alpha.2",
+  "displayName.zh-CN": "关系快照字段",
+  "description": "",
+  "description.zh-CN": "",
+  "version": "0.12.0-alpha.3",
   "license": "AGPL-3.0",
-  "main": "./lib/server/index.js",
-  "files": [
-    "lib",
-    "src",
-    "README.md",
-    "README.zh-CN.md",
-    "CHANGELOG.md",
-    "server.js",
-    "server.d.ts",
-    "client.js",
-    "client.d.ts"
-  ],
+  "main": "./dist/server/index.js",
   "devDependencies": {
-    "@ant-design/icons": "^5.1.4",
-    "@formily/core": "2.2.26",
-    "@formily/react": "2.2.26",
-    "@formily/shared": "2.2.26",
-    "@nocobase/client": "0.11.1-alpha.2",
-    "@nocobase/database": "0.11.1-alpha.2",
-    "@nocobase/server": "0.11.1-alpha.2",
-    "@nocobase/test": "0.11.1-alpha.2",
-    "@nocobase/utils": "0.11.1-alpha.2",
-    "antd": "^5.6.4",
+    "@ant-design/icons": "5.x",
+    "@formily/core": "2.x",
+    "@formily/react": "2.x",
+    "@formily/shared": "2.x",
+    "antd": "5.x",
     "rc-tree-select": "5.5.5",
     "react": "18.x",
     "react-i18next": "^11.15.1"
+  },
+  "peerDependencies": {
+    "@nocobase/client": "0.x",
+    "@nocobase/database": "0.x",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x",
+    "@nocobase/utils": "0.x"
   }
 }

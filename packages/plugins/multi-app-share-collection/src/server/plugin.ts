@@ -1,6 +1,6 @@
 import PluginMultiAppManager from '@nocobase/plugin-multi-app-manager';
 import { Application, Plugin } from '@nocobase/server';
-import { lodash } from '@nocobase/utils';
+import lodash from 'lodash';
 import { resolve } from 'path';
 
 const subAppFilteredPlugins = ['multi-app-share-collection', 'multi-app-manager'];

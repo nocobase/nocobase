@@ -1,6 +1,6 @@
 import { Context, Next } from '@nocobase/actions';
 import { Cache } from '@nocobase/cache';
-import { FilterParser, snakeCase } from '@nocobase/database';
+import { Field, FilterParser, snakeCase } from '@nocobase/database';
 import ChartsV2Plugin from '../plugin';
 import { formatter } from './formatter';
 
@@ -65,13 +65,17 @@ export const parseFieldAndAssociations = (ctx: Context, params: QueryParams) => 
       [target, name] = selected.field;
     }
     let field = underscored ? snakeCase(name) : name;
-    let type = fields.get(name)?.type;
+    let fieldType = fields.get(name)?.type;
     if (target) {
+      const targetField = fields.get(target) as Field;
+      const targetCollection = ctx.db.getCollection(targetField.target);
+      const targetFields = targetCollection.fields;
+      fieldType = targetFields.get(name)?.type;
       field = `${target}.${field}`;
       name = `${target}.${name}`;
-      type = fields.get(target)?.type;
+      const targetType = fields.get(target)?.type;
       if (!models[target]) {
-        models[target] = { type };
+        models[target] = { type: targetType };
       }
     } else {
       field = `${collectionName}.${field}`;
@@ -80,7 +84,7 @@ export const parseFieldAndAssociations = (ctx: Context, params: QueryParams) => 
       ...selected,
       field,
       name,
-      type,
+      type: fieldType,
       alias: selected.alias || name,
     };
   };
@@ -161,11 +165,7 @@ export const parseBuilder = (ctx: Context, builder: QueryParams) => {
   });
 
   orders.forEach((item: OrderProps) => {
-    const dialect = sequelize.getDialect();
-    let alias = `"${item.alias}"`;
-    if (dialect === 'mysql') {
-      alias = `\`${item.alias}\``;
-    }
+    const alias = sequelize.getQueryInterface().quoteIdentifier(item.alias);
     const name = hasAgg ? sequelize.literal(alias) : sequelize.col(item.field as string);
     order.push([name, item.order || 'ASC']);
   });

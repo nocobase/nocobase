@@ -1,26 +1,15 @@
 {
   "name": "@nocobase/plugin-sample-shop-modeling",
-  "version": "0.11.1-alpha.2",
-  "main": "./lib/server/index.js",
-  "files": [
-    "lib",
-    "src",
-    "README.md",
-    "README.zh-CN.md",
-    "CHANGELOG.md",
-    "server.js",
-    "server.d.ts",
-    "client.js",
-    "client.d.ts"
-  ],
-  "dependencies": {
+  "version": "0.12.0-alpha.3",
+  "main": "./dist/server/index.js",
+  "devDependencies": {
     "nodejs-snowflake": "2.0.1"
   },
-  "devDependencies": {
-    "@nocobase/client": "0.11.1-alpha.2",
-    "@nocobase/database": "0.11.1-alpha.2",
-    "@nocobase/server": "0.11.1-alpha.2",
-    "@nocobase/test": "0.11.1-alpha.2"
+  "peerDependencies": {
+    "@nocobase/client": "0.x",
+    "@nocobase/database": "0.x",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
 }

@@ -1,17 +1,11 @@
 import { RightSquareOutlined } from '@ant-design/icons';
-import { ArrayItems, Editable, Form, FormCollapse, FormItem, Switch } from '@formily/antd-v5';
+import { ArrayItems, Editable, FormCollapse, FormItem, FormLayout, Switch } from '@formily/antd-v5';
 import { Form as FormType, ObjectField, createForm, onFieldChange, onFormInit } from '@formily/core';
 import { FormConsumer, ISchema, Schema } from '@formily/react';
 import {
   AutoComplete,
-  Cascader,
-  DatePicker,
-  Filter,
-  Input,
-  InputNumber,
-  Radio,
+  FormProvider,
   SchemaComponent,
-  Select,
   gridRowColWrap,
   useCollectionFieldsOptions,
   useCollectionFilterOptions,
@@ -23,6 +17,7 @@ import React, { createContext, useContext, useMemo, useRef } from 'react';
 import {
   useChartFields,
   useCollectionOptions,
+  useData,
   useFieldTypes,
   useFieldsWithAssociation,
   useFormatters,
@@ -31,9 +26,10 @@ import {
   useTransformers,
 } from '../hooks';
 import { useChartsTranslation } from '../locale';
-import { ChartRenderer, ChartRendererContext, useChartTypes, useCharts, useDefaultChartType } from '../renderer';
-import { createRendererSchema, getField, getSelectedFields, processData } from '../utils';
+import { ChartRenderer, ChartRendererContext } from '../renderer';
+import { createRendererSchema, getField, getSelectedFields } from '../utils';
 import { getConfigSchema, querySchema, transformSchema } from './schemas/configure';
+import { useChartTypes, useCharts, useDefaultChartType } from '../chart/library';
 const { Paragraph, Text } = Typography;
 
 export type ChartConfigCurrent = {
@@ -103,7 +99,7 @@ export const ChartConfigure: React.FC<{
     }
     const query = form.values.query;
     const selectedFields = getSelectedFields(fields, query);
-    const { general, advanced } = init(selectedFields, query);
+    const { general, advanced } = chart.init(selectedFields, query);
     if (general || overwrite) {
       form.values.config.general = general;
     }
@@ -126,17 +122,14 @@ export const ChartConfigure: React.FC<{
   };
   const chartType = useDefaultChartType();
   const form = useMemo(
-    () => {
-      return createForm({
+    () =>
+      createForm({
         values: { config: { chartType }, ...(initialValues || field?.decoratorProps), collection },
         effects: (form) => {
           onFieldChange('config.chartType', () => initChart(true));
-          onFormInit(() => {
-            queryReact(form);
-          });
+          onFormInit(() => queryReact(form));
         },
-      });
-    },
+      }),
     // visible, collection added here to re-initialize form when visible, collection change
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [field, visible, collection],
@@ -199,9 +192,8 @@ export const ChartConfigure: React.FC<{
           afterSave();
           return;
         }
-        insert(createRendererSchema(rendererProps), {
+        insert(gridRowColWrap(createRendererSchema(rendererProps)), {
           onSuccess: afterSave,
-          wrap: gridRowColWrap,
         });
       }}
       onCancel={() => {
@@ -224,70 +216,72 @@ export const ChartConfigure: React.FC<{
         background: 'rgba(128, 128, 128, 0.08)',
       }}
     >
-      <Form layout="vertical" form={form}>
-        <Row gutter={8}>
-          <Col span={7}>
-            <Card
-              style={{
-                height: 'calc(100vh - 300px)',
-                overflow: 'auto',
-                margin: '12px 0 12px 12px',
-              }}
-              ref={queryRef}
-            >
-              <Tabs
-                tabBarExtraContent={<RunButton />}
-                items={[
-                  {
-                    label: t('Query'),
-                    key: 'query',
-                    children: <ChartConfigure.Query />,
-                  },
-                  {
-                    label: t('Data'),
-                    key: 'data',
-                    children: <ChartConfigure.Data />,
-                  },
-                ]}
-              />
-            </Card>
-          </Col>
-          <Col span={6}>
-            <Card
-              style={{
-                height: 'calc(100vh - 300px)',
-                overflow: 'auto',
-                margin: '12px 3px 12px 3px',
-              }}
-              ref={configRef}
-            >
-              <Tabs
-                items={[
-                  {
-                    label: t('Chart'),
-                    key: 'chart',
-                    children: <ChartConfigure.Config />,
-                  },
-                  {
-                    label: t('Transform'),
-                    key: 'transform',
-                    children: <ChartConfigure.Transform />,
-                  },
-                ]}
-              />
-            </Card>
-          </Col>
-          <Col span={11}>
-            <Card
-              style={{
-                margin: '12px 12px 12px 0',
-              }}
-            >
-              <ChartConfigure.Renderer />
-            </Card>
-          </Col>
-        </Row>
-      </Form>
+      <FormProvider form={form}>
+        <FormLayout layout="vertical">
+          <Row gutter={8}>
+            <Col span={7}>
+              <Card
+                style={{
+                  height: 'calc(100vh - 300px)',
+                  overflow: 'auto',
+                  margin: '12px 0 12px 12px',
+                }}
+                ref={queryRef}
+              >
+                <Tabs
+                  tabBarExtraContent={<RunButton />}
+                  items={[
+                    {
+                      label: t('Query'),
+                      key: 'query',
+                      children: <ChartConfigure.Query />,
+                    },
+                    {
+                      label: t('Data'),
+                      key: 'data',
+                      children: <ChartConfigure.Data />,
+                    },
+                  ]}
+                />
+              </Card>
+            </Col>
+            <Col span={6}>
+              <Card
+                style={{
+                  height: 'calc(100vh - 300px)',
+                  overflow: 'auto',
+                  margin: '12px 3px 12px 3px',
+                }}
+                ref={configRef}
+              >
+                <Tabs
+                  items={[
+                    {
+                      label: t('Chart'),
+                      key: 'chart',
+                      children: <ChartConfigure.Config />,
+                    },
+                    {
+                      label: t('Transform'),
+                      key: 'transform',
+                      children: <ChartConfigure.Transform />,
+                    },
+                  ]}
+                />
+              </Card>
+            </Col>
+            <Col span={11}>
+              <Card
+                style={{
+                  margin: '12px 12px 12px 0',
+                }}
+              >
+                <ChartConfigure.Renderer />
+              </Card>
+            </Col>
+          </Row>
+        </FormLayout>
+      </FormProvider>
     </Modal>
   );
 };
@@ -359,24 +353,7 @@ ChartConfigure.Query = function Query() {
         collection: current?.collection,
         useOrderReaction: useOrderReaction(compiledFieldOptions, fields),
       }}
-      components={{
-        ArrayItems,
-        Editable,
-        FormCollapse,
-        Card,
-        Switch,
-        Select,
-        Input,
-        InputNumber,
-        FormItem,
-        Radio,
-        Space,
-        Filter,
-        DatePicker,
-        Text,
-        FromSql,
-        Cascader,
-      }}
+      components={{ ArrayItems, Editable, FormCollapse, FormItem, Space, Switch, FromSql }}
     />
   );
 };
@@ -388,7 +365,7 @@ ChartConfigure.Config = function Config() {
   const charts = useCharts();
   const getChartFields = useChartFields(fields);
   const getReference = (chartType: string) => {
-    const reference = charts[chartType]?.reference;
+    const reference = charts[chartType]?.getReference?.();
     if (!reference) return '';
     const { title, link } = reference;
     return (
@@ -411,7 +388,7 @@ ChartConfigure.Config = function Config() {
           <SchemaComponent
             schema={getConfigSchema(schema)}
             scope={{ t, chartTypes, useChartFields: getChartFields, getReference }}
-            components={{ Card, Select, Input, FormItem, ArrayItems, Space, AutoComplete }}
+            components={{ FormItem, ArrayItems, Space, AutoComplete }}
           />
         );
       }}
@@ -427,18 +404,17 @@ ChartConfigure.Transform = function Transform() {
   return (
     <SchemaComponent
       schema={transformSchema}
-      components={{ Select, FormItem, ArrayItems, Space }}
+      components={{ FormItem, ArrayItems, Space }}
       scope={{ useChartFields: getChartFields, useFieldTypeOptions, useTransformers, t }}
     />
   );
 };
 
 ChartConfigure.Data = function Data() {
-  const { t } = useChartsTranslation();
-  const { current } = useContext(ChartConfigContext);
   const { service } = useContext(ChartRendererContext);
+  const { current } = useContext(ChartConfigContext);
   const fields = useFieldsWithAssociation();
-  const data = processData(fields, service?.data || current?.data || [], { t });
+  const data = useData(current?.data);
   const error = service?.error;
   return !error ? (
     <div

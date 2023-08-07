@@ -3,6 +3,7 @@ import { Input as AntdInput, Button, Space, Spin } from 'antd';
 import cls from 'classnames';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useGlobalTheme } from '../../../global-theme';
 import { useDesignable } from '../../hooks/useDesignable';
 import { MarkdownVoidDesigner } from './Markdown.Void.Designer';
 import { useStyles } from './style';
@@ -44,7 +45,8 @@ const MarkdownEditor = (props: any) => {
 
 export const MarkdownVoid: any = observer(
   (props: any) => {
-    const { componentCls, hashId } = useStyles();
+    const { isDarkTheme } = useGlobalTheme();
+    const { componentCls, hashId } = useStyles({ isDarkTheme });
     const { content, className } = props;
     const field = useField();
     const schema = useFieldSchema();

@@ -1,1 +1,1 @@
-export { default as apiKeysCollection } from './api-keys';
+export { default } from './api-keys';

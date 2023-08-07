@@ -28,7 +28,7 @@ import {
   useCurrentAppInfo,
   useGlobalTheme,
 } from '@nocobase/client';
-import { lodash } from '@nocobase/utils/client';
+import lodash from 'lodash';
 import { useFullscreen } from 'ahooks';
 import { Button, ConfigProvider, Input, Layout, Menu, Popover, Switch, Tooltip } from 'antd';
 import dagre from 'dagre';
@@ -375,9 +375,10 @@ export const GraphDrawPage = React.memo(() => {
   const [collectionData, setCollectionData] = useState<any>([]);
   const [collectionList, setCollectionList] = useState<any>([]);
   const { refreshCM } = useCollectionManager();
+  const currentAppInfo = useCurrentAppInfo();
   const {
     data: { database },
-  } = useCurrentAppInfo();
+  } = currentAppInfo;
   const categoryCtx = useContext(CollectionCategroriesContext);
   const scope = { ...options?.scope };
   const components = { ...options?.components };
@@ -506,7 +507,7 @@ export const GraphDrawPage = React.memo(() => {
       {
         inherit: 'react-shape',
         component: (node) => (
-          <CurrentAppInfoContext.Provider value={database}>
+          <CurrentAppInfoContext.Provider value={currentAppInfo}>
             <APIClientProvider apiClient={api}>
               <SchemaComponentOptions inherit scope={scope} components={components}>
                 <CollectionCategroriesProvider {...categoryCtx}>

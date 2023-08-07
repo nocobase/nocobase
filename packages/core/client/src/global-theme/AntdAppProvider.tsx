@@ -15,7 +15,11 @@ const AppInner = memo(({ children }: { children: React.ReactNode }) => {
 
 const AntdAppProvider = ({ children }: { children: React.ReactNode }) => {
   return (
-    <App>
+    <App
+      style={{
+        height: '100%',
+      }}
+    >
       <AppInner>{children}</AppInner>
     </App>
   );

@@ -85,6 +85,29 @@ const useStyles = createStyles(({ css, token }) => {
       }
     `,
 
+    executionsDropdownRowClass: css`
+      .row {
+        display: flex;
+        align-items: baseline;
+
+        &.current {
+          font-weight: bold;
+        }
+
+        .id {
+          flex-grow: 1;
+          text-align: right;
+        }
+
+        time {
+          width: 12em;
+          margin-left: 0.5rem;
+          color: ${token.colorText};
+          font-size: 80%;
+        }
+      }
+    `,
+
     branchBlockClass: css`
       display: flex;
       position: relative;
@@ -220,9 +243,7 @@ const useStyles = createStyles(({ css, token }) => {
         font-weight: bold;
 
         &:not(:focus) {
-          transition:
-            background-color 0.3s ease,
-            border-color 0.3s ease;
+          transition: background-color 0.3s ease, border-color 0.3s ease;
           border-color: ${token.colorBorderBg};
           background-color: ${token.colorBgContainerDisabled};
 
@@ -260,20 +281,6 @@ const useStyles = createStyles(({ css, token }) => {
 
       &[type='button'] {
         border: none;
-      }
-
-      &.inner {
-        position: static;
-      }
-
-      .ant-tag {
-        padding: 0;
-        width: ${token.sizeLG}px;
-        height: ${token.sizeLG}px;
-        line-height: ${token.sizeLG}px;
-        margin-right: 0;
-        border-radius: 50%;
-        text-align: center;
       }
     `,
 

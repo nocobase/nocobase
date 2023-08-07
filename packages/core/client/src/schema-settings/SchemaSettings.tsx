@@ -1,6 +1,6 @@
 import { css } from '@emotion/css';
 import { ArrayCollapse, ArrayItems, FormItem, FormLayout, Input } from '@formily/antd-v5';
-import { Field, GeneralField, createForm } from '@formily/core';
+import { createForm, Field, GeneralField } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { error } from '@nocobase/utils/client';
@@ -21,32 +21,32 @@ import {
 } from 'antd';
 import _, { cloneDeep } from 'lodash';
 import React, {
-  ReactNode,
   createContext,
+  ReactNode,
   useCallback,
   useContext,
   useMemo,
+  useState,
   // @ts-ignore
   useTransition as useReactTransition,
-  useState,
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  APIClientProvider,
   ActionContextProvider,
+  APIClientProvider,
   CollectionFieldOptions,
   CollectionManagerContext,
   CollectionProvider,
+  createDesignable,
   Designable,
+  findFormBlock,
   FormDialog,
   FormProvider,
   RemoteSchemaComponent,
   SchemaComponent,
   SchemaComponentContext,
   SchemaComponentOptions,
-  createDesignable,
-  findFormBlock,
   useAPIClient,
   useBlockRequestContext,
   useCollection,
@@ -56,6 +56,8 @@ import {
   useFilterBlock,
   useGlobalTheme,
   useLinkageCollectionFilterOptions,
+  useSortFields,
+  useActionContext,
 } from '..';
 import { useTableBlockContext } from '../block-provider';
 import { findFilterTargets, updateFilterTargets } from '../block-provider/hooks';
@@ -97,8 +99,6 @@ interface SchemaSettingsContextProps {
   template?: any;
   collectionName?: any;
 }
-
-const mouseEnterDelay = 150;
 
 const SchemaSettingsContext = createContext<SchemaSettingsContextProps>(null);
 
@@ -1146,7 +1146,6 @@ SchemaSettings.DataTemplates = function DataTemplates(props) {
   const { t } = useTranslation();
   const formSchema = findFormBlock(fieldSchema) || fieldSchema;
   const { templateData } = useDataTemplates();
-
   const schema = useMemo(
     () => ({
       type: 'object',
@@ -1171,7 +1170,6 @@ SchemaSettings.DataTemplates = function DataTemplates(props) {
   );
   const onSubmit = useCallback((v) => {
     const data = { ...(formSchema['x-data-templates'] || {}), ...v.fieldReaction };
-
     // 当 Tree 组件开启 checkStrictly 属性时，会导致 checkedKeys 的值是一个对象，而不是数组，所以这里需要转换一下以支持旧版本
     data.items.forEach((item) => {
       item.fields = Array.isArray(item.fields) ? item.fields : item.fields.checked;
@@ -1445,13 +1443,14 @@ export const findParentFieldSchema = (fieldSchema: Schema) => {
   }
 };
 
-SchemaSettings.DefaultValue = function DefaultvalueConfigure(props) {
+SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
   const variablesCtx = useVariablesCtx();
   const currentSchema = useFieldSchema();
   const fieldSchema = props?.fieldSchema ?? currentSchema;
   const field = useField<Field>();
   const { dn } = useDesignable();
   const { t } = useTranslation();
+  const actionCtx = useActionContext();
   let targetField;
   const { getField } = useCollection();
   const { getCollectionJoinField } = useCollectionManager();
@@ -1462,12 +1461,13 @@ SchemaSettings.DefaultValue = function DefaultvalueConfigure(props) {
       `${collectionField.target}.${fieldSchema['x-component-props']?.fieldNames?.label || 'id'}`,
     );
   }
-  const parentFieldSchema = collectionField.interface === 'm2o' && findParentFieldSchema(fieldSchema);
+  const parentFieldSchema = collectionField?.interface === 'm2o' && findParentFieldSchema(fieldSchema);
   const parentCollectionField = parentFieldSchema && getCollectionJoinField(parentFieldSchema?.['x-collection-field']);
   const tableCtx = useTableBlockContext();
   const isAllowContexVariable =
-    collectionField.interface === 'm2m' ||
-    (parentCollectionField?.type === 'hasMany' && collectionField.interface === 'm2o');
+    actionCtx?.fieldSchema?.['x-action'] === 'customize:create' &&
+    (collectionField?.interface === 'm2m' ||
+      (parentCollectionField?.type === 'hasMany' && collectionField?.interface === 'm2o'));
   return (
     <SchemaSettings.ModalItem
       title={t('Set default value')}
@@ -1479,44 +1479,43 @@ SchemaSettings.DefaultValue = function DefaultvalueConfigure(props) {
           title: t('Set default value'),
           properties: {
             default: {
-              ...(fieldSchemaWithoutRequired || {}),
               'x-decorator': 'FormItem',
               'x-component': 'VariableInput',
               'x-component-props': {
                 ...(fieldSchema?.['x-component-props'] || {}),
                 collectionField,
-                targetField,
-                collectionName: collectionField?.collectionName,
                 contextCollectionName: isAllowContexVariable && tableCtx.collection,
                 schema: collectionField?.uiSchema,
                 className: defaultInputStyle,
                 renderSchemaComponent: function Com(props) {
                   const s = _.cloneDeep(fieldSchemaWithoutRequired) || ({} as Schema);
                   s.title = '';
+
+                  // 任何一个非空字符串都可以
+                  s.name = 'default';
+
                   s['x-read-pretty'] = false;
                   s['x-disabled'] = false;
 
-                  return (
-                    <SchemaComponent
-                      schema={{
-                        ...(s || {}),
-                        'x-component-props': {
-                          ...s['x-component-props'],
-                          onChange: props.onChange,
-                          value: props.value,
-                          defaultValue: getFieldDefaultValue(s, collectionField),
-                          style: {
-                            width: '100%',
-                            verticalAlign: 'top',
-                            minWidth: '200px',
-                          },
-                        },
-                      }}
-                    />
-                  );
+                  const schema = {
+                    ...(s || {}),
+                    'x-component-props': {
+                      ...s['x-component-props'],
+                      collectionName: collectionField?.collectionName,
+                      targetField,
+                      onChange: props.onChange,
+                      defaultValue: getFieldDefaultValue(s, collectionField),
+                      style: {
+                        width: '100%',
+                        verticalAlign: 'top',
+                        minWidth: '200px',
+                      },
+                    },
+                  };
+
+                  return <SchemaComponent schema={schema} />;
                 },
               },
-              name: 'default',
               title: t('Default value'),
               default: getFieldDefaultValue(fieldSchema, collectionField),
             },
@@ -1537,6 +1536,122 @@ SchemaSettings.DefaultValue = function DefaultvalueConfigure(props) {
           currentSchema,
         });
         dn.refresh();
+      }}
+    />
+  );
+};
+
+SchemaSettings.SortingRule = function SortRuleConfigure(props) {
+  const field = useField();
+  const { dn } = useDesignable();
+  const { t } = useTranslation();
+  const currentSchema = useFieldSchema();
+  const { getField } = useCollection();
+  const { getCollectionJoinField } = useCollectionManager();
+  const fieldSchema = props?.fieldSchema ?? currentSchema;
+  const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
+  const sortFields = useSortFields(collectionField?.target);
+  const defaultSort = fieldSchema['x-component-props']?.service?.params?.sort || [];
+  const sort = defaultSort?.map((item: string) => {
+    return item?.startsWith('-')
+      ? {
+          field: item.substring(1),
+          direction: 'desc',
+        }
+      : {
+          field: item,
+          direction: 'asc',
+        };
+  });
+  return (
+    <SchemaSettings.ModalItem
+      title={t('Set default sorting rules')}
+      components={{ ArrayItems }}
+      schema={
+        {
+          type: 'object',
+          title: t('Set default sorting rules'),
+          properties: {
+            sort: {
+              type: 'array',
+              default: sort,
+              'x-component': 'ArrayItems',
+              'x-decorator': 'FormItem',
+              items: {
+                type: 'object',
+                properties: {
+                  space: {
+                    type: 'void',
+                    'x-component': 'Space',
+                    properties: {
+                      sort: {
+                        type: 'void',
+                        'x-decorator': 'FormItem',
+                        'x-component': 'ArrayItems.SortHandle',
+                      },
+                      field: {
+                        type: 'string',
+                        enum: sortFields,
+                        required: true,
+                        'x-decorator': 'FormItem',
+                        'x-component': 'Select',
+                        'x-component-props': {
+                          style: {
+                            width: 260,
+                          },
+                        },
+                      },
+                      direction: {
+                        type: 'string',
+                        'x-decorator': 'FormItem',
+                        'x-component': 'Radio.Group',
+                        'x-component-props': {
+                          optionType: 'button',
+                        },
+                        enum: [
+                          {
+                            label: t('ASC'),
+                            value: 'asc',
+                          },
+                          {
+                            label: t('DESC'),
+                            value: 'desc',
+                          },
+                        ],
+                      },
+                      remove: {
+                        type: 'void',
+                        'x-decorator': 'FormItem',
+                        'x-component': 'ArrayItems.Remove',
+                      },
+                    },
+                  },
+                },
+              },
+              properties: {
+                add: {
+                  type: 'void',
+                  title: t('Add sort field'),
+                  'x-component': 'ArrayItems.Addition',
+                },
+              },
+            },
+          },
+        } as ISchema
+      }
+      onSubmit={({ sort }) => {
+        const sortArr = sort.map((item) => {
+          return item.direction === 'desc' ? `-${item.field}` : item.field;
+        });
+        _.set(field.componentProps, 'service.params.sort', sortArr);
+        props?.onSubmitCallBack?.(sortArr);
+        fieldSchema['x-component-props'] = field.componentProps;
+        dn.emit('patch', {
+          schema: {
+            ['x-uid']: fieldSchema['x-uid'],
+            'x-component-props': field.componentProps,
+          },
+        });
       }}
     />
   );

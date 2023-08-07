@@ -1,7 +1,7 @@
 import { Schema } from '@formily/json-schema';
 import { BaseError } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
-import { lodash } from '@nocobase/utils';
+import lodash from 'lodash';
 import { ErrorHandler } from './error-handler';
 import enUS from './locale/en_US';
 import zhCN from './locale/zh_CN';

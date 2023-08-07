@@ -1,4 +1,4 @@
-import { dayjs } from '@nocobase/utils/client';
+import dayjs from 'dayjs';
 import { mapRangePicker } from '../util';
 
 describe('mapRangePicker', () => {

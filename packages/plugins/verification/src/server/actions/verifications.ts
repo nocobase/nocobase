@@ -1,6 +1,6 @@
 import actions, { Context, Next } from '@nocobase/actions';
 import { Op } from '@nocobase/database';
-import { dayjs } from '@nocobase/utils';
+import dayjs from 'dayjs';
 import { randomInt, randomUUID } from 'crypto';
 import { promisify } from 'util';
 import Plugin, { namespace } from '..';

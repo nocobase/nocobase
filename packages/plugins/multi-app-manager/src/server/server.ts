@@ -1,6 +1,6 @@
 import Database, { IDatabaseOptions, Transactionable } from '@nocobase/database';
 import Application, { AppManager, Plugin } from '@nocobase/server';
-import { lodash } from '@nocobase/utils';
+import lodash from 'lodash';
 import * as path from 'path';
 import { resolve } from 'path';
 import { ApplicationModel } from './models/application';

@@ -5,9 +5,11 @@ import {
   BlockSchemaComponentProvider,
   CollectionField,
   CollectionManagerProvider,
+  CurrentUserProvider,
   FormBlockProvider,
   FormItem,
   FormV2,
+  Grid,
   Input,
   Password,
   SchemaComponent,
@@ -25,6 +27,9 @@ mockRequest.onGet('/users:get').reply(200, {
     nickname: '张三',
     password: '123456',
   },
+});
+mockRequest.onGet('/auth:check').reply(() => {
+  return [200, { data: {} }];
 });
 
 const schema: ISchema = {
@@ -93,15 +98,17 @@ const schema: ISchema = {
 export default () => {
   return (
     <APIClientProvider apiClient={apiClient}>
-      <CollectionManagerProvider collections={collections}>
-        <SchemaComponentProvider
-          components={{ FormBlockProvider, FormItem, CollectionField, Input, Action, FormV2, Password }}
-        >
-          <BlockSchemaComponentProvider>
-            <SchemaComponent schema={schema} />
-          </BlockSchemaComponentProvider>
-        </SchemaComponentProvider>
-      </CollectionManagerProvider>
+      <CurrentUserProvider>
+        <CollectionManagerProvider collections={collections}>
+          <SchemaComponentProvider
+            components={{ FormBlockProvider, FormItem, CollectionField, Input, Action, FormV2, Password, Grid }}
+          >
+            <BlockSchemaComponentProvider>
+              <SchemaComponent schema={schema} />
+            </BlockSchemaComponentProvider>
+          </SchemaComponentProvider>
+        </CollectionManagerProvider>
+      </CurrentUserProvider>
     </APIClientProvider>
   );
 };

@@ -22,7 +22,7 @@ import {
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
 import { useToken } from '../__builtins__';
 import { ColumnFieldProvider } from './components/ColumnFieldProvider';
-import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
+import { extractIndex, isCollectionFieldComponent, isColumnComponent, isPortalInBody } from './utils';
 
 const useArrayField = (props) => {
   const field = useField<ArrayField>();
@@ -239,7 +239,12 @@ export const Table: any = observer(
     if (onClickRow) {
       onRow = (record) => {
         return {
-          onClick: () => onClickRow(record, setSelectedRow, selectedRow),
+          onClick: (e) => {
+            if (isPortalInBody(e.target)) {
+              return;
+            }
+            onClickRow(record, setSelectedRow, selectedRow);
+          },
         };
       };
       highlightRow = css`
@@ -297,7 +302,6 @@ export const Table: any = observer(
                     console.warn('move cancel');
                     return;
                   }
-
                   const fromIndex = e.active?.data.current?.sortable?.index;
                   const toIndex = e.over?.data.current?.sortable?.index;
                   const from = field.value[fromIndex];
@@ -323,6 +327,11 @@ export const Table: any = observer(
                   white-space: nowrap;
                   .nb-read-pretty-input-number {
                     text-align: right;
+                  }
+                  .ant-color-picker-trigger {
+                    position: absolute;
+                    top: 50%;
+                    transform: translateY(-50%);
                   }
                 `,
               )}

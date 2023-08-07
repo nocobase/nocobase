@@ -1,5 +1,3 @@
-node_modules
-*.log
-src/.umi
-src/.umi-production
-src
+/node_modules
+/src
+/.dumi
