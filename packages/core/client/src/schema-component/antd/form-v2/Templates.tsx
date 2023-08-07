@@ -102,7 +102,7 @@ export const Templates = ({ style = {}, form }) => {
     }
   }, []);
   useEffect(() => {
-    if (!templateOptions.some((v) => v.key === targetTemplate)) {
+    if (!templateOptions?.some((v) => v.key === targetTemplate)) {
       handleTemplateChange('none');
     }
   }, [templateOptions]);
