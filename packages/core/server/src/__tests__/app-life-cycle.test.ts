@@ -88,6 +88,27 @@ describe('application life cycle', () => {
   });
 
   describe('addPreset', () => {
+    it('should remove listener that add by plugin', async () => {
+      function testFunc() {}
+      class Plugin1 extends Plugin {
+        async beforeLoad() {
+          this.app.on('afterLoad', testFunc);
+        }
+      }
+
+      app = mockServer({
+        plugins: [Plugin1],
+      });
+
+      console.log(app.listeners('afterLoad'));
+      await app.load();
+      expect(app.listeners('afterLoad').filter((fn) => fn.name == testFunc.name)).toHaveLength(1);
+      console.log(app.listeners('afterLoad'));
+      await app.reload();
+      console.log(app.listeners('afterLoad'));
+      expect(app.listeners('afterLoad').filter((fn) => fn.name == testFunc.name)).toHaveLength(1);
+    });
+
     it('should init after app.load()', async () => {
       class Plugin1 extends Plugin {}
       app = mockServer({

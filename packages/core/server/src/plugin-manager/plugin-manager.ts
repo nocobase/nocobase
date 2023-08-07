@@ -139,6 +139,8 @@ export class PluginManager {
     if (!options.name && typeof plugin === 'string') {
       options.name = plugin;
     }
+
+    this.app.log.debug(`adding plugin [${options.name}]...`);
     let P: any;
     try {
       P = PluginManager.resolvePlugin(plugin);
