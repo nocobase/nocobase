@@ -667,7 +667,6 @@ export default {
   "Installing": "Installing",
   "The deletion was successful.": "The deletion was successful.",
   "Plugin Zip File": "Plugin Zip File",
-  "Saved successfully, page will reload after 2 seconds": "Saved successfully, page will reload after 2 seconds",
   "Coming soon...": "Coming soon...",
   "All plugin settings": "All plugin settings",
   "Bookmark": "Bookmark",

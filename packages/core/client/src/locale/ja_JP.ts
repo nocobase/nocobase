@@ -643,6 +643,5 @@ export default {
   "Upgrade plugin": "プラグインをアップグレード",
   "Installing": "インストール中",
   "The deletion was successful.": "削除に成功しました。",
-  "Plugin Zip File": "プラグインZipファイル",
-  "Saved successfully, page will reload after 2 seconds": "保存に成功しました。2秒後にページがリロードされます",
+  "Plugin Zip File": "プラグインZipファイル"
 }

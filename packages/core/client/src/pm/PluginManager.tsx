@@ -34,42 +34,43 @@ export interface AllowedActions {
 
 const LocalPlugins = () => {
   const { t } = useTranslation();
-  const { data, loading } = useRequest<TData>({
+  const { data, loading, refresh } = useRequest<TData>({
     url: 'applicationPlugins:list',
     params: {
       sort: 'id',
       paginate: false,
     },
   });
-  const filterList = useMemo(
-    () => [
+  const filterList = useMemo(() => {
+    let list = data?.data || [];
+    list = list.reverse();
+    return [
       {
         type: 'All',
-        list: data?.data,
+        list: list,
       },
       {
         type: 'Built-in',
-        list: _.filter(data?.data, (item) => item.builtIn),
+        list: _.filter(list, (item) => item.builtIn),
       },
       {
         type: 'Enabled',
-        list: _.filter(data?.data, (item) => item.enabled),
+        list: _.filter(list, (item) => item.enabled),
       },
       {
         type: 'Disabled',
-        list: _.filter(data?.data, (item) => !item.enabled),
+        list: _.filter(list, (item) => !item.enabled),
       },
       {
         type: 'Upgrade',
-        list: _.filter(data?.data, (item) => item.newVersion),
+        list: _.filter(list, (item) => item.newVersion),
       },
       {
         type: 'Official plugin',
-        list: _.filter(data?.data, (item) => item.isOfficial),
+        list: _.filter(list, (item) => item.isOfficial),
       },
-    ],
-    [data?.data],
-  );
+    ];
+  }, [data?.data]);
 
   const [filterIndex, setFilterIndex] = useState(0);
   const [isShowAddForm, setShowAddForm] = useState(false);
@@ -80,7 +81,13 @@ const LocalPlugins = () => {
 
   return (
     <>
-      <PluginForm isShow={isShowAddForm} onClose={() => setShowAddForm(false)} />
+      <PluginForm
+        isShow={isShowAddForm}
+        onClose={(isRefresh) => {
+          setShowAddForm(false);
+          if (isRefresh) refresh();
+        }}
+      />
       <Space direction="vertical" size="middle" style={{ display: 'flex' }}>
         <Row justify="space-between">
           <Col>

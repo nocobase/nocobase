@@ -631,7 +631,6 @@ export default {
   "Upgrade plugin": "Atualizar plugin",
   "Installing": "Instalando",
   "The deletion was successful.": "A exclusão foi bem sucedida.",
-  "Saved successfully, page will reload after 2 seconds": "Salvo com sucesso, a página será recarregada após 2 segundos",
   "Plugin Zip File": "Arquivo Zip do plugin",
   "Coming soon...": "Em breve...",
   "All plugin settings": "Configurações de todos os plugins",

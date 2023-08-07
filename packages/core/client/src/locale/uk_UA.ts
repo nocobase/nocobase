@@ -686,7 +686,6 @@ export default {
   "Installing": "Встановлення",
   "The deletion was successful.": "Видалення пройшло успішно.",
   "Plugin Zip File": "Файл плагіна Zip",
-  "Saved successfully, page will reload after 2 seconds": "Збережено успішно, сторінка перезавантажиться через 2 секунди",
   "Coming soon...": "Скоро буде...",
   "All plugin settings": "Всі налаштування плагінів",
   "Bookmark": "Закладка",

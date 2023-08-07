@@ -521,5 +521,4 @@ export default {
   "Installing": "Yükleniyor",
   "The deletion was successful.": "Silme başarılı.",
   "Plugin Zip File": "Eklenti Zip Dosyası",
-  "Saved successfully, page will reload after 2 seconds": "Başarıyla kaydedildi, sayfa 2 saniye sonra yeniden yüklenecek",
 }

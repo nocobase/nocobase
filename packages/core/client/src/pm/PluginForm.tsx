@@ -102,7 +102,7 @@ const schema = {
 };
 
 interface IPluginFormProps {
-  onClose: () => void;
+  onClose: (refresh?: boolean) => void;
   isShow: boolean;
 }
 
@@ -125,8 +125,8 @@ export const PluginForm: FC<IPluginFormProps> = ({ onClose, isShow }) => {
           method: 'post',
           data: form.values,
         });
-        message.success(t('Saved successfully, page will reload after 2 seconds'), 2, () => {
-          window.location.reload();
+        message.success(t('Saved successfully'), 2, () => {
+          onClose(true);
         });
       },
     };

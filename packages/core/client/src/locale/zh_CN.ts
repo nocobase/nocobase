@@ -710,7 +710,6 @@ export default {
   "Installing": "安装中",
   "The deletion was successful.": "删除成功",
   "Plugin Zip File": "插件压缩包",
-  "Saved successfully, page will reload after 2 seconds": "保存成功，2秒后页面将重新加载",
   'Coming soon...': '敬请期待...',
   'All plugin settings': '所有插件配置',
   'Bookmark': '书签',

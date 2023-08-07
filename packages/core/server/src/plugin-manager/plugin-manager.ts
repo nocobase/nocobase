@@ -207,7 +207,7 @@ export class PluginManager {
     }
 
     await addOrUpdatePluginByNpm({ name: packageName, registry });
-    await this.add(name);
+    await this.add(name, { registry, packageName, type: 'npm' });
   }
 
   addStatic(plugin?: any, options?: any) {
@@ -275,7 +275,7 @@ export class PluginManager {
     const packageJson = PluginManager.getPackageJson(packageName);
 
     if (!model) {
-      const { enabled, builtIn, installed, ...others } = options;
+      const { enabled, builtIn, installed, registry, packageName, zipUrl, type, ...others } = options;
       await this.repository.create({
         transaction,
         values: {
@@ -284,6 +284,10 @@ export class PluginManager {
           enabled: !!enabled,
           builtIn: !!builtIn,
           installed: !!installed,
+          registry,
+          packageName,
+          zipUrl,
+          type,
           options: {
             ...others,
           },

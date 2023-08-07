@@ -666,7 +666,6 @@ export default {
   "Installing": "Installation",
   "The deletion was successful.": "La suppression a réussi.",
   "Plugin Zip File": "Fichier Zip du plugin",
-  "Saved successfully, page will reload after 2 seconds": "Enregistré avec succès, la page se rechargera après 2 secondes",
   "Coming soon...": "Bientôt...",
   "All plugin settings": "Tous les paramètres de plugin",
   "Bookmark": "Signet",

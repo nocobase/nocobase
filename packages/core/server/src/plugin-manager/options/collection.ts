@@ -7,7 +7,11 @@ export default defineCollection({
   repository: 'PluginManagerRepository',
   fields: [
     { type: 'string', name: 'name', unique: true },
+    { type: 'string', name: 'packageName', unique: true },
     { type: 'string', name: 'version' },
+    { type: 'string', name: 'type' },
+    { type: 'string', name: 'zipUrl' },
+    { type: 'string', name: 'registry' },
     { type: 'boolean', name: 'enabled' },
     { type: 'boolean', name: 'installed' },
     { type: 'boolean', name: 'builtIn' },

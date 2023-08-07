@@ -524,5 +524,4 @@ export default {
   "Installing": "Установка",
   "The deletion was successful.": "Удаление прошло успешно.",
   "Plugin Zip File": "Zip файл плагина",
-  "Saved successfully, page will reload after 2 seconds": "Сохранено успешно, страница перезагрузится через 2 секунды",
 }
