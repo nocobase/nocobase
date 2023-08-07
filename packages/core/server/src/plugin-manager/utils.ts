@@ -35,7 +35,8 @@ export function getLocalPluginPackagesPathArr(): string[] {
 }
 
 export function getStoragePluginDir(packageName: string) {
-  return path.join(getPluginStoragePath(), packageName);
+  const pluginStoragePath = getPluginStoragePath();
+  return path.join(pluginStoragePath, packageName);
 }
 
 export function getLocalPluginDir(packageDirBasename: string) {
@@ -256,13 +257,14 @@ export function removePluginPackage(packageName: string) {
 }
 
 export async function checkPluginExist(pluginData: PluginData) {
-  const { name, type, zipUrl } = pluginData;
-  const packageDir = type === 'local' ? getStoragePluginDir(name) : getLocalPluginDir(zipUrl);
+  const { packageName, type, zipUrl } = pluginData;
+  if (!type) return true;
+  const packageDir = type === 'npm' ? getStoragePluginDir(packageName) : getLocalPluginDir(zipUrl);
   const exists = await fs.exists(packageDir);
 
   // if packageDir exists create symlink
   if (exists) {
-    await linkToNodeModules(name, packageDir);
+    await linkToNodeModules(packageName, packageDir);
   }
 
   return exists;
@@ -304,14 +306,14 @@ export function getPluginNameByClientStaticUrl(pathname: string) {
 }
 
 export async function addOrUpdatePluginByNpm(
-  options: Pick<PluginData, 'name' | 'registry' | 'version'>,
+  options: Pick<PluginData, 'packageName' | 'registry' | 'version'>,
   update?: boolean,
 ) {
-  const exists = await checkPluginExist({ ...options, type: 'local' });
+  const exists = await checkPluginExist({ ...options, type: 'npm' });
   if (exists && !update) {
-    return getPackageJson(options.name);
+    return getPackageJson(options.packageName);
   }
-  const { fileUrl, version } = await getPluginInfoByNpm(options.name, options.registry, options.version);
+  const { fileUrl, version } = await getPluginInfoByNpm(options.packageName, options.registry, options.version);
   await downloadAndUnzipToNodeModules(fileUrl);
 
   return {
@@ -342,7 +344,7 @@ export async function checkPluginPackage(plugin: PluginData) {
     if (plugin.type === 'npm') {
       return addOrUpdatePluginByNpm(
         {
-          name: plugin.name,
+          packageName: plugin.packageName,
           registry: plugin.registry,
           version: plugin.version,
         },

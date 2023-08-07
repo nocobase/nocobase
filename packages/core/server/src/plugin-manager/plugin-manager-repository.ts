@@ -1,5 +1,6 @@
 import { Repository } from '@nocobase/database';
 import { PluginManager } from './plugin-manager';
+import { checkPluginPackage } from './utils';
 
 export class PluginManagerRepository extends Repository {
   pm: PluginManager;
@@ -67,6 +68,7 @@ export class PluginManagerRepository extends Repository {
     });
 
     for (const item of items) {
+      await checkPluginPackage(item.toJSON());
       await this.pm.addStatic(item.get('name'), {
         ...item.get('options'),
         name: item.get('name'),
