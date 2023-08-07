@@ -147,7 +147,7 @@ const getDetailCollections = (props) => {
   return detailCollections;
 };
 
-const getFormCollections = (props) => {
+export const getFormCollections = (props) => {
   const { actionInitializers, childrenCollections, collection } = props;
   const formCollections = [
     {
