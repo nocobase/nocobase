@@ -96,29 +96,9 @@ export const Templates = ({ style = {}, form }) => {
   useEffect(() => {
     if (enabled && defaultTemplate) {
       form.__template = true;
-<<<<<<< HEAD
-      fetchTemplateData(api, defaultTemplate, t)
-        .then((data) => {
-          if (form && data) {
-            forEach(data, (value, key) => {
-              if (value) {
-                form.values[key] = value;
-                setTimeout(() => {
-                  form.setValuesIn(key, value);
-                });
-              }
-            });
-          }
-          return data;
-        })
-        .catch((err) => {
-          console.error(err);
-        });
-=======
       if (defaultTemplate.key === 'duplicate') {
         handleTemplateDataChange(defaultTemplate.dataId, defaultTemplate);
       }
->>>>>>> main
     }
   }, []);
 
@@ -126,25 +106,6 @@ export const Templates = ({ style = {}, form }) => {
     return { display: 'flex', alignItems: 'center', backgroundColor: token.colorFillAlter, padding: '1em', ...style };
   }, [style, token.colorFillAlter]);
 
-<<<<<<< HEAD
-            forEach(data, (value, key) => {
-              if (value) {
-                form.values[key] = value;
-                setTimeout(() => {
-                  form.setValuesIn(key, value);
-                });
-              }
-            });
-          }
-          return data;
-        })
-        .catch((err) => {
-          console.error(err);
-        });
-    } else {
-      form?.reset();
-    }
-=======
   const labelStyle = useMemo<{
     fontSize: number;
     fontWeight: 'bold';
@@ -181,7 +142,6 @@ export const Templates = ({ style = {}, form }) => {
       .catch((err) => {
         console.error(err);
       });
->>>>>>> main
   }, []);
 
   if (!enabled || !display) {
