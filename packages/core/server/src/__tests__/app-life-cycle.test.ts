@@ -54,12 +54,16 @@ describe('application life cycle', () => {
       app.on('beforeLoad', () => {
         loadFn();
       });
+
       await app.load();
       await app.load();
       expect(loadFn).toBeCalled();
       expect(loadFn).toBeCalledTimes(1);
       await app.reload();
       await app.reload();
+
+      expect(app.listenerCount('beforeLoad')).toBe(1);
+
       expect(loadFn).toBeCalledTimes(3);
     });
     it('should be called', async () => {

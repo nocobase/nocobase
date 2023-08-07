@@ -208,35 +208,25 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   private bindAppEvents(app: Application) {
-    // listen afterDestroy event, after app destroyed, remove it from supervisor
-    const afterDestroy = () => {
+    app.on('afterDestroy', () => {
       delete this.apps[app.name];
-    };
+    });
 
-    // set alwaysBind to true, so that afterDestroy will always be listened after application reload
-    afterDestroy.alwaysBind = true;
-
-    app.on('afterDestroy', afterDestroy);
-
-    const listenWorkingMessageChanged = ({ message }) => {
+    app.on('workingMessageChanged', ({ message }) => {
       this.clearAppError(app.name);
       this.emit('workingMessageChanged', {
         appName: app.name,
         message,
+        status: app.getFsmState(),
       });
-    };
+    });
 
-    const listenStatusChanged = ({ status }) => {
+    app.on('stateChanged', ({ status }) => {
       this.emit('statusChanged', {
         appName: app.name,
         status,
       });
-    };
-
-    listenStatusChanged.alwaysBind = true;
-    listenWorkingMessageChanged.alwaysBind = true;
-    app.on('workingMessageChanged', listenWorkingMessageChanged);
-    app.on('stateChanged', listenStatusChanged);
+    });
   }
 }
 

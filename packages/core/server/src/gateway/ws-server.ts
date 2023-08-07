@@ -37,11 +37,12 @@ export class WSServer {
       });
     });
 
-    AppSupervisor.getInstance().on('workingMessageChanged', ({ appName, message, ready }) => {
+    AppSupervisor.getInstance().on('workingMessageChanged', ({ appName, message, status }) => {
       this.sendToConnectionsByTag('app', appName, {
         type: 'appWorkingMessageChanged',
         payload: {
           message,
+          status,
         },
       });
     });
