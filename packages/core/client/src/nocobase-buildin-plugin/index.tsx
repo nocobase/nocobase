@@ -1,5 +1,6 @@
 import { css } from '@emotion/css';
-import { Button, Result, Spin } from 'antd';
+import { observer } from '@formily/reactive-react';
+import { Button, Modal, Result, Spin } from 'antd';
 import React, { FC } from 'react';
 import { Navigate } from 'react-router-dom';
 import { ACLPlugin } from '../acl';
@@ -23,7 +24,7 @@ import { LocalePlugin } from './plugins/LocalePlugin';
 
 const AppSpin = Spin;
 
-const AppError: FC<{ app: Application; error: Error }> = ({ app, error }) => (
+const AppError: FC<{ app: Application }> = observer(({ app }) => (
   <div>
     <Result
       className={css`
@@ -34,7 +35,7 @@ const AppError: FC<{ app: Application; error: Error }> = ({ app, error }) => (
       `}
       status="error"
       title={app.i18n.t('Failed to load plugin')}
-      subTitle={app.i18n.t(error?.message)}
+      subTitle={app.i18n.t(app.error?.message)}
       extra={[
         <Button type="primary" key="try" onClick={() => window.location.reload()}>
           {app.i18n.t('Try again')}
@@ -42,13 +43,50 @@ const AppError: FC<{ app: Application; error: Error }> = ({ app, error }) => (
       ]}
     />
   </div>
-);
+));
+
+const AppMaintaining: FC<{ app: Application; error: Error }> = observer(({ app }) => {
+  return (
+    <div>
+      <Result
+        className={css`
+          top: 50%;
+          position: absolute;
+          width: 100%;
+          transform: translate(0, -50%);
+        `}
+        status="error"
+        title={app.i18n.t(app.error?.status || 'App maintaining')}
+        subTitle={app.i18n.t(app.error?.message)}
+        extra={[
+          <Button type="primary" key="try" onClick={() => window.location.reload()}>
+            {app.i18n.t('Try again')}
+          </Button>,
+        ]}
+      />
+    </div>
+  );
+});
+
+const AppMaintainingDialog: FC<{ app: Application; error: Error }> = observer(({ app }) => {
+  return (
+    <Modal open={true} footer={null} closable={false}>
+      <Result
+        status="error"
+        title={app.i18n.t(app.error?.status || 'App maintaining')}
+        subTitle={app.i18n.t(app.error?.message)}
+      />
+    </Modal>
+  );
+});
 
 export class NocoBaseBuildInPlugin extends Plugin {
   async afterAdd() {
     this.app.addComponents({
       AppSpin,
       AppError,
+      AppMaintaining,
+      AppMaintainingDialog,
     });
     await this.addPlugins();
   }

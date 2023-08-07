@@ -19,11 +19,15 @@ export const AppComponent: FC<AppComponentProps> = observer((props) => {
   }, [app]);
 
   if (app.loading) return app.renderComponent('AppSpin', { app });
-  if (app.error) return app.renderComponent('AppError', { app, error: app.error });
+  if (!app.maintained && app.maintaining) return app.renderComponent('AppMaintaining', { app });
+  if (app.error?.code === 'LOAD_ERROR') return app.renderComponent('AppError', { app });
 
   return (
     <ErrorBoundary FallbackComponent={app.getComponent<FallbackProps>('ErrorFallback')} onError={handleErrors}>
-      <ApplicationContext.Provider value={app}>{app.renderComponent('AppMain')}</ApplicationContext.Provider>
+      <ApplicationContext.Provider value={app}>
+        {app.maintained && app.maintaining && app.renderComponent('AppMaintainingDialog', { app })}
+        {app.renderComponent('AppMain')}
+      </ApplicationContext.Provider>
     </ErrorBoundary>
   );
 });

@@ -51,12 +51,14 @@ export class Application {
   public devPlugins: Record<string, Promise<{ default: typeof Plugin }>> = {};
   public requirejs: RequireJS;
   loading = true;
+  maintained = false;
   maintaining = false;
   error = null;
 
   constructor(protected options: ApplicationOptions = {}) {
     this.initRequireJs();
     define(this, {
+      maintained: observable.ref,
       loading: observable.ref,
       maintaining: observable.ref,
       error: observable.ref,
@@ -122,25 +124,36 @@ export class Application {
   }
 
   async load() {
-    this.ws.connect();
     this.ws.on('message', (event) => {
       const data = JSON.parse(event.data);
-      if (data.type === 'maintaining') {
+      console.log(data);
+      const maintaining = data.payload.status !== 'started';
+      // const maintaining = data.type === 'maintaining';
+      if (maintaining) {
         this.maintaining = true;
         this.error = data.payload;
+      } else if (this.maintaining && !this.maintained) {
+        window.location.reload();
+        return;
       } else {
         this.maintaining = false;
+        this.maintained = true;
         this.error = null;
       }
+      console.log(this.error);
     });
+    this.ws.connect();
     try {
       this.loading = true;
       await this.pm.load();
-      this.loading = false;
     } catch (error) {
-      this.error = error;
-      this.loading = false;
+      this.error = {
+        code: 'LOAD_ERROR',
+        message: error.message,
+      };
+      console.error(error);
     }
+    this.loading = false;
   }
 
   getComponent<T = any>(Component: ComponentTypeAndString<T>, isShowError = true): ComponentType<T> | undefined {

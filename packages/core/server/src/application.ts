@@ -15,7 +15,7 @@ import compose from 'koa-compose';
 import lodash from 'lodash';
 import { waitFor } from 'xstate/lib/waitFor';
 import { createACL } from './acl';
-import { AppSupervisor, supervisedAppCall } from './app-supervisor';
+import { AppSupervisor } from './app-supervisor';
 import { registerCli } from './commands';
 import { ApplicationNotInstall } from './errors/application-not-install';
 import { createAppProxy, createI18n, createResourcer, registerMiddlewares } from './helper';
