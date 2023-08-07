@@ -1,5 +1,6 @@
 import * as workflows from './workflows';
 import * as nodes from './nodes';
+import * as executions from './executions';
 
 function make(name, mod) {
   return Object.keys(mod).reduce(
@@ -21,5 +22,6 @@ export default function ({ app }) {
     ...make('flow_nodes', {
       update: nodes.update,
     }),
+    ...make('executions', executions),
   });
 }

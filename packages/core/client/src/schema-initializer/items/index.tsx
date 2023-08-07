@@ -38,6 +38,8 @@ export * from './ListBlockInitializer';
 export * from './MarkdownBlockInitializer';
 export * from './PrintActionInitializer';
 export * from './RecordAssociationBlockInitializer';
+export * from './RecordAssociationGridCardBlockInitializer';
+export * from './RecordAssociationListBlockInitializer';
 export * from './RecordAssociationCalendarBlockInitializer';
 export * from './RecordAssociationDetailsBlockInitializer';
 export * from './RecordAssociationFormBlockInitializer';

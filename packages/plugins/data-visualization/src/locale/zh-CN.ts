@@ -69,4 +69,8 @@ export default {
   Max: '最大值',
   'Please select a chart type.': '请选择图表类型',
   Collection: '数据表',
+  isStack: '堆叠',
+  isPercent: '显示为百分比',
+  isGroup: '分组',
+  smooth: '平滑曲线',
 };

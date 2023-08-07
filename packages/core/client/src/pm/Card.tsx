@@ -19,6 +19,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import type { IPluginData } from '.';
 import { useAPIClient, useRequest } from '../api-client';
+import { useGlobalTheme } from '../global-theme';
 import { useStyles as useMarkdownStyles } from '../schema-component/antd/markdown/style';
 import { useParseMarkdown } from '../schema-component/antd/markdown/util';
 import { useStyles } from './style';
@@ -63,7 +64,8 @@ const stringToColor = function (str: string) {
 
 const PluginDocument: React.FC<PluginDocumentProps> = (props) => {
   const { styles } = useStyles();
-  const { componentCls, hashId } = useMarkdownStyles();
+  const { isDarkTheme } = useGlobalTheme();
+  const { componentCls, hashId } = useMarkdownStyles({ isDarkTheme });
   const [docLang, setDocLang] = useState('');
   const { name, path } = props;
   const { data, loading, error } = useRequest<{

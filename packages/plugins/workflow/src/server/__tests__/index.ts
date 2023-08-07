@@ -37,6 +37,14 @@ export async function getApp({ manual, ...options }: MockAppOptions = {}): Promi
         },
       },
 
+      pending: {
+        run(node, input, processor) {
+          return {
+            status: JOB_STATUS.PENDING,
+          };
+        },
+      },
+
       'prompt->error': {
         run(node, input, processor) {
           return {

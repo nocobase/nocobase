@@ -5,30 +5,22 @@ import { FieldOption } from '../../hooks';
 import { QueryProps } from '../../renderer';
 
 export class Pie extends G2PlotChart {
-  schema: ISchema = {
-    type: 'object',
-    properties: {
-      angleField: {
-        title: '{{t("angleField")}}',
-        type: 'string',
-        'x-decorator': 'FormItem',
-        'x-component': 'Select',
-        'x-reactions': '{{ useChartFields }}',
-        required: true,
-      },
-      colorField: {
-        title: '{{t("colorField")}}',
-        type: 'string',
-        'x-decorator': 'FormItem',
-        'x-component': 'Select',
-        'x-reactions': '{{ useChartFields }}',
-        required: true,
-      },
-    },
-  };
-
   constructor() {
-    super('pie', 'Pie Chart', G2Pie);
+    super({ name: 'pie', title: 'Pie Chart', component: G2Pie });
+    this.config = [
+      {
+        property: 'field',
+        name: 'angleField',
+        title: 'angleField',
+        required: true,
+      },
+      {
+        property: 'field',
+        name: 'colorField',
+        title: 'colorField',
+        required: true,
+      },
+    ];
   }
 
   init(

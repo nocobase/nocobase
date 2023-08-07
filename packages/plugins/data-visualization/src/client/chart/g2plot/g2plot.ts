@@ -1,37 +1,18 @@
-import { Chart, RenderProps } from '../chart';
+import { Chart, ChartProps, RenderProps } from '../chart';
 import { FieldOption } from '../../hooks';
 import { QueryProps } from '../../renderer';
-import { ISchema } from '@formily/react';
+import configs from './configs';
 
 export class G2PlotChart extends Chart {
-  schema: ISchema = {
-    type: 'object',
-    properties: {
-      xField: {
-        title: '{{t("xField")}}',
-        type: 'string',
-        'x-decorator': 'FormItem',
-        'x-component': 'Select',
-        'x-reactions': '{{ useChartFields }}',
-        required: true,
-      },
-      yField: {
-        title: '{{t("yField")}}',
-        type: 'string',
-        'x-decorator': 'FormItem',
-        'x-component': 'Select',
-        'x-reactions': '{{ useChartFields }}',
-        required: true,
-      },
-      seriesField: {
-        title: '{{t("seriesField")}}',
-        type: 'string',
-        'x-decorator': 'FormItem',
-        'x-component': 'Select',
-        'x-reactions': '{{ useChartFields }}',
-      },
-    },
-  };
+  constructor({ name, title, component, config }: ChartProps) {
+    super({
+      name,
+      title,
+      component,
+      config: ['xField', 'yField', 'seriesField', ...(config || [])],
+    });
+    this.addConfigs(configs);
+  }
 
   init(
     fields: FieldOption[],
@@ -73,7 +54,7 @@ export class G2PlotChart extends Chart {
       obj[key] = value;
       if (key.includes('Field')) {
         if (Array.isArray(value)) {
-          obj[key] = value.map((v) => (v.includes('.') ? replace(v) : v));
+          obj[key] = value.map((v) => (v?.includes('.') ? replace(v) : v));
         } else if (typeof value === 'string' && value.includes('.')) {
           obj[key] = replace(value);
         }
@@ -101,7 +82,7 @@ export class G2PlotChart extends Chart {
   getReference() {
     return {
       title: this.title,
-      link: `https://g2plot.antv.antgroup.com/api/plots/${this.name}`,
+      link: `https://charts.ant.design/api/plots/${this.name}`,
     };
   }
 }

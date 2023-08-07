@@ -1,4 +1,4 @@
-## v0.12: New plugin build tool
+# v0.12: New plugin build tool
 
 ## New Features
 
