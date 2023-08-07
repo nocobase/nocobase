@@ -5,21 +5,24 @@ import {
   RecordProvider,
   css,
   useCollection,
+  useCollectionManager,
   useCompile,
   useFilterAPI,
   useProps,
 } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
 import { Button, Space } from 'antd';
-import { get } from 'lodash';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { defaultImage, selectedImage } from '../../constants';
 import { useMapTranslation } from '../../locale';
 import { AMapComponent, AMapForwardedRefProps } from './Map';
+import { getSource } from '../../utils';
 
 export const AMapBlock = (props) => {
-  const { collectionField, fieldNames, dataSource = [], fixedBlock, zoom, setSelectedRecordKeys } = useProps(props);
-  const { getPrimaryKey } = useCollection();
+  const { collectionField, fieldNames, dataSource, fixedBlock, zoom, setSelectedRecordKeys } = useProps(props);
+  const { name, getPrimaryKey } = useCollection();
+  const { getCollectionJoinField } = useCollectionManager();
+  const primaryKey = getPrimaryKey();
   const [isMapInitialization, setIsMapInitialization] = useState(false);
   const mapRef = useRef<AMapForwardedRefProps>();
   const geometryUtils: AMap.IGeometryUtil = mapRef.current?.aMap?.GeometryUtil;
@@ -28,7 +31,7 @@ export const AMapBlock = (props) => {
   const { t } = useMapTranslation();
   const compile = useCompile();
   const { isConnected, doFilter } = useFilterAPI();
-  const [, setPrevSelected] = useState(null);
+  const [, setPrevSelected] = useState<any>(null);
   const selectingModeRef = useRef(selectingMode);
   selectingModeRef.current = selectingMode;
 
@@ -38,7 +41,7 @@ export const AMapBlock = (props) => {
     extData.selected = !selected;
     if ('setIcon' in overlay) {
       overlay.setIcon(
-        new mapRef.current.aMap.Icon({
+        new mapRef.current!.aMap.Icon({
           imageSize: [19, 32],
           image: selected ? defaultImage : selectedImage,
         } as AMap.IconOpts),
@@ -54,9 +57,9 @@ export const AMapBlock = (props) => {
 
   const removeSelection = () => {
     if (!mapRef.current) return;
-    mapRef.current.mouseTool().close(true);
-    mapRef.current.editor().setTarget(null);
-    mapRef.current.editor().close();
+    mapRef.current?.mouseTool().close(true);
+    mapRef.current?.editor().setTarget(null);
+    mapRef.current?.editor().close();
   };
 
   // selection
@@ -64,11 +67,11 @@ export const AMapBlock = (props) => {
     if (selectingMode !== 'selection') {
       return;
     }
-    if (!mapRef.current.editor()) {
-      mapRef.current.createEditor('polygon');
-      mapRef.current.createMouseTool('polygon');
+    if (!mapRef.current?.editor()) {
+      mapRef.current?.createEditor('polygon');
+      mapRef.current?.createMouseTool('polygon');
     } else {
-      mapRef.current.executeMouseTool('polygon');
+      mapRef.current?.executeMouseTool('polygon');
     }
     return () => {
       removeSelection();
@@ -79,7 +82,7 @@ export const AMapBlock = (props) => {
     if (selectingMode) {
       return () => {
         if (!selectingModeRef.current) {
-          mapRef.current.map.getAllOverlays().forEach((o) => {
+          mapRef.current?.map.getAllOverlays().forEach((o) => {
             setOverlayOptions(o, false);
           });
         }
@@ -88,47 +91,55 @@ export const AMapBlock = (props) => {
   }, [selectingMode]);
 
   const onSelectingComplete = useMemoizedFn(() => {
-    const selectingOverlay = mapRef.current.editor().getTarget();
-    const overlays = mapRef.current.map.getAllOverlays();
-    const selectedOverlays = overlays.filter((o) => {
+    const selectingOverlay = mapRef.current?.editor().getTarget();
+    const overlays = mapRef.current?.map.getAllOverlays();
+    const selectedOverlays = overlays?.filter((o) => {
       if (o === selectingOverlay || o.getExtData().id === undefined) return;
       if ('getPosition' in o) {
-        return geometryUtils.isPointInRing(o.getPosition(), selectingOverlay.getPath() as any);
+        return geometryUtils.isPointInRing(o.getPosition(), selectingOverlay?.getPath() as any);
       }
-      return geometryUtils.doesRingRingIntersect(o.getPath(), selectingOverlay.getPath() as any);
+      return geometryUtils.doesRingRingIntersect(o.getPath(), selectingOverlay?.getPath() as any);
     });
-    const ids = selectedOverlays.map((o) => {
+    const ids = selectedOverlays?.map((o) => {
       setOverlayOptions(o, true);
       return o.getExtData().id;
     });
-    setSelectedRecordKeys((lastIds) => ids.concat(lastIds));
-    selectingOverlay.remove();
-    mapRef.current.editor().close();
+    setSelectedRecordKeys((lastIds) => ids?.concat(lastIds));
+    selectingOverlay?.remove();
+    mapRef.current?.editor().close();
   });
 
   useEffect(() => {
-    if (!collectionField || !mapRef.current) return;
+    if (!collectionField || !mapRef.current || !dataSource) return;
+    const fieldPaths =
+      Array.isArray(fieldNames?.field) && fieldNames?.field.length > 1
+        ? fieldNames?.field.slice(0, -1)
+        : fieldNames?.field;
+    const cf = getCollectionJoinField([name, ...fieldPaths].flat().join('.'));
     const overlays = dataSource
       .map((item) => {
-        const data = get(item, fieldNames?.field);
-        if (!data) return;
-        const overlay = mapRef.current.setOverlay(collectionField.type, data, {
-          strokeColor: '#4e9bff',
-          fillColor: '#4e9bff',
-          cursor: 'pointer',
-          label: {
-            direction: 'bottom',
-            offset: [0, 5],
-            content: fieldNames?.marker ? compile(item[fieldNames.marker]) : undefined,
-          },
-          extData: {
-            id: item[getPrimaryKey()],
-          },
+        const data = getSource(item, fieldNames?.field, cf?.interface);
+        if (!data?.length) return;
+        return data?.filter(Boolean).map((mapItem) => {
+          const overlay = mapRef.current?.setOverlay(collectionField.type, mapItem, {
+            strokeColor: '#4e9bff',
+            fillColor: '#4e9bff',
+            cursor: 'pointer',
+            label: {
+              direction: 'bottom',
+              offset: [0, 5],
+              content: fieldNames?.marker ? compile(item[fieldNames.marker]) : undefined,
+            },
+            extData: {
+              id: item[primaryKey],
+            },
+          });
+          return overlay;
         });
-        return overlay;
       })
+      .flat()
       .filter(Boolean);
-    mapRef.current.map?.setFitView(overlays);
+    mapRef.current?.map?.setFitView(overlays);
 
     const events = overlays.map((o: AMap.Marker) => {
       const onClick = (e) => {
@@ -144,8 +155,8 @@ export const AMapBlock = (props) => {
           }
           return;
         }
-        const data = dataSource?.find((item) => {
-          return extData.id === item[getPrimaryKey()];
+        const data = dataSource.find((item) => {
+          return extData.id === item[primaryKey];
         });
 
         // 筛选区块模式
@@ -160,7 +171,7 @@ export const AMapBlock = (props) => {
               return null;
             } else {
               selectMarker(o);
-              doFilter(data[getPrimaryKey()], (target) => target.field || getPrimaryKey(), '$eq');
+              doFilter(data[primaryKey], (target) => target.field || primaryKey, '$eq');
             }
             return o;
           });
@@ -182,7 +193,7 @@ export const AMapBlock = (props) => {
       });
       events.forEach((e) => e());
     };
-  }, [dataSource, isMapInitialization, fieldNames, collectionField.type, isConnected]);
+  }, [dataSource, isMapInitialization, fieldNames, name, primaryKey, collectionField.type, isConnected]);
 
   useEffect(() => {
     setTimeout(() => {
@@ -210,7 +221,7 @@ export const AMapBlock = (props) => {
           z-index: 999;
         `}
       >
-        {isMapInitialization && !mapRef.current.errMessage ? (
+        {isMapInitialization && !mapRef.current?.errMessage ? (
           <Space direction="vertical">
             <Button
               style={{
@@ -265,7 +276,7 @@ export const AMapBlock = (props) => {
 const MapBlockDrawer = (props) => {
   const { setVisible, record } = props;
   const fieldSchema = useFieldSchema();
-  const schema: Schema = useMemo(
+  const schema = useMemo(
     () =>
       fieldSchema.reduceProperties((buf, current) => {
         if (current.name === 'drawer') {

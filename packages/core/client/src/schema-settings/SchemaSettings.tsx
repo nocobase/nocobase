@@ -728,6 +728,7 @@ SchemaSettings.CascaderItem = (props: CascaderProps<any> & { title: any }) => {
           onChange={onChange as any}
           options={options}
           style={{ textAlign: 'right', minWidth: 100 }}
+          {...props}
         />
       </div>
     </SchemaSettings.Item>
