@@ -6,4 +6,5 @@ export default {
   'The phone number is not registered, please register first': '手机号未注册，请先注册',
   'Please keep and enable at least one authenticator': '请至少保留并启用一个认证器',
   'Please enter your username or email': '请输入用户名或邮箱',
+  'Please enter a valid username': '请输入有效的用户名',
 };

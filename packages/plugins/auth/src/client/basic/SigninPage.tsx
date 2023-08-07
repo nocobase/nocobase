@@ -20,7 +20,7 @@ const passwordForm: ISchema = {
             return t("Please enter a valid email");
           }
         } else {
-          return /^[^@.]{2,16}$/.test(value) || t("Please enter a valid username");
+          return /^[^@.<>"'/]{2,16}$/.test(value) || t("Please enter a valid username");
         }
       }}}`,
       'x-decorator': 'FormItem',

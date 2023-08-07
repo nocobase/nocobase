@@ -470,7 +470,7 @@ export default {
   "Verification code": "验证码",
   "Send code": "发送验证码",
   "Retry after {{count}} seconds": "{{count}} 秒后重试",
-  "2 to 16 characters (excluding '@' and '.')": "2到16个字符（不包含'@'和'.'）",
+  '2 to 16 characters (excluding @.<>"\'/)': '2到16个字符（不包含@.<>"\'/）',
 
   "Roles": "角色",
   "Add role": "添加角色",

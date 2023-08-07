@@ -5,7 +5,7 @@ import { registerValidateRules } from '@formily/core';
 
 registerValidateRules({
   username(value) {
-    return /^[^@.]{2,16}$/.test(value) || i18n.t("2 to 16 characters (excluding '@' and '.')");
+    return /^[^@.<>"'/]{2,16}$/.test(value) || i18n.t('2 to 16 characters (excluding @.<>"\'/)');
   },
 });
 
