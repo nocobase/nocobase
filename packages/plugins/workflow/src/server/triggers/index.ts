@@ -2,7 +2,7 @@ import path from 'path';
 import { requireModule } from '@nocobase/utils';
 
 import Plugin from '..';
-import WorkflowModel from '../models/Workflow';
+import type { WorkflowModel } from '../types';
 
 export abstract class Trigger {
   constructor(public readonly plugin: Plugin) {}

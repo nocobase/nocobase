@@ -1,5 +1,4 @@
-import { BaseColumnFieldOptions, Field, FieldContext } from '@nocobase/database';
-import { DataTypes } from 'sequelize';
+import { BaseColumnFieldOptions, DataTypes, Field, FieldContext } from '@nocobase/database';
 import { isMysql, isPg, joinComma, toValue } from '../helpers';
 
 class Polygon extends DataTypes.ABSTRACT {

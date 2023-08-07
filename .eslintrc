@@ -1,4 +1,9 @@
 {
+  "env": {
+    "node": true,
+    "es6": true,
+    "browser": true
+  },
   "extends": [
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
@@ -14,7 +19,9 @@
     "react",
     "react-hooks",
     "prettier",
-    "promise"
+    "promise",
+    "jest-dom",
+    "testing-library"
     //"import"
   ],
   "globals": {
@@ -34,7 +41,10 @@
     }
   },
   "rules": {
+    "@typescript-eslint/no-this-alias": "off",
+    "@typescript-eslint/ban-types": "off",
     "no-unused-vars": "off",
+    "no-useless-catch": "off",
     "@typescript-eslint/no-unused-vars": "off",
     "no-empty-function": "off",
     "@typescript-eslint/no-empty-function": "off",

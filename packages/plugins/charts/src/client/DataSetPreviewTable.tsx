@@ -1,12 +1,5 @@
 import { ISchema } from '@formily/react';
-import {
-  BlockSchemaComponentProvider,
-  FormItem,
-  Input,
-  SchemaComponent,
-  SchemaComponentProvider,
-  TableV2,
-} from '@nocobase/client';
+import { FormItem, Input, SchemaComponent, SchemaComponentProvider, TableV2 } from '@nocobase/client';
 import { Empty, Spin } from 'antd';
 import React from 'react';
 import { useGetDataSet } from './ChartBlockEngine';
@@ -72,9 +65,7 @@ export default ({ queryId, fields }: { queryId: number; fields }) => {
   });
   return (
     <SchemaComponentProvider scope={{ dataSet }} components={{ TableV2, Input, FormItem }}>
-      <BlockSchemaComponentProvider>
-        <SchemaComponent schema={schema} />
-      </BlockSchemaComponentProvider>
+      <SchemaComponent schema={schema} />
     </SchemaComponentProvider>
   );
 };

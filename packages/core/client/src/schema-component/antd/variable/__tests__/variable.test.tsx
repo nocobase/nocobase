@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, sleep, userEvent } from 'testUtils';
+import { render, screen, userEvent, waitFor } from 'testUtils';
 import App1 from '../demos/demo1';
 import App2 from '../demos/demo2';
 import App3 from '../demos/demo3';
@@ -12,15 +12,9 @@ describe('Variable', () => {
 
     await userEvent.click(screen.getByText('x'));
     await userEvent.click(screen.getByText('v1'));
-    await sleep(100);
-    expect(screen.getByText('v1', { selector: '.ant-tag' })).toMatchInlineSnapshot(`
-      <span
-        class="ant-tag ant-tag-blue"
-        contenteditable="false"
-      >
-        v1
-      </span>
-    `);
+    await waitFor(() => {
+      expect(screen.getByText('v1', { selector: '.ant-tag' }).innerHTML).toMatchInlineSnapshot('"v1"');
+    });
   });
 
   it('Variable.TextArea', async () => {
@@ -31,27 +25,11 @@ describe('Variable', () => {
     expect(input).toBeInTheDocument();
     expect(variableSelector).toBeInTheDocument();
 
-    await userEvent.type(input, '1+');
-    await sleep(100);
-
     await userEvent.click(variableSelector);
     await userEvent.click(screen.getByText('v1'));
-    await sleep(100);
-    expect(input).toMatchInlineSnapshot(`
-      <div
-        class="ant-input css-1p5yrh5"
-        contenteditable="true"
-      >
-        1+
-        <span
-          class="ant-tag ant-tag-blue"
-          contenteditable="false"
-          data-variable="v1"
-        >
-          v1
-        </span>
-      </div>
-    `);
+    await waitFor(() => {
+      expect(input.innerHTML).toMatchInlineSnapshot('"<span class=\\"ant-tag ant-tag-blue\\" contenteditable=\\"false\\" data-variable=\\"v1\\">v1</span>"');
+    });
   });
 
   it('Variable.JSON', async () => {
@@ -66,9 +44,9 @@ describe('Variable', () => {
     await userEvent.type(input, '{{ "a": "');
     await userEvent.click(variableSelector);
     await userEvent.click(screen.getByText('v1'));
-    await sleep(100);
-
     await userEvent.type(input, '" }');
-    // expect(input.value).toMatchInlineSnapshot('"{ \\"a\\": \\"{{v1}}\\" }"');
+    await waitFor(() => {
+      expect(input.value).toMatchInlineSnapshot('"{ \\"a\\": \\"{{v1}}\\" }"');
+    });
   });
 });

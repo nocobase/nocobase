@@ -1,9 +1,10 @@
-import React from 'react';
 import { FormOutlined } from '@ant-design/icons';
+import React from 'react';
 import { createFormBlockSchema } from '../utils';
 import { DataBlockInitializer } from './DataBlockInitializer';
 
 export const FormBlockInitializer = (props) => {
+  const { isCusomeizeCreate } = props;
   return (
     <DataBlockInitializer
       {...props}
@@ -11,6 +12,7 @@ export const FormBlockInitializer = (props) => {
       componentType={'FormItem'}
       templateWrap={(templateSchema, { item }) => {
         const s = createFormBlockSchema({
+          isCusomeizeCreate,
           template: templateSchema,
           collection: item.name,
         });

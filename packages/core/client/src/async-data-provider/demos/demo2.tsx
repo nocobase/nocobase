@@ -1,8 +1,7 @@
-import React from 'react';
+import { APIClient, APIClientProvider, SchemaComponent, SchemaComponentProvider, useRequest } from '@nocobase/client';
 import { Table } from 'antd';
 import MockAdapter from 'axios-mock-adapter';
-import { APIClientProvider, SchemaComponentProvider, SchemaComponent, useRequest, APIClient } from '@nocobase/client';
-import { observer } from '@formily/react';
+import React from 'react';
 
 const apiClient = new APIClient();
 
@@ -18,7 +17,9 @@ mock.onGet('/users').reply(200, {
 const TableView = (props) => {
   const { request, ...others } = props;
   const callback = () => props.dataSource || [];
-  const { data, loading } = useRequest(props.request || callback);
+  const { data, loading } = useRequest<{
+    data: any;
+  }>(props.request || callback);
   return <Table {...others} dataSource={data?.data} loading={loading} />;
 };
 

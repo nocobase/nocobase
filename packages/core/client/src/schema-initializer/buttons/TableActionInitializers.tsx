@@ -34,7 +34,7 @@ export const TableActionInitializers = {
           },
           visible: function useVisible() {
             const collection = useCollection();
-            return collection.template !== 'view' && collection.template !== 'file';
+            return (collection.template !== 'view' && collection.template !== 'file') || collection?.writableView;
           },
         },
         {
@@ -47,7 +47,7 @@ export const TableActionInitializers = {
           },
           visible: function useVisible() {
             const collection = useCollection();
-            return (collection as any).template !== 'view';
+            return collection.template !== 'view' || collection?.writableView;
           },
         },
         {
@@ -78,7 +78,7 @@ export const TableActionInitializers = {
       type: 'divider',
       visible: function useVisible() {
         const collection = useCollection();
-        return (collection as any).template !== 'view';
+        return collection.template !== 'view' || collection?.writableView;
       },
     },
     // {
@@ -156,10 +156,23 @@ export const TableActionInitializers = {
             },
           },
         },
+        {
+          type: 'item',
+          title: '{{t("Add record")}}',
+          component: 'CustomizeAddRecordActionInitializer',
+          schema: {
+            'x-align': 'right',
+            'x-decorator': 'ACLActionProvider',
+            'x-acl-action': 'create',
+            'x-acl-action-props': {
+              skipScopeCheck: true,
+            },
+          },
+        },
       ],
       visible: function useVisible() {
         const collection = useCollection();
-        return (collection as any).template !== 'view';
+        return collection.template !== 'view' || collection?.writableView;
       },
     },
   ],

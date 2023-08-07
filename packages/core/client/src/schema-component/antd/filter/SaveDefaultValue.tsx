@@ -16,8 +16,8 @@ export const SaveDefaultValue = (props) => {
   return (
     <Button
       className={css`
-        border-color: rgb(241, 139, 98);
-        color: rgb(241, 139, 98);
+        border-color: var(--colorSettings);
+        color: var(--colorSettings);
       `}
       type={'dashed'}
       onClick={() => {

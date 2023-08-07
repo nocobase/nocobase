@@ -1,10 +1,7 @@
-import { css } from '@emotion/css';
 import { connect } from '@formily/react';
-import { useCollectionManager, useRecord, useRequest } from '@nocobase/client';
-import { CollectionsGraph } from '@nocobase/utils/client';
-import { Col, Input, Modal, Row, Select, Spin, Table, Tag } from 'antd';
-import debounce from 'lodash/debounce';
-import uniq from 'lodash/uniq';
+import { css, useCollectionManager, useRecord, useRequest, useToken } from '@nocobase/client';
+import { CollectionsGraph, lodash } from '@nocobase/utils/client';
+import { App, Col, Input, Row, Select, Spin, Table, Tag } from 'antd';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -63,7 +60,9 @@ const useCollections = () => {
     },
   );
 
-  const res2 = useRequest({
+  const res2 = useRequest<{
+    data: any[];
+  }>({
     url: `collections`,
     params: {
       fields: ['name', 'title', 'hidden', 'category.name', 'category.color', 'category.sort'],
@@ -72,7 +71,9 @@ const useCollections = () => {
     },
   });
 
-  const res3 = useRequest({
+  const res3 = useRequest<{
+    data: any[];
+  }>({
     url: `collectionCategories`,
     params: {
       sort: 'sort',
@@ -116,7 +117,7 @@ const useRemovedDataSource = ({ collections, removed }) => {
   }, [collections, removed, filter]);
   const setNameFilter = useMemo(
     () =>
-      debounce((name) => {
+      lodash.debounce((name) => {
         setFilter({
           ...filter,
           name,
@@ -151,7 +152,7 @@ const useAddedDataSource = ({ collections, removed }) => {
   });
   const setNameFilter = useMemo(
     () =>
-      debounce((name) => {
+      lodash.debounce((name) => {
         setFilter({
           ...filter,
           name,
@@ -180,6 +181,8 @@ export const TableTransfer = connect((props) => {
   const addedDataSource = useAddedDataSource({ collections, removed });
   const removedDataSource = useRemovedDataSource({ collections, removed });
   const { t } = useTranslation('multi-app-share-collection');
+  const { modal } = App.useApp();
+  const { token } = useToken();
   const columns = useMemo(
     () => [
       {
@@ -193,7 +196,12 @@ export const TableTransfer = connect((props) => {
       {
         title: t('Collection category'),
         dataIndex: 'category',
-        render: (categories) => categories.map((category) => <Tag color={category.color}>{category.name}</Tag>),
+        render: (categories) =>
+          categories.map((category) => (
+            <Tag key={category.name} color={category.color}>
+              {category.name}
+            </Tag>
+          )),
       },
     ],
     [],
@@ -222,10 +230,10 @@ export const TableTransfer = connect((props) => {
               margin-bottom: 8px;
             `}
           >
-            <strong style={{ fontSize: 16 }}>{t('Unshared collections')}</strong>
+            <strong style={{ fontSize: token.fontSizeLG, color: token.colorText }}>{t('Unshared collections')}</strong>
             <Input.Group compact style={{ width: 360 }}>
               <Select
-                dropdownMatchSelectWidth={false}
+                popupMatchSelectWidth={false}
                 onChange={(value) => {
                   removedDataSource.setCategoryFilter(value);
                 }}
@@ -263,7 +271,7 @@ export const TableTransfer = connect((props) => {
             // dataSource={collections.filter((collection) => removed.includes(collection.name))}
             dataSource={removedDataSource.dataSource}
             scroll={{ y: 'calc(100vh - 260px)' }}
-            onRow={({ name, disabled }) => ({
+            onRow={({ name, disabled }: any) => ({
               onClick: () => {
                 if (disabled) return;
                 const adding = findAddable(name);
@@ -275,7 +283,7 @@ export const TableTransfer = connect((props) => {
                 if (adding.length === 1) {
                   return change();
                 }
-                Modal.confirm({
+                modal.confirm({
                   title: t('Are you sure to add the following collections?'),
                   width: '60%',
                   content: (
@@ -307,10 +315,10 @@ export const TableTransfer = connect((props) => {
               margin-bottom: 8px;
             `}
           >
-            <strong style={{ fontSize: 16 }}>{t('Shared collections')}</strong>
+            <strong style={{ fontSize: token.fontSizeLG, color: token.colorText }}>{t('Shared collections')}</strong>
             <Input.Group compact style={{ width: 360 }}>
               <Select
-                dropdownMatchSelectWidth={false}
+                popupMatchSelectWidth={false}
                 onChange={(value) => {
                   addedDataSource.setCategoryFilter(value);
                 }}
@@ -336,7 +344,7 @@ export const TableTransfer = connect((props) => {
               type: 'checkbox',
               selectedRowKeys: selectedRowKeys2,
               onChange(selectedRowKeys) {
-                const values = uniq(removed.concat(selectedRowKeys));
+                const values = lodash.uniq(removed.concat(selectedRowKeys));
                 setSelected(values);
                 onChange(values);
                 setSelectedRowKeys2([]);
@@ -353,14 +361,14 @@ export const TableTransfer = connect((props) => {
                 const removing = findRemovable(name);
                 const change = () => {
                   removed.push(...removing);
-                  const values = uniq([...removed]);
+                  const values = lodash.uniq([...removed]);
                   setSelected(values);
                   onChange(values);
                 };
                 if (removing.length === 1) {
                   return change();
                 }
-                Modal.confirm({
+                modal.confirm({
                   title: t('Are you sure to remove the following collections?'),
                   width: '60%',
                   content: (

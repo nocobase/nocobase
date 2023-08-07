@@ -1,5 +1,5 @@
 import { PlusOutlined } from '@ant-design/icons';
-import { ArrayTable } from '@formily/antd';
+import { ArrayTable } from '@formily/antd-v5';
 import { useField, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Button, Dropdown, MenuProps } from 'antd';
@@ -9,10 +9,11 @@ import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
-import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
+import useDialect from '../hooks/useDialect';
 import { IField } from '../interfaces/types';
+import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import * as components from './components';
 import { getOptions } from './interfaces';
 
@@ -25,6 +26,7 @@ const getSchema = (schema: IField, record: any, compile) => {
 
   if (schema.hasDefaultValue === true) {
     properties['defaultValue'] = cloneDeep(schema?.default?.uiSchema);
+    properties.defaultValue.required = false;
     properties['defaultValue']['title'] = compile('{{ t("Default value") }}');
     properties['defaultValue']['x-decorator'] = 'FormItem';
     properties['defaultValue']['x-reactions'] = {
@@ -120,6 +122,7 @@ export const useCollectionFieldFormValues = () => {
     getValues() {
       const values = cloneDeep(form.values);
       if (values.autoCreateReverseField) {
+        /* empty */
       } else {
         delete values.reverseField;
       }
@@ -143,6 +146,7 @@ const useCreateCollectionField = () => {
       field.data.loading = true;
       const values = cloneDeep(form.values);
       if (values.autoCreateReverseField) {
+        /* empty */
       } else {
         delete values.reverseField;
       }
@@ -167,13 +171,23 @@ export const AddCollectionField = (props) => {
 };
 
 export const AddFieldAction = (props) => {
-  const { scope, getContainer, item: record, children, trigger, align } = props;
-  const { getInterface, getTemplate } = useCollectionManager();
+  const { scope, getContainer, item: record, children, trigger, align, database } = props;
+  const { getInterface, getTemplate, collections } = useCollectionManager();
   const [visible, setVisible] = useState(false);
   const [targetScope, setTargetScope] = useState();
   const [schema, setSchema] = useState({});
   const compile = useCompile();
   const { t } = useTranslation();
+  const { isDialect } = useDialect();
+
+  const currentCollections = useMemo(() => {
+    return collections.map((v) => {
+      return {
+        label: compile(v.title),
+        value: v.name,
+      };
+    });
+  }, []);
   const getFieldOptions = useCallback(() => {
     const { availableFieldInterfaces } = getTemplate(record.template) || {};
     const { exclude, include } = availableFieldInterfaces || {};
@@ -185,6 +199,8 @@ export const AddFieldAction = (props) => {
           children: v.children.filter((v) => {
             if (v.value === 'id') {
               return typeof record['autoGenId'] === 'boolean' ? record['autoGenId'] : true;
+            } else if (v.value === 'tableoid') {
+              return database?.dialect === 'postgres';
             } else {
               return typeof record[v.value] === 'boolean' ? record[v.value] : true;
             }
@@ -241,7 +257,6 @@ export const AddFieldAction = (props) => {
       };
     });
   }, [getFieldOptions]);
-
   const menu = useMemo<MenuProps>(() => {
     return {
       style: {
@@ -286,6 +301,9 @@ export const AddFieldAction = (props) => {
               record,
               showReverseFieldConfig: true,
               targetScope,
+              collections: currentCollections,
+              isDialect,
+              disabledJSONB: false,
               ...scope,
             }}
           />

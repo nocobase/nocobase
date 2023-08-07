@@ -1,6 +1,5 @@
-import { css } from '@emotion/css';
 import { useForm } from '@formily/react';
-import { useCollectionFilterOptions } from '@nocobase/client';
+import { css, useCollectionFilterOptions } from '@nocobase/client';
 import { NAMESPACE } from '../locale';
 
 export const collection = {
@@ -11,7 +10,7 @@ export const collection = {
   'x-decorator': 'FormItem',
   'x-component': 'CollectionSelect',
   'x-component-props': {
-    dropdownMatchSelectWidth: false,
+    className: 'auto-width',
   },
 };
 
@@ -53,14 +52,13 @@ export const filter = {
 export const appends = {
   type: 'array',
   title: `{{t("Preload associations", { ns: "${NAMESPACE}" })}}`,
-  description: `{{t("Please select the associated fields that need to be accessed in subsequent nodes", { ns: "${NAMESPACE}" })}}`,
+  description: `{{t("Please select the associated fields that need to be accessed in subsequent nodes. With more than two levels of to-many associations may cause performance issue, please use with caution.", { ns: "${NAMESPACE}" })}}`,
   'x-decorator': 'FormItem',
-  'x-component': 'FieldsSelect',
+  'x-component': 'AppendsTreeSelect',
   'x-component-props': {
-    mode: 'multiple',
-    placeholder: '{{t("Select field")}}',
-    filter(field) {
-      return ['linkTo', 'belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type);
+    useCollection() {
+      const { values } = useForm();
+      return values?.collection;
     },
   },
   'x-reactions': [

@@ -10,6 +10,7 @@ import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AssociationFieldContext } from './context';
 import { useAssociationFieldContext } from './hooks';
+import { RecordProvider, useRecord } from '../../../record-provider';
 
 export const Nester = (props) => {
   const { options } = useContext(AssociationFieldContext);
@@ -63,9 +64,8 @@ const ToManyNester = observer(
                             insertCount: 1,
                           });
                           field.value.splice(index + 1, 0, {});
-
-                          each(field.form.fields, (field, key) => {
-                            if (!field) {
+                          each(field.form.fields, (targetField, key) => {
+                            if (!targetField) {
                               delete field.form.fields[key];
                             }
                           });
@@ -93,7 +93,9 @@ const ToManyNester = observer(
                   </Tooltip>
                 )}
               </div>
-              <RecursionField onlyRenderProperties basePath={field.address.concat(index)} schema={fieldSchema} />
+              <RecordProvider record={value}>
+                <RecursionField onlyRenderProperties basePath={field.address.concat(index)} schema={fieldSchema} />
+              </RecordProvider>
               <Divider />
             </React.Fragment>
           );

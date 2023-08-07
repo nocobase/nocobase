@@ -30,9 +30,9 @@ export const KanbanActionInitializers = {
               skipScopeCheck: true,
             },
           },
-          visible: () => {
+          visible: function useVisible() {
             const collection = useCollection();
-            return (collection as any).template !== 'view';
+            return (collection as any).template !== 'view' || collection?.writableView;
           },
         },
       ],

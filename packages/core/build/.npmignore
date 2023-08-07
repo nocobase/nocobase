@@ -1,4 +1,3 @@
-/src/fixtures
-/src/**/*.test.ts
-/lib/**/*.test.js
+/node_modules
+/src
 /.local

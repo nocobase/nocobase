@@ -1,7 +1,6 @@
 import { i18n, IField, interfacesProperties } from '@nocobase/client';
 import { Evaluator, evaluators } from '@nocobase/evaluators/client';
-import { Registry } from '@nocobase/utils/client';
-import { cloneDeep } from 'lodash';
+import { lodash, Registry } from '@nocobase/utils/client';
 import { NAMESPACE } from '../locale';
 
 // const booleanReactions = [
@@ -40,18 +39,18 @@ const datetimeReactions = [
 const { defaultProps, dateTimeProps, operators } = interfacesProperties;
 const datetimeProperties = {
   'uiSchema.x-component-props.dateFormat': {
-    ...cloneDeep(dateTimeProps['uiSchema.x-component-props.dateFormat']),
+    ...lodash.cloneDeep(dateTimeProps['uiSchema.x-component-props.dateFormat']),
     'x-reactions': datetimeReactions,
   },
   'uiSchema.x-component-props.showTime': {
-    ...cloneDeep(dateTimeProps['uiSchema.x-component-props.showTime']),
+    ...lodash.cloneDeep(dateTimeProps['uiSchema.x-component-props.showTime']),
     'x-reactions': [
       ...(dateTimeProps['uiSchema.x-component-props.showTime']['x-reactions'] as string[]),
       ...datetimeReactions,
     ],
   },
   'uiSchema.x-component-props.timeFormat': {
-    ...cloneDeep(dateTimeProps['uiSchema.x-component-props.timeFormat']),
+    ...lodash.cloneDeep(dateTimeProps['uiSchema.x-component-props.timeFormat']),
   },
 };
 
@@ -198,4 +197,5 @@ export default {
   filterable: {
     operators: operators.number,
   },
+  titleUsable: true,
 } as IField;

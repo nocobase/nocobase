@@ -1,9 +1,9 @@
-import { css, cx } from '@emotion/css';
 import { useFieldSchema } from '@formily/react';
-import { RouteSwitch, SchemaComponent, SortableItem, useDesigner } from '@nocobase/client';
-import React, { useMemo } from 'react';
-import { Navigate, RouteProps, useLocation, useParams } from 'react-router-dom';
+import { cx, SchemaComponent, SortableItem, useDesigner, useToken } from '@nocobase/client';
+import React, { useEffect } from 'react';
+import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ContainerDesigner } from './Container.Designer';
+import useStyles from './style';
 
 const findGrid = (schema, uid) => {
   return schema.reduceProperties((final, next) => {
@@ -29,8 +29,11 @@ const TabContentComponent = () => {
 };
 
 const InternalContainer: React.FC = (props) => {
+  const { styles } = useStyles();
+  const { token } = useToken();
   const Designer = useDesigner();
   const fieldSchema = useFieldSchema();
+  const navigate = useNavigate();
   const params = useParams<{ name: string }>();
   const location = useLocation();
   const tabBarSchema = fieldSchema?.properties?.['tabBar'];
@@ -39,58 +42,24 @@ const InternalContainer: React.FC = (props) => {
   if (tabBarCurrentFirstKey) {
     redirectToUid = tabBarSchema?.properties[tabBarCurrentFirstKey]?.['x-uid'];
   }
-
-  const tabRoutes = useMemo<RouteProps[]>(() => {
-    if (!redirectToUid) {
-      return [];
+  useEffect(() => {
+    if (redirectToUid && !params.name) {
+      const locationPath = location.pathname.endsWith('/') ? location.pathname.slice(0, -1) : location.pathname;
+      navigate(`${locationPath}/tab_${redirectToUid}`, { replace: true });
     }
-    const locationPath = location.pathname.endsWith('/') ? location.pathname.slice(0, -1) : location.pathname;
-
-    return [
-      !params.name
-        ? {
-          type: 'redirect',
-          to: `${locationPath}/tab_${redirectToUid}`,
-          from: location.pathname,
-          }
-        : null,
-      {
-        type: 'route',
-        path: location.pathname,
-        component: TabContentComponent,
-      },
-    ].filter(Boolean) as any[];
-  }, [redirectToUid, params.name, location.pathname]);
+  }, [location.pathname, navigate, params.name, redirectToUid]);
 
   return (
-    <SortableItem
-      eid="nb-mobile-scroll-wrapper"
-      className={cx(
-        'nb-mobile-container',
-        css`
-          & > .general-schema-designer > .general-schema-designer-icons {
-            right: unset;
-            left: 2px;
-          }
-          background: #f0f2f5;
-          display: flex;
-          flex-direction: column;
-          width: 100%;
-          height: 100%;
-          overflow-y: scroll;
-          position: initial !important;
-        `,
-      )}
-    >
+    <SortableItem eid="nb-mobile-scroll-wrapper" className={cx('nb-mobile-container', styles.mobileContainer)}>
       <Designer></Designer>
       <div
         style={{
-          paddingBottom: tabRoutes.length ? '50px' : '0px',
+          paddingBottom: redirectToUid ? token.paddingLG * 2 : 0,
         }}
-        className={cx('nb-mobile-container-content')}
+        className="nb-mobile-container-content"
       >
-        {tabRoutes.length ? (
-          <RouteSwitch routes={tabRoutes as any} />
+        {redirectToUid ? (
+          <TabContentComponent />
         ) : (
           <SchemaComponent
             filterProperties={(schema) => {
@@ -100,22 +69,7 @@ const InternalContainer: React.FC = (props) => {
           />
         )}
       </div>
-      <div
-        className={cx(
-          'nb-mobile-container-tab-bar',
-          css`
-            & > .general-schema-designer {
-              --nb-designer-top: 20px;
-            }
-            position: absolute;
-            background: #ffffff;
-            width: 100%;
-            bottom: 0;
-            left: 0;
-            z-index: 1000;
-          `,
-        )}
-      >
+      <div className={cx('nb-mobile-container-tab-bar', styles.tabBar)}>
         <SchemaComponent
           onlyRenderProperties
           filterProperties={(schema) => {

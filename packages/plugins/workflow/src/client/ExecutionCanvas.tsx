@@ -1,24 +1,26 @@
-import React, { useEffect, useState } from 'react';
-import { Tag, Breadcrumb } from 'antd';
-import { css } from '@emotion/css';
-import { Link } from 'react-router-dom';
-
 import {
   ActionContextProvider,
+  css,
   SchemaComponent,
+  useAPIClient,
   useCompile,
   useDocumentTitle,
   useResourceActionContext,
 } from '@nocobase/client';
 import { str2moment } from '@nocobase/utils/client';
-
-import { FlowContext, useFlowContext } from './FlowContext';
-import { nodeTitleClass } from './style';
-import { ExecutionStatusOptionsMap, JobStatusOptions } from './constants';
-import { lang, NAMESPACE } from './locale';
-import { linkNodes } from './utils';
-import { instructions } from './nodes';
+import { Breadcrumb, Dropdown, Space, Tag } from 'antd';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { CanvasContent } from './CanvasContent';
+import { ExecutionStatusOptionsMap, JobStatusOptions, JobStatusOptionsMap } from './constants';
+import { FlowContext, useFlowContext } from './FlowContext';
+import { lang, NAMESPACE } from './locale';
+import { instructions } from './nodes';
+import useStyles from './style';
+import { linkNodes } from './utils';
+import { DownOutlined } from '@ant-design/icons';
+import { StatusIcon } from './components/StatusIcon';
+import classnames from 'classnames';
 
 function attachJobs(nodes, jobs: any[] = []): void {
   const nodesMap = new Map();
@@ -43,6 +45,8 @@ function attachJobs(nodes, jobs: any[] = []): void {
 function JobModal() {
   const compile = useCompile();
   const { viewJob: job, setViewJob } = useFlowContext();
+  const { styles } = useStyles();
+
   const { node = {} } = job ?? {};
   const instruction = instructions.get(node.type);
 
@@ -60,7 +64,7 @@ function JobModal() {
               },
               'x-component': 'Action.Modal',
               title: (
-                <div className={nodeTitleClass}>
+                <div className={styles.nodeTitleClass}>
                   <Tag>{compile(instruction?.title)}</Tag>
                   <strong>{node.title}</strong>
                   <span className="workflow-node-id">#{node.id}</span>
@@ -107,6 +111,96 @@ function JobModal() {
   );
 }
 
+function ExecutionsDropdown(props) {
+  const { execution } = useFlowContext();
+  const apiClient = useAPIClient();
+  const navigate = useNavigate();
+  const { styles } = useStyles();
+  const [executionsBefore, setExecutionsBefore] = useState([]);
+  const [executionsAfter, setExecutionsAfter] = useState([]);
+
+  useEffect(() => {
+    if (!execution) {
+      return;
+    }
+    apiClient
+      .resource('executions')
+      .list({
+        filter: {
+          key: execution.key,
+          id: {
+            $lt: execution.id,
+          },
+        },
+        sort: '-createdAt',
+        pageSize: 10,
+        fields: ['id', 'status', 'createdAt'],
+      })
+      .then(({ data }) => {
+        setExecutionsBefore(data.data);
+      })
+      .catch(() => {});
+  }, [execution]);
+
+  useEffect(() => {
+    if (!execution) {
+      return;
+    }
+    apiClient
+      .resource('executions')
+      .list({
+        filter: {
+          key: execution.key,
+          id: {
+            $gt: execution.id,
+          },
+        },
+        sort: 'createdAt',
+        pageSize: 10,
+        fields: ['id', 'status', 'createdAt'],
+      })
+      .then(({ data }) => {
+        setExecutionsAfter(data.data.reverse());
+      })
+      .catch(() => {});
+  }, [execution]);
+
+  const onClick = useCallback(
+    ({ key }) => {
+      if (key != execution.id) {
+        navigate(`/admin/settings/workflow/executions/${key}`);
+      }
+    },
+    [execution],
+  );
+
+  return execution ? (
+    <Dropdown
+      menu={{
+        className: styles.executionsDropdownRowClass,
+        onClick,
+        items: [...executionsAfter, execution, ...executionsBefore].map((item) => {
+          return {
+            key: item.id,
+            label: (
+              <span className={classnames('row', { current: item.id === execution.id })}>
+                <span className="id">{`#${item.id}`}</span>
+                <time>{str2moment(item.createdAt).format('YYYY-MM-DD HH:mm:ss')}</time>
+              </span>
+            ),
+            icon: <StatusIcon status={item.status} />,
+          };
+        }),
+      }}
+    >
+      <Space>
+        <strong>{`#${execution.id}`}</strong>
+        <DownOutlined />
+      </Space>
+    </Dropdown>
+  ) : null;
+}
+
 export function ExecutionCanvas() {
   const compile = useCompile();
   const { data, loading } = useResourceActionContext();
@@ -146,17 +240,13 @@ export function ExecutionCanvas() {
     >
       <div className="workflow-toolbar">
         <header>
-          <Breadcrumb>
-            <Breadcrumb.Item>
-              <Link to={`/admin/settings/workflow/workflows`}>{lang('Workflow')}</Link>
-            </Breadcrumb.Item>
-            <Breadcrumb.Item>
-              <Link to={`/admin/settings/workflow/workflows/${workflow.id}`}>{workflow.title}</Link>
-            </Breadcrumb.Item>
-            <Breadcrumb.Item>
-              <strong>{`#${execution.id}`}</strong>
-            </Breadcrumb.Item>
-          </Breadcrumb>
+          <Breadcrumb
+            items={[
+              { title: <Link to={`/admin/settings/workflow/workflows`}>{lang('Workflow')}</Link> },
+              { title: <Link to={`/admin/settings/workflow/workflows/${workflow.id}`}>{workflow.title}</Link> },
+              { title: <ExecutionsDropdown /> },
+            ]}
+          />
         </header>
         <aside>
           <Tag color={statusOption.color}>{compile(statusOption.label)}</Tag>

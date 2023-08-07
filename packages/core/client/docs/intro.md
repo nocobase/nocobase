@@ -8,91 +8,47 @@ order: 1
 
 示例：
 
-```tsx | pure
-const app = new Application();
-
-app.use([MemoryRouter, { initialEntries: ['/'] }]);
-
-app.use(({ children }) => {
-  const location = useLocation();
-  if (location.pathname === '/hello') {
-    return <div>Hello NocoBase!</div>;
-  }
-  return children;
-});
-
-export default app.compose();
-```
-
-## RouteSwitch
-
-稍微复杂的应用都会用到路由来管理前端的页面，如下：
-
-```jsx
-/**
- * defaultShowCode: true
- * title: Router
- */
-import React from 'react';
-import { Route, Routes, Link, MemoryRouter as Router } from 'react-router-dom';
-
-const Home = () => <h1>Home</h1>;
-const About = () => <h1>About</h1>;
-
-const App = () => (
-  <Router initialEntries={['/']}>
-    <Link to={'/'}>Home</Link>, <Link to={'/about'}>About</Link>
-    <Routes>
-      <Route path="/" element={<Home />}></Route>
-      <Route path="/about" element={<About />}></Route>
-    </Routes>
-  </Router>
-);
-
-export default App;
-```
-
-上述例子，组件经由路由转发，`/` 转发给 `Home`，`/about` 转发给 `About`。这种 JSX 的写法，对于熟悉 JSX 的开发来说，十分便捷，但需要开发来编写和维护，不符合 NocoBase 低代码、无代码的设计理念。所以将 Route 做了封装和配置化改造，如下：
-
 ```tsx
 /**
  * defaultShowCode: true
- * title: RouteSwitch
  */
 import React from 'react';
-import { Link, MemoryRouter as Router } from 'react-router-dom';
-import { RouteRedirectProps, RouteSwitchProvider, RouteSwitch } from '@nocobase/client';
+import { Link, Outlet } from 'react-router-dom';
+import { Application } from '@nocobase/client';
 
 const Home = () => <h1>Home</h1>;
 const About = () => <h1>About</h1>;
 
-const routes: RouteRedirectProps[] = [
-  {
-    type: 'route',
-    path: '/',
-    component: 'Home',
-  },
-  {
-    type: 'route',
-    path: '/about',
-    component: 'About',
-  },
-];
+const Layout = () => {
+  return <div>
+    <div><Link to={'/'}>Home</Link>, <Link to={'/about'}>About</Link></div>
+    <Outlet />
+  </div>
+}
 
-export default () => {
-  return (
-    <RouteSwitchProvider components={{ Home, About }}>
-      <Router initialEntries={['/']}>
-        <Link to={'/'}>Home</Link>, <Link to={'/about'}>About</Link>
-        <RouteSwitch routes={routes} />
-      </Router>
-    </RouteSwitchProvider>
-  );
-};
+const app = new Application({
+  router: {
+    type: 'memory',
+    initialEntries: ['/']
+  }
+})
+
+app.router.add('root', {
+  element: <Layout />
+})
+
+app.router.add('root.home', {
+  path: '/',
+  element: <Home />
+})
+
+app.router.add('root.about', {
+  path: '/about',
+  element: <About />
+})
+
+export default app.getRootComponent();
 ```
-
-- 由 RouteSwitchProvider 配置 components，由开发编写，以 Layout 或 Template 的方式提供给 RouteSwitch 使用。
-- 由 RouteSwitch 配置 routes，JSON 的方式，可以由后端获取，方便后续的动态化、无代码的支持。
 
 ## SchemaComponent
 
@@ -459,101 +415,6 @@ export default function App() {
 }
 ```
 
-## RouteSwitch + SchemaComponent
-
-当路由和组件都可以配置之后，可以进一步将二者结合，例子如下：
-
-```tsx
-/**
- * defaultShowCode: true
- * title: RouteSwitch + SchemaComponent
- */
-import React, { useMemo, useEffect } from 'react';
-import { Link, MemoryRouter as Router } from 'react-router-dom';
-import {
-  RouteRedirectProps,
-  RouteSwitchProvider,
-  RouteSwitch,
-  useRoute,
-  SchemaComponentProvider,
-  SchemaComponent,
-  useDesignable,
-  useSchemaComponentContext,
-} from '@nocobase/client';
-import { Spin, Button } from 'antd';
-import { observer, Schema } from '@formily/react';
-
-const Hello = observer(({ name }) => {
-  const { patch, remove } = useDesignable();
-  return (
-    <div>
-      <h1>Hello {name}!</h1>
-      <Button
-        onClick={() => {
-          patch('x-component-props.name', Math.random());
-        }}
-      >更新</Button>
-    </div>
-  )
-}, { displayName: 'Hello' });
-
-const RouteSchemaComponent = (props) => {
-  const route = useRoute();
-  const { reset } = useSchemaComponentContext();
-  useEffect(() => {
-    reset();
-  }, route.schema);
-  return <SchemaComponent schema={route.schema}/>
-}
-
-const routes: RouteRedirectProps[] = [
-  {
-    type: 'route',
-    path: '/',
-    component: 'RouteSchemaComponent',
-    schema: {
-      name: 'home',
-      'x-component': 'Hello',
-      'x-component-props': {
-        name: 'Home',
-      },
-    },
-  },
-  {
-    type: 'route',
-    path: '/about',
-    component: 'RouteSchemaComponent',
-    schema: {
-      name: 'home',
-      'x-component': 'Hello',
-      'x-component-props': {
-        name: 'About',
-      },
-    },
-  },
-];
-
-export default () => {
-  return (
-    <SchemaComponentProvider components={{ Hello }}>
-      <RouteSwitchProvider components={{ RouteSchemaComponent }}>
-        <Router initialEntries={['/']}>
-          <Link to={'/'}>Home</Link>, <Link to={'/about'}>About</Link>
-          <RouteSwitch routes={routes} />
-        </Router>
-      </RouteSwitchProvider>
-    </SchemaComponentProvider>
-  );
-};
-```
-
-以上例子实现了路由和组件层面的配置化，在开发层面配置了两个组件：
-
-- `<RouteSchemaComponent/>` 简易的可以在路由里配置 schema 的方案
-- `<Hello/>` 自定义的 Schema 组件
-
-为了让大家更加能感受到 Schema 组件的不一样之处，例子添加了一个简易的随机更新 `x-component-props.name` 值的按钮，当路由切换后，更新后的 name 并不会被重置。这也是 Schema 组件的 Designable 的能力，可以任意的动态更新 schema 配置，实时更新，实时渲染。
-
 ## Designable
 
 SchemaComponent 基于 Formily 的 SchemaField，Formily 提供了 [Designable](https://github.com/alibaba/designable) 来解决 Schema 的配置问题，但是这套方案：
@@ -781,7 +642,6 @@ const { data, loading } = useRequest();
 
 客户端的扩展以 Providers 的形式存在，提供各种可供组件使用的 Context，可全局也可以局部使用。上文我们已经介绍了核心的三个 Providers：
 
-- RouteSwitchProvider，提供配置路由所需的 Layout 和 Template 组件
 - SchemaComponentProvider，提供配置 Schema 所需的各种组件
 - ApiClientProvider，提供客户端 SDK
 
@@ -800,16 +660,14 @@ const { data, loading } = useRequest();
 ```tsx | pure
 <ApiClientProvider>
   <SchemaComponentProvider>
-    <RouteSwitchProvider>
       {...}
-    </RouteSwitchProvider>
   </SchemaComponentProvider>
 </ApiClientProvider>
 ```
 
 但是这样的方式不利于 Providers 的管理和扩展，为此提炼了 `compose()` 函数用于配置多个 providers，如下：
 
-<code id='intro-demo2' defaultShowCode="true" titile="compose" src="../src/application/demos/demo1/index.tsx"></code>
+<code id='intro-demo2' defaultShowCode="true" titile="compose" src="../src/application/demos/demo1.tsx"></code>
 
 ## Application
 

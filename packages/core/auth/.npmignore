@@ -1,4 +1,2 @@
-node_modules
-*.log
-__tests__
-src
+/node_modules
+/src

@@ -28,6 +28,7 @@ export const select: IField = {
   filterable: {
     operators: operators.enumType,
   },
+  titleUsable: true,
   schemaInitialize(schema: ISchema, { block }) {
     const props = (schema['x-component-props'] = schema['x-component-props'] || {});
     props.style = {

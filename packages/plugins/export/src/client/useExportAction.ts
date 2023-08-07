@@ -6,8 +6,8 @@ import {
   useCollectionManager,
   useCompile,
 } from '@nocobase/client';
+import lodash from 'lodash';
 import { saveAs } from 'file-saver';
-import { cloneDeep } from 'lodash';
 import { useTranslation } from 'react-i18next';
 
 export const useExportAction = () => {
@@ -20,7 +20,7 @@ export const useExportAction = () => {
   const { t } = useTranslation();
   return {
     async onClick() {
-      const { exportSettings } = cloneDeep(actionSchema?.['x-action-settings'] ?? {});
+      const { exportSettings } = lodash.cloneDeep(actionSchema?.['x-action-settings'] ?? {});
       exportSettings.forEach((es) => {
         const { uiSchema, interface: fieldInterface } =
           getCollectionJoinField(`${name}.${es.dataIndex.join('.')}`) ?? {};

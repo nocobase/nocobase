@@ -84,6 +84,8 @@ const sidebar = {
         },
         // '/welcome/release/index',
         // '/welcome/release/v08-changelog',
+        '/welcome/release/v12-changelog',
+        '/welcome/release/v11-changelog',
         '/welcome/release/v10-changelog',
       ],
     },
@@ -189,7 +191,7 @@ const sidebar = {
       children: [
         '/development/client',
         {
-          title: 'UI 设计器',
+          title: 'UI designer',
           'title.zh-CN': 'UI 设计器',
           'title.TR-TR': 'Kullanıcı Arayüz Tasarımcısı',
           children: [
@@ -260,7 +262,7 @@ const sidebar = {
       children: [
         // '/api/client',
         '/api/client/application',
-        '/api/client/route-switch',
+        '/api/client/router',
         {
           title: 'SchemaDesigner',
           'title.zh-CN': 'SchemaDesigner',

@@ -23,13 +23,9 @@ import { flatData, getLabelFormatValue, useLabelUiSchema } from './util';
 
 const useTableSelectorProps = () => {
   const field: any = useField();
-  const {
-    multiple,
-    options = [],
-    setSelectedRows,
-    selectedRows: rcSelectRows = [],
-    onChange,
-  } = useContext(RecordPickerContext);
+  const { multiple, options = [], setSelectedRows, selectedRows: rcSelectRows = [], onChange } = useContext(
+    RecordPickerContext,
+  );
   const { onRowSelectionChange, rowKey = 'id', ...others } = useTsp();
   const { setVisible } = useActionContext();
   return {
@@ -62,7 +58,7 @@ const useTableSelectorProps = () => {
 
 export const InternalPicker = observer(
   (props: any) => {
-    const { value, multiple, onChange, quickUpload, selectFile, ...others } = props;
+    const { value, multiple, onChange, quickUpload, selectFile, shouldMountElement, ...others } = props;
     const field: any = useField();
     const fieldNames = useFieldNames(props);
     const [visibleSelector, setVisibleSelector] = useState(false);
@@ -133,7 +129,7 @@ export const InternalPicker = observer(
           <div style={{ width: '100%' }}>
             <Select
               style={{ width: '100%' }}
-              dropdownMatchSelectWidth={false}
+              popupMatchSelectWidth={false}
               {...others}
               mode={multiple ? 'multiple' : props.mode}
               fieldNames={fieldNames}
@@ -176,7 +172,13 @@ export const InternalPicker = observer(
             </RecordProvider>
           )}
         </Input.Group>
-        <ActionContextProvider value={{ openMode: 'drawer', visible: visibleSelector, setVisible: setVisibleSelector }}>
+        <ActionContextProvider
+          value={{
+            openMode: 'drawer',
+            visible: visibleSelector,
+            setVisible: setVisibleSelector,
+          }}
+        >
           <RecordPickerProvider {...pickerProps}>
             <CollectionProvider name={collectionField?.target}>
               <FormProvider>

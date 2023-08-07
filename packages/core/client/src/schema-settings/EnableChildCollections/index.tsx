@@ -1,8 +1,8 @@
 import { observer, useForm } from '@formily/react';
-import React from 'react';
 import { action } from '@formily/reactive';
-import { SchemaComponent, useCompile } from '../../schema-component';
+import React from 'react';
 import { useCollectionManager } from '../../collection-manager';
+import { SchemaComponent, useCompile } from '../../schema-component';
 
 export const EnableChildCollections = observer(
   (props: any) => {
@@ -16,6 +16,7 @@ export const EnableChildCollections = observer(
     const useAsyncDataSource = (service: any) => {
       return (field: any, options?: any) => {
         field.loading = true;
+        // eslint-disable-next-line promise/catch-or-return
         service(field, options).then(
           action.bound((data: any) => {
             field.dataSource = data;
@@ -28,7 +29,7 @@ export const EnableChildCollections = observer(
       };
     };
     const loadData = async (field) => {
-      const { childrenCollections: childCollections } = form.values?.enableChildren;
+      const { childrenCollections: childCollections } = form.values?.enableChildren || {};
       return childrenCollections
         .filter((v) => {
           return !childCollections.find((k) => k.collection === v.name) || field.initialValue || v.name === field.value;

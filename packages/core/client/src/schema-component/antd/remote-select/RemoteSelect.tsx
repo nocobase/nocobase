@@ -1,18 +1,17 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty, useField, useFieldSchema, useForm } from '@formily/react';
+import dayjs from 'dayjs';
 import { Divider, SelectProps, Tag } from 'antd';
 import flat from 'flat';
-import { uniqBy } from 'lodash';
-import moment from 'moment';
+import _, { uniqBy } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
-import { useBlockRequestContext } from '../../../block-provider/BlockProvider';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { getInnermostKeyAndValue } from '../../common/utils/uitls';
-import { defaultFieldNames, Select } from '../select';
+import { useCompile } from '../../hooks';
+import { Select, defaultFieldNames } from '../select';
 import { ReadPretty } from './ReadPretty';
-import { extractFilterfield, extractValuesByPattern, generatePattern, parseVariables } from './utils';
 const EMPTY = 'N/A';
 
 export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
@@ -34,6 +33,7 @@ const InternalRemoteSelect = connect(
       service = {},
       wait = 300,
       value,
+      defaultValue,
       objectValue,
       manual = true,
       mapOptions,
@@ -47,7 +47,6 @@ const InternalRemoteSelect = connect(
     const fieldSchema = useFieldSchema();
     const isQuickAdd = fieldSchema['x-component-props']?.addMode === 'quickAdd';
     const field = useField();
-    const ctx = useBlockRequestContext();
     const { getField } = useCollection();
     const searchData = useRef(null);
     const { getCollectionJoinField, getInterface } = useCollectionManager();
@@ -64,13 +63,14 @@ const InternalRemoteSelect = connect(
       }
       return '$includes';
     }, [targetField]);
+    const compile = useCompile();
 
     const mapOptionsToTags = useCallback(
       (options) => {
         try {
           return options
             .map((option) => {
-              let label = option[fieldNames.label];
+              let label = compile(option[fieldNames.label]);
 
               if (targetField?.uiSchema?.enum) {
                 if (Array.isArray(label)) {
@@ -97,7 +97,7 @@ const InternalRemoteSelect = connect(
               }
 
               if (targetField?.type === 'date') {
-                label = moment(label).format('YYYY-MM-DD');
+                label = dayjs(label).format('YYYY-MM-DD');
               }
 
               if (mapOptions) {
@@ -120,49 +120,6 @@ const InternalRemoteSelect = connect(
       },
       [targetField?.uiSchema, fieldNames],
     );
-    const parseFilter = (rules) => {
-      if (!rules) {
-        return undefined;
-      }
-      const type = Object.keys(rules)[0] || '$and';
-      const conditions = rules[type];
-      const results = [];
-      conditions?.forEach((c) => {
-        const jsonlogic = getInnermostKeyAndValue(c);
-        const regex = /{{(.*?)}}/;
-        const matches = jsonlogic.value?.match?.(regex);
-        if (!matches || (!matches[1].includes('$form') && !matches[1].includes('$iteration'))) {
-          results.push(c);
-          return;
-        }
-        const associationfield = extractFilterfield(matches[1]);
-        const filterCollectionField = getCollectionJoinField(`${ctx.props.collection}.${associationfield}`);
-        if (['o2m', 'm2m'].includes(filterCollectionField?.interface)) {
-          // 对多子表单
-          const pattern = generatePattern(matches?.[1], associationfield);
-          const parseValue: any = extractValuesByPattern(flat(form.values), pattern);
-          const filters = parseValue.map((v) => {
-            return JSON.parse(JSON.stringify(c).replace(jsonlogic.value, v));
-          });
-          results.push({ $or: filters });
-        } else {
-          const variablesCtx = { $form: form.values, $iteration: form.values };
-          let str = matches?.[1];
-          if (str.includes('$iteration')) {
-            const path = field.path.segments.concat([]);
-            path.pop();
-            str = str.replace('$iteration.', `$iteration.${path.join('.')}.`);
-          }
-          const parseValue = parseVariables(str, variablesCtx);
-          const filterObj = JSON.parse(
-            JSON.stringify(c).replace(jsonlogic.value, str.endsWith('id') ? parseValue ?? 0 : parseValue),
-          );
-          results.push(filterObj);
-        }
-      });
-      return { [type]: results };
-    };
-
     const { data, run, loading } = useRequest(
       {
         action: 'list',
@@ -170,12 +127,11 @@ const InternalRemoteSelect = connect(
         params: {
           pageSize: 200,
           ...service?.params,
-          // search needs
-          filter: mergeFilter([parseFilter(field.componentProps?.service?.params?.filter) || service?.params?.filter]),
+          filter: service?.params?.filter,
         },
       },
       {
-        manual,
+        manual: manual && Object.prototype.toString.call(value) === '[object Object]',
         debounceWait: wait,
       },
     );
@@ -219,19 +175,21 @@ const InternalRemoteSelect = connect(
                 },
               }
             : {},
-          field.componentProps?.service?.params?.filter || service?.params?.filter,
+          service?.params?.filter,
         ]),
       });
       searchData.current = search;
     };
 
     const options = useMemo(() => {
+      const v = value || defaultValue;
       if (!data?.data?.length) {
-        return value != null ? (Array.isArray(value) ? value : [value]) : [];
+        return v != null ? (Array.isArray(v) ? v : [v]) : [];
       }
-      const valueOptions = (value != null && (Array.isArray(value) ? value : [value])) || [];
+      const valueOptions =
+        (v != null && (Array.isArray(v) ? v : [{ ...v, [fieldNames.value]: v[fieldNames.value] || v }])) || [];
       return uniqBy(data?.data?.concat(valueOptions) || [], fieldNames.value);
-    }, [data?.data, value]);
+    }, [value, defaultValue, data?.data, fieldNames.value]);
 
     const onDropdownVisibleChange = (visible) => {
       setOpen(visible);
@@ -241,10 +199,11 @@ const InternalRemoteSelect = connect(
       }
       firstRun.current = true;
     };
+
     return (
       <Select
         open={open}
-        dropdownMatchSelectWidth={false}
+        popupMatchSelectWidth={false}
         autoClearSearchValue
         filterOption={false}
         filterSort={null}
@@ -253,6 +212,7 @@ const InternalRemoteSelect = connect(
         onDropdownVisibleChange={onDropdownVisibleChange}
         objectValue={objectValue}
         value={value}
+        defaultValue={defaultValue}
         {...others}
         loading={data! ? loading : true}
         options={mapOptionsToTags(options)}
@@ -297,7 +257,7 @@ const InternalRemoteSelect = connect(
   mapReadPretty(ReadPretty),
 );
 
-export const RemoteSelect = InternalRemoteSelect as unknown as typeof InternalRemoteSelect & {
+export const RemoteSelect = (InternalRemoteSelect as unknown) as typeof InternalRemoteSelect & {
   ReadPretty: typeof ReadPretty;
 };
 
