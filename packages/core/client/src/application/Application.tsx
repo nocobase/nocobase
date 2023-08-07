@@ -1,3 +1,4 @@
+import { define, observable } from '@formily/reactive';
 import { APIClientOptions } from '@nocobase/sdk';
 import { i18n as i18next } from 'i18next';
 import get from 'lodash/get';
@@ -49,13 +50,22 @@ export class Application {
   public pm: PluginManager;
   public devPlugins: Record<string, Promise<{ default: typeof Plugin }>> = {};
   public requirejs: RequireJS;
+  loading = true;
+  maintaining = false;
+  error = null;
 
   constructor(protected options: ApplicationOptions = {}) {
     this.initRequireJs();
+    define(this, {
+      loading: observable.ref,
+      maintaining: observable.ref,
+      error: observable.ref,
+    });
     this.devPlugins = options.devPlugins || {};
     this.scopes = merge(this.scopes, options.scopes);
     this.components = merge(this.components, options.components);
     this.apiClient = new APIClient(options.apiClient);
+    this.apiClient.app = this;
     this.i18n = options.i18n || i18n;
     this.router = new RouterManager({
       ...options.router,
@@ -113,7 +123,24 @@ export class Application {
 
   async load() {
     this.ws.connect();
-    return this.pm.load();
+    this.ws.on('message', (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === 'maintaining') {
+        this.maintaining = true;
+        this.error = data.payload;
+      } else {
+        this.maintaining = false;
+        this.error = null;
+      }
+    });
+    try {
+      this.loading = true;
+      await this.pm.load();
+      this.loading = false;
+    } catch (error) {
+      this.error = error;
+      this.loading = false;
+    }
   }
 
   getComponent<T = any>(Component: ComponentTypeAndString<T>, isShowError = true): ComponentType<T> | undefined {

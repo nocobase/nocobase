@@ -1,3 +1,5 @@
+import { define, observable } from '@formily/reactive';
+
 export const getWebSocketURL = () => {
   if (!process.env.API_BASE_URL) {
     return;
@@ -26,6 +28,8 @@ export class WebSocketClient {
   protected events = [];
   protected options: WebSocketClientOptions;
   protected enabled: boolean;
+  connected = false;
+  lastMessage = {};
 
   constructor(options: WebSocketClientOptions | boolean) {
     if (!options) {
@@ -34,6 +38,10 @@ export class WebSocketClient {
     }
     this.options = options === true ? {} : options;
     this.enabled = true;
+    define(this, {
+      connected: observable.ref,
+      lastMessage: observable.ref,
+    });
   }
 
   get reconnectAttempts() {
@@ -76,6 +84,7 @@ export class WebSocketClient {
       for (const { type, listener, options } of this.events) {
         this._ws.addEventListener(type, listener, options);
       }
+      this.connected = true;
     };
     ws.onerror = async () => {
       // setTimeout(() => this.connect(), this.reconnectInterval);
@@ -84,6 +93,7 @@ export class WebSocketClient {
     ws.onclose = async () => {
       setTimeout(() => this.connect(), this.reconnectInterval);
       console.log('onclose', this.readyState, this._reconnectTimes);
+      this.connected = false;
     };
   }
 
