@@ -8,6 +8,7 @@ import { build as viteBuild } from 'vite';
 import fg from 'fast-glob';
 import {
   buildCheck,
+  checkRequire,
   formatFileSize,
   getExcludePackages,
   getFileSize,
@@ -20,8 +21,7 @@ import { globExcludeFiles } from './constant';
 import { PkgLog, getPackageJson } from './utils';
 
 const serverGlobalFiles: string[] = ['src/**', '!src/client/**', ...globExcludeFiles];
-
-const clientGlobalFiles: string[] = ['src/client/**', '!src/**/__tests__', ...globExcludeFiles];
+const clientGlobalFiles: string[] = ['src/**', '!src/server/**', ...globExcludeFiles];
 
 const external = [
   // nocobase
@@ -256,6 +256,7 @@ export function buildPluginClient(cwd: string, sourcemap: boolean, log: PkgLog) 
   const sourcePackages = getSourcePackages(clientFiles);
   const excludePackages = getExcludePackages(sourcePackages, external, pluginPrefix);
 
+  checkRequire(clientFiles, log);
   buildCheck({ cwd, packageJson, entry: 'client', files: clientFiles, log });
 
   const outDir = path.join(cwd, target_dir, 'client');

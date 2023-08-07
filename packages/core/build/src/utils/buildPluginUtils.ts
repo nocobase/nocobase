@@ -133,3 +133,23 @@ export function buildCheck(options: CheckOptions) {
   // checkRequirePackageJson(files, log);
   checkDependencies(packageJson, log);
 }
+
+export function checkRequire(sourceFiles: string[], log: Log) {
+  const requireArr = sourceFiles
+    .map((filePath) => {
+      const code = fs.readFileSync(filePath, 'utf-8');
+      return [...code.matchAll(requireRegex)].map((item) => ({
+        filePath: filePath,
+        code: item[0],
+      }));
+    })
+    .flat();
+  if (requireArr.length) {
+    log('%s not allowed. Please use %s instead.', chalk.red('require()'), chalk.red('import'));
+    requireArr.forEach((item, index) => {
+      console.log('%s. %s in %s;', index + 1, chalk.red(item.code), chalk.red(item.filePath));
+    });
+    console.log('\n');
+    process.exit(-1);
+  }
+}
