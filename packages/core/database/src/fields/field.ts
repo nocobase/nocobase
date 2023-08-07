@@ -1,5 +1,4 @@
 import _ from 'lodash';
-import lodash from 'lodash';
 
 import {
   DataType,
@@ -23,6 +22,7 @@ export interface FieldContext {
 export interface BaseFieldOptions {
   name?: string;
   hidden?: boolean;
+  translation?: boolean;
 
   [key: string]: any;
 }
@@ -32,16 +32,13 @@ export interface BaseColumnFieldOptions extends BaseFieldOptions, Omit<ModelAttr
   index?: boolean | ModelIndexesOptions;
 }
 
-type FieldEventListeners = {
-  [key: string]: any;
-};
-
 export abstract class Field {
   options: any;
   context: FieldContext;
   database: Database;
   collection: Collection;
-  fieldEventListeners: FieldEventListeners;
+
+  [key: string]: any;
 
   constructor(options?: any, context?: FieldContext) {
     this.context = context as any;
@@ -218,17 +215,6 @@ export abstract class Field {
     Object.assign(this.options, obj);
   }
 
-  setListeners(listeners: FieldEventListeners) {
-    this.fieldEventListeners = listeners;
-
-    for (const [eventName, listeners] of Object.entries(this.fieldEventListeners)) {
-      for (const listener of lodash.castArray(listeners)) {
-        // @ts-ignore
-        this.on(eventName, listener);
-      }
-    }
-  }
-
   bind() {
     const { model } = this.context.collection;
     model.rawAttributes[this.name] = this.toSequelize();
@@ -248,16 +234,6 @@ export abstract class Field {
     model.removeAttribute(this.name);
     if (this.options.index || this.options.unique) {
       this.context.collection.removeIndex([this.name]);
-    }
-
-    if (lodash.isPlainObject(this.fieldEventListeners)) {
-      // off event listeners
-      for (const [eventName, listeners] of Object.entries(this.fieldEventListeners)) {
-        for (const listener of lodash.castArray(listeners)) {
-          // @ts-ignore
-          this.off(eventName, listener);
-        }
-      }
     }
   }
 

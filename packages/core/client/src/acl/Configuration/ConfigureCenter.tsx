@@ -5,6 +5,7 @@ import { useAPIClient, useRequest } from '../../api-client';
 import { SettingsCenterContext } from '../../pm';
 import { useRecord } from '../../record-provider';
 import { useCompile } from '../../schema-component';
+import { useStyles } from '../style';
 
 const getParentKeys = (tree, func, path = []) => {
   if (!tree) return [];
@@ -69,13 +70,16 @@ const formatPluginTabs = (data) => {
 };
 
 export const SettingsCenterConfigure = () => {
+  const { styles } = useStyles();
   const record = useRecord();
   const api = useAPIClient();
   const pluginTags = useContext(SettingMenuContext);
   const items: any[] = (pluginTags && formatPluginTabs(pluginTags)) || [];
   const { t } = useTranslation();
   const compile = useCompile();
-  const { loading, refresh, data } = useRequest({
+  const { loading, refresh, data } = useRequest<{
+    data: any;
+  }>({
     resource: 'roles.snippets',
     resourceOf: record.name,
     action: 'list',
@@ -104,6 +108,7 @@ export const SettingsCenterConfigure = () => {
   return (
     items?.length && (
       <Table
+        className={styles}
         loading={loading}
         rowKey={'key'}
         pagination={false}

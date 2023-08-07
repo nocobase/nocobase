@@ -1,12 +1,14 @@
 import { TableOutlined } from '@ant-design/icons';
-import { FormDialog, FormLayout } from '@formily/antd';
+import { FormLayout } from '@formily/antd-v5';
 import { SchemaOptionsContext } from '@formily/react';
 import {
+  FormDialog,
   SchemaComponent,
   SchemaComponentOptions,
   SchemaInitializer,
   SchemaInitializerButtonContext,
   useAPIClient,
+  useGlobalTheme,
 } from '@nocobase/client';
 import { error } from '@nocobase/utils/client';
 import React, { useCallback, useContext, useMemo } from 'react';
@@ -27,6 +29,8 @@ export const ChartQueryBlockInitializer = (props) => {
   const apiClient = useAPIClient();
   const ctx = useChartQueryMetadataContext();
   const options = useContext(SchemaOptionsContext);
+  const { theme } = useGlobalTheme();
+
   const onAddQuery = useCallback(
     (info) => {
       FormDialog(
@@ -58,6 +62,7 @@ export const ChartQueryBlockInitializer = (props) => {
             </div>
           );
         },
+        theme,
       )
         .open({
           initialValues: {

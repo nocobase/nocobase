@@ -1,11 +1,13 @@
+import { TinyColor } from '@ctrl/tinycolor';
 import { useDndContext, useDndMonitor, useDraggable, useDroppable } from '@dnd-kit/core';
-import { css } from '@emotion/css';
 import { RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import cls from 'classnames';
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useDesignable, useFormBlockContext, useSchemaInitializer } from '../../../';
 import { DndContext } from '../../common/dnd-context';
+import { useToken } from '../__builtins__';
+import useStyles from './Grid.style';
 
 const GridRowContext = createContext<any>({});
 const GridColContext = createContext<any>({});
@@ -15,6 +17,7 @@ const breakRemoveOnGrid = (s: Schema) => s['x-component'] === 'Grid';
 const breakRemoveOnRow = (s: Schema) => s['x-component'] === 'Grid.Row';
 
 const ColDivider = (props) => {
+  const { token } = useToken();
   const dragIdRef = useRef<string | null>(null);
 
   const { isOver, setNodeRef } = useDroppable({
@@ -24,9 +27,12 @@ const ColDivider = (props) => {
   const { dn, designable } = useDesignable();
   const dividerRef = useRef<HTMLElement>();
 
-  const droppableStyle = {
-    backgroundColor: isOver ? 'rgba(241, 139, 98, .1)' : undefined,
-  };
+  const droppableStyle = useMemo(() => {
+    if (!isOver) return {};
+    return {
+      backgroundColor: new TinyColor(token.colorSettings).setAlpha(0.1).toHex8String(),
+    };
+  }, [isOver]);
 
   const dndContext = useDndContext();
   const activeSchema: Schema | undefined = dndContext.active?.data.current?.schema?.parent;
@@ -143,59 +149,39 @@ const ColDivider = (props) => {
           dividerRef.current = el;
         }
       }}
-      className={cls(
-        'nb-col-divider',
-        css`
-          flex-shrink: 0;
-          width: var(--nb-spacing);
-        `,
-      )}
-      style={{ ...droppableStyle }}
+      className={cls('nb-col-divider', 'ColDivider')}
+      style={droppableStyle}
     >
       <div
         ref={setDraggableNodeRef}
         {...listeners}
         {...attributes}
-        className={
-          props.first || props.last || !designable
-            ? null
-            : css`
-                &::before {
-                  content: ' ';
-                  width: 100%;
-                  height: 100%;
-                  position: absolute;
-                  cursor: col-resize;
-                }
-                &:hover {
-                  &::before {
-                    background: rgba(241, 139, 98, 0.06) !important;
-                  }
-                }
-                width: var(--nb-spacing);
-                height: 100%;
-                position: absolute;
-                cursor: col-resize;
-              `
-        }
+        className={props.first || props.last || !designable ? null : 'DraggableNode'}
       ></div>
     </div>
   );
 };
 
 const RowDivider = (props) => {
+  const { token } = useToken();
   const { isOver, setNodeRef } = useDroppable({
     id: props.id,
     data: props.data,
   });
 
-  const droppableStyle = {};
-
-  if (isOver) {
-    droppableStyle['backgroundColor'] = 'rgba(241, 139, 98, .1)';
-  }
-
   const [active, setActive] = useState(false);
+
+  const droppableStyle = useMemo(() => {
+    if (!isOver)
+      return {
+        zIndex: active ? 1000 : -1,
+      };
+
+    return {
+      zIndex: active ? 1000 : -1,
+      backgroundColor: new TinyColor(token.colorSettings).setAlpha(0.1).toHex8String(),
+    };
+  }, [active, isOver]);
 
   const dndContext = useDndContext();
   const currentSchema = props.rows[props.index];
@@ -234,26 +220,7 @@ const RowDivider = (props) => {
   });
 
   return (
-    <span
-      ref={visible ? setNodeRef : null}
-      className={cls(
-        'nb-row-divider',
-        css`
-          height: var(--nb-spacing);
-          width: 100%;
-          position: absolute;
-          margin-top: calc(-1 * var(--nb-spacing));
-        `,
-      )}
-      style={{
-        zIndex: active ? 1000 : -1,
-        // height: 24,
-        // width: '100%',
-        // position: 'absolute',
-        // marginTop: -24,
-        ...droppableStyle,
-      }}
-    />
+    <span ref={visible ? setNodeRef : null} className={cls('nb-row-divider', 'RowDivider')} style={droppableStyle} />
   );
 };
 
@@ -340,16 +307,17 @@ export const Grid: any = observer(
     const addr = field.address.toString();
     const rows = useRowProperties();
     const { setPrintContent } = useFormBlockContext();
+    const { wrapSSR, componentCls, hashId } = useStyles();
 
     useEffect(() => {
       gridRef.current && setPrintContent?.(gridRef.current);
     }, [gridRef.current]);
 
-    return (
+    return wrapSSR(
       <GridContext.Provider
         value={{ ref: gridRef, fieldSchema, renderSchemaInitializer: render, InitializerComponent, showDivider }}
       >
-        <div className={'nb-grid'} style={{ position: 'relative' }} ref={gridRef}>
+        <div className={`nb-grid ${componentCls} ${hashId}`} style={{ position: 'relative' }} ref={gridRef}>
           <DndWrapper dndContext={props.dndContext}>
             {showDivider ? (
               <RowDivider
@@ -387,7 +355,7 @@ export const Grid: any = observer(
           </DndWrapper>
           <InitializerComponent />
         </div>
-      </GridContext.Provider>
+      </GridContext.Provider>,
     );
   },
   { displayName: 'Grid' },
@@ -404,17 +372,9 @@ Grid.Row = observer(
     return (
       <GridRowContext.Provider value={{ schema: fieldSchema, cols }}>
         <div
-          className={cls(
-            'nb-grid-row',
-            css`
-              display: flex;
-              position: relative;
-              /* z-index: 0; */
-            `,
-          )}
-          style={{
-            margin: showDivider ? '0 calc(-1 * var(--nb-spacing))' : null,
-          }}
+          className={cls('nb-grid-row', 'CardRow', {
+            showDivider,
+          })}
         >
           {showDivider && (
             <ColDivider
@@ -463,14 +423,15 @@ Grid.Col = observer(
     const { showDivider } = useGridContext();
     const schema = useFieldSchema();
     const field = useField();
+    const { token } = useToken();
 
-    const width = useMemo(() => {
+    const style = useMemo(() => {
       let width = '';
       if (cols?.length) {
         const w = schema?.['x-component-props']?.['width'] || 100 / cols.length;
-        width = `calc(${w}% - var(--nb-spacing) *  ${(showDivider ? cols.length + 1 : 0) / cols.length})`;
+        width = `calc(${w}% - ${token.marginLG}px *  ${(showDivider ? cols.length + 1 : 0) / cols.length})`;
       }
-      return width;
+      return { width };
     }, [cols?.length, schema?.['x-component-props']?.['width']]);
 
     const { setNodeRef } = useDroppable({
@@ -483,7 +444,7 @@ Grid.Col = observer(
     });
     return (
       <GridColContext.Provider value={{ cols, schema }}>
-        <div ref={setNodeRef} style={{ width }} className={cls('nb-grid-col')}>
+        <div ref={setNodeRef} style={style} className={cls('nb-grid-col')}>
           {props.children}
         </div>
       </GridColContext.Provider>

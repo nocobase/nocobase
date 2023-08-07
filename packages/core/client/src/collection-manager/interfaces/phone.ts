@@ -30,4 +30,5 @@ export const phone: IField = {
   filterable: {
     operators: operators.string,
   },
+  titleUsable: true,
 };

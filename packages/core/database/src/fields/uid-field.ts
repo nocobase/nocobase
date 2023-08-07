@@ -7,28 +7,31 @@ export class UidField extends Field {
     return DataTypes.STRING;
   }
 
-  listener = async (instance) => {
+  init() {
     const { name, prefix = '', pattern } = this.options;
     const re = new RegExp(pattern || '^[A-Za-z0-9][A-Za-z0-9_-]*$');
-
-    const value = instance.get(name);
-
-    if (!value) {
-      instance.set(name, `${prefix}${uid()}`);
-    } else if (re.test(value)) {
-      instance.set(name, value);
-    } else {
-      throw new Error(`uid '${value}' is invalid`);
-    }
-  };
+    this.listener = async (instance) => {
+      const value = instance.get(name);
+      if (!value) {
+        instance.set(name, `${prefix}${uid()}`);
+      } else if (re.test(value)) {
+        instance.set(name, value);
+      } else {
+        throw new Error(`uid '${value}' is invalid`);
+      }
+    };
+  }
 
   bind() {
     super.bind();
+    this.on('beforeCreate', this.listener);
+    this.on('beforeUpdate', this.listener);
+  }
 
-    this.setListeners({
-      beforeCreate: this.listener,
-      beforeUpdate: this.listener,
-    });
+  unbind() {
+    super.unbind();
+    this.off('beforeCreate', this.listener);
+    this.off('beforeUpdate', this.listener);
   }
 }
 

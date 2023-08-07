@@ -5,27 +5,20 @@ import { useRequest } from '../api-client';
 export const CurrentAppInfoContext = createContext(null);
 
 export const useCurrentAppInfo = () => {
-  return useContext(CurrentAppInfoContext);
+  return useContext<{
+    data: {
+      database: {
+        dialect: string;
+      };
+      lang: string;
+      version: string;
+    };
+  }>(CurrentAppInfoContext);
 };
 export const CurrentAppInfoProvider = (props) => {
-  const result = useRequest(
-    {
-      url: 'app:getInfo',
-    },
-    {
-      onSuccess(data) {
-        const localTheme = localStorage.getItem('NOCOBASE_THEME');
-        if (localTheme !== data?.data?.theme) {
-          localStorage.setItem('NOCOBASE_THEME', data?.data?.theme);
-          window.location.reload();
-        }
-      },
-    },
-  );
-  const localTheme = localStorage.getItem('NOCOBASE_THEME');
-  if (localTheme && localTheme !== result?.data?.data?.theme) {
-    return <Spin />;
-  }
+  const result = useRequest({
+    url: 'app:getInfo',
+  });
   if (result.loading) {
     return <Spin />;
   }

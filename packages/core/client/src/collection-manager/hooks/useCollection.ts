@@ -26,10 +26,15 @@ export const useCollection = () => {
   const totalFields = unionBy(currentFields?.concat(inheritedFields), 'name').filter((v) => {
     return !v.isForeignKey;
   });
+
+  const foreignKeyFields = unionBy(currentFields?.concat(inheritedFields), 'name').filter((v) => {
+    return v.isForeignKey;
+  });
+
   return {
     ...collection,
     resource,
-    getField(name: SchemaKey): CollectionFieldOptions | null {
+    getField(name: SchemaKey): CollectionFieldOptions | undefined {
       const fields = totalFields as any[];
       return fields?.find((field) => field.name === name);
     },
@@ -47,5 +52,6 @@ export const useCollection = () => {
     },
     currentFields,
     inheritedFields,
+    foreignKeyFields,
   };
 };

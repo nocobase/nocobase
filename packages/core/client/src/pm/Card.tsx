@@ -1,6 +1,6 @@
 import { DeleteOutlined, SettingOutlined } from '@ant-design/icons';
-import { css } from '@emotion/css';
 import {
+  App,
   Avatar,
   Card,
   Modal,
@@ -14,13 +14,15 @@ import {
   Typography,
   message,
 } from 'antd';
-import cls from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import type { IPluginData } from '.';
 import { useAPIClient, useRequest } from '../api-client';
+import { useGlobalTheme } from '../global-theme';
+import { useStyles as useMarkdownStyles } from '../schema-component/antd/markdown/style';
 import { useParseMarkdown } from '../schema-component/antd/markdown/util';
+import { useStyles } from './style';
 
 interface PluginDocumentProps {
   path: string;
@@ -61,9 +63,16 @@ const stringToColor = function (str: string) {
 };
 
 const PluginDocument: React.FC<PluginDocumentProps> = (props) => {
+  const { styles } = useStyles();
+  const { isDarkTheme } = useGlobalTheme();
+  const { componentCls, hashId } = useMarkdownStyles({ isDarkTheme });
   const [docLang, setDocLang] = useState('');
   const { name, path } = props;
-  const { data, loading, error } = useRequest(
+  const { data, loading, error } = useRequest<{
+    data: {
+      content: string;
+    };
+  }>(
     {
       url: '/plugins:getTabInfo',
       params: {
@@ -103,19 +112,14 @@ const PluginDocument: React.FC<PluginDocumentProps> = (props) => {
   }, [handleSwitchDocLang]);
 
   return (
-    <div
-      className={css`
-        background: #ffffff;
-        padding: var(--nb-spacing); // if the antd can upgrade to v5.0, theme token will be better
-        height: 60vh;
-        overflow-y: auto;
-      `}
-      id="pm-md-preview"
-    >
+    <div className={styles.PluginDocument} id="pm-md-preview">
       {loading || parseLoading ? (
         <Spin />
       ) : (
-        <div className="nb-markdown" dangerouslySetInnerHTML={{ __html: error ? '' : htmlWithOutRelativeDirect }}></div>
+        <div
+          className={`${componentCls} ${hashId} nb-markdown nb-markdown-default nb-markdown-table`}
+          dangerouslySetInnerHTML={{ __html: error ? '' : htmlWithOutRelativeDirect }}
+        ></div>
       )}
     </div>
   );
@@ -123,39 +127,17 @@ const PluginDocument: React.FC<PluginDocumentProps> = (props) => {
 
 function PluginDetail(props: IPluginDetail) {
   const { plugin, onCancel, items } = props;
+  const { styles } = useStyles();
+
   return (
     <Modal
       footer={false}
-      className={css`
-        .ant-modal-header {
-          background: #f0f2f5;
-          padding-bottom: 8px;
-        }
-
-        .ant-modal-body {
-          padding-top: 0;
-        }
-
-        .ant-modal-body {
-          background: #f0f2f5;
-          .plugin-desc {
-            padding-bottom: 8px;
-          }
-        }
-      `}
+      className={styles.PluginDetail}
       width="70%"
       title={
         <Typography.Title level={2} style={{ margin: 0 }}>
           {plugin?.displayName || plugin?.name}
-          <Tag
-            className={css`
-              vertical-align: middle;
-              margin-top: -3px;
-              margin-left: 8px;
-            `}
-          >
-            v{plugin?.version}
-          </Tag>
+          <Tag className={'version-tag'}>v{plugin?.version}</Tag>
         </Typography.Title>
       }
       open={!!plugin}
@@ -170,32 +152,27 @@ function PluginDetail(props: IPluginDetail) {
 
 function CommonCard(props: ICommonCard) {
   const { onClick, name, displayName, actions, description, title } = props;
+  const { styles } = useStyles();
+
   return (
     <Card
       bordered={false}
-      style={{ width: 'calc(20% - 24px)', marginRight: 24, marginBottom: 24, transition: 'all 0.35s ease-in-out' }}
+      className={styles.CommonCard}
       onClick={onClick}
-      className={cls(css`
-        &:hover {
-          border: 1px solid var(--antd-wave-shadow-color);
-          cursor: pointer;
-        }
+      hoverable
+      // className={cls(css`
+      //   &:hover {
+      //     border: 1px solid var(--antd-wave-shadow-color);
+      //     cursor: pointer;
+      //   }
 
-        border: 1px solid transparent;
-      `)}
+      //   border: 1px solid transparent;
+      // `)}
       actions={actions}
       // actions={[<a>Settings</a>, <a>Remove</a>, <Switch size={'small'} defaultChecked={true}></Switch>]}
     >
       <Card.Meta
-        className={css`
-          .ant-card-meta-avatar {
-            margin-top: 8px;
-
-            .ant-avatar {
-              border-radius: 2px;
-            }
-          }
-        `}
+        className={styles.avatar}
         avatar={<Avatar style={{ background: `${stringToColor(name)}` }}>{name?.[0]}</Avatar>}
         description={
           <Tooltip title={description} placement="bottom">
@@ -213,17 +190,7 @@ function CommonCard(props: ICommonCard) {
         title={
           <span>
             {displayName || name}
-            <span
-              className={css`
-                display: block;
-                color: rgba(0, 0, 0, 0.45);
-                font-weight: normal;
-                font-size: 13px;
-                // margin-left: 8px;
-              `}
-            >
-              {title}
-            </span>
+            <span className={styles.version}>{title}</span>
           </span>
         }
       />
@@ -238,7 +205,8 @@ export const PluginCard = (props: { data: IPluginData }) => {
   const { t } = useTranslation();
   const { enabled, name, displayName, id, description, version } = data;
   const [plugin, setPlugin] = useState<any>(null);
-  const { data: tabsData, run } = useRequest(
+  const { modal } = App.useApp();
+  const { data: tabsData, run } = useRequest<any>(
     {
       url: '/plugins:getTabs',
     },
@@ -292,7 +260,7 @@ export const PluginCard = (props: { data: IPluginData }) => {
           size={'small'}
           onChange={async (checked, e) => {
             e.stopPropagation();
-            Modal.warn({
+            modal.warning({
               title: checked ? t('Plugin starting') : t('Plugin stopping'),
               content: t('The application is reloading, please do not close the page.'),
               okButtonProps: {
@@ -341,7 +309,15 @@ export const BuiltInPluginCard = (props: { data: IPluginData }) => {
   } = props;
   const navigate = useNavigate();
   const [plugin, setPlugin] = useState<any>(null);
-  const { data: tabsData, run } = useRequest(
+  const { data: tabsData, run } = useRequest<{
+    data: {
+      tabs: {
+        title: string;
+        path: string;
+      }[];
+      filterByTk: string;
+    };
+  }>(
     {
       url: '/plugins:getTabs',
     },
@@ -392,6 +368,3 @@ export const BuiltInPluginCard = (props: { data: IPluginData }) => {
     </>
   );
 };
-function useCallabck(arg0: () => void, arg1: undefined[]) {
-  throw new Error('Function not implemented.');
-}

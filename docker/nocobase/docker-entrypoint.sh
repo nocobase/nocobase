@@ -11,7 +11,7 @@ fi
 if [ ! -f "/app/nocobase/package.json" ]; then
   echo 'copying...'
   tar -zxf /app/nocobase.tar.gz --absolute-names -C /app/nocobase
-  touch /app/nocobase/packages/app/client/dist/index.html
+  touch /app/nocobase/node_modules/@nocobase/app/dist/client/index.html
 fi
 
 cd /app/nocobase && yarn start --quickstart

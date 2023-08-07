@@ -1,7 +1,7 @@
 import { Schema, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializer, useCollection, useCollectionManager, SchemaInitializerItemOptions } from '../..';
+import { SchemaInitializer, SchemaInitializerItemOptions, useCollection, useCollectionManager } from '../..';
 import { gridRowColWrap } from '../utils';
 
 const recursiveParent = (schema: Schema) => {
@@ -74,6 +74,20 @@ const useRelationFields = () => {
               title: '{{t("Details")}}',
               field,
               component: 'RecordAssociationDetailsBlockInitializer',
+            },
+            {
+              key: `${field.name}_list`,
+              type: 'item',
+              title: '{{t("List")}}',
+              field,
+              component: 'RecordAssociationListBlockInitializer',
+            },
+            {
+              key: `${field.name}_grid_card`,
+              type: 'item',
+              title: '{{t("Grid Card")}}',
+              field,
+              component: 'RecordAssociationGridCardBlockInitializer',
             },
             {
               key: `${field.name}_form`,
@@ -170,7 +184,7 @@ export const RecordBlockInitializers = (props: any) => {
   const hasFormChildCollection = formChildrenCollections?.length > 0;
   const detailChildrenCollections = getChildrenCollections(collection.name, true);
   const hasDetailChildCollection = detailChildrenCollections?.length > 0;
-  const modifyFlag = (collection as any).template !== 'view';
+  const modifyFlag = (collection as any).template !== 'view' || collection?.writableView;
   return (
     <SchemaInitializer.Button
       wrap={gridRowColWrap}

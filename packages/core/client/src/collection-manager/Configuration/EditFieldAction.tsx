@@ -1,17 +1,18 @@
-import { ArrayTable } from '@formily/antd';
+import { ArrayTable } from '@formily/antd-v5';
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import cloneDeep from 'lodash/cloneDeep';
 import set from 'lodash/set';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
-import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction, useUpdateAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
+import useDialect from '../hooks/useDialect';
 import { IField } from '../interfaces/types';
+import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import * as components from './components';
 
 const getSchema = (schema: IField, record: any, compile, getContainer): ISchema => {
@@ -25,6 +26,7 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
 
   if (schema.hasDefaultValue === true) {
     properties['defaultValue'] = cloneDeep(schema.default.uiSchema) || {};
+    properties.defaultValue.required = false;
     properties['defaultValue']['title'] = compile('{{ t("Default value") }}');
     properties['defaultValue']['x-decorator'] = 'FormItem';
     properties['defaultValue']['x-reactions'] = {
@@ -116,6 +118,7 @@ const useUpdateCollectionField = () => {
       await form.submit();
       const values = cloneDeep(form.values);
       if (values.autoCreateReverseField) {
+        /* empty */
       } else {
         delete values.reverseField;
       }
@@ -136,13 +139,23 @@ export const EditCollectionField = (props) => {
 
 export const EditFieldAction = (props) => {
   const { scope, getContainer, item: record, children } = props;
-  const { getInterface } = useCollectionManager();
+  const { getInterface, collections } = useCollectionManager();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
   const api = useAPIClient();
   const { t } = useTranslation();
   const compile = useCompile();
   const [data, setData] = useState<any>({});
+  const { isDialect } = useDialect();
+
+  const currentCollections = useMemo(() => {
+    return collections.map((v) => {
+      return {
+        label: compile(v.title),
+        value: v.name,
+      };
+    });
+  }, []);
   return (
     <RecordProvider record={record}>
       <ActionContextProvider value={{ visible, setVisible }}>
@@ -184,6 +197,9 @@ export const EditFieldAction = (props) => {
             useUpdateCollectionField,
             useCancelAction,
             showReverseFieldConfig: !data?.reverseField,
+            collections: currentCollections,
+            isDialect,
+            disabledJSONB: true,
             ...scope,
           }}
         />

@@ -1,32 +1,34 @@
-import React, { useCallback } from 'react';
-import { Cascader } from 'antd';
 import { useForm } from '@formily/react';
+import { Cascader } from 'antd';
+import React, { useCallback } from 'react';
 
 import {
+  SchemaComponentContext,
   SchemaInitializerItemOptions,
   useCollectionDataSource,
-  useCompile,
-  SchemaComponentContext,
   useCollectionManager,
+  useCompile,
 } from '@nocobase/client';
 
-import { collection, filter } from '../schemas/collection';
-import { NAMESPACE, lang } from '../locale';
-import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
-import { BaseTypeSets, nodesOptions, triggerOptions, useWorkflowVariableOptions } from '../variable';
 import { FieldsSelect } from '../components/FieldsSelect';
+import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
 import { ValueBlock } from '../components/ValueBlock';
-import { useNodeContext } from '.';
+import { NAMESPACE, lang } from '../locale';
+import { collection, filter } from '../schemas/collection';
+import { BaseTypeSets, defaultFieldNames, nodesOptions, triggerOptions } from '../variable';
 
-function matchToManyField(field, depth): boolean {
-  return ['hasMany', 'belongsToMany'].includes(field.type) && depth;
+function matchToManyField(field, appends): boolean {
+  const fieldPrefix = `${field.name}.`;
+  return (
+    ['hasMany', 'belongsToMany'].includes(field.type) &&
+    (appends.includes(field.name) || appends.some((item) => item.startsWith(fieldPrefix)))
+  );
 }
 
 function AssociatedConfig({ value, onChange, ...props }): JSX.Element {
   const { setValuesIn } = useForm();
   const compile = useCompile();
   const { getCollection } = useCollectionManager();
-  const current = useNodeContext();
   const options = [nodesOptions, triggerOptions].map((item) => {
     const children = item.useOptions({ types: [matchToManyField] })?.filter(Boolean);
     return {
@@ -160,7 +162,7 @@ export default {
                   title: `{{t("Data of collection", { ns: "${NAMESPACE}" })}}`,
                   'x-component-props': {
                     ...collection['x-component-props'],
-                    className: 'full-width',
+                    className: null,
                   },
                   'x-reactions': [
                     ...collection['x-reactions'],
@@ -197,9 +199,6 @@ export default {
                   title: `{{t("Data of associated collection", { ns: "${NAMESPACE}" })}}`,
                   'x-decorator': 'FormItem',
                   'x-component': 'AssociatedConfig',
-                  'x-component-props': {
-                    className: 'full-width',
-                  },
                   'x-reactions': [
                     {
                       dependencies: ['associated'],
@@ -296,16 +295,17 @@ export default {
     ValueBlock,
     AssociatedConfig,
   },
-  useVariables(current, { types }) {
+  useVariables({ id, title }, { types, fieldNames = defaultFieldNames }) {
     if (
       types &&
       !types.some((type) => type in BaseTypeSets || Object.values(BaseTypeSets).some((set) => set.has(type)))
     ) {
       return null;
     }
-    return [
-      // { key: '', value: '', label: lang('Calculation result') }
-    ];
+    return {
+      [fieldNames.value]: `${id}`,
+      [fieldNames.label]: title,
+    };
   },
   useInitializers(node): SchemaInitializerItemOptions | null {
     if (!node.config.collection) {

@@ -1,11 +1,10 @@
-import React from 'react';
-import { SchemaComponent } from '@nocobase/client';
-import { Card, message, Space } from 'antd';
 import { CopyOutlined } from '@ant-design/icons';
+import { ArrayItems } from '@formily/antd-v5';
 import { observer } from '@formily/react';
-import { FormItem, Input } from '@nocobase/client';
+import { FormItem, Input, SchemaComponent } from '@nocobase/client';
+import { Card, Space, message } from 'antd';
+import React from 'react';
 import { useOidcTranslation } from './locale';
-import { ArrayItems } from '@formily/antd';
 
 const schema = {
   type: 'object',

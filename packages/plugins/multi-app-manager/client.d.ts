@@ -1,4 +1,1 @@
-// @ts-nocheck
-export * from './lib/client';
-export { default } from './lib/client';
-
+export * from './dist/client/index';

@@ -7,7 +7,8 @@ export default async function (this: ManualInstruction, instance, { collection }
     throw new Error(`collection ${collection} for create data on manual node not found`);
   }
 
-  const [values] = Object.values(instance.result);
+  const { _, ...form } = instance.result;
+  const [values] = Object.values(form);
   await repo.create({
     values: {
       ...((values as { [key: string]: any }) ?? {}),

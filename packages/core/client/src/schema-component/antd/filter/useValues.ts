@@ -23,7 +23,6 @@ const findOption = (dataIndex = [], options) => {
 export const useValues = () => {
   const field = useField<any>();
   const { options } = useContext(FilterContext) || {};
-
   const data2value = () => {
     field.value = flat.unflatten({
       [`${field.data.dataIndex?.join('.')}.${field.data?.operator?.value}`]: field.data?.value,
@@ -48,7 +47,7 @@ export const useValues = () => {
     field.data.schema = merge(option?.schema, operator?.schema);
     field.data.value = get(unflatten(field.value), `${fieldPath}.$${operatorValue}`);
   };
-  useEffect(value2data, [field.path.entire]);
+  useEffect(value2data, [field.path]);
   return {
     fields: options,
     ...(field?.data || {}),
@@ -62,7 +61,7 @@ export const useValues = () => {
       const s2 = cloneDeep(operator?.schema);
       field.data.schema = merge(s1, s2);
       field.data.dataIndex = dataIndex;
-      field.data.value = operator?.noValue ? operator.default || true : null;
+      field.data.value = operator?.noValue ? operator.default || true : undefined;
       data2value();
     },
     setOperator(operatorValue) {
@@ -72,7 +71,7 @@ export const useValues = () => {
       const s1 = cloneDeep(option?.schema);
       const s2 = cloneDeep(operator?.schema);
       field.data.schema = merge(s1, s2);
-      field.data.value = operator.noValue ? operator.default || true : null;
+      field.data.value = operator.noValue ? operator.default || true : undefined;
       data2value();
     },
     setValue(value) {

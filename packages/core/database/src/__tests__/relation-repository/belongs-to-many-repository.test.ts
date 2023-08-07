@@ -2,6 +2,89 @@ import { Collection } from '@nocobase/database';
 import Database from '../../database';
 import { BelongsToManyRepository } from '../../relation-repository/belongs-to-many-repository';
 import { mockDatabase } from '../index';
+import { pgOnly } from '@nocobase/test';
+
+pgOnly()('belongs to many with targetCollection', () => {
+  let db: Database;
+
+  let Org: Collection;
+  let User: Collection;
+  let Student: Collection;
+
+  let OrgUser: Collection;
+
+  beforeEach(async () => {
+    db = mockDatabase();
+
+    await db.clean({ drop: true });
+
+    OrgUser = db.collection({
+      name: 'org_user',
+    });
+
+    Org = db.collection({
+      name: 'orgs',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'belongsToMany', name: 'users', target: 'users', through: 'org_user' },
+      ],
+    });
+
+    User = db.collection({
+      name: 'users',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'belongsToMany', name: 'orgs', target: 'orgs', through: 'org_user' },
+      ],
+    });
+
+    Student = db.collection({
+      name: 'students',
+      inherits: ['users'],
+      fields: [{ type: 'integer', name: 'score' }],
+    });
+
+    await db.sync();
+  });
+
+  afterEach(async () => {
+    await db.close();
+  });
+
+  it('should update child collection', async () => {
+    const u1 = await User.repository.create({
+      values: {
+        name: 'user1',
+      },
+    });
+
+    const s1 = await Student.repository.create({
+      values: {
+        name: 'student1',
+        score: 100,
+      },
+    });
+
+    const org1 = await Org.repository.create({
+      values: {
+        name: 'org1',
+        users: [u1.get('id'), s1.get('id')],
+      },
+    });
+
+    const repository = Org.repository.relation<BelongsToManyRepository>('users').of(org1.get('id'));
+    await repository.update({
+      filterByTk: s1.get('id'),
+      targetCollection: Student.name,
+      values: {
+        score: 200,
+      },
+    });
+
+    const s1AfterUpdate = await Student.repository.findOne({});
+    expect(s1AfterUpdate.get('score')).toBe(200);
+  });
+});
 
 describe('belongs to many with collection that has no id key', () => {
   let db: Database;
@@ -486,7 +569,7 @@ describe('belongs to many', () => {
 
     const PostTagRepository = new BelongsToManyRepository(Post, 'tags', p1.id);
 
-    const t1 = await PostTagRepository.findOne({
+    let t1 = await PostTagRepository.findOne({
       filter: {
         name: 't1',
       },
@@ -502,7 +585,7 @@ describe('belongs to many', () => {
     });
 
     const Post2TagRepository = new BelongsToManyRepository(Post, 'tags', p2.id);
-    const p2Tag = await Post2TagRepository.findOne();
+    let p2Tag = await Post2TagRepository.findOne();
     expect(p2Tag.posts_tags.tagged_at).toBeNull();
 
     // 设置p1与t1关联的tagged_at
@@ -517,11 +600,15 @@ describe('belongs to many', () => {
       },
     });
 
-    await t1.reload();
+    t1 = await PostTagRepository.findOne({
+      filter: {
+        name: 't1',
+      },
+    });
 
     expect(t1.posts_tags.tagged_at).toEqual('456');
 
-    await p2Tag.reload();
+    p2Tag = await Post2TagRepository.findOne();
     // p2-tag1 still not change
     expect(p2Tag.posts_tags.tagged_at).toBeNull();
   });

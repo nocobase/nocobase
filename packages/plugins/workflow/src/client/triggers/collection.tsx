@@ -1,9 +1,14 @@
-import { SchemaInitializerItemOptions, useCollectionDataSource } from '@nocobase/client';
+import {
+  SchemaInitializerItemOptions,
+  useCollectionDataSource,
+  useCollectionManager,
+  useCompile,
+} from '@nocobase/client';
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
 import { FieldsSelect } from '../components/FieldsSelect';
-import { NAMESPACE, useWorkflowTranslation } from '../locale';
+import { NAMESPACE, lang } from '../locale';
 import { appends, collection, filter } from '../schemas/collection';
-import { useCollectionFieldOptions } from '../variable';
+import { getCollectionFieldOptions } from '../variable';
 
 const COLLECTION_TRIGGER_MODE = {
   CREATED: 1,
@@ -45,6 +50,15 @@ export default {
             },
           },
         },
+        {
+          target: 'appends',
+          effects: ['onFieldValueChange'],
+          fulfill: {
+            state: {
+              value: [],
+            },
+          },
+        },
       ],
     },
     mode: {
@@ -53,10 +67,11 @@ export default {
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       'x-component-props': {
-        dropdownMatchSelectWidth: false,
-        options: collectionModeOptions,
+        popupMatchSelectWidth: false,
         placeholder: `{{t("Trigger on", { ns: "${NAMESPACE}" })}}`,
+        className: 'auto-width',
       },
+      enum: collectionModeOptions,
       required: true,
       'x-reactions': [
         {
@@ -100,6 +115,9 @@ export default {
     condition: {
       ...filter,
       title: `{{t("Only triggers when match conditions", { ns: "${NAMESPACE}" })}}`,
+      'x-component-props': {
+        useProps: filter['x-component-props'].useProps,
+      },
       'x-reactions': [
         {
           dependencies: ['collection'],
@@ -133,7 +151,8 @@ export default {
     FieldsSelect,
   },
   useVariables(config, options) {
-    const { t } = useWorkflowTranslation();
+    const compile = useCompile();
+    const { getCollectionFields } = useCollectionManager();
     const rootFields = [
       {
         collectionName: config.collection,
@@ -141,14 +160,20 @@ export default {
         type: 'hasOne',
         target: config.collection,
         uiSchema: {
-          title: t('Trigger data'),
+          title: lang('Trigger data'),
         },
       },
     ];
-    const result = useCollectionFieldOptions({
+    // const depth = config.appends?.length
+    //   ? config.appends.reduce((max, item) => Math.max(max, item.split('.').length), 1) + 1
+    //   : 1;
+    const result = getCollectionFieldOptions({
+      // depth,
       ...options,
       fields: rootFields,
-      depth: options?.depth ?? (config.appends?.length ? 2 : 1),
+      appends: ['data', ...(config.appends?.map((item) => `data.${item}`) || [])],
+      compile,
+      getCollectionFields,
     });
     return result;
   },

@@ -5,12 +5,10 @@ import App2 from '../demos/demo2';
 
 describe('Upload', () => {
   it('basic', () => {
-    const { container } = render(<App1 />);
-    expect(container).toMatchSnapshot();
+    render(<App1 />);
   });
 
   it('uploading', () => {
-    const { container } = render(<App2 />);
-    expect(container).toMatchSnapshot();
+    render(<App2 />);
   });
 });

@@ -4,7 +4,6 @@ import omit from 'lodash/omit';
 import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollection, useCollectionManager } from '.';
-import { useCompile } from '..';
 import { useRequest } from '../api-client';
 import { useRecord } from '../record-provider';
 import { useActionContext } from '../schema-component';
@@ -108,12 +107,30 @@ export const useChildrenCollections = (collectionName: string) => {
   });
 };
 
-export const useCollectionFilterOptions = (collectionName: string) => {
-  const { getCollectionFields, getInterface, getChildrenCollections, getCollection } = useCollectionManager();
-  const compile = useCompile();
+export const useSelfAndChildrenCollections = (collectionName: string) => {
+  const { getChildrenCollections, getCollection } = useCollectionManager();
+  const childrenCollections = getChildrenCollections(collectionName);
+  const self = getCollection(collectionName);
+  if (!collectionName) {
+    return null;
+  }
+  const options = childrenCollections.map((collection: any) => {
+    return {
+      value: collection.name,
+      label: collection?.title || collection.name,
+    };
+  });
+  options.unshift({
+    value: self.name,
+    label: self?.title || self.name,
+  });
+  return options;
+};
 
+export const useCollectionFilterOptions = (collection: any) => {
+  const { getCollectionFields, getInterface } = useCollectionManager();
   return useMemo(() => {
-    const fields = getCollectionFields(collectionName);
+    const fields = getCollectionFields(collection);
     const field2option = (field, depth) => {
       if (!field.interface) {
         return;
@@ -161,46 +178,8 @@ export const useCollectionFilterOptions = (collectionName: string) => {
       return options;
     };
     const options = getOptions(fields, 1);
-    const collection = getCollection(collectionName);
-    const childrenCollections = getChildrenCollections(collectionName);
-    if (childrenCollections.length > 0 && !options.find((v) => v.name == 'tableoid')) {
-      options.push({
-        name: 'tableoid',
-        type: 'string',
-        title: '{{t("Table OID(Inheritance)")}}',
-        schema: {
-          'x-component': 'Select',
-          enum: [{ value: collectionName, label: compile(collection.title) }].concat(
-            childrenCollections.map((v) => {
-              return {
-                value: v.name,
-                label: compile(v.title),
-              };
-            }),
-          ),
-        },
-        operators: [
-          {
-            label: '{{t("contains")}}',
-            value: '$childIn',
-            schema: {
-              'x-component': 'Select',
-              'x-component-props': { mode: 'tags' },
-            },
-          },
-          {
-            label: '{{t("does not contain")}}',
-            value: '$childNotIn',
-            schema: {
-              'x-component': 'Select',
-              'x-component-props': { mode: 'tags' },
-            },
-          },
-        ],
-      });
-    }
     return options;
-  }, [collectionName]);
+  }, [collection]);
 };
 
 export const useLinkageCollectionFilterOptions = (collectionName: string) => {
@@ -353,14 +332,18 @@ export const useCreateAction = () => {
   const { resource } = useResourceContext();
   return {
     async run() {
-      await form.submit();
-      field.data = field.data || {};
-      field.data.loading = true;
-      await resource.create({ values: form.values });
-      ctx.setVisible(false);
-      await form.reset();
-      field.data.loading = false;
-      refresh();
+      try {
+        await form.submit();
+        field.data = field.data || {};
+        field.data.loading = true;
+        await resource.create({ values: form.values });
+        ctx.setVisible(false);
+        await form.reset();
+        field.data.loading = false;
+        refresh();
+      } catch (error) {
+        field.data.loading=false;
+      }
     },
   };
 };

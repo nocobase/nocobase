@@ -1,17 +1,16 @@
 import {
   CollectionManagerContext,
   CurrentAppInfoProvider,
+  Plugin,
   SchemaComponentOptions,
   SettingsCenterProvider,
 } from '@nocobase/client';
 import React, { useContext } from 'react';
 import { MapBlockOptions } from './block';
-import Configuration from './components/Configuration';
-import Map from './components/Map';
+import { Configuration, Map } from './components';
 import { interfaces } from './fields';
 import { MapInitializer } from './initialize';
 import { useMapTranslation } from './locale';
-import './locale';
 
 const MapProvider = React.memo((props) => {
   const ctx = useContext(CollectionManagerContext);
@@ -47,4 +46,10 @@ const MapProvider = React.memo((props) => {
 });
 MapProvider.displayName = 'MapProvider';
 
-export default MapProvider;
+export class MapPlugin extends Plugin {
+  async load() {
+    this.app.use(MapProvider);
+  }
+}
+
+export default MapPlugin;

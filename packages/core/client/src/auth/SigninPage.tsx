@@ -12,7 +12,7 @@ import React, {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useAPIClient, useCurrentDocumentTitle, useRequest, useViewport } from '..';
+import { useAPIClient, useCurrentDocumentTitle, useCurrentUserContext, useRequest, useViewport } from '..';
 import { useSigninPageExtension } from './SigninPageExtension';
 
 const SigninPageContext = createContext<{
@@ -59,10 +59,12 @@ export const useSignIn = (authenticator) => {
   const form = useForm();
   const api = useAPIClient();
   const redirect = useRedirect();
+  const { refreshAsync } = useCurrentUserContext();
   return {
     async run() {
       await form.submit();
       await api.auth.signIn(form.values, authenticator);
+      await refreshAsync();
       redirect();
     },
   };
@@ -132,7 +134,7 @@ export const SigninPage = () => {
         `}
       >
         {tabs.length > 1 ? (
-          <Tabs items={tabs.map((tab) => ({ label: tab.tabTitle, key: tab.name, children: tab.component }))} />
+          <Tabs items={tabs.map((tab) => ({ label: t(tab.tabTitle), key: tab.name, children: tab.component }))} />
         ) : tabs.length ? (
           <div>{tabs[0].component}</div>
         ) : (

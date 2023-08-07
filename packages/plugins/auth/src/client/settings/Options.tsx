@@ -1,7 +1,6 @@
-import { useRequest, useRecord, useActionContext } from '@nocobase/client';
-import { useEffect } from 'react';
-import { useOptionsComponent } from '@nocobase/client';
 import { observer, useForm } from '@formily/react';
+import { useActionContext, useOptionsComponent, useRecord, useRequest } from '@nocobase/client';
+import { useEffect } from 'react';
 
 export const useValuesFromOptions = (options) => {
   const record = useRecord();

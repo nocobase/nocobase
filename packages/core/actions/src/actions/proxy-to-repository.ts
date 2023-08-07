@@ -1,6 +1,6 @@
-import { getRepositoryFromParams } from '../utils';
-import { Context } from '../index';
 import lodash from 'lodash';
+import { Context } from '../index';
+import { getRepositoryFromParams } from '../utils';
 
 export function proxyToRepository(paramKeys: string[], repositoryMethod: string) {
   return async function (ctx: Context, next) {

@@ -99,6 +99,7 @@ export const percent: IField = {
   filterable: {
     operators: operators.number,
   },
+  titleUsable: true,
   validateSchema(fieldSchema) {
     return {
       maxValue: {

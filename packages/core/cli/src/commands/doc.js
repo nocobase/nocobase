@@ -51,7 +51,7 @@ module.exports = (cli) => {
       if (command === 'serve') {
         // 如果是多语言，则需要进入内部，如果不是多语言，则直接进入 docs/dist
         let dir = resolve(cwd, 'docs/dist', process.env.DOC_LANG);
-        if (!existsSync(dir)) {
+        if (!fs.existsSync(dir)) {
           dir = resolve(cwd, 'docs/dist');
         }
         run('serve', [dir]);
