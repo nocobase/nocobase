@@ -45,6 +45,23 @@ describe('application life cycle', () => {
       app.emit('event1');
       expect(loadFn).not.toBeCalled();
     });
+
+    it('should not be called', async () => {
+      app = createAppProxy(mockServer());
+      const loadFn = jest.fn();
+
+      app.on('event1', () => {
+        loadFn();
+      });
+
+      app.on('event1', () => {
+        loadFn();
+      });
+
+      expect(app.listenerCount('event1')).toBe(2);
+      app.reInitEvents();
+      expect(app.listenerCount('event1')).toBe(0);
+    });
   });
 
   describe('load', () => {
@@ -100,12 +117,9 @@ describe('application life cycle', () => {
         plugins: [Plugin1],
       });
 
-      console.log(app.listeners('afterLoad'));
       await app.load();
       expect(app.listeners('afterLoad').filter((fn) => fn.name == testFunc.name)).toHaveLength(1);
-      console.log(app.listeners('afterLoad'));
       await app.reload();
-      console.log(app.listeners('afterLoad'));
       expect(app.listeners('afterLoad').filter((fn) => fn.name == testFunc.name)).toHaveLength(1);
     });
 

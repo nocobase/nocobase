@@ -552,11 +552,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   reInitEvents() {
-    for (const eventName of Object.keys(this['_events'])) {
-      const listeners = lodash.castArray(this['_events'][eventName] || []);
-      for (const listener of listeners) {
+    for (const eventName of this.eventNames()) {
+      for (const listener of this.listeners(eventName)) {
         if (listener['_reinitializable']) {
-          this.removeListener(eventName, listener);
+          this.removeListener(eventName, listener as any);
         }
       }
     }

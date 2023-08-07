@@ -52,7 +52,6 @@ pgOnly()('collection sync', () => {
     });
 
     await app.load();
-
     await app.db.sequelize.query(`DROP SCHEMA IF EXISTS sub1 CASCADE`);
     await app.db.sequelize.query(`DROP SCHEMA IF EXISTS sub2 CASCADE`);
 
@@ -162,31 +161,31 @@ pgOnly()('collection sync', () => {
   });
 
   it('should sync plugin status between apps', async () => {
-    // await mainApp.db.getRepository('applications').create({
-    //   values: {
-    //     name: 'sub1',
-    //   },
-    // });
-    // const sub1 = await AppSupervisor.getInstance().getApp('sub1');
-    // const getSubAppMapRecord = async (app) => {
-    //   return await app.db.getRepository('applicationPlugins').findOne({
-    //     filter: {
-    //       name: 'map',
-    //     },
-    //   });
-    // };
-    // expect((await getSubAppMapRecord(sub1)).get('enabled')).toBeFalsy();
-    // await mainApp.pm.enable('map');
-    // expect((await getSubAppMapRecord(sub1)).get('enabled')).toBeTruthy();
-    // // create new app sub2
-    // await mainApp.db.getRepository('applications').create({
-    //   values: {
-    //     name: 'sub2',
-    //   },
-    // });
-    // const sub2 = await AppSupervisor.getInstance().getApp('sub2');
-    // expect((await getSubAppMapRecord(sub2)).get('enabled')).toBeTruthy();
-    // expect(sub2.pm.get('map').options.enabled).toBeTruthy();
+    await mainApp.db.getRepository('applications').create({
+      values: {
+        name: 'sub1',
+      },
+    });
+    const sub1 = await AppSupervisor.getInstance().getApp('sub1');
+    const getSubAppMapRecord = async (app) => {
+      return await app.db.getRepository('applicationPlugins').findOne({
+        filter: {
+          name: 'map',
+        },
+      });
+    };
+    expect((await getSubAppMapRecord(sub1)).get('enabled')).toBeFalsy();
+    await mainApp.pm.enable('map');
+    expect((await getSubAppMapRecord(sub1)).get('enabled')).toBeTruthy();
+    // create new app sub2
+    await mainApp.db.getRepository('applications').create({
+      values: {
+        name: 'sub2',
+      },
+    });
+    const sub2 = await AppSupervisor.getInstance().getApp('sub2');
+    expect((await getSubAppMapRecord(sub2)).get('enabled')).toBeTruthy();
+    expect(sub2.pm.get('map').options.enabled).toBeTruthy();
   });
 
   it('should not sync roles in sub app', async () => {
