@@ -7,6 +7,7 @@ import { resolve } from 'path';
 import xpipe from 'xpipe';
 import Application from '../application';
 import { Plugin } from '../plugin';
+import { clientStaticMiddleware } from './clientStaticMiddleware';
 import collectionOptions from './options/collection';
 import resourceOptions from './options/resource';
 import { PluginManagerRepository } from './plugin-manager-repository';
@@ -44,6 +45,8 @@ export class PluginManager {
     this.repository = this.collection.repository as PluginManagerRepository;
     this.repository.setPluginManager(this);
     this.app.resourcer.define(resourceOptions);
+
+    this.app.use(clientStaticMiddleware);
 
     this.app.resourcer.use(async (ctx, next) => {
       await next();
@@ -227,24 +230,6 @@ export class PluginManager {
     return instance;
   }
 
-  async generateClientFile(plugin: string, packageName: string) {
-    const file = resolve(
-      process.cwd(),
-      'packages',
-      process.env.APP_PACKAGE_ROOT || 'app',
-      'client/src/plugins',
-      `${plugin}.ts`,
-    );
-    if (!fs.existsSync(file)) {
-      try {
-        require.resolve(`${packageName}/client`);
-        await fs.promises.writeFile(file, `export { default } from '${packageName}/client';`);
-        const { run } = require('@nocobase/cli/src/util');
-        await run('yarn', ['nocobase', 'postinstall']);
-      } catch (error) {}
-    }
-  }
-
   async add(plugin: any, options: any = {}, transaction?: any) {
     if (Array.isArray(plugin)) {
       const t = transaction || (await this.app.db.sequelize.transaction());
@@ -264,8 +249,6 @@ export class PluginManager {
     }
 
     const packageName = await PluginManager.findPackage(plugin);
-
-    await this.generateClientFile(plugin, packageName);
 
     const instance = this.addStatic(plugin, {
       ...options,
@@ -338,7 +321,10 @@ export class PluginManager {
         if (!plugin) {
           throw new Error(`${name} plugin does not exist`);
         }
-        await plugin.install();
+        if (!plugin.options.installed) {
+          await plugin.install();
+          plugin.options.installed = true;
+        }
         await plugin.afterEnable();
       }
 

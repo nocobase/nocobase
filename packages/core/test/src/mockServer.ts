@@ -99,6 +99,9 @@ export class MockServer extends Application {
                     userId: typeof userOrId === 'number' ? userOrId : userOrId?.id,
                   },
                   process.env.APP_KEY,
+                  {
+                    expiresIn: '1d',
+                  },
                 ),
                 { type: 'bearer' },
               )
@@ -193,8 +196,6 @@ export function mockServer(options: ApplicationOptions = {}) {
     ...options,
     database,
   });
-
-  app.pm.generateClientFile = async () => {};
 
   return app;
 }

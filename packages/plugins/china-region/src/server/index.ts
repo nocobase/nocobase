@@ -1,6 +1,15 @@
 import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 
+function getChinaDivisionData(key: string) {
+  try {
+    require.resolve(`../china-division/${key}.json`);
+    return require(`../china-division/${key}.json`);
+  } catch (error) {
+    return require(`china-division/dist/${key}.json`);
+  }
+}
+
 export class PluginChinaRegion extends Plugin {
   async install() {
     await this.importData();
@@ -25,9 +34,9 @@ export class PluginChinaRegion extends Plugin {
   }
 
   async importData() {
-    const areas = require('china-division/dist/areas.json');
-    const cities = require('china-division/dist/cities.json');
-    const provinces = require('china-division/dist/provinces.json');
+    const areas = getChinaDivisionData('areas');
+    const cities = getChinaDivisionData('cities');
+    const provinces = getChinaDivisionData('provinces');
 
     const timer = Date.now();
     const ChinaRegion = this.db.getModel('chinaRegions');

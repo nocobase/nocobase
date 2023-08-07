@@ -18,7 +18,7 @@ const titleCss = css`
   pointer-events: none;
   position: absolute;
   font-size: 12px;
-  background: #f18b62;
+  background: var(--colorSettings);
   color: #fff;
   padding: 0 5px;
   line-height: 16px;

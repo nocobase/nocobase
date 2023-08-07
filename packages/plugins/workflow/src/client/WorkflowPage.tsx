@@ -1,15 +1,15 @@
-import { cx } from '@emotion/css';
-import { SchemaComponent } from '@nocobase/client';
+import { cx, SchemaComponent } from '@nocobase/client';
 import React from 'react';
 import { useParams } from 'react-router-dom';
-import { workflowPageClass } from './style';
+import useStyles from './style';
 import { WorkflowCanvas } from './WorkflowCanvas';
 
 export const WorkflowPage = () => {
   const params = useParams<any>();
+  const { styles } = useStyles();
 
   return (
-    <div className={cx(workflowPageClass)}>
+    <div className={cx(styles.workflowPageClass)}>
       <SchemaComponent
         schema={{
           type: 'void',

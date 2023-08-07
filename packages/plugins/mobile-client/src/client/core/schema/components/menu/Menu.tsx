@@ -1,6 +1,6 @@
-import React from 'react';
-import { MenuItem } from './Menu.Item';
+import { useFieldSchema } from '@formily/react';
 import {
+  cx,
   DndContext,
   SchemaComponent,
   SchemaInitializer,
@@ -8,15 +8,17 @@ import {
   useDesignable,
   useDesigner,
 } from '@nocobase/client';
-import { css, cx } from '@emotion/css';
-import { MenuDesigner } from './Menu.Designer';
-import { useFieldSchema } from '@formily/react';
 import { List } from 'antd-mobile';
+import React from 'react';
 import { useTranslation } from '../../../../locale';
-import { menuItemSchema } from './schema';
 import { PageSchema } from '../../common';
+import { MenuDesigner } from './Menu.Designer';
+import { MenuItem } from './Menu.Item';
+import { menuItemSchema } from './schema';
+import useStyles from './style';
 
 const InternalMenu: React.FC = (props) => {
+  const { styles } = useStyles();
   const Designer = useDesigner();
   const fieldSchema = useFieldSchema();
   const { insertBeforeEnd, designable } = useDesignable();
@@ -39,16 +41,7 @@ const InternalMenu: React.FC = (props) => {
   };
 
   return (
-    <SortableItem
-      className={cx(
-        'nb-mobile-menu',
-        css`
-          background: #ffffff;
-          width: 100%;
-          margin-bottom: var(--nb-spacing);
-        `,
-      )}
-    >
+    <SortableItem className={cx('nb-mobile-menu', styles.mobileMenu)}>
       <List>
         {designable && (
           <List.Item>

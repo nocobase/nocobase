@@ -25,7 +25,7 @@ export const Json = React.forwardRef<typeof Input.TextArea, JSONTextAreaProps>(
         {...props}
         className={cx(
           css`
-            font-size: 90%;
+            font-size: 80%;
             font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
           `,
           props.className,

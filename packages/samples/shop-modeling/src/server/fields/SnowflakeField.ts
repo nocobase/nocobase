@@ -1,8 +1,7 @@
-import { DataTypes } from 'sequelize';
+// 引入字段类型基类
+import { BaseColumnFieldOptions, DataTypes, Field } from '@nocobase/database';
 // 引入算法工具包
 import { Snowflake } from 'nodejs-snowflake';
-// 引入字段类型基类
-import { Field, BaseColumnFieldOptions } from '@nocobase/database';
 
 export interface SnowflakeFieldOptions extends BaseColumnFieldOptions {
   type: 'snowflake';

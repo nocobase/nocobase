@@ -1,4 +1,4 @@
-import { FormItem, Input } from '@formily/antd';
+import { FormItem, Input } from '@formily/antd-v5';
 import { ISchema, observer, useForm } from '@formily/react';
 import {
   APIClientProvider,

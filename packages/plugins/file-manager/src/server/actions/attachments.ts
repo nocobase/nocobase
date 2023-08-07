@@ -1,5 +1,5 @@
-import multer from '@koa/multer';
-import actions, { Context, Next } from '@nocobase/actions';
+import { Context, Next } from '@nocobase/actions';
+import { koaMulter as multer } from '@nocobase/utils';
 import path from 'path';
 
 import { DEFAULT_MAX_FILE_SIZE, FILE_FIELD_NAME, LIMIT_FILES } from '../constants';

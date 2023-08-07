@@ -6,6 +6,7 @@ import { useCollection } from '../../../collection-manager';
 import { useSchemaInitializer } from '../../../schema-initializer';
 import { DndContext, SortableItem } from '../../common';
 import { useDesigner } from '../../hooks';
+import { useToken } from '../__builtins__';
 import { AssociationFilterBlockDesigner } from './AssociationFilter.BlockDesigner';
 import { AssociationFilterFilterBlockInitializer } from './AssociationFilter.FilterBlockInitializer';
 import { AssociationFilterInitializer } from './AssociationFilter.Initializer';
@@ -14,6 +15,7 @@ import { AssociationFilterItemDesigner } from './AssociationFilter.Item.Designer
 import { AssociationFilterProvider } from './AssociationFilterProvider';
 
 export const AssociationFilter = (props) => {
+  const { token } = useToken();
   const Designer = useDesigner();
   const filedSchema = useFieldSchema();
 
@@ -29,6 +31,7 @@ export const AssociationFilter = (props) => {
             height: 100%;
             overflow-y: auto;
             position: relative;
+            border-radius: ${token.borderRadiusLG}px;
             &:hover {
               > .general-schema-designer {
                 display: block;
@@ -36,7 +39,7 @@ export const AssociationFilter = (props) => {
             }
             &.nb-form-item:hover {
               > .general-schema-designer {
-                background: rgba(241, 139, 98, 0.06) !important;
+                background: var(--colorBgSettingsHover) !important;
                 border: 0 !important;
                 top: -5px !important;
                 bottom: -5px !important;
@@ -52,7 +55,7 @@ export const AssociationFilter = (props) => {
               left: 0;
               right: 0;
               display: none;
-              border: 2px solid rgba(241, 139, 98, 0.3);
+              border: 2px solid var(--colorBorderSettingsHover);
               pointer-events: none;
               > .general-schema-designer-icons {
                 position: absolute;
@@ -61,11 +64,12 @@ export const AssociationFilter = (props) => {
                 line-height: 16px;
                 pointer-events: all;
                 .ant-space-item {
-                  background-color: #f18b62;
+                  background-color: var(--colorSettings);
                   color: #fff;
                   line-height: 16px;
                   width: 16px;
                   padding-left: 1px;
+                  align-self: stretch;
                 }
               }
             }

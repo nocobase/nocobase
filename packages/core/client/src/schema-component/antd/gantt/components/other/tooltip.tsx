@@ -3,12 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { getYmd } from '../../helpers/other-helper';
 import { BarTask } from '../../types/bar-task';
 import { Task } from '../../types/public-types';
-import {
-  tooltipDefaultContainer,
-  tooltipDefaultContainerParagraph,
-  tooltipDetailsContainer,
-  tooltipDetailsContainerHidden,
-} from './style';
+import useStyles from './style';
 
 export type TooltipProps = {
   task: BarTask;
@@ -45,6 +40,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
   taskListWidth,
   TooltipContent,
 }) => {
+  const { wrapSSR, componentCls, hashId } = useStyles();
   const tooltipRef = useRef<HTMLDivElement | null>(null);
   const [relatedY, setRelatedY] = useState(0);
   const [relatedX, setRelatedX] = useState(0);
@@ -99,14 +95,14 @@ export const Tooltip: React.FC<TooltipProps> = ({
     rtl,
   ]);
 
-  return (
+  return wrapSSR(
     <div
       ref={tooltipRef}
-      className={relatedX ? cx(tooltipDetailsContainer) : cx(tooltipDetailsContainerHidden)}
+      className={cx(relatedX ? 'tooltipDetailsContainer' : 'tooltipDetailsContainerHidden', componentCls, hashId)}
       style={{ left: relatedX, top: relatedY }}
     >
       <TooltipContent task={task} fontSize={fontSize} fontFamily={fontFamily} />
-    </div>
+    </div>,
   );
 };
 
@@ -115,22 +111,24 @@ export const StandardTooltipContent: React.FC<{
   fontSize: string;
   fontFamily: string;
 }> = ({ task, fontSize, fontFamily }) => {
+  const { wrapSSR, componentCls, hashId } = useStyles();
+
   const style = {
     fontSize,
     fontFamily,
   };
-  return (
-    <div className={cx(tooltipDefaultContainer)} style={style}>
-      <b style={{ fontSize: fontSize + 6 }}>
+  return wrapSSR(
+    <div className={cx(componentCls, hashId, 'tooltipDefaultContainer')} style={style}>
+      <b style={{ fontSize: fontSize }}>
         {task.name}: {getYmd(task.start)} ~ {getYmd(task.end)}
       </b>
       {task.end.getTime() - task.start.getTime() !== 0 && (
-        <p className={cx(tooltipDefaultContainerParagraph)}>{`Duration: ${
+        <p className="tooltipDefaultContainerParagraph">{`Duration: ${
           Math.round(((task.end.getTime() - task.start.getTime()) / (1000 * 60 * 60 * 24)) * 10) / 10
         } day(s)`}</p>
       )}
 
-      <p className={cx(tooltipDefaultContainerParagraph)}>{!!task.progress && `Progress: ${task.progress}%`}</p>
-    </div>
+      <p className="tooltipDefaultContainerParagraph">{!!task.progress && `Progress: ${task.progress}%`}</p>
+    </div>,
   );
 };

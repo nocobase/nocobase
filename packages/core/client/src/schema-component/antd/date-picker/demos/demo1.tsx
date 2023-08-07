@@ -1,7 +1,7 @@
 /**
  * title: DatePicker
  */
-import { FormItem } from '@formily/antd';
+import { FormItem } from '@formily/antd-v5';
 import { DatePicker, Input, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
 import React from 'react';
 
@@ -17,7 +17,6 @@ const schema = {
         dateFormat: 'YYYY/MM/DD',
         showTime: true,
       },
-      // default: '2022-11-22',
       'x-reactions': {
         target: '*(read1,read2)',
         fulfill: {

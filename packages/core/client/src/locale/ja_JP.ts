@@ -222,6 +222,7 @@ export default {
   "Link to": "リンク",
   "Link to description": "コレクションの関連付けを素早く作成するためにしようされ、ほとんどの一般的なシナリオに対応しています。開発者以外の方のしようにも適しています。フィールドとして存在する場合、参照元コレクションのレコードを選択するために使用されるドロップダウンです。一度作成されると、参照先コレクションに現在のコレクションの関連フィールドが同時に生成されます。",
   "Sub-table": "サブテーブル",
+  "Sub-form(Popover)":"サブフォーム（ポップアップ窓）",
   "System info": "システム情報",
   "Created at": "作成日",
   "Last updated at": "最終更新日",
@@ -616,5 +617,14 @@ export default {
   "Find by the following fields":"次のフィールドで検索",
   "Create":"新規のみ"  ,
   "Current form":"現在のフォーム",
-  "Current object":"現在のオブジェクト"
+  "Current object":"現在のオブジェクト",
+  "Linkage with form fields":"フォームデータから連動",
+  "Allow add new, update and delete actions":"削除変更操作の許可",
+  "Date display format":"日付表示形式",
+  "Assign  data scope for the template":"テンプレートのデータ範囲の指定",
+  "Tag":"タブ",
+  "Tag color field":"ラベルの色フィールド",
+  "Sync successfully":"同期成功",
+  "Sync from form fields":"フォームフィールドの同期",
+  "Select all":"すべて選択"
 }

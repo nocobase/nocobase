@@ -317,6 +317,7 @@ export default {
   "Select file": "选择文件",
   "Subtable": "子表格",
   "Sub-form": "子表单",
+  "Sub-form(Popover)":"子表单(弹窗)",
   "Sub-details":"子详情",
   "Record picker": "数据选择器",
   "Toggles the subfield mode": "切换子字段模式",
@@ -790,4 +791,15 @@ export default {
   "File manager": "文件管理器",
   "Direct duplicate": "直接复制",
   "Copy into the form and continue to fill in": "复制到表单并继续填写",
+  "Linkage with form fields":"从表单字段联动",
+  "Failed to load plugin": "插件加载失败",
+  "Allow add new, update and delete actions":"允许增删改操作",
+  "Date display format":"日期显示格式",
+  "Assign  data scope for the template":"为模板指定数据范围",
+  "Table selected records":"表格中选中的记录",
+  "Tag":"标签",
+  "Tag color field":"标签颜色字段",
+  "Sync successfully":"同步成功",
+  "Sync from form fields":"同步表单字段",
+  "Select all":"全选"
 }

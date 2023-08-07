@@ -11,7 +11,7 @@ import {
   useDesignable,
   useSchemaTemplate,
 } from '@nocobase/client';
-import set from 'lodash/set';
+import lodash from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMapTranslation } from '../locale';
@@ -100,7 +100,7 @@ export const MapBlockDesigner = () => {
           } as ISchema
         }
         onSubmit={({ zoom }) => {
-          set(fieldSchema, 'x-component-props.zoom', zoom);
+          lodash.set(fieldSchema, 'x-component-props.zoom', zoom);
           Object.assign(field.componentProps, fieldSchema['x-component-props']);
           dn.emit('patch', {
             schema: {

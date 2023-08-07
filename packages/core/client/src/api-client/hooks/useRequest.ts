@@ -4,11 +4,12 @@ import { default as useReq } from 'ahooks/es/useRequest';
 import { Options } from 'ahooks/es/useRequest/src/types';
 import { AxiosRequestConfig } from 'axios';
 import cloneDeep from 'lodash/cloneDeep';
-import { useContext } from 'react';
-import { APIClientContext } from '../context';
 import { assign } from './assign';
+import { useAPIClient } from './useAPIClient';
 
 type FunctionService = (...args: any[]) => Promise<any>;
+
+export type ReturnTypeOfUseRequest<TData = any> = ReturnType<typeof useRequest<TData>>;
 
 export type ResourceActionOptions<P = any> = {
   resource?: string;
@@ -23,13 +24,13 @@ export function useRequest<P>(
 ) {
   // 缓存用途
   const [state, setState] = useSetState({});
-  const api = useContext(APIClientContext);
+  const api = useAPIClient();
 
-  let tempOptions, tempService;
+  let tempService;
 
   if (typeof service === 'function') {
     tempService = service;
-  } else {
+  } else if (service) {
     tempService = async (params = {}) => {
       const { resource } = service as ResourceActionOptions;
       let args = cloneDeep(service);
@@ -42,9 +43,10 @@ export function useRequest<P>(
       const response = await api.request(args);
       return response?.data;
     };
+  } else {
+    tempService = async () => {};
   }
-
-  tempOptions = {
+  const tempOptions = {
     ...options,
     onSuccess(...args) {
       // @ts-ignore
@@ -55,7 +57,6 @@ export function useRequest<P>(
     },
   };
 
-  const result: any = useReq(tempService, tempOptions);
-
+  const result = useReq<P, any>(tempService, tempOptions);
   return { ...result, state, setState };
 }

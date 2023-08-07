@@ -32,7 +32,7 @@ describe('workflow > instructions > request', () => {
         ctx.withoutDataWrapping = true;
         ctx.body = {
           meta: { title: ctx.query.title },
-          data: { title: ctx.request.body.title },
+          data: { title: ctx.request.body['title'] },
         };
       }
       next();
@@ -97,7 +97,7 @@ describe('workflow > instructions > request', () => {
 
       expect(job.result).toMatchObject({
         code: 'ECONNABORTED',
-        name: 'AxiosError',
+        name: 'Error',
         status: null,
         message: 'timeout of 250ms exceeded',
       });
@@ -123,7 +123,7 @@ describe('workflow > instructions > request', () => {
       expect(job.status).toEqual(JOB_STATUS.RESOLVED);
       expect(job.result).toMatchObject({
         code: 'ECONNABORTED',
-        name: 'AxiosError',
+        name: 'Error',
         status: null,
         message: 'timeout of 250ms exceeded',
       });
@@ -212,6 +212,36 @@ describe('workflow > instructions > request', () => {
       const [job] = await execution.getJobs();
       expect(job.status).toEqual(JOB_STATUS.RESOLVED);
       expect(job.result.data).toEqual({ title });
+    });
+
+    it('request inside loop',async () => {
+      const n1 = await workflow.createNode({
+        type: 'loop',
+        config: {
+          target: 2,
+        },
+      });
+
+      const n2 = await workflow.createNode({
+        type: 'request',
+        upstreamId: n1.id,
+        branchIndex: 0,
+        config: {
+          url: URL_DATA,
+          method: 'GET',
+        }
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
+      const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
+      expect(jobs.length).toBe(3);
+      expect(jobs.map(item => item.status)).toEqual(Array(3).fill(JOB_STATUS.RESOLVED));
+      expect(jobs[0].result).toBe(2);
     });
   });
 });

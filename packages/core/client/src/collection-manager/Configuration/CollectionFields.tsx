@@ -1,38 +1,34 @@
 import { css } from '@emotion/css';
-import { Field, createForm } from '@formily/core';
+import { createForm, Field } from '@formily/core';
 import { FieldContext, FormContext, useField } from '@formily/react';
 import { Space, Switch, Table, TableColumnProps, Tag, Tooltip } from 'antd';
 import React, { useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useCurrentAppInfo } from '../../appInfo';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { Action, useAttach, useCompile } from '../../schema-component';
-import {
-  ResourceActionContext,
-  ResourceActionProvider,
-  useResourceActionContext,
-  useResourceContext,
-} from '../ResourceActionProvider';
 import {
   isDeleteButtonDisabled,
   useBulkDestroyActionAndRefreshCM,
   useDestroyActionAndRefreshCM,
 } from '../action-hooks';
 import { useCollectionManager } from '../hooks/useCollectionManager';
+import {
+  ResourceActionContext,
+  ResourceActionProvider,
+  useResourceActionContext,
+  useResourceContext,
+} from '../ResourceActionProvider';
 import { AddCollectionField } from './AddFieldAction';
 import { EditCollectionField } from './EditFieldAction';
 import { OverridingCollectionField } from './OverridingCollectionField';
+import { collection } from './schemas/collectionFields';
 import { SyncFieldsAction } from './SyncFieldsAction';
 import { ViewCollectionField } from './ViewInheritedField';
-import { collection } from './schemas/collectionFields';
 
 const indentStyle = css`
   .ant-table {
     margin-left: -16px !important;
-  }
-`;
-const rowStyle = css`
-  .ant-table-cell {
-    background-color: white;
   }
 `;
 const tableContainer = css`
@@ -56,14 +52,11 @@ const tableContainer = css`
 `;
 
 const titlePrompt = 'Default title for each record';
-// 只有下面类型的字段才可以设置为标题字段
-const expectTypes = ['string', 'integer', 'bigInt', 'float', 'double', 'decimal', 'date', 'dateonly', 'time'];
-const excludeInterfaces = ['icon'];
 
 // 是否可以作为标题字段
 export const isTitleField = (field) => {
-  if (!field) return false;
-  return !field.isForeignKey && expectTypes.includes(field.type) && !excludeInterfaces.includes(field.interface);
+  const { getInterface } = useCollectionManager();
+  return !field.isForeignKey && getInterface(field.interface)?.titleUsable;
 };
 
 const CurrentFields = (props) => {
@@ -78,7 +71,7 @@ const CurrentFields = (props) => {
 
   const columns: TableColumnProps<any>[] = [
     {
-      dataIndex: ['uiSchema', 'title'],
+      dataIndex: ['uiSchema', 'rawTitle'],
       title: t('Field display name'),
       render: (value) => <div style={{ marginLeft: 7 }}>{compile(value)}</div>,
     },
@@ -184,7 +177,7 @@ const InheritFields = (props) => {
 
   const columns: TableColumnProps<any>[] = [
     {
-      dataIndex: ['uiSchema', 'title'],
+      dataIndex: ['uiSchema', 'rawTitle'],
       title: t('Field display name'),
       render: (value) => <div style={{ marginLeft: 1 }}>{compile(value)}</div>,
     },
@@ -269,6 +262,9 @@ export const CollectionFields = () => {
   const compile = useCompile();
   const field = useField<Field>();
   const { name } = useRecord();
+  const {
+    data: { database },
+  } = useCurrentAppInfo();
   const { getInterface, getInheritCollections, getCollection, getCurrentCollectionFields } = useCollectionManager();
   const form = useMemo(() => createForm(), []);
   const f = useAttach(form.createArrayField({ ...field.props, basePath: '' }));
@@ -403,7 +399,7 @@ export const CollectionFields = () => {
     }),
     [t],
   );
-  const addProps = { type: 'primary' };
+  const addProps = { type: 'primary', database };
   const syncProps = { type: 'primary' };
   return (
     <ResourceActionProvider {...resourceActionProps}>
@@ -430,7 +426,6 @@ export const CollectionFields = () => {
             expandable={{
               defaultExpandAllRows: true,
               defaultExpandedRowKeys: dataSource.map((d) => d.key),
-              expandedRowClassName: () => rowStyle,
               expandedRowRender: (record) =>
                 record.inherit ? (
                   <InheritFields

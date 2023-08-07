@@ -1,7 +1,6 @@
 import { Board } from '@nocobase/client';
 import { Button, Card } from 'antd';
 import React, { useState } from 'react';
-import '../style.less';
 
 const board = {
   columns: [

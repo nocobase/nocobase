@@ -4,7 +4,7 @@ import { useContext } from 'react';
 import { useFmTranslation } from '../locale';
 
 // 限制上传文件大小为 10M
-export const FILE_LIMIT_SIZE = 10 * 1024 * 1024;
+export const FILE_LIMIT_SIZE = 1024 * 1024 * 1024;
 
 export const useUploadFiles = () => {
   const { service } = useBlockRequestContext();

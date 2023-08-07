@@ -46,18 +46,8 @@ export const ActionModal: ComposedActionDrawer<ModalProps> = observer(
                 display: none;
               }
 
-              .ant-modal-body {
-                padding-top: 16px;
-              }
-
-              .ant-modal-body {
-                background: #f0f2f5;
-              }
-
-              .ant-modal-close-x {
-                width: 32px;
-                height: 32px;
-                line-height: 32px;
+              .ant-modal-content {
+                background: var(--nb-box-bg);
               }
             }
           `,
@@ -69,10 +59,6 @@ export const ActionModal: ComposedActionDrawer<ModalProps> = observer(
                 display: flex;
                 justify-content: flex-end;
                 width: 100%;
-
-                .ant-btn {
-                  margin-right: 8px;
-                }
               `}
             >
               <RecursionField

@@ -1,9 +1,7 @@
-import React, { useRef, useEffect, forwardRef } from 'react';
-import { cx } from '@emotion/css';
-import { GridProps, Grid } from '../grid/grid';
-import { CalendarProps, Calendar } from '../calendar/calendar';
-import { TaskGanttContentProps, TaskGanttContent } from './task-gantt-content';
-import { ganttVerticalContainer, horizontalContainer } from './style';
+import React, { forwardRef, useEffect, useRef } from 'react';
+import { Calendar, CalendarProps } from '../calendar/calendar';
+import { Grid, GridProps } from '../grid/grid';
+import { TaskGanttContent, TaskGanttContentProps } from './task-gantt-content';
 
 export type TaskGanttProps = {
   gridProps: GridProps;
@@ -33,19 +31,19 @@ export const TaskGantt: React.FC<TaskGanttProps> = forwardRef(
     }, [scrollX]);
 
     return (
-      <div className={cx(ganttVerticalContainer)} ref={ref} dir="ltr">
+      <div className="ganttVerticalContainer" ref={ref} dir="ltr">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width={gridProps.svgWidth}
           height={calendarProps.headerHeight}
           fontFamily={barProps.fontFamily}
-          style={{ borderBottom: '1px solid #f0f0f0', fontWeight: 700 }}
+          className="ganttHeader"
         >
           <Calendar {...calendarProps} />
         </svg>
         <div
           ref={horizontalContainerRef}
-          className={cx(horizontalContainer)}
+          className="horizontalContainer"
           style={ganttHeight ? { maxHeight: ganttHeight, width: gridProps.svgWidth } : { width: gridProps.svgWidth }}
         >
           <svg
@@ -54,7 +52,7 @@ export const TaskGantt: React.FC<TaskGanttProps> = forwardRef(
             height={barProps.rowHeight * (barProps.tasks.length || 3)}
             fontFamily={barProps.fontFamily}
             ref={ganttSVGRef}
-            style={{ borderBottom: '1px solid #f0f0f0' }}
+            className="ganttBody"
           >
             <Grid {...gridProps} />
             <TaskGanttContent {...newBarProps} />

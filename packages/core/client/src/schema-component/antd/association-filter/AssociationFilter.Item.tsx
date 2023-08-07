@@ -1,18 +1,21 @@
 import { CloseOutlined, SearchOutlined } from '@ant-design/icons';
-import { css } from '@emotion/css';
 import { useFieldSchema } from '@formily/react';
 import { Col, Collapse, Input, Row, Tree } from 'antd';
 import cls from 'classnames';
 import React, { ChangeEvent, MouseEvent, useMemo, useState } from 'react';
 import { SortableItem } from '../../common';
 import { useCompile, useDesigner, useProps } from '../../hooks';
+import { useToken } from '../__builtins__';
 import { EllipsisWithTooltip } from '../input';
 import { getLabelFormatValue, useLabelUiSchema } from '../record-picker';
 import { AssociationFilter } from './AssociationFilter';
+import useStyles from './AssociationFilter.Item.style';
 
 const { Panel } = Collapse;
 
 export const AssociationFilterItem = (props) => {
+  const { wrapSSR, componentCls, hashId } = useStyles();
+  const { token } = useToken();
   const collectionField = AssociationFilter.useAssociationField();
 
   // 把一些可定制的状态通过 hook 提取出去了，为了兼容之前添加的 Table 区块，这里加了个默认值
@@ -47,6 +50,8 @@ export const AssociationFilterItem = (props) => {
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
   const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
   const [autoExpandParent, setAutoExpandParent] = useState<boolean>(true);
+
+  const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.title || 'label');
 
   if (!collectionField) {
     return null;
@@ -83,109 +88,28 @@ export const AssociationFilterItem = (props) => {
   };
 
   const title = fieldSchema.title ?? collectionField?.uiSchema?.title;
-  const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.title || 'label');
 
-  return (
-    <SortableItem
-      className={cls(
-        'nb-block-item',
-        props.className,
-        css`
-          position: relative;
-          &:hover {
-            > .general-schema-designer {
-              display: block;
-            }
-          }
-          &.nb-form-item:hover {
-            > .general-schema-designer {
-              background: rgba(241, 139, 98, 0.06) !important;
-              border: 0 !important;
-              top: -5px !important;
-              bottom: -5px !important;
-              left: -5px !important;
-              right: -5px !important;
-            }
-          }
-          > .general-schema-designer {
-            position: absolute;
-            z-index: 999;
-            top: 0;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            display: none;
-            border: 2px solid rgba(241, 139, 98, 0.3);
-            pointer-events: none;
-            > .general-schema-designer-icons {
-              position: absolute;
-              right: 2px;
-              top: 2px;
-              line-height: 16px;
-              pointer-events: all;
-              .ant-space-item {
-                background-color: #f18b62;
-                color: #fff;
-                line-height: 16px;
-                width: 16px;
-                padding-left: 1px;
-              }
-            }
-          }
-        `,
-      )}
-    >
+  return wrapSSR(
+    <SortableItem className={cls(componentCls, hashId, 'nb-block-item', props.className, 'SortableItem')}>
       <Designer />
       <Collapse defaultActiveKey={defaultActiveKeyCollapse} ghost expandIcon={searchVisible ? () => null : undefined}>
         <Panel
-          className={css`
-            & .ant-collapse-content-box {
-              padding: 0 8px !important;
-              max-height: 400px;
-              overflow: auto;
-            }
-            & .ant-collapse-header {
-              padding: 10px !important;
-              background: #fafafa;
-            }
-          `}
+          className="Panel"
           header={
             <Row
-              className={css`
-                align-items: center;
-                width: 100%;
-                min-width: 0;
-                height: 22px;
-                flex-wrap: nowrap;
-                ${searchVisible ? 'border-bottom: 1px solid #dcdcdc;' : ''}
-              `}
+              className="headerRow"
+              style={{
+                borderBottom: searchVisible ? `1px solid ${token.colorBorder}` : 'none',
+              }}
               gutter={5}
             >
-              <Col
-                title={compile(title)}
-                className={css`
-                  flex: 1 1 auto;
-                  overflow: hidden;
-                  text-overflow: ellipsis;
-                  white-space: nowrap;
-                `}
-              >
+              <Col title={compile(title)} className="headerCol">
                 {searchVisible ? (
                   <Input
                     bordered={false}
                     autoFocus
                     placeholder="Search..."
-                    className={css`
-                      outline: none;
-                      background: #fafafa;
-                      width: 100%;
-                      border: none;
-                      height: 20px;
-                      padding: 4px;
-                      &::placeholder {
-                        color: #dcdcdc;
-                      }
-                    `}
+                    className="search"
                     onClick={handleSearchClick}
                     onChange={handleSearchInput}
                   />
@@ -194,25 +118,14 @@ export const AssociationFilterItem = (props) => {
                 )}
               </Col>
               <Col
-                className={css`
-                  flex: 0 0 auto;
-                `}
+                style={{
+                  flex: '0 0 auto',
+                }}
               >
                 {searchVisible ? (
-                  <CloseOutlined
-                    className={css`
-                      color: #aeaeae !important;
-                      font-size: 11px;
-                    `}
-                    onClick={handleSearchToggle}
-                  />
+                  <CloseOutlined className="CloseOutlined" onClick={handleSearchToggle} />
                 ) : (
-                  <SearchOutlined
-                    className={css`
-                      color: #aeaeae !important;
-                    `}
-                    onClick={handleSearchToggle}
-                  />
+                  <SearchOutlined className="SearchOutlined" onClick={handleSearchToggle} />
                 )}
               </Col>
             </Row>
@@ -220,13 +133,8 @@ export const AssociationFilterItem = (props) => {
           key={defaultActiveKeyCollapse[0]}
         >
           <Tree
-            style={{ padding: '16px 0' }}
+            className="Tree"
             onExpand={onExpand}
-            rootClassName={css`
-              .ant-tree-node-content-wrapper {
-                overflow-x: hidden;
-              }
-            `}
             expandedKeys={expandedKeys}
             autoExpandParent={autoExpandParent}
             treeData={list}
@@ -244,6 +152,6 @@ export const AssociationFilterItem = (props) => {
           />
         </Panel>
       </Collapse>
-    </SortableItem>
+    </SortableItem>,
   );
 };

@@ -1,9 +1,10 @@
 import { DeleteOutlined, MenuOutlined } from '@ant-design/icons';
+import { TinyColor } from '@ctrl/tinycolor';
 import { SortableContext, useSortable } from '@dnd-kit/sortable';
 import { css } from '@emotion/css';
 import { ArrayField, Field } from '@formily/core';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
-import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
+import { RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
 import { action, reaction } from '@formily/reactive';
 import { useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, TableColumnProps } from 'antd';
@@ -19,7 +20,9 @@ import {
   useTableSelectorContext,
 } from '../../../';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
-import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
+import { useToken } from '../__builtins__';
+import { ColumnFieldProvider } from './components/ColumnFieldProvider';
+import { extractIndex, isCollectionFieldComponent, isColumnComponent, isPortalInBody } from './utils';
 
 const useArrayField = (props) => {
   const field = useField<ArrayField>();
@@ -34,7 +37,7 @@ const useTableColumns = (props) => {
   const { exists, render } = useSchemaInitializer(schema['x-initializer']);
   const columns = schema
     .reduceProperties((buf, s) => {
-      if (isColumnComponent(s) && schemaInWhitelist(Object.values(s.properties || {}).pop())) {
+      if (isColumnComponent(s) && schemaInWhitelist(Object.values(s.properties || {}).pop(), props?.isSubTable)) {
         return buf.concat([s]);
       }
       return buf;
@@ -58,11 +61,13 @@ const useTableColumns = (props) => {
           return (
             <RecordIndexProvider index={record.__index || index}>
               <RecordProvider record={record}>
-                <RecursionField
-                  basePath={field.address.concat(record.__index || index)}
-                  schema={s}
-                  onlyRenderProperties
-                />
+                <ColumnFieldProvider schema={s} basePath={field.address.concat(record.__index || index)}>
+                  <RecursionField
+                    basePath={field.address.concat(record.__index || index)}
+                    schema={s}
+                    onlyRenderProperties
+                  />
+                </ColumnFieldProvider>
               </RecordProvider>
             </RecordIndexProvider>
           );
@@ -109,27 +114,33 @@ const useTableColumns = (props) => {
   return tableColumns;
 };
 
-const topActiveClass = css`
-  & > td {
-    border-top: 2px solid rgba(241, 139, 98, 0.6) !important;
-  }
-`;
-const bottomActiveClass = css`
-  & > td {
-    border-bottom: 2px solid rgba(241, 139, 98, 0.6) !important;
-  }
-`;
-
 const SortableRow = (props) => {
+  const { token } = useToken();
   const id = props['data-row-key']?.toString();
   const { setNodeRef, isOver, active, over } = useSortable({
     id,
   });
 
+  const classObj = useMemo(() => {
+    const borderColor = new TinyColor(token.colorSettings).setAlpha(0.6).toHex8String();
+    return {
+      topActiveClass: css`
+        & > td {
+          border-top: 2px solid ${borderColor} !important;
+        }
+      `,
+      bottomActiveClass: css`
+        & > td {
+          border-bottom: 2px solid ${borderColor} !important;
+        }
+      `,
+    };
+  }, [token.colorSettings]);
+
   const className =
     (active?.data.current?.sortable.index ?? -1) > (over?.data.current?.sortable?.index ?? -1)
-      ? topActiveClass
-      : bottomActiveClass;
+      ? classObj.topActiveClass
+      : classObj.bottomActiveClass;
 
   return (
     <tr
@@ -195,6 +206,7 @@ const useValidator = (validator: (value: any) => string) => {
 
 export const Table: any = observer(
   (props: any) => {
+    const { token } = useToken();
     const { pagination: pagination1, useProps, onChange, ...others1 } = props;
     const { pagination: pagination2, onClickRow, ...others2 } = useProps?.() || {};
     const {
@@ -227,15 +239,20 @@ export const Table: any = observer(
     if (onClickRow) {
       onRow = (record) => {
         return {
-          onClick: () => onClickRow(record, setSelectedRow, selectedRow),
+          onClick: (e) => {
+            if (isPortalInBody(e.target)) {
+              return;
+            }
+            onClickRow(record, setSelectedRow, selectedRow);
+          },
         };
       };
       highlightRow = css`
         & > td {
-          background-color: #caedff !important;
+          background-color: ${token.controlItemBgActiveHover} !important;
         }
         &:hover > td {
-          background-color: #caedff !important;
+          background-color: ${token.controlItemBgActiveHover} !important;
         }
       `;
     }
@@ -285,7 +302,6 @@ export const Table: any = observer(
                     console.warn('move cancel');
                     return;
                   }
-
                   const fromIndex = e.active?.data.current?.sortable?.index;
                   const toIndex = e.over?.data.current?.sortable?.index;
                   const from = field.value[fromIndex];
@@ -311,6 +327,11 @@ export const Table: any = observer(
                   white-space: nowrap;
                   .nb-read-pretty-input-number {
                     text-align: right;
+                  }
+                  .ant-color-picker-trigger {
+                    position: absolute;
+                    top: 50%;
+                    transform: translateY(-50%);
                   }
                 `,
               )}

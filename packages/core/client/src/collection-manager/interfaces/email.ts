@@ -28,6 +28,7 @@ export const email: IField = {
   filterable: {
     operators: operators.string,
   },
+  titleUsable: true,
   schemaInitialize(schema: ISchema, { block }) {
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
