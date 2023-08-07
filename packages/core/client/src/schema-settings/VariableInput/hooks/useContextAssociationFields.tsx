@@ -8,7 +8,6 @@ import { FieldOption, Option } from '../type';
 export const useIsSameOrChildCollection = () => {
   const { getChildrenCollections } = useCollectionManager();
   return (contextCollection, targetCollection) => {
-    console.log(contextCollection, targetCollection);
     if (contextCollection === targetCollection) {
       return true;
     }
