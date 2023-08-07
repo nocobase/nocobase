@@ -21,7 +21,6 @@ function PluginBaseInfo(props: IPluginBaseInfo) {
   const { t } = useTranslation();
   const api = useAPIClient();
   const { modal } = App.useApp();
-
   return (
     <Badge.Ribbon
       placement="end"
@@ -30,8 +29,8 @@ function PluginBaseInfo(props: IPluginBaseInfo) {
     >
       <Card
         bordered={false}
-        className={styles.CommonCard}
         style={{ width: 380 }}
+        headStyle={{ border: 'none' }}
         hoverable
         actions={[
           <div key="setting" className={classnames({ [styles.cardActionDisabled]: !enabled })}>
@@ -108,18 +107,22 @@ function PluginBaseInfo(props: IPluginBaseInfo) {
             />
           </Col>
           <Col span={8}>
-            <Space direction="vertical" align="end" style={{ display: 'flex' }}>
-              {props.installed && props.enabled && props.type === 'npm' && props.newVersion && (
+            <Space
+              direction="vertical"
+              align="end"
+              style={{ display: 'flex', marginTop: theme.fontSizeHeading4 * theme.lineHeightHeading4 }}
+            >
+              {props.newVersion && (
                 <Button icon={<SyncOutlined style={{ color: 'red', fontWeight: 'bold' }} />} ghost type="primary">
                   {t('Upgrade plugin')}
                 </Button>
               )}
-              {props.installed && props.enabled && props.type === 'upload' && (
+              {props.type === 'upload' && (
                 <Button ghost type="primary">
                   {t('Upload new version')}
                 </Button>
               )}
-              {props.installed && props.enabled && props.isCompatible === false && (
+              {props.isCompatible === false && (
                 <Button style={{ padding: 0 }} type="link">
                   <Typography.Text type="danger">{t('Dependencies check failed')}</Typography.Text>
                 </Button>

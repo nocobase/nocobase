@@ -6,7 +6,7 @@ import { isAbsolute, join, sep } from 'path';
 import rimraf from 'rimraf';
 import signale from 'signale';
 import babel from './babel';
-import { buildPluginClient, buildPluginServer, deleteJsFiles } from './buildPlugin';
+import { buildPluginClient, buildPluginServer, deleteJsFiles, writeExternalPackageVersion } from './buildPlugin';
 import getUserConfig, { CONFIG_FILES } from './getUserConfig';
 import randomColor from './randomColor';
 import registerBabel from './registerBabel';
@@ -176,6 +176,7 @@ export async function build(opts: IOpts, extraOpts: IExtraBuildOpts = {}) {
           deleteJsFiles(cwd, log);
           await buildPluginServer(cwd, log);
           await buildPluginClient(cwd, log);
+          writeExternalPackageVersion(cwd, log);
           const buildFile = join(cwd, 'build.js');
           if (existsSync(buildFile)) {
             log('build others');

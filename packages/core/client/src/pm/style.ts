@@ -32,13 +32,6 @@ export const useStyles = createStyles(({ token }) => {
       overflowY: 'auto',
     },
 
-    CommonCard: {
-      width: `calc(20% - ${token.marginLG}px)`,
-      marginRight: token.marginLG,
-      marginBottom: token.marginLG,
-      transition: 'all 0.35s ease-in-out',
-    },
-
     avatar: {
       '.ant-card-meta-avatar': {
         marginTop: '8px',

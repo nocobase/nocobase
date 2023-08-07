@@ -17,6 +17,16 @@ export const getPackageClientStaticUrl = (packageName: string, filePath: string)
   return `${PREFIX}${packageName}/${filePath}`;
 };
 
+export function getReadmeUrl(packageName: string) {
+  const realPath = getRealPath(packageName, 'README.md');
+  return fs.existsSync(realPath) ? getPackageClientStaticUrl(packageName, 'README.md') : null;
+}
+
+export function getChangelogUrl(packageName: string) {
+  const realPath = getRealPath(packageName, 'README.md');
+  return fs.existsSync(realPath) ? getPackageClientStaticUrl(packageName, 'CHANGELOG.md') : null;
+}
+
 const isMatchClientStaticUrl = (url: string) => {
   return url.startsWith(PREFIX);
 };
@@ -40,14 +50,20 @@ const getPackageName = (url: string) => {
  * /api/plugins/client/@nocobase/plugin-acl/index.js => /node_modules/@nocobase/plugin-acl/dist/client/index.js
  * /api/plugins/client/my-plugin/README.md => /node_modules/my-plugin/dist/client/README.md
  */
-const getRealPath = (packageName: string, url: string) => {
+export const getRealPathByUrl = (packageName: string, url: string) => {
   const ext = path.extname(url);
-  const filePath = url.replace(`${PREFIX}${packageName}/`, '');
-  if (ext.toLowerCase() === '.md') {
-    return path.join(NODE_MODULES, packageName, filePath);
-  } else {
-    return path.join(NODE_MODULES, packageName, 'dist', 'client', filePath);
+  let filePath = url.replace(`${PREFIX}${packageName}/`, '');
+
+  // 保护所用，包根目录下仅允许访问 md 文件，其他文件会被重定向到 dist/client 目录下
+  if (ext.toLowerCase() !== '.md') {
+    filePath = path.join('dist', 'client', filePath);
   }
+
+  return getRealPath(packageName, filePath);
+};
+
+export const getRealPath = (packageName: string, filePath: string) => {
+  return path.join(NODE_MODULES, packageName, filePath);
 };
 
 /**
@@ -62,7 +78,7 @@ export const clientStaticMiddleware = async (ctx, next) => {
     // TODO: check packageName in plugins
     const packageName = getPackageName(ctx.path);
 
-    const realPath = getRealPath(packageName, ctx.path);
+    const realPath = getRealPathByUrl(packageName, ctx.path);
 
     // get file stats
     const stats = await fs.promises.stat(realPath);

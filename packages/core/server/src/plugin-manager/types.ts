@@ -1,5 +1,6 @@
 export interface PluginData {
   name?: string;
+  packageName?: string;
   version?: string;
   preVersion?: string;
   registry?: string;

@@ -7,11 +7,11 @@ import { resolve } from 'path';
 import xpipe from 'xpipe';
 import Application from '../application';
 import { Plugin } from '../plugin';
-import { clientStaticMiddleware } from './clientStaticMiddleware';
+import { clientStaticMiddleware, getChangelogUrl, getReadmeUrl } from './clientStaticMiddleware';
 import collectionOptions from './options/collection';
 import resourceOptions from './options/resource';
 import { PluginManagerRepository } from './plugin-manager-repository';
-import { addOrUpdatePluginByNpm } from './utils';
+import { addOrUpdatePluginByNpm, checkCompatible, getNewVersion } from './utils';
 import { NODE_MODULES_PATH } from './constants';
 
 export interface PluginManagerOptions {
@@ -56,16 +56,23 @@ export class PluginManager {
       if (resourceName === 'applicationPlugins' && actionName === 'list') {
         const lng = ctx.getCurrentLocale();
         if (Array.isArray(ctx.body)) {
-          ctx.body = ctx.body.map((plugin) => {
-            const json = plugin.toJSON();
-            const packageName = PluginManager.getPackageName(json.name);
-            const packageJson = PluginManager.getPackageJson(packageName);
-            return {
-              displayName: packageJson[`displayName.${lng}`] || packageJson.displayName,
-              description: packageJson[`description.${lng}`] || packageJson.description,
-              ...json,
-            };
-          });
+          ctx.body = await Promise.all(
+            ctx.body.map(async (plugin) => {
+              const json = plugin.toJSON();
+              const packageName = PluginManager.getPackageName(json.name);
+              const packageJson = PluginManager.getPackageJson(packageName);
+              return {
+                displayName: packageJson[`displayName.${lng}`] || packageJson.displayName,
+                description: packageJson[`description.${lng}`] || packageJson.description,
+                isOfficial: packageName.startsWith('@nocobase'),
+                readmeUrl: getReadmeUrl(packageName),
+                changelogUrl: getChangelogUrl(packageName),
+                newVersion: await getNewVersion(json),
+                isCompatible: checkCompatible(packageName),
+                ...json,
+              };
+            }),
+          );
         }
       }
     });

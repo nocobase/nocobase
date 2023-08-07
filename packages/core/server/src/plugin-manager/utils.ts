@@ -1,13 +1,14 @@
 import axios from 'axios';
 import download from 'download';
 import fs from 'fs-extra';
+import semver from 'semver';
 import { builtinModules } from 'module';
 import os from 'os';
 import path from 'path';
-// @ts-ignore
-import { version } from '../../package.json';
+import pkgUp from 'pkg-up';
 import { APP_NAME, DEFAULT_PLUGIN_PATH, DEFAULT_PLUGIN_STORAGE_PATH, NODE_MODULES_PATH } from './constants';
 import { PluginData } from './types';
+import { getRealPath } from './clientStaticMiddleware';
 
 /**
  * get temp dir
@@ -267,46 +268,6 @@ export async function checkPluginExist(pluginData: PluginData) {
   return exists;
 }
 
-export function getClientStaticUrl(packageName: string) {
-  return `/api/plugins/${packageName}/index.js`;
-}
-
-export function getClientReadmeUrl(packageName: string) {
-  return `/api/plugins/${packageName}/README.md`;
-}
-
-export function getChangelogUrl(packageName: string) {
-  return `/api/plugins/${packageName}/CHANGELOG.md`;
-}
-
-/**
- * check whether the url is match client static url
- * @example
- * isMatchClientStaticUrl('/plugins/dayjs/index.js') => true
- * isMatchClientStaticUrl('/api/xx') => false
- */
-export function isMatchClientStaticUrl(url: string) {
-  return url.startsWith('/plugins/');
-}
-
-/**
- * get client static real path
- *
- * @example
- * getClientStaticRealPath('dayjs', 'http://xxx/plugins/dayjs/index.js') => '/Users/xxx/xx/dayjs/lib/client/index.js'
- * getClientStaticRealPath('dayjs', 'http://xxx/plugins/dayjs/js/a17ae.js') => '/Users/xxx/xx/dayjs/lib/client/js/a17ae.js' // lazy import
- * getClientStaticRealPath('dayjs', 'http://xxx/plugins/dayjs/readme.md') => '/Users/xxx/xx/dayjs/README.md'
- */
-export function getClientStaticRealPath(pathname: string) {
-  const packageName = getPluginNameByClientStaticUrl(pathname);
-  const packageDir = getStoragePluginDir(packageName);
-  const filePath = pathname.replace('/plugins/', '').replace(packageName, '');
-  if (path.extname(pathname).toLocaleLowerCase() === '.md') {
-    return path.join(packageDir, filePath);
-  }
-  return path.join(packageDir, 'lib', 'client', filePath);
-}
-
 /**
  * get package.json
  *
@@ -394,24 +355,62 @@ export async function checkPluginPackage(plugin: PluginData) {
 }
 
 export async function getNewVersion(plugin: PluginData): Promise<string | false> {
-  if (!plugin.name || !plugin.registry) return false;
+  if (!plugin.packageName || !plugin.registry) return false;
 
   // 1. Check plugin version by npm registry
-  const { version } = await getPluginInfoByNpm(plugin.name, plugin.registry);
+  const { version } = await getPluginInfoByNpm(plugin.packageName, plugin.registry);
   // 2. has new version, return true
   return version !== plugin.version ? version : false;
 }
 
-export async function getExtraPluginInfo(plugin: PluginData) {
-  const packageJson = getPackageJson(plugin.name);
-  if (!packageJson) return undefined;
-  const newVersion = getNewVersion(plugin);
-  return {
-    packageJson,
-    serverVersion: version,
-    newVersion,
-    clientUrl: getClientStaticUrl(plugin.name),
-    readmeUrl: getClientReadmeUrl(plugin.name),
-    changelogUrl: getChangelogUrl(plugin.name),
-  };
+/**
+ * get package.json path for specific NPM package
+ */
+export function getDepPkgPath(packageName: string, cwd: string) {
+  try {
+    return require.resolve(`${packageName}/package.json`, { paths: [cwd] });
+  } catch {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    return pkgUp.sync({
+      cwd: require.resolve(packageName, { paths: [cwd] }),
+    })!;
+  }
+}
+
+export function getPackageJsonVersion(packageName: string, cwd: string) {
+  const pkgPath = getDepPkgPath(packageName, cwd);
+  return fs.existsSync(pkgPath) ? require(pkgPath).version : null;
+}
+
+export interface DepCompatible {
+  name: string;
+  isCompatible: boolean;
+  globalVersion: string;
+  packageVersion: string;
+}
+export function getCompatible(packageName: string) {
+  const realPath = getRealPath(packageName, 'dist/externalVersion.js');
+  const exists = fs.existsSync(realPath);
+  if (!exists) {
+    return [];
+  }
+  const externalVersion = require(realPath);
+  return Object.keys(externalVersion).reduce<DepCompatible[]>((result, packageName) => {
+    const packageVersion = externalVersion[packageName];
+    const globalVersion = getPackageJsonVersion(packageName, NODE_MODULES_PATH);
+    if (globalVersion) {
+      result.push({
+        name: packageName,
+        isCompatible: semver.satisfies(globalVersion, packageVersion),
+        globalVersion,
+        packageVersion,
+      });
+    }
+    return result;
+  }, []);
+}
+
+export function checkCompatible(packageName: string) {
+  const compatible = getCompatible(packageName);
+  return compatible.every((item) => item.isCompatible);
 }
