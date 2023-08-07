@@ -47,7 +47,7 @@ const InternalField: React.FC = (props: Props) => {
     setFieldProps('description', uiSchema.description);
     if (ctx?.form) {
       const defaultVal = fieldSchema.default || defaultValue;
-      defaultVal !== null && defaultVal !== undefined && setFieldProps('initialValue', defaultVal);
+      defaultVal !== null && defaultVal !== undefined && !field.value && setFieldProps('initialValue', defaultVal);
     }
 
     if (!field.validator && (uiSchema['x-validator'] || fieldSchema['x-validator'])) {
