@@ -563,10 +563,10 @@ export const useFilterInheritsFormItemInitializerFields = (options?) => {
   const { getInterface, getInheritCollections, getCollection, getParentCollectionFields } = useCollectionManager();
   const inherits = getInheritCollections(name);
   const { snapshot } = useActionContext();
+  const form = useForm();
 
   return inherits?.map((v) => {
     const fields = getParentCollectionFields(v, name);
-    const form = useForm();
     const { readPretty = form.readPretty, block = 'Form' } = options || {};
     const targetCollection = getCollection(v);
     return {
@@ -1821,6 +1821,104 @@ export const createKanbanBlockSchema = (options) => {
                 'x-component-props': { dndContext: false },
               },
             },
+          },
+          cardViewer: {
+            type: 'void',
+            title: '{{ t("View") }}',
+            'x-designer': 'Action.Designer',
+            'x-component': 'Kanban.CardViewer',
+            'x-action': 'view',
+            'x-component-props': {
+              openMode: 'drawer',
+            },
+            properties: {
+              drawer: {
+                type: 'void',
+                title: '{{ t("View record") }}',
+                'x-component': 'Action.Container',
+                'x-component-props': {
+                  className: 'nb-action-popup',
+                },
+                properties: {
+                  tabs: {
+                    type: 'void',
+                    'x-component': 'Tabs',
+                    'x-component-props': {},
+                    'x-initializer': 'TabPaneInitializers',
+                    properties: {
+                      tab1: {
+                        type: 'void',
+                        title: '{{t("Details")}}',
+                        'x-component': 'Tabs.TabPane',
+                        'x-designer': 'Tabs.Designer',
+                        'x-component-props': {},
+                        properties: {
+                          grid: {
+                            type: 'void',
+                            'x-component': 'Grid',
+                            'x-initializer': 'RecordBlockInitializers',
+                            properties: {},
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+  return schema;
+};
+
+export const createKanbanV2BlockSchema = (options) => {
+  const { collection, resource, groupField, params, ...others } = options;
+  const schema: ISchema = {
+    type: 'void',
+    'x-acl-action': `${resource || collection}:list`,
+    'x-decorator': 'KanbanV2BlockProvider',
+    'x-decorator-props': {
+      collection: collection,
+      resource: resource || collection,
+      action: 'list',
+      groupField,
+      params: {
+        pageSize: 10,
+        ...params,
+      },
+      ...others,
+    },
+    'x-designer': 'KanbanV2.Designer',
+    'x-component': 'CardItem',
+    properties: {
+      actions: {
+        type: 'void',
+        'x-initializer': 'KanbanActionInitializers',
+        'x-component': 'ActionBar',
+        'x-component-props': {
+          style: {
+            marginBottom: 16,
+          },
+        },
+        properties: {},
+      },
+      [uid()]: {
+        type: 'array',
+        'x-component': 'KanbanV2',
+        'x-designer': 'KanbanV2.CardDesigner',
+        'x-read-pretty': true,
+        'x-component-props': {
+          useProps: '{{ useKanbanV2BlockProps }}',
+        },
+        properties: {
+          grid: {
+            type: 'void',
+            'x-component': 'Grid',
+            'x-initializer': 'ReadPrettyFormItemInitializers',
+            properties: {},
           },
           cardViewer: {
             type: 'void',
