@@ -208,15 +208,14 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       this._fsmInterpret = ApplicationFsm.getInterpreter(this);
       this._fsmInterpret.onTransition((state) => {
         if (state.matches('working')) {
-          this.emit('stateChanged', { status: state.context.workingName, app: this });
+          this.emit('stateChanged', { status: state.context.workingName });
         } else if (state.matches('error')) {
           this.emit('stateChanged', {
             status: 'error',
             error: state.context.error,
-            app: this,
           });
         } else {
-          this.emit('stateChanged', { status: state.value, app: this });
+          this.emit('stateChanged', { status: state.value });
         }
       });
     }
@@ -251,7 +250,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this.emit('workingMessageChanged', {
       message: this._workingMessage,
-      ready: this.ready,
     });
   }
 

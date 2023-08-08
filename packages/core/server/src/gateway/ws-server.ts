@@ -1,9 +1,10 @@
-import { Gateway, IncomingRequest, reportAppError } from '../gateway';
+import { Gateway, IncomingRequest } from '../gateway';
 import WebSocket from 'ws';
 import { nanoid } from 'nanoid';
 import { IncomingMessage } from 'http';
 import { AppSupervisor } from '../app-supervisor';
 import { errors, getErrorWithCode } from './errors';
+import { lodash } from '../../../utils/src';
 
 declare class WebSocketWithId extends WebSocket {
   id: string;
@@ -15,6 +16,17 @@ interface WebSocketClient {
   url: string;
   headers: any;
   app?: string;
+}
+
+function getPayloadByErrorCode(code, ...args) {
+  const error = getErrorWithCode(code);
+  return lodash.omit(
+    {
+      ...error,
+      message: error.message(...args),
+    },
+    ['status', 'maintaining'],
+  );
 }
 
 export class WSServer {
@@ -38,25 +50,12 @@ export class WSServer {
       });
     });
 
-    AppSupervisor.getInstance().on('workingMessageChanged', ({ appName, message, status }) => {
-      this.sendToConnectionsByTag('app', appName, {
-        type: 'maintaining',
-        payload: {
-          message,
-          status,
-        },
-      });
-    });
-
     AppSupervisor.getInstance().on('statusChanged', ({ app }) => {
-      const errorObj = getErrorWithCode(`APP_${app.getFsmState()}`);
-      errorObj.message = errorObj.message(app);
-      const payload = errorObj;
       const appName = app.name;
 
       this.sendToConnectionsByTag('app', appName, {
         type: 'maintaining',
-        payload,
+        payload: getPayloadByErrorCode(`APP_${app.getFsmState()}`, app),
       });
     });
   }
@@ -92,24 +91,14 @@ export class WSServer {
     if (appSupervisor.hasApp(handleAppName)) {
       const app = await appSupervisor.getApp(handleAppName, { withOutBootStrap: false });
 
-      const payload = {
-        status: app.getFsmState(),
-      };
-
-      if (payload.status === 'error') {
-        payload['errors'] = [reportAppError(handleAppName, app.getFsmError())];
-      }
-
       this.sendMessageToConnection(client, {
         type: 'maintaining',
-        payload,
+        payload: getPayloadByErrorCode(`APP_${app.getFsmState()}`, app),
       });
     } else {
       this.sendMessageToConnection(client, {
-        type: 'appStatusChanged',
-        payload: {
-          message: 'app not ready, try booting app',
-        },
+        type: 'maintaining',
+        payload: getPayloadByErrorCode('APP_NOT_FOUND', handleAppName),
       });
 
       appSupervisor.bootStrapApp(handleAppName);

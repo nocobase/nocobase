@@ -27,14 +27,6 @@ interface RunOptions {
   mainAppOptions: ApplicationOptions;
 }
 
-export function reportAppError(appName, error) {
-  return {
-    title: `The '${appName}' app is in an error status`,
-    detail: error.message || error.toString(),
-    status: 503,
-  };
-}
-
 export class Gateway extends EventEmitter {
   private static instance: Gateway;
   /**

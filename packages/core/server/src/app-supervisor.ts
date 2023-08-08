@@ -214,14 +214,13 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
     app.on('workingMessageChanged', ({ message }) => {
       this.clearAppError(app.name);
-      this.emit('workingMessageChanged', {
-        appName: app.name,
-        message,
+      this.emit('statusChanged', {
+        app,
         status: app.getFsmState(),
       });
     });
 
-    app.on('stateChanged', ({ status, app }) => {
+    app.on('stateChanged', ({ status }) => {
       this.emit('statusChanged', {
         app,
         status,

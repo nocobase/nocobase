@@ -3,6 +3,7 @@ import { Gateway } from '../gateway';
 import Application from '../application';
 import ws from 'ws';
 import { errors } from '../gateway/errors';
+import { AppSupervisor } from '../app-supervisor';
 
 describe('gateway', () => {
   let gateway: Gateway;
@@ -13,6 +14,7 @@ describe('gateway', () => {
 
   afterEach(async () => {
     await gateway.destroy();
+    await AppSupervisor.getInstance().destroy();
   });
 
   describe('http api', () => {
@@ -56,12 +58,30 @@ describe('gateway', () => {
 
   describe('websocket api', () => {
     let wsClient;
+    let port;
 
     let messages: Array<string>;
 
+    const connectClient = (port) => {
+      wsClient = new ws(`ws://localhost:${port}/ws`);
+      wsClient.on('message', (data) => {
+        const message = data.toString();
+        messages.push(message);
+      });
+
+      // await connection established
+      return new Promise((resolve) => {
+        wsClient.on('open', resolve);
+      });
+    };
+
+    const getLastMessage = () => {
+      return JSON.parse(messages[messages.length - 1]);
+    };
+
     beforeEach(async () => {
       messages = [];
-      const port = await new Promise((resolve) =>
+      port = await new Promise((resolve) =>
         gateway.startHttpServer({
           port: 0,
           host: 'localhost',
@@ -72,18 +92,6 @@ describe('gateway', () => {
           },
         }),
       );
-
-      wsClient = new ws(`ws://localhost:${port}/ws`);
-
-      // await connection established
-      await new Promise((resolve) => {
-        wsClient.on('open', resolve);
-      });
-
-      wsClient.on('message', (data) => {
-        const message = data.toString();
-        messages.push(message);
-      });
     });
 
     afterEach(async () => {
@@ -97,6 +105,13 @@ describe('gateway', () => {
     });
 
     it('should receive app error message', async () => {
+      await connectClient(port);
+
+      expect(getLastMessage()).toMatchObject({
+        type: 'maintaining',
+        payload: { message: 'application main not found', code: 'APP_NOT_FOUND' },
+      });
+
       const app = new Application({
         database: {
           dialect: 'sqlite',
@@ -112,17 +127,11 @@ describe('gateway', () => {
         setTimeout(resolve, 100);
       });
 
-      console.log(messages);
-      const lastMessage = messages[messages.length - 1];
-
-      const lastMessageObject = JSON.parse(lastMessage);
-
-      expect(lastMessageObject).toMatchObject({
+      expect(getLastMessage()).toMatchObject({
         type: 'maintaining',
         payload: {
           code: 'APP_ERROR',
           message: errors.APP_ERROR.message(app),
-          status: 503,
         },
       });
     });

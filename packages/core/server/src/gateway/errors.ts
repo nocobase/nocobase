@@ -44,9 +44,15 @@ export const errors = {
     maintaining: true,
   },
 
+  APP_RUNNING: {
+    status: 200,
+    message: (app: Application) => `application ${app.name} is running`,
+    maintaining: false,
+  },
+
   APP_IDLE: {
     status: 503,
-    message: (app: Application) => 'application is idle, waiting for command',
+    message: (app: Application) => app.workingMessage || 'application is idle, waiting for command',
     maintaining: true,
   },
 
