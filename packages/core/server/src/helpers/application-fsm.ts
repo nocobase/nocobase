@@ -51,7 +51,7 @@ export class ApplicationFsm {
           starting: {
             invoke: {
               src: 'start',
-              onDone: 'started',
+              onDone: 'running',
               onError,
             },
             entry: assign({ tryStart: true }),
@@ -81,7 +81,7 @@ export class ApplicationFsm {
               onError,
             },
           },
-          started: {
+          running: {
             on: {
               work: 'working',
               stop: 'stopping',

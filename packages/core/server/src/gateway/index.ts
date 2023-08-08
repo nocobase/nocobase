@@ -8,6 +8,7 @@ import { resolve } from 'path';
 import { IPCSocketServer } from './ipc-socket-server';
 import { IPCSocketClient } from './ipc-socket-client';
 import { Command } from 'commander';
+import { getErrorWithCode } from './errors';
 
 export interface IncomingRequest {
   url: string;
@@ -19,7 +20,7 @@ export type AppSelector = (req: IncomingRequest) => string | Promise<string>;
 interface StartHttpServerOptions {
   port: number;
   host: string;
-  callback?: () => void;
+  callback?: (server: http.Server) => void;
 }
 
 interface RunOptions {
@@ -86,15 +87,23 @@ export class Gateway extends EventEmitter {
   responseError(
     res: ServerResponse,
     error: {
-      status: string;
+      status: number;
       maintaining: boolean;
       message: string;
-      code: number;
+      code: string;
     },
   ) {
     res.setHeader('Content-Type', 'application/json');
-    res.statusCode = error.code;
+    res.statusCode = error.status;
     res.end(JSON.stringify(error));
+  }
+
+  responseErrorWithCode(code, res, ...args) {
+    const error = getErrorWithCode(code);
+    this.responseError(res, {
+      ...error,
+      message: error.message(...args),
+    });
   }
 
   async requestHandler(req: IncomingMessage, res: ServerResponse) {
@@ -102,37 +111,18 @@ export class Gateway extends EventEmitter {
     const app: Application = await AppSupervisor.getInstance().getApp(handleApp);
 
     if (!app) {
-      this.responseError(res, {
-        message: `application ${handleApp} not found`,
-        code: 404,
-        status: 'not_found',
-        maintaining: false,
-      });
-
+      this.responseErrorWithCode('APP_NOT_FOUND', res, handleApp);
       return;
     }
 
     const appInterpreter = app.getFsmInterpreter();
 
     // if app is not ready, return 503
-    if (!appInterpreter.state.matches('started')) {
+    if (!appInterpreter.state.matches('running')) {
       if (appInterpreter.state.matches('error')) {
-        const error = appInterpreter.state.context.error;
-        const errorMessage = error.message || error.toString();
-
-        this.responseError(res, {
-          message: errorMessage,
-          status: 'error',
-          code: 503,
-          maintaining: true,
-        });
+        this.responseErrorWithCode('APP_ERROR', res, app);
       } else {
-        this.responseError(res, {
-          message: app.workingMessage,
-          status: app.getFsmState(),
-          code: 503,
-          maintaining: true,
-        });
+        this.responseErrorWithCode(`APP_${app.getFsmState()}`, res, app);
       }
 
       return;
@@ -213,7 +203,7 @@ export class Gateway extends EventEmitter {
   }
 
   startHttpServer(options: StartHttpServerOptions) {
-    if (options?.port) {
+    if (options?.port !== null) {
       this.port = options.port;
     }
 
@@ -221,7 +211,7 @@ export class Gateway extends EventEmitter {
       this.host = options.host;
     }
 
-    if (!this.port) {
+    if (this.port === null) {
       console.log('gateway port is not set, http server will not start');
       return;
     }
@@ -245,7 +235,7 @@ export class Gateway extends EventEmitter {
     this.server.listen(this.port, this.host, () => {
       console.log(`Gateway HTTP Server running at http://${this.host}:${this.port}/`);
       if (options?.callback) {
-        options.callback();
+        options.callback(this.server);
       }
     });
   }

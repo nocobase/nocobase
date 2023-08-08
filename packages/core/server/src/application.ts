@@ -405,7 +405,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   async start(options: StartOptions = {}) {
     this.getFsmInterpreter().send('start', options);
-    await waitFor(this.getFsmInterpreter(), (state) => state.matches('started'));
+    await waitFor(this.getFsmInterpreter(), (state) => state.matches('running'));
   }
 
   setReadyStatus(status: boolean, reason: string) {

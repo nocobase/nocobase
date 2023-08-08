@@ -102,7 +102,7 @@ export class WSServer {
       }
 
       this.sendMessageToConnection(client, {
-        type: 'appStatusChanged',
+        type: 'maintaining',
         payload,
       });
     } else {
