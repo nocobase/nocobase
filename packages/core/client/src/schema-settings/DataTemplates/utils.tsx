@@ -158,7 +158,7 @@ export const useSyncFromForm = (fieldSchema, collection?, callBack?) => {
     }
 
     try {
-      return traverseFields(collectionName, { exclude: ['id', ...systemKeys], maxDepth: 2, disabled: false }, formData);
+      return traverseFields(collectionName, { exclude: ['id', ...systemKeys], maxDepth: 1, disabled: false }, formData);
     } catch (error) {
       console.error(error);
       return [];
@@ -213,7 +213,6 @@ export const useSyncFromForm = (fieldSchema, collection?, callBack?) => {
       };
       getAssociationAppends(fieldSchema, '');
       const treeData = getEnableFieldTree(record?.collection || collection, [...formData]);
-      console.log(treeData);
       if (callBack) {
         callBack(treeData, [...selectFields], from);
       } else {

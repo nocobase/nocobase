@@ -260,13 +260,13 @@ function loadChildren({ node, traverseAssociations, traverseFields, systemKeys, 
   const activeNode = findNode(fields.dataSource || fields.componentProps.treeData, node);
   let children = [];
   // 多对多和多对一只展示关系字段
-  if (['belongsTo', 'belongsToMany'].includes(node.field.type)) {
+  if (['belongsTo', 'belongsToMany'].includes(node.field.type) && node.type === 'reference') {
     children = traverseAssociations(node.field.target, {
       exclude: systemKeys,
       prefix: node.key,
       maxDepth: 1,
     });
-  } else if (['hasOne', 'hasMany'].includes(node.field.type)) {
+  } else if (['hasOne', 'hasMany'].includes(node.field.type) || node.type === 'duplicate') {
     children = traverseFields(node.field.target, {
       exclude: ['id', ...systemKeys],
       prefix: node.key,
