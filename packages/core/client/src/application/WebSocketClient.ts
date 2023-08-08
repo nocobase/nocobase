@@ -125,6 +125,21 @@ export class WebSocketClient {
     this._ws.addEventListener(type, listener, options);
   }
 
+  off(type: string, listener: any, options?: boolean | EventListenerOptions) {
+    let index = 0;
+    for (const event of this.events) {
+      if (event.type === type && event.listener === listener) {
+        this.events.splice(index, 1);
+        break;
+      }
+      index++;
+    }
+    if (!this._ws) {
+      return;
+    }
+    this._ws.removeEventListener(type, listener, options);
+  }
+
   removeAllListeners() {
     if (!this._ws) {
       return;
