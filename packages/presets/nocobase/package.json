@@ -42,6 +42,7 @@
     "@nocobase/plugin-verification": "0.12.0-alpha.3",
     "@nocobase/plugin-workflow": "0.12.0-alpha.3",
     "@nocobase/server": "0.12.0-alpha.3",
+    "@formily/json-schema": "2.x",
     "cronstrue": "^2.11.0"
   },
   "repository": {
