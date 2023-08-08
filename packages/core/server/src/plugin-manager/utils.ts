@@ -72,7 +72,7 @@ export async function getLatestVersion(packageName: string, registry: string) {
  * download and unzip to node_modules
  */
 export async function downloadAndUnzipToNodeModules(fileUrl: string) {
-  const fileName = path.basename(fileUrl).slice(0, -path.extname(fileUrl).length);
+  const fileName = path.basename(fileUrl);
   const tempDir = await getTempDir(fileName);
 
   // download and unzip to temp dir
@@ -93,7 +93,7 @@ export async function downloadAndUnzipToNodeModules(fileUrl: string) {
   await fs.remove(tempDir);
 
   return {
-    name: packageJson.name,
+    packageName: packageJson.name,
     version: packageJson.version,
     packageDir,
   };
@@ -257,9 +257,9 @@ export function removePluginPackage(packageName: string) {
 }
 
 export async function checkPluginExist(pluginData: PluginData) {
-  const { packageName, type, zipUrl } = pluginData;
+  const { packageName, type } = pluginData;
   if (!type) return true;
-  const packageDir = type === 'npm' ? getStoragePluginDir(packageName) : getLocalPluginDir(zipUrl);
+  const packageDir = getStoragePluginDir(packageName);
   const exists = await fs.exists(packageDir);
 
   // if packageDir exists create symlink
@@ -321,15 +321,18 @@ export async function addOrUpdatePluginByNpm(
   };
 }
 
-export async function addOrUpdatePluginByZip(options: Partial<Pick<PluginData, 'zipUrl' | 'name'>>, update?: boolean) {
-  const { name, version, packageDir } = await downloadAndUnzipToNodeModules(options.zipUrl);
+export async function addOrUpdatePluginByZip(
+  options: Partial<Pick<PluginData, 'zipUrl' | 'packageName'>>,
+  update?: boolean,
+) {
+  const { packageName, version, packageDir } = await downloadAndUnzipToNodeModules(options.zipUrl);
 
-  if (options.name && options.name !== name) {
-    throw new Error(`Plugin name in package.json must be ${options.name}, but got ${name}`);
+  if (options.packageName && options.packageName !== packageName) {
+    throw new Error(`Plugin name in package.json must be ${options.packageName}, but got ${packageName}`);
   }
 
   return {
-    name,
+    packageName,
     packageDir,
     version,
   };

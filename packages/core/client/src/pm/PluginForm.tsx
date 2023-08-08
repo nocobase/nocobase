@@ -52,13 +52,6 @@ const npmSchema: ISchema = {
             help: 'Example: https://registry.npmjs.org/',
           },
         },
-        name: {
-          type: 'string',
-          title: "{{t('Name')}}",
-          'x-decorator': 'FormItem',
-          'x-component': 'Input',
-          required: true,
-        },
         packageName: {
           type: 'string',
           title: "{{t('Npm package name')}}",
@@ -80,10 +73,11 @@ const uploadSchema: ISchema = {
       'x-component': 'div',
       type: 'void',
       properties: {
-        logo: {
+        zipUrl: {
           type: 'string',
           'x-decorator': 'FormItem',
           'x-component': 'Upload.DraggerV2',
+          required: true,
           'x-component-props': {
             action: 'attachments:create',
             multiple: false,
@@ -96,9 +90,31 @@ const uploadSchema: ISchema = {
   },
 };
 
+const zipUrlSchema: ISchema = {
+  type: 'object',
+  properties: {
+    [uid()]: {
+      'x-decorator': 'Form',
+      'x-component': 'div',
+      type: 'void',
+      properties: {
+        zipUrl: {
+          type: 'string',
+          title: "{{t('zip url')}}",
+          'x-decorator': 'FormItem',
+          'x-component': 'Input',
+          required: true,
+        },
+        footer,
+      },
+    },
+  },
+};
+
 const schema = {
   npm: npmSchema,
   upload: uploadSchema,
+  url: zipUrlSchema,
 };
 
 interface IPluginFormProps {
@@ -109,7 +125,7 @@ interface IPluginFormProps {
 export const PluginForm: FC<IPluginFormProps> = ({ onClose, isShow }) => {
   const [form] = Form.useForm();
   const { t } = useTranslation();
-  const [type, setType] = useState<'npm' | 'upload'>('npm');
+  const [type, setType] = useState<'npm' | 'upload' | 'url'>('npm');
   const { theme } = useStyles();
   const { message } = App.useApp();
   const useSaveValues = () => {
@@ -120,11 +136,19 @@ export const PluginForm: FC<IPluginFormProps> = ({ onClose, isShow }) => {
     return {
       async run() {
         await form.submit();
-        await api.request({
-          url: 'pm:addByNpm',
-          method: 'post',
-          data: form.values,
-        });
+        if (type === 'npm') {
+          await api.request({
+            url: 'pm:addByNpm',
+            method: 'post',
+            data: form.values,
+          });
+        } else {
+          await api.request({
+            url: 'pm:addByZipUrl',
+            method: 'post',
+            data: form.values,
+          });
+        }
         message.success(t('Saved successfully'), 2, () => {
           onClose(true);
         });
@@ -151,34 +175,10 @@ export const PluginForm: FC<IPluginFormProps> = ({ onClose, isShow }) => {
       <Radio.Group style={{ margin: theme.margin }} defaultValue={type} onChange={(e) => setType(e.target.value)}>
         <Radio value="npm">{t('Npm package')}</Radio>
         <Radio value="upload">{t('Upload plugin')}</Radio>
+        <Radio value="url">{t('Plugin zip url')}</Radio>
       </Radio.Group>
 
       <SchemaComponent scope={{ useCancel, useSaveValues }} schema={schema[type]} />
-      {/* <Form {...layout} form={form} initialValues={{ type: 'npm' }} style={{ maxWidth: 600 }}>
-        <Form.Item label={t('Add type')} name="type" rules={[{ required: true }]}>
-          <Radio.Group>
-            <Radio value="npm">{t('Npm package')}</Radio>
-            <Radio value="upload">{t('Upload plugin')}</Radio>
-          </Radio.Group>
-        </Form.Item>
-        {typeValue === 'npm' ? (
-          <>
-            <Form.Item
-              name="registry"
-              label="Registry url"
-              rules={[{ required: true }]}
-              help="Example: https://registry.npmjs.org/"
-            >
-              <Input />
-            </Form.Item>
-            <Form.Item name="name" label={t('Npm package name')} rules={[{ required: true }]}>
-              <Input />
-            </Form.Item>
-          </>
-        ) : (
-          <SchemaComponent scope={{ onValuesChange }} schema={schema} />
-        )}
-      </Form> */}
     </Modal>
   );
 };

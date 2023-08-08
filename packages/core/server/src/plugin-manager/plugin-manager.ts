@@ -11,7 +11,14 @@ import { clientStaticMiddleware, getChangelogUrl, getReadmeUrl } from './clientS
 import collectionOptions from './options/collection';
 import resourceOptions from './options/resource';
 import { PluginManagerRepository } from './plugin-manager-repository';
-import { addOrUpdatePluginByNpm, checkCompatible, getCompatible, getNewVersion, removePluginPackage } from './utils';
+import {
+  addOrUpdatePluginByNpm,
+  addOrUpdatePluginByZip,
+  checkCompatible,
+  getCompatible,
+  getNewVersion,
+  removePluginPackage,
+} from './utils';
 import { NODE_MODULES_PATH } from './constants';
 
 export interface PluginManagerOptions {
@@ -207,14 +214,44 @@ export class PluginManager {
     return pm;
   }
 
-  async addByNpm(options: { name: string; packageName: string; registry: string }) {
-    const { name, registry, packageName } = options;
+  async addByNpm(options: { packageName: string; registry: string }) {
+    let { registry, packageName } = options;
+    registry = registry.trim();
+    packageName = packageName.trim();
+    const name = this.getNameByPackageName(packageName);
     if (this.plugins.has(name)) {
       throw new Error(`plugin name [${name}] already exists`);
     }
 
     await addOrUpdatePluginByNpm({ packageName, registry });
-    await this.add(name, { registry, packageName, type: 'npm' });
+    return this.add(name, { registry, packageName, type: 'npm' });
+  }
+
+  async addByZipUrl(options: { zipUrl: string }) {
+    const { zipUrl } = options;
+
+    const { packageName } = await addOrUpdatePluginByZip({ zipUrl });
+    const name = this.getNameByPackageName(packageName);
+
+    if (this.plugins.has(name)) {
+      await removePluginPackage(packageName);
+      throw new Error(`plugin name [${name}] already exists`);
+    }
+
+    return this.add(name, { packageName, zipUrl, type: 'url' });
+  }
+
+  getNameByPackageName(packageName: string) {
+    const prefixes = PluginManager.getPluginPkgPrefix();
+    const prefix = prefixes.find((prefix) => packageName.startsWith(prefix));
+    if (!prefix) {
+      throw new Error(
+        `package name [${packageName}] invalid, just support ${prefixes.join(
+          ', ',
+        )}. You can modify process.env.PLUGIN_PACKAGE_PREFIX add more prefix.`,
+      );
+    }
+    return packageName.replace(prefix, '');
   }
 
   addStatic(plugin?: any, options?: any) {
