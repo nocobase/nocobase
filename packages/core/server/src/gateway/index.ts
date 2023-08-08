@@ -87,7 +87,7 @@ export class Gateway extends EventEmitter {
   ) {
     res.setHeader('Content-Type', 'application/json');
     res.statusCode = error.status;
-    res.end(JSON.stringify(error));
+    res.end(JSON.stringify({ error }));
   }
 
   responseErrorWithCode(code, res, ...args) {

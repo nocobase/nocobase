@@ -26,10 +26,7 @@ describe('gateway', () => {
         .expect((res) => {
           const data = res.body;
           expect(data).toMatchObject({
-            code: 'APP_NOT_FOUND',
-            message: `application main not found`,
-            status: 404,
-            maintaining: false,
+            error: { code: 'APP_NOT_FOUND', message: `application main not found`, status: 404, maintaining: false },
           });
         })
         .end(done);
@@ -48,10 +45,12 @@ describe('gateway', () => {
       const data = res.body;
 
       expect(data).toMatchObject({
-        code: 'APP_IDLE',
-        message: errors.APP_IDLE.message(main),
-        status: 503,
-        maintaining: true,
+        error: {
+          code: 'APP_IDLE',
+          message: errors.APP_IDLE.message(main),
+          status: 503,
+          maintaining: true,
+        },
       });
     });
   });
