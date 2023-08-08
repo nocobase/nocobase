@@ -62,11 +62,13 @@ const CustomThemeProvider = React.memo((props) => {
   }, []);
 
   const contentStyle = useMemo(() => {
-    return open ? { transform: 'rotate(0)', flexGrow: 1, width: 0 } : { flexGrow: 1, width: 0 };
+    return open
+      ? { transform: 'rotate(0)', flexGrow: 1, width: 0, height: '100%' }
+      : { flexGrow: 1, width: 0, height: '100%' };
   }, [open]);
 
   const editor = (
-    <div style={{ display: 'flex', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', overflow: 'hidden', height: '100%' }}>
       <div style={contentStyle}>{props.children}</div>
       {open ? (
         <div className={styles.editor}>
