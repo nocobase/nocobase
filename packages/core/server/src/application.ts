@@ -105,6 +105,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   private _fsm;
   private _fsmInterpret;
+  public activatedCommand = null;
+  private _authenticated = false;
+  public running = false;
 
   constructor(public options: ApplicationOptions) {
     super();
@@ -360,19 +363,55 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this.runAsCLI(argv);
   }
 
-  async runAsCLI(argv = process.argv, options?: ParseOptions) {
+  async authenticate() {
+    if (this._authenticated) {
+      return;
+    }
+    this._authenticated = true;
     try {
       await this.db.auth({ retry: 30 });
     } catch (error) {
       console.log(chalk.red(error.message));
       process.exit(1);
     }
-
     await this.dbVersionCheck({ exit: true });
-
     await this.db.prepare();
+  }
 
-    return this.cli.parseAsync(argv, options);
+  async runAsCLI(argv = process.argv, options?: ParseOptions) {
+    if (this.activatedCommand) {
+      this.emit('maintaining', { code: 'COMMAND_RUNNING', command: this.activatedCommand });
+      // 提示某命令正在运行
+      return;
+    }
+
+    try {
+      const command = await this.cli
+        .hook('preAction', async (thisCommand, actionCommand) => {
+          // 开始执行某命名
+          this.activatedCommand = {
+            name: actionCommand.name(), // 还需要把 parent 加上
+            args: actionCommand.args,
+          };
+          this.emit('maintaining', { code: 'COMMAND_BEGIN', command: this.activatedCommand });
+          await this.authenticate();
+          await this.load();
+        })
+        .parseAsync(argv, options);
+      return command;
+    } catch (error) {
+      // 某命名执行异常
+      this.emit('maintaining', {
+        code: 'COMMAND_ERROR',
+        command: this.activatedCommand,
+        message: error.message,
+      });
+      console.error(error);
+    }
+
+    // 命令执行结束
+    this.emit('maintaining', { code: 'COMMAND_END', command: this.activatedCommand });
+    this.activatedCommand = null;
   }
 
   async _start(options: StartOptions = {}) {
