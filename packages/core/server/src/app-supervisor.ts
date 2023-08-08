@@ -221,9 +221,9 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
       });
     });
 
-    app.on('stateChanged', ({ status }) => {
+    app.on('stateChanged', ({ status, app }) => {
       this.emit('statusChanged', {
-        appName: app.name,
+        app,
         status,
       });
     });

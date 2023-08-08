@@ -3,6 +3,7 @@ import WebSocket from 'ws';
 import { nanoid } from 'nanoid';
 import { IncomingMessage } from 'http';
 import { AppSupervisor } from '../app-supervisor';
+import { errors, getErrorWithCode } from './errors';
 
 declare class WebSocketWithId extends WebSocket {
   id: string;
@@ -39,7 +40,7 @@ export class WSServer {
 
     AppSupervisor.getInstance().on('workingMessageChanged', ({ appName, message, status }) => {
       this.sendToConnectionsByTag('app', appName, {
-        type: 'appWorkingMessageChanged',
+        type: 'maintaining',
         payload: {
           message,
           status,
@@ -47,17 +48,14 @@ export class WSServer {
       });
     });
 
-    AppSupervisor.getInstance().on('statusChanged', ({ appName, status, error }) => {
-      const payload = {
-        status,
-      };
-
-      if (error) {
-        payload['errors'] = [reportAppError(appName, error.message)];
-      }
+    AppSupervisor.getInstance().on('statusChanged', ({ app }) => {
+      const errorObj = getErrorWithCode(`APP_${app.getFsmState()}`);
+      errorObj.message = errorObj.message(app);
+      const payload = errorObj;
+      const appName = app.name;
 
       this.sendToConnectionsByTag('app', appName, {
-        type: 'appStatusChanged',
+        type: 'maintaining',
         payload,
       });
     });
@@ -93,6 +91,7 @@ export class WSServer {
 
     if (appSupervisor.hasApp(handleAppName)) {
       const app = await appSupervisor.getApp(handleAppName, { withOutBootStrap: false });
+
       const payload = {
         status: app.getFsmState(),
       };

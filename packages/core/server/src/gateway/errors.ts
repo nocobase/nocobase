@@ -1,4 +1,5 @@
 import Application from '../application';
+import lodash from 'lodash';
 
 export const errors = {
   APP_NOT_FOUND: {
@@ -59,11 +60,13 @@ export const errors = {
 export function getErrorWithCode(errorCode: string) {
   errorCode = errorCode.toUpperCase();
 
-  const error = errors[errorCode] || {
-    status: 500,
-    message: (app: Application) => `unknown error: ${errorCode}`,
-    maintaining: false,
-  };
+  const error = lodash.cloneDeep(
+    errors[errorCode] || {
+      status: 500,
+      message: (app: Application) => `unknown error: ${errorCode}`,
+      maintaining: false,
+    },
+  );
 
   error.code = errorCode;
   return error;

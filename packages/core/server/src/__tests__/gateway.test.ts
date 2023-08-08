@@ -81,7 +81,8 @@ describe('gateway', () => {
       });
 
       wsClient.on('message', (data) => {
-        messages.push(data.toString());
+        const message = data.toString();
+        messages.push(message);
       });
     });
 
@@ -91,9 +92,11 @@ describe('gateway', () => {
       await new Promise((resolve) => {
         wsClient.on('close', resolve);
       });
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
     });
 
-    it('should receive app status changed message', async () => {
+    it('should receive app error message', async () => {
       const app = new Application({
         database: {
           dialect: 'sqlite',
@@ -101,13 +104,27 @@ describe('gateway', () => {
         },
       });
 
-      await app.start();
+      await app.getFsmInterpreter().send('start', {
+        checkInstall: true,
+      });
 
       await new Promise((resolve) => {
         setTimeout(resolve, 100);
       });
 
       console.log(messages);
+      const lastMessage = messages[messages.length - 1];
+
+      const lastMessageObject = JSON.parse(lastMessage);
+
+      expect(lastMessageObject).toMatchObject({
+        type: 'maintaining',
+        payload: {
+          code: 'APP_ERROR',
+          message: errors.APP_ERROR.message(app),
+          status: 503,
+        },
+      });
     });
   });
 });
