@@ -11,7 +11,7 @@ import { clientStaticMiddleware, getChangelogUrl, getReadmeUrl } from './clientS
 import collectionOptions from './options/collection';
 import resourceOptions from './options/resource';
 import { PluginManagerRepository } from './plugin-manager-repository';
-import { addOrUpdatePluginByNpm, checkCompatible, getNewVersion } from './utils';
+import { addOrUpdatePluginByNpm, checkCompatible, getNewVersion, removePluginPackage } from './utils';
 import { NODE_MODULES_PATH } from './constants';
 
 export interface PluginManagerOptions {
@@ -213,7 +213,7 @@ export class PluginManager {
       throw new Error(`plugin name [${name}] already exists`);
     }
 
-    await addOrUpdatePluginByNpm({ name: packageName, registry });
+    await addOrUpdatePluginByNpm({ packageName, registry });
     await this.add(name, { registry, packageName, type: 'npm' });
   }
 
@@ -381,6 +381,9 @@ export class PluginManager {
       const plugin = this.app.getPlugin(pluginName);
       if (!plugin) {
         throw new Error(`${name} plugin does not exist`);
+      }
+      if (plugin.options.type && plugin.options.packageName) {
+        await removePluginPackage(plugin.options.packageName);
       }
       await plugin.remove();
     }

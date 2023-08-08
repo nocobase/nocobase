@@ -75,6 +75,9 @@ export class PluginManagerRepository extends Repository {
         version: item.get('version'),
         enabled: item.get('enabled'),
         type: item.get('type'),
+        packageName: item.get('packageName'),
+        zipUrl: item.get('zipUrl'),
+        registry: item.get('registry'),
         async: true,
       });
     }
