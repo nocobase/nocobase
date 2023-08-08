@@ -53,7 +53,7 @@ export const useSyncFromForm = (fieldSchema, collection?, callBack?) => {
             field,
             disabled,
           };
-          const tatgetFormField = formData.find((v) => v.name === field.name);
+          const tatgetFormField = formData.find((v) => v.name === option.key);
           if (
             ['belongsTo', 'belongsToMany'].includes(field.type) &&
             (!tatgetFormField || ['Select', 'Picker'].includes(tatgetFormField?.fieldMode))
