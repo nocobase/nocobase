@@ -1,6 +1,5 @@
 import Application from '../application';
 import { createMachine, interpret, assign, actions, raise } from 'xstate';
-import { ApplicationNotInstall } from '../errors/application-not-install';
 
 const onError = {
   target: 'error',
@@ -114,6 +113,8 @@ export class ApplicationFsm {
 
         services: {
           async working(context, event) {
+            await application.load();
+
             switch (context.workingType) {
               case 'install':
                 await application.install(event.options);
@@ -131,6 +132,8 @@ export class ApplicationFsm {
           },
 
           async start(context, options) {
+            await application.load();
+
             await application._start(options as any);
           },
 

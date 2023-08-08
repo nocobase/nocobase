@@ -64,7 +64,7 @@ export const errors = {
 };
 
 export function getErrorWithCode(errorCode: string) {
-  errorCode = errorCode.toUpperCase();
+  errorCode = lodash.snakeCase(errorCode).toUpperCase();
 
   const error = lodash.cloneDeep(
     errors[errorCode] || {

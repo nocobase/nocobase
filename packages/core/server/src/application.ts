@@ -372,16 +372,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     await this.db.prepare();
 
-    try {
-      await this.load();
-    } catch (error) {
-      console.log(`ignore error ${error.message}`);
-    }
-
     return this.cli.parseAsync(argv, options);
   }
 
   async _start(options: StartOptions = {}) {
+    await this.load();
     if (options.checkInstall && !(await this.isInstalled())) {
       throw new ApplicationNotInstall(
         `Application ${this.name} is not installed, Please run 'yarn run nocobase install' command first`,
