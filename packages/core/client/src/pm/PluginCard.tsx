@@ -21,6 +21,7 @@ function PluginBaseInfo(props: IPluginBaseInfo) {
   const { t } = useTranslation();
   const api = useAPIClient();
   const { modal } = App.useApp();
+  const [enabledVal, setEnabledVal] = useState(enabled);
   return (
     <Badge.Ribbon
       placement="end"
@@ -67,6 +68,10 @@ function PluginBaseInfo(props: IPluginBaseInfo) {
             disabled={builtIn}
             onChange={async (checked, e) => {
               e.stopPropagation();
+              if (!props.isCompatible && checked) {
+                message.error(t("Dependencies check failed, please check plugin's dependencies."));
+                return;
+              }
               modal.warning({
                 title: checked ? t('Plugin starting') : t('Plugin stopping'),
                 content: t('The application is reloading, please do not close the page.'),
@@ -76,12 +81,13 @@ function PluginBaseInfo(props: IPluginBaseInfo) {
                   },
                 },
               });
+              setEnabledVal(checked);
               await api.request({
                 url: `pm:${checked ? 'enable' : 'disable'}/${name}`,
               });
               window.location.reload();
             }}
-            defaultChecked={enabled}
+            checked={enabledVal}
           ></Switch>,
         ]}
       >
@@ -122,8 +128,8 @@ function PluginBaseInfo(props: IPluginBaseInfo) {
                   {t('Upload new version')}
                 </Button>
               )}
-              {props.isCompatible === false && (
-                <Button style={{ padding: 0 }} type="link">
+              {!props.isCompatible && (
+                <Button onClick={onClick} style={{ padding: 0 }} type="link">
                   <Typography.Text type="danger">{t('Dependencies check failed')}</Typography.Text>
                 </Button>
               )}
@@ -144,7 +150,7 @@ export const PluginCard = (props: { data: IPluginData }) => {
 
   return (
     <>
-      <PluginDetail plugin={plugin} onCancel={() => setPlugin(undefined)} />
+      {plugin && <PluginDetail plugin={plugin} onCancel={() => setPlugin(undefined)} />}
       <PluginBaseInfo
         onClick={() => {
           setPlugin(data);

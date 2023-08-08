@@ -34,12 +34,11 @@ export const PluginDocument: React.FC<PluginDocumentProps> = memo((props) => {
   }, [html]);
 
   const handleSwitchDocLang = useCallback((e: MouseEvent) => {
-    const lang = (e.target as HTMLDivElement).innerHTML;
-    if (lang.trim() === '中文') {
-      setDocUrl('zh-CN');
-    } else if (lang.trim() === 'English') {
-      setDocUrl('en-US');
-    }
+    const url = (e.target as HTMLDivElement).getAttribute('href');
+    if (!url) return;
+    const parsedUrl = new URL(docUrl, window.location.origin);
+    const combinedUrl = new URL(url, parsedUrl);
+    setDocUrl(combinedUrl.pathname);
   }, []);
 
   useEffect(() => {

@@ -5,10 +5,10 @@ import semver from 'semver';
 import { builtinModules } from 'module';
 import os from 'os';
 import path from 'path';
-import pkgUp from 'pkg-up';
 import { APP_NAME, DEFAULT_PLUGIN_PATH, DEFAULT_PLUGIN_STORAGE_PATH, NODE_MODULES_PATH } from './constants';
 import { PluginData } from './types';
 import { getRealPath } from './clientStaticMiddleware';
+import deps from './deps';
 
 /**
  * get temp dir
@@ -365,25 +365,6 @@ export async function getNewVersion(plugin: PluginData): Promise<string | false>
   return version !== plugin.version ? version : false;
 }
 
-/**
- * get package.json path for specific NPM package
- */
-export function getDepPkgPath(packageName: string, cwd: string) {
-  try {
-    return require.resolve(`${packageName}/package.json`, { paths: [cwd] });
-  } catch {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    return pkgUp.sync({
-      cwd: require.resolve(packageName, { paths: [cwd] }),
-    })!;
-  }
-}
-
-export function getPackageJsonVersion(packageName: string, cwd: string) {
-  const pkgPath = getDepPkgPath(packageName, cwd);
-  return fs.existsSync(pkgPath) ? require(pkgPath).version : null;
-}
-
 export interface DepCompatible {
   name: string;
   isCompatible: boolean;
@@ -399,11 +380,17 @@ export function getCompatible(packageName: string) {
   const externalVersion = require(realPath);
   return Object.keys(externalVersion).reduce<DepCompatible[]>((result, packageName) => {
     const packageVersion = externalVersion[packageName];
-    const globalVersion = getPackageJsonVersion(packageName, NODE_MODULES_PATH);
-    if (globalVersion) {
+    const globalPackageName = deps[packageName]
+      ? packageName
+      : deps[packageName.split('/')[0]] // @nocobase and @formily
+      ? packageName.split('/')[0]
+      : undefined;
+
+    if (globalPackageName) {
+      const globalVersion = deps[globalPackageName];
       result.push({
         name: packageName,
-        isCompatible: semver.satisfies(globalVersion, packageVersion),
+        isCompatible: semver.satisfies(packageVersion, globalVersion, { includePrerelease: true }),
         globalVersion,
         packageVersion,
       });

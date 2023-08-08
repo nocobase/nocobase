@@ -11,7 +11,7 @@ import { clientStaticMiddleware, getChangelogUrl, getReadmeUrl } from './clientS
 import collectionOptions from './options/collection';
 import resourceOptions from './options/resource';
 import { PluginManagerRepository } from './plugin-manager-repository';
-import { addOrUpdatePluginByNpm, checkCompatible, getNewVersion, removePluginPackage } from './utils';
+import { addOrUpdatePluginByNpm, checkCompatible, getCompatible, getNewVersion, removePluginPackage } from './utils';
 import { NODE_MODULES_PATH } from './constants';
 
 export interface PluginManagerOptions {
@@ -65,7 +65,7 @@ export class PluginManager {
                 displayName: packageJson[`displayName.${lng}`] || packageJson.displayName,
                 description: packageJson[`description.${lng}`] || packageJson.description,
                 isOfficial: packageName.startsWith('@nocobase'),
-                readmeUrl: getReadmeUrl(packageName),
+                readmeUrl: getReadmeUrl(packageName, lng),
                 changelogUrl: getChangelogUrl(packageName),
                 newVersion: await getNewVersion(json),
                 isCompatible: checkCompatible(packageName),
@@ -441,6 +441,17 @@ export class PluginManager {
   static resolvePlugin(pluginName: string) {
     const packageName = this.getPackageName(pluginName, true);
     return requireModule(packageName);
+  }
+
+  async detail(name: string) {
+    const packageName = PluginManager.getPackageName(name);
+    const packageJson = PluginManager.getPackageJson(packageName);
+    const file = PluginManager.getPackageName(name, true);
+    return {
+      packageJson,
+      depsCompatible: getCompatible(packageName),
+      lastUpdated: fs.statSync(file).ctime,
+    };
   }
 }
 

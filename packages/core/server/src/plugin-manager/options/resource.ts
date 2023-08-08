@@ -60,5 +60,14 @@ export default {
       ctx.body = filterByTk;
       await next();
     },
+    async detail(ctx, next) {
+      const pm = ctx.app.pm;
+      const { filterByTk } = ctx.action.params;
+      if (!filterByTk) {
+        ctx.throw(400, 'plugin name invalid');
+      }
+      ctx.body = await pm.detail(filterByTk);
+      await next();
+    },
   },
 };

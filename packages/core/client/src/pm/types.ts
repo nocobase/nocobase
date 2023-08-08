@@ -14,4 +14,6 @@ export interface IPluginData {
   description?: string;
   type: 'npm' | 'upload';
   isCompatible?: boolean;
+  readmeUrl: string;
+  changelogUrl: string;
 }
