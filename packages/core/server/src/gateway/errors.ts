@@ -58,7 +58,13 @@ export const errors = {
 
 export function getErrorWithCode(errorCode: string) {
   errorCode = errorCode.toUpperCase();
-  const error = errors[errorCode];
+
+  const error = errors[errorCode] || {
+    status: 500,
+    message: (app: Application) => `unknown error: ${errorCode}`,
+    maintaining: false,
+  };
+
   error.code = errorCode;
   return error;
 }
