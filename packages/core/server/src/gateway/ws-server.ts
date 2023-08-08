@@ -3,8 +3,8 @@ import WebSocket from 'ws';
 import { nanoid } from 'nanoid';
 import { IncomingMessage } from 'http';
 import { AppSupervisor } from '../app-supervisor';
-import { errors, getErrorWithCode } from './errors';
-import { lodash } from '../../../utils/src';
+import { getErrorWithCode } from './errors';
+import lodash from 'lodash';
 
 declare class WebSocketWithId extends WebSocket {
   id: string;
