@@ -119,7 +119,7 @@ export const AMapBlock = (props) => {
     const overlays = dataSource
       .map((item) => {
         const data = getSource(item, fieldNames?.field, cf?.interface);
-        if (!data?.length) return;
+        if (!data?.length) return [];
         return data?.filter(Boolean).map((mapItem) => {
           const overlay = mapRef.current?.setOverlay(collectionField.type, mapItem, {
             strokeColor: '#4e9bff',
@@ -137,8 +137,7 @@ export const AMapBlock = (props) => {
           return overlay;
         });
       })
-      .flat()
-      .filter(Boolean);
+      .flat();
     mapRef.current?.map?.setFitView(overlays);
 
     const events = overlays.map((o: AMap.Marker) => {

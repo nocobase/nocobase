@@ -154,7 +154,7 @@ export const GoogleMapsBlock = (props) => {
     const overlays: google.maps.Polygon[] = dataSource
       .map((item) => {
         const data = getSource(item, fieldNames?.field, cf?.interface);
-        if (!data?.length) return;
+        if (!data?.length) return [];
         return data?.filter(Boolean).map((mapItem) => {
           if (!data) return;
           const overlay = mapRef.current?.setOverlay(collectionField.type, mapItem, {
@@ -173,8 +173,7 @@ export const GoogleMapsBlock = (props) => {
           return overlay;
         });
       })
-      .flat()
-      .filter(Boolean);
+      .flat();
 
     overlaysRef.current = overlays;
     mapRef.current?.setFitView(overlays);
