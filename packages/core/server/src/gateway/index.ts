@@ -86,14 +86,15 @@ export class Gateway extends EventEmitter {
   responseError(
     res: ServerResponse,
     error: {
-      title: string;
-      detail?: string;
-      status: number;
+      status: string;
+      maintaining: boolean;
+      message: string;
+      code: number;
     },
   ) {
     res.setHeader('Content-Type', 'application/json');
-    res.statusCode = error.status;
-    res.end(JSON.stringify([error]));
+    res.statusCode = error.code;
+    res.end(JSON.stringify(error));
   }
 
   async requestHandler(req: IncomingMessage, res: ServerResponse) {
@@ -102,8 +103,10 @@ export class Gateway extends EventEmitter {
 
     if (!app) {
       this.responseError(res, {
-        title: `app ${handleApp} not found`,
-        status: 404,
+        message: `application ${handleApp} not found`,
+        code: 404,
+        status: 'not_found',
+        maintaining: false,
       });
 
       return;
@@ -118,15 +121,17 @@ export class Gateway extends EventEmitter {
         const errorMessage = error.message || error.toString();
 
         this.responseError(res, {
-          title: `The '${handleApp}' app is in an error status`,
-          detail: errorMessage,
-          status: 503,
+          message: errorMessage,
+          status: 'error',
+          code: 503,
+          maintaining: true,
         });
       } else {
         this.responseError(res, {
-          title: `app ${handleApp} is not ready yet, current status: ${app.getFsmState()}`,
-          detail: `last working message: ${app.workingMessage}`,
-          status: 503,
+          message: app.workingMessage,
+          status: app.getFsmState(),
+          code: 503,
+          maintaining: true,
         });
       }
 
