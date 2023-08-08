@@ -161,25 +161,10 @@ export const KanbanV2BlockProvider = (props) => {
         await onClick();
         const targetKey = props.groupField.join('.');
         const target = values[targetKey] || '__unknown__';
-        setTargetColumn(target);
-        // if (targetColumn) {
-        //   const index = kanbanColumns.findIndex((v) => {
-        //     return v.value === targetColumn;
-        //   });
-        //   const column = kanbanColumns.find((v) => {
-        //     return v.value === targetColumn;
-        //   });
-        //   const newColumns = [...kanbanColumns];
-        //   newColumns[index] = { ...column, update: true };
-        //   setKanbanColumns(newColumns);
-        // } else {
-        //   const column = kanbanColumns.find((v) => {
-        //     return v.value === '__unknown__';
-        //   });
-        //   const newColumns = [...kanbanColumns];
-        //   newColumns[0] = { ...column, update: true };
-        //   setKanbanColumns(newColumns);
-        // }
+        setTargetColumn(null);
+        setTimeout(() => {
+          setTargetColumn(target);
+        });
       },
     };
   };
@@ -208,14 +193,14 @@ export const useKanbanV2BlockProps = () => {
   const field: any = useField();
   const { columns } = ctx;
   useEffect(() => {
-    if (!ctx.service.loading) {
+    if (!ctx?.service?.loading) {
       field.value = ctx?.service?.data?.data;
       // eslint-disable-next-line promise/catch-or-return
-      ctx.form.reset().then(() => {
+      ctx.form?.reset().then(() => {
         ctx.form.setValues(ctx.service?.data?.data?.[0] || {});
       });
     }
-  }, [ctx.service.loading]);
+  }, [ctx?.service?.loading]);
   return {
     columns: columns,
     groupField: ctx.groupField,

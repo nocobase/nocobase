@@ -1,11 +1,11 @@
 import { css } from '@emotion/css';
-import { FormLayout } from '@formily/antd';
+import { FormLayout } from '@formily/antd-v5';
 import { FieldContext, FormContext, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { Divider, Skeleton, Spin } from 'antd';
-import React, { memo, useContext, useEffect, useState } from 'react';
+import { Spin } from 'antd';
+import React, { memo, useContext, useEffect, useState, useRef } from 'react';
 import { Draggable, Droppable } from 'react-beautiful-dnd';
 import { useTranslation } from 'react-i18next';
-import InfiniteScroll from 'react-infinite-scroll-component';
+import { useInfiniteScroll } from 'ahooks';
 import {
   BlockItem,
   KanbanCardBlockProvider,
@@ -14,6 +14,7 @@ import {
   useKanbanV2BlockContext,
 } from '../../../../';
 import { useProps } from '../../../hooks/useProps';
+import { uniqBy } from 'lodash';
 
 const grid = 8;
 const getItemStyle = (isDragging, draggableStyle) => ({
@@ -95,19 +96,41 @@ export const Column = memo((props: any) => {
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
   const [disabledCardDrag, setDisableCardDrag] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const displayLable = fieldSchema['x-label-disabled'];
-  const loadMoreData = (el, index) => {
-    getColumnDatas(el, index, params, appends, el?.meta?.page + 1);
+  const { data: result, loading, loadMore, loadingMore, mutate } = useInfiniteScroll(
+    (d) => getLoadMoreList(d?.nextId, 10),
+    {
+      target: document.getElementById(`scrollableDiv${ind}`),
+      isNoMore: (d) => d?.nextId === undefined,
+    },
+  );
+  const getLoadMoreList = async (nextId: string | undefined, limit: number): Promise<any> => {
+    const res = await getColumnDatas(data, ind, params, appends, nextId + 1, () => {});
+    return {
+      ...res,
+      list: uniqBy(res.cards, 'id'),
+      nextId: res?.meta?.count > res.cards.length ? Math.ceil(res.cards.length / 10) : undefined,
+    };
   };
   useEffect(() => {
-    if (!data?.cards || targetColumn === data.value) {
-      setLoading(true);
-      getColumnDatas(data, ind, params, appends, 1, () => {
-        setLoading(false);
-      });
+    if (targetColumn === data.value) {
+      getColumnDatas(data, ind, params, appends, 1, () => {}).then((res) => {
+        mutate({
+          ...res,
+          list: res.cards,
+          nextId: res?.meta?.count > res.cards.length ? Math.ceil(res.cards.length / 10) : undefined,
+        });
+      }).catch;
     }
-  }, [appends.length, params, targetColumn]);
+  }, [targetColumn]);
+
+  useEffect(() => {
+    mutate({
+      list: cards,
+      nextId: data?.meta?.count > cards?.length ? Math.ceil(cards?.length / 10) : undefined,
+    });
+  }, [cards]);
+
+  const displayLable = fieldSchema['x-label-disabled'];
   fieldSchema.properties.grid['x-component-props'] = {
     dndContext: {
       onDragStart: () => {
@@ -118,27 +141,14 @@ export const Column = memo((props: any) => {
       },
     },
   };
+  console.log(result?.list, cards);
   return (
     <Droppable key={ind} droppableId={`${data.value}`}>
       {(provided, snapshot) => (
         <div ref={provided.innerRef} style={getListStyle()} {...provided.droppableProps} id={`scrollableDiv${ind}`}>
-          <InfiniteScroll
-            key={ind}
-            dataLength={cards?.length || 0}
-            next={() => loadMoreData(data, ind)}
-            hasMore={cards?.length < data?.meta?.count}
-            loader={<Skeleton avatar paragraph={{ rows: 1 }} active />}
-            scrollableTarget={`scrollableDiv${ind}`}
-            endMessage={
-              cards?.length > 0 && (
-                <Divider plain style={{ color: '#908d8d' }}>
-                  {t('All loaded, nothing more')}
-                </Divider>
-              )
-            }
-          >
-            <Spin spinning={loading} style={{ minHeight: 400 }}>
-              {cards?.map((item, index) => (
+          <div key={ind}>
+            <Spin spinning={loading}>
+              {result?.list?.map((item, index) => (
                 <Draggable
                   key={item.id}
                   draggableId={`item-${item.id}`}
@@ -175,8 +185,15 @@ export const Column = memo((props: any) => {
                 </Draggable>
               ))}
             </Spin>
+            <div style={{ marginTop: 8 }}>
+              {result?.nextId && result?.list?.length > 0 && (
+                <span onClick={loadMore}>{loadingMore ? 'Loading more...' : 'Click to load more'}</span>
+              )}
+
+              {!result?.nextId && <span>{t('All loaded, nothing more')}</span>}
+            </div>
             {provided.placeholder}
-          </InfiniteScroll>
+          </div>
         </div>
       )}
     </Droppable>

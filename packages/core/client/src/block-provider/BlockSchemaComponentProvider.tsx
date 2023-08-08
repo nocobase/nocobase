@@ -11,7 +11,6 @@ import { GanttBlockProvider, useGanttBlockProps } from './GanttBlockProvider';
 import * as bp from './hooks';
 import { KanbanBlockProvider, useKanbanBlockProps } from './KanbanBlockProvider';
 import { KanbanV2BlockProvider, useKanbanV2BlockProps } from './KanbanV2BlockProvider';
-
 import { TableBlockProvider, useTableBlockProps } from './TableBlockProvider';
 import { TableFieldProvider, useTableFieldProps } from './TableFieldProvider';
 import { TableSelectorProvider, useTableSelectorProps } from './TableSelectorProvider';
@@ -74,7 +73,7 @@ export class BlockSchemaComponentPlugin extends Plugin {
       FormFieldProvider,
       DetailsBlockProvider,
       KanbanBlockProvider,
-      useKanbanV2BlockProps,
+      KanbanV2BlockProvider,
       RecordLink,
     });
   }

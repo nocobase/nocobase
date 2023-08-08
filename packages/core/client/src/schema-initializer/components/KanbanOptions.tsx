@@ -1,4 +1,4 @@
-import { ArrayTable } from '@formily/antd';
+import { ArrayTable } from '@formily/antd-v5';
 import { observer } from '@formily/react';
 import { useField } from '@formily/react';
 import React, { useEffect } from 'react';

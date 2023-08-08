@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { FormDialog, FormLayout } from '@formily/antd';
+import { FormDialog, FormLayout } from '@formily/antd-v5';
 import { FormOutlined } from '@ant-design/icons';
 import { SchemaOptionsContext } from '@formily/react';
 import { useTranslation } from 'react-i18next';

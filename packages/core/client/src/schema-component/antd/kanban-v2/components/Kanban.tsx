@@ -50,7 +50,7 @@ export const KanbanV2: any = (props) => {
   const { useProps } = props;
   const { groupField, columns } = useProps();
   const { associateCollectionField } = useKanbanV2BlockContext();
-  const [columnData, setColumnData] = useState(cloneDeep(columns));
+  const [columnData, setColumnData] = useState(cloneDeep(columns) || []);
   const [visible, setVisible] = useState(false);
   const [record, setRecord] = useState<any>({});
   const isAssociationField = isAssocField(groupField);
@@ -58,7 +58,7 @@ export const KanbanV2: any = (props) => {
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   useEffect(() => {
-    const newColumns = columns.map((v) => {
+    const newColumns = columns?.map((v) => {
       const column = columnData.find((h) => {
         return h.value === v.value;
       });
@@ -68,9 +68,8 @@ export const KanbanV2: any = (props) => {
         return v;
       }
     });
-    setColumnData(cloneDeep(newColumns));
+    setColumnData(cloneDeep(newColumns) || []);
   }, [columns]);
-
   const getColumnDatas = useCallback(async (el, index, params, appends?, currentPage?, fun?) => {
     const parseFilter = (value) => {
       if (value === '__unknown__') {
@@ -98,7 +97,7 @@ export const KanbanV2: any = (props) => {
     const newColumn = columnData.find((v) => v.value === el.value) || el;
     const page = currentPage || 1;
     // eslint-disable-next-line promise/catch-or-return
-    resource
+    return resource
       .list({
         ...params,
         appends,
@@ -119,6 +118,7 @@ export const KanbanV2: any = (props) => {
             newState[index] = newColumn;
             setColumnData(newState);
           }
+          return newColumn;
         }
       });
   }, []);
