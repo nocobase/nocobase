@@ -100,9 +100,7 @@ export const useSyncFromForm = (fieldSchema, collection?, callBack?) => {
       cache.set(cacheKey, result);
       return result;
     };
-  })(
-    new LRUCache<string, any>({ max: 100 }),
-  );
+  })(new LRUCache<string, any>({ max: 100 }));
 
   const traverseAssociations = ((cache) => {
     return (collectionName, { prefix, maxDepth, depth = 0, exclude = [] }) => {
@@ -149,9 +147,7 @@ export const useSyncFromForm = (fieldSchema, collection?, callBack?) => {
       cache.set(cacheKey, result);
       return result;
     };
-  })(
-    new LRUCache<string, any>({ max: 100 }),
-  );
+  })(new LRUCache<string, any>({ max: 100 }));
   const getEnableFieldTree = useCallback((collectionName: string, formData) => {
     if (!collectionName) {
       return [];

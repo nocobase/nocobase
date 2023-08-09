@@ -18,7 +18,7 @@ ReadPretty.ColorPicker = function ColorPicker(props: any) {
 
   return (
     <div className={cls(prefixCls, props.className)}>
-      <ColorPicker showText disabled value={props.value} size='small'/>
+      <ColorPicker showText disabled value={props.value} size="small" />
     </div>
   );
 };
