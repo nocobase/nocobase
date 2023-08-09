@@ -797,6 +797,7 @@ export default {
   "Date display format":"日期显示格式",
   "Assign  data scope for the template":"为模板指定数据范围",
   "Table selected records":"表格中选中的记录",
+
   "Tag":"标签",
   "Tag color field":"标签颜色字段",
   "Sync successfully":"同步成功",

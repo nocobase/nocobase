@@ -1,5 +1,5 @@
 import { SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
-import { parse } from '@nocobase/utils/client';
+import { isURL, parse } from '@nocobase/utils/client';
 import { App, message } from 'antd';
 import { cloneDeep } from 'lodash';
 import get from 'lodash/get';
@@ -40,18 +40,6 @@ function renderTemplate(str: string, data: any) {
   });
 }
 
-function isURL(string) {
-  let url;
-
-  try {
-    url = new URL(string);
-  } catch (e) {
-    return false;
-  }
-
-  return url.protocol === 'http:' || url.protocol === 'https:';
-}
-
 const filterValue = (value) => {
   if (typeof value !== 'object') {
     return value;
@@ -86,6 +74,7 @@ function getFormValues(filterByTk, field, form, fieldNames, getField, resource) 
       return omit({ ...form.values }, keys);
     }
   }
+
   return form.values;
   const values = {};
   for (const key in form.values) {
@@ -151,8 +140,13 @@ export const useCreateActionProps = () => {
   return {
     async onClick() {
       const fieldNames = fields.map((field) => field.name);
-      const { assignedValues: originalAssignedValues = {}, onSuccess, overwriteValues, skipValidator } =
-        actionSchema?.['x-action-settings'] ?? {};
+      const {
+        assignedValues: originalAssignedValues = {},
+        onSuccess,
+        overwriteValues,
+        skipValidator,
+        triggerWorkflows,
+      } = actionSchema?.['x-action-settings'] ?? {};
       const addChild = fieldSchema?.['x-component-props']?.addChild;
 
       const assignedValues = {};
@@ -189,6 +183,10 @@ export const useCreateActionProps = () => {
             ...assignedValues,
           },
           filterKeys: filterKeys,
+          // TODO(refactor): should change to inject by plugin
+          triggerWorkflows: triggerWorkflows?.length
+            ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
+            : undefined,
         });
         actionField.data.loading = false;
         actionField.data.data = data;
@@ -237,8 +235,12 @@ export const useAssociationCreateActionProps = () => {
   return {
     async onClick() {
       const fieldNames = fields.map((field) => field.name);
-      const { assignedValues: originalAssignedValues = {}, onSuccess, overwriteValues, skipValidator } =
-        actionSchema?.['x-action-settings'] ?? {};
+      const {
+        assignedValues: originalAssignedValues = {},
+        onSuccess,
+        overwriteValues,
+        skipValidator,
+      } = actionSchema?.['x-action-settings'] ?? {};
       const addChild = fieldSchema?.['x-component-props']?.addChild;
 
       const assignedValues = {};
@@ -435,8 +437,11 @@ export const useCustomizeUpdateActionProps = () => {
 
   return {
     async onClick() {
-      const { assignedValues: originalAssignedValues = {}, onSuccess, skipValidator } =
-        actionSchema?.['x-action-settings'] ?? {};
+      const {
+        assignedValues: originalAssignedValues = {},
+        onSuccess,
+        skipValidator,
+      } = actionSchema?.['x-action-settings'] ?? {};
 
       const assignedValues = {};
       const waitList = Object.keys(originalAssignedValues).map(async (key) => {
@@ -504,8 +509,11 @@ export const useCustomizeBulkUpdateActionProps = () => {
 
   return {
     async onClick() {
-      const { assignedValues: originalAssignedValues = {}, onSuccess, updateMode } =
-        actionSchema?.['x-action-settings'] ?? {};
+      const {
+        assignedValues: originalAssignedValues = {},
+        onSuccess,
+        updateMode,
+      } = actionSchema?.['x-action-settings'] ?? {};
       actionField.data = field.data || {};
       actionField.data.loading = true;
 
@@ -772,8 +780,13 @@ export const useUpdateActionProps = () => {
 
   return {
     async onClick() {
-      const { assignedValues: originalAssignedValues = {}, onSuccess, overwriteValues, skipValidator } =
-        actionSchema?.['x-action-settings'] ?? {};
+      const {
+        assignedValues: originalAssignedValues = {},
+        onSuccess,
+        overwriteValues,
+        skipValidator,
+        triggerWorkflows,
+      } = actionSchema?.['x-action-settings'] ?? {};
 
       const assignedValues = {};
       const waitList = Object.keys(originalAssignedValues).map(async (key) => {
@@ -806,6 +819,10 @@ export const useUpdateActionProps = () => {
           },
           ...data,
           updateAssociationValues,
+          // TODO(refactor): should change to inject by plugin
+          triggerWorkflows: triggerWorkflows?.length
+            ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
+            : undefined,
         });
         actionField.data.loading = false;
         __parent?.service?.refresh?.();

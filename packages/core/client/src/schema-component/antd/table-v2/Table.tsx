@@ -1,6 +1,6 @@
 import { DeleteOutlined, MenuOutlined } from '@ant-design/icons';
 import { TinyColor } from '@ctrl/tinycolor';
-import { SortableContext, useSortable } from '@dnd-kit/sortable';
+import { SortableContext, SortableContextProps, useSortable } from '@dnd-kit/sortable';
 import { css } from '@emotion/css';
 import { ArrayField, Field } from '@formily/core';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
@@ -454,13 +454,14 @@ export const Table: any = observer(
     const SortableWrapper = useCallback<React.FC>(
       ({ children }) => {
         return dragSort
-          ? React.createElement(SortableContext, {
-              items: field.value?.map?.(getRowKey) || [],
+          ? React.createElement<Omit<SortableContextProps, 'children'>>(
+              SortableContext,
+              {
+                items: field.value?.map?.(getRowKey) || [],
+              },
               children,
-            })
-          : React.createElement(React.Fragment, {
-              children,
-            });
+            )
+          : React.createElement(React.Fragment, {}, children);
       },
       [field, dragSort],
     );
@@ -530,7 +531,7 @@ export const Table: any = observer(
         {field.errors.length > 0 && (
           <div className="ant-formily-item-error-help ant-formily-item-help ant-formily-item-help-enter ant-formily-item-help-enter-active">
             {field.errors.map((error) => {
-              return error.messages.map((message) => <div>{message}</div>);
+              return error.messages.map((message) => <div key={message}>{message}</div>);
             })}
           </div>
         )}
