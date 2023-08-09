@@ -10,7 +10,20 @@ export const globExcludeFiles = [
   '!src/**/*.md',
   '!src/**/*.+(test|e2e|spec).+(js|jsx|ts|tsx)',
 ];
-
+export const EsbuildSupportExts = [
+  '.ts',
+  '.tsx',
+  '.js',
+  '.jsx',
+  '.json',
+  '.css',
+  '.less',
+  '.sass',
+  '.scss',
+  '.styl',
+  '.txt',
+  '.data',
+];
 export const ROOT_PATH = path.join(__dirname, '../../../../');
 export const PACKAGES_PATH = path.join(ROOT_PATH, 'packages');
 export const PLUGINS_DIR = [path.join(PACKAGES_PATH, 'plugins'), path.join(PACKAGES_PATH, 'samples')];

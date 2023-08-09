@@ -17,7 +17,7 @@ import {
 } from './utils/buildPluginUtils';
 import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js';
 import { getDepsConfig } from './utils/getDepsConfig';
-import { globExcludeFiles } from './constant';
+import { EsbuildSupportExts, globExcludeFiles } from './constant';
 import { PkgLog, getPackageJson } from './utils';
 
 const serverGlobalFiles: string[] = ['src/**', '!src/client/**', ...globExcludeFiles];
@@ -231,6 +231,10 @@ export async function buildPluginServer(cwd: string, sourcemap: boolean, log: Pk
   const packageJson = getPackageJson(cwd);
   const serverFiles = fg.globSync(serverGlobalFiles, { cwd, absolute: true });
   buildCheck({ cwd, packageJson, entry: 'server', files: serverFiles, log });
+  const otherExts = serverFiles.map((item) => path.extname(item)).filter((item) => !EsbuildSupportExts.includes(item));
+  if (otherExts.length) {
+    log('%s will not be processed, only be copied to the dist directory.', chalk.yellow(otherExts.join(',')));
+  }
 
   await tsupBuild({
     entry: serverFiles,
@@ -244,6 +248,7 @@ export async function buildPluginServer(cwd: string, sourcemap: boolean, log: Pk
     outDir: path.join(cwd, target_dir),
     format: 'cjs',
     skipNodeModulesBundle: true,
+    loader: otherExts.reduce((prev, cur) => ({ ...prev, [cur]: 'copy' }), {}),
   });
 
   await buildServerDeps(cwd, serverFiles, log);

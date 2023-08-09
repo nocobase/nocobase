@@ -1,14 +1,19 @@
 import { build } from 'tsup';
 import fg from 'fast-glob';
 import path from 'path';
-import { globExcludeFiles } from './constant';
+import chalk from 'chalk';
+import { globExcludeFiles, EsbuildSupportExts } from './constant';
 import { PkgLog } from './utils';
 
-export function buildCjs(cwd: string, sourcemap: boolean = false, log?: PkgLog) {
+export function buildCjs(cwd: string, sourcemap: boolean = false, log: PkgLog) {
   log('build cjs');
 
   const entry = fg.globSync(['src/**', ...globExcludeFiles], { cwd, absolute: true });
   const outDir = path.join(cwd, 'lib');
+  const otherExts = entry.map((item) => path.extname(item)).filter((item) => !EsbuildSupportExts.includes(item));
+  if (otherExts.length) {
+    log('%s will not be processed, only be copied to the lib directory.', chalk.yellow(otherExts.join(',')));
+  }
 
   return build({
     entry,
@@ -21,9 +26,7 @@ export function buildCjs(cwd: string, sourcemap: boolean = false, log?: PkgLog) 
     target: 'node16',
     keepNames: true,
     outDir,
-    loader: {
-      '.pegjs': 'file',
-    },
+    loader: otherExts.reduce((prev, cur) => ({ ...prev, [cur]: 'copy' }), {}),
     format: 'cjs',
     skipNodeModulesBundle: true,
   });
