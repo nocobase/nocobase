@@ -65,7 +65,6 @@ export const Action: ComposedAction = observer(
     actionTitle = lodash.isString(actionTitle) ? t(actionTitle) : actionTitle;
 
     useEffect(() => {
-      field.linkageProperty = {};
       linkageRules
         .filter((k) => !k.disabled)
         .forEach((v) => {
@@ -80,7 +79,7 @@ export const Action: ComposedAction = observer(
             });
           });
         });
-    }, [linkageRules, values, designable]);
+    }, [JSON.stringify(linkageRules), values, designable]);
 
     const renderButton = () => {
       if (!designable && field?.data?.hidden) {

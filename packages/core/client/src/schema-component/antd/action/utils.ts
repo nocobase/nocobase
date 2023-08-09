@@ -1,5 +1,4 @@
 import type { ISchema } from '@formily/react';
-import { last } from 'lodash';
 import { ActionType } from '../../../schema-settings/LinkageRules/type';
 import { VariableOption, VariablesContextType } from '../../../variables/types';
 import { conditionAnalyses } from '../../common/utils/uitls';
@@ -85,20 +84,17 @@ export const linkageAction = async ({
   variables: VariablesContextType;
   localVariables: VariableOption[];
 }) => {
-  const disableResult = field?.linkageProperty?.disabled || [false];
-  const displayResult = field?.linkageProperty?.display || ['visible'];
   switch (operator) {
     case ActionType.Visible:
       if (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables })) {
-        displayResult.push(operator);
         field.data = field.data || {};
         field.data.hidden = false;
+
+        field._display = field._display || field.display;
+        field.display = operator;
+      } else {
+        field.display = field._display;
       }
-      field.linkageProperty = {
-        ...field.linkageProperty,
-        display: displayResult,
-      };
-      field.display = last(displayResult);
       break;
     case ActionType.Hidden:
       if (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables })) {
@@ -111,23 +107,17 @@ export const linkageAction = async ({
       break;
     case ActionType.Disabled:
       if (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables })) {
-        disableResult.push(true);
+        field.disabled = true;
+      } else {
+        field.disabled = false;
       }
-      field.linkageProperty = {
-        ...field.linkageProperty,
-        disabled: disableResult,
-      };
-      field.disabled = last(disableResult);
       break;
     case ActionType.Active:
       if (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables })) {
-        disableResult.push(false);
+        field.disabled = false;
+      } else {
+        field.disabled = true;
       }
-      field.linkageProperty = {
-        ...field.linkageProperty,
-        disabled: disableResult,
-      };
-      field.disabled = last(disableResult);
       break;
     default:
       return null;

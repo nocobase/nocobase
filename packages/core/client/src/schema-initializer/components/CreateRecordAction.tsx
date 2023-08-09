@@ -97,7 +97,6 @@ export const CreateRecordAction = observer(
     const localVariables = useLocalVariables();
 
     useEffect(() => {
-      field.linkageProperty = {};
       linkageRules
         .filter((k) => !k.disabled)
         .forEach((v) => {
@@ -112,7 +111,7 @@ export const CreateRecordAction = observer(
             });
           });
         });
-    }, [linkageRules, values]);
+    }, [JSON.stringify(linkageRules), values]);
     return (
       <div className={actionDesignerCss}>
         <ActionContextProvider value={{ ...ctx, visible, setVisible }}>
@@ -202,7 +201,6 @@ export const CreateAction = observer(
     }, [menuItems]);
 
     useEffect(() => {
-      field.linkageProperty = {};
       linkageRules
         .filter((k) => !k.disabled)
         .forEach((v) => {
@@ -217,7 +215,7 @@ export const CreateAction = observer(
             });
           });
         });
-    }, [linkageRules, values]);
+    }, [JSON.stringify(linkageRules), values]);
     return (
       <div className={actionDesignerCss}>
         {FinallyButton({

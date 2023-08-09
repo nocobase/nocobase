@@ -106,6 +106,15 @@ export const conditionAnalyses = async ({
 }) => {
   const type = Object.keys(rules)[0] || '$and';
   const conditions = rules[type];
+  localVariables = localVariables.map((variable) => {
+    if (variable.name === '$form') {
+      return {
+        ...variable,
+        ctx: formValues,
+      };
+    }
+    return variable;
+  });
 
   let results = conditions.map(async (c) => {
     const jsonlogic = getInnermostKeyAndValue(c);

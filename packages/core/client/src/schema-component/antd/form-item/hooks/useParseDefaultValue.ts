@@ -53,7 +53,9 @@ const useParseDefaultValue = () => {
 
     // 实现联动的效果，当依赖的变量变化时（如 `$form` 变量），重新解析默认值
     const dispose = reaction(() => {
-      return _.get({ $form: formVariable?.ctx }, getPath(schema.default));
+      if (isVariable(schema.default)) {
+        return _.get({ $form: formVariable?.ctx }, getPath(schema.default));
+      }
     }, run);
 
     return dispose;
