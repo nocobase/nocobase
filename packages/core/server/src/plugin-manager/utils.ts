@@ -134,9 +134,9 @@ export async function getPluginInfoByNpm(packageName: string, registry: string, 
     version = await getLatestVersion(packageName, registry);
   }
 
-  const fileUrl = `${registry}/${packageName}/-/${packageName.split('/').pop()}-${version}.tgz`;
+  const compressedFileUrl = `${registry}/${packageName}/-/${packageName.split('/').pop()}-${version}.tgz`;
 
-  return { fileUrl, version };
+  return { compressedFileUrl, version };
 }
 
 /**
@@ -203,53 +203,6 @@ export function getServerPackages(packageDir: string) {
   return srcServerPlugins;
 }
 
-/**
- * remove devDependencies & adjust dependencies
- */
-export async function adjustPluginJson(packageDir: string) {
-  const packageJsonPath = path.join(packageDir, 'package.json');
-  const packageJson = require(packageJsonPath);
-  const serverPlugins = getServerPackages(packageDir);
-  const dependencies: Record<string, string> = packageJson.dependencies || {};
-  const serverDependencies = Object.keys(dependencies).reduce<Record<string, string>>((result, packageName) => {
-    if (serverPlugins.includes(packageName)) {
-      result[packageName] = dependencies[packageName];
-    }
-    return result;
-  }, {});
-
-  fs.writeJSON(
-    packageJsonPath,
-    {
-      ...packageJson,
-      dependencies: serverDependencies,
-      devDependencies: {},
-    },
-    { spaces: 2 },
-  );
-
-  return !!Object.keys(serverDependencies).length;
-}
-
-// /**
-//  * install dependencies
-//  */
-// export async function installPlugin(packageDir: string) {
-//   const shouldInstall = await adjustPluginJson(packageDir);
-
-//   if (shouldInstall) {
-//     try {
-//       await $({
-//         stdio: 'inherit',
-//         shell: true,
-//         cwd: packageDir,
-//       })`yarn install --registry=http://registry.npmmirror.com`;
-//     } catch {
-//       await $({ stdio: 'inherit', shell: true, cwd: packageDir })`yarn install`;
-//     }
-//   }
-// }
-
 export function removePluginPackage(packageName: string) {
   const packageDir = getStoragePluginDir(packageName);
   const nodeModulesPluginDir = getNodeModulesPluginDir(packageName);
@@ -305,27 +258,10 @@ export function getPluginNameByClientStaticUrl(pathname: string) {
   return pathArr[0];
 }
 
-export async function addOrUpdatePluginByNpm(
-  options: Pick<PluginData, 'packageName' | 'registry' | 'version'>,
-  update?: boolean,
+export async function addOrUpdatePluginByCompressedFileUrl(
+  options: Partial<Pick<PluginData, 'compressedFileUrl' | 'packageName'>>,
 ) {
-  const exists = await checkPluginExist({ ...options, type: 'npm' });
-  if (exists && !update) {
-    return getPackageJson(options.packageName);
-  }
-  const { fileUrl, version } = await getPluginInfoByNpm(options.packageName, options.registry, options.version);
-  await downloadAndUnzipToNodeModules(fileUrl);
-
-  return {
-    version,
-  };
-}
-
-export async function addOrUpdatePluginByZip(
-  options: Partial<Pick<PluginData, 'zipUrl' | 'packageName'>>,
-  update?: boolean,
-) {
-  const { packageName, version, packageDir } = await downloadAndUnzipToNodeModules(options.zipUrl);
+  const { packageName, version, packageDir } = await downloadAndUnzipToNodeModules(options.compressedFileUrl);
 
   if (options.packageName && options.packageName !== packageName) {
     throw new Error(`Plugin name in package.json must be ${options.packageName}, but got ${packageName}`);
@@ -342,20 +278,8 @@ export async function addOrUpdatePluginByZip(
  * reinstall package when reinstall app or other situation
  */
 export async function checkPluginPackage(plugin: PluginData) {
-  // 1. check plugin exist
-  if (!(await checkPluginExist(plugin))) {
-    if (plugin.type === 'npm') {
-      return addOrUpdatePluginByNpm(
-        {
-          packageName: plugin.packageName,
-          registry: plugin.registry,
-          version: plugin.version,
-        },
-        true,
-      );
-    } else if (plugin.type === 'url') {
-      return addOrUpdatePluginByZip(plugin);
-    }
+  if (plugin.type && !(await checkPluginExist(plugin))) {
+    await addOrUpdatePluginByCompressedFileUrl(plugin);
   }
 }
 

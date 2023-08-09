@@ -10,7 +10,7 @@ export default defineCollection({
     { type: 'string', name: 'packageName', unique: true },
     { type: 'string', name: 'version' },
     { type: 'string', name: 'type' },
-    { type: 'string', name: 'zipUrl' },
+    { type: 'string', name: 'compressedFileUrl' },
     { type: 'string', name: 'registry' },
     { type: 'boolean', name: 'enabled' },
     { type: 'boolean', name: 'installed' },

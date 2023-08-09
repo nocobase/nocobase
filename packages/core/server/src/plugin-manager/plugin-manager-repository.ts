@@ -47,6 +47,18 @@ export class PluginManagerRepository extends Repository {
     return pluginNames;
   }
 
+  async upgrade(name: string, data: { version: string; compressedFileUrl: string }) {
+    return this.update({
+      filter: {
+        name,
+      },
+      values: {
+        version: data.version,
+        compressedFileUrl: data.compressedFileUrl,
+      },
+    });
+  }
+
   async disable(name: string | string[]) {
     const pluginNames = typeof name === 'string' ? [name] : name;
     await this.update({
@@ -76,7 +88,7 @@ export class PluginManagerRepository extends Repository {
         enabled: item.get('enabled'),
         type: item.get('type'),
         packageName: item.get('packageName'),
-        zipUrl: item.get('zipUrl'),
+        compressedFileUrl: item.get('compressedFileUrl'),
         registry: item.get('registry'),
         async: true,
       });

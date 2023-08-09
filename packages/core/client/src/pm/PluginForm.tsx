@@ -73,7 +73,7 @@ const uploadSchema: ISchema = {
       'x-component': 'div',
       type: 'void',
       properties: {
-        zipUrl: {
+        compressedFileUrl: {
           type: 'string',
           'x-decorator': 'FormItem',
           'x-component': 'Upload.DraggerV2',
@@ -90,7 +90,7 @@ const uploadSchema: ISchema = {
   },
 };
 
-const zipUrlSchema: ISchema = {
+const compressedFileUrlSchema: ISchema = {
   type: 'object',
   properties: {
     [uid()]: {
@@ -98,7 +98,7 @@ const zipUrlSchema: ISchema = {
       'x-component': 'div',
       type: 'void',
       properties: {
-        zipUrl: {
+        compressedFileUrl: {
           type: 'string',
           'x-decorator': 'FormItem',
           'x-component': 'Input',
@@ -113,7 +113,7 @@ const zipUrlSchema: ISchema = {
 const schema = {
   npm: npmSchema,
   upload: uploadSchema,
-  url: zipUrlSchema,
+  url: compressedFileUrlSchema,
 };
 
 interface IPluginFormProps {
@@ -122,7 +122,6 @@ interface IPluginFormProps {
 }
 
 export const PluginForm: FC<IPluginFormProps> = ({ onClose, isShow }) => {
-  const [form] = Form.useForm();
   const { t } = useTranslation();
   const [type, setType] = useState<'npm' | 'upload' | 'url'>('npm');
   const { theme } = useStyles();
@@ -143,9 +142,12 @@ export const PluginForm: FC<IPluginFormProps> = ({ onClose, isShow }) => {
           });
         } else {
           await api.request({
-            url: 'pm:addByZipUrl',
+            url: 'pm:addByCompressedFileUrl',
             method: 'post',
-            data: form.values,
+            data: {
+              ...form.values,
+              type,
+            },
           });
         }
         message.success(t('Saved successfully'), 2, () => {
@@ -158,23 +160,18 @@ export const PluginForm: FC<IPluginFormProps> = ({ onClose, isShow }) => {
   const useCancel = () => {
     return {
       run() {
-        handleCancel();
+        onClose();
       },
     };
   };
 
-  const handleCancel = () => {
-    onClose();
-    form.resetFields();
-  };
-
   return (
-    <Modal onCancel={handleCancel} footer={null} destroyOnClose title={t('New plugin')} width={580} open={isShow}>
+    <Modal onCancel={() => onClose()} footer={null} destroyOnClose title={t('New plugin')} width={580} open={isShow}>
       <label style={{ fontWeight: 'bold' }}>{t('Add type')}:</label>
       <Radio.Group style={{ margin: theme.margin }} defaultValue={type} onChange={(e) => setType(e.target.value)}>
         <Radio value="npm">{t('Npm package')}</Radio>
         <Radio value="upload">{t('Upload plugin')}</Radio>
-        <Radio value="url">{t('Compressed file link')}</Radio>
+        <Radio value="url">{t('Compressed file url')}</Radio>
       </Radio.Group>
 
       <SchemaComponent scope={{ useCancel, useSaveValues }} schema={schema[type]} />

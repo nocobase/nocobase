@@ -23,13 +23,39 @@ export default {
       ctx.body = await pm.addByNpm(values);
       await next();
     },
-    async addByZipUrl(ctx, next) {
+    async addByCompressedFileUrl(ctx, next) {
       const pm = ctx.app.pm;
       const { values } = ctx.action.params;
-      if (!values['zipUrl']) {
-        ctx.throw(400, 'plugin registry is required');
+      if (!values['compressedFileUrl']) {
+        ctx.throw(400, 'plugin CompressedFileUrl is required');
       }
-      ctx.body = await pm.addByZipUrl(values);
+      if (!values['type']) {
+        ctx.throw(400, 'type is required');
+      }
+      ctx.body = await pm.addByCompressedFileUrl(values);
+      await next();
+    },
+    async upgradeByNpm(ctx, next) {
+      const { filterByTk } = ctx.action.params;
+      if (!filterByTk) {
+        ctx.throw(400, 'plugin name invalid');
+      }
+      const pm = ctx.app.pm;
+      await pm.upgradeByNpm(filterByTk);
+      ctx.body = 'ok';
+      await next();
+    },
+    async upgradeByCompressedFileUrl(ctx, next) {
+      const { filterByTk, values } = ctx.action.params;
+      if (!filterByTk) {
+        ctx.throw(400, 'plugin name invalid');
+      }
+      if (!values['compressedFileUrl']) {
+        ctx.throw(400, 'compressedFileUrl is required');
+      }
+      const pm = ctx.app.pm;
+      await pm.upgradeByCompressedFileUrl({ name: filterByTk, compressedFileUrl: values['compressedFileUrl'] });
+      ctx.body = 'ok';
       await next();
     },
     async enable(ctx, next) {
@@ -50,10 +76,6 @@ export default {
       }
       await pm.disable(filterByTk);
       ctx.body = filterByTk;
-      await next();
-    },
-    async upgrade(ctx, next) {
-      ctx.body = 'ok';
       await next();
     },
     async remove(ctx, next) {

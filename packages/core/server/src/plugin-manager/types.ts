@@ -5,7 +5,7 @@ export interface PluginData {
   preVersion?: string;
   registry?: string;
   clientUrl?: string;
-  zipUrl?: string;
+  compressedFileUrl?: string;
   enabled?: boolean;
   type?: 'url' | 'npm';
   isOfficial?: boolean;

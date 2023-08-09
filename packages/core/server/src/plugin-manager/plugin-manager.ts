@@ -12,11 +12,11 @@ import collectionOptions from './options/collection';
 import resourceOptions from './options/resource';
 import { PluginManagerRepository } from './plugin-manager-repository';
 import {
-  addOrUpdatePluginByNpm,
-  addOrUpdatePluginByZip,
+  addOrUpdatePluginByCompressedFileUrl,
   checkCompatible,
   getCompatible,
   getNewVersion,
+  getPluginInfoByNpm,
   removePluginPackage,
 } from './utils';
 import { NODE_MODULES_PATH } from './constants';
@@ -219,19 +219,14 @@ export class PluginManager {
     let { registry, packageName } = options;
     registry = registry.trim();
     packageName = packageName.trim();
-    const name = this.getNameByPackageName(packageName);
-    if (this.plugins.has(name)) {
-      throw new Error(`plugin name [${name}] already exists`);
-    }
-
-    await addOrUpdatePluginByNpm({ packageName, registry });
-    return this.add(name, { registry, packageName, type: 'npm' });
+    const { compressedFileUrl } = await getPluginInfoByNpm(options.packageName, options.registry);
+    return this.addByCompressedFileUrl({ compressedFileUrl, registry, type: 'npm' });
   }
 
-  async addByZipUrl(options: { zipUrl: string }) {
-    const { zipUrl } = options;
+  async addByCompressedFileUrl(options: { compressedFileUrl: string; registry?: string; type?: string }) {
+    const { compressedFileUrl, registry, type } = options;
 
-    const { packageName } = await addOrUpdatePluginByZip({ zipUrl });
+    const { packageName } = await addOrUpdatePluginByCompressedFileUrl({ compressedFileUrl });
     const name = this.getNameByPackageName(packageName);
 
     if (this.plugins.has(name)) {
@@ -239,7 +234,35 @@ export class PluginManager {
       throw new Error(`plugin name [${name}] already exists`);
     }
 
-    return this.add(name, { packageName, zipUrl, type: 'url' });
+    return this.add(name, { packageName, compressedFileUrl, registry, type });
+  }
+
+  async upgradeByNpm(name: string) {
+    const plugin = this.plugins.get(name);
+    if (!plugin) {
+      throw new Error(`plugin name [${name}] not exists`);
+    }
+    if (!plugin.options.packageName || !plugin.options.registry) {
+      throw new Error(`plugin name [${name}] not installed by npm`);
+    }
+    const { compressedFileUrl } = await getPluginInfoByNpm(plugin.options.packageName, plugin.options.registry);
+    return this.upgradeByCompressedFileUrl({ compressedFileUrl, name });
+  }
+
+  async upgradeByCompressedFileUrl(options: { compressedFileUrl: string; name: string }) {
+    const { name, compressedFileUrl } = options;
+    const plugin = this.plugins.get(name);
+    if (!plugin) {
+      throw new Error(`plugin name [${name}] not exists`);
+    }
+
+    const { version } = await addOrUpdatePluginByCompressedFileUrl({
+      compressedFileUrl,
+      packageName: plugin.options.packageName,
+    });
+
+    await this.addStatic(name, { ...plugin.options, compressedFileUrl, version }, true);
+    return this.repository.upgrade(name, { version, compressedFileUrl });
   }
 
   getNameByPackageName(packageName: string) {
@@ -255,7 +278,7 @@ export class PluginManager {
     return packageName.replace(prefix, '');
   }
 
-  addStatic(plugin?: any, options?: any) {
+  addStatic(plugin?: any, options?: any, upgrade = false) {
     if (!options?.async) {
       this._tmpPluginArgs.push([plugin, options]);
     }
@@ -279,7 +302,7 @@ export class PluginManager {
 
     const pluginName = instance.getName();
 
-    if (this.plugins.has(pluginName)) {
+    if (!upgrade && this.plugins.has(pluginName)) {
       throw new Error(`plugin name [${pluginName}] already exists`);
     }
 
@@ -320,7 +343,7 @@ export class PluginManager {
     const packageJson = PluginManager.getPackageJson(packageName);
 
     if (!model) {
-      const { enabled, builtIn, installed, registry, packageName, zipUrl, type, ...others } = options;
+      const { enabled, builtIn, installed, registry, packageName, compressedFileUrl, type, ...others } = options;
       await this.repository.create({
         transaction,
         values: {
@@ -331,7 +354,7 @@ export class PluginManager {
           installed: !!installed,
           registry,
           packageName,
-          zipUrl,
+          compressedFileUrl,
           type,
           options: {
             ...others,

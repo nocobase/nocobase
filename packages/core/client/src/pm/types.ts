@@ -11,9 +11,10 @@ export interface IPluginData {
   builtIn: boolean;
   isOfficial?: boolean;
   newVersion?: boolean;
+  compressedFileUrl?: string;
   options: Record<string, unknown>;
   description?: string;
-  type: 'npm' | 'url';
+  type: 'npm' | 'upload' | 'url';
   isCompatible?: boolean;
   readmeUrl: string;
   changelogUrl: string;

@@ -110,7 +110,7 @@ const LocalPlugins = () => {
         <Space size={'middle'} wrap>
           {filterList[filterIndex]?.list?.map((item) => (
             <div key={item.id}>
-              <PluginCard data={item} />
+              <PluginCard data={item} refresh={refresh} />
             </div>
           ))}
         </Space>
