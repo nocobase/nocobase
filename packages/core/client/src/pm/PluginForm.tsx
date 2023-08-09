@@ -73,15 +73,17 @@ const uploadSchema: ISchema = {
       'x-component': 'div',
       type: 'void',
       properties: {
-        compressedFileUrl: {
+        uploadFile: {
           type: 'string',
           'x-decorator': 'FormItem',
-          'x-component': 'Upload.DraggerV2',
+          'x-component': 'Upload.Dragger',
           required: true,
           'x-component-props': {
             action: 'attachments:create',
             multiple: false,
             maxCount: 1,
+            height: '150px',
+            tipContent: `{{t('Upload placeholder')}}`,
           },
         },
         footer,
@@ -141,11 +143,13 @@ export const PluginForm: FC<IPluginFormProps> = ({ onClose, isShow }) => {
             data: form.values,
           });
         } else {
+          const compressedFileUrl =
+            type === 'url' ? form.values.compressedFileUrl : form.values.uploadFile[0].response.data.url;
           await api.request({
             url: 'pm:addByCompressedFileUrl',
             method: 'post',
             data: {
-              ...form.values,
+              compressedFileUrl,
               type,
             },
           });

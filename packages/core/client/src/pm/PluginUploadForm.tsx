@@ -15,15 +15,17 @@ const schema: ISchema = {
       'x-component': 'div',
       type: 'void',
       properties: {
-        compressedFileUrl: {
+        uploadFile: {
           type: 'string',
           'x-decorator': 'FormItem',
-          'x-component': 'Upload.DraggerV2',
+          'x-component': 'Upload.Dragger',
           required: true,
           'x-component-props': {
             action: 'attachments:create',
             multiple: false,
             maxCount: 1,
+            height: '150px',
+            tipContent: `{{t('Upload placeholder')}}`,
           },
         },
         footer: {
@@ -59,9 +61,10 @@ const schema: ISchema = {
 interface IPluginUploadFormProps {
   onClose: (refresh?: boolean) => void;
   name: string;
+  isShow: boolean;
 }
 
-export const PluginUploadForm: FC<IPluginUploadFormProps> = ({ onClose, name }) => {
+export const PluginUploadForm: FC<IPluginUploadFormProps> = ({ onClose, name, isShow }) => {
   const { t } = useTranslation();
   const { message } = App.useApp();
   const useSaveValues = () => {
@@ -75,7 +78,9 @@ export const PluginUploadForm: FC<IPluginUploadFormProps> = ({ onClose, name }) 
         await api.request({
           url: `pm:upgradeByCompressedFileUrl/${name}`,
           method: 'post',
-          data: form.values,
+          data: {
+            compressedFileUrl: form.values.uploadFile[0].response.data.url,
+          },
         });
         message.success(t('Saved successfully'), 2, () => {
           onClose(true);
@@ -93,7 +98,7 @@ export const PluginUploadForm: FC<IPluginUploadFormProps> = ({ onClose, name }) 
   };
 
   return (
-    <Modal onCancel={() => onClose()} footer={null} destroyOnClose title={t('Upload plugin')} width={580} open={true}>
+    <Modal open={isShow} onCancel={() => onClose()} footer={null} destroyOnClose title={t('Upload plugin')} width={580}>
       <SchemaComponent scope={{ useCancel, useSaveValues }} schema={schema} />
     </Modal>
   );

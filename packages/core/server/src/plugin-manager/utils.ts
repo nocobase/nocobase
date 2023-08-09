@@ -1,5 +1,6 @@
 import axios from 'axios';
 import download from 'download';
+import decompress from 'decompress';
 import fs from 'fs-extra';
 import semver from 'semver';
 import { builtinModules } from 'module';
@@ -14,11 +15,11 @@ import deps from './deps';
  * get temp dir
  *
  * @example
- * getTempDir('dayjs') => '/tmp/nocobase/dayjs'
+ * getTempDir() => '/tmp/nocobase'
  */
-export async function getTempDir(packageName: string) {
+export async function getTempDir() {
   const temporaryDirectory = await fs.realpath(os.tmpdir());
-  return path.join(temporaryDirectory, APP_NAME, packageName);
+  return path.join(temporaryDirectory, APP_NAME);
 }
 
 export function getPluginStoragePath() {
@@ -73,24 +74,39 @@ export async function getLatestVersion(packageName: string, registry: string) {
  */
 export async function downloadAndUnzipToNodeModules(fileUrl: string) {
   const fileName = path.basename(fileUrl);
-  const tempDir = await getTempDir(fileName);
+  const tempDir = await getTempDir();
+  const tempFile = path.join(tempDir, fileName);
+  const tempPackageDir = tempFile.replace(path.extname(fileName), '');
 
   // download and unzip to temp dir
-  await fs.remove(tempDir);
-  await download(fileUrl, tempDir, { extract: true });
+  await fs.remove(tempPackageDir);
+  await download(fileUrl, tempDir);
+  await decompress(tempFile, tempPackageDir);
 
-  const packageJson = require(path.join(tempDir, 'package', 'package.json'));
+  const tempPackageContentDir = fs.existsSync(path.join(tempPackageDir, 'package'))
+    ? path.join(tempPackageDir, 'package')
+    : tempPackageDir;
+  const packageJsonPath = path.join(tempPackageContentDir, 'package.json');
+
+  if (!fs.existsSync(packageJsonPath)) {
+    await fs.remove(tempFile);
+    await fs.remove(tempPackageDir);
+    throw new Error(`download ${fileUrl} failed`);
+  }
+
+  const packageJson = require(packageJsonPath);
   const packageDir = getStoragePluginDir(packageJson.name);
 
   // move to plugin storage dir
   await fs.remove(packageDir);
-  await fs.move(path.join(tempDir, 'package'), packageDir, { overwrite: true });
+  await fs.move(tempPackageContentDir, packageDir, { overwrite: true });
 
   // symlink to node_modules
   await linkToNodeModules(packageJson.name, packageDir);
 
   // remove temp dir
-  await fs.remove(tempDir);
+  await fs.remove(tempFile);
+  await fs.remove(tempPackageDir);
 
   return {
     packageName: packageJson.name,

@@ -39,7 +39,9 @@
     "xpipe": "^1.0.5",
     "download": "8.0.0",
     "@types/download": "8.0.2",
-    "pkg-up": "3.1.0"
+    "pkg-up": "3.1.0",
+    "decompress": "4.2.1",
+    "@types/decompress": "4.2.4"
   },
   "devDependencies": {
     "@types/semver": "^7.3.9"

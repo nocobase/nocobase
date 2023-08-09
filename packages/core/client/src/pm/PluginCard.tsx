@@ -53,7 +53,16 @@ function PluginInfo(props: IPluginInfo) {
 
   return (
     <>
-      {showUploadForm && <PluginUploadForm name={name} onClose={() => setShowUploadForm(true)} />}
+      {showUploadForm && (
+        <PluginUploadForm
+          isShow={showUploadForm}
+          name={name}
+          onClose={(isRefresh) => {
+            setShowUploadForm(false);
+            if (isRefresh) refresh();
+          }}
+        />
+      )}
       <Badge.Ribbon placement="end" style={{ display: isOfficial ? undefined : 'none' }} text={t('Official plugin')}>
         <Card
           bordered={false}
