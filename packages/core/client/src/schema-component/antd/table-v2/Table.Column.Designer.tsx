@@ -73,6 +73,7 @@ export const TableColumnDesigner = (props) => {
   if (fieldSchema['x-read-pretty'] === true) {
     readOnlyMode = 'read-pretty';
   }
+  const isSelectFieldMode = isAssociationField && fieldMode === 'Select';
   return (
     <GeneralSchemaDesigner disableInitializer>
       <SchemaSettings.ModalItem
@@ -107,7 +108,7 @@ export const TableColumnDesigner = (props) => {
           dn.refresh();
         }}
       />
-      {currentMode && !field.readPretty && (
+      {isSelectFieldMode && !field.readPretty && !uiSchema?.['x-read-pretty'] && (
         <SchemaSettings.DataScope
           collectionName={collectionField?.target}
           defaultFilter={fieldSchema?.['x-component-props']?.service?.params?.filter || {}}
