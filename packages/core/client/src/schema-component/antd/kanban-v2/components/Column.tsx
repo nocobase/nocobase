@@ -1,7 +1,7 @@
 import { css } from '@emotion/css';
 import { FormLayout } from '@formily/antd-v5';
 import { FieldContext, FormContext, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { Spin } from 'antd';
+import { Spin, Empty } from 'antd';
 import React, { memo, useContext, useEffect, useState, useRef } from 'react';
 import { Draggable, Droppable } from 'react-beautiful-dnd';
 import { useTranslation } from 'react-i18next';
@@ -189,7 +189,8 @@ export const Column = memo((props: any) => {
                 <span onClick={loadMore}>{loadingMore ? 'Loading more...' : 'Click to load more'}</span>
               )}
 
-              {!result?.nextId && <span>{t('All loaded, nothing more')}</span>}
+              {!result?.nextId && !loading && result?.list?.length > 0 && <span>{t('All loaded, nothing more')}</span>}
+              {!result?.nextId && !loading && result?.list?.length === 0 && <Empty />}
             </div>
             {provided.placeholder}
           </div>
