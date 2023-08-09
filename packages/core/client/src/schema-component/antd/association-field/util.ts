@@ -55,7 +55,7 @@ export const getTabFormatValue = (labelUiSchema: ISchema, value: any, tagColor):
   if (Array.isArray(options) && value) {
     const values = toArr(value).map((val) => {
       const opt: any = options.find((option: any) => option.value === val);
-      return React.createElement(Tag, { color: tagColor||opt?.color }, opt?.label);
+      return React.createElement(Tag, { color: tagColor || opt?.color }, opt?.label);
     });
     return values;
   }
