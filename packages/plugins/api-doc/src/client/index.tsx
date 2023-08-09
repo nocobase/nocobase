@@ -44,7 +44,7 @@ const APIDocumentationProvider = React.memo((props) => {
     <SettingsCenterProvider
       settings={{
         ['api-doc']: {
-          title: t('Api Documentation'),
+          title: t('API documentation'),
           icon: 'BookOutlined',
           tabs: {
             documentation: {

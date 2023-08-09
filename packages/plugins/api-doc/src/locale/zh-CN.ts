@@ -1,5 +1,5 @@
 export default {
-  'Api Documentation': 'Api 文档',
-  Documentation: '文档',
+  'API documentation': 'Api 文档',
+  'Documentation': '文档',
   'Select a definition': '选择端点',
 };
