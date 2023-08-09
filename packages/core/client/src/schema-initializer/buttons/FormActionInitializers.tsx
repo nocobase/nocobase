@@ -16,7 +16,7 @@ const FormTriggerWorkflowActionInitializer = {
       onSuccess: {
         manualClose: true,
         redirecting: false,
-        successMessage: '{{t("Operation succeeded")}}',
+        successMessage: '{{t("Submitted successfully")}}',
       },
       triggerWorkflows: [],
     },
@@ -120,7 +120,7 @@ export const FormActionInitializers = {
               onSuccess: {
                 manualClose: true,
                 redirecting: false,
-                successMessage: '{{t("Operation succeeded")}}',
+                successMessage: '{{t("Submitted successfully")}}',
               },
               triggerWorkflows: [],
             },
@@ -253,7 +253,7 @@ export const CreateFormActionInitializers = {
               onSuccess: {
                 manualClose: true,
                 redirecting: false,
-                successMessage: '{{t("Operation succeeded")}}',
+                successMessage: '{{t("Submitted successfully")}}',
               },
               triggerWorkflows: [],
             },
@@ -385,7 +385,7 @@ export const UpdateFormActionInitializers = {
               onSuccess: {
                 manualClose: true,
                 redirecting: false,
-                successMessage: '{{t("Operation succeeded")}}',
+                successMessage: '{{t("Submitted successfully")}}',
               },
               triggerWorkflows: [],
             },
@@ -410,7 +410,7 @@ export const UpdateFormActionInitializers = {
               onSuccess: {
                 manualClose: false,
                 redirecting: false,
-                successMessage: '{{t("Operation succeeded")}}',
+                successMessage: '{{t("Submitted successfully")}}',
               },
             },
             'x-component-props': {
@@ -517,7 +517,7 @@ export const BulkEditFormActionInitializers = {
               onSuccess: {
                 manualClose: true,
                 redirecting: false,
-                successMessage: '{{t("Operation succeeded")}}',
+                successMessage: '{{t("Submitted successfully")}}',
               },
             },
             'x-component-props': {

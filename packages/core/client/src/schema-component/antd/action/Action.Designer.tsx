@@ -558,12 +558,12 @@ function AfterSuccess() {
 
   return (
     <SchemaSettings.ModalItem
-      title={t('After operation succeeded')}
+      title={t('After successful submission')}
       initialValues={fieldSchema?.['x-action-settings']?.['onSuccess']}
       schema={
         {
           type: 'object',
-          title: t('After operation succeeded'),
+          title: t('After successful submission'),
           properties: {
             successMessage: {
               title: t('Popup message'),
