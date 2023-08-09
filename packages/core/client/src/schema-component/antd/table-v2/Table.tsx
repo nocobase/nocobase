@@ -1,6 +1,6 @@
 import { DeleteOutlined, MenuOutlined } from '@ant-design/icons';
 import { TinyColor } from '@ctrl/tinycolor';
-import { SortableContext, useSortable } from '@dnd-kit/sortable';
+import { SortableContext, SortableContextProps, useSortable } from '@dnd-kit/sortable';
 import { css } from '@emotion/css';
 import { ArrayField, Field } from '@formily/core';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
@@ -22,7 +22,7 @@ import {
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
 import { useToken } from '../__builtins__';
 import { ColumnFieldProvider } from './components/ColumnFieldProvider';
-import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
+import { extractIndex, isCollectionFieldComponent, isColumnComponent, isPortalInBody } from './utils';
 
 const useArrayField = (props) => {
   const field = useField<ArrayField>();
@@ -239,7 +239,12 @@ export const Table: any = observer(
     if (onClickRow) {
       onRow = (record) => {
         return {
-          onClick: () => onClickRow(record, setSelectedRow, selectedRow),
+          onClick: (e) => {
+            if (isPortalInBody(e.target)) {
+              return;
+            }
+            onClickRow(record, setSelectedRow, selectedRow);
+          },
         };
       };
       highlightRow = css`
@@ -297,7 +302,6 @@ export const Table: any = observer(
                     console.warn('move cancel');
                     return;
                   }
-
                   const fromIndex = e.active?.data.current?.sortable?.index;
                   const toIndex = e.over?.data.current?.sortable?.index;
                   const from = field.value[fromIndex];
@@ -323,6 +327,11 @@ export const Table: any = observer(
                   white-space: nowrap;
                   .nb-read-pretty-input-number {
                     text-align: right;
+                  }
+                  .ant-color-picker-trigger {
+                    position: absolute;
+                    top: 50%;
+                    transform: translateY(-50%);
                   }
                 `,
               )}
@@ -445,13 +454,14 @@ export const Table: any = observer(
     const SortableWrapper = useCallback<React.FC>(
       ({ children }) => {
         return dragSort
-          ? React.createElement(SortableContext, {
-              items: field.value?.map?.(getRowKey) || [],
+          ? React.createElement<Omit<SortableContextProps, 'children'>>(
+              SortableContext,
+              {
+                items: field.value?.map?.(getRowKey) || [],
+              },
               children,
-            })
-          : React.createElement(React.Fragment, {
-              children,
-            });
+            )
+          : React.createElement(React.Fragment, {}, children);
       },
       [field, dragSort],
     );
@@ -521,7 +531,7 @@ export const Table: any = observer(
         {field.errors.length > 0 && (
           <div className="ant-formily-item-error-help ant-formily-item-help ant-formily-item-help-enter ant-formily-item-help-enter-active">
             {field.errors.map((error) => {
-              return error.messages.map((message) => <div>{message}</div>);
+              return error.messages.map((message) => <div key={message}>{message}</div>);
             })}
           </div>
         )}

@@ -1,4 +1,4 @@
-import { dayjs } from '@nocobase/utils/client';
+import dayjs from 'dayjs';
 import flat from 'flat';
 import _, { every, findIndex, isArray, some } from 'lodash';
 import { useMemo } from 'react';
@@ -13,19 +13,31 @@ type VariablesCtx = {
   $form?: Record<string, any>;
 };
 
+function flattenDeep(data, result = []) {
+  for (let i = 0; i < data?.length; i++) {
+    const { children, ...rest } = data[i];
+    result.push(rest);
+    if (children) {
+      flattenDeep(children, result);
+    }
+  }
+  return result;
+}
+
 export const useVariablesCtx = (): VariablesCtx => {
-  const { data } = useCurrentUserContext() || {};
+  const currentUser = useCurrentUserContext();
   const { field, service, rowKey } = useTableBlockContext();
-  const contextData = service?.data?.data?.filter((v) => (field?.data?.selectedRowKeys || [])?.includes(v[rowKey]));
+  const tableData = flattenDeep(service?.data?.data);
+  const contextData = tableData?.filter((v) => (field?.data?.selectedRowKeys || [])?.includes(v[rowKey]));
   return useMemo(() => {
     return {
-      $user: data?.data || {},
+      $user: currentUser?.data?.data || {},
       $date: {
         now: () => dayjs().toISOString(),
       },
       $context: contextData,
     };
-  }, [data]);
+  }, [contextData, currentUser?.data?.data]);
 };
 
 export const isVariable = (str: unknown) => {

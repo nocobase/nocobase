@@ -25,7 +25,7 @@ module.exports = (cli) => {
           './tsconfig.server.json',
           '-r',
           'tsconfig-paths/register',
-          `./packages/${APP_PACKAGE_ROOT}/server/src/index.ts`,
+          `${APP_PACKAGE_ROOT}/src/index.ts`,
           ...process.argv.slice(2),
         ]);
         return;
@@ -65,7 +65,7 @@ module.exports = (cli) => {
           './tsconfig.server.json',
           '-r',
           'tsconfig-paths/register',
-          `./packages/${APP_PACKAGE_ROOT}/server/src/index.ts`,
+          `${APP_PACKAGE_ROOT}/src/index.ts`,
           'start',
           ...process.argv.slice(3),
           `--port=${serverPort}`,
@@ -98,7 +98,7 @@ module.exports = (cli) => {
         run('umi', ['dev'], {
           env: {
             PORT: clientPort,
-            APP_ROOT: `packages/${APP_PACKAGE_ROOT}/client`,
+            APP_ROOT: `${APP_PACKAGE_ROOT}/client`,
             PROXY_TARGET_URL:
               process.env.PROXY_TARGET_URL || (serverPort ? `http://127.0.0.1:${serverPort}` : undefined),
           },

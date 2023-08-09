@@ -57,11 +57,15 @@ const useStyles = createStyles(({ css, token }) => {
 
     workflowVersionDropdownClass: css`
       .ant-dropdown-menu-item {
+        justify-content: flex-end;
         .ant-dropdown-menu-title-content {
+          display: flex;
+          align-items: baseline;
+          justify-content: flex-end;
           text-align: right;
 
           time {
-            margin-left: 0.5rem;
+            width: 14em;
             color: ${token.colorText};
             font-size: 80%;
           }
@@ -81,6 +85,28 @@ const useStyles = createStyles(({ css, token }) => {
               font-style: italic;
             }
           }
+        }
+      }
+    `,
+
+    executionsDropdownRowClass: css`
+      .row {
+        display: flex;
+        align-items: baseline;
+
+        &.current {
+          font-weight: bold;
+        }
+
+        .id {
+          flex-grow: 1;
+          text-align: right;
+        }
+
+        time {
+          width: 12em;
+          color: ${token.colorText};
+          font-size: 80%;
         }
       }
     `,
@@ -260,20 +286,6 @@ const useStyles = createStyles(({ css, token }) => {
 
       &[type='button'] {
         border: none;
-      }
-
-      &.inner {
-        position: static;
-      }
-
-      .ant-tag {
-        padding: 0;
-        width: ${token.sizeLG}px;
-        height: ${token.sizeLG}px;
-        line-height: ${token.sizeLG}px;
-        margin-right: 0;
-        border-radius: 50%;
-        text-align: center;
       }
     `,
 

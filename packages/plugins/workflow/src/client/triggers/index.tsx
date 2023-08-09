@@ -16,10 +16,12 @@ import { Registry } from '@nocobase/utils/client';
 import { Alert, Button, Input, Tag, message } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useFlowContext } from '../FlowContext';
+import { DrawerDescription } from '../components/DrawerDescription';
 import { NAMESPACE, lang } from '../locale';
 import useStyles from '../style';
 import { VariableOptions } from '../variable';
 import collection from './collection';
+import formTrigger from './form';
 import schedule from './schedule/';
 
 function useUpdateConfigAction() {
@@ -50,6 +52,7 @@ function useUpdateConfigAction() {
 export interface Trigger {
   title: string;
   type: string;
+  description?: string;
   // group: string;
   useVariables?(config: any, options?): VariableOptions;
   fieldset: { [key: string]: ISchema };
@@ -62,6 +65,7 @@ export interface Trigger {
 
 export const triggers = new Registry<Trigger>();
 
+triggers.register(formTrigger.type, formTrigger);
 triggers.register(collection.type, collection);
 triggers.register(schedule.type, schedule);
 
@@ -168,7 +172,7 @@ export const TriggerConfig = () => {
   const { fieldset, scope, components } = trigger;
   typeTitle = trigger.title;
   const detailText = executed ? '{{t("View")}}' : '{{t("Configure")}}';
-  const titleText = `${lang('Trigger')}: ${compile(typeTitle)}`;
+  const titleText = lang('Trigger');
 
   async function onChangeTitle(next) {
     const t = next || typeTitle;
@@ -254,13 +258,25 @@ export const TriggerConfig = () => {
                           },
                         },
                       }
+                    : trigger.description
+                    ? {
+                        description: {
+                          type: 'void',
+                          'x-component': DrawerDescription,
+                          'x-component-props': {
+                            label: lang('Trigger type'),
+                            title: trigger.title,
+                            description: trigger.description,
+                          },
+                        },
+                      }
                     : {}),
                   fieldset: {
                     type: 'void',
                     'x-component': 'fieldset',
                     'x-component-props': {
                       className: css`
-                        .ant-select:not(.full-width) {
+                        .ant-select.auto-width {
                           width: auto;
                           min-width: 6em;
                         }

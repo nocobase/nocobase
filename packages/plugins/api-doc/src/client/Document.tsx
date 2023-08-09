@@ -1,21 +1,20 @@
 import { css, useAPIClient, useRequest } from '@nocobase/client';
 import { Select, Space, Spin, Typography } from 'antd';
-import React, { lazy, useEffect, useState } from 'react';
-import 'swagger-ui-react/swagger-ui.css';
+import React, { useEffect, useRef, useState } from 'react';
+import { SwaggerUIBundle } from 'swagger-ui-dist';
+import 'swagger-ui-dist/swagger-ui.css';
 import { useTranslation } from '../locale';
 
 const DESTINATION_URL_KEY = 'API_DOC:DESTINATION_URL_KEY';
 const getUrl = () => localStorage.getItem(DESTINATION_URL_KEY);
-const SwaggerUI = lazy(() => {
-  return import('swagger-ui-react');
-});
 
 const Documentation = () => {
   const apiClient = useAPIClient();
   const { t } = useTranslation();
+  const swaggerUIRef = useRef();
 
   const { data: urls } = useRequest<{ data: { name: string; url: string }[] }>({ url: 'swagger:getUrls' });
-  const requestInterceptor: <T extends Record<string, any> = Record<string, any>>(req: T) => T | Promise<T> = (req) => {
+  const requestInterceptor = (req) => {
     if (!req.headers['Authorization']) {
       req.headers['Authorization'] = `Bearer ${apiClient.auth.getToken()}`;
     }
@@ -37,6 +36,14 @@ const Documentation = () => {
       onDestinationChange(urls.data[0].url);
     }
   }, [destination, urls]);
+
+  useEffect(() => {
+    SwaggerUIBundle({
+      requestInterceptor,
+      url: destination,
+      domNode: swaggerUIRef.current,
+    });
+  }, [destination]);
 
   if (!destination) {
     return <Spin />;
@@ -88,7 +95,8 @@ const Documentation = () => {
           />
         </div>
       </div>
-      <SwaggerUI url={destination} requestInterceptor={requestInterceptor} persistAuthorization deepLinking />
+      <div ref={swaggerUIRef}></div>
+      {/* <SwaggerUI url={destination} requestInterceptor={requestInterceptor} persistAuthorization deepLinking /> */}
     </Space>
   );
 };

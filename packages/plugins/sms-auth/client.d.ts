@@ -1,2 +1,2 @@
-export * from './src/client';
-export { default } from './src/client';
+export * from './dist/client';
+export { default } from './dist/client';

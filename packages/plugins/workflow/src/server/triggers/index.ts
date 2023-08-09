@@ -1,5 +1,5 @@
-import path from 'path';
 import { requireModule } from '@nocobase/utils';
+import path from 'path';
 
 import Plugin from '..';
 import type { WorkflowModel } from '../types';
@@ -14,6 +14,7 @@ export default function <T extends Trigger>(plugin, more: { [key: string]: { new
   const { triggers } = plugin;
 
   triggers.register('collection', new (requireModule(path.join(__dirname, 'collection')))(plugin));
+  triggers.register('form', new (requireModule(path.join(__dirname, 'form')))(plugin));
   triggers.register('schedule', new (requireModule(path.join(__dirname, 'schedule')))(plugin));
 
   for (const [name, TClass] of Object.entries(more)) {

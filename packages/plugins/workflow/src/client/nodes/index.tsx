@@ -18,7 +18,7 @@ import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AddButton } from '../AddButton';
 import { useFlowContext } from '../FlowContext';
-import { NodeDescription } from '../components/NodeDescription';
+import { DrawerDescription } from '../components/DrawerDescription';
 import { JobStatusOptionsMap } from '../constants';
 import { NAMESPACE, lang } from '../locale';
 import useStyles from '../style';
@@ -34,8 +34,9 @@ import manual from './manual';
 import parallel from './parallel';
 import query from './query';
 import request from './request';
-import update from './update';
 import sql from './sql';
+import update from './update';
+import { StatusIcon } from '../components/StatusIcon';
 
 export interface Instruction {
   title: string;
@@ -238,11 +239,10 @@ export function RemoveButton() {
 
 function InnerJobButton({ job, ...props }) {
   const { styles } = useStyles();
-  const { icon, color } = JobStatusOptionsMap[job.status];
 
   return (
     <Button {...props} shape="circle" size="small" className={cx(styles.nodeJobButtonClass, props.className)}>
-      <Tag color={color}>{icon}</Tag>
+      <StatusIcon status={job.status} />
     </Button>
   );
 }
@@ -280,7 +280,6 @@ export function JobButton() {
     <Dropdown
       menu={{
         items: jobs.map((job) => {
-          const { icon, color } = JobStatusOptionsMap[job.status];
           return {
             key: job.id,
             label: (
@@ -296,9 +295,7 @@ export function JobButton() {
                   }
                 `}
               >
-                <span className={cx(styles.nodeJobButtonClass, 'inner')}>
-                  <Tag color={color}>{icon}</Tag>
-                </span>
+                <StatusIcon status={job.status} />
                 <time>{str2moment(job.updatedAt).format('YYYY-MM-DD HH:mm:ss')}</time>
               </div>
             ),
@@ -429,9 +426,11 @@ export function NodeDefaultView(props) {
                       ? {
                           description: {
                             type: 'void',
-                            'x-component': NodeDescription,
+                            'x-component': DrawerDescription,
                             'x-component-props': {
-                              instruction,
+                              label: lang('Node type'),
+                              title: instruction.title,
+                              description: instruction.description,
                             },
                           },
                         }
@@ -447,17 +446,9 @@ export function NodeDefaultView(props) {
                           .ant-picker,
                           .ant-input-number,
                           .ant-input-affix-wrapper {
-                            &:not(.full-width) {
+                            &.auto-width {
                               width: auto;
                               min-width: 6em;
-                            }
-                          }
-                          .ant-input-affix-wrapper {
-                            &:not(.full-width) {
-                              .ant-input {
-                                width: auto;
-                                min-width: 6em;
-                              }
                             }
                           }
                         `,

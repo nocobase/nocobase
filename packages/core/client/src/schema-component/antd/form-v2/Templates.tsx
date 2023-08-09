@@ -101,7 +101,11 @@ export const Templates = ({ style = {}, form }) => {
       }
     }
   }, []);
-
+  useEffect(() => {
+    if (!templateOptions?.some((v) => v.key === targetTemplate)) {
+      handleTemplateChange('none');
+    }
+  }, [templateOptions]);
   const wrapperStyle = useMemo(() => {
     return { display: 'flex', alignItems: 'center', backgroundColor: token.colorFillAlter, padding: '1em', ...style };
   }, [style, token.colorFillAlter]);
@@ -115,7 +119,7 @@ export const Templates = ({ style = {}, form }) => {
     return { fontSize: token.fontSize, fontWeight: 'bold', whiteSpace: 'nowrap', marginRight: token.marginXS };
   }, [token.fontSize, token.marginXS]);
 
-  const handleTemplateChange = useCallback(async (value, option) => {
+  const handleTemplateChange = useCallback(async (value) => {
     setTargetTemplate(value);
     setTemplateData(null);
     form?.reset();
@@ -148,7 +152,6 @@ export const Templates = ({ style = {}, form }) => {
     return null;
   }
   const template = templateOptions?.find((v) => v.key === targetTemplate);
-
   return (
     <div style={wrapperStyle}>
       <Space wrap>
@@ -160,10 +163,10 @@ export const Templates = ({ style = {}, form }) => {
           value={targetTemplate}
           onChange={handleTemplateChange}
         />
-        {targetTemplate !== 'none' && (
+        {targetTemplate !== 'none' && template && (
           <RemoteSelect
             style={{ width: 220 }}
-            fieldNames={{ label: template.titleField, value: 'id' }}
+            fieldNames={{ label: template?.titleField, value: 'id' }}
             target={template?.collection}
             value={targetTemplateData}
             objectValue

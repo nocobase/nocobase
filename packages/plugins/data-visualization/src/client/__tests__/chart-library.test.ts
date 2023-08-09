@@ -1,5 +1,6 @@
+import { Chart } from '../chart/chart';
 import { FieldOption } from '../hooks';
-import { infer } from '../renderer';
+const chart = new Chart('test', 'Test', null);
 
 describe('library', () => {
   describe('auto infer', () => {
@@ -37,7 +38,7 @@ describe('library', () => {
     ] as FieldOption[];
 
     test('1 measure, 1 dimension', () => {
-      const { xField, yField } = infer(fields, {
+      const { xField, yField } = chart.infer(fields, {
         measures: [{ field: ['price'] }],
         dimensions: [{ field: ['title'] }],
       });
@@ -46,7 +47,7 @@ describe('library', () => {
     });
 
     test('1 measure, 2 dimensions with date', () => {
-      const { xField, yField, seriesField } = infer(fields, {
+      const { xField, yField, seriesField } = chart.infer(fields, {
         measures: [{ field: ['price'] }],
         dimensions: [{ field: ['title'] }, { field: ['createdAt'] }],
       });
@@ -56,7 +57,7 @@ describe('library', () => {
     });
 
     test('1 measure, 2 dimensions without date', () => {
-      const { xField, yField, seriesField } = infer(fields, {
+      const { xField, yField, seriesField } = chart.infer(fields, {
         measures: [{ field: ['price'] }],
         dimensions: [{ field: ['title'] }, { field: ['name'] }],
       });
@@ -66,7 +67,7 @@ describe('library', () => {
     });
 
     test('2 measures, 1 dimension', () => {
-      const { xField, yField, yFields } = infer(fields, {
+      const { xField, yField, yFields } = chart.infer(fields, {
         measures: [{ field: ['price'] }, { field: ['count'] }],
         dimensions: [{ field: ['title'] }],
       });

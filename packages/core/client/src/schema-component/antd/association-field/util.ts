@@ -1,7 +1,9 @@
 import { ISchema } from '@formily/react';
 import { isArr } from '@formily/shared';
-import { dayjs, getDefaultFormat, str2moment } from '@nocobase/utils/client';
+import { getDefaultFormat, str2moment } from '@nocobase/utils/client';
 import { Tag } from 'antd';
+import { get, isFunction } from 'lodash';
+import dayjs from 'dayjs';
 import React from 'react';
 import { CollectionFieldOptions, useCollectionManager } from '../../../collection-manager';
 
@@ -48,6 +50,28 @@ export const getLabelFormatValue = (labelUiSchema: ISchema, value: any, isTag = 
   }
 };
 
+export const getTabFormatValue = (labelUiSchema: ISchema, value: any, tagColor): any => {
+  const options = labelUiSchema?.enum;
+  if (Array.isArray(options) && value) {
+    const values = toArr(value).map((val) => {
+      const opt: any = options.find((option: any) => option.value === val);
+      return React.createElement(Tag, { color: tagColor || opt?.color }, opt?.label);
+    });
+    return values;
+  }
+  switch (labelUiSchema?.['x-component']) {
+    case 'DatePicker':
+      return React.createElement(
+        Tag,
+        { color: tagColor },
+        getDatePickerLabels({ ...labelUiSchema?.['x-component-props'], value }),
+      );
+
+    default:
+      return React.createElement(Tag, { color: tagColor }, value);
+  }
+};
+
 export function flatData(data) {
   const newArr = [];
   for (let i = 0; i < data.length; i++) {
@@ -70,3 +94,37 @@ export const toValue = (value, placeholder) => {
   }
   return value;
 };
+
+export const parseVariables = (str: string, ctx) => {
+  if (str) {
+    const result = get(ctx, str);
+    return isFunction(result) ? result() : result;
+  } else {
+    return str;
+  }
+};
+export function extractFilterfield(str) {
+  const match = str.match(/^\$form\.([^.[\]]+)/);
+  if (match) {
+    return match[1];
+  }
+  return null;
+}
+
+export function extractValuesByPattern(obj, pattern) {
+  const regexPattern = new RegExp(pattern.replace(/\*/g, '\\d+'));
+  const result = [];
+
+  for (const key in obj) {
+    if (regexPattern.test(key)) {
+      const value = obj[key];
+      result.push(value);
+    }
+  }
+
+  return result;
+}
+export function generatePattern(str, fieldName) {
+  const result = str.replace(`$form.${fieldName}.`, `${fieldName}.*.`);
+  return result;
+}

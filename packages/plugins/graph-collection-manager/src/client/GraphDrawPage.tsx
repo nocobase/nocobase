@@ -28,7 +28,7 @@ import {
   useCurrentAppInfo,
   useGlobalTheme,
 } from '@nocobase/client';
-import { lodash } from '@nocobase/utils/client';
+import lodash from 'lodash';
 import { useFullscreen } from 'ahooks';
 import { Button, ConfigProvider, Input, Layout, Menu, Popover, Switch, Tooltip } from 'antd';
 import dagre from 'dagre';
@@ -375,17 +375,18 @@ export const GraphDrawPage = React.memo(() => {
   const [collectionData, setCollectionData] = useState<any>([]);
   const [collectionList, setCollectionList] = useState<any>([]);
   const { refreshCM } = useCollectionManager();
+  const currentAppInfo = useCurrentAppInfo();
   const {
     data: { database },
-  } = useCurrentAppInfo();
+  } = currentAppInfo;
   const categoryCtx = useContext(CollectionCategroriesContext);
   const scope = { ...options?.scope };
   const components = { ...options?.components };
-  const useSaveGraphPositionAction = async (data) => {
+  const saveGraphPositionAction = async (data) => {
     await api.resource('graphPositions').create({ values: data });
     await refreshPositions();
   };
-  const useUpdatePositionAction = async (data, isbatch = false) => {
+  const updatePositionAction = async (data, isbatch = false) => {
     if (isbatch) {
       await api.resource('graphPositions').update({
         values: data,
@@ -412,7 +413,7 @@ export const GraphDrawPage = React.memo(() => {
   const refreshGM = async () => {
     const data = await refreshCM();
     targetGraph.collections = data;
-    targetGraph.updatePositionAction = useUpdatePositionAction;
+    targetGraph.updatePositionAction = updatePositionAction;
     const currentNodes = targetGraph.getNodes();
     setCollectionData(data);
     setCollectionList(data);
@@ -506,7 +507,7 @@ export const GraphDrawPage = React.memo(() => {
       {
         inherit: 'react-shape',
         component: (node) => (
-          <CurrentAppInfoContext.Provider value={database}>
+          <CurrentAppInfoContext.Provider value={currentAppInfo}>
             <APIClientProvider apiClient={api}>
               <SchemaComponentOptions inherit scope={scope} components={components}>
                 <CollectionCategroriesProvider {...categoryCtx}>
@@ -567,12 +568,12 @@ export const GraphDrawPage = React.memo(() => {
       const oldPosition = targetGraph.positions.find((v) => v.collectionName === node.store.data.name);
       if (oldPosition) {
         (oldPosition.x !== currentPosition.x || oldPosition.y !== currentPosition.y) &&
-          useUpdatePositionAction({
+          updatePositionAction({
             collectionName: node.store.data.name,
             ...currentPosition,
           });
       } else {
-        useSaveGraphPositionAction({
+        saveGraphPositionAction({
           collectionName: node.store.data.name,
           ...currentPosition,
         });
@@ -608,7 +609,7 @@ export const GraphDrawPage = React.memo(() => {
 
   const handleEdgeUnActive = (targetEdge) => {
     targetGraph.activeEdge = null;
-    const { m2m, connectionType } = targetEdge.store?.data;
+    const { m2m, connectionType } = targetEdge.store?.data ?? {};
     const m2mLineId = m2m?.find((v) => v !== targetEdge.id);
     const m2mEdge = targetGraph.getCellById(m2mLineId);
     const lightsOut = (edge) => {
@@ -645,7 +646,7 @@ export const GraphDrawPage = React.memo(() => {
   };
   const handleEdgeActive = (targetEdge) => {
     targetGraph.activeEdge = targetEdge;
-    const { associated, m2m, connectionType } = targetEdge.store?.data;
+    const { associated, m2m, connectionType } = targetEdge.store?.data ?? {};
     const m2mLineId = m2m?.find((v) => v !== targetEdge.id);
     const m2mEdge = targetGraph.getCellById(m2mLineId);
     const lightUp = (edge) => {
@@ -701,7 +702,7 @@ export const GraphDrawPage = React.memo(() => {
     getNodes(nodesData);
     getEdges(edgesData);
     getEdges(inheritEdges);
-    layout(useSaveGraphPositionAction);
+    layout(saveGraphPositionAction);
   };
 
   // 增量渲染
@@ -720,18 +721,19 @@ export const GraphDrawPage = React.memo(() => {
     const diffNodes = getDiffNode(nodesData, currentNodes);
     const diffEdges = getDiffEdge(edgesData, currentEdgesGroup.currentRelateEdges || []);
     const diffInheritEdge = getDiffEdge(inheritEdges, currentEdgesGroup.currentInheritEdges || []);
+    const maxY = maxBy(positions, 'y').y;
+    const minX = minBy(positions, 'x').x;
+    const yNodes = positions.filter((v) => {
+      return Math.abs(v.y - maxY) < 100;
+    });
+    let referenceNode: any = maxBy(yNodes, 'x');
+    let position;
+
     diffNodes.forEach(({ status, node, port }) => {
       const updateNode = targetGraph.getCellById(node.id);
       switch (status) {
         case 'add':
-          const maxY = maxBy(positions, 'y').y;
-          const yNodes = positions.filter((v) => {
-            return Math.abs(v.y - maxY) < 100;
-          });
-          let referenceNode: any = maxBy(yNodes, 'x');
-          let position;
           if (referenceNode.x > 4500) {
-            const minX = minBy(positions, 'x').x;
             referenceNode = minBy(yNodes, 'x');
             position = { x: minX, y: referenceNode.y + 400 };
           } else {
@@ -741,7 +743,7 @@ export const GraphDrawPage = React.memo(() => {
             ...node,
             position,
           });
-          useSaveGraphPositionAction({
+          saveGraphPositionAction({
             collectionName: node.name,
             ...position,
           });
@@ -758,17 +760,18 @@ export const GraphDrawPage = React.memo(() => {
           break;
         case 'delete':
           targetGraph.removeCell(node.id);
+          break;
         default:
           return null;
       }
     });
     const renderDiffEdges = (data) => {
       data.forEach(({ status, edge }) => {
+        const newEdge = targetGraph.addEdge({
+          ...edge,
+        });
         switch (status) {
           case 'add':
-            const newEdge = targetGraph.addEdge({
-              ...edge,
-            });
             optimizeEdge(newEdge);
             break;
           case 'delete':
@@ -1009,9 +1012,13 @@ export const GraphDrawPage = React.memo(() => {
   }, []);
 
   useEffect(() => {
-    refreshPositions().then(() => {
-      refreshGM();
-    });
+    refreshPositions()
+      .then(() => {
+        refreshGM();
+      })
+      .catch((err) => {
+        throw err;
+      });
   }, []);
   const loadCollections = async () => {
     return targetGraph.collections?.map((collection: any) => ({

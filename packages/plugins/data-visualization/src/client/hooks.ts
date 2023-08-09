@@ -1,14 +1,14 @@
 import { ArrayField } from '@formily/core';
-import { ISchema, Schema } from '@formily/react';
-import { useACLRoleContext, useCollectionManager } from '@nocobase/client';
+import { ISchema, Schema, useForm } from '@formily/react';
+import { CollectionFieldOptions, useACLRoleContext, useCollectionManager } from '@nocobase/client';
 import { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChartConfigContext } from './block/ChartConfigure';
 import formatters from './block/formatters';
 import transformers from './block/transformers';
-import { lang } from './locale';
-import { ChartRendererProps } from './renderer';
-import { getField, getSelectedFields, parseField } from './utils';
+import { lang, useChartsTranslation } from './locale';
+import { ChartRendererContext, ChartRendererProps } from './renderer';
+import { getField, getSelectedFields, parseField, processData } from './utils';
 
 export type FieldOption = {
   value: string;
@@ -23,7 +23,13 @@ export type FieldOption = {
   targetFields?: FieldOption[];
 };
 
-export const useFields = (collection?: string) => {
+export const useFields = (
+  collection?: string,
+): (CollectionFieldOptions & {
+  key: string;
+  label: string;
+  value: string;
+})[] => {
   const { current } = useContext(ChartConfigContext);
   if (!collection) {
     collection = current?.collection || '';
@@ -43,24 +49,40 @@ export const useFields = (collection?: string) => {
 };
 
 export const useFieldsWithAssociation = (collection?: string) => {
-  const { getCollectionFields } = useCollectionManager();
+  const { getCollectionFields, getInterface } = useCollectionManager();
   const { t } = useTranslation();
   const fields = useFields(collection);
   return fields.map((field) => {
+    const filterable = getInterface(field.interface)?.filterable;
     const label = Schema.compile(field.uiSchema?.title || field.name, { t });
-    if (!field.target) {
+    if (!(filterable && (filterable?.nested || filterable?.children?.length))) {
       return { ...field, label };
     }
-    const targetFields = (getCollectionFields(field.target) || [])
-      .filter((targetField) => {
-        return targetField.interface;
-      })
-      .map((targetField) => ({
-        ...targetField,
-        key: `${field.name}.${targetField.name}`,
-        label: `${label} / ${Schema.compile(targetField.uiSchema?.title || targetField.name, { t })}`,
-        value: `${field.name}.${targetField.name}`,
+    let targetFields = [];
+    if (filterable?.nested) {
+      const nestedFields = (getCollectionFields(field.target) || [])
+        .filter((targetField) => {
+          return targetField.interface;
+        })
+        .map((targetField) => ({
+          ...targetField,
+          key: `${field.name}.${targetField.name}`,
+          label: `${label} / ${Schema.compile(targetField.uiSchema?.title || targetField.name, { t })}`,
+          value: `${field.name}.${targetField.name}`,
+        }));
+      targetFields = [...targetFields, ...nestedFields];
+    }
+
+    if (filterable?.children?.length) {
+      const children = filterable.children.map((child: any) => ({
+        ...child,
+        key: `${field.name}.${child.name}`,
+        label: `${label} / ${Schema.compile(child.schema?.title || child.title || child.name, { t })}`,
+        value: `${field.name}.${child.name}`,
       }));
+      targetFields = [...targetFields, ...children];
+    }
+
     return {
       ...field,
       label,
@@ -236,4 +258,13 @@ export const useOrderReaction = (defaultOptions: any[], fields: FieldOption[]) =
     return newOrders;
   }, []);
   field.setValue(newOrders);
+};
+
+export const useData = (data?: any[], collection?: string) => {
+  const { t } = useChartsTranslation();
+  const { service, query } = useContext(ChartRendererContext);
+  const fields = useFieldsWithAssociation(collection);
+  const form = useForm();
+  const selectedFields = getSelectedFields(fields, form?.values?.query || query);
+  return processData(selectedFields, service?.data || data || [], { t });
 };

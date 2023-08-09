@@ -9,10 +9,7 @@ RUN cd /app \
   && yarn install --production
 
 RUN cd /app \
-  && rm -rf my-nocobase-app/packages/app/client/src/.umi \
   && rm -rf nocobase.tar.gz \
-  && find ./my-nocobase-app/node_modules/china-division/dist -name '*.csv' -delete \
-  && find ./my-nocobase-app/node_modules/china-division/dist -name '*.sqlite' -delete \
   && tar -zcf ./nocobase.tar.gz -C /app/my-nocobase-app .
 
 FROM node:18-slim

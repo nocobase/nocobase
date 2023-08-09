@@ -251,6 +251,7 @@ export default {
   "Link to description": "Used to create collection relationships quickly and compatible with most common scenarios. Suitable for non-developer use. When present as a field, it is a drop-down selection used to select records from the target collection. Once created, it will simultaneously generate the associated fields of the current collection in the target collection.",
   "Sub-table": "Sub-table",
   "Sub-details":"Sub-details",
+  "Sub-form(Popover)":"Sub-form(Popover)",
   "System info": "System info",
   "Created at": "Created at",
   "Last updated at": "Last updated at",
@@ -710,5 +711,10 @@ export default {
   "Allow add new, update and delete actions":"Allow add new, update and delete actions",
   "Date display format":"Date display format",
   "Assign  data scope for the template":"Assign  data scope for the template",
-  "Table selected records":"Table selected records"
+  "Table selected records":"Table selected records",
+  "Tag":"Tag",
+  "Tag color field":"Tag color field",
+  "Sync successfully":"Sync successfully",
+  "Sync from form fields":"Sync from form fields",
+  "Select all":"Select all"
 };

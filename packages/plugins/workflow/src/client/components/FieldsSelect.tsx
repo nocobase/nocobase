@@ -18,7 +18,6 @@ export const FieldsSelect = observer(
 
     return (
       <Select
-        className="full-width"
         popupMatchSelectWidth={false}
         {...others}
         options={fields.filter(filter).map((field) => ({

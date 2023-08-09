@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, sleep, userEvent, waitFor } from 'testUtils';
+import { render, screen, userEvent, waitFor } from 'testUtils';
 import App1 from '../demos/demo1';
 import App2 from '../demos/demo2';
 import App3 from '../demos/demo3';
@@ -8,19 +8,21 @@ describe('FormV2', () => {
   it('basic', async () => {
     render(<App1 />);
 
-    const input = document.querySelector('.ant-input') as HTMLInputElement;
-    const submit = screen.getByText('Submit');
-
-    expect(input).toBeInTheDocument();
-    expect(screen.getByText('Nickname')).toBeInTheDocument();
+    let input, submit;
+    await waitFor(() => {
+      input = document.querySelector('.ant-input') as HTMLInputElement;
+      submit = screen.getByText('Submit');
+      expect(input).toBeInTheDocument();
+      expect(screen.queryByText('Nickname')).toBeInTheDocument();
+    });
 
     await userEvent.type(input, '李四');
     await userEvent.click(submit);
 
-    await sleep(100);
-
-    // notification 的内容
-    expect(screen.getByText(/\{"nickname":"李四"\}/i)).toBeInTheDocument();
+    await waitFor(() => {
+      // notification 的内容
+      expect(screen.getByText(/\{"nickname":"李四"\}/i)).toBeInTheDocument();
+    });
   });
 
   it('initial values', async () => {
@@ -41,8 +43,7 @@ describe('FormV2', () => {
     });
   });
 
-  // TODO: 等 @Testing-Library 升级到 14.x
-  it.skip('read pretty', async () => {
+  it('read pretty', async () => {
     render(<App3 />);
 
     await waitFor(() => {

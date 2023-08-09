@@ -358,6 +358,7 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
         content: t('Are you sure to clear the canvas?'),
         okText: t('Confirm'),
         cancelText: t('Cancel'),
+        getContainer: () => mapContainerRef.current,
         onOk() {
           ok();
         },

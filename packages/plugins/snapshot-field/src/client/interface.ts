@@ -1,7 +1,7 @@
 import type { Field } from '@formily/core';
 import { ISchema, useForm } from '@formily/react';
 import { IField, interfacesProperties, useCollectionManager, useRecord } from '@nocobase/client';
-import { lodash } from '@nocobase/utils/client';
+import lodash from 'lodash';
 import { NAMESPACE } from './locale';
 
 const { defaultProps } = interfacesProperties;
@@ -169,6 +169,7 @@ export const snapshot: IField = {
       'x-decorator': 'FormItem',
       'x-component': 'AppendsTreeSelect',
       'x-component-props': {
+        multiple: true,
         useCollection: useRecordCollection,
       },
       'x-reactions': [

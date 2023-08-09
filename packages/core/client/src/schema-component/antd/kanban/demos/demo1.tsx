@@ -4,6 +4,7 @@ import {
   APIClientProvider,
   BlockSchemaComponentProvider,
   CollectionManagerProvider,
+  CurrentUserProvider,
   SchemaComponent,
   SchemaComponentProvider,
 } from '@nocobase/client';
@@ -18,6 +19,9 @@ const sleep = (value: number) => new Promise((resolve) => setTimeout(resolve, va
 mockRequest.onGet('/t_j6omof6tza8:list').reply(async (config) => {
   await sleep(200);
   return [200, data];
+});
+mockRequest.onGet('/auth:check').reply(() => {
+  return [200, { data: {} }];
 });
 
 const schema: ISchema = {
@@ -69,15 +73,17 @@ const schema: ISchema = {
 export default () => {
   return (
     <APIClientProvider apiClient={apiClient}>
-      <SchemaComponentProvider>
-        <CollectionManagerProvider collections={collections}>
-          <AntdSchemaComponentProvider>
-            <BlockSchemaComponentProvider>
-              <SchemaComponent schema={schema} />
-            </BlockSchemaComponentProvider>
-          </AntdSchemaComponentProvider>
-        </CollectionManagerProvider>
-      </SchemaComponentProvider>
+      <CurrentUserProvider>
+        <SchemaComponentProvider>
+          <CollectionManagerProvider collections={collections}>
+            <AntdSchemaComponentProvider>
+              <BlockSchemaComponentProvider>
+                <SchemaComponent schema={schema} />
+              </BlockSchemaComponentProvider>
+            </AntdSchemaComponentProvider>
+          </CollectionManagerProvider>
+        </SchemaComponentProvider>
+      </CurrentUserProvider>
     </APIClientProvider>
   );
 };

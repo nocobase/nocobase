@@ -1,43 +1,32 @@
 {
   "name": "@nocobase/plugin-mobile-client",
-  "version": "0.11.1-alpha.3",
-  "main": "./lib/server/index.js",
-  "files": [
-    "lib",
-    "src",
-    "README.md",
-    "README.zh-CN.md",
-    "CHANGELOG.md",
-    "server.js",
-    "server.d.ts",
-    "client.js",
-    "client.d.ts"
-  ],
+  "version": "0.12.0-alpha.3",
+  "main": "./dist/server/index.js",
   "displayName": "Mobile-client",
   "displayName.zh-CN": "移动端",
   "description": "Provide mobile client access",
   "description.zh-CN": "提供移动端访问",
   "devDependencies": {
-    "@ant-design/icons": "^5.1.4",
-    "@formily/antd-v5": "^1.1.0-beta.4",
-    "@formily/react": "2.2.26",
-    "@formily/shared": "2.2.26",
-    "@nocobase/client": "0.11.1-alpha.3",
-    "@nocobase/database": "0.11.1-alpha.3",
-    "@nocobase/server": "0.11.1-alpha.3",
-    "@nocobase/test": "0.11.1-alpha.3",
-    "@nocobase/utils": "0.11.1-alpha.3",
+    "@ant-design/icons": "5.x",
+    "@formily/antd-v5": "1.x",
+    "@formily/react": "2.x",
+    "@formily/shared": "2.x",
     "@types/react": "^17.0.0",
     "@types/react-dom": "^17.0.0",
-    "antd": "^5.6.4",
+    "antd": "5.x",
+    "antd-mobile": "^5.29.1",
     "antd-style": "^3.3.0",
+    "classnames": "^2.3.1",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "react-i18next": "^11.15.1",
     "react-router-dom": "^6.11.2"
   },
-  "dependencies": {
-    "antd-mobile": "^5.29.1",
-    "classnames": "^2.3.1"
+  "peerDependencies": {
+    "@nocobase/client": "0.x",
+    "@nocobase/database": "0.x",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x",
+    "@nocobase/utils": "0.x"
   }
 }

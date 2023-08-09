@@ -1,6 +1,6 @@
 import { ApplicationOptions } from '@nocobase/server';
 import { MockServer, mockServer } from '@nocobase/test';
-import { lodash } from '@nocobase/utils';
+import lodash from 'lodash';
 import path from 'path';
 import Plugin from '..';
 import { JOB_STATUS } from '../constants';
@@ -34,6 +34,14 @@ export async function getApp({ manual, ...options }: MockAppOptions = {}): Promi
       error: {
         run(node, input, processor) {
           throw new Error('definite error');
+        },
+      },
+
+      pending: {
+        run(node, input, processor) {
+          return {
+            status: JOB_STATUS.PENDING,
+          };
         },
       },
 
