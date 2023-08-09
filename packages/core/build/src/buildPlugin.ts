@@ -231,7 +231,7 @@ export async function buildPluginServer(cwd: string, sourcemap: boolean, log: Pk
   const packageJson = getPackageJson(cwd);
   const serverFiles = fg.globSync(serverGlobalFiles, { cwd, absolute: true });
   buildCheck({ cwd, packageJson, entry: 'server', files: serverFiles, log });
-  const otherExts = serverFiles.map((item) => path.extname(item)).filter((item) => !EsbuildSupportExts.includes(item));
+  const otherExts = Array.from(new Set(serverFiles.map((item) => path.extname(item)).filter((item) => !EsbuildSupportExts.includes(item))));
   if (otherExts.length) {
     log('%s will not be processed, only be copied to the dist directory.', chalk.yellow(otherExts.join(',')));
   }
@@ -248,7 +248,10 @@ export async function buildPluginServer(cwd: string, sourcemap: boolean, log: Pk
     outDir: path.join(cwd, target_dir),
     format: 'cjs',
     skipNodeModulesBundle: true,
-    loader: otherExts.reduce((prev, cur) => ({ ...prev, [cur]: 'copy' }), {}),
+    loader: {
+      ...otherExts.reduce((prev, cur) => ({ ...prev, [cur]: 'copy' }), {}),
+      '.json': 'copy',
+    },
   });
 
   await buildServerDeps(cwd, serverFiles, log);
