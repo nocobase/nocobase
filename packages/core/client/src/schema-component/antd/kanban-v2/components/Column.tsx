@@ -141,7 +141,6 @@ export const Column = memo((props: any) => {
       },
     },
   };
-  console.log(result?.list, cards);
   return (
     <Droppable key={ind} droppableId={`${data.value}`}>
       {(provided, snapshot) => (
