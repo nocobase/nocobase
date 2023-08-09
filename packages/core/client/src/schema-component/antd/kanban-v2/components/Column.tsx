@@ -94,14 +94,17 @@ export const Column = observer(
     const fieldSchema = useFieldSchema();
     const { t } = useTranslation();
     const [disabledCardDrag, setDisableCardDrag] = useState(false);
-    const { data: result, loading, loadMore, loadingMore, mutate } = useInfiniteScroll(
-      (d) => getLoadMoreList(d?.nextId, 10),
-      {
-        target: document.getElementById(`scrollableDiv${ind}`),
-        isNoMore: (d) => d?.nextId === undefined,
-        reloadDeps: [targetColumn, params, appends.length],
-      },
-    );
+    const {
+      data: result,
+      loading,
+      loadMore,
+      loadingMore,
+      mutate,
+    } = useInfiniteScroll((d) => getLoadMoreList(d?.nextId, 10), {
+      target: document.getElementById(`scrollableDiv${ind}`),
+      isNoMore: (d) => d?.nextId === undefined,
+      reloadDeps: [targetColumn === data.value, params, appends.length],
+    });
     const getLoadMoreList = async (nextId: string | undefined, limit: number): Promise<any> => {
       const res = await getColumnDatas(data, ind, params, appends, nextId + 1, () => {});
       return {
