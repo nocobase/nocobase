@@ -13,13 +13,11 @@ import { i18n, InitOptions } from 'i18next';
 import Koa, { DefaultContext as KoaDefaultContext, DefaultState as KoaDefaultState } from 'koa';
 import compose from 'koa-compose';
 import lodash from 'lodash';
-import { waitFor } from 'xstate/lib/waitFor';
 import { createACL } from './acl';
 import { AppSupervisor } from './app-supervisor';
 import { registerCli } from './commands';
 import { ApplicationNotInstall } from './errors/application-not-install';
 import { createAppProxy, createI18n, createResourcer, registerMiddlewares } from './helper';
-import { ApplicationFsm } from './helpers/application-fsm';
 import { ApplicationVersion } from './helpers/application-version';
 import { Locale } from './locale';
 import { Plugin } from './plugin';
@@ -91,59 +89,46 @@ interface StartOptions {
   checkInstall?: boolean;
 }
 
-type MaintainingStatus = 'COMMAND_BEGIN' | 'COMMAND_END' | 'COMMAND_RUNNING' | 'COMMAND_ERROR';
+type MaintainingStatus = 'command_end' | 'command_running' | 'command_error';
 
 type MaintainingCommandStatus = {
-  command: string;
+  command: {
+    name: string;
+  };
   status: MaintainingStatus;
   error?: Error;
 };
+
 export class Application<StateT = DefaultState, ContextT = DefaultContext> extends Koa implements AsyncEmitter {
   public listenServer: Server;
   declare middleware: any;
   stopped = false;
   ready = false;
   startMode = false;
-  protected _loaded: boolean;
   declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
   public rawOptions: ApplicationOptions;
+  public activatedCommand: {
+    name: string;
+  } = null;
+  public running = false;
   protected plugins = new Map<string, Plugin>();
   protected _appSupervisor: AppSupervisor = AppSupervisor.getInstance();
-
-  private _fsm;
-  private _fsmInterpret;
-  public activatedCommand = null;
   private _authenticated = false;
-  public running = false;
-
   private _maintaining = false;
-
   private _maintainingCommandStatus: MaintainingCommandStatus;
-
-  getMaintaining() {
-    return this._maintaining;
-  }
-
-  setMaintaining(_maintainingCommandStatus: MaintainingCommandStatus) {
-    this._maintainingCommandStatus = _maintainingCommandStatus;
-
-    this.emit('maintaining', _maintainingCommandStatus);
-
-    if (_maintainingCommandStatus.status == 'COMMAND_END') {
-      this._maintaining = false;
-      return;
-    }
-
-    this._maintaining = true;
-  }
 
   constructor(public options: ApplicationOptions) {
     super();
     this.rawOptions = this.name == 'main' ? lodash.cloneDeep(options) : {};
-    this._fsm = ApplicationFsm.buildFsm(this);
-
     this.init();
+
     this._appSupervisor.addApp(this);
+  }
+
+  protected _loaded: boolean;
+
+  get loaded() {
+    return this._loaded;
   }
 
   private _workingMessage: string = 'idle' as string;
@@ -226,54 +211,25 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this.options.name || 'main';
   }
 
-  get loaded() {
-    return this._loaded;
+  isMaintaining() {
+    return this._maintaining;
   }
 
-  getStateMachine() {
-    return this._fsm;
+  getMaintaining() {
+    return this._maintainingCommandStatus;
   }
 
-  getFsmInterpreter() {
-    if (!this._fsmInterpret) {
-      this._fsmInterpret = ApplicationFsm.getInterpreter(this);
-      this._fsmInterpret.onTransition((state) => {
-        if (state.matches('working')) {
-          this.emit('stateChanged', { status: state.context.workingName });
-        } else if (state.matches('error')) {
-          this.emit('stateChanged', {
-            status: 'error',
-            error: state.context.error,
-          });
-        } else {
-          this.emit('stateChanged', { status: state.value });
-        }
-      });
+  setMaintaining(_maintainingCommandStatus: MaintainingCommandStatus) {
+    this._maintainingCommandStatus = _maintainingCommandStatus;
+
+    this.emit('maintaining', _maintainingCommandStatus);
+
+    if (_maintainingCommandStatus.status == 'command_end') {
+      this._maintaining = false;
+      return;
     }
 
-    return this._fsmInterpret;
-  }
-
-  getFsmState() {
-    const state = this.getFsmInterpreter().state;
-
-    if (state.matches('working')) {
-      return state.context.workingName;
-    } else if (state.matches('error')) {
-      return 'error';
-    }
-
-    return state.value;
-  }
-
-  getFsmError() {
-    const state = this.getFsmInterpreter().state;
-
-    if (state.matches('error')) {
-      return state.context.error;
-    }
-
-    return null;
+    this._maintaining = true;
   }
 
   setWorkingMessage(message: string) {
@@ -419,7 +375,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
           };
 
           this.setMaintaining({
-            status: 'COMMAND_BEGIN',
+            status: 'command_running',
             command: this.activatedCommand,
           });
 
@@ -427,16 +383,16 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
           await this.load();
         })
         .parseAsync(argv, options);
-
       this.setMaintaining({
-        status: 'COMMAND_END',
+        status: 'command_end',
         command: this.activatedCommand,
       });
 
       return command;
     } catch (error) {
+      console.log(error);
       this.setMaintaining({
-        status: 'COMMAND_ERROR',
+        status: 'command_error',
         command: this.activatedCommand,
         error,
       });
@@ -445,7 +401,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
   }
 
-  async _start(options: StartOptions = {}) {
+  async start(options: StartOptions = {}) {
     await this.load();
     if (options.checkInstall && !(await this.isInstalled())) {
       throw new ApplicationNotInstall(
@@ -467,11 +423,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.setReadyStatus(true, 'started');
   }
 
-  async start(options: StartOptions = {}) {
-    this.getFsmInterpreter().send('start', options);
-    await waitFor(this.getFsmInterpreter(), (state) => state.matches('running'));
-  }
-
   setReadyStatus(status: boolean, reason: string) {
     this.ready = status;
 
@@ -479,7 +430,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.emit('readyStatusChanged', this.ready);
   }
 
-  async _stop(options: any = {}) {
+  async stop(options: any = {}) {
     this.log.debug('stop app...');
     this.setWorkingMessage('stopping app...');
     if (this.stopped) {
@@ -506,16 +457,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.setWorkingMessage('stopped');
   }
 
-  async stop(options: any = {}) {
-    this.getFsmInterpreter().send('stop', options);
-    await waitFor(this.getFsmInterpreter(), (state) => state.matches('idle'));
-  }
-
   async destroy(options: any = {}) {
     this.logger.debug('start destroy app');
     this.setWorkingMessage('destroying app...');
     await this.emitAsync('beforeDestroy', this, options);
-    await this._stop(options);
+    await this.stop(options);
 
     this.logger.debug('emit afterDestroy');
     await this.emitAsync('afterDestroy', this, options);
@@ -562,6 +508,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async install(options: InstallOptions = {}) {
+    this.setWorkingMessage('installing app...');
     this.log.debug('Database dialect: ' + this.db.sequelize.getDialect());
 
     if (options?.clean || options?.sync?.force) {
@@ -572,12 +519,14 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
 
     this.log.debug('emit beforeInstall');
+    this.setWorkingMessage('call beforeInstall hook...');
     await this.emitAsync('beforeInstall', this, options);
     this.log.debug('start install plugins');
     await this.pm.install(options);
     this.log.debug('update version');
     await this.version.update();
     this.log.debug('emit afterInstall');
+    this.setWorkingMessage('call afterInstall hook...');
     await this.emitAsync('afterInstall', this, options);
   }
 

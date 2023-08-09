@@ -11,33 +11,20 @@ type BootOptions = {
 
 type AppBootstrapper = (bootOptions: BootOptions) => Promise<void>;
 
-type AppStatus = 'initializing' | 'initialized' | 'running' | null;
-
-export function supervisedAppCall(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
-  const originalMethod = descriptor.value;
-
-  descriptor.value = async function (...args: any[]) {
-    try {
-      const result = await originalMethod.apply(this, args);
-      return result;
-    } catch (error) {
-      console.log(`handle error from ${originalMethod.name}`);
-      AppSupervisor.getInstance().setAppError(this.name, error);
-      throw error;
-    }
-  };
-
-  return descriptor;
-}
+type AppStatus =
+  | 'initializing'
+  | 'initialized'
+  | 'running'
+  | 'command_running'
+  | 'command_error'
+  | 'command_end'
+  | null;
 
 export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   private static instance: AppSupervisor;
   public runningMode: 'single' | 'multiple' = 'multiple';
   public singleAppName: string | null = null;
   declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
-
-  private appBootMutex = new Mutex();
-
   public apps: {
     [appName: string]: Application;
   } = {};
@@ -50,6 +37,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     [appName: string]: AppStatus;
   } = {};
 
+  private appBootMutex = new Mutex();
   private appBootstrapper: AppBootstrapper = null;
 
   private mainAppName = 'main';
@@ -254,17 +242,16 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
     app.on('workingMessageChanged', ({ message }) => {
       this.clearAppError(app.name);
-      this.emit('statusChanged', {
-        app,
-        status: app.getFsmState(),
-      });
     });
 
-    app.on('stateChanged', ({ status }) => {
-      this.emit('statusChanged', {
-        app,
-        status,
-      });
+    app.on('maintaining', (maintainingStatus) => {
+      const { status } = maintainingStatus;
+
+      if (status === 'command_error') {
+        this.setAppError(app.name, maintainingStatus.error);
+      }
+
+      this.setAppStatus(app.name, status);
     });
   }
 }

@@ -1,7 +1,19 @@
 import Application from '../application';
 import lodash from 'lodash';
 
-export const errors = {
+interface AppError {
+  status: number;
+  message: any;
+  command?: any;
+  maintaining: boolean;
+  code: string;
+}
+
+interface AppErrors {
+  [key: string]: Omit<AppError, 'code'>;
+}
+
+export const errors: AppErrors = {
   APP_NOT_FOUND: {
     status: 404,
     message: (appName: string) => `application ${appName} not found`,
@@ -58,28 +70,59 @@ export const errors = {
 
   APP_INITIALIZING: {
     status: 503,
-    message: (appName) => `application ${appName} is initializing`,
+    message: (appName: string) => `application ${appName} is initializing`,
     maintaining: true,
   },
 
-  APP_ERROR: {
+  COMMAND_ERROR: {
     status: 503,
-    message: (app: Application) => app.getFsmError().message,
+    maintaining: true,
+    message: (app: Application) => app.getMaintaining().error.message,
+    command: (app: Application) => app.getMaintaining().command,
+  },
+
+  COMMAND_END: {
+    status: 503,
+    maintaining: true,
+    message: (app: Application) => `${app.getMaintaining().command.name} running end`,
+  },
+
+  COMMAND_RUNNING: {
+    status: 503,
+    maintaining: true,
+    message: (app: Application) => app.workingMessage,
+  },
+
+  UNKNOWN_ERROR: {
+    status: 500,
+    message: 'unknown error',
     maintaining: true,
   },
 };
 
-export function getErrorWithCode(errorCode: string) {
+export function getErrorWithCode(errorCode: string): AppError {
+  const rawCode = errorCode;
   errorCode = lodash.snakeCase(errorCode).toUpperCase();
 
-  const error = lodash.cloneDeep(
-    errors[errorCode] || {
-      status: 500,
-      message: (app: Application) => `unknown error: ${errorCode}`,
-      maintaining: false,
-    },
-  );
+  if (!errors[errorCode] && errors[`APP_${errorCode}`]) {
+    errorCode = `APP_${errorCode}`;
+  }
 
-  error.code = errorCode;
-  return error;
+  if (!errors[errorCode]) {
+    errorCode = 'UNKNOWN_ERROR';
+  }
+
+  const error = lodash.cloneDeep(errors[errorCode]);
+  error['code'] = errorCode == 'UNKNOWN_ERROR' ? rawCode : errorCode;
+  return error as AppError;
+}
+
+export function applyErrorWithArgs(error: AppError, ...args: any[]) {
+  const functionKeys = Object.keys(error).filter((key) => typeof error[key] === 'function');
+  const functionResults = functionKeys.map((key) => error[key].apply(null, args));
+
+  return {
+    ...error,
+    ...lodash.zipObject(functionKeys, functionResults),
+  };
 }

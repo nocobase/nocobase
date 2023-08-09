@@ -1,6 +1,4 @@
-import { AppSupervisor } from '../app-supervisor';
 import Application from '../application';
-import { Gateway } from '../gateway';
 
 export default (app: Application) => {
   app
@@ -9,7 +7,7 @@ export default (app: Application) => {
     .action(async (...cliArgs) => {
       const [opts] = cliArgs;
 
-      app.getFsmInterpreter().send('start', {
+      await app.start({
         dbSync: opts?.dbSync,
         cliArgs,
         checkInstall: true,

@@ -1,14 +1,14 @@
 import { EventEmitter } from 'events';
 import http, { IncomingMessage, ServerResponse } from 'http';
 import { AppSupervisor } from '../app-supervisor';
-import Application, { ApplicationOptions } from '../application';
+import { ApplicationOptions } from '../application';
 import { WSServer } from './ws-server';
 import { parse } from 'url';
 import { resolve } from 'path';
 import { IPCSocketServer } from './ipc-socket-server';
 import { IPCSocketClient } from './ipc-socket-client';
 import { Command } from 'commander';
-import { getErrorWithCode } from './errors';
+import { applyErrorWithArgs, getErrorWithCode } from './errors';
 
 export interface IncomingRequest {
   url: string;
@@ -91,11 +91,7 @@ export class Gateway extends EventEmitter {
   }
 
   responseErrorWithCode(code, res, ...args) {
-    const error = getErrorWithCode(code);
-    this.responseError(res, {
-      ...error,
-      message: error.message(...args),
-    });
+    this.responseError(res, applyErrorWithArgs(getErrorWithCode(code), ...args));
   }
 
   async requestHandler(req: IncomingMessage, res: ServerResponse) {
@@ -122,7 +118,7 @@ export class Gateway extends EventEmitter {
     const app = await AppSupervisor.getInstance().getApp(handleApp);
 
     if (appStatus !== 'running') {
-      this.responseErrorWithCode(`APP_${appStatus}`, res, app);
+      this.responseErrorWithCode(`${appStatus}`, res, app);
       return;
     }
 

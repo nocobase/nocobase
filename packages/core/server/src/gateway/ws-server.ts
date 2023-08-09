@@ -91,10 +91,10 @@ export class WSServer {
     if (appSupervisor.hasApp(handleAppName)) {
       const app = await appSupervisor.getApp(handleAppName, { withOutBootStrap: false });
 
-      this.sendMessageToConnection(client, {
-        type: 'maintaining',
-        payload: getPayloadByErrorCode(`APP_${app.getFsmState()}`, app),
-      });
+      // this.sendMessageToConnection(client, {
+      //   type: 'maintaining',
+      //   payload: getPayloadByErrorCode(`APP_${app.getFsmState()}`, app),
+      // });
     } else {
       this.sendMessageToConnection(client, {
         type: 'maintaining',

@@ -67,6 +67,65 @@ describe('gateway', () => {
         },
       });
     });
+
+    it('should return error when app not installed', async () => {
+      const main = new Application({
+        database: {
+          dialect: 'sqlite',
+          storage: ':memory:',
+        },
+      });
+
+      // app should have error when not installed
+      await main.runAsCLI(['start'], { from: 'user' });
+
+      const res = await supertest.agent(gateway.getCallback()).get('/api/app:getInfo');
+      expect(res.status).toBe(503);
+      const data = res.body;
+
+      expect(data).toMatchObject({
+        error: {
+          code: 'COMMAND_ERROR',
+          message: errors.COMMAND_ERROR.message(main),
+          command: {
+            name: 'start',
+          },
+          status: 503,
+          maintaining: true,
+        },
+      });
+    });
+
+    it('should return running message when app is command running status', async () => {
+      const main = new Application({
+        database: {
+          dialect: 'sqlite',
+          storage: ':memory:',
+        },
+      });
+
+      main.on('beforeInstall', async () => {
+        await new Promise((resolve) => {
+          setTimeout(resolve, 2000);
+        });
+      });
+
+      main.runAsCLI(['install'], { from: 'user' });
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      const res = await supertest.agent(gateway.getCallback()).get('/api/app:getInfo');
+      const data = res.body;
+
+      expect(data).toMatchObject({
+        error: {
+          status: 503,
+          maintaining: true,
+          message: 'call beforeInstall hook...',
+          code: 'COMMAND_RUNNING',
+        },
+      });
+    });
   });
 
   describe('websocket api', () => {
@@ -132,9 +191,7 @@ describe('gateway', () => {
         },
       });
 
-      await app.getFsmInterpreter().send('start', {
-        checkInstall: true,
-      });
+      await app.runAsCLI(['start'], { from: 'user' });
 
       await new Promise((resolve) => {
         setTimeout(resolve, 100);
@@ -143,8 +200,8 @@ describe('gateway', () => {
       expect(getLastMessage()).toMatchObject({
         type: 'maintaining',
         payload: {
-          code: 'APP_ERROR',
-          message: errors.APP_ERROR.message(app),
+          code: 'COMMAND_ERROR',
+          message: errors.COMMAND_ERROR.message(app),
         },
       });
     });
