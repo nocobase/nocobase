@@ -10,6 +10,7 @@ import { useRecord } from '../../record-provider';
 import { ActionContextProvider, useActionContext, useCompile } from '../../schema-component';
 import { linkageAction } from '../../schema-component/antd/action/utils';
 import { parseVariables } from '../../schema-component/common/utils/uitls';
+import { useLocalVariables, useVariables } from '../../variables';
 
 export const actionDesignerCss = css`
   position: relative;
@@ -89,16 +90,26 @@ export const CreateRecordAction = observer(
     const fieldSchema = useFieldSchema();
     const field: any = useField();
     const [currentCollection, setCurrentCollection] = useState(collection.name);
-    const linkageRules = fieldSchema?.['x-linkage-rules'] || [];
+    const linkageRules: any[] = fieldSchema?.['x-linkage-rules'] || [];
     const values = useRecord();
     const ctx = useActionContext();
+    const variables = useVariables();
+    const localVariables = useLocalVariables();
+
     useEffect(() => {
       field.linkageProperty = {};
       linkageRules
         .filter((k) => !k.disabled)
-        .map((v) => {
-          return v.actions?.map((h) => {
-            linkageAction(h.operator, field, v.condition, values);
+        .forEach((v) => {
+          v.actions?.forEach((h) => {
+            linkageAction({
+              operator: h.operator,
+              field,
+              condition: v.condition,
+              values,
+              variables,
+              localVariables,
+            });
           });
         });
     }, [linkageRules, values]);
@@ -142,6 +153,9 @@ export const CreateAction = observer(
     const fieldSchema = useFieldSchema();
     const field: any = useField();
     const form = useForm();
+    const variables = useVariables();
+    const localVariables = useLocalVariables();
+
     const enableChildren = fieldSchema['x-enable-children'] || [];
     const allowAddToCurrent = fieldSchema?.['x-allow-add-to-current'];
     const linkageFromForm = fieldSchema?.['x-component-props']?.['linkageFromForm'];
@@ -168,7 +182,7 @@ export const CreateAction = observer(
           return v && actionAclCheck(`${v.name}:create`);
         });
     }, [enableChildren, totalChildCollections]);
-    const linkageRules = fieldSchema?.['x-linkage-rules'] || [];
+    const linkageRules: any[] = fieldSchema?.['x-linkage-rules'] || [];
     const values = useRecord();
     const compile = useCompile();
     const { designable } = useDesignable();
@@ -191,9 +205,16 @@ export const CreateAction = observer(
       field.linkageProperty = {};
       linkageRules
         .filter((k) => !k.disabled)
-        .map((v) => {
-          return v.actions?.map((h) => {
-            linkageAction(h.operator, field, v.condition, values);
+        .forEach((v) => {
+          v.actions?.forEach((h) => {
+            linkageAction({
+              operator: h.operator,
+              field,
+              condition: v.condition,
+              values,
+              variables,
+              localVariables,
+            });
           });
         });
     }, [linkageRules, values]);

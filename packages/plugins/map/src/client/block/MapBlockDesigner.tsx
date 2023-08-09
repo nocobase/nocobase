@@ -8,6 +8,7 @@ import {
   useCollection,
   useCollectionManager,
   useDesignable,
+  useFormBlockContext,
   useSchemaTemplate,
 } from '@nocobase/client';
 import lodash from 'lodash';
@@ -20,6 +21,7 @@ export const MapBlockDesigner = () => {
   const { name, title } = useCollection();
   const field = useField();
   const fieldSchema = useFieldSchema();
+  const { form } = useFormBlockContext();
   const { service } = useMapBlockContext();
   const { t: mapT } = useMapTranslation();
   const { t } = useTranslation();
@@ -111,6 +113,7 @@ export const MapBlockDesigner = () => {
       <SchemaSettings.DataScope
         collectionName={name}
         defaultFilter={fieldSchema?.['x-decorator-props']?.params?.filter || {}}
+        form={form}
         onSubmit={({ filter }) => {
           const params = field.decoratorProps.params || {};
           params.filter = filter;

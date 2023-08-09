@@ -73,6 +73,7 @@ export const DetailsDesigner = () => {
   const template = useSchemaTemplate();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
+  const { form } = useFormBlockContext();
   const field = useField();
   const { service } = useDetailsBlockContext();
   const { dn } = useDesignable();
@@ -96,6 +97,7 @@ export const DetailsDesigner = () => {
       <SchemaSettings.DataScope
         collectionName={name}
         defaultFilter={fieldSchema?.['x-decorator-props']?.params?.filter || {}}
+        form={form}
         onSubmit={({ filter }) => {
           filter = removeNullCondition(filter);
           const params = field.decoratorProps.params || {};

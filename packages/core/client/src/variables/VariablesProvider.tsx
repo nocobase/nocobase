@@ -5,8 +5,8 @@ import { useAPIClient } from '../api-client';
 import type { CollectionFieldOptions } from '../collection-manager';
 import { useCollectionManager } from '../collection-manager';
 import { useCompile } from '../schema-component';
-import { isVariable } from '../schema-component/common/utils/uitls';
-import useBuildInVariables from './hooks/useBuiltinVariables';
+import { REGEX_OF_VARIABLE, isVariable } from '../schema-component/common/utils/uitls';
+import useBuiltInVariables from './hooks/useBuiltinVariables';
 import { VariableOption, VariablesContextType } from './types';
 
 export const VariablesContext = createContext<VariablesContextType>(null);
@@ -39,13 +39,27 @@ const getFieldPath = (variablePath: string) => {
   return result.join('.');
 };
 
+/**
+ * `{{ $user.name }}` => `$user.name`
+ * @param variableString
+ * @returns
+ */
+export const getPath = (variableString: string) => {
+  if (!variableString) {
+    return variableString;
+  }
+
+  const matches = variableString.match(REGEX_OF_VARIABLE);
+  return matches[0].replace(REGEX_OF_VARIABLE, '$1');
+};
+
 const VariablesProvider = ({ children }) => {
   const ctxRef = useRef<Record<string, any>>({});
   const [ctx, setCtx] = useState<Record<string, any>>({});
   const api = useAPIClient();
   const { getCollectionJoinField } = useCollectionManager();
   const compile = useCompile();
-  const { builtinVariables } = useBuildInVariables();
+  const { builtinVariables } = useBuiltInVariables();
 
   useEffect(() => {
     ctxRef.current = ctx;
@@ -118,9 +132,7 @@ const VariablesProvider = ({ children }) => {
    */
   const registerVariable = useCallback((variableOption: VariableOption) => {
     if (process.env.NODE_ENV !== 'production' && !isVariable(`{{${variableOption.name}}}`)) {
-      throw new Error(
-        `VariablesProvider: ${variableOption.name} is not a valid name, it should be like $user begin with $`,
-      );
+      throw new Error(`VariablesProvider: ${variableOption.name} is not a valid name`);
     }
 
     setCtx((prev) => {
@@ -182,9 +194,7 @@ const VariablesProvider = ({ children }) => {
         }
       }
 
-      const r = /\{\{\s*(.*?)\s*\}\}/g;
-      const matches = str.match(r);
-      const path = matches[0].replace(r, '$1');
+      const path = getPath(str);
       const value = await getValue(path);
 
       // 3. 局部变量使用完成后，需要在全局中清除
@@ -210,13 +220,13 @@ const VariablesProvider = ({ children }) => {
   );
 
   const getCollectionField = useCallback((variableString: string) => {
-    const matches = variableString.match(/\{\{\s*(.*?)\s*\}\}/g);
+    const matches = variableString.match(REGEX_OF_VARIABLE);
 
     if (process.env.NODE_ENV !== 'production' && !matches) {
       throw new Error(`VariablesProvider: ${variableString} is not a variable string`);
     }
 
-    const path = matches[0].replace(/\{\{\s*(.*?)\s*\}\}/g, '$1');
+    const path = matches[0].replace(REGEX_OF_VARIABLE, '$1');
 
     // 当仅有一个例如 `$user` 这样的字符串时，需要拼一个假的 `collectionField` 返回
     if (!path.includes('.')) {
@@ -228,6 +238,12 @@ const VariablesProvider = ({ children }) => {
     return getCollectionJoinField(getFieldPath(path));
   }, []);
 
+  useEffect(() => {
+    builtinVariables.forEach((variableOption) => {
+      registerVariable(variableOption);
+    });
+  }, [builtinVariables, registerVariable]);
+
   const value = useMemo(
     () => ({
       ctx,
@@ -236,15 +252,10 @@ const VariablesProvider = ({ children }) => {
       registerVariable,
       getVariable,
       getCollectionField,
+      removeVariable,
     }),
-    [ctx, getCollectionField, getVariable, parseVariable, registerVariable],
+    [ctx, getCollectionField, getVariable, parseVariable, registerVariable, removeVariable],
   );
-
-  useEffect(() => {
-    builtinVariables.forEach((variableOption) => {
-      registerVariable(variableOption);
-    });
-  }, [builtinVariables, registerVariable]);
 
   return <VariablesContext.Provider value={value}>{children}</VariablesContext.Provider>;
 };

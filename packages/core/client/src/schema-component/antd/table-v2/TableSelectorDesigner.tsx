@@ -3,7 +3,7 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { cloneDeep } from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useTableSelectorContext } from '../../../block-provider';
+import { useFormBlockContext, useTableSelectorContext } from '../../../block-provider';
 import { useCollection } from '../../../collection-manager';
 import { useSortFields } from '../../../collection-manager/action-hooks';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
@@ -15,6 +15,7 @@ export const TableSelectorDesigner = () => {
   const { name, title } = useCollection();
   const field = useField();
   const fieldSchema = useFieldSchema();
+  const { form } = useFormBlockContext();
   const sortFields = useSortFields(name);
   const { service, extraFilter } = useTableSelectorContext();
   const { t } = useTranslation();
@@ -39,6 +40,7 @@ export const TableSelectorDesigner = () => {
       <SchemaSettings.DataScope
         collectionName={name}
         defaultFilter={fieldSchema?.['x-decorator-props']?.params?.filter || {}}
+        form={form}
         onSubmit={({ filter }) => {
           filter = removeNullCondition(filter);
           const params = field.decoratorProps.params || {};

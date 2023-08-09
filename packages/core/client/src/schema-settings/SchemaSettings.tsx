@@ -59,9 +59,10 @@ import {
   useFilterBlock,
   useGlobalTheme,
   useLinkageCollectionFilterOptions,
+  useRecord,
   useSortFields,
 } from '..';
-import { useTableBlockContext } from '../block-provider';
+import { useFormBlockContext, useTableBlockContext } from '../block-provider';
 import { findFilterTargets, updateFilterTargets } from '../block-provider/hooks';
 import {
   FilterBlockType,
@@ -1072,6 +1073,7 @@ SchemaSettings.DefaultSortingRules = function DefaultSortingRules(props) {
 SchemaSettings.LinkageRules = function LinkageRules(props) {
   const { collectionName } = props;
   const fieldSchema = useFieldSchema();
+  const { form } = useFormBlockContext();
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const { getTemplateById } = useSchemaTemplateManager();
@@ -1098,6 +1100,7 @@ SchemaSettings.LinkageRules = function LinkageRules(props) {
                     type,
                     linkageOptions: useLinkageCollectionFieldOptions(collectionName),
                     collectionName,
+                    form,
                   };
                 },
               },
@@ -1458,6 +1461,9 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
   const { getField } = useCollection();
   const { getCollectionJoinField } = useCollectionManager();
   const variables = useVariables();
+  const { name } = useCollection();
+  const record = useRecord();
+  const { form } = useFormBlockContext();
 
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
   const fieldSchemaWithoutRequired = _.omit(fieldSchema, 'required');
@@ -1469,7 +1475,7 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
   const parentFieldSchema = collectionField?.interface === 'm2o' && findParentFieldSchema(fieldSchema);
   const parentCollectionField = parentFieldSchema && getCollectionJoinField(parentFieldSchema?.['x-collection-field']);
   const tableCtx = useTableBlockContext();
-  const isAllowContexVariable =
+  const isAllowContextVariable =
     actionCtx?.fieldSchema?.['x-action'] === 'customize:create' &&
     (collectionField?.interface === 'm2m' ||
       (parentCollectionField?.type === 'hasMany' && collectionField?.interface === 'm2o'));
@@ -1489,9 +1495,12 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
               'x-component-props': {
                 ...(fieldSchema?.['x-component-props'] || {}),
                 collectionField,
-                contextCollectionName: isAllowContexVariable && tableCtx.collection,
+                contextCollectionName: isAllowContextVariable && tableCtx.collection,
+                blockCollectionName: name,
                 schema: collectionField?.uiSchema,
                 className: defaultInputStyle,
+                form,
+                record,
                 shouldChange: (value) => {
                   if (!isVariable(value) || !variables) {
                     return true;
@@ -1689,7 +1698,10 @@ SchemaSettings.SortingRule = function SortRuleConfigure(props) {
 SchemaSettings.DataScope = function DataScopeConfigure(props: DataScopeProps) {
   const { t } = useTranslation();
   const options = useCollectionFilterOptions(props.collectionName);
-  const dynamicComponent = (props) => FilterDynamicComponent({ ...props });
+  const record = useRecord();
+
+  const dynamicComponent = (p) =>
+    FilterDynamicComponent({ ...p, rootCollection: props.collectionName, from: props.form, record });
 
   return (
     <SchemaSettings.ModalItem

@@ -2,12 +2,14 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { useFormBlockContext } from '../../../block-provider';
 import { useCollection, useCollectionManager, useSortFields } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useCompile, useDesignable } from '../../hooks';
 
 export const AssociationFilterItemDesigner = (props) => {
   const fieldSchema = useFieldSchema();
+  const { form } = useFormBlockContext();
 
   const field = useField();
   const { t } = useTranslation();
@@ -110,6 +112,7 @@ export const AssociationFilterItemDesigner = (props) => {
       <SchemaSettings.DataScope
         collectionName={collectionField?.target}
         defaultFilter={fieldSchema?.['x-component-props']?.params?.filter || {}}
+        form={form}
         onSubmit={({ filter }) => {
           _.set(field.componentProps, 'params', {
             ...field.componentProps?.params,

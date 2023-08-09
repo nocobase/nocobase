@@ -1,5 +1,5 @@
 import { SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
-import { dayjs, parse } from '@nocobase/utils/client';
+import { parse } from '@nocobase/utils/client';
 import { App, message } from 'antd';
 import { cloneDeep } from 'lodash';
 import get from 'lodash/get';
@@ -18,7 +18,7 @@ import { removeNullCondition, useActionContext, useCompile } from '../../schema-
 import { isVariable } from '../../schema-component/common/utils/uitls';
 import { BulkEditFormItemValueType } from '../../schema-initializer/components';
 import { useCurrentUserContext } from '../../user';
-import { useVariables } from '../../variables';
+import { useLocalVariables, useVariables } from '../../variables';
 import { useBlockRequestContext, useFilterByTk, useParamsFromRecord } from '../BlockProvider';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { mergeFilter } from '../SharedFilterProvider';
@@ -137,45 +137,16 @@ export const useCreateActionProps = () => {
   const navigate = useNavigate();
   const actionSchema = useFieldSchema();
   const actionField = useField();
-  const { fields, getField, getTreeParentField, name } = useCollection();
+  const { fields, getField, getTreeParentField } = useCollection();
   const compile = useCompile();
   const filterByTk = useFilterByTk();
   const currentRecord = useRecord();
-  const currentUserContext = useCurrentUserContext();
   const { modal } = App.useApp();
   const variables = useVariables();
+  const localVariables = useLocalVariables({ form });
 
-  const currentUser = currentUserContext?.data?.data;
   const action = actionField.componentProps.saveMode || 'create';
   const filterKeys = actionField.componentProps.filterKeys || [];
-  const localVariables = [
-    {
-      name: '$user',
-      ctx: currentUser,
-      collectionName: 'users',
-    },
-    // 兼容老版本
-    {
-      name: 'currentUser',
-      ctx: currentUser,
-      collectionName: 'users',
-    },
-    {
-      name: 'currentTime',
-      ctx: () => dayjs().toISOString(),
-    },
-    // 兼容老版本
-    {
-      name: 'currentRecord',
-      ctx: form.values,
-      collectionName: name,
-    },
-    {
-      name: '$record',
-      ctx: form.values,
-      collectionName: name,
-    },
-  ];
 
   return {
     async onClick() {
@@ -188,8 +159,11 @@ export const useCreateActionProps = () => {
       const waitList = Object.keys(originalAssignedValues).map(async (key) => {
         const value = originalAssignedValues[key];
         if (isVariable(value)) {
-          assignedValues[key] = await variables?.parseVariable(value, localVariables);
-        } else {
+          const result = await variables?.parseVariable(value, localVariables);
+          if (result) {
+            assignedValues[key] = result;
+          }
+        } else if (value != null && value !== '') {
           assignedValues[key] = value;
         }
       });
@@ -253,41 +227,12 @@ export const useAssociationCreateActionProps = () => {
   const { setVisible, fieldSchema } = useActionContext();
   const actionSchema = useFieldSchema();
   const actionField = useField();
-  const { fields, getField, getTreeParentField, name } = useCollection();
+  const { fields, getField, getTreeParentField } = useCollection();
   const compile = useCompile();
   const filterByTk = useFilterByTk();
   const currentRecord = useRecord();
-  const currentUserContext = useCurrentUserContext();
-  const currentUser = currentUserContext?.data?.data;
   const variables = useVariables();
-  const localVariables = [
-    {
-      name: '$user',
-      ctx: currentUser,
-      collectionName: 'users',
-    },
-    // 兼容老版本
-    {
-      name: 'currentUser',
-      ctx: currentUser,
-      collectionName: 'users',
-    },
-    {
-      name: 'currentTime',
-      ctx: () => dayjs().toISOString(),
-    },
-    // 兼容老版本
-    {
-      name: 'currentRecord',
-      ctx: form.values,
-      collectionName: name,
-    },
-    {
-      name: '$record',
-      ctx: form.values,
-      collectionName: name,
-    },
-  ];
+  const localVariables = useLocalVariables({ form });
 
   return {
     async onClick() {
@@ -300,8 +245,11 @@ export const useAssociationCreateActionProps = () => {
       const waitList = Object.keys(originalAssignedValues).map(async (key) => {
         const value = originalAssignedValues[key];
         if (isVariable(value)) {
-          assignedValues[key] = await variables?.parseVariable(value, localVariables);
-        } else {
+          const result = await variables?.parseVariable(value, localVariables);
+          if (result) {
+            assignedValues[key] = result;
+          }
+        } else if (value != null && value !== '') {
           assignedValues[key] = value;
         }
       });
@@ -478,43 +426,12 @@ export const useCustomizeUpdateActionProps = () => {
   const { resource, __parent, service } = useBlockRequestContext();
   const filterByTk = useFilterByTk();
   const actionSchema = useFieldSchema();
-  const currentRecord = useRecord();
-  const currentUserContext = useCurrentUserContext();
-  const currentUser = currentUserContext?.data?.data;
   const navigate = useNavigate();
   const compile = useCompile();
   const form = useForm();
   const { modal } = App.useApp();
-  const { name } = useCollection();
   const variables = useVariables();
-  const localVariables = [
-    {
-      name: '$user',
-      ctx: currentUser,
-      collectionName: 'users',
-    },
-    // 兼容老版本
-    {
-      name: 'currentUser',
-      ctx: currentUser,
-      collectionName: 'users',
-    },
-    {
-      name: 'currentTime',
-      ctx: () => dayjs().toISOString(),
-    },
-    // 兼容老版本
-    {
-      name: 'currentRecord',
-      ctx: form.values,
-      collectionName: name,
-    },
-    {
-      name: '$record',
-      ctx: form.values,
-      collectionName: name,
-    },
-  ];
+  const localVariables = useLocalVariables({ form });
 
   return {
     async onClick() {
@@ -525,8 +442,11 @@ export const useCustomizeUpdateActionProps = () => {
       const waitList = Object.keys(originalAssignedValues).map(async (key) => {
         const value = originalAssignedValues[key];
         if (isVariable(value)) {
-          assignedValues[key] = await variables?.parseVariable(value, localVariables);
-        } else {
+          const result = await variables?.parseVariable(value, localVariables);
+          if (result) {
+            assignedValues[key] = result;
+          }
+        } else if (value != null && value !== '') {
           assignedValues[key] = value;
         }
       });
@@ -567,7 +487,6 @@ export const useCustomizeUpdateActionProps = () => {
 };
 
 export const useCustomizeBulkUpdateActionProps = () => {
-  const form = useForm();
   const { field, resource, __parent, service } = useBlockRequestContext();
   const expressionScope = useContext(SchemaExpressionScopeContext);
   const actionSchema = useFieldSchema();
@@ -575,44 +494,13 @@ export const useCustomizeBulkUpdateActionProps = () => {
   const { rowKey } = tableBlockContext;
   const selectedRecordKeys =
     tableBlockContext.field?.data?.selectedRowKeys ?? expressionScope?.selectedRecordKeys ?? {};
-  const currentUserContext = useCurrentUserContext();
-  const currentUser = currentUserContext?.data?.data;
   const navigate = useNavigate();
   const compile = useCompile();
   const { t } = useTranslation();
   const actionField = useField();
   const { modal } = App.useApp();
-  const currentRecord = useRecord();
-  const { name } = useCollection();
   const variables = useVariables();
-  const localVariables = [
-    {
-      name: '$user',
-      ctx: currentUser,
-      collectionName: 'users',
-    },
-    // 兼容老版本
-    {
-      name: 'currentUser',
-      ctx: currentUser,
-      collectionName: 'users',
-    },
-    {
-      name: 'currentTime',
-      ctx: () => dayjs().toISOString(),
-    },
-    // 兼容老版本
-    {
-      name: 'currentRecord',
-      ctx: form.values,
-      collectionName: name,
-    },
-    {
-      name: '$record',
-      ctx: form.values,
-      collectionName: name,
-    },
-  ];
+  const localVariables = useLocalVariables();
 
   return {
     async onClick() {
@@ -625,8 +513,11 @@ export const useCustomizeBulkUpdateActionProps = () => {
       const waitList = Object.keys(originalAssignedValues).map(async (key) => {
         const value = originalAssignedValues[key];
         if (isVariable(value)) {
-          assignedValues[key] = await variables?.parseVariable(value, localVariables);
-        } else {
+          const result = await variables?.parseVariable(value, localVariables);
+          if (result) {
+            assignedValues[key] = result;
+          }
+        } else if (value != null && value !== '') {
           assignedValues[key] = value;
         }
       });
@@ -866,7 +757,7 @@ export const useCustomizeRequestActionProps = () => {
 export const useUpdateActionProps = () => {
   const form = useForm();
   const filterByTk = useFilterByTk();
-  const { field, resource, __parent, service } = useBlockRequestContext();
+  const { field, resource, __parent } = useBlockRequestContext();
   const { setVisible } = useActionContext();
   const actionSchema = useFieldSchema();
   const navigate = useNavigate();
@@ -874,43 +765,10 @@ export const useUpdateActionProps = () => {
   const compile = useCompile();
   const actionField = useField();
   const { updateAssociationValues } = useFormBlockContext();
-  const currentRecord = useRecord();
-  const currentUserContext = useCurrentUserContext();
   const { modal } = App.useApp();
-  const { name } = useCollection();
-
-  const currentUser = currentUserContext?.data?.data;
   const data = useParamsFromRecord();
-
   const variables = useVariables();
-  const localVariables = [
-    {
-      name: '$user',
-      ctx: currentUser,
-      collectionName: 'users',
-    },
-    // 兼容老版本
-    {
-      name: 'currentUser',
-      ctx: currentUser,
-      collectionName: 'users',
-    },
-    {
-      name: 'currentTime',
-      ctx: () => dayjs().toISOString(),
-    },
-    // 兼容老版本
-    {
-      name: 'currentRecord',
-      ctx: form.values,
-      collectionName: name,
-    },
-    {
-      name: '$record',
-      ctx: form.values,
-      collectionName: name,
-    },
-  ];
+  const localVariables = useLocalVariables({ form });
 
   return {
     async onClick() {
@@ -921,8 +779,11 @@ export const useUpdateActionProps = () => {
       const waitList = Object.keys(originalAssignedValues).map(async (key) => {
         const value = originalAssignedValues[key];
         if (isVariable(value)) {
-          assignedValues[key] = await variables?.parseVariable(value, localVariables);
-        } else {
+          const result = await variables?.parseVariable(value, localVariables);
+          if (result) {
+            assignedValues[key] = result;
+          }
+        } else if (value != null && value !== '') {
           assignedValues[key] = value;
         }
       });

@@ -54,6 +54,7 @@ export interface VariablesContextType {
    */
   getVariable: (variableName: string) => VariableOption;
   getCollectionField: (variableString: string) => CollectionFieldOptions;
+  removeVariable: (variableName: string) => void;
 }
 
 export interface VariableOption {

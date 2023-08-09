@@ -11,6 +11,7 @@ import { useBlockRequestContext } from '../../../block-provider/BlockProvider';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { Collection, useCollection, useCollectionManager } from '../../../collection-manager';
 import { isTitleField } from '../../../collection-manager/Configuration/CollectionFields';
+import { useRecord } from '../../../record-provider';
 import { GeneralSchemaItems } from '../../../schema-items/GeneralSchemaItems';
 import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isShowDefaultValue } from '../../../schema-settings';
 import { useIsShowMultipleSwitch } from '../../../schema-settings/hooks/useIsShowMultipleSwitch';
@@ -127,6 +128,7 @@ FormItem.Designer = function Designer() {
   const { getCollectionFields, getInterface, getCollectionJoinField, getCollection } = useCollectionManager();
   const { getField } = useCollection();
   const { form } = useFormBlockContext();
+  const record = useRecord();
   const ctx = useBlockRequestContext();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
@@ -352,12 +354,14 @@ FormItem.Designer = function Designer() {
         <SchemaSettings.DataScope
           collectionName={collectionField?.target}
           defaultFilter={fieldSchema?.['x-component-props']?.service?.params?.filter || {}}
+          form={form}
           dynamicComponent={(props) =>
             FilterDynamicComponent({
               ...props,
               form,
               collectionField,
               rootCollection: ctx.props.collection || ctx.props.resource,
+              record,
             })
           }
           onSubmit={({ filter }) => {

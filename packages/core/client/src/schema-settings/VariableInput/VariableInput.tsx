@@ -1,8 +1,9 @@
-import React, { useMemo } from 'react';
+import { Form } from '@formily/core';
+import React, { useEffect } from 'react';
 import { CollectionFieldOptions } from '../../collection-manager';
-import { useCompile, Variable } from '../../schema-component';
+import { Variable } from '../../schema-component';
 import { useContextAssociationFields, useIsSameOrChildCollection } from './hooks/useContextAssociationFields';
-import { useUserVariable } from './hooks/useUserVariable';
+import { useVariableOptions } from './hooks/useVariableOptions';
 
 type Props = {
   value: any;
@@ -22,6 +23,12 @@ type Props = {
    * @returns 返回为 `true` 时，才会触发 `onChange`
    */
   shouldChange?: (value: any) => boolean;
+  /**
+   * 当前所在的区块的 collectionName
+   */
+  blockCollectionName?: string;
+  form?: Form;
+  record?: Record<string, any>;
 };
 
 export const VariableInput = (props: Props) => {
@@ -35,34 +42,20 @@ export const VariableInput = (props: Props) => {
     contextCollectionName,
     collectionField,
     shouldChange,
+    blockCollectionName,
+    form,
+    record,
   } = props;
-  const compile = useCompile();
-  const userVariable = useUserVariable({ schema, maxDepth: 3 });
+  const variableOptions = useVariableOptions({ collectionField, blockCollectionName, form, record });
   const contextVariable = useContextAssociationFields({ schema, maxDepth: 2, contextCollectionName, collectionField });
   const getIsSameOrChildCollection = useIsSameOrChildCollection();
   const isAllowTableContext = getIsSameOrChildCollection(contextCollectionName, collectionField?.target);
-  const scope = useMemo(() => {
-    const data = [
-      userVariable,
-      compile({
-        label: `{{t("Date variables")}}`,
-        value: '$date',
-        key: '$date',
-        disabled: schema['x-component'] !== 'DatePicker',
-        children: [
-          {
-            key: 'now',
-            value: 'now',
-            label: `{{t("Now")}}`,
-          },
-        ],
-      }),
-    ];
+
+  useEffect(() => {
     if (contextCollectionName) {
-      data.unshift(contextVariable);
+      variableOptions.unshift(contextVariable);
     }
-    return data;
-  }, [compile, contextCollectionName, contextVariable, schema, userVariable]);
+  }, []);
 
   const handleChange = (value: any) => {
     if (!shouldChange) {
@@ -78,7 +71,7 @@ export const VariableInput = (props: Props) => {
       className={className}
       value={value}
       onChange={handleChange}
-      scope={scope}
+      scope={variableOptions}
       style={style}
       changeOnSelect={isAllowTableContext}
     >

@@ -1,15 +1,19 @@
+import { Form } from '@formily/core';
 import { useTranslation } from 'react-i18next';
 import { useBaseVariable } from './useBaseVariable';
 
+/**
+ * 变量：`当前对象`
+ * @param param0
+ * @returns
+ */
 export const useIterationVariable = ({
-  blockForm,
   currentCollection,
   schema,
-  rootCollection,
+  form,
 }: {
-  blockForm?: any;
+  form: Form;
   currentCollection: string;
-  rootCollection: string;
   schema?: any;
 }) => {
   const { t } = useTranslation();
@@ -22,11 +26,11 @@ export const useIterationVariable = ({
     returnFields: (fields, option) => {
       return option.depth === 0
         ? fields.filter((field) => {
-            return Object.keys(blockForm.fields).some((name) => name.includes(`.${field.name}`));
+            return Object.keys(form.fields).some((name) => name.includes(`.${field.name}`));
           })
         : fields;
     },
   });
 
-  return blockForm && currentCollection !== rootCollection ? result : null;
+  return result;
 };

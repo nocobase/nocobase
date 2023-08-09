@@ -1,18 +1,20 @@
 import { css } from '@emotion/css';
 import { observer, useFieldSchema } from '@formily/react';
 import React from 'react';
-import { SchemaComponent } from '../../schema-component';
+import { useRecord } from '../../record-provider';
+import { FilterDynamicComponent, SchemaComponent } from '../../schema-component';
 import { FilterContext } from '../../schema-component/antd/filter/context';
+import { LinkageRuleActionGroup } from './LinkageRuleActionGroup';
 import { EnableLinkage } from './components/EnableLinkage';
 import { ArrayCollapse } from './components/LinkageHeader';
-import { FilterDynamicComponent } from './FilterDynamicComponent';
-import { LinkageRuleActionGroup } from './LinkageRuleActionGroup';
 
 export const FormLinkageRules = observer(
   (props: any) => {
     const fieldSchema = useFieldSchema();
     const { useProps, dynamicComponent } = props;
-    const { options, defaultValues, collectionName } = useProps();
+    const { options, defaultValues, collectionName, form } = useProps();
+    const record = useRecord();
+
     return (
       <FilterContext.Provider value={{ field: options, fieldSchema, dynamicComponent, options: options || [] }}>
         <SchemaComponent
@@ -64,7 +66,8 @@ export const FormLinkageRules = observer(
                                 `,
                               };
                             },
-                            dynamicComponent: (props) => FilterDynamicComponent({ ...props, collectionName }),
+                            dynamicComponent: (props) =>
+                              FilterDynamicComponent({ ...props, rootCollection: collectionName, form, record }),
                           },
                         },
                         actions: {

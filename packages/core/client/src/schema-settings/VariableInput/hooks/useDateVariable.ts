@@ -1,15 +1,27 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-export const useDateVariable = ({ operator, schema }) => {
+interface Props {
+  operator?: {
+    value: string;
+  };
+  schema: any;
+}
+
+/**
+ * 变量：`日期变量`
+ * @param param0
+ * @returns
+ */
+export const useDateVariable = ({ operator, schema }: Props) => {
   const { t } = useTranslation();
   const operatorValue = operator?.value || '';
-  const disabled = !['DatePicker', 'DatePicker.RangePicker'].includes(schema?.['x-component']);
+  const disabled = schema?.['x-component'] !== 'DatePicker.RangePicker' && operatorValue !== '$dateBetween';
   const dateOptions = [
     {
       key: 'now',
       value: 'now',
-      label: t('Now'),
+      label: t('Current time'),
       disabled: schema?.['x-component'] !== 'DatePicker' || operatorValue === '$dateBetween',
     },
     {
@@ -150,7 +162,7 @@ export const useDateVariable = ({ operator, schema }) => {
     };
   }, [schema?.['x-component']]);
 
-  if (!operator || !schema) return null;
+  if (!schema) return null;
 
   return result;
 };

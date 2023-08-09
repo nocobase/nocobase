@@ -404,6 +404,7 @@ AssociationSelect.Designer = function Designer() {
       <SchemaSettings.DataScope
         collectionName={collectionField?.target}
         defaultFilter={field.componentProps?.service?.params?.filter || {}}
+        form={form}
         onSubmit={({ filter }) => {
           filter = removeNullCondition(filter);
           _.set(field.componentProps, 'service.params.filter', filter);
@@ -816,6 +817,7 @@ AssociationSelect.FilterDesigner = function FilterDesigner() {
       <SchemaSettings.DataScope
         collectionName={collectionField?.target}
         defaultFilter={field.componentProps?.service?.params?.filter || {}}
+        form={form}
         onSubmit={({ filter }) => {
           filter = removeNullCondition(filter);
           _.set(field.componentProps, 'service.params.filter', filter);

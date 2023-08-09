@@ -1,3 +1,5 @@
+import { Form } from '@formily/core';
+
 export interface DataScopeProps {
   /**
    * 点击提交时触发
@@ -23,4 +25,8 @@ export interface DataScopeProps {
    * @returns
    */
   dynamicComponent?: (props: any) => React.ReactNode;
+  /**
+   * 当前表单区块中的表单实例
+   */
+  form: Form;
 }

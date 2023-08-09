@@ -6,7 +6,7 @@ import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { GeneralSchemaDesigner, SchemaSettings } from '../..';
-import { mergeFilter } from '../../../block-provider';
+import { mergeFilter, useFormBlockContext } from '../../../block-provider';
 import { useCollectionManager } from '../../../collection-manager';
 import { isTitleField } from '../../../collection-manager/Configuration/CollectionFields';
 import { removeNullCondition, useCompile, useDesignable } from '../../../schema-component';
@@ -24,6 +24,7 @@ export const Designer = observer(
       formSchema: ISchema;
       data?: ITemplate;
     };
+    const { form } = useFormBlockContext();
 
     // 在这里读取 resource 的值，当 resource 变化时，会触发该组件的更新
     const collectionName = field.componentProps.service.resource;
@@ -65,6 +66,7 @@ export const Designer = observer(
         <SchemaSettings.DataScope
           collectionName={collectionName}
           defaultFilter={getFilter()}
+          form={form}
           onSubmit={({ filter }) => {
             setFilter(filter);
 

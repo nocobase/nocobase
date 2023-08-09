@@ -7,9 +7,12 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../../block-provider';
 import { CollectionFieldProvider, useCollection, useCollectionField } from '../../../collection-manager';
+import { useRecord } from '../../../record-provider';
 import { Variable, useCompile, useComponent, useVariableScope } from '../../../schema-component';
-import { useBaseVariable } from '../../../schema-settings/VariableInput/hooks/useBaseVariable';
-import { useUserVariable } from '../../../schema-settings/VariableInput/hooks/useUserVariable';
+import {
+  compatOldVariables,
+  useVariableOptions,
+} from '../../../schema-settings/VariableInput/hooks/useVariableOptions';
 import { DeletedField } from '../DeletedField';
 
 const InternalField: React.FC = (props) => {
@@ -89,30 +92,21 @@ export const AssignedField = (props: any) => {
   const [options, setOptions] = useState<any[]>([]);
   const collection = useCollection();
   const scope = useVariableScope();
-  const userVariable = useUserVariable({ schema: collectionField.uiSchema });
-  const currentRecordVariable = useBaseVariable({
-    schema: collectionField.uiSchema,
-    name: getNameOfRecordVariable(value),
-    title: t('Current record'),
-    collectionName: collection.name,
-  });
-
-  userVariable.value = getNameOfUserVariable(value);
+  const compile = useCompile();
+  const { form } = useFormBlockContext();
+  const record = useRecord();
+  const variableOptions = useVariableOptions({ collectionField, blockCollectionName: collection.name, form, record });
 
   useEffect(() => {
-    const opt = [
-      {
-        value: 'currentTime',
-        label: t('Current time'),
-        children: null,
-        disabled: collectionField.uiSchema?.['x-component'] !== 'DatePicker',
-      },
-      currentRecordVariable,
-      userVariable,
-    ];
+    const opt = compatOldVariables(variableOptions, {
+      value,
+      collectionName: collection.name,
+      t,
+      compile,
+    });
     const next = opt.concat(scope);
     setOptions(next);
-  }, [scope]);
+  }, [collection.name, scope, variableOptions]);
 
   return (
     <Variable.Input

@@ -2,7 +2,7 @@ import { useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile, useDesignable } from '../..';
-import { useGanttBlockContext } from '../../../block-provider';
+import { useFormBlockContext, useGanttBlockContext } from '../../../block-provider';
 import { useCollection } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
@@ -24,6 +24,7 @@ const useOptions = (type = 'string') => {
 export const GanttDesigner = () => {
   const field = useField();
   const fieldSchema = useFieldSchema();
+  const { form } = useFormBlockContext();
   const { name, title } = useCollection();
   const { service } = useGanttBlockContext();
   const { dn } = useDesignable();
@@ -146,6 +147,7 @@ export const GanttDesigner = () => {
       <SchemaSettings.DataScope
         collectionName={name}
         defaultFilter={fieldSchema?.['x-decorator-props']?.params?.filter || {}}
+        form={form}
         onSubmit={({ filter }) => {
           const params = field.decoratorProps.params || {};
           params.filter = filter;

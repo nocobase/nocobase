@@ -1,5 +1,6 @@
 import flat from 'flat';
-import _, { every, findIndex, isArray, some } from 'lodash';
+import _, { every, findIndex, some } from 'lodash';
+import { VariableOption, VariablesContextType } from '../../../variables/types';
 import jsonLogic from '../../common/utils/logic';
 
 type VariablesCtx = {
@@ -9,22 +10,15 @@ type VariablesCtx = {
   $form?: Record<string, any>;
 };
 
+export const REGEX_OF_VARIABLE = /\{\{\s*([a-zA-Z0-9_$.]+?)\s*\}\}/g;
+
 export const isVariable = (str: unknown) => {
   if (typeof str !== 'string') {
     return false;
   }
-  const regex = /\{\{\s*(.*?)\s*\}\}/g;
-  const matches = str.match(regex);
+  const matches = str.match(REGEX_OF_VARIABLE);
 
   if (!matches) {
-    return false;
-  }
-
-  const path = matches[0].replace(regex, '$1');
-  const list = path.split('.');
-  const variableName = list[0];
-
-  if (variableName[0] !== '$' && variableName !== 'currentUser' && variableName !== 'currentRecord') {
     return false;
   }
 
@@ -72,27 +66,6 @@ const getFieldValue = (fieldPath, values) => {
   return matchedValues;
 };
 
-const getValue = (str: string, values) => {
-  const regex = /{{(.*?)}}/;
-  const matches = str?.match?.(regex);
-  if (matches) {
-    return getVariableValue(str, values);
-  } else {
-    return str;
-  }
-};
-const getVariableValue = (str, values) => {
-  const regex = /{{[^.]+\.([^}]+)}}/;
-  const match = regex.exec(str);
-  const targetField = match?.[1]?.split('.') || [];
-  const isArrayField = isArray(values[targetField[0]]);
-  if (isArrayField && targetField.length > 1) {
-    //对多关系字段
-    return getFieldValue(targetField, values);
-  } else {
-    return flat(values)[match?.[1]];
-  }
-};
 const getTargetField = (obj) => {
   const keys = getAllKeys(obj);
   const index = findIndex(keys, (key, index, keys) => {
@@ -120,37 +93,59 @@ function getAllKeys(obj) {
   return keys;
 }
 
-export const conditionAnalyse = (rules, scope) => {
-  const values = { ...scope, now: new Date() };
+export const conditionAnalyses = async ({
+  rules,
+  formValues,
+  variables,
+  localVariables,
+}: {
+  rules;
+  formValues;
+  variables: VariablesContextType;
+  localVariables: VariableOption[];
+}) => {
   const type = Object.keys(rules)[0] || '$and';
   const conditions = rules[type];
-  const results = conditions.map((c) => {
+
+  let results = conditions.map(async (c) => {
     const jsonlogic = getInnermostKeyAndValue(c);
     const operator = jsonlogic?.key;
-    const value = getValue(jsonlogic?.value, values);
-    const targetField = getTargetField(c);
+    const targetVariableName = targetFieldToVariableString(getTargetField(c));
+
     if (!operator) {
       return true;
     }
+
+    const parsingResult = isVariable(jsonlogic?.value)
+      ? [
+          variables?.parseVariable(jsonlogic?.value, localVariables),
+          variables?.parseVariable(targetVariableName, localVariables),
+        ]
+      : [jsonlogic?.value, variables?.parseVariable(targetVariableName, localVariables)];
+
     try {
-      const isArrayField = isArray(values[targetField[0]]);
-      if (isArrayField && targetField.length > 1) {
-        //对多关系字段比较
-        const currentValue = getFieldValue(targetField, values);
-        const result = jsonLogic.apply({ [operator]: [currentValue, value] });
-        return result;
-      } else {
-        const currentValue = targetField.length > 1 ? flat(values)?.[targetField.join('.')] : values?.[targetField[0]];
-        const result = jsonLogic.apply({ [operator]: [currentValue, value] });
-        return result;
-      }
+      const [value, targetValue] = await Promise.all(parsingResult);
+      return jsonLogic.apply({ [operator]: [targetValue, value] });
     } catch (error) {
-      console.error(error);
+      if (process.env.NODE_ENV !== 'production') {
+        throw error;
+      }
     }
   });
+  results = await Promise.all(results);
+
   if (type === '$and') {
     return every(results, (v) => v);
   } else {
     return some(results, (v) => v);
   }
 };
+
+/**
+ * 转化成变量字符串，方便解析出值
+ * @param targetField
+ * @returns
+ */
+function targetFieldToVariableString(targetField: string[]) {
+  return `{{ $form.${targetField.join('.')} }}`;
+}

@@ -4,6 +4,7 @@ import { Slider } from 'antd';
 import _ from 'lodash';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useFormBlockContext } from '../../../block-provider';
 import { useCollection, useSortFields } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
@@ -22,6 +23,7 @@ export const GridCardDesigner = () => {
   const template = useSchemaTemplate();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
+  const { form } = useFormBlockContext();
   const field = useField();
   const { dn } = useDesignable();
   const sortFields = useSortFields(name);
@@ -94,6 +96,7 @@ export const GridCardDesigner = () => {
         <SchemaSettings.DataScope
           collectionName={name}
           defaultFilter={fieldSchema?.['x-decorator-props']?.params?.filter || {}}
+          form={form}
           onSubmit={({ filter }) => {
             filter = removeNullCondition(filter);
             _.set(fieldSchema, 'x-decorator-props.params.filter', filter);

@@ -4,6 +4,7 @@ import {
   SchemaSettings,
   useCollection,
   useDesignable,
+  useFormBlockContext,
   useTableBlockContext,
 } from '@nocobase/client';
 import React from 'react';
@@ -13,6 +14,7 @@ export const AuditLogsDesigner = () => {
   const { name, title } = useCollection();
   const field = useField();
   const fieldSchema = useFieldSchema();
+  const { form } = useFormBlockContext();
   const { service } = useTableBlockContext();
   const { t } = useTranslation();
   const { dn } = useDesignable();
@@ -21,6 +23,7 @@ export const AuditLogsDesigner = () => {
       <SchemaSettings.DataScope
         collectionName={name}
         defaultFilter={fieldSchema?.['x-decorator-props']?.params?.filter || {}}
+        form={form}
         onSubmit={({ filter }) => {
           const params = field.decoratorProps.params || {};
           params.filter = filter;

@@ -8,6 +8,7 @@ import { useActionContext } from '../..';
 import { useDesignable } from '../../';
 import { Icon } from '../../../icon';
 import { useRecord } from '../../../record-provider';
+import { useLocalVariables, useVariables } from '../../../variables';
 import { SortableItem } from '../../common';
 import { useCompile, useComponent, useDesigner } from '../../hooks';
 import { useProps } from '../../hooks/useProps';
@@ -57,6 +58,9 @@ export const Action: ComposedAction = observer(
     const { designable } = useDesignable();
     const tarComponent = useComponent(component) || component;
     const { modal } = App.useApp();
+    const variables = useVariables();
+    const localVariables = useLocalVariables({ form });
+
     let actionTitle = title || compile(fieldSchema.title);
     actionTitle = lodash.isString(actionTitle) ? t(actionTitle) : actionTitle;
 
@@ -65,8 +69,15 @@ export const Action: ComposedAction = observer(
       linkageRules
         .filter((k) => !k.disabled)
         .forEach((v) => {
-          return v.actions?.map((h) => {
-            linkageAction(h.operator, field, v.condition, values);
+          v.actions?.forEach((h) => {
+            linkageAction({
+              operator: h.operator,
+              field,
+              condition: v.condition,
+              values,
+              variables,
+              localVariables,
+            });
           });
         });
     }, [linkageRules, values, designable]);

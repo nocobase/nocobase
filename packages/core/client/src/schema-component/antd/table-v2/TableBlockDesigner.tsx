@@ -2,7 +2,7 @@ import { ArrayItems } from '@formily/antd-v5';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useTableBlockContext } from '../../../block-provider';
+import { useFormBlockContext, useTableBlockContext } from '../../../block-provider';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { useSortFields } from '../../../collection-manager/action-hooks';
@@ -18,6 +18,7 @@ export const TableBlockDesigner = () => {
   const { getCollectionField, getCollection } = useCollectionManager();
   const field = useField();
   const fieldSchema = useFieldSchema();
+  const { form } = useFormBlockContext();
   const sortFields = useSortFields(name);
   const { service } = useTableBlockContext();
   const { t } = useTranslation();
@@ -108,6 +109,7 @@ export const TableBlockDesigner = () => {
       <SchemaSettings.DataScope
         collectionName={name}
         defaultFilter={fieldSchema?.['x-decorator-props']?.params?.filter || {}}
+        form={form}
         onSubmit={onDataScopeSubmit}
       />
       {!dragSort && (

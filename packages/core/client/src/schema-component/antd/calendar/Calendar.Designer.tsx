@@ -2,7 +2,7 @@ import { useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { FixedBlockDesignerItem, removeNullCondition, useDesignable } from '../..';
-import { useCalendarBlockContext } from '../../../block-provider';
+import { useCalendarBlockContext, useFormBlockContext } from '../../../block-provider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
@@ -10,6 +10,7 @@ import { useSchemaTemplate } from '../../../schema-templates';
 export const CalendarDesigner = () => {
   const field = useField();
   const fieldSchema = useFieldSchema();
+  const { form } = useFormBlockContext();
   const { name, title } = useCollection();
   const { getCollectionFieldsOptions } = useCollectionManager();
   const { service } = useCalendarBlockContext();
@@ -104,6 +105,7 @@ export const CalendarDesigner = () => {
       <SchemaSettings.DataScope
         collectionName={name}
         defaultFilter={fieldSchema?.['x-decorator-props']?.params?.filter || {}}
+        form={form}
         onSubmit={({ filter }) => {
           filter = removeNullCondition(filter);
           const params = field.decoratorProps.params || {};

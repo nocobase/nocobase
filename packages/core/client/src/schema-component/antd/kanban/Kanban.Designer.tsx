@@ -1,6 +1,6 @@
 import { useField, useFieldSchema } from '@formily/react';
 import React from 'react';
-import { useKanbanBlockContext } from '../../../block-provider';
+import { useFormBlockContext, useKanbanBlockContext } from '../../../block-provider';
 import { useCollection } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
@@ -12,6 +12,7 @@ export const KanbanDesigner = () => {
   const { name, title } = useCollection();
   const field = useField();
   const fieldSchema = useFieldSchema();
+  const { form } = useFormBlockContext();
   const { service } = useKanbanBlockContext();
   const { dn } = useDesignable();
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
@@ -23,6 +24,7 @@ export const KanbanDesigner = () => {
       <SchemaSettings.DataScope
         collectionName={name}
         defaultFilter={fieldSchema?.['x-decorator-props']?.params?.filter || {}}
+        form={form}
         onSubmit={({ filter }) => {
           filter = removeNullCondition(filter);
           const params = field.decoratorProps.params || {};

@@ -2,6 +2,7 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { set } from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { useFormBlockContext } from '../../../block-provider';
 import { useCollectionManager } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isShowDefaultValue } from '../../../schema-settings';
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
@@ -44,6 +45,7 @@ export const useColorFields = (collectionName?: any) => {
 };
 export const TableColumnDesigner = (props) => {
   const { uiSchema, fieldSchema, collectionField } = props;
+  const { form } = useFormBlockContext();
   const { getInterface, getCollection } = useCollectionManager();
   const field: any = useField();
   const { t } = useTranslation();
@@ -109,6 +111,7 @@ export const TableColumnDesigner = (props) => {
         <SchemaSettings.DataScope
           collectionName={collectionField?.target}
           defaultFilter={fieldSchema?.['x-component-props']?.service?.params?.filter || {}}
+          form={form}
           onSubmit={({ filter }) => {
             filter = removeNullCondition(filter);
             set(field.componentProps, 'service.params.filter', filter);
