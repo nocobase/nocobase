@@ -3,7 +3,7 @@ import WebSocket from 'ws';
 import { nanoid } from 'nanoid';
 import { IncomingMessage } from 'http';
 import { AppSupervisor } from '../app-supervisor';
-import { getErrorWithCode } from './errors';
+import { applyErrorWithArgs, getErrorWithCode } from './errors';
 import lodash from 'lodash';
 
 declare class WebSocketWithId extends WebSocket {
@@ -20,13 +20,7 @@ interface WebSocketClient {
 
 function getPayloadByErrorCode(code, ...args) {
   const error = getErrorWithCode(code);
-  return lodash.omit(
-    {
-      ...error,
-      message: error.message(...args),
-    },
-    ['status', 'maintaining'],
-  );
+  return lodash.omit(applyErrorWithArgs(error, ...args), ['status', 'maintaining']);
 }
 
 export class WSServer {
@@ -50,12 +44,25 @@ export class WSServer {
       });
     });
 
-    AppSupervisor.getInstance().on('statusChanged', ({ app }) => {
-      const appName = app.name;
+    AppSupervisor.getInstance().on('appWorkingMessageChanged', async ({ appName, message }) => {
+      const app = await AppSupervisor.getInstance().getApp(appName, {
+        withOutBootStrap: true,
+      });
 
       this.sendToConnectionsByTag('app', appName, {
         type: 'maintaining',
-        payload: getPayloadByErrorCode(`APP_${app.getFsmState()}`, app),
+        payload: getPayloadByErrorCode(AppSupervisor.getInstance().getAppStatus(appName), app),
+      });
+    });
+
+    AppSupervisor.getInstance().on('appStatusChanged', async ({ appName, status }) => {
+      const app = await AppSupervisor.getInstance().getApp(appName, {
+        withOutBootStrap: true,
+      });
+
+      this.sendToConnectionsByTag('app', appName, {
+        type: 'maintaining',
+        payload: getPayloadByErrorCode(status === null ? 'APP_NOT_FOUND' : status, app || appName),
       });
     });
   }
@@ -81,28 +88,42 @@ export class WSServer {
       headers: client.headers,
     };
 
-    const appSupervisor = AppSupervisor.getInstance();
-
     const handleAppName = await Gateway.getInstance().getRequestHandleAppName(req);
 
     client.app = handleAppName;
     client.tags.push(`app#${handleAppName}`);
 
-    if (appSupervisor.hasApp(handleAppName)) {
-      const app = await appSupervisor.getApp(handleAppName, { withOutBootStrap: false });
+    const hasApp = AppSupervisor.getInstance().hasApp(handleAppName);
 
-      // this.sendMessageToConnection(client, {
-      //   type: 'maintaining',
-      //   payload: getPayloadByErrorCode(`APP_${app.getFsmState()}`, app),
-      // });
-    } else {
+    if (!hasApp) {
+      AppSupervisor.getInstance().bootStrapApp(handleAppName);
+    }
+
+    const appStatus = AppSupervisor.getInstance().getAppStatus(handleAppName, 'initializing');
+
+    if (appStatus === null) {
       this.sendMessageToConnection(client, {
         type: 'maintaining',
         payload: getPayloadByErrorCode('APP_NOT_FOUND', handleAppName),
       });
-
-      appSupervisor.bootStrapApp(handleAppName);
+      return;
     }
+
+    if (appStatus === 'initializing') {
+      this.sendMessageToConnection(client, {
+        type: 'maintaining',
+        payload: getPayloadByErrorCode('APP_INITIALIZING', handleAppName),
+      });
+
+      return;
+    }
+
+    const app = await AppSupervisor.getInstance().getApp(handleAppName);
+
+    this.sendMessageToConnection(client, {
+      type: 'maintaining',
+      payload: getPayloadByErrorCode(appStatus, app),
+    });
   }
 
   removeConnection(id: string) {

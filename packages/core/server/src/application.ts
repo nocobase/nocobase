@@ -383,6 +383,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
           await this.load();
         })
         .parseAsync(argv, options);
+
       this.setMaintaining({
         status: 'command_end',
         command: this.activatedCommand,

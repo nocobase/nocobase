@@ -182,6 +182,21 @@ describe('gateway', () => {
     it('should receive app error message', async () => {
       await connectClient(port);
 
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // should receive two messages
+
+      // first message is app initializing
+      const firstMessage = messages[0];
+      expect(JSON.parse(firstMessage)).toMatchObject({
+        type: 'maintaining',
+        payload: {
+          code: 'APP_INITIALIZING',
+          message: 'application main is initializing',
+        },
+      });
+
+      //second message is app not found
       expect(getLastMessage()).toMatchObject({
         type: 'maintaining',
         payload: { message: 'application main not found', code: 'APP_NOT_FOUND' },
@@ -205,6 +220,25 @@ describe('gateway', () => {
         payload: {
           code: 'COMMAND_ERROR',
           message: errors.COMMAND_ERROR.message(app),
+          command: {
+            name: 'start',
+          },
+        },
+      });
+
+      await app.runAsCLI(['install'], { from: 'user' });
+      await app.runAsCLI(['start'], { from: 'user' });
+
+      await new Promise((resolve) => {
+        setTimeout(resolve, 100);
+      });
+
+      console.log(messages);
+
+      expect(getLastMessage()).toMatchObject({
+        type: 'maintaining',
+        payload: {
+          code: 'APP_RUNNING',
         },
       });
     });

@@ -37,6 +37,10 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     [appName: string]: AppStatus;
   } = {};
 
+  public lastWorkingMessage: {
+    [appName: string]: string;
+  } = {};
+
   private appBootMutex = new Mutex();
   private appBootstrapper: AppBootstrapper = null;
 
@@ -93,7 +97,16 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   setAppStatus(appName: string, status: AppStatus) {
+    if (this.appStatus[appName] === status) {
+      return;
+    }
+
     this.appStatus[appName] = status;
+
+    this.emit('appStatusChanged', {
+      appName,
+      status,
+    });
   }
 
   async bootStrapApp(appName: string, options = {}) {
@@ -212,8 +225,11 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
     // call app.destroy
     await this.apps[appName].destroy();
+
     delete this.apps[appName];
     delete this.appStatus[appName];
+    delete this.appErrors[appName];
+    delete this.lastWorkingMessage[appName];
   }
 
   subApps() {
@@ -236,12 +252,17 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   private bindAppEvents(app: Application) {
-    app.on('afterDestroy', () => {
-      delete this.apps[app.name];
-    });
-
     app.on('workingMessageChanged', ({ message }) => {
-      this.clearAppError(app.name);
+      if (this.lastWorkingMessage[app.name] === message) {
+        return;
+      }
+
+      this.lastWorkingMessage[app.name] = message;
+
+      this.emit('appWorkingMessageChanged', {
+        appName: app.name,
+        message,
+      });
     });
 
     app.on('maintaining', (maintainingStatus) => {
@@ -252,6 +273,10 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
       }
 
       this.setAppStatus(app.name, status);
+
+      if (status === 'command_end' && maintainingStatus.command.name == 'start') {
+        this.setAppStatus(app.name, 'running');
+      }
     });
   }
 }
