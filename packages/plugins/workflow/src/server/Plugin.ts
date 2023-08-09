@@ -129,7 +129,13 @@ export default class WorkflowPlugin extends Plugin {
       ],
     });
 
+    this.app.acl.registerSnippet({
+      name: 'ui.*',
+      actions: ['workflows:list'],
+    });
+
     this.app.acl.allow('users_jobs', ['list', 'get', 'submit'], 'loggedIn');
+    this.app.acl.allow('workflows', ['trigger'], 'loggedIn');
 
     await db.import({
       directory: path.resolve(__dirname, 'collections'),

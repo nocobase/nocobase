@@ -35,11 +35,11 @@ export const Action: ComposedAction = observer(
       className,
       icon,
       title,
+      onClick,
       ...others
-    } = props;
+    } = useProps(props);
     const { wrapSSR, componentCls, hashId } = useStyles();
     const { t } = useTranslation();
-    const { onClick } = useProps(props);
     const [visible, setVisible] = useState(false);
     const [formValueChanged, setFormValueChanged] = useState(false);
     const Designer = useDesigner();

@@ -53,8 +53,7 @@
       "prettier --write"
     ],
     "*.ts?(x)": [
-      "eslint --fix",
-      "prettier --parser=typescript --write"
+      "eslint --fix"
     ]
   },
   "devDependencies": {

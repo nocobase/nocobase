@@ -57,11 +57,15 @@ const useStyles = createStyles(({ css, token }) => {
 
     workflowVersionDropdownClass: css`
       .ant-dropdown-menu-item {
+        justify-content: flex-end;
         .ant-dropdown-menu-title-content {
+          display: flex;
+          align-items: baseline;
+          justify-content: flex-end;
           text-align: right;
 
           time {
-            margin-left: 0.5rem;
+            width: 14em;
             color: ${token.colorText};
             font-size: 80%;
           }
@@ -101,7 +105,6 @@ const useStyles = createStyles(({ css, token }) => {
 
         time {
           width: 12em;
-          margin-left: 0.5rem;
           color: ${token.colorText};
           font-size: 80%;
         }
@@ -243,7 +246,9 @@ const useStyles = createStyles(({ css, token }) => {
         font-weight: bold;
 
         &:not(:focus) {
-          transition: background-color 0.3s ease, border-color 0.3s ease;
+          transition:
+            background-color 0.3s ease,
+            border-color 0.3s ease;
           border-color: ${token.colorBorderBg};
           background-color: ${token.colorBgContainerDisabled};
 
