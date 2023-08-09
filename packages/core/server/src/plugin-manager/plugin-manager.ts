@@ -69,6 +69,8 @@ export class PluginManager {
               const packageName = PluginManager.getPackageName(json.name);
               const packageJson = PluginManager.getPackageJson(packageName);
               return {
+                ...json,
+                packageName,
                 displayName: packageJson[`displayName.${lng}`] || packageJson.displayName,
                 description: packageJson[`description.${lng}`] || packageJson.description,
                 isOfficial: packageName.startsWith('@nocobase'),
@@ -76,7 +78,6 @@ export class PluginManager {
                 changelogUrl: getChangelogUrl(packageName),
                 newVersion: await getNewVersion(json),
                 isCompatible: checkCompatible(packageName),
-                ...json,
               };
             }),
           );

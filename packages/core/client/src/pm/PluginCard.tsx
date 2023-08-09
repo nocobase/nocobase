@@ -97,7 +97,7 @@ function PluginBaseInfo(props: IPluginBaseInfo) {
               // avatar={<Avatar style={{ background: `${stringToColor(name)}` }}>{name?.[0]}</Avatar>}
               description={
                 <Space direction="vertical">
-                  <Typography.Title level={4}>{displayName || name}</Typography.Title>
+                  <Typography.Title level={4}>{displayName || name || props.packageName}</Typography.Title>
                   <Typography.Text type="secondary">
                     {t('Version')}: {props.version}
                   </Typography.Text>

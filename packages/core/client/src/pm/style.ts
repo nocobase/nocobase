@@ -23,6 +23,7 @@ export const useStyles = createStyles(({ token }) => {
     PluginDetailBaseInfo: {
       display: 'flex',
       flexDirection: 'column',
+      marginBottom: token.margin,
     },
 
     PluginDocument: {

@@ -4,6 +4,7 @@ export interface IPluginData {
   updatedAt: Date;
   name: string;
   displayName: string;
+  packageName: string;
   version: string;
   enabled: boolean;
   installed: boolean;

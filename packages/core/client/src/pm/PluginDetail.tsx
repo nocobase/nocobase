@@ -92,56 +92,84 @@ export const PluginDetail: FC<IPluginDetail> = ({ plugin, onCancel }) => {
         <Row gutter={20}>
           <Col span={16}>{plugin?.readmeUrl ? <PluginDocument url={plugin?.readmeUrl} /> : 'NO README.md FILE'}</Col>
           <Col span={8}>
-            <Space style={{ width: '100%' }} direction="vertical">
-              {repository && (
-                <div className={styles.PluginDetailBaseInfo}>
-                  <Typography.Text type="secondary">Repository</Typography.Text>
-                  <Typography.Text strong>{repository}</Typography.Text>
-                </div>
-              )}
-              {data?.data?.packageJson.homepage && (
-                <div className={styles.PluginDetailBaseInfo}>
-                  <Typography.Text type="secondary">Homepage</Typography.Text>
-                  <Typography.Text strong>{data?.data?.packageJson.homepage}</Typography.Text>
-                </div>
-              )}
-              {plugin.description && (
-                <div className={styles.PluginDetailBaseInfo}>
-                  <Typography.Text type="secondary">Description</Typography.Text>
-                  <Typography.Text strong>{plugin.description || 'empty'}</Typography.Text>
-                </div>
-              )}
-              <Row>
+            <Row>
+              {plugin.name && (
                 <Col span={12}>
                   <div className={styles.PluginDetailBaseInfo}>
-                    <Typography.Text type="secondary">Last Updated</Typography.Text>
-                    <Typography.Text strong>{dayjs(data?.data?.lastUpdated).fromNow()}</Typography.Text>
+                    <Typography.Text type="secondary">name</Typography.Text>
+                    <Typography.Text strong>{plugin.name}</Typography.Text>
                   </div>
                 </Col>
+              )}
+              {plugin.displayName && (
+                <Col span={12}>
+                  <div className={styles.PluginDetailBaseInfo}>
+                    <Typography.Text type="secondary">displayName</Typography.Text>
+                    <Typography.Text strong>{plugin.displayName}</Typography.Text>
+                  </div>
+                </Col>
+              )}
+              <Col span={24}>
+                <div className={styles.PluginDetailBaseInfo}>
+                  <Typography.Text type="secondary">packageName</Typography.Text>
+                  <Typography.Text strong>{plugin.packageName}</Typography.Text>
+                </div>
+              </Col>
+              {repository && (
+                <Col span={24}>
+                  <div className={styles.PluginDetailBaseInfo}>
+                    <Typography.Text type="secondary">Repository</Typography.Text>
+                    <Typography.Text strong>{repository}</Typography.Text>
+                  </div>
+                </Col>
+              )}
+              {data?.data?.packageJson.homepage && (
+                <Col span={24}>
+                  <div className={styles.PluginDetailBaseInfo}>
+                    <Typography.Text type="secondary">Homepage</Typography.Text>
+                    <Typography.Text strong>{data?.data?.packageJson.homepage}</Typography.Text>
+                  </div>
+                </Col>
+              )}
+              {plugin.description && (
+                <Col span={24}>
+                  <div className={styles.PluginDetailBaseInfo}>
+                    <Typography.Text type="secondary">Description</Typography.Text>
+                    <Typography.Text strong>{plugin.description || 'empty'}</Typography.Text>
+                  </div>
+                </Col>
+              )}
+              {data?.data?.packageJson.license && (
                 <Col span={12}>
                   <div className={styles.PluginDetailBaseInfo}>
                     <Typography.Text type="secondary">License</Typography.Text>
                     <Typography.Text strong>{data?.data?.packageJson.license}</Typography.Text>
                   </div>
                 </Col>
-              </Row>
-              <Row>
+              )}
+              <Col span={12}>
+                <div className={styles.PluginDetailBaseInfo}>
+                  <Typography.Text type="secondary">Last Updated</Typography.Text>
+                  <Typography.Text strong>{dayjs(data?.data?.lastUpdated).fromNow()}</Typography.Text>
+                </div>
+              </Col>
+              <Col span={12}>
+                <div className={styles.PluginDetailBaseInfo}>
+                  <Typography.Text type="secondary">Version</Typography.Text>
+                  <Typography.Text strong>{plugin?.version}</Typography.Text>
+                </div>
+              </Col>
+              {plugin?.newVersion && (
                 <Col span={12}>
+                  (
                   <div className={styles.PluginDetailBaseInfo}>
-                    <Typography.Text type="secondary">Version</Typography.Text>
-                    <Typography.Text strong>{plugin?.version}</Typography.Text>
+                    <Typography.Text type="danger">Latest Version</Typography.Text>
+                    <Typography.Text strong>{plugin?.newVersion}</Typography.Text>
                   </div>
+                  )
                 </Col>
-                <Col span={12}>
-                  {plugin?.newVersion && (
-                    <div className={styles.PluginDetailBaseInfo}>
-                      <Typography.Text type="danger">Latest Version</Typography.Text>
-                      <Typography.Text strong>{plugin?.newVersion}</Typography.Text>
-                    </div>
-                  )}
-                </Col>
-              </Row>
-            </Space>
+              )}
+            </Row>
           </Col>
         </Row>
       ),
@@ -179,7 +207,7 @@ export const PluginDetail: FC<IPluginDetail> = ({ plugin, onCancel }) => {
       ) : (
         plugin && (
           <>
-            <Typography.Title level={3}>{plugin.name}</Typography.Title>
+            <Typography.Title level={3}>{plugin.packageName}</Typography.Title>
             <Space split={<span>&nbsp;•&nbsp;</span>}>
               <span>{plugin.version}</span>
               <span>Last Updated {dayjs(data?.data?.lastUpdated).fromNow()}</span>
