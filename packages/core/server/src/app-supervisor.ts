@@ -1,6 +1,7 @@
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import { EventEmitter } from 'events';
 import Application, { ApplicationOptions } from './application';
+import { Mutex } from 'async-mutex';
 
 type BootOptions = {
   appName: string;
@@ -9,6 +10,8 @@ type BootOptions = {
 };
 
 type AppBootstrapper = (bootOptions: BootOptions) => Promise<void>;
+
+type AppStatus = string;
 
 export function supervisedAppCall(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
   const originalMethod = descriptor.value;
@@ -33,12 +36,18 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   public singleAppName: string | null = null;
   declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
 
+  private appBootMutex = new Mutex();
+
   public apps: {
-    [key: string]: Application;
+    [appName: string]: Application;
   } = {};
 
   public appErrors: {
-    [key: string]: Error;
+    [appName: string]: Error;
+  } = {};
+
+  public appStatus: {
+    [appName: string]: AppStatus;
   } = {};
 
   private appBootstrapper: AppBootstrapper = null;
@@ -95,15 +104,28 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     AppSupervisor.instance = null;
   }
 
+  setAppStatus(appName: string, status: AppStatus) {
+    this.appStatus[appName] = status;
+  }
+
   async bootStrapApp(appName: string, options = {}) {
-    if (!this.hasApp(appName) && this.appBootstrapper) {
-      console.log(`bootStrapApp ${appName}`);
-      await this.appBootstrapper({
-        appSupervisor: this,
-        appName,
-        options,
-      });
-    }
+    await this.appBootMutex.runExclusive(async () => {
+      if (!this.hasApp(appName) && this.appBootstrapper) {
+        this.setAppStatus(appName, 'initializing');
+
+        await this.appBootstrapper({
+          appSupervisor: this,
+          appName,
+          options,
+        });
+
+        if (!this.hasApp(appName)) {
+          this.setAppStatus(appName, null);
+        } else {
+          this.setAppStatus(appName, 'initialized');
+        }
+      }
+    });
   }
 
   async getApp(
@@ -122,6 +144,10 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
   setAppBootstrapper(appBootstrapper: AppBootstrapper) {
     this.appBootstrapper = appBootstrapper;
+  }
+
+  getAppStatus(appName: string): AppStatus | null {
+    return this.appStatus[appName] || null;
   }
 
   async restartApp(name: string) {
