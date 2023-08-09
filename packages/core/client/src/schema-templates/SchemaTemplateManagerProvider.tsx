@@ -2,9 +2,11 @@ import { ISchema, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Spin } from 'antd';
 import { cloneDeep } from 'lodash';
+import collections from 'packages/plugins/multi-app-share-collection/src/server/collections/collections';
 import React, { createContext, ReactNode, useContext, useMemo } from 'react';
 import { useAPIClient, useRequest } from '../api-client';
 import { Plugin } from '../application/Plugin';
+import { useCollectionManager } from '../collection-manager';
 import { BlockTemplate } from './BlockTemplate';
 
 export const SchemaTemplateManagerContext = createContext<any>({});
@@ -35,6 +37,7 @@ export const useSchemaTemplate = () => {
 };
 
 export const useSchemaTemplateManager = () => {
+  const { getInheritCollections } = useCollectionManager();
   const { refresh, templates = [] } = useContext(SchemaTemplateManagerContext);
   const api = useAPIClient();
   return {
@@ -100,7 +103,9 @@ export const useSchemaTemplateManager = () => {
       return templates?.find((template) => template.key === key);
     },
     getTemplatesByCollection(collectionName: string, resourceName: string = null) {
-      const items = templates?.filter?.((template) => template.collectionName === collectionName);
+      const parentCollections = getInheritCollections(collectionName);
+      const totalCollections = parentCollections.concat([collectionName]);
+      const items = templates?.filter?.((template) => totalCollections.includes(template.collectionName));
       return items || [];
     },
     getTemplatesByComponentName(componentName: string): Array<any> {
