@@ -116,6 +116,21 @@ interface RemoveProps {
   breakRemoveOn?: ISchema | ((s: ISchema) => boolean);
 }
 
+interface ModalItemProps {
+  title: string;
+  onSubmit: (values: any) => void;
+  initialValues?: any;
+  schema?: ISchema;
+  modalTip?: string;
+  components?: any;
+  hidden?: boolean;
+  scope?: any;
+  effects?: any;
+  width?: string | number;
+  children?: ReactNode;
+  asyncGetInitialValues?: () => Promise<any>;
+}
+
 type SchemaSettingsNested = {
   Remove?: React.FC<RemoveProps>;
   Item?: React.FC<MenuItemProps>;
@@ -124,6 +139,7 @@ type SchemaSettingsNested = {
   SwitchItem?: React.FC<SwitchItemProps>;
   CascaderItem?: React.FC<CascaderProps<any> & Omit<MenuItemProps, 'title'> & { title: any }>;
   DataScope?: React.FC<DataScopeProps>;
+  ModalItem: React.FC<ModalItemProps>;
   [key: string]: any;
 };
 
@@ -879,7 +895,7 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
 });
 SchemaSettings.ActionModalItem.displayName = 'SchemaSettings.ActionModalItem';
 
-SchemaSettings.ModalItem = function ModalItem(props) {
+SchemaSettings.ModalItem = function ModalItem(props: ModalItemProps) {
   const {
     hidden,
     title,
@@ -1706,13 +1722,13 @@ SchemaSettings.DataScope = function DataScopeConfigure(props: DataScopeProps) {
   return (
     <SchemaSettings.ModalItem
       title={t('Set the data scope')}
+      initialValues={{ filter: props.defaultFilter }}
       schema={
         {
           type: 'object',
           title: t('Set the data scope'),
           properties: {
             filter: {
-              default: props.defaultFilter,
               enum: props.collectionFilterOption || options,
               'x-component': 'Filter',
               'x-component-props': {

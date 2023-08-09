@@ -53,6 +53,23 @@ export const getPath = (variableString: string) => {
   return matches[0].replace(REGEX_OF_VARIABLE, '$1');
 };
 
+/**
+ * `{{ $user.name }}` => `$user`
+ * @param variableString
+ * @returns
+ */
+export const getVariableName = (variableString: string) => {
+  if (!_.isString(variableString)) {
+    return variableString;
+  }
+
+  const variablePath = getPath(variableString);
+  const list = variablePath.split('.');
+  const variableName = list[0];
+
+  return variableName;
+};
+
 const VariablesProvider = ({ children }) => {
   const ctxRef = useRef<Record<string, any>>({});
   const [ctx, setCtx] = useState<Record<string, any>>({});

@@ -2,8 +2,8 @@ import { ISchema } from '@formily/react';
 import { isArr } from '@formily/shared';
 import { getDefaultFormat, str2moment } from '@nocobase/utils/client';
 import { Tag } from 'antd';
-import { get, isFunction } from 'lodash';
 import dayjs from 'dayjs';
+import { get, isFunction } from 'lodash';
 import React from 'react';
 import { CollectionFieldOptions, useCollectionManager } from '../../../collection-manager';
 
@@ -55,7 +55,7 @@ export const getTabFormatValue = (labelUiSchema: ISchema, value: any, tagColor):
   if (Array.isArray(options) && value) {
     const values = toArr(value).map((val) => {
       const opt: any = options.find((option: any) => option.value === val);
-      return React.createElement(Tag, { color: tagColor||opt?.color }, opt?.label);
+      return React.createElement(Tag, { color: tagColor || opt?.color }, opt?.label);
     });
     return values;
   }
@@ -103,7 +103,7 @@ export const parseVariables = (str: string, ctx) => {
     return str;
   }
 };
-export function extractFilterfield(str) {
+export function extractFilterField(str) {
   const match = str.match(/^\$form\.([^.[\]]+)/);
   if (match) {
     return match[1];

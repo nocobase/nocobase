@@ -3,7 +3,7 @@ import { useField, useFieldSchema } from '@formily/react';
 import { reaction } from '@formily/reactive';
 import _ from 'lodash';
 import { useEffect } from 'react';
-import { useLocalVariables, useVariables } from '../../../../variables';
+import { DEBOUNCE_WAIT, useLocalVariables, useVariables } from '../../../../variables';
 import { getPath } from '../../../../variables/VariablesProvider';
 import { isVariable } from '../../../common/utils/uitls';
 import { useCompile } from '../../../hooks';
@@ -47,7 +47,7 @@ const useParseDefaultValue = () => {
         field.setInitialValue(compile(schema.default));
       }
     };
-    const run = _.debounce(_run, 600);
+    const run = _.debounce(_run, DEBOUNCE_WAIT);
 
     _run();
 

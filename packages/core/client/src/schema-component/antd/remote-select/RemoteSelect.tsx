@@ -1,14 +1,12 @@
 import { LoadingOutlined } from '@ant-design/icons';
-import { connect, mapProps, mapReadPretty, useField, useFieldSchema, useForm } from '@formily/react';
-import dayjs from 'dayjs';
+import { connect, mapProps, mapReadPretty, useFieldSchema } from '@formily/react';
 import { Divider, SelectProps, Tag } from 'antd';
-import flat from 'flat';
-import _, { uniqBy } from 'lodash';
+import dayjs from 'dayjs';
+import { uniqBy } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
-import { getInnermostKeyAndValue } from '../../common/utils/uitls';
 import { useCompile } from '../../hooks';
 import { Select, defaultFieldNames } from '../select';
 import { ReadPretty } from './ReadPretty';
@@ -42,11 +40,9 @@ const InternalRemoteSelect = connect(
       ...others
     } = props;
     const [open, setOpen] = useState(false);
-    const form = useForm();
     const firstRun = useRef(false);
     const fieldSchema = useFieldSchema();
     const isQuickAdd = fieldSchema['x-component-props']?.addMode === 'quickAdd';
-    const field = useField();
     const { getField } = useCollection();
     const searchData = useRef(null);
     const { getCollectionJoinField, getInterface } = useCollectionManager();
@@ -131,7 +127,7 @@ const InternalRemoteSelect = connect(
         },
       },
       {
-        manual: manual && Object.prototype.toString.call(value) === '[object Object]',
+        manual,
         debounceWait: wait,
       },
     );
