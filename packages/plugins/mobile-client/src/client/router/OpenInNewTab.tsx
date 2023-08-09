@@ -14,7 +14,7 @@ export const OpenInNewTab = () => {
     if (window.location.pathname.startsWith('/apps')) {
       baseUrl = window.origin + location.pathname.split('/').slice(0, 3).join('/');
     }
-    window.open(`${baseUrl}${location.pathname}`);
+    window.open(`${baseUrl}${location.pathname}${location.search}`);
   };
 
   return (
