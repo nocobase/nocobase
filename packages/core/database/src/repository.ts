@@ -37,6 +37,7 @@ import { UpdateGuard } from './update-guard';
 
 const debug = require('debug')('noco-database');
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface IRepository {}
 
 interface CreateManyOptions extends BulkCreateOptions {
@@ -163,6 +164,16 @@ interface RelatedQueryOptions {
     collection: Collection;
   };
 }
+interface MaxOptions extends Transactionable {
+  field: string;
+  filter?: Filter;
+}
+
+interface IncrOptions extends Omit<UpdateOptions, 'values'> {
+  field: string;
+  filter?: Filter;
+  value?: number;
+}
 
 const transaction = transactionWrapperBuilder(function () {
   return (<Repository>this).collection.model.sequelize.transaction();
@@ -222,8 +233,7 @@ interface FirstOrCreateOptions extends Transactionable {
 }
 
 export class Repository<TModelAttributes extends {} = any, TCreationAttributes extends {} = TModelAttributes>
-  implements IRepository
-{
+  implements IRepository {
   database: Database;
   collection: Collection;
   model: ModelStatic<Model>;
@@ -242,7 +252,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       const chunks = key.split('.');
       return chunks
         .filter((chunk) => {
-          return !Boolean(chunk.match(/\d+/));
+          return !chunk.match(/\d+/);
         })
         .join('.');
     };
@@ -547,8 +557,9 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
     const instance = await this.model.create<any>(values, {
       ...options,
+      withAssociations: true,
       transaction,
-    });
+    } as any);
 
     if (!instance) {
       return;
@@ -792,7 +803,32 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       });
     }
   }
+  async max(options: MaxOptions): Promise<number | undefined> {
+    const transaction = await this.getTransaction(options);
 
+    const queryOptions = this.buildQueryOptions({
+      ...options,
+      fields: [],
+    });
+
+    const { field } = options;
+
+    const results = await this.model.findAll({
+      ...queryOptions,
+      attributes: [
+        [
+          Sequelize.literal(
+            `MAX(${this.database.sequelize.getQueryInterface().quoteIdentifiers(`${this.collection.name}.${field}`)})`,
+          ),
+          'max',
+        ],
+      ],
+      raw: true,
+      transaction,
+    });
+
+    return results[0]['max'];
+  }
   /**
    * @param association target association
    */

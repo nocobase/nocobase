@@ -1,13 +1,12 @@
-import { Op, Model } from 'sequelize';
-
 import { Context } from '..';
-import { Collection, TargetKey, Repository, SortField } from '@nocobase/database';
+import { Collection, TargetKey, Repository, SortField, Model } from '@nocobase/database';
 import { getRepositoryFromParams } from '../utils';
+import lodash from 'lodash';
 
 export async function move(ctx: Context, next) {
   const repository = getRepositoryFromParams(ctx);
 
-  const { sourceId, targetId, sortField, targetScope, sticky, method } = ctx.action.params;
+  const { sourceId, targetId, sortField, targetScope, sticky, method } = ctx.action.params.values || ctx.action.params;
 
   if (repository instanceof Repository) {
     const sortAbleCollection = new SortAbleCollection(repository.collection, sortField);
@@ -19,7 +18,7 @@ export async function move(ctx: Context, next) {
     }
 
     // change scope
-    if (sourceId && targetScope) {
+    if (sourceId && targetScope !== undefined) {
       await sortAbleCollection.changeScope(sourceId, targetScope, method);
     }
 
@@ -56,15 +55,38 @@ export class SortAbleCollection {
     this.scopeKey = this.field.get('scopeKey');
   }
 
+  private async getInstanceScopeValue(instance) {
+    const isAssociatedScope = this.scopeKey.includes('.');
+
+    if (isAssociatedScope) {
+      try {
+        return await instance.lazyLoadGet(this.scopeKey);
+      } catch (e) {
+        if (e.message.includes('not found')) {
+          return null;
+        }
+      }
+    }
+
+    return instance.get(this.scopeKey);
+  }
+
   // insert source position to target position
   async move(sourceInstanceId: TargetKey, targetInstanceId: TargetKey, options: MoveOptions = {}) {
     const sourceInstance = await this.collection.repository.findById(sourceInstanceId);
     const targetInstance = await this.collection.repository.findById(targetInstanceId);
 
-    if (this.scopeKey && sourceInstance.get(this.scopeKey) !== targetInstance.get(this.scopeKey)) {
-      await sourceInstance.update({
-        [this.scopeKey]: targetInstance.get(this.scopeKey),
-      });
+    if (this.scopeKey) {
+      const currentScopeValue = await this.getInstanceScopeValue(sourceInstance);
+      const newScopeValue = await this.getInstanceScopeValue(targetInstance);
+
+      if (currentScopeValue !== newScopeValue) {
+        await this.changeScope(sourceInstanceId, {
+          [this.scopeKey]: newScopeValue,
+        });
+
+        await sourceInstance.reload();
+      }
     }
 
     await this.sameScopeMove(sourceInstance, targetInstance, options);
@@ -72,20 +94,33 @@ export class SortAbleCollection {
 
   async changeScope(sourceInstanceId: TargetKey, targetScope: any, method?: string) {
     const sourceInstance = await this.collection.repository.findById(sourceInstanceId);
-    const targetScopeValue = targetScope[this.scopeKey];
+    const targetScopeValue = lodash.isPlainObject(targetScope) ? targetScope[this.scopeKey] : targetScope;
 
-    if (targetScopeValue && sourceInstance.get(this.scopeKey) !== targetScopeValue) {
-      await sourceInstance.update(
-        {
-          [this.scopeKey]: targetScopeValue,
-        },
-        {
-          silent: false,
-        },
-      );
+    const isAssociatedScope = this.scopeKey.includes('.');
+
+    const currentScopeValue = await this.getInstanceScopeValue(sourceInstance);
+
+    if (currentScopeValue !== targetScopeValue) {
+      if (isAssociatedScope) {
+        console.log(`update associated scope from ${currentScopeValue} to ${targetScopeValue}`);
+        await sourceInstance.lazyLoadSet(this.scopeKey, targetScopeValue);
+      } else {
+        await sourceInstance.update(
+          {
+            [this.scopeKey]: targetScopeValue,
+          },
+          {
+            hooks: false,
+          },
+        );
+      }
 
       if (method === 'prepend') {
         await this.sticky(sourceInstanceId);
+      } else {
+        // reset sort
+        console.log('reset sort', this.collection.name, sourceInstance.get('id'));
+        await this.collection.context.database.emitAsync(`${this.collection.name}.afterChangeScope`, sourceInstance);
       }
     }
   }
@@ -112,45 +147,55 @@ export class SortAbleCollection {
       targetSort = targetSort + 1;
     }
 
-    const scopeValue = this.scopeKey ? sourceInstance.get(this.scopeKey) : null;
+    const scopeValue = this.scopeKey ? await this.getInstanceScopeValue(sourceInstance) : null;
+
     let updateCondition;
     let change;
 
     if (targetSort > sourceSort) {
       updateCondition = {
-        [Op.gt]: sourceSort,
-        [Op.lte]: targetSort,
+        $gt: sourceSort,
+        $lte: targetSort,
       };
       change = -1;
     } else {
       updateCondition = {
-        [Op.lt]: sourceSort,
-        [Op.gte]: targetSort,
+        $lt: sourceSort,
+        $gte: targetSort,
       };
       change = 1;
     }
 
-    const where = {
+    const filter = {
       [fieldName]: updateCondition,
     };
 
     if (scopeValue) {
-      where[this.scopeKey] = {
-        [Op.eq]: scopeValue,
-      };
+      filter[this.scopeKey] = scopeValue;
     }
 
-    await this.collection.model.increment(fieldName, {
-      where,
-      by: change,
-      silent: true,
+    const instanceIdToUpdate = await this.collection.repository.find({
+      filter,
     });
+
+    for (const instance of instanceIdToUpdate) {
+      await instance.update(
+        {
+          [fieldName]: instance.get(fieldName) + change,
+        },
+        {
+          silent: true,
+          hooks: false,
+        },
+      );
+    }
 
     await sourceInstance.update(
       {
         [fieldName]: targetSort,
       },
       {
+        hooks: false,
         silent: true,
       },
     );

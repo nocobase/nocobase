@@ -1,5 +1,5 @@
 import lodash from 'lodash';
-import { Model as SequelizeModel, ModelStatic } from 'sequelize';
+import { Model as SequelizeModel, ModelStatic, Transactionable } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
 import { Field } from './fields';
@@ -21,8 +21,7 @@ interface JSONTransformerOptions {
 
 export class Model<TModelAttributes extends {} = any, TCreationAttributes extends {} = TModelAttributes>
   extends SequelizeModel<TModelAttributes, TCreationAttributes>
-  implements IModel
-{
+  implements IModel {
   public static database: Database;
   public static collection: Collection;
 
@@ -120,7 +119,86 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
 
     return traverseJSON(super.toJSON(), opts);
   }
+  public async lazyLoadModel(key, options: Transactionable = {}): Promise<Model> {
+    const { transaction } = options;
 
+    const path = key.split('.');
+    const associations = path.slice(0, -1);
+
+    let target = this;
+
+    for (const associationName of associations) {
+      if (!target) {
+        throw new Error(`Association ${key} not found`);
+      }
+
+      // @ts-ignore
+      const association = target.constructor.associations[associationName];
+
+      if (!association) {
+        throw new Error(`Association ${associationName} not found`);
+      }
+
+      const getAccessor = association.accessors.get;
+      target = await target[getAccessor]({ transaction });
+
+      // treat belongsToMany and hasMany as single association
+      if (Array.isArray(target)) {
+        target = target[0];
+      }
+
+      if (!target) {
+        throw new Error(`Association ${key} not found`);
+      }
+    }
+
+    return target;
+  }
+
+  public async lazyLoadSet(key, value, options: Transactionable = {}) {
+    const { transaction } = options;
+    const firstAssociationKey = key.split('.').shift();
+    // @ts-ignore
+    const firstAssociation = this.constructor.associations[firstAssociationKey];
+
+    if (firstAssociation.associationType == 'BelongsTo' || firstAssociation.associationType == 'BelongsToMany') {
+      if (value == null) {
+        // 解除关联
+        const setAccessors = firstAssociation['accessors']['set'];
+        await this[setAccessors](null, { transaction });
+      } else {
+        // @ts-ignore
+        const collection = this.constructor.database.modelCollection.get(firstAssociation.target);
+        const targetInstance = await collection.repository.findOne({
+          filter: {
+            [key.split('.').slice(1).join('.')]: value,
+          },
+          transaction,
+        });
+
+        const setAccessors = firstAssociation['accessors']['set'];
+        await this[setAccessors](targetInstance, { transaction });
+      }
+    } else {
+      try {
+        const model = await this.lazyLoadModel(key, options);
+        await model.update({ [key.split('.').pop()]: value }, { transaction });
+      } catch (e) {
+        if (e.message.includes('not found')) {
+          const createAccessor = firstAssociation['accessors']['create'];
+          await this[createAccessor]({ [key.split('.').pop()]: value }, { transaction });
+        } else {
+          throw e;
+        }
+      }
+    }
+  }
+
+  public async lazyLoadGet(key: string, options: Transactionable = {}) {
+    const targetModel = await this.lazyLoadModel(key, options);
+
+    return targetModel.get(key.split('.').pop());
+  }
   private hiddenObjKey(obj, options: JSONTransformerOptions) {
     const hiddenFields = Array.from(options.collection.fields.values())
       .filter((field) => field.options.hidden)
