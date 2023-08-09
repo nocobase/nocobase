@@ -12,9 +12,9 @@ export const ChildDynamicComponent = observer(
     const fieldSchema = useFieldSchema();
     const formVariable = useFormVariable({ collectionName: rootCollection, form });
     const iterationVariable = useIterationVariable({
-      currentCollection: collectionField.collectionName,
-      rootCollection,
+      currentCollection: collectionField?.collectionName,
       form,
+      schema: collectionField?.uiSchema,
     });
 
     const compile = useCompile();
