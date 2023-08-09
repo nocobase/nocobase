@@ -91,6 +91,13 @@ interface StartOptions {
   checkInstall?: boolean;
 }
 
+type MaintainingStatus = 'COMMAND_BEGIN' | 'COMMAND_END' | 'COMMAND_RUNNING' | 'COMMAND_ERROR';
+
+type MaintainingCommandStatus = {
+  command: string;
+  status: MaintainingStatus;
+  error?: Error;
+};
 export class Application<StateT = DefaultState, ContextT = DefaultContext> extends Koa implements AsyncEmitter {
   public listenServer: Server;
   declare middleware: any;
@@ -108,6 +115,27 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   public activatedCommand = null;
   private _authenticated = false;
   public running = false;
+
+  private _maintaining = false;
+
+  private _maintainingCommandStatus: MaintainingCommandStatus;
+
+  getMaintaining() {
+    return this._maintaining;
+  }
+
+  setMaintaining(_maintainingCommandStatus: MaintainingCommandStatus) {
+    this._maintainingCommandStatus = _maintainingCommandStatus;
+
+    this.emit('maintaining', _maintainingCommandStatus);
+
+    if (_maintainingCommandStatus.status == 'COMMAND_END') {
+      this._maintaining = false;
+      return;
+    }
+
+    this._maintaining = true;
+  }
 
   constructor(public options: ApplicationOptions) {
     super();
@@ -380,38 +408,41 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   async runAsCLI(argv = process.argv, options?: ParseOptions) {
     if (this.activatedCommand) {
-      this.emit('maintaining', { code: 'COMMAND_RUNNING', command: this.activatedCommand });
-      // 提示某命令正在运行
       return;
     }
 
     try {
       const command = await this.cli
         .hook('preAction', async (thisCommand, actionCommand) => {
-          // 开始执行某命名
           this.activatedCommand = {
-            name: actionCommand.name(), // 还需要把 parent 加上
-            args: actionCommand.args,
+            name: actionCommand.name(),
           };
-          this.emit('maintaining', { code: 'COMMAND_BEGIN', command: this.activatedCommand });
+
+          this.setMaintaining({
+            status: 'COMMAND_BEGIN',
+            command: this.activatedCommand,
+          });
+
           await this.authenticate();
           await this.load();
         })
         .parseAsync(argv, options);
+
+      this.setMaintaining({
+        status: 'COMMAND_END',
+        command: this.activatedCommand,
+      });
+
       return command;
     } catch (error) {
-      // 某命名执行异常
-      this.emit('maintaining', {
-        code: 'COMMAND_ERROR',
+      this.setMaintaining({
+        status: 'COMMAND_ERROR',
         command: this.activatedCommand,
-        message: error.message,
+        error,
       });
-      console.error(error);
+    } finally {
+      this.activatedCommand = null;
     }
-
-    // 命令执行结束
-    this.emit('maintaining', { code: 'COMMAND_END', command: this.activatedCommand });
-    this.activatedCommand = null;
   }
 
   async _start(options: StartOptions = {}) {

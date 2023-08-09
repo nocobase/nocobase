@@ -100,27 +100,32 @@ export class Gateway extends EventEmitter {
 
   async requestHandler(req: IncomingMessage, res: ServerResponse) {
     const handleApp = await this.getRequestHandleAppName(req as IncomingRequest);
-    const app: Application = await AppSupervisor.getInstance().getApp(handleApp);
 
-    if (!app) {
+    const hasApp = AppSupervisor.getInstance().hasApp(handleApp);
+
+    if (!hasApp) {
+      AppSupervisor.getInstance().bootStrapApp(handleApp);
+    }
+
+    const appStatus = AppSupervisor.getInstance().getAppStatus(handleApp, 'initializing');
+
+    if (appStatus === null) {
       this.responseErrorWithCode('APP_NOT_FOUND', res, handleApp);
       return;
     }
 
-    const appInterpreter = app.getFsmInterpreter();
-
-    // if app is not ready, return 503
-    if (!appInterpreter.state.matches('running')) {
-      if (appInterpreter.state.matches('error')) {
-        this.responseErrorWithCode('APP_ERROR', res, app);
-      } else {
-        this.responseErrorWithCode(`APP_${app.getFsmState()}`, res, app);
-      }
-
+    if (appStatus === 'initializing') {
+      this.responseErrorWithCode('APP_INITIALIZING', res, handleApp);
       return;
     }
 
-    // if request health check, return 200
+    const app = await AppSupervisor.getInstance().getApp(handleApp);
+
+    if (appStatus !== 'running') {
+      this.responseErrorWithCode(`APP_${appStatus}`, res, app);
+      return;
+    }
+
     if (req.url.endsWith('/__health_check')) {
       res.statusCode = 200;
       res.end('ok');

@@ -18,18 +18,32 @@ describe('gateway', () => {
   });
 
   describe('http api', () => {
-    it('should return error when app not found', (done) => {
-      supertest
-        .agent(gateway.getCallback())
-        .get('/api/app:getInfo')
-        .expect(404)
-        .expect((res) => {
-          const data = res.body;
-          expect(data).toMatchObject({
-            error: { code: 'APP_NOT_FOUND', message: `application main not found`, status: 404, maintaining: false },
-          });
-        })
-        .end(done);
+    it('should return error when app not found', async () => {
+      const res = await supertest.agent(gateway.getCallback()).get('/api/app:getInfo');
+      expect(res.status).toBe(503);
+      const data = res.body;
+
+      expect(data).toMatchObject({
+        error: {
+          code: 'APP_INITIALIZING',
+          message: `application main is initializing`,
+          status: 503,
+          maintaining: true,
+        },
+      });
+
+      const res2 = await supertest.agent(gateway.getCallback()).get('/api/app:getInfo');
+      expect(res2.status).toBe(404);
+      const data2 = res2.body;
+
+      expect(data2).toMatchObject({
+        error: {
+          code: 'APP_NOT_FOUND',
+          message: `application main not found`,
+          status: 404,
+          maintaining: true,
+        },
+      });
     });
 
     it('should match error structure', async () => {
@@ -46,8 +60,8 @@ describe('gateway', () => {
 
       expect(data).toMatchObject({
         error: {
-          code: 'APP_IDLE',
-          message: errors.APP_IDLE.message(main),
+          code: 'APP_INITIALIZED',
+          message: errors.APP_INITIALIZED.message(main),
           status: 503,
           maintaining: true,
         },

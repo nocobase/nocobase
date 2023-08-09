@@ -11,7 +11,7 @@ type BootOptions = {
 
 type AppBootstrapper = (bootOptions: BootOptions) => Promise<void>;
 
-type AppStatus = string;
+type AppStatus = 'initializing' | 'initialized' | 'running' | null;
 
 export function supervisedAppCall(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
   const originalMethod = descriptor.value;
@@ -110,14 +110,16 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
   async bootStrapApp(appName: string, options = {}) {
     await this.appBootMutex.runExclusive(async () => {
-      if (!this.hasApp(appName) && this.appBootstrapper) {
+      if (!this.hasApp(appName)) {
         this.setAppStatus(appName, 'initializing');
 
-        await this.appBootstrapper({
-          appSupervisor: this,
-          appName,
-          options,
-        });
+        if (this.appBootstrapper) {
+          await this.appBootstrapper({
+            appSupervisor: this,
+            appName,
+            options,
+          });
+        }
 
         if (!this.hasApp(appName)) {
           this.setAppStatus(appName, null);
@@ -146,8 +148,14 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     this.appBootstrapper = appBootstrapper;
   }
 
-  getAppStatus(appName: string): AppStatus | null {
-    return this.appStatus[appName] || null;
+  getAppStatus(appName: string, defaultStatus?: AppStatus): AppStatus | null {
+    const status = this.appStatus[appName];
+
+    if (status === undefined && defaultStatus !== undefined) {
+      return defaultStatus;
+    }
+
+    return status;
   }
 
   async restartApp(name: string) {
@@ -194,6 +202,10 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
     this.emit('afterAppAdded', app);
 
+    if (!this.getAppStatus(app.name)) {
+      this.setAppStatus(app.name, 'initialized');
+    }
+
     return app;
   }
 
@@ -212,6 +224,8 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
     // call app.destroy
     await this.apps[appName].destroy();
+    delete this.apps[appName];
+    delete this.appStatus[appName];
   }
 
   subApps() {

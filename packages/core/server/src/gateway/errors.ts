@@ -5,7 +5,7 @@ export const errors = {
   APP_NOT_FOUND: {
     status: 404,
     message: (appName: string) => `application ${appName} not found`,
-    maintaining: false,
+    maintaining: true,
   },
 
   APP_INSTALLING: {
@@ -50,9 +50,15 @@ export const errors = {
     maintaining: false,
   },
 
-  APP_IDLE: {
+  APP_INITIALIZED: {
     status: 503,
-    message: (app: Application) => app.workingMessage || 'application is idle, waiting for command',
+    message: (app: Application) => app.workingMessage || 'application is initialized, waiting for command',
+    maintaining: true,
+  },
+
+  APP_INITIALIZING: {
+    status: 503,
+    message: (appName) => `application ${appName} is initializing`,
     maintaining: true,
   },
 
