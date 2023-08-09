@@ -85,12 +85,14 @@ export const errors: AppErrors = {
     status: 503,
     maintaining: true,
     message: (app: Application) => `${app.getMaintaining().command.name} running end`,
+    command: (app: Application) => app.getMaintaining().command,
   },
 
   COMMAND_RUNNING: {
     status: 503,
     maintaining: true,
     message: (app: Application) => app.workingMessage,
+    command: (app: Application) => app.getMaintaining().command,
   },
 
   UNKNOWN_ERROR: {

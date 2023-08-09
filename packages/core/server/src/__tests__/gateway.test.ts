@@ -123,6 +123,9 @@ describe('gateway', () => {
           maintaining: true,
           message: 'call beforeInstall hook...',
           code: 'COMMAND_RUNNING',
+          command: {
+            name: 'install',
+          },
         },
       });
     });
