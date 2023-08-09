@@ -37,6 +37,7 @@ import { UpdateGuard } from './update-guard';
 
 const debug = require('debug')('noco-database');
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface IRepository {}
 
 interface CreateManyOptions extends BulkCreateOptions {
@@ -222,8 +223,7 @@ interface FirstOrCreateOptions extends Transactionable {
 }
 
 export class Repository<TModelAttributes extends {} = any, TCreationAttributes extends {} = TModelAttributes>
-  implements IRepository
-{
+  implements IRepository {
   database: Database;
   collection: Collection;
   model: ModelStatic<Model>;
@@ -242,7 +242,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       const chunks = key.split('.');
       return chunks
         .filter((chunk) => {
-          return !Boolean(chunk.match(/\d+/));
+          return !chunk.match(/\d+/);
         })
         .join('.');
     };
