@@ -191,7 +191,8 @@ export const BlockRequestProvider = (props) => {
       value={{
         allowedActions,
         block: props.block,
-        ...props,
+        props,
+        params: props.params,
         field,
         service,
         resource,
