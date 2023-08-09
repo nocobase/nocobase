@@ -7,7 +7,7 @@ export interface PluginData {
   clientUrl?: string;
   zipUrl?: string;
   enabled?: boolean;
-  type?: 'upload' | 'npm' | 'local';
+  type?: 'url' | 'npm';
   isOfficial?: boolean;
   installed?: boolean;
   builtIn?: boolean;

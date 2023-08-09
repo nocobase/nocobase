@@ -353,7 +353,7 @@ export async function checkPluginPackage(plugin: PluginData) {
         },
         true,
       );
-    } else if (plugin.type === 'upload') {
+    } else if (plugin.type === 'url') {
       return addOrUpdatePluginByZip(plugin);
     }
   }

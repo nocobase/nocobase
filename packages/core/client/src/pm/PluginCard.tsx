@@ -123,7 +123,7 @@ function PluginBaseInfo(props: IPluginBaseInfo) {
                   {t('Upgrade plugin')}
                 </Button>
               )}
-              {props.type === 'upload' && (
+              {props.type === 'url' && (
                 <Button ghost type="primary">
                   {t('Upload new version')}
                 </Button>

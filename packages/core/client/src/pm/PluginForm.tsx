@@ -100,7 +100,6 @@ const zipUrlSchema: ISchema = {
       properties: {
         zipUrl: {
           type: 'string',
-          title: "{{t('zip url')}}",
           'x-decorator': 'FormItem',
           'x-component': 'Input',
           required: true,
@@ -175,7 +174,7 @@ export const PluginForm: FC<IPluginFormProps> = ({ onClose, isShow }) => {
       <Radio.Group style={{ margin: theme.margin }} defaultValue={type} onChange={(e) => setType(e.target.value)}>
         <Radio value="npm">{t('Npm package')}</Radio>
         <Radio value="upload">{t('Upload plugin')}</Radio>
-        <Radio value="url">{t('Plugin zip url')}</Radio>
+        <Radio value="url">{t('Compressed file link')}</Radio>
       </Radio.Group>
 
       <SchemaComponent scope={{ useCancel, useSaveValues }} schema={schema[type]} />

@@ -12,7 +12,7 @@ export interface IPluginData {
   newVersion?: boolean;
   options: Record<string, unknown>;
   description?: string;
-  type: 'npm' | 'upload';
+  type: 'npm' | 'url';
   isCompatible?: boolean;
   readmeUrl: string;
   changelogUrl: string;
