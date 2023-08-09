@@ -2,7 +2,6 @@ import { ISchema, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Spin } from 'antd';
 import { cloneDeep } from 'lodash';
-import collections from 'packages/plugins/multi-app-share-collection/src/server/collections/collections';
 import React, { createContext, ReactNode, useContext, useMemo } from 'react';
 import { useAPIClient, useRequest } from '../api-client';
 import { Plugin } from '../application/Plugin';
