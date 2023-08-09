@@ -22,7 +22,7 @@ const InternalKanbanV2BlockProvider = (props) => {
       }),
     [],
   );
-  const { resource, service } = useBlockRequestContext();
+  const { resource, service, params } = useBlockRequestContext();
   if (service.loading && !field.loaded) {
     return <Spin />;
   }
@@ -31,6 +31,7 @@ const InternalKanbanV2BlockProvider = (props) => {
     <KanbanV2BlockContext.Provider
       value={{
         ...props,
+        params,
         action,
         form,
         field,
@@ -87,36 +88,6 @@ const recursiveProperties = (schema: Schema, component = 'CollectionField', asso
     }
   });
 };
-const useAssociationNames = (collection) => {
-  const { getCollectionFields } = useCollectionManager();
-  const collectionFields = getCollectionFields(collection);
-  const associationFields = new Set();
-  for (const collectionField of collectionFields) {
-    if (collectionField.target) {
-      associationFields.add(collectionField.name);
-      const fields = getCollectionFields(collectionField.target);
-      for (const field of fields) {
-        if (field.target) {
-          associationFields.add(`${collectionField.name}.${field.name}`);
-        }
-      }
-    }
-  }
-  const fieldSchema = useFieldSchema();
-  const kanbanSchema = fieldSchema.reduceProperties((buf, schema) => {
-    if (schema['x-component'].startsWith('KanbanV2')) {
-      return schema;
-    }
-    return buf;
-  }, new Schema({}));
-  const gridSchema: any = kanbanSchema?.properties?.grid;
-  const appends = [];
-  if (gridSchema) {
-    recursiveProperties(gridSchema, 'CollectionField', associationFields, appends);
-  }
-
-  return uniq(appends);
-};
 
 const useGroupField = (props) => {
   const { getCollectionFields } = useCollectionManager();
@@ -126,9 +97,8 @@ const useGroupField = (props) => {
 };
 
 export const KanbanV2BlockProvider = (props) => {
-  const { columns, collection } = props;
+  const { columns } = props;
   const params = { ...props.params };
-  const appends = useAssociationNames(collection);
   const groupField: any = useGroupField(props);
   const [kanbanColumns, setKanbanColumns] = useState(columns);
   const [targetColumn, setTargetColumn] = useState(null);
@@ -145,9 +115,6 @@ export const KanbanV2BlockProvider = (props) => {
   }, []);
   if (!groupField) {
     return null;
-  }
-  if (!Object.keys(params).includes('appends')) {
-    params['appends'] = appends;
   }
 
   params['filter'] = props.params.filter;
