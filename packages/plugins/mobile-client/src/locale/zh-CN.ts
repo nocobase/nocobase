@@ -28,6 +28,7 @@ const locale = {
   'Delete menu block': '删除菜单区块',
   'Mobile client access address': '移动端访问地址',
   'The full address is': '完整的地址是',
+  'Open in new tab': '在新标签页打开',
 };
 
 export default locale;

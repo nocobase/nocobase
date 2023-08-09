@@ -909,7 +909,20 @@ SchemaSettings.ModalItem = function ModalItem(props) {
               <CollectionManagerContext.Provider value={cm}>
                 <CollectionProvider collection={collection}>
                   <SchemaComponentOptions scope={options.scope} components={options.components}>
-                    <FormLayout layout={'vertical'} style={{ minWidth: 520 }}>
+                    <FormLayout
+                      layout={'vertical'}
+                      className={css`
+                        // screen > 576px
+                        @media (min-width: 576px) {
+                          min-width: 520px;
+                        }
+
+                        // screen <= 576px
+                        @media (max-width: 576px) {
+                          min-width: 320px;
+                        }
+                      `}
+                    >
                       <APIClientProvider apiClient={apiClient}>
                         <SchemaComponent components={components} scope={scope} schema={schema} />
                       </APIClientProvider>
