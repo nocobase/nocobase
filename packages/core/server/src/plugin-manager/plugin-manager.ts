@@ -370,16 +370,35 @@ export class PluginManager {
       if (!plugin.enabled) {
         continue;
       }
-      await plugin.beforeLoad();
+      try {
+        await plugin.beforeLoad();
+      } catch (e) {
+        await this.handleError(name, plugin.options.builtIn, e);
+      }
     }
 
     for (const [name, plugin] of this.plugins) {
       if (!plugin.enabled) {
         continue;
       }
-      await this.app.emitAsync('beforeLoadPlugin', plugin, options);
-      await plugin.load();
-      await this.app.emitAsync('afterLoadPlugin', plugin, options);
+      try {
+        await this.app.emitAsync('beforeLoadPlugin', plugin, options);
+        await plugin.load();
+        await this.app.emitAsync('afterLoadPlugin', plugin, options);
+      } catch (e) {
+        await this.handleError(name, plugin.options.builtIn, e);
+      }
+    }
+  }
+
+  async handleError(name: string, builtIn: boolean, error: Error) {
+    if (!builtIn) {
+      console.error(
+        `plugin [${name}] load error, will disable it. error message: ${error.message}, stack: ${error.stack}`,
+      );
+      await this.disable(name);
+    } else {
+      throw error;
     }
   }
 
