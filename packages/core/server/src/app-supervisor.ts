@@ -269,12 +269,11 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
     app.on('maintaining', (maintainingStatus) => {
       const { status } = maintainingStatus;
+      this.setAppStatus(app.name, status);
 
       if (status === 'command_error') {
         this.setAppError(app.name, maintainingStatus.error);
       }
-
-      this.setAppStatus(app.name, status);
 
       if (status === 'command_end' && maintainingStatus.command.name == 'start') {
         this.setAppStatus(app.name, 'running');
