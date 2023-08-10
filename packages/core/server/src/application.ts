@@ -126,6 +126,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   protected _loaded: boolean;
+  protected _started: boolean;
 
   get loaded() {
     return this._loaded;
@@ -367,6 +368,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       return;
     }
 
+    const lastMaintainingStatus = this._maintainingCommandStatus;
+
     try {
       const command = await this.cli
         .hook('preAction', async (thisCommand, actionCommand) => {
@@ -381,6 +384,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
           await this.authenticate();
           await this.load();
+        })
+        .hook('postAction', async () => {
+          if (lastMaintainingStatus.error) {
+            await this.restart();
+          }
         })
         .parseAsync(argv, options);
 
@@ -403,7 +411,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async start(options: StartOptions = {}) {
-    await this.load();
+    if (this._started) {
+      return;
+    }
+    this._started = true;
     if (options.checkInstall && !(await this.isInstalled())) {
       throw new ApplicationNotInstall(
         `Application ${this.name} is not installed, Please run 'yarn run nocobase install' command first`,
@@ -422,6 +433,15 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.stopped = false;
     this.setWorkingMessage('started');
     this.setReadyStatus(true, 'started');
+  }
+
+  async restart(options: StartOptions = {}) {
+    if (!this._started) {
+      return;
+    }
+    this._started = false;
+    await this.reload(options);
+    await this.start(options);
   }
 
   setReadyStatus(status: boolean, reason: string) {
