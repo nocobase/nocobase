@@ -49,9 +49,10 @@ export class WSServer {
         withOutBootStrap: true,
       });
 
+      const payload = getPayloadByErrorCode(AppSupervisor.getInstance().getAppStatus(appName), app, message);
       this.sendToConnectionsByTag('app', appName, {
         type: 'maintaining',
-        payload: getPayloadByErrorCode(AppSupervisor.getInstance().getAppStatus(appName), app),
+        payload,
       });
     });
 

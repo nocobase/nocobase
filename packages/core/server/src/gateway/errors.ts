@@ -91,7 +91,7 @@ export const errors: AppErrors = {
   COMMAND_RUNNING: {
     status: 503,
     maintaining: true,
-    message: (app: Application) => app.workingMessage,
+    message: (app: Application, message) => message || app.workingMessage,
     command: (app: Application) => app.getMaintaining().command,
   },
 
