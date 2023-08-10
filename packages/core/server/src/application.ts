@@ -419,7 +419,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     if (this._started) {
       return;
     }
+
     this._started = true;
+
     if (options.checkInstall && !(await this.isInstalled())) {
       throw new ApplicationNotInstall(
         `Application ${this.name} is not installed, Please run 'yarn run nocobase install' command first`,
@@ -481,6 +483,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.stopped = true;
     this.log.info(`${this.name} is stopped`);
     this.setWorkingMessage('stopped');
+    this._started = false;
   }
 
   async destroy(options: any = {}) {
