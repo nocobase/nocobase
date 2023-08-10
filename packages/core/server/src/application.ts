@@ -439,7 +439,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.emitAsync('afterStart', this, options);
     this.stopped = false;
     this.setWorkingMessage('started');
-    this.setReadyStatus(true, 'started');
   }
 
   async restart(options: StartOptions = {}) {
@@ -449,13 +448,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._started = false;
     await this.reload(options);
     await this.start(options);
-  }
-
-  setReadyStatus(status: boolean, reason: string) {
-    this.ready = status;
-
-    this.logger.debug(`set ready status to ${status} because ${reason}`);
-    this.emit('readyStatusChanged', this.ready);
   }
 
   async stop(options: any = {}) {

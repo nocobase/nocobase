@@ -31,7 +31,7 @@ export class WSServer {
     this.wss = new WebSocket.Server({ noServer: true });
 
     this.wss.on('connection', (ws: WebSocketWithId, request: IncomingMessage) => {
-      this.addNewConnection(ws, request);
+      const client = this.addNewConnection(ws, request);
 
       console.log(`new client connected ${ws.id}`);
 
@@ -41,6 +41,19 @@ export class WSServer {
 
       ws.on('close', () => {
         this.removeConnection(ws.id);
+      });
+    });
+
+    Gateway.getInstance().on('appSelectorChanged', () => {
+      // reset connection app tags
+      this.loopThroughConnections(async (client) => {
+        const handleAppName = await Gateway.getInstance().getRequestHandleAppName({
+          url: client.url,
+          headers: client.headers,
+        });
+
+        client.tags = client.tags.filter((tag) => !tag.startsWith('app#'));
+        client.tags.push(`app#${handleAppName}`);
       });
     });
 
@@ -81,6 +94,8 @@ export class WSServer {
     });
 
     this.setClientApp(this.webSocketClients.get(id));
+
+    return this.webSocketClients.get(id);
   }
 
   async setClientApp(client: WebSocketClient) {
@@ -92,6 +107,7 @@ export class WSServer {
     const handleAppName = await Gateway.getInstance().getRequestHandleAppName(req);
 
     client.app = handleAppName;
+    console.log(`client tags: app#${handleAppName}`);
     client.tags.push(`app#${handleAppName}`);
 
     const hasApp = AppSupervisor.getInstance().hasApp(handleAppName);
