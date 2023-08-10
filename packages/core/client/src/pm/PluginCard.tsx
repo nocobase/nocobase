@@ -68,6 +68,8 @@ function PluginInfo(props: IPluginInfo) {
           bordered={false}
           style={{ width: 380 }}
           headStyle={{ border: 'none' }}
+          bodyStyle={{ paddingTop: 5 }}
+          title={displayName || name || packageName}
           hoverable
           actions={[
             <div key="setting" className={classnames({ [styles.cardActionDisabled]: !enabled })}>
@@ -105,11 +107,11 @@ function PluginInfo(props: IPluginInfo) {
               onChange={async (checked, e) => {
                 e.stopPropagation();
                 if (!isCompatible && checked) {
-                  message.error(t("Dependencies check failed, please check plugin's dependencies."));
+                  message.error(t("Dependencies check failed, can't enable."));
                   return;
                 }
                 modal.warning({
-                  title: checked ? t('Plugin starting') : t('Plugin stopping'),
+                  title: checked ? t('Plugin starting...') : t('Plugin stopping...'),
                   content: t('The application is reloading, please do not close the page.'),
                   okButtonProps: {
                     style: {
@@ -133,7 +135,6 @@ function PluginInfo(props: IPluginInfo) {
                 // avatar={<Avatar style={{ background: `${stringToColor(name)}` }}>{name?.[0]}</Avatar>}
                 description={
                   <Space direction="vertical">
-                    <Typography.Title level={4}>{displayName || name || packageName}</Typography.Title>
                     <Typography.Text type="secondary">
                       {t('Version')}: {version}
                     </Typography.Text>
@@ -149,11 +150,7 @@ function PluginInfo(props: IPluginInfo) {
               />
             </Col>
             <Col span={8}>
-              <Space
-                direction="vertical"
-                align="end"
-                style={{ display: 'flex', marginTop: theme.fontSizeHeading4 * theme.lineHeightHeading4 }}
-              >
+              <Space direction="vertical" align="end" style={{ display: 'flex', marginTop: -10 }}>
                 {newVersion && (
                   <Button
                     loading={npmUpgradeLoading}

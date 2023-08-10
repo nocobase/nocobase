@@ -374,8 +374,8 @@ export async function getNewVersion(plugin: PluginData): Promise<string | false>
 
 export interface DepCompatible {
   name: string;
-  isCompatible: boolean;
-  globalVersion: string;
+  result: boolean;
+  versionRange: string;
   packageVersion: string;
 }
 export function getCompatible(packageName: string) {
@@ -394,11 +394,11 @@ export function getCompatible(packageName: string) {
       : undefined;
 
     if (globalPackageName) {
-      const globalVersion = deps[globalPackageName];
+      const versionRange = deps[globalPackageName];
       result.push({
         name: packageName,
-        isCompatible: semver.satisfies(packageVersion, globalVersion, { includePrerelease: true }),
-        globalVersion,
+        result: semver.satisfies(packageVersion, versionRange, { includePrerelease: true }),
+        versionRange,
         packageVersion,
       });
     }
@@ -408,5 +408,5 @@ export function getCompatible(packageName: string) {
 
 export function checkCompatible(packageName: string) {
   const compatible = getCompatible(packageName);
-  return compatible.every((item) => item.isCompatible);
+  return compatible.every((item) => item.result);
 }

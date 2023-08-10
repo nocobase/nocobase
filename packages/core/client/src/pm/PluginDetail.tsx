@@ -7,6 +7,7 @@ import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { useStyles } from './style';
 import { PluginDocument } from './PluginDocument';
+import { useTranslation } from 'react-i18next';
 
 dayjs.extend(relativeTime);
 
@@ -23,8 +24,8 @@ interface PackageJSON {
 
 interface DepCompatible {
   name: string;
-  isCompatible: boolean;
-  globalVersion: string;
+  result: boolean;
+  versionRange: string;
   packageVersion: string;
 }
 
@@ -38,33 +39,35 @@ interface IPluginDetail {
   plugin: IPluginData;
   onCancel: () => void;
 }
-const dependenciesCompatibleTableColumns = [
-  {
-    title: 'Name',
-    dataIndex: 'name',
-    key: 'name',
-  },
-  {
-    title: 'Global Version',
-    dataIndex: 'globalVersion',
-    key: 'globalVersion',
-  },
-  {
-    title: 'Package Version',
-    dataIndex: 'packageVersion',
-    key: 'packageVersion',
-  },
-  {
-    title: 'Is Compatible',
-    dataIndex: 'isCompatible',
-    key: 'isCompatible',
-    render: (isCompatible: boolean) => (
-      <Tag color={isCompatible ? 'success' : 'error'}>{isCompatible ? 'Yes' : 'No'}</Tag>
-    ),
-  },
-];
 
 export const PluginDetail: FC<IPluginDetail> = ({ plugin, onCancel }) => {
+  const { t } = useTranslation();
+  const dependenciesCompatibleTableColumns = useMemo(
+    () => [
+      {
+        title: t('Name'),
+        dataIndex: 'name',
+        key: 'name',
+      },
+      {
+        title: t('Version range'),
+        dataIndex: 'versionRange',
+        key: 'versionRange',
+      },
+      {
+        title: t("Plugin's version"),
+        dataIndex: 'packageVersion',
+        key: 'packageVersion',
+      },
+      {
+        title: t('Result'),
+        dataIndex: 'result',
+        key: 'result',
+        render: (result: boolean) => <Tag color={result ? 'success' : 'error'}>{result ? 'Yes' : 'No'}</Tag>,
+      },
+    ],
+    [t],
+  );
   const { data, loading } = useRequest<{ data: IPluginDetailData }>(
     {
       url: `/pm:detail/${plugin.name}`,
@@ -87,16 +90,16 @@ export const PluginDetail: FC<IPluginDetail> = ({ plugin, onCancel }) => {
   const tabItems: TabsProps['items'] = [
     {
       key: 'readme',
-      label: 'Readme',
+      label: t('Readme'),
       children: (
         <Row gutter={20}>
-          <Col span={16}>{plugin?.readmeUrl ? <PluginDocument url={plugin?.readmeUrl} /> : 'NO README.md FILE'}</Col>
+          <Col span={16}>{plugin?.readmeUrl ? <PluginDocument url={plugin?.readmeUrl} /> : t('No README.md file')}</Col>
           <Col span={8}>
             <Row>
               {plugin.name && (
                 <Col span={12}>
                   <div className={styles.PluginDetailBaseInfo}>
-                    <Typography.Text type="secondary">name</Typography.Text>
+                    <Typography.Text type="secondary">{t('Name')}</Typography.Text>
                     <Typography.Text strong>{plugin.name}</Typography.Text>
                   </div>
                 </Col>
@@ -104,21 +107,21 @@ export const PluginDetail: FC<IPluginDetail> = ({ plugin, onCancel }) => {
               {plugin.displayName && (
                 <Col span={12}>
                   <div className={styles.PluginDetailBaseInfo}>
-                    <Typography.Text type="secondary">displayName</Typography.Text>
+                    <Typography.Text type="secondary">{t('DisplayName')}</Typography.Text>
                     <Typography.Text strong>{plugin.displayName}</Typography.Text>
                   </div>
                 </Col>
               )}
               <Col span={24}>
                 <div className={styles.PluginDetailBaseInfo}>
-                  <Typography.Text type="secondary">packageName</Typography.Text>
+                  <Typography.Text type="secondary">{t('PackageName')}</Typography.Text>
                   <Typography.Text strong>{plugin.packageName}</Typography.Text>
                 </div>
               </Col>
               {repository && (
                 <Col span={24}>
                   <div className={styles.PluginDetailBaseInfo}>
-                    <Typography.Text type="secondary">Repository</Typography.Text>
+                    <Typography.Text type="secondary">{t('Repository')}</Typography.Text>
                     <Typography.Text strong>{repository}</Typography.Text>
                   </div>
                 </Col>
@@ -126,7 +129,7 @@ export const PluginDetail: FC<IPluginDetail> = ({ plugin, onCancel }) => {
               {data?.data?.packageJson.homepage && (
                 <Col span={24}>
                   <div className={styles.PluginDetailBaseInfo}>
-                    <Typography.Text type="secondary">Homepage</Typography.Text>
+                    <Typography.Text type="secondary">{t('Homepage')}</Typography.Text>
                     <Typography.Text strong>{data?.data?.packageJson.homepage}</Typography.Text>
                   </div>
                 </Col>
@@ -134,28 +137,28 @@ export const PluginDetail: FC<IPluginDetail> = ({ plugin, onCancel }) => {
               {plugin.description && (
                 <Col span={24}>
                   <div className={styles.PluginDetailBaseInfo}>
-                    <Typography.Text type="secondary">Description</Typography.Text>
-                    <Typography.Text strong>{plugin.description || 'empty'}</Typography.Text>
+                    <Typography.Text type="secondary">{t('Description')}</Typography.Text>
+                    <Typography.Text strong>{plugin.description}</Typography.Text>
                   </div>
                 </Col>
               )}
               {data?.data?.packageJson.license && (
                 <Col span={12}>
                   <div className={styles.PluginDetailBaseInfo}>
-                    <Typography.Text type="secondary">License</Typography.Text>
+                    <Typography.Text type="secondary">{t('License')}</Typography.Text>
                     <Typography.Text strong>{data?.data?.packageJson.license}</Typography.Text>
                   </div>
                 </Col>
               )}
               <Col span={12}>
                 <div className={styles.PluginDetailBaseInfo}>
-                  <Typography.Text type="secondary">Last Updated</Typography.Text>
+                  <Typography.Text type="secondary">{t('Last updated')}</Typography.Text>
                   <Typography.Text strong>{dayjs(data?.data?.lastUpdated).fromNow()}</Typography.Text>
                 </div>
               </Col>
               <Col span={12}>
                 <div className={styles.PluginDetailBaseInfo}>
-                  <Typography.Text type="secondary">Version</Typography.Text>
+                  <Typography.Text type="secondary">{t('Version')}</Typography.Text>
                   <Typography.Text strong>{plugin?.version}</Typography.Text>
                 </div>
               </Col>
@@ -163,7 +166,7 @@ export const PluginDetail: FC<IPluginDetail> = ({ plugin, onCancel }) => {
                 <Col span={12}>
                   (
                   <div className={styles.PluginDetailBaseInfo}>
-                    <Typography.Text type="danger">Latest Version</Typography.Text>
+                    <Typography.Text type="danger">{t('Latest Version')}</Typography.Text>
                     <Typography.Text strong>{plugin?.newVersion}</Typography.Text>
                   </div>
                   )
@@ -176,12 +179,13 @@ export const PluginDetail: FC<IPluginDetail> = ({ plugin, onCancel }) => {
     },
     {
       key: 'dependencies',
-      label: 'Dependencies Compatible',
+      label: t('Dependencies compatibility check'),
       children: (
         <>
           <Alert
-            message="If plugin package is not compatible. You
-                should change the package version to match the global version."
+            message={t(
+              'If the compatibility check fails, you should change the dependent version to meet the version requirements.',
+            )}
           ></Alert>
           <Table
             style={{ marginTop: theme.margin }}
@@ -195,8 +199,8 @@ export const PluginDetail: FC<IPluginDetail> = ({ plugin, onCancel }) => {
     },
     {
       key: 'changelog',
-      label: 'Changelog',
-      children: plugin?.changelogUrl ? <PluginDocument url={plugin?.changelogUrl} /> : '暂无更新日志',
+      label: t('Changelog'),
+      children: plugin?.changelogUrl ? <PluginDocument url={plugin?.changelogUrl} /> : t('No CHANGELOG.md file'),
     },
   ];
 
@@ -210,7 +214,9 @@ export const PluginDetail: FC<IPluginDetail> = ({ plugin, onCancel }) => {
             <Typography.Title level={3}>{plugin.packageName}</Typography.Title>
             <Space split={<span>&nbsp;•&nbsp;</span>}>
               <span>{plugin.version}</span>
-              <span>Last Updated {dayjs(data?.data?.lastUpdated).fromNow()}</span>
+              <span>
+                {t('Last updated')} {dayjs(data?.data?.lastUpdated).fromNow()}
+              </span>
             </Space>
             <Tabs items={tabItems} defaultActiveKey={!plugin.isCompatible ? 'dependencies' : undefined}></Tabs>
           </>

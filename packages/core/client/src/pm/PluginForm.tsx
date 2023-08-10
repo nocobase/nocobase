@@ -61,7 +61,7 @@ const npmSchema: ISchema = {
         },
         authToken: {
           type: 'string',
-          title: "{{t('Npm Registry authToken')}}",
+          title: "{{t('Npm authToken')}}",
           'x-decorator': 'FormItem',
           'x-component': 'Input',
         },
@@ -89,7 +89,7 @@ const uploadSchema: ISchema = {
             multiple: false,
             maxCount: 1,
             height: '150px',
-            tipContent: `{{t('Upload placeholder')}}`,
+            tipContent: `{{t('Drag and drop the file here or click to upload, file size should not exceed 10M')}}`,
           },
         },
         footer,
