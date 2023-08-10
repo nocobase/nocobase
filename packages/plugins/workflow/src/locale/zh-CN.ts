@@ -18,6 +18,8 @@ export default {
   'Delete a main version will cause all other revisions to be deleted too.': '删除主版本将导致其他版本一并被删除。',
   Loading: '加载中',
   'Load failed': '加载失败',
+  'Use transaction': '启用事务',
+  'Auto delete history when execution is on end status': '执行结束后自动删除对应状态的历史记录',
   Trigger: '触发器',
   'Trigger variables': '触发器变量',
   'Trigger data': '触发数据',
