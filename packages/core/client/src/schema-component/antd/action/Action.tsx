@@ -35,11 +35,11 @@ export const Action: ComposedAction = observer(
       className,
       icon,
       title,
+      onClick,
       ...others
-    } = props;
+    } = useProps(props);
     const { wrapSSR, componentCls, hashId } = useStyles();
     const { t } = useTranslation();
-    const { onClick } = useProps(props);
     const [visible, setVisible] = useState(false);
     const [formValueChanged, setFormValueChanged] = useState(false);
     const Designer = useDesigner();
@@ -128,7 +128,7 @@ export const Action: ComposedAction = observer(
       >
         {popover && <RecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
         {!popover && renderButton()}
-        {!popover && <div onClick={(e) => e.stopPropagation()}>{props.children}</div>}
+        {!popover && props.children}
         {element}
       </ActionContextProvider>,
     );

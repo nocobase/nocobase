@@ -121,14 +121,14 @@ export const DialectVersionAccessors = {
       if (v.toLowerCase().includes('mariadb')) {
         return '';
       }
-      const m = /([\d+\.]+)/.exec(v);
+      const m = /([\d+.]+)/.exec(v);
       return m[0];
     },
   },
   postgres: {
     sql: 'select version() as version',
     get: (v: string) => {
-      const m = /([\d+\.]+)/.exec(v);
+      const m = /([\d+.]+)/.exec(v);
       return semver.minVersion(m[0]).version;
     },
   },
@@ -264,17 +264,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
     this.migrations = new Migrations(context);
 
-    this.migrator = new Umzug({
-      logger: migratorOptions.logger || console,
-      migrations: this.migrations.callback(),
-      context,
-      storage: new SequelizeStorage({
-        modelName: `${this.options.tablePrefix || ''}migrations`,
-        ...migratorOptions.storage,
-        sequelize: this.sequelize,
-      }),
-    });
-
     this.sequelize.beforeDefine((model, opts) => {
       if (this.options.tablePrefix) {
         opts.tableName = `${this.options.tablePrefix}${opts.tableName || opts.modelName || opts.name.plural}`;
@@ -287,7 +276,18 @@ export class Database extends EventEmitter implements AsyncEmitter {
       timestamps: false,
       namespace: 'core.migration',
       duplicator: 'required',
-      fields: [{ type: 'string', name: 'name' }],
+      fields: [{ type: 'string', name: 'name', primaryKey: true }],
+    });
+
+    this.migrator = new Umzug({
+      logger: migratorOptions.logger || console,
+      migrations: this.migrations.callback(),
+      context,
+      storage: new SequelizeStorage({
+        modelName: `${this.options.tablePrefix || ''}migrations`,
+        ...migratorOptions.storage,
+        sequelize: this.sequelize,
+      }),
     });
 
     this.initListener();
@@ -700,7 +700,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   async auth(options: Omit<QueryOptions, 'retry'> & { retry?: number | Pick<QueryOptions, 'retry'> } = {}) {
     const { retry = 10, ...others } = options;
-    const delay = (ms) => new Promise((yea) => setTimeout(yea, ms));
+    const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
     let count = 1;
     const authenticate = async () => {
       try {

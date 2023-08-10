@@ -216,6 +216,7 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
       content: t('Are you sure to clear the canvas?'),
       okText: t('Confirm'),
       cancelText: t('Cancel'),
+      getContainer: () => document.getElementById(id.current),
       onOk() {
         ok();
       },
