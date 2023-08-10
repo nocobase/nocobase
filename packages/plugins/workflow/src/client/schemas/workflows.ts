@@ -101,6 +101,7 @@ const workflowFieldset = {
       useTransaction: {
         type: 'boolean',
         title: `{{ t("Use transaction", { ns: "${NAMESPACE}" }) }}`,
+        description: `{{ t("Nodes of workflow will run in a same transaction. Any failure will cause data rollback, and will also rollback the history of the execution.", { ns: "${NAMESPACE}" }) }}`,
         'x-decorator': 'FormItem',
         'x-component': 'Checkbox',
       },
