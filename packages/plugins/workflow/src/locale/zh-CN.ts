@@ -103,6 +103,16 @@ export default {
   Canceled: '已取消',
   Rejected: '已拒绝',
 
+  'Triggered but still waiting in queue to execute.': '已触发但仍在队列中等待执行。',
+  'Started and executing, maybe waiting for an async callback (manual, delay etc.).':
+    '已开始执行，可能在等待异步回调（人工、延时等）。',
+  'Successfully finished.': '成功完成。',
+  'Failed to satisfy node configurations.': '未满足节点配置造成的失败。',
+  'Some node meets error.': '某个节点出错。',
+  'Running of some node was aborted by program flow.': '某个节点被程序流程终止。',
+  'Manually canceled whole execution when waiting.': '等待时被手动取消整个执行。',
+  'Rejected from a manual node.': '被人工节点拒绝继续。',
+
   'Continue the process': '继续流程',
   'Terminate the process': '终止流程',
   'Save temporarily': '暂存',
