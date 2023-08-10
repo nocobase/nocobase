@@ -342,7 +342,9 @@ export const useCreateAction = () => {
         field.data.loading = false;
         refresh();
       } catch (error) {
-        field.data.loading=false;
+        if (field.data) {
+          field.data.loading = false;
+        }
       }
     },
   };
