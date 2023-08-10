@@ -58,12 +58,12 @@ export class APIClient extends APIClientSDK {
           if (errorCache.size > 10) {
             errorCache.clear();
           }
-          const maintaining = !!error?.response?.data?.maintaining;
+          const maintaining = !!error?.response?.data?.error?.maintaining;
           if (this.app.maintaining !== maintaining) {
             this.app.maintaining = maintaining;
           }
           if (this.app.maintaining) {
-            this.app.error = error?.response?.data;
+            this.app.error = error?.response?.data?.error;
             return;
           } else if (this.app.error) {
             this.app.error = null;
