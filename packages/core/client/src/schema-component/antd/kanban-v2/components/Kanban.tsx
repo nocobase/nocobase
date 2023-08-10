@@ -49,7 +49,7 @@ const ColumnHeader = ({ color, label }) => {
 export const KanbanV2: any = (props) => {
   const { useProps } = props;
   const { groupField, columns } = useProps();
-  const { associateCollectionField } = useKanbanV2BlockContext();
+  const { associateCollectionField, setTargetColumn } = useKanbanV2BlockContext();
   const [columnData, setColumnData] = useState(cloneDeep(columns) || []);
   const [visible, setVisible] = useState(false);
   const [record, setRecord] = useState<any>({});
@@ -70,6 +70,7 @@ export const KanbanV2: any = (props) => {
     });
     setColumnData(cloneDeep(newColumns) || []);
   }, [columns]);
+
   const getColumnDatas = useCallback(async (el, index, params, appends?, currentPage?, fun?) => {
     const parseFilter = (value) => {
       if (value === '__unknown__') {
@@ -131,31 +132,31 @@ export const KanbanV2: any = (props) => {
     const sInd = source.droppableId;
     const dInd = destination.droppableId;
     if (sInd === dInd) {
-      const items = reorder(columnData.find((v) => v.value === sInd).cards, source.index, destination.index);
-      const newColumn = columnData.find((v) => v.value === sInd);
-      const index = columnData.findIndex((v) => v.value === sInd);
-      const newState: any = [...columnData];
-      newState[index] = { ...newColumn, cards: items };
-      setColumnData(newState);
+      // const items = reorder(columnData.find((v) => v.value === sInd).cards, source.index, destination.index);
+      // const newColumn = columnData.find((v) => v.value === sInd);
+      // const index = columnData.findIndex((v) => v.value === sInd);
+      // const newState: any = [...columnData];
+      // newState[index] = { ...newColumn, cards: items };
+      // setColumnData(newState);
       handleCardDragEndSave(
         { fromColumnId: source.droppableId, fromPosition: source.index },
         { toColumnId: destination.droppableId, toPosition: destination.index },
       );
     } else {
-      const result = move(
-        columnData.find((v) => v.value === sInd).cards,
-        columnData.find((v) => v.value === dInd).cards,
-        source,
-        destination,
-      );
-      const newState = [...columnData];
-      const sColumns = columnData.find((v) => v.value === sInd);
-      const sIndex = columnData.findIndex((v) => v.value === sInd);
-      const dColumns = columnData.find((v) => v.value === dInd);
-      const dIndex = columnData.findIndex((v) => v.value === dInd);
-      newState[sIndex] = { ...sColumns, cards: result[sInd] };
-      newState[dIndex] = { ...dColumns, cards: result[dInd] };
-      setColumnData(newState);
+      // const result = move(
+      //   columnData.find((v) => v.value === sInd).cards,
+      //   columnData.find((v) => v.value === dInd).cards,
+      //   source,
+      //   destination,
+      // );
+      // const newState = [...columnData];
+      // const sColumns = columnData.find((v) => v.value === sInd);
+      // const sIndex = columnData.findIndex((v) => v.value === sInd);
+      // const dColumns = columnData.find((v) => v.value === dInd);
+      // const dIndex = columnData.findIndex((v) => v.value === dInd);
+      // newState[sIndex] = { ...sColumns, cards: result[sInd] };
+      // newState[dIndex] = { ...dColumns, cards: result[dInd] };
+      // setColumnData(newState);
       handleCardDragEndSave(
         { fromColumnId: source.droppableId, fromPosition: source.index },
         { toColumnId: destination.droppableId, toPosition: destination.index },
@@ -183,15 +184,18 @@ export const KanbanV2: any = (props) => {
       await resource.move({
         values: values,
       });
+      setTargetColumn([fromColumnId, toColumnId]);
       message.success(t('Saved successfully'));
     } catch (error) {
       console.log(error);
     }
   };
+
   const handleCardClick = React.useCallback((data) => {
     setVisible(true);
     setRecord(data);
   }, []);
+
   return (
     <div>
       <div style={{ display: 'flex', overflowX: 'auto' }}>
@@ -208,13 +212,7 @@ export const KanbanV2: any = (props) => {
               }}
             >
               <ColumnHeader {...el} />
-              <Column
-                data={el}
-                ind={ind}
-                cards={el?.cards}
-                onCardClick={handleCardClick}
-                getColumnDatas={getColumnDatas}
-              />
+              <Column data={el} ind={ind} onCardClick={handleCardClick} getColumnDatas={getColumnDatas} />
             </div>
           ))}
           <KanbanRecordViewer visible={visible} setVisible={setVisible} record={record} />

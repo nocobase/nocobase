@@ -84,7 +84,7 @@ const List = (props) => {
 
 export const Column = observer(
   (props: any) => {
-    const { ind, data, cards, getColumnDatas } = props;
+    const { ind, data, getColumnDatas } = props;
     const {
       service,
       params: { appends },
@@ -98,13 +98,17 @@ export const Column = observer(
       data: result,
       loading,
       loadMore,
-      loadingMore,
-      mutate,
+      reload,
     } = useInfiniteScroll((d) => getLoadMoreList(d?.nextId, 10), {
       target: document.getElementById(`scrollableDiv${ind}`),
       isNoMore: (d) => d?.nextId === undefined,
       reloadDeps: [targetColumn === data.value, params, appends.length],
     });
+    useEffect(() => {
+      if (Array.isArray(targetColumn) && targetColumn?.includes(data.value)) {
+        reload();
+      }
+    }, [targetColumn]);
     const getLoadMoreList = async (nextId: string | undefined, limit: number): Promise<any> => {
       const res = await getColumnDatas(data, ind, params, appends, nextId + 1, () => {});
       return {
@@ -113,13 +117,6 @@ export const Column = observer(
         nextId: res?.meta?.count > res.cards.length ? Math.ceil(res.cards.length / 10) : undefined,
       };
     };
-    useEffect(() => {
-      mutate({
-        list: cards,
-        nextId: data?.meta?.count > cards?.length ? Math.ceil(cards?.length / 10) : undefined,
-      });
-    }, [cards]);
-
     const displayLable = fieldSchema['x-label-disabled'];
     fieldSchema.properties.grid['x-component-props'] = {
       dndContext: {
@@ -175,11 +172,7 @@ export const Column = observer(
                 ))}
               </Spin>
               <div style={{ marginTop: 8 }}>
-                {result?.nextId && result?.list?.length > 0 ? (
-                  <span onClick={loadMore}>{loadingMore ? 'Loading more...' : 'Click to load more'}</span>
-                ) : (
-                  ''
-                )}
+                {result?.nextId && result?.list?.length > 0 ? <span onClick={loadMore}>{'Loading more...'}</span> : ''}
                 {!result?.nextId && !loading && result?.list?.length > 0 && (
                   <span>{t('All loaded, nothing more')}</span>
                 )}

@@ -145,6 +145,7 @@ export const KanbanV2BlockProvider = (props) => {
           associateCollectionField={props.groupField}
           columns={kanbanColumns}
           targetColumn={targetColumn}
+          setTargetColumn={setTargetColumn}
         />
       </BlockProvider>
     </SchemaComponentOptions>
