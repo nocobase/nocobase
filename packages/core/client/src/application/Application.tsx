@@ -126,9 +126,8 @@ export class Application {
   async load() {
     this.ws.on('message', (event) => {
       const data = JSON.parse(event.data);
-      console.log(data);
-      const maintaining = data.payload.status !== 'started';
-      // const maintaining = data.type === 'maintaining';
+      console.log(data.payload);
+      const maintaining = data.type === 'maintaining' && data.payload.code !== 'APP_RUNNING';
       if (maintaining) {
         this.maintaining = true;
         this.error = data.payload;
@@ -140,7 +139,6 @@ export class Application {
         this.maintained = true;
         this.error = null;
       }
-      console.log(this.error);
     });
     this.ws.connect();
     try {

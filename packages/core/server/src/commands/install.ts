@@ -1,6 +1,5 @@
 import chalk from 'chalk';
 import Application from '../application';
-import { Gateway } from '../gateway';
 export default (app: Application) => {
   app
     .command('install')
@@ -43,5 +42,7 @@ export default (app: Application) => {
           force: opts.force,
         },
       });
+
+      await app.restart();
     });
 };
