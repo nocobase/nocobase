@@ -98,7 +98,7 @@ const getSchema = (schema, category, compile): ISchema => {
 };
 
 const getDefaultCollectionFields = (values) => {
-  if (values?.template === 'view') {
+  if (values?.template === 'view' || values?.template === 'sql') {
     return values.fields;
   }
   const defaults = values.fields ? [...values.fields] : [];

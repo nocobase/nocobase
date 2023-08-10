@@ -9,8 +9,12 @@ export const CollectionCategory = observer(
     const compile = useCompile();
     return (
       <>
-        {value.map((item) => {
-          return <Tag color={item.color}>{compile(item?.name)}</Tag>;
+        {value.map((item, index) => {
+          return (
+            <Tag color={item.color} key={index}>
+              {compile(item?.name)}
+            </Tag>
+          );
         })}
       </>
     );

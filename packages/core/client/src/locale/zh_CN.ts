@@ -218,6 +218,7 @@ export default {
   "Records can be sorted": "可以对行记录进行排序",
   "Calendar collection": "日历数据表",
   "General collection": "普通数据表",
+  "SQL collection": "SQL数据表",
   "Connect to database view":"连接数据库视图",
   "Source collections":"来源数据表",
   "Field source":"来源字段",
