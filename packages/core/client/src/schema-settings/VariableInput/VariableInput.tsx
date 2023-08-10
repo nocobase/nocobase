@@ -1,9 +1,10 @@
 import { Form } from '@formily/core';
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CollectionFieldOptions } from '../../collection-manager';
-import { Variable } from '../../schema-component';
-import { useContextAssociationFields, useIsSameOrChildCollection } from './hooks/useContextAssociationFields';
-import { useVariableOptions } from './hooks/useVariableOptions';
+import { Variable, useCompile } from '../../schema-component';
+import { useContextAssociationFields } from './hooks/useContextAssociationFields';
+import { compatOldVariables, useVariableOptions } from './hooks/useVariableOptions';
 
 type Props = {
   value: any;
@@ -28,6 +29,9 @@ type Props = {
    */
   blockCollectionName?: string;
   form?: Form;
+  /**
+   * 当前表单的记录，数据来自数据库
+   */
   record?: Record<string, any>;
 };
 
@@ -46,10 +50,18 @@ export const VariableInput = (props: Props) => {
     form,
     record,
   } = props;
-  const variableOptions = useVariableOptions({ collectionField, blockCollectionName, form, record });
+  const { t } = useTranslation();
+  const compile = useCompile();
+  const variableOptions = compatOldVariables(
+    useVariableOptions({ collectionField, blockCollectionName, form, record }),
+    {
+      value,
+      collectionName: blockCollectionName,
+      t,
+      compile,
+    },
+  );
   const contextVariable = useContextAssociationFields({ schema, maxDepth: 2, contextCollectionName, collectionField });
-  const getIsSameOrChildCollection = useIsSameOrChildCollection();
-  const isAllowTableContext = getIsSameOrChildCollection(contextCollectionName, collectionField?.target);
 
   useEffect(() => {
     if (contextCollectionName) {
@@ -73,7 +85,7 @@ export const VariableInput = (props: Props) => {
       onChange={handleChange}
       scope={variableOptions}
       style={style}
-      changeOnSelect={isAllowTableContext}
+      changeOnSelect
     >
       <RenderSchemaComponent value={value} onChange={onChange} />
     </Variable.Input>

@@ -67,7 +67,7 @@ export const FormLinkageRules = observer(
                               };
                             },
                             dynamicComponent: (props) =>
-                              FilterDynamicComponent({ ...props, rootCollection: collectionName, form, record }),
+                              FilterDynamicComponent({ ...props, blockCollectionName: collectionName, form, record }),
                           },
                         },
                         actions: {

@@ -360,7 +360,7 @@ FormItem.Designer = function Designer() {
               ...props,
               form,
               collectionField,
-              rootCollection: ctx.props.collection || ctx.props.resource,
+              blockCollectionName: ctx.props.collection || ctx.props.resource,
               record,
             })
           }
