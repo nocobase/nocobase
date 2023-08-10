@@ -1,20 +1,20 @@
 import { ArrayTable } from '@formily/antd-v5';
+import { onFieldValueChange } from '@formily/core';
 import { connect, ISchema, mapProps, useField, useFieldSchema, useForm, useFormEffects } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
 import { Alert, Tree as AntdTree } from 'antd';
 import { cloneDeep } from 'lodash';
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RemoteSelect, useCompile, useDesignable } from '../..';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { CollectionOptions, useCollection, useCollectionManager } from '../../../collection-manager';
+import { useRecord } from '../../../record-provider';
 import { OpenModeSchemaItems } from '../../../schema-items';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useCollectionState } from '../../../schema-settings/DataTemplates/hooks/useCollectionState';
+import { useSyncFromForm } from '../../../schema-settings/DataTemplates/utils';
 import { useLinkageAction } from './hooks';
 import { requestSettingsSchema } from './utils';
-import { useRecord } from '../../../record-provider';
-import { useSyncFromForm } from '../../../schema-settings/DataTemplates/utils';
-import { onFieldValueChange } from '@formily/core';
 
 const Tree = connect(
   AntdTree,
@@ -653,7 +653,7 @@ function FormWorkflowSelect(props) {
   const [workflowCollection, setWorkflowCollection] = useState(baseCollection.name);
   useFormEffects(() => {
     onFieldValueChange(`group[${index}].context`, (field) => {
-      let collection = baseCollection;
+      let collection: CollectionOptions = baseCollection;
       if (field.value) {
         const paths = field.value.split('.');
         for (let i = 0; i < paths.length && collection; i++) {

@@ -129,6 +129,8 @@ interface ModalItemProps {
   width?: string | number;
   children?: ReactNode;
   asyncGetInitialValues?: () => Promise<any>;
+  eventKey?: string;
+  hide?: boolean;
 }
 
 type SchemaSettingsNested = {
