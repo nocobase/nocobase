@@ -1,8 +1,8 @@
-import axios from 'axios';
-import download from 'download';
+import axios, { Axios, AxiosRequestConfig } from 'axios';
 import decompress from 'decompress';
 import fs from 'fs-extra';
 import semver from 'semver';
+import ini from 'ini';
 import { builtinModules } from 'module';
 import os from 'os';
 import path from 'path';
@@ -56,23 +56,66 @@ export function getNodeModulesPluginDir(packageName: string) {
   return path.join(NODE_MODULES_PATH, packageName);
 }
 
+export function getAuthorizationHeaders(registry?: string, authToken?: string) {
+  const headers = {};
+  if (registry && !authToken) {
+    const npmrcPath = path.join(process.cwd(), '.npmrc');
+    const url = new URL(registry);
+    let envConfig: Record<string, string> = process.env;
+    if (fs.existsSync(npmrcPath)) {
+      const content = fs.readFileSync(path.join(process.cwd(), '.npmrc'), 'utf-8');
+      envConfig = {
+        ...envConfig,
+        ...ini.parse(content),
+      };
+    }
+    const key = Object.keys(envConfig).find((key) => key.includes(url.host) && key.includes('_authToken'));
+    if (key) {
+      authToken = envConfig[key];
+    }
+  }
+  if (authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`;
+  }
+  return headers;
+}
+
 /**
  * get latest version from npm
  *
  * @example
  * getLatestVersion('dayjs', 'https://registry.npmjs.org') => '1.10.6'
  */
-export async function getLatestVersion(packageName: string, registry: string) {
-  const response = await axios.get(`${registry}/${packageName}`);
+export async function getLatestVersion(packageName: string, registry: string, token?: string) {
+  const response = await axios.get(`${registry}/${packageName}`, {
+    headers: getAuthorizationHeaders(registry, token),
+  });
   const data = response.data;
   const latestVersion = data['dist-tags'].latest;
   return latestVersion;
 }
 
+export async function download(url: string, destination: string, options: AxiosRequestConfig = {}) {
+  const response = await axios.get(url, {
+    ...options,
+    responseType: 'stream',
+  });
+
+  fs.mkdirpSync(path.dirname(destination));
+  const writer = fs.createWriteStream(destination);
+
+  response.data.pipe(writer);
+
+  return new Promise((resolve, reject) => {
+    writer.on('finish', resolve);
+    writer.on('error', reject);
+  });
+}
+
 /**
  * download and unzip to node_modules
  */
-export async function downloadAndUnzipToNodeModules(fileUrl: string) {
+export async function downloadAndUnzipToNodeModules(fileUrl: string, authToken?: string) {
   const fileName = path.basename(fileUrl);
   const tempDir = await getTempDir();
   const tempFile = path.join(tempDir, fileName);
@@ -80,9 +123,13 @@ export async function downloadAndUnzipToNodeModules(fileUrl: string) {
 
   // download and unzip to temp dir
   await fs.remove(tempPackageDir);
-  await download(fileUrl, tempDir);
+
+  await download(fileUrl, tempFile, {
+    headers: getAuthorizationHeaders(fileUrl, authToken),
+  });
   await decompress(tempFile, tempPackageDir);
 
+  // npm package unzip will be wrapped in a `package` dir
   const tempPackageContentDir = fs.existsSync(path.join(tempPackageDir, 'package'))
     ? path.join(tempPackageDir, 'package')
     : tempPackageDir;
@@ -142,12 +189,22 @@ export async function linkLocalPackageToNodeModules(packageDir: string) {
  * getPluginInfoByNpm('dayjs', 'https://registry.npmjs.org', '1.1.0')
  * => { fileUrl: 'https://registry.npmjs.org/dayjs/-/dayjs-1.1.0.tgz', latestVersion: '1.1.0' }
  */
-export async function getPluginInfoByNpm(packageName: string, registry: string, version?: string) {
+
+interface GetPluginInfoOptions {
+  packageName: string;
+  registry: string;
+  version?: string;
+  authToken?: string;
+}
+
+export async function getPluginInfoByNpm(options: GetPluginInfoOptions) {
+  let { registry, version } = options;
+  const { packageName, authToken } = options;
   if (registry.endsWith('/')) {
     registry = registry.slice(0, -1);
   }
   if (!version) {
-    version = await getLatestVersion(packageName, registry);
+    version = await getLatestVersion(packageName, registry, authToken);
   }
 
   const compressedFileUrl = `${registry}/${packageName}/-/${packageName.split('/').pop()}-${version}.tgz`;
@@ -275,9 +332,12 @@ export function getPluginNameByClientStaticUrl(pathname: string) {
 }
 
 export async function addOrUpdatePluginByCompressedFileUrl(
-  options: Partial<Pick<PluginData, 'compressedFileUrl' | 'packageName'>>,
+  options: Partial<Pick<PluginData, 'compressedFileUrl' | 'packageName' | 'authToken'>>,
 ) {
-  const { packageName, version, packageDir } = await downloadAndUnzipToNodeModules(options.compressedFileUrl);
+  const { packageName, version, packageDir } = await downloadAndUnzipToNodeModules(
+    options.compressedFileUrl,
+    options.authToken,
+  );
 
   if (options.packageName && options.packageName !== packageName) {
     throw new Error(`Plugin name in package.json must be ${options.packageName}, but got ${packageName}`);
@@ -300,10 +360,14 @@ export async function checkPluginPackage(plugin: PluginData) {
 }
 
 export async function getNewVersion(plugin: PluginData): Promise<string | false> {
-  if (!plugin.packageName || !plugin.registry) return false;
+  if (!(plugin.packageName && plugin.registry)) return false;
 
   // 1. Check plugin version by npm registry
-  const { version } = await getPluginInfoByNpm(plugin.packageName, plugin.registry);
+  const { version } = await getPluginInfoByNpm({
+    packageName: plugin.packageName,
+    registry: plugin.registry,
+    authToken: plugin.authToken,
+  });
   // 2. has new version, return true
   return version !== plugin.version ? version : false;
 }

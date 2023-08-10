@@ -59,6 +59,12 @@ const npmSchema: ISchema = {
           'x-component': 'Input',
           required: true,
         },
+        authToken: {
+          type: 'string',
+          title: "{{t('Npm Registry authToken')}}",
+          'x-decorator': 'FormItem',
+          'x-component': 'Input',
+        },
         footer,
       },
     },

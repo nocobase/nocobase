@@ -81,18 +81,12 @@ export class PluginManagerRepository extends Repository {
 
     for (const item of items) {
       try {
-        await checkPluginPackage(item.toJSON());
+        const json = item.toJSON();
+        await checkPluginPackage(json);
         await this.pm.addStatic(item.get('name'), {
           ...item.get('options'),
-          name: item.get('name'),
-          version: item.get('version'),
-          enabled: item.get('enabled'),
-          builtIn: item.get('builtIn'),
-          type: item.get('type'),
-          packageName: item.get('packageName'),
-          compressedFileUrl: item.get('compressedFileUrl'),
-          registry: item.get('registry'),
           async: true,
+          ...json,
         });
       } catch (e) {
         await this.pm.handleError(item.get('name'), item.get('builtIn'), e);

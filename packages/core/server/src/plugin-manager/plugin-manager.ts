@@ -215,18 +215,28 @@ export class PluginManager {
     return pm;
   }
 
-  async addByNpm(options: { packageName: string; registry: string }) {
-    let { registry, packageName } = options;
+  async addByNpm(options: { packageName: string; registry: string; authToken?: string }) {
+    let { registry, packageName, authToken } = options;
     registry = registry.trim();
     packageName = packageName.trim();
-    const { compressedFileUrl } = await getPluginInfoByNpm(options.packageName, options.registry);
-    return this.addByCompressedFileUrl({ compressedFileUrl, registry, type: 'npm' });
+    authToken = authToken?.trim();
+    const { compressedFileUrl } = await getPluginInfoByNpm({
+      packageName,
+      registry,
+      authToken,
+    });
+    return this.addByCompressedFileUrl({ compressedFileUrl, registry, authToken, type: 'npm' });
   }
 
-  async addByCompressedFileUrl(options: { compressedFileUrl: string; registry?: string; type?: string }) {
-    const { compressedFileUrl, registry, type } = options;
+  async addByCompressedFileUrl(options: {
+    compressedFileUrl: string;
+    registry?: string;
+    authToken?: string;
+    type?: string;
+  }) {
+    const { compressedFileUrl, registry, type, authToken } = options;
 
-    const { packageName } = await addOrUpdatePluginByCompressedFileUrl({ compressedFileUrl });
+    const { packageName } = await addOrUpdatePluginByCompressedFileUrl({ compressedFileUrl, authToken });
     const name = this.getNameByPackageName(packageName);
 
     if (this.plugins.has(name)) {
@@ -234,7 +244,7 @@ export class PluginManager {
       throw new Error(`plugin name [${name}] already exists`);
     }
 
-    return this.add(name, { packageName, compressedFileUrl, registry, type });
+    return this.add(name, { packageName, compressedFileUrl, authToken, registry, type });
   }
 
   async upgradeByNpm(name: string) {
@@ -245,7 +255,11 @@ export class PluginManager {
     if (!plugin.options.packageName || !plugin.options.registry) {
       throw new Error(`plugin name [${name}] not installed by npm`);
     }
-    const { compressedFileUrl } = await getPluginInfoByNpm(plugin.options.packageName, plugin.options.registry);
+    const { compressedFileUrl } = await getPluginInfoByNpm({
+      packageName: plugin.options.packageName,
+      registry: plugin.options.registry,
+      authToken: plugin.options.authToken,
+    });
     return this.upgradeByCompressedFileUrl({ compressedFileUrl, name });
   }
 
@@ -259,6 +273,7 @@ export class PluginManager {
     const { version } = await addOrUpdatePluginByCompressedFileUrl({
       compressedFileUrl,
       packageName: plugin.options.packageName,
+      authToken: plugin.options.authToken,
     });
 
     await this.addStatic(name, { ...plugin.options, compressedFileUrl, version }, true);
@@ -343,7 +358,17 @@ export class PluginManager {
     const packageJson = PluginManager.getPackageJson(packageName);
 
     if (!model) {
-      const { enabled, builtIn, installed, registry, packageName, compressedFileUrl, type, ...others } = options;
+      const {
+        enabled,
+        builtIn,
+        installed,
+        registry,
+        packageName,
+        authToken,
+        compressedFileUrl,
+        type,
+        ...others
+      } = options;
       await this.repository.create({
         transaction,
         values: {
@@ -356,6 +381,7 @@ export class PluginManager {
           packageName,
           compressedFileUrl,
           type,
+          authToken,
           options: {
             ...others,
           },

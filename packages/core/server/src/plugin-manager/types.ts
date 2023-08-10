@@ -7,7 +7,8 @@ export interface PluginData {
   clientUrl?: string;
   compressedFileUrl?: string;
   enabled?: boolean;
-  type?: 'url' | 'npm';
+  type?: 'url' | 'npm' | 'upload';
+  authToken?: string;
   isOfficial?: boolean;
   installed?: boolean;
   builtIn?: boolean;

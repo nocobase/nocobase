@@ -14,6 +14,7 @@ export default defineCollection({
     { type: 'string', name: 'registry' },
     { type: 'boolean', name: 'enabled' },
     { type: 'boolean', name: 'installed' },
+    { type: 'boolean', name: 'authToken' },
     { type: 'boolean', name: 'builtIn' },
     { type: 'json', name: 'options' },
   ],
