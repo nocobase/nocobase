@@ -225,11 +225,6 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
     // call app.destroy
     await this.apps[appName].destroy();
-
-    delete this.apps[appName];
-    delete this.appStatus[appName];
-    delete this.appErrors[appName];
-    delete this.lastWorkingMessage[appName];
   }
 
   subApps() {
@@ -252,6 +247,13 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   private bindAppEvents(app: Application) {
+    app.on('afterDestroy', () => {
+      delete this.apps[app.name];
+      delete this.appStatus[app.name];
+      delete this.appErrors[app.name];
+      delete this.lastWorkingMessage[app.name];
+    });
+
     app.on('workingMessageChanged', ({ message }) => {
       if (this.lastWorkingMessage[app.name] === message) {
         return;
