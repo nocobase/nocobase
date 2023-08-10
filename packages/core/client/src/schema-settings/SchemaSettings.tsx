@@ -1512,6 +1512,7 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
 
                   const schema = {
                     ...(s || {}),
+                    'x-decorator': 'FormItem',
                     'x-component-props': {
                       ...s['x-component-props'],
                       collectionName: collectionField?.collectionName,
@@ -1525,7 +1526,6 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
                       },
                     },
                   };
-
                   return <SchemaComponent schema={schema} />;
                 },
               },
