@@ -105,7 +105,7 @@ export class Gateway extends EventEmitter {
 
     const appStatus = AppSupervisor.getInstance().getAppStatus(handleApp, 'initializing');
 
-    if (appStatus === null) {
+    if (appStatus === 'not_found') {
       this.responseErrorWithCode('APP_NOT_FOUND', res, handleApp);
       return;
     }

@@ -1,3 +1,4 @@
+import { AppSupervisor } from '../app-supervisor';
 import Application from '../application';
 import lodash from 'lodash';
 
@@ -6,17 +7,30 @@ interface AppError {
   message: any;
   command?: any;
   maintaining: boolean;
-  code: string;
+  code: any;
 }
 
 interface AppErrors {
-  [key: string]: Omit<AppError, 'code'>;
+  [key: string]: Omit<AppError, 'code'> & {
+    code?: any;
+  };
 }
 
 export const errors: AppErrors = {
   APP_NOT_FOUND: {
     status: 404,
     message: (appName: string) => `application ${appName} not found`,
+    maintaining: true,
+  },
+
+  APP_ERROR: {
+    status: 503,
+    message: (app: Application) => AppSupervisor.getInstance().appErrors[app.name]?.message,
+    code: (app: Application): string => {
+      const error = AppSupervisor.getInstance().appErrors[app.name];
+      return error['code'] || 'APP_ERROR';
+    },
+    command: (app: Application) => app.getMaintaining().command,
     maintaining: true,
   },
 
@@ -88,7 +102,7 @@ export const errors: AppErrors = {
     command: (app: Application) => app.getMaintaining().command,
   },
 
-  COMMAND_RUNNING: {
+  APP_COMMANDING: {
     status: 503,
     maintaining: true,
     message: (app: Application, message) => message || app.workingMessage,
@@ -115,7 +129,11 @@ export function getErrorWithCode(errorCode: string): AppError {
   }
 
   const error = lodash.cloneDeep(errors[errorCode]);
-  error['code'] = errorCode == 'UNKNOWN_ERROR' ? rawCode : errorCode;
+
+  if (!error.code) {
+    error['code'] = errorCode == 'UNKNOWN_ERROR' ? rawCode : errorCode;
+  }
+
   return error as AppError;
 }
 

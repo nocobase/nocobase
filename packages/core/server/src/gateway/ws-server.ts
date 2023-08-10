@@ -63,7 +63,7 @@ export class WSServer {
 
       this.sendToConnectionsByTag('app', appName, {
         type: 'maintaining',
-        payload: getPayloadByErrorCode(status === null ? 'APP_NOT_FOUND' : status, app || appName),
+        payload: getPayloadByErrorCode(status, app || appName),
       });
     });
   }
@@ -102,7 +102,7 @@ export class WSServer {
 
     const appStatus = AppSupervisor.getInstance().getAppStatus(handleAppName, 'initializing');
 
-    if (appStatus === null) {
+    if (appStatus === 'not_found') {
       this.sendMessageToConnection(client, {
         type: 'maintaining',
         payload: getPayloadByErrorCode('APP_NOT_FOUND', handleAppName),

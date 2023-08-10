@@ -89,9 +89,9 @@ interface StartOptions {
   checkInstall?: boolean;
 }
 
-type MaintainingStatus = 'command_end' | 'command_running' | 'command_error';
+type MaintainingStatus = 'command_begin' | 'command_end' | 'command_running' | 'command_error';
 
-type MaintainingCommandStatus = {
+export type MaintainingCommandStatus = {
   command: {
     name: string;
   };
@@ -132,7 +132,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._loaded;
   }
 
-  private _workingMessage: string = 'idle' as string;
+  private _workingMessage: string;
 
   get workingMessage() {
     return this._workingMessage;
@@ -378,6 +378,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
           };
 
           this.setMaintaining({
+            status: 'command_begin',
+            command: this.activatedCommand,
+          });
+
+          this.setMaintaining({
             status: 'command_running',
             command: this.activatedCommand,
           });
@@ -386,7 +391,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
           await this.load();
         })
         .hook('postAction', async () => {
-          if (lastMaintainingStatus.error) {
+          if (lastMaintainingStatus?.error && this._started) {
             await this.restart();
           }
         })

@@ -1,6 +1,6 @@
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import { EventEmitter } from 'events';
-import Application, { ApplicationOptions } from './application';
+import Application, { ApplicationOptions, MaintainingCommandStatus } from './application';
 import { Mutex } from 'async-mutex';
 
 type BootOptions = {
@@ -11,14 +11,7 @@ type BootOptions = {
 
 type AppBootstrapper = (bootOptions: BootOptions) => Promise<void>;
 
-type AppStatus =
-  | 'initializing'
-  | 'initialized'
-  | 'running'
-  | 'command_running'
-  | 'command_error'
-  | 'command_end'
-  | null;
+type AppStatus = 'initializing' | 'initialized' | 'running' | 'commanding' | 'stopped' | 'error' | 'not_found';
 
 export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   private static instance: AppSupervisor;
@@ -39,6 +32,10 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
   public lastWorkingMessage: {
     [appName: string]: string;
+  } = {};
+
+  public statusBeforeCommanding: {
+    [appName: string]: AppStatus;
   } = {};
 
   private appBootMutex = new Mutex();
@@ -64,7 +61,6 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   setAppError(appName: string, error: Error) {
-    console.log(error);
     this.appErrors[appName] = error;
 
     this.emit('appError', {
@@ -123,7 +119,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
         }
 
         if (!this.hasApp(appName)) {
-          this.setAppStatus(appName, null);
+          this.setAppStatus(appName, 'not_found');
         } else {
           this.setAppStatus(appName, 'initialized');
         }
@@ -203,7 +199,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
     this.emit('afterAppAdded', app);
 
-    if (!this.getAppStatus(app.name)) {
+    if (!this.getAppStatus(app.name) || this.getAppStatus(app.name) == 'not_found') {
       this.setAppStatus(app.name, 'initialized');
     }
 
@@ -252,6 +248,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
       delete this.appStatus[app.name];
       delete this.appErrors[app.name];
       delete this.lastWorkingMessage[app.name];
+      delete this.statusBeforeCommanding[app.name];
     });
 
     app.on('workingMessageChanged', ({ message }) => {
@@ -267,16 +264,47 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
       });
     });
 
-    app.on('maintaining', (maintainingStatus) => {
+    app.on('afterStart', async () => {
+      this.setAppStatus(app.name, 'running');
+    });
+
+    app.on('afterStop', async () => {
+      this.setAppStatus(app.name, 'stopped');
+    });
+
+    app.on('maintaining', (maintainingStatus: MaintainingCommandStatus) => {
       const { status } = maintainingStatus;
-      this.setAppStatus(app.name, status);
 
-      if (status === 'command_error') {
-        this.setAppError(app.name, maintainingStatus.error);
-      }
+      switch (status) {
+        case 'command_begin':
+          {
+            this.statusBeforeCommanding[app.name] = this.getAppStatus(app.name);
+            this.setAppStatus(app.name, 'commanding');
+          }
+          break;
 
-      if (status === 'command_end' && maintainingStatus.command.name == 'start') {
-        this.setAppStatus(app.name, 'running');
+        case 'command_running':
+          // emit status changed
+          // this.emit('appMaintainingStatusChanged', maintainingStatus);
+          break;
+        case 'command_end':
+          {
+            const appStatus = this.getAppStatus(app.name);
+            // emit status changed
+            this.emit('appMaintainingStatusChanged', maintainingStatus);
+
+            // not change
+            if (appStatus == 'commanding') {
+              this.setAppStatus(app.name, this.statusBeforeCommanding[app.name]);
+            }
+          }
+          break;
+        case 'command_error':
+          {
+            this.setAppError(app.name, maintainingStatus.error);
+            this.setAppStatus(app.name, 'error');
+          }
+          break;
       }
     });
   }

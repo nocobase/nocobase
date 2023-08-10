@@ -85,8 +85,8 @@ describe('gateway', () => {
 
       expect(data).toMatchObject({
         error: {
-          code: 'COMMAND_ERROR',
-          message: errors.COMMAND_ERROR.message(main),
+          code: 'APP_NOT_INSTALLED_ERROR',
+          message: errors.APP_ERROR.message(main),
           command: {
             name: 'start',
           },
@@ -110,7 +110,7 @@ describe('gateway', () => {
         });
       });
 
-      main.runAsCLI(['install'], { from: 'user' });
+      const installPromise = main.runAsCLI(['install'], { from: 'user' });
 
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
@@ -122,12 +122,14 @@ describe('gateway', () => {
           status: 503,
           maintaining: true,
           message: 'call beforeInstall hook...',
-          code: 'COMMAND_RUNNING',
+          code: 'APP_COMMANDING',
           command: {
             name: 'install',
           },
         },
       });
+
+      await installPromise;
     });
   });
 
@@ -136,6 +138,10 @@ describe('gateway', () => {
     let port;
 
     let messages: Array<string>;
+
+    const waitSecond = async () => {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    };
 
     const connectClient = (port) => {
       wsClient = new ws(`ws://localhost:${port}/ws`);
@@ -170,19 +176,21 @@ describe('gateway', () => {
     });
 
     afterEach(async () => {
+      console.log(messages);
+
       wsClient.close();
 
       await new Promise((resolve) => {
         wsClient.on('close', resolve);
       });
 
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await waitSecond();
     });
 
     it('should receive app error message', async () => {
       await connectClient(port);
 
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await waitSecond();
 
       // should receive two messages
 
@@ -209,17 +217,23 @@ describe('gateway', () => {
         },
       });
 
-      await app.runAsCLI(['start'], { from: 'user' });
-
-      await new Promise((resolve) => {
-        setTimeout(resolve, 100);
-      });
+      await waitSecond();
 
       expect(getLastMessage()).toMatchObject({
         type: 'maintaining',
         payload: {
-          code: 'COMMAND_ERROR',
-          message: errors.COMMAND_ERROR.message(app),
+          code: 'APP_INITIALIZED',
+        },
+      });
+
+      await app.runAsCLI(['start'], { from: 'user' });
+      await waitSecond();
+
+      expect(getLastMessage()).toMatchObject({
+        type: 'maintaining',
+        payload: {
+          code: 'APP_NOT_INSTALLED_ERROR',
+          message: errors.APP_ERROR.message(app),
           command: {
             name: 'start',
           },
@@ -227,14 +241,8 @@ describe('gateway', () => {
       });
 
       await app.runAsCLI(['install'], { from: 'user' });
-      await app.runAsCLI(['start'], { from: 'user' });
 
-      await new Promise((resolve) => {
-        setTimeout(resolve, 100);
-      });
-
-      console.log(messages);
-
+      await waitSecond();
       expect(getLastMessage()).toMatchObject({
         type: 'maintaining',
         payload: {
