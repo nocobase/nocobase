@@ -1,17 +1,17 @@
 import { useField, useFieldSchema } from '@formily/react';
 import { useDesignable } from '@nocobase/client';
 import lodash from 'lodash';
-import { useCallback } from 'react';
+import { useMemoizedFn } from 'ahooks';
 
 export const useSchemaPatch = () => {
   const { dn } = useDesignable();
   const fieldSchema = useFieldSchema();
   const field = useField();
 
-  const onUpdateComponentProps = useCallback((data) => {
+  const onUpdateComponentProps = useMemoizedFn(async (data) => {
     lodash.set(fieldSchema, 'x-component-props', data);
     field.componentProps = { ...field.componentProps, ...data };
-    dn.emit('patch', {
+    await dn.emit('patch', {
       schema: {
         ['x-uid']: fieldSchema['x-uid'],
         'x-component-props': fieldSchema['x-component-props'],
@@ -23,8 +23,8 @@ export const useSchemaPatch = () => {
         ],
       },
     });
-    dn.refresh();
-  }, []);
+    await dn.refresh();
+  });
 
   return { onUpdateComponentProps };
 };

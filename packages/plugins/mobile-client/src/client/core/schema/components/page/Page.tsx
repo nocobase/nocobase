@@ -1,4 +1,4 @@
-import { RecursionField, useFieldSchema } from '@formily/react';
+import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import { ActionBarProvider, SortableItem, TabsContextProvider, cx, useDesigner } from '@nocobase/client';
 import { TabsProps } from 'antd';
 import React, { useCallback } from 'react';
@@ -10,9 +10,12 @@ import useStyles from './style';
 const InternalPage: React.FC = (props) => {
   const { styles } = useStyles();
   const Designer = useDesigner();
+  const field = useField();
   const fieldSchema = useFieldSchema();
   const [searchParams, setSearchParams] = useSearchParams();
   const tabsSchema = fieldSchema.properties?.['tabs'];
+  const isHeaderEnabled = field.componentProps.headerEnabled !== false;
+  const isTabsEnabled = field.componentProps.tabsEnabled !== false;
   // Only support globalActions in page
   const onlyInPage = fieldSchema.root === fieldSchema.parent;
   let hasGlobalActions = false;
@@ -75,23 +78,46 @@ const InternalPage: React.FC = (props) => {
         }}
         className={cx('nb-mobile-page-header', styles.mobilePageHeader)}
       >
-        <RecursionField
-          schema={fieldSchema}
-          filterProperties={(s) => {
-            return 'MHeader' === s['x-component'];
-          }}
-        ></RecursionField>
+        {isHeaderEnabled && (
+          <RecursionField
+            schema={fieldSchema}
+            filterProperties={(s) => {
+              return 'MHeader' === s['x-component'];
+            }}
+          ></RecursionField>
+        )}
         <TabsContextProvider
           PaneRoot={GlobalActionProvider}
           activeKey={searchParams.get('tab')}
           onChange={onTabsChange}
         >
-          <RecursionField
-            schema={fieldSchema}
-            filterProperties={(s) => {
-              return 'Tabs' === s['x-component'];
-            }}
-          ></RecursionField>
+          {isTabsEnabled ? (
+            <RecursionField
+              schema={fieldSchema}
+              filterProperties={(s) => {
+                return 'Tabs' === s['x-component'];
+              }}
+            ></RecursionField>
+          ) : (
+            <RecursionField
+              schema={fieldSchema}
+              mapProperties={(s) => {
+                if (s['x-component'] !== 'Tabs') {
+                  return s;
+                }
+                const schemaArr = Object.values(s.properties).sort((k1, k2) => {
+                  return k1['x-index'] - k2['x-index'];
+                });
+                if (schemaArr.length === 0) {
+                  return s;
+                }
+                return Object.values(schemaArr[0].properties)?.[0];
+              }}
+              filterProperties={(s) => {
+                return 'Grid' === s['x-component'];
+              }}
+            ></RecursionField>
+          )}
         </TabsContextProvider>
       </div>
       <GlobalActionProvider>
