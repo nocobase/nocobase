@@ -5,7 +5,7 @@ export async function update(context: Context, next) {
   const repository = utils.getRepositoryFromParams(context) as Repository;
   const { filterByTk, values } = context.action.params;
   context.action.mergeParams({
-    whitelist: ['title', 'description', 'enabled', 'config'],
+    whitelist: ['title', 'description', 'enabled', 'config', 'options'],
   });
   // only enable/disable
   if (Object.keys(values).includes('config')) {
