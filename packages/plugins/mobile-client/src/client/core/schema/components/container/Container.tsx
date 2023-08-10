@@ -71,7 +71,7 @@ const InternalContainer: React.FC = (props) => {
           />
         )}
       </div>
-      {isTabBarEnabled ? (
+      {isTabBarEnabled && (
         <div className={cx('nb-mobile-container-tab-bar', styles.tabBar)}>
           <SchemaComponent
             onlyRenderProperties
@@ -81,7 +81,7 @@ const InternalContainer: React.FC = (props) => {
             schema={fieldSchema}
           ></SchemaComponent>
         </div>
-      ) : null}
+      )}
     </SortableItem>
   );
 };

@@ -3,7 +3,7 @@ import { ActionBarProvider, SortableItem, TabsContextProvider, cx, useDesigner }
 import { TabsProps } from 'antd';
 import React, { useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { countGridCol } from '../../helpers';
+import { countGridCol, findSchema } from '../../helpers';
 import { PageDesigner } from './Page.Designer';
 import useStyles from './style';
 
@@ -16,6 +16,17 @@ const InternalPage: React.FC = (props) => {
   const tabsSchema = fieldSchema.properties?.['tabs'];
   const isHeaderEnabled = field.componentProps.headerEnabled !== false;
   const isTabsEnabled = field.componentProps.tabsEnabled !== false;
+
+  let pageSchema = findSchema(fieldSchema, 'MPage');
+  if (!isTabsEnabled && !pageSchema && tabsSchema) {
+    const schemaArr = Object.values(tabsSchema.properties || {}).sort((k1, k2) => {
+      return k1['x-index'] - k2['x-index'];
+    });
+    if (schemaArr.length !== 0) {
+      pageSchema = Object.values(schemaArr[0].properties)?.[0];
+    }
+  }
+
   // Only support globalActions in page
   const onlyInPage = fieldSchema.root === fieldSchema.parent;
   let hasGlobalActions = false;
@@ -91,33 +102,12 @@ const InternalPage: React.FC = (props) => {
           activeKey={searchParams.get('tab')}
           onChange={onTabsChange}
         >
-          {isTabsEnabled ? (
-            <RecursionField
-              schema={fieldSchema}
-              filterProperties={(s) => {
-                return 'Tabs' === s['x-component'];
-              }}
-            ></RecursionField>
-          ) : (
-            <RecursionField
-              schema={fieldSchema}
-              mapProperties={(s) => {
-                if (s['x-component'] !== 'Tabs') {
-                  return s;
-                }
-                const schemaArr = Object.values(s.properties).sort((k1, k2) => {
-                  return k1['x-index'] - k2['x-index'];
-                });
-                if (schemaArr.length === 0) {
-                  return s;
-                }
-                return Object.values(schemaArr[0].properties)?.[0];
-              }}
-              filterProperties={(s) => {
-                return 'Grid' === s['x-component'];
-              }}
-            ></RecursionField>
-          )}
+          <RecursionField
+            schema={isTabsEnabled ? fieldSchema : pageSchema}
+            filterProperties={(s) => {
+              return 'Tabs' === s['x-component'] || 'Grid.Row' === s['x-component'];
+            }}
+          ></RecursionField>
         </TabsContextProvider>
       </div>
       <GlobalActionProvider>
