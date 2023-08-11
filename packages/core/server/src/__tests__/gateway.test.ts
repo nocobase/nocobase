@@ -158,7 +158,7 @@ describe('gateway', () => {
 
     beforeEach(async () => {
       messages = [];
-      port = startServerWithRandomPort(gateway.startHttpServer.bind(gateway));
+      port = await startServerWithRandomPort(gateway.startHttpServer.bind(gateway));
     });
 
     afterEach(async () => {
