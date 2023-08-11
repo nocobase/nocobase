@@ -1,3 +1,4 @@
+// @ts-ignore
 import { version } from '../../package.json';
 
 const deps: Record<string, string> = {
