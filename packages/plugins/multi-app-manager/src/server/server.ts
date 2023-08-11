@@ -139,8 +139,7 @@ export class PluginMultiAppManager extends Plugin {
       await subApp.db.sync();
       await subApp.install();
       await subApp.reload();
-
-      await subApp.start();
+      await subApp.runCommand('start');
     });
 
     this.db.on('applications.afterDestroy', async (model: ApplicationModel) => {
@@ -191,10 +190,7 @@ export class PluginMultiAppManager extends Plugin {
 
         // must skip load on upgrade
         if (!options?.upgrading) {
-          await subApp.load();
-
-          // start sub app
-          await subApp.start();
+          await subApp.runCommand('start');
         }
       });
     }
@@ -216,8 +212,7 @@ export class PluginMultiAppManager extends Plugin {
           const registeredApp = await subApp.registerToSupervisor(this.app, {
             appOptionsFactory: this.appOptionsFactory,
           });
-          await registeredApp.load();
-          await registeredApp.start();
+          await registeredApp.runCommand('start');
         } catch (err) {
           console.error('Auto register sub application in single mode failed: ', appSupervisor.singleAppName, err);
         }
@@ -239,8 +234,7 @@ export class PluginMultiAppManager extends Plugin {
                 appOptionsFactory: this.appOptionsFactory,
               });
 
-              await registeredApp.load();
-              await registeredApp.start();
+              await registeredApp.runCommand('start');
             })(),
           );
         }

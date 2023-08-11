@@ -12,17 +12,18 @@ describe('App Supervisor', () => {
   });
 
   it('should get application initializing status', async () => {
-    expect(appSupervisor.getAppStatus('test')).toBe(null);
+    expect(appSupervisor.getAppStatus('test')).toBe(undefined);
 
-    appSupervisor.setAppBootstrapper(async ({ appSupervisor, appName, options }) => {
+    appSupervisor.setAppBootstrapper(async () => {
       await new Promise((resolve) => setTimeout(resolve, 1000));
     });
 
     appSupervisor.getApp('test');
 
+    await new Promise((resolve) => setTimeout(resolve, 500));
     expect(appSupervisor.getAppStatus('test')).toBe('initializing');
 
     await new Promise((resolve) => setTimeout(resolve, 2000));
-    expect(appSupervisor.getAppStatus('test')).toBe(null);
+    expect(appSupervisor.getAppStatus('test')).toBe('not_found');
   });
 });
