@@ -687,6 +687,7 @@ export default {
   "Plugin starting...": "Plugin iniciando...",
   "Plugin stopping...": "Plugin deteniendo...",
   "Are you sure to delete this plugin?": "¿Estás seguro de eliminar este plugin?",
+  "re-download file": "volver a descargar el archivo",
     "Coming soon...": "Próximamente...",
     "All plugin settings": "Configuración de todos los plugins",
     "Bookmark": "Marcador",

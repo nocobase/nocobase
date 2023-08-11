@@ -16,7 +16,7 @@ interface IPluginInfo extends IPluginCard {
 }
 
 function PluginInfo(props: IPluginInfo) {
-  const { data, refresh, onClick } = props;
+  const { data, onClick } = props;
   const {
     name,
     displayName,
@@ -38,17 +38,18 @@ function PluginInfo(props: IPluginInfo) {
   const { modal } = App.useApp();
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [enabledVal, setEnabledVal] = useState(enabled);
+  const reload = () => window.location.reload();
 
   const { loading: npmUpgradeLoading, run: npmUpgradeRun } = useRequest(
     { url: `pm:upgradeByNpm/${name}`, method: 'post' },
     {
       manual: true,
-      onSuccess: refresh,
+      onSuccess: reload,
     },
   );
   const { loading: urlUpgradeLoading, run: urlUpgradeRun } = useRequest(
     { url: `pm:upgradeByCompressedFileUrl/${name}`, method: 'post', data: { compressedFileUrl } },
-    { manual: true, onSuccess: refresh },
+    { manual: true, onSuccess: reload },
   );
 
   return (
@@ -59,7 +60,7 @@ function PluginInfo(props: IPluginInfo) {
           name={name}
           onClose={(isRefresh) => {
             setShowUploadForm(false);
-            if (isRefresh) refresh();
+            if (isRefresh) reload();
           }}
         />
       )}
@@ -191,12 +192,11 @@ function PluginInfo(props: IPluginInfo) {
 }
 
 export interface IPluginCard {
-  refresh: () => void;
   data: IPluginData;
 }
 
 export const PluginCard: FC<IPluginCard> = (props) => {
-  const { data, refresh } = props;
+  const { data } = props;
   const [plugin, setPlugin] = useState<IPluginData>(undefined);
 
   return (
@@ -207,7 +207,6 @@ export const PluginCard: FC<IPluginCard> = (props) => {
           setPlugin(data);
         }}
         data={data}
-        refresh={refresh}
       />
     </>
   );

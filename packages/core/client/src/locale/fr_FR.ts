@@ -684,6 +684,7 @@ export default {
   "Plugin starting...": "Démarrage du plugin...",
   "Plugin stopping...": "Arrêt du plugin...",
   "Are you sure to delete this plugin?": "Êtes-vous sûr de vouloir supprimer ce plugin ?",
+  "re-download file": "re-télécharger le fichier",
   "Coming soon...": "Bientôt...",
   "All plugin settings": "Tous les paramètres de plugin",
   "Bookmark": "Signet",

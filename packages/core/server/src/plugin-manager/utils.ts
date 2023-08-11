@@ -380,6 +380,9 @@ export interface DepCompatible {
 }
 export function getCompatible(packageName: string) {
   const realPath = getRealPath(packageName, 'dist/externalVersion.js');
+
+  delete require.cache[realPath];
+
   const exists = fs.existsSync(realPath);
   if (!exists) {
     return [];

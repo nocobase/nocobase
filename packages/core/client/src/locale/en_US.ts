@@ -685,6 +685,7 @@ export default {
   "Plugin starting...": "Plugin starting...",
   "Plugin stopping...": "Plugin stopping...",
   "Are you sure to delete this plugin?": "Are you sure to delete this plugin?",
+  "re-download file": "re-download file",
   "Coming soon...": "Coming soon...",
   "All plugin settings": "All plugin settings",
   "Bookmark": "Bookmark",

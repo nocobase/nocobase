@@ -704,6 +704,7 @@ export default {
   "Plugin starting...": "Запуск плагіна...",
   "Plugin stopping...": "Зупинка плагіна...",
   "Are you sure to delete this plugin?": "Ви впевнені, що хочете видалити цей плагін?",
+  "re-download file": "перезавантажити файл",
   "Coming soon...": "Скоро буде...",
   "All plugin settings": "Всі налаштування плагінів",
   "Bookmark": "Закладка",

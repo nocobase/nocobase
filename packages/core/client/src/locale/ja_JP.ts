@@ -662,4 +662,5 @@ export default {
   "Plugin starting...": "プラグインを起動しています...",
   "Plugin stopping...": "プラグインを停止しています...",
   "Are you sure to delete this plugin?": "このプラグインを削除してもよろしいですか？",
+  "re-download file": "ファイルを再ダウンロード",
 }

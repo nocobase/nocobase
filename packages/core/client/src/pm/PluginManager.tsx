@@ -110,7 +110,7 @@ const LocalPlugins = () => {
         <Space size={'middle'} wrap>
           {filterList[filterIndex]?.list?.map((item) => (
             <div key={item.id}>
-              <PluginCard data={item} refresh={refresh} />
+              <PluginCard data={item} />
             </div>
           ))}
         </Space>
@@ -157,7 +157,7 @@ export const PluginManager = () => {
                 key: 'local',
                 label: t('Local'),
                 children: (
-                  <div style={{ marginTop: theme.margin, minHeight: '80vh' }}>
+                  <div style={{ marginTop: theme.margin, marginBottom: theme.marginLG, minHeight: '80vh' }}>
                     <LocalPlugins />
                   </div>
                 ),
@@ -166,7 +166,7 @@ export const PluginManager = () => {
                 key: 'marketplace',
                 label: t('Marketplace'),
                 children: (
-                  <div style={{ marginTop: theme.margin, minHeight: '80vh' }}>
+                  <div style={{ marginTop: theme.margin, marginBottom: theme.marginLG, minHeight: '80vh' }}>
                     <MarketplacePlugins />
                   </div>
                 ),

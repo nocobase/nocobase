@@ -538,5 +538,6 @@ export default {
   "Dependencies check failed, can't enable.": "Bağımlılık kontrolü başarısız oldu, etkinleştirilemiyor.",
   "Plugin starting...": "Eklenti başlatılıyor...",
   "Plugin stopping...": "Eklenti durduruluyor...",
-  "Are you sure to delete this plugin?": "Bu eklentiyi silmek istediğinizden emin misiniz?"
+  "Are you sure to delete this plugin?": "Bu eklentiyi silmek istediğinizden emin misiniz?",
+  "re-download file": "dosyayı yeniden indir",
 }

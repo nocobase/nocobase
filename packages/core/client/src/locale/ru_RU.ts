@@ -542,4 +542,5 @@ export default {
   "Plugin starting...": "Запуск плагина...",
   "Plugin stopping...": "Остановка плагина...",
   "Are you sure to delete this plugin?": "Вы уверены, что хотите удалить этот плагин?",
+  "re-download file": "повторно загрузить файл",
 }

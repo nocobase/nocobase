@@ -728,6 +728,7 @@ export default {
   "Plugin starting...": "插件启动中...",
   "Plugin stopping...": "插件停止中...",
   "Are you sure to delete this plugin?": "确定要删除此插件吗？",
+  "re-download file": "重新下载文件",
   'Coming soon...': '敬请期待...',
   'All plugin settings': '所有插件配置',
   'Bookmark': '书签',

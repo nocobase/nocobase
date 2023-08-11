@@ -650,6 +650,7 @@ export default {
   "Plugin starting...": "Plugin iniciando...",
   "Plugin stopping...": "Plugin parando...",
   "Are you sure to delete this plugin?": "Tem certeza de que deseja excluir este plugin?",
+  "re-download file": "re-fazer download do arquivo",
   "Coming soon...": "Em breve...",
   "All plugin settings": "Configurações de todos os plugins",
   "Bookmark": "Favoritar",
