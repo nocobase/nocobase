@@ -1,4 +1,4 @@
-import { supertest } from '@nocobase/test';
+import { startServerWithRandomPort, supertest, waitSecond } from '@nocobase/test';
 import { Gateway } from '../gateway';
 import Application from '../application';
 import ws from 'ws';
@@ -139,10 +139,6 @@ describe('gateway', () => {
 
     let messages: Array<string>;
 
-    const waitSecond = async () => {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-    };
-
     const connectClient = (port) => {
       wsClient = new ws(`ws://localhost:${port}/ws`);
       wsClient.on('message', (data) => {
@@ -162,17 +158,7 @@ describe('gateway', () => {
 
     beforeEach(async () => {
       messages = [];
-      port = await new Promise((resolve) =>
-        gateway.startHttpServer({
-          port: 0,
-          host: 'localhost',
-          callback(server) {
-            // @ts-ignore
-            const port = server.address().port;
-            resolve(port);
-          },
-        }),
-      );
+      port = startServerWithRandomPort(gateway.startHttpServer.bind(gateway));
     });
 
     afterEach(async () => {

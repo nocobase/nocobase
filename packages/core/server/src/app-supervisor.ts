@@ -120,7 +120,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
         if (!this.hasApp(appName)) {
           this.setAppStatus(appName, 'not_found');
-        } else {
+        } else if (!this.getAppStatus(appName)) {
           this.setAppStatus(appName, 'initialized');
         }
       }

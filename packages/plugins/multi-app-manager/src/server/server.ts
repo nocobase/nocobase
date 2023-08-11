@@ -139,6 +139,11 @@ export class PluginMultiAppManager extends Plugin {
       await subApp.db.sync();
       await subApp.install();
       await subApp.reload();
+
+      if (AppSupervisor.getInstance().getAppStatus(this.app.name) !== 'running') {
+        return;
+      }
+
       await subApp.runCommand('start');
     });
 

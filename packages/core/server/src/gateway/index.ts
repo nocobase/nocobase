@@ -65,6 +65,7 @@ export class Gateway extends EventEmitter {
       this.server.close();
       this.server = null;
     }
+
     if (this.ipcSocketServer) {
       this.ipcSocketServer.close();
       this.ipcSocketServer = null;

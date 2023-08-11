@@ -21,12 +21,9 @@ export default (app: Application) => {
       if (!opts?.clean && !opts?.force && installed) {
         if (!opts.silent) {
           console.log('NocoBase is already installed. To reinstall, please execute:');
-          console.log();
           const command = '$ yarn nocobase install -f';
           console.log(chalk.yellow(command));
-          console.log();
           console.log(chalk.red('This operation will clear the database!!!'));
-          console.log();
         }
         return;
       }

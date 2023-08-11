@@ -376,7 +376,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
         this.activatedCommand = {
           name: getCommandFullName(actionCommand),
         };
-        console.log(`call preAction at ${this.activatedCommand.name}`);
         this.setMaintaining({
           status: 'command_begin',
           command: this.activatedCommand,
@@ -391,7 +390,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
         await this.load();
       })
       .hook('postAction', async (_, actionCommand) => {
-        console.log(`call postAction at ${getCommandFullName(actionCommand)}`);
         if (this._maintainingStatusBeforeCommand?.error && this._started) {
           await this.restart();
         }
