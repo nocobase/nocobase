@@ -31,7 +31,10 @@ export default class Processor {
   jobsMap = new Map<number, JobModel>();
   jobsMapByNodeId: { [key: number]: any } = {};
 
-  constructor(public execution: ExecutionModel, public options: ProcessorOptions) {
+  constructor(
+    public execution: ExecutionModel,
+    public options: ProcessorOptions,
+  ) {
     this.logger = options.plugin.getLogger(execution.workflowId);
   }
 
@@ -63,7 +66,7 @@ export default class Processor {
   }
 
   private async getTransaction() {
-    if (!this.execution.useTransaction) {
+    if (!this.execution.workflow.options?.useTransaction) {
       return;
     }
 
@@ -76,15 +79,15 @@ export default class Processor {
   }
 
   public async prepare() {
+    const { execution } = this;
+    if (!execution.workflow) {
+      execution.workflow = await execution.getWorkflow();
+    }
+
     const transaction = await this.getTransaction();
     this.transaction = transaction;
 
-    const { execution } = this;
-    if (!execution.workflow) {
-      execution.workflow = await execution.getWorkflow({ transaction });
-    }
-
-    const nodes = await execution.workflow.getNodes({ transaction });
+    const nodes = await execution.workflow.getNodes();
 
     this.makeNodes(nodes);
 

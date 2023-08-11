@@ -15,6 +15,7 @@ import { lang } from './locale';
 import { instructions } from './nodes';
 import { workflowSchema } from './schemas/workflows';
 import { triggers } from './triggers';
+import { ExecutionStatusSelect } from './components/ExecutionStatusSelect';
 
 // registerField(expressionField.group, 'expression', expressionField);
 
@@ -35,6 +36,7 @@ function WorkflowPane() {
           ExecutionResourceProvider,
           ExecutionLink,
           OpenDrawer,
+          ExecutionStatusSelect,
         }}
       />
     </Card>

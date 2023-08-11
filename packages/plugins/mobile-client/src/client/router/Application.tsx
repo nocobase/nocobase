@@ -12,6 +12,7 @@ import React, { useMemo } from 'react';
 import { Outlet, useParams } from 'react-router-dom';
 import { MobileCore } from '../core';
 import { useInterfaceContext } from './InterfaceProvider';
+import { OpenInNewTab } from './OpenInNewTab';
 
 const commonCSSVariables = css`
   --nb-spacing: 14px;
@@ -92,6 +93,7 @@ const MApplication: React.FC = (props) => {
   return (
     <Provider>
       <MobileCore>
+        <OpenInNewTab />
         <ActionContextProvider modalProps={modalProps as ModalProps} drawerProps={drawerProps}>
           <div
             className={cx(

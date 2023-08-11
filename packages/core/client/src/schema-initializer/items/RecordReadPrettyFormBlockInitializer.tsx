@@ -17,7 +17,8 @@ export const RecordReadPrettyFormBlockInitializer = (props) => {
     ...others
   } = props;
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
-  const collection = targetCollection || useCollection();
+  const currentCollection = useCollection();
+  const collection = targetCollection || currentCollection;
   const association = useBlockAssociationContext();
   const { block } = useBlockRequestContext();
   const actionInitializers =
@@ -61,7 +62,7 @@ export const RecordReadPrettyFormBlockInitializer = (props) => {
           );
         }
       }}
-      items={useRecordCollectionDataSourceItems('ReadPrettyFormItem')}
+      items={useRecordCollectionDataSourceItems('ReadPrettyFormItem', null, collection?.name)}
     />
   );
 };
