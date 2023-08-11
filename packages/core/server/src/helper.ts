@@ -1,6 +1,7 @@
 import cors from '@koa/cors';
 import Database from '@nocobase/database';
 import Resourcer from '@nocobase/resourcer';
+import { Command } from 'commander';
 import i18next from 'i18next';
 import bodyParser from 'koa-bodyparser';
 import Application, { ApplicationOptions } from './application';
@@ -91,4 +92,18 @@ export const createAppProxy = (app: Application) => {
       return Reflect.get(target, prop, ...args);
     },
   });
+};
+
+export const getCommandFullName = (command: Command) => {
+  const names = [];
+  names.push(command.name());
+  let parent = command?.parent;
+  while (parent) {
+    if (!parent?.parent) {
+      break;
+    }
+    names.unshift(parent.name());
+    parent = parent.parent;
+  }
+  return names.join('.');
 };

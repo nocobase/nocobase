@@ -1,19 +1,35 @@
 import Application from '../application';
-import { Gateway } from '../gateway';
 
 export default (app: Application) => {
-  app
-    .command('pm')
-    .argument('<method>')
-    .arguments('<plugins...>')
-    .option('-S, --skip-yarn-install', 'skip yarn install')
-    .action(async (method, plugins, options, ...args) => {
-      if (method === 'add' && !options.skipYarnInstall) {
-        const { run } = require('@nocobase/cli/src/util');
-        console.log('Install dependencies and rebuild workspaces');
-        await run('yarn', ['install']);
-      }
+  const pm = app.command('pm');
 
-      app.pm[method](plugins, options);
+  pm.command('create')
+    .arguments('plugin')
+    .action(async (plugin) => {
+      await app.pm.create(plugin);
+    });
+
+  pm.command('add')
+    .arguments('plugin')
+    .action(async (plugin) => {
+      await app.pm.add(plugin);
+    });
+
+  pm.command('enable')
+    .arguments('<plugins...>')
+    .action(async (plugins) => {
+      await app.pm.enable(plugins);
+    });
+
+  pm.command('disable')
+    .arguments('<plugins...>')
+    .action(async (plugins) => {
+      await app.pm.disable(plugins);
+    });
+
+  pm.command('remove')
+    .arguments('<plugins...>')
+    .action(async (plugins) => {
+      await app.pm.remove(plugins);
     });
 };

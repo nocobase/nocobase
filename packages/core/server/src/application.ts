@@ -17,7 +17,7 @@ import { createACL } from './acl';
 import { AppSupervisor } from './app-supervisor';
 import { registerCli } from './commands';
 import { ApplicationNotInstall } from './errors/application-not-install';
-import { createAppProxy, createI18n, createResourcer, registerMiddlewares } from './helper';
+import { createAppProxy, createI18n, createResourcer, getCommandFullName, registerMiddlewares } from './helper';
 import { ApplicationVersion } from './helpers/application-version';
 import { Locale } from './locale';
 import { Plugin } from './plugin';
@@ -372,9 +372,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     try {
       const command = await this.cli
-        .hook('preAction', async (thisCommand, actionCommand) => {
+        .hook('preAction', async (_, actionCommand) => {
           this.activatedCommand = {
-            name: actionCommand.name(),
+            name: getCommandFullName(actionCommand),
           };
 
           this.setMaintaining({
