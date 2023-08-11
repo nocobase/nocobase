@@ -1509,7 +1509,6 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
 
                   s['x-read-pretty'] = false;
                   s['x-disabled'] = false;
-                  console.log(props.onChange);
                   const schema = {
                     ...(s || {}),
                     'x-decorator': 'FormItem',
