@@ -149,8 +149,16 @@ export const PluginForm: FC<IPluginFormProps> = ({ onClose, isShow }) => {
             data: form.values,
           });
         } else {
-          const compressedFileUrl =
+          let compressedFileUrl =
             type === 'url' ? form.values.compressedFileUrl : form.values.uploadFile[0].response.data.url;
+
+          if (!(compressedFileUrl.startsWith('http') || compressedFileUrl.startsWith('//'))) {
+            if (!compressedFileUrl.startsWith('/')) {
+              compressedFileUrl = `/${compressedFileUrl}`;
+            }
+            compressedFileUrl = `${window.origin}${compressedFileUrl}`;
+          }
+
           await api.request({
             url: 'pm:addByCompressedFileUrl',
             method: 'post',
