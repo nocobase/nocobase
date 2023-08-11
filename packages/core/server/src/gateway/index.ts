@@ -151,7 +151,7 @@ export class Gateway extends EventEmitter {
         port,
         host,
       });
-    } else {
+    } else if (!this.isHelp()) {
       const ipcClient = await this.tryConnectToIPCServer();
 
       if (ipcClient) {
@@ -168,6 +168,11 @@ export class Gateway extends EventEmitter {
   isStart() {
     const argv = process.argv;
     return argv[2] === 'start';
+  }
+
+  isHelp() {
+    const argv = process.argv;
+    return argv[2] === 'help';
   }
 
   getStartOptions() {
