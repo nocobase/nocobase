@@ -56,9 +56,9 @@ const InternalPage: React.FC = (props) => {
 
   const GlobalActionProvider = useCallback(
     (props) => {
-      if (hasGlobalActions) {
-        return (
-          <TabsContextProvider>
+      return (
+        <TabsContextProvider>
+          {hasGlobalActions ? (
             <ActionBarProvider
               container={
                 (typeof props.active !== 'undefined' ? props.active : true) && onlyInPage
@@ -72,12 +72,13 @@ const InternalPage: React.FC = (props) => {
             >
               {props.children}
             </ActionBarProvider>
-          </TabsContextProvider>
-        );
-      }
-      return <>{props.children}</>;
+          ) : (
+            props.children
+          )}
+        </TabsContextProvider>
+      );
     },
-    [hasGlobalActions, onlyInPage],
+    [hasGlobalActions, onlyInPage, styles.globalActionCSS],
   );
 
   return (
