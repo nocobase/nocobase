@@ -18,9 +18,9 @@ interface WebSocketClient {
   app?: string;
 }
 
-function getPayloadByErrorCode(code, ...args) {
+function getPayloadByErrorCode(code, options) {
   const error = getErrorWithCode(code);
-  return lodash.omit(applyErrorWithArgs(error, ...args), ['status', 'maintaining']);
+  return lodash.omit(applyErrorWithArgs(error, options), ['status', 'maintaining']);
 }
 
 export class WSServer {
@@ -57,12 +57,17 @@ export class WSServer {
       });
     });
 
-    AppSupervisor.getInstance().on('appWorkingMessageChanged', async ({ appName, message }) => {
+    AppSupervisor.getInstance().on('appWorkingMessageChanged', async ({ appName, message, command }) => {
       const app = await AppSupervisor.getInstance().getApp(appName, {
         withOutBootStrap: true,
       });
 
-      const payload = getPayloadByErrorCode(AppSupervisor.getInstance().getAppStatus(appName), app, message);
+      const payload = getPayloadByErrorCode('commanding', {
+        app,
+        message,
+        command,
+      });
+
       this.sendToConnectionsByTag('app', appName, {
         type: 'maintaining',
         payload,
@@ -74,9 +79,11 @@ export class WSServer {
         withOutBootStrap: true,
       });
 
+      const payload = getPayloadByErrorCode(status, { app, appName });
+      console.log(`send payload ${JSON.stringify(payload)}`);
       this.sendToConnectionsByTag('app', appName, {
         type: 'maintaining',
-        payload: getPayloadByErrorCode(status, app || appName),
+        payload,
       });
     });
   }
@@ -121,7 +128,7 @@ export class WSServer {
     if (appStatus === 'not_found') {
       this.sendMessageToConnection(client, {
         type: 'maintaining',
-        payload: getPayloadByErrorCode('APP_NOT_FOUND', handleAppName),
+        payload: getPayloadByErrorCode('APP_NOT_FOUND', { appName: handleAppName }),
       });
       return;
     }
@@ -129,7 +136,7 @@ export class WSServer {
     if (appStatus === 'initializing') {
       this.sendMessageToConnection(client, {
         type: 'maintaining',
-        payload: getPayloadByErrorCode('APP_INITIALIZING', handleAppName),
+        payload: getPayloadByErrorCode('APP_INITIALIZING', { appName: handleAppName }),
       });
 
       return;
@@ -139,7 +146,7 @@ export class WSServer {
 
     this.sendMessageToConnection(client, {
       type: 'maintaining',
-      payload: getPayloadByErrorCode(appStatus, app),
+      payload: getPayloadByErrorCode(appStatus, { app }),
     });
   }
 

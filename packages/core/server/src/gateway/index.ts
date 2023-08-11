@@ -90,8 +90,8 @@ export class Gateway extends EventEmitter {
     res.end(JSON.stringify({ error }));
   }
 
-  responseErrorWithCode(code, res, ...args) {
-    this.responseError(res, applyErrorWithArgs(getErrorWithCode(code), ...args));
+  responseErrorWithCode(code, res, options) {
+    this.responseError(res, applyErrorWithArgs(getErrorWithCode(code), options));
   }
 
   async requestHandler(req: IncomingMessage, res: ServerResponse) {
@@ -106,19 +106,19 @@ export class Gateway extends EventEmitter {
     const appStatus = AppSupervisor.getInstance().getAppStatus(handleApp, 'initializing');
 
     if (appStatus === 'not_found') {
-      this.responseErrorWithCode('APP_NOT_FOUND', res, handleApp);
+      this.responseErrorWithCode('APP_NOT_FOUND', res, { appName: handleApp });
       return;
     }
 
     if (appStatus === 'initializing') {
-      this.responseErrorWithCode('APP_INITIALIZING', res, handleApp);
+      this.responseErrorWithCode('APP_INITIALIZING', res, { appName: handleApp });
       return;
     }
 
     const app = await AppSupervisor.getInstance().getApp(handleApp);
 
     if (appStatus !== 'running') {
-      this.responseErrorWithCode(`${appStatus}`, res, app);
+      this.responseErrorWithCode(`${appStatus}`, res, { app });
       return;
     }
 

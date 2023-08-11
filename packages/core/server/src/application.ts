@@ -238,6 +238,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this.emit('workingMessageChanged', {
       message: this._workingMessage,
+      maintainingStatus: this._maintainingCommandStatus,
     });
   }
 
@@ -363,6 +364,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.db.prepare();
   }
 
+  async runCommand(command: string) {
+    return await this.runAsCLI([command], { from: 'user' });
+  }
+
   async runAsCLI(argv = process.argv, options?: ParseOptions) {
     if (this.activatedCommand) {
       return;
@@ -438,7 +443,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.emitAsync('beforeStart', this, options);
     await this.emitAsync('afterStart', this, options);
     this.stopped = false;
-    this.setWorkingMessage('started');
   }
 
   async restart(options: StartOptions = {}) {
@@ -575,6 +579,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   toJSON() {
     return {
       appName: this.name,
+      name: this.name,
     };
   }
 

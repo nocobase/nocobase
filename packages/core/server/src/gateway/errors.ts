@@ -19,94 +19,72 @@ interface AppErrors {
 export const errors: AppErrors = {
   APP_NOT_FOUND: {
     status: 404,
-    message: (appName: string) => `application ${appName} not found`,
+    message: ({ appName }) => `application ${appName} not found`,
     maintaining: true,
   },
 
   APP_ERROR: {
     status: 503,
-    message: (app: Application) => AppSupervisor.getInstance().appErrors[app.name]?.message,
-    code: (app: Application): string => {
+    message: ({ app }) => {
+      return AppSupervisor.getInstance().appErrors[app.name]?.message;
+    },
+    code: ({ app }): string => {
       const error = AppSupervisor.getInstance().appErrors[app.name];
       return error['code'] || 'APP_ERROR';
     },
-    command: (app: Application) => app.getMaintaining().command,
-    maintaining: true,
-  },
-
-  APP_INSTALLING: {
-    status: 503,
-    message: (app: Application) => app.workingMessage,
+    command: ({ app }) => app.getMaintaining().command,
     maintaining: true,
   },
 
   APP_STARTING: {
     status: 503,
-    message: (app: Application) => app.workingMessage,
+    message: ({ app }) => app.workingMessage,
     maintaining: true,
   },
 
   APP_STOPPING: {
     status: 503,
-    message: (app: Application) => app.workingMessage,
-    maintaining: true,
-  },
-
-  APP_UPDATING: {
-    status: 503,
-    message: (app: Application) => app.workingMessage,
-    maintaining: true,
-  },
-
-  APP_PM_ENABLING: {
-    status: 503,
-    message: (app: Application) => app.workingMessage,
-    maintaining: true,
-  },
-
-  APP_PM_DISABLING: {
-    status: 503,
-    message: (app: Application) => app.workingMessage,
+    message: ({ app }) => app.workingMessage,
     maintaining: true,
   },
 
   APP_RUNNING: {
     status: 200,
-    message: (app: Application) => `application ${app.name} is running`,
+    message: ({ app }) => `application ${app.name} is running`,
     maintaining: false,
   },
 
   APP_INITIALIZED: {
     status: 503,
-    message: (app: Application) => app.workingMessage || 'application is initialized, waiting for command',
+    message: () => 'application is initialized, waiting for command',
     maintaining: true,
   },
 
   APP_INITIALIZING: {
     status: 503,
-    message: (appName: string) => `application ${appName} is initializing`,
+    message: ({ appName }) => `application ${appName} is initializing`,
     maintaining: true,
   },
 
   COMMAND_ERROR: {
     status: 503,
     maintaining: true,
-    message: (app: Application) => app.getMaintaining().error.message,
-    command: (app: Application) => app.getMaintaining().command,
+    message: ({ app }) => app.getMaintaining().error.message,
+    command: ({ app }) => app.getMaintaining().command,
   },
 
   COMMAND_END: {
     status: 503,
     maintaining: true,
-    message: (app: Application) => `${app.getMaintaining().command.name} running end`,
-    command: (app: Application) => app.getMaintaining().command,
+    message: ({ app }) => `${app.getMaintaining().command.name} running end`,
+    command: ({ app }) => app.getMaintaining().command,
   },
 
   APP_COMMANDING: {
     status: 503,
     maintaining: true,
-    message: (app: Application, message) => message || app.workingMessage,
-    command: (app: Application) => app.getMaintaining().command,
+    message: ({ app, message }) => message || app.workingMessage,
+    command: ({ app, command }) => command || app.getMaintaining().command,
   },
 
   UNKNOWN_ERROR: {
@@ -137,9 +115,11 @@ export function getErrorWithCode(errorCode: string): AppError {
   return error as AppError;
 }
 
-export function applyErrorWithArgs(error: AppError, ...args: any[]) {
+export function applyErrorWithArgs(error: AppError, options) {
   const functionKeys = Object.keys(error).filter((key) => typeof error[key] === 'function');
-  const functionResults = functionKeys.map((key) => error[key].apply(null, args));
+  const functionResults = functionKeys.map((key) => {
+    return error[key](options);
+  });
 
   return {
     ...error,

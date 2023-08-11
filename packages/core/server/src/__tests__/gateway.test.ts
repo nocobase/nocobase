@@ -61,7 +61,7 @@ describe('gateway', () => {
       expect(data).toMatchObject({
         error: {
           code: 'APP_INITIALIZED',
-          message: errors.APP_INITIALIZED.message(main),
+          message: errors.APP_INITIALIZED.message({ app: main }),
           status: 503,
           maintaining: true,
         },
@@ -86,7 +86,7 @@ describe('gateway', () => {
       expect(data).toMatchObject({
         error: {
           code: 'APP_NOT_INSTALLED_ERROR',
-          message: errors.APP_ERROR.message(main),
+          message: errors.APP_ERROR.message({ app: main }),
           command: {
             name: 'start',
           },
@@ -140,7 +140,7 @@ describe('gateway', () => {
     let messages: Array<string>;
 
     const waitSecond = async () => {
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     };
 
     const connectClient = (port) => {
@@ -233,7 +233,7 @@ describe('gateway', () => {
         type: 'maintaining',
         payload: {
           code: 'APP_NOT_INSTALLED_ERROR',
-          message: errors.APP_ERROR.message(app),
+          message: errors.APP_ERROR.message({ app }),
           command: {
             name: 'start',
           },
@@ -250,5 +250,32 @@ describe('gateway', () => {
         },
       });
     });
+
+    it('should receive app running message when command end', async () => {
+      await connectClient(port);
+      const app = new Application({
+        database: {
+          dialect: 'sqlite',
+          storage: ':memory:',
+        },
+      });
+
+      await waitSecond();
+
+      await app.runCommand('start');
+      await app.runCommand('install');
+      await app.runCommand('db:auth');
+
+      await waitSecond();
+
+      expect(getLastMessage()).toMatchObject({
+        type: 'maintaining',
+        payload: {
+          code: 'APP_RUNNING',
+        },
+      });
+    });
+
+    it('should receive app stopped when stop app', async () => {});
   });
 });
