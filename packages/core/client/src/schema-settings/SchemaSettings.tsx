@@ -1671,8 +1671,9 @@ SchemaSettings.SortingRule = function SortRuleConfigure(props) {
 // 是否显示默认值配置项
 export const isShowDefaultValue = (collectionField: CollectionFieldOptions, getInterface) => {
   return (
-    !['o2o', 'oho', 'obo', 'o2m', 'attachment', 'expression'].includes(collectionField?.interface) &&
-    !isSystemField(collectionField, getInterface)
+    !['o2o', 'oho', 'obo', 'o2m', 'attachment', 'expression', 'point', 'lineString', 'circle', 'polygon'].includes(
+      collectionField?.interface,
+    ) && !isSystemField(collectionField, getInterface)
   );
 };
 
