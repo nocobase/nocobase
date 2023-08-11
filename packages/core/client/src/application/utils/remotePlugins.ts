@@ -16,10 +16,6 @@ export function getRemotePlugins(
   if (baseURL.endsWith('/')) {
     baseURL = baseURL.slice(0, -1);
   }
-  if (baseURL.endsWith('/api')) {
-    baseURL = baseURL.slice(0, -4);
-  }
-
   requirejs.requirejs.config({
     paths: pluginData.reduce<Record<string, string>>((memo, item) => {
       memo[item.packageName] = `${baseURL}${item.url}`;
