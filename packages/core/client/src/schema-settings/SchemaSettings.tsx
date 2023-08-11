@@ -1509,7 +1509,7 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
 
                   s['x-read-pretty'] = false;
                   s['x-disabled'] = false;
-
+                  console.log(props.onChange);
                   const schema = {
                     ...(s || {}),
                     'x-decorator': 'FormItem',
@@ -1517,7 +1517,7 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
                       ...s['x-component-props'],
                       collectionName: collectionField?.collectionName,
                       targetField,
-                      onChange: props.onChange,
+                      onChange: collectionField?.interface !== 'richText' ? props.onChange : null,
                       defaultValue: getFieldDefaultValue(s, collectionField),
                       style: {
                         width: '100%',
