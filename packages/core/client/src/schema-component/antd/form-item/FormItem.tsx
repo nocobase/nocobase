@@ -353,14 +353,16 @@ FormItem.Designer = function Designer() {
           defaultFilter={fieldSchema?.['x-component-props']?.service?.params?.filter || {}}
           form={form}
           dynamicComponent={(props: DynamicComponentProps) => {
-            return VariableInput({
-              ...props,
-              form,
-              collectionField,
-              blockCollectionName: ctx.props.collection || ctx.props.resource,
-              record,
-              shouldChange: getShouldChange({ collectionField: props.collectionField, variables, localVariables }),
-            });
+            return (
+              <VariableInput
+                {...props}
+                form={form}
+                collectionField={collectionField}
+                blockCollectionName={ctx.props.collection || ctx.props.resource}
+                record={record}
+                shouldChange={getShouldChange({ collectionField: props.collectionField, variables, localVariables })}
+              />
+            );
           }}
           onSubmit={({ filter }) => {
             filter = removeNullCondition(filter);

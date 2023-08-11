@@ -1,7 +1,7 @@
 import { createForm, onFieldValueChange } from '@formily/core';
 import { FieldContext, FormContext } from '@formily/react';
 import { merge } from '@formily/shared';
-import React, { useContext, useMemo } from 'react';
+import React, { useCallback, useContext, useMemo } from 'react';
 import { CollectionFieldOptions } from '../../../collection-manager';
 import { SchemaComponent } from '../../core';
 import { useComponent } from '../../hooks';
@@ -9,6 +9,9 @@ import { FilterContext } from './context';
 
 export interface DynamicComponentProps {
   value: any;
+  /**
+   * `Filter` 组件左侧选择的字段
+   */
   collectionField: CollectionFieldOptions;
   onChange: (value: any) => void;
   renderSchemaComponent: () => React.JSX.Element;
@@ -37,7 +40,7 @@ export const DynamicComponent = (props: Props) => {
       },
     });
   }, [JSON.stringify(props.value)]);
-  const renderSchemaComponent = () => {
+  const renderSchemaComponent = useCallback(() => {
     return (
       <FieldContext.Provider value={null}>
         <SchemaComponent
@@ -57,7 +60,7 @@ export const DynamicComponent = (props: Props) => {
         />
       </FieldContext.Provider>
     );
-  };
+  }, [props.schema]);
   return (
     <FormContext.Provider value={form}>
       {component

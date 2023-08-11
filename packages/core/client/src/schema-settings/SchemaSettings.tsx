@@ -1709,13 +1709,15 @@ SchemaSettings.DataScope = function DataScopeConfigure(props: DataScopeProps) {
   const localVariables = useLocalVariables();
 
   const dynamicComponent = (props: DynamicComponentProps) => {
-    return VariableInput({
-      ...props,
-      blockCollectionName: name,
-      form,
-      record,
-      shouldChange: getShouldChange({ collectionField: props.collectionField, variables, localVariables }),
-    });
+    return (
+      <VariableInput
+        {...props}
+        blockCollectionName={name}
+        form={form}
+        record={record}
+        shouldChange={getShouldChange({ collectionField: props.collectionField, variables, localVariables })}
+      />
+    );
   };
 
   return (

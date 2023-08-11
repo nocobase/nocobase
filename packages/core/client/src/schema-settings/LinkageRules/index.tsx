@@ -86,13 +86,15 @@ export const FormLinkageRules = observer(
                             },
                             dynamicComponent: (props: DynamicComponentProps) => {
                               const { collectionField } = props;
-                              return VariableInput({
-                                ...props,
-                                blockCollectionName: collectionName,
-                                form,
-                                record,
-                                shouldChange: getShouldChange({ collectionField, variables, localVariables }),
-                              });
+                              return (
+                                <VariableInput
+                                  {...props}
+                                  blockCollectionName={collectionName}
+                                  form={form}
+                                  record={record}
+                                  shouldChange={getShouldChange({ collectionField, variables, localVariables })}
+                                />
+                              );
                             },
                           },
                         },
