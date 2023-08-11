@@ -9,7 +9,6 @@ export default (app: Application) => {
     const [opts] = cliArgs;
     console.log('upgrading...');
     await app.upgrade();
-    await app.restart();
     console.log(chalk.green(`✨  NocoBase has been upgraded to v${app.getVersion()}`));
   });
 };

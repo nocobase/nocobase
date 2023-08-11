@@ -42,7 +42,5 @@ export default (app: Application) => {
           force: opts.force,
         },
       });
-
-      await app.restart();
     });
 };

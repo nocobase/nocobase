@@ -557,6 +557,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.log.debug('emit afterInstall');
     this.setWorkingMessage('call afterInstall hook...');
     await this.emitAsync('afterInstall', this, options);
+    if (this._started) {
+      await this.restart();
+    }
   }
 
   async upgrade(options: any = {}) {
@@ -572,6 +575,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.version.update();
     await this.emitAsync('afterUpgrade', this, options);
     this.log.debug(chalk.green(`✨  NocoBase has been upgraded to v${this.getVersion()}`));
+    if (this._started) {
+      await this.restart();
+    }
   }
 
   toJSON() {
