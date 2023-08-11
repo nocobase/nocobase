@@ -395,4 +395,96 @@ describe('workflow > Plugin', () => {
       expect(e2.status).toBe(EXECUTION_STATUS.QUEUEING);
     });
   });
+
+  describe('options.deleteExecutionOnStatus', () => {
+    it('no configured should not be deleted', async () => {
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      const p1 = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const executions = await w1.getExecutions();
+      expect(executions.length).toBe(1);
+    });
+
+    it('status on started should not be deleted', async () => {
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        options: {
+          deleteExecutionOnStatus: [EXECUTION_STATUS.STARTED],
+        },
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      await w1.createNode({
+        type: 'pending',
+      });
+
+      const p1 = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const executions = await w1.getExecutions();
+      expect(executions.length).toBe(1);
+      expect(executions[0].status).toBe(EXECUTION_STATUS.STARTED);
+    });
+
+    it('configured resolved status should be deleted', async () => {
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        options: {
+          deleteExecutionOnStatus: [EXECUTION_STATUS.RESOLVED],
+        },
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      const p1 = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const executions = await w1.getExecutions();
+      expect(executions.length).toBe(0);
+    });
+
+    it('configured error status should be deleted', async () => {
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        options: {
+          deleteExecutionOnStatus: [EXECUTION_STATUS.ERROR],
+        },
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      await w1.createNode({
+        type: 'error',
+      });
+
+      const p1 = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const executions = await w1.getExecutions();
+      expect(executions.length).toBe(0);
+    });
+  });
 });

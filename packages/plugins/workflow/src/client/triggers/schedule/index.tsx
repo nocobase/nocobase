@@ -1,15 +1,20 @@
-import { useCollectionDataSource, SchemaInitializerItemOptions, useCompile, useCollectionManager } from '@nocobase/client';
+import {
+  SchemaInitializerItemOptions,
+  useCollectionDataSource,
+  useCollectionManager,
+  useCompile,
+} from '@nocobase/client';
 
+import { CollectionBlockInitializer } from '../../components/CollectionBlockInitializer';
+import { NAMESPACE, lang } from '../../locale';
+import { getCollectionFieldOptions } from '../../variable';
 import { ScheduleConfig } from './ScheduleConfig';
 import { SCHEDULE_MODE } from './constants';
-import { NAMESPACE, lang } from '../../locale';
-import { CollectionBlockInitializer } from '../../components/CollectionBlockInitializer';
-import { defaultFieldNames, getCollectionFieldOptions } from '../../variable';
-import { FieldsSelect } from '../../components/FieldsSelect';
 
 export default {
   title: `{{t("Schedule event", { ns: "${NAMESPACE}" })}}`,
   type: 'schedule',
+  description: `{{t("Event will be scheduled and triggered base on time conditions.", { ns: "${NAMESPACE}" })}}`,
   fieldset: {
     config: {
       type: 'void',
@@ -26,7 +31,6 @@ export default {
   useVariables(config, opts) {
     const compile = useCompile();
     const { getCollectionFields } = useCollectionManager();
-    const { fieldNames = defaultFieldNames } = opts;
     const options: any[] = [];
     if (!opts?.types || opts.types.includes('date')) {
       options.push({ key: 'date', value: 'date', label: lang('Trigger time') });
@@ -49,7 +53,7 @@ export default {
             uiSchema: {
               title: lang('Trigger data'),
             },
-          }
+          },
         ],
         appends: ['data', ...(config.appends?.map((item) => `data.${item}`) || [])],
         compile,

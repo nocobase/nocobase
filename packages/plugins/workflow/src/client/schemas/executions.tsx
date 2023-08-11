@@ -1,9 +1,11 @@
 import React from 'react';
 import { ISchema } from '@formily/react';
 import { Link } from 'react-router-dom';
-import { useActionContext } from '@nocobase/client';
+import { useActionContext, useRecord, useResourceActionContext, useResourceContext } from '@nocobase/client';
 import { ExecutionStatusOptions } from '../constants';
 import { NAMESPACE } from '../locale';
+import { useTranslation } from 'react-i18next';
+import { message } from 'antd';
 
 export const executionCollection = {
   name: 'executions',
@@ -87,10 +89,31 @@ export const executionSchema = {
             },
           },
           properties: {
-            // filter: {
-            //   type: 'object',
-            //   'x-component': 'Filter',
-            // }
+            clear: {
+              type: 'void',
+              title: '{{t("Clear")}}',
+              'x-component': 'Action',
+              'x-component-props': {
+                useAction() {
+                  const { t } = useTranslation();
+                  const { refresh, defaultRequest } = useResourceActionContext();
+                  const { resource } = useResourceContext();
+                  const { setVisible } = useActionContext();
+                  return {
+                    async run() {
+                      await resource.destroy({ filter: defaultRequest.params?.filter });
+                      message.success(t('Operation succeeded'));
+                      refresh();
+                      setVisible(false);
+                    },
+                  };
+                },
+                confirm: {
+                  title: `{{t("Clear all executions", { ns: "${NAMESPACE}" })}}`,
+                  content: `{{t("Clear executions will not reset executed count, and started executions will not be deleted, are you sure you want to delete them all?", { ns: "${NAMESPACE}" })}}`,
+                },
+              },
+            },
           },
         },
         table: {
@@ -152,7 +175,7 @@ export const executionSchema = {
                     split: '|',
                   },
                   properties: {
-                    config: {
+                    link: {
                       type: 'void',
                       title: `{{t("Details", { ns: "${NAMESPACE}" })}}`,
                       'x-component': 'ExecutionLink',

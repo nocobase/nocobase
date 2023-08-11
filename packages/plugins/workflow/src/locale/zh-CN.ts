@@ -1,7 +1,12 @@
 export default {
   Workflow: '工作流',
   'Execution history': '执行历史',
+  'Clear all executions': '清除所有执行记录',
+  'Clear executions will not reset executed count, and started executions will not be deleted, are you sure you want to delete them all?':
+    '清空执行记录不会重置执行次数，且执行中的也不会被删除，确定要删除所有执行记录吗？',
   Executed: '已执行',
+  Sync: '同步',
+  'Sync enabled status of all workflows from database': '从数据库同步所有工作流的启用状态',
   'Trigger type': '触发方式',
   Status: '状态',
   On: '启用',
@@ -9,15 +14,38 @@ export default {
   Version: '版本',
   'Copy to new version': '复制到新版本',
   Duplicate: '复制',
+  'Duplicate to new workflow': '复制为新工作流',
   'Delete a main version will cause all other revisions to be deleted too.': '删除主版本将导致其他版本一并被删除。',
   Loading: '加载中',
   'Load failed': '加载失败',
+  'Use transaction': '启用事务',
+  'Data operation nodes in workflow will run in a same transaction until any interruption. Any failure will cause data rollback, and will also rollback the history of the execution.':
+    '工作流中的节点将在同一个事务中运行。任何失败都会导致数据回滚，同时也会回滚相应的执行历史。',
+  'Auto delete history when execution is on end status': '执行结束后自动删除对应状态的历史记录',
   Trigger: '触发器',
   'Trigger variables': '触发器变量',
   'Trigger data': '触发数据',
   'Trigger time': '触发时间',
   'Triggered at': '触发时间',
+
+  'Form event': '表单事件',
+  'Event triggers when submitted a workflow bound form action.': '在提交绑定工作流的表单操作按钮后触发。',
+  'Form data model': '表单数据模型',
+  'Use a collection to match form data.': '使用一个数据表来匹配表单数据。',
+  'Associations to use': '待使用的关系数据',
+  'Bind workflows': '绑定工作流',
+  'Workflow will be triggered after submitting succeeded.': '提交成功后触发工作流。',
+  'Workflow will be triggered after saving succeeded.': '保存成功后触发工作流。',
+  'Workflow will be triggered directly once the button clicked.': '按钮点击后直接触发工作流。',
+  'Submit to workflow': '提交至工作流',
+  'Add workflow': '添加工作流',
+  'Select workflow': '选择工作流',
+  'Trigger data context': '触发数据上下文',
+  'Full form data': '完整表单数据',
+  'Select context': '选择上下文',
   'Collection event': '数据表事件',
+  'Event will be triggered on collection data row created, updated or deleted.':
+    '当数据表中的数据被新增、更新或删除时触发。',
   'Trigger on': '触发时机',
   'After record added': '新增数据后',
   'After record updated': '更新数据后',
@@ -31,6 +59,7 @@ export default {
   'Please select the associated fields that need to be accessed in subsequent nodes. With more than two levels of to-many associations may cause performance issue, please use with caution.':
     '请选中需要在后续节点中被访问的关系字段。超过两层的对多关联可能会导致性能问题，请谨慎使用。',
   'Schedule event': '定时任务',
+  'Scheduled job base on time conditions.': '基于时间条件的计划任务',
   'Trigger mode': '触发模式',
   'Based on certain date': '自定义时间',
   'Based on date field of collection': '根据数据表时间字段',
@@ -77,6 +106,16 @@ export default {
   Aborted: '已终止',
   Canceled: '已取消',
   Rejected: '已拒绝',
+
+  'Triggered but still waiting in queue to execute.': '已触发但仍在队列中等待执行。',
+  'Started and executing, maybe waiting for an async callback (manual, delay etc.).':
+    '已开始执行，可能在等待异步回调（人工、延时等）。',
+  'Successfully finished.': '成功完成。',
+  'Failed to satisfy node configurations.': '未满足节点配置造成的失败。',
+  'Some node meets error.': '某个节点出错。',
+  'Running of some node was aborted by program flow.': '某个节点被程序流程终止。',
+  'Manually canceled whole execution when waiting.': '等待时被手动取消整个执行。',
+  'Rejected from a manual node.': '被人工节点拒绝继续。',
 
   'Continue the process': '继续流程',
   'Terminate the process': '终止流程',
@@ -244,5 +283,5 @@ export default {
 
   'SQL action': 'SQL 操作',
   'Execute a SQL statement in database': '在数据库中执行一个 SQL 语句',
-  'Usage of SQL query result is not supported yet.': 'SQL 执行的结果暂不支持使用。'
+  'Usage of SQL query result is not supported yet.': 'SQL 执行的结果暂不支持使用。',
 };

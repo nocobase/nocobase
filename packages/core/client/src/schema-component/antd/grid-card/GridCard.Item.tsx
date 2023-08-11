@@ -3,7 +3,7 @@ import { ObjectField } from '@formily/core';
 import { useField } from '@formily/react';
 import { Card } from 'antd';
 import React from 'react';
-import { RecordSimpleProvider } from '../../../record-provider';
+import { RecordProvider } from '../../../record-provider';
 
 const itemCss = css`
   display: flex;
@@ -24,13 +24,13 @@ export const GridCardItem = (props) => {
           padding: 24px 24px 0px;
           height: 100%;
         }
-        .nb-action-bar button {
-          margin-bottom: 10px;
+        .nb-action-bar {
+          padding: 5px 0;
         }
       `}
     >
       <div className={itemCss}>
-        <RecordSimpleProvider value={field.value}>{props.children}</RecordSimpleProvider>
+        <RecordProvider record={field.value}>{props.children}</RecordProvider>
       </div>
     </Card>
   );
