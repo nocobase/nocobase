@@ -44,8 +44,8 @@ const isMatchClientStaticUrl = (url: string) => {
  * /api/plugins/client/my-plugin/README.md => my-plugin
  */
 const getPackageName = (url: string) => {
-  const urlArr = url.split('/');
-  return urlArr[4].startsWith('@') ? `${urlArr[4]}/${urlArr[5]}` : urlArr[4];
+  const urlArr = url.replace(PREFIX, '').replace('/api', '').split('/').filter(Boolean);
+  return urlArr[0].startsWith('@') ? `${urlArr[0]}/${urlArr[1]}` : urlArr[0];
 };
 
 /**

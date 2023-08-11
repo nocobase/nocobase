@@ -76,6 +76,7 @@ function PluginInfo(props: IPluginInfo) {
               <SettingOutlined
                 onClick={(e) => {
                   e.stopPropagation();
+                  if (!enabled) return;
                   navigate(`/admin/settings/${name}`);
                 }}
               />
