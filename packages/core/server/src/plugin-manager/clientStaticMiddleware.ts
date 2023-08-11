@@ -59,7 +59,7 @@ export const getRealPathByUrl = (packageName: string, url: string) => {
   const ext = path.extname(url);
   let filePath = url.replace(`${PREFIX}${packageName}/`, '').replace(`/api`, '');
 
-  // 保护所用，包根目录下仅允许访问 md 文件，其他文件会被重定向到 dist/client 目录下
+  // 保护作用，包目录下仅允许访问 md 文件，其他文件会被重定向到 dist/client 目录下
   if (ext.toLowerCase() !== '.md') {
     filePath = path.join('dist', 'client', filePath);
   }
