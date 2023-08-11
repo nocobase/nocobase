@@ -83,14 +83,12 @@ export const SettingsMenu: React.FC<{
           modal.confirm({
             title: t('Reboot application'),
             content: t('The will interrupt service, it may take a few seconds to restart. Are you sure to continue?'),
-            okText: t('Reboot'),
+            okText: t('Restart'),
             okButtonProps: {
               danger: true,
             },
             onOk: async () => {
-              await api.resource('app').reboot();
-              await check();
-              window.location.reload();
+              await api.resource('app').restart();
             },
           });
         },

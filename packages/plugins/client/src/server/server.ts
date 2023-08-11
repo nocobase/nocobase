@@ -1,4 +1,4 @@
-import { Plugin, PluginManager, getPackageClientStaticUrl, AppSupervisor } from '@nocobase/server';
+import { Plugin, PluginManager, getPackageClientStaticUrl } from '@nocobase/server';
 import fs from 'fs';
 import send from 'koa-send';
 import serve from 'koa-static';
@@ -194,9 +194,9 @@ export class ClientPlugin extends Plugin {
           await ctx.cache.reset();
           await next();
         },
-        reboot(ctx) {
-          const appName = ctx.app.name;
-          AppSupervisor.getInstance().restartApp(appName);
+        async restart(ctx, next) {
+          ctx.app.runAsCLI(['restart'], { from: 'user' });
+          await next();
         },
       },
     });
