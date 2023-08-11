@@ -15,23 +15,6 @@ import { XButton } from './XButton';
 import { useStyles } from './style';
 
 const JT_VALUE_RE = /^\s*{{\s*([^{}]+)\s*}}\s*$/;
-const groupClass = css`
-  width: auto;
-  display: flex;
-  &.ant-input-group-compact {
-    display: flex;
-  }
-  .ant-input-disabled {
-    .ant-tag {
-      color: #bfbfbf;
-      border-color: #d9d9d9;
-    }
-  }
-  .ant-input.null-value {
-    width: 4em;
-    min-width: 4em;
-  }
-`;
 
 function parseValue(value: any): string | string[] {
   if (value == null) {
@@ -269,7 +252,7 @@ export function Input(props) {
   const disabled = props.disabled || form.disabled;
 
   return wrapSSR(
-    <Space.Compact style={style} className={classNames(groupClass, componentCls, hashId, className)}>
+    <Space.Compact style={style} className={classNames(componentCls, hashId, className)}>
       {variable ? (
         <div
           className={cx(
@@ -330,7 +313,7 @@ export function Input(props) {
           ) : null}
         </div>
       ) : (
-        children ?? <ConstantComponent value={value} onChange={onChange} />
+        <div style={{ flex: 1 }}>{children ?? <ConstantComponent value={value} onChange={onChange} />}</div>
       )}
       {options.length > 1 && !disabled ? (
         <Cascader

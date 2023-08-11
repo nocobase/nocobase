@@ -11,9 +11,18 @@ export const useStyles = genStyleHook('nb-variable', (token) => {
 
   return {
     [componentCls]: {
-      '.ant-formily-item .ant-formily-item-control .ant-formily-item-control-content .ant-formily-item-control-content-component': {
-        lineHeight: 'normal',
+      width: 'auto',
+      display: 'flex',
+      '&.ant-input-group-compact': { display: 'flex' },
+      '.ant-input-disabled': {
+        '.ant-tag': { color: '#bfbfbf', borderColor: '#d9d9d9' },
       },
+      '.ant-input.null-value': { width: '4em', minWidth: '4em' },
+
+      '.ant-formily-item .ant-formily-item-control .ant-formily-item-control-content .ant-formily-item-control-content-component':
+        {
+          lineHeight: 'normal',
+        },
 
       '.ant-formily-item': {
         marginBottom: 0,

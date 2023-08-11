@@ -1,4 +1,5 @@
 import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
+import { isPortalInBody } from '@nocobase/utils/client';
 import { App, Button, Popover } from 'antd';
 import classnames from 'classnames';
 import lodash from 'lodash';
@@ -96,6 +97,10 @@ export const Action: ComposedAction = observer(
             opacity: designable && field?.data?.hidden && 0.1,
           }}
           onClick={(e: React.MouseEvent) => {
+            if (isPortalInBody(e.target as Element)) {
+              return;
+            }
+
             if (!disabled) {
               e.preventDefault();
               e.stopPropagation();

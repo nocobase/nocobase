@@ -6,6 +6,7 @@ import { ArrayField, Field } from '@formily/core';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
 import { RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
 import { action, reaction } from '@formily/reactive';
+import { isPortalInBody } from '@nocobase/utils/client';
 import { useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
@@ -22,7 +23,7 @@ import {
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
 import { useToken } from '../__builtins__';
 import { ColumnFieldProvider } from './components/ColumnFieldProvider';
-import { extractIndex, isCollectionFieldComponent, isColumnComponent, isPortalInBody } from './utils';
+import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
 
 const useArrayField = (props) => {
   const field = useField<ArrayField>();

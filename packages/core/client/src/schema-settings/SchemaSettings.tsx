@@ -856,40 +856,31 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
         {props.children || props.title}
       </SchemaSettings.Item>
       {createPortal(
-        <div
-          onClick={(e) => {
-            e.stopPropagation();
-          }}
-          onKeyDown={(e) => {
-            e.stopPropagation();
-          }}
+        <Modal
+          width={'50%'}
+          title={compile(title)}
+          {...others}
+          destroyOnClose
+          open={visible}
+          onCancel={cancelHandler}
+          footer={
+            <Space>
+              <Button onClick={cancelHandler}>{t('Cancel')}</Button>
+              <Button type="primary" onClick={submitHandler}>
+                {t('Submit')}
+              </Button>
+            </Space>
+          }
         >
-          <Modal
-            width={'50%'}
-            title={compile(title)}
-            {...others}
-            destroyOnClose
-            open={visible}
-            onCancel={cancelHandler}
-            footer={
-              <Space>
-                <Button onClick={cancelHandler}>{t('Cancel')}</Button>
-                <Button type="primary" onClick={submitHandler}>
-                  {t('Submit')}
-                </Button>
-              </Space>
-            }
-          >
-            <FormProvider form={form}>
-              <FormLayout layout={'vertical'}>
-                {modalTip && <Alert message={modalTip} />}
-                {modalTip && <br />}
-                {visible && schemaUid && <RemoteSchemaComponent noForm components={components} uid={schemaUid} />}
-                {visible && schema && <SchemaComponent components={components} schema={schema} />}
-              </FormLayout>
-            </FormProvider>
-          </Modal>
-        </div>,
+          <FormProvider form={form}>
+            <FormLayout layout={'vertical'}>
+              {modalTip && <Alert message={modalTip} />}
+              {modalTip && <br />}
+              {visible && schemaUid && <RemoteSchemaComponent noForm components={components} uid={schemaUid} />}
+              {visible && schema && <SchemaComponent components={components} schema={schema} />}
+            </FormLayout>
+          </FormProvider>
+        </Modal>,
         document.body,
       )}
     </>
