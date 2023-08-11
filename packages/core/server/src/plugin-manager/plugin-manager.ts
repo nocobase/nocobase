@@ -91,10 +91,7 @@ export class PluginManager {
     });
 
     this.app.on('beforeLoad', async (app, options) => {
-      if (options?.method && ['install', 'upgrade'].includes(options.method)) {
-        await this.collection.sync();
-      }
-
+      await this.collection.sync();
       const exists = await this.app.db.collectionExistsInDb('applicationPlugins');
 
       if (!exists) {
