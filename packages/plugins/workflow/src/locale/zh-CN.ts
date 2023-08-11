@@ -19,7 +19,7 @@ export default {
   Loading: '加载中',
   'Load failed': '加载失败',
   'Use transaction': '启用事务',
-  'Nodes of workflow will run in a same transaction. Any failure will cause data rollback, and will also rollback the history of the execution.':
+  'Data operation nodes in workflow will run in a same transaction until any interruption. Any failure will cause data rollback, and will also rollback the history of the execution.':
     '工作流中的节点将在同一个事务中运行。任何失败都会导致数据回滚，同时也会回滚相应的执行历史。',
   'Auto delete history when execution is on end status': '执行结束后自动删除对应状态的历史记录',
   Trigger: '触发器',
