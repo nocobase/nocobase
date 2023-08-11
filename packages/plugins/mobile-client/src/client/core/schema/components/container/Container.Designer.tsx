@@ -16,6 +16,7 @@ export const ContainerDesigner = () => {
 
   const field = useField();
   const { dn } = useDesignable();
+  const navigate = useNavigate();
 
   const tabBarSchema = findSchema(fieldSchema, 'MTabBar');
   const tabBarEnabled = tabBarSchema && field.componentProps.tabBarEnabled !== false;
@@ -75,6 +76,10 @@ export const ContainerDesigner = () => {
           await onUpdateComponentProps({
             tabBarEnabled: v,
           });
+
+          if (v === false) {
+            navigate('../');
+          }
         }}
       />
     </SchemaSettings>
