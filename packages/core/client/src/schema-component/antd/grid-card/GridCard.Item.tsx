@@ -24,8 +24,8 @@ export const GridCardItem = (props) => {
           padding: 24px 24px 0px;
           height: 100%;
         }
-        .nb-action-bar button {
-          margin-bottom: 10px;
+        .nb-action-bar {
+          padding: 5px 0;
         }
       `}
     >

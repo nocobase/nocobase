@@ -2,9 +2,10 @@ import { CheckOutlined, EnvironmentOutlined, ExpandOutlined } from '@ant-design/
 import { RecursionField, Schema, useFieldSchema } from '@formily/react';
 import {
   ActionContextProvider,
-  css,
   RecordProvider,
+  css,
   useCollection,
+  useCollectionManager,
   useCompile,
   useFilterAPI,
   useProps,
@@ -16,6 +17,7 @@ import { defaultImage, selectedImage } from '../../constants';
 import { useMapTranslation } from '../../locale';
 import { GoogleMapForwardedRefProps, GoogleMapsComponent, OverlayOptions } from './Map';
 import { getIcon } from './utils';
+import { getSource } from '../../utils';
 
 const OVERLAY_KEY = 'google-maps-overlay-id';
 const OVERLAY_SELECtED = 'google-maps-overlay-selected';
@@ -28,13 +30,10 @@ const labelClass = css`
 `;
 
 export const GoogleMapsBlock = (props) => {
-  const { fieldNames, dataSource = [], fixedBlock, zoom, setSelectedRecordKeys } = useProps(props);
-  const { getField, getPrimaryKey } = useCollection();
-  const { marker: markerName, field: fieldName } = fieldNames || {
-    marker: 'id',
-    field: 'id',
-  };
-  const field = getField(fieldName);
+  const { collectionField, fieldNames, dataSource, fixedBlock, zoom, setSelectedRecordKeys } = useProps(props);
+  const { getPrimaryKey } = useCollection();
+  const primaryKey = getPrimaryKey();
+  const { marker: markerName = 'id' } = fieldNames;
   const [isMapInitialization, setIsMapInitialization] = useState(false);
   const mapRef = useRef<GoogleMapForwardedRefProps>();
   const [record, setRecord] = useState();
@@ -42,11 +41,13 @@ export const GoogleMapsBlock = (props) => {
   const { t } = useMapTranslation();
   const compile = useCompile();
   const { isConnected, doFilter } = useFilterAPI();
-  const [, setPrevSelected] = useState(null);
+  const [, setPrevSelected] = useState<any>(null);
   const selectingModeRef = useRef(selectingMode);
-  const selectionOverlayRef = useRef<google.maps.Polygon>();
+  const selectionOverlayRef = useRef<google.maps.Polygon | null>(null);
   const overlaysRef = useRef<google.maps.MVCObject[]>([]);
   selectingModeRef.current = selectingMode;
+
+  const { getCollectionJoinField } = useCollectionManager();
 
   const setOverlayOptions = (overlay: google.maps.MVCObject, state?: boolean) => {
     const selected = typeof state !== 'undefined' ? !state : overlay.get(OVERLAY_SELECtED);
@@ -71,17 +72,17 @@ export const GoogleMapsBlock = (props) => {
     if (selectingMode !== 'selection') {
       return;
     }
-    if (!mapRef.current.drawingManager) {
-      mapRef.current.drawingManager = mapRef.current.createDraw(true, {
+    if (mapRef.current && !mapRef.current?.drawingManager) {
+      mapRef.current.drawingManager = mapRef.current?.createDraw(true, {
         editable: true,
         draggable: true,
       });
     }
     const listenerSet = new Set<() => void>();
-    mapRef.current.drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
-    mapRef.current.drawingManager.addListener('overlaycomplete', (event) => {
+    mapRef.current?.drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
+    mapRef.current?.drawingManager.addListener('overlaycomplete', (event) => {
       const polygon = event.overlay as google.maps.Polygon;
-      mapRef.current.drawingManager.setDrawingMode(null);
+      mapRef.current?.drawingManager.setDrawingMode(null);
       selectionOverlayRef.current = polygon;
       const path = polygon.getPath();
       ['insert_at', 'remove_at', 'set_at'].forEach((key) => {
@@ -96,8 +97,8 @@ export const GoogleMapsBlock = (props) => {
       selectionOverlayRef.current?.unbindAll();
       selectionOverlayRef.current?.setMap(null);
       selectionOverlayRef.current = null;
-      mapRef.current.drawingManager.setDrawingMode(null);
-      mapRef.current.drawingManager.unbindAll();
+      mapRef.current?.drawingManager.setDrawingMode(null);
+      mapRef.current?.drawingManager.unbindAll();
     };
   }, [selectingMode]);
 
@@ -120,15 +121,15 @@ export const GoogleMapsBlock = (props) => {
     const selectedOverlays = overlays.filter((o) => {
       if (o === overlay || o.get(OVERLAY_KEY) === undefined) return;
       if (o instanceof google.maps.Marker) {
-        return poly.containsLocation(o.getPosition(), overlay);
+        return poly.containsLocation(o.getPosition()!, overlay!);
       } else if (o instanceof google.maps.Circle) {
-        return poly.containsLocation(o.getCenter(), overlay);
+        return poly.containsLocation(o.getCenter()!, overlay!);
       } else {
         return (o as google.maps.Polygon)
           .getPath()
           .getArray()
           .some((position) => {
-            return poly.containsLocation(position, overlay);
+            return poly.containsLocation(position, overlay!);
           });
       }
     });
@@ -137,36 +138,45 @@ export const GoogleMapsBlock = (props) => {
       return o.get(OVERLAY_KEY);
     });
     setSelectedRecordKeys((lastIds) => ids.concat(lastIds));
-    overlay.unbindAll();
-    overlay.setMap(null);
-    mapRef.current.drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
+    overlay?.unbindAll();
+    overlay?.setMap(null);
+    mapRef.current?.drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
   });
 
   useEffect(() => {
-    if (!field || !mapRef.current?.map) return;
+    if (!collectionField || !dataSource?.length || !mapRef.current?.map) return;
+    const fieldPaths =
+      Array.isArray(fieldNames?.field) && fieldNames?.field.length > 1
+        ? fieldNames?.field.slice(0, -1)
+        : fieldNames?.field;
+    const cf = getCollectionJoinField([name, ...fieldPaths].flat().join('.'));
+
     const overlays: google.maps.Polygon[] = dataSource
       .map((item) => {
-        const data = item[fieldNames?.field];
-        if (!data) return;
-        const overlay = mapRef.current.setOverlay(field.type, data, {
-          strokeColor: '#4e9bff',
-          fillColor: '#4e9bff',
-          cursor: 'pointer',
-          label: {
-            className: labelClass,
-            fontFamily: 'inherit',
-            fontSize: '13px',
-            color: '#333',
-            text: fieldNames?.marker ? compile(item[markerName]) : undefined,
-          } as google.maps.MarkerLabel,
+        const data = getSource(item, fieldNames?.field, cf?.interface);
+        if (!data?.length) return [];
+        return data?.filter(Boolean).map((mapItem) => {
+          if (!data) return;
+          const overlay = mapRef.current?.setOverlay(collectionField.type, mapItem, {
+            strokeColor: '#4e9bff',
+            fillColor: '#4e9bff',
+            cursor: 'pointer',
+            label: {
+              className: labelClass,
+              fontFamily: 'inherit',
+              fontSize: '13px',
+              color: '#333',
+              text: fieldNames?.marker ? compile(item[markerName]) : undefined,
+            } as google.maps.MarkerLabel,
+          });
+          overlay?.set(OVERLAY_KEY, item[primaryKey]);
+          return overlay;
         });
-        overlay.set(OVERLAY_KEY, item[getPrimaryKey()]);
-        return overlay;
       })
-      .filter(Boolean);
+      .flat();
 
     overlaysRef.current = overlays;
-    mapRef.current.setFitView(overlays);
+    mapRef.current?.setFitView(overlays);
 
     const events = overlays.map((o: google.maps.MVCObject) => {
       const onClick = (event) => {
@@ -175,7 +185,7 @@ export const GoogleMapsBlock = (props) => {
         if (!id) return;
 
         const data = dataSource?.find((item) => {
-          return id === item[getPrimaryKey()];
+          return id === item[primaryKey];
         });
 
         // 筛选区块模式
@@ -190,7 +200,7 @@ export const GoogleMapsBlock = (props) => {
               return null;
             } else {
               selectMarker(overlay);
-              doFilter(data[getPrimaryKey()], (target) => target.field || getPrimaryKey(), '$eq');
+              doFilter(data[primaryKey], (target) => target.field || primaryKey, '$eq');
             }
             return overlay;
           });
@@ -213,7 +223,7 @@ export const GoogleMapsBlock = (props) => {
       });
       events.forEach((e) => e());
     };
-  }, [dataSource, isMapInitialization, markerName, field.type, isConnected]);
+  }, [dataSource, isMapInitialization, markerName, collectionField.type, isConnected]);
 
   useEffect(() => {
     setTimeout(() => {

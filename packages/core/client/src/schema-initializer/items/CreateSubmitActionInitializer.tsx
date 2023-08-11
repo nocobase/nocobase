@@ -13,6 +13,9 @@ export const CreateSubmitActionInitializer = (props) => {
       htmlType: 'submit',
       useProps: '{{ useCreateActionProps }}',
     },
+    'x-action-settings': {
+      triggerWorkflows: [],
+    },
   };
   return <ActionInitializer {...props} schema={schema} />;
 };

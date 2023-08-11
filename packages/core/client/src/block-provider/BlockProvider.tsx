@@ -56,6 +56,8 @@ const useResource = (props: UseResourceProps) => {
   const association = useAssociation(props);
   const sourceId = useSourceId?.();
   const field = useField<Field>();
+  const withoutTableFieldResource = useContext(WithoutTableFieldResource);
+  const __parent = useContext(BlockRequestContext);
   if (block === 'TableField') {
     const options = {
       field,
@@ -68,8 +70,6 @@ const useResource = (props: UseResourceProps) => {
     return new TableFieldResource(options);
   }
 
-  const withoutTableFieldResource = useContext(WithoutTableFieldResource);
-  const __parent = useContext(BlockRequestContext);
   if (
     !withoutTableFieldResource &&
     __parent?.block === 'TableField' &&

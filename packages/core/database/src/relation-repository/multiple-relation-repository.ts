@@ -1,4 +1,5 @@
 import { HasOne, MultiAssociationAccessors, Sequelize, Transaction, Transactionable } from 'sequelize';
+import lodash from 'lodash';
 import injectTargetCollection from '../decorators/target-collection-decorator';
 import {
   CommonFindOptions,
@@ -134,10 +135,8 @@ export abstract class MultipleRelationRepository extends RelationRepository {
 
     const values = guard.sanitize(options.values);
 
-    const queryOptions = this.buildQueryOptions(options as any);
-
     const instances = await this.find({
-      ...queryOptions,
+      ...(lodash.omit(options, ['values']) as any),
       transaction,
     });
 

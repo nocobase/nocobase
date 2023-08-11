@@ -75,6 +75,7 @@ export const TableColumnDesigner = (props) => {
   if (fieldSchema['x-read-pretty'] === true) {
     readOnlyMode = 'read-pretty';
   }
+  const isSelectFieldMode = isAssociationField && fieldMode === 'Select';
   return (
     <GeneralSchemaDesigner disableInitializer>
       <SchemaSettings.ModalItem
@@ -109,7 +110,7 @@ export const TableColumnDesigner = (props) => {
           dn.refresh();
         }}
       />
-      {currentMode && !field.readPretty && (
+      {isSelectFieldMode && !field.readPretty && !uiSchema?.['x-read-pretty'] && (
         <SchemaSettings.ModalItem
           title={t('Set the data scope')}
           schema={
@@ -134,7 +135,7 @@ export const TableColumnDesigner = (props) => {
             fieldSchema['x-component-props'] = field.componentProps;
             const path = field.path?.splice(field.path?.length - 1, 1);
             field.form.query(`${path.concat(`*.` + fieldSchema.name)}`).forEach((f) => {
-              // set(f.componentProps, 'service.params.filter', filter);
+              f.componentProps.service = f.componentProps.service || { params: {} };
               f.componentProps.service.params.filter = filter;
             });
             dn.emit('patch', {
