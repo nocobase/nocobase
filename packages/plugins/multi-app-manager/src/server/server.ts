@@ -207,6 +207,8 @@ export class PluginMultiAppManager extends Plugin {
       const appSupervisor = AppSupervisor.getInstance();
 
       if (appSupervisor.runningMode == 'single') {
+        Gateway.getInstance().setAppSelector(() => appSupervisor.singleAppName);
+
         // If the sub application is running in single mode, register the application automatically
         try {
           const subApp = await repository.findOne({

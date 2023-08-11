@@ -59,7 +59,7 @@ export class Gateway extends EventEmitter {
   }
 
   public reset() {
-    this.setAppSelector(() => process.env['STARTUP_SUBAPP'] || 'main');
+    this.setAppSelector(() => 'main');
 
     if (this.server) {
       this.server.close();
@@ -73,10 +73,6 @@ export class Gateway extends EventEmitter {
   }
 
   setAppSelector(selector: AppSelector) {
-    if (AppSupervisor.getInstance().runningMode === 'single' && this.appSelector) {
-      return;
-    }
-
     this.appSelector = selector;
     this.emit('appSelectorChanged');
   }
