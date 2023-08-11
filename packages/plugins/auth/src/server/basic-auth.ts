@@ -16,11 +16,20 @@ export class BasicAuth extends BaseAuth {
     if (!values[uniqueField]) {
       ctx.throw(400, ctx.t('Please fill in your email address', { ns: namespace }));
     }
-    const user = await this.userRepository.findOne({
-      where: {
-        [uniqueField]: values[uniqueField],
-      },
-    });
+    let user = null;
+    if (uniqueField == 'email') {
+      user = await this.userRepository.findOne({
+        where: {
+          [uniqueField]: String(values[uniqueField]).toLowerCase(),
+        },
+      });
+    } else {
+      user = await this.userRepository.findOne({
+        where: {
+          [uniqueField]: values[uniqueField],
+        },
+      });
+    }
 
     if (!user) {
       ctx.throw(401, ctx.t('The email is incorrect, please re-enter', { ns: namespace }));
