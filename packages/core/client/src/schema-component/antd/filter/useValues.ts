@@ -3,8 +3,22 @@ import { merge } from '@formily/shared';
 import flat, { unflatten } from 'flat';
 import cloneDeep from 'lodash/cloneDeep';
 import get from 'lodash/get';
-import { useContext, useEffect } from 'react';
+import { useContext, useEffect, useMemo } from 'react';
+import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { FilterContext } from './context';
+
+interface UseValuesReturn {
+  fields: any[];
+  collectionField: any;
+  dataIndex: string[];
+  operators: any[];
+  operator: any;
+  schema: any;
+  value: any;
+  setDataIndex: (dataIndex: string[]) => void;
+  setOperator: (operatorValue: string) => void;
+  setValue: (value: any) => void;
+}
 
 // import { useValues } from './useValues';
 const findOption = (dataIndex = [], options) => {
@@ -20,9 +34,19 @@ const findOption = (dataIndex = [], options) => {
   return option;
 };
 
-export const useValues = () => {
+export const useValues = (): UseValuesReturn => {
+  const { name } = useCollection();
+  const { getCollectionJoinField } = useCollectionManager();
   const field = useField<any>();
-  const { options } = useContext(FilterContext) || {};
+  const { options, collectionName } = useContext(FilterContext) || {};
+  const values: object = flat(field.value || {});
+  const path = Object.keys(values).shift() || '';
+
+  const collectionField = useMemo(() => {
+    const [fieldPath = ''] = path.split('.$');
+    return getCollectionJoinField(`${collectionName || name}.${fieldPath}`);
+  }, [name, path]);
+
   const data2value = () => {
     field.value = flat.unflatten({
       [`${field.data.dataIndex?.join('.')}.${field.data?.operator?.value}`]: field.data?.value,
@@ -30,8 +54,6 @@ export const useValues = () => {
   };
   const value2data = () => {
     field.data = field.data || {};
-    const values: object = flat(field.value || {});
-    const path = Object.keys(values).shift() || '';
     if (!path || !options) {
       return;
     }
@@ -51,6 +73,7 @@ export const useValues = () => {
   return {
     fields: options,
     ...(field?.data || {}),
+    collectionField,
     setDataIndex(dataIndex) {
       const option = findOption(dataIndex, options);
       const operator = option?.operators?.[0];

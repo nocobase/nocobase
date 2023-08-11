@@ -1,6 +1,6 @@
 import { getValuesByPath } from '@nocobase/utils/client';
 import _ from 'lodash';
-import React, { createContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { createContext, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useAPIClient } from '../api-client';
 import type { CollectionFieldOptions } from '../collection-manager';
 import { useCollectionManager } from '../collection-manager';
@@ -72,15 +72,18 @@ export const getVariableName = (variableString: string) => {
 
 const VariablesProvider = ({ children }) => {
   const ctxRef = useRef<Record<string, any>>({});
-  const [ctx, setCtx] = useState<Record<string, any>>({});
   const api = useAPIClient();
   const { getCollectionJoinField } = useCollectionManager();
   const compile = useCompile();
   const { builtinVariables } = useBuiltInVariables();
 
-  useEffect(() => {
-    ctxRef.current = ctx;
-  }, [ctx]);
+  const setCtx = useCallback((ctx: Record<string, any> | ((prev: Record<string, any>) => Record<string, any>)) => {
+    if (_.isFunction(ctx)) {
+      ctxRef.current = ctx(ctxRef.current);
+    } else {
+      ctxRef.current = ctx;
+    }
+  }, []);
 
   /**
    * 1. 从 `ctx` 中根据 `path` 取值
@@ -158,7 +161,6 @@ const VariablesProvider = ({ children }) => {
         [variableOption.name]: variableOption.ctx,
       };
     });
-    ctxRef.current[variableOption.name] = variableOption.ctx;
     if (variableOption.collectionName) {
       variableToCollectionName[variableOption.name] = variableOption.collectionName;
     }
@@ -182,44 +184,32 @@ const VariablesProvider = ({ children }) => {
       delete next[variableName];
       return next;
     });
-    delete ctxRef.current[variableName];
     delete variableToCollectionName[variableName];
   }, []);
 
-  const parseVariable = useCallback(
-    /**
-     * 将变量字符串解析为真正的值
-     * @param str 变量字符串
-     * @param localVariable 局部变量，解析完成后会被清除
-     * @returns
-     */
-    async (str: string, localVariable?: VariableOption) => {
-      if (!isVariable(str)) {
-        return str;
-      }
-
+  const onLocalVariablesReady = useCallback(
+    async (localVariables: VariableOption | VariableOption[], handler: () => Promise<void>) => {
       let old = null;
-      if (localVariable) {
-        if (Array.isArray(localVariable)) {
-          old = localVariable.map((item) => getVariable(item.name));
-          localVariable.forEach((item) => registerVariable(item));
+      if (localVariables) {
+        if (Array.isArray(localVariables)) {
+          old = localVariables.map((item) => getVariable(item.name));
+          localVariables.forEach((item) => registerVariable(item));
         } else {
           // 1. 如果有局部变量，先把全局中同名的变量取出来
-          old = getVariable(localVariable.name);
+          old = getVariable(localVariables.name);
           // 2. 把局部变量注册到全局，这样就可以使用了
-          registerVariable(localVariable);
+          registerVariable(localVariables);
         }
       }
 
-      const path = getPath(str);
-      const value = await getValue(path);
+      await handler();
 
       // 3. 局部变量使用完成后，需要在全局中清除
-      if (localVariable) {
-        if (Array.isArray(localVariable)) {
-          localVariable.forEach((item) => removeVariable(item.name));
+      if (localVariables) {
+        if (Array.isArray(localVariables)) {
+          localVariables.forEach((item) => removeVariable(item.name));
         } else {
-          removeVariable(localVariable.name);
+          removeVariable(localVariables.name);
         }
       }
       // 4. 如果有同名的全局变量，把它重新注册回去
@@ -230,30 +220,59 @@ const VariablesProvider = ({ children }) => {
           registerVariable(old);
         }
       }
+    },
+    [getVariable, registerVariable, removeVariable],
+  );
+
+  const parseVariable = useCallback(
+    /**
+     * 将变量字符串解析为真正的值
+     * @param str 变量字符串
+     * @param localVariables 局部变量，解析完成后会被清除
+     * @returns
+     */
+    async (str: string, localVariables?: VariableOption | VariableOption[]) => {
+      if (!isVariable(str)) {
+        return str;
+      }
+
+      let value = null;
+      await onLocalVariablesReady(localVariables, async () => {
+        const path = getPath(str);
+        value = await getValue(path);
+      });
 
       return value;
     },
-    [getValue, getVariable, registerVariable, removeVariable],
+    [getValue, onLocalVariablesReady],
   );
 
-  const getCollectionField = useCallback((variableString: string) => {
-    const matches = variableString.match(REGEX_OF_VARIABLE);
+  const getCollectionField = useCallback(
+    async (variableString: string, localVariables?: VariableOption | VariableOption[]) => {
+      if (process.env.NODE_ENV !== 'production' && !isVariable(variableString)) {
+        throw new Error(`VariablesProvider: ${variableString} is not a variable string`);
+      }
 
-    if (process.env.NODE_ENV !== 'production' && !matches) {
-      throw new Error(`VariablesProvider: ${variableString} is not a variable string`);
-    }
+      let result = null;
 
-    const path = matches[0].replace(REGEX_OF_VARIABLE, '$1');
+      await onLocalVariablesReady(localVariables, async () => {
+        const matches = variableString.match(REGEX_OF_VARIABLE);
+        const path = matches[0].replace(REGEX_OF_VARIABLE, '$1');
 
-    // 当仅有一个例如 `$user` 这样的字符串时，需要拼一个假的 `collectionField` 返回
-    if (!path.includes('.')) {
-      return {
-        target: variableToCollectionName[path],
-      };
-    }
+        // 当仅有一个例如 `$user` 这样的字符串时，需要拼一个假的 `collectionField` 返回
+        if (!path.includes('.')) {
+          result = {
+            target: variableToCollectionName[path],
+          };
+        }
 
-    return getCollectionJoinField(getFieldPath(path));
-  }, []);
+        result = getCollectionJoinField(getFieldPath(path));
+      });
+
+      return result;
+    },
+    [getCollectionJoinField, onLocalVariablesReady],
+  );
 
   useEffect(() => {
     builtinVariables.forEach((variableOption) => {
@@ -262,16 +281,17 @@ const VariablesProvider = ({ children }) => {
   }, [builtinVariables, registerVariable]);
 
   const value = useMemo(
-    () => ({
-      ctx,
-      setCtx,
-      parseVariable,
-      registerVariable,
-      getVariable,
-      getCollectionField,
-      removeVariable,
-    }),
-    [ctx, getCollectionField, getVariable, parseVariable, registerVariable, removeVariable],
+    () =>
+      ({
+        ctxRef,
+        setCtx,
+        parseVariable,
+        registerVariable,
+        getVariable,
+        getCollectionField,
+        removeVariable,
+      }) as VariablesContextType,
+    [getCollectionField, getVariable, parseVariable, registerVariable, removeVariable, setCtx],
   );
 
   return <VariablesContext.Provider value={value}>{children}</VariablesContext.Provider>;

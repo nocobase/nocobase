@@ -29,7 +29,7 @@ const useParseDefaultValue = () => {
 
         let value = await variables.parseVariable(schema.default, localVariables);
         if (Array.isArray(value)) {
-          const collectionField = variables.getCollectionField(schema.default);
+          const collectionField = await variables.getCollectionField(schema.default);
           const isDate = collectionField?.uiSchema?.['x-component'] === 'DatePicker';
           if (isDate) {
             value = value.filter(Boolean)[0];

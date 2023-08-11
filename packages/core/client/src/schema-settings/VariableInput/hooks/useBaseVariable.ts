@@ -33,35 +33,33 @@ const getChildren = (
   { schema, depth, maxDepth, loadChildren, compile }: GetOptionsParams,
 ): Option[] => {
   const result = options
-    .map(
-      (option): Option => {
-        if (!option.target) {
-          return {
-            key: option.name,
-            value: option.name,
-            label: compile(option.title),
-            // TODO: 现在是通过组件的名称来过滤能够被选择的选项，这样的坏处是不够精确，后续可以优化
-            disabled: schema?.['x-component'] !== option.schema?.['x-component'],
-            isLeaf: true,
-            depth,
-          };
-        }
-
-        if (depth >= maxDepth) {
-          return null;
-        }
-
+    .map((option): Option => {
+      if (!option.target) {
         return {
           key: option.name,
           value: option.name,
           label: compile(option.title),
-          isLeaf: false,
-          field: option,
+          // TODO: 现在是通过组件的名称来过滤能够被选择的选项，这样的坏处是不够精确，后续可以优化
+          disabled: schema?.['x-component'] !== option.schema?.['x-component'],
+          isLeaf: true,
           depth,
-          loadChildren,
         };
-      },
-    )
+      }
+
+      if (depth >= maxDepth) {
+        return null;
+      }
+
+      return {
+        key: option.name,
+        value: option.name,
+        label: compile(option.title),
+        isLeaf: false,
+        field: option,
+        depth,
+        loadChildren,
+      };
+    })
     .filter(Boolean);
 
   return result;
@@ -121,6 +119,7 @@ export const useBaseVariable = ({
       },
       depth: 0,
       loadChildren,
+      children: [],
     } as Option;
   }, [schema?.['x-component']]);
 

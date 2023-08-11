@@ -64,7 +64,7 @@ export const useVariableOptions = ({ collectionField, blockCollectionName: rootC
  *
  * @param variables
  */
-export const compatOldVariables = (variables: Option[], { value, collectionName, t, compile }) => {
+export const compatOldVariables = (variables: Option[], { value, collectionName, t }) => {
   if (!isVariable(value)) {
     return variables;
   }

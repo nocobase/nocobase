@@ -1,18 +1,36 @@
 import { css } from '@emotion/css';
+import { Form } from '@formily/core';
 import { observer, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useRecord } from '../../record-provider';
-import { FilterDynamicComponent, SchemaComponent } from '../../schema-component';
+import { SchemaComponent } from '../../schema-component';
+import { DynamicComponentProps } from '../../schema-component/antd/filter/DynamicComponent';
 import { FilterContext } from '../../schema-component/antd/filter/context';
+import { VariableOption, VariablesContextType } from '../../variables/types';
+import { VariableInput, getShouldChange } from '../VariableInput/VariableInput';
 import { LinkageRuleActionGroup } from './LinkageRuleActionGroup';
 import { EnableLinkage } from './components/EnableLinkage';
 import { ArrayCollapse } from './components/LinkageHeader';
 
+interface usePropsReturn {
+  options: any;
+  defaultValues: any[];
+  collectionName: string;
+  form: Form;
+  variables: VariablesContextType;
+  localVariables: VariableOption | VariableOption[];
+}
+
+interface Props {
+  useProps: () => usePropsReturn;
+  dynamicComponent: any;
+}
+
 export const FormLinkageRules = observer(
-  (props: any) => {
+  (props: Props) => {
     const fieldSchema = useFieldSchema();
     const { useProps, dynamicComponent } = props;
-    const { options, defaultValues, collectionName, form } = useProps();
+    const { options, defaultValues, collectionName, form, variables, localVariables } = useProps();
     const record = useRecord();
 
     return (
@@ -66,8 +84,16 @@ export const FormLinkageRules = observer(
                                 `,
                               };
                             },
-                            dynamicComponent: (props) =>
-                              FilterDynamicComponent({ ...props, blockCollectionName: collectionName, form, record }),
+                            dynamicComponent: (props: DynamicComponentProps) => {
+                              const { collectionField } = props;
+                              return VariableInput({
+                                ...props,
+                                blockCollectionName: collectionName,
+                                form,
+                                record,
+                                shouldChange: getShouldChange({ collectionField, variables, localVariables }),
+                              });
+                            },
                           },
                         },
                         actions: {

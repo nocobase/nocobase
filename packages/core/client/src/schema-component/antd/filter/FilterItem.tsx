@@ -5,8 +5,8 @@ import { Cascader, Select, Space } from 'antd';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../..';
-import { RemoveConditionContext } from './context';
 import { DynamicComponent } from './DynamicComponent';
+import { RemoveConditionContext } from './context';
 import { useValues } from './useValues';
 
 export const FilterItem = observer(
@@ -14,7 +14,18 @@ export const FilterItem = observer(
     const { t } = useTranslation();
     const compile = useCompile();
     const remove = useContext(RemoveConditionContext);
-    const { schema, fields, operators, dataIndex, operator, setDataIndex, setOperator, value, setValue } = useValues();
+    const {
+      schema,
+      fields,
+      operators,
+      dataIndex,
+      operator,
+      setDataIndex,
+      setOperator,
+      value,
+      setValue,
+      collectionField,
+    } = useValues();
     return (
       // 添加 nc-filter-item 类名是为了帮助编写测试时更容易选中该元素
       <div style={{ marginBottom: 8 }} className="nc-filter-item">
@@ -48,7 +59,9 @@ export const FilterItem = observer(
             }}
             placeholder={t('Comparision')}
           />
-          {!operator?.noValue ? <DynamicComponent value={value} schema={schema} onChange={setValue} /> : null}
+          {!operator?.noValue ? (
+            <DynamicComponent value={value} schema={schema} collectionField={collectionField} onChange={setValue} />
+          ) : null}
           {!props.disabled && (
             <a>
               <CloseCircleOutlined onClick={() => remove()} style={{ color: '#bfbfbf' }} />

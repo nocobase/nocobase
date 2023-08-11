@@ -42,6 +42,12 @@ vi.mock('../../collection-manager', async () => {
               target: 'test',
             };
           }
+          if (path === 'local.belongsToField') {
+            return {
+              type: 'belongsTo',
+              target: 'test',
+            };
+          }
         },
       };
     },
@@ -132,7 +138,7 @@ describe('useVariables', () => {
     });
 
     await waitFor(async () => {
-      expect(result.current.ctx).toMatchInlineSnapshot(`
+      expect(result.current.ctxRef.current).toMatchInlineSnapshot(`
         {
           "$date": {
             "last30Days": [Function],
@@ -315,7 +321,7 @@ describe('useVariables', () => {
     });
 
     await waitFor(async () => {
-      expect(result.current.ctx).toMatchInlineSnapshot(`
+      expect(result.current.ctxRef.current).toMatchInlineSnapshot(`
         {
           "$date": {
             "last30Days": [Function],
@@ -371,7 +377,7 @@ describe('useVariables', () => {
     });
 
     await waitFor(async () => {
-      expect(result.current.ctx).toMatchInlineSnapshot(`
+      expect(result.current.ctxRef.current).toMatchInlineSnapshot(`
         {
           "$date": {
             "last30Days": [Function],
@@ -545,11 +551,47 @@ describe('useVariables', () => {
       wrapper: Providers,
     });
 
-    await waitFor(() => {
-      expect(result.current.getCollectionField('{{ $user.belongsToField }}')).toEqual({
+    await waitFor(async () => {
+      expect(await result.current.getCollectionField('{{ $user.belongsToField }}')).toEqual({
         type: 'belongsTo',
         target: 'test',
       });
+    });
+  });
+
+  it('getCollectionField with no exist variable', async () => {
+    const { result } = renderHook(() => useVariables(), {
+      wrapper: Providers,
+    });
+
+    await waitFor(async () => {
+      expect(await result.current.getCollectionField('{{ $noExist.belongsToField }}')).toEqual(undefined);
+    });
+  });
+
+  it('getCollectionField with local variables', async () => {
+    const { result } = renderHook(() => useVariables(), {
+      wrapper: Providers,
+    });
+
+    const localVariables = [
+      {
+        name: '$local',
+        ctx: {
+          name: 'local variable',
+        },
+        collectionName: 'local',
+      },
+    ];
+
+    await waitFor(async () => {
+      expect(await result.current.getCollectionField('{{ $local.belongsToField }}', localVariables))
+        .toMatchInlineSnapshot(`
+        {
+          "target": "test",
+          "type": "belongsTo",
+        }
+      `);
     });
   });
 });

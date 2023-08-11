@@ -14,7 +14,7 @@ export interface VariablesContextType {
    * }
    * ```
    */
-  ctx: Record<string, any>;
+  ctxRef: React.MutableRefObject<Record<string, any>>;
   /**
    * 更新上下文
    */
@@ -53,7 +53,10 @@ export interface VariablesContextType {
    * @returns 变量的配置
    */
   getVariable: (variableName: string) => VariableOption;
-  getCollectionField: (variableString: string) => CollectionFieldOptions;
+  getCollectionField: (
+    variableString: string,
+    localVariables?: VariableOption | VariableOption[],
+  ) => Promise<CollectionFieldOptions>;
   removeVariable: (variableName: string) => void;
 }
 

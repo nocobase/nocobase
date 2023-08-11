@@ -1,19 +1,19 @@
-import { css } from '@emotion/css';
 import { Field } from '@formily/core';
-import { connect, useField, useFieldSchema } from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
-import _ from 'lodash';
-import React, { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import React, { useEffect } from 'react';
 import { useFormBlockContext } from '../../../block-provider';
 import { CollectionFieldProvider, useCollection, useCollectionField } from '../../../collection-manager';
 import { useRecord } from '../../../record-provider';
-import { Variable, useCompile, useComponent, useVariableScope } from '../../../schema-component';
-import {
-  compatOldVariables,
-  useVariableOptions,
-} from '../../../schema-settings/VariableInput/hooks/useVariableOptions';
+import { useCompile, useComponent } from '../../../schema-component';
+import { VariableInput, getShouldChange } from '../../../schema-settings/VariableInput/VariableInput';
+import { useLocalVariables, useVariables } from '../../../variables';
 import { DeletedField } from '../DeletedField';
+
+interface AssignedFieldProps {
+  value: any;
+  onChange: (value: any) => void;
+}
 
 const InternalField: React.FC = (props) => {
   const field = useField<Field>();
@@ -69,93 +69,41 @@ const InternalField: React.FC = (props) => {
   return React.createElement(component, props, props.children);
 };
 
-const CollectionField = connect((props) => {
+const CollectionField = (props) => {
   const fieldSchema = useFieldSchema();
   return (
     <CollectionFieldProvider name={fieldSchema.name} fallback={<DeletedField />}>
       <InternalField {...props} />
     </CollectionFieldProvider>
   );
-});
+};
 
 export enum AssignedFieldValueType {
   ConstantValue = 'constantValue',
   DynamicValue = 'dynamicValue',
 }
 
-export const AssignedField = (props: any) => {
+export const AssignedField = (props: AssignedFieldProps) => {
   const { value, onChange } = props;
-  const { t } = useTranslation();
-  const fieldSchema = useFieldSchema();
-  const { getField } = useCollection();
-  const collectionField = getField(fieldSchema.name);
-  const [options, setOptions] = useState<any[]>([]);
-  const collection = useCollection();
-  const scope = useVariableScope();
-  const compile = useCompile();
+  const { name, getField } = useCollection();
   const { form } = useFormBlockContext();
+  const fieldSchema = useFieldSchema();
   const record = useRecord();
-  const variableOptions = useVariableOptions({ collectionField, blockCollectionName: collection.name, form, record });
+  const variables = useVariables();
+  const localVariables = useLocalVariables();
 
-  useEffect(() => {
-    const opt = compatOldVariables(variableOptions, {
-      value,
-      collectionName: collection.name,
-      t,
-      compile,
-    });
-    const next = opt.concat(scope);
-    setOptions(next);
-  }, [collection.name, scope, variableOptions]);
+  const collectionField = getField(fieldSchema.name);
 
   return (
-    <Variable.Input
+    <VariableInput
+      form={form}
+      record={record}
       value={value}
       onChange={onChange}
-      scope={options}
-      className={css`
-        .variable {
-          width: 100%;
-        }
-      `}
-    >
-      <CollectionField value={value} onChange={onChange} />
-    </Variable.Input>
+      blockCollectionName={name}
+      renderSchemaComponent={CollectionField}
+      collectionField={collectionField}
+      shouldChange={getShouldChange({ collectionField, variables, localVariables })}
+    />
   );
 };
-
-/**
- * 为了兼容老版本的变量字符串（`currentRecord` -> `$record`）
- * @param value
- * @returns
- */
-function getNameOfRecordVariable(value: any) {
-  if (!_.isString(value)) {
-    return '$record';
-  }
-
-  // 兼容老版本
-  if (value.includes('currentRecord')) {
-    return 'currentRecord';
-  }
-
-  return '$record';
-}
-
-/**
- * `currentUser` -> `$user`
- * @param value
- * @returns
- */
-function getNameOfUserVariable(value: any) {
-  if (!_.isString(value)) {
-    return '$user';
-  }
-
-  // 兼容老版本
-  if (value.includes('currentUser')) {
-    return 'currentUser';
-  }
-
-  return '$user';
-}

@@ -14,14 +14,15 @@ import { isTitleField } from '../../../collection-manager/Configuration/Collecti
 import { useRecord } from '../../../record-provider';
 import { GeneralSchemaItems } from '../../../schema-items/GeneralSchemaItems';
 import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isShowDefaultValue } from '../../../schema-settings';
+import { VariableInput, getShouldChange } from '../../../schema-settings/VariableInput/VariableInput';
 import { useIsShowMultipleSwitch } from '../../../schema-settings/hooks/useIsShowMultipleSwitch';
-import { useVariables } from '../../../variables';
+import { useLocalVariables, useVariables } from '../../../variables';
 import useContextVariable from '../../../variables/hooks/useContextVariable';
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
 import { BlockItem } from '../block-item';
 import { removeNullCondition } from '../filter';
+import { DynamicComponentProps } from '../filter/DynamicComponent';
 import { HTMLEncode } from '../input/shared';
-import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
 import { useColorFields } from '../table-v2/Table.Column.Designer';
 import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
 import { useEnsureOperatorsValid } from './SchemaSettingOptions';
@@ -124,7 +125,6 @@ export const FormItem: any = observer(
 );
 
 FormItem.Designer = function Designer() {
-  let targetField;
   const { getCollectionFields, getInterface, getCollectionJoinField, getCollection } = useCollectionManager();
   const { getField } = useCollection();
   const { form } = useFormBlockContext();
@@ -137,11 +137,8 @@ FormItem.Designer = function Designer() {
   const compile = useCompile();
   const IsShowMultipleSwitch = useIsShowMultipleSwitch();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
-  if (collectionField?.target) {
-    targetField = getCollectionJoinField(
-      `${collectionField.target}.${fieldSchema['x-component-props']?.fieldNames?.label || 'id'}`,
-    );
-  }
+  const variables = useVariables();
+  const localVariables = useLocalVariables();
 
   const targetCollection = getCollection(collectionField?.target);
   const interfaceConfig = getInterface(collectionField?.interface);
@@ -355,15 +352,16 @@ FormItem.Designer = function Designer() {
           collectionName={collectionField?.target}
           defaultFilter={fieldSchema?.['x-component-props']?.service?.params?.filter || {}}
           form={form}
-          dynamicComponent={(props) =>
-            FilterDynamicComponent({
+          dynamicComponent={(props: DynamicComponentProps) => {
+            return VariableInput({
               ...props,
               form,
               collectionField,
               blockCollectionName: ctx.props.collection || ctx.props.resource,
               record,
-            })
-          }
+              shouldChange: getShouldChange({ collectionField: props.collectionField, variables, localVariables }),
+            });
+          }}
           onSubmit={({ filter }) => {
             filter = removeNullCondition(filter);
             _.set(field.componentProps, 'service.params.filter', filter);

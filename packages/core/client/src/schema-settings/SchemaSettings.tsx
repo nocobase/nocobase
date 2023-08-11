@@ -39,7 +39,6 @@ import {
   CollectionManagerContext,
   CollectionProvider,
   Designable,
-  FilterDynamicComponent,
   FormDialog,
   FormProvider,
   RemoteSchemaComponent,
@@ -73,17 +72,18 @@ import {
 } from '../filter-provider/utils';
 import { useCollectMenuItem, useCollectMenuItems, useMenuItem } from '../hooks/useMenuItem';
 import { getTargetKey } from '../schema-component/antd/association-filter/utilts';
+import { DynamicComponentProps } from '../schema-component/antd/filter/DynamicComponent';
 import { isVariable } from '../schema-component/common/utils/uitls';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
-import { useVariables } from '../variables';
+import { useLocalVariables, useVariables } from '../variables';
 import { FormDataTemplates } from './DataTemplates';
 import { DateFormatCom, ExpiresRadio } from './DateFormat/ExpiresRadio';
 import { EnableChildCollections } from './EnableChildCollections';
 import { ChildDynamicComponent } from './EnableChildCollections/DynamicComponent';
 import { FormLinkageRules } from './LinkageRules';
 import { useLinkageCollectionFieldOptions } from './LinkageRules/action-hooks';
-import { VariableInput } from './VariableInput/VariableInput';
+import { VariableInput, getShouldChange } from './VariableInput/VariableInput';
 import { DataScopeProps } from './types';
 
 interface SchemaSettingsProps {
@@ -1095,6 +1095,9 @@ SchemaSettings.LinkageRules = function LinkageRules(props) {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const { getTemplateById } = useSchemaTemplateManager();
+  const variables = useVariables();
+  const localVariables = useLocalVariables();
+
   const type = ['Action', 'Action.Link'].includes(fieldSchema['x-component']) ? 'button' : 'field';
   const gridSchema = findGridSchema(fieldSchema) || fieldSchema;
   return (
@@ -1119,6 +1122,8 @@ SchemaSettings.LinkageRules = function LinkageRules(props) {
                     linkageOptions: useLinkageCollectionFieldOptions(collectionName),
                     collectionName,
                     form,
+                    variables,
+                    localVariables,
                   };
                 },
               },
@@ -1479,6 +1484,7 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
   const { getField } = useCollection();
   const { getCollectionJoinField } = useCollectionManager();
   const variables = useVariables();
+  const localVariables = useLocalVariables();
   const { name } = useCollection();
   const record = useRecord();
   const { form } = useFormBlockContext();
@@ -1519,32 +1525,7 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
                 className: defaultInputStyle,
                 form,
                 record,
-                shouldChange: (value) => {
-                  if (!isVariable(value) || !variables) {
-                    return true;
-                  }
-                  const collectionFieldOfVariable = variables.getCollectionField(value);
-
-                  // `一对一` 和 `一对多` 的不能用于设置默认值，因为其具有唯一性
-                  if (['o2o', 'o2m', 'oho'].includes(collectionFieldOfVariable?.interface)) {
-                    return false;
-                  }
-                  if (!collectionField?.target && collectionFieldOfVariable?.target) {
-                    return false;
-                  }
-                  if (collectionField?.target && !collectionFieldOfVariable?.target) {
-                    return false;
-                  }
-                  if (
-                    collectionField?.target &&
-                    collectionFieldOfVariable?.target &&
-                    collectionField.target !== collectionFieldOfVariable.target
-                  ) {
-                    return false;
-                  }
-
-                  return true;
-                },
+                shouldChange: getShouldChange({ collectionField, variables, localVariables }),
                 renderSchemaComponent: function Com(props) {
                   const s = _.cloneDeep(fieldSchemaWithoutRequired) || ({} as Schema);
                   s.title = '';
@@ -1719,12 +1700,23 @@ SchemaSettings.SortingRule = function SortRuleConfigure(props) {
 };
 
 SchemaSettings.DataScope = function DataScopeConfigure(props: DataScopeProps) {
+  const { name } = useCollection();
   const { t } = useTranslation();
   const options = useCollectionFilterOptions(props.collectionName);
   const record = useRecord();
+  const { form } = useFormBlockContext();
+  const variables = useVariables();
+  const localVariables = useLocalVariables();
 
-  const dynamicComponent = (p) =>
-    FilterDynamicComponent({ ...p, blockCollectionName: props.collectionName, from: props.form, record });
+  const dynamicComponent = (props: DynamicComponentProps) => {
+    return VariableInput({
+      ...props,
+      blockCollectionName: name,
+      form,
+      record,
+      shouldChange: getShouldChange({ collectionField: props.collectionField, variables, localVariables }),
+    });
+  };
 
   return (
     <SchemaSettings.ModalItem
