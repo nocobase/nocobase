@@ -116,6 +116,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   private _authenticated = false;
   private _maintaining = false;
   private _maintainingCommandStatus: MaintainingCommandStatus;
+  private _maintainingStatusBeforeCommand: MaintainingCommandStatus | null;
 
   constructor(public options: ApplicationOptions) {
     super();
@@ -368,39 +369,44 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return await this.runAsCLI([command], { from: 'user' });
   }
 
+  createCli() {
+    return new Command('nocobase')
+      .usage('[command] [options]')
+      .hook('preAction', async (_, actionCommand) => {
+        this.activatedCommand = {
+          name: getCommandFullName(actionCommand),
+        };
+        console.log(`call preAction at ${this.activatedCommand.name}`);
+        this.setMaintaining({
+          status: 'command_begin',
+          command: this.activatedCommand,
+        });
+
+        this.setMaintaining({
+          status: 'command_running',
+          command: this.activatedCommand,
+        });
+
+        await this.authenticate();
+        await this.load();
+      })
+      .hook('postAction', async (_, actionCommand) => {
+        console.log(`call postAction at ${getCommandFullName(actionCommand)}`);
+        if (this._maintainingStatusBeforeCommand?.error && this._started) {
+          await this.restart();
+        }
+      });
+  }
+
   async runAsCLI(argv = process.argv, options?: ParseOptions) {
     if (this.activatedCommand) {
       return;
     }
 
-    const lastMaintainingStatus = this._maintainingCommandStatus;
+    this._maintainingStatusBeforeCommand = this._maintainingCommandStatus;
 
     try {
-      const command = await this.cli
-        .hook('preAction', async (_, actionCommand) => {
-          this.activatedCommand = {
-            name: getCommandFullName(actionCommand),
-          };
-
-          this.setMaintaining({
-            status: 'command_begin',
-            command: this.activatedCommand,
-          });
-
-          this.setMaintaining({
-            status: 'command_running',
-            command: this.activatedCommand,
-          });
-
-          await this.authenticate();
-          await this.load();
-        })
-        .hook('postAction', async () => {
-          if (lastMaintainingStatus?.error && this._started) {
-            await this.restart();
-          }
-        })
-        .parseAsync(argv, options);
+      const command = await this.cli.parseAsync(argv, options);
 
       this.setMaintaining({
         status: 'command_end',
@@ -478,7 +484,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.emitAsync('afterStop', this, options);
     this.stopped = true;
     this.log.info(`${this.name} is stopped`);
-    this.setWorkingMessage('stopped');
     this._started = false;
   }
 
@@ -553,6 +558,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.log.debug('emit afterInstall');
     this.setWorkingMessage('call afterInstall hook...');
     await this.emitAsync('afterInstall', this, options);
+
+    if (this._maintainingStatusBeforeCommand?.error) {
+      return;
+    }
+
     if (this._started) {
       await this.restart();
     }
@@ -634,7 +644,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._db = this.createDatabase(options);
 
     this._resourcer = createResourcer(options);
-    this._cli = new Command('nocobase').usage('[command] [options]');
+    this._cli = this.createCli();
     this._i18n = createI18n(options);
     this._cache = createCache(options.cache);
     this.context.db = this._db;

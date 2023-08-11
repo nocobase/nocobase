@@ -240,7 +240,23 @@ describe('gateway', () => {
         },
       });
 
+      const jestFn = jest.fn();
+
+      app.on('beforeInstall', async () => {
+        jestFn();
+      });
+
+      const runningJest = jest.fn();
+      app.on('maintaining', ({ status }) => {
+        if (status === 'command_running') {
+          runningJest();
+        }
+      });
+
       await app.runAsCLI(['install'], { from: 'user' });
+
+      expect(jestFn).toBeCalledTimes(1);
+      expect(runningJest).toBeCalledTimes(1);
 
       await waitSecond();
       expect(getLastMessage()).toMatchObject({
@@ -276,6 +292,37 @@ describe('gateway', () => {
       });
     });
 
-    it('should receive app stopped when stop app', async () => {});
+    it('should receive app stopped when stop app', async () => {
+      await connectClient(port);
+      const app = new Application({
+        database: {
+          dialect: 'sqlite',
+          storage: ':memory:',
+        },
+      });
+
+      await waitSecond();
+
+      await app.runCommand('start');
+      await app.runCommand('install');
+      await waitSecond();
+
+      expect(getLastMessage()).toMatchObject({
+        type: 'maintaining',
+        payload: {
+          code: 'APP_RUNNING',
+        },
+      });
+
+      await app.runCommand('stop');
+
+      await waitSecond();
+      expect(getLastMessage()).toMatchObject({
+        type: 'maintaining',
+        payload: {
+          code: 'APP_STOPPED',
+        },
+      });
+    });
   });
 });

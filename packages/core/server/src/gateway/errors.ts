@@ -42,9 +42,9 @@ export const errors: AppErrors = {
     maintaining: true,
   },
 
-  APP_STOPPING: {
+  APP_STOPPED: {
     status: 503,
-    message: ({ app }) => app.workingMessage,
+    message: ({ app }) => `application ${app.name} is stopped`,
     maintaining: true,
   },
 
