@@ -90,6 +90,10 @@ const workflowFieldset = {
     'x-component': 'CollectionField',
     'x-decorator': 'FormItem',
   },
+  enabled: {
+    'x-component': 'CollectionField',
+    'x-decorator': 'FormItem',
+  },
   description: {
     'x-component': 'CollectionField',
     'x-decorator': 'FormItem',
@@ -101,7 +105,7 @@ const workflowFieldset = {
       useTransaction: {
         type: 'boolean',
         title: `{{ t("Use transaction", { ns: "${NAMESPACE}" }) }}`,
-        description: `{{ t("Nodes of workflow will run in a same transaction. Any failure will cause data rollback, and will also rollback the history of the execution.", { ns: "${NAMESPACE}" }) }}`,
+        description: `{{ t("Data operation nodes in workflow will run in a same transaction until any interruption. Any failure will cause data rollback, and will also rollback the history of the execution.", { ns: "${NAMESPACE}" }) }}`,
         'x-decorator': 'FormItem',
         'x-component': 'Checkbox',
       },
