@@ -77,6 +77,7 @@ export const Action: ComposedAction = observer(
       }
       return (
         <SortableItem
+          data-testid={`${fieldSchema['x-action'] || fieldSchema.name}-action`}
           {...others}
           loading={field?.data?.loading}
           icon={icon ? <Icon type={icon} /> : null}
