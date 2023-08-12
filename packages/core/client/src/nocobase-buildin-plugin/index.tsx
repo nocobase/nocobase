@@ -46,11 +46,49 @@ const AppError: FC<{ app: Application }> = observer(({ app }) => (
   </div>
 ));
 
-const getProps = (app) => {
+const getProps = (app: Application) => {
+  if (!app.ws.connected) {
+    return {
+      status: 'error',
+      title: 'App error',
+      subTitle: 'The server is down',
+    };
+  }
+
+  if (!app.error) {
+    return {};
+  }
+
+  if (app.error.code === 'APP_NOT_FOUND') {
+    return {
+      status: 'warning',
+      title: 'App not found',
+      subTitle: app.error?.message,
+    };
+  }
+
+  if (app.error.code === 'APP_INITIALIZING') {
+    return {
+      status: 'info',
+      icon: <LoadingOutlined />,
+      title: 'App initializing',
+      subTitle: app.error?.message,
+    };
+  }
+
+  if (app.error.code === 'APP_INITIALIZED') {
+    return {
+      status: 'warning',
+      title: 'App initialized',
+      subTitle: app.error?.message,
+    };
+  }
+
   if (app.error.code === 'APP_ERROR') {
     return {
       status: 'error',
       title: 'App error',
+      subTitle: app.error?.message,
     };
   }
 
@@ -58,6 +96,7 @@ const getProps = (app) => {
     return {
       status: 'warning',
       title: 'App not installed',
+      subTitle: app.error?.message,
     };
   }
 
@@ -65,6 +104,7 @@ const getProps = (app) => {
     return {
       status: 'warning',
       title: 'App stopped',
+      subTitle: app.error?.message,
     };
   }
 
@@ -73,6 +113,7 @@ const getProps = (app) => {
       status: 'info',
       icon: <LoadingOutlined />,
       title: app.error?.command?.name,
+      subTitle: app.error?.message,
     };
     const commands = {
       start: {
@@ -99,7 +140,7 @@ const getProps = (app) => {
 };
 
 const AppMaintaining: FC<{ app: Application; error: Error }> = observer(({ app }) => {
-  const { icon, status, title } = getProps(app);
+  const { icon, status, title, subTitle } = getProps(app);
   return (
     <div>
       <Result
@@ -112,7 +153,7 @@ const AppMaintaining: FC<{ app: Application; error: Error }> = observer(({ app }
         icon={icon}
         status={status}
         title={app.i18n.t(title)}
-        subTitle={app.i18n.t(app.error?.message)}
+        subTitle={app.i18n.t(subTitle)}
         // extra={[
         //   <Button type="primary" key="try" onClick={() => window.location.reload()}>
         //     {app.i18n.t('Try again')}
@@ -124,10 +165,10 @@ const AppMaintaining: FC<{ app: Application; error: Error }> = observer(({ app }
 });
 
 const AppMaintainingDialog: FC<{ app: Application; error: Error }> = observer(({ app }) => {
-  const { icon, status, title } = getProps(app);
+  const { icon, status, title, subTitle } = getProps(app);
   return (
     <Modal open={true} footer={null} closable={false}>
-      <Result icon={icon} status={status} title={app.i18n.t(title)} subTitle={app.i18n.t(app.error?.message)} />
+      <Result icon={icon} status={status} title={app.i18n.t(title)} subTitle={app.i18n.t(subTitle)} />
     </Modal>
   );
 });

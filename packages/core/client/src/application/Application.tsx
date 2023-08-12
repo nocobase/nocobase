@@ -140,6 +140,9 @@ export class Application {
         this.error = null;
       }
     });
+    this.ws.on('close', () => {
+      this.maintaining = true;
+    });
     this.ws.connect();
     try {
       this.loading = true;
