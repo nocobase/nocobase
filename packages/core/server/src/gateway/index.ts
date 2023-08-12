@@ -1,15 +1,15 @@
+import { Command } from 'commander';
 import { EventEmitter } from 'events';
 import http, { IncomingMessage, ServerResponse } from 'http';
+import { resolve } from 'path';
+import handler from 'serve-handler';
+import { parse } from 'url';
 import { AppSupervisor } from '../app-supervisor';
 import { ApplicationOptions } from '../application';
-import { WSServer } from './ws-server';
-import { parse } from 'url';
-import { resolve } from 'path';
-import { IPCSocketServer } from './ipc-socket-server';
-import { IPCSocketClient } from './ipc-socket-client';
-import { Command } from 'commander';
 import { applyErrorWithArgs, getErrorWithCode } from './errors';
-import { handlePluginStaticFile } from './handle-plugin-static-file';
+import { IPCSocketClient } from './ipc-socket-client';
+import { IPCSocketServer } from './ipc-socket-server';
+import { WSServer } from './ws-server';
 
 export interface IncomingRequest {
   url: string;
@@ -97,8 +97,41 @@ export class Gateway extends EventEmitter {
   }
 
   async requestHandler(req: IncomingMessage, res: ServerResponse) {
-    if (await handlePluginStaticFile(req, res)) {
-      return;
+    const { pathname } = parse(req.url);
+
+    if (pathname.startsWith('/storage/uploads/')) {
+      return handler(req, res, {
+        public: resolve(process.cwd(), 'storage', 'uploads'),
+        rewrites: [
+          {
+            source: '/storage/uploads/:file',
+            destination: '/:file',
+          },
+        ],
+      });
+    }
+
+    if (pathname.startsWith('/api/plugins/client/')) {
+      return handler(req, res, {
+        public: resolve(process.cwd(), 'node_modules'),
+        rewrites: [
+          {
+            source: '/api/plugins/client/:plugin/index.js',
+            destination: '/:plugin/dist/client/index.js',
+          },
+          {
+            source: '/api/plugins/client/@:org/:plugin/index.js',
+            destination: '/@:org/:plugin/dist/client/index.js',
+          },
+        ],
+      });
+    }
+
+    if (!pathname.startsWith('/api')) {
+      return handler(req, res, {
+        public: `${process.env.APP_PACKAGE_ROOT}/dist/client`,
+        rewrites: [{ source: '/**', destination: '/index.html' }],
+      });
     }
 
     const handleApp = await this.getRequestHandleAppName(req as IncomingRequest);

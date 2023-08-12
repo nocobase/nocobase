@@ -49,7 +49,7 @@ export class WebSocketClient {
   }
 
   get reconnectInterval() {
-    return this.options?.reconnectInterval || 2000;
+    return this.options?.reconnectInterval || 1000;
   }
 
   get readyState() {
