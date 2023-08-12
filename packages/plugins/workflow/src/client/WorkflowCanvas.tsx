@@ -8,11 +8,12 @@ import {
   useResourceActionContext,
   useResourceContext,
 } from '@nocobase/client';
+import { str2moment } from '@nocobase/utils/client';
 import { App, Breadcrumb, Button, Dropdown, Switch, message } from 'antd';
-import classnames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
+
 import { CanvasContent } from './CanvasContent';
 import { ExecutionLink } from './ExecutionLink';
 import { FlowContext, useFlowContext } from './FlowContext';
@@ -164,17 +165,16 @@ export function WorkflowCanvas() {
                   .map((item, index) => ({
                     key: `${item.id}`,
                     icon: item.current ? <RightOutlined /> : null,
+                    className: cx({
+                      executed: item.executed,
+                      unexecuted: !item.executed,
+                      enabled: item.enabled,
+                    }),
                     label: (
-                      <span
-                        className={classnames({
-                          executed: item.executed,
-                          unexecuted: !item.executed,
-                          enabled: item.enabled,
-                        })}
-                      >
+                      <>
                         <strong>{`#${item.id}`}</strong>
-                        <time>{new Date(item.createdAt).toLocaleString()}</time>
-                      </span>
+                        <time>{str2moment(item.createdAt).format('YYYY-MM-DD HH:mm:ss')}</time>
+                      </>
                     ),
                   })),
               }}

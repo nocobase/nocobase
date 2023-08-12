@@ -1,7 +1,6 @@
 import { createStyles, cx } from '@nocobase/client';
 import { Tag } from 'antd';
 import React from 'react';
-import { lang } from '../locale';
 
 const useStyles = createStyles(({ css, token }) => {
   return {
@@ -16,6 +15,7 @@ const useStyles = createStyles(({ css, token }) => {
 
       dl {
         display: flex;
+        align-items: baseline;
 
         dt {
           color: ${token.colorText};
@@ -33,19 +33,19 @@ const useStyles = createStyles(({ css, token }) => {
   };
 });
 
-export function NodeDescription(props) {
-  const { instruction } = props;
+export function DrawerDescription(props) {
+  const { label, title, description } = props;
   const { styles } = useStyles();
 
   return (
     <div className={cx(styles.container, props.className)}>
       <dl>
-        <dt>{lang('Node type')}</dt>
+        <dt>{label}</dt>
         <dd>
-          <Tag style={{ background: 'none' }}>{instruction.title}</Tag>
+          <Tag style={{ background: 'none' }}>{title}</Tag>
         </dd>
       </dl>
-      {instruction.description ? <p>{instruction.description}</p> : null}
+      {description ? <p>{description}</p> : null}
     </div>
   );
 }
