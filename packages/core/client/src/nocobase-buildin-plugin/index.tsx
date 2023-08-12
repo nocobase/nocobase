@@ -1,3 +1,4 @@
+import { LoadingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer } from '@formily/reactive-react';
 import { Button, Modal, Result, Spin } from 'antd';
@@ -45,7 +46,60 @@ const AppError: FC<{ app: Application }> = observer(({ app }) => (
   </div>
 ));
 
+const getProps = (app) => {
+  if (app.error.code === 'APP_ERROR') {
+    return {
+      status: 'error',
+      title: 'App error',
+    };
+  }
+
+  if (app.error.code === 'APP_NOT_INSTALLED_ERROR') {
+    return {
+      status: 'warning',
+      title: 'App not installed',
+    };
+  }
+
+  if (app.error.code === 'APP_STOPPED') {
+    return {
+      status: 'warning',
+      title: 'App stopped',
+    };
+  }
+
+  if (app.error.code === 'APP_COMMANDING') {
+    const props = {
+      status: 'info',
+      icon: <LoadingOutlined />,
+      title: app.error?.command?.name,
+    };
+    const commands = {
+      start: {
+        title: 'App starting',
+      },
+      restart: {
+        title: 'App restarting',
+      },
+      install: {
+        title: 'App installing',
+      },
+      upgrade: {
+        title: 'App upgrading',
+      },
+      'pm.enable': {
+        title: 'Enabling plugin',
+      },
+      'pm.disable': {
+        title: 'Disabling plugin',
+      },
+    };
+    return { ...props, ...commands[app.error?.command?.name] };
+  }
+};
+
 const AppMaintaining: FC<{ app: Application; error: Error }> = observer(({ app }) => {
+  const { icon, status, title } = getProps(app);
   return (
     <div>
       <Result
@@ -55,27 +109,25 @@ const AppMaintaining: FC<{ app: Application; error: Error }> = observer(({ app }
           width: 100%;
           transform: translate(0, -50%);
         `}
-        status="error"
-        title={app.i18n.t(app.error?.status || 'App maintaining')}
+        icon={icon}
+        status={status}
+        title={app.i18n.t(title)}
         subTitle={app.i18n.t(app.error?.message)}
-        extra={[
-          <Button type="primary" key="try" onClick={() => window.location.reload()}>
-            {app.i18n.t('Try again')}
-          </Button>,
-        ]}
+        // extra={[
+        //   <Button type="primary" key="try" onClick={() => window.location.reload()}>
+        //     {app.i18n.t('Try again')}
+        //   </Button>,
+        // ]}
       />
     </div>
   );
 });
 
 const AppMaintainingDialog: FC<{ app: Application; error: Error }> = observer(({ app }) => {
+  const { icon, status, title } = getProps(app);
   return (
     <Modal open={true} footer={null} closable={false}>
-      <Result
-        status="error"
-        title={app.i18n.t(app.error?.status || 'App maintaining')}
-        subTitle={app.i18n.t(app.error?.message)}
-      />
+      <Result icon={icon} status={status} title={app.i18n.t(title)} subTitle={app.i18n.t(app.error?.message)} />
     </Modal>
   );
 });
