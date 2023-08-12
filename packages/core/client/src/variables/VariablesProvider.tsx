@@ -7,6 +7,7 @@ import { useCollectionManager } from '../collection-manager';
 import { useCompile } from '../schema-component';
 import useBuiltInVariables from './hooks/useBuiltinVariables';
 import { VariableOption, VariablesContextType } from './types';
+import { filterEmptyValues } from './utils/filterEmptyValues';
 import { getAction } from './utils/getAction';
 import { getPath } from './utils/getPath';
 import { REGEX_OF_VARIABLE, isVariable } from './utils/isVariable';
@@ -199,7 +200,7 @@ const VariablesProvider = ({ children }) => {
         value = await getValue(path);
       });
 
-      return uniq(value);
+      return uniq(filterEmptyValues(value));
     },
     [getValue, onLocalVariablesReady],
   );
