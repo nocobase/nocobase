@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { useAsyncData } from '../../../../async-data-provider';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Input, Select, Spin, Table } from 'antd';
 import { useField } from '@formily/react';
 import { ArrayField } from '@formily/core';
@@ -15,6 +15,21 @@ export const FieldsConfigure = () => {
   const field: ArrayField = useField();
   const compile = useCompile();
   const { getInterface } = useCollectionManager();
+  const interfaceOptions = useMemo(
+    () =>
+      getOptions()
+        .filter((v) => !['relation'].includes(v.key))
+        .map((options, index) => ({
+          ...options,
+          key: index,
+          label: compile(options.label),
+          options: options.children.map((option) => ({
+            ...option,
+            label: compile(option.label),
+          })),
+        })),
+    [compile],
+  );
 
   useEffect(() => {
     if (!loading && data) {
@@ -44,7 +59,7 @@ export const FieldsConfigure = () => {
   const handleFieldChange = (record: any, index: number) => {
     const fields = [...dataSource];
     fields.splice(index, 1, record);
-    setDataSource([...dataSource]);
+    setDataSource(fields);
     field.setValue(fields);
   };
 
@@ -64,7 +79,7 @@ export const FieldsConfigure = () => {
         const field = dataSource[index];
         return (
           <Input
-            // value={field.uiSchema?.title !== undefined ? field.uiSchema.title : field?.name}
+            value={field.uiSchema?.title !== undefined ? field.uiSchema.title : field?.name}
             onChange={(e) =>
               handleFieldChange({ ...field, uiSchema: { ...field?.uiSchema, title: e.target.value } }, index)
             }
@@ -79,10 +94,8 @@ export const FieldsConfigure = () => {
       width: 150,
       render: (text: string, record: any, index: number) => {
         const field = dataSource[index];
-        const data = getOptions().filter((v) => !['relation', 'systemInfo'].includes(v.key));
         return (
           <Select
-            // defaultValue={text}
             style={{ width: '100%' }}
             popupMatchSelectWidth={false}
             onChange={(value) => {
@@ -98,17 +111,8 @@ export const FieldsConfigure = () => {
               );
             }}
             allowClear={true}
-          >
-            {data.map((group) => (
-              <Select.OptGroup key={group.key} label={compile(group.label)}>
-                {group.children.map((item) => (
-                  <Select.Option key={item.value} value={item.value}>
-                    {compile(item.label)}
-                  </Select.Option>
-                ))}
-              </Select.OptGroup>
-            ))}
-          </Select>
+            options={interfaceOptions}
+          />
         );
       },
     },
