@@ -164,6 +164,17 @@ interface RelatedQueryOptions {
   };
 }
 
+interface MaxOptions extends Transactionable {
+  field: string;
+  filter?: Filter;
+}
+
+interface IncrOptions extends Omit<UpdateOptions, 'values'> {
+  field: string;
+  filter?: Filter;
+  value?: number;
+}
+
 const transaction = transactionWrapperBuilder(function () {
   return (<Repository>this).collection.model.sequelize.transaction();
 });
@@ -547,8 +558,9 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
     const instance = await this.model.create<any>(values, {
       ...options,
+      withAssociations: true,
       transaction,
-    });
+    } as any);
 
     if (!instance) {
       return;
@@ -791,6 +803,33 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         transaction,
       });
     }
+  }
+
+  async max(options: MaxOptions): Promise<number | undefined> {
+    const transaction = await this.getTransaction(options);
+
+    const queryOptions = this.buildQueryOptions({
+      ...options,
+      fields: [],
+    });
+
+    const { field } = options;
+
+    const results = await this.model.findAll({
+      ...queryOptions,
+      attributes: [
+        [
+          Sequelize.literal(
+            `MAX(${this.database.sequelize.getQueryInterface().quoteIdentifiers(`${this.collection.name}.${field}`)})`,
+          ),
+          'max',
+        ],
+      ],
+      raw: true,
+      transaction,
+    });
+
+    return results[0]['max'];
   }
 
   /**

@@ -803,4 +803,6 @@ export default {
   "Sync successfully":"同步成功",
   "Sync from form fields":"同步表单字段",
   "Select all":"全选"
+  "All loaded, nothing more":"已加载所有数据",
+  "Loading more":"加载更多"
 }

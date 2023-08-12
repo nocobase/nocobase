@@ -626,5 +626,7 @@ export default {
   "Tag color field":"ラベルの色フィールド",
   "Sync successfully":"同期成功",
   "Sync from form fields":"フォームフィールドの同期",
-  "Select all":"すべて選択"
+  "Select all":"すべて選択",
+  "All loaded, nothing more":"すべてロード完了",
+  "Loading more":"追加のロード"
 }
