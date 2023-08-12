@@ -73,10 +73,10 @@ import {
 import { useCollectMenuItem, useCollectMenuItems, useMenuItem } from '../hooks/useMenuItem';
 import { getTargetKey } from '../schema-component/antd/association-filter/utilts';
 import { DynamicComponentProps } from '../schema-component/antd/filter/DynamicComponent';
-import { isVariable } from '../schema-component/common/utils/uitls';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
 import { useLocalVariables, useVariables } from '../variables';
+import { isVariable } from '../variables/utils/isVariable';
 import { FormDataTemplates } from './DataTemplates';
 import { DateFormatCom, ExpiresRadio } from './DateFormat/ExpiresRadio';
 import { EnableChildCollections } from './EnableChildCollections';

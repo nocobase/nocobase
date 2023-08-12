@@ -4,8 +4,8 @@ import { reaction } from '@formily/reactive';
 import _ from 'lodash';
 import { useEffect } from 'react';
 import { DEBOUNCE_WAIT, useLocalVariables, useVariables } from '../../../../variables';
-import { getPath } from '../../../../variables/VariablesProvider';
-import { isVariable } from '../../../common/utils/uitls';
+import { getPath } from '../../../../variables/utils/getPath';
+import { isVariable } from '../../../../variables/utils/isVariable';
 import { useCompile } from '../../../hooks';
 
 const useParseDefaultValue = () => {

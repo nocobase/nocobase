@@ -1,6 +1,7 @@
 import flat from 'flat';
 import _, { every, findIndex, some } from 'lodash';
 import { VariableOption, VariablesContextType } from '../../../variables/types';
+import { isVariable } from '../../../variables/utils/isVariable';
 import jsonLogic from '../../common/utils/logic';
 
 type VariablesCtx = {
@@ -8,21 +9,6 @@ type VariablesCtx = {
   $user?: Record<string, any>;
   $date?: Record<string, any>;
   $form?: Record<string, any>;
-};
-
-export const REGEX_OF_VARIABLE = /\{\{\s*([a-zA-Z0-9_$.]+?)\s*\}\}/g;
-
-export const isVariable = (str: unknown) => {
-  if (typeof str !== 'string') {
-    return false;
-  }
-  const matches = str.match(REGEX_OF_VARIABLE);
-
-  if (!matches) {
-    return false;
-  }
-
-  return true;
 };
 
 export const parseVariables = (str: string, ctx: VariablesCtx | any) => {

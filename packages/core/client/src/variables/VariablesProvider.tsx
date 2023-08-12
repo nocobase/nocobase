@@ -5,28 +5,15 @@ import { useAPIClient } from '../api-client';
 import type { CollectionFieldOptions } from '../collection-manager';
 import { useCollectionManager } from '../collection-manager';
 import { useCompile } from '../schema-component';
-import { REGEX_OF_VARIABLE, isVariable } from '../schema-component/common/utils/uitls';
 import useBuiltInVariables from './hooks/useBuiltinVariables';
 import { VariableOption, VariablesContextType } from './types';
+import { getAction } from './utils/getAction';
+import { getPath } from './utils/getPath';
+import { REGEX_OF_VARIABLE, isVariable } from './utils/isVariable';
 
 export const VariablesContext = createContext<VariablesContextType>(null);
 
 const variableToCollectionName = {};
-
-const TYPE_TO_ACTION = {
-  hasMany: 'list',
-  belongsTo: 'get',
-  hasOne: 'get',
-  belongsToMany: 'list',
-};
-
-const getAction = (type: string) => {
-  if (process.env.NODE_ENV !== 'production' && !(type in TYPE_TO_ACTION)) {
-    throw new Error(`VariablesProvider: unknown type: ${type}`);
-  }
-
-  return TYPE_TO_ACTION[type];
-};
 
 const getFieldPath = (variablePath: string) => {
   const list = variablePath.split('.');
@@ -37,37 +24,6 @@ const getFieldPath = (variablePath: string) => {
     return item;
   });
   return result.join('.');
-};
-
-/**
- * `{{ $user.name }}` => `$user.name`
- * @param variableString
- * @returns
- */
-export const getPath = (variableString: string) => {
-  if (!variableString) {
-    return variableString;
-  }
-
-  const matches = variableString.match(REGEX_OF_VARIABLE);
-  return matches[0].replace(REGEX_OF_VARIABLE, '$1');
-};
-
-/**
- * `{{ $user.name }}` => `$user`
- * @param variableString
- * @returns
- */
-export const getVariableName = (variableString: string) => {
-  if (!_.isString(variableString)) {
-    return variableString;
-  }
-
-  const variablePath = getPath(variableString);
-  const list = variablePath.split('.');
-  const variableName = list[0];
-
-  return variableName;
 };
 
 const VariablesProvider = ({ children }) => {

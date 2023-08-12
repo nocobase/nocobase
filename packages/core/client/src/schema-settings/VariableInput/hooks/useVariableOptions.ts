@@ -3,7 +3,7 @@ import _ from 'lodash';
 import { useMemo } from 'react';
 import { CollectionFieldOptions } from '../../../collection-manager';
 import { useValues } from '../../../schema-component/antd/filter/useValues';
-import { isVariable } from '../../../schema-component/common/utils/uitls';
+import { isVariable } from '../../../variables/utils/isVariable';
 import { Option } from '../type';
 import { useDateVariable } from './useDateVariable';
 import { useFormVariable } from './useFormVariable';
@@ -61,7 +61,7 @@ export const useVariableOptions = ({ collectionField, blockCollectionName: rootC
 };
 
 /**
- *
+ * 兼容老版本的变量
  * @param variables
  */
 export const compatOldVariables = (variables: Option[], { value, collectionName, t }) => {

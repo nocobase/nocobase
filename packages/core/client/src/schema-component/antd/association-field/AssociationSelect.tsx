@@ -5,7 +5,7 @@ import { isFunction } from 'mathjs';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RecordProvider, useAPIClient } from '../../../';
-import { isVariable } from '../../common/utils/uitls';
+import { isVariable } from '../../../variables/utils/isVariable';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
 import useServiceOptions, { useAssociationFieldContext } from './hooks';
 
@@ -109,7 +109,7 @@ interface AssociationSelectInterface {
   FilterDesigner: React.FC;
 }
 
-export const AssociationSelect = (InternalAssociationSelect as unknown) as AssociationSelectInterface;
+export const AssociationSelect = InternalAssociationSelect as unknown as AssociationSelectInterface;
 
 export const AssociationSelectReadPretty = connect(
   (props: any) => {

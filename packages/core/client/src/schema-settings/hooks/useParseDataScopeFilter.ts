@@ -1,8 +1,8 @@
 import { flatten, unflatten } from '@nocobase/utils/client';
 import { useCallback } from 'react';
-import { isVariable } from '../../schema-component/common/utils/uitls';
 import { useLocalVariables, useVariables } from '../../variables';
-import { getVariableName } from '../../variables/VariablesProvider';
+import { getVariableName } from '../../variables/utils/getVariableName';
+import { isVariable } from '../../variables/utils/isVariable';
 
 interface Props {
   /**

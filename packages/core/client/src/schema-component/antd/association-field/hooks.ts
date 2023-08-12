@@ -12,8 +12,8 @@ import { isInFilterFormBlock } from '../../../filter-provider';
 import { useRecord } from '../../../record-provider';
 import { useParseDataScopeFilter } from '../../../schema-settings';
 import { DEBOUNCE_WAIT } from '../../../variables';
-import { getPath } from '../../../variables/VariablesProvider';
-import { isVariable } from '../../common/utils/uitls';
+import { getPath } from '../../../variables/utils/getPath';
+import { isVariable } from '../../../variables/utils/isVariable';
 import { useDesignable } from '../../hooks';
 import { AssociationFieldContext } from './context';
 

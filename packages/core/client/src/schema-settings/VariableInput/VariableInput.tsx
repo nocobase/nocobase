@@ -4,8 +4,8 @@ import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CollectionFieldOptions } from '../../collection-manager';
 import { Variable, useVariableScope } from '../../schema-component';
-import { isVariable } from '../../schema-component/common/utils/uitls';
 import { VariableOption, VariablesContextType } from '../../variables/types';
+import { isVariable } from '../../variables/utils/isVariable';
 import { useContextAssociationFields } from './hooks/useContextAssociationFields';
 import { compatOldVariables, useVariableOptions } from './hooks/useVariableOptions';
 
@@ -48,7 +48,7 @@ type Props = {
 };
 
 /**
- * 注意：该组件存在一下问题：
+ * 注意：该组件存在以下问题：
  * - 在选中选项的时候该组件不能触发重渲染
  * - 如果触发重渲染可能会导致无法展开子选项列表
  * @param props
