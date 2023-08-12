@@ -6,7 +6,6 @@ import { resolve } from 'path';
 import Application from '../application';
 import { createAppProxy } from '../helper';
 import { Plugin } from '../plugin';
-import { clientStaticMiddleware } from './clientStaticMiddleware';
 import collectionOptions from './options/collection';
 import resourceOptions from './options/resource';
 import { PluginManagerRepository } from './plugin-manager-repository';
@@ -44,8 +43,6 @@ export class PluginManager {
     this.repository.setPluginManager(this);
     this.app.resourcer.define(resourceOptions);
 
-    this.app.use(clientStaticMiddleware);
-
     this.app.resourcer.use(async (ctx, next) => {
       await next();
       const { resourceName, actionName } = ctx.action;
@@ -72,10 +69,59 @@ export class PluginManager {
     });
   }
 
-  protected async initPresetPlugins() {
-    for (const plugin of this.options.plugins) {
-      const [p, opts = {}] = Array.isArray(plugin) ? plugin : [plugin];
-      await this.add(p, { ...opts, enabled: true, isPreset: true });
+  static getPackageJson(packageName: string) {
+    return require(`${packageName}/package.json`);
+  }
+
+  static getPackageName(name: string) {
+    const prefixes = this.getPluginPkgPrefix();
+    for (const prefix of prefixes) {
+      try {
+        require.resolve(`${prefix}${name}`);
+        return `${prefix}${name}`;
+      } catch (error) {
+        continue;
+      }
+    }
+    throw new Error(`${name} plugin does not exist`);
+  }
+
+  static getPluginPkgPrefix() {
+    return (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro-').split(
+      ',',
+    );
+  }
+
+  static async findPackage(name: string) {
+    try {
+      const packageName = this.getPackageName(name);
+      return packageName;
+    } catch (error) {
+      console.log(`\`${name}\` plugin not found locally`);
+      const prefixes = this.getPluginPkgPrefix();
+      for (const prefix of prefixes) {
+        try {
+          const packageName = `${prefix}${name}`;
+          console.log(`Try to find ${packageName}`);
+          await execa('npm', ['v', packageName, 'versions']);
+          console.log(`${packageName} downloading`);
+          await execa('yarn', ['add', packageName, '-W']);
+          console.log(`${packageName} downloaded`);
+          return packageName;
+        } catch (error) {
+          continue;
+        }
+      }
+    }
+    throw new Error(`No available packages found, ${name} plugin does not exist`);
+  }
+
+  static resolvePlugin(pluginName: string | typeof Plugin) {
+    if (typeof pluginName === 'string') {
+      const packageName = this.getPackageName(pluginName);
+      return requireModule(packageName);
+    } else {
+      return pluginName;
     }
   }
 
@@ -309,59 +355,10 @@ export class PluginManager {
     this.app.reload();
   }
 
-  static getPackageJson(packageName: string) {
-    return require(`${packageName}/package.json`);
-  }
-
-  static getPackageName(name: string) {
-    const prefixes = this.getPluginPkgPrefix();
-    for (const prefix of prefixes) {
-      try {
-        require.resolve(`${prefix}${name}`);
-        return `${prefix}${name}`;
-      } catch (error) {
-        continue;
-      }
-    }
-    throw new Error(`${name} plugin does not exist`);
-  }
-
-  static getPluginPkgPrefix() {
-    return (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro-').split(
-      ',',
-    );
-  }
-
-  static async findPackage(name: string) {
-    try {
-      const packageName = this.getPackageName(name);
-      return packageName;
-    } catch (error) {
-      console.log(`\`${name}\` plugin not found locally`);
-      const prefixes = this.getPluginPkgPrefix();
-      for (const prefix of prefixes) {
-        try {
-          const packageName = `${prefix}${name}`;
-          console.log(`Try to find ${packageName}`);
-          await execa('npm', ['v', packageName, 'versions']);
-          console.log(`${packageName} downloading`);
-          await execa('yarn', ['add', packageName, '-W']);
-          console.log(`${packageName} downloaded`);
-          return packageName;
-        } catch (error) {
-          continue;
-        }
-      }
-    }
-    throw new Error(`No available packages found, ${name} plugin does not exist`);
-  }
-
-  static resolvePlugin(pluginName: string | typeof Plugin) {
-    if (typeof pluginName === 'string') {
-      const packageName = this.getPackageName(pluginName);
-      return requireModule(packageName);
-    } else {
-      return pluginName;
+  protected async initPresetPlugins() {
+    for (const plugin of this.options.plugins) {
+      const [p, opts = {}] = Array.isArray(plugin) ? plugin : [plugin];
+      await this.add(p, { ...opts, enabled: true, isPreset: true });
     }
   }
 }

@@ -9,6 +9,7 @@ import { IPCSocketServer } from './ipc-socket-server';
 import { IPCSocketClient } from './ipc-socket-client';
 import { Command } from 'commander';
 import { applyErrorWithArgs, getErrorWithCode } from './errors';
+import { handlePluginStaticFile } from './handle-plugin-static-file';
 
 export interface IncomingRequest {
   url: string;
@@ -96,6 +97,10 @@ export class Gateway extends EventEmitter {
   }
 
   async requestHandler(req: IncomingMessage, res: ServerResponse) {
+    if (await handlePluginStaticFile(req, res)) {
+      return;
+    }
+
     const handleApp = await this.getRequestHandleAppName(req as IncomingRequest);
 
     const hasApp = AppSupervisor.getInstance().hasApp(handleApp);

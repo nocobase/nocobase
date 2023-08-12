@@ -18,6 +18,12 @@ describe('gateway', () => {
   });
 
   describe('http api', () => {
+    it('should send plugin static file through gateway', async () => {
+      const staticUrl = '/api/plugins/client/@nocobase/plugin-acl/index.js';
+      const response = await supertest.agent(gateway.getCallback()).get(staticUrl);
+      expect(response.status).toBe(404);
+    });
+
     it('should return error when app not found', async () => {
       const res = await supertest.agent(gateway.getCallback()).get('/api/app:getInfo');
       expect(res.status).toBe(503);
