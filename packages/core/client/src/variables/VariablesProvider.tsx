@@ -10,6 +10,7 @@ import { VariableOption, VariablesContextType } from './types';
 import { getAction } from './utils/getAction';
 import { getPath } from './utils/getPath';
 import { REGEX_OF_VARIABLE, isVariable } from './utils/isVariable';
+import { uniq } from './utils/uniq';
 
 export const VariablesContext = createContext<VariablesContextType>(null);
 
@@ -198,7 +199,7 @@ const VariablesProvider = ({ children }) => {
         value = await getValue(path);
       });
 
-      return value;
+      return uniq(value);
     },
     [getValue, onLocalVariablesReady],
   );
