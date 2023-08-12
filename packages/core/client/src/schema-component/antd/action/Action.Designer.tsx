@@ -143,17 +143,17 @@ function SaveMode() {
             saveMode: {
               'x-decorator': 'FormItem',
               'x-component': 'Radio.Group',
-              title: t('Save mode'),
+              // title: t('Save mode'),
               default: field.componentProps.saveMode || 'create',
               enum: [
-                { value: 'create', label: '{{t("Create")}}' },
-                { value: 'firstOrCreate', label: '{{t("First or create")}}' },
-                { value: 'updateOrCreate', label: '{{t("Update or create")}}' },
+                { value: 'create', label: '{{t("Insert")}}' },
+                { value: 'firstOrCreate', label: '{{t("Insert if not exists")}}' },
+                { value: 'updateOrCreate', label: '{{t("Insert if not exists, or update")}}' },
               ],
             },
             filterKeys: {
               type: 'array',
-              title: '{{ t("Find by the following fields") }}',
+              title: '{{ t("Determine whether a record exists by the following fields") }}',
               required: true,
               default: field.componentProps.filterKeys,
               'x-decorator': 'FormItem',

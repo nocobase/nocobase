@@ -65,7 +65,7 @@ const useStyles = createStyles(({ css, token }) => {
           text-align: right;
 
           time {
-            width: 14em;
+            width: 12em;
             color: ${token.colorText};
             font-size: 80%;
           }

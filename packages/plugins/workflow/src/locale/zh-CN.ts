@@ -18,6 +18,10 @@ export default {
   'Delete a main version will cause all other revisions to be deleted too.': '删除主版本将导致其他版本一并被删除。',
   Loading: '加载中',
   'Load failed': '加载失败',
+  'Use transaction': '启用事务',
+  'Data operation nodes in workflow will run in a same transaction until any interruption. Any failure will cause data rollback, and will also rollback the history of the execution.':
+    '工作流中的节点将在同一个事务中运行。任何失败都会导致数据回滚，同时也会回滚相应的执行历史。',
+  'Auto delete history when execution is on end status': '执行结束后自动删除对应状态的历史记录',
   Trigger: '触发器',
   'Trigger variables': '触发器变量',
   'Trigger data': '触发数据',
@@ -102,6 +106,16 @@ export default {
   Aborted: '已终止',
   Canceled: '已取消',
   Rejected: '已拒绝',
+
+  'Triggered but still waiting in queue to execute.': '已触发但仍在队列中等待执行。',
+  'Started and executing, maybe waiting for an async callback (manual, delay etc.).':
+    '已开始执行，可能在等待异步回调（人工、延时等）。',
+  'Successfully finished.': '成功完成。',
+  'Failed to satisfy node configurations.': '未满足节点配置造成的失败。',
+  'Some node meets error.': '某个节点出错。',
+  'Running of some node was aborted by program flow.': '某个节点被程序流程终止。',
+  'Manually canceled whole execution when waiting.': '等待时被手动取消整个执行。',
+  'Rejected from a manual node.': '被人工节点拒绝继续。',
 
   'Continue the process': '继续流程',
   'Terminate the process': '终止流程',

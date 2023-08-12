@@ -13,9 +13,9 @@ import {
 } from '@nocobase/client';
 import lodash from 'lodash';
 import React from 'react';
-import { useTranslation } from 'react-i18next';
 import { useMapTranslation } from '../locale';
 import { useMapBlockContext } from './MapBlockProvider';
+import { findNestedOption } from './utils';
 
 export const MapBlockDesigner = () => {
   const { name, title } = useCollection();
@@ -23,8 +23,7 @@ export const MapBlockDesigner = () => {
   const fieldSchema = useFieldSchema();
   const { form } = useFormBlockContext();
   const { service } = useMapBlockContext();
-  const { t: mapT } = useMapTranslation();
-  const { t } = useTranslation();
+  const { t } = useMapTranslation();
   const { dn } = useDesignable();
   const { getCollectionFieldsOptions } = useCollectionManager();
   const collection = useCollection();
@@ -34,17 +33,21 @@ export const MapBlockDesigner = () => {
 
   const template = useSchemaTemplate();
 
-  const mapFieldOptions = getCollectionFieldsOptions(collection?.name, ['point', 'lineString', 'polygon']);
+  const mapFieldOptions = getCollectionFieldsOptions(collection?.name, ['point', 'lineString', 'polygon'], {
+    association: ['o2o', 'obo', 'oho', 'o2m', 'm2o', 'm2m'],
+  });
   const markerFieldOptions = getCollectionFieldsOptions(collection?.name, 'string');
+  const isPointField = findNestedOption(fieldNames.field, mapFieldOptions)?.type === 'point';
 
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettings.BlockTitleItem />
       <FixedBlockDesignerItem />
-      <SchemaSettings.SelectItem
-        title={mapT('Map field')}
+      <SchemaSettings.CascaderItem
+        title={t('Map field')}
         value={fieldNames.field}
         options={mapFieldOptions}
+        allowClear={false}
         onChange={(v) => {
           const fieldNames = field.decoratorProps.fieldNames || {};
           fieldNames['field'] = v;
@@ -60,34 +63,36 @@ export const MapBlockDesigner = () => {
           dn.refresh();
         }}
       />
-      <SchemaSettings.SelectItem
-        title={mapT('Marker field')}
-        value={fieldNames.marker}
-        options={markerFieldOptions}
-        onChange={(v) => {
-          const fieldNames = field.decoratorProps.fieldNames || {};
-          fieldNames['marker'] = v;
-          field.decoratorProps.fieldNames = fieldNames;
-          fieldSchema['x-decorator-props']['fieldNames'] = fieldNames;
-          service.refresh();
-          dn.emit('patch', {
-            schema: {
-              ['x-uid']: fieldSchema['x-uid'],
-              'x-decorator-props': field.decoratorProps,
-            },
-          });
-          dn.refresh();
-        }}
-      />
+      {isPointField ? (
+        <SchemaSettings.SelectItem
+          title={t('Marker field')}
+          value={fieldNames.marker}
+          options={markerFieldOptions}
+          onChange={(v) => {
+            const fieldNames = field.decoratorProps.fieldNames || {};
+            fieldNames['marker'] = v;
+            field.decoratorProps.fieldNames = fieldNames;
+            fieldSchema['x-decorator-props']['fieldNames'] = fieldNames;
+            service.refresh();
+            dn.emit('patch', {
+              schema: {
+                ['x-uid']: fieldSchema['x-uid'],
+                'x-decorator-props': field.decoratorProps,
+              },
+            });
+            dn.refresh();
+          }}
+        />
+      ) : null}
       <SchemaSettings.ModalItem
-        title={mapT('The default zoom level of the map')}
+        title={t('The default zoom level of the map')}
         schema={
           {
             type: 'object',
-            title: mapT('Set default zoom level'),
+            title: t('Set default zoom level'),
             properties: {
               zoom: {
-                title: mapT('Zoom'),
+                title: t('Zoom'),
                 default: defaultZoom,
                 'x-component': 'InputNumber',
                 'x-decorator': 'FormItem',

@@ -253,7 +253,6 @@ export default class WorkflowPlugin extends Plugin {
             context,
             key: workflow.key,
             status: EXECUTION_STATUS.QUEUEING,
-            useTransaction: workflow.useTransaction,
           },
           { transaction },
         );
@@ -350,6 +349,9 @@ export default class WorkflowPlugin extends Plugin {
       this.getLogger(execution.workflowId).info(
         `execution (${execution.id}) finished with status: ${execution.status}`,
       );
+      if (execution.status && execution.workflow.options?.deleteExecutionOnStatus?.includes(execution.status)) {
+        await execution.destroy();
+      }
     } catch (err) {
       this.getLogger(execution.workflowId).error(`execution (${execution.id}) error: ${err.message}`, err);
     }
