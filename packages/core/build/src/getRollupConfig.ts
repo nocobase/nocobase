@@ -1,24 +1,24 @@
-import { existsSync } from 'fs'
-import { basename, extname, join } from 'path';
-import { ModuleFormat, RollupOptions, Plugin } from 'rollup';
-import url from '@rollup/plugin-url';
-import json from '@rollup/plugin-json';
-import replace from '@rollup/plugin-replace';
-import commonjs from '@rollup/plugin-commonjs';
-import nodeResolve from '@rollup/plugin-node-resolve';
-import inject, { RollupInjectOptions } from '@rollup/plugin-inject';
 import babel, { RollupBabelInputPluginOptions } from '@rollup/plugin-babel';
+import commonjs from '@rollup/plugin-commonjs';
+import inject, { RollupInjectOptions } from '@rollup/plugin-inject';
+import json from '@rollup/plugin-json';
+import nodeResolve from '@rollup/plugin-node-resolve';
+import replace from '@rollup/plugin-replace';
+import url from '@rollup/plugin-url';
 import { createFilter } from '@rollup/pluginutils';
+import svgr from '@svgr/rollup';
+import autoprefixer from 'autoprefixer';
+import { existsSync } from 'fs';
+import NpmImport from 'less-plugin-npm-import';
+import { camelCase } from 'lodash';
+import { basename, extname, join } from 'path';
+import { ModuleFormat, Plugin, RollupOptions } from 'rollup';
 import postcss from 'rollup-plugin-postcss';
 import { terser } from 'rollup-plugin-terser';
 import typescript2 from 'rollup-plugin-typescript2';
-import { camelCase } from 'lodash';
 import tempDir from 'temp-dir';
-import autoprefixer from 'autoprefixer';
-import NpmImport from 'less-plugin-npm-import';
-import svgr from '@svgr/rollup';
-import getBabelConfig from './getBabelConfig';
 import { getPkgPath, shouldTransform } from './es5ImcompatibleVersions';
+import getBabelConfig from './getBabelConfig';
 import { IBundleOptions } from './types';
 
 interface IGetRollupConfigOpts {
@@ -239,7 +239,7 @@ export default function(opts: IGetRollupConfigOpts): RollupOptions[] {
         dir: join(cwd, `${esm && (esm as any).dir || 'dist'}`),
         entryFileNames: `${(esm && (esm as any).file) || `${name}.esm`}.js`,
       }
-    
+
       return [
         {
           input,
@@ -262,6 +262,7 @@ export default function(opts: IGetRollupConfigOpts): RollupOptions[] {
                   ...getPlugins(),
                   replace({
                     'process.env.NODE_ENV': JSON.stringify('production'),
+                    'process.env.__TEST__': false,
                   }),
                   terser(terserOpts),
                 ],
@@ -308,6 +309,7 @@ export default function(opts: IGetRollupConfigOpts): RollupOptions[] {
             ...getPlugins(),
             replace({
               'process.env.NODE_ENV': JSON.stringify('development'),
+              'process.env.__TEST__': false,
             }),
           ],
           external: testExternal.bind(null, externalPeerDeps, externalsExclude),
@@ -329,6 +331,7 @@ export default function(opts: IGetRollupConfigOpts): RollupOptions[] {
                   ...getPlugins({ minCSS: true }),
                   replace({
                     'process.env.NODE_ENV': JSON.stringify('production'),
+                    'process.env.__TEST__': false,
                   }),
                   terser(terserOpts),
                 ],

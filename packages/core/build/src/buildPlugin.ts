@@ -276,6 +276,7 @@ export function buildPluginClient(cwd: string, log: Log) {
     mode: 'production',
     define: {
       'process.env.NODE_ENV': JSON.stringify('production'),
+      'process.env.__TEST__': false,
     },
     logLevel: 'warn',
     build: {
