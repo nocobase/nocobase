@@ -54,8 +54,20 @@ export const transformVariableValue = (value: any, deps: Deps) => {
     return value;
   }
 
+  if (targetCollectionFiled.name === 'id') {
+    if (Array.isArray(value)) {
+      return value[0];
+    }
+    return value;
+  }
+
   if (Array.isArray(value)) {
-    return value.join(',');
+    if (_.isString(value[0])) {
+      return value.join(',');
+    }
+    if (_.isNumber(value[0])) {
+      return _.sum(value);
+    }
   }
 
   return value;
