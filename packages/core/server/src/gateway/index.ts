@@ -101,13 +101,7 @@ export class Gateway extends EventEmitter {
 
     if (pathname.startsWith('/storage/uploads/')) {
       return handler(req, res, {
-        public: resolve(process.cwd(), 'storage', 'uploads'),
-        rewrites: [
-          {
-            source: '/storage/uploads/:file',
-            destination: '/:file',
-          },
-        ],
+        public: resolve(process.cwd()),
       });
     }
 
