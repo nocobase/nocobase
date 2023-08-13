@@ -26,7 +26,9 @@ export function selectQuery(
   // Add WHERE to sub or main query
   if (Object.prototype.hasOwnProperty.call(options, 'where')) {
     options.where = this.getWhereConditions(options.where, tableName, model, options);
-    queryItems.push(` WHERE ${options.where}`);
+    if (options.where) {
+      queryItems.push(` WHERE ${options.where}`);
+    }
   }
 
   // Add GROUP BY to sub or main query
@@ -55,7 +57,7 @@ export function selectQuery(
   }
 
   const query = `SELECT ${attributes.join(', ')} FROM (${model.sql}) ${this.getAliasToken()} ${this.quoteIdentifier(
-    tableName,
+    model.name,
   )}${queryItems.join('')}`;
 
   return `${query};`;
