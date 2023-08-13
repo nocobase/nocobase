@@ -6,9 +6,9 @@ import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
 
 const PORT = 12345;
 
-const URL_DATA = `http://localhost:${PORT}/data`;
+const URL_DATA = `http://localhost:${PORT}/api/data`;
 const URL_400 = `http://localhost:${PORT}/api/400`;
-const URL_TIMEOUT = `http://localhost:${PORT}/timeout`;
+const URL_TIMEOUT = `http://localhost:${PORT}/api/timeout`;
 
 describe('workflow > instructions > request', () => {
   let app: Application;
@@ -24,11 +24,11 @@ describe('workflow > instructions > request', () => {
       if (ctx.path === '/api/400') {
         return ctx.throw(400);
       }
-      if (ctx.path === '/timeout') {
+      if (ctx.path === '/api/timeout') {
         await sleep(2000);
         return ctx.throw(new Error('timeout'));
       }
-      if (ctx.path === '/data') {
+      if (ctx.path === '/api/data') {
         ctx.withoutDataWrapping = true;
         ctx.body = {
           meta: { title: ctx.query.title },
