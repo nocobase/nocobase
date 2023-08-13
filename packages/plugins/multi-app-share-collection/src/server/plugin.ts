@@ -4,6 +4,7 @@ import lodash from 'lodash';
 import { resolve } from 'path';
 
 const subAppFilteredPlugins = ['multi-app-share-collection', 'multi-app-manager'];
+const unSyncPlugins = ['localization-management'];
 
 class SubAppPlugin extends Plugin {
   beforeLoad() {
@@ -221,7 +222,7 @@ export class MultiAppShareCollectionPlugin extends Plugin {
     this.app.on('afterEnablePlugin', async (pluginName) => {
       await traverseSubApps(
         async (subApp) => {
-          if (subAppFilteredPlugins.includes(pluginName)) return;
+          if ([...subAppFilteredPlugins, ...unSyncPlugins].includes(pluginName)) return;
           await subApp.pm.enable(pluginName);
         },
         {
@@ -233,7 +234,7 @@ export class MultiAppShareCollectionPlugin extends Plugin {
     this.app.on('afterDisablePlugin', async (pluginName) => {
       await traverseSubApps(
         async (subApp) => {
-          if (subAppFilteredPlugins.includes(pluginName)) return;
+          if ([...subAppFilteredPlugins, ...unSyncPlugins].includes(pluginName)) return;
           await subApp.pm.disable(pluginName);
         },
         {
