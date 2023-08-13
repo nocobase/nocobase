@@ -1,9 +1,9 @@
 import { ISchema, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { Spin } from 'antd';
 import { cloneDeep } from 'lodash';
-import React, { createContext, ReactNode, useContext, useMemo } from 'react';
+import React, { ReactNode, createContext, useContext, useMemo } from 'react';
 import { useAPIClient, useRequest } from '../api-client';
+import { useApp } from '../application';
 import { Plugin } from '../application/Plugin';
 import { useCollectionManager } from '../collection-manager';
 import { BlockTemplate } from './BlockTemplate';
@@ -116,6 +116,7 @@ export const useSchemaTemplateManager = () => {
 
 export const RemoteSchemaTemplateManagerProvider: React.FC<{ children?: ReactNode }> = (props) => {
   const api = useAPIClient();
+  const app = useApp();
   const options = {
     resource: 'uiSchemaTemplates',
     action: 'list',
@@ -128,7 +129,7 @@ export const RemoteSchemaTemplateManagerProvider: React.FC<{ children?: ReactNod
     data: any[];
   }>(options);
   if (service.loading) {
-    return <Spin />;
+    return app.renderComponent('AppSpin');
   }
   return (
     <SchemaTemplateManagerProvider

@@ -23,7 +23,11 @@ import { SystemSettingsPlugin } from '../system-settings';
 import { CurrentUserProvider, CurrentUserSettingsMenuProvider } from '../user';
 import { LocalePlugin } from './plugins/LocalePlugin';
 
-const AppSpin = Spin;
+const AppSpin = () => {
+  return (
+    <Spin style={{ position: 'fixed', top: '50%', left: '50%', fontSize: 72, transform: 'translate(-50%, -50%)' }} />
+  );
+};
 
 const AppError: FC<{ app: Application }> = observer(({ app }) => (
   <div>

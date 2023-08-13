@@ -9,9 +9,9 @@ export const getWebSocketURL = () => {
   }
   try {
     const url = new URL(process.env.API_BASE_URL);
-    return `ws://${url.host}/ws`;
+    return `${url.protocol === 'https:' ? 'wss' : 'ws'}://${url.host}/ws`;
   } catch (error) {
-    return `ws://${location.host}/ws`;
+    return `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`;
   }
 };
 
