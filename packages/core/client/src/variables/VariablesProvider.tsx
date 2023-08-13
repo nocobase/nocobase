@@ -108,21 +108,24 @@ const VariablesProvider = ({ children }) => {
   /**
    * 注册一个全局变量
    */
-  const registerVariable = useCallback((variableOption: VariableOption) => {
-    if (process.env.NODE_ENV !== 'production' && !isVariable(`{{${variableOption.name}}}`)) {
-      throw new Error(`VariablesProvider: ${variableOption.name} is not a valid name`);
-    }
+  const registerVariable = useCallback(
+    (variableOption: VariableOption) => {
+      if (process.env.NODE_ENV !== 'production' && !isVariable(`{{${variableOption.name}}}`)) {
+        throw new Error(`VariablesProvider: ${variableOption.name} is not a valid name`);
+      }
 
-    setCtx((prev) => {
-      return {
-        ...prev,
-        [variableOption.name]: variableOption.ctx,
-      };
-    });
-    if (variableOption.collectionName) {
-      variableToCollectionName[variableOption.name] = variableOption.collectionName;
-    }
-  }, []);
+      setCtx((prev) => {
+        return {
+          ...prev,
+          [variableOption.name]: variableOption.ctx,
+        };
+      });
+      if (variableOption.collectionName) {
+        variableToCollectionName[variableOption.name] = variableOption.collectionName;
+      }
+    },
+    [setCtx],
+  );
 
   const getVariable = useCallback((variableName: string): VariableOption => {
     if (!ctxRef.current[variableName]) {

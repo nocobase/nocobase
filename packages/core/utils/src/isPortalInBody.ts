@@ -5,7 +5,8 @@
 
 export const isPortalInBody = (dom: Element) => {
   while (dom) {
-    if (dom.id === 'root') {
+    // 如果有 `nb-action` 类名，说明是一个 Action 按钮，其本身已经阻止了冒泡，不需要再次阻止，如果阻止会导致点击无效
+    if (dom.id === 'root' || dom.classList?.contains('nb-action')) {
       return false;
     }
     dom = dom.parentNode as Element;

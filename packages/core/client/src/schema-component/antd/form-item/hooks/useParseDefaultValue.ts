@@ -3,17 +3,23 @@ import { useField, useFieldSchema } from '@formily/react';
 import { reaction } from '@formily/reactive';
 import _ from 'lodash';
 import { useEffect } from 'react';
+import { useCollection } from '../../../../collection-manager';
 import { DEBOUNCE_WAIT, useLocalVariables, useVariables } from '../../../../variables';
 import { getPath } from '../../../../variables/utils/getPath';
 import { isVariable } from '../../../../variables/utils/isVariable';
+import { transformVariableValue } from '../../../../variables/utils/transformVariableValue';
 import { useCompile } from '../../../hooks';
 
+/**
+ * 用于解析并设置 FormItem 的默认值
+ */
 const useParseDefaultValue = () => {
   const field = useField<Field>();
   const schema = useFieldSchema();
   const variables = useVariables();
   const compile = useCompile({ noCache: true });
   const localVariables = useLocalVariables();
+  const { getField } = useCollection();
 
   useEffect(() => {
     const formVariable = localVariables.find((item) => item.name === '$form');
@@ -26,19 +32,16 @@ const useParseDefaultValue = () => {
         }
 
         field.loading = true;
+        const collectionField = !schema.name.toString().includes('.') && getField(schema.name);
 
-        let value = await variables.parseVariable(schema.default, localVariables);
-        if (Array.isArray(value)) {
-          const collectionField = await variables.getCollectionField(schema.default);
-          const isDate = collectionField?.uiSchema?.['x-component'] === 'DatePicker';
-          if (isDate) {
-            value = value.filter(Boolean)[0];
-          } else if (!collectionField?.target) {
-            value = value.filter(Boolean).join(',');
+        if (process.env.NODE_ENV !== 'production') {
+          if (!collectionField) {
+            throw new Error(`useParseDefaultValue: can not find field ${schema.name}`);
           }
         }
 
-        field.setInitialValue(value);
+        const value = await variables.parseVariable(schema.default, localVariables);
+        field.setInitialValue(transformVariableValue(value, { targetCollectionFiled: collectionField }));
         if (value == null || value === '') {
           field.reset();
         }

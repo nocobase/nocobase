@@ -101,9 +101,10 @@ export const Action: ComposedAction = observer(
               return;
             }
 
+            e.preventDefault();
+            e.stopPropagation();
+
             if (!disabled) {
-              e.preventDefault();
-              e.stopPropagation();
               const onOk = () => {
                 onClick?.(e);
                 setVisible(true);
@@ -120,7 +121,7 @@ export const Action: ComposedAction = observer(
             }
           }}
           component={tarComponent || Button}
-          className={classnames(componentCls, hashId, className)}
+          className={classnames(componentCls, hashId, className, 'nb-action')}
           type={props.type === 'danger' ? undefined : props.type}
         >
           {actionTitle}

@@ -19,6 +19,7 @@ import { BulkEditFormItemValueType } from '../../schema-initializer/components';
 import { useCurrentUserContext } from '../../user';
 import { useLocalVariables, useVariables } from '../../variables';
 import { isVariable } from '../../variables/utils/isVariable';
+import { transformVariableValue } from '../../variables/utils/transformVariableValue';
 import { useBlockRequestContext, useFilterByTk, useParamsFromRecord } from '../BlockProvider';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { mergeFilter } from '../SharedFilterProvider';
@@ -126,7 +127,7 @@ export const useCreateActionProps = () => {
   const navigate = useNavigate();
   const actionSchema = useFieldSchema();
   const actionField = useField();
-  const { fields, getField, getTreeParentField } = useCollection();
+  const { fields, getField, getTreeParentField, name } = useCollection();
   const compile = useCompile();
   const filterByTk = useFilterByTk();
   const currentRecord = useRecord();
@@ -152,10 +153,18 @@ export const useCreateActionProps = () => {
       const assignedValues = {};
       const waitList = Object.keys(originalAssignedValues).map(async (key) => {
         const value = originalAssignedValues[key];
+        const collectionField = getField(key);
+
+        if (process.env.NODE_ENV !== 'production') {
+          if (!collectionField) {
+            throw new Error(`useCreateActionProps: field "${key}" not found in collection "${name}"`);
+          }
+        }
+
         if (isVariable(value)) {
           const result = await variables?.parseVariable(value, localVariables);
           if (result) {
-            assignedValues[key] = result;
+            assignedValues[key] = transformVariableValue(result, { targetCollectionFiled: collectionField });
           }
         } else if (value != null && value !== '') {
           assignedValues[key] = value;
@@ -225,7 +234,7 @@ export const useAssociationCreateActionProps = () => {
   const { setVisible, fieldSchema } = useActionContext();
   const actionSchema = useFieldSchema();
   const actionField = useField();
-  const { fields, getField, getTreeParentField } = useCollection();
+  const { fields, getField, getTreeParentField, name } = useCollection();
   const compile = useCompile();
   const filterByTk = useFilterByTk();
   const currentRecord = useRecord();
@@ -246,10 +255,18 @@ export const useAssociationCreateActionProps = () => {
       const assignedValues = {};
       const waitList = Object.keys(originalAssignedValues).map(async (key) => {
         const value = originalAssignedValues[key];
+        const collectionField = getField(key);
+
+        if (process.env.NODE_ENV !== 'production') {
+          if (!collectionField) {
+            throw new Error(`useAssociationCreateActionProps: field "${key}" not found in collection "${name}"`);
+          }
+        }
+
         if (isVariable(value)) {
           const result = await variables?.parseVariable(value, localVariables);
           if (result) {
-            assignedValues[key] = result;
+            assignedValues[key] = transformVariableValue(result, { targetCollectionFiled: collectionField });
           }
         } else if (value != null && value !== '') {
           assignedValues[key] = value;
@@ -434,6 +451,7 @@ export const useCustomizeUpdateActionProps = () => {
   const { modal } = App.useApp();
   const variables = useVariables();
   const localVariables = useLocalVariables({ form });
+  const { name, getField } = useCollection();
 
   return {
     async onClick() {
@@ -446,10 +464,18 @@ export const useCustomizeUpdateActionProps = () => {
       const assignedValues = {};
       const waitList = Object.keys(originalAssignedValues).map(async (key) => {
         const value = originalAssignedValues[key];
+        const collectionField = getField(key);
+
+        if (process.env.NODE_ENV !== 'production') {
+          if (!collectionField) {
+            throw new Error(`useCustomizeUpdateActionProps: field "${key}" not found in collection "${name}"`);
+          }
+        }
+
         if (isVariable(value)) {
           const result = await variables?.parseVariable(value, localVariables);
           if (result) {
-            assignedValues[key] = result;
+            assignedValues[key] = transformVariableValue(result, { targetCollectionFiled: collectionField });
           }
         } else if (value != null && value !== '') {
           assignedValues[key] = value;
@@ -506,6 +532,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
   const { modal } = App.useApp();
   const variables = useVariables();
   const localVariables = useLocalVariables();
+  const { name, getField } = useCollection();
 
   return {
     async onClick() {
@@ -520,10 +547,18 @@ export const useCustomizeBulkUpdateActionProps = () => {
       const assignedValues = {};
       const waitList = Object.keys(originalAssignedValues).map(async (key) => {
         const value = originalAssignedValues[key];
+        const collectionField = getField(key);
+
+        if (process.env.NODE_ENV !== 'production') {
+          if (!collectionField) {
+            throw new Error(`useCustomizeBulkUpdateActionProps: field "${key}" not found in collection "${name}"`);
+          }
+        }
+
         if (isVariable(value)) {
           const result = await variables?.parseVariable(value, localVariables);
           if (result) {
-            assignedValues[key] = result;
+            assignedValues[key] = transformVariableValue(result, { targetCollectionFiled: collectionField });
           }
         } else if (value != null && value !== '') {
           assignedValues[key] = value;
@@ -769,7 +804,7 @@ export const useUpdateActionProps = () => {
   const { setVisible } = useActionContext();
   const actionSchema = useFieldSchema();
   const navigate = useNavigate();
-  const { fields, getField } = useCollection();
+  const { fields, getField, name } = useCollection();
   const compile = useCompile();
   const actionField = useField();
   const { updateAssociationValues } = useFormBlockContext();
@@ -791,10 +826,18 @@ export const useUpdateActionProps = () => {
       const assignedValues = {};
       const waitList = Object.keys(originalAssignedValues).map(async (key) => {
         const value = originalAssignedValues[key];
+        const collectionField = getField(key);
+
+        if (process.env.NODE_ENV !== 'production') {
+          if (!collectionField) {
+            throw new Error(`useUpdateActionProps: field "${key}" not found in collection "${name}"`);
+          }
+        }
+
         if (isVariable(value)) {
           const result = await variables?.parseVariable(value, localVariables);
           if (result) {
-            assignedValues[key] = result;
+            assignedValues[key] = transformVariableValue(result, { targetCollectionFiled: collectionField });
           }
         } else if (value != null && value !== '') {
           assignedValues[key] = value;

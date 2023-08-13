@@ -1,7 +1,7 @@
-import flat from 'flat';
 import _, { every, findIndex, some } from 'lodash';
 import { VariableOption, VariablesContextType } from '../../../variables/types';
 import { isVariable } from '../../../variables/utils/isVariable';
+import { transformVariableValue } from '../../../variables/utils/transformVariableValue';
 import jsonLogic from '../../common/utils/logic';
 
 type VariablesCtx = {
@@ -37,20 +37,6 @@ export function getInnermostKeyAndValue(obj) {
   }
   return null;
 }
-
-const getFieldValue = (fieldPath, values) => {
-  const v = fieldPath[0];
-  const h = fieldPath[1];
-  const regex = new RegExp('^' + v + '\\..+\\.' + h + '$'); // 构建匹配的正则表达式
-  const matchedValues = [];
-  const data = flat.flatten(values, { maxDepth: 3 });
-  for (const key in data) {
-    if (regex.test(key)) {
-      matchedValues.push(data[key]);
-    }
-  }
-  return matchedValues;
-};
 
 const getTargetField = (obj) => {
   const keys = getAllKeys(obj);
@@ -90,6 +76,12 @@ export const conditionAnalyses = async ({
   variables: VariablesContextType;
   localVariables: VariableOption[];
 }) => {
+  if (process.env.NODE_ENV !== 'production') {
+    if (!variables) {
+      throw new Error(`conditionAnalyses: variables cannot be ${variables}`);
+    }
+  }
+
   const type = Object.keys(rules)[0] || '$and';
   const conditions = rules[type];
   localVariables = localVariables.map((variable) => {
@@ -105,22 +97,28 @@ export const conditionAnalyses = async ({
   let results = conditions.map(async (c) => {
     const jsonlogic = getInnermostKeyAndValue(c);
     const operator = jsonlogic?.key;
-    const targetVariableName = targetFieldToVariableString(getTargetField(c));
 
     if (!operator) {
       return true;
     }
 
+    const targetVariableName = targetFieldToVariableString(getTargetField(c));
     const parsingResult = isVariable(jsonlogic?.value)
       ? [
-          variables?.parseVariable(jsonlogic?.value, localVariables),
-          variables?.parseVariable(targetVariableName, localVariables),
+          variables.parseVariable(jsonlogic?.value, localVariables),
+          variables.parseVariable(targetVariableName, localVariables),
         ]
-      : [jsonlogic?.value, variables?.parseVariable(targetVariableName, localVariables)];
+      : [jsonlogic?.value, variables.parseVariable(targetVariableName, localVariables)];
 
     try {
       const [value, targetValue] = await Promise.all(parsingResult);
-      return jsonLogic.apply({ [operator]: [targetValue, value] });
+      const targetCollectionFiled = await variables.getCollectionField(targetVariableName, localVariables);
+      return jsonLogic.apply({
+        [operator]: [
+          transformVariableValue(targetValue, { targetCollectionFiled }),
+          transformVariableValue(value, { targetCollectionFiled }),
+        ],
+      });
     } catch (error) {
       if (process.env.NODE_ENV !== 'production') {
         throw error;

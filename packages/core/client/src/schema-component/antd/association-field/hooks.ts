@@ -15,6 +15,7 @@ import { DEBOUNCE_WAIT } from '../../../variables';
 import { getPath } from '../../../variables/utils/getPath';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { useDesignable } from '../../hooks';
+import { removeNullCondition } from '../filter';
 import { AssociationFieldContext } from './context';
 
 export const useInsertSchema = (component) => {
@@ -66,7 +67,7 @@ export default function useServiceOptions(props) {
 
     const _run = async () => {
       const result = await parseFilter(mergeFilter([filterFromSchema || service?.params?.filter]));
-      setFieldServiceFilter(result);
+      setFieldServiceFilter(removeNullCondition(result));
     };
     const run = _.debounce(_run, DEBOUNCE_WAIT);
 
@@ -108,11 +109,16 @@ export default function useServiceOptions(props) {
     if (props.value === undefined || props.value === null) {
       return;
     }
+
+    let result: any[] = null;
+
     if (Array.isArray(props.value)) {
-      return props.value.map(normalizeValues);
+      result = props.value.map(normalizeValues);
     } else {
-      return [normalizeValues(props.value)];
+      result = [normalizeValues(props.value)];
     }
+
+    return result.filter(Boolean);
   }, [props.value, normalizeValues]);
 
   const collectionField = useMemo(() => {
@@ -145,7 +151,7 @@ export default function useServiceOptions(props) {
               },
             }
           : null,
-        params?.filter && value
+        params?.filter && value?.length
           ? {
               [fieldNames?.value]: {
                 ['$in']: value,
