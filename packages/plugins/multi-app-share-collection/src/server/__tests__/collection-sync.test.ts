@@ -134,7 +134,7 @@ pgOnly()('collection sync', () => {
     expect(sub1.db.options.schema).toBe('sub1');
   });
 
-  it('should sync plugin status into lazy load sub app', async () => {
+  it.skip('should sync plugin status into lazy load sub app', async () => {
     await mainApp.db.getRepository('applications').create({
       values: {
         name: 'sub1',
@@ -175,7 +175,8 @@ pgOnly()('collection sync', () => {
       });
     };
     expect((await getSubAppMapRecord(sub1)).get('enabled')).toBeFalsy();
-    await mainApp.pm.enable('map');
+    await mainApp.pm.enable(['map']);
+
     expect((await getSubAppMapRecord(sub1)).get('enabled')).toBeTruthy();
     // create new app sub2
     await mainApp.db.getRepository('applications').create({

@@ -1,5 +1,6 @@
 import { Repository } from '@nocobase/database';
 import { PluginManager } from './plugin-manager';
+import lodash from 'lodash';
 
 export class PluginManagerRepository extends Repository {
   pm: PluginManager;
@@ -17,7 +18,7 @@ export class PluginManagerRepository extends Repository {
   }
 
   async enable(name: string | string[]) {
-    const pluginNames = typeof name === 'string' ? [name] : name;
+    const pluginNames = lodash.castArray(name);
     const plugins = pluginNames.map((name) => this.pm.get(name));
 
     for (const plugin of plugins) {
@@ -47,11 +48,17 @@ export class PluginManagerRepository extends Repository {
   }
 
   async disable(name: string | string[]) {
-    const pluginNames = typeof name === 'string' ? [name] : name;
+    name = lodash.cloneDeep(name);
+
+    const pluginNames = lodash.castArray(name);
+    console.log(`disable ${name}, ${pluginNames}`);
+    const filter = {
+      name,
+    };
+
+    console.log(JSON.stringify(filter, null, 2));
     await this.update({
-      filter: {
-        name,
-      },
+      filter,
       values: {
         enabled: false,
         installed: false,

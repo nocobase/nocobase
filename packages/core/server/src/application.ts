@@ -376,6 +376,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
         this.activatedCommand = {
           name: getCommandFullName(actionCommand),
         };
+
         this.setMaintaining({
           status: 'command_begin',
           command: this.activatedCommand,

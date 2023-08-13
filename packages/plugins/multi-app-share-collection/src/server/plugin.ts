@@ -219,28 +219,22 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       });
     });
 
-    this.app.on('afterEnablePlugin', async (pluginName) => {
-      await traverseSubApps(
-        async (subApp) => {
-          if ([...subAppFilteredPlugins, ...unSyncPlugins].includes(pluginName)) return;
-          await subApp.pm.enable(pluginName);
-        },
-        {
-          loadFromDatabase: true,
-        },
-      );
+    this.app.on('afterEnablePlugin', async (pluginNames) => {
+      await traverseSubApps(async (subApp) => {
+        for (const pluginName of lodash.castArray(pluginNames)) {
+          if (subAppFilteredPlugins.includes(pluginName)) return;
+          await subApp.runAsCLI(['pm', 'enable', pluginName], { from: 'user' });
+        }
+      });
     });
 
-    this.app.on('afterDisablePlugin', async (pluginName) => {
-      await traverseSubApps(
-        async (subApp) => {
-          if ([...subAppFilteredPlugins, ...unSyncPlugins].includes(pluginName)) return;
-          await subApp.pm.disable(pluginName);
-        },
-        {
-          loadFromDatabase: true,
-        },
-      );
+    this.app.on('afterDisablePlugin', async (pluginNames) => {
+      await traverseSubApps(async (subApp) => {
+        for (const pluginName of lodash.castArray(pluginNames)) {
+          if (subAppFilteredPlugins.includes(pluginName)) return;
+          await subApp.runAsCLI(['pm', 'enable', pluginName], { from: 'user' });
+        }
+      });
     });
 
     this.app.db.on('field.afterRemove', (removedField) => {
@@ -248,6 +242,7 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       for (const subApp of subApps) {
         const collectionName = removedField.collection.name;
         const collection = subApp.db.getCollection(collectionName);
+
         if (!collection) {
           subApp.log.warn(`collection ${collectionName} not found in ${subApp.name}`);
           continue;
