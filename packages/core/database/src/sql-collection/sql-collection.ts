@@ -20,7 +20,10 @@ export class SqlCollection extends Collection {
 
     const { autoGenId, sql } = this.options;
     const model = class extends SQLModel {};
-    model.init(null, this.sequelizeModelOptions());
+    model.init(null, {
+      ...this.sequelizeModelOptions(),
+      schema: '',
+    });
 
     if (!autoGenId) {
       model.removeAttribute('id');
