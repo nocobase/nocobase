@@ -11,6 +11,14 @@ import { useTranslation } from 'react-i18next';
 
 dayjs.extend(relativeTime);
 
+type Author =
+  | string
+  | {
+      name: string;
+      email?: string;
+      url?: string;
+    };
+
 interface PackageJSON {
   name: string;
   version: string;
@@ -18,6 +26,7 @@ interface PackageJSON {
   repository?: string | { type: string; url: string };
   homepage?: string;
   license?: string;
+  author?: Author;
   devDependencies?: Record<string, string>;
   dependencies?: Record<string, string>;
 }
@@ -85,6 +94,13 @@ export const PluginDetail: FC<IPluginDetail> = ({ plugin, onCancel }) => {
     return url.replace(/\.git$/, '').replace(/^git\+/, '');
   }, [data]);
 
+  const author = useMemo(() => {
+    const author = data?.data?.packageJson.author;
+    if (!author) return null;
+    if (typeof author === 'string') return author;
+    return author.name;
+  }, [data]);
+
   const { styles, theme } = useStyles();
 
   const tabItems: TabsProps['items'] = [
@@ -147,6 +163,14 @@ export const PluginDetail: FC<IPluginDetail> = ({ plugin, onCancel }) => {
                   <div className={styles.PluginDetailBaseInfo}>
                     <Typography.Text type="secondary">{t('License')}</Typography.Text>
                     <Typography.Text strong>{data?.data?.packageJson.license}</Typography.Text>
+                  </div>
+                </Col>
+              )}
+              {author && (
+                <Col span={12}>
+                  <div className={styles.PluginDetailBaseInfo}>
+                    <Typography.Text type="secondary">{t('Author')}</Typography.Text>
+                    <Typography.Text strong>{author}</Typography.Text>
                   </div>
                 </Col>
               )}

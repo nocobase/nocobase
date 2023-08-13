@@ -663,4 +663,7 @@ export default {
   "Plugin stopping...": "プラグインを停止しています...",
   "Are you sure to delete this plugin?": "このプラグインを削除してもよろしいですか？",
   "re-download file": "ファイルを再ダウンロード",
+  "Not enabled": "有効になっていません",
+  "Search plugin": "プラグインを検索",
+  "Author": "著者",
 }

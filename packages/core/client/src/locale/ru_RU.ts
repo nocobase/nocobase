@@ -543,4 +543,7 @@ export default {
   "Plugin stopping...": "Остановка плагина...",
   "Are you sure to delete this plugin?": "Вы уверены, что хотите удалить этот плагин?",
   "re-download file": "повторно загрузить файл",
+  "Not enabled": "Не включено",
+  "Search plugin": "Поиск плагина",
+  "Author": "Автор",
 }

@@ -8,6 +8,7 @@ export const useStyles = createStyles(({ token }) => {
     },
     pageHeader: {
       paddingBottom: 0,
+      backgroundColor: token.colorBgContainer,
       paddingTop: token.paddingSM,
       paddingInline: token.paddingLG,
       '.ant-page-header-footer': { marginBlockStart: '0' },
@@ -15,10 +16,15 @@ export const useStyles = createStyles(({ token }) => {
         marginBottom: 0,
       },
     },
-
     pageContent: {
       margin: token.marginLG,
     },
+    // pageContent: {
+    //   marginTop: token.margin,
+    //   marginBottom: token.marginLG,
+    //   background: 'transparent',
+    //   minHeight: '80vh',
+    // },
 
     PluginDetailBaseInfo: {
       display: 'flex',

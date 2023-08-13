@@ -540,4 +540,7 @@ export default {
   "Plugin stopping...": "Eklenti durduruluyor...",
   "Are you sure to delete this plugin?": "Bu eklentiyi silmek istediğinizden emin misiniz?",
   "re-download file": "dosyayı yeniden indir",
+  "Not enabled": "Etkin değil",
+  "Search plugin": "Eklenti ara",
+  "Author": "Yazar",
 }

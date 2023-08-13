@@ -64,129 +64,127 @@ function PluginInfo(props: IPluginInfo) {
           }}
         />
       )}
-      <Badge.Ribbon placement="end" style={{ display: isOfficial ? undefined : 'none' }} text={t('Official plugin')}>
-        <Card
-          bordered={false}
-          style={{ width: 380 }}
-          headStyle={{ border: 'none' }}
-          bodyStyle={{ paddingTop: 5 }}
-          title={displayName || name || packageName}
-          hoverable
-          actions={[
-            <div key="setting" className={classnames({ [styles.cardActionDisabled]: !enabled })}>
-              <SettingOutlined
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (!enabled) return;
-                  navigate(`/admin/settings/${name}`);
-                }}
-              />
-            </div>,
-            <Popconfirm
-              key={'delete'}
-              disabled={builtIn}
-              title={t('Are you sure to delete this plugin?')}
-              onConfirm={async (e) => {
+      <Card
+        bordered={false}
+        style={{ width: 380 }}
+        headStyle={{ border: 'none' }}
+        bodyStyle={{ paddingTop: 5 }}
+        title={displayName || name || packageName}
+        hoverable
+        actions={[
+          <div key="setting" className={classnames({ [styles.cardActionDisabled]: !enabled })}>
+            <SettingOutlined
+              onClick={(e) => {
                 e.stopPropagation();
-                await api.request({
-                  url: `pm:remove/${name}`,
-                });
-                message.success(t('The deletion was successful.'));
-                window.location.reload();
+                if (!enabled) return;
+                navigate(`/admin/settings/${name}`);
               }}
-              onCancel={(e) => e.stopPropagation()}
-              okText={t('Yes')}
-              cancelText={t('No')}
-            >
-              <div className={classnames({ [styles.cardActionDisabled]: builtIn })}>
-                <DeleteOutlined />
-              </div>
-            </Popconfirm>,
-            <Switch
-              key={'enable'}
-              size={'small'}
-              disabled={builtIn}
-              onChange={async (checked, e) => {
-                e.stopPropagation();
-                if (!isCompatible && checked) {
-                  message.error(t("Dependencies check failed, can't enable."));
-                  return;
-                }
-                modal.warning({
-                  title: checked ? t('Plugin starting...') : t('Plugin stopping...'),
-                  content: t('The application is reloading, please do not close the page.'),
-                  okButtonProps: {
-                    style: {
-                      display: 'none',
-                    },
+            />
+          </div>,
+          <Popconfirm
+            key={'delete'}
+            disabled={builtIn}
+            title={t('Are you sure to delete this plugin?')}
+            onConfirm={async (e) => {
+              e.stopPropagation();
+              await api.request({
+                url: `pm:remove/${name}`,
+              });
+              message.success(t('The deletion was successful.'));
+              window.location.reload();
+            }}
+            onCancel={(e) => e.stopPropagation()}
+            okText={t('Yes')}
+            cancelText={t('No')}
+          >
+            <div className={classnames({ [styles.cardActionDisabled]: builtIn })}>
+              <DeleteOutlined />
+            </div>
+          </Popconfirm>,
+          <Switch
+            key={'enable'}
+            size={'small'}
+            disabled={builtIn}
+            onChange={async (checked, e) => {
+              e.stopPropagation();
+              if (!isCompatible && checked) {
+                message.error(t("Dependencies check failed, can't enable."));
+                return;
+              }
+              modal.warning({
+                title: checked ? t('Plugin starting...') : t('Plugin stopping...'),
+                content: t('The application is reloading, please do not close the page.'),
+                okButtonProps: {
+                  style: {
+                    display: 'none',
                   },
-                });
-                setEnabledVal(checked);
-                await api.request({
-                  url: `pm:${checked ? 'enable' : 'disable'}/${name}`,
-                });
-                window.location.reload();
-              }}
-              checked={enabledVal}
-            ></Switch>,
-          ]}
-        >
-          <Row justify="space-between">
-            <Col span={16} onClick={onClick}>
-              <Card.Meta
-                // avatar={<Avatar style={{ background: `${stringToColor(name)}` }}>{name?.[0]}</Avatar>}
-                description={
-                  <Space direction="vertical">
-                    <Typography.Text type="secondary">
-                      {t('Version')}: {version}
-                    </Typography.Text>
-                    <Typography.Paragraph
-                      type="secondary"
-                      style={{ height: theme.fontSize * theme.lineHeight * 3, marginBottom: 0 }}
-                      ellipsis={{ rows: 3 }}
-                    >
-                      {description}
-                    </Typography.Paragraph>
-                  </Space>
-                }
-              />
-            </Col>
-            <Col span={8}>
-              <Space direction="vertical" align="end" style={{ display: 'flex', marginTop: -10 }}>
-                {newVersion && (
-                  <Button
-                    loading={npmUpgradeLoading}
-                    icon={<SyncOutlined style={{ color: 'red', fontWeight: 'bold' }} />}
-                    ghost
-                    onClick={npmUpgradeRun}
-                    type="primary"
+                },
+              });
+              setEnabledVal(checked);
+              await api.request({
+                url: `pm:${checked ? 'enable' : 'disable'}/${name}`,
+              });
+              window.location.reload();
+            }}
+            checked={enabledVal}
+          ></Switch>,
+        ]}
+      >
+        <Row justify="space-between">
+          <Col span={16} onClick={onClick}>
+            <Card.Meta
+              // avatar={<Avatar style={{ background: `${stringToColor(name)}` }}>{name?.[0]}</Avatar>}
+              description={
+                <Space direction="vertical">
+                  <Typography.Text type="secondary">
+                    {t('Version')}: {version}
+                  </Typography.Text>
+                  <Typography.Paragraph
+                    type="secondary"
+                    style={{ height: theme.fontSize * theme.lineHeight * 3, marginBottom: 0 }}
+                    ellipsis={{ rows: 3 }}
                   >
-                    {t('Upgrade plugin')}
-                  </Button>
-                )}
-                {type === 'url' && (
-                  <Button ghost type="primary" loading={urlUpgradeLoading} onClick={urlUpgradeRun}>
-                    {t('re-download file')}
-                  </Button>
-                )}
-                {type === 'upload' && (
-                  <Button onClick={() => setShowUploadForm(true)} ghost type="primary">
-                    {t('Upload new version')}
-                  </Button>
-                )}
-                {!isCompatible && (
-                  <Button onClick={onClick} style={{ padding: 0 }} type="link">
-                    <Typography.Text type="danger">{t('Dependencies check failed')}</Typography.Text>
-                  </Button>
-                )}
-                <Button onClick={onClick} style={{ padding: 0 }} type="link">
-                  {t('More details')}
+                    {description}
+                  </Typography.Paragraph>
+                </Space>
+              }
+            />
+          </Col>
+          <Col span={8}>
+            <Space direction="vertical" align="end" style={{ display: 'flex', marginTop: -10 }}>
+              {newVersion && (
+                <Button
+                  loading={npmUpgradeLoading}
+                  icon={<SyncOutlined style={{ color: 'red', fontWeight: 'bold' }} />}
+                  ghost
+                  onClick={npmUpgradeRun}
+                  type="primary"
+                >
+                  {t('Upgrade plugin')}
                 </Button>
-              </Space>
-            </Col>
-          </Row>
-        </Card>
-      </Badge.Ribbon>
+              )}
+              {type === 'url' && (
+                <Button ghost type="primary" loading={urlUpgradeLoading} onClick={urlUpgradeRun}>
+                  {t('re-download file')}
+                </Button>
+              )}
+              {type === 'upload' && (
+                <Button onClick={() => setShowUploadForm(true)} ghost type="primary">
+                  {t('Upload new version')}
+                </Button>
+              )}
+              {!isCompatible && (
+                <Button onClick={onClick} style={{ padding: 0 }} type="link">
+                  <Typography.Text type="danger">{t('Dependencies check failed')}</Typography.Text>
+                </Button>
+              )}
+              <Button onClick={onClick} style={{ padding: 0 }} type="link">
+                {t('More details')}
+              </Button>
+            </Space>
+          </Col>
+        </Row>
+      </Card>
     </>
   );
 }

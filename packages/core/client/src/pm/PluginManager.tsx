@@ -1,10 +1,12 @@
 export * from './PluginManagerLink';
 import { PageHeader } from '@ant-design/pro-layout';
-import { Button, Col, Divider, Result, Row, Space, Spin, Tabs } from 'antd';
+import { Button, Col, Divider, Result, Row, Space, Spin, Tabs, Input } from 'antd';
 import _ from 'lodash';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useDebounce, useDebounceEffect } from 'ahooks';
+
 import { useACLRoleContext } from '../acl/ACLProvider';
 import { useRequest } from '../api-client';
 import { useToken } from '../style';
@@ -58,7 +60,7 @@ const LocalPlugins = () => {
         list: _.filter(list, (item) => item.enabled),
       },
       {
-        type: 'Disabled',
+        type: 'Not enabled',
         list: _.filter(list, (item) => !item.enabled),
       },
       {
@@ -74,6 +76,27 @@ const LocalPlugins = () => {
 
   const [filterIndex, setFilterIndex] = useState(0);
   const [isShowAddForm, setShowAddForm] = useState(false);
+  const [searchValue, setSearchValue] = useState('');
+  const debouncedSearchValue = useDebounce(searchValue, { wait: 100 });
+
+  const pluginList = useMemo(() => {
+    let list = filterList[filterIndex]?.list || [];
+    if (debouncedSearchValue) {
+      list = _.filter(
+        list,
+        (item) =>
+          item.name?.includes(debouncedSearchValue) ||
+          item.description?.includes(debouncedSearchValue) ||
+          item.displayName?.includes(debouncedSearchValue) ||
+          item.packageName?.includes(debouncedSearchValue),
+      );
+    }
+    return list;
+  }, [filterIndex, filterList, debouncedSearchValue]);
+
+  const handleSearch = (value: string) => {
+    setSearchValue(value);
+  };
 
   if (loading) {
     return <Spin />;
@@ -102,13 +125,20 @@ const LocalPlugins = () => {
             </Space>
           </Col>
           <Col>
-            <Button onClick={() => setShowAddForm(true)} type="primary">
-              {t('New plugin')}
-            </Button>
+            <Space>
+              <Input
+                allowClear
+                placeholder={t('Search plugin')}
+                onChange={(e) => handleSearch(e.currentTarget.value)}
+              />
+              <Button onClick={() => setShowAddForm(true)} type="primary">
+                {t('New plugin')}
+              </Button>
+            </Space>
           </Col>
         </Row>
         <Space size={'middle'} wrap>
-          {filterList[filterIndex]?.list?.map((item) => (
+          {pluginList.map((item) => (
             <div key={item.id}>
               <PluginCard data={item} />
             </div>
@@ -131,7 +161,7 @@ export const PluginManager = () => {
   const { tabName = 'local' } = params;
   const { t } = useTranslation();
   const { snippets = [] } = useACLRoleContext();
-  const { styles, theme } = useStyles();
+  const { styles } = useStyles();
 
   useEffect(() => {
     const { tabName } = params;
@@ -156,25 +186,23 @@ export const PluginManager = () => {
               {
                 key: 'local',
                 label: t('Local'),
-                children: (
-                  <div style={{ marginTop: theme.margin, marginBottom: theme.marginLG, minHeight: '80vh' }}>
-                    <LocalPlugins />
-                  </div>
-                ),
               },
               {
                 key: 'marketplace',
                 label: t('Marketplace'),
-                children: (
-                  <div style={{ marginTop: theme.margin, marginBottom: theme.marginLG, minHeight: '80vh' }}>
-                    <MarketplacePlugins />
-                  </div>
-                ),
               },
             ]}
           />
         }
       />
+      <div className={styles.pageContent} style={{ display: 'flex', flexFlow: 'row wrap' }}>
+        {React.createElement(
+          {
+            local: LocalPlugins,
+            marketplace: MarketplacePlugins,
+          }[tabName],
+        )}
+      </div>
     </div>
   ) : (
     <Result status="404" title="404" subTitle="Sorry, the page you visited does not exist." />
