@@ -12,7 +12,8 @@ interface Props {
   exclude: string[];
 }
 
-const defaultExclude = ['$user', '$date'];
+// TODO: 建议变量名统一命名为 `$n` 开头，以防止与 formily 内置变量冲突
+const defaultExclude = ['$user', '$date', '$nDate'];
 
 const useParseDataScopeFilter = ({ exclude }: Props = { exclude: defaultExclude }) => {
   const localVariables = useLocalVariables();

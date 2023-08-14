@@ -140,7 +140,7 @@ describe('useVariables', () => {
     await waitFor(async () => {
       expect(result.current.ctxRef.current).toMatchInlineSnapshot(`
         {
-          "$date": {
+          "$nDate": {
             "last30Days": [Function],
             "last7Days": [Function],
             "last90Days": [Function],
@@ -323,7 +323,7 @@ describe('useVariables', () => {
     await waitFor(async () => {
       expect(result.current.ctxRef.current).toMatchInlineSnapshot(`
         {
-          "$date": {
+          "$nDate": {
             "last30Days": [Function],
             "last7Days": [Function],
             "last90Days": [Function],
@@ -379,7 +379,7 @@ describe('useVariables', () => {
     await waitFor(async () => {
       expect(result.current.ctxRef.current).toMatchInlineSnapshot(`
         {
-          "$date": {
+          "$nDate": {
             "last30Days": [Function],
             "last7Days": [Function],
             "last90Days": [Function],

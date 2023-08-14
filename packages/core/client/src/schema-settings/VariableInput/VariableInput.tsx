@@ -125,8 +125,14 @@ export const getShouldChange = ({ collectionField, variables, localVariables }: 
     if (!isVariable(value) || !variables) {
       return true;
     }
+
+    if (value.includes('$nDate.')) {
+      return true;
+    }
+
     const collectionFieldOfVariable = await variables.getCollectionField(value, localVariables);
 
+    // 像 `{{ $use }}` 这种的变量字符串是没有对应的 `collectionField` 的
     if (!collectionFieldOfVariable || !collectionField) {
       return false;
     }

@@ -155,8 +155,8 @@ export const useDateVariable = ({ operator, schema }: Props) => {
   const result = useMemo(() => {
     return {
       label: t('Date variables'),
-      value: '$date',
-      key: '$date',
+      value: '$nDate',
+      key: '$nDate',
       disabled: dateOptions.every((option) => option.disabled),
       children: dateOptions,
     };

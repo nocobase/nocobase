@@ -123,5 +123,12 @@ export const compatOldVariables = (variables: Option[], { value, collectionName,
     variables.push(currentTime);
   }
 
+  if (value.includes('$date')) {
+    const formVariable = variables.find((item) => item.value === '$nDate');
+    if (formVariable) {
+      formVariable.value = '$date';
+    }
+  }
+
   return variables;
 };

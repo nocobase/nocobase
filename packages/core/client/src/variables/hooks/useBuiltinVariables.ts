@@ -24,7 +24,7 @@ const useBuiltInVariables = () => {
         collectionName: 'users',
       },
       {
-        name: '$date',
+        name: '$nDate',
         ctx: dateVars,
       },
       // 兼容旧版本的 `$system` 变量，新版本已弃用
