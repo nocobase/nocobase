@@ -2,6 +2,8 @@ import { css } from '@emotion/css';
 import { Form } from '@formily/core';
 import { observer, useFieldSchema } from '@formily/react';
 import React, { useMemo } from 'react';
+import { FormBlockContext } from '../../block-provider';
+import { RecordProvider } from '../../record-provider';
 import { SchemaComponent } from '../../schema-component';
 import { DynamicComponentProps } from '../../schema-component/antd/filter/DynamicComponent';
 import { FilterContext } from '../../schema-component/antd/filter/context';
@@ -152,9 +154,13 @@ export const FormLinkageRules = observer(
     );
 
     return (
-      <FilterContext.Provider value={value}>
-        <SchemaComponent components={components} schema={schema} />
-      </FilterContext.Provider>
+      <FormBlockContext.Provider value={{ form }}>
+        <RecordProvider record={record}>
+          <FilterContext.Provider value={value}>
+            <SchemaComponent components={components} schema={schema} />
+          </FilterContext.Provider>
+        </RecordProvider>
+      </FormBlockContext.Provider>
     );
   },
   { displayName: 'FormLinkageRules' },

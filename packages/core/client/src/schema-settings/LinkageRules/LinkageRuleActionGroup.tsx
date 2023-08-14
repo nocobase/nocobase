@@ -26,11 +26,19 @@ export const LinkageRuleActions = observer(
   { displayName: 'LinkageRuleActions' },
 );
 
-export const LinkageRuleActionGroup = (props) => {
+interface LinkageRuleActionGroupProps {
+  useProps: () => {
+    type: 'button' | 'field';
+    linkageOptions: any;
+    collectionName: string;
+  };
+}
+
+export const LinkageRuleActionGroup = (props: LinkageRuleActionGroupProps) => {
   const { t } = useTranslation();
   const field = useField<VoidField>();
   const logic = 'actions';
-  const { type, linkageOptions, collectionName } = props?.useProps() || {};
+  const { type, linkageOptions, collectionName } = props.useProps();
 
   const style = useMemo(() => ({ marginLeft: 10 }), []);
   const components = useMemo(

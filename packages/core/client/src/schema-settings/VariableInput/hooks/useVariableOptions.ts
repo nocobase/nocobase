@@ -12,6 +12,9 @@ import { useRecordVariable } from './useRecordVariable';
 import { useUserVariable } from './useUserVariable';
 
 interface Props {
+  /**
+   * 消费该变量的字段
+   */
   collectionField: CollectionFieldOptions;
   blockCollectionName: string;
   form: Form;
