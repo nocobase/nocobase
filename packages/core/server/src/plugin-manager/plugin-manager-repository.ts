@@ -1,6 +1,6 @@
 import { Repository } from '@nocobase/database';
-import { PluginManager } from './plugin-manager';
 import lodash from 'lodash';
+import { PluginManager } from './plugin-manager';
 
 export class PluginManagerRepository extends Repository {
   pm: PluginManager;
@@ -67,15 +67,27 @@ export class PluginManagerRepository extends Repository {
     return pluginNames;
   }
 
+  async getItems() {
+    try {
+      // sort plugins by id
+      return await this.find({
+        sort: 'id',
+      });
+    } catch (error) {
+      await this.database.sync();
+      return await this.find({
+        sort: 'id',
+      });
+    }
+  }
+
   async init() {
     const exists = await this.collection.existsInDb();
     if (!exists) {
       return;
     }
-    // sort plugins by id
-    const items = await this.find({
-      sort: 'id',
-    });
+
+    const items = await this.getItems();
 
     for (const item of items) {
       await this.pm.add(item.get('name'), {
