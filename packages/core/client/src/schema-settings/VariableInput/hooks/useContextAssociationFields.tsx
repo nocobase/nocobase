@@ -31,35 +31,33 @@ const getChildren = (
   getIsSameOrChildCollection,
 ): Option[] => {
   const result = options
-    .map(
-      (option): Option => {
-        const disabled = !getIsSameOrChildCollection(option.target, collectionField?.target);
-        if (!option.target) {
-          return {
-            key: option.name,
-            value: option.name,
-            label: compile(option.title),
-            disabled: disabled,
-            isLeaf: true,
-            depth,
-          };
-        }
-
-        if (depth >= maxDepth) {
-          return null;
-        }
+    .map((option): Option => {
+      const disabled = !getIsSameOrChildCollection(option.target, collectionField?.target);
+      if (!option.target) {
         return {
           key: option.name,
           value: option.name,
           label: compile(option.title),
           disabled: disabled,
           isLeaf: true,
-          field: option,
           depth,
-          loadChildren,
         };
-      },
-    )
+      }
+
+      if (depth >= maxDepth) {
+        return null;
+      }
+      return {
+        key: option.name,
+        value: option.name,
+        label: compile(option.title),
+        disabled: disabled,
+        isLeaf: true,
+        field: option,
+        depth,
+        loadChildren,
+      };
+    })
     .filter(Boolean);
   return result;
 };

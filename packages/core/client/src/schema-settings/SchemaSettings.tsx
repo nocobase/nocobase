@@ -190,6 +190,12 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
         onOpenChange={(open) => {
           changeMenu(open);
         }}
+        overlayClassName={css`
+          .ant-dropdown-menu-item-group-list {
+            max-height: 300px;
+            overflow-y: auto;
+          }
+        `}
         menu={{ items }}
       >
         {typeof title === 'string' ? <span>{title}</span> : title}
@@ -1547,15 +1553,15 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
                   s.name = 'default';
                   s['x-read-pretty'] = false;
                   s['x-disabled'] = false;
-
                   const defaultValue = getFieldDefaultValue(s, collectionField);
                   const schema = {
                     ...(s || {}),
+                    'x-decorator': 'FormItem',
                     'x-component-props': {
                       ...s['x-component-props'],
                       collectionName: collectionField?.collectionName,
                       targetField,
-                      onChange: props.onChange,
+                      onChange: collectionField?.interface !== 'richText' ? props.onChange : null,
                       defaultValue: isVariable(defaultValue) ? '' : defaultValue,
                       style: {
                         width: '100%',
@@ -1565,7 +1571,6 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
                     },
                     default: isVariable(defaultValue) ? '' : defaultValue,
                   } as ISchema;
-
                   return (
                     <FormProvider>
                       <SchemaComponent schema={schema} />
@@ -1763,8 +1768,9 @@ SchemaSettings.DataScope = function DataScopeConfigure(props: DataScopeProps) {
 // 是否显示默认值配置项
 export const isShowDefaultValue = (collectionField: CollectionFieldOptions, getInterface) => {
   return (
-    !['o2o', 'oho', 'obo', 'o2m', 'attachment', 'expression'].includes(collectionField?.interface) &&
-    !isSystemField(collectionField, getInterface)
+    !['o2o', 'oho', 'obo', 'o2m', 'attachment', 'expression', 'point', 'lineString', 'circle', 'polygon'].includes(
+      collectionField?.interface,
+    ) && !isSystemField(collectionField, getInterface)
   );
 };
 
