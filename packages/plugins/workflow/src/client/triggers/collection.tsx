@@ -27,6 +27,7 @@ const collectionModeOptions = [
 export default {
   title: `{{t("Collection event", { ns: "${NAMESPACE}" })}}`,
   type: 'collection',
+  description: `{{t("Event will be triggered on collection data row created, updated or deleted.", { ns: "${NAMESPACE}" })}}`,
   fieldset: {
     collection: {
       ...collection,

@@ -20,14 +20,54 @@ export const EXECUTION_STATUS = {
 };
 
 export const ExecutionStatusOptions = [
-  { value: EXECUTION_STATUS.QUEUEING, label: `{{t("Queueing", { ns: "${NAMESPACE}" })}}`, color: 'blue' },
-  { value: EXECUTION_STATUS.STARTED, label: `{{t("On going", { ns: "${NAMESPACE}" })}}`, color: 'gold' },
-  { value: EXECUTION_STATUS.RESOLVED, label: `{{t("Resolved", { ns: "${NAMESPACE}" })}}`, color: 'green' },
-  { value: EXECUTION_STATUS.FAILED, label: `{{t("Failed", { ns: "${NAMESPACE}" })}}`, color: 'red' },
-  { value: EXECUTION_STATUS.ERROR, label: `{{t("Error", { ns: "${NAMESPACE}" })}}`, color: 'red' },
-  { value: EXECUTION_STATUS.ABORTED, label: `{{t("Aborted", { ns: "${NAMESPACE}" })}}`, color: 'red' },
-  { value: EXECUTION_STATUS.CANCELED, label: `{{t("Canceled", { ns: "${NAMESPACE}" })}}`, color: 'volcano' },
-  { value: EXECUTION_STATUS.REJECTED, label: `{{t("Rejected", { ns: "${NAMESPACE}" })}}`, color: 'volcano' },
+  {
+    value: EXECUTION_STATUS.QUEUEING,
+    label: `{{t("Queueing", { ns: "${NAMESPACE}" })}}`,
+    color: 'blue',
+    description: `{{t("Triggered but still waiting in queue to execute.", { ns: "${NAMESPACE}" })}}`,
+  },
+  {
+    value: EXECUTION_STATUS.STARTED,
+    label: `{{t("On going", { ns: "${NAMESPACE}" })}}`,
+    color: 'gold',
+    description: `{{t("Started and executing, maybe waiting for an async callback (manual, delay etc.).", { ns: "${NAMESPACE}" })}}`,
+  },
+  {
+    value: EXECUTION_STATUS.RESOLVED,
+    label: `{{t("Resolved", { ns: "${NAMESPACE}" })}}`,
+    color: 'green',
+    description: `{{t("Successfully finished.", { ns: "${NAMESPACE}" })}}`,
+  },
+  {
+    value: EXECUTION_STATUS.FAILED,
+    label: `{{t("Failed", { ns: "${NAMESPACE}" })}}`,
+    color: 'red',
+    description: `{{t("Failed to satisfy node configurations.", { ns: "${NAMESPACE}" })}}`,
+  },
+  {
+    value: EXECUTION_STATUS.ERROR,
+    label: `{{t("Error", { ns: "${NAMESPACE}" })}}`,
+    color: 'red',
+    description: `{{t("Some node meets error.", { ns: "${NAMESPACE}" })}}`,
+  },
+  {
+    value: EXECUTION_STATUS.ABORTED,
+    label: `{{t("Aborted", { ns: "${NAMESPACE}" })}}`,
+    color: 'red',
+    description: `{{t("Running of some node was aborted by program flow.", { ns: "${NAMESPACE}" })}}`,
+  },
+  {
+    value: EXECUTION_STATUS.CANCELED,
+    label: `{{t("Canceled", { ns: "${NAMESPACE}" })}}`,
+    color: 'volcano',
+    description: `{{t("Manually canceled whole execution when waiting.", { ns: "${NAMESPACE}" })}}`,
+  },
+  {
+    value: EXECUTION_STATUS.REJECTED,
+    label: `{{t("Rejected", { ns: "${NAMESPACE}" })}}`,
+    color: 'volcano',
+    description: `{{t("Rejected from a manual node.", { ns: "${NAMESPACE}" })}}`,
+  },
 ];
 
 export const ExecutionStatusOptionsMap = ExecutionStatusOptions.reduce(

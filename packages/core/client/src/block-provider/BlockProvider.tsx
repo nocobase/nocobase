@@ -69,6 +69,7 @@ const useResource = (props: UseResourceProps) => {
     };
     return new TableFieldResource(options);
   }
+
   if (
     !withoutTableFieldResource &&
     __parent?.block === 'TableField' &&

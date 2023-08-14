@@ -56,6 +56,7 @@ export const appends = {
   'x-decorator': 'FormItem',
   'x-component': 'AppendsTreeSelect',
   'x-component-props': {
+    multiple: true,
     useCollection() {
       const { values } = useForm();
       return values?.collection;
