@@ -1102,58 +1102,68 @@ SchemaSettings.LinkageRules = function LinkageRules(props) {
   const { getTemplateById } = useSchemaTemplateManager();
   const variables = useVariables();
   const localVariables = useLocalVariables();
+  const record = useRecord();
 
   const type = ['Action', 'Action.Link'].includes(fieldSchema['x-component']) ? 'button' : 'field';
   const gridSchema = findGridSchema(fieldSchema) || fieldSchema;
+  const schema = useMemo<ISchema>(
+    () => ({
+      type: 'object',
+      title: t('Linkage rules'),
+      properties: {
+        fieldReaction: {
+          'x-component': FormLinkageRules,
+          'x-component-props': {
+            useProps: () => {
+              const options = useLinkageCollectionFilterOptions(collectionName);
+              return {
+                options,
+                defaultValues: gridSchema?.['x-linkage-rules'] || fieldSchema?.['x-linkage-rules'],
+                type,
+                linkageOptions: useLinkageCollectionFieldOptions(collectionName),
+                collectionName,
+                form,
+                variables,
+                localVariables,
+                record,
+              };
+            },
+          },
+        },
+      },
+    }),
+    [collectionName, fieldSchema, form, gridSchema, localVariables, record, t, type, variables],
+  );
+  const components = useMemo(() => ({ ArrayCollapse, FormLayout }), []);
+  const onSubmit = useCallback(
+    (v) => {
+      const rules = [];
+      for (const rule of v.fieldReaction.rules) {
+        rules.push(_.pickBy(rule, _.identity));
+      }
+      const templateId = gridSchema['x-component'] === 'BlockTemplate' && gridSchema['x-component-props'].templateId;
+      const uid = (templateId && getTemplateById(templateId).uid) || gridSchema['x-uid'];
+      const schema = {
+        ['x-uid']: uid,
+      };
+
+      gridSchema['x-linkage-rules'] = rules;
+      schema['x-linkage-rules'] = rules;
+      dn.emit('patch', {
+        schema,
+      });
+      dn.refresh();
+    },
+    [dn, getTemplateById, gridSchema],
+  );
+
   return (
     <SchemaSettings.ModalItem
       title={t('Linkage rules')}
-      components={{ ArrayCollapse, FormLayout }}
+      components={components}
       width={770}
-      schema={
-        {
-          type: 'object',
-          title: t('Linkage rules'),
-          properties: {
-            fieldReaction: {
-              'x-component': FormLinkageRules,
-              'x-component-props': {
-                useProps: () => {
-                  const options = useLinkageCollectionFilterOptions(collectionName);
-                  return {
-                    options,
-                    defaultValues: gridSchema?.['x-linkage-rules'] || fieldSchema?.['x-linkage-rules'],
-                    type,
-                    linkageOptions: useLinkageCollectionFieldOptions(collectionName),
-                    collectionName,
-                    form,
-                    variables,
-                    localVariables,
-                  };
-                },
-              },
-            },
-          },
-        } as ISchema
-      }
-      onSubmit={(v) => {
-        const rules = [];
-        for (const rule of v.fieldReaction.rules) {
-          rules.push(_.pickBy(rule, _.identity));
-        }
-        const templateId = gridSchema['x-component'] === 'BlockTemplate' && gridSchema['x-component-props'].templateId;
-        const uid = (templateId && getTemplateById(templateId).uid) || gridSchema['x-uid'];
-        const schema = {
-          ['x-uid']: uid,
-        };
-
-        gridSchema['x-linkage-rules'] = rules;
-        schema['x-linkage-rules'] = rules;
-        dn.emit('patch', {
-          schema,
-        });
-        dn.refresh();
-      }}
+      schema={schema}
+      onSubmit={onSubmit}
     />
   );
 };

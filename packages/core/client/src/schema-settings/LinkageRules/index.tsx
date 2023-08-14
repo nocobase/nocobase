@@ -2,7 +2,6 @@ import { css } from '@emotion/css';
 import { Form } from '@formily/core';
 import { observer, useFieldSchema } from '@formily/react';
 import React, { useMemo } from 'react';
-import { useRecord } from '../../record-provider';
 import { SchemaComponent } from '../../schema-component';
 import { DynamicComponentProps } from '../../schema-component/antd/filter/DynamicComponent';
 import { FilterContext } from '../../schema-component/antd/filter/context';
@@ -19,6 +18,7 @@ interface usePropsReturn {
   form: Form;
   variables: VariablesContextType;
   localVariables: VariableOption | VariableOption[];
+  record: Record<string, any>;
 }
 
 interface Props {
@@ -30,8 +30,7 @@ export const FormLinkageRules = observer(
   (props: Props) => {
     const fieldSchema = useFieldSchema();
     const { useProps, dynamicComponent } = props;
-    const { options, defaultValues, collectionName, form, variables, localVariables } = useProps();
-    const record = useRecord();
+    const { options, defaultValues, collectionName, form, variables, localVariables, record } = useProps();
 
     const components = useMemo(() => ({ ArrayCollapse }), []);
     const schema = useMemo(

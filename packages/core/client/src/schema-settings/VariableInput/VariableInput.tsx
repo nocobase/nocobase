@@ -1,6 +1,6 @@
 import { Form } from '@formily/core';
 // @ts-ignore
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CollectionFieldOptions } from '../../collection-manager';
 import { Variable, useVariableScope } from '../../schema-component';
@@ -87,18 +87,21 @@ export const VariableInput = (props: Props) => {
     }
   }, []);
 
-  const handleChange = (value: any) => {
-    if (!shouldChange) {
-      return onChange(value);
-    }
-
-    // `shouldChange` 这个函数的运算量比较大，会导致展开变量列表时有明显的卡顿感，在这里加个延迟能有效解决这个问题
-    setTimeout(async () => {
-      if (await shouldChange(value)) {
-        onChange(value);
+  const handleChange = useCallback(
+    (value: any) => {
+      if (!shouldChange) {
+        return onChange(value);
       }
-    });
-  };
+
+      // `shouldChange` 这个函数的运算量比较大，会导致展开变量列表时有明显的卡顿感，在这里加个延迟能有效解决这个问题
+      setTimeout(async () => {
+        if (await shouldChange(value)) {
+          onChange(value);
+        }
+      });
+    },
+    [onChange, shouldChange],
+  );
 
   return (
     <Variable.Input

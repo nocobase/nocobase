@@ -34,7 +34,7 @@ export const useVariableOptions = ({ collectionField, blockCollectionName: rootC
   });
   const currentRecordVariable = useRecordVariable({ schema, collectionName: rootCollection });
 
-  const result = useMemo(() => {
+  return useMemo(() => {
     if (!schema) return [];
 
     return [
@@ -56,8 +56,6 @@ export const useVariableOptions = ({ collectionField, blockCollectionName: rootC
     record,
     currentRecordVariable,
   ]);
-
-  return result;
 };
 
 /**
