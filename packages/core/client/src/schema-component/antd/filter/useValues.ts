@@ -3,7 +3,7 @@ import { merge } from '@formily/shared';
 import flat, { unflatten } from 'flat';
 import cloneDeep from 'lodash/cloneDeep';
 import get from 'lodash/get';
-import { useContext, useEffect, useMemo } from 'react';
+import { useCallback, useContext, useEffect, useMemo } from 'react';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { FilterContext } from './context';
 
@@ -47,11 +47,12 @@ export const useValues = (): UseValuesReturn => {
     return getCollectionJoinField(`${collectionName || name}.${fieldPath}`);
   }, [name, path]);
 
-  const data2value = () => {
+  const data2value = useCallback(() => {
     field.value = flat.unflatten({
       [`${field.data.dataIndex?.join('.')}.${field.data?.operator?.value}`]: field.data?.value,
     });
-  };
+  }, [field]);
+
   const value2data = () => {
     field.data = field.data || {};
     if (!path || !options) {
@@ -69,12 +70,11 @@ export const useValues = (): UseValuesReturn => {
     field.data.schema = merge(option?.schema, operator?.schema);
     field.data.value = get(unflatten(field.value), `${fieldPath}.$${operatorValue}`);
   };
+
   useEffect(value2data, [field.path]);
-  return {
-    fields: options,
-    ...(field?.data || {}),
-    collectionField,
-    setDataIndex(dataIndex) {
+
+  const setDataIndex = useCallback(
+    (dataIndex) => {
       const option = findOption(dataIndex, options);
       const operator = option?.operators?.[0];
       field.data = field.data || {};
@@ -87,7 +87,11 @@ export const useValues = (): UseValuesReturn => {
       field.data.value = operator?.noValue ? operator.default || true : undefined;
       data2value();
     },
-    setOperator(operatorValue) {
+    [data2value, field, options],
+  );
+
+  const setOperator = useCallback(
+    (operatorValue) => {
       const operator = field.data?.operators?.find?.((item) => item.value === operatorValue);
       field.data.operator = operator;
       const option = findOption(field.data.dataIndex, options);
@@ -97,9 +101,23 @@ export const useValues = (): UseValuesReturn => {
       field.data.value = operator.noValue ? operator.default || true : undefined;
       data2value();
     },
-    setValue(value) {
+    [data2value, field.data, options],
+  );
+
+  const setValue = useCallback(
+    (value) => {
       field.data.value = value;
       data2value();
     },
+    [data2value, field.data],
+  );
+
+  return {
+    fields: options,
+    ...(field?.data || {}),
+    collectionField,
+    setDataIndex,
+    setOperator,
+    setValue,
   };
 };
