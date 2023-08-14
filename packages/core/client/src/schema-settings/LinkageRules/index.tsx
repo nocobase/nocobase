@@ -1,7 +1,7 @@
 import { css } from '@emotion/css';
 import { Form } from '@formily/core';
 import { observer, useFieldSchema } from '@formily/react';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useRecord } from '../../record-provider';
 import { SchemaComponent } from '../../schema-component';
 import { DynamicComponentProps } from '../../schema-component/antd/filter/DynamicComponent';
@@ -33,121 +33,128 @@ export const FormLinkageRules = observer(
     const { options, defaultValues, collectionName, form, variables, localVariables } = useProps();
     const record = useRecord();
 
-    return (
-      <FilterContext.Provider value={{ field: options, fieldSchema, dynamicComponent, options: options || [] }}>
-        <SchemaComponent
-          components={{ ArrayCollapse }}
-          schema={{
-            type: 'object',
-            properties: {
-              rules: {
-                type: 'array',
-                default: defaultValues,
-                'x-component': 'ArrayCollapse',
-                'x-decorator': 'FormItem',
-                'x-component-props': {
-                  accordion: true,
-                },
-                items: {
-                  type: 'object',
-                  'x-component': 'ArrayCollapse.CollapsePanel',
+    const components = useMemo(() => ({ ArrayCollapse }), []);
+    const schema = useMemo(
+      () => ({
+        type: 'object',
+        properties: {
+          rules: {
+            type: 'array',
+            default: defaultValues,
+            'x-component': 'ArrayCollapse',
+            'x-decorator': 'FormItem',
+            'x-component-props': {
+              accordion: true,
+            },
+            items: {
+              type: 'object',
+              'x-component': 'ArrayCollapse.CollapsePanel',
+              'x-component-props': {
+                extra: <EnableLinkage />,
+              },
+              properties: {
+                layout: {
+                  type: 'void',
+                  'x-component': 'FormLayout',
                   'x-component-props': {
-                    extra: <EnableLinkage />,
+                    labelStyle: {
+                      marginTop: '6px',
+                    },
+                    labelCol: 8,
+                    wrapperCol: 16,
                   },
                   properties: {
-                    layout: {
-                      type: 'void',
-                      'x-component': 'FormLayout',
+                    conditions: {
+                      'x-component': 'h4',
+                      'x-content': '{{ t("Condition") }}',
+                    },
+                    condition: {
+                      'x-component': 'Filter',
                       'x-component-props': {
-                        labelStyle: {
-                          marginTop: '6px',
+                        collectionName,
+                        useProps() {
+                          return {
+                            options,
+                            className: css`
+                              position: relative;
+                              width: 100%;
+                              margin-left: 10px;
+                            `,
+                          };
                         },
-                        labelCol: 8,
-                        wrapperCol: 16,
-                      },
-                      properties: {
-                        conditions: {
-                          'x-component': 'h4',
-                          'x-content': '{{ t("Condition") }}',
-                        },
-                        condition: {
-                          'x-component': 'Filter',
-                          'x-component-props': {
-                            collectionName,
-                            useProps() {
-                              return {
-                                options,
-                                className: css`
-                                  position: relative;
-                                  width: 100%;
-                                  margin-left: 10px;
-                                `,
-                              };
-                            },
-                            dynamicComponent: (props: DynamicComponentProps) => {
-                              const { collectionField } = props;
-                              return (
-                                <VariableInput
-                                  {...props}
-                                  blockCollectionName={collectionName}
-                                  form={form}
-                                  record={record}
-                                  shouldChange={getShouldChange({ collectionField, variables, localVariables })}
-                                />
-                              );
-                            },
-                          },
-                        },
-                        actions: {
-                          'x-component': 'h4',
-                          'x-content': '{{ t("Properties") }}',
-                        },
-                        action: {
-                          type: 'void',
-                          'x-component': LinkageRuleActionGroup,
-                          'x-component-props': {
-                            ...props,
-                          },
+                        dynamicComponent: (props: DynamicComponentProps) => {
+                          const { collectionField } = props;
+                          return (
+                            <VariableInput
+                              {...props}
+                              blockCollectionName={collectionName}
+                              form={form}
+                              record={record}
+                              shouldChange={getShouldChange({ collectionField, variables, localVariables })}
+                            />
+                          );
                         },
                       },
                     },
-                    remove: {
-                      type: 'void',
-                      'x-component': 'ArrayCollapse.Remove',
+                    actions: {
+                      'x-component': 'h4',
+                      'x-content': '{{ t("Properties") }}',
                     },
-                    moveUp: {
+                    action: {
                       type: 'void',
-                      'x-component': 'ArrayCollapse.MoveUp',
-                    },
-                    moveDown: {
-                      type: 'void',
-                      'x-component': 'ArrayCollapse.MoveDown',
-                    },
-                    copy: {
-                      type: 'void',
-                      'x-component': 'ArrayCollapse.Copy',
+                      'x-component': LinkageRuleActionGroup,
+                      'x-component-props': {
+                        ...props,
+                      },
                     },
                   },
                 },
-                properties: {
-                  add: {
-                    type: 'void',
-                    title: '{{ t("Add linkage rule") }}',
-                    'x-component': 'ArrayCollapse.Addition',
-                    'x-reactions': {
-                      dependencies: ['rules'],
-                      fulfill: {
-                        state: {
-                          // disabled: '{{$deps[0].length >= 3}}',
-                        },
-                      },
+                remove: {
+                  type: 'void',
+                  'x-component': 'ArrayCollapse.Remove',
+                },
+                moveUp: {
+                  type: 'void',
+                  'x-component': 'ArrayCollapse.MoveUp',
+                },
+                moveDown: {
+                  type: 'void',
+                  'x-component': 'ArrayCollapse.MoveDown',
+                },
+                copy: {
+                  type: 'void',
+                  'x-component': 'ArrayCollapse.Copy',
+                },
+              },
+            },
+            properties: {
+              add: {
+                type: 'void',
+                title: '{{ t("Add linkage rule") }}',
+                'x-component': 'ArrayCollapse.Addition',
+                'x-reactions': {
+                  dependencies: ['rules'],
+                  fulfill: {
+                    state: {
+                      // disabled: '{{$deps[0].length >= 3}}',
                     },
                   },
                 },
               },
             },
-          }}
-        />
+          },
+        },
+      }),
+      [collectionName, defaultValues, form, localVariables, options, props, record, variables],
+    );
+    const value = useMemo(
+      () => ({ field: options, fieldSchema, dynamicComponent, options: options || [] }),
+      [dynamicComponent, fieldSchema, options],
+    );
+
+    return (
+      <FilterContext.Provider value={value}>
+        <SchemaComponent components={components} schema={schema} />
       </FilterContext.Provider>
     );
   },
