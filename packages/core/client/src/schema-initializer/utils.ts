@@ -744,8 +744,6 @@ export const useCurrentSchema = (action: string, key: string, find = findSchema,
   const { remove } = useDesignable();
   const schema = find(fieldSchema, key, action);
   const ctx = useContext(BlockRequestContext);
-  console.log(fieldSchema, key, action);
-
   return {
     schema,
     exists: !!schema,
