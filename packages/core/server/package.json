@@ -39,7 +39,8 @@
     "serve-handler": "^6.1.5",
     "xpipe": "^1.0.5",
     "ws": "^8.13.0",
-    "xstate": "^4.38.0"
+    "xstate": "^4.38.0",
+    "nanoid": "3.3.4"
   },
   "devDependencies": {
     "@types/semver": "^7.3.9",
