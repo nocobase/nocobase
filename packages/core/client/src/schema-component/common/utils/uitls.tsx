@@ -84,15 +84,6 @@ export const conditionAnalyses = async ({
 
   const type = Object.keys(rules)[0] || '$and';
   const conditions = rules[type];
-  localVariables = localVariables.map((variable) => {
-    if (variable.name === '$nForm') {
-      return {
-        ...variable,
-        ctx: formValues,
-      };
-    }
-    return variable;
-  });
 
   let results = conditions.map(async (c) => {
     const jsonlogic = getInnermostKeyAndValue(c);
@@ -140,5 +131,6 @@ export const conditionAnalyses = async ({
  * @returns
  */
 function targetFieldToVariableString(targetField: string[]) {
+  // Action 中的联动规则虽然没有 form 上下文但是在这里也使用的是 `$nForm` 变量，这样实现更简单
   return `{{ $nForm.${targetField.join('.')} }}`;
 }

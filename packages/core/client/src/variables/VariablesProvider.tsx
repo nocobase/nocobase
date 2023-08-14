@@ -10,6 +10,7 @@ import { VariableOption, VariablesContextType } from './types';
 import { filterEmptyValues } from './utils/filterEmptyValues';
 import { getAction } from './utils/getAction';
 import { getPath } from './utils/getPath';
+import { clearRequested, getRequested, hasRequested, stashRequested } from './utils/hasRequested';
 import { REGEX_OF_VARIABLE, isVariable } from './utils/isVariable';
 import { uniq } from './utils/uniq';
 
@@ -72,23 +73,39 @@ const VariablesProvider = ({ children }) => {
           const result = current.map((item) => {
             if (item[key] == null && item.id != null) {
               if (associationField?.target) {
-                return api
+                const url = `/${collectionName}/${item.id}/${key}:${getAction(associationField.type)}`;
+                if (hasRequested(url)) {
+                  return getRequested(url);
+                }
+                const result = api
                   .request({
-                    url: `/${collectionName}/${item.id}/${key}:${getAction(associationField.type)}`,
+                    url,
                   })
                   .then((data) => {
+                    clearRequested(url);
                     item[key] = data.data.data;
                     return item[key];
                   });
+                stashRequested(url, result);
+                return result;
               }
             }
             return item[key];
           });
           current = _.flatten(await Promise.all(result));
         } else if (current[key] == null && current.id != null && associationField?.target) {
-          const data = await api.request({
-            url: `/${collectionName}/${current.id}/${key}:${getAction(associationField.type)}`,
-          });
+          const url = `/${collectionName}/${current.id}/${key}:${getAction(associationField.type)}`;
+          let data = null;
+          if (hasRequested(url)) {
+            data = await getRequested(url);
+          } else {
+            const waitForData = api.request({
+              url,
+            });
+            stashRequested(url, waitForData);
+            data = await waitForData;
+            clearRequested(url);
+          }
           current[key] = data.data.data;
           current = getValuesByPath(current, key);
         } else {

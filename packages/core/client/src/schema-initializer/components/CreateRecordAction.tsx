@@ -94,7 +94,7 @@ export const CreateRecordAction = observer(
     const values = useRecord();
     const ctx = useActionContext();
     const variables = useVariables();
-    const localVariables = useLocalVariables();
+    const localVariables = useLocalVariables({ form: { values } as any });
 
     useEffect(() => {
       linkageRules
@@ -153,7 +153,6 @@ export const CreateAction = observer(
     const field: any = useField();
     const form = useForm();
     const variables = useVariables();
-    const localVariables = useLocalVariables();
 
     const enableChildren = fieldSchema['x-enable-children'] || [];
     const allowAddToCurrent = fieldSchema?.['x-allow-add-to-current'];
@@ -183,6 +182,7 @@ export const CreateAction = observer(
     }, [enableChildren, totalChildCollections]);
     const linkageRules: any[] = fieldSchema?.['x-linkage-rules'] || [];
     const values = useRecord();
+    const localVariables = useLocalVariables({ form: { values } as any });
     const compile = useCompile();
     const { designable } = useDesignable();
     const icon = props.icon || null;

@@ -60,7 +60,7 @@ export const Action: ComposedAction = observer(
     const tarComponent = useComponent(component) || component;
     const { modal } = App.useApp();
     const variables = useVariables();
-    const localVariables = useLocalVariables({ form });
+    const localVariables = useLocalVariables({ form: { values } as any });
 
     let actionTitle = title || compile(fieldSchema.title);
     actionTitle = lodash.isString(actionTitle) ? t(actionTitle) : actionTitle;

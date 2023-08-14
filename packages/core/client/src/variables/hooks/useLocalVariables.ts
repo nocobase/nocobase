@@ -51,7 +51,7 @@ const useLocalVariables = (props?: Props) => {
         collectionName: name,
       },
     ] as VariableOption[];
-  }, [currentRecord, form?.values, name]);
+  }, [JSON.stringify(currentRecord), JSON.stringify(form?.values || {}), name]); // 尽量保持返回的值不变，这样可以减少接口的请求次数，因为关系字段会缓存到变量的 ctx 中
 };
 
 export default useLocalVariables;
