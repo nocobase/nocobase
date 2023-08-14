@@ -23,9 +23,13 @@ import { flatData, getLabelFormatValue, isShowFilePicker, useLabelUiSchema } fro
 
 const useTableSelectorProps = () => {
   const field: any = useField();
-  const { multiple, options = [], setSelectedRows, selectedRows: rcSelectRows = [], onChange } = useContext(
-    RecordPickerContext,
-  );
+  const {
+    multiple,
+    options = [],
+    setSelectedRows,
+    selectedRows: rcSelectRows = [],
+    onChange,
+  } = useContext(RecordPickerContext);
   const { onRowSelectionChange, rowKey = 'id', ...others } = useTsp();
   const { setVisible } = useActionContext();
   return {
@@ -161,7 +165,7 @@ const InternalFileManager = (props) => {
         }}
       >
         <RecordPickerProvider {...pickerProps}>
-          <CollectionProvider name={collectionField.target}>
+          <CollectionProvider name={collectionField?.target}>
             <FormProvider>
               <TableSelectorParamsProvider params={{ filter: getFilter() }}>
                 <SchemaComponentOptions scope={{ usePickActionProps, useTableSelectorProps }}>
