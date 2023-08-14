@@ -561,7 +561,7 @@ export class PluginManager {
   async detail(name: string) {
     const packageName = PluginManager.getPackageName(name);
     const packageJson = PluginManager.getPackageJson(packageName);
-    const file = PluginManager.getPackageName(name);
+    const file = require.resolve(PluginManager.getPackageName(name));
     return {
       packageJson,
       depsCompatible: getCompatible(packageName),
