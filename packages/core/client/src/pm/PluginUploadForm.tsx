@@ -1,4 +1,4 @@
-import { App, Modal } from 'antd';
+import { App, Modal, message } from 'antd';
 import React, { FC } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaComponent } from '../schema-component';
@@ -6,6 +6,7 @@ import { ISchema } from '@formily/json-schema';
 import { uid } from '@formily/shared';
 import { useForm } from '@formily/react';
 import { useAPIClient } from '../api-client';
+import { RcFile } from 'antd/es/upload';
 
 const schema: ISchema = {
   type: 'object',
@@ -25,7 +26,20 @@ const schema: ISchema = {
             multiple: false,
             maxCount: 1,
             height: '150px',
-            tipContent: `{{t('Drag and drop the file here or click to upload, file size should not exceed 10M')}}`,
+            tipContent: `{{t('Drag and drop the file here or click to upload, file size should not exceed 30M')}}`,
+            beforeUpload: (file: RcFile) => {
+              const compressedFileRegex = /\.(zip|rar|tar|gz|bz2)$/;
+              const isCompressedFile = compressedFileRegex.test(file.name);
+              if (!isCompressedFile) {
+                message.error('File only support zip, rar, tar, gz, bz2!');
+              }
+
+              const fileSizeLimit = file.size / 1024 / 1024 < 30;
+              if (!fileSizeLimit) {
+                message.error('File must smaller than 30MB!');
+              }
+              return isCompressedFile && fileSizeLimit;
+            },
           },
         },
         footer: {
@@ -74,6 +88,7 @@ export const PluginUploadForm: FC<IPluginUploadFormProps> = ({ onClose, name, is
 
     return {
       async run() {
+        if (form.values.uploadFile[0]?.response?.data?.url) return;
         await form.submit();
         await api.request({
           url: `pm:upgradeByCompressedFileUrl/${name}`,

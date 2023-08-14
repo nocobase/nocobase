@@ -657,7 +657,7 @@ export default {
   "No CHANGELOG.md file": "CHANGELOG.mdファイルがありません",
   "No README.md file": "README.mdファイルがありません",
   "Homepage": "ホームページ",
-  "Drag and drop the file here or click to upload, file size should not exceed 10M": "ファイルをここにドラッグ＆ドロップするか、クリックしてアップロードしてください。ファイルサイズは10Mを超えてはいけません",
+  "Drag and drop the file here or click to upload, file size should not exceed 30M": "ファイルをここにドラッグ＆ドロップするか、クリックしてアップロードしてください。ファイルサイズは10Mを超えてはいけません",
   "Dependencies check failed, can't enable.": "依存関係のチェックに失敗しました。有効にできません。",
   "Plugin starting...": "プラグインを起動しています...",
   "Plugin stopping...": "プラグインを停止しています...",

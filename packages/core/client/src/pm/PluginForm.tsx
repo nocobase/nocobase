@@ -1,4 +1,4 @@
-import { App, Form, Modal, Radio } from 'antd';
+import { App, Modal, Radio, message } from 'antd';
 import React, { FC, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaComponent } from '../schema-component';
@@ -7,6 +7,7 @@ import { uid } from '@formily/shared';
 import { useStyles } from './style';
 import { useForm } from '@formily/react';
 import { useAPIClient } from '../api-client';
+import { RcFile } from 'antd/es/upload';
 
 const footer = {
   type: 'void',
@@ -89,7 +90,20 @@ const uploadSchema: ISchema = {
             multiple: false,
             maxCount: 1,
             height: '150px',
-            tipContent: `{{t('Drag and drop the file here or click to upload, file size should not exceed 10M')}}`,
+            tipContent: `{{t('Drag and drop the file here or click to upload, file size should not exceed 30M')}}`,
+            beforeUpload: (file: RcFile) => {
+              const compressedFileRegex = /\.(zip|rar|tar|gz|bz2)$/;
+              const isCompressedFile = compressedFileRegex.test(file.name);
+              if (!isCompressedFile) {
+                message.error('File only support zip, rar, tar, gz, bz2!');
+              }
+
+              const fileSizeLimit = file.size / 1024 / 1024 < 30;
+              if (!fileSizeLimit) {
+                message.error('File must smaller than 30MB!');
+              }
+              return isCompressedFile && fileSizeLimit;
+            },
           },
         },
         footer,
@@ -150,8 +164,8 @@ export const PluginForm: FC<IPluginFormProps> = ({ onClose, isShow }) => {
           });
         } else {
           let compressedFileUrl =
-            type === 'url' ? form.values.compressedFileUrl : form.values.uploadFile[0].response.data.url;
-
+            type === 'url' ? form.values.compressedFileUrl : form.values.uploadFile[0]?.response?.data?.url;
+          if (!compressedFileUrl) return;
           if (!(compressedFileUrl.startsWith('http') || compressedFileUrl.startsWith('//'))) {
             if (!compressedFileUrl.startsWith('/')) {
               compressedFileUrl = `/${compressedFileUrl}`;

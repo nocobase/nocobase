@@ -699,7 +699,7 @@ export default {
   "No CHANGELOG.md file": "Файл CHANGELOG.md відсутній",
   "No README.md file": "Файл README.md відсутній",
   "Homepage": "Домашня сторінка",
-  "Drag and drop the file here or click to upload, file size should not exceed 10M": "Перетягніть файл сюди або натисніть, щоб завантажити, розмір файлу не повинен перевищувати 10 Мб",
+  "Drag and drop the file here or click to upload, file size should not exceed 30M": "Перетягніть файл сюди або натисніть, щоб завантажити, розмір файлу не повинен перевищувати 10 Мб",
   "Dependencies check failed, can't enable.": "Перевірка залежностей не вдалась, неможливо увімкнути.",
   "Plugin starting...": "Запуск плагіна...",
   "Plugin stopping...": "Зупинка плагіна...",

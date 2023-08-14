@@ -723,7 +723,7 @@ export default {
   "No CHANGELOG.md file": "没有 CHANGELOG.md 日志",
   "No README.md file": "没有 README.md 文件",
   "Homepage": "主页",
-  'Drag and drop the file here or click to upload, file size should not exceed 10M': '将文件拖放到此处或单击上传，文件大小不应超过 10M',
+  'Drag and drop the file here or click to upload, file size should not exceed 30M': '将文件拖放到此处或单击上传，文件大小不应超过 30M',
   "Dependencies check failed, can't enable.": "依赖检查失败，无法启用。",
   "Plugin starting...": "插件启动中...",
   "Plugin stopping...": "插件停止中...",

@@ -683,7 +683,7 @@ export default {
   "No CHANGELOG.md file": "No CHANGELOG.md file",
   "No README.md file": "No README.md file",
   "Homepage": "Homepage",
-  'Drag and drop the file here or click to upload, file size should not exceed 10M': 'Drag and drop the file here or click to upload, file size should not exceed 10M',
+  'Drag and drop the file here or click to upload, file size should not exceed 30M': 'Drag and drop the file here or click to upload, file size should not exceed 30M',
   "Dependencies check failed, can't enable.": "Dependencies check failed, can't enable.",
   "Plugin starting...": "Plugin starting...",
   "Plugin stopping...": "Plugin stopping...",

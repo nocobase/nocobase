@@ -534,7 +534,7 @@ export default {
   "No CHANGELOG.md file": "CHANGELOG.md dosyası bulunmamaktadır",
   "No README.md file": "README.md dosyası bulunmamaktadır",
   "Homepage": "Anasayfa",
-  "Drag and drop the file here or click to upload, file size should not exceed 10M": "Dosyayı buraya sürükleyin veya yüklemek için tıklayın, dosya boyutu 10M'i geçmemelidir",
+  "Drag and drop the file here or click to upload, file size should not exceed 30M": "Dosyayı buraya sürükleyin veya yüklemek için tıklayın, dosya boyutu 30M'i geçmemelidir",
   "Dependencies check failed, can't enable.": "Bağımlılık kontrolü başarısız oldu, etkinleştirilemiyor.",
   "Plugin starting...": "Eklenti başlatılıyor...",
   "Plugin stopping...": "Eklenti durduruluyor...",
