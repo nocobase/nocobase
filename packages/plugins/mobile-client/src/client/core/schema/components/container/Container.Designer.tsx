@@ -6,20 +6,21 @@ import { Button } from 'antd';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { generateNTemplate, useTranslation } from '../../../../locale';
-import { PageSchema } from '../../common';
 import { findSchema } from '../../helpers';
+import { useSchemaPatch } from '../../hooks';
 
 export const ContainerDesigner = () => {
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
-  const { dn } = useDesignable();
-  const tabBarSchema = fieldSchema.reduceProperties(
-    (schema, next) => schema || (next['x-component'] === 'MTabBar' && next),
-  ) as Schema;
-
-  const navigate = useNavigate();
+  const { onUpdateComponentProps } = useSchemaPatch();
 
   const field = useField();
+  const { dn } = useDesignable();
+  const navigate = useNavigate();
+
+  const tabBarSchema = findSchema(fieldSchema, 'MTabBar');
+  const tabBarEnabled = tabBarSchema && field.componentProps.tabBarEnabled !== false;
+
   const schemaSettingsProps = {
     dn,
     field,
@@ -43,44 +44,41 @@ export const ContainerDesigner = () => {
       {...schemaSettingsProps}
     >
       <SchemaSettings.SwitchItem
-        checked={!!tabBarSchema}
+        checked={tabBarEnabled}
         title={t('Enable TabBar')}
         onChange={async (v) => {
           if (v) {
-            const pageSchema = findSchema(fieldSchema, 'MPage');
-            if (!pageSchema) return;
-            await dn.remove(pageSchema);
-            await dn.insertBeforeEnd({
-              type: 'void',
-              'x-component': 'MTabBar',
-              'x-component-props': {},
-              name: 'tabBar',
-              properties: {
-                [uid()]: {
-                  type: 'void',
-                  'x-component': 'MTabBar.Item',
-                  'x-designer': 'MTabBar.Item.Designer',
-                  'x-component-props': {
-                    icon: 'HomeOutlined',
-                    title: generateNTemplate('Untitled'),
-                  },
-                  properties: {
-                    page: pageSchema.toJSON(),
+            if (!tabBarSchema) {
+              const pageSchema = findSchema(fieldSchema, 'MPage');
+              await dn.insertBeforeEnd({
+                type: 'void',
+                'x-component': 'MTabBar',
+                'x-component-props': {},
+                name: 'tabBar',
+                properties: {
+                  [uid()]: {
+                    type: 'void',
+                    'x-component': 'MTabBar.Item',
+                    'x-designer': 'MTabBar.Item.Designer',
+                    'x-component-props': {
+                      icon: 'HomeOutlined',
+                      title: generateNTemplate('Untitled'),
+                    },
+                    properties: {
+                      page: pageSchema.toJSON(),
+                    },
                   },
                 },
-              },
-            });
-          } else {
-            const tabBarSchemaFirstKey = Object.keys(tabBarSchema.properties || {})?.[0];
-            const pageSchema = tabBarSchemaFirstKey
-              ? findSchema(tabBarSchema.properties[tabBarSchemaFirstKey], 'MPage')
-              : null;
-            await dn.remove(tabBarSchema);
-            await dn.insertBeforeEnd(pageSchema || PageSchema, {
-              onSuccess() {
-                navigate('../');
-              },
-            });
+              });
+            }
+          }
+
+          await onUpdateComponentProps({
+            tabBarEnabled: v,
+          });
+
+          if (v === false) {
+            navigate('../');
           }
         }}
       />
