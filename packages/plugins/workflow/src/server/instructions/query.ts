@@ -10,7 +10,12 @@ export default {
     const { collection, multiple, params = {}, failOnEmpty = false } = node.config;
 
     const repo = (<typeof FlowNodeModel>node.constructor).database.getRepository(collection);
-    const { page = DEFAULT_PAGE, pageSize = DEFAULT_PER_PAGE, ...options } = processor.getParsedValue(params, node);
+    const {
+      page = DEFAULT_PAGE,
+      pageSize = DEFAULT_PER_PAGE,
+      sort = [],
+      ...options
+    } = processor.getParsedValue(params, node);
     const appends = options.appends
       ? Array.from(
           options.appends.reduce((set, field) => {
@@ -23,6 +28,9 @@ export default {
     const result = await (multiple ? repo.find : repo.findOne).call(repo, {
       ...options,
       ...utils.pageArgsToLimitArgs(page, pageSize),
+      sort: sort
+        .filter((item) => item.field)
+        .map((item) => `${item.direction?.toLowerCase() === 'desc' ? '-' : ''}${item.field}`),
       appends,
       transaction: processor.transaction,
     });
