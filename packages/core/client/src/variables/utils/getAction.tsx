@@ -1,8 +1,8 @@
 const TYPE_TO_ACTION = {
-  hasMany: 'list',
+  hasMany: 'list?pageSize=9999',
   belongsTo: 'get',
   hasOne: 'get',
-  belongsToMany: 'list',
+  belongsToMany: 'list?pageSize=9999',
 };
 export const getAction = (type: string) => {
   if (process.env.NODE_ENV !== 'production' && !(type in TYPE_TO_ACTION)) {
