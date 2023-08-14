@@ -9,7 +9,6 @@ export interface PluginData {
   enabled?: boolean;
   type?: 'url' | 'npm' | 'upload';
   authToken?: string;
-  isOfficial?: boolean;
   installed?: boolean;
   builtIn?: boolean;
   options?: any;

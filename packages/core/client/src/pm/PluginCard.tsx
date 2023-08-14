@@ -20,7 +20,6 @@ function PluginInfo(props: IPluginInfo) {
   const {
     name,
     displayName,
-    isOfficial,
     isCompatible,
     packageName,
     version,
@@ -69,7 +68,7 @@ function PluginInfo(props: IPluginInfo) {
         style={{ width: 380 }}
         headStyle={{ border: 'none' }}
         bodyStyle={{ paddingTop: 5 }}
-        title={displayName || name || packageName}
+        title={<div onClick={onClick}>{displayName || name || packageName}</div>}
         hoverable
         actions={[
           <div key="setting" className={classnames({ [styles.cardActionDisabled]: !enabled })}>
@@ -130,10 +129,9 @@ function PluginInfo(props: IPluginInfo) {
           ></Switch>,
         ]}
       >
-        <Row justify="space-between">
-          <Col span={16} onClick={onClick}>
+        <Row justify="space-between" onClick={onClick}>
+          <Col span={16}>
             <Card.Meta
-              // avatar={<Avatar style={{ background: `${stringToColor(name)}` }}>{name?.[0]}</Avatar>}
               description={
                 <Space direction="vertical">
                   <Typography.Text type="secondary">
@@ -157,28 +155,46 @@ function PluginInfo(props: IPluginInfo) {
                   loading={npmUpgradeLoading}
                   icon={<SyncOutlined style={{ color: 'red', fontWeight: 'bold' }} />}
                   ghost
-                  onClick={npmUpgradeRun}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    npmUpgradeRun();
+                  }}
                   type="primary"
                 >
                   {t('Upgrade plugin')}
                 </Button>
               )}
               {type === 'url' && (
-                <Button ghost type="primary" loading={urlUpgradeLoading} onClick={urlUpgradeRun}>
+                <Button
+                  ghost
+                  type="primary"
+                  loading={urlUpgradeLoading}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    urlUpgradeRun();
+                  }}
+                >
                   {t('re-download file')}
                 </Button>
               )}
               {type === 'upload' && (
-                <Button onClick={() => setShowUploadForm(true)} ghost type="primary">
+                <Button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowUploadForm(true);
+                  }}
+                  ghost
+                  type="primary"
+                >
                   {t('Upload new version')}
                 </Button>
               )}
               {!isCompatible && (
-                <Button onClick={onClick} style={{ padding: 0 }} type="link">
+                <Button style={{ padding: 0 }} type="link">
                   <Typography.Text type="danger">{t('Dependencies check failed')}</Typography.Text>
                 </Button>
               )}
-              <Button onClick={onClick} style={{ padding: 0 }} type="link">
+              <Button style={{ padding: 0 }} type="link">
                 {t('More details')}
               </Button>
             </Space>

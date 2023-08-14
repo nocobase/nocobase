@@ -67,10 +67,6 @@ const LocalPlugins = () => {
         type: 'Upgrade',
         list: _.filter(list, (item) => item.newVersion),
       },
-      {
-        type: 'Official plugin',
-        list: _.filter(list, (item) => item.isOfficial),
-      },
     ];
   }, [data?.data]);
 

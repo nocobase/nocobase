@@ -73,7 +73,6 @@ export class PluginManager {
                 packageName,
                 displayName: packageJson[`displayName.${lng}`] || packageJson.displayName,
                 description: packageJson[`description.${lng}`] || packageJson.description,
-                isOfficial: packageName.startsWith('@nocobase'),
                 readmeUrl: getReadmeUrl(packageName, lng),
                 changelogUrl: getChangelogUrl(packageName),
                 newVersion: await getNewVersion(json),
@@ -355,17 +354,8 @@ export class PluginManager {
     const packageJson = PluginManager.getPackageJson(packageName);
 
     if (!model) {
-      const {
-        enabled,
-        builtIn,
-        installed,
-        registry,
-        packageName,
-        authToken,
-        compressedFileUrl,
-        type,
-        ...others
-      } = options;
+      const { enabled, builtIn, installed, registry, packageName, authToken, compressedFileUrl, type, ...others } =
+        options;
       await this.repository.create({
         transaction,
         values: {
