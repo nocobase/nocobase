@@ -67,7 +67,6 @@ export const transformVariableValue = (value: any, deps: Deps) => {
   // 下拉多选
   if (targetCollectionFiled.interface === 'multipleSelect') {
     const options = _.isArray(targetCollectionFiled.uiSchema.enum) ? targetCollectionFiled.uiSchema.enum : [];
-    console.log('options_1', options);
     if (Array.isArray(value)) {
       return value.filter((item) => options.some((enumItem: { value: any }) => enumItem.value === item));
     }
@@ -77,7 +76,6 @@ export const transformVariableValue = (value: any, deps: Deps) => {
   // 下拉单选
   if (targetCollectionFiled.interface === 'select') {
     const options = _.isArray(targetCollectionFiled.uiSchema.enum) ? targetCollectionFiled.uiSchema.enum : [];
-    console.log('options_2', options);
     if (Array.isArray(value)) {
       return value.find((item) => options.some((enumItem: { value: any }) => enumItem.value === item));
     }

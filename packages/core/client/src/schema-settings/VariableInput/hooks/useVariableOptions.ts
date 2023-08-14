@@ -40,7 +40,7 @@ export const useVariableOptions = ({ collectionField, blockCollectionName: rootC
     return [
       userVariable,
       dateVariable,
-      form && formVariable,
+      form && !form.readPretty && formVariable,
       form && fieldCollectionName && rootCollection && fieldCollectionName !== rootCollection && iterationVariable,
       !_.isEmpty(record) && currentRecordVariable,
     ].filter(Boolean);
