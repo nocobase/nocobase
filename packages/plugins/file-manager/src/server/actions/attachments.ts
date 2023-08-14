@@ -32,7 +32,7 @@ function getFileData(ctx: Context) {
   const urlPath = storage.path ? storage.path.replace(/^([^/])/, '/$1') : '';
 
   return {
-    title: file.originalname.replace(extname, ''),
+    title: Buffer.from(file.originalname, 'latin1').toString('utf8').replace(extname, ''),
     filename,
     extname,
     // TODO(feature): 暂时两者相同，后面 storage.path 模版化以后，这里只是 file 实际的 path

@@ -1,20 +1,20 @@
 import { ArrayTable } from '@formily/antd-v5';
+import { onFieldValueChange } from '@formily/core';
 import { connect, ISchema, mapProps, useField, useFieldSchema, useForm, useFormEffects } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
 import { Alert, Tree as AntdTree } from 'antd';
 import { cloneDeep } from 'lodash';
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RemoteSelect, useCompile, useDesignable } from '../..';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { useRecord } from '../../../record-provider';
 import { OpenModeSchemaItems } from '../../../schema-items';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useCollectionState } from '../../../schema-settings/DataTemplates/hooks/useCollectionState';
+import { useSyncFromForm } from '../../../schema-settings/DataTemplates/utils';
 import { useLinkageAction } from './hooks';
 import { requestSettingsSchema } from './utils';
-import { useRecord } from '../../../record-provider';
-import { useSyncFromForm } from '../../../schema-settings/DataTemplates/utils';
-import { onFieldValueChange } from '@formily/core';
 
 const Tree = connect(
   AntdTree,
@@ -143,17 +143,17 @@ function SaveMode() {
             saveMode: {
               'x-decorator': 'FormItem',
               'x-component': 'Radio.Group',
-              title: t('Save mode'),
+              // title: t('Save mode'),
               default: field.componentProps.saveMode || 'create',
               enum: [
-                { value: 'create', label: '{{t("Create")}}' },
-                { value: 'firstOrCreate', label: '{{t("First or create")}}' },
-                { value: 'updateOrCreate', label: '{{t("Update or create")}}' },
+                { value: 'create', label: '{{t("Insert")}}' },
+                { value: 'firstOrCreate', label: '{{t("Insert if not exists")}}' },
+                { value: 'updateOrCreate', label: '{{t("Insert if not exists, or update")}}' },
               ],
             },
             filterKeys: {
               type: 'array',
-              title: '{{ t("Find by the following fields") }}',
+              title: '{{ t("Determine whether a record exists by the following fields") }}',
               required: true,
               default: field.componentProps.filterKeys,
               'x-decorator': 'FormItem',

@@ -167,6 +167,12 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
         onOpenChange={(open) => {
           changeMenu(open);
         }}
+        overlayClassName={css`
+          .ant-dropdown-menu-item-group-list {
+            max-height: 300px;
+            overflow-y: auto;
+          }
+        `}
         menu={{ items }}
       >
         {typeof title === 'string' ? <span>{title}</span> : title}
@@ -728,6 +734,7 @@ SchemaSettings.CascaderItem = (props: CascaderProps<any> & { title: any }) => {
           onChange={onChange as any}
           options={options}
           style={{ textAlign: 'right', minWidth: 100 }}
+          {...props}
         />
       </div>
     </SchemaSettings.Item>
