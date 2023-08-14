@@ -1,7 +1,7 @@
 import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useFormBlockContext } from '../../../block-provider';
 import { CollectionFieldProvider, useCollection, useCollectionField } from '../../../collection-manager';
 import { useRecord } from '../../../record-provider';
@@ -94,6 +94,10 @@ export const AssignedField = (props: AssignedFieldProps) => {
 
   const collectionField = getField(fieldSchema.name);
 
+  const shouldChange = useMemo(
+    () => getShouldChange({ collectionField, variables, localVariables }),
+    [collectionField, localVariables, variables],
+  );
   return (
     <VariableInput
       form={form}
@@ -103,7 +107,7 @@ export const AssignedField = (props: AssignedFieldProps) => {
       blockCollectionName={name}
       renderSchemaComponent={CollectionField}
       collectionField={collectionField}
-      shouldChange={getShouldChange({ collectionField, variables, localVariables })}
+      shouldChange={shouldChange}
     />
   );
 };
