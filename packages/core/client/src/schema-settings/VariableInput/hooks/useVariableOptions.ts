@@ -96,7 +96,7 @@ export const compatOldVariables = (variables: Option[], { value, collectionName,
   }
 
   if (value.includes(`${collectionName}.`)) {
-    const formVariable = variables.find((item) => item.value === '$form');
+    const formVariable = variables.find((item) => item.value === '$nForm');
     if (formVariable) {
       formVariable.value = collectionName;
     }
@@ -110,7 +110,7 @@ export const compatOldVariables = (variables: Option[], { value, collectionName,
   }
 
   if (value.includes('currentRecord')) {
-    const formVariable = variables.find((item) => item.value === '$form');
+    const formVariable = variables.find((item) => item.value === '$nRecord');
     if (formVariable) {
       formVariable.value = 'currentRecord';
     }

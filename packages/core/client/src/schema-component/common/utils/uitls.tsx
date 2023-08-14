@@ -85,7 +85,7 @@ export const conditionAnalyses = async ({
   const type = Object.keys(rules)[0] || '$and';
   const conditions = rules[type];
   localVariables = localVariables.map((variable) => {
-    if (variable.name === '$form') {
+    if (variable.name === '$nForm') {
       return {
         ...variable,
         ctx: formValues,
@@ -140,5 +140,5 @@ export const conditionAnalyses = async ({
  * @returns
  */
 function targetFieldToVariableString(targetField: string[]) {
-  return `{{ $form.${targetField.join('.')} }}`;
+  return `{{ $nForm.${targetField.join('.')} }}`;
 }

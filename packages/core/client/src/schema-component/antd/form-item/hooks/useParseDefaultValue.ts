@@ -22,7 +22,7 @@ const useParseDefaultValue = () => {
   const { getField } = useCollection();
 
   useEffect(() => {
-    const formVariable = localVariables.find((item) => item.name === '$form');
+    const formVariable = localVariables.find((item) => item.name === '$nForm');
     const _run = async () => {
       // 如果默认值是一个变量，则需要解析之后再显示出来
       if (isVariable(schema.default) && variables && field) {
@@ -54,10 +54,10 @@ const useParseDefaultValue = () => {
 
     _run();
 
-    // 实现联动的效果，当依赖的变量变化时（如 `$form` 变量），重新解析默认值
+    // 实现联动的效果，当依赖的变量变化时（如 `$nForm` 变量），重新解析默认值
     const dispose = reaction(() => {
       if (isVariable(schema.default)) {
-        return _.get({ $form: formVariable?.ctx }, getPath(schema.default));
+        return _.get({ $nForm: formVariable?.ctx }, getPath(schema.default));
       }
     }, run);
 

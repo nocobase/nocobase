@@ -34,19 +34,19 @@ const useLocalVariables = (props?: Props) => {
         ctx: currentRecord,
         collectionName: name,
       },
-      // 兼容旧版本的以数据表名称命名的变量，新版本已更名为 `$form`
+      // 兼容旧版本的以数据表名称命名的变量，新版本已更名为 `$nForm`
       {
         name,
         ctx: form?.values,
         collectionName: name,
       },
       {
-        name: '$record',
+        name: '$nRecord',
         ctx: currentRecord,
         collectionName: name,
       },
       {
-        name: '$form',
+        name: '$nForm',
         ctx: form?.values,
         collectionName: name,
       },

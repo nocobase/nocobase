@@ -20,7 +20,7 @@ export const useFormVariable = ({
   const result = useBaseVariable({
     schema,
     maxDepth: 4,
-    name: '$form',
+    name: '$nForm',
     title: t('Current form'),
     collectionName: collectionName,
     returnFields: (fields, option) => {

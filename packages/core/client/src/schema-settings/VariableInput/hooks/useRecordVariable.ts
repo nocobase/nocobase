@@ -11,7 +11,7 @@ export const useRecordVariable = (props: Props) => {
 
   const currentRecordVariable = useBaseVariable({
     schema: props.schema,
-    name: '$record',
+    name: '$nRecord',
     title: t('Current record'),
     collectionName: props.collectionName,
   });

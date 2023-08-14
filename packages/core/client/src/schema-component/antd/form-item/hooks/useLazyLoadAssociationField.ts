@@ -24,11 +24,11 @@ const useLazyLoadAssociationField = () => {
     }
 
     const formVariable = {
-      name: '$form',
+      name: '$nForm',
       ctx: form.values,
       collectionName: name,
     };
-    const variableString = `{{ $form.${schemaName} }}`;
+    const variableString = `{{ $nForm.${schemaName} }}`;
     const collectionField = getCollectionJoinField(`${name}.${schemaName}`);
 
     if (process.env.NODE_ENV !== 'production') {

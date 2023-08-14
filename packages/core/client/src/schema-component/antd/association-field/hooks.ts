@@ -83,7 +83,7 @@ export default function useServiceOptions(props) {
           if (!isVariable(value)) {
             return value;
           }
-          const result = _.get({ $form: form?.values }, getPath(value));
+          const result = _.get({ $nForm: form?.values }, getPath(value));
           return result;
         },
       });
