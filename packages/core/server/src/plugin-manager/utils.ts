@@ -96,7 +96,7 @@ export async function getLatestVersion(packageName: string, registry: string, to
 }
 
 export async function download(url: string, destination: string, options: AxiosRequestConfig = {}) {
-  const response = await axios.get(url, {
+  const response = await axios.get(url.replace('localhost', '127.0.0.1'), {
     ...options,
     responseType: 'stream',
   });
@@ -138,10 +138,10 @@ export async function downloadAndUnzipToNodeModules(fileUrl: string, authToken?:
   if (!fs.existsSync(packageJsonPath)) {
     await fs.remove(tempFile);
     await fs.remove(tempPackageDir);
-    throw new Error(`download ${fileUrl} failed`);
+    throw new Error(`decompress ${fileUrl} failed`);
   }
 
-  const packageJson = require(packageJsonPath);
+  const packageJson = requireNoCache(packageJsonPath);
   const packageDir = getStoragePluginDir(packageJson.name);
 
   // move to plugin storage dir
@@ -311,7 +311,7 @@ export function getPackageJsonByLocalPath(localPath: string) {
   if (!fs.existsSync(localPath)) {
     return null;
   } else {
-    return require(path.join(localPath, 'package.json'));
+    return requireNoCache(path.join(localPath, 'package.json'));
   }
 }
 
@@ -372,6 +372,26 @@ export async function getNewVersion(plugin: PluginData): Promise<string | false>
   return version !== plugin.version ? version : false;
 }
 
+export function removeRequireCache(fileOrPackageName: string) {
+  delete require.cache[require.resolve(fileOrPackageName)];
+  delete require.cache[fileOrPackageName];
+}
+
+export function requireNoCache(fileOrPackageName: string) {
+  removeRequireCache(fileOrPackageName);
+  return require(fileOrPackageName);
+}
+
+export function requireModule(m: any) {
+  if (typeof m === 'string') {
+    m = require(m);
+  }
+  if (typeof m !== 'object') {
+    return m;
+  }
+  return m.__esModule ? m.default : m;
+}
+
 export interface DepCompatible {
   name: string;
   result: boolean;
@@ -381,13 +401,18 @@ export interface DepCompatible {
 export function getCompatible(packageName: string) {
   const realPath = getRealPath(packageName, 'dist/externalVersion.js');
 
-  delete require.cache[realPath];
-
   const exists = fs.existsSync(realPath);
   if (!exists) {
     return [];
   }
-  const externalVersion = require(realPath);
+
+  let externalVersion: Record<string, string>;
+  try {
+    externalVersion = requireNoCache(realPath);
+  } catch (e) {
+    console.error(e);
+    return [];
+  }
   return Object.keys(externalVersion).reduce<DepCompatible[]>((result, packageName) => {
     const packageVersion = externalVersion[packageName];
     const globalPackageName = deps[packageName]

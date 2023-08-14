@@ -1,9 +1,8 @@
 import { CleanOptions, Collection, SyncOptions } from '@nocobase/database';
-import { requireModule } from '@nocobase/utils';
 import execa from 'execa';
 import fs from 'fs';
 import net from 'net';
-import { resolve } from 'path';
+import { resolve, sep } from 'path';
 import xpipe from 'xpipe';
 import Application from '../application';
 import { Plugin } from '../plugin';
@@ -18,6 +17,8 @@ import {
   getNewVersion,
   getPluginInfoByNpm,
   removePluginPackage,
+  requireModule,
+  requireNoCache,
 } from './utils';
 import { NODE_MODULES_PATH } from './constants';
 
@@ -68,6 +69,15 @@ export class PluginManager {
               const json = plugin.toJSON();
               const packageName = PluginManager.getPackageName(json.name);
               const packageJson = PluginManager.getPackageJson(packageName);
+              let newVersion = undefined;
+
+              try {
+                newVersion = await getNewVersion(json);
+              } catch (e) {
+                console.error(e);
+                newVersion = undefined;
+              }
+
               return {
                 ...json,
                 packageName,
@@ -75,7 +85,7 @@ export class PluginManager {
                 description: packageJson[`description.${lng}`] || packageJson.description,
                 readmeUrl: getReadmeUrl(packageName, lng),
                 changelogUrl: getChangelogUrl(packageName),
-                newVersion: await getNewVersion(json),
+                newVersion,
                 isCompatible: checkCompatible(packageName),
               };
             }),
@@ -273,7 +283,11 @@ export class PluginManager {
     });
 
     await this.addStatic(name, { ...plugin.options, compressedFileUrl, version }, true);
-    return this.repository.upgrade(name, { version, compressedFileUrl });
+    await this.repository.upgrade(name, { version, compressedFileUrl });
+    if (plugin.enabled) {
+      const newPlugin = this.plugins.get(name);
+      await this.load({}, new Map([[name, newPlugin]]));
+    }
   }
 
   getNameByPackageName(packageName: string) {
@@ -297,7 +311,7 @@ export class PluginManager {
     let name: string;
     if (typeof plugin === 'string') {
       name = plugin;
-      plugin = PluginManager.resolvePlugin(plugin);
+      plugin = PluginManager.resolvePlugin(plugin, upgrade);
     } else {
       name = plugin.name;
       if (!name) {
@@ -378,8 +392,8 @@ export class PluginManager {
     return instance;
   }
 
-  async load(options: any = {}) {
-    for (const [name, plugin] of this.plugins) {
+  async load(options: any = {}, plugins = this.plugins) {
+    for (const [name, plugin] of plugins) {
       if (!plugin.enabled) {
         continue;
       }
@@ -390,7 +404,7 @@ export class PluginManager {
       }
     }
 
-    for (const [name, plugin] of this.plugins) {
+    for (const [name, plugin] of plugins) {
       if (!plugin.enabled) {
         continue;
       }
@@ -485,15 +499,15 @@ export class PluginManager {
   }
 
   static getPackageJson(packageName: string) {
-    return require(`${packageName}/package.json`);
+    return requireNoCache(`${packageName}/package.json`);
   }
 
-  static getPackageName(name: string, isAbsolute = false) {
+  static getPackageName(name: string) {
     const prefixes = this.getPluginPkgPrefix();
     for (const prefix of prefixes) {
       try {
-        const absolutePath = require.resolve(`${prefix}${name}`, { paths: [process.cwd(), NODE_MODULES_PATH] });
-        return isAbsolute ? absolutePath : `${prefix}${name}`;
+        require.resolve(`${prefix}${name}`);
+        return `${prefix}${name}`;
       } catch (error) {
         continue;
       }
@@ -531,15 +545,23 @@ export class PluginManager {
     throw new Error(`No available packages found, ${name} plugin does not exist`);
   }
 
-  static resolvePlugin(pluginName: string) {
-    const packageName = this.getPackageName(pluginName, true);
+  static resolvePlugin(pluginName: string, isUpgrade = false) {
+    const packageName = this.getPackageName(pluginName);
+    if (isUpgrade) {
+      const packageNamePath = packageName.replace('/', sep);
+      Object.keys(require.cache).forEach((key) => {
+        if (key.includes(packageNamePath)) {
+          delete require.cache[key];
+        }
+      });
+    }
     return requireModule(packageName);
   }
 
   async detail(name: string) {
     const packageName = PluginManager.getPackageName(name);
     const packageJson = PluginManager.getPackageJson(packageName);
-    const file = PluginManager.getPackageName(name, true);
+    const file = PluginManager.getPackageName(name);
     return {
       packageJson,
       depsCompatible: getCompatible(packageName),
