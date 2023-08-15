@@ -167,6 +167,12 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
         onOpenChange={(open) => {
           changeMenu(open);
         }}
+        overlayClassName={css`
+          .ant-dropdown-menu-item-group-list {
+            max-height: 300px;
+            overflow-y: auto;
+          }
+        `}
         menu={{ items }}
       >
         {typeof title === 'string' ? <span>{title}</span> : title}
@@ -728,6 +734,7 @@ SchemaSettings.CascaderItem = (props: CascaderProps<any> & { title: any }) => {
           onChange={onChange as any}
           options={options}
           style={{ textAlign: 'right', minWidth: 100 }}
+          {...props}
         />
       </div>
     </SchemaSettings.Item>
@@ -909,7 +916,20 @@ SchemaSettings.ModalItem = function ModalItem(props) {
               <CollectionManagerContext.Provider value={cm}>
                 <CollectionProvider collection={collection}>
                   <SchemaComponentOptions scope={options.scope} components={options.components}>
-                    <FormLayout layout={'vertical'} style={{ minWidth: 520 }}>
+                    <FormLayout
+                      layout={'vertical'}
+                      className={css`
+                        // screen > 576px
+                        @media (min-width: 576px) {
+                          min-width: 520px;
+                        }
+
+                        // screen <= 576px
+                        @media (max-width: 576px) {
+                          min-width: 320px;
+                        }
+                      `}
+                    >
                       <APIClientProvider apiClient={apiClient}>
                         <SchemaComponent components={components} scope={scope} schema={schema} />
                       </APIClientProvider>
@@ -1496,14 +1516,14 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
 
                   s['x-read-pretty'] = false;
                   s['x-disabled'] = false;
-
                   const schema = {
                     ...(s || {}),
+                    'x-decorator': 'FormItem',
                     'x-component-props': {
                       ...s['x-component-props'],
                       collectionName: collectionField?.collectionName,
                       targetField,
-                      onChange: props.onChange,
+                      onChange: collectionField?.interface !== 'richText' ? props.onChange : null,
                       defaultValue: getFieldDefaultValue(s, collectionField),
                       style: {
                         width: '100%',
@@ -1512,7 +1532,6 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
                       },
                     },
                   };
-
                   return <SchemaComponent schema={schema} />;
                 },
               },
@@ -1659,8 +1678,9 @@ SchemaSettings.SortingRule = function SortRuleConfigure(props) {
 // 是否显示默认值配置项
 export const isShowDefaultValue = (collectionField: CollectionFieldOptions, getInterface) => {
   return (
-    !['o2o', 'oho', 'obo', 'o2m', 'attachment', 'expression'].includes(collectionField?.interface) &&
-    !isSystemField(collectionField, getInterface)
+    !['o2o', 'oho', 'obo', 'o2m', 'attachment', 'expression', 'point', 'lineString', 'circle', 'polygon'].includes(
+      collectionField?.interface,
+    ) && !isSystemField(collectionField, getInterface)
   );
 };
 

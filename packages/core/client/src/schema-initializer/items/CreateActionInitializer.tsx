@@ -13,6 +13,7 @@ export const CreateActionInitializer = (props) => {
       openMode: 'drawer',
       type: 'primary',
       component: 'CreateRecordAction',
+      icon: 'PlusOutlined',
     },
     properties: {
       drawer: {

@@ -10,19 +10,20 @@ export const Editable = observer((props) => {
   const field: any = useField();
   const containerRef = useRef(null);
   const fieldSchema = useFieldSchema();
+  const value = typeof field.value === 'object' ? field.value?.default : field.value;
   const schema: any = {
     name: fieldSchema.name,
     'x-collection-field': fieldSchema['x-collection-field'],
     'x-component': 'CollectionField',
     'x-read-pretty': true,
-    default: field.value,
+    default: value,
     'x-component-props': fieldSchema['x-component-props'],
   };
   const form = useMemo(
     () =>
       createForm({
         values: {
-          [fieldSchema.name]: field.value,
+          [fieldSchema.name]: value,
         },
       }),
     [field.value, fieldSchema['x-component-props']],

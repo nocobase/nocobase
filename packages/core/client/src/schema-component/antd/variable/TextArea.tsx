@@ -357,6 +357,10 @@ export function TextArea(props) {
               }
             }
           }
+
+          > .x-button {
+            height: min-content;
+          }
         `,
       )}
     >

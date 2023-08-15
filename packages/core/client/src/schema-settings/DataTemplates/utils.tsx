@@ -53,7 +53,7 @@ export const useSyncFromForm = (fieldSchema, collection?, callBack?) => {
             field,
             disabled,
           };
-          const tatgetFormField = formData.find((v) => v.name === field.name);
+          const tatgetFormField = formData.find((v) => v.name === option.key);
           if (
             ['belongsTo', 'belongsToMany'].includes(field.type) &&
             (!tatgetFormField || ['Select', 'Picker'].includes(tatgetFormField?.fieldMode))
@@ -100,9 +100,7 @@ export const useSyncFromForm = (fieldSchema, collection?, callBack?) => {
       cache.set(cacheKey, result);
       return result;
     };
-  })(
-    new LRUCache<string, any>({ max: 100 }),
-  );
+  })(new LRUCache<string, any>({ max: 100 }));
 
   const traverseAssociations = ((cache) => {
     return (collectionName, { prefix, maxDepth, depth = 0, exclude = [] }) => {
@@ -149,9 +147,7 @@ export const useSyncFromForm = (fieldSchema, collection?, callBack?) => {
       cache.set(cacheKey, result);
       return result;
     };
-  })(
-    new LRUCache<string, any>({ max: 100 }),
-  );
+  })(new LRUCache<string, any>({ max: 100 }));
   const getEnableFieldTree = useCallback((collectionName: string, formData) => {
     if (!collectionName) {
       return [];
