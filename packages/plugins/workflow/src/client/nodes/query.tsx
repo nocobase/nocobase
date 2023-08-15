@@ -1,11 +1,19 @@
-import { SchemaInitializerItemOptions, useCollectionDataSource, useCollectionManager, useCompile } from '@nocobase/client';
+import { ArrayItems } from '@formily/antd-v5';
 
-import { appends, collection, filter } from '../schemas/collection';
+import {
+  SchemaComponentContext,
+  SchemaInitializerItemOptions,
+  useCollectionDataSource,
+  useCollectionManager,
+  useCompile,
+} from '@nocobase/client';
+
+import { appends, collection, filter, pagination, sort } from '../schemas/collection';
 import { NAMESPACE } from '../locale';
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
 import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
-import { getCollectionFieldOptions } from '../variable';
-import { FieldsSelect } from '../components/FieldsSelect';
+import { getCollectionFieldOptions, useWorkflowVariableOptions } from '../variable';
+import { useForm } from '@formily/react';
 
 export default {
   title: `{{t("Query record", { ns: "${NAMESPACE}" })}}`,
@@ -16,31 +24,70 @@ export default {
     collection,
     multiple: {
       type: 'boolean',
-      title: `{{t("Allow multiple records as result", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
+      'x-content': `{{t("Allow multiple records as result", { ns: "${NAMESPACE}" })}}`,
       description: `{{t("If checked, when there are multiple records in the query result, an array will be returned as the result, which can be operated on one by one using a loop node. Otherwise, only one record will be returned.", { ns: "${NAMESPACE}" })}}`,
     },
     params: {
       type: 'object',
+      'x-component': 'fieldset',
       properties: {
         filter,
+        sort,
+        pagination,
         appends,
       },
+      'x-reactions': [
+        {
+          dependencies: ['collection'],
+          fulfill: {
+            state: {
+              visible: '{{$deps[0] != null}}',
+            },
+          },
+        },
+      ],
     },
     failOnEmpty: {
       type: 'boolean',
-      title: `{{t("Exit when query result is null", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
+      'x-content': `{{t("Exit when query result is null", { ns: "${NAMESPACE}" })}}`,
     },
   },
   view: {},
   scope: {
     useCollectionDataSource,
+    useWorkflowVariableOptions,
+    useSortableFields() {
+      const compile = useCompile();
+      const { getCollectionFields, getInterface } = useCollectionManager();
+      const { values } = useForm();
+      const fields = getCollectionFields(values.collection);
+      return fields
+        .filter((field: any) => {
+          if (!field.interface) {
+            return false;
+          }
+          const fieldInterface = getInterface(field.interface);
+          if (fieldInterface?.sortable) {
+            return true;
+          }
+          return false;
+        })
+        .map((field: any) => {
+          return {
+            value: field.name,
+            label: field?.uiSchema?.title ? compile(field?.uiSchema?.title) : field.name,
+          };
+        });
+    },
   },
   components: {
+    ArrayItems,
     FilterDynamicComponent,
+    SchemaComponentContext,
   },
   useVariables({ id, title, config }, options) {
     const compile = useCompile();
