@@ -14,11 +14,17 @@ export class Locale {
     this.app = app;
     this.cache = createCache();
 
-    this.app.on('afterLoad', () => this.load());
+    this.app.on('afterLoad', async () => {
+      this.app.log.debug('load locale resource');
+      this.app.setWorkingMessage('load locale resource');
+      await this.load();
+      this.app.log.debug('locale resource loaded');
+      this.app.setWorkingMessage('locale resource loaded');
+    });
   }
 
-  load() {
-    this.getCacheResources(this.defaultLang);
+  async load() {
+    await this.getCacheResources(this.defaultLang);
   }
 
   setLocaleFn(name: string, fn: (lang: string) => Promise<any>) {
