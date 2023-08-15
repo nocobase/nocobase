@@ -157,6 +157,14 @@ export class PluginManager {
     return this.pluginInstances.has(name);
   }
 
+  del(name: string | typeof Plugin) {
+    const instance = this.get(name);
+    if (instance) {
+      this.pluginAliases.delete(instance.name);
+      this.pluginInstances.delete(instance.constructor as typeof Plugin);
+    }
+  }
+
   async create(name: string | string[]) {
     console.log('creating...');
     const pluginNames = Array.isArray(name) ? name : [name];
@@ -320,6 +328,8 @@ export class PluginManager {
     this.app.log.debug(`emit afterEnablePlugin event...`);
     await this.app.emitAsync('afterEnablePlugin', name);
     this.app.log.debug(`afterEnablePlugin event emitted`);
+
+    await this.app.restart();
   }
 
   async disable(name: string | string[]) {
@@ -337,6 +347,7 @@ export class PluginManager {
 
       await this.app.emitAsync('afterDisablePlugin', name);
       this.app.setWorkingMessage(`plugin ${name} disabled`);
+      await this.app.restart();
     } catch (error) {
       throw error;
     }
