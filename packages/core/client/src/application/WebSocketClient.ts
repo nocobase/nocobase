@@ -94,7 +94,7 @@ export class WebSocketClient {
       for (const { type, listener, options } of this.events) {
         this._ws.addEventListener(type, listener, options);
       }
-      pingIntervalTimer = setInterval(() => this.send('ws.ping'), this.pingInterval);
+      pingIntervalTimer = setInterval(() => this.send('ping'), this.pingInterval);
       this.connected = true;
     };
     ws.onerror = async () => {
