@@ -47,15 +47,18 @@ const PreviewCom = (props) => {
           type: 'group',
           key: v,
           label: t(`Parent collection fields`) + t(`(${getCollection(v).title})`),
-          children: fields.map((k) => {
-            return {
-              value: k.name,
-              label: t(k.uiSchema?.title),
-            };
-          }),
+          children: fields
+            .filter((v) => !['hasOne', 'hasMany', 'belongsToMany'].includes(v?.type))
+            .map((k) => {
+              return {
+                value: k.name,
+                label: t(k.uiSchema?.title),
+              };
+            }),
         };
       });
       const children = collection.fields
+        .filter((v) => !['hasOne', 'hasMany', 'belongsToMany'].includes(v?.type))
         ?.map((v) => {
           return { value: v.name, label: t(v.uiSchema?.title) };
         })
