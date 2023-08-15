@@ -113,6 +113,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   public running = false;
   protected plugins = new Map<string, Plugin>();
   protected _appSupervisor: AppSupervisor = AppSupervisor.getInstance();
+  protected _started: boolean;
   private _authenticated = false;
   private _maintaining = false;
   private _maintainingCommandStatus: MaintainingCommandStatus;
@@ -127,7 +128,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   protected _loaded: boolean;
-  protected _started: boolean;
 
   get loaded() {
     return this._loaded;
@@ -447,6 +447,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     await this.emitAsync('beforeStart', this, options);
     await this.emitAsync('afterStart', this, options);
+    await this.emitAsync('__started', this, options);
     this.stopped = false;
   }
 

@@ -270,7 +270,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
       });
     });
 
-    app.on('afterStart', async () => {
+    app.on('__started', async () => {
       this.setAppStatus(app.name, 'running');
     });
 
