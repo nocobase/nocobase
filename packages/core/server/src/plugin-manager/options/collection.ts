@@ -7,7 +7,7 @@ export default defineCollection({
   repository: 'PluginManagerRepository',
   fields: [
     { type: 'string', name: 'name', unique: true },
-    { type: 'string', name: 'packageName', unique: true },
+    { type: 'string', name: 'packageName' },
     { type: 'string', name: 'version' },
     { type: 'string', name: 'type' },
     { type: 'string', name: 'compressedFileUrl' },
