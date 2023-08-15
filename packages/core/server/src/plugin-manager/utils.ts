@@ -129,10 +129,15 @@ export async function downloadAndUnzipToNodeModules(fileUrl: string, authToken?:
   });
   await decompress(tempFile, tempPackageDir);
 
-  // npm package unzip will be wrapped in a `package` dir
-  const tempPackageContentDir = fs.existsSync(path.join(tempPackageDir, 'package'))
-    ? path.join(tempPackageDir, 'package')
-    : tempPackageDir;
+  let tempPackageContentDir = tempPackageDir;
+  const files = fs.readdirSync(tempPackageDir, { recursive: false, withFileTypes: true });
+  if (
+    files.length === 1 &&
+    files[0].isDirectory() &&
+    fs.existsSync(path.join(tempPackageDir, files[0]['name'], 'package.json'))
+  ) {
+    tempPackageContentDir = path.join(tempPackageDir, files[0]['name']);
+  }
   const packageJsonPath = path.join(tempPackageContentDir, 'package.json');
 
   if (!fs.existsSync(packageJsonPath)) {
@@ -142,6 +147,13 @@ export async function downloadAndUnzipToNodeModules(fileUrl: string, authToken?:
   }
 
   const packageJson = requireNoCache(packageJsonPath);
+  const mainFile = path.join(tempPackageContentDir, packageJson.main);
+  if (!fs.existsSync(mainFile)) {
+    await fs.remove(tempFile);
+    await fs.remove(tempPackageDir);
+    throw new Error(`main file ${packageJson.main} not found, Please check if the plugin has been built.`);
+  }
+
   const packageDir = getStoragePluginDir(packageJson.name);
 
   // move to plugin storage dir

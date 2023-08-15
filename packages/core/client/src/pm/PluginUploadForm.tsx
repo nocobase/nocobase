@@ -88,7 +88,7 @@ export const PluginUploadForm: FC<IPluginUploadFormProps> = ({ onClose, name, is
 
     return {
       async run() {
-        if (form.values.uploadFile[0]?.response?.data?.url) return;
+        if (!form.values.uploadFile[0]?.response?.data?.url) return;
         await form.submit();
         await api.request({
           url: `pm:upgradeByCompressedFileUrl/${name}`,
