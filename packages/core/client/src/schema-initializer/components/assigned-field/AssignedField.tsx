@@ -1,12 +1,20 @@
 import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
-import React, { useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { useFormBlockContext } from '../../../block-provider';
-import { CollectionFieldProvider, useCollection, useCollectionField } from '../../../collection-manager';
+import {
+  CollectionFieldProvider,
+  useCollection,
+  useCollectionField,
+  useCollectionFilterOptions,
+  useCollectionManager,
+} from '../../../collection-manager';
 import { useRecord } from '../../../record-provider';
 import { useCompile, useComponent } from '../../../schema-component';
 import { VariableInput, getShouldChange } from '../../../schema-settings/VariableInput/VariableInput';
+import { Option } from '../../../schema-settings/VariableInput/type';
+import { formatVariableScop } from '../../../schema-settings/VariableInput/utils/formatVariableScop';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { DeletedField } from '../DeletedField';
 
@@ -85,19 +93,39 @@ export enum AssignedFieldValueType {
 
 export const AssignedField = (props: AssignedFieldProps) => {
   const { value, onChange } = props;
-  const { name, getField } = useCollection();
+  const { getCollectionFields } = useCollectionManager();
+  const collection = useCollection();
   const { form } = useFormBlockContext();
   const fieldSchema = useFieldSchema();
   const record = useRecord();
   const variables = useVariables();
   const localVariables = useLocalVariables();
+  const currentFormFields = useCollectionFilterOptions(collection);
 
+  const { name, getField } = collection;
   const collectionField = getField(fieldSchema.name);
 
   const shouldChange = useMemo(
     () => getShouldChange({ collectionField, variables, localVariables }),
     [collectionField, localVariables, variables],
   );
+
+  const returnScope = useCallback(
+    (scope: Option[]) => {
+      const currentForm = scope.find((item) => item.value === '$nForm');
+      const fields = getCollectionFields(name);
+
+      // fix https://nocobase.height.app/T-1355
+      // 工作流人工节点的 `自定义表单` 区块，与其它表单区块不同，根据它的数据表名称，获取到的字段列表为空，所以需要在这里特殊处理一下
+      if (!fields?.length && currentForm) {
+        currentForm.children = formatVariableScop(currentFormFields);
+      }
+
+      return scope;
+    },
+    [currentFormFields, name],
+  );
+
   return (
     <VariableInput
       form={form}
@@ -108,6 +136,7 @@ export const AssignedField = (props: AssignedFieldProps) => {
       renderSchemaComponent={CollectionField}
       collectionField={collectionField}
       shouldChange={shouldChange}
+      returnScope={returnScope}
     />
   );
 };
