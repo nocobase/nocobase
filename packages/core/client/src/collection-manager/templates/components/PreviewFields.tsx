@@ -1,6 +1,8 @@
 import { Cascader } from '@formily/antd-v5';
 import { useField, useForm } from '@formily/react';
 import { Input, Select, Spin, Table, Tag } from 'antd';
+import { last } from 'lodash';
+import { boolean } from 'mathjs';
 import React, { useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ResourceActionContext, useCompile } from '../../../';
@@ -30,19 +32,37 @@ const PreviewCom = (props) => {
   const [sourceFields, setSourceFields] = useState([]);
   const field: any = useField();
   const form = useForm();
-  const { getCollection, getInterface } = useCollectionManager();
+  const { getCollection, getInterface, getCollectionFields, getInheritCollections, getParentCollectionFields } =
+    useCollectionManager();
   const compile = useCompile();
   const initOptions = getOptions().filter((v) => !['relation', 'systemInfo'].includes(v.key));
   useEffect(() => {
     const data = [];
     sources.forEach((item) => {
       const collection = getCollection(item);
-      const children = collection.fields?.map((v) => {
-        return { value: v.name, label: v.uiSchema?.title };
+      const inherits = getInheritCollections(item);
+      const result = inherits.map((v) => {
+        const fields = getParentCollectionFields(v, item);
+        return {
+          type: 'group',
+          key: v,
+          label: t(`Parent collection fields`) + t(`(${getCollection(v).title})`),
+          children: fields.map((k) => {
+            return {
+              value: k.name,
+              label: t(k.uiSchema?.title),
+            };
+          }),
+        };
       });
+      const children = collection.fields
+        ?.map((v) => {
+          return { value: v.name, label: t(v.uiSchema?.title) };
+        })
+        .concat(result);
       data.push({
         value: item,
-        label: collection.title,
+        label: t(collection.title),
         children,
       });
     });
@@ -70,7 +90,7 @@ const PreviewCom = (props) => {
             setDataSource(fieldsData);
             form.setValuesIn('sources', data.data?.sources);
           }
-        });
+        }).catch;
     }
   }, [databaseView]);
 
@@ -78,9 +98,10 @@ const PreviewCom = (props) => {
     dataSource.splice(index, 1, record);
     setDataSource(dataSource);
     field.value = dataSource.map((v) => {
+      const source = typeof v.source === 'string' ? v.source : v.source?.filter?.(Boolean)?.join('.');
       return {
         ...v,
-        source: typeof v.source === 'string' ? v.source : v.source?.join('.'),
+        source,
       };
     });
   };
@@ -104,7 +125,8 @@ const PreviewCom = (props) => {
             style={{ width: '100%' }}
             options={compile(sourceFields)}
             onChange={(value, selectedOptions) => {
-              handleFieldChange({ ...record, source: value }, index);
+              const sourceField = getCollectionFields(value?.[0])?.find((v) => v.name === last(value));
+              handleFieldChange({ ...record, source: value, uiSchema: sourceField?.uiSchema }, index);
             }}
             placeholder={t('Select field source')}
           />
@@ -177,7 +199,7 @@ const PreviewCom = (props) => {
         const item = dataSource[index];
         return (
           <Input
-            defaultValue={record?.uiSchema?.title || text}
+            value={item?.uiSchema?.title || text}
             onChange={(e) =>
               handleFieldChange({ ...item, uiSchema: { ...item?.uiSchema, title: e.target.value } }, index)
             }
@@ -190,7 +212,7 @@ const PreviewCom = (props) => {
     <Spin spinning={loading}>
       {dataSource.length > 0 && (
         <>
-          <div className="ant-formily-item-label">
+          <div className="ant-formily-item-label" style={{ display: 'flex' }}>
             <div className="ant-formily-item-label-content">
               <span>
                 <label>{t('Fields')}</label>
