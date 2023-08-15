@@ -1,6 +1,19 @@
 import { MultipleRelationRepository, Repository } from '@nocobase/database';
 import { Context } from '.';
 
+export function pageArgsToLimitArgs(
+  page: number,
+  pageSize: number,
+): {
+  offset: number;
+  limit: number;
+} {
+  return {
+    offset: (page - 1) * pageSize,
+    limit: pageSize,
+  };
+}
+
 export function getRepositoryFromParams(ctx: Context) {
   const { resourceName, resourceOf } = ctx.action;
 
