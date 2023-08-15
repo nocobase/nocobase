@@ -1,4 +1,24 @@
-import { Plugin } from '@nocobase/client';
+import { CollectionManagerProvider, Plugin, SchemaComponentOptions } from '@nocobase/client';
+import React from 'react';
+import { useCustomizeRequestActionProps } from './hooks';
+import { CustomRequestConfigurationFieldsSchema, CustomRequestSchema } from './schemas';
+import { CustomRequestActionDesigner } from './components';
+import { CustomRequestInitializer } from './initializer';
+
+const CustomRequestProvider: React.FC = (props) => {
+  return (
+    <SchemaComponentOptions
+      scope={{
+        useCustomizeRequestActionProps,
+        CustomRequestConfigurationFieldsSchema,
+        CustomRequestSchema,
+      }}
+      components={{ CustomRequestActionDesigner, CustomRequestInitializer }}
+    >
+      <CollectionManagerProvider>{props.children}</CollectionManagerProvider>
+    </SchemaComponentOptions>
+  );
+};
 
 export class CustomRequestPlugin extends Plugin {
   async afterAdd() {
@@ -9,7 +29,7 @@ export class CustomRequestPlugin extends Plugin {
 
   // You can get and modify the app instance here
   async load() {
-    console.log(this.app);
+    this.app.use(CustomRequestProvider);
     // this.app.addComponents({})
     // this.app.addScopes({})
     // this.app.addProvider()

@@ -31,13 +31,6 @@ export const usePickActionProps = () => {
   };
 };
 
-function renderTemplate(str: string, data: any) {
-  const re = /\{\{\s*((\w+\.?)+)\s*\}\}/g;
-  return str.replace(re, function (_, key) {
-    return get(data, key) || '';
-  });
-}
-
 const filterValue = (value) => {
   if (typeof value !== 'object') {
     return value;
@@ -61,7 +54,7 @@ const filterValue = (value) => {
   return obj;
 };
 
-function getFormValues(filterByTk, field, form, fieldNames, getField, resource) {
+export function getFormValues(filterByTk, field, form, fieldNames, getField, resource) {
   if (filterByTk) {
     const actionFields = field?.data?.activeFields as Set<string>;
     if (actionFields) {
@@ -219,8 +212,12 @@ export const useAssociationCreateActionProps = () => {
   return {
     async onClick() {
       const fieldNames = fields.map((field) => field.name);
-      const { assignedValues: originalAssignedValues = {}, onSuccess, overwriteValues, skipValidator } =
-        actionSchema?.['x-action-settings'] ?? {};
+      const {
+        assignedValues: originalAssignedValues = {},
+        onSuccess,
+        overwriteValues,
+        skipValidator,
+      } = actionSchema?.['x-action-settings'] ?? {};
       const addChild = fieldSchema?.['x-component-props']?.addChild;
       const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentRecord, currentUser });
       if (!skipValidator) {
@@ -404,8 +401,11 @@ export const useCustomizeUpdateActionProps = () => {
 
   return {
     async onClick() {
-      const { assignedValues: originalAssignedValues = {}, onSuccess, skipValidator } =
-        actionSchema?.['x-action-settings'] ?? {};
+      const {
+        assignedValues: originalAssignedValues = {},
+        onSuccess,
+        skipValidator,
+      } = actionSchema?.['x-action-settings'] ?? {};
       const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentRecord, currentUser });
       if (skipValidator === false) {
         await form.submit();
@@ -459,8 +459,11 @@ export const useCustomizeBulkUpdateActionProps = () => {
 
   return {
     async onClick() {
-      const { assignedValues: originalAssignedValues = {}, onSuccess, updateMode } =
-        actionSchema?.['x-action-settings'] ?? {};
+      const {
+        assignedValues: originalAssignedValues = {},
+        onSuccess,
+        updateMode,
+      } = actionSchema?.['x-action-settings'] ?? {};
       actionField.data = field.data || {};
       actionField.data.loading = true;
       const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentUser });
@@ -593,89 +596,6 @@ export const useCustomizeBulkEditActionProps = () => {
             title: compile(onSuccess?.successMessage),
             onOk: async () => {
               await form.reset();
-              if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-                if (isURL(onSuccess.redirectTo)) {
-                  window.location.href = onSuccess.redirectTo;
-                } else {
-                  navigate(onSuccess.redirectTo);
-                }
-              }
-            },
-          });
-        } else {
-          message.success(compile(onSuccess?.successMessage));
-        }
-      } finally {
-        actionField.data.loading = false;
-      }
-    },
-  };
-};
-
-export const useCustomizeRequestActionProps = () => {
-  const apiClient = useAPIClient();
-  const navigate = useNavigate();
-  const filterByTk = useFilterByTk();
-  const actionSchema = useFieldSchema();
-  const compile = useCompile();
-  const form = useForm();
-  const { fields, getField } = useCollection();
-  const { field, resource, __parent, service } = useBlockRequestContext();
-  const currentRecord = useRecord();
-  const currentUserContext = useCurrentUserContext();
-  const currentUser = currentUserContext?.data?.data;
-  const actionField = useField();
-  const { setVisible } = useActionContext();
-  const { modal } = App.useApp();
-
-  return {
-    async onClick() {
-      const { skipValidator, onSuccess, requestSettings } = actionSchema?.['x-action-settings'] ?? {};
-      const xAction = actionSchema?.['x-action'];
-      if (!requestSettings['url']) {
-        return;
-      }
-      if (skipValidator !== true && xAction === 'customize:form:request') {
-        await form.submit();
-      }
-
-      const headers = requestSettings['headers'] ? JSON.parse(requestSettings['headers']) : {};
-      const params = requestSettings['params'] ? JSON.parse(requestSettings['params']) : {};
-      const data = requestSettings['data'] ? JSON.parse(requestSettings['data']) : {};
-      const methods = ['POST', 'PUT', 'PATCH'];
-      if (xAction === 'customize:form:request' && methods.includes(requestSettings['method'])) {
-        const fieldNames = fields.map((field) => field.name);
-        const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
-        Object.assign(data, values);
-      }
-      const requestBody = {
-        url: renderTemplate(requestSettings['url'], { currentRecord, currentUser }),
-        method: requestSettings['method'],
-        headers: parse(headers)({ currentRecord, currentUser }),
-        params: parse(params)({ currentRecord, currentUser }),
-        data: parse(data)({ currentRecord, currentUser }),
-      };
-      actionField.data = field.data || {};
-      actionField.data.loading = true;
-      try {
-        await apiClient.request({
-          ...requestBody,
-        });
-        actionField.data.loading = false;
-        if (!(resource instanceof TableFieldResource)) {
-          __parent?.service?.refresh?.();
-        }
-        service?.refresh?.();
-        if (xAction === 'customize:form:request') {
-          setVisible?.(false);
-        }
-        if (!onSuccess?.successMessage) {
-          return;
-        }
-        if (onSuccess?.manualClose) {
-          modal.success({
-            title: compile(onSuccess?.successMessage),
-            onOk: async () => {
               if (onSuccess?.redirecting && onSuccess?.redirectTo) {
                 if (isURL(onSuccess.redirectTo)) {
                   window.location.href = onSuccess.redirectTo;

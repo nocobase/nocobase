@@ -2,7 +2,14 @@
   "name": "@nocobase/plugin-custom-request",
   "version": "0.12.0-alpha.3",
   "main": "dist/server/index.js",
-  "dependencies": {},
+  "dependencies": {
+    "@formily/react": "2.x",
+    "@formily/shared": "2.x",
+    "react-i18next": "^11.15.1",
+    "react-router-dom": "^6.11.2",
+    "antd": "5.x",
+    "lodash": "4.17.21"
+  },
   "peerDependencies": {
     "@nocobase/client": "0.x",
     "@nocobase/server": "0.x",
