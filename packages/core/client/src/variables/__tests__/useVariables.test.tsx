@@ -78,7 +78,7 @@ mockRequest.onGet('/users/0/belongsToField:get').reply(() => {
     },
   ];
 });
-mockRequest.onGet('/users/0/hasManyField:list').reply(() => {
+mockRequest.onGet('/users/0/hasManyField:list?pageSize=9999').reply(() => {
   return [
     200,
     {
@@ -91,7 +91,7 @@ mockRequest.onGet('/users/0/hasManyField:list').reply(() => {
     },
   ];
 });
-mockRequest.onGet('/test/0/hasManyField:list').reply(() => {
+mockRequest.onGet('/test/0/hasManyField:list?pageSize=9999').reply(() => {
   return [
     200,
     {
