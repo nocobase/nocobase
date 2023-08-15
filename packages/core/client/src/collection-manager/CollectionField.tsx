@@ -48,13 +48,7 @@ const InternalField: React.FC = (props: Props) => {
     setFieldProps('description', uiSchema.description);
     if (ctx?.form) {
       const defaultVal = fieldSchema.default || defaultValue;
-      if (defaultVal !== null && defaultVal !== undefined) {
-        if (collectionField.interface === 'checkbox') {
-          !field.value && setFieldProps('initialValue', defaultVal);
-        } else {
-          setFieldProps('initialValue', defaultVal);
-        }
-      }
+      defaultVal !== null && defaultVal !== undefined && setFieldProps('initialValue', defaultVal);
     }
 
     if (!field.validator && (uiSchema['x-validator'] || fieldSchema['x-validator'])) {

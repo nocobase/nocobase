@@ -136,7 +136,7 @@ export const Templates = ({ style = {}, form }) => {
           form.__template = true;
 
           forEach(data, (value, key) => {
-            if (value) {
+            if (value !== null && value !== undefined) {
               form.values[key] = value;
             }
           });

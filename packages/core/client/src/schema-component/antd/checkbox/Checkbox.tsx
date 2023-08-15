@@ -29,10 +29,18 @@ export const Checkbox: ComposedCheckbox = connect(
     };
     return <AntdCheckbox {...props} onChange={changeHandler} />;
   },
-  mapProps({
-    value: 'checked',
-    onInput: 'onChange',
-  }),
+  mapProps(
+    {
+      value: 'checked',
+      onInput: 'onChange',
+    },
+    (props, field: any) => {
+      return {
+        ...props,
+        defaultChecked: field.initialValue,
+      };
+    },
+  ),
   mapReadPretty(ReadPretty),
 );
 

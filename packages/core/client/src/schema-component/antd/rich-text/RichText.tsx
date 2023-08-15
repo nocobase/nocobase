@@ -39,7 +39,7 @@ export const RichText = connect(
     const { value } = props;
     return {
       ...props,
-      value: typeof value === 'object' ? value?.default : value,
+      value: value,
     };
   }),
   mapReadPretty((props) => {
