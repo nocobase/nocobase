@@ -698,14 +698,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     db.setLogger(this._logger);
 
-    db.on('afterDisconnect', () => {
-      this.log.debug('database disconnected');
-    });
-
-    db.on('afterConnect', () => {
-      this.log.debug('database connected');
-    });
-
     return db;
   }
 }

@@ -206,6 +206,7 @@ export class PluginMultiAppManager extends Plugin {
       const repository = this.db.getRepository('applications');
       const appSupervisor = AppSupervisor.getInstance();
 
+      this.app.setWorkingMessage('starting sub applications...');
       if (appSupervisor.runningMode == 'single') {
         Gateway.getInstance().setAppSelector(() => appSupervisor.singleAppName);
 

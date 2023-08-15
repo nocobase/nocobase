@@ -1,5 +1,4 @@
 import { AppSupervisor } from '../app-supervisor';
-import Application from '../application';
 import lodash from 'lodash';
 
 interface AppError {
@@ -48,12 +47,6 @@ export const errors: AppErrors = {
     maintaining: true,
   },
 
-  APP_RUNNING: {
-    status: 200,
-    message: ({ app }) => `application ${app.name} is running`,
-    maintaining: false,
-  },
-
   APP_INITIALIZED: {
     status: 503,
     message: ({ app }) => `application ${app.name} is initialized, waiting for command`,
@@ -85,6 +78,12 @@ export const errors: AppErrors = {
     maintaining: true,
     message: ({ app, message }) => message || app.workingMessage,
     command: ({ app, command }) => command || app.getMaintaining().command,
+  },
+
+  APP_RUNNING: {
+    status: 200,
+    maintaining: false,
+    message: ({ message, app }) => message || `application ${app.name} is running`,
   },
 
   UNKNOWN_ERROR: {

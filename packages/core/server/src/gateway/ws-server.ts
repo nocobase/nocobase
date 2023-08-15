@@ -57,12 +57,12 @@ export class WSServer {
       });
     });
 
-    AppSupervisor.getInstance().on('appWorkingMessageChanged', async ({ appName, message, command }) => {
+    AppSupervisor.getInstance().on('appWorkingMessageChanged', async ({ appName, message, command, status }) => {
       const app = await AppSupervisor.getInstance().getApp(appName, {
         withOutBootStrap: true,
       });
 
-      const payload = getPayloadByErrorCode('commanding', {
+      const payload = getPayloadByErrorCode(status, {
         app,
         message,
         command,

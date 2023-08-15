@@ -258,15 +258,17 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
       this.lastWorkingMessage[app.name] = message;
 
-      if (!maintainingStatus) {
+      const appStatus = this.getAppStatus(app.name);
+
+      if (!maintainingStatus && appStatus !== 'running') {
         return;
       }
 
       this.emit('appWorkingMessageChanged', {
         appName: app.name,
         message,
-        status: 'commanding',
-        command: maintainingStatus.command,
+        status: appStatus,
+        command: appStatus == 'running' ? null : maintainingStatus.command,
       });
     });
 
