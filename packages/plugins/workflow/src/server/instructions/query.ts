@@ -1,3 +1,5 @@
+import { DEFAULT_PAGE, DEFAULT_PER_PAGE, utils } from '@nocobase/actions';
+
 import Processor from '../Processor';
 import { JOB_STATUS } from '../constants';
 import { toJSON } from '../utils';
@@ -8,7 +10,12 @@ export default {
     const { collection, multiple, params = {}, failOnEmpty = false } = node.config;
 
     const repo = (<typeof FlowNodeModel>node.constructor).database.getRepository(collection);
-    const options = processor.getParsedValue(params, node);
+    const {
+      page = DEFAULT_PAGE,
+      pageSize = DEFAULT_PER_PAGE,
+      sort = [],
+      ...options
+    } = processor.getParsedValue(params, node);
     const appends = options.appends
       ? Array.from(
           options.appends.reduce((set, field) => {
@@ -20,7 +27,11 @@ export default {
       : options.appends;
     const result = await (multiple ? repo.find : repo.findOne).call(repo, {
       ...options,
-      appends: appends,
+      ...utils.pageArgsToLimitArgs(page, pageSize),
+      sort: sort
+        .filter((item) => item.field)
+        .map((item) => `${item.direction?.toLowerCase() === 'desc' ? '-' : ''}${item.field}`),
+      appends,
       transaction: processor.transaction,
     });
 
