@@ -445,7 +445,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       await this.db.reconnect();
     }
 
+    this.setWorkingMessage('emit beforeStart');
     await this.emitAsync('beforeStart', this, options);
+
+    this.setWorkingMessage('emit afterStart');
     await this.emitAsync('afterStart', this, options);
     await this.emitAsync('__started', this, options);
     this.stopped = false;
