@@ -89,13 +89,14 @@ pgOnly()('view with association', () => {
     const dropSQL = `DROP VIEW IF EXISTS ${viewName};`;
     await db.sequelize.query(dropSQL);
 
-    const viewSQL = `CREATE VIEW ${viewName} AS select group_id, user_id, MD5(user_id::text || group_id::text) AS id from ${UserGroupCollection.quotedTableName()}`;
+    const viewSQL = `CREATE VIEW public.${viewName} AS select group_id, user_id, MD5(user_id::text || group_id::text) AS id from ${UserGroupCollection.quotedTableName()}`;
 
     await db.sequelize.query(viewSQL);
 
     const inferResult = await ViewFieldInference.inferFields({
       db,
       viewName,
+      viewSchema: 'public',
     });
 
     const UserGroupViewCollection = db.collection({
