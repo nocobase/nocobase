@@ -24,7 +24,7 @@ export class Locale {
   }
 
   async load() {
-    await this.getCacheResources(this.defaultLang);
+    await this.get(this.defaultLang);
   }
 
   setLocaleFn(name: string, fn: (lang: string) => Promise<any>) {
@@ -36,6 +36,7 @@ export class Locale {
       resources: await this.getCacheResources(lang),
     };
     for (const [name, fn] of this.localeFn) {
+      this.app.log.debug(`load [${name}] locale resource `);
       const result = await this.wrapCache(`locale:${name}:${lang}`, async () => await fn(lang));
       if (result) {
         defaults[name] = result;
@@ -67,6 +68,8 @@ export class Locale {
     for (const name of names) {
       try {
         const packageName = PluginManager.getPackageName(name);
+        this.app.log.debug(`load [${packageName}] locale resource `);
+        this.app.setWorkingMessage(`load [${packageName}] locale resource `);
         const res = getResource(packageName, lang);
         if (res) {
           resources[name] = { ...res };
