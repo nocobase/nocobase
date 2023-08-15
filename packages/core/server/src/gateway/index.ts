@@ -165,8 +165,7 @@ export class Gateway extends EventEmitter {
   }
 
   async getRequestHandleAppName(req: IncomingRequest) {
-    const defaultAppName = process.env['STARTUP_SUBAPP'] || 'main';
-    return (await this.appSelector(req)) || defaultAppName;
+    return (await this.appSelector(req)) || 'main';
   }
 
   getCallback() {
