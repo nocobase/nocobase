@@ -96,7 +96,10 @@ export async function getLatestVersion(packageName: string, registry: string, to
 }
 
 export async function download(url: string, destination: string, options: AxiosRequestConfig = {}) {
-  const response = await axios.get(url.replace('localhost', '127.0.0.1'), {
+  if (process.env.NODE_ENV === 'production') {
+    url = url.replace('localhost', '127.0.0.1');
+  }
+  const response = await axios.get(url, {
     ...options,
     responseType: 'stream',
   });
@@ -128,6 +131,11 @@ export async function downloadAndUnzipToNodeModules(fileUrl: string, authToken?:
     headers: getAuthorizationHeaders(fileUrl, authToken),
   });
   await decompress(tempFile, tempPackageDir);
+
+  if (!fs.existsSync(tempPackageDir)) {
+    await fs.remove(tempFile);
+    throw new Error(`decompress ${fileUrl} failed`);
+  }
 
   let tempPackageContentDir = tempPackageDir;
   const files = fs.readdirSync(tempPackageDir, { recursive: false, withFileTypes: true });

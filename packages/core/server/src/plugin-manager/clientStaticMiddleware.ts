@@ -55,12 +55,13 @@ const getPackageName = (url: string) => {
  * /api/plugins/client/@nocobase/plugin-acl/index.js => /node_modules/@nocobase/plugin-acl/dist/client/index.js
  * /api/plugins/client/my-plugin/README.md => /node_modules/my-plugin/dist/client/README.md
  */
+const clientExtensions = ['.js', '.css', '.map', '.json'];
 export const getRealPathByUrl = (packageName: string, url: string) => {
   const ext = path.extname(url);
   let filePath = url.replace(`${PREFIX}${packageName}/`, '').replace(`/api`, '');
 
   // 保护作用，包目录下仅允许访问 md 文件，其他文件会被重定向到 dist/client 目录下
-  if (ext.toLowerCase() !== '.md') {
+  if (clientExtensions.includes(ext.toLowerCase())) {
     filePath = path.join('dist', 'client', filePath);
   }
 

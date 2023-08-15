@@ -27,8 +27,15 @@ export const PluginDocument: React.FC<PluginDocumentProps> = memo((props) => {
 
   const htmlWithOutRelativeDirect = useMemo(() => {
     if (html) {
+      let res = html;
       const pattern = /<a\s+href="\..*?\/([^/]+)"/g;
-      return html.replace(pattern, (match, $1) => match + `onclick="return false;"`); // prevent the default event of <a/>
+      res = res.replace(pattern, (match, $1) => match + `onclick="return false;"`); // prevent the default event of <a/>
+
+      // replace img src
+      res = res.replace(/src="(.*?)"/g, (match, src) => {
+        return `src="/api/plugins/client/@nocobase/plugin-dumu-saas-store/${src}"`;
+      });
+      return res;
     }
     return '';
   }, [html]);

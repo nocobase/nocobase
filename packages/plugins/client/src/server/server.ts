@@ -127,7 +127,6 @@ export class ClientPlugin extends Plugin {
             .map((item) => {
               try {
                 const packageName = PluginManager.getPackageName(item.name);
-                require.resolve(`${packageName}/client`);
                 return {
                   ...item.toJSON(),
                   packageName,
