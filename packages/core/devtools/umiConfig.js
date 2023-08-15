@@ -152,7 +152,9 @@ export default function devDynamicImport(packageName: string): Promise<any> {
   }
 
   generatePluginContent() {
-    fs.rmdirSync(this.outputPath, { recursive: true, force: true });
+    if (fs.existsSync(this.outputPath)) {
+      fs.rmdirSync(this.outputPath, { recursive: true, force: true });
+    }
     fs.mkdirSync(this.outputPath);
     const validPluginPaths = this.pluginsPath.filter((pluginPath) => fs.existsSync(pluginPath));
     if (!validPluginPaths.length || process.env.NODE_ENV === 'production') {
