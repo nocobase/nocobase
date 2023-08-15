@@ -215,7 +215,7 @@ const PreviewCom = (props) => {
     <Spin spinning={loading}>
       {dataSource.length > 0 && (
         <>
-          <div className="ant-formily-item-label" style={{ display: 'flex' }}>
+          <div className="ant-formily-item-label" style={{ display: 'flex', padding: '0 0 8px' }}>
             <div className="ant-formily-item-label-content">
               <span>
                 <label>{t('Fields')}</label>

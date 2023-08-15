@@ -78,7 +78,11 @@ export const PreviewTable = (props) => {
         }}
       >
         {previewColumns?.length > 0 && [
-          <div className="ant-formily-item-label" style={{ marginTop: 24, display: 'flex' }} key={viewName}>
+          <div
+            className="ant-formily-item-label"
+            style={{ marginTop: 24, display: 'flex', padding: '0 0 8px' }}
+            key={viewName}
+          >
             <div className="ant-formily-item-label-content">
               <span>
                 <label>{t('Preview')}</label>
