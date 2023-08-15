@@ -137,7 +137,20 @@ export function useTriggerWorkflowsActionProps() {
         triggerWorkflows,
       } = actionSchema?.['x-action-settings'] ?? {};
       const addChild = fieldSchema?.['x-component-props']?.addChild;
-      const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentRecord, currentUser });
+      const assignedValues = parse(originalAssignedValues)({
+        // @deprecated
+        currentTime: new Date(),
+        // @deprecated
+        currentRecord,
+        // @deprecated
+        currentUser,
+        $user: currentUser,
+        $nRecord: currentRecord,
+        $nForm: form.values,
+        $nDate: {
+          now: () => new Date().toISOString(),
+        },
+      });
       if (!skipValidator) {
         await form.submit();
       }

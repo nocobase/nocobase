@@ -1,8 +1,8 @@
 import { Context, utils } from '@nocobase/actions';
 
+import ManualInstruction from '.';
 import Plugin from '../..';
 import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
-import ManualInstruction from '.';
 
 export async function submit(context: Context, next) {
   const repository = utils.getRepositoryFromParams(context);
@@ -30,7 +30,7 @@ export async function submit(context: Context, next) {
   }
 
   const { forms = {} } = userJob.node.config;
-  const [formKey] = Object.keys(values.result ?? {}).filter(key => key !== '_');
+  const [formKey] = Object.keys(values.result ?? {}).filter((key) => key !== '_');
   const actionKey = values.result?._;
 
   const actionItem = forms[formKey]?.actions?.find((item) => item.key === actionKey);
@@ -40,7 +40,8 @@ export async function submit(context: Context, next) {
     userJob.job.status !== JOB_STATUS.PENDING ||
     userJob.execution.status !== EXECUTION_STATUS.STARTED ||
     !userJob.workflow.enabled ||
-    !actionKey || actionItem?.status == null
+    !actionKey ||
+    actionItem?.status == null
   ) {
     return context.throw(400);
   }
@@ -55,16 +56,25 @@ export async function submit(context: Context, next) {
     return context.throw(403);
   }
   const presetValues = processor.getParsedValue(actionItem.values ?? {}, null, {
+    // @deprecated
     currentUser: currentUser.toJSON(),
+    // @deprecated
     currentRecord: values.result[formKey],
+    // @deprecated
     currentTime: new Date(),
+    $user: currentUser.toJSON(),
+    $nDate: {
+      now: () => new Date().toISOString(),
+    },
+    $nForm: values.result[formKey],
   });
 
   userJob.set({
     status: actionItem.status,
-    result: actionItem.status > JOB_STATUS.PENDING
-      ? { [formKey]: Object.assign(values.result[formKey], presetValues), _: actionKey }
-      : Object.assign(userJob.result ?? {}, values.result),
+    result:
+      actionItem.status > JOB_STATUS.PENDING
+        ? { [formKey]: Object.assign(values.result[formKey], presetValues), _: actionKey }
+        : Object.assign(userJob.result ?? {}, values.result),
   });
 
   const handler = instruction.formTypes.get(forms[formKey].type);

@@ -199,20 +199,20 @@ export function Input(props) {
   };
 
   const onSwitch = useCallback(
-    (next) => {
+    (next, optionPath: any[]) => {
       if (next[0] === '') {
         if (next[1]) {
           if (next[1] !== type) {
-            onChange(ConstantTypes[next[1]]?.default ?? null);
+            onChange(ConstantTypes[next[1]]?.default ?? null, optionPath);
           }
         } else {
           if (variable) {
-            onChange(null);
+            onChange(null, optionPath);
           }
         }
         return;
       }
-      onChange(`{{${next.join('.')}}}`);
+      onChange(`{{${next.join('.')}}}`, optionPath);
     },
     [type, variable, onChange],
   );

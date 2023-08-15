@@ -3,6 +3,7 @@ import { FormatVariableScopeParam, FormatVariableScopeReturn } from '../Variable
 export function formatVariableScop(variableScop: FormatVariableScopeParam[]): FormatVariableScopeReturn[] {
   return variableScop.map((item) => {
     return {
+      ...item,
       value: item.name,
       key: item.name,
       label: item.title,

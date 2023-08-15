@@ -37,6 +37,10 @@ export const useVariableOptions = ({ collectionField, blockCollectionName: rootC
   });
   const currentRecordVariable = useRecordVariable({ schema, collectionName: rootCollection });
 
+  // 保证下面的 `_.isEmpty(record)` 结果符合预期，如果存在 `__parent` 字段，需要删除
+  record = { ...record };
+  delete record.__parent;
+
   return useMemo(() => {
     if (!schema) return [];
 

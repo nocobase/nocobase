@@ -10,7 +10,6 @@ import { isVariable } from '../../variables/utils/isVariable';
 import { useContextAssociationFields } from './hooks/useContextAssociationFields';
 import { compatOldVariables, useVariableOptions } from './hooks/useVariableOptions';
 import { Option } from './type';
-import { formatVariableScop } from './utils/formatVariableScop';
 
 interface GetShouldChangeProps {
   collectionField: CollectionFieldOptions;
@@ -25,7 +24,7 @@ interface RenderSchemaComponentProps {
 
 type Props = {
   value: any;
-  onChange: (value: any) => void;
+  onChange: (value: any, optionPath?: any[]) => void;
   renderSchemaComponent: (props: RenderSchemaComponentProps) => any;
   schema?: any;
   children?: any;
@@ -38,7 +37,7 @@ type Props = {
    * @param value `onChange` 的第一个参数
    * @returns 返回为 `true` 时，才会触发 `onChange`
    */
-  shouldChange?: (value: any) => Promise<boolean>;
+  shouldChange?: (value: any, optionPath?: any[]) => Promise<boolean>;
   /**
    * 当前所在的区块的 collectionName
    */
@@ -89,7 +88,7 @@ export const VariableInput = (props: Props) => {
       collectionName: blockCollectionName,
       t,
     },
-  ).concat(formatVariableScop(scope));
+  ).concat(scope);
   const contextVariable = useContextAssociationFields({ schema, maxDepth: 2, contextCollectionName, collectionField });
 
   useEffect(() => {
@@ -99,14 +98,14 @@ export const VariableInput = (props: Props) => {
   }, []);
 
   const handleChange = useCallback(
-    (value: any) => {
+    (value: any, optionPath: any[]) => {
       if (!shouldChange) {
         return onChange(value);
       }
 
       // `shouldChange` 这个函数的运算量比较大，会导致展开变量列表时有明显的卡顿感，在这里加个延迟能有效解决这个问题
       setTimeout(async () => {
-        if (await shouldChange(value)) {
+        if (await shouldChange(value, optionPath)) {
           onChange(value);
         }
       });
@@ -132,32 +131,15 @@ export const VariableInput = (props: Props) => {
  * 通过限制用户的选择，来防止用户选择错误的变量
  */
 export const getShouldChange = ({ collectionField, variables, localVariables }: GetShouldChangeProps) => {
-  return async (value: any) => {
+  return async (value: any, optionPath: any[]) => {
     if (!isVariable(value) || !variables) {
       return true;
     }
 
-    // 工作流中的 `触发器变量`
-    if (value.includes('$context.')) {
-      return true;
-    }
+    const lastOption = optionPath[optionPath.length - 1];
 
-    // 工作流中的 `系统变量`
-    if (value.includes('$system.')) {
-      return true;
-    }
-
-    // 工作流中的 `局部变量`
-    if (value.includes('$scopes')) {
-      return true;
-    }
-
-    // 工作流中的 `节点数据`
-    if (value.includes('$jobsMapByNodeId')) {
-      return true;
-    }
-
-    if (value.includes('$nDate.')) {
+    // 点击叶子节点时，必须更新 value
+    if (lastOption && _.isEmpty(lastOption.children) && !lastOption.loadChildren) {
       return true;
     }
 

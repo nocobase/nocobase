@@ -84,6 +84,8 @@ import { ChildDynamicComponent } from './EnableChildCollections/DynamicComponent
 import { FormLinkageRules } from './LinkageRules';
 import { useLinkageCollectionFieldOptions } from './LinkageRules/action-hooks';
 import { VariableInput, getShouldChange } from './VariableInput/VariableInput';
+import { Option } from './VariableInput/type';
+import { formatVariableScop } from './VariableInput/utils/formatVariableScop';
 import { DataScopeProps } from './types';
 
 interface SchemaSettingsProps {
@@ -1503,13 +1505,15 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
   const actionCtx = useActionContext();
   let targetField;
   const { getField } = useCollection();
-  const { getCollectionJoinField } = useCollectionManager();
+  const { getCollectionJoinField, getCollectionFields } = useCollectionManager();
   const variables = useVariables();
   const localVariables = useLocalVariables();
-  const { name } = useCollection();
+  const collection = useCollection();
   const record = useRecord();
   const { form } = useFormBlockContext();
+  const currentFormFields = useCollectionFilterOptions(collection);
 
+  const { name } = collection;
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
   const fieldSchemaWithoutRequired = _.omit(fieldSchema, 'required');
   if (collectionField?.target) {
@@ -1524,6 +1528,23 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
     actionCtx?.fieldSchema?.['x-action'] === 'customize:create' &&
     (collectionField?.interface === 'm2m' ||
       (parentCollectionField?.type === 'hasMany' && collectionField?.interface === 'm2o'));
+
+  const returnScope = useCallback(
+    (scope: Option[]) => {
+      const currentForm = scope.find((item) => item.value === '$nForm');
+      const fields = getCollectionFields(name);
+
+      // fix https://nocobase.height.app/T-1355
+      // 工作流人工节点的 `自定义表单` 区块，与其它表单区块不同，根据它的数据表名称，获取到的字段列表为空，所以需要在这里特殊处理一下
+      if (!fields?.length && currentForm) {
+        currentForm.children = formatVariableScop(currentFormFields);
+      }
+
+      return scope;
+    },
+    [currentFormFields, name],
+  );
+
   return (
     <SchemaSettings.ModalItem
       title={t('Set default value')}
@@ -1546,6 +1567,7 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
                 className: defaultInputStyle,
                 form,
                 record,
+                returnScope,
                 shouldChange: getShouldChange({ collectionField, variables, localVariables }),
                 renderSchemaComponent: function Com(props) {
                   const s = _.cloneDeep(fieldSchemaWithoutRequired) || ({} as Schema);
