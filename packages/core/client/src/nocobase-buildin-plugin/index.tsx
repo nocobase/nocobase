@@ -51,7 +51,7 @@ const AppError: FC<{ app: Application }> = observer(({ app }) => (
 ));
 
 const getProps = (app: Application) => {
-  if (!app.ws.connected) {
+  if (app.ws.serverDown) {
     return {
       status: 'error',
       title: 'App error',

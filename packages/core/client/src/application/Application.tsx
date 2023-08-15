@@ -140,7 +140,7 @@ export class Application {
         this.error = null;
       }
     });
-    this.ws.on('close', () => {
+    this.ws.on('serverDown', () => {
       this.maintaining = true;
     });
     this.ws.connect();

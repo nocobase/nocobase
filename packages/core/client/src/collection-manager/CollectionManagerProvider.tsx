@@ -2,7 +2,7 @@ import { keyBy } from 'lodash';
 import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../api-client';
-import { useApp } from '../application';
+import { useAppSpin } from '../application/hooks/useAppSpin';
 import { templateOptions } from '../collection-manager/Configuration/templates';
 import { useCollectionHistory } from './CollectionHistoryProvider';
 import { CollectionManagerSchemaComponentProvider } from './CollectionManagerSchemaComponentProvider';
@@ -36,7 +36,7 @@ export const RemoteCollectionManagerProvider = (props: any) => {
   const api = useAPIClient();
   const [contentLoading, setContentLoading] = useState(false);
   const { refreshCH } = useCollectionHistory();
-  const app = useApp();
+  const { render } = useAppSpin();
   const options = {
     resource: 'collections',
     action: 'list',
@@ -64,7 +64,7 @@ export const RemoteCollectionManagerProvider = (props: any) => {
   }>(coptions);
 
   if (service.loading) {
-    return app.renderComponent('AppSpin');
+    return render();
   }
   const refreshCM = async (opts) => {
     if (opts?.reload) {

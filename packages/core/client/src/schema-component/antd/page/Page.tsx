@@ -9,7 +9,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { FormDialog } from '..';
-import { useApp } from '../../../application';
+import { useAppSpin } from '../../../application/hooks/useAppSpin';
 import { useDocumentTitle } from '../../../document-title';
 import { FilterBlockProvider } from '../../../filter-provider/FilterProvider';
 import { useGlobalTheme } from '../../../global-theme';
@@ -195,10 +195,10 @@ function PageContent(
   props: any,
 ): React.ReactNode {
   const { token } = useToken();
-  const app = useApp();
+  const { render } = useAppSpin();
 
   if (loading) {
-    return app.renderComponent('AppSpin');
+    return render();
   }
 
   return !disablePageHeader && enablePageTabs ? (

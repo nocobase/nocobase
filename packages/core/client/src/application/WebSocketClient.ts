@@ -18,8 +18,10 @@ export const getWebSocketURL = () => {
 export type WebSocketClientOptions = {
   reconnectInterval?: number;
   reconnectAttempts?: number;
+  pingInterval?: number;
   url?: string;
   protocols?: string | string[];
+  onServerDown?: any;
 };
 
 export class WebSocketClient {
@@ -29,6 +31,7 @@ export class WebSocketClient {
   protected options: WebSocketClientOptions;
   protected enabled: boolean;
   connected = false;
+  serverDown = false;
   lastMessage = {};
 
   constructor(options: WebSocketClientOptions | boolean) {
@@ -39,6 +42,7 @@ export class WebSocketClient {
     this.options = options === true ? {} : options;
     this.enabled = true;
     define(this, {
+      serverDown: observable.ref,
       connected: observable.ref,
       lastMessage: observable.ref,
     });
@@ -50,6 +54,10 @@ export class WebSocketClient {
 
   get reconnectInterval() {
     return this.options?.reconnectInterval || 1000;
+  }
+
+  get pingInterval() {
+    return this.options?.pingInterval || 30000;
   }
 
   get readyState() {
@@ -74,8 +82,10 @@ export class WebSocketClient {
     }
     this._reconnectTimes++;
     const ws = new WebSocket(this.options.url || getWebSocketURL(), this.options.protocols);
+    let pingIntervalTimer: any;
     ws.onopen = () => {
       console.log('[nocobase-ws]: connected.');
+      this.serverDown = false;
       if (this._ws) {
         this.removeAllListeners();
       }
@@ -84,16 +94,22 @@ export class WebSocketClient {
       for (const { type, listener, options } of this.events) {
         this._ws.addEventListener(type, listener, options);
       }
+      pingIntervalTimer = setInterval(() => this.send('ws.ping'), this.pingInterval);
       this.connected = true;
     };
     ws.onerror = async () => {
       // setTimeout(() => this.connect(), this.reconnectInterval);
       console.log('onerror', this.readyState, this._reconnectTimes);
     };
-    ws.onclose = async () => {
+    ws.onclose = async (event) => {
       setTimeout(() => this.connect(), this.reconnectInterval);
-      console.log('onclose', this.readyState, this._reconnectTimes);
+      console.log('onclose', this.readyState, this._reconnectTimes, this.serverDown);
       this.connected = false;
+      clearInterval(pingIntervalTimer);
+      if (this._reconnectTimes >= Math.min(this.reconnectAttempts, 5)) {
+        this.serverDown = true;
+        this.emit('serverDown', event);
+      }
     };
   }
 
@@ -123,6 +139,14 @@ export class WebSocketClient {
       return;
     }
     this._ws.addEventListener(type, listener, options);
+  }
+
+  emit(type: string, args: any) {
+    for (const event of this.events) {
+      if (event.type === type) {
+        event.listener(args);
+      }
+    }
   }
 
   off(type: string, listener: any, options?: boolean | EventListenerOptions) {

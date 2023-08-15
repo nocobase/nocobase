@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAPIClient, useRequest } from '../api-client';
-import { useApp } from '../application';
+import { useAppSpin } from '../application/hooks/useAppSpin';
 
 export interface CollectionHistoryContextValue {
   historyCollections: any[];
@@ -41,7 +41,7 @@ export const CollectionHistoryProvider: React.FC = (props) => {
 
   const isAdminPage = location.pathname.startsWith('/admin');
   const token = api.auth.getToken() || '';
-  const app = useApp();
+  const { render } = useAppSpin();
 
   useEffect(() => {
     if (isAdminPage && token) {
@@ -57,7 +57,7 @@ export const CollectionHistoryProvider: React.FC = (props) => {
   };
 
   if (service.loading) {
-    return app.renderComponent('AppSpin');
+    return render();
   }
 
   return (
