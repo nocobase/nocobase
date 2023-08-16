@@ -278,7 +278,8 @@ export const AddFieldAction = (props) => {
   }, [getInterface, items, record]);
 
   return (
-    record.template !== 'view' && (
+    record.template !== 'view' &&
+    record.template !== 'sql' && (
       <RecordProvider record={record}>
         <ActionContextProvider value={{ visible, setVisible }}>
           <Dropdown getPopupContainer={getContainer} trigger={trigger} align={align} menu={menu}>

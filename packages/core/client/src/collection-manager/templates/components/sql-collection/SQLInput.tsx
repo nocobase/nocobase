@@ -1,10 +1,7 @@
 import { useForm } from '@formily/react';
 import { useAsyncData } from '../../../../async-data-provider';
-import { Input } from '../../../../schema-component/antd/input';
 import React from 'react';
 import { SchemaComponent } from '../../../../schema-component';
-import { useTranslation } from 'react-i18next';
-import { Alert } from 'antd';
 
 export const SQLInput = () => {
   const { run } = useAsyncData();
@@ -26,7 +23,7 @@ export const SQLInput = () => {
                 if (!form.values.sql) {
                   return;
                 }
-                run();
+                run(form.values.sql);
               },
             },
           },

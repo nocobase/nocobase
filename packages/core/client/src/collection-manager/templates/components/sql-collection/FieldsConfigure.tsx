@@ -7,6 +7,26 @@ import { ArrayField } from '@formily/core';
 import { getOptions } from '../../../Configuration/interfaces';
 import { useCompile } from '../../../../schema-component';
 import { useCollectionManager } from '../../../hooks';
+import dayjs from 'dayjs';
+
+const inferInterface = (field: string, value: any) => {
+  if (field.toLowerCase().includes('id')) {
+    return 'id';
+  }
+  if (typeof value === 'number') {
+    if (Number.isInteger(value)) {
+      return 'integer';
+    }
+    return 'number';
+  }
+  if (typeof value === 'boolean') {
+    return 'boolean';
+  }
+  if (dayjs(value).isValid()) {
+    return 'datetime';
+  }
+  return 'input';
+};
 
 export const FieldsConfigure = () => {
   const { t } = useTranslation();
@@ -32,15 +52,35 @@ export const FieldsConfigure = () => {
   );
 
   useEffect(() => {
+    const fieldsMp = new Map();
     if (!loading && data) {
-      const fields = Object.keys(data?.[0] || {}).map((col) => {
-        return {
+      Object.entries(data?.[0] || {}).forEach(([col, val]) => {
+        const fieldInterface = inferInterface(col, val);
+        const defaultConfig = getInterface(fieldInterface)?.default;
+        fieldsMp.set(col, {
           name: col,
-        };
+          interface: fieldInterface,
+          type: defaultConfig?.type,
+          uiSchema: {
+            title: col,
+            ...defaultConfig?.uiSchema,
+          },
+        });
       });
-      setDataSource(fields);
-      field.setValue(fields);
     }
+    if (field.value?.length) {
+      field.value.forEach((item) => {
+        if (fieldsMp.has(item.name)) {
+          fieldsMp.set(item.name, item);
+        }
+      });
+    }
+    const fields = Array.from(fieldsMp.values());
+    if (!fields.length) {
+      return;
+    }
+    setDataSource(fields);
+    field.setValue(fields);
   }, [loading, data, field]);
 
   if (loading) {
@@ -79,7 +119,7 @@ export const FieldsConfigure = () => {
         const field = dataSource[index];
         return (
           <Input
-            value={field.uiSchema?.title !== undefined ? field.uiSchema.title : field?.name}
+            defaultValue={field.uiSchema?.title !== undefined ? field.uiSchema.title : field?.name}
             onChange={(e) =>
               handleFieldChange({ ...field, uiSchema: { ...field?.uiSchema, title: e.target.value } }, index)
             }
@@ -96,6 +136,7 @@ export const FieldsConfigure = () => {
         const field = dataSource[index];
         return (
           <Select
+            defaultValue={field.interface || 'input'}
             style={{ width: '100%' }}
             popupMatchSelectWidth={false}
             onChange={(value) => {

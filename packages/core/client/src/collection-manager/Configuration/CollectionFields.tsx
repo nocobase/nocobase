@@ -25,6 +25,7 @@ import { OverridingCollectionField } from './OverridingCollectionField';
 import { collection } from './schemas/collectionFields';
 import { SyncFieldsAction } from './SyncFieldsAction';
 import { ViewCollectionField } from './ViewInheritedField';
+import { SyncSQLFieldsAction } from './SyncSQLFieldsAction';
 
 const indentStyle = css`
   .ant-table {
@@ -409,6 +410,7 @@ export const CollectionFields = () => {
           >
             <Action {...deleteProps} />
             <SyncFieldsAction {...syncProps} />
+            <SyncSQLFieldsAction />
             <AddCollectionField {...addProps} />
           </Space>
           <Table

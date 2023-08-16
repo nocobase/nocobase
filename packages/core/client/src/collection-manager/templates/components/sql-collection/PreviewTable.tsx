@@ -1,17 +1,50 @@
 import { useAsyncData } from '../../../../async-data-provider';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Table } from 'antd';
+import { Schema, observer, useForm } from '@formily/react';
+import { useTranslation } from 'react-i18next';
 
-export const PreviewTable = () => {
+export const PreviewTable = observer(() => {
   const { data, loading } = useAsyncData();
+  const { t } = useTranslation();
+  const form = useForm();
+
+  const fields = form.values.fields || [];
+  const titleMp = fields.reduce(
+    (
+      mp: {
+        [name: string]: string;
+      },
+      field: any,
+    ) => {
+      mp[field.name] = field?.uiSchema?.title;
+      return mp;
+    },
+    {},
+  );
+
   const columns = Object.keys(data?.[0] || {}).map((col) => {
+    const title = titleMp[col];
     return {
-      title: col,
+      title: title || col,
       dataIndex: col,
       key: col,
     };
   });
-  const dataSource = data?.map((item: any, index: number) => ({ ...item, key: index }));
+
+  const dataSource = data?.map((record: any, index: number) => {
+    const compiledRecord = Object.entries(record).reduce((mp: { [key: string]: any }, [key, val]: [string, any]) => {
+      if (typeof val !== 'string') {
+        mp[key] = val;
+        return mp;
+      }
+      const compiled = Schema.compile(val, { t });
+      mp[key] = t(compiled);
+      return mp;
+    }, {});
+    return { ...compiledRecord, key: index };
+  });
+
   return (
     <div
       style={{
@@ -28,4 +61,4 @@ export const PreviewTable = () => {
       />
     </div>
   );
-};
+});

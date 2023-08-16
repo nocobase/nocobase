@@ -1,18 +1,25 @@
 import { useAPIClient, useRequest } from '../../../../api-client';
 import { AsyncDataProvider } from '../../../../async-data-provider';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from '@formily/react';
+import { useRecord } from '../../../../record-provider';
 
-export const SQLRequestProvider = (props) => {
+export const SQLRequestProvider: React.FC<{
+  manual?: boolean;
+}> = (props) => {
   const api = useAPIClient();
   const form = useForm();
+  const record = useRecord();
+  let { manual } = props;
+  manual = manual === undefined ? true : manual;
+
   const result = useRequest(
-    () =>
+    (sql: string) =>
       api
         .resource('sql')
         .execute({
           values: {
-            sql: form.values.sql,
+            sql,
           },
         })
         .then((res) => res?.data?.data || []),
@@ -20,6 +27,14 @@ export const SQLRequestProvider = (props) => {
       manual: true,
     },
   );
+
+  const { run } = result;
+  const sql = form.values.sql || record.sql;
+  useEffect(() => {
+    if (sql) {
+      run(sql);
+    }
+  }, [manual, run, sql]);
 
   return <AsyncDataProvider value={result}>{props.children}</AsyncDataProvider>;
 };

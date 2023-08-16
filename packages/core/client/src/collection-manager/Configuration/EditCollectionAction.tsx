@@ -100,11 +100,14 @@ export const useUpdateCollectionActionAndRefreshCM = (options) => {
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   const { resource, targetKey } = useResourceContext();
-  const { [targetKey]: filterByTk } = useRecord();
+  const { [targetKey]: filterByTk, template } = useRecord();
   return {
     async run() {
       await form.submit();
-      await resource.update({ filterByTk, values: omit(form.values, ['fields']) });
+      await resource.update({
+        filterByTk,
+        values: template === 'sql' ? form.values : omit(form.values, ['fields']),
+      });
       ctx.setVisible(false);
       await form.reset();
       refresh();
