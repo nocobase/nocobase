@@ -167,7 +167,7 @@ const InheritFields = (props) => {
   const { [targetKey]: filterByTk, titleField, name } = useRecord();
   const [loadingRecord, setLoadingRecord] = React.useState(null);
   const { t } = useTranslation();
-  const { refreshCM } = useCollectionManager();
+  const { refreshCM, isTitleField } = useCollectionManager();
 
   const columns: TableColumnProps<any>[] = [
     {
