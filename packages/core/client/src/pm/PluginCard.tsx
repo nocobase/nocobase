@@ -65,9 +65,9 @@ function PluginInfo(props: IPluginInfo) {
       )}
       <Card
         bordered={false}
-        style={{ width: 380 }}
         headStyle={{ border: 'none' }}
         bodyStyle={{ paddingTop: 5 }}
+        style={{ marginBottom: theme.marginLG }}
         title={<div onClick={onClick}>{displayName || name || packageName}</div>}
         hoverable
         actions={[

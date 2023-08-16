@@ -36,6 +36,7 @@ export interface AllowedActions {
 
 const LocalPlugins = () => {
   const { t } = useTranslation();
+  const { theme } = useStyles();
   const { data, loading, refresh } = useRequest<TData>({
     url: 'applicationPlugins:list',
     params: {
@@ -133,13 +134,13 @@ const LocalPlugins = () => {
             </Space>
           </Col>
         </Row>
-        <Space size={'middle'} wrap>
+        <Row gutter={theme.marginLG}>
           {pluginList.map((item) => (
-            <div key={item.id}>
+            <Col key={item.id} xs={24} sm={24} md={12} lg={8} xl={6} xxl={4}>
               <PluginCard data={item} />
-            </div>
+            </Col>
           ))}
-        </Space>
+        </Row>
       </Space>
     </>
   );
