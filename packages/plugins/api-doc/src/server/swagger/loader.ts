@@ -3,8 +3,8 @@ import { requireModule } from '@nocobase/utils';
 import { merge } from './merge';
 
 export const loadSwagger = (packageName: string) => {
-  const prefixes = ['src', 'lib'];
-  const targets = ['swagger.json', 'swagger/index.json', 'swagger.ts', 'swagger'];
+  const prefixes = ['src', 'lib', 'dist'];
+  const targets = ['swagger.json', 'swagger/index.json', 'swagger'];
   for (const prefix of prefixes) {
     for (const dict of targets) {
       try {
