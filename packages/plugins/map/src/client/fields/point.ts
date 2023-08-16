@@ -1,4 +1,4 @@
-import { IField } from '@nocobase/client';
+import { IField, operators } from '@nocobase/client';
 import { generateNTemplate } from '../locale';
 import { commonSchema } from './schema';
 
@@ -18,6 +18,9 @@ export const point: IField = {
       'x-component-designer': 'Map.Designer',
       'x-component-props': {},
     },
+  },
+  filterable: {
+    operators: operators.object,
   },
   ...commonSchema,
 };

@@ -32,6 +32,7 @@ import React, {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
+import { Router } from 'react-router-dom';
 import {
   APIClientProvider,
   ActionContextProvider,
@@ -929,30 +930,32 @@ SchemaSettings.ModalItem = function ModalItem(props: ModalItemProps) {
           { title: schema.title || title, width },
           () => {
             return (
-              <CollectionManagerContext.Provider value={cm}>
-                <CollectionProvider collection={collection}>
-                  <SchemaComponentOptions scope={options.scope} components={options.components}>
-                    <FormLayout
-                      layout={'vertical'}
-                      className={css`
-                        // screen > 576px
-                        @media (min-width: 576px) {
-                          min-width: 520px;
-                        }
+              <Router location={location} navigator={null}>
+                <CollectionManagerContext.Provider value={cm}>
+                  <CollectionProvider collection={collection}>
+                    <SchemaComponentOptions scope={options.scope} components={options.components}>
+                      <FormLayout
+                        layout={'vertical'}
+                        className={css`
+                          // screen > 576px
+                          @media (min-width: 576px) {
+                            min-width: 520px;
+                          }
 
-                        // screen <= 576px
-                        @media (max-width: 576px) {
-                          min-width: 320px;
-                        }
-                      `}
-                    >
-                      <APIClientProvider apiClient={apiClient}>
-                        <SchemaComponent components={components} scope={scope} schema={schema} />
-                      </APIClientProvider>
-                    </FormLayout>
-                  </SchemaComponentOptions>
-                </CollectionProvider>
-              </CollectionManagerContext.Provider>
+                          // screen <= 576px
+                          @media (max-width: 576px) {
+                            min-width: 320px;
+                          }
+                        `}
+                      >
+                        <APIClientProvider apiClient={apiClient}>
+                          <SchemaComponent components={components} scope={scope} schema={schema} />
+                        </APIClientProvider>
+                      </FormLayout>
+                    </SchemaComponentOptions>
+                  </CollectionProvider>
+                </CollectionManagerContext.Provider>
+              </Router>
             );
           },
           theme,
