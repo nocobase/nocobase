@@ -1,6 +1,8 @@
 import { Command } from 'commander';
+import compression from 'compression';
 import { EventEmitter } from 'events';
 import http, { IncomingMessage, ServerResponse } from 'http';
+import { promisify } from 'node:util';
 import { resolve } from 'path';
 import handler from 'serve-handler';
 import { parse } from 'url';
@@ -10,6 +12,8 @@ import { applyErrorWithArgs, getErrorWithCode } from './errors';
 import { IPCSocketClient } from './ipc-socket-client';
 import { IPCSocketServer } from './ipc-socket-server';
 import { WSServer } from './ws-server';
+
+const compress = promisify(compression());
 
 export interface IncomingRequest {
   url: string;
@@ -100,12 +104,14 @@ export class Gateway extends EventEmitter {
     const { pathname } = parse(req.url);
 
     if (pathname.startsWith('/storage/uploads/')) {
+      await compress(req, res);
       return handler(req, res, {
         public: resolve(process.cwd()),
       });
     }
 
     if (pathname.startsWith('/api/plugins/client/')) {
+      await compress(req, res);
       return handler(req, res, {
         public: resolve(process.cwd(), 'node_modules'),
         rewrites: [
@@ -122,6 +128,7 @@ export class Gateway extends EventEmitter {
     }
 
     if (!pathname.startsWith('/api')) {
+      await compress(req, res);
       return handler(req, res, {
         public: `${process.env.APP_PACKAGE_ROOT}/dist/client`,
         rewrites: [{ source: '/**', destination: '/index.html' }],
