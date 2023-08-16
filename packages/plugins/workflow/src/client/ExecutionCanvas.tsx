@@ -95,10 +95,7 @@ function JobModal() {
                   'x-decorator': 'FormItem',
                   'x-component': 'Input.JSON',
                   'x-component-props': {
-                    className: css`
-                      padding: 1em;
-                      background-color: #eee;
-                    `,
+                    className: styles.nodeJobResultClass,
                   },
                   'x-read-pretty': true,
                 },
