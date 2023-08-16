@@ -1,8 +1,6 @@
 import { Plugin, PluginManager, getPackageClientStaticUrl } from '@nocobase/server';
 import fs from 'fs';
-import send from 'koa-send';
-import serve from 'koa-static';
-import { isAbsolute, resolve } from 'path';
+import { resolve } from 'path';
 import { getAntdLocale } from './antd';
 import { getCronLocale } from './cron';
 import { getCronstrueLocale } from './cronstrue';
@@ -233,25 +231,6 @@ export class ClientPlugin extends Plugin {
         },
       },
     });
-    let root = this.options.dist || `${process.env.APP_PACKAGE_ROOT}/dist/client`;
-    if (!isAbsolute(root)) {
-      root = resolve(process.cwd(), root);
-    }
-    if (process.env.APP_ENV !== 'production' && root) {
-      this.app.use(
-        async (ctx, next) => {
-          if (ctx.path.startsWith(this.app.resourcer.options.prefix)) {
-            return next();
-          }
-          await serve(root)(ctx, next);
-          // console.log('koa-send', root, ctx.status);
-          if (ctx.status == 404) {
-            return send(ctx, 'index.html', { root });
-          }
-        },
-        { tag: 'clientStatic', before: 'cors' },
-      );
-    }
   }
 }
 
