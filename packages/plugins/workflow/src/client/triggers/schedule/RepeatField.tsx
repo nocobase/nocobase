@@ -25,9 +25,10 @@ function getNumberOption(v) {
 }
 
 function getRepeatTypeValue(v) {
+  let option;
   switch (typeof v) {
     case 'number':
-      const option = getNumberOption(v);
+      option = getNumberOption(v);
       return option ? option.value : 'none';
     case 'string':
       return 'cron';
@@ -48,6 +49,7 @@ function CommonRepeatField({ value, onChange }) {
       min={1}
       addonBefore={t('Every')}
       addonAfter={t(option.unitText)}
+      className="auto-width"
     />
   );
 }
@@ -78,6 +80,7 @@ export function RepeatField({ value = null, onChange }) {
         gap: 0.5em;
 
         .react-js-cron {
+          width: 100%;
           padding: 0.5em 0.5em 0 0.5em;
           border: 1px dashed #ccc;
 
@@ -92,10 +95,16 @@ export function RepeatField({ value = null, onChange }) {
               margin: 0 0.5em 0 0;
             }
           }
+
+          .react-js-cron-week-days {
+            > span {
+              min-width: 2em;
+            }
+          }
         }
       `}
     >
-      <Select value={typeValue} onChange={onTypeChange}>
+      <Select value={typeValue} onChange={onTypeChange} className="auto-width">
         {RepeatOptions.map((item) => (
           <Select.Option key={item.value} value={item.value}>
             {t(item.text)}

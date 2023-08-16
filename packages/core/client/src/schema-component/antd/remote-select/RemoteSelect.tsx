@@ -65,6 +65,7 @@ const InternalRemoteSelect = connect(
       (options) => {
         try {
           return options
+            .filter((v) => ['number', 'string'].includes(typeof v[fieldNames.value]))
             .map((option) => {
               let label = compile(option[fieldNames.label]);
 
@@ -91,7 +92,6 @@ const InternalRemoteSelect = connect(
                   }
                 }
               }
-
               if (targetField?.type === 'date') {
                 label = dayjs(label).format('YYYY-MM-DD');
               }
@@ -186,7 +186,6 @@ const InternalRemoteSelect = connect(
         (v != null && (Array.isArray(v) ? v : [{ ...v, [fieldNames.value]: v[fieldNames.value] || v }])) || [];
       return uniqBy(data?.data?.concat(valueOptions) || [], fieldNames.value);
     }, [value, defaultValue, data?.data, fieldNames.value]);
-
     const onDropdownVisibleChange = (visible) => {
       setOpen(visible);
       searchData.current = null;
@@ -195,7 +194,6 @@ const InternalRemoteSelect = connect(
       }
       firstRun.current = true;
     };
-
     return (
       <Select
         open={open}
@@ -253,7 +251,7 @@ const InternalRemoteSelect = connect(
   mapReadPretty(ReadPretty),
 );
 
-export const RemoteSelect = (InternalRemoteSelect as unknown) as typeof InternalRemoteSelect & {
+export const RemoteSelect = InternalRemoteSelect as unknown as typeof InternalRemoteSelect & {
   ReadPretty: typeof ReadPretty;
 };
 
