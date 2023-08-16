@@ -10,7 +10,7 @@ export const useRecordVariable = (props: Props) => {
   const { t } = useTranslation();
 
   const currentRecordVariable = useBaseVariable({
-    schema: props.schema,
+    uiSchema: props.schema,
     name: '$nRecord',
     title: t('Current record'),
     collectionName: props.collectionName,

@@ -18,7 +18,7 @@ export const useIterationVariable = ({
 }) => {
   const { t } = useTranslation();
   const result = useBaseVariable({
-    schema,
+    uiSchema: schema,
     maxDepth: 4,
     name: '$iteration',
     title: t('Current object'),

@@ -5,6 +5,7 @@ import React, { useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CollectionFieldOptions } from '../../collection-manager';
 import { Variable, useVariableScope } from '../../schema-component';
+import { useValues } from '../../schema-component/antd/filter/useValues';
 import { VariableOption, VariablesContextType } from '../../variables/types';
 import { isVariable } from '../../variables/utils/isVariable';
 import { useContextAssociationFields } from './hooks/useContextAssociationFields';
@@ -80,9 +81,10 @@ export const VariableInput = (props: Props) => {
   } = props;
   const { t } = useTranslation();
   const scope = useVariableScope();
+  const { operator, schema: uiSchema = collectionField?.uiSchema } = useValues();
 
   const variableOptions = compatOldVariables(
-    useVariableOptions({ collectionField, blockCollectionName, form, record }),
+    useVariableOptions({ collectionField, blockCollectionName, form, record, operator, uiSchema }),
     {
       value,
       collectionName: blockCollectionName,

@@ -3,7 +3,7 @@ import { useCompile, useGetFilterOptions } from '../../../schema-component';
 import { FieldOption, Option } from '../type';
 
 interface GetOptionsParams {
-  schema: any;
+  uiSchema: any;
   depth: number;
   maxDepth?: number;
   loadChildren?: (option: Option) => Promise<void>;
@@ -11,8 +11,8 @@ interface GetOptionsParams {
 }
 
 interface BaseProps {
-  /** collectionField 的  */
-  schema: any;
+  /** 被选中字段的 uiSchema  */
+  uiSchema: any;
   maxDepth?: number;
   name: string;
   title: string;
@@ -30,7 +30,7 @@ interface BaseProps {
 
 const getChildren = (
   options: FieldOption[],
-  { schema, depth, maxDepth, loadChildren, compile }: GetOptionsParams,
+  { uiSchema, depth, maxDepth, loadChildren, compile }: GetOptionsParams,
 ): Option[] => {
   const result = options
     .map((option): Option => {
@@ -40,7 +40,7 @@ const getChildren = (
           value: option.name,
           label: compile(option.title),
           // TODO: 现在是通过组件的名称来过滤能够被选择的选项，这样的坏处是不够精确，后续可以优化
-          disabled: schema?.['x-component'] !== option.schema?.['x-component'],
+          disabled: !!uiSchema && uiSchema?.['x-component'] !== option.schema?.['x-component'],
           isLeaf: true,
           depth,
         };
@@ -66,7 +66,7 @@ const getChildren = (
 };
 
 export const useBaseVariable = ({
-  schema,
+  uiSchema,
   maxDepth = 3,
   name,
   title,
@@ -88,7 +88,7 @@ export const useBaseVariable = ({
       setTimeout(() => {
         const children =
           getChildren(returnFields(getFilterOptions(target), option), {
-            schema,
+            uiSchema,
             depth: option.depth + 1,
             maxDepth,
             loadChildren,
@@ -121,7 +121,7 @@ export const useBaseVariable = ({
       loadChildren,
       children: [],
     } as Option;
-  }, [schema?.['x-component']]);
+  }, [uiSchema?.['x-component']]);
 
   return result;
 };

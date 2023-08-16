@@ -18,7 +18,7 @@ export const useFormVariable = ({
 }) => {
   const { t } = useTranslation();
   const result = useBaseVariable({
-    schema,
+    uiSchema: schema,
     maxDepth: 4,
     name: '$nForm',
     title: t('Current form'),

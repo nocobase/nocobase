@@ -6,10 +6,10 @@ import { useBaseVariable } from './useBaseVariable';
  * @param param0
  * @returns
  */
-export const useUserVariable = ({ schema, maxDepth = 3 }: { schema: any; maxDepth?: number }) => {
+export const useUserVariable = ({ uiSchema, maxDepth = 3 }: { uiSchema: any; maxDepth?: number }) => {
   const { t } = useTranslation();
   const result = useBaseVariable({
-    schema,
+    uiSchema,
     maxDepth,
     name: '$user',
     title: t('Current user'),

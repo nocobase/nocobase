@@ -1,8 +1,8 @@
 import { Form } from '@formily/core';
+import { ISchema } from '@formily/react';
 import _ from 'lodash';
 import { useMemo } from 'react';
 import { CollectionFieldOptions } from '../../../collection-manager';
-import { useValues } from '../../../schema-component/antd/filter/useValues';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { Option } from '../type';
 import { useDateVariable } from './useDateVariable';
@@ -22,28 +22,40 @@ interface Props {
    * `useRecord` 返回的值
    */
   record: Record<string, any>;
+  /**
+   * `Filter` 组件中选中的字段的 `uiSchema`，比如设置 `数据范围` 的时候在左侧选择的字段
+   */
+  uiSchema?: ISchema;
+  /**
+   * `Filter` 组件中的操作符，比如设置 `数据范围` 的时候在中间选择的操作符
+   */
+  operator?: { value: string };
 }
 
-export const useVariableOptions = ({ collectionField, blockCollectionName: rootCollection, form, record }: Props) => {
+export const useVariableOptions = ({
+  collectionField,
+  blockCollectionName: rootCollection,
+  form,
+  record,
+  uiSchema,
+  operator,
+}: Props) => {
   const fieldCollectionName = collectionField?.collectionName;
-  const { operator, schema = collectionField?.uiSchema } = useValues();
-  const userVariable = useUserVariable({ maxDepth: 3, schema });
-  const dateVariable = useDateVariable({ operator, schema });
-  const formVariable = useFormVariable({ schema, collectionName: rootCollection, form });
+  const userVariable = useUserVariable({ maxDepth: 3, uiSchema: uiSchema });
+  const dateVariable = useDateVariable({ operator, schema: uiSchema });
+  const formVariable = useFormVariable({ schema: uiSchema, collectionName: rootCollection, form });
   const iterationVariable = useIterationVariable({
     currentCollection: fieldCollectionName,
-    schema,
+    schema: uiSchema,
     form,
   });
-  const currentRecordVariable = useRecordVariable({ schema, collectionName: rootCollection });
+  const currentRecordVariable = useRecordVariable({ schema: uiSchema, collectionName: rootCollection });
 
   // 保证下面的 `_.isEmpty(record)` 结果符合预期，如果存在 `__parent` 字段，需要删除
   record = { ...record };
   delete record.__parent;
 
   return useMemo(() => {
-    if (!schema) return [];
-
     return [
       userVariable,
       dateVariable,
@@ -52,7 +64,6 @@ export const useVariableOptions = ({ collectionField, blockCollectionName: rootC
       !_.isEmpty(record) && currentRecordVariable,
     ].filter(Boolean);
   }, [
-    schema,
     userVariable,
     dateVariable,
     form,
