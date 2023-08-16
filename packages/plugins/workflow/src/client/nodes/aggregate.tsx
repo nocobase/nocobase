@@ -1,6 +1,6 @@
 import { useForm } from '@formily/react';
 import { Cascader } from 'antd';
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 import {
   SchemaComponentContext,
@@ -21,15 +21,13 @@ function matchToManyField(field, appends): boolean {
   const fieldPrefix = `${field.name}.`;
   return (
     ['hasMany', 'belongsToMany'].includes(field.type) &&
-    (appends.includes(field.name) || appends.some((item) => item.startsWith(fieldPrefix)))
+    (appends ? appends.includes(field.name) || appends.some((item) => item.startsWith(fieldPrefix)) : true)
   );
 }
 
-function AssociatedConfig({ value, onChange, ...props }): JSX.Element {
-  const { setValuesIn } = useForm();
+function useAssociatedFields() {
   const compile = useCompile();
-  const { getCollection } = useCollectionManager();
-  const options = [nodesOptions, triggerOptions].map((item) => {
+  return [nodesOptions, triggerOptions].map((item) => {
     const children = item.useOptions({ types: [matchToManyField] })?.filter(Boolean);
     return {
       label: compile(item.label),
@@ -39,6 +37,13 @@ function AssociatedConfig({ value, onChange, ...props }): JSX.Element {
       disabled: children && !children.length,
     };
   });
+}
+
+function AssociatedConfig({ value, onChange, ...props }): JSX.Element {
+  const { setValuesIn } = useForm();
+  const { getCollection } = useCollectionManager();
+  const baseOptions = useAssociatedFields();
+  const [options, setOptions] = useState(baseOptions);
 
   const { associatedKey = '', name: fieldName } = value ?? {};
   let p = [];
@@ -46,6 +51,43 @@ function AssociatedConfig({ value, onChange, ...props }): JSX.Element {
   if (matched) {
     p = [...matched[1].trim().split('.').slice(0, -1), fieldName];
   }
+
+  const loadData = async (selectedOptions) => {
+    const option = selectedOptions[selectedOptions.length - 1];
+    if (!option.children?.length && !option.isLeaf && option.loadChildren) {
+      await option.loadChildren(option);
+      setOptions((prev) => [...prev]);
+    }
+  };
+
+  useEffect(() => {
+    const run = async () => {
+      if (!p || options.length <= 1) {
+        return;
+      }
+      let prevOption = null;
+
+      for (let i = 0; i < p.length; i++) {
+        const key = p[i];
+        try {
+          if (i === 0) {
+            prevOption = options.find((item) => item.value === key);
+          } else {
+            if (prevOption.loadChildren && !prevOption.children?.length) {
+              await prevOption.loadChildren(prevOption);
+            }
+            prevOption = prevOption.children.find((item) => item.value === key);
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }
+      setOptions([...options]);
+    };
+
+    run();
+    // NOTE: watch `options.length` and it only happens once
+  }, [value, options.length]);
 
   const onSelectChange = useCallback(
     (path, option) => {
@@ -78,7 +120,7 @@ function AssociatedConfig({ value, onChange, ...props }): JSX.Element {
     [onChange],
   );
 
-  return <Cascader {...props} value={p} options={options} onChange={onSelectChange} />;
+  return <Cascader {...props} value={p} options={options} onChange={onSelectChange} loadData={loadData as any} />;
 }
 
 // based on collection:

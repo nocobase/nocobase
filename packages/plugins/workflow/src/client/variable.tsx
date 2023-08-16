@@ -126,7 +126,7 @@ export const BaseTypeSets = {
 // { type: 'reference', options: { collection: 'attachments', multiple: false } }
 // { type: 'reference', options: { collection: 'myExpressions', entity: false } }
 
-function matchFieldType(field, type, appends): boolean {
+function matchFieldType(field, type, appends?: string[]): boolean {
   const inputType = typeof type;
   if (inputType === 'string') {
     return BaseTypeSets[type]?.has(field.interface);
@@ -264,10 +264,11 @@ function getNormalizedFields(collectionName, { compile, getCollectionFields }) {
 }
 
 async function loadChildren(option) {
+  const appends = getNextAppends(option.field, option.appends);
   const result = getCollectionFieldOptions({
     collection: option.field.target,
     types: option.types,
-    appends: getNextAppends(option.field, option.appends),
+    appends,
     ...this,
   });
   option.loadChildren = null;
@@ -275,7 +276,7 @@ async function loadChildren(option) {
     option.children = result;
   } else {
     option.isLeaf = true;
-    const matchingType = option.types?.some((type) => matchFieldType(option.field, type, 0));
+    const matchingType = option.types ? option.types.some((type) => matchFieldType(option.field, type, appends)) : true;
     if (!matchingType) {
       option.disabled = true;
     }
