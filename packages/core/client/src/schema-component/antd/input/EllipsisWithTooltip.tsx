@@ -53,7 +53,8 @@ export const EllipsisWithTooltip = forwardRef((props: Partial<IEllipsisWithToolt
         <div
           style={{
             width: 300,
-            overflowX: 'auto',
+            overflow: 'auto',
+            maxHeight: 400,
           }}
         >
           {popoverContent || props.children}

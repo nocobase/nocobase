@@ -1,5 +1,7 @@
 export default {
   "Display <1><0>10</0><1>20</1><2>50</2><3>100</3></1> items per page": "每页显示 <1><0>10</0><1>20</1><2>50</2><3>100</3></1> 条",
+  "Page number": "页码",
+  "Page size": "每页条数",
   "Meet <1><0>All</0><1>Any</1></1> conditions in the group": "满足组内 <1><0>全部</0><1>任意</1></1> 条件",
   "Open in<1><0>Modal</0><1>Drawer</1><2>Window</2></1>": "在 <1><0>对话框</0><1>抽屉</1><2>窗口</2></1> 内打开",
   "{{count}} filter items": "{{count}} 个筛选项",
@@ -732,6 +734,8 @@ export default {
   'Constant': '常量',
   'Select a variable': '选择变量',
   "Insert": "插入",
+  "Insert if not exists": "不存在时插入",
+  "Insert if not exists, or update": "不存在时插入，否则更新",
   'System variables': '系统变量',
   'Date variables': '日期变量',
   'Double click to choose entire object': '双击选择整个对象',
@@ -798,9 +802,11 @@ export default {
   "Date display format":"日期显示格式",
   "Assign  data scope for the template":"为模板指定数据范围",
   "Table selected records":"表格中选中的记录",
+
   "Tag":"标签",
   "Tag color field":"标签颜色字段",
   "Sync successfully":"同步成功",
   "Sync from form fields":"同步表单字段",
-  "Select all":"全选"
+  "Select all":"全选",
+  "Determine whether a record exists by the following fields": "通过以下字段判断记录是否存在"
 }

@@ -74,7 +74,53 @@ const collection = {
         'x-decorator': 'FormItem',
       } as ISchema,
     },
+    {
+      type: 'object',
+      name: 'options',
+    },
   ],
+};
+
+const workflowFieldset = {
+  title: {
+    'x-component': 'CollectionField',
+    'x-decorator': 'FormItem',
+  },
+  type: {
+    'x-component': 'CollectionField',
+    'x-decorator': 'FormItem',
+  },
+  enabled: {
+    'x-component': 'CollectionField',
+    'x-decorator': 'FormItem',
+  },
+  description: {
+    'x-component': 'CollectionField',
+    'x-decorator': 'FormItem',
+  },
+  options: {
+    type: 'object',
+    'x-component': 'fieldset',
+    properties: {
+      // NOTE: not to expose this option for now, because hard to track errors
+      // useTransaction: {
+      //   type: 'boolean',
+      //   title: `{{ t("Use transaction", { ns: "${NAMESPACE}" }) }}`,
+      //   description: `{{ t("Data operation nodes in workflow will run in a same transaction until any interruption. Any failure will cause data rollback, and will also rollback the history of the execution.", { ns: "${NAMESPACE}" }) }}`,
+      //   'x-decorator': 'FormItem',
+      //   'x-component': 'Checkbox',
+      // },
+      deleteExecutionOnStatus: {
+        type: 'array',
+        title: `{{ t("Auto delete history when execution is on end status", { ns: "${NAMESPACE}" }) }}`,
+        'x-decorator': 'FormItem',
+        'x-component': 'ExecutionStatusSelect',
+        'x-component-props': {
+          multiple: true,
+        },
+      },
+    },
+  },
 };
 
 export const workflowSchema: ISchema = {
@@ -132,18 +178,10 @@ export const workflowSchema: ISchema = {
                   },
                   title: '{{t("Add new")}}',
                   properties: {
-                    title: {
-                      'x-component': 'CollectionField',
-                      'x-decorator': 'FormItem',
-                    },
-                    type: {
-                      'x-component': 'CollectionField',
-                      'x-decorator': 'FormItem',
-                    },
-                    description: {
-                      'x-component': 'CollectionField',
-                      'x-decorator': 'FormItem',
-                    },
+                    title: workflowFieldset.title,
+                    type: workflowFieldset.type,
+                    description: workflowFieldset.description,
+                    options: workflowFieldset.options,
                     footer: {
                       type: 'void',
                       'x-component': 'Action.Drawer.Footer',
@@ -283,7 +321,7 @@ export const workflowSchema: ISchema = {
                     split: '|',
                   },
                   properties: {
-                    config: {
+                    view: {
                       type: 'void',
                       'x-component': 'WorkflowLink',
                     },
@@ -304,18 +342,10 @@ export const workflowSchema: ISchema = {
                           },
                           title: '{{ t("Edit") }}',
                           properties: {
-                            title: {
-                              'x-component': 'CollectionField',
-                              'x-decorator': 'FormItem',
-                            },
-                            enabled: {
-                              'x-component': 'CollectionField',
-                              'x-decorator': 'FormItem',
-                            },
-                            description: {
-                              'x-component': 'CollectionField',
-                              'x-decorator': 'FormItem',
-                            },
+                            title: workflowFieldset.title,
+                            enabled: workflowFieldset.enabled,
+                            description: workflowFieldset.description,
+                            options: workflowFieldset.options,
                             footer: {
                               type: 'void',
                               'x-component': 'Action.Drawer.Footer',
@@ -403,18 +433,18 @@ export const workflowSchema: ISchema = {
                         },
                       },
                     },
-                    // delete: {
-                    //   type: 'void',
-                    //   title: '{{ t("Delete") }}',
-                    //   'x-component': 'Action.Link',
-                    //   'x-component-props': {
-                    //     confirm: {
-                    //       title: "{{t('Delete record')}}",
-                    //       content: "{{t('Are you sure you want to delete it?')}}",
-                    //     },
-                    //     useAction: '{{ cm.useDestroyActionAndRefreshCM }}',
-                    //   },
-                    // },
+                    delete: {
+                      type: 'void',
+                      title: '{{ t("Delete") }}',
+                      'x-component': 'Action.Link',
+                      'x-component-props': {
+                        confirm: {
+                          title: "{{t('Delete record')}}",
+                          content: "{{t('Are you sure you want to delete it?')}}",
+                        },
+                        useAction: '{{ cm.useDestroyActionAndRefreshCM }}',
+                      },
+                    },
                   },
                 },
               },

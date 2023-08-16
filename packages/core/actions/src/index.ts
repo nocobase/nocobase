@@ -8,6 +8,8 @@ import { Application } from '@nocobase/server';
 
 export * as utils from './utils';
 
+export * from './constants';
+
 export type Next = () => Promise<any>;
 
 export interface Context extends Omit<Koa.Context, 'app'> {

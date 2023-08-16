@@ -1,5 +1,6 @@
 import { css, cx } from '@nocobase/client';
 import React from 'react';
+import { useLocation } from 'react-router-dom';
 import Device from './iOS6';
 
 export const MobileDevice: React.FC = (props) => {
@@ -13,6 +14,7 @@ export const MobileDevice: React.FC = (props) => {
           display: flex;
           justify-content: center;
           align-items: center;
+          margin-top: 50px;
         `,
       )}
     >

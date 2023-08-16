@@ -76,6 +76,11 @@ export default function () {
         constraints: false,
         onDelete: 'NO ACTION',
       },
+      {
+        type: 'jsonb',
+        name: 'options',
+        defaultValue: {},
+      },
     ],
     // NOTE: use unique index for avoiding deadlock in mysql when setCurrent
     indexes: [

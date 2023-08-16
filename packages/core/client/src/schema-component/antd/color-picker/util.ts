@@ -5,7 +5,9 @@ const toStringByPicker = (value, picker, timezone: 'gmt' | 'local') => {
   if (!dayjs.isDayjs(value)) return value;
   if (timezone === 'local') {
     const offset = new Date().getTimezoneOffset();
-    return dayjs(toStringByPicker(value, picker, 'gmt')).add(offset, 'minutes').toISOString();
+    return dayjs(toStringByPicker(value, picker, 'gmt'))
+      .add(offset, 'minutes')
+      .toISOString();
   }
 
   if (picker === 'year') {

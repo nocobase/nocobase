@@ -9,7 +9,8 @@ import { createFormBlockSchema, useRecordCollectionDataSourceItems } from '../ut
 export const RecordFormBlockInitializer = (props) => {
   const { onCreateBlockSchema, componentType, createBlockSchema, insert, targetCollection, ...others } = props;
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
-  const collection = targetCollection || useCollection();
+  const currentCollection = useCollection();
+  const collection = targetCollection || currentCollection;
   const association = useBlockAssociationContext();
   return (
     <SchemaInitializer.Item
@@ -48,7 +49,7 @@ export const RecordFormBlockInitializer = (props) => {
           );
         }
       }}
-      items={useRecordCollectionDataSourceItems('FormItem')}
+      items={useRecordCollectionDataSourceItems('FormItem', null, collection?.name)}
     />
   );
 };

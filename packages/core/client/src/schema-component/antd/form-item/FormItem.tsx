@@ -17,7 +17,6 @@ import {
   useCollectionFilterOptions,
   useCollectionManager,
 } from '../../../collection-manager';
-import { isTitleField } from '../../../collection-manager/Configuration/CollectionFields';
 import { GeneralSchemaItems } from '../../../schema-items/GeneralSchemaItems';
 import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isShowDefaultValue } from '../../../schema-settings';
 import { useIsShowMultipleSwitch } from '../../../schema-settings/hooks/useIsShowMultipleSwitch';
@@ -159,7 +158,8 @@ export const FormItem: any = observer(
 
 FormItem.Designer = function Designer() {
   let targetField;
-  const { getCollectionFields, getInterface, getCollectionJoinField, getCollection } = useCollectionManager();
+  const { getCollectionFields, getInterface, getCollectionJoinField, getCollection, isTitleField } =
+    useCollectionManager();
   const { getField } = useCollection();
   const { form } = useFormBlockContext();
   const ctx = useBlockRequestContext();

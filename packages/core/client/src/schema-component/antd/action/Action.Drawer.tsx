@@ -32,7 +32,6 @@ export const ActionDrawer: ComposedActionDrawer = observer(
         title={field.title}
         {...others}
         {...drawerProps}
-        {...modalProps}
         rootStyle={{
           ...drawerProps?.style,
           ...others?.style,

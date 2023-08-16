@@ -8,14 +8,13 @@ import { useTranslation } from 'react-i18next';
 import { GeneralSchemaDesigner, SchemaSettings } from '../..';
 import { mergeFilter } from '../../../block-provider';
 import { useCollectionFilterOptions, useCollectionManager } from '../../../collection-manager';
-import { isTitleField } from '../../../collection-manager/Configuration/CollectionFields';
 import { removeNullCondition, useCompile, useDesignable } from '../../../schema-component';
 import { ITemplate } from '../../../schema-component/antd/form-v2/Templates';
 import { FilterDynamicComponent } from '../../../schema-component/antd/table-v2/FilterDynamicComponent';
 
 export const Designer = observer(
   () => {
-    const { getCollectionFields, getCollectionField, getCollection } = useCollectionManager();
+    const { getCollectionFields, getCollectionField, getCollection, isTitleField } = useCollectionManager();
     const field = useField<Field>();
     const fieldSchema = useFieldSchema();
     const { t } = useTranslation();
