@@ -1,7 +1,6 @@
 FROM node:16 as builder
 ARG VERDACCIO_URL=http://host.docker.internal:10104/
 ARG COMMIT_HASH
-ARG APPEND_PRESET_LOCAL_PLUGINS
 ARG BEFORE_PACK_NOCOBASE="ls -l"
 
 RUN apt-get update && apt-get install -y jq
@@ -25,7 +24,7 @@ RUN yarn config set registry $VERDACCIO_URL
 WORKDIR /app
 RUN cd /app \
   && yarn config set network-timeout 600000 -g \
-  && yarn create nocobase-app my-nocobase-app -a -e APP_ENV=production -e APPEND_PRESET_LOCAL_PLUGINS=$APPEND_PRESET_LOCAL_PLUGINS \
+  && yarn create nocobase-app my-nocobase-app -a -e APP_PORT=80 -e APP_ENV=production -e \
   && cd /app/my-nocobase-app \
   && yarn install --production
 

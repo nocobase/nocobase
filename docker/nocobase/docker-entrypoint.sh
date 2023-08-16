@@ -1,9 +1,6 @@
 #!/bin/sh
 set -e
 
-nginx
-echo 'nginx started';
-
 if [ ! -d "/app/nocobase" ]; then
   mkdir nocobase
 fi
