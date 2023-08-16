@@ -10,7 +10,11 @@ export const CollectionCategory = observer(
     return (
       <>
         {value.map((item) => {
-          return <Tag color={item.color}>{compile(item?.name)}</Tag>;
+          return (
+            <Tag key={item.name} color={item.color}>
+              {compile(item?.name)}
+            </Tag>
+          );
         })}
       </>
     );

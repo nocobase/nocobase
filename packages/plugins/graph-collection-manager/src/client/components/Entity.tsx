@@ -54,10 +54,12 @@ const Entity: React.FC<{
   const { styles } = useStyles();
   const { node, setTargetNode, targetGraph } = props;
   const {
-    store: {
-      data: { title, name, item, attrs, select },
+    node: {
+      store: {
+        data: { title, name, item, attrs, select },
+      },
+      id,
     },
-    id,
   } = node;
   const {
     data: { database },
@@ -179,8 +181,10 @@ const Entity: React.FC<{
 
 const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, node, loadCollections }) => {
   const {
-    store: {
-      data: { title, name, item, ports, data, sourcePort, associated, targetPort },
+    node: {
+      store: {
+        data: { title, name, item, ports, data, sourcePort, associated, targetPort },
+      },
     },
   } = node;
   const [collapse, setCollapse] = useState(false);
