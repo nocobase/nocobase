@@ -209,12 +209,12 @@ export class CollectionManagerPlugin extends Plugin {
     });
 
     const loadCollections = async () => {
-      this.app.log.debug('load custom collections');
+      this.app.log.debug('loading custom collections');
+      this.app.setWorkingMessage('loading custom collections');
       await this.app.db.getRepository<CollectionRepository>('collections').load();
     };
 
     this.app.on('afterStart', loadCollections);
-    this.app.on('afterInstall', loadCollections);
     this.app.on('beforeUpgrade', async () => {
       await this.db.sync();
       await loadCollections();

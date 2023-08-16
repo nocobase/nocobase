@@ -1,22 +1,22 @@
 import path from 'path';
 
-import winston from 'winston';
 import LRUCache from 'lru-cache';
+import winston from 'winston';
 
 import { Op } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 
-import initFields from './fields';
+import { Logger, LoggerOptions, createLogger, getLoggerFilePath, getLoggerLevel } from '@nocobase/logger';
+import Processor from './Processor';
 import initActions from './actions';
 import { EXECUTION_STATUS } from './constants';
-import initInstructions, { Instruction } from './instructions';
-import Processor from './Processor';
-import initTriggers, { Trigger } from './triggers';
+import initFields from './fields';
 import initFunctions, { CustomFunction } from './functions';
-import { createLogger, Logger, LoggerOptions, getLoggerLevel, getLoggerFilePath } from '@nocobase/logger';
+import initInstructions, { Instruction } from './instructions';
+import initTriggers, { Trigger } from './triggers';
 
-import type { WorkflowModel, ExecutionModel, JobModel } from './types';
+import type { ExecutionModel, JobModel, WorkflowModel } from './types';
 
 type Pending = [ExecutionModel, JobModel?];
 
@@ -169,6 +169,7 @@ export default class WorkflowPlugin extends Plugin {
     });
 
     this.app.on('afterStart', () => {
+      this.app.setWorkingMessage('check for not started executions');
       // check for not started executions
       this.dispatch();
     });

@@ -125,7 +125,7 @@ export class ClientPlugin extends Plugin {
     this.app.acl.allow('plugins', '*', 'public');
     this.app.acl.registerSnippet({
       name: 'app',
-      actions: ['app:reboot', 'app:clearCache'],
+      actions: ['app:restart', 'app:clearCache'],
     });
     const dialect = this.app.db.sequelize.getDialect();
     const restartMark = resolve(process.cwd(), 'storage', 'restart');
