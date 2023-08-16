@@ -40,7 +40,7 @@ import React, { createContext, forwardRef, useContext, useEffect, useLayoutEffec
 import { useAsyncDataSource, useCreateActionAndRefreshCM } from './action-hooks';
 import { AddCollectionAction } from './components/AddCollectionAction';
 import Entity from './components/Entity';
-// import { SimpleNodeView } from './components/ViewNode';
+import { SimpleNodeView } from './components/ViewNode';
 import useStyles from './style';
 import {
   formatData,
@@ -492,28 +492,30 @@ export const GraphDrawPage = React.memo(() => {
         refWidth: 100,
         refHeight: 100,
       },
-      component: (node) => (
-        <CurrentAppInfoContext.Provider value={currentAppInfo}>
-          <APIClientProvider apiClient={api}>
-            <SchemaComponentOptions inherit scope={scope} components={components}>
-              <CollectionCategroriesProvider {...categoryCtx}>
-                <CollectionManagerProvider
-                  collections={targetGraph?.collections}
-                  refreshCM={refreshGM}
-                  interfaces={ctx.interfaces}
-                >
-                  {/* TODO: 因为画布中的卡片是一次性注册进 Graph 的，这里的 theme 是存在闭包里的，因此当主题动态变更时，并不会触发卡片的重新渲染 */}
-                  <ConfigProvider theme={theme}>
-                    <div style={{ height: 'auto' }}>
-                      <Entity node={node} setTargetNode={setTargetNode} targetGraph={targetGraph} />
-                    </div>
-                  </ConfigProvider>
-                </CollectionManagerProvider>
-              </CollectionCategroriesProvider>
-            </SchemaComponentOptions>
-          </APIClientProvider>
-        </CurrentAppInfoContext.Provider>
-      ),
+      component: React.forwardRef((props, ref) => {
+        return (
+          <CurrentAppInfoContext.Provider value={currentAppInfo}>
+            <APIClientProvider apiClient={api}>
+              <SchemaComponentOptions inherit scope={scope} components={components}>
+                <CollectionCategroriesProvider {...categoryCtx}>
+                  <CollectionManagerProvider
+                    collections={targetGraph?.collections}
+                    refreshCM={refreshGM}
+                    interfaces={ctx.interfaces}
+                  >
+                    {/* TODO: 因为画布中的卡片是一次性注册进 Graph 的，这里的 theme 是存在闭包里的，因此当主题动态变更时，并不会触发卡片的重新渲染 */}
+                    <ConfigProvider theme={theme}>
+                      <div style={{ height: 'auto' }}>
+                        <Entity {...props} setTargetNode={setTargetNode} targetGraph={targetGraph} />
+                      </div>
+                    </ConfigProvider>
+                  </CollectionManagerProvider>
+                </CollectionCategroriesProvider>
+              </SchemaComponentOptions>
+            </APIClientProvider>
+          </CurrentAppInfoContext.Provider>
+        );
+      }),
     });
     targetGraph.use(
       new Scroller({
@@ -530,14 +532,12 @@ export const GraphDrawPage = React.memo(() => {
         padding: 10,
         graphOptions: {
           async: true,
-          // getCellView(cell) {
-          //   if (cell.isNode()) {
-          //     return SimpleNodeView;
-          //   }
-          // },
           createCellView(cell) {
             if (cell.isEdge()) {
               return null;
+            }
+            if (cell.isNode()) {
+              return SimpleNodeView;
             }
           },
         },
