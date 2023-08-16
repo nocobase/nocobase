@@ -65,7 +65,7 @@ const useStyles = createStyles(({ css, token }) => {
           text-align: right;
 
           time {
-            width: 14em;
+            width: 12em;
             color: ${token.colorText};
             font-size: 80%;
           }
@@ -318,6 +318,11 @@ const useStyles = createStyles(({ css, token }) => {
       display: flex;
       flex-direction: column-reverse;
       align-items: center;
+    `,
+
+    nodeJobResultClass: css`
+      padding: 1em;
+      background-color: ${token.colorBgContainer};
     `,
 
     addButtonClass: css`

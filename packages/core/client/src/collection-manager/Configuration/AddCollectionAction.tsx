@@ -142,7 +142,7 @@ const getDefaultCollectionFields = (values) => {
       uiSchema: {
         type: 'object',
         title: '{{t("Created by")}}',
-        'x-component': 'RecordPicker',
+        'x-component': 'AssociationField',
         'x-component-props': {
           fieldNames: {
             value: 'id',
@@ -178,7 +178,7 @@ const getDefaultCollectionFields = (values) => {
       uiSchema: {
         type: 'object',
         title: '{{t("Last updated by")}}',
-        'x-component': 'RecordPicker',
+        'x-component': 'AssociationField',
         'x-component-props': {
           fieldNames: {
             value: 'id',
