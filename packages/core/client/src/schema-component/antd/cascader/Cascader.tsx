@@ -67,6 +67,7 @@ export const Cascader = connect(
         run();
       }
     };
+
     return (
       <AntdCascader
         loading={loading}

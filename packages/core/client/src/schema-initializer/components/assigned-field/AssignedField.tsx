@@ -1,6 +1,7 @@
 import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
+import _ from 'lodash';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useFormBlockContext } from '../../../block-provider';
 import {
@@ -21,6 +22,7 @@ import { DeletedField } from '../DeletedField';
 interface AssignedFieldProps {
   value: any;
   onChange: (value: any) => void;
+  [key: string]: any;
 }
 
 const InternalField: React.FC = (props) => {
@@ -65,7 +67,7 @@ const InternalField: React.FC = (props) => {
     }
     setRequired();
     // @ts-ignore
-    field.dataSource = uiSchema.enum;
+    field.dataSource = uiSchema.enum || [];
     const originalProps = compile(uiSchema['x-component-props']) || {};
     const componentProps = merge(originalProps, field.componentProps || {});
     field.componentProps = componentProps;
@@ -126,6 +128,13 @@ export const AssignedField = (props: AssignedFieldProps) => {
     [currentFormFields, name],
   );
 
+  const renderSchemaComponent = useCallback(
+    ({ value, onChange }): React.JSX.Element => {
+      return <CollectionField {...props} value={value} onChange={onChange} />;
+    },
+    [JSON.stringify(_.omit(props, 'value'))],
+  );
+
   return (
     <VariableInput
       form={form}
@@ -133,7 +142,7 @@ export const AssignedField = (props: AssignedFieldProps) => {
       value={value}
       onChange={onChange}
       blockCollectionName={name}
-      renderSchemaComponent={CollectionField}
+      renderSchemaComponent={renderSchemaComponent}
       collectionField={collectionField}
       shouldChange={shouldChange}
       returnScope={returnScope}
