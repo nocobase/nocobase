@@ -11,7 +11,7 @@ describe('select query', () => {
     }),
   });
   model.sql = 'SELECT * FROM "users"';
-  const queryGenerator = model.queryGenerator as any;
+  const queryGenerator = model.queryInterface.queryGenerator as any;
 
   test('plain sql', () => {
     const query = queryGenerator.selectQuery('users', {}, model);
