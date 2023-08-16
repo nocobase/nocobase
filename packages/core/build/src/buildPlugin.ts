@@ -299,10 +299,14 @@ export function buildPluginClient(cwd: string, sourcemap: boolean, log: PkgLog) 
       },
       rollupOptions: {
         cache: true,
-        external: Object.keys(globals),
+        external: [...Object.keys(globals), 'react', 'react/jsx-runtime'],
         output: {
           exports: 'named',
-          globals,
+          globals: {
+            react: 'React',
+            'react/jsx-runtime': 'jsxRuntime',
+            ...globals,
+          },
         },
       },
     },
