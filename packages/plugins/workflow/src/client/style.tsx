@@ -320,6 +320,11 @@ const useStyles = createStyles(({ css, token }) => {
       align-items: center;
     `,
 
+    nodeJobResultClass: css`
+      padding: 1em;
+      background-color: ${token.colorBgContainer};
+    `,
+
     addButtonClass: css`
       flex-shrink: 0;
       padding: 2em 0;
