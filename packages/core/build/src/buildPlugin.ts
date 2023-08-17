@@ -286,7 +286,7 @@ export function buildPluginClient(cwd: string, sourcemap: boolean, log: PkgLog) 
     },
     logLevel: 'warn',
     build: {
-      minify: false,
+      minify: true,
       outDir,
       cssCodeSplit: false,
       emptyOutDir: false,
