@@ -66,18 +66,13 @@ function PluginInfo(props: IPluginInfo) {
       )}
       <Card
         bordered={false}
+        onClick={() => {
+          !error && onClick();
+        }}
         headStyle={{ border: 'none' }}
         bodyStyle={{ paddingTop: 5 }}
         style={{ marginBottom: theme.marginLG }}
-        title={
-          <div
-            onClick={() => {
-              !error && onClick();
-            }}
-          >
-            {displayName || name || packageName}
-          </div>
-        }
+        title={<div>{displayName || name || packageName}</div>}
         hoverable
         actions={[
           <div key="setting" className={classnames({ [styles.cardActionDisabled]: !enabled || error })}>
@@ -105,7 +100,12 @@ function PluginInfo(props: IPluginInfo) {
             okText={t('Yes')}
             cancelText={t('No')}
           >
-            <div className={classnames({ [styles.cardActionDisabled]: builtIn })}>
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+              className={classnames({ [styles.cardActionDisabled]: builtIn })}
+            >
               <DeleteOutlined />
             </div>
           </Popconfirm>,
@@ -138,21 +138,20 @@ function PluginInfo(props: IPluginInfo) {
           ></Switch>,
         ]}
       >
-        <Row
-          justify="space-between"
-          onClick={() => {
-            !error && onClick();
-          }}
-        >
+        <Row justify="space-between">
           <Col span={16}>
             <Card.Meta
               description={
-                <Space style={{ height: theme.fontSize * theme.lineHeight * 4 }} direction="vertical">
+                <Space direction="vertical">
                   <Typography.Text type="secondary">
                     {t('Version')}: {version}
                   </Typography.Text>
                   {!error ? (
-                    <Typography.Paragraph type="secondary" ellipsis={{ rows: 3 }}>
+                    <Typography.Paragraph
+                      style={{ height: theme.fontSize * theme.lineHeight * 3 }}
+                      type="secondary"
+                      ellipsis={{ rows: 3 }}
+                    >
                       {description}
                     </Typography.Paragraph>
                   ) : (

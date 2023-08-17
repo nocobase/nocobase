@@ -192,7 +192,7 @@ export const PluginManager = () => {
           />
         }
       />
-      <div className={styles.pageContent} style={{ display: 'flex', width: '100%', flexFlow: 'row wrap' }}>
+      <div className={styles.pageContent} style={{ display: 'flex', flexFlow: 'row wrap' }}>
         {React.createElement(
           {
             local: LocalPlugins,
