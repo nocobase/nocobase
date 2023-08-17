@@ -33,6 +33,7 @@ export default {
   'Form data model': '表单数据模型',
   'Use a collection to match form data.': '使用一个数据表来匹配表单数据。',
   'Associations to use': '待使用的关系数据',
+  'User submitted form': '提交表单的用户',
   'Bind workflows': '绑定工作流',
   'Workflow will be triggered after submitting succeeded.': '提交成功后触发工作流。',
   'Workflow will be triggered after saving succeeded.': '保存成功后触发工作流。',
