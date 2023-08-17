@@ -8,7 +8,6 @@ import { DEBOUNCE_WAIT, useLocalVariables, useVariables } from '../../../../vari
 import { getPath } from '../../../../variables/utils/getPath';
 import { isVariable } from '../../../../variables/utils/isVariable';
 import { transformVariableValue } from '../../../../variables/utils/transformVariableValue';
-import { useCompile } from '../../../hooks';
 
 /**
  * 用于解析并设置 FormItem 的默认值
@@ -17,7 +16,6 @@ const useParseDefaultValue = () => {
   const field = useField<Field>();
   const schema = useFieldSchema();
   const variables = useVariables();
-  const compile = useCompile({ noCache: true });
   const localVariables = useLocalVariables();
   const { getField } = useCollection();
 
