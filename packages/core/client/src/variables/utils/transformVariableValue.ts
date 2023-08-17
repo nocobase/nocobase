@@ -82,6 +82,14 @@ export const transformVariableValue = (value: any, deps: Deps) => {
     return options.some((item: { value: any }) => item.value === value) ? value : undefined;
   }
 
+  // 勾选
+  if (targetCollectionFiled.type === 'boolean') {
+    if (Array.isArray(value)) {
+      return value[0];
+    }
+    return value;
+  }
+
   // 字符串应该拼接。
   // 数字应该相加，比如一个学校有 10 个班级，每个班级有 10 个同学，那么选择所有班级中的人数也就是整个学校的人数就是 100。
   if (Array.isArray(value)) {
