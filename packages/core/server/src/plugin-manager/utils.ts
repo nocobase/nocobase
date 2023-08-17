@@ -146,7 +146,9 @@ export async function downloadAndUnzipToTempDir(fileUrl: string, authToken?: str
   }
 
   let tempPackageContentDir = tempPackageDir;
-  const files = fs.readdirSync(tempPackageDir, { recursive: false, withFileTypes: true });
+  const files = fs
+    .readdirSync(tempPackageDir, { recursive: false, withFileTypes: true })
+    .filter((item) => item.name !== '__MACOSX');
   if (
     files.length === 1 &&
     files[0].isDirectory() &&
