@@ -5,6 +5,7 @@ import Plugin from '..';
 import { WorkflowModel } from '../types';
 import { Model, modelAssociationByKey } from '@nocobase/database';
 import { BelongsTo, HasOne } from 'sequelize';
+import { toJSON } from '../utils';
 
 export default class FormTrigger extends Trigger {
   constructor(plugin: Plugin) {
@@ -85,7 +86,7 @@ export default class FormTrigger extends Trigger {
               appends,
             });
           }
-          this.plugin.trigger(workflow, { data: payload });
+          this.plugin.trigger(workflow, { data: toJSON(payload) });
         });
       } else {
         this.plugin.trigger(workflow, { data: trigger[1] ? get(values, trigger[1]) : values });
