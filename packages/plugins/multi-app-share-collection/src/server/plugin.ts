@@ -224,20 +224,20 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       });
     });
 
-    this.app.on('afterEnablePlugin', async (pluginNames) => {
-      await traverseSubApps(async (subApp) => {
+    this.app.on('afterEnablePlugin', (pluginNames) => {
+      traverseSubApps((subApp) => {
         for (const pluginName of lodash.castArray(pluginNames)) {
           if (subAppFilteredPlugins.includes(pluginName)) return;
-          await subApp.runAsCLI(['pm', 'enable', pluginName], { from: 'user' });
+          subApp.runAsCLI(['pm', 'enable', pluginName], { from: 'user' });
         }
       });
     });
 
-    this.app.on('afterDisablePlugin', async (pluginNames) => {
-      await traverseSubApps(async (subApp) => {
+    this.app.on('afterDisablePlugin', (pluginNames) => {
+      traverseSubApps((subApp) => {
         for (const pluginName of lodash.castArray(pluginNames)) {
           if (subAppFilteredPlugins.includes(pluginName)) return;
-          await subApp.runAsCLI(['pm', 'enable', pluginName], { from: 'user' });
+          subApp.runAsCLI(['pm', 'enable', pluginName], { from: 'user' });
         }
       });
     });
