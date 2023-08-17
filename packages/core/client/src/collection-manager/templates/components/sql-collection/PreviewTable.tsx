@@ -5,7 +5,7 @@ import { Schema, observer, useForm } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 
 export const PreviewTable = observer(() => {
-  const { data, loading } = useAsyncData();
+  const { data, loading, error } = useAsyncData();
   const { t } = useTranslation();
   const form = useForm();
 
@@ -23,27 +23,34 @@ export const PreviewTable = observer(() => {
     {},
   );
 
-  const columns = Object.keys(data?.[0] || {}).map((col) => {
-    const title = titleMp[col];
-    return {
-      title: title || col,
-      dataIndex: col,
-      key: col,
-    };
-  });
+  const columns = error
+    ? []
+    : Object.keys(data?.[0] || {}).map((col) => {
+        const title = titleMp[col];
+        return {
+          title: title || col,
+          dataIndex: col,
+          key: col,
+        };
+      });
 
-  const dataSource = data?.map((record: any, index: number) => {
-    const compiledRecord = Object.entries(record).reduce((mp: { [key: string]: any }, [key, val]: [string, any]) => {
-      if (typeof val !== 'string') {
-        mp[key] = val;
-        return mp;
-      }
-      const compiled = Schema.compile(val, { t });
-      mp[key] = t(compiled);
-      return mp;
-    }, {});
-    return { ...compiledRecord, key: index };
-  });
+  const dataSource = error
+    ? []
+    : data?.map((record: any, index: number) => {
+        const compiledRecord = Object.entries(record).reduce(
+          (mp: { [key: string]: any }, [key, val]: [string, any]) => {
+            if (typeof val !== 'string') {
+              mp[key] = val;
+              return mp;
+            }
+            const compiled = Schema.compile(val, { t });
+            mp[key] = t(compiled);
+            return mp;
+          },
+          {},
+        );
+        return { ...compiledRecord, key: index };
+      });
 
   return (
     <div

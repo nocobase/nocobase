@@ -35,7 +35,10 @@ export const sql: ICollectionTemplate = {
       properties: {
         sqlInput: {
           type: 'void',
+          title: '{{t("SQL")}}',
+          'x-decorator': 'FormItem',
           'x-component': SQLInput,
+          required: true,
         },
         fields: {
           type: 'array',

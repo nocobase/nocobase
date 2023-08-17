@@ -87,7 +87,7 @@ export const FieldsConfigure = () => {
     return <Spin />;
   }
   if (!data && !error) {
-    return <Alert showIcon message={t('Please enter a valid select query')} />;
+    return <Alert showIcon message={t('Please use a valid select query')} />;
   }
   const err = error as any;
   if (err) {
