@@ -40,7 +40,7 @@ interface DepCompatible {
 
 interface IPluginDetailData {
   packageJson: PackageJSON;
-  depsCompatible: DepCompatible[];
+  depsCompatible: DepCompatible[] | false;
   lastUpdated: string;
 }
 
@@ -206,18 +206,26 @@ export const PluginDetail: FC<IPluginDetail> = ({ plugin, onCancel }) => {
       label: t('Dependencies compatibility check'),
       children: (
         <>
-          <Alert
-            message={t(
-              'If the compatibility check fails, you should change the dependent version to meet the version requirements.',
-            )}
-          ></Alert>
-          <Table
-            style={{ marginTop: theme.margin }}
-            rowKey={'name'}
-            pagination={false}
-            columns={dependenciesCompatibleTableColumns}
-            dataSource={data?.data?.depsCompatible}
-          />
+          {data?.data?.depsCompatible === false ? (
+            <Typography.Text type="danger">
+              {t('`dist/externalVersion.js` not found or failed to `require`. Please rebuild this plugin.')}
+            </Typography.Text>
+          ) : (
+            <>
+              <Alert
+                message={t(
+                  'If the compatibility check fails, you should change the dependent version to meet the version requirements.',
+                )}
+              ></Alert>
+              <Table
+                style={{ marginTop: theme.margin }}
+                rowKey={'name'}
+                pagination={false}
+                columns={dependenciesCompatibleTableColumns}
+                dataSource={data?.data?.depsCompatible}
+              />
+            </>
+          )}
         </>
       ),
     },
@@ -242,7 +250,11 @@ export const PluginDetail: FC<IPluginDetail> = ({ plugin, onCancel }) => {
                 {t('Last updated')} {dayjs(data?.data?.lastUpdated).fromNow()}
               </span>
             </Space>
-            <Tabs items={tabItems} defaultActiveKey={!plugin.isCompatible ? 'dependencies' : undefined}></Tabs>
+            <Tabs
+              style={{ minHeight: '50vh' }}
+              items={tabItems}
+              defaultActiveKey={!plugin.isCompatible ? 'dependencies' : undefined}
+            ></Tabs>
           </>
         )
       )}

@@ -89,12 +89,20 @@ export const PluginUploadForm: FC<IPluginUploadFormProps> = ({ onClose, name, is
     return {
       async run() {
         if (!form.values.uploadFile[0]?.response?.data?.url) return;
+        let compressedFileUrl = form.values.uploadFile[0].response.data.url;
+        if (!compressedFileUrl) return;
+        if (!(compressedFileUrl.startsWith('http') || compressedFileUrl.startsWith('//'))) {
+          if (!compressedFileUrl.startsWith('/')) {
+            compressedFileUrl = `/${compressedFileUrl}`;
+          }
+          compressedFileUrl = `${window.origin}${compressedFileUrl}`;
+        }
         await form.submit();
         await api.request({
           url: `pm:upgradeByCompressedFileUrl/${name}`,
           method: 'post',
           data: {
-            compressedFileUrl: form.values.uploadFile[0].response.data.url,
+            compressedFileUrl,
           },
         });
         message.success(t('Saved successfully'), 2, () => {

@@ -90,9 +90,14 @@ export async function getLatestVersion(packageName: string, registry: string, to
   const response = await axios.get(`${registry}/${packageName}`, {
     headers: getAuthorizationHeaders(registry, token),
   });
-  const data = response.data;
-  const latestVersion = data['dist-tags'].latest;
-  return latestVersion;
+  try {
+    const data = response.data;
+    const latestVersion = data['dist-tags'].latest;
+    return latestVersion;
+  } catch (e) {
+    console.error(e);
+    throw new Error(`${registry} is not a valid registry, '${registry}/${packageName}' response is not a valid json.`);
+  }
 }
 
 export async function download(url: string, destination: string, options: AxiosRequestConfig = {}) {
@@ -129,6 +134,7 @@ export async function downloadAndUnzipToTempDir(fileUrl: string, authToken?: str
 
   // download and unzip to temp dir
   await fs.remove(tempPackageDir);
+  await fs.remove(tempFile);
 
   await download(fileUrl, tempFile, {
     headers: getAuthorizationHeaders(fileUrl, authToken),
@@ -142,7 +148,7 @@ export async function downloadAndUnzipToTempDir(fileUrl: string, authToken?: str
 
   if (!fs.existsSync(tempPackageDir)) {
     await fs.remove(tempFile);
-    throw new Error(`decompress failed`);
+    throw new Error(`File is not a valid compressed file. Maybe the file need authorization.`);
   }
 
   let tempPackageContentDir = tempPackageDir;
@@ -448,7 +454,7 @@ export function getCompatible(packageName: string) {
 
   const exists = fs.existsSync(realPath);
   if (!exists) {
-    return [];
+    return false;
   }
 
   let externalVersion: Record<string, string>;
@@ -456,7 +462,7 @@ export function getCompatible(packageName: string) {
     externalVersion = requireNoCache(realPath);
   } catch (e) {
     console.error(e);
-    return [];
+    return false;
   }
   return Object.keys(externalVersion).reduce<DepCompatible[]>((result, packageName) => {
     const packageVersion = externalVersion[packageName];
@@ -481,5 +487,6 @@ export function getCompatible(packageName: string) {
 
 export function checkCompatible(packageName: string) {
   const compatible = getCompatible(packageName);
+  if (!compatible) return false;
   return compatible.every((item) => item.result);
 }
