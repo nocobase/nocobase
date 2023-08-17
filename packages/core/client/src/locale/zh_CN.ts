@@ -809,4 +809,5 @@ export default {
   "Select all": "全选",
   "Determine whether a record exists by the following fields": "通过以下字段判断记录是否存在",
   "Sync from database": "从数据库同步",
+  "SQL collection": "SQL数据表",
 };

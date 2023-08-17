@@ -33,7 +33,11 @@ export const ListActionInitializers = {
           },
           visible: function useVisible() {
             const collection = useCollection();
-            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'file';
+            return (
+              (collection.template !== 'view' || collection?.writableView) &&
+              collection.template !== 'file' &&
+              collection.template !== 'sql'
+            );
           },
         },
         {
@@ -165,7 +169,7 @@ export const ListItemActionInitializers = {
           },
           visible: function useVisible() {
             const collection = useCollection();
-            return (collection as any).template !== 'view' || collection?.writableView;
+            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
         {
@@ -263,7 +267,7 @@ export const ListItemActionInitializers = {
           },
           visible: function useVisible() {
             const collection = useCollection();
-            return (collection as any).template !== 'view' || collection?.writableView;
+            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
         {
@@ -289,7 +293,7 @@ export const ListItemActionInitializers = {
           },
           visible: function useVisible() {
             const collection = useCollection();
-            return (collection as any).template !== 'view' || collection?.writableView;
+            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
       ],

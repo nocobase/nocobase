@@ -721,4 +721,5 @@ export default {
   "Sync from form fields": "Sync from form fields",
   "Select all": "Select all",
   "Sync from database": "Sync from database",
+  "SQL collection": "SQL collection",
 };

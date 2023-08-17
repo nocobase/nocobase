@@ -81,7 +81,7 @@ export const FieldsConfigure = () => {
     }
     setDataSource(fields);
     field.setValue(fields);
-  }, [loading, data, field]);
+  }, [loading, data, field, getInterface]);
 
   if (loading) {
     return <Spin />;
@@ -145,7 +145,10 @@ export const FieldsConfigure = () => {
                 {
                   ...field,
                   interface: value,
-                  uiSchema: interfaceConfig?.default?.uiSchema,
+                  uiSchema: {
+                    ...interfaceConfig?.default?.uiSchema,
+                    title: field.uiSchema?.title || interfaceConfig?.default?.uiSchema?.title,
+                  },
                   type: interfaceConfig?.default?.type,
                 },
                 index,
