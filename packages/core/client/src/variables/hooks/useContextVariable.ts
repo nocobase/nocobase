@@ -1,11 +1,9 @@
 import { useMemo } from 'react';
 import { useTableBlockContext } from '../../block-provider';
-import { useCollection } from '../../collection-manager';
 import { VariableOption } from '../types';
 
 const useContextVariable = (): VariableOption => {
-  const { name } = useCollection();
-  const { field, service, rowKey } = useTableBlockContext();
+  const { field, service, rowKey, collection: collectionName } = useTableBlockContext();
   const contextData = useMemo(
     () => service?.data?.data?.filter((v) => (field?.data?.selectedRowKeys || [])?.includes(v[rowKey])),
     [field?.data?.selectedRowKeys, rowKey, service?.data?.data],
@@ -15,9 +13,9 @@ const useContextVariable = (): VariableOption => {
     return {
       name: '$context',
       ctx: contextData,
-      collectionName: name,
+      collectionName,
     };
-  }, [contextData, name]);
+  }, [collectionName, contextData]);
 };
 
 export default useContextVariable;

@@ -1,7 +1,7 @@
 import { Form } from '@formily/core';
 // @ts-ignore
 import _ from 'lodash';
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CollectionFieldOptions } from '../../collection-manager';
 import { Variable, useVariableScope } from '../../schema-component';
@@ -93,11 +93,9 @@ export const VariableInput = (props: Props) => {
   ).concat(scope);
   const contextVariable = useContextAssociationFields({ schema, maxDepth: 2, contextCollectionName, collectionField });
 
-  useEffect(() => {
-    if (contextCollectionName) {
-      variableOptions.unshift(contextVariable);
-    }
-  }, []);
+  if (contextCollectionName && variableOptions.every((item) => item.value !== contextVariable.value)) {
+    variableOptions.push(contextVariable);
+  }
 
   const handleChange = useCallback(
     (value: any, optionPath: any[]) => {
