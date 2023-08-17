@@ -1,8 +1,10 @@
 import { Field } from '@formily/core';
 import { evaluators } from '@nocobase/evaluators/client';
+import { uid } from '@nocobase/utils';
 import { cloneDeep } from 'lodash';
 import { ActionType } from '../../../schema-settings/LinkageRules/type';
 import { VariableOption, VariablesContextType } from '../../../variables/types';
+import { REGEX_OF_VARIABLE } from '../../../variables/utils/isVariable';
 import { conditionAnalyses } from '../../common/utils/uitls';
 
 interface Props {
@@ -69,8 +71,16 @@ export const linkageMergeAction = async ({
           let result = null;
           if (value?.mode === 'express') {
             const scope = cloneDeep(values);
+
+            // 1. 解析如 `{{$user.name}}` 之类的变量
+            const { exp, scope: expScope } = await replaceVariables(value.result || value.value, {
+              variables,
+              localVariables,
+            });
+
             try {
-              result = evaluate(value.result || value.value, { ...scope, now: () => new Date().toString() });
+              // 2. TODO: 需要把里面解析变量的逻辑删除，因为在上一步已经解析过了
+              result = evaluate(exp, { ...scope, now: () => new Date().toString(), ...expScope });
             } catch (error) {
               if (process.env.NODE_ENV !== 'production') {
                 throw error;
@@ -92,3 +102,39 @@ export const linkageMergeAction = async ({
       return null;
   }
 };
+
+async function replaceVariables(
+  value: string,
+  {
+    variables,
+    localVariables,
+  }: {
+    variables: VariablesContextType;
+    localVariables: VariableOption[];
+  },
+) {
+  const store = {};
+  const scope = {};
+
+  const waitForParsing = value.match(REGEX_OF_VARIABLE)?.map(async (item) => {
+    const result = await variables.parseVariable(item, localVariables);
+
+    // 在开头加 `_` 是为了保证 id 不能以数字开头，否则在解析表达式的时候（不是解析变量）会报错
+    const id = `_${uid()}`;
+
+    scope[id] = result;
+    store[item] = id;
+    return result;
+  });
+
+  if (waitForParsing) {
+    await Promise.all(waitForParsing);
+  }
+
+  return {
+    exp: value.replace(REGEX_OF_VARIABLE, (match) => {
+      return store[match] || match;
+    }),
+    scope,
+  };
+}

@@ -1,17 +1,35 @@
 import { Input, Select } from 'antd';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useFormBlockContext } from '../../block-provider';
+import { useRecord } from '../../record-provider';
 import { Variable } from '.././../schema-component';
+import { useVariableOptions } from '../VariableInput/hooks/useVariableOptions';
 import { DynamicComponent } from './DynamicComponent';
-import { useVariableOptions } from './Variables';
 
 const { Option } = Select;
 
-export const ValueDynamicComponent = (props) => {
+interface ValueDynamicComponentProps {
+  fieldValue: any;
+  schema: any;
+  setValue: (value: any) => void;
+  collectionName: string;
+}
+
+export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
   const { fieldValue, schema, setValue, collectionName } = props;
   const [mode, setMode] = useState(fieldValue?.mode || 'constant');
   const { t } = useTranslation();
-  const scope = useVariableOptions(collectionName);
+  const { form } = useFormBlockContext();
+  const record = useRecord();
+  const scope = useVariableOptions({
+    collectionField: { uiSchema: schema },
+    blockCollectionName: collectionName,
+    form,
+    record,
+    uiSchema: schema,
+  });
+
   return (
     <Input.Group compact>
       <Select
