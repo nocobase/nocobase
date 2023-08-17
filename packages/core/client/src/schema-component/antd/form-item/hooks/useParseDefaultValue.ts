@@ -46,10 +46,10 @@ const useParseDefaultValue = () => {
           field.reset();
         }
         field.loading = false;
-      } else if (field.setInitialValue) {
-        field.setInitialValue(compile(schema.default));
       }
     };
+
+    // 使用防抖，提高性能和用户体验
     const run = _.debounce(_run, DEBOUNCE_WAIT);
 
     _run();
