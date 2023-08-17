@@ -654,6 +654,7 @@ export default {
   "Not enabled": "Não habilitado",
   "Search plugin": "Pesquisar plugin",
   "Author": "Autor",
+  "Plugin loading failed. Please check the server logs.": "Falha ao carregar o plugin. Verifique os logs do servidor.",
   "Coming soon...": "Em breve...",
   "All plugin settings": "Configurações de todos os plugins",
   "Bookmark": "Favoritar",

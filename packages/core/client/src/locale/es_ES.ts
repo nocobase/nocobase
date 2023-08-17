@@ -691,6 +691,7 @@ export default {
   "Not enabled": "No habilitado",
   "Search plugin": "Buscar plugin",
   "Author": "Autor",
+  "Plugin loading failed. Please check the server logs.": "Error al cargar el plugin. Compruebe los registros del servidor.",
     "Coming soon...": "Próximamente...",
     "All plugin settings": "Configuración de todos los plugins",
     "Bookmark": "Marcador",

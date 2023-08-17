@@ -732,6 +732,7 @@ export default {
   "Not enabled": "未启用",
   "Search plugin": "搜索插件",
   "Author": "作者",
+  "Plugin loading failed. Please check the server logs.": "插件加载失败，请检查服务器日志。",
   'Coming soon...': '敬请期待...',
   'All plugin settings': '所有插件配置',
   'Bookmark': '书签',

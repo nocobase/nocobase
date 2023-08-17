@@ -11,16 +11,18 @@ import collectionOptions from './options/collection';
 import resourceOptions from './options/resource';
 import { PluginManagerRepository } from './plugin-manager-repository';
 import {
-  addOrUpdatePluginByCompressedFileUrl,
+  updatePluginByCompressedFileUrl,
   checkCompatible,
+  copyTempPackageToStorageAndLinkToNodeModules,
+  downloadAndUnzipToTempDir,
   getCompatible,
   getNewVersion,
   getPluginInfoByNpm,
   removePluginPackage,
   requireModule,
   requireNoCache,
+  removeTmpDir,
 } from './utils';
-import { NODE_MODULES_PATH } from './constants';
 
 export interface PluginManagerOptions {
   app: Application;
@@ -67,8 +69,17 @@ export class PluginManager {
           ctx.body = await Promise.all(
             ctx.body.map(async (plugin) => {
               const json = plugin.toJSON();
-              const packageName = PluginManager.getPackageName(json.name);
-              const packageJson = PluginManager.getPackageJson(packageName);
+              let packageName;
+              let packageJson;
+              try {
+                packageName = PluginManager.getPackageName(json.name);
+                packageJson = PluginManager.getPackageJson(packageName);
+              } catch (e) {
+                return {
+                  ...json,
+                  error: true,
+                };
+              }
               let newVersion = undefined;
 
               try {
@@ -90,6 +101,7 @@ export class PluginManager {
               };
             }),
           );
+          ctx.body = ctx.body.filter((item) => item);
         }
       }
     });
@@ -242,14 +254,17 @@ export class PluginManager {
   }) {
     const { compressedFileUrl, registry, type, authToken } = options;
 
-    const { packageName } = await addOrUpdatePluginByCompressedFileUrl({ compressedFileUrl, authToken });
+    const { packageName, tempFile, tempPackageContentDir } = await downloadAndUnzipToTempDir(
+      compressedFileUrl,
+      authToken,
+    );
     const name = this.getNameByPackageName(packageName);
 
     if (this.plugins.has(name)) {
-      await removePluginPackage(packageName);
+      await removeTmpDir(tempFile, tempPackageContentDir);
       throw new Error(`plugin name [${name}] already exists`);
     }
-
+    await copyTempPackageToStorageAndLinkToNodeModules(tempFile, tempPackageContentDir, packageName);
     return this.add(name, { packageName, compressedFileUrl, authToken, registry, type });
   }
 
@@ -271,20 +286,20 @@ export class PluginManager {
 
   async upgradeByCompressedFileUrl(options: { compressedFileUrl: string; name: string }) {
     const { name, compressedFileUrl } = options;
-    const plugin = this.plugins.get(name);
-    if (!plugin) {
+    const data = await this.repository.findOne({ filter: { name } });
+    if (!data) {
       throw new Error(`plugin name [${name}] not exists`);
     }
 
-    const { version } = await addOrUpdatePluginByCompressedFileUrl({
+    const { version } = await updatePluginByCompressedFileUrl({
       compressedFileUrl,
-      packageName: plugin.options.packageName,
-      authToken: plugin.options.authToken,
+      packageName: data.packageName,
+      authToken: data.authToken,
     });
 
-    await this.addStatic(name, { ...plugin.options, compressedFileUrl, version }, true);
+    await this.addStatic(name, { ...data.toJSON(), compressedFileUrl, version }, true);
     await this.repository.upgrade(name, { version, compressedFileUrl });
-    if (plugin.enabled) {
+    if (data.enabled) {
       const newPlugin = this.plugins.get(name);
       await this.load({}, new Map([[name, newPlugin]]));
     }
@@ -487,7 +502,7 @@ export class PluginManager {
     for (const pluginName of pluginNames) {
       const plugin = this.app.getPlugin(pluginName);
       if (!plugin) {
-        throw new Error(`${name} plugin does not exist`);
+        continue;
       }
       if (plugin.options.type && plugin.options.packageName) {
         await removePluginPackage(plugin.options.packageName);

@@ -17,4 +17,5 @@ export interface IPluginData {
   isCompatible?: boolean;
   readmeUrl: string;
   changelogUrl: string;
+  error: boolean;
 }

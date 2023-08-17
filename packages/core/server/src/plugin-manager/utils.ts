@@ -96,9 +96,7 @@ export async function getLatestVersion(packageName: string, registry: string, to
 }
 
 export async function download(url: string, destination: string, options: AxiosRequestConfig = {}) {
-  if (process.env.NODE_ENV === 'production') {
-    url = url.replace('localhost', '127.0.0.1');
-  }
+  url = url.replace('localhost', '127.0.0.1');
   const response = await axios.get(url, {
     ...options,
     responseType: 'stream',
@@ -115,10 +113,15 @@ export async function download(url: string, destination: string, options: AxiosR
   });
 }
 
+export async function removeTmpDir(tempFile: string, tempPackageContentDir: string) {
+  await fs.remove(tempFile);
+  await fs.remove(tempPackageContentDir);
+}
+
 /**
  * download and unzip to node_modules
  */
-export async function downloadAndUnzipToNodeModules(fileUrl: string, authToken?: string) {
+export async function downloadAndUnzipToTempDir(fileUrl: string, authToken?: string) {
   const fileName = path.basename(fileUrl);
   const tempDir = await getTempDir();
   const tempFile = path.join(tempDir, fileName);
@@ -130,11 +133,16 @@ export async function downloadAndUnzipToNodeModules(fileUrl: string, authToken?:
   await download(fileUrl, tempFile, {
     headers: getAuthorizationHeaders(fileUrl, authToken),
   });
+
+  if (!fs.existsSync(tempFile)) {
+    throw new Error(`download ${fileUrl} failed`);
+  }
+
   await decompress(tempFile, tempPackageDir);
 
   if (!fs.existsSync(tempPackageDir)) {
     await fs.remove(tempFile);
-    throw new Error(`decompress ${fileUrl} failed`);
+    throw new Error(`decompress failed`);
   }
 
   let tempPackageContentDir = tempPackageDir;
@@ -149,35 +157,43 @@ export async function downloadAndUnzipToNodeModules(fileUrl: string, authToken?:
   const packageJsonPath = path.join(tempPackageContentDir, 'package.json');
 
   if (!fs.existsSync(packageJsonPath)) {
-    await fs.remove(tempFile);
-    await fs.remove(tempPackageDir);
+    await removeTmpDir(tempFile, tempPackageContentDir);
     throw new Error(`decompress ${fileUrl} failed`);
   }
 
   const packageJson = requireNoCache(packageJsonPath);
   const mainFile = path.join(tempPackageContentDir, packageJson.main);
   if (!fs.existsSync(mainFile)) {
-    await fs.remove(tempFile);
-    await fs.remove(tempPackageDir);
+    await removeTmpDir(tempFile, tempPackageContentDir);
     throw new Error(`main file ${packageJson.main} not found, Please check if the plugin has been built.`);
   }
 
-  const packageDir = getStoragePluginDir(packageJson.name);
+  return {
+    packageName: packageJson.name,
+    version: packageJson.version,
+    tempPackageContentDir,
+    tempFile,
+  };
+}
+
+export async function copyTempPackageToStorageAndLinkToNodeModules(
+  tempFile: string,
+  tempPackageContentDir: string,
+  packageName: string,
+) {
+  const packageDir = getStoragePluginDir(packageName);
 
   // move to plugin storage dir
   await fs.remove(packageDir);
   await fs.move(tempPackageContentDir, packageDir, { overwrite: true });
 
   // symlink to node_modules
-  await linkToNodeModules(packageJson.name, packageDir);
+  await linkToNodeModules(packageName, packageDir);
 
   // remove temp dir
-  await fs.remove(tempFile);
-  await fs.remove(tempPackageDir);
+  await removeTmpDir(tempFile, tempPackageContentDir);
 
   return {
-    packageName: packageJson.name,
-    version: packageJson.version,
     packageDir,
   };
 }
@@ -351,17 +367,24 @@ export function getPluginNameByClientStaticUrl(pathname: string) {
   return pathArr[0];
 }
 
-export async function addOrUpdatePluginByCompressedFileUrl(
+export async function updatePluginByCompressedFileUrl(
   options: Partial<Pick<PluginData, 'compressedFileUrl' | 'packageName' | 'authToken'>>,
 ) {
-  const { packageName, version, packageDir } = await downloadAndUnzipToNodeModules(
+  const { packageName, version, tempFile, tempPackageContentDir } = await downloadAndUnzipToTempDir(
     options.compressedFileUrl,
     options.authToken,
   );
 
   if (options.packageName && options.packageName !== packageName) {
+    await removeTmpDir(tempFile, tempPackageContentDir);
     throw new Error(`Plugin name in package.json must be ${options.packageName}, but got ${packageName}`);
   }
+
+  const { packageDir } = await copyTempPackageToStorageAndLinkToNodeModules(
+    tempFile,
+    tempPackageContentDir,
+    packageName,
+  );
 
   return {
     packageName,
@@ -375,7 +398,7 @@ export async function addOrUpdatePluginByCompressedFileUrl(
  */
 export async function checkPluginPackage(plugin: PluginData) {
   if (plugin.type && !(await checkPluginExist(plugin))) {
-    await addOrUpdatePluginByCompressedFileUrl(plugin);
+    await updatePluginByCompressedFileUrl(plugin);
   }
 }
 

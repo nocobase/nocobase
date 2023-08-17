@@ -80,16 +80,33 @@ export class PluginManagerRepository extends Repository {
     });
 
     for (const item of items) {
+      const json = item.toJSON();
+      let hasError = false;
       try {
-        const json = item.toJSON();
         await checkPluginPackage(json);
+      } catch (e) {
+        console.error(e);
+        if (json.enabled) {
+          await this.disable(json.name);
+        }
+        hasError = true;
+      }
+
+      // 如果插件资源有问题，跳过，否则会导致后续插件无法正常加载
+      if (hasError) {
+        continue;
+      }
+      try {
         await this.pm.addStatic(item.get('name'), {
           ...item.get('options'),
           async: true,
           ...json,
         });
       } catch (e) {
-        await this.pm.handleError(item.get('name'), item.get('builtIn'), e);
+        console.error(e);
+        if (json.enabled) {
+          await this.disable(json.name);
+        }
       }
     }
   }

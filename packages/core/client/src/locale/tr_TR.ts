@@ -543,4 +543,5 @@ export default {
   "Not enabled": "Etkin değil",
   "Search plugin": "Eklenti ara",
   "Author": "Yazar",
+  "Plugin loading failed. Please check the server logs.": "Eklenti yüklenemedi. Lütfen sunucu günlüklerini kontrol edin.",
 }

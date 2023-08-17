@@ -666,4 +666,5 @@ export default {
   "Not enabled": "有効になっていません",
   "Search plugin": "プラグインを検索",
   "Author": "著者",
+  "Plugin loading failed. Please check the server logs.": "プラグインのロードに失敗しました。サーバーログを確認してください。",
 }

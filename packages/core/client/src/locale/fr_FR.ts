@@ -688,6 +688,7 @@ export default {
   "Not enabled": "Non activé",
   "Search plugin": "Rechercher un plugin",
   "Author": "Auteur",
+  "Plugin loading failed. Please check the server logs.": "Échec du chargement du plugin. Veuillez vérifier les journaux du serveur.",
   "Coming soon...": "Bientôt...",
   "All plugin settings": "Tous les paramètres de plugin",
   "Bookmark": "Signet",

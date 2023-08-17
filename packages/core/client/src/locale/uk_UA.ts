@@ -708,6 +708,7 @@ export default {
   "Not enabled": "Не увімкнено",
   "Search plugin": "Пошук плагіна",
   "Author": "Автор",
+  "Plugin loading failed. Please check the server logs.": "Не вдалося завантажити плагін. Будь ласка, перевірте журнали сервера.",
   "Coming soon...": "Скоро буде...",
   "All plugin settings": "Всі налаштування плагінів",
   "Bookmark": "Закладка",

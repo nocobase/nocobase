@@ -692,6 +692,7 @@ export default {
   "Not enabled": "Not enabled",
   "Search plugin": "Search plugin",
   "Author": "Author",
+  "Plugin loading failed. Please check the server logs.": "Plugin loading failed. Please check the server logs.",
   "Coming soon...": "Coming soon...",
   "All plugin settings": "All plugin settings",
   "Bookmark": "Bookmark",

@@ -29,6 +29,7 @@ function PluginInfo(props: IPluginInfo) {
     description,
     newVersion,
     type,
+    error,
   } = data;
   const { styles, theme } = useStyles();
   const navigate = useNavigate();
@@ -68,14 +69,22 @@ function PluginInfo(props: IPluginInfo) {
         headStyle={{ border: 'none' }}
         bodyStyle={{ paddingTop: 5 }}
         style={{ marginBottom: theme.marginLG }}
-        title={<div onClick={onClick}>{displayName || name || packageName}</div>}
+        title={
+          <div
+            onClick={() => {
+              !error && onClick();
+            }}
+          >
+            {displayName || name || packageName}
+          </div>
+        }
         hoverable
         actions={[
-          <div key="setting" className={classnames({ [styles.cardActionDisabled]: !enabled })}>
+          <div key="setting" className={classnames({ [styles.cardActionDisabled]: !enabled || error })}>
             <SettingOutlined
               onClick={(e) => {
                 e.stopPropagation();
-                if (!enabled) return;
+                if (!enabled || error) return;
                 navigate(`/admin/settings/${name}`);
               }}
             />
@@ -103,7 +112,7 @@ function PluginInfo(props: IPluginInfo) {
           <Switch
             key={'enable'}
             size={'small'}
-            disabled={builtIn}
+            disabled={builtIn || error}
             onChange={async (checked, e) => {
               e.stopPropagation();
               if (!isCompatible && checked) {
@@ -129,25 +138,33 @@ function PluginInfo(props: IPluginInfo) {
           ></Switch>,
         ]}
       >
-        <Row justify="space-between" onClick={onClick}>
+        <Row
+          justify="space-between"
+          onClick={() => {
+            !error && onClick();
+          }}
+        >
           <Col span={16}>
             <Card.Meta
               description={
-                <Space direction="vertical">
+                <Space style={{ height: theme.fontSize * theme.lineHeight * 4 }} direction="vertical">
                   <Typography.Text type="secondary">
                     {t('Version')}: {version}
                   </Typography.Text>
-                  <Typography.Paragraph
-                    type="secondary"
-                    style={{ height: theme.fontSize * theme.lineHeight * 3, marginBottom: 0 }}
-                    ellipsis={{ rows: 3 }}
-                  >
-                    {description}
-                  </Typography.Paragraph>
+                  {!error ? (
+                    <Typography.Paragraph type="secondary" ellipsis={{ rows: 3 }}>
+                      {description}
+                    </Typography.Paragraph>
+                  ) : (
+                    <Typography.Text type="danger">
+                      {t('Plugin loading failed. Please check the server logs.')}
+                    </Typography.Text>
+                  )}
                 </Space>
               }
             />
           </Col>
+
           <Col span={8}>
             <Space direction="vertical" align="end" style={{ display: 'flex', marginTop: -10 }}>
               {newVersion && (
@@ -189,14 +206,16 @@ function PluginInfo(props: IPluginInfo) {
                   {t('Upload new version')}
                 </Button>
               )}
-              {!isCompatible && (
+              {!isCompatible && !error && (
                 <Button style={{ padding: 0 }} type="link">
                   <Typography.Text type="danger">{t('Dependencies check failed')}</Typography.Text>
                 </Button>
               )}
-              <Button style={{ padding: 0 }} type="link">
-                {t('More details')}
-              </Button>
+              {!error && (
+                <Button style={{ padding: 0 }} type="link">
+                  {t('More details')}
+                </Button>
+              )}
             </Space>
           </Col>
         </Row>

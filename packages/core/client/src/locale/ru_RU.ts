@@ -546,4 +546,5 @@ export default {
   "Not enabled": "Не включено",
   "Search plugin": "Поиск плагина",
   "Author": "Автор",
+  "Plugin loading failed. Please check the server logs.": "Не удалось загрузить плагин. Пожалуйста, проверьте журналы сервера.",
 }

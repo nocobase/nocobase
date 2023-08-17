@@ -32,7 +32,8 @@ export const PluginDocument: React.FC<PluginDocumentProps> = memo((props) => {
       res = res.replace(pattern, (match, $1) => match + `onclick="return false;"`); // prevent the default event of <a/>
 
       // replace img src
-      res = res.replace(/src="(.*?)"/g, (match, src) => {
+      res = res.replace(/src="(.*?)"/g, (match, src: string) => {
+        if (src.startsWith('http') || src.startsWith('//:')) return match;
         return `src="/api/plugins/client/@nocobase/plugin-dumu-saas-store/${src}"`;
       });
       return res;
