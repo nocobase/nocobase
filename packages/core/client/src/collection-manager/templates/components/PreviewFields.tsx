@@ -2,7 +2,6 @@ import { Cascader } from '@formily/antd-v5';
 import { useField, useForm } from '@formily/react';
 import { Input, Select, Spin, Table, Tag } from 'antd';
 import { last } from 'lodash';
-import { boolean } from 'mathjs';
 import React, { useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ResourceActionContext, useCompile } from '../../../';
@@ -41,7 +40,7 @@ const PreviewCom = (props) => {
     sources.forEach((item) => {
       const collection = getCollection(item);
       const inherits = getInheritCollections(item);
-      const result = inherits.map((v) => {
+      const result: any[] = inherits.map((v) => {
         const fields = getParentCollectionFields(v, item);
         return {
           type: 'group',
@@ -60,7 +59,7 @@ const PreviewCom = (props) => {
       const children = collection.fields
         .filter((v) => !['hasOne', 'hasMany', 'belongsToMany'].includes(v?.type))
         ?.map((v) => {
-          return { value: v.name, label: t(v.uiSchema?.title) };
+          return { value: v.name, key: v.name, label: t(v.uiSchema?.title) };
         })
         .concat(result);
       data.push({
