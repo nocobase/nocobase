@@ -102,13 +102,6 @@ export class WSServer {
       headers: request.headers,
     });
 
-    this.sendMessageToConnection(this.webSocketClients.get(id), {
-      type: 'connected',
-      payload: {
-        id,
-      },
-    });
-
     this.setClientApp(this.webSocketClients.get(id));
 
     return this.webSocketClients.get(id);

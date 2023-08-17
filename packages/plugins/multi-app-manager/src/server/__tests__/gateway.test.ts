@@ -40,6 +40,9 @@ describe('gateway with multiple apps', () => {
           plugins: [],
         },
       },
+      context: {
+        waitSubAppInstall: true,
+      },
     });
 
     const subApp = await AppSupervisor.getInstance().getApp(subAppName);

@@ -6,7 +6,6 @@ import path, { resolve } from 'path';
 import qs from 'qs';
 import { parse } from 'url';
 import { ApplicationModel } from '../server';
-import App from '../../../../core/client/src/board/demos/demo2';
 
 export type AppDbCreator = (app: Application, transaction?: Transactionable) => Promise<void>;
 export type AppOptionsFactory = (appName: string, mainApp: Application) => any;

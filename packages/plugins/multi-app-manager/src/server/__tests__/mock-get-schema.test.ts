@@ -49,6 +49,9 @@ describe('test with start', () => {
           plugins: ['test-package'],
         },
       },
+      context: {
+        waitSubAppInstall: true,
+      },
     });
 
     expect(loadFn).toHaveBeenCalled();
@@ -77,6 +80,9 @@ describe('test with start', () => {
         options: {
           plugins: ['ui-schema-storage'],
         },
+      },
+      context: {
+        waitSubAppInstall: true,
       },
     });
     const subApp = await AppSupervisor.getInstance().getApp(name);
