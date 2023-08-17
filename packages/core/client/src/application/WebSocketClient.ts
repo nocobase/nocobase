@@ -1,17 +1,21 @@
 import { define, observable } from '@formily/reactive';
+import { getSubAppName } from '@nocobase/sdk';
 
 export const getWebSocketURL = () => {
   if (!process.env.API_BASE_URL) {
     return;
   }
+  const subApp = getSubAppName();
+  const queryString = subApp ? `?__appName=${subApp}` : '';
+  console.log(queryString);
   if (process.env.WEBSOCKET_URL) {
-    return process.env.WEBSOCKET_URL;
+    return `${process.env.WEBSOCKET_URL}${queryString}`;
   }
   try {
     const url = new URL(process.env.API_BASE_URL);
-    return `${url.protocol === 'https:' ? 'wss' : 'ws'}://${url.host}/ws`;
+    return `${url.protocol === 'https:' ? 'wss' : 'ws'}://${url.host}/ws${queryString}`;
   } catch (error) {
-    return `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`;
+    return `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws${queryString}`;
   }
 };
 

@@ -1,8 +1,10 @@
 import { Database, IDatabaseOptions, Transactionable } from '@nocobase/database';
 import Application, { AppSupervisor, Gateway, Plugin } from '@nocobase/server';
-import lodash from 'lodash';
 import { Mutex } from 'async-mutex';
+import lodash from 'lodash';
 import path, { resolve } from 'path';
+import qs from 'qs';
+import { parse } from 'url';
 import { ApplicationModel } from '../server';
 
 export type AppDbCreator = (app: Application, transaction?: Transactionable) => Promise<void>;
@@ -98,6 +100,11 @@ export class PluginMultiAppManager extends Plugin {
 
   async load() {
     Gateway.getInstance().setAppSelector(async (req) => {
+      const appName = qs.parse(parse(req.url).query)?.__appName;
+      if (appName) {
+        return appName;
+      }
+
       if (req.headers['x-app']) {
         return req.headers['x-app'];
       }
