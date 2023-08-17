@@ -8,7 +8,6 @@ import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFilterByTk, useFormBlockContext } from '../../../block-provider';
 import { useCollection, useCollectionManager, useSortFields } from '../../../collection-manager';
-import { isTitleField } from '../../../collection-manager/Configuration/CollectionFields';
 import { GeneralSchemaItems } from '../../../schema-items';
 import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isShowDefaultValue } from '../../../schema-settings';
 import { useIsShowMultipleSwitch } from '../../../schema-settings/hooks/useIsShowMultipleSwitch';
@@ -86,10 +85,11 @@ interface AssociationSelectInterface {
   FilterDesigner: React.FC;
 }
 
-export const AssociationSelect = (InternalAssociationSelect as unknown) as AssociationSelectInterface;
+export const AssociationSelect = InternalAssociationSelect as unknown as AssociationSelectInterface;
 
 AssociationSelect.Designer = function Designer() {
-  const { getCollectionFields, getInterface, getCollectionJoinField, getCollection } = useCollectionManager();
+  const { getCollectionFields, getInterface, getCollectionJoinField, getCollection, isTitleField } =
+    useCollectionManager();
   const { getField } = useCollection();
   const { form } = useFormBlockContext();
   const field = useField<Field>();

@@ -102,13 +102,14 @@ const workflowFieldset = {
     type: 'object',
     'x-component': 'fieldset',
     properties: {
-      useTransaction: {
-        type: 'boolean',
-        title: `{{ t("Use transaction", { ns: "${NAMESPACE}" }) }}`,
-        description: `{{ t("Data operation nodes in workflow will run in a same transaction until any interruption. Any failure will cause data rollback, and will also rollback the history of the execution.", { ns: "${NAMESPACE}" }) }}`,
-        'x-decorator': 'FormItem',
-        'x-component': 'Checkbox',
-      },
+      // NOTE: not to expose this option for now, because hard to track errors
+      // useTransaction: {
+      //   type: 'boolean',
+      //   title: `{{ t("Use transaction", { ns: "${NAMESPACE}" }) }}`,
+      //   description: `{{ t("Data operation nodes in workflow will run in a same transaction until any interruption. Any failure will cause data rollback, and will also rollback the history of the execution.", { ns: "${NAMESPACE}" }) }}`,
+      //   'x-decorator': 'FormItem',
+      //   'x-component': 'Checkbox',
+      // },
       deleteExecutionOnStatus: {
         type: 'array',
         title: `{{ t("Auto delete history when execution is on end status", { ns: "${NAMESPACE}" }) }}`,
@@ -177,7 +178,10 @@ export const workflowSchema: ISchema = {
                   },
                   title: '{{t("Add new")}}',
                   properties: {
-                    ...workflowFieldset,
+                    title: workflowFieldset.title,
+                    type: workflowFieldset.type,
+                    description: workflowFieldset.description,
+                    options: workflowFieldset.options,
                     footer: {
                       type: 'void',
                       'x-component': 'Action.Drawer.Footer',
@@ -338,7 +342,10 @@ export const workflowSchema: ISchema = {
                           },
                           title: '{{ t("Edit") }}',
                           properties: {
-                            ...workflowFieldset,
+                            title: workflowFieldset.title,
+                            enabled: workflowFieldset.enabled,
+                            description: workflowFieldset.description,
+                            options: workflowFieldset.options,
                             footer: {
                               type: 'void',
                               'x-component': 'Action.Drawer.Footer',

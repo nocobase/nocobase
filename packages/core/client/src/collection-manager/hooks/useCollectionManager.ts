@@ -265,6 +265,15 @@ export const useCollectionManager = () => {
     return getInheritChain(collectionName);
   };
 
+  const getInterface = (name: string) => {
+    return interfaces[name] ? clone(interfaces[name]) : null;
+  };
+
+  // 是否可以作为标题字段
+  const isTitleField = (field) => {
+    return !field.isForeignKey && getInterface(field.interface)?.titleUsable;
+  };
+
   return {
     service,
     interfaces,
@@ -303,9 +312,7 @@ export const useCollectionManager = () => {
       }
       return collectionField;
     },
-    getInterface(name: string) {
-      return interfaces[name] ? clone(interfaces[name]) : null;
-    },
+    getInterface,
     getTemplate(name = 'general') {
       return templates[name] ? clone(templates[name] || templates['general']) : null;
     },
@@ -329,5 +336,6 @@ export const useCollectionManager = () => {
     },
     getAllCollectionsInheritChain,
     getInheritCollectionsChain,
+    isTitleField,
   };
 };

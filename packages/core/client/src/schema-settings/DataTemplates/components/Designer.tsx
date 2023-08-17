@@ -8,13 +8,12 @@ import { useTranslation } from 'react-i18next';
 import { GeneralSchemaDesigner, SchemaSettings } from '../..';
 import { mergeFilter, useFormBlockContext } from '../../../block-provider';
 import { useCollectionManager } from '../../../collection-manager';
-import { isTitleField } from '../../../collection-manager/Configuration/CollectionFields';
 import { removeNullCondition, useCompile, useDesignable } from '../../../schema-component';
 import { ITemplate } from '../../../schema-component/antd/form-v2/Templates';
 
 export const Designer = observer(
   () => {
-    const { getCollectionFields, getCollectionField, getCollection } = useCollectionManager();
+    const { getCollectionFields, getCollectionField, getCollection, isTitleField } = useCollectionManager();
     const field = useField<Field>();
     const fieldSchema = useFieldSchema();
     const { t } = useTranslation();

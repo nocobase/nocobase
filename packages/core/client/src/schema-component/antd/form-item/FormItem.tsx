@@ -10,7 +10,6 @@ import { ACLCollectionFieldProvider } from '../../../acl/ACLProvider';
 import { useBlockRequestContext } from '../../../block-provider/BlockProvider';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { Collection, useCollection, useCollectionManager } from '../../../collection-manager';
-import { isTitleField } from '../../../collection-manager/Configuration/CollectionFields';
 import { useRecord } from '../../../record-provider';
 import { GeneralSchemaItems } from '../../../schema-items/GeneralSchemaItems';
 import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isShowDefaultValue } from '../../../schema-settings';
@@ -125,7 +124,8 @@ export const FormItem: any = observer(
 );
 
 FormItem.Designer = function Designer() {
-  const { getCollectionFields, getInterface, getCollectionJoinField, getCollection } = useCollectionManager();
+  const { getCollectionFields, getInterface, getCollectionJoinField, getCollection, isTitleField } =
+    useCollectionManager();
   const { getField } = useCollection();
   const { form } = useFormBlockContext();
   const record = useRecord();
