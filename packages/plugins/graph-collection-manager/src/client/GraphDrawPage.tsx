@@ -24,17 +24,16 @@ import {
   SchemaComponentOptions,
   Select,
   collection,
-  css,
-  cx,
   useAPIClient,
   useCollectionManager,
   useCompile,
   useCurrentAppInfo,
   useGlobalTheme,
 } from '@nocobase/client';
+import { css, cx } from '@emotion/css';
 import lodash from 'lodash';
 import { useFullscreen } from 'ahooks';
-import { Button, ConfigProvider, Input, Layout, Menu, Popover, Switch, Tooltip } from 'antd';
+import { Button, ConfigProvider, Input, Layout, Menu, Popover, Switch, Tooltip, App } from 'antd';
 import dagre from 'dagre';
 import React, { createContext, forwardRef, useContext, useEffect, useLayoutEffect, useState } from 'react';
 import { useAsyncDataSource, useCreateActionAndRefreshCM } from './action-hooks';
@@ -51,7 +50,6 @@ import {
   getPopupContainer,
   useGCMTranslation,
 } from './utils';
-
 const { drop, groupBy, last, maxBy, minBy, take } = lodash;
 
 const LINE_HEIGHT = 40;
@@ -379,6 +377,8 @@ export const GraphDrawPage = React.memo(() => {
   const {
     data: { database },
   } = currentAppInfo;
+  const { modal } = App.useApp();
+  console.log(modal);
   const categoryCtx = useContext(CollectionCategroriesContext);
   const scope = { ...options?.scope };
   const components = { ...options?.components };
@@ -506,7 +506,9 @@ export const GraphDrawPage = React.memo(() => {
                     {/* TODO: 因为画布中的卡片是一次性注册进 Graph 的，这里的 theme 是存在闭包里的，因此当主题动态变更时，并不会触发卡片的重新渲染 */}
                     <ConfigProvider theme={theme}>
                       <div style={{ height: 'auto' }}>
-                        <Entity {...props} setTargetNode={setTargetNode} targetGraph={targetGraph} />
+                        <App>
+                          <Entity {...props} setTargetNode={setTargetNode} targetGraph={targetGraph} />
+                        </App>
                       </div>
                     </ConfigProvider>
                   </CollectionManagerProvider>
@@ -700,9 +702,10 @@ export const GraphDrawPage = React.memo(() => {
   const renderInitGraphCollection = (rawData) => {
     const { nodesData, edgesData, inheritEdges } = formatData(rawData);
     targetGraph.data = { nodes: nodesData, edges: edgesData };
-    getNodes(nodesData);
-    getEdges(edgesData);
-    getEdges(inheritEdges);
+    // getNodes(nodesData);
+    // getEdges(edgesData);
+    // getEdges(inheritEdges);
+    targetGraph.fromJSON({ nodes: nodesData, edges: inheritEdges.concat(edgesData) });
     layout(saveGraphPositionAction);
   };
 
