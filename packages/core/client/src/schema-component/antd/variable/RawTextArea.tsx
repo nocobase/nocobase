@@ -56,7 +56,13 @@ export function RawTextArea(props): JSX.Element {
           }
         `}
       >
-        <VariableSelect options={options} setOptions={setOptions} onInsert={onInsert} changeOnSelect={changeOnSelect} />
+        <VariableSelect
+          fieldNames={props.fieldNames}
+          options={options}
+          setOptions={setOptions}
+          onInsert={onInsert}
+          changeOnSelect={changeOnSelect}
+        />
       </Button.Group>
     </div>
   );

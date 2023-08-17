@@ -29,8 +29,13 @@ export const CustomRequestConfigurationFieldsSchema = {
       title: `{{t("URL", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-decorator-props': {},
-      'x-component': 'Input',
+      'x-component': 'Variable.RawTextArea',
       'x-component-props': {
+        scope: '{{useCustomRequestVariableOptions()}}',
+        fieldNames: {
+          value: 'name',
+          label: 'title',
+        },
         placeholder: 'https://www.nocobase.com',
       },
     },
@@ -60,7 +65,11 @@ export const CustomRequestConfigurationFieldsSchema = {
                 'x-decorator': 'FormItem',
                 'x-component': 'Variable.Input',
                 'x-component-props': {
-                  // scope: '{{useWorkflowVariableOptions()}}',
+                  scope: '{{useCustomRequestVariableOptions()}}',
+                  fieldNames: {
+                    value: 'name',
+                    label: 'title',
+                  },
                   useTypedConstant: true,
                 },
               },
@@ -106,7 +115,11 @@ export const CustomRequestConfigurationFieldsSchema = {
                 'x-decorator': 'FormItem',
                 'x-component': 'Variable.Input',
                 'x-component-props': {
-                  scope: '{{useWorkflowVariableOptions()}}',
+                  scope: '{{useCustomRequestVariableOptions()}}',
+                  fieldNames: {
+                    value: 'name',
+                    label: 'title',
+                  },
                   useTypedConstant: true,
                 },
               },
@@ -132,8 +145,9 @@ export const CustomRequestConfigurationFieldsSchema = {
       title: `{{t("Body", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-decorator-props': {},
-      'x-component': 'RequestBody',
+      'x-component': 'Variable.JSON',
       'x-component-props': {
+        scope: '{{useCustomRequestVariableOptions()}}',
         changeOnSelect: true,
         autoSize: {
           minRows: 10,

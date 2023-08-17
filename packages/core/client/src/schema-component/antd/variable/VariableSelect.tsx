@@ -5,7 +5,13 @@ import { useTranslation } from 'react-i18next';
 import { useToken } from '../__builtins__';
 import useStyles from './VariableSelect.style';
 
-export function VariableSelect({ options, setOptions, onInsert, changeOnSelect = false }): JSX.Element {
+export function VariableSelect({
+  options,
+  setOptions,
+  onInsert,
+  changeOnSelect = false,
+  fieldNames = {},
+}): JSX.Element {
   const { t } = useTranslation();
   const [selectedVar, setSelectedVar] = useState<string[]>([]);
   const { wrapSSR, componentCls, hashId } = useStyles();
@@ -26,6 +32,7 @@ export function VariableSelect({ options, setOptions, onInsert, changeOnSelect =
         placeholder={t('Select a variable')}
         value={[]}
         options={options}
+        fieldNames={fieldNames}
         loadData={loadData}
         onChange={(keyPaths = [], selectedOptions = []) => {
           setSelectedVar(keyPaths as string[]);

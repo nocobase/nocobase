@@ -13,8 +13,9 @@ export class CustomRequestPlugin extends Plugin {
 
     this.app.resource({
       name: 'customRequests',
-      actions: {},
-      only: ['send'],
+      actions: {
+        send() {},
+      },
     });
 
     // this.app.acl.registerSnippet({
