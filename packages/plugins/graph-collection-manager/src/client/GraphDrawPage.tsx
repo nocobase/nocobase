@@ -377,8 +377,6 @@ export const GraphDrawPage = React.memo(() => {
   const {
     data: { database },
   } = currentAppInfo;
-  const { modal } = App.useApp();
-  console.log(modal);
   const categoryCtx = useContext(CollectionCategroriesContext);
   const scope = { ...options?.scope };
   const components = { ...options?.components };
