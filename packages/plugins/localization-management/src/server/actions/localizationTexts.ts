@@ -1,6 +1,5 @@
-import { Context, Next } from '@nocobase/actions';
+import { Context, Next, DEFAULT_PAGE, DEFAULT_PER_PAGE } from '@nocobase/actions';
 import { Database, Model, Op } from '@nocobase/database';
-import { DEFAULT_PAGE, DEFAULT_PER_PAGE } from '../constans';
 
 const appendTranslations = async (db: Database, rows: Model[], locale: string): Promise<any[]> => {
   const texts = rows || [];

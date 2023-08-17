@@ -710,10 +710,13 @@ const findSchema = (schema: Schema, key: string, action: string) => {
     if (s[key] === action) {
       return s;
     }
-    const c = findSchema(s, key, action);
-    if (c) {
-      return c;
+    if (s['x-component'] !== 'Action.Container') {
+      const c = findSchema(s, key, action);
+      if (c) {
+        return c;
+      }
     }
+
     return buf;
   });
 };
@@ -741,7 +744,6 @@ export const useCurrentSchema = (action: string, key: string, find = findSchema,
   const { remove } = useDesignable();
   const schema = find(fieldSchema, key, action);
   const ctx = useContext(BlockRequestContext);
-
   return {
     schema,
     exists: !!schema,

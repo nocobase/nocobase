@@ -137,7 +137,9 @@ export const AMapBlock = (props) => {
           return overlay;
         });
       })
-      .flat();
+      .flat()
+      .filter(Boolean);
+
     mapRef.current?.map?.setFitView(overlays);
 
     const events = overlays.map((o: AMap.Marker) => {

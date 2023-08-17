@@ -7,6 +7,8 @@ import * as actions from './actions';
 
 export * as utils from './utils';
 
+export * from './constants';
+
 export type Next = () => Promise<any>;
 
 export interface Context extends Koa.Context {
