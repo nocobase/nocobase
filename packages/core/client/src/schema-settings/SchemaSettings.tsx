@@ -787,7 +787,7 @@ SchemaSettings.PopupItem = function PopupItem(props) {
 };
 
 SchemaSettings.ActionModalItem = React.memo((props: any) => {
-  const { title, onSubmit, initialValues, initialSchema, schema, modalTip, components, ...others } = props;
+  const { title, onSubmit, initialValues, initialSchema, schema, modalTip, components, scope, ...others } = props;
   const [visible, setVisible] = useState(false);
   const [schemaUid, setSchemaUid] = useState<string>(props.uid);
   const { t } = useTranslation();
@@ -862,8 +862,10 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
               <FormLayout layout={'vertical'}>
                 {modalTip && <Alert message={modalTip} />}
                 {modalTip && <br />}
-                {visible && schemaUid && <RemoteSchemaComponent noForm components={components} uid={schemaUid} />}
-                {visible && schema && <SchemaComponent components={components} schema={schema} />}
+                {visible && schemaUid && (
+                  <RemoteSchemaComponent noForm components={components} scope={scope} uid={schemaUid} />
+                )}
+                {visible && schema && <SchemaComponent components={components} scope={scope} schema={schema} />}
               </FormLayout>
             </FormProvider>
           </Modal>

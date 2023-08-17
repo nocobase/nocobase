@@ -29,36 +29,28 @@ function CustomRequestSettingsItem() {
   );
   const customRequests = apiClient.resource('customRequests');
 
-  return (
-    <SchemaComponentOptions
+  return data ? (
+    <SchemaSettings.ActionModalItem
+      title={t('Request settings')}
       components={{
         ArrayItems,
       }}
-      scope={{
-        useCustomRequestVariableOptions,
+      schema={CustomRequestConfigurationFieldsSchema}
+      initialValues={data?.data?.options}
+      onSubmit={(requestSettings) => {
+        customRequests.updateOrCreate({
+          values: {
+            key: fieldSchema['x-uid'],
+            options: {
+              ...requestSettings,
+              collectionName: name,
+            },
+          },
+          filterKeys: ['key'],
+        });
       }}
-    >
-      {data ? (
-        <SchemaSettings.ActionModalItem
-          title={t('Request settings')}
-          schema={CustomRequestConfigurationFieldsSchema}
-          initialValues={data?.data?.options}
-          onSubmit={(requestSettings) => {
-            customRequests.updateOrCreate({
-              values: {
-                key: fieldSchema['x-uid'],
-                options: {
-                  ...requestSettings,
-                  collectionName: name,
-                },
-              },
-              filterKeys: ['key'],
-            });
-          }}
-        />
-      ) : null}
-    </SchemaComponentOptions>
-  );
+    />
+  ) : null;
 }
 
 export const CustomRequestActionDesigner: React.FC = () => {
