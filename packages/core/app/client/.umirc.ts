@@ -53,6 +53,9 @@ export default defineConfig({
     edge: 79,
     safari: 12,
   },
+  codeSplitting: {
+    jsStrategy: 'depPerChunk'
+  },
   chainWebpack(config, { env }) {
     if (env === 'production') {
       config.plugin('ignore nocobase plugins').use(require('webpack').IgnorePlugin, [
