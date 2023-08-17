@@ -92,7 +92,7 @@ const uploadSchema: ISchema = {
             height: '150px',
             tipContent: `{{t('Drag and drop the file here or click to upload, file size should not exceed 30M')}}`,
             beforeUpload: (file: RcFile) => {
-              const compressedFileRegex = /\.(zip|rar|tar|gz|bz2)$/;
+              const compressedFileRegex = /\.(zip|rar|tar|gz|bz2|tgz)$/;
               const isCompressedFile = compressedFileRegex.test(file.name);
               if (!isCompressedFile) {
                 message.error('File only support zip, rar, tar, gz, bz2!');

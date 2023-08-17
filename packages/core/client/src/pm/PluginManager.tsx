@@ -108,7 +108,7 @@ const LocalPlugins = () => {
           if (isRefresh) refresh();
         }}
       />
-      <Space direction="vertical" size="middle" style={{ display: 'flex' }}>
+      <Space direction="vertical" size="middle" style={{ display: 'flex', width: '100%' }}>
         <Row justify="space-between">
           <Col>
             <Space size={0} split={<Divider type="vertical" />}>
@@ -192,7 +192,7 @@ export const PluginManager = () => {
           />
         }
       />
-      <div className={styles.pageContent} style={{ display: 'flex', flexFlow: 'row wrap' }}>
+      <div className={styles.pageContent} style={{ display: 'flex', width: '100%', flexFlow: 'row wrap' }}>
         {React.createElement(
           {
             local: LocalPlugins,
