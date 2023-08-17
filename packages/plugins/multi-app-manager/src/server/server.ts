@@ -6,6 +6,7 @@ import path, { resolve } from 'path';
 import qs from 'qs';
 import { parse } from 'url';
 import { ApplicationModel } from '../server';
+import App from '../../../../core/client/src/board/demos/demo2';
 
 export type AppDbCreator = (app: Application, transaction?: Transactionable) => Promise<void>;
 export type AppOptionsFactory = (appName: string, mainApp: Application) => any;
@@ -142,16 +143,12 @@ export class PluginMultiAppManager extends Plugin {
 
       // create database
       await this.appDbCreator(subApp, transaction);
-      await subApp.reload();
-      await subApp.db.sync();
-      await subApp.install();
-      await subApp.reload();
 
-      if (AppSupervisor.getInstance().getAppStatus(this.app.name) !== 'running') {
-        return;
+      const startPromise = subApp.runAsCLI(['start', '--quickstart'], { from: 'user' });
+
+      if (options?.context?.waitSubAppInstall) {
+        await startPromise;
       }
-
-      await subApp.runCommand('start');
     });
 
     this.db.on('applications.afterDestroy', async (model: ApplicationModel) => {
@@ -291,13 +288,7 @@ export class PluginMultiAppManager extends Plugin {
         try {
           console.log(`${instance.name}: upgrading...`);
 
-          await subApp.upgrade({
-            cliArgs,
-          });
-
-          await subApp.stop({
-            cliArgs,
-          });
+          await subApp.runAsCLI(['upgrade'], { from: 'user' });
         } catch (error) {
           console.log(`${instance.name}: upgrade failed`);
           this.app.logger.error(error);

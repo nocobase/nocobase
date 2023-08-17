@@ -78,9 +78,13 @@ pgOnly()('collection sync', () => {
       values: {
         name: 'sub1',
       },
+      context: {
+        waitSubAppInstall: true,
+      },
     });
 
     const sub1 = await AppSupervisor.getInstance().getApp('sub1');
+
     // create user at main app
     await mainApp.db.getRepository('users').create({
       values: {
@@ -99,10 +103,15 @@ pgOnly()('collection sync', () => {
       },
       appends: ['roles'],
     });
+
     expect(user.get('roles').map((item) => item.name)).toEqual([defaultRole.name]);
+
     await mainApp.db.getRepository('applications').create({
       values: {
         name: 'sub2',
+      },
+      context: {
+        waitSubAppInstall: true,
       },
     });
     const sub2 = await AppSupervisor.getInstance().getApp('sub2');
@@ -125,6 +134,9 @@ pgOnly()('collection sync', () => {
       values: {
         name: 'sub1',
       },
+      context: {
+        waitSubAppInstall: true,
+      },
     });
 
     await AppSupervisor.getInstance().removeApp('sub1');
@@ -138,6 +150,9 @@ pgOnly()('collection sync', () => {
     await mainApp.db.getRepository('applications').create({
       values: {
         name: 'sub1',
+      },
+      context: {
+        waitSubAppInstall: true,
       },
     });
 
@@ -165,6 +180,9 @@ pgOnly()('collection sync', () => {
       values: {
         name: 'sub1',
       },
+      context: {
+        waitSubAppInstall: true,
+      },
     });
     const sub1 = await AppSupervisor.getInstance().getApp('sub1');
     const getSubAppMapRecord = async (app) => {
@@ -183,6 +201,9 @@ pgOnly()('collection sync', () => {
       values: {
         name: 'sub2',
       },
+      context: {
+        waitSubAppInstall: true,
+      },
     });
     const sub2 = await AppSupervisor.getInstance().getApp('sub2');
     expect((await getSubAppMapRecord(sub2)).get('enabled')).toBeTruthy();
@@ -193,6 +214,9 @@ pgOnly()('collection sync', () => {
     await mainDb.getRepository('applications').create({
       values: {
         name: 'sub1',
+      },
+      context: {
+        waitSubAppInstall: true,
       },
     });
 
@@ -217,6 +241,9 @@ pgOnly()('collection sync', () => {
     const subApp1Record = await mainDb.getRepository('applications').create({
       values: {
         name: 'sub1',
+      },
+      context: {
+        waitSubAppInstall: true,
       },
     });
 
@@ -249,6 +276,9 @@ pgOnly()('collection sync', () => {
       values: {
         name: 'sub1',
       },
+      context: {
+        waitSubAppInstall: true,
+      },
     });
 
     const subApp1 = await AppSupervisor.getInstance().getApp(subApp1Record.name);
@@ -273,12 +303,18 @@ pgOnly()('collection sync', () => {
       values: {
         name: 'sub1',
       },
+      context: {
+        waitSubAppInstall: true,
+      },
     });
     const subApp1 = await AppSupervisor.getInstance().getApp(subApp1Record.name);
 
     const subApp2Record = await mainDb.getRepository('applications').create({
       values: {
         name: 'sub2',
+      },
+      context: {
+        waitSubAppInstall: true,
       },
     });
     const subApp2 = await AppSupervisor.getInstance().getApp(subApp2Record.name);
@@ -312,6 +348,9 @@ pgOnly()('collection sync', () => {
     const subApp1Record = await mainDb.getRepository('applications').create({
       values: {
         name: 'sub1',
+      },
+      context: {
+        waitSubAppInstall: true,
       },
     });
 
@@ -436,6 +475,9 @@ pgOnly()('collection sync', () => {
       values: {
         name: 'sub1',
       },
+      context: {
+        waitSubAppInstall: true,
+      },
     });
 
     const sub1 = await AppSupervisor.getInstance().getApp('sub1');
@@ -470,6 +512,9 @@ pgOnly()('collection sync', () => {
     await mainApp.db.getRepository('applications').create({
       values: {
         name: 'sub1',
+      },
+      context: {
+        waitSubAppInstall: true,
       },
     });
 

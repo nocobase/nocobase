@@ -16,7 +16,8 @@ describe('multiple apps', () => {
     await app.cleanDb();
     app.plugin(PluginMultiAppManager);
 
-    await app.loadAndInstall();
+    await app.runCommand('install');
+    await app.runCommand('start');
   });
 
   afterEach(async () => {
@@ -43,6 +44,9 @@ describe('multiple apps', () => {
           plugins: [],
         },
       },
+      context: {
+        waitSubAppInstall: true,
+      },
     });
 
     await AppSupervisor.getInstance().removeApp(name);
@@ -60,9 +64,13 @@ describe('multiple apps', () => {
           plugins: [],
         },
       },
+      context: {
+        waitSubAppInstall: true,
+      },
     });
 
-    expect(await AppSupervisor.getInstance().getApp(name)).toBeDefined();
+    const subAppStatus = AppSupervisor.getInstance().getAppStatus(name);
+    expect(subAppStatus).toEqual('running');
   });
 
   it('should list application with status', async () => {
@@ -73,6 +81,9 @@ describe('multiple apps', () => {
         options: {
           plugins: [],
         },
+      },
+      context: {
+        waitSubAppInstall: true,
       },
     });
 
@@ -117,6 +128,9 @@ describe('multiple apps', () => {
           plugins: [],
         },
       },
+      context: {
+        waitSubAppInstall: true,
+      },
     });
 
     expect(AppSupervisor.getInstance().hasApp(name)).toBeTruthy();
@@ -138,6 +152,9 @@ describe('multiple apps', () => {
         options: {
           plugins: [['ui-schema-storage', { test: 'B' }]],
         },
+      },
+      context: {
+        waitSubAppInstall: true,
       },
     });
 
@@ -163,6 +180,9 @@ describe('multiple apps', () => {
           plugins: ['ui-schema-storage'],
         },
       },
+      context: {
+        waitSubAppInstall: true,
+      },
     });
 
     // remove it from supervisor
@@ -186,6 +206,9 @@ describe('multiple apps', () => {
         options: {
           plugins: [],
         },
+      },
+      context: {
+        waitSubAppInstall: true,
       },
     });
 
@@ -211,8 +234,10 @@ describe('multiple apps', () => {
           plugins: [],
         },
       },
+      context: {
+        waitSubAppInstall: true,
+      },
     });
-
     await AppSupervisor.getInstance().removeApp(subAppName);
 
     await app.start();
@@ -244,6 +269,9 @@ describe('multiple apps', () => {
         options: {
           plugins: [],
         },
+      },
+      context: {
+        waitSubAppInstall: true,
       },
     });
 

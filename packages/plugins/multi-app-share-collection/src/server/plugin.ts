@@ -84,6 +84,9 @@ class SubAppPlugin extends Plugin {
 
     // new subApp sync plugins from mainApp
     subApp.on('beforeInstall', async () => {
+      // sync applicationPlugins collection
+      await subApp.db.sync();
+
       const subAppPluginsCollection = subApp.db.getCollection('applicationPlugins');
       const mainAppPluginsCollection = mainApp.db.getCollection('applicationPlugins');
 
@@ -107,6 +110,8 @@ class SubAppPlugin extends Plugin {
           sequenceName[0]['pg_get_serial_sequence']
         }', (SELECT max("id") FROM ${subAppPluginsCollection.quotedTableName()}));
       `);
+
+      await subApp.reload();
 
       console.log(`sync plugins from ${mainApp.name} app to sub app ${subApp.name}`);
     });

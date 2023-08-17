@@ -104,7 +104,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   declare middleware: any;
   stopped = false;
   ready = false;
-  startMode = false;
   declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
   public rawOptions: ApplicationOptions;
   public activatedCommand: {
@@ -414,7 +413,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
       return command;
     } catch (error) {
-      console.log(error);
+      console.log(`run command ${this.activatedCommand.name} error:`, error);
       this.setMaintaining({
         status: 'command_error',
         command: this.activatedCommand,
@@ -438,7 +437,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       );
     }
 
-    this.startMode = true;
     this.setWorkingMessage('starting app...');
 
     if (this.db.closed()) {

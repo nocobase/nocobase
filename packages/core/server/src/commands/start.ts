@@ -8,8 +8,6 @@ export default (app: Application) => {
     .action(async (...cliArgs) => {
       const [opts] = cliArgs;
 
-      console.log('opts.quickstart', opts.quickstart);
-
       if (opts.quickstart) {
         if (await app.isInstalled()) {
           app.log.debug('installed....');
