@@ -326,14 +326,8 @@ export class PluginMultiAppManager extends Plugin {
       if (actionName === 'list' && resourceName === 'applications') {
         const applications = ctx.body.rows;
         for (const application of applications) {
-          const app = await AppSupervisor.getInstance().getApp(application.name, {
-            withOutBootStrap: true,
-          });
-          if (app) {
-            application.status = 'running';
-          } else {
-            application.status = 'stopped';
-          }
+          const appStatus = AppSupervisor.getInstance().getAppStatus(application.name, 'stopped');
+          application.status = appStatus;
         }
       }
     });
