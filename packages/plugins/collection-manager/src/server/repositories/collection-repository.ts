@@ -11,7 +11,9 @@ interface LoadOptions {
 export class CollectionRepository extends Repository {
   async load(options: LoadOptions = {}) {
     const { filter, skipExist } = options;
+    console.log('start load collections');
     const instances = (await this.find({ filter, appends: ['fields'] })) as CollectionModel[];
+    console.log('end load collections');
 
     const graphlib = CollectionsGraph.graphlib();
 
@@ -96,6 +98,8 @@ export class CollectionRepository extends Repository {
     for (const [collectionName, skipField] of Object.entries(lazyCollectionFields)) {
       await nameMap[collectionName].loadFields({ includeFields: skipField });
     }
+
+    console.log('finished load collection');
   }
 
   async db2cm(collectionName: string) {

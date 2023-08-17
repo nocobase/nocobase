@@ -100,35 +100,6 @@ export class PluginMultiAppManager extends Plugin {
   }
 
   async load() {
-    Gateway.getInstance().setAppSelector(async (req) => {
-      const appName = qs.parse(parse(req.url).query)?.__appName;
-      if (appName) {
-        return appName;
-      }
-
-      if (req.headers['x-app']) {
-        return req.headers['x-app'];
-      }
-
-      if (req.headers['x-hostname']) {
-        const repository = this.db.getRepository('applications');
-        if (!repository) {
-          return null;
-        }
-        const appInstance = await repository.findOne({
-          filter: {
-            cname: req.headers['x-hostname'],
-          },
-        });
-
-        if (appInstance) {
-          return appInstance.name;
-        }
-      }
-
-      return null;
-    });
-
     await this.db.import({
       directory: resolve(__dirname, 'collections'),
     });
@@ -205,6 +176,35 @@ export class PluginMultiAppManager extends Plugin {
     }
 
     AppSupervisor.getInstance().setAppBootstrapper(LazyLoadApplication);
+
+    Gateway.getInstance().setAppSelector(async (req) => {
+      const appName = qs.parse(parse(req.url).query)?.__appName;
+      if (appName) {
+        return appName;
+      }
+
+      if (req.headers['x-app']) {
+        return req.headers['x-app'];
+      }
+
+      if (req.headers['x-hostname']) {
+        const repository = this.db.getRepository('applications');
+        if (!repository) {
+          return null;
+        }
+        const appInstance = await repository.findOne({
+          filter: {
+            cname: req.headers['x-hostname'],
+          },
+        });
+
+        if (appInstance) {
+          return appInstance.name;
+        }
+      }
+
+      return null;
+    });
 
     this.app.on('afterStart', async (app) => {
       const repository = this.db.getRepository('applications');

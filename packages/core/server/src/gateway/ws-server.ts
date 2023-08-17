@@ -54,6 +54,8 @@ export class WSServer {
 
         client.tags = client.tags.filter((tag) => !tag.startsWith('app#'));
         client.tags.push(`app#${handleAppName}`);
+
+        AppSupervisor.getInstance().bootStrapApp(handleAppName);
       });
     });
 
@@ -98,6 +100,13 @@ export class WSServer {
       tags: [],
       url: request.url,
       headers: request.headers,
+    });
+
+    this.sendMessageToConnection(this.webSocketClients.get(id), {
+      type: 'connected',
+      payload: {
+        id,
+      },
     });
 
     this.setClientApp(this.webSocketClients.get(id));
