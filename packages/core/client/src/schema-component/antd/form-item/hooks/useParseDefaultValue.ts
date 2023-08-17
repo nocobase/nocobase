@@ -44,6 +44,11 @@ const useParseDefaultValue = () => {
           field.reset();
         }
         field.loading = false;
+
+        // 如果不是一个有效的变量字符串（如：`{{ $user.name }}`）却依然包含 `{{` 和 `}}`，
+        // 则可以断定是一个需要 compile（`useCompile` 返回的函数） 的字符串，这样的字符串会有 formily 自动解析，无需在这里赋值
+      } else if (schema.default && !/\{\{.+\}\}/g.test(schema.default) && field.setInitialValue) {
+        field.setInitialValue(schema.default);
       }
     };
 
