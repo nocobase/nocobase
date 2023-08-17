@@ -13,10 +13,8 @@ export const useCustomRequestVariableOptions = () => {
   const [fields, userFields] = useMemo(() => {
     return [compile(fieldsOptions), compile(userFieldOptions)];
   }, [fieldsOptions, userFieldOptions]);
-
-  const scope = useVariableScope();
-  const options = useMemo(() => {
-    const opt = [
+  return useMemo(() => {
+    return [
       {
         name: 'currentRecord',
         title: t('Current record'),
@@ -47,9 +45,5 @@ export const useCustomRequestVariableOptions = () => {
         children: null,
       },
     ];
-    const next = opt.concat(scope);
-    return next;
-  }, [fields, userFields, scope]);
-
-  return options;
+  }, [fields, userFields]);
 };

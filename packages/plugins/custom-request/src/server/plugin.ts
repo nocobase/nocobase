@@ -1,5 +1,6 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
+import { send } from './actions/send';
 
 export class CustomRequestPlugin extends Plugin {
   afterAdd() {}
@@ -14,7 +15,7 @@ export class CustomRequestPlugin extends Plugin {
     this.app.resource({
       name: 'customRequests',
       actions: {
-        send() {},
+        send,
       },
     });
 

@@ -10,19 +10,11 @@ import {
   useCurrentUserContext,
   useFilterByTk,
   useRecord,
+  useRequest,
 } from '@nocobase/client';
-import { parse } from '@nocobase/utils';
 import { App } from 'antd';
 import { isURL } from '@nocobase/utils/client';
-import { get } from 'lodash';
 import { useNavigate } from 'react-router-dom';
-
-function renderTemplate(str: string, data: any) {
-  const re = /\{\{\s*((\w+\.?)+)\s*\}\}/g;
-  return str.replace(re, function (_, key) {
-    return get(data, key) || '';
-  });
-}
 
 export const useCustomizeRequestActionProps = () => {
   const apiClient = useAPIClient();
@@ -31,47 +23,51 @@ export const useCustomizeRequestActionProps = () => {
   const actionSchema = useFieldSchema();
   const compile = useCompile();
   const form = useForm();
-  const { fields, getField } = useCollection();
+  const { fields, getField, getPrimaryKey } = useCollection();
   const { field, resource, __parent, service } = useBlockRequestContext();
-  const currentRecord = useRecord();
-  const currentUserContext = useCurrentUserContext();
-  const currentUser = currentUserContext?.data?.data;
+  const record = useRecord();
+  const fieldSchema = useFieldSchema();
+  const url = `customRequests:get/${fieldSchema['x-uid']}`;
+  const { data } = useRequest<{ data: { options: any } }>(
+    {
+      url,
+    },
+    {
+      cacheKey: url,
+    },
+  );
+
   const actionField = useField();
   const { setVisible } = useActionContext();
   const { modal, message } = App.useApp();
 
   return {
     async onClick() {
-      const { skipValidator, onSuccess, requestSettings } = actionSchema?.['x-action-settings'] ?? {};
+      const { skipValidator, onSuccess } = actionSchema?.['x-action-settings'] ?? {};
+      const options = data?.data?.options;
+      if (!options?.['url']) return;
       const xAction = actionSchema?.['x-action'];
-      if (!requestSettings['url']) {
-        return;
-      }
       if (skipValidator !== true && xAction === 'customize:form:request') {
         await form.submit();
       }
 
-      const headers = requestSettings['headers'] ? JSON.parse(requestSettings['headers']) : {};
-      const params = requestSettings['params'] ? JSON.parse(requestSettings['params']) : {};
-      const data = requestSettings['data'] ? JSON.parse(requestSettings['data']) : {};
+      const requestConfig = {};
       const methods = ['POST', 'PUT', 'PATCH'];
-      if (xAction === 'customize:form:request' && methods.includes(requestSettings['method'])) {
+      if (xAction === 'customize:form:request' && methods.includes(options['method'])) {
         const fieldNames = fields.map((field) => field.name);
         const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
-        Object.assign(data, values);
+        requestConfig['data'] = values;
       }
-      const requestBody = {
-        url: renderTemplate(requestSettings['url'], { currentRecord, currentUser }),
-        method: requestSettings['method'],
-        headers: parse(headers)({ currentRecord, currentUser }),
-        params: parse(params)({ currentRecord, currentUser }),
-        data: parse(data)({ currentRecord, currentUser }),
-      };
-      actionField.data = field.data || {};
+
+      actionField.data ??= {};
       actionField.data.loading = true;
       try {
         await apiClient.request({
-          ...requestBody,
+          url: `/customRequests:send/${fieldSchema['x-uid']}`,
+          data: {
+            requestConfig,
+            currentRecord: record[getPrimaryKey()],
+          },
         });
         actionField.data.loading = false;
         if (!(resource instanceof TableFieldResource)) {

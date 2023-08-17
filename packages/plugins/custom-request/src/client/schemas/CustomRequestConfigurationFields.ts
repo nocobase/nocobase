@@ -148,6 +148,10 @@ export const CustomRequestConfigurationFieldsSchema = {
       'x-component': 'Variable.JSON',
       'x-component-props': {
         scope: '{{useCustomRequestVariableOptions()}}',
+        fieldNames: {
+          value: 'name',
+          label: 'title',
+        },
         changeOnSelect: true,
         autoSize: {
           minRows: 10,
