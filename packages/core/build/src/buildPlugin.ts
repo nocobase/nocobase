@@ -297,6 +297,7 @@ export function buildPluginClient(cwd: string, sourcemap: boolean, log: PkgLog) 
         name: packageJson.name,
         fileName: () => outputFileName,
       },
+      target: ['es2015', 'edge88', 'firefox78', 'chrome87', 'safari14'],
       rollupOptions: {
         cache: true,
         external: [...Object.keys(globals), 'react', 'react/jsx-runtime'],

@@ -32,6 +32,7 @@ export function viteBuild(cwd: string, sourcemap: boolean, format: 'cjs' | 'es')
         formats: [format],
         fileName: 'index',
       },
+      target: ['es2015', 'edge88', 'firefox78', 'chrome87', 'safari14'],
       rollupOptions: {
         cache: true,
         treeshake: true,
