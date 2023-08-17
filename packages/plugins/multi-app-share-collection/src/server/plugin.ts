@@ -196,31 +196,9 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       });
     });
 
-    this.app.db.on('collection:loaded', async ({ transaction, collection }) => {
-      await traverseSubApps(async (subApp) => {
-        const name = collection.name;
-
-        const collectionRecord = await subApp.db.getRepository('collections').findOne({
-          filter: {
-            name,
-          },
-          transaction,
-        });
-
-        await collectionRecord.load({ transaction });
-      });
-    });
-
-    this.app.db.on('field:loaded', async ({ transaction, fieldKey }) => {
-      await traverseSubApps(async (subApp) => {
-        const fieldRecord = await subApp.db.getRepository('fields').findOne({
-          filterByTk: fieldKey,
-          transaction,
-        });
-
-        if (fieldRecord) {
-          await fieldRecord.load({ transaction });
-        }
+    this.app.on('__restarted', () => {
+      traverseSubApps((subApp) => {
+        subApp.runCommand('restart');
       });
     });
 
@@ -237,7 +215,7 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       traverseSubApps((subApp) => {
         for (const pluginName of lodash.castArray(pluginNames)) {
           if (subAppFilteredPlugins.includes(pluginName)) return;
-          subApp.runAsCLI(['pm', 'enable', pluginName], { from: 'user' });
+          subApp.runAsCLI(['pm', 'disable', pluginName], { from: 'user' });
         }
       });
     });

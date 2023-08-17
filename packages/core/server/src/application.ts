@@ -459,6 +459,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._started = false;
     await this.reload(options);
     await this.start(options);
+    this.emit('__restarted', this, options);
   }
 
   async stop(options: any = {}) {

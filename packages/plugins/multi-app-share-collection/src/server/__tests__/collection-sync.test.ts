@@ -294,6 +294,8 @@ pgOnly()('collection sync', () => {
       context: {},
     });
 
+    await subApp1.runCommand('restart');
+
     const postCollection = subApp1.db.getCollection('posts');
 
     expect(postCollection.options.schema).toBe(
