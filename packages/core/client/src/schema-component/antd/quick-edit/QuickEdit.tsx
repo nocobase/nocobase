@@ -10,7 +10,7 @@ export const Editable = observer((props) => {
   const field: any = useField();
   const containerRef = useRef(null);
   const fieldSchema = useFieldSchema();
-  const value = typeof field.value === 'object' ? field.value?.default : field.value;
+  const value = field.value;
   const schema: any = {
     name: fieldSchema.name,
     'x-collection-field': fieldSchema['x-collection-field'],
