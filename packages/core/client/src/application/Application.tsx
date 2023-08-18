@@ -131,7 +131,8 @@ export class Application {
       if (maintaining) {
         this.maintaining = true;
         this.error = data.payload;
-      } else if (this.maintaining && !this.maintained) {
+      } else if (this.maintaining) {
+        //  && !this.maintained
         window.location.reload();
         return;
       } else {
