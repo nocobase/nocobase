@@ -38,10 +38,8 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     [appName: string]: AppStatus;
   } = {};
 
-  private appBootMutex = new Mutex();
+  private appMutexes = {};
   private appBootstrapper: AppBootstrapper = null;
-
-  private mainAppName = 'main';
 
   private constructor() {
     super();
@@ -105,8 +103,16 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     });
   }
 
+  getMutexOfApp(appName: string) {
+    if (!this.appMutexes[appName]) {
+      this.appMutexes[appName] = new Mutex();
+    }
+
+    return this.appMutexes[appName];
+  }
+
   async bootStrapApp(appName: string, options = {}) {
-    await this.appBootMutex.runExclusive(async () => {
+    await this.getMutexOfApp(appName).runExclusive(async () => {
       if (!this.hasApp(appName)) {
         this.setAppStatus(appName, 'initializing');
 
