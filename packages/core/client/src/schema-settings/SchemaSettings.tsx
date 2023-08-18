@@ -1580,6 +1580,11 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
                   s.name = 'default';
                   s['x-read-pretty'] = false;
                   s['x-disabled'] = false;
+
+                  if (collectionField.target) {
+                    s['x-component-props'].mode = 'Select';
+                  }
+
                   const defaultValue = getFieldDefaultValue(s, collectionField);
                   const schema = {
                     ...(s || {}),
@@ -1624,7 +1629,6 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
           schema,
           currentSchema,
         });
-        dn.refresh();
       }}
     />
   );
