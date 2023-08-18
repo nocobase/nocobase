@@ -499,7 +499,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.emitAsync('afterDestroy', this, options);
 
     this.logger.debug('finish destroy app');
-    this.setWorkingMessage('destroyed');
   }
 
   async dbVersionCheck(options?: { exit?: boolean }) {

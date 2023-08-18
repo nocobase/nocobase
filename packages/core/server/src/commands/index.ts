@@ -10,6 +10,7 @@ export function registerCli(app: Application) {
   require('./start').default(app);
   require('./restart').default(app);
   require('./stop').default(app);
+  require('./destroy').default(app);
   require('./upgrade').default(app);
   require('./pm').default(app);
 
