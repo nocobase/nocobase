@@ -17,7 +17,7 @@ export default {
 
 function customLogger(queryString, queryObject) {
   console.log(queryString); // outputs a string
-  if (queryObject.bind) {
+  if (queryObject?.bind) {
     console.log(queryObject.bind); // outputs an array
   }
 }
