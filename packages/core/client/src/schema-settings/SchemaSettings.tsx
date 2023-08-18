@@ -835,7 +835,7 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
         initialValues: cloneDeep(initialValues),
         values: cloneDeep(initialValues),
       }),
-    [],
+    [initialValues],
   );
 
   const cancelHandler = useCallback(() => {
