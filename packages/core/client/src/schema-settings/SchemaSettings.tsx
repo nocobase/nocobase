@@ -1576,6 +1576,7 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
                 shouldChange: getShouldChange({ collectionField, variables, localVariables }),
                 renderSchemaComponent: function Com(props) {
                   const s = _.cloneDeep(fieldSchemaWithoutRequired) || ({} as Schema);
+                  s.type = 'void';
                   s.title = '';
                   s.name = 'default';
                   s['x-read-pretty'] = false;
@@ -1609,7 +1610,7 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
                     default: isVariable(defaultValue) ? '' : defaultValue,
                   } as ISchema;
                   return (
-                    <FormProvider form={form}>
+                    <FormProvider>
                       <SchemaComponent schema={schema} />
                     </FormProvider>
                   );
