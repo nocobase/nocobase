@@ -61,6 +61,7 @@ const OperationButton: any = React.memo((props: any) => {
           AddFieldAction,
           OverrideFieldAction,
           ViewFieldAction,
+          EditFieldAction,
           ...options.components,
         }}
         scope={{
@@ -102,7 +103,7 @@ const OperationButton: any = React.memo((props: any) => {
                 update: {
                   type: 'void',
                   'x-action': 'update',
-                  'x-component': EditFieldAction,
+                  'x-component': 'EditFieldAction',
                   'x-visible': '{{isInheritField}}',
                   'x-component-props': {
                     item: {
@@ -205,6 +206,7 @@ const PopoverContent = React.memo((props: any) => {
   const operatioBtnProps = {
     title,
     name,
+    node,
     ...other,
   };
   const typeColor = (v) => {
