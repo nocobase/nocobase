@@ -12,13 +12,14 @@ const useLazyLoadAssociationField = () => {
   const { name } = useCollection();
   const { getCollectionJoinField } = useCollectionManager();
   const form = useForm();
-  const schema = useFieldSchema();
+  const fieldSchema = useFieldSchema();
   const variables = useVariables();
   const field = useField<Field>();
 
-  const schemaName = schema.name.toString();
+  const schemaName = fieldSchema.name.toString();
 
   useEffect(() => {
+    // 在数据表管理页面，也存在 `a.b` 之类的 schema name，其 collectionName 为 fields，所以在这里排除一下 `name === 'fields'` 的情况
     if (!schemaName.includes('.') || !variables || name === 'fields') {
       return;
     }
