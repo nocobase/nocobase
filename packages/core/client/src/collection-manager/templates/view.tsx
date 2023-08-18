@@ -132,10 +132,13 @@ export const view: ICollectionTemplate = {
           schema: {
             'x-component-props': '{{$form.values}}', //任意层次属性都支持表达式
           },
+          state: {
+            visible: `{{$deps[1]?.length > 0}}`,
+          },
         },
       },
     },
- 
+
     ...getConfigurableProperties('category'),
   },
 };

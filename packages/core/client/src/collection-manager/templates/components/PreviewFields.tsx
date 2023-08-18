@@ -90,9 +90,11 @@ const PreviewCom = (props) => {
               }
             });
             field.value = fieldsData;
-            setDataSource(fieldsData);
-            form.setValuesIn('sources', data.data?.sources);
-            setSourceCollections(data.data?.sources);
+            setTimeout(() => {
+              setDataSource(fieldsData);
+              form.setValuesIn('sources', data.data?.sources);
+              setSourceCollections(data.data?.sources);
+            });
           }
         }).catch;
     }
