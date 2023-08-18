@@ -56,7 +56,9 @@ export const Cascader = connect(
             if (selectedOptions[index]) {
               return <span key={label}>{label}</span>;
             }
-            const item = toArr(value).find((item) => item[fieldNames.value] === label);
+            const item = toArr(value)
+              .filter(Boolean)
+              .find((item) => item[fieldNames.value] === label);
             return <span key={label}>{item?.[fieldNames.label] || label}</span>;
           })}
         </Space>
