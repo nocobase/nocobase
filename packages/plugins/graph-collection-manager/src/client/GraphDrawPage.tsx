@@ -33,7 +33,7 @@ import {
 import { css, cx } from '@emotion/css';
 import lodash from 'lodash';
 import { useFullscreen } from 'ahooks';
-import { Button, ConfigProvider, Input, Layout, Menu, Popover, Switch, Tooltip, App } from 'antd';
+import { Button, ConfigProvider, Input, Layout, Menu, Popover, Switch, Tooltip, App, Spin } from 'antd';
 import dagre from 'dagre';
 import React, { createContext, forwardRef, useContext, useEffect, useLayoutEffect, useState } from 'react';
 import { useAsyncDataSource, useCreateActionAndRefreshCM } from './action-hooks';
@@ -219,24 +219,6 @@ function optimizeEdge(edge) {
   }
 }
 
-function getNodes(nodes) {
-  targetGraph.addNodes(nodes);
-}
-
-function getEdges(edges) {
-  edges.forEach((item) => {
-    if (item.source && item.target) {
-      targetGraph.addEdge({
-        ...item,
-        connector: {
-          name: 'normal',
-          zIndex: 1000,
-        },
-      });
-    }
-  });
-}
-
 const CollapsedContext = createContext<any>({});
 const formatNodeData = () => {
   const layoutNodes = [];
@@ -372,7 +354,8 @@ export const GraphDrawPage = React.memo(() => {
   const { t } = useGCMTranslation();
   const [collectionData, setCollectionData] = useState<any>([]);
   const [collectionList, setCollectionList] = useState<any>([]);
-  const { refreshCM } = useCollectionManager();
+  const [loading, setLoading] = useState(false);
+  const { refreshCM, collections } = useCollectionManager();
   const currentAppInfo = useCurrentAppInfo();
   const {
     data: { database },
@@ -408,8 +391,8 @@ export const GraphDrawPage = React.memo(() => {
       refreshPositions();
     }
   };
-  const refreshGM = async () => {
-    const data = await refreshCM();
+  const refreshGM = async (collections?) => {
+    const data = collections?.length > 0 ? collections : await refreshCM();
     targetGraph.collections = data;
     targetGraph.updatePositionAction = updatePositionAction;
     const currentNodes = targetGraph.getNodes();
@@ -700,9 +683,6 @@ export const GraphDrawPage = React.memo(() => {
   const renderInitGraphCollection = (rawData) => {
     const { nodesData, edgesData, inheritEdges } = formatData(rawData);
     targetGraph.data = { nodes: nodesData, edges: edgesData };
-    // getNodes(nodesData);
-    // getEdges(edgesData);
-    // getEdges(inheritEdges);
     targetGraph.fromJSON({ nodes: nodesData, edges: inheritEdges.concat(edgesData) });
     layout(saveGraphPositionAction);
   };
@@ -1014,14 +994,18 @@ export const GraphDrawPage = React.memo(() => {
   }, []);
 
   useEffect(() => {
+    setLoading(true);
     refreshPositions()
-      .then(() => {
-        refreshGM();
+      .then(async () => {
+        await refreshGM(collections);
+        setLoading(false);
       })
       .catch((err) => {
+        setLoading(false);
         throw err;
       });
   }, []);
+
   const loadCollections = async () => {
     return targetGraph.collections?.map((collection: any) => ({
       label: compile(collection.title),
@@ -1031,359 +1015,361 @@ export const GraphDrawPage = React.memo(() => {
   return (
     <Layout>
       <div className={styles.graphCollectionContainerClass}>
-        <CollectionManagerProvider collections={targetGraph?.collections} refreshCM={refreshGM}>
-          <CollapsedContext.Provider value={{ collectionList, handleSearchCollection }}>
-            <div className={cx(styles.collectionListClass)}>
-              <SchemaComponent
-                components={{
-                  Select: (props) => (
-                    <Select popupMatchSelectWidth={false} {...props} getPopupContainer={getPopupContainer} />
-                  ),
-                  AddCollectionAction,
-                }}
-                schema={{
-                  type: 'void',
-                  properties: {
-                    block1: {
-                      type: 'void',
-                      'x-collection': 'collections',
-                      'x-decorator': 'ResourceActionProvider',
-                      'x-decorator-props': {
-                        collection,
-                        request: {
-                          resource: 'collections',
-                          action: 'list',
-                          params: {
-                            pageSize: 50,
-                            filter: {
-                              inherit: false,
+        <Spin spinning={loading}>
+          <CollectionManagerProvider collections={targetGraph?.collections} refreshCM={refreshGM}>
+            <CollapsedContext.Provider value={{ collectionList, handleSearchCollection }}>
+              <div className={cx(styles.collectionListClass)}>
+                <SchemaComponent
+                  components={{
+                    Select: (props) => (
+                      <Select popupMatchSelectWidth={false} {...props} getPopupContainer={getPopupContainer} />
+                    ),
+                    AddCollectionAction,
+                  }}
+                  schema={{
+                    type: 'void',
+                    properties: {
+                      block1: {
+                        type: 'void',
+                        'x-collection': 'collections',
+                        'x-decorator': 'ResourceActionProvider',
+                        'x-decorator-props': {
+                          collection,
+                          request: {
+                            resource: 'collections',
+                            action: 'list',
+                            params: {
+                              pageSize: 50,
+                              filter: {
+                                inherit: false,
+                              },
+                              sort: ['sort'],
+                              appends: [],
                             },
-                            sort: ['sort'],
-                            appends: [],
                           },
                         },
-                      },
-                      properties: {
-                        actions: {
-                          type: 'void',
-                          'x-component': 'ActionBar',
-                          'x-component-props': {
-                            style: {
-                              fontSize: 16,
-                            },
-                          },
-                          properties: {
-                            create: {
-                              type: 'void',
-                              title: '{{ t("Create collection") }}',
-                              'x-component': 'AddCollectionAction',
-                              'x-component-props': {
-                                type: 'primary',
+                        properties: {
+                          actions: {
+                            type: 'void',
+                            'x-component': 'ActionBar',
+                            'x-component-props': {
+                              style: {
+                                fontSize: 16,
                               },
                             },
-                            fullScreen: {
-                              type: 'void',
-                              'x-component': 'Action',
-                              'x-component-props': {
-                                component: forwardRef(() => {
-                                  const [isFullscreen, { toggleFullscreen }] = useFullscreen(
-                                    document.getElementById('graph_container'),
+                            properties: {
+                              create: {
+                                type: 'void',
+                                title: '{{ t("Create collection") }}',
+                                'x-component': 'AddCollectionAction',
+                                'x-component-props': {
+                                  type: 'primary',
+                                },
+                              },
+                              fullScreen: {
+                                type: 'void',
+                                'x-component': 'Action',
+                                'x-component-props': {
+                                  component: forwardRef(() => {
+                                    const [isFullscreen, { toggleFullscreen }] = useFullscreen(
+                                      document.getElementById('graph_container'),
+                                    );
+                                    return (
+                                      <Tooltip title={t('Full Screen')} getPopupContainer={getPopupContainer}>
+                                        <Button
+                                          onClick={() => {
+                                            toggleFullscreen();
+                                          }}
+                                        >
+                                          {isFullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
+                                        </Button>
+                                      </Tooltip>
+                                    );
+                                  }),
+                                  useAction: () => {
+                                    return {
+                                      run() {},
+                                    };
+                                  },
+                                },
+                              },
+                              collectionList: {
+                                type: 'void',
+                                'x-component': function Com() {
+                                  const { handleSearchCollection, collectionList } = useContext(CollapsedContext);
+                                  const [selectedKeys, setSelectKey] = useState([]);
+                                  const content = (
+                                    <div>
+                                      <Input
+                                        style={{ margin: '4px 0' }}
+                                        bordered={false}
+                                        placeholder={t('Collection Search')}
+                                        onChange={handleSearchCollection}
+                                      />
+                                      <Menu
+                                        selectedKeys={selectedKeys}
+                                        selectable={true}
+                                        className={css`
+                                          .ant-menu-item {
+                                            height: 32px;
+                                            line-height: 32px;
+                                          }
+                                        `}
+                                        style={{ maxHeight: '70vh', overflowY: 'auto', border: 'none' }}
+                                        items={[
+                                          { type: 'divider' },
+                                          ...collectionList.map((v) => {
+                                            return {
+                                              key: v.name,
+                                              label: compile(v.title),
+                                              onClick: (e: any) => {
+                                                if (e.key !== selectedKeys[0]) {
+                                                  setSelectKey([e.key]);
+                                                  handleFiterCollections(e.key);
+                                                } else {
+                                                  targetGraph.filterConfig = null;
+                                                  handleFiterCollections(false);
+                                                  setSelectKey([]);
+                                                }
+                                              },
+                                            };
+                                          }),
+                                        ]}
+                                      />
+                                    </div>
                                   );
                                   return (
-                                    <Tooltip title={t('Full Screen')} getPopupContainer={getPopupContainer}>
-                                      <Button
-                                        onClick={() => {
-                                          toggleFullscreen();
-                                        }}
-                                      >
-                                        {isFullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
-                                      </Button>
-                                    </Tooltip>
-                                  );
-                                }),
-                                useAction: () => {
-                                  return {
-                                    run() {},
-                                  };
-                                },
-                              },
-                            },
-                            collectionList: {
-                              type: 'void',
-                              'x-component': function Com() {
-                                const { handleSearchCollection, collectionList } = useContext(CollapsedContext);
-                                const [selectedKeys, setSelectKey] = useState([]);
-                                const content = (
-                                  <div>
-                                    <Input
-                                      style={{ margin: '4px 0' }}
-                                      bordered={false}
-                                      placeholder={t('Collection Search')}
-                                      onChange={handleSearchCollection}
-                                    />
-                                    <Menu
-                                      selectedKeys={selectedKeys}
-                                      selectable={true}
-                                      className={css`
-                                        .ant-menu-item {
-                                          height: 32px;
-                                          line-height: 32px;
+                                    <Popover
+                                      content={content}
+                                      autoAdjustOverflow
+                                      placement="bottomRight"
+                                      trigger={['click']}
+                                      getPopupContainer={getPopupContainer}
+                                      overlayClassName={css`
+                                        .ant-popover-inner-content {
+                                          padding: 0;
                                         }
                                       `}
-                                      style={{ maxHeight: '70vh', overflowY: 'auto', border: 'none' }}
-                                      items={[
-                                        { type: 'divider' },
-                                        ...collectionList.map((v) => {
-                                          return {
-                                            key: v.name,
-                                            label: compile(v.title),
-                                            onClick: (e: any) => {
-                                              if (e.key !== selectedKeys[0]) {
-                                                setSelectKey([e.key]);
-                                                handleFiterCollections(e.key);
-                                              } else {
-                                                targetGraph.filterConfig = null;
-                                                handleFiterCollections(false);
-                                                setSelectKey([]);
-                                              }
-                                            },
-                                          };
-                                        }),
-                                      ]}
-                                    />
-                                  </div>
-                                );
-                                return (
-                                  <Popover
-                                    content={content}
-                                    autoAdjustOverflow
-                                    placement="bottomRight"
-                                    trigger={['click']}
-                                    getPopupContainer={getPopupContainer}
-                                    overlayClassName={css`
-                                      .ant-popover-inner-content {
-                                        padding: 0;
-                                      }
-                                    `}
-                                  >
-                                    <Button>
-                                      <MenuOutlined />
-                                    </Button>
-                                  </Popover>
-                                );
-                              },
-                              'x-component-props': {
-                                icon: 'MenuOutlined',
-                                useAction: () => {
-                                  return {
-                                    run() {},
-                                  };
+                                    >
+                                      <Button>
+                                        <MenuOutlined />
+                                      </Button>
+                                    </Popover>
+                                  );
+                                },
+                                'x-component-props': {
+                                  icon: 'MenuOutlined',
+                                  useAction: () => {
+                                    return {
+                                      run() {},
+                                    };
+                                  },
                                 },
                               },
-                            },
-                            autoLayout: {
-                              type: 'void',
-                              'x-component': 'Action',
-                              'x-component-props': {
-                                component: forwardRef(() => {
+                              autoLayout: {
+                                type: 'void',
+                                'x-component': 'Action',
+                                'x-component-props': {
+                                  component: forwardRef(() => {
+                                    return (
+                                      <Tooltip title={t('Auto layout')} getPopupContainer={getPopupContainer}>
+                                        <Button
+                                          onClick={() => {
+                                            handelResetLayout();
+                                          }}
+                                        >
+                                          <ApartmentOutlined />
+                                        </Button>
+                                      </Tooltip>
+                                    );
+                                  }),
+                                  useAction: () => {
+                                    return {
+                                      run() {},
+                                    };
+                                  },
+                                },
+                              },
+                              connectionType: {
+                                type: 'void',
+                                'x-component': () => {
+                                  const menuItems = [
+                                    {
+                                      key: ConnectionType.Both,
+                                      label: 'All relationships',
+                                    },
+                                    {
+                                      key: ConnectionType.Entity,
+                                      label: 'Entity relationship only',
+                                    },
+                                    {
+                                      key: ConnectionType.Inherit,
+                                      label: 'Inheritance relationship only',
+                                    },
+                                  ];
+                                  const content = (
+                                    <div>
+                                      <Menu
+                                        defaultSelectedKeys={[ConnectionType.Both]}
+                                        selectable={true}
+                                        className={css`
+                                          .ant-menu-item {
+                                            height: 32px;
+                                            line-height: 32px;
+                                          }
+                                        `}
+                                        style={{ maxHeight: '70vh', overflowY: 'auto', border: 'none' }}
+                                        items={[
+                                          { type: 'divider' },
+                                          ...menuItems.map((v) => {
+                                            return {
+                                              key: v.key,
+                                              label: t(v.label),
+                                              onClick: (e: any) => {
+                                                targetGraph.connectionType = v.key;
+                                                const { filterConfig } = targetGraph;
+                                                filterConfig && handleFiterCollections(filterConfig.key);
+                                                handleSetRelationshipType(v.key);
+                                              },
+                                            };
+                                          }),
+                                        ]}
+                                      />
+                                    </div>
+                                  );
                                   return (
-                                    <Tooltip title={t('Auto layout')} getPopupContainer={getPopupContainer}>
-                                      <Button
-                                        onClick={() => {
-                                          handelResetLayout();
-                                        }}
-                                      >
-                                        <ApartmentOutlined />
+                                    <Popover
+                                      content={content}
+                                      autoAdjustOverflow
+                                      placement="bottomRight"
+                                      trigger={['click']}
+                                      getPopupContainer={getPopupContainer}
+                                      overlayClassName={css`
+                                        .ant-popover-inner-content {
+                                          padding: 0;
+                                        }
+                                      `}
+                                    >
+                                      <Button>
+                                        <ShareAltOutlined />
                                       </Button>
+                                    </Popover>
+                                  );
+                                },
+                                'x-component-props': {
+                                  icon: 'MenuOutlined',
+                                  useAction: () => {
+                                    return {
+                                      run() {},
+                                    };
+                                  },
+                                },
+                              },
+                              direction: {
+                                type: 'void',
+                                'x-component': () => {
+                                  const menuItems = [
+                                    {
+                                      key: DirectionType.Both,
+                                      label: 'All directions',
+                                    },
+                                    {
+                                      key: DirectionType.Target,
+                                      label: 'Target index',
+                                    },
+                                    {
+                                      key: DirectionType.Source,
+                                      label: 'Source index',
+                                    },
+                                  ];
+                                  const content = (
+                                    <div>
+                                      <Menu
+                                        defaultSelectedKeys={[DirectionType.Target]}
+                                        selectable={true}
+                                        className={css`
+                                          .ant-menu-item {
+                                            height: 32px;
+                                            line-height: 32px;
+                                          }
+                                        `}
+                                        style={{ maxHeight: '70vh', overflowY: 'auto', border: 'none' }}
+                                        items={[
+                                          { type: 'divider' },
+                                          ...menuItems.map((v) => {
+                                            return {
+                                              key: v.key,
+                                              label: t(v.label),
+                                              onClick: (e: any) => {
+                                                targetGraph.direction = v.key;
+                                                const { filterConfig } = targetGraph;
+                                                if (filterConfig) {
+                                                  handleFiterCollections(filterConfig.key);
+                                                }
+                                              },
+                                            };
+                                          }),
+                                        ]}
+                                      />
+                                    </div>
+                                  );
+                                  return (
+                                    <Popover
+                                      content={content}
+                                      autoAdjustOverflow
+                                      placement="bottomRight"
+                                      trigger={['click']}
+                                      getPopupContainer={getPopupContainer}
+                                      overlayClassName={css`
+                                        .ant-popover-inner-content {
+                                          padding: 0;
+                                        }
+                                      `}
+                                    >
+                                      <Button>
+                                        <LineHeightOutlined />
+                                      </Button>
+                                    </Popover>
+                                  );
+                                },
+                              },
+                              selectMode: {
+                                type: 'void',
+                                'x-component': () => {
+                                  return (
+                                    <Tooltip title={t('Selection')}>
+                                      <Switch
+                                        onChange={(value) => {
+                                          targetGraph.toggleSelection();
+                                        }}
+                                      />
                                     </Tooltip>
                                   );
-                                }),
-                                useAction: () => {
-                                  return {
-                                    run() {},
-                                  };
                                 },
-                              },
-                            },
-                            connectionType: {
-                              type: 'void',
-                              'x-component': () => {
-                                const menuItems = [
-                                  {
-                                    key: ConnectionType.Both,
-                                    label: 'All relationships',
-                                  },
-                                  {
-                                    key: ConnectionType.Entity,
-                                    label: 'Entity relationship only',
-                                  },
-                                  {
-                                    key: ConnectionType.Inherit,
-                                    label: 'Inheritance relationship only',
-                                  },
-                                ];
-                                const content = (
-                                  <div>
-                                    <Menu
-                                      defaultSelectedKeys={[ConnectionType.Both]}
-                                      selectable={true}
-                                      className={css`
-                                        .ant-menu-item {
-                                          height: 32px;
-                                          line-height: 32px;
-                                        }
-                                      `}
-                                      style={{ maxHeight: '70vh', overflowY: 'auto', border: 'none' }}
-                                      items={[
-                                        { type: 'divider' },
-                                        ...menuItems.map((v) => {
-                                          return {
-                                            key: v.key,
-                                            label: t(v.label),
-                                            onClick: (e: any) => {
-                                              targetGraph.connectionType = v.key;
-                                              const { filterConfig } = targetGraph;
-                                              filterConfig && handleFiterCollections(filterConfig.key);
-                                              handleSetRelationshipType(v.key);
-                                            },
-                                          };
-                                        }),
-                                      ]}
-                                    />
-                                  </div>
-                                );
-                                return (
-                                  <Popover
-                                    content={content}
-                                    autoAdjustOverflow
-                                    placement="bottomRight"
-                                    trigger={['click']}
-                                    getPopupContainer={getPopupContainer}
-                                    overlayClassName={css`
-                                      .ant-popover-inner-content {
-                                        padding: 0;
-                                      }
-                                    `}
-                                  >
-                                    <Button>
-                                      <ShareAltOutlined />
-                                    </Button>
-                                  </Popover>
-                                );
-                              },
-                              'x-component-props': {
-                                icon: 'MenuOutlined',
-                                useAction: () => {
-                                  return {
-                                    run() {},
-                                  };
-                                },
-                              },
-                            },
-                            direction: {
-                              type: 'void',
-                              'x-component': () => {
-                                const menuItems = [
-                                  {
-                                    key: DirectionType.Both,
-                                    label: 'All directions',
-                                  },
-                                  {
-                                    key: DirectionType.Target,
-                                    label: 'Target index',
-                                  },
-                                  {
-                                    key: DirectionType.Source,
-                                    label: 'Source index',
-                                  },
-                                ];
-                                const content = (
-                                  <div>
-                                    <Menu
-                                      defaultSelectedKeys={[DirectionType.Target]}
-                                      selectable={true}
-                                      className={css`
-                                        .ant-menu-item {
-                                          height: 32px;
-                                          line-height: 32px;
-                                        }
-                                      `}
-                                      style={{ maxHeight: '70vh', overflowY: 'auto', border: 'none' }}
-                                      items={[
-                                        { type: 'divider' },
-                                        ...menuItems.map((v) => {
-                                          return {
-                                            key: v.key,
-                                            label: t(v.label),
-                                            onClick: (e: any) => {
-                                              targetGraph.direction = v.key;
-                                              const { filterConfig } = targetGraph;
-                                              if (filterConfig) {
-                                                handleFiterCollections(filterConfig.key);
-                                              }
-                                            },
-                                          };
-                                        }),
-                                      ]}
-                                    />
-                                  </div>
-                                );
-                                return (
-                                  <Popover
-                                    content={content}
-                                    autoAdjustOverflow
-                                    placement="bottomRight"
-                                    trigger={['click']}
-                                    getPopupContainer={getPopupContainer}
-                                    overlayClassName={css`
-                                      .ant-popover-inner-content {
-                                        padding: 0;
-                                      }
-                                    `}
-                                  >
-                                    <Button>
-                                      <LineHeightOutlined />
-                                    </Button>
-                                  </Popover>
-                                );
-                              },
-                            },
-                            selectMode: {
-                              type: 'void',
-                              'x-component': () => {
-                                return (
-                                  <Tooltip title={t('Selection')}>
-                                    <Switch
-                                      onChange={(value) => {
-                                        targetGraph.toggleSelection();
-                                      }}
-                                    />
-                                  </Tooltip>
-                                );
                               },
                             },
                           },
                         },
                       },
                     },
-                  },
-                }}
-                scope={{
-                  useAsyncDataSource,
-                  loadCollections,
-                  useCreateActionAndRefreshCM: () => useCreateActionAndRefreshCM(setTargetNode),
-                  enableInherits: database?.dialect === 'postgres',
-                }}
-              />
-            </div>
-          </CollapsedContext.Provider>
-        </CollectionManagerProvider>
-        <div id="container" style={{ width: '100vw', height: '100vh' }}></div>
-        <div
-          id="graph-minimap"
-          className={styles.graphMinimap}
-          style={{ width: '300px', height: '250px', right: '10px', bottom: '20px', position: 'fixed' }}
-        ></div>
+                  }}
+                  scope={{
+                    useAsyncDataSource,
+                    loadCollections,
+                    useCreateActionAndRefreshCM: () => useCreateActionAndRefreshCM(setTargetNode),
+                    enableInherits: database?.dialect === 'postgres',
+                  }}
+                />
+              </div>
+            </CollapsedContext.Provider>
+          </CollectionManagerProvider>
+          <div id="container" style={{ width: '100vw', height: '100vh' }}></div>
+          <div
+            id="graph-minimap"
+            className={styles.graphMinimap}
+            style={{ width: '300px', height: '250px', right: '10px', bottom: '20px', position: 'fixed' }}
+          ></div>
+        </Spin>
       </div>
     </Layout>
   );

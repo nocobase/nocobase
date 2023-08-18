@@ -184,7 +184,10 @@ export const formatInheritEdgeData = (collections) => {
             cell: k,
             connectionPoint: 'rect',
           },
-          connector: 'rounded',
+          connector: {
+            name: 'normal',
+            zIndex: 1000,
+          },
           connectionType: 'inherited',
           ...commonAttrs,
         });
@@ -313,6 +316,10 @@ const formatRelationEdgeData = (data, targetTables, tableData) => {
             },
           },
         ],
+        connector: {
+          name: 'normal',
+          zIndex: 1000,
+        },
       };
       const isuniq = (id) => {
         const targetEdge = edges.find((v) => v.id === id);
