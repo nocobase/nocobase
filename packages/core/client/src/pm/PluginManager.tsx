@@ -5,15 +5,15 @@ import _ from 'lodash';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useDebounce, useDebounceEffect } from 'ahooks';
+import { useDebounce } from 'ahooks';
 
 import { useACLRoleContext } from '../acl/ACLProvider';
 import { useRequest } from '../api-client';
 import { useToken } from '../style';
 import { PluginCard } from './PluginCard';
 import { useStyles } from './style';
-import { PluginForm } from './PluginForm';
 import { IPluginData } from './types';
+import { PluginAddModal } from './PluginForm/modal/PluginAddModal';
 
 export interface TData {
   data: IPluginData[];
@@ -101,7 +101,7 @@ const LocalPlugins = () => {
 
   return (
     <>
-      <PluginForm
+      <PluginAddModal
         isShow={isShowAddForm}
         onClose={(isRefresh) => {
           setShowAddForm(false);

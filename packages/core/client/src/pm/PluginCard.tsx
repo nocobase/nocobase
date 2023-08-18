@@ -9,7 +9,8 @@ import type { IPluginData } from './types';
 import { useAPIClient, useRequest } from '../api-client';
 import { useStyles } from './style';
 import { PluginDetail } from './PluginDetail';
-import { PluginUploadForm } from './PluginUploadForm';
+import { PluginUploadModal } from './PluginForm/modal/PluginUploadModal';
+import { PluginUrlModal } from './PluginForm/modal/PluginUrlModal';
 
 interface IPluginInfo extends IPluginCard {
   onClick: () => void;
@@ -47,23 +48,30 @@ function PluginInfo(props: IPluginInfo) {
       onSuccess: reload,
     },
   );
-  const { loading: urlUpgradeLoading, run: urlUpgradeRun } = useRequest(
-    { url: `pm:upgradeByCompressedFileUrl/${name}`, method: 'post', data: { compressedFileUrl } },
-    { manual: true, onSuccess: reload },
-  );
 
   return (
     <>
-      {showUploadForm && (
-        <PluginUploadForm
-          isShow={showUploadForm}
-          name={name}
-          onClose={(isRefresh) => {
-            setShowUploadForm(false);
-            if (isRefresh) reload();
-          }}
-        />
-      )}
+      {showUploadForm &&
+        (type === 'upload' ? (
+          <PluginUploadModal
+            isShow={showUploadForm}
+            name={name}
+            onClose={(isRefresh) => {
+              setShowUploadForm(false);
+              if (isRefresh) reload();
+            }}
+          />
+        ) : (
+          <PluginUrlModal
+            isShow={showUploadForm}
+            name={name}
+            compressedFileUrl={compressedFileUrl}
+            onClose={(isRefresh) => {
+              setShowUploadForm(false);
+              if (isRefresh) reload();
+            }}
+          />
+        ))}
       <Card
         bordered={false}
         onClick={() => {
@@ -184,13 +192,12 @@ function PluginInfo(props: IPluginInfo) {
                 <Button
                   ghost
                   type="primary"
-                  loading={urlUpgradeLoading}
                   onClick={(e) => {
                     e.stopPropagation();
-                    urlUpgradeRun();
+                    setShowUploadForm(true);
                   }}
                 >
-                  {t('re-download file')}
+                  {t('Upload new version')}
                 </Button>
               )}
               {type === 'upload' && (

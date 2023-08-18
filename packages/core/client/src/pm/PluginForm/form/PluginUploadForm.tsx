@@ -1,12 +1,13 @@
-import { App, Modal, message } from 'antd';
+import { App, message } from 'antd';
 import React, { FC } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaComponent } from '../schema-component';
 import { ISchema } from '@formily/json-schema';
 import { uid } from '@formily/shared';
 import { useForm } from '@formily/react';
-import { useAPIClient } from '../api-client';
-import { RcFile } from 'antd/es/upload';
+import type { RcFile } from 'antd/es/upload';
+
+import { useAPIClient } from '../../../api-client';
+import { SchemaComponent } from '../../../schema-component';
 
 const schema: ISchema = {
   type: 'object',
@@ -74,12 +75,11 @@ const schema: ISchema = {
 
 interface IPluginUploadFormProps {
   onClose: (refresh?: boolean) => void;
-  name: string;
-  isShow: boolean;
+  name?: string;
+  isUpdate?: boolean;
 }
 
-export const PluginUploadForm: FC<IPluginUploadFormProps> = ({ onClose, name, isShow }) => {
-  const { t } = useTranslation();
+export const PluginUploadForm: FC<IPluginUploadFormProps> = ({ onClose, name, isUpdate }) => {
   const { message } = App.useApp();
   const useSaveValues = () => {
     const api = useAPIClient();
@@ -99,10 +99,11 @@ export const PluginUploadForm: FC<IPluginUploadFormProps> = ({ onClose, name, is
         }
         await form.submit();
         await api.request({
-          url: `pm:upgradeByCompressedFileUrl/${name}`,
+          url: `pm:${isUpdate ? 'upgradeByCompressedFileUrl/' + name : 'addByCompressedFileUrl'}`,
           method: 'post',
           data: {
             compressedFileUrl,
+            type: 'upload',
           },
         });
         message.success(t('Saved successfully'), 2, () => {
@@ -120,9 +121,5 @@ export const PluginUploadForm: FC<IPluginUploadFormProps> = ({ onClose, name, is
     };
   };
 
-  return (
-    <Modal open={isShow} onCancel={() => onClose()} footer={null} destroyOnClose title={t('Upload plugin')} width={580}>
-      <SchemaComponent scope={{ useCancel, useSaveValues }} schema={schema} />
-    </Modal>
-  );
+  return <SchemaComponent scope={{ useCancel, useSaveValues }} schema={schema} />;
 };

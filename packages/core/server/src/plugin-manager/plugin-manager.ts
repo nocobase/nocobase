@@ -508,6 +508,7 @@ export class PluginManager {
         await removePluginPackage(plugin.options.packageName);
       }
       await plugin.remove();
+      this.plugins.delete(pluginName);
     }
     await this.repository.remove(name);
     this.app.reload();
