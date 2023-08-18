@@ -251,10 +251,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.pm.addPreset(pluginClass, options);
   }
 
-  async isAlive() {
-    return true;
-  }
-
   // @ts-ignore
   use<NewStateT = {}, NewContextT = {}>(
     middleware: Koa.Middleware<StateT & NewStateT, ContextT & NewContextT>,
