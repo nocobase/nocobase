@@ -838,17 +838,17 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
     [],
   );
 
-  const cancelHandler = () => {
+  const cancelHandler = useCallback(() => {
     setVisible(false);
-  };
+  }, []);
 
-  const submitHandler = async () => {
+  const submitHandler = useCallback(async () => {
     await form.submit();
     onSubmit?.(cloneDeep(form.values));
     setVisible(false);
-  };
+  }, [form, onSubmit]);
 
-  const openAssignedFieldValueHandler = async () => {
+  const openAssignedFieldValueHandler = useCallback(async () => {
     if (!schemaUid && initialSchema?.['x-uid']) {
       fieldSchema['x-action-settings'].schemaUid = initialSchema['x-uid'];
       dn.emit('patch', { schema: fieldSchema });
@@ -858,11 +858,13 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
 
     ctx.setVisible(false);
     setVisible(true);
-  };
+  }, [api, ctx, dn, fieldSchema, initialSchema, schemaUid]);
+
+  const onKeyDown = useCallback((e: React.KeyboardEvent<HTMLLIElement>): void => e.stopPropagation(), []);
 
   return (
     <>
-      <SchemaSettings.Item {...others} onClick={openAssignedFieldValueHandler} onKeyDown={(e) => e.stopPropagation()}>
+      <SchemaSettings.Item {...others} onClick={openAssignedFieldValueHandler} onKeyDown={onKeyDown}>
         {props.children || props.title}
       </SchemaSettings.Item>
       {createPortal(

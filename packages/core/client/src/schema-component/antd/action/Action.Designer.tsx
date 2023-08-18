@@ -481,6 +481,18 @@ function AssignedFieldValues() {
     ),
   };
   const actionType = fieldSchema['x-action'] ?? '';
+  const onSubmit = useCallback(
+    (assignedValues) => {
+      fieldSchema['x-action-settings']['assignedValues'] = assignedValues;
+      dn.emit('patch', {
+        schema: {
+          ['x-uid']: fieldSchema['x-uid'],
+          'x-action-settings': fieldSchema['x-action-settings'],
+        },
+      });
+    },
+    [dn, fieldSchema],
+  );
 
   return (
     <SchemaSettings.ActionModalItem
@@ -489,16 +501,7 @@ function AssignedFieldValues() {
       initialValues={fieldSchema?.['x-action-settings']?.assignedValues}
       modalTip={tips[actionType]}
       uid={fieldSchema?.['x-action-settings']?.schemaUid}
-      onSubmit={(assignedValues) => {
-        fieldSchema['x-action-settings']['assignedValues'] = assignedValues;
-        dn.emit('patch', {
-          schema: {
-            ['x-uid']: fieldSchema['x-uid'],
-            'x-action-settings': fieldSchema['x-action-settings'],
-          },
-        });
-        dn.refresh();
-      }}
+      onSubmit={onSubmit}
     />
   );
 }
