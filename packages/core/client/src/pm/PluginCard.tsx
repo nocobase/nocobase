@@ -142,9 +142,9 @@ function PluginInfo(props: IPluginInfo) {
           <Col span={16}>
             <Card.Meta
               description={
-                <Space direction="vertical">
-                  <Typography.Text type="secondary">
-                    {t('Version')}: {version}
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  <Typography.Text ellipsis type="secondary">
+                    {version}
                   </Typography.Text>
                   {!error ? (
                     <Typography.Paragraph
