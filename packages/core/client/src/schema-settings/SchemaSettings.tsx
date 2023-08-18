@@ -1586,6 +1586,11 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
                   }
 
                   const defaultValue = getFieldDefaultValue(s, collectionField);
+
+                  if (collectionField?.uiSchema['x-component'] === 'Checkbox') {
+                    s['x-component-props'].defaultChecked = defaultValue;
+                  }
+
                   const schema = {
                     ...(s || {}),
                     'x-decorator': 'FormItem',
@@ -1604,7 +1609,7 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
                     default: isVariable(defaultValue) ? '' : defaultValue,
                   } as ISchema;
                   return (
-                    <FormProvider>
+                    <FormProvider form={form}>
                       <SchemaComponent schema={schema} />
                     </FormProvider>
                   );
