@@ -26,6 +26,7 @@ import { useColorFields } from '../table-v2/Table.Column.Designer';
 import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
 import { useEnsureOperatorsValid } from './SchemaSettingOptions';
 import useLazyLoadAssociationFieldOfForm from './hooks/useLazyLoadAssociationFieldOfForm';
+import useLazyLoadAssociationFieldOfSubForm from './hooks/useLazyLoadAssociationFieldOfSubForm';
 import useParseDefaultValue from './hooks/useParseDefaultValue';
 
 export const findColumnFieldSchema = (fieldSchema, getCollectionJoinField) => {
@@ -61,6 +62,7 @@ export const FormItem: any = observer(
     // 需要放在注冊完变量之后
     useParseDefaultValue();
     useLazyLoadAssociationFieldOfForm();
+    useLazyLoadAssociationFieldOfSubForm();
 
     useEffect(() => {
       if (ctx?.block === 'form') {
