@@ -8,6 +8,7 @@ import type { RcFile } from 'antd/es/upload';
 
 import { useAPIClient } from '../../../api-client';
 import { SchemaComponent } from '../../../schema-component';
+import { IPluginData } from '../../types';
 
 const schema: ISchema = {
   type: 'object',
@@ -75,11 +76,11 @@ const schema: ISchema = {
 
 interface IPluginUploadFormProps {
   onClose: (refresh?: boolean) => void;
-  name?: string;
-  isUpdate?: boolean;
+  isUpgrade: boolean;
+  pluginData?: IPluginData;
 }
 
-export const PluginUploadForm: FC<IPluginUploadFormProps> = ({ onClose, name, isUpdate }) => {
+export const PluginUploadForm: FC<IPluginUploadFormProps> = ({ onClose, pluginData, isUpgrade }) => {
   const { message } = App.useApp();
   const useSaveValues = () => {
     const api = useAPIClient();
@@ -99,7 +100,7 @@ export const PluginUploadForm: FC<IPluginUploadFormProps> = ({ onClose, name, is
         }
         await form.submit();
         await api.request({
-          url: `pm:${isUpdate ? 'upgradeByCompressedFileUrl/' + name : 'addByCompressedFileUrl'}`,
+          url: `pm:${isUpgrade ? 'upgradeByCompressedFileUrl/' + pluginData?.name : 'addByCompressedFileUrl'}`,
           method: 'post',
           data: {
             compressedFileUrl,

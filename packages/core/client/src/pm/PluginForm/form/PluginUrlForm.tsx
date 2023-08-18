@@ -7,6 +7,7 @@ import { useForm } from '@formily/react';
 
 import { useAPIClient, useRequest } from '../../../api-client';
 import { SchemaComponent } from '../../../schema-component';
+import { IPluginData } from '../../types';
 
 const schema: ISchema = {
   type: 'object',
@@ -57,12 +58,11 @@ const schema: ISchema = {
 
 interface IPluginUrlFormProps {
   onClose: (refresh?: boolean) => void;
-  name?: string;
-  isUpdate?: boolean;
-  compressedFileUrl?: string;
+  isUpgrade?: boolean;
+  pluginData?: IPluginData;
 }
 
-export const PluginUrlForm: FC<IPluginUrlFormProps> = ({ onClose, name, compressedFileUrl, isUpdate }) => {
+export const PluginUrlForm: FC<IPluginUrlFormProps> = ({ onClose, pluginData, isUpgrade }) => {
   const { message } = App.useApp();
   const useSaveValues = () => {
     const api = useAPIClient();
@@ -75,7 +75,7 @@ export const PluginUrlForm: FC<IPluginUrlFormProps> = ({ onClose, name, compress
         if (!compressedFileUrl) return;
         await form.submit();
         await api.request({
-          url: `pm:${isUpdate ? 'upgradeByCompressedFileUrl/' + name : 'addByCompressedFileUrl'}`,
+          url: `pm:${isUpgrade ? 'upgradeByCompressedFileUrl/' + name : 'addByCompressedFileUrl'}`,
           method: 'post',
           data: {
             compressedFileUrl,
@@ -93,7 +93,7 @@ export const PluginUrlForm: FC<IPluginUrlFormProps> = ({ onClose, name, compress
     return useRequest(
       () =>
         Promise.resolve({
-          data: { compressedFileUrl },
+          data: { compressedFileUrl: pluginData.compressedFileUrl },
         }),
       options,
     );

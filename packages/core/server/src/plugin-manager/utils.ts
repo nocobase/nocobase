@@ -87,13 +87,19 @@ export function getAuthorizationHeaders(registry?: string, authToken?: string) {
  * getLatestVersion('dayjs', 'https://registry.npmjs.org') => '1.10.6'
  */
 export async function getLatestVersion(packageName: string, registry: string, token?: string) {
+  const npmInfo = await getNpmInfo(packageName, registry, token);
+  const latestVersion = npmInfo['dist-tags'].latest;
+  return latestVersion;
+}
+
+export async function getNpmInfo(packageName: string, registry: string, token?: string) {
+  registry.endsWith('/') && (registry = registry.slice(0, -1));
   const response = await axios.get(`${registry}/${packageName}`, {
     headers: getAuthorizationHeaders(registry, token),
   });
   try {
     const data = response.data;
-    const latestVersion = data['dist-tags'].latest;
-    return latestVersion;
+    return data;
   } catch (e) {
     console.error(e);
     throw new Error(`${registry} is not a valid registry, '${registry}/${packageName}' response is not a valid json.`);
@@ -101,7 +107,6 @@ export async function getLatestVersion(packageName: string, registry: string, to
 }
 
 export async function download(url: string, destination: string, options: AxiosRequestConfig = {}) {
-  url = url.replace('localhost', '127.0.0.1');
   const response = await axios.get(url, {
     ...options,
     responseType: 'stream',

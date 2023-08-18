@@ -83,7 +83,7 @@ export const PluginDetail: FC<IPluginDetail> = ({ plugin, onCancel }) => {
     },
     {
       refreshDeps: [plugin.name],
-      ready: plugin.name !== null,
+      ready: !!plugin.name,
     },
   );
 
@@ -186,16 +186,6 @@ export const PluginDetail: FC<IPluginDetail> = ({ plugin, onCancel }) => {
                   <Typography.Text strong>{plugin?.version}</Typography.Text>
                 </div>
               </Col>
-              {plugin?.newVersion && (
-                <Col span={12}>
-                  (
-                  <div className={styles.PluginDetailBaseInfo}>
-                    <Typography.Text type="danger">{t('Latest Version')}</Typography.Text>
-                    <Typography.Text strong>{plugin?.newVersion}</Typography.Text>
-                  </div>
-                  )
-                </Col>
-              )}
             </Row>
           </Col>
         </Row>

@@ -64,10 +64,6 @@ const LocalPlugins = () => {
         type: 'Not enabled',
         list: _.filter(list, (item) => !item.enabled),
       },
-      {
-        type: 'Upgrade',
-        list: _.filter(list, (item) => item.newVersion),
-      },
     ];
   }, [data?.data]);
 

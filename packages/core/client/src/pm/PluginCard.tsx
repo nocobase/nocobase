@@ -1,16 +1,15 @@
-import { DeleteOutlined, SettingOutlined, SyncOutlined } from '@ant-design/icons';
-import { App, Badge, Button, Card, Col, Popconfirm, Row, Space, Switch, Typography, message } from 'antd';
+import { DeleteOutlined, SettingOutlined } from '@ant-design/icons';
+import { App, Button, Card, Col, Popconfirm, Row, Space, Switch, Typography, message } from 'antd';
 import React, { FC, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import classnames from 'classnames';
 
 import type { IPluginData } from './types';
-import { useAPIClient, useRequest } from '../api-client';
+import { useAPIClient } from '../api-client';
 import { useStyles } from './style';
 import { PluginDetail } from './PluginDetail';
-import { PluginUploadModal } from './PluginForm/modal/PluginUploadModal';
-import { PluginUrlModal } from './PluginForm/modal/PluginUrlModal';
+import { PluginUpgradeModal } from './PluginForm/modal/PluginUpgradeModal';
 
 interface IPluginInfo extends IPluginCard {
   onClick: () => void;
@@ -18,20 +17,7 @@ interface IPluginInfo extends IPluginCard {
 
 function PluginInfo(props: IPluginInfo) {
   const { data, onClick } = props;
-  const {
-    name,
-    displayName,
-    isCompatible,
-    packageName,
-    version,
-    builtIn,
-    enabled,
-    compressedFileUrl,
-    description,
-    newVersion,
-    type,
-    error,
-  } = data;
+  const { name, displayName, isCompatible, packageName, version, builtIn, enabled, description, type, error } = data;
   const { styles, theme } = useStyles();
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -41,37 +27,18 @@ function PluginInfo(props: IPluginInfo) {
   const [enabledVal, setEnabledVal] = useState(enabled);
   const reload = () => window.location.reload();
 
-  const { loading: npmUpgradeLoading, run: npmUpgradeRun } = useRequest(
-    { url: `pm:upgradeByNpm/${name}`, method: 'post' },
-    {
-      manual: true,
-      onSuccess: reload,
-    },
-  );
-
   return (
     <>
-      {showUploadForm &&
-        (type === 'upload' ? (
-          <PluginUploadModal
-            isShow={showUploadForm}
-            name={name}
-            onClose={(isRefresh) => {
-              setShowUploadForm(false);
-              if (isRefresh) reload();
-            }}
-          />
-        ) : (
-          <PluginUrlModal
-            isShow={showUploadForm}
-            name={name}
-            compressedFileUrl={compressedFileUrl}
-            onClose={(isRefresh) => {
-              setShowUploadForm(false);
-              if (isRefresh) reload();
-            }}
-          />
-        ))}
+      {showUploadForm && (
+        <PluginUpgradeModal
+          isShow={showUploadForm}
+          pluginData={data}
+          onClose={(isRefresh) => {
+            setShowUploadForm(false);
+            if (isRefresh) reload();
+          }}
+        />
+      )}
       <Card
         bordered={false}
         onClick={() => {
@@ -174,42 +141,16 @@ function PluginInfo(props: IPluginInfo) {
 
           <Col span={8}>
             <Space direction="vertical" align="end" style={{ display: 'flex', marginTop: -10 }}>
-              {newVersion && (
+              {type && (
                 <Button
-                  loading={npmUpgradeLoading}
-                  icon={<SyncOutlined style={{ color: 'red', fontWeight: 'bold' }} />}
-                  ghost
                   onClick={(e) => {
                     e.stopPropagation();
-                    npmUpgradeRun();
+                    setShowUploadForm(true);
                   }}
+                  ghost
                   type="primary"
                 >
                   {t('Upgrade plugin')}
-                </Button>
-              )}
-              {type === 'url' && (
-                <Button
-                  ghost
-                  type="primary"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowUploadForm(true);
-                  }}
-                >
-                  {t('Upload new version')}
-                </Button>
-              )}
-              {type === 'upload' && (
-                <Button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowUploadForm(true);
-                  }}
-                  ghost
-                  type="primary"
-                >
-                  {t('Upload new version')}
                 </Button>
               )}
               {!isCompatible && !error && (

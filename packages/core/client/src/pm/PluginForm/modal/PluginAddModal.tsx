@@ -25,8 +25,8 @@ export const PluginAddModal: FC<IPluginFormProps> = ({ onClose, isShow }) => {
         <Radio value="upload">{t('Upload plugin')}</Radio>
         <Radio value="url">{t('Compressed file url')}</Radio>
       </Radio.Group>
-      {type === 'npm' && <PluginNpmForm onClose={onClose} />}
-      {type === 'upload' && <PluginUploadForm onClose={onClose} />}
+      {type === 'npm' && <PluginNpmForm onClose={onClose} isUpgrade={false} />}
+      {type === 'upload' && <PluginUploadForm onClose={onClose} isUpgrade={false} />}
       {type === 'url' && <PluginUrlForm onClose={onClose} />}
     </Modal>
   );

@@ -1,6 +1,7 @@
 import { Repository } from '@nocobase/database';
 import { PluginManager } from './plugin-manager';
 import { checkPluginPackage } from './utils';
+import { PluginData } from './types';
 
 export class PluginManagerRepository extends Repository {
   pm: PluginManager;
@@ -47,15 +48,12 @@ export class PluginManagerRepository extends Repository {
     return pluginNames;
   }
 
-  async upgrade(name: string, data: { version: string; compressedFileUrl: string }) {
+  async upgrade(name: string, data: PluginData) {
     return this.update({
       filter: {
         name,
       },
-      values: {
-        version: data.version,
-        compressedFileUrl: data.compressedFileUrl,
-      },
+      values: data,
     });
   }
 

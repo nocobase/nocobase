@@ -22,7 +22,9 @@ import {
   requireModule,
   requireNoCache,
   removeTmpDir,
+  getNpmInfo,
 } from './utils';
+import { PluginData } from './types';
 
 export interface PluginManagerOptions {
   app: Application;
@@ -80,14 +82,6 @@ export class PluginManager {
                   error: true,
                 };
               }
-              let newVersion = undefined;
-
-              try {
-                newVersion = await getNewVersion(json);
-              } catch (e) {
-                console.error(e);
-                newVersion = undefined;
-              }
 
               return {
                 ...json,
@@ -96,7 +90,6 @@ export class PluginManager {
                 description: packageJson[`description.${lng}`] || packageJson.description,
                 readmeUrl: getReadmeUrl(packageName, lng),
                 changelogUrl: getChangelogUrl(packageName),
-                newVersion,
                 isCompatible: checkCompatible(packageName),
               };
             }),
@@ -268,7 +261,7 @@ export class PluginManager {
     return this.add(name, { packageName, compressedFileUrl, authToken, registry, type });
   }
 
-  async upgradeByNpm(name: string) {
+  async upgradeByNpm(name: string, values: { registry: string; version: string; authToken?: string }) {
     const plugin = this.plugins.get(name);
     if (!plugin) {
       throw new Error(`plugin name [${name}] not exists`);
@@ -276,16 +269,20 @@ export class PluginManager {
     if (!plugin.options.packageName || !plugin.options.registry) {
       throw new Error(`plugin name [${name}] not installed by npm`);
     }
+    const version = values.version?.trim();
+    const registry = values.registry?.trim() || plugin.options.registry;
+    const authToken = values.authToken?.trim() || plugin.options.authToken;
     const { compressedFileUrl } = await getPluginInfoByNpm({
       packageName: plugin.options.packageName,
-      registry: plugin.options.registry,
-      authToken: plugin.options.authToken,
+      registry: registry,
+      authToken: authToken,
+      version,
     });
-    return this.upgradeByCompressedFileUrl({ compressedFileUrl, name });
+    return this.upgradeByCompressedFileUrl({ compressedFileUrl, name, version, registry, authToken });
   }
 
-  async upgradeByCompressedFileUrl(options: { compressedFileUrl: string; name: string }) {
-    const { name, compressedFileUrl } = options;
+  async upgradeByCompressedFileUrl(options: PluginData) {
+    const { name, compressedFileUrl, registry, authToken } = options;
     const data = await this.repository.findOne({ filter: { name } });
     if (!data) {
       throw new Error(`plugin name [${name}] not exists`);
@@ -294,11 +291,11 @@ export class PluginManager {
     const { version } = await updatePluginByCompressedFileUrl({
       compressedFileUrl,
       packageName: data.packageName,
-      authToken: data.authToken,
+      authToken: authToken,
     });
 
     await this.addStatic(name, { ...data.toJSON(), compressedFileUrl, version }, true);
-    await this.repository.upgrade(name, { version, compressedFileUrl });
+    await this.repository.upgrade(name, { version, compressedFileUrl, registry, authToken });
     if (data.enabled) {
       const newPlugin = this.plugins.get(name);
       await this.load({}, new Map([[name, newPlugin]]));
@@ -583,6 +580,12 @@ export class PluginManager {
       depsCompatible: getCompatible(packageName),
       lastUpdated: fs.statSync(file).ctime,
     };
+  }
+
+  async getNpmVersionList(name: string) {
+    const plugin = this.plugins.get(name);
+    const npmInfo = await getNpmInfo(plugin.options.packageName, plugin.options.registry, plugin.options.authToken);
+    return Object.keys(npmInfo.versions);
   }
 }
 

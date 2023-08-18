@@ -9,7 +9,8 @@ export interface IPluginData {
   enabled: boolean;
   installed: boolean;
   builtIn: boolean;
-  newVersion?: boolean;
+  registry?: string;
+  authToken?: string;
   compressedFileUrl?: string;
   options: Record<string, unknown>;
   description?: string;

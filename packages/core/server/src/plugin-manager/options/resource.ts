@@ -36,13 +36,28 @@ export default {
       await next();
     },
     async upgradeByNpm(ctx, next) {
+      const { filterByTk, values } = ctx.action.params;
+      if (!filterByTk) {
+        ctx.throw(400, 'plugin name invalid');
+      }
+      if (!values['registry']) {
+        ctx.throw(400, 'plugin registry is required');
+      }
+      if (!values['version']) {
+        ctx.throw(400, 'plugin version is required');
+      }
+      const pm = ctx.app.pm;
+      await pm.upgradeByNpm(filterByTk, values);
+      ctx.body = 'ok';
+      await next();
+    },
+    async npmVersionList(ctx, next) {
       const { filterByTk } = ctx.action.params;
       if (!filterByTk) {
         ctx.throw(400, 'plugin name invalid');
       }
       const pm = ctx.app.pm;
-      await pm.upgradeByNpm(filterByTk);
-      ctx.body = 'ok';
+      ctx.body = await pm.getNpmVersionList(filterByTk);
       await next();
     },
     async upgradeByCompressedFileUrl(ctx, next) {
