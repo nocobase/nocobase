@@ -205,7 +205,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     }
 
     // call app.destroy
-    await this.apps[appName].destroy();
+    await this.apps[appName].runCommand('destroy');
   }
 
   subApps() {
