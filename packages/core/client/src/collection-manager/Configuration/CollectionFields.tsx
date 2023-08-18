@@ -53,12 +53,6 @@ const tableContainer = css`
 
 const titlePrompt = 'Default title for each record';
 
-// 是否可以作为标题字段
-export const isTitleField = (field) => {
-  const { getInterface } = useCollectionManager();
-  return !field.isForeignKey && getInterface(field.interface)?.titleUsable;
-};
-
 const CurrentFields = (props) => {
   const compile = useCompile();
   const { getInterface } = useCollectionManager();
@@ -67,7 +61,7 @@ const CurrentFields = (props) => {
   const { resource, targetKey } = props.collectionResource || {};
   const { [targetKey]: filterByTk, titleField } = useRecord();
   const [loadingRecord, setLoadingRecord] = React.useState<any>(null);
-  const { refreshCM } = useCollectionManager();
+  const { refreshCM, isTitleField } = useCollectionManager();
 
   const columns: TableColumnProps<any>[] = [
     {
@@ -173,7 +167,7 @@ const InheritFields = (props) => {
   const { [targetKey]: filterByTk, titleField, name } = useRecord();
   const [loadingRecord, setLoadingRecord] = React.useState(null);
   const { t } = useTranslation();
-  const { refreshCM } = useCollectionManager();
+  const { refreshCM, isTitleField } = useCollectionManager();
 
   const columns: TableColumnProps<any>[] = [
     {

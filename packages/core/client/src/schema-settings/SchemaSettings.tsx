@@ -167,6 +167,12 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
         onOpenChange={(open) => {
           changeMenu(open);
         }}
+        overlayClassName={css`
+          .ant-dropdown-menu-item-group-list {
+            max-height: 300px;
+            overflow-y: auto;
+          }
+        `}
         menu={{ items }}
       >
         {typeof title === 'string' ? <span>{title}</span> : title}
@@ -1510,14 +1516,14 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
 
                   s['x-read-pretty'] = false;
                   s['x-disabled'] = false;
-
                   const schema = {
                     ...(s || {}),
+                    'x-decorator': 'FormItem',
                     'x-component-props': {
                       ...s['x-component-props'],
                       collectionName: collectionField?.collectionName,
                       targetField,
-                      onChange: props.onChange,
+                      onChange: collectionField?.interface !== 'richText' ? props.onChange : null,
                       defaultValue: getFieldDefaultValue(s, collectionField),
                       style: {
                         width: '100%',
@@ -1526,7 +1532,6 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
                       },
                     },
                   };
-
                   return <SchemaComponent schema={schema} />;
                 },
               },
@@ -1673,8 +1678,9 @@ SchemaSettings.SortingRule = function SortRuleConfigure(props) {
 // 是否显示默认值配置项
 export const isShowDefaultValue = (collectionField: CollectionFieldOptions, getInterface) => {
   return (
-    !['o2o', 'oho', 'obo', 'o2m', 'attachment', 'expression'].includes(collectionField?.interface) &&
-    !isSystemField(collectionField, getInterface)
+    !['o2o', 'oho', 'obo', 'o2m', 'attachment', 'expression', 'point', 'lineString', 'circle', 'polygon'].includes(
+      collectionField?.interface,
+    ) && !isSystemField(collectionField, getInterface)
   );
 };
 

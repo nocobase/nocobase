@@ -103,7 +103,7 @@ function isPluginPackage(name: string) {
   const prefixes = (process.env.PLUGIN_PACKAGE_PREFIX || '').split(',');
   for (const prefix of prefixes) {
     if (prefix.includes('preset')) {
-      return false;
+      continue;
     }
     if (name.startsWith(prefix)) {
       return true;

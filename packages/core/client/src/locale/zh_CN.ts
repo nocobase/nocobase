@@ -1,5 +1,7 @@
 export default {
   "Display <1><0>10</0><1>20</1><2>50</2><3>100</3></1> items per page": "每页显示 <1><0>10</0><1>20</1><2>50</2><3>100</3></1> 条",
+  "Page number": "页码",
+  "Page size": "每页条数",
   "Meet <1><0>All</0><1>Any</1></1> conditions in the group": "满足组内 <1><0>全部</0><1>任意</1></1> 条件",
   "Open in<1><0>Modal</0><1>Drawer</1><2>Window</2></1>": "在 <1><0>对话框</0><1>抽屉</1><2>窗口</2></1> 内打开",
   "{{count}} filter items": "{{count}} 个筛选项",

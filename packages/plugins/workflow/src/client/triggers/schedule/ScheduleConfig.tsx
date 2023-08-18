@@ -203,7 +203,8 @@ export const ScheduleConfig = () => {
                 'x-component-props': {
                   className: css`
                     .ant-input-number {
-                      width: 4em;
+                      width: auto;
+                      min-width: 6em;
                     }
 
                     .ant-picker {
