@@ -31,7 +31,8 @@ const inferInterface = (field: string, value: any) => {
 export const FieldsConfigure = () => {
   const { t } = useTranslation();
   const [dataSource, setDataSource] = useState([]);
-  const { data, error, loading } = useAsyncData();
+  const { data: res, error, loading } = useAsyncData();
+  const { data } = res || {};
   const field: ArrayField = useField();
   const compile = useCompile();
   const { getInterface } = useCollectionManager();

@@ -5,23 +5,16 @@ import { Schema, observer, useForm } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 
 export const PreviewTable = observer(() => {
-  const { data, loading, error } = useAsyncData();
+  const { data: res, loading, error } = useAsyncData();
+  const { data } = res || {};
   const { t } = useTranslation();
   const form = useForm();
 
   const fields = form.values.fields || [];
-  const titleMp = fields.reduce(
-    (
-      mp: {
-        [name: string]: string;
-      },
-      field: any,
-    ) => {
-      mp[field.name] = field?.uiSchema?.title;
-      return mp;
-    },
-    {},
-  );
+  const titleMp = fields.reduce((mp: { [name: string]: string }, field: any) => {
+    mp[field.name] = field?.uiSchema?.title;
+    return mp;
+  }, {});
 
   const columns = error
     ? []

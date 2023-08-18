@@ -1,16 +1,5 @@
 import { Context, Next } from '@nocobase/actions';
-
-const handleLimit = (sql: string) => {
-  // The result is for preview only, so add or replace limit clause to avoid too many results
-  if (/limit\s+\d+/i.test(sql)) {
-    sql = sql.replace(/limit\s+\d+/i, 'limit 5');
-  } else if (/;\s*$/.test(sql)) {
-    sql = sql.replace(/;\s*$/, ' limit 5');
-  } else {
-    sql = `${sql} limit 5`;
-  }
-  return sql;
-};
+import { SQLModel, SqlCollection } from '@nocobase/database';
 
 export default {
   name: 'sql',
@@ -26,9 +15,12 @@ export default {
       if (!/^select/i.test(sql) && !/^with([\s\S]+)select([\s\S]+)/i.test(sql)) {
         ctx.throw(400, ctx.t('Only select query allowed'));
       }
-      sql = handleLimit(sql);
-      const [data] = await ctx.db.sequelize.query(sql);
-      ctx.body = data;
+      const tmpCollection = new SqlCollection({ name: 'tmp', sql }, { database: ctx.db });
+      const model = tmpCollection.model as typeof SQLModel;
+      // The result is for preview only, add limit clause to avoid too many results
+      const data = await model.findAll({ attributes: ['*'], limit: 5, raw: true });
+      const fields = model.inferFields();
+      ctx.body = { data, fields, source: Object.values(fields).map((field) => field.source) };
       await next();
     },
   },
