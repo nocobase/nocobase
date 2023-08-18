@@ -20,6 +20,8 @@ export function getRemotePlugins(
     baseURL = baseURL.slice(0, -4);
   }
 
+  // for dynamic import `import()`
+  (window as any).staticBaseUrl = `/api/plugins/client`;
   requirejs.requirejs.config({
     paths: pluginData.reduce<Record<string, string>>((memo, item) => {
       memo[item.packageName] = `${baseURL}${item.url}`;

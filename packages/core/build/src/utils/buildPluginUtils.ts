@@ -64,9 +64,8 @@ export function getPackagesFromFiles(files: string[]): string[] {
   return [...new Set(packageNames)];
 }
 
-export function getSourcePackages(sourcePaths: string[]): string[] {
-  const files = sourcePaths.map((item) => fs.readFileSync(item, 'utf-8'));
-  return getPackagesFromFiles(files);
+export function getSourcePackages(fileSources: string[]): string[] {
+  return getPackagesFromFiles(fileSources);
 }
 
 export function getIncludePackages(sourcePackages: string[], external: string[], pluginPrefix: string[]): string[] {
@@ -152,4 +151,15 @@ export function checkRequire(sourceFiles: string[], log: Log) {
     console.log('\n');
     process.exit(-1);
   }
+}
+
+export function checkFileSize(outDir: string, log: Log) {
+  const files = fs.readdirSync(outDir);
+
+  files.forEach(file => {
+    const fileSize = getFileSize(path.join(outDir, file));
+    if (fileSize > 1024 * 1024) {
+      log(`The %s size %s exceeds 1MB. You can use dynamic import \`import()\` for lazy loading content.`, chalk.red(file), chalk.red(formatFileSize(fileSize)));
+    }
+  });
 }
