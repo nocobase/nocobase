@@ -8,7 +8,7 @@ import { transformVariableValue } from '../../../../variables/utils/transformVar
 /**
  * 用于懒加载 Form 区块中只用于展示的关联字段的值
  */
-const useLazyLoadAssociationField = () => {
+const useLazyLoadAssociationFieldOfForm = () => {
   const { name } = useCollection();
   const { getCollectionJoinField } = useCollectionManager();
   const form = useForm();
@@ -49,4 +49,4 @@ const useLazyLoadAssociationField = () => {
   }, [schemaName.includes('.') ? form.values[schemaName.split('.')[0]] : null]);
 };
 
-export default useLazyLoadAssociationField;
+export default useLazyLoadAssociationFieldOfForm;

@@ -25,7 +25,7 @@ import { HTMLEncode } from '../input/shared';
 import { useColorFields } from '../table-v2/Table.Column.Designer';
 import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
 import { useEnsureOperatorsValid } from './SchemaSettingOptions';
-import useLazyLoadAssociationField from './hooks/useLazyLoadAssociationField';
+import useLazyLoadAssociationFieldOfForm from './hooks/useLazyLoadAssociationFieldOfForm';
 import useParseDefaultValue from './hooks/useParseDefaultValue';
 
 export const findColumnFieldSchema = (fieldSchema, getCollectionJoinField) => {
@@ -45,20 +45,6 @@ export const findColumnFieldSchema = (fieldSchema, getCollectionJoinField) => {
   getAssociationAppends(fieldSchema);
   return [...childrenSchema];
 };
-function transformData(inputData) {
-  const transformedData = [];
-  const keys = Object.keys(inputData) || [];
-  const values: any[] = Object.values(inputData) || [];
-  for (let i = 0; i < values[0]?.length; i++) {
-    const newObj = {};
-    keys.forEach((key, index) => {
-      newObj[key] = values[index][i];
-    });
-    transformedData.push(newObj);
-  }
-
-  return transformedData;
-}
 export const FormItem: any = observer(
   (props: any) => {
     useEnsureOperatorsValid();
@@ -74,7 +60,7 @@ export const FormItem: any = observer(
 
     // 需要放在注冊完变量之后
     useParseDefaultValue();
-    useLazyLoadAssociationField();
+    useLazyLoadAssociationFieldOfForm();
 
     useEffect(() => {
       if (ctx?.block === 'form') {
