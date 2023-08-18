@@ -4,6 +4,7 @@ import { EventEmitter } from 'events';
 import http, { IncomingMessage, ServerResponse } from 'http';
 import { promisify } from 'node:util';
 import { resolve } from 'path';
+import qs from 'qs';
 import handler from 'serve-handler';
 import { parse } from 'url';
 import { AppSupervisor } from '../app-supervisor';
@@ -64,7 +65,18 @@ export class Gateway extends EventEmitter {
   }
 
   public reset() {
-    this.setAppSelector(() => 'main');
+    this.setAppSelector(async (req) => {
+      const appName = qs.parse(parse(req.url).query)?.__appName;
+      if (appName) {
+        return appName;
+      }
+
+      if (req.headers['x-app']) {
+        return req.headers['x-app'];
+      }
+
+      return null;
+    });
 
     if (this.server) {
       this.server.close();
@@ -282,7 +294,7 @@ export class Gateway extends EventEmitter {
       const ipcClient = await this.getIPCSocketClient();
       return ipcClient;
     } catch (e) {
-      console.log(e);
+      // console.log(e);
       return false;
     }
   }
