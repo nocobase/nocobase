@@ -2,15 +2,15 @@ import { CloseOutlined, PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { ArrayField } from '@formily/core';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
-import { observer, RecursionField, useFieldSchema } from '@formily/react';
+import { RecursionField, observer, useFieldSchema } from '@formily/react';
 import { action } from '@formily/reactive';
 import { each } from '@formily/shared';
 import { Button, Card, Divider, Tooltip } from 'antd';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
+import { RecordProvider } from '../../../record-provider';
 import { AssociationFieldContext } from './context';
 import { useAssociationFieldContext } from './hooks';
-import { RecordProvider, useRecord } from '../../../record-provider';
 
 export const Nester = (props) => {
   const { options } = useContext(AssociationFieldContext);
@@ -24,7 +24,12 @@ export const Nester = (props) => {
 };
 
 const ToOneNester = (props) => {
-  return <Card bordered={true}>{props.children}</Card>;
+  const { field } = useAssociationFieldContext<ArrayField>();
+  return (
+    <RecordProvider record={field.value}>
+      <Card bordered={true}>{props.children}</Card>
+    </RecordProvider>
+  );
 };
 
 const ToManyNester = observer(

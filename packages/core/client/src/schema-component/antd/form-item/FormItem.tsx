@@ -29,23 +29,6 @@ import useLazyLoadAssociationFieldOfForm from './hooks/useLazyLoadAssociationFie
 import useLazyLoadAssociationFieldOfSubForm from './hooks/useLazyLoadAssociationFieldOfSubForm';
 import useParseDefaultValue from './hooks/useParseDefaultValue';
 
-export const findColumnFieldSchema = (fieldSchema, getCollectionJoinField) => {
-  const childrenSchema = new Set();
-  const getAssociationAppends = (schema) => {
-    schema.reduceProperties((_, s) => {
-      const collectionField = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
-      const isAssociationField = collectionField && ['belongsTo'].includes(collectionField.type);
-      if (collectionField && isAssociationField && s.default?.includes?.('$context')) {
-        childrenSchema.add(JSON.stringify({ name: s.name, default: s.default }));
-      } else {
-        getAssociationAppends(s);
-      }
-    }, []);
-  };
-
-  getAssociationAppends(fieldSchema);
-  return [...childrenSchema];
-};
 export const FormItem: any = observer(
   (props: any) => {
     useEnsureOperatorsValid();

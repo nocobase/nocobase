@@ -31,7 +31,7 @@ const useLazyLoadAssociationFieldOfSubForm = () => {
     // 通过模拟一个 record 变量，用解析变量的方法去获取关系字段的值
     const recordVariable = {
       name: '$nRecord',
-      ctx: record,
+      ctx: cloneRecord,
       collectionName: name,
     };
     const variableString = `{{ $nRecord.${schemaName} }}`;
