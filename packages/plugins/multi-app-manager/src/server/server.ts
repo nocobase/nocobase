@@ -280,14 +280,21 @@ export class PluginMultiAppManager extends Plugin {
           continue;
         }
 
+        const beforeSubAppStatus = AppSupervisor.getInstance().getAppStatus(instance.name);
+
         const subApp = await appSupervisor.getApp(instance.name, {
           upgrading: true,
         });
 
+        console.log({ beforeSubAppStatus });
         try {
+          this.app.setWorkingMessage(`upgrading sub app ${instance.name}...`);
           console.log(`${instance.name}: upgrading...`);
 
           await subApp.runAsCLI(['upgrade'], { from: 'user' });
+          if (!beforeSubAppStatus && AppSupervisor.getInstance().getAppStatus(instance.name) === 'initialized') {
+            await AppSupervisor.getInstance().removeApp(instance.name);
+          }
         } catch (error) {
           console.log(`${instance.name}: upgrade failed`);
           this.app.logger.error(error);

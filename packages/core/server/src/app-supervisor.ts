@@ -120,7 +120,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
         if (!this.hasApp(appName)) {
           this.setAppStatus(appName, 'not_found');
-        } else if (!this.getAppStatus(appName)) {
+        } else if (!this.getAppStatus(appName) || this.getAppStatus(appName) == 'initializing') {
           this.setAppStatus(appName, 'initialized');
         }
       }
@@ -153,27 +153,6 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     }
 
     return status;
-  }
-
-  async restartApp(name: string) {
-    if (!this.hasApp(name)) {
-      throw new Error(`app ${name} not exists`);
-    }
-
-    const app = this.apps[name];
-    app.setWorkingMessage('restart app');
-
-    await app.destroy();
-
-    // create new app instance
-    if (app.name === this.mainAppName) {
-      const rawAttribute = app.rawOptions;
-      const newApp = new Application(rawAttribute);
-      await newApp.load();
-      await newApp.start();
-    } else {
-      await this.bootStrapApp(name);
-    }
   }
 
   bootMainApp(options: ApplicationOptions) {

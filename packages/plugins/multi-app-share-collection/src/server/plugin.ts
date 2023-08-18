@@ -220,21 +220,6 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       });
     });
 
-    this.app.db.on('field.afterRemove', (removedField) => {
-      const subApps = [...AppSupervisor.getInstance().subApps()];
-      for (const subApp of subApps) {
-        const collectionName = removedField.collection.name;
-        const collection = subApp.db.getCollection(collectionName);
-
-        if (!collection) {
-          subApp.log.warn(`collection ${collectionName} not found in ${subApp.name}`);
-          continue;
-        }
-
-        collection.removeField(removedField.name);
-      }
-    });
-
     this.app.db.on(`afterRemoveCollection`, (collection) => {
       const subApps = [...AppSupervisor.getInstance().subApps()];
       for (const subApp of subApps) {

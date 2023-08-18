@@ -212,16 +212,22 @@ describe('multiple apps', () => {
       },
     });
 
-    const subApp = await AppSupervisor.getInstance().getApp(subAppName);
+    await AppSupervisor.getInstance().removeApp(subAppName);
+
     const jestFn = jest.fn();
 
-    subApp.on('afterUpgrade', () => {
-      jestFn();
+    AppSupervisor.getInstance().on('afterAppAdded', (subApp) => {
+      subApp.on('afterUpgrade', () => {
+        jestFn();
+      });
     });
 
-    await app.upgrade();
+    await app.runCommand('upgrade');
 
     expect(jestFn).toBeCalled();
+
+    // sub app should remove after upgrade
+    expect(AppSupervisor.getInstance().hasApp(subAppName)).toBeFalsy();
   });
 
   it('should start automatically', async () => {
