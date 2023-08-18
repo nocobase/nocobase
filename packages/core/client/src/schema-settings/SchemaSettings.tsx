@@ -1576,20 +1576,27 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
                 shouldChange: getShouldChange({ collectionField, variables, localVariables }),
                 renderSchemaComponent: function Com(props) {
                   const s = _.cloneDeep(fieldSchemaWithoutRequired) || ({} as Schema);
-                  s.type = 'void';
                   s.title = '';
                   s.name = 'default';
                   s['x-read-pretty'] = false;
                   s['x-disabled'] = false;
 
+                  const defaultValue = getFieldDefaultValue(s, collectionField);
+
                   if (collectionField.target) {
                     s['x-component-props'].mode = 'Select';
                   }
 
-                  const defaultValue = getFieldDefaultValue(s, collectionField);
+                  if (collectionField?.uiSchema.type) {
+                    s.type = collectionField.uiSchema.type;
+                  }
 
                   if (collectionField?.uiSchema['x-component'] === 'Checkbox') {
                     s['x-component-props'].defaultChecked = defaultValue;
+
+                    // 在这里如果不设置 type 为 void，会导致设置的默认值不生效
+                    // 但是我不知道为什么必须要设置为 void ？
+                    s.type = 'void';
                   }
 
                   const schema = {
@@ -1599,7 +1606,7 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
                       ...s['x-component-props'],
                       collectionName: collectionField?.collectionName,
                       targetField,
-                      onChange: collectionField?.interface !== 'richText' ? props.onChange : null,
+                      onChange: props.onChange,
                       defaultValue: isVariable(defaultValue) ? '' : defaultValue,
                       style: {
                         width: '100%',
@@ -1609,6 +1616,7 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
                     },
                     default: isVariable(defaultValue) ? '' : defaultValue,
                   } as ISchema;
+
                   return (
                     <FormProvider>
                       <SchemaComponent schema={schema} />

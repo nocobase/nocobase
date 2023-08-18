@@ -20,6 +20,10 @@ const useParseDefaultValue = () => {
   const { getField } = useCollection();
 
   useEffect(() => {
+    if (schema.default == null) {
+      return;
+    }
+
     const formVariable = localVariables.find((item) => item.name === '$nForm');
     const _run = async () => {
       // 如果默认值是一个变量，则需要解析之后再显示出来
@@ -38,16 +42,21 @@ const useParseDefaultValue = () => {
           }
         }
 
-        const value = await variables.parseVariable(schema.default, localVariables);
-        field.setInitialValue(transformVariableValue(value, { targetCollectionFiled: collectionField }));
+        const value = transformVariableValue(await variables.parseVariable(schema.default, localVariables), {
+          targetCollectionFiled: collectionField,
+        });
+
         if (value == null || value === '') {
           field.reset();
+        } else {
+          field.setInitialValue(value);
         }
+
         field.loading = false;
 
         // 如果不是一个有效的变量字符串（如：`{{ $user.name }}`）却依然包含 `{{` 和 `}}`，
-        // 则可以断定是一个需要 compile（`useCompile` 返回的函数） 的字符串，这样的字符串会有 formily 自动解析，无需在这里赋值
-      } else if (schema.default && !/\{\{.+\}\}/g.test(schema.default) && field.setInitialValue) {
+        // 则可以断定是一个需要 compile（`useCompile` 返回的函数） 的字符串，这样的字符串会由 formily 自动解析，无需在这里赋值
+      } else if (!/\{\{.+\}\}/g.test(schema.default) && field.setInitialValue) {
         field.setInitialValue(schema.default);
       }
     };

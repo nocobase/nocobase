@@ -1,5 +1,6 @@
 import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
+import _ from 'lodash';
 import { useEffect } from 'react';
 import { useRecord } from '../../../..';
 import { useCollection, useCollectionManager } from '../../../../collection-manager';
@@ -20,7 +21,10 @@ const useLazyLoadAssociationFieldOfSubForm = () => {
   const schemaName = fieldSchema.name.toString();
 
   useEffect(() => {
-    if (record[schemaName] != null || !record || !variables) {
+    const cloneRecord = { ...record };
+    delete cloneRecord['__parent'];
+
+    if (_.isEmpty(cloneRecord) || !variables || record[schemaName] != null) {
       return;
     }
 
