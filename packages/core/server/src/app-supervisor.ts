@@ -30,7 +30,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     [appName: string]: AppStatus;
   } = {};
 
-  public lastWorkingMessage: {
+  public lastMaintainingMessage: {
     [appName: string]: string;
   } = {};
 
@@ -232,16 +232,16 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
       delete this.apps[app.name];
       delete this.appStatus[app.name];
       delete this.appErrors[app.name];
-      delete this.lastWorkingMessage[app.name];
+      delete this.lastMaintainingMessage[app.name];
       delete this.statusBeforeCommanding[app.name];
     });
 
-    app.on('workingMessageChanged', ({ message, maintainingStatus }) => {
-      if (this.lastWorkingMessage[app.name] === message) {
+    app.on('maintainingMessageChanged', ({ message, maintainingStatus }) => {
+      if (this.lastMaintainingMessage[app.name] === message) {
         return;
       }
 
-      this.lastWorkingMessage[app.name] = message;
+      this.lastMaintainingMessage[app.name] = message;
 
       const appStatus = this.getAppStatus(app.name);
 
@@ -249,7 +249,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
         return;
       }
 
-      this.emit('appWorkingMessageChanged', {
+      this.emit('appMaintainingMessageChanged', {
         appName: app.name,
         message,
         status: appStatus,

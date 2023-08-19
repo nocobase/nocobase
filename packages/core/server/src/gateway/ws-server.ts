@@ -59,7 +59,7 @@ export class WSServer {
       });
     });
 
-    AppSupervisor.getInstance().on('appWorkingMessageChanged', async ({ appName, message, command, status }) => {
+    AppSupervisor.getInstance().on('appMaintainingMessageChanged', async ({ appName, message, command, status }) => {
       const app = await AppSupervisor.getInstance().getApp(appName, {
         withOutBootStrap: true,
       });

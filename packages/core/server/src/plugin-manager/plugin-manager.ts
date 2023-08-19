@@ -223,7 +223,7 @@ export class PluginManager {
   }
 
   async load(options: any = {}) {
-    this.app.setWorkingMessage('loading plugins...');
+    this.app.setMaintainingMessage('loading plugins...');
     const total = this.pluginInstances.size;
 
     let current = 0;
@@ -236,7 +236,7 @@ export class PluginManager {
       const name = P.name;
       current += 1;
 
-      this.app.setWorkingMessage(`before load plugin [${name}], ${current}/${total}`);
+      this.app.setMaintainingMessage(`before load plugin [${name}], ${current}/${total}`);
       if (!plugin.enabled) {
         continue;
       }
@@ -252,7 +252,7 @@ export class PluginManager {
       }
       const name = P.name;
       current += 1;
-      this.app.setWorkingMessage(`load plugin [${name}], ${current}/${total}`);
+      this.app.setMaintainingMessage(`load plugin [${name}], ${current}/${total}`);
 
       if (!plugin.enabled) {
         continue;
@@ -266,11 +266,11 @@ export class PluginManager {
       this.app.logger.debug(`after load plugin [${name}]...`);
     }
 
-    this.app.setWorkingMessage('loaded plugins');
+    this.app.setMaintainingMessage('loaded plugins');
   }
 
   async install(options: InstallOptions = {}) {
-    this.app.setWorkingMessage('install plugins...');
+    this.app.setMaintainingMessage('install plugins...');
     const total = this.pluginInstances.size;
     let current = 0;
 
@@ -290,13 +290,13 @@ export class PluginManager {
       }
 
       plugin.state.installing = true;
-      this.app.setWorkingMessage(`before install plugin [${name}], ${current}/${total}`);
+      this.app.setMaintainingMessage(`before install plugin [${name}], ${current}/${total}`);
       await this.app.emitAsync('beforeInstallPlugin', plugin, options);
       this.app.logger.debug(`install plugin [${name}]...`);
       await plugin.install(options);
       plugin.state.installing = false;
       plugin.state.installed = true;
-      this.app.setWorkingMessage(`after install plugin [${name}], ${current}/${total}`);
+      this.app.setMaintainingMessage(`after install plugin [${name}], ${current}/${total}`);
       await this.app.emitAsync('afterInstallPlugin', plugin, options);
     }
   }
@@ -304,14 +304,14 @@ export class PluginManager {
   async enable(name: string | string[]) {
     this.app.log.debug(`enabling plugin ${name}`);
 
-    this.app.setWorkingMessage(`enabling plugin ${name}`);
+    this.app.setMaintainingMessage(`enabling plugin ${name}`);
     const pluginNames = await this.repository.enable(name);
 
     await this.app.reload();
 
     this.app.log.debug(`syncing database in enable plugin ${name}...`);
 
-    this.app.setWorkingMessage(`sync database`);
+    this.app.setMaintainingMessage(`sync database`);
     await this.app.db.sync();
 
     for (const pluginName of pluginNames) {
@@ -320,7 +320,7 @@ export class PluginManager {
         throw new Error(`${name} plugin does not exist`);
       }
       this.app.log.debug(`installing plugin ${pluginName}...`);
-      this.app.setWorkingMessage(`install plugin ${pluginName}...`);
+      this.app.setMaintainingMessage(`install plugin ${pluginName}...`);
       await plugin.install();
       await plugin.afterEnable();
     }
@@ -334,7 +334,7 @@ export class PluginManager {
 
   async disable(name: string | string[]) {
     try {
-      this.app.setWorkingMessage(`disabling plugin ${name}`);
+      this.app.setMaintainingMessage(`disabling plugin ${name}`);
       const pluginNames = await this.repository.disable(name);
       await this.app.reload();
       for (const pluginName of pluginNames) {
@@ -346,7 +346,7 @@ export class PluginManager {
       }
 
       await this.app.emitAsync('afterDisablePlugin', name);
-      this.app.setWorkingMessage(`plugin ${name} disabled`);
+      this.app.setMaintainingMessage(`plugin ${name} disabled`);
       await this.app.restart();
     } catch (error) {
       throw error;

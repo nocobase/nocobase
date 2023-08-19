@@ -37,7 +37,7 @@ export const errors: AppErrors = {
 
   APP_STARTING: {
     status: 503,
-    message: ({ app }) => app.workingMessage,
+    message: ({ app }) => app.maintainingMessage,
     maintaining: true,
   },
 
@@ -76,7 +76,7 @@ export const errors: AppErrors = {
   APP_COMMANDING: {
     status: 503,
     maintaining: true,
-    message: ({ app, message }) => message || app.workingMessage,
+    message: ({ app, message }) => message || app.maintainingMessage,
     command: ({ app, command }) => command || app.getMaintaining().command,
   },
 

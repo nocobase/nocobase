@@ -16,10 +16,10 @@ export class Locale {
 
     this.app.on('afterLoad', async () => {
       this.app.log.debug('load locale resource');
-      this.app.setWorkingMessage('load locale resource');
+      this.app.setMaintainingMessage('load locale resource');
       await this.load();
       this.app.log.debug('locale resource loaded');
-      this.app.setWorkingMessage('locale resource loaded');
+      this.app.setMaintainingMessage('locale resource loaded');
     });
   }
 
@@ -69,7 +69,7 @@ export class Locale {
       try {
         const packageName = PluginManager.getPackageName(name);
         this.app.log.debug(`load [${packageName}] locale resource `);
-        this.app.setWorkingMessage(`load [${packageName}] locale resource `);
+        this.app.setMaintainingMessage(`load [${packageName}] locale resource `);
         const res = getResource(packageName, lang);
         if (res) {
           resources[name] = { ...res };

@@ -132,10 +132,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._loaded;
   }
 
-  private _workingMessage: string;
+  private _maintainingMessage: string;
 
-  get workingMessage() {
-    return this._workingMessage;
+  get maintainingMessage() {
+    return this._maintainingMessage;
   }
 
   protected _db: Database;
@@ -233,11 +233,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._maintaining = true;
   }
 
-  setWorkingMessage(message: string) {
-    this._workingMessage = message;
+  setMaintainingMessage(message: string) {
+    this._maintainingMessage = message;
 
-    this.emit('workingMessageChanged', {
-      message: this._workingMessage,
+    this.emit('maintainingMessageChanged', {
+      message: this._maintainingMessage,
       maintainingStatus: this._maintainingCommandStatus,
     });
   }
@@ -299,24 +299,24 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
 
     if (options?.reload) {
-      this.setWorkingMessage('app reload');
+      this.setMaintainingMessage('app reload');
       this.log.info(`app.reload()`);
       const oldDb = this._db;
       this.init();
       await oldDb.close();
     }
 
-    this.setWorkingMessage('init plugins');
+    this.setMaintainingMessage('init plugins');
     await this.pm.initPlugins();
 
-    this.setWorkingMessage('start load');
+    this.setMaintainingMessage('start load');
 
-    this.setWorkingMessage('emit beforeLoad');
+    this.setMaintainingMessage('emit beforeLoad');
     await this.emitAsync('beforeLoad', this, options);
 
     await this.pm.load(options);
 
-    this.setWorkingMessage('emit afterLoad');
+    this.setMaintainingMessage('emit afterLoad');
     await this.emitAsync('afterLoad', this, options);
     this._loaded = true;
   }
@@ -332,7 +332,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     });
 
     this.log.debug('emit afterReload');
-    this.setWorkingMessage('emit afterReload');
+    this.setMaintainingMessage('emit afterReload');
     await this.emitAsync('afterReload', this, options);
     this.log.debug(`finish reload`);
   }
@@ -433,16 +433,16 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       );
     }
 
-    this.setWorkingMessage('starting app...');
+    this.setMaintainingMessage('starting app...');
 
     if (this.db.closed()) {
       await this.db.reconnect();
     }
 
-    this.setWorkingMessage('emit beforeStart');
+    this.setMaintainingMessage('emit beforeStart');
     await this.emitAsync('beforeStart', this, options);
 
-    this.setWorkingMessage('emit afterStart');
+    this.setMaintainingMessage('emit afterStart');
     await this.emitAsync('afterStart', this, options);
     await this.emitAsync('__started', this, options);
     this.stopped = false;
@@ -460,7 +460,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   async stop(options: any = {}) {
     this.log.debug('stop app...');
-    this.setWorkingMessage('stopping app...');
+    this.setMaintainingMessage('stopping app...');
     if (this.stopped) {
       this.log.warn(`Application ${this.name} already stopped`);
       return;
@@ -487,7 +487,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   async destroy(options: any = {}) {
     this.logger.debug('start destroy app');
-    this.setWorkingMessage('destroying app...');
+    this.setMaintainingMessage('destroying app...');
     await this.emitAsync('beforeDestroy', this, options);
     await this.stop(options);
 
@@ -535,7 +535,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async install(options: InstallOptions = {}) {
-    this.setWorkingMessage('installing app...');
+    this.setMaintainingMessage('installing app...');
     this.log.debug('Database dialect: ' + this.db.sequelize.getDialect());
 
     if (options?.clean || options?.sync?.force) {
@@ -546,14 +546,14 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
 
     this.log.debug('emit beforeInstall');
-    this.setWorkingMessage('call beforeInstall hook...');
+    this.setMaintainingMessage('call beforeInstall hook...');
     await this.emitAsync('beforeInstall', this, options);
     this.log.debug('start install plugins');
     await this.pm.install(options);
     this.log.debug('update version');
     await this.version.update();
     this.log.debug('emit afterInstall');
-    this.setWorkingMessage('call afterInstall hook...');
+    this.setMaintainingMessage('call afterInstall hook...');
     await this.emitAsync('afterInstall', this, options);
 
     if (this._maintainingStatusBeforeCommand?.error) {

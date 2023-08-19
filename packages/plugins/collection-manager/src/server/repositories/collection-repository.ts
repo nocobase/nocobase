@@ -93,7 +93,7 @@ export class CollectionRepository extends Repository {
         lazyCollectionFields[instanceName] = skipField;
       }
       this.database.logger.debug(`load ${instanceName} collection`);
-      this.app.setWorkingMessage(`load ${instanceName} collection`);
+      this.app.setMaintainingMessage(`load ${instanceName} collection`);
 
       await nameMap[instanceName].load({ skipField });
     }
@@ -101,14 +101,14 @@ export class CollectionRepository extends Repository {
     // load view fields
     for (const viewCollectionName of viewCollections) {
       this.database.logger.debug(`load ${viewCollectionName} collection fields`);
-      this.app.setWorkingMessage(`load ${viewCollectionName} collection fields`);
+      this.app.setMaintainingMessage(`load ${viewCollectionName} collection fields`);
       await nameMap[viewCollectionName].loadFields({});
     }
 
     // load lazy collection field
     for (const [collectionName, skipField] of Object.entries(lazyCollectionFields)) {
       this.database.logger.debug(`load ${collectionName} collection fields`);
-      this.app.setWorkingMessage(`load ${collectionName} collection fields`);
+      this.app.setMaintainingMessage(`load ${collectionName} collection fields`);
       await nameMap[collectionName].loadFields({ includeFields: skipField });
     }
 

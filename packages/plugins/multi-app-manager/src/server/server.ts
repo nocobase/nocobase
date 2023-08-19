@@ -206,7 +206,7 @@ export class PluginMultiAppManager extends Plugin {
       const repository = this.db.getRepository('applications');
       const appSupervisor = AppSupervisor.getInstance();
 
-      this.app.setWorkingMessage('starting sub applications...');
+      this.app.setMaintainingMessage('starting sub applications...');
       if (appSupervisor.runningMode == 'single') {
         Gateway.getInstance().setAppSelector(() => appSupervisor.singleAppName);
 
@@ -274,7 +274,7 @@ export class PluginMultiAppManager extends Plugin {
 
         console.log({ beforeSubAppStatus });
         try {
-          this.app.setWorkingMessage(`upgrading sub app ${instance.name}...`);
+          this.app.setMaintainingMessage(`upgrading sub app ${instance.name}...`);
           console.log(`${instance.name}: upgrading...`);
 
           await subApp.runAsCLI(['upgrade'], { from: 'user' });
