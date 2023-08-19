@@ -21,6 +21,7 @@ export function getRemotePlugins(
   }
 
   requirejs.requirejs.config({
+    waitSeconds: 120,
     paths: pluginData.reduce<Record<string, string>>((memo, item) => {
       memo[item.packageName] = `${baseURL}${item.url}`;
       memo[`${item.packageName}/client`] = `${baseURL}${item.url}.js?client`;
