@@ -68,30 +68,31 @@ export default {
 
       const rawValues = await ctx.app.db.sequelize.query(sql, { type: 'SELECT' });
 
-      for (const raw of rawValues) {
-        const fakeInstance = {
-          dataValues: raw,
-          getDataValue: (key) => raw[key],
-        };
+      if (fieldTypes) {
+        for (const raw of rawValues) {
+          const fakeInstance = {
+            dataValues: raw,
+            getDataValue: (key) => raw[key],
+          };
 
-        for (const fieldName of Object.keys(fieldTypes)) {
-          const fieldType = fieldTypes[fieldName];
-          const FieldClass = ctx.app.db.fieldTypes.get(fieldType);
+          for (const fieldName of Object.keys(fieldTypes)) {
+            const fieldType = fieldTypes[fieldName];
+            const FieldClass = ctx.app.db.fieldTypes.get(fieldType);
 
-          const fieldOptions = new FieldClass(
-            { name: fieldName },
-            {
-              db: ctx.app.db,
-            },
-          ).options;
+            const fieldOptions = new FieldClass(
+              { name: fieldName },
+              {
+                db: ctx.app.db,
+              },
+            ).options;
 
-          if (fieldOptions.get) {
-            const newValue = fieldOptions.get.apply(fakeInstance);
-            raw[fieldName] = newValue;
+            if (fieldOptions.get) {
+              const newValue = fieldOptions.get.apply(fakeInstance);
+              raw[fieldName] = newValue;
+            }
           }
         }
       }
-
       ctx.body = rawValues;
       await next();
     },
