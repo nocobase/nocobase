@@ -1,5 +1,6 @@
-import { Form } from '@formily/core';
+import { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
+import { BlockRequestContext } from '../../../block-provider';
 import { useBaseVariable } from './useBaseVariable';
 
 /**
@@ -7,15 +8,8 @@ import { useBaseVariable } from './useBaseVariable';
  * @param param0
  * @returns
  */
-export const useIterationVariable = ({
-  currentCollection,
-  schema,
-  form,
-}: {
-  form: Form;
-  currentCollection: string;
-  schema?: any;
-}) => {
+export const useIterationVariable = ({ currentCollection, schema }: { currentCollection: string; schema?: any }) => {
+  const ctx = useContext(BlockRequestContext);
   const { t } = useTranslation();
   const result = useBaseVariable({
     uiSchema: schema,
@@ -26,7 +20,9 @@ export const useIterationVariable = ({
     returnFields: (fields, option) => {
       return option.depth === 0
         ? fields.filter((field) => {
-            return Object.keys(form.fields).some((name) => name.includes(`.${field.name}`));
+            if (ctx.field?.data?.activeFields) {
+              return ctx.field.data.activeFields.has(field.name);
+            }
           })
         : fields;
     },

@@ -43,11 +43,10 @@ export const useVariableOptions = ({
   const fieldCollectionName = collectionField?.collectionName;
   const userVariable = useUserVariable({ maxDepth: 3, uiSchema: uiSchema });
   const dateVariable = useDateVariable({ operator, schema: uiSchema });
-  const formVariable = useFormVariable({ schema: uiSchema, collectionName: rootCollection, form });
+  const formVariable = useFormVariable({ schema: uiSchema, collectionName: rootCollection });
   const iterationVariable = useIterationVariable({
     currentCollection: fieldCollectionName,
     schema: uiSchema,
-    form,
   });
   const currentRecordVariable = useRecordVariable({ schema: uiSchema, collectionName: rootCollection });
 

@@ -62,7 +62,7 @@ import {
   useRecord,
   useSortFields,
 } from '..';
-import { useFormBlockContext, useTableBlockContext } from '../block-provider';
+import { BlockRequestContext, useFormBlockContext, useTableBlockContext } from '../block-provider';
 import { findFilterTargets, updateFilterTargets } from '../block-provider/hooks';
 import {
   FilterBlockType,
@@ -919,6 +919,7 @@ SchemaSettings.ModalItem = function ModalItem(props: ModalItemProps) {
   const collection = useCollection();
   const apiClient = useAPIClient();
   const { theme } = useGlobalTheme();
+  const ctx = useContext(BlockRequestContext);
 
   if (hidden) {
     return null;
@@ -933,30 +934,32 @@ SchemaSettings.ModalItem = function ModalItem(props: ModalItemProps) {
           () => {
             return (
               <Router location={location} navigator={null}>
-                <CollectionManagerContext.Provider value={cm}>
-                  <CollectionProvider collection={collection}>
-                    <SchemaComponentOptions scope={options.scope} components={options.components}>
-                      <FormLayout
-                        layout={'vertical'}
-                        className={css`
-                          // screen > 576px
-                          @media (min-width: 576px) {
-                            min-width: 520px;
-                          }
+                <BlockRequestContext.Provider value={ctx}>
+                  <CollectionManagerContext.Provider value={cm}>
+                    <CollectionProvider collection={collection}>
+                      <SchemaComponentOptions scope={options.scope} components={options.components}>
+                        <FormLayout
+                          layout={'vertical'}
+                          className={css`
+                            // screen > 576px
+                            @media (min-width: 576px) {
+                              min-width: 520px;
+                            }
 
-                          // screen <= 576px
-                          @media (max-width: 576px) {
-                            min-width: 320px;
-                          }
-                        `}
-                      >
-                        <APIClientProvider apiClient={apiClient}>
-                          <SchemaComponent components={components} scope={scope} schema={schema} />
-                        </APIClientProvider>
-                      </FormLayout>
-                    </SchemaComponentOptions>
-                  </CollectionProvider>
-                </CollectionManagerContext.Provider>
+                            // screen <= 576px
+                            @media (max-width: 576px) {
+                              min-width: 320px;
+                            }
+                          `}
+                        >
+                          <APIClientProvider apiClient={apiClient}>
+                            <SchemaComponent components={components} scope={scope} schema={schema} />
+                          </APIClientProvider>
+                        </FormLayout>
+                      </SchemaComponentOptions>
+                    </CollectionProvider>
+                  </CollectionManagerContext.Provider>
+                </BlockRequestContext.Provider>
               </Router>
             );
           },
@@ -1258,7 +1261,6 @@ SchemaSettings.EnableChildCollections = function EnableChildCollectionsItem(prop
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const allowAddToCurrent = fieldSchema?.['x-allow-add-to-current'];
-  const form = useForm();
   const { getCollectionJoinField } = useCollectionManager();
   const ctx = useBlockRequestContext();
   const collectionField = getCollectionJoinField(fieldSchema?.parent?.['x-collection-field']) || {};
@@ -1299,7 +1301,6 @@ SchemaSettings.EnableChildCollections = function EnableChildCollectionsItem(prop
               'x-component': ChildDynamicComponent,
               'x-component-props': {
                 rootCollection: ctx.props.collection || ctx.props.resource,
-                form,
                 collectionField,
               },
               default: fieldSchema?.['x-component-props']?.['linkageFromForm'],

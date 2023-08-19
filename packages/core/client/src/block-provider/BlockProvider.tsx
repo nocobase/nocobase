@@ -24,7 +24,16 @@ import { useAssociationNames } from './hooks';
 
 export const BlockResourceContext = createContext(null);
 export const BlockAssociationContext = createContext(null);
-export const BlockRequestContext = createContext<any>({});
+export const BlockRequestContext = createContext<{
+  block?: string;
+  props?: any;
+  field?: Field;
+  service?: any;
+  resource?: any;
+  allowedActions?: any;
+  __parent?: any;
+  updateAssociationValues?: any[];
+}>({});
 
 export const useBlockResource = () => {
   return useContext(BlockResourceContext);
@@ -165,7 +174,7 @@ export const MaybeCollectionProvider = (props) => {
 };
 
 export const BlockRequestProvider = (props) => {
-  const field = useField();
+  const field = useField<Field>();
   const resource = useBlockResource();
   const [allowedActions, setAllowedActions] = useState({});
 

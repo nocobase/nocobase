@@ -19,7 +19,7 @@ const InternalFormBlockProvider = (props) => {
       createForm({
         readPretty,
       }),
-    [],
+    [readPretty],
   );
   const { resource, service, updateAssociationValues } = useBlockRequestContext();
   const formBlockRef = useRef();
