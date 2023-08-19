@@ -70,6 +70,13 @@ const schema: ISchema = {
           title: "{{t('Nickname')}}",
           'x-decorator': 'FormItem',
           'x-component': 'Input',
+        },
+        username: {
+          type: 'string',
+          title: '{{t("Username")}}',
+          'x-decorator': 'FormItem',
+          'x-component': 'Input',
+          'x-validator': { username: true },
           required: true,
         },
         email: {
@@ -78,7 +85,6 @@ const schema: ISchema = {
           'x-decorator': 'FormItem',
           'x-component': 'Input',
           'x-validator': 'email',
-          required: true,
         },
         phone: {
           type: 'string',
@@ -86,7 +92,6 @@ const schema: ISchema = {
           'x-decorator': 'FormItem',
           'x-component': 'Input',
           'x-validator': 'phone',
-          required: true,
         },
         footer: {
           'x-component': 'Action.Drawer.Footer',
