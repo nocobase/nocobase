@@ -43,7 +43,7 @@ const useParseDefaultValue = () => {
         }
 
         const value = transformVariableValue(await variables.parseVariable(schema.default, localVariables), {
-          targetCollectionFiled: collectionField,
+          targetCollectionField: collectionField,
         });
 
         if (value == null || value === '') {

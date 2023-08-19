@@ -164,7 +164,7 @@ export const useCreateActionProps = () => {
         if (isVariable(value)) {
           const result = await variables?.parseVariable(value, localVariables);
           if (result) {
-            assignedValues[key] = transformVariableValue(result, { targetCollectionFiled: collectionField });
+            assignedValues[key] = transformVariableValue(result, { targetCollectionField: collectionField });
           }
         } else if (value != null && value !== '') {
           assignedValues[key] = value;
@@ -266,7 +266,7 @@ export const useAssociationCreateActionProps = () => {
         if (isVariable(value)) {
           const result = await variables?.parseVariable(value, localVariables);
           if (result) {
-            assignedValues[key] = transformVariableValue(result, { targetCollectionFiled: collectionField });
+            assignedValues[key] = transformVariableValue(result, { targetCollectionField: collectionField });
           }
         } else if (value != null && value !== '') {
           assignedValues[key] = value;
@@ -475,7 +475,7 @@ export const useCustomizeUpdateActionProps = () => {
         if (isVariable(value)) {
           const result = await variables?.parseVariable(value, localVariables);
           if (result) {
-            assignedValues[key] = transformVariableValue(result, { targetCollectionFiled: collectionField });
+            assignedValues[key] = transformVariableValue(result, { targetCollectionField: collectionField });
           }
         } else if (value != null && value !== '') {
           assignedValues[key] = value;
@@ -558,7 +558,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
         if (isVariable(value)) {
           const result = await variables?.parseVariable(value, localVariables);
           if (result) {
-            assignedValues[key] = transformVariableValue(result, { targetCollectionFiled: collectionField });
+            assignedValues[key] = transformVariableValue(result, { targetCollectionField: collectionField });
           }
         } else if (value != null && value !== '') {
           assignedValues[key] = value;
@@ -837,7 +837,7 @@ export const useUpdateActionProps = () => {
         if (isVariable(value)) {
           const result = await variables?.parseVariable(value, localVariables);
           if (result) {
-            assignedValues[key] = transformVariableValue(result, { targetCollectionFiled: collectionField });
+            assignedValues[key] = transformVariableValue(result, { targetCollectionField: collectionField });
           }
         } else if (value != null && value !== '') {
           assignedValues[key] = value;

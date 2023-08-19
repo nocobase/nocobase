@@ -106,8 +106,8 @@ export const conditionAnalyses = async ({
       const targetCollectionFiled = await variables.getCollectionField(targetVariableName, localVariables);
       return jsonLogic.apply({
         [operator]: [
-          transformVariableValue(targetValue, { targetCollectionFiled }),
-          transformVariableValue(value, { targetCollectionFiled }),
+          transformVariableValue(targetValue, { targetCollectionField: targetCollectionFiled }),
+          transformVariableValue(value, { targetCollectionField: targetCollectionFiled }),
         ],
       });
     } catch (error) {

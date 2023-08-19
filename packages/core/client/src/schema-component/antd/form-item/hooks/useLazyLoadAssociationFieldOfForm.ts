@@ -41,7 +41,7 @@ const useLazyLoadAssociationFieldOfForm = () => {
     variables
       .parseVariable(variableString, formVariable)
       .then((value) => {
-        field.value = transformVariableValue(value, { targetCollectionFiled: collectionField });
+        field.value = transformVariableValue(value, { targetCollectionField: collectionField });
       })
       .catch((err) => {
         console.error(err);

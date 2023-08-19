@@ -5,7 +5,7 @@ interface Deps {
   /**
    * 消费当前变量值的 collection field，根据其值去判断应该怎么转换变量值
    */
-  targetCollectionFiled: CollectionFieldOptions;
+  targetCollectionField: CollectionFieldOptions;
 }
 
 /**
@@ -18,30 +18,56 @@ interface Deps {
  * @returns
  */
 export const transformVariableValue = (value: any, deps: Deps) => {
-  const { targetCollectionFiled } = deps;
+  const { targetCollectionField } = deps;
 
   // 关系字段的值应该是一个对象，如果不是一个对象就在开发环境抛出一个错误
   if (process.env.NODE_ENV !== 'production') {
-    if (['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(targetCollectionFiled.type)) {
+    if (['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(targetCollectionField.type)) {
       if (Array.isArray(value) && value.length && !_.isObject(value[0])) {
         throw new Error(
-          `transformVariableValue: ${targetCollectionFiled.type} field value should be an array of object`,
+          `transformVariableValue: ${targetCollectionField.type} field value should be an array of object`,
         );
       }
       if (value && !_.isObject(value)) {
-        throw new Error(`transformVariableValue: ${targetCollectionFiled.type} field value should be an object`);
+        throw new Error(`transformVariableValue: ${targetCollectionField.type} field value should be an object`);
       }
     }
   }
 
-  if (['belongsTo', 'hasOne'].includes(targetCollectionFiled.type)) {
+  // 行政区划
+  if (targetCollectionField.interface === 'chinaRegion') {
+    if (Array.isArray(value)) {
+      return value.map((item) => {
+        if (!_.isObject(item)) {
+          if (process.env.NODE_ENV !== 'production') {
+            throw new Error(`transformVariableValue: chinaRegion field value should be an array of object`);
+          }
+        }
+
+        item = { ...item };
+        Object.keys(item).forEach((key) => {
+          if (_.isObjectLike(item[key])) {
+            delete item[key];
+          }
+        });
+
+        return item;
+      });
+    }
+
+    if (process.env.NODE_ENV !== 'production') {
+      throw new Error(`transformVariableValue: chinaRegion field value should be an array`);
+    }
+  }
+
+  if (['belongsTo', 'hasOne'].includes(targetCollectionField.type)) {
     if (Array.isArray(value)) {
       return value[0];
     }
     return value;
   }
 
-  if (['hasMany', 'belongsToMany'].includes(targetCollectionFiled.type)) {
+  if (['hasMany', 'belongsToMany'].includes(targetCollectionField.type)) {
     if (!Array.isArray(value)) {
       return [value];
     }
@@ -49,7 +75,7 @@ export const transformVariableValue = (value: any, deps: Deps) => {
   }
 
   // 日期字段的值是一个字符串，但是日期字符串有严格的格式要求，如果把数组中的日期拼接起来会报错
-  if (targetCollectionFiled.uiSchema['x-component'] === 'DatePicker') {
+  if (targetCollectionField.uiSchema['x-component'] === 'DatePicker') {
     if (Array.isArray(value)) {
       return value[0];
     }
@@ -57,7 +83,7 @@ export const transformVariableValue = (value: any, deps: Deps) => {
   }
 
   // id 字段是一个 number ，但是又不能相加，所以也应该取第一个值
-  if (targetCollectionFiled.name === 'id') {
+  if (targetCollectionField.name === 'id') {
     if (Array.isArray(value)) {
       return value[0];
     }
@@ -65,8 +91,8 @@ export const transformVariableValue = (value: any, deps: Deps) => {
   }
 
   // 下拉多选
-  if (targetCollectionFiled.interface === 'multipleSelect') {
-    const options = _.isArray(targetCollectionFiled.uiSchema.enum) ? targetCollectionFiled.uiSchema.enum : [];
+  if (targetCollectionField.interface === 'multipleSelect') {
+    const options = _.isArray(targetCollectionField.uiSchema.enum) ? targetCollectionField.uiSchema.enum : [];
     if (Array.isArray(value)) {
       return value.filter((item) => options.some((enumItem: { value: any }) => enumItem.value === item));
     }
@@ -74,8 +100,8 @@ export const transformVariableValue = (value: any, deps: Deps) => {
   }
 
   // 下拉单选
-  if (targetCollectionFiled.interface === 'select') {
-    const options = _.isArray(targetCollectionFiled.uiSchema.enum) ? targetCollectionFiled.uiSchema.enum : [];
+  if (targetCollectionField.interface === 'select') {
+    const options = _.isArray(targetCollectionField.uiSchema.enum) ? targetCollectionField.uiSchema.enum : [];
     if (Array.isArray(value)) {
       return value.find((item) => options.some((enumItem: { value: any }) => enumItem.value === item));
     }
@@ -83,7 +109,7 @@ export const transformVariableValue = (value: any, deps: Deps) => {
   }
 
   // 勾选
-  if (targetCollectionFiled.type === 'boolean') {
+  if (targetCollectionField.type === 'boolean') {
     if (Array.isArray(value)) {
       return value[0];
     }
@@ -91,7 +117,7 @@ export const transformVariableValue = (value: any, deps: Deps) => {
   }
 
   // Radio 单选
-  if (targetCollectionFiled.uiSchema['x-component'] === 'Radio.Group') {
+  if (targetCollectionField.uiSchema['x-component'] === 'Radio.Group') {
     if (Array.isArray(value)) {
       return value[0];
     }
@@ -99,11 +125,27 @@ export const transformVariableValue = (value: any, deps: Deps) => {
   }
 
   // Checkbox 多选
-  if (targetCollectionFiled.uiSchema['x-component'] === 'Checkbox.Group') {
+  if (targetCollectionField.uiSchema['x-component'] === 'Checkbox.Group') {
     if (Array.isArray(value)) {
       return value;
     }
     return [value];
+  }
+
+  // 邮箱
+  if (targetCollectionField.interface === 'email') {
+    if (Array.isArray(value)) {
+      return value[0];
+    }
+    return value;
+  }
+
+  // 电话
+  if (targetCollectionField.interface === 'phone') {
+    if (Array.isArray(value)) {
+      return value[0];
+    }
+    return value;
   }
 
   // 字符串应该拼接。
