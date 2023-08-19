@@ -46,6 +46,7 @@ export const transformVariableValue = (value: any, deps: Deps) => {
 
         item = { ...item };
         Object.keys(item).forEach((key) => {
+          // 在这里删除掉一些字段，不然保存的时候会报 `字段唯一性` 错误
           if (_.isObjectLike(item[key])) {
             delete item[key];
           }
