@@ -1,6 +1,7 @@
 import type { Plugin } from '../Plugin';
 import type { PluginData } from '../PluginManager';
 import type { RequireJS } from './requirejs';
+import type { DevDynamicImport } from '../Application';
 
 export function defineDevPlugins(plugins: Record<string, typeof Plugin>) {
   Object.entries(plugins).forEach(([name, plugin]) => {
@@ -44,11 +45,11 @@ interface GetPluginsOption {
   requirejs: RequireJS;
   pluginData: PluginData[];
   baseURL?: string;
-  devPlugins?: Record<string, Promise<{ default: typeof Plugin }>>;
+  devDynamicImport?: DevDynamicImport;
 }
 
 export async function getPlugins(options: GetPluginsOption): Promise<Array<typeof Plugin>> {
-  const { requirejs, pluginData, baseURL, devPlugins = {} } = options;
+  const { requirejs, pluginData, baseURL, devDynamicImport } = options;
 
   if (pluginData.length === 0) return [];
 
@@ -57,16 +58,18 @@ export async function getPlugins(options: GetPluginsOption): Promise<Array<typeo
 
     const resolveDevPlugins: Record<string, typeof Plugin> = {};
     const pluginPackageNames = pluginData.map((item) => item.packageName);
-    for await (const packageName of pluginPackageNames) {
-      if (devPlugins[packageName]) {
-        const plugin = await devPlugins[packageName];
-        plugins.push(plugin.default);
-        resolveDevPlugins[packageName] = plugin.default;
+    if (devDynamicImport) {
+      for await (const packageName of pluginPackageNames) {
+        const plugin = await devDynamicImport(packageName);
+        if (plugin) {
+          plugins.push(plugin.default);
+          resolveDevPlugins[packageName] = plugin.default;
+        }
       }
+      defineDevPlugins(resolveDevPlugins);
     }
-    defineDevPlugins(resolveDevPlugins);
 
-    const remotePlugins = pluginData.filter((item) => !devPlugins[item.packageName]);
+    const remotePlugins = pluginData.filter((item) => !resolveDevPlugins[item.packageName]);
 
     if (remotePlugins.length === 0) {
       return plugins;
