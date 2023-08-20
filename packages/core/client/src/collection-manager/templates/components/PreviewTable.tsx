@@ -66,12 +66,12 @@ export const PreviewTable = (props) => {
               name: item.name,
               'x-component': 'CollectionField',
               'x-read-pretty': true,
-              'x-collection-field': fieldSource.join('.'),
+              'x-collection-field': fieldSource?.join('.'),
               default: content,
             };
             return (
               <EllipsisWithTooltip ellipsis={true}>
-                {schema && <RecursionField schema={objSchema} name={item.name} onlyRenderSelf />}
+                {schema && fieldSource && <RecursionField schema={objSchema} name={item.name} onlyRenderSelf />}
               </EllipsisWithTooltip>
             );
           },
