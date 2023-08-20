@@ -71,8 +71,6 @@ export const FormItem: any = observer(
     const { getCollectionJoinField } = useCollectionManager();
     const collectionField = getCollectionJoinField(schema['x-collection-field']);
 
-    console.log('collectionField', collectionField);
-
     useEffect(() => {
       if (ctx?.block === 'form') {
         ctx.field.data = ctx.field.data || {};
