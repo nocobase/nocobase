@@ -165,28 +165,25 @@ function getNextAppends(field, appends: string[]) {
 
 function filterTypedFields({ fields, types, appends, compile, getCollectionFields }) {
   return fields.filter((field) => {
-    const match = types?.length ? types.some((type) => matchFieldType(field, type, appends)) : true;
+    if (types?.length) {
+      return types.some((type) => matchFieldType(field, type, appends));
+    }
     if (isAssociationField(field)) {
       const nextAppends = getNextAppends(field, appends);
       const included = appends.includes(field.name);
-      if (match) {
-        return included;
-      } else {
-        return (
-          (nextAppends.length || included) &&
-          filterTypedFields({
-            fields: getNormalizedFields(field.target, { compile, getCollectionFields }),
-            types,
-            // depth: depth - 1,
-            appends: nextAppends,
-            compile,
-            getCollectionFields,
-          }).length
-        );
-      }
-    } else {
-      return match;
+      return (
+        (nextAppends.length || included) &&
+        filterTypedFields({
+          fields: getNormalizedFields(field.target, { compile, getCollectionFields }),
+          types,
+          // depth: depth - 1,
+          appends: nextAppends,
+          compile,
+          getCollectionFields,
+        }).length
+      );
     }
+    return true;
   });
 }
 
