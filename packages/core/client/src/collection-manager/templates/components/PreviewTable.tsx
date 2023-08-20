@@ -79,35 +79,37 @@ export const PreviewTable = (props) => {
       });
   };
   return (
-    <Spin spinning={loading}>
+    <Spin spinning={loading} key="preview">
       <div
         style={{
           marginBottom: 22,
         }}
       >
-        {previewColumns?.length > 0 && [
-          <div
-            className="ant-formily-item-label"
-            style={{ marginTop: 24, display: 'flex', padding: '0 0 8px' }}
-            key={viewName}
-          >
-            <div className="ant-formily-item-label-content">
-              <span>
-                <label>{t('Preview')}</label>
-              </span>
-            </div>
-            <span className="ant-formily-item-colon">:</span>
-          </div>,
-          <Table
-            size={'middle'}
-            pagination={false}
-            bordered
-            columns={previewColumns}
-            dataSource={previewData}
-            scroll={{ x: 1000, y: 300 }}
-            key={`${viewName}-table`}
-          />,
-        ]}
+        <div
+          className="ant-formily-item-label"
+          style={{ marginTop: 24, display: 'flex', padding: '0 0 8px' }}
+          key={viewName}
+        >
+          <div className="ant-formily-item-label-content">
+            <span>
+              <label>{t('Preview')}</label>
+            </span>
+          </div>
+          <span className="ant-formily-item-colon">:</span>
+        </div>
+        {previewColumns?.length > 0 && (
+          <>
+            <Table
+              size={'middle'}
+              pagination={false}
+              bordered
+              columns={previewColumns}
+              dataSource={previewData}
+              scroll={{ x: 1000, y: 300 }}
+              key={viewName}
+            />
+          </>
+        )}
       </div>
     </Spin>
   );

@@ -11,23 +11,29 @@ export class BasicAuth extends BaseAuth {
 
   async validate() {
     const ctx = this.ctx;
-    const { uniqueField = 'email', values } = ctx.action.params;
+    const {
+      values: {
+        account, // Username or email
+        email, // Old parameter, compatible with old api
+        password,
+      },
+    } = ctx.action.params;
 
-    if (!values[uniqueField]) {
-      ctx.throw(400, ctx.t('Please fill in your email address', { ns: namespace }));
+    if (!account && !email) {
+      ctx.throw(400, ctx.t('Please enter your username or email', { ns: namespace }));
     }
     const user = await this.userRepository.findOne({
-      where: {
-        [uniqueField]: values[uniqueField],
+      filter: {
+        $or: [{ username: account || null }, { email: account || email }],
       },
     });
 
     if (!user) {
-      ctx.throw(401, ctx.t('The email is incorrect, please re-enter', { ns: namespace }));
+      ctx.throw(401, ctx.t('The username or email is incorrect, please re-enter', { ns: namespace }));
     }
 
     const field = this.userCollection.getField<PasswordField>('password');
-    const valid = await field.verify(values.password, user.password);
+    const valid = await field.verify(password, user.password);
     if (!valid) {
       ctx.throw(401, ctx.t('The password is incorrect, please re-enter', { ns: namespace }));
     }
@@ -42,6 +48,10 @@ export class BasicAuth extends BaseAuth {
     }
     const User = ctx.db.getRepository('users');
     const { values } = ctx.action.params;
+    const { username } = values;
+    if (!/^[^@.<>"'/]{2,16}$/.test(username)) {
+      ctx.throw(400, ctx.t('Please enter a valid username', { ns: namespace }));
+    }
     const user = await User.create({ values });
     return user;
   }

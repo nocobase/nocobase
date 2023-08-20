@@ -84,6 +84,40 @@ export class PresetNocoBase extends Plugin {
     });
 
     this.app.on('beforeUpgrade', async () => {
+      if (!this.db.inDialect('sqlite')) {
+        return;
+      }
+      await this.app.load({ method: 'upgrade' });
+      const Field = this.db.getRepository('fields');
+      const existed = await Field.count({
+        filter: {
+          name: 'username',
+          collectionName: 'users',
+        },
+      });
+      if (!existed) {
+        await this.db.getRepository('fields').create({
+          values: {
+            name: 'username',
+            collectionName: 'users',
+            type: 'string',
+            unique: true,
+            interface: 'input',
+            uiSchema: {
+              type: 'string',
+              title: '{{t("Username")}}',
+              'x-component': 'Input',
+              'x-validator': { username: true },
+              required: true,
+            },
+          },
+          // NOTE: to trigger hook
+          context: {},
+        });
+      }
+    });
+
+    this.app.on('beforeUpgrade', async () => {
       const result = await this.app.version.satisfies('<0.8.0-alpha.1');
 
       if (result) {

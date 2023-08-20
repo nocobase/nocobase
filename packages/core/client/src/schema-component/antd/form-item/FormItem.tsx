@@ -1,5 +1,5 @@
 import { css, cx } from '@emotion/css';
-import { ArrayCollapse, ArrayItems, FormLayout, FormItem as Item } from '@formily/antd-v5';
+import { ArrayCollapse, FormLayout, FormItem as Item } from '@formily/antd-v5';
 import { Field } from '@formily/core';
 import { ISchema, observer, useField, useFieldSchema } from '@formily/react';
 import { Select } from 'antd';
@@ -70,6 +70,7 @@ export const FormItem: any = observer(
     const variablesCtx = useVariablesCtx();
     const { getCollectionJoinField } = useCollectionManager();
     const collectionField = getCollectionJoinField(schema['x-collection-field']);
+
     useEffect(() => {
       if (ctx?.block === 'form') {
         ctx.field.data = ctx.field.data || {};
