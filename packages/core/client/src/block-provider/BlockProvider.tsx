@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { Field } from '@formily/core';
+import { Field, GeneralField } from '@formily/core';
 import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import { useRequest } from 'ahooks';
 import { Col, Row } from 'antd';
@@ -27,7 +27,7 @@ export const BlockAssociationContext = createContext(null);
 export const BlockRequestContext = createContext<{
   block?: string;
   props?: any;
-  field?: Field;
+  field?: GeneralField;
   service?: any;
   resource?: any;
   allowedActions?: any;
@@ -64,7 +64,7 @@ const useResource = (props: UseResourceProps) => {
   const isCreateAction = fieldSchema?.['x-action'] === 'create';
   const association = useAssociation(props);
   const sourceId = useSourceId?.();
-  const field = useField<Field>();
+  const field = useField();
   const withoutTableFieldResource = useContext(WithoutTableFieldResource);
   const __parent = useContext(BlockRequestContext);
   if (block === 'TableField') {
