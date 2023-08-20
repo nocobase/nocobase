@@ -374,6 +374,8 @@ pgOnly()('collection sync', () => {
       context: {},
     });
 
+    await subApp1.runCommand('restart');
+
     const subAppMainCollectionRecord = await subApp1.db.getRepository('collections').findOne({
       filter: {
         name: 'mainCollection',
@@ -416,6 +418,8 @@ pgOnly()('collection sync', () => {
       },
     });
 
+    await subApp1.runCommand('restart');
+
     const subRecord = await subApp1.db.getRepository('mainCollection').findOne({});
     expect(subRecord.get('title')).toBe('test');
 
@@ -429,6 +433,8 @@ pgOnly()('collection sync', () => {
       },
     });
 
+    await subApp1.runCommand('restart');
+
     const mainCollectionTitleField2 = await subApp1.db.getRepository('fields').findOne({
       filter: {
         collectionName: 'mainCollection',
@@ -438,7 +444,7 @@ pgOnly()('collection sync', () => {
 
     expect(mainCollectionTitleField2.get('unique')).toBe(true);
 
-    expect(subAppMainCollection.getField('title')).toBeTruthy();
+    expect(subApp1.db.getCollection('mainCollection').getField('title')).toBeTruthy();
 
     await mainApp.db.getRepository('fields').destroy({
       filter: {
@@ -499,6 +505,8 @@ pgOnly()('collection sync', () => {
       },
       context: {},
     });
+
+    await sub1.runCommand('restart');
 
     const sub1CollectionsRecord = await sub1.db.getRepository('collections').findOne({
       filter: {
