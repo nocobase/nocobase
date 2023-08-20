@@ -237,14 +237,14 @@ const VariablesProvider = ({ children }) => {
         const matches = variableString.match(REGEX_OF_VARIABLE);
         const path = matches[0].replace(REGEX_OF_VARIABLE, '$1');
 
+        result = getCollectionJoinField(getFieldPath(path));
+
         // 当仅有一个例如 `$user` 这样的字符串时，需要拼一个假的 `collectionField` 返回
-        if (!path.includes('.')) {
+        if (!result && !path.includes('.')) {
           result = {
             target: variableToCollectionName[path],
           };
         }
-
-        result = getCollectionJoinField(getFieldPath(path));
       });
 
       return result;

@@ -145,13 +145,7 @@ export const getShouldChange = ({ collectionField, variables, localVariables }: 
 
     const collectionFieldOfVariable = await variables.getCollectionField(value, localVariables);
 
-    // 工作流人工节点的 `自定义表单` 区块，会有这种情况，通过其区块的数据表名称是获取不到字段信息的
-    if (!collectionFieldOfVariable && value.includes('$nForm.')) {
-      return true;
-    }
-
-    // 像 `{{ $use }}` 这种的变量字符串是没有对应的 `collectionField` 的
-    if (!collectionFieldOfVariable || !collectionField) {
+    if (!collectionField) {
       return false;
     }
 
