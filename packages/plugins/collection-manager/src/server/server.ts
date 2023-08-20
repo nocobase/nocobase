@@ -216,9 +216,15 @@ export class CollectionManagerPlugin extends Plugin {
 
     this.app.on('afterStart', loadCollections);
     this.app.on('beforeUpgrade', async () => {
-      await this.db.getCollection('collections').sync();
-      await this.db.getCollection('fields').sync();
-      await this.db.getCollection('collectionCategories').sync();
+      const syncOptions = {
+        alter: {
+          drop: false,
+        },
+        force: false,
+      };
+      await this.db.getCollection('collections').sync(syncOptions);
+      await this.db.getCollection('fields').sync(syncOptions);
+      await this.db.getCollection('collectionCategories').sync(syncOptions);
       await loadCollections();
     });
 
