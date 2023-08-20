@@ -2,7 +2,7 @@ import { css } from '@emotion/css';
 import { createForm, Field, Form } from '@formily/core';
 import { observer, useField, useFieldSchema, useForm } from '@formily/react';
 import { Button, Popover, Space } from 'antd';
-import React, { createContext, useContext, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FormProvider, SchemaComponent } from '../../core';
 import { useDesignable } from '../../hooks';
@@ -20,18 +20,29 @@ export const FilterAction = observer(
     const fieldSchema = useFieldSchema();
     const form = useMemo<Form>(() => props.form || createForm(), []);
     const { options, onSubmit, onReset, ...others } = useProps(props);
+    const shouldNotClosePopoverRef = React.useRef(false);
+    const onOpenChange = useCallback((visible: boolean): void => {
+      if (shouldNotClosePopoverRef.current) {
+        return;
+      }
+      setVisible(visible);
+    }, []);
+
+    // 参考：https://github.com/ant-design/ant-design/issues/44119
+    const avoidClosePopover = useCallback(() => {
+      shouldNotClosePopoverRef.current = true;
+    }, []);
+
     return (
       <FilterActionContext.Provider value={{ field, fieldSchema, designable, dn }}>
         <Popover
           destroyTooltipOnHide
           placement={'bottomLeft'}
           open={visible}
-          onOpenChange={(visible) => {
-            setVisible(visible);
-          }}
+          onOpenChange={onOpenChange}
           trigger={'click'}
           content={
-            <form>
+            <form onClick={avoidClosePopover}>
               <FormProvider form={form}>
                 <SchemaComponent
                   schema={{
@@ -62,6 +73,7 @@ export const FilterAction = observer(
                         onReset?.(form.values);
                         field.title = t('Filter');
                         setVisible(false);
+                        shouldNotClosePopoverRef.current = false;
                       }}
                     >
                       {t('Reset')}
@@ -74,6 +86,7 @@ export const FilterAction = observer(
                         e.stopPropagation();
                         onSubmit?.(form.values);
                         setVisible(false);
+                        shouldNotClosePopoverRef.current = false;
                       }}
                     >
                       {t('Submit')}
