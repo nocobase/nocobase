@@ -20,8 +20,9 @@ import { BaseTypeSets, defaultFieldNames, nodesOptions, triggerOptions } from '.
 function matchToManyField(field, appends): boolean {
   const fieldPrefix = `${field.name}.`;
   return (
-    ['hasMany', 'belongsToMany'].includes(field.type) &&
-    (appends ? appends.includes(field.name) || appends.some((item) => item.startsWith(fieldPrefix)) : true)
+    (['hasOne', 'belongsTo'].includes(field.type) &&
+      (appends ? appends.includes(field.name) || appends.some((item) => item.startsWith(fieldPrefix)) : true)) ||
+    ['hasMany', 'belongsToMany'].includes(field.type)
   );
 }
 
