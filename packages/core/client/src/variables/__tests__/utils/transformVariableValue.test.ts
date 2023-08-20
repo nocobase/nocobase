@@ -6,10 +6,10 @@ describe('transformVariableValue', () => {
       name: 'test',
     };
     const deps = {
-      targetCollectionFiled: { type: 'belongsTo', uiSchema: { 'x-component': 'Text' } },
+      targetCollectionField: { type: 'belongsTo', uiSchema: { 'x-component': 'Text' } },
     };
 
-    const result = transformVariableValue(value, deps);
+    const result = transformVariableValue(value, deps as any);
 
     expect(result).toBe(value);
   });
@@ -24,10 +24,10 @@ describe('transformVariableValue', () => {
       },
     ];
     const deps = {
-      targetCollectionFiled: { type: 'belongsTo', uiSchema: { 'x-component': 'Text' } },
+      targetCollectionField: { type: 'belongsTo', uiSchema: { 'x-component': 'Text' } },
     };
 
-    const result = transformVariableValue(value, deps);
+    const result = transformVariableValue(value, deps as any);
 
     expect(result).toBe(value[0]);
   });
@@ -37,10 +37,10 @@ describe('transformVariableValue', () => {
       name: 'test',
     };
     const deps = {
-      targetCollectionFiled: { type: 'hasOne', uiSchema: { 'x-component': 'Text' } },
+      targetCollectionField: { type: 'hasOne', uiSchema: { 'x-component': 'Text' } },
     };
 
-    const result = transformVariableValue(value, deps);
+    const result = transformVariableValue(value, deps as any);
 
     expect(result).toBe(value);
   });
@@ -55,10 +55,10 @@ describe('transformVariableValue', () => {
       },
     ];
     const deps = {
-      targetCollectionFiled: { type: 'hasOne', uiSchema: { 'x-component': 'Text' } },
+      targetCollectionField: { type: 'hasOne', uiSchema: { 'x-component': 'Text' } },
     };
 
-    const result = transformVariableValue(value, deps);
+    const result = transformVariableValue(value, deps as any);
 
     expect(result).toBe(value[0]);
   });
@@ -68,10 +68,10 @@ describe('transformVariableValue', () => {
       name: 'test',
     };
     const deps = {
-      targetCollectionFiled: { type: 'hasMany', uiSchema: { 'x-component': 'Text' } },
+      targetCollectionField: { type: 'hasMany', uiSchema: { 'x-component': 'Text' } },
     };
 
-    const result = transformVariableValue(value, deps);
+    const result = transformVariableValue(value, deps as any);
 
     expect(result).toEqual([value]);
   });
@@ -86,10 +86,10 @@ describe('transformVariableValue', () => {
       },
     ];
     const deps = {
-      targetCollectionFiled: { type: 'hasMany', uiSchema: { 'x-component': 'Text' } },
+      targetCollectionField: { type: 'hasMany', uiSchema: { 'x-component': 'Text' } },
     };
 
-    const result = transformVariableValue(value, deps);
+    const result = transformVariableValue(value, deps as any);
 
     expect(result).toBe(value);
   });
@@ -99,10 +99,10 @@ describe('transformVariableValue', () => {
       name: 'test',
     };
     const deps = {
-      targetCollectionFiled: { type: 'belongsToMany', uiSchema: { 'x-component': 'Text' } },
+      targetCollectionField: { type: 'belongsToMany', uiSchema: { 'x-component': 'Text' } },
     };
 
-    const result = transformVariableValue(value, deps);
+    const result = transformVariableValue(value, deps as any);
 
     expect(result).toEqual([value]);
   });
@@ -117,10 +117,10 @@ describe('transformVariableValue', () => {
       },
     ];
     const deps = {
-      targetCollectionFiled: { type: 'belongsToMany', uiSchema: { 'x-component': 'Text' } },
+      targetCollectionField: { type: 'belongsToMany', uiSchema: { 'x-component': 'Text' } },
     };
 
-    const result = transformVariableValue(value, deps);
+    const result = transformVariableValue(value, deps as any);
 
     expect(result).toEqual(value);
   });
