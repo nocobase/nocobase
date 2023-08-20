@@ -216,7 +216,9 @@ export class CollectionManagerPlugin extends Plugin {
 
     this.app.on('afterStart', loadCollections);
     this.app.on('beforeUpgrade', async () => {
-      await this.db.sync();
+      await this.db.getCollection('collections').sync();
+      await this.db.getCollection('fields').sync();
+      await this.db.getCollection('collectionCategories').sync();
       await loadCollections();
     });
 
