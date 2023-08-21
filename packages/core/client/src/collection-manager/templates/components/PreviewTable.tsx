@@ -62,16 +62,21 @@ export const PreviewTable = (props) => {
           width: 200,
           render: (v, record, index) => {
             const content = record[item.name];
-            const objSchema = {
-              name: item.name,
-              'x-component': schema && fieldSource ? 'CollectionField' : 'Input',
-              'x-read-pretty': true,
-              'x-collection-field': fieldSource?.join('.'),
-              default: content,
+            const objSchema: any = {
+              type: 'object',
+              properties: {
+                [item.name]: {
+                  name: `${item.name}`,
+                  'x-component': schema && fieldSource ? 'CollectionField' : 'Input',
+                  'x-read-pretty': true,
+                  'x-collection-field': fieldSource?.join('.'),
+                  default: content,
+                },
+              },
             };
             return (
               <EllipsisWithTooltip ellipsis={true}>
-                <RecursionField schema={objSchema} name={item.name} onlyRenderSelf />
+                <RecursionField schema={objSchema} name={index} onlyRenderProperties />
               </EllipsisWithTooltip>
             );
           },
@@ -106,7 +111,7 @@ export const PreviewTable = (props) => {
               columns={previewColumns}
               dataSource={previewData}
               scroll={{ x: 1000, y: 300 }}
-              key={viewName}
+              key={`${viewName}-preview`}
             />
           </>
         )}
