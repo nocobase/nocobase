@@ -293,17 +293,31 @@ export default {
         properties: {
           type: {
             type: 'string',
+            example: 'void',
+          },
+          title: {
+            type: 'string',
+            example: '{{ t("Actions") }}',
+            description: "ui schema's title",
           },
           'x-uid': {
             type: 'string',
+            example: 'ygdvvfnw3h8',
             description: 'unique id of ui schema node',
+          },
+          'x-index': {
+            type: 'integer',
+            exmaple: 1,
+            description: "ui schema's order index",
           },
           'x-async': {
             type: 'boolean',
+            example: false,
             description: 'async or not',
           },
           name: {
             type: 'string',
+            name: '2qakvs173rs',
             description: "ui schema's name",
           },
           properties: {
