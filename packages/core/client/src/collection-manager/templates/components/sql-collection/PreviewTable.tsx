@@ -21,7 +21,7 @@ export const PreviewTable = observer(() => {
     : Object.keys(data?.[0] || {}).map((col) => {
         const title = titleMp[col];
         return {
-          title: title || col,
+          title: Schema.compile(title || col, { t }),
           dataIndex: col,
           key: col,
         };

@@ -22,9 +22,13 @@ export const SQLRequestProvider: React.FC<{
             sql,
           },
         })
-        .then((res) => res?.data?.data || []),
+        .then((res) => res?.data?.data || { data: [], fields: [], sources: [] }),
     {
       manual: true,
+      onSuccess: (data) => {
+        const { sources } = data;
+        form.setValuesIn('sources', sources);
+      },
     },
   );
 

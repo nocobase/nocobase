@@ -36,6 +36,16 @@ const schema = {
             sql: {
               type: 'string',
             },
+            sources: {
+              type: 'array',
+              title: '{{t("Source collections")}}',
+              'x-decorator': 'FormItem',
+              'x-component': 'Select',
+              'x-component-props': {
+                multiple: true,
+              },
+              'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
+            },
             fields: {
               type: 'array',
               title: '{{t("Fields")}}',

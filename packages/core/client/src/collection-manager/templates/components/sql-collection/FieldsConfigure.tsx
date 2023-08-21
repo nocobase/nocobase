@@ -1,13 +1,14 @@
 import { useTranslation } from 'react-i18next';
 import { useAsyncData } from '../../../../async-data-provider';
-import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Input, Select, Spin, Table } from 'antd';
-import { useField } from '@formily/react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, Cascader, Input, Select, Spin, Table, Tag } from 'antd';
+import { observer, useField, useForm } from '@formily/react';
 import { ArrayField } from '@formily/core';
 import { getOptions } from '../../../Configuration/interfaces';
 import { useCompile } from '../../../../schema-component';
 import { useCollectionManager } from '../../../hooks';
 import dayjs from 'dayjs';
+import { FieldOptions } from '@nocobase/database';
 
 const inferInterface = (field: string, value: any) => {
   if (field.toLowerCase().includes('id')) {
@@ -28,11 +29,51 @@ const inferInterface = (field: string, value: any) => {
   return 'input';
 };
 
-export const FieldsConfigure = () => {
+const useSourceFieldsOptions = () => {
+  const form = useForm();
+  const { sources = [] } = form.values;
+  const { t } = useTranslation();
+  const { getCollection, getInheritCollections, getParentCollectionFields } = useCollectionManager();
+  const data = [];
+  sources.forEach((item: string) => {
+    const collection = getCollection(item);
+    const inherits = getInheritCollections(item);
+    const result = inherits.map((v) => {
+      const fields: FieldOptions[] = getParentCollectionFields(v, item);
+      return {
+        type: 'group',
+        key: v,
+        label: t(`Parent collection fields`) + t(`(${getCollection(v).title})`),
+        children: fields
+          .filter((v) => !['hasOne', 'hasMany', 'belongsToMany'].includes(v?.type))
+          .map((k) => {
+            return {
+              value: k.name,
+              label: t(k.uiSchema?.title),
+            };
+          }),
+      };
+    });
+    const children = (collection.fields as FieldOptions[])
+      .filter((v) => !['hasOne', 'hasMany', 'belongsToMany'].includes(v?.type))
+      ?.map((v) => {
+        return { value: v.name, label: t(v.uiSchema?.title) };
+      });
+
+    data.push({
+      value: item,
+      label: t(collection.title),
+      children: [...children, ...result],
+    });
+  });
+  return data;
+};
+
+export const FieldsConfigure = observer(() => {
   const { t } = useTranslation();
   const [dataSource, setDataSource] = useState([]);
   const { data: res, error, loading } = useAsyncData();
-  const { data } = res || {};
+  const { data, fields: sourceFields } = res || {};
   const field: ArrayField = useField();
   const compile = useCompile();
   const { getInterface } = useCollectionManager();
@@ -51,20 +92,25 @@ export const FieldsConfigure = () => {
         })),
     [compile],
   );
+  const sourceFieldsOptions = useSourceFieldsOptions();
 
+  const refGetInterface = useRef(getInterface);
   useEffect(() => {
     const fieldsMp = new Map();
     if (!loading && data) {
       Object.entries(data?.[0] || {}).forEach(([col, val]) => {
+        const sourceField = sourceFields[col];
         const fieldInterface = inferInterface(col, val);
-        const defaultConfig = getInterface(fieldInterface)?.default;
+        const defaultConfig = refGetInterface.current(fieldInterface)?.default;
+        const uiSchema = sourceField?.uiSchema || defaultConfig?.uiSchema || {};
         fieldsMp.set(col, {
           name: col,
-          interface: fieldInterface,
-          type: defaultConfig?.type,
+          interface: sourceField?.interface || fieldInterface,
+          type: sourceField?.type || defaultConfig?.type,
+          source: sourceField?.source,
           uiSchema: {
             title: col,
-            ...defaultConfig?.uiSchema,
+            ...uiSchema,
           },
         });
       });
@@ -82,7 +128,7 @@ export const FieldsConfigure = () => {
     }
     setDataSource(fields);
     field.setValue(fields);
-  }, [loading, data, field, getInterface]);
+  }, [loading, data, field, sourceFields]);
 
   if (loading) {
     return <Spin />;
@@ -112,18 +158,31 @@ export const FieldsConfigure = () => {
       width: 130,
     },
     {
-      title: t('Field display name'),
-      dataIndex: 'title',
-      key: 'title',
-      width: 180,
+      title: t('Field source'),
+      dataIndex: 'source',
+      key: 'source',
+      width: 200,
       render: (text: string, record: any, index: number) => {
         const field = dataSource[index];
         return (
-          <Input
-            defaultValue={field.uiSchema?.title !== undefined ? field.uiSchema.title : field?.name}
-            onChange={(e) =>
-              handleFieldChange({ ...field, uiSchema: { ...field?.uiSchema, title: e.target.value } }, index)
-            }
+          <Cascader
+            defaultValue={typeof text === 'string' ? text?.split('.') : text}
+            allowClear
+            options={compile(sourceFieldsOptions)}
+            placeholder={t('Select field source')}
+            onChange={(value: string[]) => {
+              const sourceField = sourceFields[value?.[1]];
+              handleFieldChange(
+                {
+                  ...field,
+                  source: value,
+                  interface: sourceField?.interface,
+                  type: sourceField?.type,
+                  uiSchema: sourceField?.uiSchema,
+                },
+                index,
+              );
+            }}
           />
         );
       },
@@ -135,7 +194,9 @@ export const FieldsConfigure = () => {
       width: 150,
       render: (text: string, record: any, index: number) => {
         const field = dataSource[index];
-        return (
+        return field.source ? (
+          <Tag>{compile(getInterface(text)?.title) || text}</Tag>
+        ) : (
           <Select
             defaultValue={field.interface || 'input'}
             style={{ width: '100%' }}
@@ -161,6 +222,24 @@ export const FieldsConfigure = () => {
         );
       },
     },
+    {
+      title: t('Field display name'),
+      dataIndex: 'title',
+      key: 'title',
+      width: 180,
+      render: (text: string, record: any, index: number) => {
+        const field = dataSource[index];
+        return (
+          <Input
+            value={field.uiSchema?.title || text}
+            defaultValue={field.uiSchema?.title !== undefined ? field.uiSchema.title : field?.name}
+            onChange={(e) =>
+              handleFieldChange({ ...field, uiSchema: { ...field?.uiSchema, title: e.target.value } }, index)
+            }
+          />
+        );
+      },
+    },
   ];
   return (
     <Table
@@ -174,4 +253,4 @@ export const FieldsConfigure = () => {
       rowKey="name"
     />
   );
-};
+});

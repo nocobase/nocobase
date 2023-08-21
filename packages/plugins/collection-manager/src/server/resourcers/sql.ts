@@ -20,7 +20,8 @@ export default {
       // The result is for preview only, add limit clause to avoid too many results
       const data = await model.findAll({ attributes: ['*'], limit: 5, raw: true });
       const fields = model.inferFields();
-      ctx.body = { data, fields, source: Object.values(fields).map((field) => field.source) };
+      const sources = Array.from(new Set(Object.values(fields).map((field) => field.collection)));
+      ctx.body = { data, fields, sources };
       await next();
     },
   },

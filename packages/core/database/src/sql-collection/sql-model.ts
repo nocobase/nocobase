@@ -50,6 +50,12 @@ export class SQLModel extends Model {
       });
       return Array.from(tables).map((table) => ({ table, columns: '*' }));
     }
+    if (ast.columns === '*') {
+      return ast.from.map((fromItem: { table: string; as: string }) => ({
+        table: fromItem.table,
+        columns: '*',
+      }));
+    }
     const columns: string[] = ast.columns.reduce(
       (
         tableMp: { [table: string]: { name: string; as: string }[] },
@@ -98,6 +104,8 @@ export class SQLModel extends Model {
     [field: string]: {
       type: string;
       source: string;
+      collection: string;
+      interface: string;
     };
   } {
     const tables = this.parseTablesAndColumns();
@@ -116,8 +124,11 @@ export class SQLModel extends Model {
             return;
           }
           sourceFields[field.name] = {
+            collection: field.collection.name,
             type: field.type,
             source: `${field.collection.name}.${field.name}`,
+            interface: field.options.interface,
+            uiSchema: field.options.uiSchema,
           };
         });
       } else {
@@ -131,8 +142,11 @@ export class SQLModel extends Model {
             return;
           }
           sourceFields[column.as || column.name] = {
+            collection: field.collection.name,
             type: field.type,
             source: `${field.collection.name}.${field.name}`,
+            interface: field.options.interface,
+            uiSchema: field.options.uiSchema,
           };
         });
       }

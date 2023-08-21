@@ -1,3 +1,4 @@
+import { useAsyncData } from '../../async-data-provider';
 import { SQLInput, PreviewTable, FieldsConfigure, SQLRequestProvider } from './components/sql-collection';
 import { getConfigurableProperties } from './properties';
 import { ICollectionTemplate } from './types';
@@ -39,6 +40,16 @@ export const sql: ICollectionTemplate = {
           'x-decorator': 'FormItem',
           'x-component': SQLInput,
           required: true,
+        },
+        sources: {
+          type: 'array',
+          title: '{{t("Source collections")}}',
+          'x-decorator': 'FormItem',
+          'x-component': 'Select',
+          'x-component-props': {
+            multiple: true,
+          },
+          'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
         },
         fields: {
           type: 'array',
