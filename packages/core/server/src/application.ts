@@ -350,12 +350,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       return;
     }
     this._authenticated = true;
-    try {
-      await this.db.auth({ retry: 30 });
-    } catch (error) {
-      console.log(chalk.red(error.message));
-      process.exit(1);
-    }
+    await this.db.auth({ retry: 30 });
     await this.dbVersionCheck({ exit: true });
     await this.db.prepare();
   }
@@ -543,6 +538,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       await this.db.clean({ drop: true });
       this.log.debug('app reloading');
       await this.reload();
+    } else if (await this.isInstalled()) {
+      this.log.warn('app is installed');
+      return;
     }
 
     this.log.debug('emit beforeInstall');
@@ -588,19 +586,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       appName: this.name,
       name: this.name,
     };
-  }
-
-  public async handleDynamicCall(method: string, ...args: any[]): Promise<{ result: any }> {
-    const target = lodash.get(this, method);
-    let result = target;
-
-    if (typeof target === 'function') {
-      const methodPaths: Array<string> = method.split('.');
-      methodPaths.pop();
-      result = await target.apply(methodPaths.length > 0 ? lodash.get(this, methodPaths.join('.')) : this, args);
-    }
-
-    return JSON.parse(JSON.stringify({ result }));
   }
 
   reInitEvents() {

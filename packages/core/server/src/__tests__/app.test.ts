@@ -1,6 +1,6 @@
 import { DataTypes, mockDatabase } from '@nocobase/database';
-import { AppSupervisor } from '../app-supervisor';
 import Application, { ApplicationOptions } from '../application';
+import Plugin from '../plugin';
 
 const mockServer = (options?: ApplicationOptions) => {
   return new Application({
@@ -10,18 +10,17 @@ const mockServer = (options?: ApplicationOptions) => {
   });
 };
 
-describe('application life cycle', () => {
+describe('app destroy', () => {
   let app: Application;
 
   afterEach(async () => {
     if (app) {
       await app.destroy();
     }
-    AppSupervisor.getInstance().apps = {};
   });
 
   test('case1', async () => {
-    const app = mockServer();
+    app = mockServer();
     await app.load();
     await app.install();
     app.pm.collection.addField('foo', { type: 'string' });
@@ -67,5 +66,31 @@ describe('application life cycle', () => {
     await app.upgrade();
     const exists = await app.pm.collection.getField('foo').existsInDb();
     expect(exists).toBeTruthy();
+  });
+
+  test('case4', async () => {
+    class P extends Plugin {
+      async load() {
+        this.db.collection({
+          name: 'test',
+          fields: [],
+        });
+      }
+    }
+    app = mockServer({
+      plugins: [P],
+    });
+    await app.load();
+    await app.install();
+    await app.db.getRepository('test').create({ values: {} });
+    await app.install();
+    expect(await app.db.getRepository('test').count()).toBe(1);
+    await app.install({ clean: true });
+    expect(await app.db.getRepository('test').count()).toBe(0);
+  });
+
+  test('app main already exists', async () => {
+    mockServer();
+    expect(() => mockServer()).toThrow('app main already exists');
   });
 });
