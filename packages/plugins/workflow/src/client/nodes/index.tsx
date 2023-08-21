@@ -265,6 +265,8 @@ export function JobButton() {
             border: 2px solid #d9d9d9;
             border-radius: 50%;
             cursor: not-allowed;
+            width: 24px;
+            height: 24px;
           `,
         )}
       />
