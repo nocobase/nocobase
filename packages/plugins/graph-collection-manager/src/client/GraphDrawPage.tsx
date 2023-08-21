@@ -766,7 +766,7 @@ export const GraphDrawPage = React.memo(() => {
     };
     setTimeout(() => {
       renderDiffEdges(diffEdges.concat(diffInheritEdge));
-    });
+    }, 300);
   };
 
   const handleSearchCollection = (e) => {
