@@ -5,6 +5,7 @@ import Plugin from '..';
 import { WorkflowModel } from '../types';
 import { Model, modelAssociationByKey } from '@nocobase/database';
 import { BelongsTo, HasOne } from 'sequelize';
+import { toJSON } from '../utils';
 
 export default class FormTrigger extends Trigger {
   constructor(plugin: Plugin) {
@@ -47,6 +48,8 @@ export default class FormTrigger extends Trigger {
       return;
     }
 
+    const { currentUser } = context.state;
+
     const triggers = triggerWorkflows.split(',').map((trigger) => trigger.split('!'));
     const workflowRepo = this.plugin.db.getRepository('workflows');
     const workflows = await workflowRepo.find({
@@ -85,10 +88,14 @@ export default class FormTrigger extends Trigger {
               appends,
             });
           }
-          this.plugin.trigger(workflow, { data: payload });
+          this.plugin.trigger(workflow, { data: payload, user: currentUser });
         });
       } else {
-        this.plugin.trigger(workflow, { data: trigger[1] ? get(values, trigger[1]) : values });
+        const data = trigger[1] ? get(values, trigger[1]) : values;
+        this.plugin.trigger(workflow, {
+          data,
+          user: currentUser,
+        });
       }
     });
   }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { onFormInputChange } from '@formily/core';
 import { toJS } from '@formily/reactive';
-import { useFieldSchema, useFormEffects, useForm } from '@formily/react';
+import { useFieldSchema, useFormEffects, useField } from '@formily/react';
 import {
   Checkbox,
   DatePicker,
@@ -39,6 +39,32 @@ function useTargetCollectionField() {
   return getCollectionField(`${collection.name}.${paths[paths.length - 1]}`);
 }
 
+function getValuesByPath(data, path) {
+  const keys = path.split('.');
+  let current = data;
+
+  for (const key of keys) {
+    if (current && typeof current === 'object') {
+      if (Array.isArray(current) && !isNaN(key)) {
+        const index = parseInt(key);
+        if (index >= 0 && index < current.length) {
+          current = current[index];
+        } else {
+          return data;
+        }
+      } else if (key in current) {
+        current = current[key];
+      } else {
+        return data;
+      }
+    } else {
+      return data;
+    }
+  }
+
+  return current;
+}
+
 export function Result(props) {
   const { value, ...others } = props;
   const fieldSchema = useFieldSchema();
@@ -46,6 +72,9 @@ export function Result(props) {
   const [editingValue, setEditingValue] = useState(value);
   const { evaluate } = (evaluators as Registry<Evaluator>).get(engine);
   const formBlockContext = useFormBlockContext();
+  const field = useField();
+  const path: any = field.path.entire;
+  const fieldPath = path?.replace(`.${fieldSchema.name}`, '');
 
   useEffect(() => {
     setEditingValue(value);
@@ -60,7 +89,8 @@ export function Result(props) {
       ) {
         return;
       }
-      const scope = toJS(form.values);
+
+      const scope = toJS(getValuesByPath(form.values, fieldPath));
       let v;
       try {
         v = evaluate(expression, scope);

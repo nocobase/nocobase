@@ -17,7 +17,10 @@ export class PluginManager {
   protected pluginsAliases: Record<string, Plugin> = {};
   private initPlugins: Promise<void>;
 
-  constructor(protected _plugins: PluginType[], protected app: Application) {
+  constructor(
+    protected _plugins: PluginType[],
+    protected app: Application,
+  ) {
     this.app = app;
     this.initPlugins = this.init(_plugins);
   }
@@ -43,7 +46,7 @@ export class PluginManager {
         requirejs: this.app.requirejs,
         pluginData: pluginList,
         baseURL: this.app.apiClient.axios?.defaults?.baseURL,
-        devPlugins: this.app.devPlugins,
+        devDynamicImport: this.app.devDynamicImport,
       });
       for await (const plugin of plugins) {
         await this.add(plugin);

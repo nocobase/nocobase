@@ -226,7 +226,7 @@ describe('workflow > instructions > query', () => {
         config: {
           collection: 'posts',
           params: {
-            sort: 'id',
+            sort: [{ field: 'id', direction: 'asc' }],
           },
         },
       });
@@ -312,6 +312,31 @@ describe('workflow > instructions > query', () => {
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
       expect(job.result.length).toBe(0);
+    });
+
+    it('params.sort & params.page & params.pageSize', async () => {
+      const n1 = await workflow.createNode({
+        type: 'query',
+        config: {
+          collection: 'posts',
+          multiple: true,
+          params: {
+            sort: [{ field: 'id', direction: 'asc' }],
+            page: 1,
+            pageSize: 1,
+          },
+        },
+      });
+
+      const p1 = await PostRepo.create({ values: { title: 't1' } });
+      const p2 = await PostRepo.create({ values: { title: 't2' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      const [job] = await execution.getJobs();
+      expect(job.result.length).toBe(1);
+      expect(job.result[0].title).toBe(p1.title);
     });
   });
 

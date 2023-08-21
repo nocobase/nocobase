@@ -12,7 +12,7 @@ export const PreviewTable = (props) => {
   const [previewData, setPreviewData] = useState([]);
   const compile = useCompile();
   const [loading, setLoading] = useState(false);
-  const { getCollection, getCollectionField, getInterface } = useCollectionManager();
+  const { getInterface, getCollectionFields } = useCollectionManager();
   const api = useAPIClient();
   const { t } = useTranslation();
   const form = useForm();
@@ -37,7 +37,7 @@ export const PreviewTable = (props) => {
           setLoading(false);
           setPreviewData(data?.data || []);
         }
-      });
+      }).catch;
   };
 
   const formatPreviewColumns = (data) => {
@@ -45,12 +45,9 @@ export const PreviewTable = (props) => {
       .filter((k) => k.source || k.interface)
       ?.map((item) => {
         const fieldSource = typeof item?.source === 'string' ? item?.source?.split('.') : item?.source;
-        const sourceField = getCollection(fieldSource?.[0])?.fields.find((v) => v.name === fieldSource?.[1])?.uiSchema
-          ?.title;
-        const target = item?.uiSchema?.title || sourceField || item.name;
-        const schema: any = item.source
-          ? getCollectionField(typeof item.source === 'string' ? item.source : item.source.join('.'))?.uiSchema
-          : getInterface(item.interface)?.default?.uiSchema;
+        const sourceField = getCollectionFields(fieldSource?.[0])?.find((v) => v.name === fieldSource?.[1])?.uiSchema;
+        const target = item?.uiSchema?.title || sourceField?.title || item.name;
+        const schema: any = item.source ? sourceField : getInterface(item.interface)?.default?.uiSchema;
         return {
           title: compile(target),
           dataIndex: item.name,
@@ -74,31 +71,37 @@ export const PreviewTable = (props) => {
       });
   };
   return (
-    <Spin spinning={loading}>
+    <Spin spinning={loading} key="preview">
       <div
         style={{
           marginBottom: 22,
         }}
       >
-        {previewColumns?.length > 0 && [
-          <div className="ant-formily-item-label" style={{ marginTop: 24 }}>
-            <div className="ant-formily-item-label-content">
-              <span>
-                <label>{t('Preview')}</label>
-              </span>
-            </div>
-            <span className="ant-formily-item-colon">:</span>
-          </div>,
-          <Table
-            size={'middle'}
-            pagination={false}
-            bordered
-            columns={previewColumns}
-            dataSource={previewData}
-            scroll={{ x: 1000, y: 300 }}
-            key={viewName}
-          />,
-        ]}
+        <div
+          className="ant-formily-item-label"
+          style={{ marginTop: 24, display: 'flex', padding: '0 0 8px' }}
+          key={viewName}
+        >
+          <div className="ant-formily-item-label-content">
+            <span>
+              <label>{t('Preview')}</label>
+            </span>
+          </div>
+          <span className="ant-formily-item-colon">:</span>
+        </div>
+        {previewColumns?.length > 0 && (
+          <>
+            <Table
+              size={'middle'}
+              pagination={false}
+              bordered
+              columns={previewColumns}
+              dataSource={previewData}
+              scroll={{ x: 1000, y: 300 }}
+              key={viewName}
+            />
+          </>
+        )}
       </div>
     </Spin>
   );

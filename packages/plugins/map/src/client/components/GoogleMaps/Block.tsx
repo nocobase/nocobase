@@ -173,7 +173,8 @@ export const GoogleMapsBlock = (props) => {
           return overlay;
         });
       })
-      .flat();
+      .flat()
+      .filter(Boolean);
 
     overlaysRef.current = overlays;
     mapRef.current?.setFitView(overlays);
