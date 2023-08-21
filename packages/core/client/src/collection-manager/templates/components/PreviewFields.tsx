@@ -29,6 +29,7 @@ const PreviewCom = (props) => {
   const [loading, setLoading] = useState(false);
   const [dataSource, setDataSource] = useState([]);
   const [sourceFields, setSourceFields] = useState([]);
+  const [sourceCollections, setSourceCollections] = useState(sources);
   const field: any = useField();
   const form = useForm();
   const { getCollection, getInterface, getCollectionFields, getInheritCollections, getParentCollectionFields } =
@@ -37,7 +38,7 @@ const PreviewCom = (props) => {
   const initOptions = getOptions().filter((v) => !['relation', 'systemInfo'].includes(v.key));
   useEffect(() => {
     const data = [];
-    sources.forEach((item) => {
+    sourceCollections.forEach((item) => {
       const collection = getCollection(item);
       const inherits = getInheritCollections(item);
       const result: any[] = inherits.map((v) => {
@@ -69,8 +70,7 @@ const PreviewCom = (props) => {
       });
     });
     setSourceFields(data);
-  }, [sources, databaseView]);
-
+  }, [sourceCollections, databaseView]);
   useEffect(() => {
     if (databaseView) {
       setLoading(true);
@@ -89,8 +89,11 @@ const PreviewCom = (props) => {
               }
             });
             field.value = fieldsData;
-            setDataSource(fieldsData);
-            form.setValuesIn('sources', data.data?.sources);
+            setTimeout(() => {
+              setDataSource(fieldsData);
+              form.setValuesIn('sources', data.data?.sources);
+              setSourceCollections(data.data?.sources);
+            });
           }
         }).catch;
     }

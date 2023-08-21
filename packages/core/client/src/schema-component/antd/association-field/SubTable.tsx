@@ -32,6 +32,9 @@ export const SubTable: any = observer(
     return (
       <div
         className={css`
+          .ant-table-content {
+            overflow: unset !important;
+          }
           .ant-table-footer {
             padding: 0 !important;
           }
