@@ -85,12 +85,12 @@ export const formatData = (data) => {
       name: item.name,
       title: item.title,
       width: 250,
-      // height: 40 * portsData.initPorts?.length||40,
+      // height: 40 * portsData.initPorts?.length || 40,
       ports: [...(portsData.initPorts || []), ...(portsData.morePorts || [])],
       item: item,
     };
   });
-  const edges = formatEdgeData(edgeData, targetTablekeys, tableData);
+  const edges = formatRelationEdgeData(edgeData, targetTablekeys, tableData);
   const inheritEdges = formatInheritEdgeData(data);
   return { nodesData: tableData, edgesData: edges, inheritEdges };
 };
@@ -119,7 +119,6 @@ export const formatInheritEdgeData = (collections) => {
         textVerticalAnchor: 'middle',
         stroke: '#ddd',
         sourceMarker: null,
-        // targetMarker: null,
       },
     },
     router: {
@@ -185,7 +184,10 @@ export const formatInheritEdgeData = (collections) => {
             cell: k,
             connectionPoint: 'rect',
           },
-          connector: 'rounded',
+          connector: {
+            name: 'normal',
+            zIndex: 1000,
+          },
           connectionType: 'inherited',
           ...commonAttrs,
         });
@@ -195,7 +197,7 @@ export const formatInheritEdgeData = (collections) => {
   return inheritEdges;
 };
 
-const formatEdgeData = (data, targetTables, tableData) => {
+const formatRelationEdgeData = (data, targetTables, tableData) => {
   const edges = [];
   for (let i = 0; i < data.length; i++) {
     if (targetTables.includes(data[i].target)) {
@@ -314,6 +316,10 @@ const formatEdgeData = (data, targetTables, tableData) => {
             },
           },
         ],
+        connector: {
+          name: 'normal',
+          zIndex: 1000,
+        },
       };
       const isuniq = (id) => {
         const targetEdge = edges.find((v) => v.id === id);
