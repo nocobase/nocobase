@@ -3,6 +3,7 @@ import { useField, useFieldSchema } from '@formily/react';
 import { reaction } from '@formily/reactive';
 import _ from 'lodash';
 import { useEffect } from 'react';
+import { useRecord } from '../../../../../src/record-provider';
 import { useCollection } from '../../../../collection-manager';
 import { DEBOUNCE_WAIT, useLocalVariables, useVariables } from '../../../../variables';
 import { getPath } from '../../../../variables/utils/getPath';
@@ -17,10 +18,15 @@ const useParseDefaultValue = () => {
   const schema = useFieldSchema();
   const variables = useVariables();
   const localVariables = useLocalVariables();
+  const record = useRecord();
+
   const { getField } = useCollection();
 
   useEffect(() => {
-    if (schema.default == null) {
+    const _record = _.omit(record, '__parent');
+
+    // 根据 record 是否为空，判断当前是否是新建状态，编辑状态下不需要设置默认值，否则会覆盖用户输入的值，只有新建状态下才需要设置默认值
+    if (schema.default == null || !_.isEmpty(_record)) {
       return;
     }
 
