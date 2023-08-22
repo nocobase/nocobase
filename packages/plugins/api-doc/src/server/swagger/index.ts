@@ -4,15 +4,122 @@ import { SchemaTypeMapping } from './constants';
 import { createDefaultActionSwagger, getInterfaceCollection } from './helpers';
 import { getPluginsSwagger, getSwaggerDocument, loadSwagger } from './loader';
 import { merge } from './merge';
+import collectionToSwaggerObject from './collections';
 
 export class SwaggerManager {
   private plugin: APIDocPlugin;
 
+  constructor(plugin: APIDocPlugin) {
+    this.plugin = plugin;
+  }
+
   private get app() {
     return this.plugin.app;
   }
+
   private get db() {
     return this.plugin.db;
+  }
+
+  async generateSwagger(options: { plugins?: string[] } = {}) {
+    const base = await this.getBaseSwagger();
+    const core = options.plugins ? {} : await loadSwagger('@nocobase/server');
+    const plugins = await this.loadSwaggers(options.plugins);
+    return merge(merge(core, plugins), base);
+  }
+
+  async getSwagger() {
+    return this.generateSwagger();
+  }
+
+  collection2Swagger(collectionName: string) {
+    const collection = this.db.getCollection(collectionName);
+    return {
+      tags: [{ name: collectionName, description: collection.options.title }],
+      ...collectionToSwaggerObject(collection),
+    };
+  }
+
+  async getCollectionsSwagger(name?: string) {
+    const base = await this.getBaseSwagger();
+    let others = {};
+    if (name) {
+      const collectionSwagger = this.collection2Swagger(name);
+      console.log({
+        others,
+        collectionSwagger,
+      });
+      others = merge(others, collectionSwagger);
+    } else {
+      const collections = await this.db.getRepository('collections').find({
+        filter: {
+          'name.$ne': ['roles', 'users'],
+          'hidden.$isFalsy': true,
+        },
+      });
+      for (const collection of collections) {
+        if (collection.name === 'roles') {
+          continue;
+        }
+        others = merge(others, this.collection2Swagger(collection.name));
+      }
+    }
+    return merge(base, others);
+  }
+
+  async getPluginsSwagger(pluginName?: string) {
+    return this.generateSwagger({
+      plugins: pluginName ? [pluginName] : [],
+    });
+  }
+
+  async getCoreSwagger() {
+    return merge(await this.getBaseSwagger(), await loadSwagger('@nocobase/server'));
+  }
+
+  async getUrls() {
+    const plugins = await getPluginsSwagger(this.db)
+      .then((res) => {
+        return Object.keys(res).map((name) => {
+          const schema = res[name];
+          return {
+            name: schema.info?.title || name,
+            url: `/api/swagger:get?ns=${encodeURIComponent(`plugins/${name}`)}`,
+          };
+        });
+      })
+      .catch(() => []);
+    const collections = await this.db.getRepository('collections').find({
+      filter: {
+        'name.$ne': ['roles', 'users'],
+        'hidden.$isFalsy': true,
+      },
+    });
+    return [
+      {
+        name: 'NocoBase API',
+        url: '/api/swagger:get',
+      },
+      {
+        name: 'NocoBase API - Core',
+        url: '/api/swagger:get?ns=core',
+      },
+      {
+        name: 'NocoBase API - All plugins',
+        url: '/api/swagger:get?ns=plugins',
+      },
+      {
+        name: 'NocoBase API - Custom collections',
+        url: '/api/swagger:get?ns=collections',
+      },
+      ...plugins,
+      ...collections.map((collection) => {
+        return {
+          name: `Collection API - ${collection.title}`,
+          url: `/api/swagger:get?ns=${encodeURIComponent('collections/' + collection.name)}`,
+        };
+      }),
+    ];
   }
 
   private async getBaseSwagger() {
@@ -26,10 +133,6 @@ export class SwaggerManager {
         },
       ],
     });
-  }
-
-  constructor(plugin: APIDocPlugin) {
-    this.plugin = plugin;
   }
 
   private generateSchemas() {
@@ -123,177 +226,5 @@ export class SwaggerManager {
 
   private loadSwaggers(plugins: string[]) {
     return getSwaggerDocument(this.db, plugins);
-  }
-
-  async generateSwagger(options: { plugins?: string[] } = {}) {
-    const base = await this.getBaseSwagger();
-    const core = options.plugins ? {} : await loadSwagger('@nocobase/server');
-    const plugins = await this.loadSwaggers(options.plugins);
-    return merge(merge(core, plugins), base);
-  }
-
-  async getSwagger() {
-    return this.generateSwagger();
-  }
-
-  collection2Swagger(collectionName: string) {
-    const collection = this.db.getCollection(collectionName);
-    const paths = {
-      [`/${collectionName}:list`]: {
-        get: {
-          tags: [collectionName],
-          description: '',
-          parameters: [],
-          responses: {
-            '200': {
-              description: 'OK',
-            },
-          },
-        },
-      },
-      [`/${collectionName}:get`]: {
-        get: {
-          tags: [collectionName],
-          description: '',
-          parameters: [],
-          responses: {
-            '200': {
-              description: 'OK',
-            },
-          },
-        },
-      },
-      [`/${collectionName}:create`]: {
-        post: {
-          tags: [collectionName],
-          description: '',
-          parameters: [],
-          responses: {
-            '200': {
-              description: 'OK',
-            },
-          },
-        },
-      },
-      [`/${collectionName}:update`]: {
-        post: {
-          tags: [collectionName],
-          description: '',
-          parameters: [],
-          responses: {
-            '200': {
-              description: 'OK',
-            },
-          },
-        },
-      },
-      [`/${collectionName}:destroy`]: {
-        post: {
-          tags: [collectionName],
-          description: '',
-          parameters: [],
-          responses: {
-            '200': {
-              description: 'OK',
-            },
-          },
-        },
-      },
-    };
-    if (collection.options.sortable) {
-      paths[`/${collectionName}:move`] = {
-        post: {
-          tags: [collectionName],
-          description: '',
-          parameters: [],
-          responses: {
-            '200': {
-              description: 'OK',
-            },
-          },
-        },
-      };
-    }
-    return {
-      tags: [{ name: collectionName, description: collection.options.title }],
-      paths,
-    };
-  }
-
-  async getCollectionsSwagger(name?: string) {
-    const base = await this.getBaseSwagger();
-    let others = {};
-    if (name) {
-      others = merge(others, this.collection2Swagger(name));
-    } else {
-      const collections = await this.db.getRepository('collections').find({
-        filter: {
-          'name.$ne': ['roles', 'users'],
-          'hidden.$isFalsy': true,
-        },
-      });
-      for (const collection of collections) {
-        if (collection.name === 'roles') {
-          continue;
-        }
-        others = merge(others, this.collection2Swagger(collection.name));
-      }
-    }
-    return merge(base, others);
-  }
-
-  async getPluginsSwagger(pluginName?: string) {
-    return this.generateSwagger({
-      plugins: pluginName ? [pluginName] : [],
-    });
-  }
-
-  async getCoreSwagger() {
-    return merge(await this.getBaseSwagger(), await loadSwagger('@nocobase/server'));
-  }
-
-  async getUrls() {
-    const plugins = await getPluginsSwagger(this.db)
-      .then((res) => {
-        return Object.keys(res).map((name) => {
-          const schema = res[name];
-          return {
-            name: schema.info?.title || name,
-            url: `/api/swagger:get?ns=${encodeURIComponent(`plugins/${name}`)}`,
-          };
-        });
-      })
-      .catch(() => []);
-    const collections = await this.db.getRepository('collections').find({
-      filter: {
-        'name.$ne': ['roles', 'users'],
-        'hidden.$isFalsy': true,
-      },
-    });
-    return [
-      {
-        name: 'NocoBase API',
-        url: '/api/swagger:get',
-      },
-      {
-        name: 'NocoBase API - Core',
-        url: '/api/swagger:get?ns=core',
-      },
-      {
-        name: 'NocoBase API - All plugins',
-        url: '/api/swagger:get?ns=plugins',
-      },
-      {
-        name: 'NocoBase API - Custom collections',
-        url: '/api/swagger:get?ns=collections',
-      },
-      ...plugins,
-      ...collections.map((collection) => {
-        return {
-          name: `Collection API - ${collection.title}`,
-          url: `/api/swagger:get?ns=${encodeURIComponent('collections/' + collection.name)}`,
-        };
-      }),
-    ];
   }
 }
