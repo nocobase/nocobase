@@ -97,6 +97,11 @@ function _isAllowToSetDefaultValue({
     );
   }
 
+  // 当 Field component 不是下列组件时，不允许设置默认值
+  if (collectionField.target && !['Picker', 'Select'].includes(fieldSchema['x-component-props']?.mode)) {
+    return false;
+  }
+
   record = _.omit(record, '__parent');
 
   // 表单编辑状态下，不允许设置默认值
