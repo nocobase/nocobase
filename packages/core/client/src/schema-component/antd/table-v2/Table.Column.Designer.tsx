@@ -1,10 +1,10 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { set } from 'lodash';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../../block-provider';
 import { useCollectionManager } from '../../../collection-manager';
-import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isShowDefaultValue } from '../../../schema-settings';
+import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isSystemField } from '../../../schema-settings';
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
 import { useAssociationFieldContext } from '../association-field/hooks';
 import { removeNullCondition } from '../filter';
@@ -74,6 +74,27 @@ export const TableColumnDesigner = (props) => {
     readOnlyMode = 'read-pretty';
   }
   const isSelectFieldMode = isAssociationField && fieldMode === 'Select';
+  const isAllowToSetDefaultValue = useMemo(() => {
+    return (
+      isSubTableColumn &&
+      !field?.readPretty &&
+      ![
+        'o2o',
+        'oho',
+        'obo',
+        'o2m',
+        'attachment',
+        'expression',
+        'point',
+        'lineString',
+        'circle',
+        'polygon',
+        'sequence',
+      ].includes(collectionField?.interface) &&
+      !isSystemField(collectionField, getInterface)
+    );
+  }, [collectionField, field?.readPretty, getInterface, isSubTableColumn]);
+
   return (
     <GeneralSchemaDesigner disableInitializer>
       <SchemaSettings.ModalItem
@@ -390,9 +411,7 @@ export const TableColumnDesigner = (props) => {
             }}
           />
         )}
-      {isSubTableColumn && !field?.readPretty && isShowDefaultValue(collectionField, getInterface) && (
-        <SchemaSettings.DefaultValue fieldSchema={fieldSchema} />
-      )}
+      {isAllowToSetDefaultValue && <SchemaSettings.DefaultValue fieldSchema={fieldSchema} />}
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren={!isSubTableColumn}

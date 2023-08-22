@@ -9,7 +9,12 @@ import { useTranslation } from 'react-i18next';
 import { useFilterByTk, useFormBlockContext } from '../../../block-provider';
 import { useCollection, useCollectionManager, useSortFields } from '../../../collection-manager';
 import { GeneralSchemaItems } from '../../../schema-items';
-import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isShowDefaultValue } from '../../../schema-settings';
+import {
+  GeneralSchemaDesigner,
+  SchemaSettings,
+  isAllowToSetDefaultValue,
+  isPatternDisabled,
+} from '../../../schema-settings';
 import { useIsShowMultipleSwitch } from '../../../schema-settings/hooks/useIsShowMultipleSwitch';
 import { useCompile, useDesignable, useFieldComponentOptions, useFieldTitle } from '../../hooks';
 import { removeNullCondition } from '../filter';
@@ -279,54 +284,51 @@ AssociationSelect.Designer = function Designer() {
           }}
         />
       )}
-      {form &&
-        !form?.readPretty &&
-        isShowDefaultValue(collectionField, getInterface) &&
-        !isPatternDisabled(fieldSchema) && (
-          <SchemaSettings.ModalItem
-            title={t('Set default value')}
-            components={{ ArrayCollapse, FormLayout }}
-            width={800}
-            schema={
-              {
-                type: 'object',
-                title: t('Set default value'),
-                properties: {
-                  default: {
-                    ...(fieldSchemaWithoutRequired || {}),
-                    'x-decorator': 'FormItem',
-                    'x-component-props': {
-                      ...fieldSchemaWithoutRequired['x-component-props'],
-                      component: collectionField?.target ? 'AssociationSelect' : undefined,
-                      service: {
-                        resource: collectionField?.target,
-                      },
+      {isAllowToSetDefaultValue({ collectionField, getInterface, form, fieldSchema }) && (
+        <SchemaSettings.ModalItem
+          title={t('Set default value')}
+          components={{ ArrayCollapse, FormLayout }}
+          width={800}
+          schema={
+            {
+              type: 'object',
+              title: t('Set default value'),
+              properties: {
+                default: {
+                  ...(fieldSchemaWithoutRequired || {}),
+                  'x-decorator': 'FormItem',
+                  'x-component-props': {
+                    ...fieldSchemaWithoutRequired['x-component-props'],
+                    component: collectionField?.target ? 'AssociationSelect' : undefined,
+                    service: {
+                      resource: collectionField?.target,
                     },
-                    name: 'default',
-                    title: t('Default value'),
-                    default: fieldSchema.default || collectionField?.defaultValue,
-                    'x-read-pretty': false,
-                    'x-disabled': false,
                   },
+                  name: 'default',
+                  title: t('Default value'),
+                  default: fieldSchema.default || collectionField?.defaultValue,
+                  'x-read-pretty': false,
+                  'x-disabled': false,
                 },
-              } as ISchema
+              },
+            } as ISchema
+          }
+          onSubmit={(v) => {
+            const schema: ISchema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            if (field.value !== v.default) {
+              field.value = v.default;
             }
-            onSubmit={(v) => {
-              const schema: ISchema = {
-                ['x-uid']: fieldSchema['x-uid'],
-              };
-              if (field.value !== v.default) {
-                field.value = v.default;
-              }
-              fieldSchema.default = v.default;
-              schema.default = v.default;
-              dn.emit('patch', {
-                schema,
-              });
-              refresh();
-            }}
-          />
-        )}
+            fieldSchema.default = v.default;
+            schema.default = v.default;
+            dn.emit('patch', {
+              schema,
+            });
+            refresh();
+          }}
+        />
+      )}
       {form && !isSubFormAssociationField && fieldComponentOptions && (
         <SchemaSettings.SelectItem
           title={t('Field component')}

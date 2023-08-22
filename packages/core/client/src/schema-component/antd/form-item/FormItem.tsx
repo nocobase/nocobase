@@ -12,7 +12,12 @@ import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { Collection, useCollection, useCollectionManager } from '../../../collection-manager';
 import { useRecord } from '../../../record-provider';
 import { GeneralSchemaItems } from '../../../schema-items/GeneralSchemaItems';
-import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isShowDefaultValue } from '../../../schema-settings';
+import {
+  GeneralSchemaDesigner,
+  SchemaSettings,
+  isAllowToSetDefaultValue,
+  isPatternDisabled,
+} from '../../../schema-settings';
 import { VariableInput, getShouldChange } from '../../../schema-settings/VariableInput/VariableInput';
 import { useIsShowMultipleSwitch } from '../../../schema-settings/hooks/useIsShowMultipleSwitch';
 import { useLocalVariables, useVariables } from '../../../variables';
@@ -314,10 +319,9 @@ FormItem.Designer = function Designer() {
           }}
         />
       )}
-      {form &&
-        !form?.readPretty &&
-        isShowDefaultValue(collectionField, getInterface) &&
-        !isPatternDisabled(fieldSchema) && <SchemaSettings.DefaultValue />}
+      {isAllowToSetDefaultValue({ collectionField, getInterface, form, fieldSchema }) && (
+        <SchemaSettings.DefaultValue />
+      )}
       {isSelectFieldMode && !field.readPretty && (
         <SchemaSettings.DataScope
           collectionName={collectionField?.target}
