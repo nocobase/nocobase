@@ -30,6 +30,9 @@ export const useStyles = genStyleHook('nb-markdown', (token, { isDarkTheme }) =>
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
+        img: {
+          boxShadow: '0 0 .5em rgba(0, 0, 0, 0.1)',
+        },
       },
       img: { maxWidth: '100%' },
       '.hljs': { background: '#f8f8f8', color: '#444' },
