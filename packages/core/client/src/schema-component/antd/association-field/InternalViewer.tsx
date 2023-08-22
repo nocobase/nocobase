@@ -27,7 +27,7 @@ export const ReadPrettyInternalViewer: React.FC = observer(
   (props: any) => {
     const fieldSchema = useFieldSchema();
     const recordCtx = useRecord();
-    const { enableLink } = fieldSchema['x-component-props'];
+    const { enableLink } = fieldSchema['x-component-props'] || {};
     // value 做了转换，但 props.value 和原来 useField().value 的值不一致
     const field = useField();
     const fieldNames = useFieldNames(props);
