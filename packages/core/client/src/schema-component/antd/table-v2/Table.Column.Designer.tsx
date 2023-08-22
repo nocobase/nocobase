@@ -1,10 +1,11 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { set } from 'lodash';
-import React, { useMemo } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../../block-provider';
 import { useCollectionManager } from '../../../collection-manager';
-import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isSystemField } from '../../../schema-settings';
+import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled } from '../../../schema-settings';
+import useIsAllowToSetDefaultValue from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
 import { useAssociationFieldContext } from '../association-field/hooks';
 import { removeNullCondition } from '../filter';
@@ -60,6 +61,8 @@ export const TableColumnDesigner = (props) => {
   const isFileField = isFileCollection(targetCollection);
   const isSubTableColumn = ['QuickEdit', 'FormItem'].includes(fieldSchema['x-decorator']);
   const { currentMode } = useAssociationFieldContext();
+  const { isAllowToSetDefaultValue } = useIsAllowToSetDefaultValue({ collectionField, fieldSchema });
+
   const isDateField = ['datetime', 'createdAt', 'updatedAt'].includes(collectionField?.interface);
   const isAssociationField = ['obo', 'oho', 'o2o', 'o2m', 'm2m', 'm2o', 'snapshot'].includes(
     collectionField?.interface,
@@ -74,26 +77,6 @@ export const TableColumnDesigner = (props) => {
     readOnlyMode = 'read-pretty';
   }
   const isSelectFieldMode = isAssociationField && fieldMode === 'Select';
-  const isAllowToSetDefaultValue = useMemo(() => {
-    return (
-      isSubTableColumn &&
-      !field?.readPretty &&
-      ![
-        'o2o',
-        'oho',
-        'obo',
-        'o2m',
-        'attachment',
-        'expression',
-        'point',
-        'lineString',
-        'circle',
-        'polygon',
-        'sequence',
-      ].includes(collectionField?.interface) &&
-      !isSystemField(collectionField, getInterface)
-    );
-  }, [collectionField, field?.readPretty, getInterface, isSubTableColumn]);
 
   return (
     <GeneralSchemaDesigner disableInitializer>
@@ -411,7 +394,7 @@ export const TableColumnDesigner = (props) => {
             }}
           />
         )}
-      {isAllowToSetDefaultValue && <SchemaSettings.DefaultValue fieldSchema={fieldSchema} />}
+      {isAllowToSetDefaultValue(isSubTableColumn) && <SchemaSettings.DefaultValue fieldSchema={fieldSchema} />}
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren={!isSubTableColumn}

@@ -12,13 +12,9 @@ import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { Collection, useCollection, useCollectionManager } from '../../../collection-manager';
 import { useRecord } from '../../../record-provider';
 import { GeneralSchemaItems } from '../../../schema-items/GeneralSchemaItems';
-import {
-  GeneralSchemaDesigner,
-  SchemaSettings,
-  isAllowToSetDefaultValue,
-  isPatternDisabled,
-} from '../../../schema-settings';
+import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled } from '../../../schema-settings';
 import { VariableInput, getShouldChange } from '../../../schema-settings/VariableInput/VariableInput';
+import useIsAllowToSetDefaultValue from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useIsShowMultipleSwitch } from '../../../schema-settings/hooks/useIsShowMultipleSwitch';
 import { useLocalVariables, useVariables } from '../../../variables';
 import useContextVariable from '../../../variables/hooks/useContextVariable';
@@ -115,6 +111,7 @@ FormItem.Designer = function Designer() {
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
   const variables = useVariables();
   const localVariables = useLocalVariables();
+  const { isAllowToSetDefaultValue } = useIsAllowToSetDefaultValue();
 
   const targetCollection = getCollection(collectionField?.target);
   const interfaceConfig = getInterface(collectionField?.interface);
@@ -319,9 +316,7 @@ FormItem.Designer = function Designer() {
           }}
         />
       )}
-      {isAllowToSetDefaultValue({ collectionField, getInterface, form, fieldSchema }) && (
-        <SchemaSettings.DefaultValue />
-      )}
+      {isAllowToSetDefaultValue() && <SchemaSettings.DefaultValue />}
       {isSelectFieldMode && !field.readPretty && (
         <SchemaSettings.DataScope
           collectionName={collectionField?.target}

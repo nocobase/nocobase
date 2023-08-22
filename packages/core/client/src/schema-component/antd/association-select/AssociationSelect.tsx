@@ -9,12 +9,8 @@ import { useTranslation } from 'react-i18next';
 import { useFilterByTk, useFormBlockContext } from '../../../block-provider';
 import { useCollection, useCollectionManager, useSortFields } from '../../../collection-manager';
 import { GeneralSchemaItems } from '../../../schema-items';
-import {
-  GeneralSchemaDesigner,
-  SchemaSettings,
-  isAllowToSetDefaultValue,
-  isPatternDisabled,
-} from '../../../schema-settings';
+import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled } from '../../../schema-settings';
+import useIsAllowToSetDefaultValue from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useIsShowMultipleSwitch } from '../../../schema-settings/hooks/useIsShowMultipleSwitch';
 import { useCompile, useDesignable, useFieldComponentOptions, useFieldTitle } from '../../hooks';
 import { removeNullCondition } from '../filter';
@@ -104,6 +100,7 @@ AssociationSelect.Designer = function Designer() {
   const { dn, refresh, insertAdjacent } = useDesignable();
   const compile = useCompile();
   const IsShowMultipleSwitch = useIsShowMultipleSwitch();
+  const { isAllowToSetDefaultValue } = useIsAllowToSetDefaultValue();
 
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
   const fieldComponentOptions = useFieldComponentOptions();
@@ -284,7 +281,7 @@ AssociationSelect.Designer = function Designer() {
           }}
         />
       )}
-      {isAllowToSetDefaultValue({ collectionField, getInterface, form, fieldSchema }) && (
+      {isAllowToSetDefaultValue() && (
         <SchemaSettings.ModalItem
           title={t('Set default value')}
           components={{ ArrayCollapse, FormLayout }}

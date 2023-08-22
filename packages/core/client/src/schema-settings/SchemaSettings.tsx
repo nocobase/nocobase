@@ -1,6 +1,6 @@
 import { css } from '@emotion/css';
 import { ArrayCollapse, ArrayItems, FormItem, FormLayout, Input } from '@formily/antd-v5';
-import { Field, Form, GeneralField, createForm } from '@formily/core';
+import { Field, GeneralField, createForm } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { error } from '@nocobase/utils/client';
@@ -1813,37 +1813,6 @@ SchemaSettings.DataScope = function DataScopeConfigure(props: DataScopeProps) {
       }
       onSubmit={props.onSubmit}
     />
-  );
-};
-
-export const isAllowToSetDefaultValue = ({
-  collectionField,
-  getInterface,
-  form,
-  fieldSchema,
-}: {
-  collectionField: CollectionFieldOptions;
-  getInterface: (name: string) => any;
-  form: Form;
-  fieldSchema: Schema<any, any, any, any, any, any, any, any, any>;
-}) => {
-  return (
-    !form?.readPretty &&
-    !isPatternDisabled(fieldSchema) &&
-    ![
-      'o2o',
-      'oho',
-      'obo',
-      'o2m',
-      'attachment',
-      'expression',
-      'point',
-      'lineString',
-      'circle',
-      'polygon',
-      'sequence',
-    ].includes(collectionField?.interface) &&
-    !isSystemField(collectionField, getInterface)
   );
 };
 
