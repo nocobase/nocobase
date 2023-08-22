@@ -181,18 +181,18 @@ function isDisabledDefault(params: IsDisabledParams) {
     return false;
   }
 
+  // 普通字段不允许设置多个值
   if (!collectionField.target && ['hasMany', 'belongsToMany'].includes(option.type)) {
     return true;
   }
-
   if (!collectionField.target && ['hasOne', 'belongsTo'].includes(option.type)) {
     return false;
   }
 
+  // 对一字段不允许设置多个值
   if (['hasOne', 'belongsTo'].includes(collectionField.type) && ['hasMany', 'belongsToMany'].includes(option.type)) {
     return true;
   }
-
   if (['hasOne', 'belongsTo'].includes(collectionField.type) && ['hasOne', 'belongsTo'].includes(option.type)) {
     return false;
   }
