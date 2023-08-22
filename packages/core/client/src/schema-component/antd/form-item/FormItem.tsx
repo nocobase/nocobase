@@ -89,7 +89,10 @@ export const FormItem: any = observer(
           let iniValues = [];
           contextData?.map((v) => {
             const data = parseVariables(schema.default, { $context: v });
-            iniValues = iniValues.concat(data);
+            iniValues = iniValues.concat(data).map((v) => {
+              delete v[collectionField.through];
+              return v;
+            });
           });
           const data = _.uniqBy(iniValues, 'id');
           field.setInitialValue?.(data.length > 0 ? data : [{}]);

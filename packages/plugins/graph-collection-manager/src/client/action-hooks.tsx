@@ -10,7 +10,7 @@ import {
 } from '@nocobase/client';
 import { error } from '@nocobase/utils/client';
 import { Select, message } from 'antd';
-import { lodash } from '@nocobase/utils/client'
+import { lodash } from '@nocobase/utils/client';
 import React, { useContext, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { GraphCollectionContext } from './components/CollectionNodeProvder';
