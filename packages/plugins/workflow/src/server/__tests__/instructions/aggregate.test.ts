@@ -31,7 +31,7 @@ describe('workflow > instructions > aggregate', () => {
     });
   });
 
-  afterEach(() => db.close());
+  afterEach(() => app.destroy());
 
   describe('based on collection', () => {
     it('count', async () => {

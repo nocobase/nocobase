@@ -125,8 +125,8 @@ export default {
 
     try {
       result = evaluator
-        ? evaluator(expression, processor.getScope())
-        : logicCalculate(processor.getParsedValue(calculation, node));
+        ? evaluator(expression, processor.getScope(node.id))
+        : logicCalculate(processor.getParsedValue(calculation, node.id));
     } catch (e) {
       return {
         result: e.toString(),
