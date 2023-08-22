@@ -29,6 +29,9 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
       [uid()]: {
         type: 'void',
         'x-component': 'Action.Drawer',
+        'x-component-props': {
+          getContainer: '{{ getContainer }}',
+        },
         'x-decorator': 'Form',
         'x-decorator-props': {
           useValues(options) {
