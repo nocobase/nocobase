@@ -1,7 +1,14 @@
-import { useMemo } from 'react';
+import { ISchema } from '@formily/json-schema';
+import React, { useContext, useMemo } from 'react';
 import { CollectionFieldOptions } from '../../../collection-manager';
 import { useCompile, useGetFilterOptions } from '../../../schema-component';
 import { FieldOption, Option } from '../type';
+
+export interface IsDisabledParams {
+  option: FieldOption;
+  collectionField: CollectionFieldOptions;
+  uiSchema: ISchema;
+}
 
 interface GetOptionsParams {
   collectionField: CollectionFieldOptions;
@@ -14,6 +21,7 @@ interface GetOptionsParams {
   noDisabled?: boolean;
   loadChildren?: (option: Option) => Promise<void>;
   compile: (value: string) => any;
+  isDisabled?: (params: IsDisabledParams) => boolean;
 }
 
 interface BaseProps {
@@ -40,9 +48,23 @@ interface BaseProps {
   returnFields?(fields: FieldOption[], option: Option): FieldOption[];
 }
 
+interface BaseVariableProviderProps {
+  /**
+   * 每一个选项都会调用该方法，返回 true 表示禁用该选项，当 `noDisabled` 为 true 时，该方法不会被调用
+   */
+  isDisabled?: (params: IsDisabledParams) => boolean;
+  children?: React.ReactNode;
+}
+
+const BaseVariableContext = React.createContext<Omit<BaseVariableProviderProps, 'children'>>(null);
+
+export const BaseVariableProvider = (props: BaseVariableProviderProps) => {
+  return <BaseVariableContext.Provider value={props}>{props.children}</BaseVariableContext.Provider>;
+};
+
 const getChildren = (
   options: FieldOption[],
-  { collectionField, uiSchema, depth, maxDepth, noDisabled, loadChildren, compile }: GetOptionsParams,
+  { collectionField, uiSchema, depth, maxDepth, noDisabled, loadChildren, compile, isDisabled }: GetOptionsParams,
 ): Option[] => {
   const result = options
     .map((option): Option => {
@@ -51,7 +73,7 @@ const getChildren = (
           key: option.name,
           value: option.name,
           label: compile(option.title),
-          disabled: noDisabled ? false : isDisabled(option, { collectionField, uiSchema }),
+          disabled: noDisabled ? false : isDisabled({ option, collectionField, uiSchema }),
           isLeaf: true,
           depth,
         };
@@ -68,7 +90,7 @@ const getChildren = (
         isLeaf: false,
         field: option,
         depth,
-        disabled: noDisabled ? false : isDisabled(option, { collectionField, uiSchema }),
+        disabled: noDisabled ? false : isDisabled({ option, collectionField, uiSchema }),
         loadChildren,
       };
     })
@@ -89,12 +111,11 @@ export const useBaseVariable = ({
 }: BaseProps) => {
   const compile = useCompile();
   const getFilterOptions = useGetFilterOptions();
+  const { isDisabled } = useContext(BaseVariableContext) || {};
 
   const loadChildren = (option: Option): Promise<void> => {
     if (!option.field?.target) {
-      return new Promise((resolve) => {
-        resolve(void 0);
-      });
+      return Promise.resolve(void 0);
     }
 
     const target = option.field.target;
@@ -109,6 +130,7 @@ export const useBaseVariable = ({
             noDisabled,
             loadChildren,
             compile,
+            isDisabled: isDisabled || isDisabledDefault,
           }) || [];
 
         if (children.length === 0) {
@@ -142,14 +164,13 @@ export const useBaseVariable = ({
   return result;
 };
 
-function isDisabled(
-  option: FieldOption,
-  deps: {
-    collectionField: CollectionFieldOptions;
-    uiSchema: any;
-  },
-) {
-  const { collectionField, uiSchema } = deps;
+/**
+ * 默认的禁用选项方法，可以通过 `BaseVariableProvider` 覆盖
+ * @param params
+ * @returns
+ */
+function isDisabledDefault(params: IsDisabledParams) {
+  const { option, collectionField, uiSchema } = params;
 
   if (!uiSchema) {
     return false;

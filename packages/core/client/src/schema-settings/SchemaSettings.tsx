@@ -85,6 +85,7 @@ import { ChildDynamicComponent } from './EnableChildCollections/DynamicComponent
 import { FormLinkageRules } from './LinkageRules';
 import { useLinkageCollectionFieldOptions } from './LinkageRules/action-hooks';
 import { VariableInput, getShouldChange } from './VariableInput/VariableInput';
+import { BaseVariableProvider, IsDisabledParams } from './VariableInput/hooks/useBaseVariable';
 import { Option } from './VariableInput/type';
 import { formatVariableScop } from './VariableInput/utils/formatVariableScop';
 import { DataScopeProps } from './types';
@@ -1797,6 +1798,10 @@ SchemaSettings.DataScope = function DataScopeConfigure(props: DataScopeProps) {
           properties: {
             filter: {
               enum: props.collectionFilterOption || options,
+              'x-decorator': BaseVariableProvider,
+              'x-decorator-props': {
+                isDisabled,
+              },
               'x-component': 'Filter',
               'x-component-props': {
                 collectionName: props.collectionName,
@@ -1843,4 +1848,33 @@ export const isPatternDisabled = (fieldSchema: Schema) => {
 function getFieldDefaultValue(fieldSchema: ISchema, collectionField: CollectionFieldOptions) {
   const result = fieldSchema?.default ?? collectionField?.defaultValue;
   return result;
+}
+
+function isDisabled(params: IsDisabledParams) {
+  const { option, collectionField, uiSchema } = params;
+
+  if (!uiSchema) {
+    return false;
+  }
+
+  // json 类型的字段，允许设置任意类型的值
+  if (collectionField.interface === 'json') {
+    return false;
+  }
+
+  // 数据范围支持选择 `对多` 、`对一` 的关系字段
+  if (option.target) {
+    return false;
+  }
+
+  // 数字可以赋值给字符串
+  if (uiSchema.type === 'string' && option.schema?.type === 'number') {
+    return false;
+  }
+
+  if (uiSchema?.['x-component'] !== option.schema?.['x-component']) {
+    return true;
+  }
+
+  return false;
 }
