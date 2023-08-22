@@ -825,6 +825,6 @@ export default {
   'Select all': '全选',
   'Determine whether a record exists by the following fields': '通过以下字段判断记录是否存在',
   'Sync from database': '从数据库同步',
-  'Please use a valid select query': '请使用正确的SELECT SQL语句',
+  'Please use a valid SELECT or WITH AS query': '请使用正确的SELECT或WITH AS SQL语句',
   'Select field source': '选择字段来源',
 };

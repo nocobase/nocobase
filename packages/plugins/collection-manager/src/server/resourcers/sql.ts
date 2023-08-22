@@ -2,7 +2,7 @@ import { Context, Next } from '@nocobase/actions';
 import { SQLModel, SqlCollection } from '@nocobase/database';
 
 export default {
-  name: 'sql',
+  name: 'sql-collection',
   actions: {
     execute: async (ctx: Context, next: Next) => {
       let {
@@ -19,10 +19,68 @@ export default {
       const model = tmpCollection.model as typeof SQLModel;
       // The result is for preview only, add limit clause to avoid too many results
       const data = await model.findAll({ attributes: ['*'], limit: 5, raw: true });
-      const fields = model.inferFields();
+      let fields: {
+        [field: string]: {
+          type: string;
+          source: string;
+          collection: string;
+          interface: string;
+        };
+      } = {};
+      try {
+        fields = model.inferFields();
+      } catch (err) {
+        fields = {};
+      }
       const sources = Array.from(new Set(Object.values(fields).map((field) => field.collection)));
       ctx.body = { data, fields, sources };
       await next();
     },
+    setFields: async (ctx: Context, next: Next) => {
+      const { filterByTk, values } = ctx.action.params;
+      const transaction = await ctx.app.db.sequelize.transaction();
+      try {
+        const fields = values.fields?.map((f: any) => {
+          delete f.key;
+          return f;
+        });
+        const repo = ctx.db.getRepository('collections');
+        const collection = await repo.findOne({
+          filter: {
+            name: filterByTk,
+          },
+          transaction,
+        });
+
+        await repo.update({
+          filterByTk,
+          values: {
+            fields,
+            sources: values.sources,
+          },
+          transaction,
+        });
+
+        await collection.loadFields({
+          transaction,
+        });
+
+        await transaction.commit();
+      } catch (e) {
+        await transaction.rollback();
+        throw e;
+      }
+
+      await next();
+    },
+  },
+  update: async (ctx: Context, next: Next) => {
+    const { filterByTk, values } = ctx.action.params;
+    ctx.body = await ctx.db.getRepository('collections').update({
+      filterByTk,
+      values,
+      updateAssociationValues: ['fields'],
+    });
+    await next();
   },
 };

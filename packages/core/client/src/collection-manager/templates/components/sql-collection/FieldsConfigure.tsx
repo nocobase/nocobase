@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { useAsyncData } from '../../../../async-data-provider';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Cascader, Input, Select, Spin, Table, Tag } from 'antd';
 import { observer, useField, useForm } from '@formily/react';
 import { ArrayField } from '@formily/core';
@@ -9,6 +9,9 @@ import { useCompile } from '../../../../schema-component';
 import { useCollectionManager } from '../../../hooks';
 import dayjs from 'dayjs';
 import { FieldOptions } from '@nocobase/database';
+import { ResourceActionContext, useResourceContext } from '../../../ResourceActionProvider';
+import { useRecord } from '../../../../record-provider';
+import { last } from 'lodash';
 
 const inferInterface = (field: string, value: any) => {
   if (field.toLowerCase().includes('id')) {
@@ -75,8 +78,9 @@ export const FieldsConfigure = observer(() => {
   const { data: res, error, loading } = useAsyncData();
   const { data, fields: sourceFields } = res || {};
   const field: ArrayField = useField();
+  const { data: curFields } = useContext(ResourceActionContext);
   const compile = useCompile();
-  const { getInterface } = useCollectionManager();
+  const { getInterface, getCollectionField } = useCollectionManager();
   const interfaceOptions = useMemo(
     () =>
       getOptions()
@@ -115,6 +119,7 @@ export const FieldsConfigure = observer(() => {
         });
       });
     }
+
     if (field.value?.length) {
       field.value.forEach((item) => {
         if (fieldsMp.has(item.name)) {
@@ -122,19 +127,28 @@ export const FieldsConfigure = observer(() => {
         }
       });
     }
+
+    // if (curFields?.data.length) {
+    //   curFields.data.forEach((field: any) => {
+    //     if (fieldsMp.has(field.name)) {
+    //       fieldsMp.set(field.name, field);
+    //     }
+    //   });
+    // }
+
     const fields = Array.from(fieldsMp.values());
     if (!fields.length) {
       return;
     }
     setDataSource(fields);
     field.setValue(fields);
-  }, [loading, data, field, sourceFields]);
+  }, [loading, data, field, sourceFields, curFields]);
 
   if (loading) {
     return <Spin />;
   }
   if (!data && !error) {
-    return <Alert showIcon message={t('Please use a valid select query')} />;
+    return <Alert showIcon message={t('Please use a valid SELECT or WITH AS query')} />;
   }
   const err = error as any;
   if (err) {
@@ -147,7 +161,12 @@ export const FieldsConfigure = observer(() => {
     const fields = [...dataSource];
     fields.splice(index, 1, record);
     setDataSource(fields);
-    field.setValue(fields);
+    field.setValue(
+      fields.map((f) => ({
+        ...f,
+        source: typeof f.source === 'string' ? f.source : f.source?.filter?.(Boolean)?.join('.'),
+      })),
+    );
   };
 
   const columns = [
@@ -171,7 +190,10 @@ export const FieldsConfigure = observer(() => {
             options={compile(sourceFieldsOptions)}
             placeholder={t('Select field source')}
             onChange={(value: string[]) => {
-              const sourceField = sourceFields[value?.[1]];
+              let sourceField = sourceFields[value?.[1]];
+              if (!sourceField) {
+                sourceField = getCollectionField(value?.join('.') || '');
+              }
               handleFieldChange(
                 {
                   ...field,
@@ -209,7 +231,7 @@ export const FieldsConfigure = observer(() => {
                   interface: value,
                   uiSchema: {
                     ...interfaceConfig?.default?.uiSchema,
-                    title: field.uiSchema?.title || interfaceConfig?.default?.uiSchema?.title,
+                    title: interfaceConfig?.default?.uiSchema?.title || field.uiSchema?.title,
                   },
                   type: interfaceConfig?.default?.type,
                 },

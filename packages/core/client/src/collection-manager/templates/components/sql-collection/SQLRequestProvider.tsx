@@ -16,7 +16,7 @@ export const SQLRequestProvider: React.FC<{
   const result = useRequest(
     (sql: string) =>
       api
-        .resource('sql')
+        .resource('sql-collection')
         .execute({
           values: {
             sql,
@@ -27,7 +27,8 @@ export const SQLRequestProvider: React.FC<{
       manual: true,
       onSuccess: (data) => {
         const { sources } = data;
-        form.setValuesIn('sources', sources);
+        const formSources = form.values.sources || [];
+        form.setValuesIn('sources', Array.from(new Set([...formSources, ...sources])));
       },
     },
   );

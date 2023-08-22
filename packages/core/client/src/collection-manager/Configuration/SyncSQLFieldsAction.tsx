@@ -87,7 +87,7 @@ const schema = {
   },
 };
 
-const useSyncFromDB = () => {
+const useSyncFromDB = (refreshCMList?: any) => {
   const form = useForm();
   const ctx = useActionContext();
   const { refreshCM } = useCollectionManager();
@@ -102,10 +102,11 @@ const useSyncFromDB = () => {
       field.data = field.data || {};
       field.data.loading = true;
       try {
-        await api.resource('collections').setFields({
+        await api.resource('sql-collection').setFields({
           filterByTk,
           values: {
             fields: form.values.fields,
+            sources: form.values.sources,
           },
         });
         ctx.setVisible(false);
@@ -113,6 +114,7 @@ const useSyncFromDB = () => {
         field.data.loading = false;
         refresh();
         await refreshCM();
+        await refreshCMList?.();
       } catch (err) {
         field.data.loading = false;
       }
@@ -120,7 +122,9 @@ const useSyncFromDB = () => {
   };
 };
 
-export const SyncSQLFieldsAction: React.FC<{}> = (props) => {
+export const SyncSQLFieldsAction: React.FC<{
+  refreshCMList: any;
+}> = ({ refreshCMList }) => {
   const record = useRecord();
   const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
@@ -145,7 +149,7 @@ export const SyncSQLFieldsAction: React.FC<{}> = (props) => {
               components={{ FormLayout }}
               scope={{
                 useCancelAction,
-                useSyncFromDB,
+                useSyncFromDB: () => useSyncFromDB(refreshCMList),
               }}
             />
           </ActionContextProvider>

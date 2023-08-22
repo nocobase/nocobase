@@ -741,6 +741,6 @@ export default {
   'Select all': 'Select all',
   'Sync from database': 'Sync from database',
   'SQL collection': 'SQL collection',
-  'Please use a valid select query': 'Please use a valid select query',
+  'Please use a valid SELECT or WITH AS query': 'Please use a valid SELECT or WITH AS query',
   'Select field source': 'Select field source',
 };

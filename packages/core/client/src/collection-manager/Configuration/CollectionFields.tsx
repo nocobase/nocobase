@@ -410,7 +410,7 @@ export const CollectionFields = () => {
           >
             <Action {...deleteProps} />
             <SyncFieldsAction {...syncProps} />
-            <SyncSQLFieldsAction />
+            <SyncSQLFieldsAction refreshCMList={refreshAsync} />
             <AddCollectionField {...addProps} />
           </Space>
           <Table
