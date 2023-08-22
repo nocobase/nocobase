@@ -26,6 +26,21 @@ export function ListActionTemplate(options: any) {
             type: 'integer',
           },
         },
+        {
+          $ref: '#/components/parameters/filter',
+        },
+        {
+          $ref: '#/components/parameters/sort',
+        },
+        {
+          $ref: '#/components/parameters/fields',
+        },
+        {
+          $ref: '#/components/parameters/appends',
+        },
+        {
+          $ref: '#/components/parameters/except',
+        },
       ],
       responses: {
         '200': {
@@ -83,6 +98,21 @@ export function GetActionTemplate(options: any) {
         {
           $ref: '#/components/parameters/filterByTk',
         },
+        {
+          $ref: '#/components/parameters/filter',
+        },
+        {
+          $ref: '#/components/parameters/sort',
+        },
+        {
+          $ref: '#/components/parameters/fields',
+        },
+        {
+          $ref: '#/components/parameters/appends',
+        },
+        {
+          $ref: '#/components/parameters/except',
+        },
       ],
       responses: {
         '200': {
@@ -107,6 +137,14 @@ export function CreateActionTemplate(options: any) {
     post: {
       tags: ['{{target}}'],
       description: `create {{target}}`,
+      parameters: [
+        {
+          $ref: '#/components/parameters/whitelist',
+        },
+        {
+          $ref: '#/components/parameters/blacklist',
+        },
+      ],
       requestBody: {
         content: {
           'application/json': {
@@ -142,6 +180,15 @@ export function UpdateActionTemplate(options: any) {
       parameters: [
         {
           $ref: '#/components/parameters/filterByTk',
+        },
+        {
+          $ref: '#/components/parameters/filter',
+        },
+        {
+          $ref: '#/components/parameters/whitelist',
+        },
+        {
+          $ref: '#/components/parameters/blacklist',
         },
       ],
       requestBody: {
@@ -179,6 +226,9 @@ export function DestroyActionTemplate(options: any) {
       parameters: [
         {
           $ref: '#/components/parameters/filterByTk',
+        },
+        {
+          $ref: '#/components/parameters/filter',
         },
       ],
       responses: {

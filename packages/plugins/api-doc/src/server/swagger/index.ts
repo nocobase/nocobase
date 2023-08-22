@@ -45,10 +45,6 @@ export class SwaggerManager {
     let others = {};
     if (name) {
       const collectionSwagger = this.collection2Swagger(name);
-      console.log({
-        others,
-        collectionSwagger,
-      });
       others = merge(others, collectionSwagger);
     } else {
       const collections = await this.db.getRepository('collections').find({
