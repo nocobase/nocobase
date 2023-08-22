@@ -10,11 +10,13 @@ import { useBaseVariable } from './useBaseVariable';
 export const useUserVariable = ({
   collectionField,
   uiSchema,
+  noDisabled,
   maxDepth = 3,
 }: {
   collectionField: CollectionFieldOptions;
   uiSchema: any;
   maxDepth?: number;
+  noDisabled?: boolean;
 }) => {
   const { t } = useTranslation();
   const result = useBaseVariable({
@@ -24,6 +26,7 @@ export const useUserVariable = ({
     name: '$user',
     title: t('Current user'),
     collectionName: 'users',
+    noDisabled,
   });
 
   return result;

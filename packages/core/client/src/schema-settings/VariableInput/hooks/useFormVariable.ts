@@ -13,10 +13,12 @@ export const useFormVariable = ({
   collectionName,
   collectionField,
   schema,
+  noDisabled,
 }: {
   collectionName: string;
   collectionField: CollectionFieldOptions;
   schema?: any;
+  noDisabled?: boolean;
 }) => {
   const ctx = useContext(BlockRequestContext);
   const { t } = useTranslation();
@@ -27,6 +29,7 @@ export const useFormVariable = ({
     name: '$nForm',
     title: t('Current form'),
     collectionName: collectionName,
+    noDisabled,
     returnFields: (fields, option) => {
       return option.depth === 0
         ? fields.filter((field) => {

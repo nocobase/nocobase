@@ -30,6 +30,10 @@ interface Props {
    * `Filter` 组件中的操作符，比如设置 `数据范围` 的时候在中间选择的操作符
    */
   operator?: { value: string };
+  /**
+   * 不需要禁用选项，一般会在表达式中使用
+   */
+  noDisabled?: boolean;
 }
 
 export const useVariableOptions = ({
@@ -39,20 +43,28 @@ export const useVariableOptions = ({
   record,
   uiSchema,
   operator,
+  noDisabled,
 }: Props) => {
   const fieldCollectionName = collectionField?.collectionName;
-  const userVariable = useUserVariable({ maxDepth: 3, uiSchema: uiSchema, collectionField });
-  const dateVariable = useDateVariable({ operator, schema: uiSchema });
-  const formVariable = useFormVariable({ schema: uiSchema, collectionName: rootCollection, collectionField });
+  const userVariable = useUserVariable({ maxDepth: 3, uiSchema: uiSchema, collectionField, noDisabled });
+  const dateVariable = useDateVariable({ operator, schema: uiSchema, noDisabled });
+  const formVariable = useFormVariable({
+    schema: uiSchema,
+    collectionName: rootCollection,
+    collectionField,
+    noDisabled,
+  });
   const iterationVariable = useIterationVariable({
     currentCollection: fieldCollectionName,
     collectionField,
     schema: uiSchema,
+    noDisabled,
   });
   const currentRecordVariable = useRecordVariable({
     schema: uiSchema,
     collectionName: rootCollection,
     collectionField,
+    noDisabled,
   });
 
   // 保证下面的 `_.isEmpty(record)` 结果符合预期，如果存在 `__parent` 字段，需要删除

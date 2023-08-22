@@ -6,6 +6,10 @@ interface Props {
     value: string;
   };
   schema: any;
+  /**
+   * 不需要禁用选项，一般会在表达式中使用
+   */
+  noDisabled?: boolean;
 }
 
 /**
@@ -13,16 +17,18 @@ interface Props {
  * @param param0
  * @returns
  */
-export const useDateVariable = ({ operator, schema }: Props) => {
+export const useDateVariable = ({ operator, schema, noDisabled }: Props) => {
   const { t } = useTranslation();
   const operatorValue = operator?.value || '';
-  const disabled = schema?.['x-component'] !== 'DatePicker.RangePicker' && operatorValue !== '$dateBetween';
+  const disabled = noDisabled
+    ? false
+    : schema?.['x-component'] !== 'DatePicker.RangePicker' && operatorValue !== '$dateBetween';
   const dateOptions = [
     {
       key: 'now',
       value: 'now',
       label: t('Current time'),
-      disabled: schema?.['x-component'] !== 'DatePicker' || operatorValue === '$dateBetween',
+      disabled: noDisabled ? false : schema?.['x-component'] !== 'DatePicker' || operatorValue === '$dateBetween',
     },
     {
       key: 'yesterday',

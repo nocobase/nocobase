@@ -6,6 +6,7 @@ interface Props {
   collectionField: CollectionFieldOptions;
   schema: any;
   collectionName: string;
+  noDisabled?: boolean;
 }
 
 export const useRecordVariable = (props: Props) => {
@@ -17,6 +18,7 @@ export const useRecordVariable = (props: Props) => {
     name: '$nRecord',
     title: t('Current record'),
     collectionName: props.collectionName,
+    noDisabled: props.noDisabled,
   });
 
   return currentRecordVariable;

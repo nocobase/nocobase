@@ -13,10 +13,12 @@ export const useIterationVariable = ({
   currentCollection,
   collectionField,
   schema,
+  noDisabled,
 }: {
   currentCollection: string;
   collectionField: CollectionFieldOptions;
   schema?: any;
+  noDisabled?: boolean;
 }) => {
   const ctx = useContext(BlockRequestContext);
   const { t } = useTranslation();
@@ -27,6 +29,7 @@ export const useIterationVariable = ({
     name: '$iteration',
     title: t('Current object'),
     collectionName: currentCollection,
+    noDisabled,
     returnFields: (fields, option) => {
       return option.depth === 0
         ? fields.filter((field) => {

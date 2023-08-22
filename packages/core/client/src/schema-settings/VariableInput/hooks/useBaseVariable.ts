@@ -8,6 +8,10 @@ interface GetOptionsParams {
   uiSchema: any;
   depth: number;
   maxDepth?: number;
+  /**
+   * 不需要禁用选项，一般会在表达式中使用
+   */
+  noDisabled?: boolean;
   loadChildren?: (option: Option) => Promise<void>;
   compile: (value: string) => any;
 }
@@ -25,6 +29,10 @@ interface BaseProps {
    */
   collectionName: string;
   /**
+   * 不需要禁用选项，一般会在表达式中使用
+   */
+  noDisabled?: boolean;
+  /**
    * 对每一个关系字段的 fields 进行过滤
    * @param fields
    * @param option
@@ -34,7 +42,7 @@ interface BaseProps {
 
 const getChildren = (
   options: FieldOption[],
-  { collectionField, uiSchema, depth, maxDepth, loadChildren, compile }: GetOptionsParams,
+  { collectionField, uiSchema, depth, maxDepth, noDisabled, loadChildren, compile }: GetOptionsParams,
 ): Option[] => {
   const result = options
     .map((option): Option => {
@@ -43,7 +51,7 @@ const getChildren = (
           key: option.name,
           value: option.name,
           label: compile(option.title),
-          disabled: isDisabled(option, { collectionField, uiSchema }),
+          disabled: noDisabled ? false : isDisabled(option, { collectionField, uiSchema }),
           isLeaf: true,
           depth,
         };
@@ -60,7 +68,7 @@ const getChildren = (
         isLeaf: false,
         field: option,
         depth,
-        disabled: isDisabled(option, { collectionField, uiSchema }),
+        disabled: noDisabled ? false : isDisabled(option, { collectionField, uiSchema }),
         loadChildren,
       };
     })
@@ -76,6 +84,7 @@ export const useBaseVariable = ({
   name,
   title,
   collectionName,
+  noDisabled,
   returnFields = (fields) => fields,
 }: BaseProps) => {
   const compile = useCompile();
@@ -97,6 +106,7 @@ export const useBaseVariable = ({
             uiSchema,
             depth: option.depth + 1,
             maxDepth,
+            noDisabled,
             loadChildren,
             compile,
           }) || [];
