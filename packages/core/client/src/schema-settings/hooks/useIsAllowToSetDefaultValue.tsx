@@ -1,8 +1,14 @@
 import { Form } from '@formily/core';
 import { Schema, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
+import React, { useContext, useMemo } from 'react';
 import { CollectionFieldOptions, useCollection, useCollectionManager, useFormBlockContext, useRecord } from '../..';
 import { isPatternDisabled, isSystemField } from '../SchemaSettings';
+
+interface DefaultValueProviderProps {
+  isAllowToSetDefaultValue: (params: IsAllowToSetDefaultValueParams) => boolean;
+  children: React.ReactNode;
+}
 
 interface IsAllowToSetDefaultValueParams {
   collectionField: CollectionFieldOptions;
@@ -23,12 +29,25 @@ interface Props {
   record?: Record<string, any>;
 }
 
+const DefaultValueContext = React.createContext<Omit<DefaultValueProviderProps, 'children'>>(null);
+
+export const DefaultValueProvider = (props: DefaultValueProviderProps) => {
+  const value = useMemo(() => {
+    return {
+      isAllowToSetDefaultValue: props.isAllowToSetDefaultValue,
+    };
+  }, [props.isAllowToSetDefaultValue]);
+
+  return <DefaultValueContext.Provider value={value}>{props.children}</DefaultValueContext.Provider>;
+};
+
 const useIsAllowToSetDefaultValue = ({ form, fieldSchema, collectionField, record }: Props = {}) => {
   const { getInterface, getCollectionJoinField } = useCollectionManager();
   const { getField } = useCollection();
   const { form: innerForm } = useFormBlockContext();
   const innerFieldSchema = useFieldSchema();
   const innerRecord = useRecord();
+  const { isAllowToSetDefaultValue = _isAllowToSetDefaultValue } = useContext(DefaultValueContext) || {};
 
   const innerCollectionField =
     getField(innerFieldSchema['name']) || getCollectionJoinField(innerFieldSchema['x-collection-field']);
@@ -49,7 +68,21 @@ const useIsAllowToSetDefaultValue = ({ form, fieldSchema, collectionField, recor
 
 export default useIsAllowToSetDefaultValue;
 
-function isAllowToSetDefaultValue({
+export const interfacesOfUnsupportedDefaultValue = [
+  'o2o',
+  'oho',
+  'obo',
+  'o2m',
+  'attachment',
+  'expression',
+  'point',
+  'lineString',
+  'circle',
+  'polygon',
+  'sequence',
+];
+
+function _isAllowToSetDefaultValue({
   collectionField,
   getInterface,
   form,
@@ -59,19 +92,8 @@ function isAllowToSetDefaultValue({
 }: IsAllowToSetDefaultValueParams) {
   if (isSubTableColumn) {
     return (
-      ![
-        'o2o',
-        'oho',
-        'obo',
-        'o2m',
-        'attachment',
-        'expression',
-        'point',
-        'lineString',
-        'circle',
-        'polygon',
-        'sequence',
-      ].includes(collectionField?.interface) && !isSystemField(collectionField, getInterface)
+      !interfacesOfUnsupportedDefaultValue.includes(collectionField?.interface) &&
+      !isSystemField(collectionField, getInterface)
     );
   }
 
@@ -85,19 +107,7 @@ function isAllowToSetDefaultValue({
   return (
     !form?.readPretty &&
     !isPatternDisabled(fieldSchema) &&
-    ![
-      'o2o',
-      'oho',
-      'obo',
-      'o2m',
-      'attachment',
-      'expression',
-      'point',
-      'lineString',
-      'circle',
-      'polygon',
-      'sequence',
-    ].includes(collectionField?.interface) &&
+    !interfacesOfUnsupportedDefaultValue.includes(collectionField?.interface) &&
     !isSystemField(collectionField, getInterface)
   );
 }

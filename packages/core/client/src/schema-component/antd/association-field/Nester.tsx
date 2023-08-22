@@ -6,9 +6,14 @@ import { RecursionField, observer, useFieldSchema } from '@formily/react';
 import { action } from '@formily/reactive';
 import { each } from '@formily/shared';
 import { Button, Card, Divider, Tooltip } from 'antd';
-import React, { useContext } from 'react';
+import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RecordProvider } from '../../../record-provider';
+import { isPatternDisabled, isSystemField } from '../../../schema-settings';
+import {
+  DefaultValueProvider,
+  interfacesOfUnsupportedDefaultValue,
+} from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { AssociationFieldContext } from './context';
 import { useAssociationFieldContext } from './hooks';
 
@@ -25,9 +30,21 @@ export const Nester = (props) => {
 
 const ToOneNester = (props) => {
   const { field } = useAssociationFieldContext<ArrayField>();
+
+  const isAllowToSetDefaultValue = useCallback(({ form, fieldSchema, collectionField, getInterface }) => {
+    return (
+      !form?.readPretty &&
+      !isPatternDisabled(fieldSchema) &&
+      !interfacesOfUnsupportedDefaultValue.includes(collectionField?.interface) &&
+      !isSystemField(collectionField, getInterface)
+    );
+  }, []);
+
   return (
     <RecordProvider record={field.value}>
-      <Card bordered={true}>{props.children}</Card>
+      <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
+        <Card bordered={true}>{props.children}</Card>
+      </DefaultValueProvider>
     </RecordProvider>
   );
 };
@@ -37,6 +54,16 @@ const ToManyNester = observer(
     const fieldSchema = useFieldSchema();
     const { options, field, allowMultiple, allowDissociate } = useAssociationFieldContext<ArrayField>();
     const { t } = useTranslation();
+
+    const isAllowToSetDefaultValue = useCallback(({ form, fieldSchema, collectionField, getInterface }) => {
+      return (
+        !form?.readPretty &&
+        !isPatternDisabled(fieldSchema) &&
+        !interfacesOfUnsupportedDefaultValue.includes(collectionField?.interface) &&
+        !isSystemField(collectionField, getInterface)
+      );
+    }, []);
+
     return (field.value || []).length > 0 ? (
       <Card
         bordered={true}
@@ -99,7 +126,9 @@ const ToManyNester = observer(
                 )}
               </div>
               <RecordProvider record={value}>
-                <RecursionField onlyRenderProperties basePath={field.address.concat(index)} schema={fieldSchema} />
+                <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
+                  <RecursionField onlyRenderProperties basePath={field.address.concat(index)} schema={fieldSchema} />
+                </DefaultValueProvider>
               </RecordProvider>
               <Divider />
             </React.Fragment>
