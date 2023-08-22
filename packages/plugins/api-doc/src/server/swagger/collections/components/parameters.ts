@@ -12,6 +12,13 @@ export default (collection: Collection) => {
         description: 'filter by tk',
         schema: getTypeByField(collection.fields.get(primaryKey)),
       },
+      collectionIndex: {
+        required: true,
+        name: 'collectionIndex',
+        in: 'path',
+        description: 'collection index',
+        schema: getTypeByField(collection.fields.get(primaryKey)),
+      },
     },
   };
 };

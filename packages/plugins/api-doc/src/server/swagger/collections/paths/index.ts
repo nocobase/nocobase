@@ -1,12 +1,10 @@
 import { Collection } from '@nocobase/database';
 import list from './list';
-import create from './create';
-import update from './update';
+import associations from './associations';
 
 export default (collection: Collection) => {
   return {
     ...list(collection),
-    ...create(collection),
-    ...update(collection),
+    ...associations(collection),
   };
 };

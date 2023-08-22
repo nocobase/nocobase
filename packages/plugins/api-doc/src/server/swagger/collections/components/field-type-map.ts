@@ -12,6 +12,13 @@ const fieldTypeMap = {
   string: {
     type: 'string',
   },
+  text: {
+    type: 'string',
+  },
+
+  jsontype: {
+    type: 'string',
+  },
 };
 
 function getTypeByField(field: Field) {
@@ -19,8 +26,11 @@ function getTypeByField(field: Field) {
   const fieldAttributes = fieldTypeMap[fieldType];
 
   if (!fieldAttributes) {
-    throw new Error(`Unknown field type: ${fieldType}`);
+    return {
+      type: 'string',
+    };
   }
+
   return fieldAttributes;
 }
 
