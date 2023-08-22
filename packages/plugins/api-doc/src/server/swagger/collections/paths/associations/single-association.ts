@@ -1,6 +1,6 @@
 import { BelongsToField, Collection, HasOneField } from '@nocobase/database';
 import { appendCollectionIndexParams } from './multiple-association';
-import { DestroyActionTemplate, GetActionTemplate, UpdateActionTemplate } from '../list';
+import { DestroyActionTemplate, GetActionTemplate, UpdateActionTemplate } from '../collection';
 
 function removeFilterByTkParams(apiDoc: object) {
   for (const action of Object.values(apiDoc)) {

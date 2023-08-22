@@ -1,5 +1,6 @@
 import { Collection } from '@nocobase/database';
 import { parse } from '@nocobase/utils';
+import { hasSortField } from './index';
 
 export function ListActionTemplate(options: any) {
   const template = parse({
@@ -191,8 +192,62 @@ export function DestroyActionTemplate(options: any) {
   return template(options);
 }
 
+export function MoveActionTemplate(options: any) {
+  const template = parse({
+    post: {
+      tags: ['{{target}}'],
+      description: `move {{target}}`,
+      parameters: [
+        {
+          name: 'sourceId',
+          in: 'query',
+          description: 'source id',
+          schema: { type: 'string' },
+        },
+        {
+          name: 'targetId',
+          in: 'query',
+          description: 'move target id',
+          schema: { type: 'string' },
+        },
+
+        {
+          name: 'method',
+          in: 'query',
+          description: 'move method, insertAfter or insertBefore',
+          schema: { type: 'string' },
+        },
+        {
+          name: 'sortField',
+          in: 'query',
+          description: 'sort field name, default is sort',
+          schema: { type: 'string' },
+        },
+        {
+          name: 'targetScope',
+          in: 'query',
+          description: 'move target scope',
+          schema: { type: 'string' },
+        },
+        {
+          name: 'sticky',
+          in: 'query',
+          description: 'sticky to top',
+          schema: { type: 'boolean' },
+        },
+      ],
+      responses: {
+        '200': {
+          description: 'OK',
+        },
+      },
+    },
+  });
+  return template(options);
+}
+
 export default (collection: Collection) => {
-  return {
+  const apiDoc = {
     [`/${collection.name}:list`]: ListActionTemplate({
       collectionName: collection.name,
       target: collection.name,
@@ -214,4 +269,12 @@ export default (collection: Collection) => {
       target: collection.name,
     }),
   };
+
+  if (hasSortField(collection)) {
+    apiDoc[`/${collection.name}:move`] = MoveActionTemplate({
+      collectionName: collection.name,
+      target: collection.name,
+    });
+  }
+  return apiDoc;
 };

@@ -5,7 +5,7 @@ import {
   GetActionTemplate,
   ListActionTemplate,
   UpdateActionTemplate,
-} from '../list';
+} from '../collection';
 
 export function appendCollectionIndexParams(apiDef: object) {
   for (const action of Object.keys(apiDef)) {
