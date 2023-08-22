@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { CollectionFieldOptions } from '../../../collection-manager';
 import { useBaseVariable } from './useBaseVariable';
 
 /**
@@ -6,9 +7,18 @@ import { useBaseVariable } from './useBaseVariable';
  * @param param0
  * @returns
  */
-export const useUserVariable = ({ uiSchema, maxDepth = 3 }: { uiSchema: any; maxDepth?: number }) => {
+export const useUserVariable = ({
+  collectionField,
+  uiSchema,
+  maxDepth = 3,
+}: {
+  collectionField: CollectionFieldOptions;
+  uiSchema: any;
+  maxDepth?: number;
+}) => {
   const { t } = useTranslation();
   const result = useBaseVariable({
+    collectionField,
     uiSchema,
     maxDepth,
     name: '$user',

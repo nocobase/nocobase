@@ -456,19 +456,61 @@
     csstype "^3.0.8"
     tslib "^2.0.3"
 
-"@antv/x6-react-shape@^1.6.2":
-  version "1.6.4"
-  resolved "https://registry.npmmirror.com/@antv/x6-react-shape/-/x6-react-shape-1.6.4.tgz#e7e9368ce6e0b896cc9882cb08f516406a955fb6"
-
-"@antv/x6@^1.9.0":
-  version "1.34.13"
-  resolved "https://registry.npmmirror.com/@antv/x6/-/x6-1.34.13.tgz#d87df19b24d2005433b8c18289f8556f256a5530"
+"@antv/x6-common@^2.0.13":
+  version "2.0.14"
+  resolved "https://registry.npmmirror.com/@antv/x6-common/-/x6-common-2.0.14.tgz#ab89959df2f4bfb7626615ab60fc7203d339359a"
+  integrity sha512-/8OmYV2hxUIwNKt/YurWhGmhbTBu95mZRcF5cwUVp0oR0SmOGNFqMT710w1uvLAfWmfdoq/oEcCuScW/L8mOLw==
   dependencies:
-    csstype "^3.0.3"
-    jquery "^3.5.1"
-    jquery-mousewheel "^3.1.13"
     lodash-es "^4.17.15"
-    mousetrap "^1.6.5"
+    utility-types "^3.10.0"
+
+"@antv/x6-geometry@^2.0.5":
+  version "2.0.5"
+  resolved "https://registry.npmmirror.com/@antv/x6-geometry/-/x6-geometry-2.0.5.tgz#c158317d74135bedd78c2fdeb76f9c7cfa0ef0aa"
+  integrity sha512-MId6riEQkxphBpVeTcL4ZNXL4lScyvDEPLyIafvWMcWNTGK0jgkK7N20XSzqt8ltJb0mGUso5s56mrk8ysHu2A==
+
+"@antv/x6-plugin-dnd@^2.0.0":
+  version "2.0.6"
+  resolved "https://registry.npmmirror.com/@antv/x6-plugin-dnd/-/x6-plugin-dnd-2.0.6.tgz#403b8f45dc18f0622512298f556a531ed10a158b"
+  integrity sha512-HD0PgL27ZV+X1Q0gwQ0ltm67J5okvAdGndFv5p8Pp9bV5PKe8B2BzLF1CZwhBroz58xkXJVcGH0TT4NmrHjbRw==
+
+"@antv/x6-plugin-export@^2.0.0":
+  version "2.1.6"
+  resolved "https://registry.npmmirror.com/@antv/x6-plugin-export/-/x6-plugin-export-2.1.6.tgz#f8cedab3707c43728baaf0f0bfb1e75ec4a61a30"
+  integrity sha512-m0ukMmZhrFE5n7uCR43DVQBdiUfpjGN+vm1mc+6RTZdHK8pa6Mxr0RZztaxPy34YA4tli+bGY3ePslsNPfh6PQ==
+
+"@antv/x6-plugin-minimap@^2.0.0":
+  version "2.0.5"
+  resolved "https://registry.npmmirror.com/@antv/x6-plugin-minimap/-/x6-plugin-minimap-2.0.5.tgz#bd4699408715b4709e77e83edf14ceb0e767b1f6"
+  integrity sha512-6L+W80AvoEZG4cwRxgPxvYLeKhqkBJEt4hTnZ2NWWcvBx02F9RJKRZVEEUemqE12mKUv4HT6WtbQV0QIfkTEMw==
+
+"@antv/x6-plugin-scroller@^2.0.0":
+  version "2.0.10"
+  resolved "https://registry.npmmirror.com/@antv/x6-plugin-scroller/-/x6-plugin-scroller-2.0.10.tgz#bdd39d3530e469bbe72c5feca3b6787512232a3d"
+  integrity sha512-CrC5zCbtPe7LJEKK8ucLcDN+9lMtTJNApFmFObAiR/y2LO1QFCHz8GGLVeNOZaIEmJbR/Z/etpJkvc1LE7WhTg==
+
+"@antv/x6-plugin-selection@^2.0.0":
+  version "2.1.7"
+  resolved "https://registry.npmmirror.com/@antv/x6-plugin-selection/-/x6-plugin-selection-2.1.7.tgz#8964041d595b732bec5883a1f77757bededec594"
+  integrity sha512-ODfYLNwKSaLgIYMYfMW4dYQ9KKFOVBEdH0BzvyG8mfRol+JtZuyrm4BRbAvMryQKHrSxs4JCYXTFd2F7ZTuxLQ==
+
+"@antv/x6-plugin-snapline@^2.0.0":
+  version "2.1.7"
+  resolved "https://registry.npmmirror.com/@antv/x6-plugin-snapline/-/x6-plugin-snapline-2.1.7.tgz#1b4e3be0a281ba324117b7ac7b9b8c39e484cce2"
+  integrity sha512-AsysoCb9vES0U2USNhEpYuO/W8I0aYfkhlbee5Kt4NYiMfQfZKQyqW/YjDVaS2pm38C1NKu1LdPVk/BBr4CasA==
+
+"@antv/x6-react-shape@^2.0.0":
+  version "2.2.2"
+  resolved "https://registry.npmmirror.com/@antv/x6-react-shape/-/x6-react-shape-2.2.2.tgz#b0caf31219fa3219b4e7a4960583e2c3affb870c"
+  integrity sha512-uwehrdNCPkgBpVfsxEQk1M77Q+q9D7+HkqIm4Fm3Oz4kzkKCoc3KoxCIoLimbANAhqAPEJ40sRR0ZY+lzmP7WQ==
+
+"@antv/x6@^2.0.0":
+  version "2.13.1"
+  resolved "https://registry.npmmirror.com/@antv/x6/-/x6-2.13.1.tgz#c344eb797edc0e437ab1bed599099a8bd68a4ada"
+  integrity sha512-aAj3SlOi4KhBhpoiX4WCsJ61glztSmZy6Vb0aWZTFZXErfp1sUjTmrThJeTG6IQZbXW+7GcGjFGI04roOa05Bg==
+  dependencies:
+    "@antv/x6-common" "^2.0.13"
+    "@antv/x6-geometry" "^2.0.5"
     utility-types "^3.10.0"
 
 "@arvinxu/layout-kit@^1":
@@ -9639,7 +9681,7 @@ commander@^10.0.0:
   version "10.0.1"
   resolved "https://registry.npmmirror.com/commander/-/commander-10.0.1.tgz#881ee46b4f77d1c1dccc5823433aa39b022cbe06"
 
-commander@^2.19.0, commander@^2.20.0, commander@^2.20.3, commander@^2.8.1, commander@^2.9.0:
+commander@^2.19.0, commander@^2.20.0, commander@^2.8.1, commander@^2.9.0:
   version "2.20.3"
   resolved "https://registry.npmmirror.com/commander/-/commander-2.20.3.tgz#fd485e84c03eb4881c20722ba48035e8531aeb33"
 
@@ -10351,10 +10393,6 @@ cssesc@^3.0.0:
   version "3.0.0"
   resolved "https://registry.npmmirror.com/cssesc/-/cssesc-3.0.0.tgz#37741919903b868565e1c09ea747445cd18983ee"
 
-cssfilter@0.0.10:
-  version "0.0.10"
-  resolved "https://registry.npmjs.org/cssfilter/-/cssfilter-0.0.10.tgz#c6d2672632a2e5c83e013e6864a42ce8defd20ae"
-
 cssnano-preset-default@^4.0.8:
   version "4.0.8"
   resolved "https://registry.npmmirror.com/cssnano-preset-default/-/cssnano-preset-default-4.0.8.tgz#920622b1fc1e95a34e8838203f1397a504f2d3ff"
@@ -10489,7 +10527,7 @@ cssstyle@^2.3.0:
   dependencies:
     cssom "~0.3.6"
 
-csstype@^3.0.10, csstype@^3.0.2, csstype@^3.0.3, csstype@^3.0.8:
+csstype@^3.0.10, csstype@^3.0.2, csstype@^3.0.8:
   version "3.1.2"
   resolved "https://registry.npmmirror.com/csstype/-/csstype-3.1.2.tgz#1d4bf9d572f11c14031f0436e1c10bc1f571f50b"
 
@@ -16240,14 +16278,6 @@ joycon@^3.0.1:
   version "3.1.1"
   resolved "https://registry.yarnpkg.com/joycon/-/joycon-3.1.1.tgz#bce8596d6ae808f8b68168f5fc69280996894f03"
 
-jquery-mousewheel@^3.1.13:
-  version "3.1.13"
-  resolved "https://registry.npmmirror.com/jquery-mousewheel/-/jquery-mousewheel-3.1.13.tgz#06f0335f16e353a695e7206bf50503cb523a6ee5"
-
-jquery@^3.5.1:
-  version "3.7.0"
-  resolved "https://registry.npmmirror.com/jquery/-/jquery-3.7.0.tgz#fe2c01a05da500709006d8790fe21c8a39d75612"
-
 js-base64@^2.5.2:
   version "2.6.4"
   resolved "https://registry.npmmirror.com/js-base64/-/js-base64-2.6.4.tgz#f4e686c5de1ea1f867dbcad3d46d969428df98c4"
@@ -18217,10 +18247,6 @@ moment@^2.29.1, moment@^2.29.4:
 moo@^0.5.0, moo@^0.5.1:
   version "0.5.2"
   resolved "https://registry.npmmirror.com/moo/-/moo-0.5.2.tgz#f9fe82473bc7c184b0d32e2215d3f6e67278733c"
-
-mousetrap@^1.6.5:
-  version "1.6.5"
-  resolved "https://registry.npmmirror.com/mousetrap/-/mousetrap-1.6.5.tgz#8a766d8c272b08393d5f56074e0b5ec183485bf9"
 
 move-concurrently@^1.0.1:
   version "1.0.1"
@@ -25999,13 +26025,6 @@ xpipe@^1.0.5:
 xregexp@2.0.0:
   version "2.0.0"
   resolved "https://registry.npmmirror.com/xregexp/-/xregexp-2.0.0.tgz#52a63e56ca0b84a7f3a5f3d61872f126ad7a5943"
-
-xss@^1.0.14:
-  version "1.0.14"
-  resolved "https://registry.npmjs.org/xss/-/xss-1.0.14.tgz#4f3efbde75ad0d82e9921cc3c95e6590dd336694"
-  dependencies:
-    commander "^2.20.3"
-    cssfilter "0.0.10"
 
 xtend@^4.0.0, xtend@~4.0.0, xtend@~4.0.1:
   version "4.0.2"

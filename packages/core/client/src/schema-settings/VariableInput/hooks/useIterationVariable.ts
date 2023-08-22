@@ -1,6 +1,7 @@
 import { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BlockRequestContext } from '../../../block-provider';
+import { CollectionFieldOptions } from '../../../collection-manager';
 import { useBaseVariable } from './useBaseVariable';
 
 /**
@@ -8,10 +9,19 @@ import { useBaseVariable } from './useBaseVariable';
  * @param param0
  * @returns
  */
-export const useIterationVariable = ({ currentCollection, schema }: { currentCollection: string; schema?: any }) => {
+export const useIterationVariable = ({
+  currentCollection,
+  collectionField,
+  schema,
+}: {
+  currentCollection: string;
+  collectionField: CollectionFieldOptions;
+  schema?: any;
+}) => {
   const ctx = useContext(BlockRequestContext);
   const { t } = useTranslation();
   const result = useBaseVariable({
+    collectionField,
     uiSchema: schema,
     maxDepth: 4,
     name: '$iteration',

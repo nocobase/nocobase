@@ -1,8 +1,10 @@
 import { useMemo } from 'react';
+import { CollectionFieldOptions } from '../../../collection-manager';
 import { useCompile, useGetFilterOptions } from '../../../schema-component';
 import { FieldOption, Option } from '../type';
 
 interface GetOptionsParams {
+  collectionField: CollectionFieldOptions;
   uiSchema: any;
   depth: number;
   maxDepth?: number;
@@ -11,7 +13,9 @@ interface GetOptionsParams {
 }
 
 interface BaseProps {
-  /** 被选中字段的 uiSchema  */
+  // 当前字段
+  collectionField: CollectionFieldOptions;
+  /** 当前字段的 `uiSchema`，和 `collectionField.uiSchema` 不同，该值也包含操作符中 schema（参见 useValues） */
   uiSchema: any;
   maxDepth?: number;
   name: string;
@@ -30,7 +34,7 @@ interface BaseProps {
 
 const getChildren = (
   options: FieldOption[],
-  { uiSchema, depth, maxDepth, loadChildren, compile }: GetOptionsParams,
+  { collectionField, uiSchema, depth, maxDepth, loadChildren, compile }: GetOptionsParams,
 ): Option[] => {
   const result = options
     .map((option): Option => {
@@ -39,8 +43,7 @@ const getChildren = (
           key: option.name,
           value: option.name,
           label: compile(option.title),
-          // TODO: 现在是通过组件的名称来过滤能够被选择的选项，这样的坏处是不够精确，后续可以优化
-          disabled: !!uiSchema && uiSchema?.['x-component'] !== option.schema?.['x-component'],
+          disabled: isDisabled(option, { collectionField, uiSchema }),
           isLeaf: true,
           depth,
         };
@@ -57,6 +60,7 @@ const getChildren = (
         isLeaf: false,
         field: option,
         depth,
+        disabled: isDisabled(option, { collectionField, uiSchema }),
         loadChildren,
       };
     })
@@ -66,6 +70,7 @@ const getChildren = (
 };
 
 export const useBaseVariable = ({
+  collectionField,
   uiSchema,
   maxDepth = 3,
   name,
@@ -88,6 +93,7 @@ export const useBaseVariable = ({
       setTimeout(() => {
         const children =
           getChildren(returnFields(getFilterOptions(target), option), {
+            collectionField,
             uiSchema,
             depth: option.depth + 1,
             maxDepth,
@@ -125,3 +131,49 @@ export const useBaseVariable = ({
 
   return result;
 };
+
+function isDisabled(
+  option: FieldOption,
+  deps: {
+    collectionField: CollectionFieldOptions;
+    uiSchema: any;
+  },
+) {
+  const { collectionField, uiSchema } = deps;
+
+  if (!uiSchema) {
+    return false;
+  }
+
+  // json 类型的字段，允许设置任意类型的值
+  if (collectionField.interface === 'json') {
+    return false;
+  }
+
+  if (!collectionField.target && ['hasMany', 'belongsToMany'].includes(option.type)) {
+    return true;
+  }
+
+  if (!collectionField.target && ['hasOne', 'belongsTo'].includes(option.type)) {
+    return false;
+  }
+
+  if (['hasOne', 'belongsTo'].includes(collectionField.type) && ['hasMany', 'belongsToMany'].includes(option.type)) {
+    return true;
+  }
+
+  if (['hasOne', 'belongsTo'].includes(collectionField.type) && ['hasOne', 'belongsTo'].includes(option.type)) {
+    return false;
+  }
+
+  // 数字可以赋值给字符串
+  if (uiSchema.type === 'string' && option.schema?.type === 'number') {
+    return false;
+  }
+
+  if (uiSchema?.['x-component'] !== option.schema?.['x-component']) {
+    return true;
+  }
+
+  return false;
+}

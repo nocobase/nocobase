@@ -41,14 +41,19 @@ export const useVariableOptions = ({
   operator,
 }: Props) => {
   const fieldCollectionName = collectionField?.collectionName;
-  const userVariable = useUserVariable({ maxDepth: 3, uiSchema: uiSchema });
+  const userVariable = useUserVariable({ maxDepth: 3, uiSchema: uiSchema, collectionField });
   const dateVariable = useDateVariable({ operator, schema: uiSchema });
-  const formVariable = useFormVariable({ schema: uiSchema, collectionName: rootCollection });
+  const formVariable = useFormVariable({ schema: uiSchema, collectionName: rootCollection, collectionField });
   const iterationVariable = useIterationVariable({
     currentCollection: fieldCollectionName,
+    collectionField,
     schema: uiSchema,
   });
-  const currentRecordVariable = useRecordVariable({ schema: uiSchema, collectionName: rootCollection });
+  const currentRecordVariable = useRecordVariable({
+    schema: uiSchema,
+    collectionName: rootCollection,
+    collectionField,
+  });
 
   // 保证下面的 `_.isEmpty(record)` 结果符合预期，如果存在 `__parent` 字段，需要删除
   record = { ...record };
