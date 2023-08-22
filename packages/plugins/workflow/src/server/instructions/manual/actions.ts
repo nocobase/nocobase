@@ -30,7 +30,7 @@ export async function submit(context: Context, next) {
   }
 
   const { forms = {} } = userJob.node.config;
-  const [formKey] = Object.keys(values.result ?? {}).filter(key => key !== '_');
+  const [formKey] = Object.keys(values.result ?? {}).filter((key) => key !== '_');
   const actionKey = values.result?._;
 
   const actionItem = forms[formKey]?.actions?.find((item) => item.key === actionKey);
@@ -40,7 +40,8 @@ export async function submit(context: Context, next) {
     userJob.job.status !== JOB_STATUS.PENDING ||
     userJob.execution.status !== EXECUTION_STATUS.STARTED ||
     !userJob.workflow.enabled ||
-    !actionKey || actionItem?.status == null
+    !actionKey ||
+    actionItem?.status == null
   ) {
     return context.throw(400);
   }
@@ -50,11 +51,11 @@ export async function submit(context: Context, next) {
   await processor.prepare();
 
   // NOTE: validate assignee
-  const assignees = processor.getParsedValue(userJob.node.config.assignees ?? []);
+  const assignees = processor.getParsedValue(userJob.node.config.assignees ?? [], userJob.nodeId);
   if (!assignees.includes(currentUser.id) || userJob.userId !== currentUser.id) {
     return context.throw(403);
   }
-  const presetValues = processor.getParsedValue(actionItem.values ?? {}, null, {
+  const presetValues = processor.getParsedValue(actionItem.values ?? {}, userJob.nodeId, {
     currentUser: currentUser.toJSON(),
     currentRecord: values.result[formKey],
     currentTime: new Date(),
@@ -62,9 +63,10 @@ export async function submit(context: Context, next) {
 
   userJob.set({
     status: actionItem.status,
-    result: actionItem.status > JOB_STATUS.PENDING
-      ? { [formKey]: Object.assign(values.result[formKey], presetValues), _: actionKey }
-      : Object.assign(userJob.result ?? {}, values.result),
+    result:
+      actionItem.status > JOB_STATUS.PENDING
+        ? { [formKey]: Object.assign(values.result[formKey], presetValues), _: actionKey }
+        : Object.assign(userJob.result ?? {}, values.result),
   });
 
   const handler = instruction.formTypes.get(forms[formKey].type);
