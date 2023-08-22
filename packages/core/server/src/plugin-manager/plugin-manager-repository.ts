@@ -95,11 +95,10 @@ export class PluginManagerRepository extends Repository {
     const items = await this.getItems();
 
     for (const item of items) {
+      const { options, ...others } = item.toJSON();
       await this.pm.add(item.get('name'), {
-        ...item.get('options'),
-        name: item.get('name'),
-        version: item.get('version'),
-        enabled: item.get('enabled'),
+        ...others,
+        ...options,
       });
     }
   }

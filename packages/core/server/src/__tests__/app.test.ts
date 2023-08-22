@@ -93,4 +93,14 @@ describe('app destroy', () => {
     mockServer();
     expect(() => mockServer()).toThrow('app main already exists');
   });
+
+  test('command', async () => {
+    const loadFn = jest.fn();
+    app = mockServer();
+    const command = app.command('foo');
+    command.command('bar').action(() => loadFn());
+    await app.runCommand('foo', 'bar');
+    expect(loadFn).toBeCalled();
+    expect(loadFn).toBeCalledTimes(1);
+  });
 });

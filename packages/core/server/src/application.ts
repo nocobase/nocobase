@@ -355,8 +355,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.db.prepare();
   }
 
-  async runCommand(command: string) {
-    return await this.runAsCLI([command], { from: 'user' });
+  async runCommand(command: string, ...args: any[]) {
+    return await this.runAsCLI([command, ...args], { from: 'user' });
   }
 
   createCli() {
@@ -441,6 +441,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.emitAsync('afterStart', this, options);
     await this.emitAsync('__started', this, options);
     this.stopped = false;
+  }
+
+  async isStarted() {
+    return this._started;
   }
 
   async restart(options: StartOptions = {}) {

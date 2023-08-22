@@ -54,6 +54,14 @@ export abstract class Plugin<O = any> implements PluginInterface {
     this.options.enabled = value;
   }
 
+  get installed() {
+    return this.options.installed;
+  }
+
+  set installed(value) {
+    this.options.installed = value;
+  }
+
   setOptions(options: any) {
     this.options = options || {};
   }
@@ -74,9 +82,13 @@ export abstract class Plugin<O = any> implements PluginInterface {
 
   async afterEnable() {}
 
+  async beforeDisable() {}
+
   async afterDisable() {}
 
-  async remove() {}
+  async beforeRemove() {}
+
+  async afterRemove() {}
 
   async importCollections(collectionsPath: string) {
     await this.db.import({

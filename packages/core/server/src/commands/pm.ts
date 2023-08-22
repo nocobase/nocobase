@@ -18,13 +18,23 @@ export default (app: Application) => {
   pm.command('enable')
     .arguments('<plugins...>')
     .action(async (plugins) => {
-      await app.pm.enable(plugins);
+      try {
+        await app.pm.enable(plugins);
+      } catch (error) {
+        app.setMaintainingMessage('Failed to enable plugin');
+        await app.restart();
+      }
     });
 
   pm.command('disable')
     .arguments('<plugins...>')
     .action(async (plugins) => {
-      await app.pm.disable(plugins);
+      try {
+        await app.pm.disable(plugins);
+        app.setMaintainingMessage('Failed to disable plugin');
+      } catch (error) {
+        await app.restart();
+      }
     });
 
   pm.command('remove')
