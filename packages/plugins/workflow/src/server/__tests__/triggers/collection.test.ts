@@ -23,7 +23,7 @@ describe('workflow > triggers > collection', () => {
     TagRepo = db.getCollection('tags').repository;
   });
 
-  afterEach(() => db.close());
+  afterEach(() => app.destroy());
 
   describe('toggle', () => {
     it('when collection change', async () => {

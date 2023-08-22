@@ -28,7 +28,7 @@ describe('workflow > instructions > condition', () => {
     });
   });
 
-  afterEach(() => db.close());
+  afterEach(() => app.destroy());
 
   describe('config.rejectOnFalse', () => {});
 
