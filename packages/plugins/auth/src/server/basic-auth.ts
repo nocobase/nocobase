@@ -22,10 +22,13 @@ export class BasicAuth extends BaseAuth {
     if (!account && !email) {
       ctx.throw(400, ctx.t('Please enter your username or email', { ns: namespace }));
     }
+    const filter = email
+      ? { email }
+      : {
+          $or: [{ username: account }, { email: account }],
+        };
     const user = await this.userRepository.findOne({
-      filter: {
-        $or: [{ username: account || null }, { email: account || email }],
-      },
+      filter,
     });
 
     if (!user) {
