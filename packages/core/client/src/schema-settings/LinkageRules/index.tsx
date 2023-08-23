@@ -3,6 +3,7 @@ import { Form } from '@formily/core';
 import { observer, useFieldSchema } from '@formily/react';
 import React, { useMemo } from 'react';
 import { FormBlockContext } from '../../block-provider';
+import { useCollectionManager } from '../../collection-manager';
 import { RecordProvider } from '../../record-provider';
 import { SchemaComponent } from '../../schema-component';
 import { DynamicComponentProps } from '../../schema-component/antd/filter/DynamicComponent';
@@ -33,6 +34,7 @@ export const FormLinkageRules = observer(
     const fieldSchema = useFieldSchema();
     const { useProps, dynamicComponent } = props;
     const { options, defaultValues, collectionName, form, variables, localVariables, record } = useProps();
+    const { getAllCollectionsInheritChain } = useCollectionManager();
 
     const components = useMemo(() => ({ ArrayCollapse }), []);
     const schema = useMemo(
@@ -90,7 +92,12 @@ export const FormLinkageRules = observer(
                               {...props}
                               form={form}
                               record={record}
-                              shouldChange={getShouldChange({ collectionField, variables, localVariables })}
+                              shouldChange={getShouldChange({
+                                collectionField,
+                                variables,
+                                localVariables,
+                                getAllCollectionsInheritChain,
+                              })}
                             />
                           );
                         },

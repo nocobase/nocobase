@@ -95,7 +95,7 @@ export enum AssignedFieldValueType {
 
 export const AssignedField = (props: AssignedFieldProps) => {
   const { value, onChange } = props;
-  const { getCollectionFields } = useCollectionManager();
+  const { getCollectionFields, getAllCollectionsInheritChain } = useCollectionManager();
   const collection = useCollection();
   const { form } = useFormBlockContext();
   const fieldSchema = useFieldSchema();
@@ -108,8 +108,8 @@ export const AssignedField = (props: AssignedFieldProps) => {
   const collectionField = getField(fieldSchema.name);
 
   const shouldChange = useMemo(
-    () => getShouldChange({ collectionField, variables, localVariables }),
-    [collectionField, localVariables, variables],
+    () => getShouldChange({ collectionField, variables, localVariables, getAllCollectionsInheritChain }),
+    [collectionField, getAllCollectionsInheritChain, localVariables, variables],
   );
 
   const returnScope = useCallback(

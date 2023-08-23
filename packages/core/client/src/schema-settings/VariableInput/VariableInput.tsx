@@ -17,6 +17,8 @@ interface GetShouldChangeProps {
   collectionField: CollectionFieldOptions;
   variables: VariablesContextType;
   localVariables: VariableOption | VariableOption[];
+  /** `useCollectionManager` 返回的 */
+  getAllCollectionsInheritChain: (collectionName: string) => string[];
 }
 
 interface RenderSchemaComponentProps {
@@ -127,7 +129,14 @@ export const VariableInput = (props: Props) => {
 /**
  * 通过限制用户的选择，来防止用户选择错误的变量
  */
-export const getShouldChange = ({ collectionField, variables, localVariables }: GetShouldChangeProps) => {
+export const getShouldChange = ({
+  collectionField,
+  variables,
+  localVariables,
+  getAllCollectionsInheritChain,
+}: GetShouldChangeProps) => {
+  const collectionsInheritChain = collectionField ? getAllCollectionsInheritChain(collectionField.target) : [];
+
   return async (value: any, optionPath: any[]) => {
     if (!isVariable(value) || !variables) {
       return true;
@@ -159,7 +168,7 @@ export const getShouldChange = ({ collectionField, variables, localVariables }: 
     if (
       collectionField.target &&
       collectionFieldOfVariable.target &&
-      collectionField.target !== collectionFieldOfVariable.target
+      !collectionsInheritChain.includes(collectionFieldOfVariable.target)
     ) {
       return false;
     }

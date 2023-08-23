@@ -1512,7 +1512,7 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props: { fieldSchem
   const actionCtx = useActionContext();
   let targetField;
   const { getField } = useCollection();
-  const { getCollectionJoinField, getCollectionFields } = useCollectionManager();
+  const { getCollectionJoinField, getCollectionFields, getAllCollectionsInheritChain } = useCollectionManager();
   const variables = useVariables();
   const localVariables = useLocalVariables();
   const collection = useCollection();
@@ -1574,7 +1574,12 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props: { fieldSchem
                 form,
                 record,
                 returnScope,
-                shouldChange: getShouldChange({ collectionField, variables, localVariables }),
+                shouldChange: getShouldChange({
+                  collectionField,
+                  variables,
+                  localVariables,
+                  getAllCollectionsInheritChain,
+                }),
                 renderSchemaComponent: function Com(props) {
                   const s = _.cloneDeep(fieldSchemaWithoutRequired) || ({} as Schema);
                   s.title = '';
@@ -1772,6 +1777,7 @@ SchemaSettings.DataScope = function DataScopeConfigure(props: DataScopeProps) {
   const { form } = useFormBlockContext();
   const variables = useVariables();
   const localVariables = useLocalVariables();
+  const { getAllCollectionsInheritChain } = useCollectionManager();
 
   const dynamicComponent = (props: DynamicComponentProps) => {
     return (
@@ -1779,7 +1785,12 @@ SchemaSettings.DataScope = function DataScopeConfigure(props: DataScopeProps) {
         {...props}
         form={form}
         record={record}
-        shouldChange={getShouldChange({ collectionField: props.collectionField, variables, localVariables })}
+        shouldChange={getShouldChange({
+          collectionField: props.collectionField,
+          variables,
+          localVariables,
+          getAllCollectionsInheritChain,
+        })}
       />
     );
   };

@@ -96,8 +96,14 @@ export const FormItem: any = observer(
 );
 
 FormItem.Designer = function Designer() {
-  const { getCollectionFields, getInterface, getCollectionJoinField, getCollection, isTitleField } =
-    useCollectionManager();
+  const {
+    getCollectionFields,
+    getInterface,
+    getCollectionJoinField,
+    getCollection,
+    isTitleField,
+    getAllCollectionsInheritChain,
+  } = useCollectionManager();
   const { getField } = useCollection();
   const { form } = useFormBlockContext();
   const record = useRecord();
@@ -328,7 +334,12 @@ FormItem.Designer = function Designer() {
                 form={form}
                 collectionField={collectionField}
                 record={record}
-                shouldChange={getShouldChange({ collectionField: props.collectionField, variables, localVariables })}
+                shouldChange={getShouldChange({
+                  collectionField: props.collectionField,
+                  variables,
+                  localVariables,
+                  getAllCollectionsInheritChain,
+                })}
               />
             );
           }}
