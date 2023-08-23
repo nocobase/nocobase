@@ -10,17 +10,6 @@ import useServiceOptions, { useAssociationFieldContext } from './hooks';
 
 const EMPTY = 'N/A';
 
-function updateArrayWithKey(a, b) {
-  const index = a.findIndex((item) => item.key === b.key);
-  if (index !== -1) {
-    a[index] = b;
-  } else {
-    a.push(b);
-  }
-
-  return a;
-}
-
 export const InternalCascadeSelect = observer(
   (props: any) => {
     const { fieldNames } = props;
@@ -41,7 +30,7 @@ export const InternalCascadeSelect = observer(
         const options = value?.map((v) => {
           return {
             key: v.parentId,
-            children: v.children,
+            children: [],
             value: { label: v[fieldNames.label], value: v[fieldNames.value] },
           };
         });
@@ -65,7 +54,8 @@ export const InternalCascadeSelect = observer(
       options[index + 1] = { key: option?.id, children: data?.length > 0 ? data : null };
       setSelectedOptions([...options]);
       const fieldValue = field.value || [];
-      fieldValue.push(option);
+      fieldValue.splice(index + 1);
+      fieldValue[index + 1] = option;
       field.value = fieldValue;
     };
 
