@@ -5,17 +5,17 @@ export default (collection: Collection) => {
   const primaryKey = collection.model.primaryKeyAttribute;
 
   const parameters = {
-    filterByTk: {
-      name: 'filterByTk',
-      in: 'query',
-      description: 'filter by tk',
-      schema: getTypeByField(collection.fields.get(primaryKey)),
-    },
     collectionIndex: {
       required: true,
       name: 'collectionIndex',
       in: 'path',
       description: 'collection index',
+      schema: getTypeByField(collection.fields.get(primaryKey)),
+    },
+    filterByTk: {
+      name: 'filterByTk',
+      in: 'query',
+      description: 'filter by tk',
       schema: getTypeByField(collection.fields.get(primaryKey)),
     },
     filter: {

@@ -15,7 +15,7 @@ export function appendCollectionIndexParams(apiDef: object) {
       apiDef[action]['parameters'] = [];
     }
 
-    apiDef[action]['parameters'].push({
+    apiDef[action]['parameters'].unshift({
       $ref: '#/components/parameters/collectionIndex',
     });
   }
