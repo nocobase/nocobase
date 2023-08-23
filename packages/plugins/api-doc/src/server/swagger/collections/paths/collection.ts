@@ -135,7 +135,12 @@ export function GetActionTemplate(options: TemplateOptions) {
           content: {
             'application/json': {
               schema: {
-                $ref: `#/components/schemas/${collection.name}`,
+                type: 'object',
+                properties: {
+                  data: {
+                    $ref: `#/components/schemas/${collection.name}`,
+                  },
+                },
               },
             },
           },
@@ -174,7 +179,12 @@ export function CreateActionTemplate(options: TemplateOptions) {
           content: {
             'application/json': {
               schema: {
-                $ref: `#/components/schemas/${collection.name}`,
+                type: 'object',
+                properties: {
+                  data: {
+                    $ref: `#/components/schemas/${collection.name}`,
+                  },
+                },
               },
             },
           },
@@ -219,7 +229,12 @@ export function UpdateActionTemplate(options: TemplateOptions) {
           content: {
             'application/json': {
               schema: {
-                $ref: `#/components/schemas/${collection.name}`,
+                type: 'object',
+                properties: {
+                  data: {
+                    $ref: `#/components/schemas/${collection.name}`,
+                  },
+                },
               },
             },
           },

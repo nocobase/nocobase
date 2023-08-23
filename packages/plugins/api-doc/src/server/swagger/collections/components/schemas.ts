@@ -26,7 +26,19 @@ function getCollectionReadOnlyFields(collection: Collection) {
       continue;
     }
 
-    if (fieldName === 'createdAt' || fieldName === 'updatedAt') {
+    if (
+      [
+        'createdAt',
+        'updatedAt',
+        'created_at',
+        'updated_at',
+        'sort',
+        'created_by_id',
+        'createdById',
+        'updatedById',
+        'updated_by_id',
+      ].includes(fieldName)
+    ) {
       readOnlyFields.push(fieldName);
       continue;
     }
