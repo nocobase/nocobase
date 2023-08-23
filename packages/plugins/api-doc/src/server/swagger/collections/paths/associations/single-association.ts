@@ -29,7 +29,7 @@ export default (collection: Collection, associationField: HasOneField | BelongsT
     [`/${collection.name}/{collectionIndex}/${associationField.name}:set`]: appendCollectionIndexParams({
       post: {
         tags: [`${collection.name}.${associationField.name}`],
-        description: `set ${collection.name}.${associationField.name}`,
+        summary: 'Associate a record',
         parameters: [
           {
             name: 'tk',
@@ -51,7 +51,7 @@ export default (collection: Collection, associationField: HasOneField | BelongsT
     [`/${collection.name}/{collectionIndex}/${associationField.name}:remove`]: appendCollectionIndexParams({
       post: {
         tags: [`${collection.name}.${associationField.name}`],
-        description: `set ${collection.name}.${associationField.name}`,
+        summary: 'Disassociate the relationship record',
         responses: {
           '200': {
             description: 'OK',
@@ -60,12 +60,7 @@ export default (collection: Collection, associationField: HasOneField | BelongsT
       },
     }),
     [`/${collection.name}/{collectionIndex}/${associationField.name}:update`]: removeFilterByTkParams(
-      appendCollectionIndexParams(
-        UpdateActionTemplate({
-          collectionName: associationField.target,
-          target: `${collection.name}.${associationField.name}`,
-        }),
-      ),
+      appendCollectionIndexParams(UpdateActionTemplate(options)),
     ),
     [`/${collection.name}/{collectionIndex}/${associationField.name}:create`]: removeFilterByTkParams(
       appendCollectionIndexParams(UpdateActionTemplate(options)),
