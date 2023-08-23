@@ -135,7 +135,7 @@ export function GetActionTemplate(options: TemplateOptions) {
           content: {
             'application/json': {
               schema: {
-                $ref: `#/components/schemas/{{collectionName}}`,
+                $ref: `#/components/schemas/${collection.name}`,
               },
             },
           },
@@ -163,7 +163,7 @@ export function CreateActionTemplate(options: TemplateOptions) {
         content: {
           'application/json': {
             schema: {
-              $ref: `#/components/schemas/{{collectionName}}.form`,
+              $ref: `#/components/schemas/${collection.name}.form`,
             },
           },
         },
@@ -174,7 +174,7 @@ export function CreateActionTemplate(options: TemplateOptions) {
           content: {
             'application/json': {
               schema: {
-                $ref: `#/components/schemas/{{collectionName}}`,
+                $ref: `#/components/schemas/${collection.name}`,
               },
             },
           },
@@ -208,7 +208,7 @@ export function UpdateActionTemplate(options: TemplateOptions) {
         content: {
           'application/json': {
             schema: {
-              $ref: `#/components/schemas/{{collectionName}}.form`,
+              $ref: `#/components/schemas/${collection.name}.form`,
             },
           },
         },
@@ -219,7 +219,7 @@ export function UpdateActionTemplate(options: TemplateOptions) {
           content: {
             'application/json': {
               schema: {
-                $ref: `#/components/schemas/{{collectionName}}`,
+                $ref: `#/components/schemas/${collection.name}`,
               },
             },
           },
