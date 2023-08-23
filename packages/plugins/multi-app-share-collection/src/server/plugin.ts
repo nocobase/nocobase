@@ -125,6 +125,10 @@ export class MultiAppShareCollectionPlugin extends Plugin {
     if (!this.db.inDialect('postgres')) {
       throw new Error('multi-app-share-collection plugin only support postgres');
     }
+    const plugin = this.pm.get('multi-app-manager');
+    if (!plugin.enabled) {
+      throw new Error(`${this.name} plugin need multi-app-manager plugin enabled`);
+    }
   }
 
   async beforeLoad() {
@@ -300,10 +304,6 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       const schema = app.options.database.schema;
       await this.app.db.sequelize.query(`CREATE SCHEMA IF NOT EXISTS ${schema}`);
     });
-  }
-
-  requiredPlugins(): any[] {
-    return ['multi-app-manager'];
   }
 }
 

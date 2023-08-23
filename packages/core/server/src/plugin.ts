@@ -42,6 +42,10 @@ export abstract class Plugin<O = any> implements PluginInterface {
     return this.options.name as string;
   }
 
+  get pm() {
+    return this.app.pm;
+  }
+
   get db() {
     return this.app.db;
   }
