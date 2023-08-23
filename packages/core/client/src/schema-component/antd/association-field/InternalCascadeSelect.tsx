@@ -1,5 +1,5 @@
 import { observer, useField, useFieldSchema } from '@formily/react';
-import { Space, Select, Tag } from 'antd';
+import { Space, Select, Tag, Spin } from 'antd';
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import dayjs from 'dayjs';
 import { useCompile } from '../../../schema-component';
@@ -59,7 +59,6 @@ export const InternalCascadeSelect = observer(
     };
 
     const handleSelect = async (value, option) => {
-      console.log(value, option);
       const data = await handleGetOptions({ parentId: option?.id });
       if (data?.length > 0) {
         const options = updateArrayWithKey(selectedOptions, { key: option?.id, children: data });
@@ -69,7 +68,7 @@ export const InternalCascadeSelect = observer(
       fieldValue.push(option);
       field.value = fieldValue;
     };
-    console.log(selectedOptions);
+
     return (
       <div key={fieldSchema.name}>
         <Space wrap>
@@ -95,8 +94,8 @@ export const InternalCascadeSelect = observer(
 const CascadeSelect = (props) => {
   const { fieldNames, data, mapOptions, onChange, key, value, selectedValue, index, handleGetOptions, ...other } =
     props;
-  const service = useServiceOptions(props);
   const [options, setOptions] = useState(data);
+  const [loading, setLoading] = useState(false);
   const compile = useCompile();
   const { options: collectionField } = useAssociationFieldContext();
   const { getCollectionJoinField, getInterface } = useCollectionManager();
@@ -168,38 +167,46 @@ const CascadeSelect = (props) => {
 
   const onDropdownVisibleChange = async (visible) => {
     if (visible && !options.length) {
+      setLoading(true);
       const result = await handleGetOptions({ parentId: selectedValue?.key });
+      setLoading(false);
       setOptions(result);
     }
   };
 
   const onSearch = async (search) => {
-    handleGetOptions({
-      filter: mergeFilter([
-        search
-          ? {
-              [fieldNames.label]: {
-                [operator]: search,
-              },
-            }
-          : {},
-        service?.params?.filter,
-      ]),
+    const serachParam = search
+      ? {
+          [fieldNames.label]: {
+            [operator]: search,
+          },
+        }
+      : {};
+    setLoading(true);
+    const result = await handleGetOptions({
+      ...serachParam,
+      parentId: selectedValue?.key,
     });
+    setLoading(false);
+    setTimeout(() => setOptions(result));
   };
-  console.log(value, data);
+
   return (
     <Select
       showSearch
+      autoClearSearchValue
+      filterOption={false}
+      filterSort={null}
       value={value}
       labelInValue
-      key={key}
+      key={index}
       onSearch={onSearch}
       fieldNames={fieldNames}
       style={{ width: 150 }}
       onChange={onChange}
       options={mapOptionsToTags(options)}
       onDropdownVisibleChange={onDropdownVisibleChange}
+      notFoundContent={loading ? <Spin size="small" /> : null}
     />
   );
 };
