@@ -14,6 +14,7 @@ import { PlusOutlined, DownOutlined } from '@ant-design/icons';
 import { AuthTypeContext, AuthTypesContext, useAuthTypes } from './authType';
 import { useValuesFromOptions, Options } from './Options';
 import { useTranslation } from 'react-i18next';
+import { useAuthTranslation } from '../locale';
 
 const useCloseAction = () => {
   const { setVisible } = useActionContext();
@@ -59,6 +60,7 @@ const useCanNotDelete = () => {
 };
 
 export const Authenticator = () => {
+  const { t } = useAuthTranslation();
   const [types, setTypes] = useState([]);
   const api = useAPIClient();
   useRequest(
@@ -68,10 +70,10 @@ export const Authenticator = () => {
         .listTypes()
         .then((res) => {
           const types = res?.data?.data || [];
-          return types.map((type: string) => ({
-            key: type,
-            label: type,
-            value: type,
+          return types.map((type: { name: string; title?: string }) => ({
+            key: type.name,
+            label: t(type.title || type.name),
+            value: type.name,
           }));
         }),
     {
@@ -87,7 +89,7 @@ export const Authenticator = () => {
         <SchemaComponent
           schema={authenticatorsSchema}
           components={{ AddNew, Options }}
-          scope={{ types, useValuesFromOptions, useCanNotDelete }}
+          scope={{ types, useValuesFromOptions, useCanNotDelete, t }}
         />
       </AuthTypesContext.Provider>
     </Card>

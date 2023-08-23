@@ -30,7 +30,7 @@ describe('workflow > instructions > calculation', () => {
     });
   });
 
-  afterEach(() => db.close());
+  afterEach(() => app.destroy());
 
   describe('math.js', () => {
     it('syntax error', async () => {

@@ -15,7 +15,7 @@ export default {
   async run(node: FlowNodeModel, prevJob, processor: Processor) {
     const { dynamic = false } = <CalculationConfig>node.config || {};
     let { engine = 'math.js', expression = '' } = node.config;
-    let scope = processor.getScope(node);
+    let scope = processor.getScope(node.id);
     if (dynamic) {
       const parsed = parse(dynamic)(scope) ?? {};
       engine = parsed.engine;

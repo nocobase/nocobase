@@ -34,7 +34,7 @@ describe('workflow > instructions > query', () => {
     });
   });
 
-  afterEach(() => db.close());
+  afterEach(() => app.destroy());
 
   describe('query one', () => {
     it('params: empty', async () => {

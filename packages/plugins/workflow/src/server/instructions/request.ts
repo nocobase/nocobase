@@ -52,7 +52,7 @@ export default class implements Instruction {
       upstreamId: prevJob?.id ?? null,
     });
 
-    const config = processor.getParsedValue(node.config, node) as RequestConfig;
+    const config = processor.getParsedValue(node.config, node.id) as RequestConfig;
 
     // eslint-disable-next-line promise/catch-or-return
     request(config)

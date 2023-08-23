@@ -29,7 +29,7 @@ describe('workflow > instructions > create', () => {
     });
   });
 
-  afterEach(() => db.close());
+  afterEach(() => app.destroy());
 
   describe('create one', () => {
     it('params: from context', async () => {

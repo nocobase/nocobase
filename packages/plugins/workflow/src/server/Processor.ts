@@ -318,7 +318,8 @@ export default class Processor {
     return null;
   }
 
-  public getScope(node?) {
+  public getScope(sourceNodeId: number) {
+    const node = this.nodesMap.get(sourceNodeId);
     const systemFns = {};
     const scope = {
       execution: this.execution,
@@ -329,12 +330,10 @@ export default class Processor {
     }
 
     const $scopes = {};
-    if (node) {
-      for (let n = this.findBranchParentNode(node); n; n = this.findBranchParentNode(n)) {
-        const instruction = this.options.plugin.instructions.get(n.type);
-        if (typeof instruction.getScope === 'function') {
-          $scopes[n.id] = instruction.getScope(n, this.jobsMapByNodeId[n.id], this);
-        }
+    for (let n = this.findBranchParentNode(node); n; n = this.findBranchParentNode(n)) {
+      const instruction = this.options.plugin.instructions.get(n.type);
+      if (typeof instruction.getScope === 'function') {
+        $scopes[n.id] = instruction.getScope(n, this.jobsMapByNodeId[n.id], this);
       }
     }
 
@@ -346,9 +345,9 @@ export default class Processor {
     };
   }
 
-  public getParsedValue(value, node?, additionalScope?: object) {
+  public getParsedValue(value, sourceNodeId: number, additionalScope?: object) {
     const template = parse(value);
-    const scope = Object.assign(this.getScope(node), additionalScope);
+    const scope = Object.assign(this.getScope(sourceNodeId), additionalScope);
     template.parameters.forEach(({ key }) => {
       appendArrayColumn(scope, key);
     });
