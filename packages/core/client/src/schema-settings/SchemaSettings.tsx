@@ -1503,7 +1503,7 @@ export const findParentFieldSchema = (fieldSchema: Schema) => {
   }
 };
 
-SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
+SchemaSettings.DefaultValue = function DefaultValueConfigure(props: { fieldSchema?: Schema }) {
   const currentSchema = useFieldSchema();
   const fieldSchema = props?.fieldSchema ?? currentSchema;
   const field: Field = useField();
@@ -1569,7 +1569,6 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
                 ...(fieldSchema?.['x-component-props'] || {}),
                 collectionField,
                 contextCollectionName: isAllowContextVariable && tableCtx.collection,
-                blockCollectionName: name,
                 schema: collectionField?.uiSchema,
                 className: defaultInputStyle,
                 form,
@@ -1767,7 +1766,6 @@ SchemaSettings.SortingRule = function SortRuleConfigure(props) {
 };
 
 SchemaSettings.DataScope = function DataScopeConfigure(props: DataScopeProps) {
-  const { name } = useCollection();
   const { t } = useTranslation();
   const options = useCollectionFilterOptions(props.collectionName);
   const record = useRecord();
@@ -1779,7 +1777,6 @@ SchemaSettings.DataScope = function DataScopeConfigure(props: DataScopeProps) {
     return (
       <VariableInput
         {...props}
-        blockCollectionName={name}
         form={form}
         record={record}
         shouldChange={getShouldChange({ collectionField: props.collectionField, variables, localVariables })}

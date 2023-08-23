@@ -2,7 +2,7 @@ import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import { reaction } from '@formily/reactive';
 import _ from 'lodash';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRecord } from '../../../../../src/record-provider';
 import { useCollection } from '../../../../collection-manager';
 import { DEBOUNCE_WAIT, useLocalVariables, useVariables } from '../../../../variables';
@@ -20,13 +20,14 @@ const useParseDefaultValue = () => {
   const localVariables = useLocalVariables();
   const record = useRecord();
 
+  // 需要保存 record 的初始值，因为设置默认值的时候 record 会被修改，导致初始值丢失
+  const recordRef = useRef(_.omit(record, '__parent'));
+
   const { getField } = useCollection();
 
   useEffect(() => {
-    const _record = _.omit(record, '__parent');
-
     // 根据 record 是否为空，判断当前是否是新建状态，编辑状态下不需要设置默认值，否则会覆盖用户输入的值，只有新建状态下才需要设置默认值
-    if (schema.default == null || !_.isEmpty(_record)) {
+    if (schema.default == null || !_.isEmpty(recordRef.current)) {
       return;
     }
 

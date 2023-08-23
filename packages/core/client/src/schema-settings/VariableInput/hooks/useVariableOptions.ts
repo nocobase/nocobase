@@ -5,6 +5,7 @@ import { useMemo } from 'react';
 import { CollectionFieldOptions } from '../../../collection-manager';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { Option } from '../type';
+import { useBlockCollection } from './useBlockCollection';
 import { useDateVariable } from './useDateVariable';
 import { useFormVariable } from './useFormVariable';
 import { useIterationVariable } from './useIterationVariable';
@@ -16,7 +17,6 @@ interface Props {
    * 消费该变量的字段
    */
   collectionField: CollectionFieldOptions;
-  blockCollectionName: string;
   form: Form;
   /**
    * `useRecord` 返回的值
@@ -36,21 +36,15 @@ interface Props {
   noDisabled?: boolean;
 }
 
-export const useVariableOptions = ({
-  collectionField,
-  blockCollectionName: rootCollection,
-  form,
-  record,
-  uiSchema,
-  operator,
-  noDisabled,
-}: Props) => {
+export const useVariableOptions = ({ collectionField, form, record, uiSchema, operator, noDisabled }: Props) => {
+  const { name: blockCollectionName } = useBlockCollection();
+
   const fieldCollectionName = collectionField?.collectionName;
   const userVariable = useUserVariable({ maxDepth: 3, uiSchema: uiSchema, collectionField, noDisabled });
   const dateVariable = useDateVariable({ operator, schema: uiSchema, noDisabled });
   const formVariable = useFormVariable({
     schema: uiSchema,
-    collectionName: rootCollection,
+    collectionName: blockCollectionName,
     collectionField,
     noDisabled,
   });
@@ -62,7 +56,7 @@ export const useVariableOptions = ({
   });
   const currentRecordVariable = useRecordVariable({
     schema: uiSchema,
-    collectionName: rootCollection,
+    collectionName: blockCollectionName,
     collectionField,
     noDisabled,
   });
@@ -76,7 +70,11 @@ export const useVariableOptions = ({
       userVariable,
       dateVariable,
       form && !form.readPretty && formVariable,
-      form && fieldCollectionName && rootCollection && fieldCollectionName !== rootCollection && iterationVariable,
+      form &&
+        fieldCollectionName &&
+        blockCollectionName &&
+        fieldCollectionName !== blockCollectionName &&
+        iterationVariable,
       !_.isEmpty(record) && currentRecordVariable,
     ].filter(Boolean);
   }, [
@@ -85,7 +83,7 @@ export const useVariableOptions = ({
     form,
     formVariable,
     fieldCollectionName,
-    rootCollection,
+    blockCollectionName,
     iterationVariable,
     record,
     currentRecordVariable,

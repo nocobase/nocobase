@@ -88,7 +88,6 @@ export const FormLinkageRules = observer(
                           return (
                             <VariableInput
                               {...props}
-                              blockCollectionName={collectionName}
                               form={form}
                               record={record}
                               shouldChange={getShouldChange({ collectionField, variables, localVariables })}

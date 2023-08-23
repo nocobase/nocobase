@@ -8,6 +8,7 @@ import { Variable, useVariableScope } from '../../schema-component';
 import { useValues } from '../../schema-component/antd/filter/useValues';
 import { VariableOption, VariablesContextType } from '../../variables/types';
 import { isVariable } from '../../variables/utils/isVariable';
+import { useBlockCollection } from './hooks/useBlockCollection';
 import { useContextAssociationFields } from './hooks/useContextAssociationFields';
 import { compatOldVariables, useVariableOptions } from './hooks/useVariableOptions';
 import { Option } from './type';
@@ -39,10 +40,6 @@ type Props = {
    * @returns 返回为 `true` 时，才会触发 `onChange`
    */
   shouldChange?: (value: any, optionPath?: any[]) => Promise<boolean>;
-  /**
-   * 当前所在的区块的 collectionName
-   */
-  blockCollectionName: string;
   form?: Form;
   /**
    * 当前表单的记录，数据来自数据库
@@ -74,17 +71,17 @@ export const VariableInput = (props: Props) => {
     contextCollectionName,
     collectionField,
     shouldChange,
-    blockCollectionName,
     form,
     record,
     returnScope = _.identity,
   } = props;
+  const { name: blockCollectionName } = useBlockCollection();
   const { t } = useTranslation();
   const scope = useVariableScope();
   const { operator, schema: uiSchema = collectionField?.uiSchema } = useValues();
 
   const variableOptions = compatOldVariables(
-    useVariableOptions({ collectionField, blockCollectionName, form, record, operator, uiSchema }),
+    useVariableOptions({ collectionField, form, record, operator, uiSchema }),
     {
       value,
       collectionName: blockCollectionName,

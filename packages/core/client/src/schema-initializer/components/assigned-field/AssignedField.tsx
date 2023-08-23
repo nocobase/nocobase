@@ -141,7 +141,6 @@ export const AssignedField = (props: AssignedFieldProps) => {
       record={record}
       value={value}
       onChange={onChange}
-      blockCollectionName={name}
       renderSchemaComponent={renderSchemaComponent}
       collectionField={collectionField}
       shouldChange={shouldChange}

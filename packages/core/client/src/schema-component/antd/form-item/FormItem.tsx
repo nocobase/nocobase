@@ -101,7 +101,6 @@ FormItem.Designer = function Designer() {
   const { getField } = useCollection();
   const { form } = useFormBlockContext();
   const record = useRecord();
-  const ctx = useBlockRequestContext();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
@@ -328,7 +327,6 @@ FormItem.Designer = function Designer() {
                 {...props}
                 form={form}
                 collectionField={collectionField}
-                blockCollectionName={ctx.props.collection || ctx.props.resource}
                 record={record}
                 shouldChange={getShouldChange({ collectionField: props.collectionField, variables, localVariables })}
               />

@@ -24,7 +24,6 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
   const record = useRecord();
   const scope = useVariableOptions({
     collectionField: { uiSchema: schema },
-    blockCollectionName: collectionName,
     form,
     record,
     uiSchema: schema,
