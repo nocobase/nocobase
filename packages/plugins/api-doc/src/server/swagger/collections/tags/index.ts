@@ -13,7 +13,7 @@ export default (collection: Collection, options) => {
   ];
 
   if (options.withAssociation) {
-    for (const association of associations) {
+    for (const field of associations) {
       tags.push({
         name: `${collection.name}.${field.name}`,
         description: `${relationTypeToString(field)} relationship, ${collection.options?.title || collection.name}/${

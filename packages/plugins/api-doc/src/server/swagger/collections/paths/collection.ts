@@ -8,7 +8,7 @@ type TemplateOptions = {
 
 export function relationTypeToString(field: RelationField) {
   return {
-    belongsTo: 'One to one',
+    belongsTo: 'Many to one',
     hasOne: 'One to one',
     hasMany: 'One to many',
     belongsToMany: 'Many to many',
