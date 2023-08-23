@@ -1,6 +1,6 @@
 import { BelongsToField, Collection, HasOneField } from '@nocobase/database';
 import { appendCollectionIndexParams } from './multiple-association';
-import { DestroyActionTemplate, GetActionTemplate, UpdateActionTemplate } from '../collection';
+import { CreateActionTemplate, DestroyActionTemplate, GetActionTemplate, UpdateActionTemplate } from '../collection';
 
 function removeFilterByTkParams(apiDoc: object) {
   for (const action of Object.values(apiDoc)) {
@@ -8,6 +8,26 @@ function removeFilterByTkParams(apiDoc: object) {
       action.parameters = action.parameters.filter((param: any) => {
         if (param.$ref) {
           return param.$ref !== '#/components/parameters/filterByTk';
+        }
+      });
+    }
+  }
+
+  return apiDoc;
+}
+
+const parametersShouldRemove = [
+  '#/components/parameters/filterByTk',
+  '#/components/parameters/filter',
+  '#/components/parameters/sort',
+];
+
+function filterSingleAssociationParams(apiDoc: object) {
+  for (const action of Object.values(apiDoc)) {
+    if (action.parameters) {
+      action.parameters = action.parameters.filter((param: any) => {
+        if (param.$ref) {
+          return !parametersShouldRemove.includes(param.$ref);
         }
       });
     }
@@ -24,7 +44,7 @@ export default (collection: Collection, associationField: HasOneField | BelongsT
 
   return {
     [`/${collection.name}/{collectionIndex}/${associationField.name}:get`]: removeFilterByTkParams(
-      appendCollectionIndexParams(GetActionTemplate(options)),
+      filterSingleAssociationParams(appendCollectionIndexParams(GetActionTemplate(options))),
     ),
     [`/${collection.name}/{collectionIndex}/${associationField.name}:set`]: appendCollectionIndexParams({
       post: {
@@ -60,13 +80,13 @@ export default (collection: Collection, associationField: HasOneField | BelongsT
       },
     }),
     [`/${collection.name}/{collectionIndex}/${associationField.name}:update`]: removeFilterByTkParams(
-      appendCollectionIndexParams(UpdateActionTemplate(options)),
+      filterSingleAssociationParams(appendCollectionIndexParams(UpdateActionTemplate(options))),
     ),
     [`/${collection.name}/{collectionIndex}/${associationField.name}:create`]: removeFilterByTkParams(
-      appendCollectionIndexParams(UpdateActionTemplate(options)),
+      filterSingleAssociationParams(appendCollectionIndexParams(CreateActionTemplate(options))),
     ),
     [`/${collection.name}/{collectionIndex}/${associationField.name}:destroy`]: removeFilterByTkParams(
-      appendCollectionIndexParams(DestroyActionTemplate(options)),
+      filterSingleAssociationParams(appendCollectionIndexParams(DestroyActionTemplate(options))),
     ),
   };
 };
