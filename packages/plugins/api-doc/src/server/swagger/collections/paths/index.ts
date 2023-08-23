@@ -3,12 +3,12 @@ import list from './collection';
 import associations from './associations';
 
 export default (collection: Collection) => {
-  const apiDoc = {
+  const paths = {
     ...list(collection),
     ...associations(collection),
   };
 
-  return apiDoc;
+  return paths;
 };
 
 export function hasSortField(collection: Collection) {

@@ -1,12 +1,27 @@
-import { Collection } from '@nocobase/database';
-import { parse } from '@nocobase/utils';
+import { Collection, RelationField } from '@nocobase/database';
 import { hasSortField } from './index';
 
-export function ListActionTemplate(options: any) {
-  const template = parse({
+type TemplateOptions = {
+  collection: Collection;
+  relationField?: RelationField;
+};
+
+export function relationTypeToString(field: RelationField) {
+  return {
+    belongsTo: 'One to one',
+    hasOne: 'One to one',
+    hasMany: 'One to many',
+    belongsToMany: 'Many to many',
+  }[field.type];
+}
+
+export function ListActionTemplate({ collection, relationField }: TemplateOptions) {
+  return {
     get: {
-      tags: ['{{target}}'],
-      description: `list {{target}}`,
+      tags: [relationField ? `${collection.name}.${relationField.name}` : collection.name],
+      summary: relationField
+        ? `Return a list of ${relationTypeToString(relationField)} relationship`
+        : `Returns a list of the collection`,
       parameters: [
         {
           name: 'page',
@@ -53,7 +68,7 @@ export function ListActionTemplate(options: any) {
                   data: {
                     type: 'array',
                     items: {
-                      $ref: '#/components/schemas/{{collectionName}}',
+                      $ref: `#/components/schemas/${collection.name}`,
                     },
                   },
                   meta: {
@@ -84,16 +99,16 @@ export function ListActionTemplate(options: any) {
         },
       },
     },
-  });
-
-  return template(options);
+  };
 }
 
-export function GetActionTemplate(options: any) {
-  const template = parse({
+export function GetActionTemplate(options: TemplateOptions) {
+  const { collection, relationField } = options;
+
+  return {
     get: {
-      tags: ['{{target}}'],
-      description: `get {{target}}`,
+      tags: [relationField ? `${collection.name}.${relationField.name}` : collection.name],
+      summary: `Return a record${relationField ? ` of ${relationTypeToString(relationField)}` : ''}`,
       parameters: [
         {
           $ref: '#/components/parameters/filterByTk',
@@ -127,16 +142,15 @@ export function GetActionTemplate(options: any) {
         },
       },
     },
-  });
-
-  return template(options);
+  };
 }
 
-export function CreateActionTemplate(options: any) {
-  const template = parse({
+export function CreateActionTemplate(options: TemplateOptions) {
+  const { collection, relationField } = options;
+  return {
     post: {
-      tags: ['{{target}}'],
-      description: `create {{target}}`,
+      tags: [relationField ? `${collection.name}.${relationField.name}` : collection.name],
+      summary: relationField ? `Create and associate a record` : `Create record`,
       parameters: [
         {
           $ref: '#/components/parameters/whitelist',
@@ -167,16 +181,15 @@ export function CreateActionTemplate(options: any) {
         },
       },
     },
-  });
-
-  return template(options);
+  };
 }
 
-export function UpdateActionTemplate(options: any) {
-  const template = parse({
+export function UpdateActionTemplate(options: TemplateOptions) {
+  const { collection, relationField } = options;
+  return {
     post: {
-      tags: ['{{target}}'],
-      description: `update {{target}}`,
+      tags: [relationField ? `${collection.name}.${relationField.name}` : collection.name],
+      summary: relationField ? `Update the relationship record` : `Update record`,
       parameters: [
         {
           $ref: '#/components/parameters/filterByTk',
@@ -213,16 +226,15 @@ export function UpdateActionTemplate(options: any) {
         },
       },
     },
-  });
-
-  return template(options);
+  };
 }
 
-export function DestroyActionTemplate(options: any) {
-  const template = parse({
+export function DestroyActionTemplate(options: TemplateOptions) {
+  const { collection, relationField } = options;
+  return {
     post: {
-      tags: ['{{target}}'],
-      description: `destroy {{target}}`,
+      tags: [relationField ? `${collection.name}.${relationField.name}` : collection.name],
+      summary: relationField ? `Destroy and disassociate the relationship record` : `Delete record`,
       parameters: [
         {
           $ref: '#/components/parameters/filterByTk',
@@ -237,16 +249,16 @@ export function DestroyActionTemplate(options: any) {
         },
       },
     },
-  });
-
-  return template(options);
+  };
 }
 
-export function MoveActionTemplate(options: any) {
-  const template = parse({
+export function MoveActionTemplate(options: TemplateOptions) {
+  const { collection, relationField } = options;
+
+  return {
     post: {
-      tags: ['{{target}}'],
-      description: `move {{target}}`,
+      tags: [relationField ? `${collection.name}.${relationField.name}` : collection.name],
+      summary: relationField ? `Move the relationship record` : `Move record`,
       parameters: [
         {
           name: 'sourceId',
@@ -292,39 +304,22 @@ export function MoveActionTemplate(options: any) {
         },
       },
     },
-  });
-  return template(options);
+  };
 }
 
 export default (collection: Collection) => {
-  const apiDoc = {
-    [`/${collection.name}:list`]: ListActionTemplate({
-      collectionName: collection.name,
-      target: collection.name,
-    }),
-    [`/${collection.name}:get`]: GetActionTemplate({
-      collectionName: collection.name,
-      target: collection.name,
-    }),
-    [`/${collection.name}:create`]: CreateActionTemplate({
-      collectionName: collection.name,
-      target: collection.name,
-    }),
-    [`/${collection.name}:update`]: UpdateActionTemplate({
-      collectionName: collection.name,
-      target: collection.name,
-    }),
-    [`/${collection.name}:destroy`]: DestroyActionTemplate({
-      collectionName: collection.name,
-      target: collection.name,
-    }),
+  const options = { collection };
+  const apiDoc: any = {
+    [`/${collection.name}:list`]: ListActionTemplate(options),
+    [`/${collection.name}:get`]: GetActionTemplate(options),
+    [`/${collection.name}:create`]: CreateActionTemplate(options),
+    [`/${collection.name}:update`]: UpdateActionTemplate(options),
+    [`/${collection.name}:destroy`]: DestroyActionTemplate(options),
   };
 
   if (hasSortField(collection)) {
-    apiDoc[`/${collection.name}:move`] = MoveActionTemplate({
-      collectionName: collection.name,
-      target: collection.name,
-    });
+    apiDoc[`/${collection.name}:move`] = MoveActionTemplate(options);
   }
+
   return apiDoc;
 };

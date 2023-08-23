@@ -22,37 +22,27 @@ export function appendCollectionIndexParams(apiDef: object) {
   return apiDef;
 }
 
-export default (collection: Collection, associationField: HasManyField | BelongsToManyField) => {
+export default (collection: Collection, relationField: HasManyField | BelongsToManyField) => {
+  const options = {
+    collection,
+    relationField,
+  };
+
   return {
-    [`/${collection.name}/{collectionIndex}/${associationField.name}:list`]: appendCollectionIndexParams(
-      ListActionTemplate({
-        collectionName: associationField.target,
-        target: `${collection.name}.${associationField.name}`,
-      }),
+    [`/${collection.name}/{collectionIndex}/${relationField.name}:list`]: appendCollectionIndexParams(
+      ListActionTemplate(options),
     ),
-    [`/${collection.name}/{collectionIndex}/${associationField.name}:get`]: appendCollectionIndexParams(
-      GetActionTemplate({
-        collectionName: associationField.target,
-        target: `${collection.name}.${associationField.name}`,
-      }),
+    [`/${collection.name}/{collectionIndex}/${relationField.name}:get`]: appendCollectionIndexParams(
+      GetActionTemplate(options),
     ),
-    [`/${collection.name}/{collectionIndex}/${associationField.name}:create`]: appendCollectionIndexParams(
-      CreateActionTemplate({
-        collectionName: associationField.target,
-        target: `${collection.name}.${associationField.name}`,
-      }),
+    [`/${collection.name}/{collectionIndex}/${relationField.name}:create`]: appendCollectionIndexParams(
+      CreateActionTemplate(options),
     ),
-    [`/${collection.name}/{collectionIndex}/${associationField.name}:update`]: appendCollectionIndexParams(
-      UpdateActionTemplate({
-        collectionName: associationField.target,
-        target: `${collection.name}.${associationField.name}`,
-      }),
+    [`/${collection.name}/{collectionIndex}/${relationField.name}:update`]: appendCollectionIndexParams(
+      UpdateActionTemplate(options),
     ),
-    [`/${collection.name}/{collectionIndex}/${associationField.name}:destroy`]: appendCollectionIndexParams(
-      DestroyActionTemplate({
-        collectionName: associationField.target,
-        target: `${collection.name}.${associationField.name}`,
-      }),
+    [`/${collection.name}/{collectionIndex}/${relationField.name}:destroy`]: appendCollectionIndexParams(
+      DestroyActionTemplate(options),
     ),
   };
 };
