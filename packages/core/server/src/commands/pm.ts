@@ -21,8 +21,10 @@ export default (app: Application) => {
       try {
         await app.pm.enable(plugins);
       } catch (error) {
-        app.setMaintainingMessage('Failed to enable plugin');
-        await app.restart();
+        app.setMaintainingMessage(`Failed to enable plugin: ${error.message}`);
+        await new Promise((resolve) => {
+          setTimeout(() => resolve(null), 10000);
+        });
       }
     });
 
@@ -31,9 +33,11 @@ export default (app: Application) => {
     .action(async (plugins) => {
       try {
         await app.pm.disable(plugins);
-        app.setMaintainingMessage('Failed to disable plugin');
       } catch (error) {
-        await app.restart();
+        app.setMaintainingMessage(`Failed to disable plugin: ${error.message}`);
+        await new Promise((resolve) => {
+          setTimeout(() => resolve(null), 10000);
+        });
       }
     });
 

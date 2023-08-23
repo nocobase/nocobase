@@ -373,17 +373,14 @@ export class PluginManager {
           name: toBeUpdated,
         },
         values: {
-          enabled: true,
+          enabled: false,
           installed: false,
         },
       });
+      await this.app.tryReloadOrRestart();
       throw error;
     }
-    if (await this.app.isStarted()) {
-      await this.app.restart();
-    } else {
-      await this.app.reload();
-    }
+    await this.app.tryReloadOrRestart();
   }
 
   async disable(name: string | string[]) {
@@ -433,12 +430,10 @@ export class PluginManager {
           enabled: true,
         },
       });
+      await this.app.tryReloadOrRestart();
+      throw error;
     }
-    if (await this.app.isStarted()) {
-      await this.app.restart();
-    } else {
-      await this.app.reload();
-    }
+    await this.app.tryReloadOrRestart();
   }
 
   async remove(name: string | string[]) {

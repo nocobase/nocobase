@@ -447,6 +447,14 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._started;
   }
 
+  async tryReloadOrRestart() {
+    if (this._started) {
+      await this.restart();
+    } else {
+      await this.reload();
+    }
+  }
+
   async restart(options: StartOptions = {}) {
     if (!this._started) {
       return;
