@@ -37,7 +37,7 @@ export const FormItem: any = observer(
     const schema = useFieldSchema();
     const contextVariable = useContextVariable();
     const variables = useVariables();
-    const { addActiveFieldName } = useFormActiveFields();
+    const { addActiveFieldName } = useFormActiveFields() || {};
 
     useEffect(() => {
       variables?.registerVariable(contextVariable);
@@ -49,7 +49,7 @@ export const FormItem: any = observer(
     useLazyLoadAssociationFieldOfSubForm();
 
     useEffect(() => {
-      addActiveFieldName(schema.name as string);
+      addActiveFieldName?.(schema.name as string);
     }, [addActiveFieldName, schema.name]);
 
     const showTitle = schema['x-decorator-props']?.showTitle ?? true;

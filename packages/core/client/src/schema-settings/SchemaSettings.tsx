@@ -891,7 +891,7 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
             </Space>
           }
         >
-          <FormActiveFieldsProvider name="form" getActiveFieldsName={upLevelActiveFields.getActiveFieldsName}>
+          <FormActiveFieldsProvider name="form" getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}>
             <FormProvider form={form}>
               <FormLayout layout={'vertical'}>
                 {modalTip && <Alert message={modalTip} />}
@@ -943,7 +943,7 @@ SchemaSettings.ModalItem = function ModalItem(props: ModalItemProps) {
           { title: schema.title || title, width },
           () => {
             return (
-              <FormActiveFieldsProvider name="form" getActiveFieldsName={upLevelActiveFields.getActiveFieldsName}>
+              <FormActiveFieldsProvider name="form" getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}>
                 <Router location={location} navigator={null}>
                   <BlockRequestContext.Provider value={ctx}>
                     <CollectionManagerContext.Provider value={cm}>

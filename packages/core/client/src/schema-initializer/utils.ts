@@ -734,7 +734,7 @@ const recursiveParent = (schema: Schema) => {
 };
 
 export const useCurrentSchema = (action: string, key: string, find = findSchema, rm = removeSchema) => {
-  const { removeActiveFieldName } = useFormActiveFields();
+  const { removeActiveFieldName } = useFormActiveFields() || {};
   let fieldSchema = useFieldSchema();
   if (!fieldSchema?.['x-initializer']) {
     const recursiveInitializerSchema = recursiveParent(fieldSchema);
@@ -748,7 +748,7 @@ export const useCurrentSchema = (action: string, key: string, find = findSchema,
     schema,
     exists: !!schema,
     remove() {
-      removeActiveFieldName(schema.name);
+      removeActiveFieldName?.(schema.name);
       schema && rm(schema, remove);
     },
   };
