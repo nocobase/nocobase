@@ -63,7 +63,12 @@ import {
   useSortFields,
 } from '..';
 import { BlockRequestContext, useFormBlockContext, useTableBlockContext } from '../block-provider';
-import { findFilterTargets, updateFilterTargets } from '../block-provider/hooks';
+import {
+  FormActiveFieldsProvider,
+  findFilterTargets,
+  updateFilterTargets,
+  useFormActiveFields,
+} from '../block-provider/hooks';
 import {
   FilterBlockType,
   getSupportFieldsByAssociation,
@@ -829,6 +834,7 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
   const { dn } = useSchemaSettings();
   const compile = useCompile();
   const api = useAPIClient();
+  const upLevelActiveFields = useFormActiveFields();
 
   const form = useMemo(
     () =>
@@ -885,14 +891,16 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
             </Space>
           }
         >
-          <FormProvider form={form}>
-            <FormLayout layout={'vertical'}>
-              {modalTip && <Alert message={modalTip} />}
-              {modalTip && <br />}
-              {visible && schemaUid && <RemoteSchemaComponent noForm components={components} uid={schemaUid} />}
-              {visible && schema && <SchemaComponent components={components} schema={schema} />}
-            </FormLayout>
-          </FormProvider>
+          <FormActiveFieldsProvider name="form" getActiveFieldsName={upLevelActiveFields.getActiveFieldsName}>
+            <FormProvider form={form}>
+              <FormLayout layout={'vertical'}>
+                {modalTip && <Alert message={modalTip} />}
+                {modalTip && <br />}
+                {visible && schemaUid && <RemoteSchemaComponent noForm components={components} uid={schemaUid} />}
+                {visible && schema && <SchemaComponent components={components} schema={schema} />}
+              </FormLayout>
+            </FormProvider>
+          </FormActiveFieldsProvider>
         </Modal>,
         document.body,
       )}
@@ -921,6 +929,7 @@ SchemaSettings.ModalItem = function ModalItem(props: ModalItemProps) {
   const apiClient = useAPIClient();
   const { theme } = useGlobalTheme();
   const ctx = useContext(BlockRequestContext);
+  const upLevelActiveFields = useFormActiveFields();
 
   if (hidden) {
     return null;
@@ -934,34 +943,36 @@ SchemaSettings.ModalItem = function ModalItem(props: ModalItemProps) {
           { title: schema.title || title, width },
           () => {
             return (
-              <Router location={location} navigator={null}>
-                <BlockRequestContext.Provider value={ctx}>
-                  <CollectionManagerContext.Provider value={cm}>
-                    <CollectionProvider collection={collection}>
-                      <SchemaComponentOptions scope={options.scope} components={options.components}>
-                        <FormLayout
-                          layout={'vertical'}
-                          className={css`
-                            // screen > 576px
-                            @media (min-width: 576px) {
-                              min-width: 520px;
-                            }
+              <FormActiveFieldsProvider name="form" getActiveFieldsName={upLevelActiveFields.getActiveFieldsName}>
+                <Router location={location} navigator={null}>
+                  <BlockRequestContext.Provider value={ctx}>
+                    <CollectionManagerContext.Provider value={cm}>
+                      <CollectionProvider collection={collection}>
+                        <SchemaComponentOptions scope={options.scope} components={options.components}>
+                          <FormLayout
+                            layout={'vertical'}
+                            className={css`
+                              // screen > 576px
+                              @media (min-width: 576px) {
+                                min-width: 520px;
+                              }
 
-                            // screen <= 576px
-                            @media (max-width: 576px) {
-                              min-width: 320px;
-                            }
-                          `}
-                        >
-                          <APIClientProvider apiClient={apiClient}>
-                            <SchemaComponent components={components} scope={scope} schema={schema} />
-                          </APIClientProvider>
-                        </FormLayout>
-                      </SchemaComponentOptions>
-                    </CollectionProvider>
-                  </CollectionManagerContext.Provider>
-                </BlockRequestContext.Provider>
-              </Router>
+                              // screen <= 576px
+                              @media (max-width: 576px) {
+                                min-width: 320px;
+                              }
+                            `}
+                          >
+                            <APIClientProvider apiClient={apiClient}>
+                              <SchemaComponent components={components} scope={scope} schema={schema} />
+                            </APIClientProvider>
+                          </FormLayout>
+                        </SchemaComponentOptions>
+                      </CollectionProvider>
+                    </CollectionManagerContext.Provider>
+                  </BlockRequestContext.Provider>
+                </Router>
+              </FormActiveFieldsProvider>
             );
           },
           theme,

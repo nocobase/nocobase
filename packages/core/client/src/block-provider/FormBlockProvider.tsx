@@ -8,6 +8,7 @@ import { RecordProvider, useRecord } from '../record-provider';
 import { useActionContext, useDesignable } from '../schema-component';
 import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v2/Templates';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
+import { FormActiveFieldsProvider } from './hooks';
 
 export const FormBlockContext = createContext<any>({});
 
@@ -84,7 +85,9 @@ export const FormBlockProvider = (props) => {
   return (
     (detailFlag || createFlag || isCusomeizeCreate) && (
       <BlockProvider {...props} block={'form'}>
-        <InternalFormBlockProvider {...props} />
+        <FormActiveFieldsProvider name="form">
+          <InternalFormBlockProvider {...props} />
+        </FormActiveFieldsProvider>
       </BlockProvider>
     )
   );

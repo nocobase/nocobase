@@ -7,7 +7,7 @@ import _ from 'lodash';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ACLCollectionFieldProvider } from '../../../acl/ACLProvider';
-import { useBlockRequestContext } from '../../../block-provider/BlockProvider';
+import { useFormActiveFields } from '../../../block-provider';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { Collection, useCollection, useCollectionManager } from '../../../collection-manager';
 import { useRecord } from '../../../record-provider';
@@ -34,10 +34,10 @@ export const FormItem: any = observer(
   (props: any) => {
     useEnsureOperatorsValid();
     const field = useField<Field>();
-    const ctx = useBlockRequestContext();
     const schema = useFieldSchema();
     const contextVariable = useContextVariable();
     const variables = useVariables();
+    const { addActiveFieldName } = useFormActiveFields();
 
     useEffect(() => {
       variables?.registerVariable(contextVariable);
@@ -49,12 +49,8 @@ export const FormItem: any = observer(
     useLazyLoadAssociationFieldOfSubForm();
 
     useEffect(() => {
-      if (ctx?.block === 'form') {
-        ctx.field.data = ctx.field.data || {};
-        ctx.field.data.activeFields = ctx.field.data.activeFields || new Set();
-        ctx.field.data.activeFields.add(schema.name);
-      }
-    }, []);
+      addActiveFieldName(schema.name as string);
+    }, [addActiveFieldName, schema.name]);
 
     const showTitle = schema['x-decorator-props']?.showTitle ?? true;
     return (

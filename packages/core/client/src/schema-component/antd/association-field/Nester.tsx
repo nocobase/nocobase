@@ -9,6 +9,7 @@ import { Button, Card, Divider, Tooltip } from 'antd';
 import _ from 'lodash';
 import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
+import { FormActiveFieldsProvider } from '../../../block-provider';
 import { RecordProvider, useRecord } from '../../../record-provider';
 import { isPatternDisabled, isSystemField } from '../../../schema-settings';
 import {
@@ -60,11 +61,13 @@ const ToOneNester = (props) => {
   }, []);
 
   return (
-    <RecordProvider record={field.value}>
-      <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
-        <Card bordered={true}>{props.children}</Card>
-      </DefaultValueProvider>
-    </RecordProvider>
+    <FormActiveFieldsProvider name="nester">
+      <RecordProvider record={field.value}>
+        <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
+          <Card bordered={true}>{props.children}</Card>
+        </DefaultValueProvider>
+      </RecordProvider>
+    </FormActiveFieldsProvider>
   );
 };
 
@@ -153,11 +156,13 @@ const ToManyNester = observer(
                   </Tooltip>
                 )}
               </div>
-              <RecordProvider record={value}>
-                <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
-                  <RecursionField onlyRenderProperties basePath={field.address.concat(index)} schema={fieldSchema} />
-                </DefaultValueProvider>
-              </RecordProvider>
+              <FormActiveFieldsProvider name="nester">
+                <RecordProvider record={value}>
+                  <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
+                    <RecursionField onlyRenderProperties basePath={field.address.concat(index)} schema={fieldSchema} />
+                  </DefaultValueProvider>
+                </RecordProvider>
+              </FormActiveFieldsProvider>
               <Divider />
             </React.Fragment>
           );

@@ -1,6 +1,5 @@
-import { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BlockRequestContext } from '../../../block-provider';
+import { useFormActiveFields } from '../../../block-provider';
 import { CollectionFieldOptions } from '../../../collection-manager';
 import { useBaseVariable } from './useBaseVariable';
 
@@ -20,7 +19,7 @@ export const useIterationVariable = ({
   schema?: any;
   noDisabled?: boolean;
 }) => {
-  const ctx = useContext(BlockRequestContext);
+  const { getActiveFieldsName } = useFormActiveFields();
   const { t } = useTranslation();
   const result = useBaseVariable({
     collectionField,
@@ -31,11 +30,11 @@ export const useIterationVariable = ({
     collectionName: currentCollection,
     noDisabled,
     returnFields: (fields, option) => {
+      const activeFieldsName = getActiveFieldsName('nester');
+
       return option.depth === 0
         ? fields.filter((field) => {
-            if (ctx.field?.data?.activeFields) {
-              return ctx.field.data.activeFields.has(field.name);
-            }
+            return activeFieldsName.includes(field.name);
           })
         : fields;
     },

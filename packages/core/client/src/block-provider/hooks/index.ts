@@ -8,7 +8,7 @@ import { ChangeEvent, useContext, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
-import { AssociationFilter, useFormBlockContext, useTableBlockContext } from '../..';
+import { AssociationFilter, useFormActiveFields, useFormBlockContext, useTableBlockContext } from '../..';
 import { useAPIClient, useRequest } from '../../api-client';
 import { useCollection, useCollectionManager } from '../../collection-manager';
 import { useFilterBlock } from '../../filter-provider/FilterProvider';
@@ -24,6 +24,8 @@ import { useBlockRequestContext, useFilterByTk, useParamsFromRecord } from '../B
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { mergeFilter } from '../SharedFilterProvider';
 import { TableFieldResource } from '../TableFieldProvider';
+
+export * from './useFormActiveFields';
 
 export const usePickActionProps = () => {
   const form = useForm();
@@ -64,13 +66,28 @@ const filterValue = (value) => {
   return obj;
 };
 
-function getFormValues(filterByTk, field, form, fieldNames, getField, resource) {
+function getFormValues({
+  filterByTk,
+  field,
+  form,
+  fieldNames,
+  getField,
+  resource,
+  actionFields,
+}: {
+  filterByTk;
+  field;
+  form;
+  fieldNames;
+  getField;
+  resource;
+  actionFields: any[];
+}) {
   if (filterByTk) {
-    const actionFields = field?.data?.activeFields as Set<string>;
     if (actionFields) {
       const keys = Object.keys(form.values).filter((key) => {
         const f = getField(key);
-        return !actionFields.has(key) && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(f?.type);
+        return !actionFields.includes(key) && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(f?.type);
       });
       return omit({ ...form.values }, keys);
     }
@@ -134,6 +151,7 @@ export const useCreateActionProps = () => {
   const { modal } = App.useApp();
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: form });
+  const { getActiveFieldsName } = useFormActiveFields();
 
   const action = actionField.componentProps.saveMode || 'create';
   const filterKeys = actionField.componentProps.filterKeys || [];
@@ -175,7 +193,15 @@ export const useCreateActionProps = () => {
       if (!skipValidator) {
         await form.submit();
       }
-      const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
+      const values = getFormValues({
+        filterByTk,
+        field,
+        form,
+        fieldNames,
+        getField,
+        resource,
+        actionFields: getActiveFieldsName('form'),
+      });
       // const values = omitBy(formValues, (value) => isEqual(JSON.stringify(value), '[{}]'));
       if (addChild) {
         const treeParentField = getTreeParentField();
@@ -240,6 +266,7 @@ export const useAssociationCreateActionProps = () => {
   const currentRecord = useRecord();
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: form });
+  const { getActiveFieldsName } = useFormActiveFields();
 
   return {
     async onClick() {
@@ -277,7 +304,15 @@ export const useAssociationCreateActionProps = () => {
       if (!skipValidator) {
         await form.submit();
       }
-      const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
+      const values = getFormValues({
+        filterByTk,
+        field,
+        form,
+        fieldNames,
+        getField,
+        resource,
+        actionFields: getActiveFieldsName('form'),
+      });
       if (addChild) {
         const treeParentField = getTreeParentField();
         values[treeParentField?.name ?? 'parent'] = currentRecord;
@@ -729,6 +764,7 @@ export const useCustomizeRequestActionProps = () => {
   const actionField = useField();
   const { setVisible } = useActionContext();
   const { modal } = App.useApp();
+  const { getActiveFieldsName } = useFormActiveFields();
 
   return {
     async onClick() {
@@ -747,7 +783,15 @@ export const useCustomizeRequestActionProps = () => {
       const methods = ['POST', 'PUT', 'PATCH'];
       if (xAction === 'customize:form:request' && methods.includes(requestSettings['method'])) {
         const fieldNames = fields.map((field) => field.name);
-        const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
+        const values = getFormValues({
+          filterByTk,
+          field,
+          form,
+          fieldNames,
+          getField,
+          resource,
+          actionFields: getActiveFieldsName('form'),
+        });
         Object.assign(data, values);
       }
       const requestBody = {
@@ -812,6 +856,7 @@ export const useUpdateActionProps = () => {
   const data = useParamsFromRecord();
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: form });
+  const { getActiveFieldsName } = useFormActiveFields();
 
   return {
     async onClick() {
@@ -849,7 +894,15 @@ export const useUpdateActionProps = () => {
         await form.submit();
       }
       const fieldNames = fields.map((field) => field.name);
-      const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
+      const values = getFormValues({
+        filterByTk,
+        field,
+        form,
+        fieldNames,
+        getField,
+        resource,
+        actionFields: getActiveFieldsName('form'),
+      });
       actionField.data = field.data || {};
       actionField.data.loading = true;
       try {

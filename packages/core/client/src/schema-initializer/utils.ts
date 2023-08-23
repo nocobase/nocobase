@@ -4,7 +4,7 @@ import { error } from '@nocobase/utils/client';
 import _ from 'lodash';
 import React, { useCallback, useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BlockRequestContext, SchemaInitializerButtonContext, SchemaInitializerItemOptions } from '../';
+import { SchemaInitializerButtonContext, SchemaInitializerItemOptions, useFormActiveFields } from '../';
 import { FieldOptions, useCollection, useCollectionManager } from '../collection-manager';
 import { isAssocField } from '../filter-provider/utils';
 import { useActionContext, useDesignable } from '../schema-component';
@@ -734,6 +734,7 @@ const recursiveParent = (schema: Schema) => {
 };
 
 export const useCurrentSchema = (action: string, key: string, find = findSchema, rm = removeSchema) => {
+  const { removeActiveFieldName } = useFormActiveFields();
   let fieldSchema = useFieldSchema();
   if (!fieldSchema?.['x-initializer']) {
     const recursiveInitializerSchema = recursiveParent(fieldSchema);
@@ -743,16 +744,11 @@ export const useCurrentSchema = (action: string, key: string, find = findSchema,
   }
   const { remove } = useDesignable();
   const schema = find(fieldSchema, key, action);
-  const ctx = useContext(BlockRequestContext);
   return {
     schema,
     exists: !!schema,
     remove() {
-      if (ctx.field) {
-        ctx.field.data = ctx.field.data || {};
-        ctx.field.data.activeFields = ctx.field.data.activeFields || new Set();
-        ctx.field.data.activeFields.delete(schema.name);
-      }
+      removeActiveFieldName(schema.name);
       schema && rm(schema, remove);
     },
   };
