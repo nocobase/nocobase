@@ -24,6 +24,7 @@ declare global {
   }
 }
 
+export type DevDynamicImport = (packageName: string) => Promise<{ default: typeof Plugin }>;
 export type ComponentAndProps<T = any> = [ComponentType, T];
 export interface ApplicationOptions {
   apiClient?: APIClientOptions;
@@ -33,7 +34,7 @@ export interface ApplicationOptions {
   components?: Record<string, ComponentType>;
   scopes?: Record<string, any>;
   router?: RouterOptions;
-  devPlugins?: Record<string, Promise<{ default: typeof Plugin }>>;
+  devDynamicImport?: DevDynamicImport;
 }
 
 export class Application {
@@ -44,12 +45,12 @@ export class Application {
   public apiClient: APIClient;
   public components: Record<string, ComponentType> = { ...defaultAppComponents };
   public pm: PluginManager;
-  public devPlugins: Record<string, Promise<{ default: typeof Plugin }>> = {};
+  public devDynamicImport: DevDynamicImport;
   public requirejs: RequireJS;
 
   constructor(protected options: ApplicationOptions = {}) {
     this.initRequireJs();
-    this.devPlugins = options.devPlugins || {};
+    this.devDynamicImport = options.devDynamicImport;
     this.scopes = merge(this.scopes, options.scopes);
     this.components = merge(this.components, options.components);
     this.apiClient = new APIClient(options.apiClient);

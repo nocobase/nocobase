@@ -43,7 +43,7 @@ const CollectionFieldSet = observer(
     const scope = useWorkflowVariableOptions();
     const { values: config } = form;
     const collectionName = config?.collection;
-    const collectionFields = getCollectionFields(collectionName);
+    const collectionFields = getCollectionFields(collectionName).filter((field) => field.uiSchema);
     const fields = filter ? collectionFields.filter(filter.bind(config)) : collectionFields;
 
     const unassignedFields = useMemo(() => fields.filter((field) => !value || !(field.name in value)), [fields, value]);

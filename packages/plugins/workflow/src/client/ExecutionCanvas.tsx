@@ -1,6 +1,6 @@
 import {
   ActionContextProvider,
-  css,
+  cx,
   SchemaComponent,
   useAPIClient,
   useCompile,
@@ -12,15 +12,14 @@ import { Breadcrumb, Dropdown, Space, Tag } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CanvasContent } from './CanvasContent';
-import { ExecutionStatusOptionsMap, JobStatusOptions, JobStatusOptionsMap } from './constants';
+import { ExecutionStatusOptionsMap, JobStatusOptions } from './constants';
 import { FlowContext, useFlowContext } from './FlowContext';
 import { lang, NAMESPACE } from './locale';
 import { instructions } from './nodes';
 import useStyles from './style';
 import { linkNodes } from './utils';
 import { DownOutlined } from '@ant-design/icons';
-import { StatusIcon } from './components/StatusIcon';
-import classnames from 'classnames';
+import { StatusButton } from './components/StatusButton';
 
 function attachJobs(nodes, jobs: any[] = []): void {
   const nodesMap = new Map();
@@ -174,18 +173,23 @@ function ExecutionsDropdown(props) {
   return execution ? (
     <Dropdown
       menu={{
-        className: styles.executionsDropdownRowClass,
         onClick,
+        defaultSelectedKeys: [`${execution.id}`],
+        className: cx(styles.dropdownClass, styles.executionsDropdownRowClass),
         items: [...executionsAfter, execution, ...executionsBefore].map((item) => {
           return {
             key: item.id,
             label: (
-              <span className={classnames('row', { current: item.id === execution.id })}>
+              <>
                 <span className="id">{`#${item.id}`}</span>
                 <time>{str2moment(item.createdAt).format('YYYY-MM-DD HH:mm:ss')}</time>
+              </>
+            ),
+            icon: (
+              <span>
+                <StatusButton statusMap={ExecutionStatusOptionsMap} status={item.status} />
               </span>
             ),
-            icon: <StatusIcon status={item.status} />,
           };
         }),
       }}

@@ -708,6 +708,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
         console.log('Connection has been established successfully.');
         return true;
       } catch (error) {
+        console.log(`Unable to connect to the database: ${error.message}`);
         if (count >= (retry as number)) {
           throw new Error('Connection failed, please check your database connection credentials and try again.');
         }

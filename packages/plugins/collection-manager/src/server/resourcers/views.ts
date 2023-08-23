@@ -56,7 +56,7 @@ export default {
     },
 
     async query(ctx, next) {
-      const { filterByTk, schema = 'public', page = 1, pageSize = 10 } = ctx.action.params;
+      const { filterByTk, fieldTypes, schema = 'public', page = 1, pageSize = 10 } = ctx.action.params;
 
       const offset = (page - 1) * pageSize;
       const limit = 1 * pageSize;
@@ -66,7 +66,34 @@ export default {
                      ctx.app.db.utils.addSchema(filterByTk, schema),
                    )} LIMIT ${limit} OFFSET ${offset}`;
 
-      ctx.body = await ctx.app.db.sequelize.query(sql, { type: 'SELECT' });
+      const rawValues = await ctx.app.db.sequelize.query(sql, { type: 'SELECT' });
+
+      if (fieldTypes) {
+        for (const raw of rawValues) {
+          const fakeInstance = {
+            dataValues: raw,
+            getDataValue: (key) => raw[key],
+          };
+
+          for (const fieldName of Object.keys(fieldTypes)) {
+            const fieldType = fieldTypes[fieldName];
+            const FieldClass = ctx.app.db.fieldTypes.get(fieldType);
+
+            const fieldOptions = new FieldClass(
+              { name: fieldName },
+              {
+                db: ctx.app.db,
+              },
+            ).options;
+
+            if (fieldOptions.get) {
+              const newValue = fieldOptions.get.apply(fakeInstance);
+              raw[fieldName] = newValue;
+            }
+          }
+        }
+      }
+      ctx.body = rawValues;
       await next();
     },
   },
