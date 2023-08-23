@@ -4,8 +4,10 @@ import {
   DestroyActionTemplate,
   GetActionTemplate,
   ListActionTemplate,
+  MoveActionTemplate,
   UpdateActionTemplate,
 } from '../collection';
+import { hasSortField } from '../index';
 
 export function appendCollectionIndexParams(apiDef: object) {
   for (const action of Object.keys(apiDef)) {
@@ -28,7 +30,9 @@ export default (collection: Collection, relationField: HasManyField | BelongsToM
     relationField,
   };
 
-  return {
+  const targetCollection = collection.db.getCollection(relationField.target);
+
+  const paths = {
     [`/${collection.name}/{collectionIndex}/${relationField.name}:list`]: appendCollectionIndexParams(
       ListActionTemplate(options),
     ),
@@ -44,5 +48,70 @@ export default (collection: Collection, relationField: HasManyField | BelongsToM
     [`/${collection.name}/{collectionIndex}/${relationField.name}:destroy`]: appendCollectionIndexParams(
       DestroyActionTemplate(options),
     ),
+
+    [`/${collection.name}/{collectionIndex}/${relationField.name}:set`]: appendCollectionIndexParams({
+      post: {
+        tags: [`${collection.name}.${relationField.name}`],
+        summary: 'Set or reset associations',
+        parameters: [
+          {
+            $ref: '#/components/parameters/filterByTk',
+          },
+          {
+            $ref: '#/components/parameters/filterByTks',
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'OK',
+          },
+        },
+      },
+    }),
+
+    [`/${collection.name}/{collectionIndex}/${relationField.name}:remove`]: appendCollectionIndexParams({
+      post: {
+        tags: [`${collection.name}.${relationField.name}`],
+        summary: 'Detach record',
+        parameters: [
+          {
+            $ref: '#/components/parameters/filterByTk',
+          },
+          {
+            $ref: '#/components/parameters/filterByTks',
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'OK',
+          },
+        },
+      },
+    }),
+
+    [`/${collection.name}/{collectionIndex}/${relationField.name}:toggle`]: appendCollectionIndexParams({
+      post: {
+        tags: [`${collection.name}.${relationField.name}`],
+        summary: 'Attach or detach record',
+        parameters: [
+          {
+            $ref: '#/components/parameters/filterByTk',
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'OK',
+          },
+        },
+      },
+    }),
   };
+
+  if (hasSortField(collection)) {
+    paths[`/${collection.name}/{collectionIndex}/${relationField.name}:move`] = appendCollectionIndexParams(
+      MoveActionTemplate(options),
+    );
+  }
+
+  return paths;
 };

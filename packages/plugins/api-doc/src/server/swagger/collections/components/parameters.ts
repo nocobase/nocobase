@@ -18,8 +18,18 @@ export default (collection: Collection) => {
       filterByTk: {
         name: 'filterByTk',
         in: 'query',
-        description: 'filter by tk',
+        description: 'filter by TK(default by ID)',
         schema: getTypeByField(collection.fields.get(primaryKey)),
+      },
+
+      filterByTks: {
+        name: 'filterByTk',
+        in: 'query',
+        description: 'filter by TKs(default by ID), example: `1,2,3`',
+        schema: {
+          type: 'array',
+          items: getTypeByField(collection.fields.get(primaryKey)),
+        },
       },
     });
   }

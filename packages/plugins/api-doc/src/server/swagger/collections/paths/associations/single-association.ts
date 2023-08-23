@@ -36,19 +36,19 @@ function filterSingleAssociationParams(apiDoc: object) {
   return apiDoc;
 }
 
-export default (collection: Collection, associationField: HasOneField | BelongsToField) => {
+export default (collection: Collection, relationField: HasOneField | BelongsToField) => {
   const options = {
     collection,
-    relationField: associationField,
+    relationField,
   };
 
   return {
-    [`/${collection.name}/{collectionIndex}/${associationField.name}:get`]: removeFilterByTkParams(
+    [`/${collection.name}/{collectionIndex}/${relationField.name}:get`]: removeFilterByTkParams(
       filterSingleAssociationParams(appendCollectionIndexParams(GetActionTemplate(options))),
     ),
-    [`/${collection.name}/{collectionIndex}/${associationField.name}:set`]: appendCollectionIndexParams({
+    [`/${collection.name}/{collectionIndex}/${relationField.name}:set`]: appendCollectionIndexParams({
       post: {
-        tags: [`${collection.name}.${associationField.name}`],
+        tags: [`${collection.name}.${relationField.name}`],
         summary: 'Associate a record',
         parameters: [
           {
@@ -68,9 +68,9 @@ export default (collection: Collection, associationField: HasOneField | BelongsT
       },
     }),
 
-    [`/${collection.name}/{collectionIndex}/${associationField.name}:remove`]: appendCollectionIndexParams({
+    [`/${collection.name}/{collectionIndex}/${relationField.name}:remove`]: appendCollectionIndexParams({
       post: {
-        tags: [`${collection.name}.${associationField.name}`],
+        tags: [`${collection.name}.${relationField.name}`],
         summary: 'Disassociate the relationship record',
         responses: {
           '200': {
@@ -79,13 +79,13 @@ export default (collection: Collection, associationField: HasOneField | BelongsT
         },
       },
     }),
-    [`/${collection.name}/{collectionIndex}/${associationField.name}:update`]: removeFilterByTkParams(
+    [`/${collection.name}/{collectionIndex}/${relationField.name}:update`]: removeFilterByTkParams(
       filterSingleAssociationParams(appendCollectionIndexParams(UpdateActionTemplate(options))),
     ),
-    [`/${collection.name}/{collectionIndex}/${associationField.name}:create`]: removeFilterByTkParams(
+    [`/${collection.name}/{collectionIndex}/${relationField.name}:create`]: removeFilterByTkParams(
       filterSingleAssociationParams(appendCollectionIndexParams(CreateActionTemplate(options))),
     ),
-    [`/${collection.name}/{collectionIndex}/${associationField.name}:destroy`]: removeFilterByTkParams(
+    [`/${collection.name}/{collectionIndex}/${relationField.name}:destroy`]: removeFilterByTkParams(
       filterSingleAssociationParams(appendCollectionIndexParams(DestroyActionTemplate(options))),
     ),
   };
