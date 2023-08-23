@@ -7,6 +7,7 @@ import { useRecord } from '../../../../../src/record-provider';
 import { useCollection } from '../../../../collection-manager';
 import { DEBOUNCE_WAIT, useLocalVariables, useVariables } from '../../../../variables';
 import { getPath } from '../../../../variables/utils/getPath';
+import { getVariableName } from '../../../../variables/utils/getVariableName';
 import { isVariable } from '../../../../variables/utils/isVariable';
 import { transformVariableValue } from '../../../../variables/utils/transformVariableValue';
 
@@ -31,7 +32,8 @@ const useParseDefaultValue = () => {
       return;
     }
 
-    const formVariable = localVariables.find((item) => item.name === '$nForm');
+    const variableName = getVariableName(schema.default);
+    const variableValue = localVariables.find((item) => item.name === variableName);
     const _run = async () => {
       // 如果默认值是一个变量，则需要解析之后再显示出来
       if (isVariable(schema.default) && variables && field) {
@@ -76,7 +78,7 @@ const useParseDefaultValue = () => {
     // 实现联动的效果，当依赖的变量变化时（如 `$nForm` 变量），重新解析默认值
     const dispose = reaction(() => {
       if (isVariable(schema.default)) {
-        return _.get({ $nForm: formVariable?.ctx }, getPath(schema.default));
+        return _.get({ [variableName]: variableValue?.ctx }, getPath(schema.default));
       }
     }, run);
 

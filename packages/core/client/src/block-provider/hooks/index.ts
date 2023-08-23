@@ -133,7 +133,7 @@ export const useCreateActionProps = () => {
   const currentRecord = useRecord();
   const { modal } = App.useApp();
   const variables = useVariables();
-  const localVariables = useLocalVariables({ form });
+  const localVariables = useLocalVariables({ currentForm: form });
 
   const action = actionField.componentProps.saveMode || 'create';
   const filterKeys = actionField.componentProps.filterKeys || [];
@@ -239,7 +239,7 @@ export const useAssociationCreateActionProps = () => {
   const filterByTk = useFilterByTk();
   const currentRecord = useRecord();
   const variables = useVariables();
-  const localVariables = useLocalVariables({ form });
+  const localVariables = useLocalVariables({ currentForm: form });
 
   return {
     async onClick() {
@@ -450,7 +450,7 @@ export const useCustomizeUpdateActionProps = () => {
   const form = useForm();
   const { modal } = App.useApp();
   const variables = useVariables();
-  const localVariables = useLocalVariables({ form });
+  const localVariables = useLocalVariables({ currentForm: form });
   const { name, getField } = useCollection();
 
   return {
@@ -811,7 +811,7 @@ export const useUpdateActionProps = () => {
   const { modal } = App.useApp();
   const data = useParamsFromRecord();
   const variables = useVariables();
-  const localVariables = useLocalVariables({ form });
+  const localVariables = useLocalVariables({ currentForm: form });
 
   return {
     async onClick() {

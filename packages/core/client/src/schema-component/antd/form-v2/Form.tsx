@@ -78,7 +78,7 @@ const WithForm = (props: WithFormProps) => {
   const fieldSchema = useFieldSchema();
   const { setFormValueChanged } = useActionContext();
   const variables = useVariables();
-  const localVariables = useLocalVariables({ form });
+  const localVariables = useLocalVariables({ currentForm: form });
   const linkageRules: any[] =
     (getLinkageRules(fieldSchema) || fieldSchema.parent?.['x-linkage-rules'])?.filter((k) => !k.disabled) || [];
 
