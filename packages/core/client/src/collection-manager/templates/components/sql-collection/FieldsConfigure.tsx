@@ -164,7 +164,7 @@ export const FieldsConfigure = observer(() => {
     field.setValue(
       fields.map((f) => ({
         ...f,
-        source: typeof f.source === 'string' ? f.source : f.source?.filter?.(Boolean)?.join('.'),
+        source: typeof f.source === 'string' ? f.source : f.source?.filter?.(Boolean)?.join('.') || null,
       })),
     );
   };
@@ -228,7 +228,7 @@ export const FieldsConfigure = observer(() => {
               handleFieldChange(
                 {
                   ...field,
-                  interface: value,
+                  interface: value || null,
                   uiSchema: {
                     ...interfaceConfig?.default?.uiSchema,
                     title: interfaceConfig?.default?.uiSchema?.title || field.uiSchema?.title,

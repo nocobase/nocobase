@@ -73,14 +73,15 @@ export default {
 
       await next();
     },
-  },
-  update: async (ctx: Context, next: Next) => {
-    const { filterByTk, values } = ctx.action.params;
-    ctx.body = await ctx.db.getRepository('collections').update({
-      filterByTk,
-      values,
-      updateAssociationValues: ['fields'],
-    });
-    await next();
+    update: async (ctx: Context, next: Next) => {
+      console.log('test==============');
+      const { filterByTk, values } = ctx.action.params;
+      ctx.body = await ctx.db.getRepository('collections').update({
+        filterByTk,
+        values,
+        updateAssociationValues: ['fields'],
+      });
+      await next();
+    },
   },
 };
