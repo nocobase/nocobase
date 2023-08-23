@@ -159,7 +159,7 @@ export function WorkflowCanvas() {
               menu={{
                 onClick: onSwitchVersion,
                 defaultSelectedKeys: [`${workflow.id}`],
-                className: cx(styles.workflowVersionDropdownClass),
+                className: cx(styles.dropdownClass, styles.workflowVersionDropdownClass),
                 items: revisions
                   .sort((a, b) => b.id - a.id)
                   .map((item, index) => ({
