@@ -56,7 +56,7 @@ const useParseDefaultValue = () => {
         });
 
         if (value == null || value === '') {
-          field.reset();
+          field.setValue(null);
         } else {
           field.setInitialValue(value);
         }
