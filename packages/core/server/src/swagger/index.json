@@ -789,7 +789,7 @@
     "/{collectionName}/{collectionIndex}/{oneToManyAssociation}:list": {
       "get": {
         "tags": ["$collection.$oneToManyAssociation"],
-        "summary": "View a list of the one-to-many relationship",
+        "summary": "Returns a list of the one-to-many relationship",
         "parameters": [
           {
             "$ref": "#/components/parameters/collectionName"
@@ -832,7 +832,7 @@
     "/{collectionName}/{collectionIndex}/{oneToManyAssociation}:get": {
       "get": {
         "tags": ["$collection.$oneToManyAssociation"],
-        "summary": "View a record of the one-to-many relationship",
+        "summary": "Returns a record of the one-to-many relationship",
         "parameters": [
           {
             "$ref": "#/components/parameters/collectionName"
@@ -1060,7 +1060,7 @@
     "/{collectionName}/{collectionIndex}/{oneToManyAssociation}:add": {
       "post": {
         "tags": ["$collection.$oneToManyAssociation"],
-        "summary": "Attach a record",
+        "summary": "Attach record",
         "parameters": [
           {
             "$ref": "#/components/parameters/collectionName"
@@ -1088,7 +1088,7 @@
     "/{collectionName}/{collectionIndex}/{oneToManyAssociation}:remove": {
       "post": {
         "tags": ["$collection.$oneToManyAssociation"],
-        "summary": "Detach a record",
+        "summary": "Detach record",
         "parameters": [
           {
             "$ref": "#/components/parameters/collectionName"
@@ -1116,7 +1116,7 @@
     "/{collectionName}/{collectionIndex}/{manyToManyAssociation}:list": {
       "get": {
         "tags": ["$collection.$manyToManyAssociation"],
-        "description": "",
+        "summary": "Returns a list of the many-to-many relationship",
         "parameters": [
           {
             "$ref": "#/components/parameters/collectionName"
@@ -1128,16 +1128,7 @@
             "$ref": "#/components/parameters/manyToManyAssociation"
           },
           {
-            "$ref": "#/components/parameters/page"
-          },
-          {
-            "$ref": "#/components/parameters/pageSize"
-          },
-          {
             "$ref": "#/components/parameters/filter"
-          },
-          {
-            "$ref": "#/components/parameters/sort"
           },
           {
             "$ref": "#/components/parameters/fields"
@@ -1147,6 +1138,15 @@
           },
           {
             "$ref": "#/components/parameters/except"
+          },
+          {
+            "$ref": "#/components/parameters/page"
+          },
+          {
+            "$ref": "#/components/parameters/pageSize"
+          },
+          {
+            "$ref": "#/components/parameters/sort"
           }
         ],
         "responses": {
@@ -1159,7 +1159,7 @@
     "/{collectionName}/{collectionIndex}/{manyToManyAssociation}:get": {
       "get": {
         "tags": ["$collection.$manyToManyAssociation"],
-        "description": "",
+        "summary": "Returns a record of the many-to-many relationship",
         "parameters": [
           {
             "$ref": "#/components/parameters/collectionName"
@@ -1177,9 +1177,6 @@
             "$ref": "#/components/parameters/filter"
           },
           {
-            "$ref": "#/components/parameters/sort"
-          },
-          {
             "$ref": "#/components/parameters/fields"
           },
           {
@@ -1187,6 +1184,9 @@
           },
           {
             "$ref": "#/components/parameters/except"
+          },
+          {
+            "$ref": "#/components/parameters/sort"
           }
         ],
         "responses": {
@@ -1199,7 +1199,7 @@
     "/{collectionName}/{collectionIndex}/{manyToManyAssociation}:create": {
       "post": {
         "tags": ["$collection.$manyToManyAssociation"],
-        "description": "",
+        "summary": "Create and attach record of the many-to-many relationship",
         "parameters": [
           {
             "$ref": "#/components/parameters/collectionName"
@@ -1227,7 +1227,7 @@
     "/{collectionName}/{collectionIndex}/{manyToManyAssociation}:update": {
       "post": {
         "tags": ["$collection.$manyToManyAssociation"],
-        "description": "",
+        "summary": "Update record of the many-to-many relationship",
         "parameters": [
           {
             "$ref": "#/components/parameters/collectionName"
@@ -1261,7 +1261,7 @@
     "/{collectionName}/{collectionIndex}/{manyToManyAssociation}:destroy": {
       "post": {
         "tags": ["$collection.$manyToManyAssociation"],
-        "description": "",
+        "summary": "Delete and detach record of the one-to-many relationship",
         "parameters": [
           {
             "$ref": "#/components/parameters/collectionName"
@@ -1289,7 +1289,7 @@
     "/{collectionName}/{collectionIndex}/{manyToManyAssociation}:move": {
       "post": {
         "tags": ["$collection.$manyToManyAssociation"],
-        "description": "",
+        "summary": "Move record of the one-to-many relationship",
         "parameters": [
           {
             "$ref": "#/components/parameters/collectionName"
@@ -1359,7 +1359,7 @@
     "/{collectionName}/{collectionIndex}/{manyToManyAssociation}:set": {
       "post": {
         "tags": ["$collection.$manyToManyAssociation"],
-        "description": "",
+        "summary": "Set or reset associations",
         "parameters": [
           {
             "$ref": "#/components/parameters/collectionName"
@@ -1381,7 +1381,7 @@
     "/{collectionName}/{collectionIndex}/{manyToManyAssociation}:add": {
       "post": {
         "tags": ["$collection.$manyToManyAssociation"],
-        "description": "",
+        "summary": "Attach record",
         "parameters": [
           {
             "$ref": "#/components/parameters/collectionName"
@@ -1403,7 +1403,7 @@
     "/{collectionName}/{collectionIndex}/{manyToManyAssociation}:remove": {
       "post": {
         "tags": ["$collection.$manyToManyAssociation"],
-        "description": "",
+        "summary": "Detach record",
         "parameters": [
           {
             "$ref": "#/components/parameters/collectionName"
@@ -1425,7 +1425,7 @@
     "/{collectionName}/{collectionIndex}/{manyToManyAssociation}:toggle": {
       "post": {
         "tags": ["$collection.$manyToManyAssociation"],
-        "description": "",
+        "summary": "Attach or detach record",
         "parameters": [
           {
             "$ref": "#/components/parameters/collectionName"

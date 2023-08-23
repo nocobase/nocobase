@@ -91,7 +91,7 @@ export class HasManyRepository extends MultipleRelationRepository {
 
   @transaction((args, transaction) => {
     return {
-      pk: args[0],
+      tk: args[0],
       transaction,
     };
   })
@@ -107,13 +107,12 @@ export class HasManyRepository extends MultipleRelationRepository {
 
   @transaction((args, transaction) => {
     return {
-      pk: args[0],
+      tk: args[0],
       transaction,
     };
   })
   async add(options: TargetKey | TargetKey[] | AssociatedOptions): Promise<void> {
     const transaction = await this.getTransaction(options);
-
     const sourceModel = await this.getSourceModel(transaction);
 
     await sourceModel[this.accessors().add](this.convertTks(options), {
