@@ -32,7 +32,7 @@ export const InternalCascadeSelect = observer(
     const api = useAPIClient();
     const { options: collectionField } = useAssociationFieldContext();
     const resource = api.resource(collectionField.target);
-    const [selectedOptions, setSelectedOptions] = useState<{ key: string; children: [] }[]>([
+    const [selectedOptions, setSelectedOptions] = useState<{ key: string; children: any }[]>([
       { key: null, children: [] },
     ]);
 
@@ -58,12 +58,12 @@ export const InternalCascadeSelect = observer(
       return response?.data?.data;
     };
 
-    const handleSelect = async (value, option) => {
+    const handleSelect = async (value, option, index) => {
       const data = await handleGetOptions({ parentId: option?.id });
-      if (data?.length > 0) {
-        const options = updateArrayWithKey(selectedOptions, { key: option?.id, children: data });
-        setSelectedOptions([...options]);
-      }
+      const options = [...selectedOptions];
+      options.splice(index + 1);
+      options[index + 1] = { key: option?.id, children: data?.length > 0 ? data : null };
+      setSelectedOptions([...options]);
       const fieldValue = field.value || [];
       fieldValue.push(option);
       field.value = fieldValue;
@@ -72,18 +72,20 @@ export const InternalCascadeSelect = observer(
     return (
       <div key={fieldSchema.name}>
         <Space wrap>
-          {selectedOptions.map((selectedValue: any, index) => (
-            <CascadeSelect
-              key={selectedValue.key}
-              fieldNames={fieldNames}
-              onChange={handleSelect}
-              data={selectedValue.children}
-              value={selectedValue.value}
-              selectedValue={selectedValue}
-              index={index}
-              handleGetOptions={handleGetOptions}
-            />
-          ))}
+          {selectedOptions
+            .filter((v) => v.children)
+            .map((selectedValue: any, index) => (
+              <CascadeSelect
+                key={selectedValue.key}
+                fieldNames={fieldNames}
+                onChange={handleSelect}
+                data={selectedValue.children}
+                value={selectedValue.value}
+                selectedValue={selectedValue}
+                index={index}
+                handleGetOptions={handleGetOptions}
+              />
+            ))}
         </Space>
       </div>
     );
@@ -166,7 +168,7 @@ const CascadeSelect = (props) => {
   );
 
   const onDropdownVisibleChange = async (visible) => {
-    if (visible && !options.length) {
+    if (visible) {
       setLoading(true);
       const result = await handleGetOptions({ parentId: selectedValue?.key });
       setLoading(false);
@@ -188,11 +190,12 @@ const CascadeSelect = (props) => {
       parentId: selectedValue?.key,
     });
     setLoading(false);
-    setTimeout(() => setOptions(result));
+    setOptions(result);
   };
 
   return (
     <Select
+      allowClear
       showSearch
       autoClearSearchValue
       filterOption={false}
@@ -203,7 +206,7 @@ const CascadeSelect = (props) => {
       onSearch={onSearch}
       fieldNames={fieldNames}
       style={{ width: 150 }}
-      onChange={onChange}
+      onChange={(value, option) => onChange(value, option, index)}
       options={mapOptionsToTags(options)}
       onDropdownVisibleChange={onDropdownVisibleChange}
       notFoundContent={loading ? <Spin size="small" /> : null}
