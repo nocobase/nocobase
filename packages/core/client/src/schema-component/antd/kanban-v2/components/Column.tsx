@@ -2,7 +2,7 @@ import { css } from '@emotion/css';
 import { FormLayout } from '@formily/antd-v5';
 import { FieldContext, FormContext, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Spin, Empty } from 'antd';
-import React, { memo, useContext, useEffect, useState, useRef } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Draggable, Droppable } from 'react-beautiful-dnd';
 import { useTranslation } from 'react-i18next';
 import { useInfiniteScroll } from 'ahooks';
