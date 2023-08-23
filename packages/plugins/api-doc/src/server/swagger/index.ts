@@ -32,12 +32,11 @@ export class SwaggerManager {
     return this.generateSwagger();
   }
 
-  collection2Swagger(collectionName: string) {
+  collection2Swagger(collectionName: string, withAssociation = true) {
     const collection = this.db.getCollection(collectionName);
-    return {
-      tags: [{ name: collectionName, description: collection.options.title }],
-      ...collectionToSwaggerObject(collection),
-    };
+    return collectionToSwaggerObject(collection, {
+      withAssociation,
+    });
   }
 
   async getCollectionsSwagger(name?: string) {
@@ -57,7 +56,7 @@ export class SwaggerManager {
         if (collection.name === 'roles') {
           continue;
         }
-        others = merge(others, this.collection2Swagger(collection.name));
+        others = merge(others, this.collection2Swagger(collection.name, false));
       }
     }
     return merge(base, others);

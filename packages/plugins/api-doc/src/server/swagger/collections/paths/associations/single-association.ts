@@ -17,14 +17,14 @@ function removeFilterByTkParams(apiDoc: object) {
 }
 
 export default (collection: Collection, associationField: HasOneField | BelongsToField) => {
+  const options = {
+    collection,
+    relationField: associationField,
+  };
+
   return {
     [`/${collection.name}/{collectionIndex}/${associationField.name}:get`]: removeFilterByTkParams(
-      appendCollectionIndexParams(
-        GetActionTemplate({
-          collectionName: associationField.target,
-          target: `${collection.name}.${associationField.name}`,
-        }),
-      ),
+      appendCollectionIndexParams(GetActionTemplate(options)),
     ),
     [`/${collection.name}/{collectionIndex}/${associationField.name}:set`]: appendCollectionIndexParams({
       post: {
@@ -68,20 +68,10 @@ export default (collection: Collection, associationField: HasOneField | BelongsT
       ),
     ),
     [`/${collection.name}/{collectionIndex}/${associationField.name}:create`]: removeFilterByTkParams(
-      appendCollectionIndexParams(
-        UpdateActionTemplate({
-          collectionName: associationField.target,
-          target: `${collection.name}.${associationField.name}`,
-        }),
-      ),
+      appendCollectionIndexParams(UpdateActionTemplate(options)),
     ),
     [`/${collection.name}/{collectionIndex}/${associationField.name}:destroy`]: removeFilterByTkParams(
-      appendCollectionIndexParams(
-        DestroyActionTemplate({
-          collectionName: associationField.target,
-          target: `${collection.name}.${associationField.name}`,
-        }),
-      ),
+      appendCollectionIndexParams(DestroyActionTemplate(options)),
     ),
   };
 };

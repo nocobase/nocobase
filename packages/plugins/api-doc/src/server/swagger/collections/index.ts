@@ -3,11 +3,11 @@ import paths from './paths';
 import components from './components';
 import tags from './tags';
 
-function collectionToSwaggerObject(collection: Collection) {
+function collectionToSwaggerObject(collection: Collection, options) {
   return {
-    paths: paths(collection),
-    components: components(collection),
-    tags: tags(collection),
+    paths: paths(collection, options),
+    components: components(collection, options),
+    tags: tags(collection, options),
   };
 }
 

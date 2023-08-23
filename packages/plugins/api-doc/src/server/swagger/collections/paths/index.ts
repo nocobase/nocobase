@@ -2,11 +2,12 @@ import { Collection } from '@nocobase/database';
 import list from './collection';
 import associations from './associations';
 
-export default (collection: Collection) => {
-  const paths = {
-    ...list(collection),
-    ...associations(collection),
-  };
+export default (collection: Collection, options) => {
+  const paths = list(collection);
+
+  if (options.withAssociation) {
+    Object.assign(paths, associations(collection));
+  }
 
   return paths;
 };

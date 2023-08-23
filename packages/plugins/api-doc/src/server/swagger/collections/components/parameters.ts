@@ -4,20 +4,27 @@ import { getTypeByField } from './field-type-map';
 export default (collection: Collection) => {
   const primaryKey = collection.model.primaryKeyAttribute;
 
-  const parameters = {
-    collectionIndex: {
-      required: true,
-      name: 'collectionIndex',
-      in: 'path',
-      description: 'collection index',
-      schema: getTypeByField(collection.fields.get(primaryKey)),
-    },
-    filterByTk: {
-      name: 'filterByTk',
-      in: 'query',
-      description: 'filter by tk',
-      schema: getTypeByField(collection.fields.get(primaryKey)),
-    },
+  const parameters = {};
+
+  if (primaryKey) {
+    Object.assign(parameters, {
+      collectionIndex: {
+        required: true,
+        name: 'collectionIndex',
+        in: 'path',
+        description: 'collection index',
+        schema: getTypeByField(collection.fields.get(primaryKey)),
+      },
+      filterByTk: {
+        name: 'filterByTk',
+        in: 'query',
+        description: 'filter by tk',
+        schema: getTypeByField(collection.fields.get(primaryKey)),
+      },
+    });
+  }
+
+  Object.assign(parameters, {
     filter: {
       name: 'filter',
       in: 'query',
@@ -104,7 +111,7 @@ export default (collection: Collection) => {
         },
       },
     },
-  };
+  });
 
   return {
     parameters,

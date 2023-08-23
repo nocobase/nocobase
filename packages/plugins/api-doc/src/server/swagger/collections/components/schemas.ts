@@ -69,20 +69,18 @@ function collectionToSchema(collection: Collection) {
   };
 }
 
-export default (collection: Collection) => {
+export default (collection: Collection, options) => {
   const associations = associationFields(collection);
   const associationsTarget = associations.map((field) => collection.db.getCollection(field.target));
 
+  const schemas = collectionToSchema(collection);
+  if (options.withAssociation) {
+    for (const target of associationsTarget) {
+      Object.assign(schemas, collectionToSchema(target));
+    }
+  }
   return {
-    schemas: {
-      ...collectionToSchema(collection),
-      ...associationsTarget.reduce((obj, target) => {
-        return {
-          ...obj,
-          ...collectionToSchema(target),
-        };
-      }, {}),
-    },
+    schemas,
   };
 };
 
