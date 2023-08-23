@@ -13,7 +13,7 @@ export default {
   },
   externalDocs: {
     description: 'Find out more about NocoBase',
-    url: 'https://docs.nocobase.com/',
+    url: 'https://docs.nocobase.com/api/http',
   },
   components: {
     securitySchemes: {

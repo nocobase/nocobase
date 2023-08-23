@@ -1,6 +1,6 @@
 import { omit } from 'lodash';
 import { HasMany, Op } from 'sequelize';
-import { AggregateOptions, DestroyOptions, FindOptions, TargetKey, TK } from '../repository';
+import { AggregateOptions, DestroyOptions, FindOptions, TK, TargetKey } from '../repository';
 import { AssociatedOptions, MultipleRelationRepository } from './multiple-relation-repository';
 import { transaction } from './relation-repository';
 export class HasManyRepository extends MultipleRelationRepository {
@@ -89,17 +89,6 @@ export class HasManyRepository extends MultipleRelationRepository {
     return true;
   }
 
-  handleKeyOfAdd(options) {
-    let handleKeys;
-
-    if (typeof options !== 'object' && !Array.isArray(options)) {
-      handleKeys = [options];
-    } else {
-      handleKeys = options['pk'];
-    }
-    return handleKeys;
-  }
-
   @transaction((args, transaction) => {
     return {
       pk: args[0],
@@ -111,7 +100,7 @@ export class HasManyRepository extends MultipleRelationRepository {
 
     const sourceModel = await this.getSourceModel(transaction);
 
-    await sourceModel[this.accessors().set](this.handleKeyOfAdd(options), {
+    await sourceModel[this.accessors().set](this.convertTks(options), {
       transaction,
     });
   }
@@ -127,7 +116,7 @@ export class HasManyRepository extends MultipleRelationRepository {
 
     const sourceModel = await this.getSourceModel(transaction);
 
-    await sourceModel[this.accessors().add](this.handleKeyOfAdd(options), {
+    await sourceModel[this.accessors().add](this.convertTks(options), {
       transaction,
     });
   }
