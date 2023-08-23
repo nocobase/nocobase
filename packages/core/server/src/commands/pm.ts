@@ -21,6 +21,7 @@ export default (app: Application) => {
       try {
         await app.pm.enable(plugins);
       } catch (error) {
+        app.log.debug(`Failed to enable plugin: ${error.message}`);
         app.setMaintainingMessage(`Failed to enable plugin: ${error.message}`);
         await new Promise((resolve) => {
           setTimeout(() => resolve(null), 10000);
@@ -34,6 +35,7 @@ export default (app: Application) => {
       try {
         await app.pm.disable(plugins);
       } catch (error) {
+        app.log.debug(`Failed to disable plugin: ${error.message}`);
         app.setMaintainingMessage(`Failed to disable plugin: ${error.message}`);
         await new Promise((resolve) => {
           setTimeout(() => resolve(null), 10000);

@@ -367,6 +367,7 @@ export class PluginManager {
         await this.app.emitAsync('afterEnablePlugin', pluginName);
         this.app.log.debug(`afterEnablePlugin event emitted`);
       }
+      await this.app.tryReloadOrRestart();
     } catch (error) {
       await this.repository.update({
         filter: {
@@ -380,7 +381,6 @@ export class PluginManager {
       await this.app.tryReloadOrRestart();
       throw error;
     }
-    await this.app.tryReloadOrRestart();
   }
 
   async disable(name: string | string[]) {
@@ -413,7 +413,7 @@ export class PluginManager {
       },
     });
     try {
-      await this.app.reload();
+      await this.app.tryReloadOrRestart();
       for (const pluginName of pluginNames) {
         const plugin = this.get(pluginName);
         this.app.log.debug(`emit afterDisablePlugin event...`);
@@ -433,7 +433,6 @@ export class PluginManager {
       await this.app.tryReloadOrRestart();
       throw error;
     }
-    await this.app.tryReloadOrRestart();
   }
 
   async remove(name: string | string[]) {
