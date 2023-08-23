@@ -51,11 +51,13 @@ export const InternalCascadeSelect = observer(
       const data = await handleGetOptions({ parentId: option?.id });
       const options = [...selectedOptions];
       options.splice(index + 1);
-      options[index + 1] = { key: option?.id, children: data?.length > 0 ? data : null };
-      setSelectedOptions([...options]);
       const fieldValue = field.value || [];
       fieldValue.splice(index + 1);
-      fieldValue[index + 1] = option;
+      if (value) {
+        options[index + 1] = { key: option?.id, children: data?.length > 0 ? data : null };
+        fieldValue[index + 1] = option;
+      }
+      setSelectedOptions([...options]);
       field.value = fieldValue;
     };
 
