@@ -20,5 +20,9 @@ export const transformVariableValue = (value: any, deps: Deps) => {
     return value;
   }
 
+  if (targetCollectionField.interface === 'json') {
+    return JSON.stringify(value);
+  }
+
   return value;
 };
