@@ -237,7 +237,7 @@
     "/{collectionName}:list": {
       "get": {
         "tags": ["$collection"],
-        "summary": "View list",
+        "summary": "Returns a list of the collection",
         "description": "A list of the collection",
         "parameters": [
           {
@@ -275,7 +275,7 @@
     "/{collectionName}:get": {
       "get": {
         "tags": ["$collection"],
-        "summary": "View a record",
+        "summary": "Returns a record",
         "parameters": [
           {
             "$ref": "#/components/parameters/collectionName"
@@ -463,7 +463,7 @@
     "/{collectionName}/{collectionIndex}/{oneToOneAssociation}:get": {
       "get": {
         "tags": ["$collection.$oneToOneAssociation"],
-        "summary": "View the relationship record",
+        "summary": "Returns the relationship record",
         "parameters": [
           {
             "$ref": "#/components/parameters/collectionName"
@@ -626,7 +626,7 @@
     "/{collectionName}/{collectionIndex}/{manyToOneAssociation}:get": {
       "get": {
         "tags": ["$collection.$manyToOneAssociation"],
-        "summary": "View the relationship record",
+        "summary": "Returns the relationship record",
         "parameters": [
           {
             "$ref": "#/components/parameters/collectionName"
@@ -1369,6 +1369,12 @@
           },
           {
             "$ref": "#/components/parameters/manyToManyAssociation"
+          },
+          {
+            "$ref": "#/components/parameters/filterByTk"
+          },
+          {
+            "$ref": "#/components/parameters/filterByTks"
           }
         ],
         "responses": {
@@ -1391,6 +1397,12 @@
           },
           {
             "$ref": "#/components/parameters/manyToManyAssociation"
+          },
+          {
+            "$ref": "#/components/parameters/filterByTk"
+          },
+          {
+            "$ref": "#/components/parameters/filterByTks"
           }
         ],
         "responses": {
@@ -1413,6 +1425,12 @@
           },
           {
             "$ref": "#/components/parameters/manyToManyAssociation"
+          },
+          {
+            "$ref": "#/components/parameters/filterByTk"
+          },
+          {
+            "$ref": "#/components/parameters/filterByTks"
           }
         ],
         "responses": {
@@ -1435,6 +1453,9 @@
           },
           {
             "$ref": "#/components/parameters/manyToManyAssociation"
+          },
+          {
+            "$ref": "#/components/parameters/filterByTk"
           }
         ],
         "responses": {
