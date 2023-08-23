@@ -44,6 +44,8 @@ export const useFieldModeOptions = (props?) => {
             { label: t('Record picker'), value: 'Picker' },
             { label: t('Sub-table'), value: 'SubTable' },
             { label: t('Cascade Select'), value: 'CascadeSelect' },
+            !isSubTableField && { label: t('Sub-form'), value: 'Nester' },
+            { label: t('Sub-form(Popover)'), value: 'PopoverNester' },
           ];
     }
     switch (collectionField.interface) {
