@@ -46,7 +46,7 @@ export default (collection: Collection) => {
     sort: {
       name: 'sort',
       in: 'query',
-      description: 'sort items by fields',
+      description: 'sort items by fields, example: `-field1,-field2,field3`',
       schema: {
         oneOf: [
           {
@@ -66,59 +66,103 @@ export default (collection: Collection) => {
     fields: {
       name: 'fields',
       in: 'query',
-      description: 'select fields',
+      description: 'select fields, example: `field1,field2`',
       schema: {
-        type: 'array',
-        items: {
-          type: 'string',
-        },
+        oneOf: [
+          {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+            example: ['id', 'createdAt'],
+          },
+          {
+            type: 'string',
+            example: 'id,createdAt',
+          },
+        ],
       },
     },
 
     except: {
       name: 'except',
       in: 'query',
-      description: 'except fields in results',
+      description: 'except fields in results, example: `field1,field2`',
       schema: {
-        type: 'array',
-        items: {
-          type: 'string',
-        },
+        oneOf: [
+          {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+            example: ['id', 'createdAt'],
+          },
+          {
+            type: 'string',
+            example: 'id,createdAt',
+          },
+        ],
       },
     },
 
     appends: {
       name: 'appends',
       in: 'query',
-      description: 'append associations in results',
+      description: 'append associations in results, example: `assoc1,assoc2`',
       schema: {
-        type: 'array',
-        items: {
-          type: 'string',
-        },
+        oneOf: [
+          {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+            example: ['id', 'createdAt'],
+          },
+          {
+            type: 'string',
+            example: 'id,createdAt',
+          },
+        ],
       },
     },
-
     whitelist: {
       name: 'whitelist',
       in: 'query',
-      description: 'whitelist for fields changes',
+      description: 'whitelist for fields changes, example: `field1,field2`',
       schema: {
-        type: 'array',
-        items: {
-          type: 'string',
-        },
+        oneOf: [
+          {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+            example: ['id', 'createdAt'],
+          },
+          {
+            type: 'string',
+            example: 'id,createdAt',
+          },
+        ],
       },
     },
     blacklist: {
       name: 'blacklist',
       in: 'query',
-      description: 'blacklist for fields changes',
+      description: 'blacklist for fields changes, example: `field1,field2`',
       schema: {
-        type: 'array',
-        items: {
-          type: 'string',
-        },
+        oneOf: [
+          {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+            example: ['id', 'createdAt'],
+          },
+          {
+            type: 'string',
+            example: 'id,createdAt',
+          },
+        ],
       },
     },
   });
