@@ -6,9 +6,10 @@ import { RecursionField, observer, useFieldSchema } from '@formily/react';
 import { action } from '@formily/reactive';
 import { each } from '@formily/shared';
 import { Button, Card, Divider, Tooltip } from 'antd';
+import _ from 'lodash';
 import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { RecordProvider } from '../../../record-provider';
+import { RecordProvider, useRecord } from '../../../record-provider';
 import { isPatternDisabled, isSystemField } from '../../../schema-settings';
 import {
   DefaultValueProvider,
@@ -30,8 +31,26 @@ export const Nester = (props) => {
 
 const ToOneNester = (props) => {
   const { field } = useAssociationFieldContext<ArrayField>();
+  const record = useRecord();
+
+  // 保存原始数据，用于判断是否允许设置默认值
+  const recordRef = React.useRef(_.omit(record, '__parent'));
 
   const isAllowToSetDefaultValue = useCallback(({ form, fieldSchema, collectionField, getInterface }) => {
+    // 当 Field component 不是下列组件时，不允许设置默认值
+    if (
+      collectionField.target &&
+      fieldSchema['x-component-props']?.mode &&
+      !['Picker', 'Select'].includes(fieldSchema['x-component-props'].mode)
+    ) {
+      return false;
+    }
+
+    // hasOne 和 belongsTo 类型的字段只能有一个值，不会新增值，所以在编辑状态下不允许设置默认值
+    if (!_.isEmpty(recordRef.current)) {
+      return false;
+    }
+
     return (
       !form?.readPretty &&
       !isPatternDisabled(fieldSchema) &&
@@ -56,6 +75,15 @@ const ToManyNester = observer(
     const { t } = useTranslation();
 
     const isAllowToSetDefaultValue = useCallback(({ form, fieldSchema, collectionField, getInterface }) => {
+      // 当 Field component 不是下列组件时，不允许设置默认值
+      if (
+        collectionField.target &&
+        fieldSchema['x-component-props']?.mode &&
+        !['Picker', 'Select'].includes(fieldSchema['x-component-props'].mode)
+      ) {
+        return false;
+      }
+
       return (
         !form?.readPretty &&
         !isPatternDisabled(fieldSchema) &&
