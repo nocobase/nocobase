@@ -46,19 +46,13 @@ export const PreviewTable = observer(() => {
       });
 
   return (
-    <div
-      style={{
-        overflow: 'auto',
-      }}
-    >
-      <Table
-        bordered
-        dataSource={dataSource}
-        columns={columns}
-        scroll={{ x: columns.length * 150, y: 300 }}
-        loading={loading}
-        rowKey="key"
-      />
-    </div>
+    <Table
+      bordered
+      dataSource={dataSource}
+      columns={columns}
+      scroll={{ x: columns.length * 150, y: 300 }}
+      loading={loading}
+      rowKey="key"
+    />
   );
 });
