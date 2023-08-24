@@ -1,7 +1,6 @@
-import { useCollection, useCollectionFilterOptions, useCompile, useRecord, useVariableScope } from '@nocobase/client';
-import { NAMESPACE, useTranslation } from '../../locale';
-import { useEffect, useMemo } from 'react';
-import { useFieldSchema } from '@formily/react';
+import { useCollection, useCollectionFilterOptions, useCompile } from '@nocobase/client';
+import { useTranslation } from '../../locale';
+import { useMemo } from 'react';
 
 export const useCustomRequestVariableOptions = () => {
   const collection = useCollection();

@@ -424,7 +424,9 @@ async function preloadOptions(scope, value) {
 }
 
 TextArea.ReadPretty = function ReadPretty(props): JSX.Element {
-  const { value, scope } = props;
+  const { value } = props;
+  const scope = typeof props.scope === 'function' ? props.scope() : props.scope;
+
   const [options, setOptions] = useState([]);
   const keyLabelMap = useMemo(() => createOptionsValueLabelMap(options), [options]);
 

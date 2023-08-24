@@ -120,9 +120,8 @@ const ConstantTypes = {
 
 function getTypedConstantOption(type: string, types: true | string[], fieldNames) {
   const allTypes = Object.values(ConstantTypes);
-  const children = (types
-    ? allTypes.filter((item) => (Array.isArray(types) && types.includes(item.value)) || types === true)
-    : allTypes
+  const children = (
+    types ? allTypes.filter((item) => (Array.isArray(types) && types.includes(item.value)) || types === true) : allTypes
   ).map((item) =>
     Object.keys(item).reduce(
       (result, key) =>
@@ -148,7 +147,6 @@ function getTypedConstantOption(type: string, types: true | string[], fieldNames
 export function Input(props) {
   const {
     value = '',
-    scope,
     onChange,
     children,
     button,
@@ -158,6 +156,7 @@ export function Input(props) {
     changeOnSelect,
     fieldNames,
   } = props;
+  const scope = typeof props.scope === 'function' ? props.scope() : props.scope;
   const { wrapSSR, hashId, componentCls, rootPrefixCls } = useStyles();
 
   // 添加 antd input 样式，防止样式缺失
@@ -182,29 +181,27 @@ export function Input(props) {
     fieldNames ?? {},
   );
 
-  const {
-    component: ConstantComponent,
-    ...constantOption
-  }: DefaultOptionType & { component?: React.FC<any> } = useMemo(() => {
-    if (children) {
+  const { component: ConstantComponent, ...constantOption }: DefaultOptionType & { component?: React.FC<any> } =
+    useMemo(() => {
+      if (children) {
+        return {
+          value: '',
+          label: t('Constant'),
+          [names.value]: '',
+          [names.label]: t('Constant'),
+        };
+      }
+      if (useTypedConstant) {
+        return getTypedConstantOption(type, useTypedConstant, names);
+      }
       return {
         value: '',
-        label: t('Constant'),
+        label: t('Null'),
         [names.value]: '',
-        [names.label]: t('Constant'),
+        [names.label]: t('Null'),
+        component: ConstantTypes.null.component,
       };
-    }
-    if (useTypedConstant) {
-      return getTypedConstantOption(type, useTypedConstant, names);
-    }
-    return {
-      value: '',
-      label: t('Null'),
-      [names.value]: '',
-      [names.label]: t('Null'),
-      component: ConstantTypes.null.component,
-    };
-  }, [type, useTypedConstant]);
+    }, [type, useTypedConstant]);
 
   useEffect(() => {
     setOptions([compile(constantOption), ...(scope ? cloneDeep(scope) : [])]);

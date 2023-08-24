@@ -35,6 +35,7 @@ function CustomRequestSettingsItem() {
       components={{
         ArrayItems,
       }}
+      scope={{ useCustomRequestVariableOptions }}
       schema={CustomRequestConfigurationFieldsSchema}
       initialValues={data?.data?.options}
       onSubmit={(requestSettings) => {

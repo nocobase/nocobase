@@ -31,7 +31,7 @@ export const CustomRequestConfigurationFieldsSchema = {
       'x-decorator-props': {},
       'x-component': 'Variable.RawTextArea',
       'x-component-props': {
-        scope: '{{useCustomRequestVariableOptions()}}',
+        scope: '{{useCustomRequestVariableOptions}}',
         fieldNames: {
           value: 'name',
           label: 'title',
@@ -65,7 +65,7 @@ export const CustomRequestConfigurationFieldsSchema = {
                 'x-decorator': 'FormItem',
                 'x-component': 'Variable.Input',
                 'x-component-props': {
-                  scope: '{{useCustomRequestVariableOptions()}}',
+                  scope: '{{useCustomRequestVariableOptions}}',
                   fieldNames: {
                     value: 'name',
                     label: 'title',
@@ -115,7 +115,7 @@ export const CustomRequestConfigurationFieldsSchema = {
                 'x-decorator': 'FormItem',
                 'x-component': 'Variable.Input',
                 'x-component-props': {
-                  scope: '{{useCustomRequestVariableOptions()}}',
+                  scope: '{{useCustomRequestVariableOptions}}',
                   fieldNames: {
                     value: 'name',
                     label: 'title',
@@ -147,7 +147,7 @@ export const CustomRequestConfigurationFieldsSchema = {
       'x-decorator-props': {},
       'x-component': 'Variable.JSON',
       'x-component-props': {
-        scope: '{{useCustomRequestVariableOptions()}}',
+        scope: '{{useCustomRequestVariableOptions}}',
         fieldNames: {
           value: 'name',
           label: 'title',

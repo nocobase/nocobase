@@ -48,23 +48,29 @@ export async function send(ctx: Context, next: Next) {
   const variables = {
     currentRecord,
     currentUser: ctx.auth.user,
-    currentTime: new Date(),
+    currentTime: new Date().toISOString(),
   };
 
   try {
     ctx.body = await axios({
       ...options,
       url: parse(url)(variables),
-      headers: omitNullAndUndefined(parse(arrayToObject(headers))(variables)),
+      headers: {
+        ...omitNullAndUndefined(parse(arrayToObject(headers))(variables)),
+        Authorization: 'Bearer ' + ctx.getBearerToken(),
+      },
       params: parse(arrayToObject(params))(variables),
       data: parse({
         ...data,
         ...requestConfig?.data,
       })(variables),
-    }).then((res) => res.data);
+    }).then((res) => {
+      return res.data;
+    });
   } catch (err: any) {
     if (axios.isAxiosError(err)) {
-      ctx.throw(err.code, err.message);
+      ctx.status = err.response?.status || 500;
+      ctx.body = err.response?.data || { message: err.message };
     } else {
       ctx.throw(500, err?.message);
     }
