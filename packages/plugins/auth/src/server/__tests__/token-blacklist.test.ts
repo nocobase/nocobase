@@ -19,7 +19,7 @@ describe('token-blacklist', () => {
   });
 
   afterAll(async () => {
-    await db.close();
+    await app.destroy();
   });
 
   afterEach(async () => {
@@ -66,7 +66,6 @@ describe('token-blacklist', () => {
       token: 'should not be deleted',
       expiration: new Date('2100-01-01'),
     });
-    await tokenBlacklist.deleteByExpiration();
     expect(await tokenBlacklist.has('should be deleted')).not.toBeTruthy();
     expect(await tokenBlacklist.has('should not be deleted')).toBeTruthy();
   });

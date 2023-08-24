@@ -13,8 +13,6 @@ export async function prepareApp(): Promise<MockServer> {
   });
 
   await app.loadAndInstall({ clean: true });
-
-  await app.db.sync();
-
+  await app.start();
   return app;
 }

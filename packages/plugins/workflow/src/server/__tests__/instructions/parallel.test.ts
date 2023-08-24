@@ -29,7 +29,7 @@ describe('workflow > instructions > parallel', () => {
     });
   });
 
-  afterEach(() => app.stop());
+  afterEach(() => app.destroy());
 
   describe('single all', () => {
     it('all resolved', async () => {

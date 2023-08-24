@@ -35,7 +35,7 @@ describe('actions', () => {
   });
 
   afterEach(async () => {
-    await db.close();
+    await app.destroy();
   });
 
   // it('should login user with password', async () => {

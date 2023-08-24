@@ -2,6 +2,7 @@ import { APIClient as APIClientSDK } from '@nocobase/sdk';
 import { Result } from 'ahooks/es/useRequest/src/types';
 import { notification } from 'antd';
 import React from 'react';
+import { Application } from '../application';
 
 const handleErrorMessage = (error, notification) => {
   const reader = new FileReader();
@@ -9,7 +10,7 @@ const handleErrorMessage = (error, notification) => {
   reader.onload = function () {
     notification.error({
       message: JSON.parse(reader.result as string).errors?.map?.((error: any) => {
-        return React.createElement('div', { children: error.message });
+        return React.createElement('div', {}, error.message);
       }),
     });
   };
@@ -19,6 +20,7 @@ const errorCache = new Map();
 export class APIClient extends APIClientSDK {
   services: Record<string, Result<any, any>> = {};
   silence = false;
+  app: Application;
   /** 该值会在 AntdAppProvider 中被重新赋值 */
   notification: any = notification;
 
@@ -55,6 +57,16 @@ export class APIClient extends APIClientSDK {
         } else {
           if (errorCache.size > 10) {
             errorCache.clear();
+          }
+          const maintaining = !!error?.response?.data?.error?.maintaining;
+          if (this.app.maintaining !== maintaining) {
+            this.app.maintaining = maintaining;
+          }
+          if (this.app.maintaining) {
+            this.app.error = error?.response?.data?.error;
+            return;
+          } else if (this.app.error) {
+            this.app.error = null;
           }
           let errs = error?.response?.data?.errors || [{ message: 'Server error' }];
           errs = errs.filter((error) => {

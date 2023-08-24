@@ -1,10 +1,6 @@
-import { Application } from '@nocobase/server';
+import { Gateway } from '@nocobase/server';
 import config from './config';
 
-const app = new Application(config);
-
-if (require.main === module) {
-  app.runAsCLI();
-}
-
-export default app;
+Gateway.getInstance().run({
+  mainAppOptions: config,
+});
