@@ -3,7 +3,7 @@ import { Registry } from '@nocobase/utils';
 import { Instruction } from '.';
 import { Processor } from '..';
 import { JOB_STATUS } from '../constants';
-import type { FlowNodeModel } from '../types';
+import type { FlowNodeModel, JobModel } from '../types';
 
 type Comparer = (a: any, b: any) => boolean;
 
@@ -157,16 +157,20 @@ export default {
 
     const savedJob = await processor.saveJob(job);
 
-    return processor.run(branchNode, savedJob);
+    await processor.run(branchNode, savedJob);
+
+    return null;
   },
 
-  async resume(node: FlowNodeModel, branchJob, processor: Processor) {
+  async resume(node: FlowNodeModel, branchJob: JobModel, processor: Processor) {
+    const job = processor.findBranchParentJob(branchJob, node) as JobModel;
+
     if (branchJob.status === JOB_STATUS.RESOLVED) {
       // return to continue node.downstream
-      return branchJob;
+      return job;
     }
 
     // pass control to upper scope by ending current scope
-    return processor.end(node, branchJob);
+    return processor.exit(branchJob.status);
   },
 } as Instruction;
