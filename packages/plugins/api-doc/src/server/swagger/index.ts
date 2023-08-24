@@ -52,11 +52,17 @@ export class SwaggerManager {
           'hidden.$isFalsy': true,
         },
       });
+
       for (const collection of collections) {
         if (collection.name === 'roles') {
           continue;
         }
-        others = merge(others, this.collection2Swagger(collection.name, false));
+
+        try {
+          others = merge(others, this.collection2Swagger(collection.name, false));
+        } catch (e) {
+          this.app.log.error(e);
+        }
       }
     }
     return merge(base, others);
