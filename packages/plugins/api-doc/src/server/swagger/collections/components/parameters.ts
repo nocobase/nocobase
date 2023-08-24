@@ -7,6 +7,11 @@ export default (collection: Collection) => {
   const parameters = {};
 
   if (primaryKey) {
+    const primaryKeyField = collection.fields.get(primaryKey);
+    if (!primaryKeyField) {
+      throw new Error(`primaryKeyField not found: ${primaryKey}, ${collection.name}`);
+    }
+
     Object.assign(parameters, {
       collectionIndex: {
         required: true,
