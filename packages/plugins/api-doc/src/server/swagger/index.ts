@@ -32,18 +32,21 @@ export class SwaggerManager {
     return this.generateSwagger();
   }
 
-  collection2Swagger(collectionName: string, withAssociation = true) {
+  async collection2Swagger(collectionName: string, withAssociation = true) {
     const collection = this.db.getCollection(collectionName);
-    return collectionToSwaggerObject(collection, {
-      withAssociation,
-    });
+    return await (async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      return collectionToSwaggerObject(collection, {
+        withAssociation,
+      });
+    })();
   }
 
   async getCollectionsSwagger(name?: string) {
     const base = await this.getBaseSwagger();
     let others = {};
     if (name) {
-      const collectionSwagger = this.collection2Swagger(name);
+      const collectionSwagger = await this.collection2Swagger(name);
       others = merge(others, collectionSwagger);
     } else {
       const collections = await this.db.getRepository('collections').find({
@@ -59,7 +62,7 @@ export class SwaggerManager {
         }
 
         try {
-          others = merge(others, this.collection2Swagger(collection.name, false));
+          others = merge(others, await this.collection2Swagger(collection.name, false));
         } catch (e) {
           this.app.log.error(e);
         }
