@@ -15,7 +15,7 @@ export default {
       pageSize = DEFAULT_PER_PAGE,
       sort = [],
       ...options
-    } = processor.getParsedValue(params, node);
+    } = processor.getParsedValue(params, node.id);
     const appends = options.appends
       ? Array.from(
           options.appends.reduce((set, field) => {

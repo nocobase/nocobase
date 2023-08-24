@@ -1,0 +1,20 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "NocoBase API - China region plugin"
+  },
+  "paths": {
+    "/chinaRegions:list": {
+      "get": {
+        "tags": ["chinaRegions"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  }
+}

@@ -458,46 +458,46 @@
 
 "@antv/x6-common@^2.0.13":
   version "2.0.14"
-  resolved "https://registry.npmjs.org/@antv/x6-common/-/x6-common-2.0.14.tgz#ab89959df2f4bfb7626615ab60fc7203d339359a"
+  resolved "https://registry.npmmirror.com/@antv/x6-common/-/x6-common-2.0.14.tgz#ab89959df2f4bfb7626615ab60fc7203d339359a"
   dependencies:
     lodash-es "^4.17.15"
     utility-types "^3.10.0"
 
 "@antv/x6-geometry@^2.0.5":
   version "2.0.5"
-  resolved "https://registry.npmjs.org/@antv/x6-geometry/-/x6-geometry-2.0.5.tgz#c158317d74135bedd78c2fdeb76f9c7cfa0ef0aa"
+  resolved "https://registry.npmmirror.com/@antv/x6-geometry/-/x6-geometry-2.0.5.tgz#c158317d74135bedd78c2fdeb76f9c7cfa0ef0aa"
 
 "@antv/x6-plugin-dnd@^2.0.0":
   version "2.0.6"
-  resolved "https://registry.npmjs.org/@antv/x6-plugin-dnd/-/x6-plugin-dnd-2.0.6.tgz#403b8f45dc18f0622512298f556a531ed10a158b"
+  resolved "https://registry.npmmirror.com/@antv/x6-plugin-dnd/-/x6-plugin-dnd-2.0.6.tgz#403b8f45dc18f0622512298f556a531ed10a158b"
 
 "@antv/x6-plugin-export@^2.0.0":
   version "2.1.6"
-  resolved "https://registry.npmjs.org/@antv/x6-plugin-export/-/x6-plugin-export-2.1.6.tgz#f8cedab3707c43728baaf0f0bfb1e75ec4a61a30"
+  resolved "https://registry.npmmirror.com/@antv/x6-plugin-export/-/x6-plugin-export-2.1.6.tgz#f8cedab3707c43728baaf0f0bfb1e75ec4a61a30"
 
 "@antv/x6-plugin-minimap@^2.0.0":
   version "2.0.5"
-  resolved "https://registry.npmjs.org/@antv/x6-plugin-minimap/-/x6-plugin-minimap-2.0.5.tgz#bd4699408715b4709e77e83edf14ceb0e767b1f6"
+  resolved "https://registry.npmmirror.com/@antv/x6-plugin-minimap/-/x6-plugin-minimap-2.0.5.tgz#bd4699408715b4709e77e83edf14ceb0e767b1f6"
 
 "@antv/x6-plugin-scroller@^2.0.0":
   version "2.0.10"
-  resolved "https://registry.npmjs.org/@antv/x6-plugin-scroller/-/x6-plugin-scroller-2.0.10.tgz#bdd39d3530e469bbe72c5feca3b6787512232a3d"
+  resolved "https://registry.npmmirror.com/@antv/x6-plugin-scroller/-/x6-plugin-scroller-2.0.10.tgz#bdd39d3530e469bbe72c5feca3b6787512232a3d"
 
 "@antv/x6-plugin-selection@^2.0.0":
   version "2.1.7"
-  resolved "https://registry.npmjs.org/@antv/x6-plugin-selection/-/x6-plugin-selection-2.1.7.tgz#8964041d595b732bec5883a1f77757bededec594"
+  resolved "https://registry.npmmirror.com/@antv/x6-plugin-selection/-/x6-plugin-selection-2.1.7.tgz#8964041d595b732bec5883a1f77757bededec594"
 
 "@antv/x6-plugin-snapline@^2.0.0":
   version "2.1.7"
-  resolved "https://registry.npmjs.org/@antv/x6-plugin-snapline/-/x6-plugin-snapline-2.1.7.tgz#1b4e3be0a281ba324117b7ac7b9b8c39e484cce2"
+  resolved "https://registry.npmmirror.com/@antv/x6-plugin-snapline/-/x6-plugin-snapline-2.1.7.tgz#1b4e3be0a281ba324117b7ac7b9b8c39e484cce2"
 
 "@antv/x6-react-shape@^2.0.0":
   version "2.2.2"
-  resolved "https://registry.npmjs.org/@antv/x6-react-shape/-/x6-react-shape-2.2.2.tgz#b0caf31219fa3219b4e7a4960583e2c3affb870c"
+  resolved "https://registry.npmmirror.com/@antv/x6-react-shape/-/x6-react-shape-2.2.2.tgz#b0caf31219fa3219b4e7a4960583e2c3affb870c"
 
 "@antv/x6@^2.0.0":
   version "2.13.1"
-  resolved "https://registry.npmjs.org/@antv/x6/-/x6-2.13.1.tgz#c344eb797edc0e437ab1bed599099a8bd68a4ada"
+  resolved "https://registry.npmmirror.com/@antv/x6/-/x6-2.13.1.tgz#c344eb797edc0e437ab1bed599099a8bd68a4ada"
   dependencies:
     "@antv/x6-common" "^2.0.13"
     "@antv/x6-geometry" "^2.0.5"
@@ -24007,6 +24007,10 @@ svgson@^4.1.0:
     deep-rename-keys "^0.2.1"
     omit-deep "0.3.0"
     xml-reader "2.4.3"
+
+swagger-ui-dist@^5.3.1:
+  version "5.3.1"
+  resolved "https://registry.npmmirror.com/swagger-ui-dist/-/swagger-ui-dist-5.3.1.tgz#ae76a74136152d790b06a8b71ca389cac35ab78f"
 
 swr@^2.0.0:
   version "2.2.0"

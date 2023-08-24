@@ -2,7 +2,7 @@ import actions from '@nocobase/actions';
 import { HandlerType } from '@nocobase/resourcer';
 import { Registry } from '@nocobase/utils';
 
-import Plugin from '../..';
+import Plugin, { Processor } from '../..';
 import { JOB_STATUS } from '../../constants';
 import { Instruction } from '..';
 import jobsCollection from './collecions/jobs';
@@ -124,9 +124,9 @@ export default class implements Instruction {
     initFormTypes(this);
   }
 
-  async run(node, prevJob, processor) {
+  async run(node, prevJob, processor: Processor) {
     const { mode, ...config } = node.config as ManualConfig;
-    const assignees = [...new Set(processor.getParsedValue(config.assignees) || [])];
+    const assignees = [...new Set(processor.getParsedValue(config.assignees, node.id) || [])];
 
     const job = await processor.saveJob({
       status: JOB_STATUS.PENDING,
@@ -154,7 +154,7 @@ export default class implements Instruction {
     return job;
   }
 
-  async resume(node, job, processor) {
+  async resume(node, job, processor: Processor) {
     // NOTE: check all users jobs related if all done then continue as parallel
     const { assignees = [], mode } = node.config as ManualConfig;
 
