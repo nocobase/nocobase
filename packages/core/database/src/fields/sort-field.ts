@@ -78,6 +78,14 @@ export class SortField extends Field {
 
     const doInit = async (scopeKey = null, scopeValue = null) => {
       const queryInterface = this.collection.db.sequelize.getQueryInterface();
+      if (scopeKey) {
+        const scopeField = this.collection.getField(scopeKey);
+        if (!scopeField) {
+          throw new Error(`can not find scope field ${scopeKey} for collection ${this.collection.name}`);
+        }
+
+        scopeKey = this.collection.model.rawAttributes[scopeKey].field;
+      }
 
       const quotedOrderField = queryInterface.quoteIdentifier(orderField);
 
@@ -113,8 +121,8 @@ export class SortField extends Field {
         SET ${queryInterface.quoteIdentifier(this.name)} = ordered_table.new_sequence_number
         FROM ordered_table
         WHERE ${this.collection.quotedTableName()}.${quotedOrderField} = ${queryInterface.quoteIdentifier(
-                'ordered_table',
-              )}.${quotedOrderField};
+          'ordered_table',
+        )}.${quotedOrderField};
         `
         }
 
