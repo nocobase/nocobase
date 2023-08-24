@@ -34,7 +34,7 @@ describe('storage:ali-oss', () => {
   });
 
   afterEach(async () => {
-    await db.close();
+    await app.destroy();
   });
 
   describe('upload', () => {

@@ -2,29 +2,31 @@ import { ACL } from '@nocobase/acl';
 import { registerActions } from '@nocobase/actions';
 import { actions as authActions, AuthManager } from '@nocobase/auth';
 import { Cache, createCache, ICacheConfig } from '@nocobase/cache';
-import Database, { Collection, CollectionOptions, IDatabaseOptions } from '@nocobase/database';
+import Database, { CollectionOptions, IDatabaseOptions } from '@nocobase/database';
 import { AppLoggerOptions, createAppLogger, Logger } from '@nocobase/logger';
 import Resourcer, { ResourceOptions } from '@nocobase/resourcer';
 import { applyMixins, AsyncEmitter, Toposort, ToposortOptions } from '@nocobase/utils';
 import chalk from 'chalk';
 import { Command, CommandOptions, ParseOptions } from 'commander';
-import { Server } from 'http';
+import { IncomingMessage, Server, ServerResponse } from 'http';
 import { i18n, InitOptions } from 'i18next';
 import Koa, { DefaultContext as KoaDefaultContext, DefaultState as KoaDefaultState } from 'koa';
 import compose from 'koa-compose';
-import semver from 'semver';
-import { promisify } from 'util';
+import lodash from 'lodash';
 import { createACL } from './acl';
-import { AppManager } from './app-manager';
+import { AppSupervisor } from './app-supervisor';
 import { registerCli } from './commands';
-import { createI18n, createResourcer, registerMiddlewares } from './helper';
+import { ApplicationNotInstall } from './errors/application-not-install';
+import { createAppProxy, createI18n, createResourcer, getCommandFullName, registerMiddlewares } from './helper';
+import { ApplicationVersion } from './helpers/application-version';
 import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
 
 const packageJson = require('../package.json');
 
-export type PluginConfiguration = string | [string, any];
+export type PluginType = string | typeof Plugin;
+export type PluginConfiguration = PluginType | [PluginType, any];
 
 export interface ResourcerOptions {
   prefix?: string;
@@ -61,14 +63,6 @@ export interface DefaultContext extends KoaDefaultContext {
   [key: string]: any;
 }
 
-interface MiddlewareOptions {
-  name?: string;
-  resourceName?: string;
-  resourceNames?: string[];
-  insertBefore?: string;
-  insertAfter?: string;
-}
-
 interface ActionsOptions {
   resourceName?: string;
   resourceNames?: string[];
@@ -92,251 +86,169 @@ interface ListenOptions {
 interface StartOptions {
   cliArgs?: any[];
   dbSync?: boolean;
-  listen?: ListenOptions;
+  checkInstall?: boolean;
 }
 
-export class ApplicationVersion {
-  protected app: Application;
-  protected collection: Collection;
+type MaintainingStatus = 'command_begin' | 'command_end' | 'command_running' | 'command_error';
 
-  constructor(app: Application) {
-    this.app = app;
-    if (!app.db.hasCollection('applicationVersion')) {
-      app.db.collection({
-        name: 'applicationVersion',
-        namespace: 'core.applicationVersion',
-        duplicator: 'required',
-        timestamps: false,
-        fields: [{ name: 'value', type: 'string' }],
-      });
-    }
-    this.collection = this.app.db.getCollection('applicationVersion');
-  }
-
-  async get() {
-    if (await this.app.db.collectionExistsInDb('applicationVersion')) {
-      const model = await this.collection.model.findOne();
-      if (!model) {
-        return null;
-      }
-      return model.get('value') as any;
-    }
-    return null;
-  }
-
-  async update() {
-    await this.collection.sync();
-    await this.collection.model.destroy({
-      truncate: true,
-    });
-
-    await this.collection.model.create({
-      value: this.app.getVersion(),
-    });
-  }
-
-  async satisfies(range: string) {
-    if (await this.app.db.collectionExistsInDb('applicationVersion')) {
-      const model: any = await this.collection.model.findOne();
-      const version = model?.value as any;
-      if (!version) {
-        return true;
-      }
-      return semver.satisfies(version, range, { includePrerelease: true });
-    }
-    return true;
-  }
-}
+export type MaintainingCommandStatus = {
+  command: {
+    name: string;
+  };
+  status: MaintainingStatus;
+  error?: Error;
+};
 
 export class Application<StateT = DefaultState, ContextT = DefaultContext> extends Koa implements AsyncEmitter {
-  protected _db: Database;
-  protected _logger: Logger;
-
-  protected _resourcer: Resourcer;
-
-  protected _cache: Cache;
-
-  protected _cli: Command;
-
-  protected _i18n: i18n;
-
-  protected _pm: PluginManager;
-
-  protected _acl: ACL;
-
-  protected _appManager: AppManager;
-
-  protected _authManager: AuthManager;
-
-  protected _locales: Locale;
-
-  protected _version: ApplicationVersion;
-
-  protected plugins = new Map<string, Plugin>();
-
   public listenServer: Server;
-
   declare middleware: any;
-
   stopped = false;
+  ready = false;
+  declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
+  public rawOptions: ApplicationOptions;
+  public activatedCommand: {
+    name: string;
+  } = null;
+  public running = false;
+  protected plugins = new Map<string, Plugin>();
+  protected _appSupervisor: AppSupervisor = AppSupervisor.getInstance();
+  protected _started: boolean;
+  private _authenticated = false;
+  private _maintaining = false;
+  private _maintainingCommandStatus: MaintainingCommandStatus;
+  private _maintainingStatusBeforeCommand: MaintainingCommandStatus | null;
 
   constructor(public options: ApplicationOptions) {
     super();
+    this.rawOptions = this.name == 'main' ? lodash.cloneDeep(options) : {};
     this.init();
+
+    this._appSupervisor.addApp(this);
   }
+
+  protected _loaded: boolean;
+
+  get loaded() {
+    return this._loaded;
+  }
+
+  private _maintainingMessage: string;
+
+  get maintainingMessage() {
+    return this._maintainingMessage;
+  }
+
+  protected _db: Database;
 
   get db() {
     return this._db;
   }
 
-  get cache() {
-    return this._cache;
+  protected _logger: Logger;
+
+  get logger() {
+    return this._logger;
   }
+
+  protected _resourcer: Resourcer;
 
   get resourcer() {
     return this._resourcer;
   }
 
+  protected _cache: Cache;
+
+  get cache() {
+    return this._cache;
+  }
+
+  protected _cli: Command;
+
   get cli() {
     return this._cli;
   }
 
-  get acl() {
-    return this._acl;
-  }
+  protected _i18n: i18n;
 
   get i18n() {
     return this._i18n;
   }
 
+  protected _pm: PluginManager;
+
   get pm() {
     return this._pm;
   }
 
-  get version() {
-    return this._version;
+  protected _acl: ACL;
+
+  get acl() {
+    return this._acl;
   }
 
-  get appManager() {
-    return this._appManager;
-  }
+  protected _authManager: AuthManager;
 
   get authManager() {
     return this._authManager;
   }
 
-  get logger() {
-    return this._logger;
+  protected _locales: Locale;
+
+  get locales() {
+    return this._locales;
+  }
+
+  protected _version: ApplicationVersion;
+
+  get version() {
+    return this._version;
   }
 
   get log() {
     return this._logger;
   }
 
-  get locales() {
-    return this._locales;
-  }
-
   get name() {
     return this.options.name || 'main';
   }
 
-  protected init() {
-    const options = this.options;
-
-    const logger = createAppLogger(options.logger);
-    this._logger = logger.instance;
-
-    // @ts-ignore
-    this._events = [];
-    // @ts-ignore
-    this._eventsCount = [];
-
-    this.removeAllListeners();
-
-    this.middleware = new Toposort<any>();
-    this.plugins = new Map<string, Plugin>();
-    this._acl = createACL();
-
-    this.use(logger.middleware, { tag: 'logger' });
-
-    if (this._db) {
-      // MaxListenersExceededWarning
-      this._db.removeAllListeners();
-    }
-
-    this._db = this.createDatabase(options);
-
-    this._resourcer = createResourcer(options);
-    this._cli = new Command('nocobase').usage('[command] [options]');
-    this._i18n = createI18n(options);
-    this._cache = createCache(options.cache);
-    this.context.db = this._db;
-    this.context.logger = this._logger;
-    this.context.resourcer = this._resourcer;
-    this.context.cache = this._cache;
-
-    if (this._pm) {
-      this._pm = this._pm.clone();
-    } else {
-      this._pm = new PluginManager({
-        app: this,
-        plugins: options.plugins,
-      });
-    }
-
-    if (this._appManager) {
-      this._appManager.bindMainApplication(this);
-    } else {
-      this._appManager = new AppManager(this);
-    }
-
-    this._authManager = new AuthManager({
-      authKey: 'X-Authenticator',
-      default: 'basic',
-    });
-    this.resource({
-      name: 'auth',
-      actions: authActions,
-    });
-    this._resourcer.use(this._authManager.middleware(), { tag: 'auth' });
-
-    if (this.options.acl !== false) {
-      this._resourcer.use(this._acl.middleware(), { tag: 'acl', after: ['auth'] });
-    }
-
-    this._locales = new Locale(this);
-
-    registerMiddlewares(this, options);
-
-    if (options.registerActions !== false) {
-      registerActions(this);
-    }
-
-    registerCli(this);
-
-    this._version = new ApplicationVersion(this);
+  isMaintaining() {
+    return this._maintaining;
   }
 
-  private createDatabase(options: ApplicationOptions) {
-    const db = new Database({
-      ...(options.database instanceof Database ? options.database.options : options.database),
-      migrator: {
-        context: { app: this },
-      },
+  getMaintaining() {
+    return this._maintainingCommandStatus;
+  }
+
+  setMaintaining(_maintainingCommandStatus: MaintainingCommandStatus) {
+    this._maintainingCommandStatus = _maintainingCommandStatus;
+
+    this.emit('maintaining', _maintainingCommandStatus);
+
+    if (_maintainingCommandStatus.status == 'command_end') {
+      this._maintaining = false;
+      return;
+    }
+
+    this._maintaining = true;
+  }
+
+  setMaintainingMessage(message: string) {
+    this._maintainingMessage = message;
+
+    this.emit('maintainingMessageChanged', {
+      message: this._maintainingMessage,
+      maintainingStatus: this._maintainingCommandStatus,
     });
-
-    db.setLogger(this._logger);
-
-    return db;
   }
 
   getVersion() {
     return packageJson.version;
   }
 
-  plugin<O = any>(pluginClass: any, options?: O): Plugin {
-    return this.pm.addStatic(pluginClass, options);
+  plugin<O = any>(pluginClass: any, options?: O) {
+    this.log.debug(`add plugin ${pluginClass.name}`);
+    this.pm.addPreset(pluginClass, options);
   }
 
   // @ts-ignore
@@ -353,14 +265,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     if (!this.listenerCount('error')) this.on('error', this.onerror);
 
-    const handleRequest = (req, res) => {
+    return (req: IncomingMessage, res: ServerResponse) => {
       const ctx = this.createContext(req, res);
 
       // @ts-ignore
       return this.handleRequest(ctx, fn);
     };
-
-    return handleRequest;
   }
 
   collection(options: CollectionOptions) {
@@ -380,32 +290,54 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   findCommand(name: string): Command {
-    return (<any>this.cli)._findCommand(name);
+    return (this.cli as any)._findCommand(name);
   }
 
   async load(options?: any) {
+    if (this._loaded) {
+      return;
+    }
+
     if (options?.reload) {
-      console.log(`Reload the ${this.name} application configuration`);
+      this.setMaintainingMessage('app reload');
+      this.log.info(`app.reload()`);
       const oldDb = this._db;
       this.init();
       await oldDb.close();
     }
 
+    this.setMaintainingMessage('init plugins');
+    await this.pm.initPlugins();
+
+    this.setMaintainingMessage('start load');
+
+    this.setMaintainingMessage('emit beforeLoad');
     await this.emitAsync('beforeLoad', this, options);
+
     await this.pm.load(options);
+
+    this.setMaintainingMessage('emit afterLoad');
     await this.emitAsync('afterLoad', this, options);
+    this._loaded = true;
   }
 
   async reload(options?: any) {
+    this.log.debug(`start reload`);
+
+    this._loaded = false;
+
     await this.load({
       ...options,
       reload: true,
     });
 
+    this.log.debug('emit afterReload');
+    this.setMaintainingMessage('emit afterReload');
     await this.emitAsync('afterReload', this, options);
+    this.log.debug(`finish reload`);
   }
 
-  getPlugin<P extends Plugin>(name: string) {
+  getPlugin<P extends Plugin>(name: string | typeof Plugin) {
     return this.pm.get(name) as P;
   }
 
@@ -413,75 +345,129 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this.runAsCLI(argv);
   }
 
-  async runAsCLI(argv = process.argv, options?: ParseOptions) {
-    try {
-      await this.db.auth({ retry: 30 });
-    } catch (error) {
-      console.log(chalk.red(error.message));
-      process.exit(1);
+  async authenticate() {
+    if (this._authenticated) {
+      return;
     }
-
+    this._authenticated = true;
+    await this.db.auth({ retry: 30 });
     await this.dbVersionCheck({ exit: true });
-
     await this.db.prepare();
+  }
 
-    if (argv?.[2] !== 'upgrade') {
-      await this.load({
-        method: argv?.[2],
+  async runCommand(command: string, ...args: any[]) {
+    return await this.runAsCLI([command, ...args], { from: 'user' });
+  }
+
+  createCli() {
+    return new Command('nocobase')
+      .usage('[command] [options]')
+      .hook('preAction', async (_, actionCommand) => {
+        this.activatedCommand = {
+          name: getCommandFullName(actionCommand),
+        };
+
+        this.setMaintaining({
+          status: 'command_begin',
+          command: this.activatedCommand,
+        });
+
+        this.setMaintaining({
+          status: 'command_running',
+          command: this.activatedCommand,
+        });
+
+        await this.authenticate();
+        await this.load();
+      })
+      .hook('postAction', async (_, actionCommand) => {
+        if (this._maintainingStatusBeforeCommand?.error && this._started) {
+          await this.restart();
+        }
       });
+  }
+
+  async runAsCLI(argv = process.argv, options?: ParseOptions) {
+    if (this.activatedCommand) {
+      return;
     }
 
-    return this.cli.parseAsync(argv, options);
+    this._maintainingStatusBeforeCommand = this._maintainingCommandStatus;
+
+    try {
+      const command = await this.cli.parseAsync(argv, options);
+
+      this.setMaintaining({
+        status: 'command_end',
+        command: this.activatedCommand,
+      });
+
+      return command;
+    } catch (error) {
+      console.log(`run command ${this.activatedCommand.name} error:`, error);
+      this.setMaintaining({
+        status: 'command_error',
+        command: this.activatedCommand,
+        error,
+      });
+    } finally {
+      this.activatedCommand = null;
+    }
   }
 
   async start(options: StartOptions = {}) {
+    if (this._started) {
+      return;
+    }
+
+    this._started = true;
+
+    if (options.checkInstall && !(await this.isInstalled())) {
+      throw new ApplicationNotInstall(
+        `Application ${this.name} is not installed, Please run 'yarn nocobase install' command first`,
+      );
+    }
+
+    this.setMaintainingMessage('starting app...');
+
     if (this.db.closed()) {
       await this.db.reconnect();
     }
 
-    if (options.dbSync) {
-      console.log('db sync...');
-      await this.db.sync();
-    }
-
+    this.setMaintainingMessage('emit beforeStart');
     await this.emitAsync('beforeStart', this, options);
 
-    if (options?.listen?.port) {
-      const pmServer = await this.pm.listen();
-
-      const listen = () =>
-        new Promise((resolve, reject) => {
-          const Server = this.listen(options?.listen, () => {
-            resolve(Server);
-          });
-
-          Server.on('error', (err) => {
-            reject(err);
-          });
-
-          Server.on('close', () => {
-            pmServer.close();
-          });
-        });
-
-      try {
-        //@ts-ignore
-        this.listenServer = await listen();
-      } catch (e) {
-        console.error(e);
-        process.exit(1);
-      }
-    }
-
+    this.setMaintainingMessage('emit afterStart');
     await this.emitAsync('afterStart', this, options);
+    await this.emitAsync('__started', this, options);
     this.stopped = false;
   }
 
-  listen(...args): Server {
-    return this.appManager.listen(...args);
+  async isStarted() {
+    return this._started;
+  }
+
+  async tryReloadOrRestart() {
+    if (this._started) {
+      await this.restart();
+    } else {
+      await this.reload();
+    }
+  }
+
+  async restart(options: StartOptions = {}) {
+    if (!this._started) {
+      return;
+    }
+    this._started = false;
+    await this.reload(options);
+    await this.start(options);
+    this.emit('__restarted', this, options);
   }
 
   async stop(options: any = {}) {
+    this.log.debug('stop app...');
+    this.setMaintainingMessage('stopping app...');
     if (this.stopped) {
       this.log.warn(`Application ${this.name} already stopped`);
       return;
@@ -489,31 +475,33 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     await this.emitAsync('beforeStop', this, options);
 
-    // close http server
-    if (this.listenServer) {
-      await promisify(this.listenServer.close).call(this.listenServer);
-      this.listenServer = null;
-    }
-
     try {
       // close database connection
       // silent if database already closed
       if (!this.db.closed()) {
+        this.logger.info(`close db`);
         await this.db.close();
       }
     } catch (e) {
-      console.log(e);
+      this.log.error(e);
     }
 
     await this.emitAsync('afterStop', this, options);
     this.stopped = true;
-    console.log(`${this.name} is stopped`);
+    this.log.info(`${this.name} is stopped`);
+    this._started = false;
   }
 
   async destroy(options: any = {}) {
+    this.logger.debug('start destroy app');
+    this.setMaintainingMessage('destroying app...');
     await this.emitAsync('beforeDestroy', this, options);
     await this.stop(options);
+
+    this.logger.debug('emit afterDestroy');
     await this.emitAsync('afterDestroy', this, options);
+
+    this.logger.debug('finish destroy app');
   }
 
   async dbVersionCheck(options?: { exit?: boolean }) {
@@ -554,19 +542,37 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async install(options: InstallOptions = {}) {
-    console.log('Database dialect: ' + this.db.sequelize.getDialect());
+    this.setMaintainingMessage('installing app...');
+    this.log.debug('Database dialect: ' + this.db.sequelize.getDialect());
 
     if (options?.clean || options?.sync?.force) {
-      console.log('Truncate database and reload app configuration');
+      this.log.debug('truncate database');
       await this.db.clean({ drop: true });
-      await this.reload({ method: 'install' });
+      this.log.debug('app reloading');
+      await this.reload();
+    } else if (await this.isInstalled()) {
+      this.log.warn('app is installed');
+      return;
     }
 
+    this.log.debug('emit beforeInstall');
+    this.setMaintainingMessage('call beforeInstall hook...');
     await this.emitAsync('beforeInstall', this, options);
-    await this.db.sync();
+    this.log.debug('start install plugins');
     await this.pm.install(options);
+    this.log.debug('update version');
     await this.version.update();
+    this.log.debug('emit afterInstall');
+    this.setMaintainingMessage('call afterInstall hook...');
     await this.emitAsync('afterInstall', this, options);
+
+    if (this._maintainingStatusBeforeCommand?.error) {
+      return;
+    }
+
+    if (this._started) {
+      await this.restart();
+    }
   }
 
   async upgrade(options: any = {}) {
@@ -581,14 +587,112 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     });
     await this.version.update();
     await this.emitAsync('afterUpgrade', this, options);
+    this.log.debug(chalk.green(`✨  NocoBase has been upgraded to v${this.getVersion()}`));
+    if (this._started) {
+      await this.restart();
+    }
   }
-
-  declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
 
   toJSON() {
     return {
       appName: this.name,
+      name: this.name,
     };
+  }
+
+  reInitEvents() {
+    for (const eventName of this.eventNames()) {
+      for (const listener of this.listeners(eventName)) {
+        if (listener['_reinitializable']) {
+          this.removeListener(eventName, listener as any);
+        }
+      }
+    }
+  }
+
+  protected init() {
+    const options = this.options;
+
+    const logger = createAppLogger({
+      ...options.logger,
+      defaultMeta: {
+        app: this.name,
+      },
+    });
+
+    this._logger = logger.instance;
+
+    this.reInitEvents();
+
+    this.middleware = new Toposort<any>();
+    this.plugins = new Map<string, Plugin>();
+    this._acl = createACL();
+
+    this.use(logger.middleware, { tag: 'logger' });
+
+    if (this._db) {
+      // MaxListenersExceededWarning
+      this._db.removeAllListeners();
+    }
+
+    this._db = this.createDatabase(options);
+
+    this._resourcer = createResourcer(options);
+    this._cli = this.createCli();
+    this._i18n = createI18n(options);
+    this._cache = createCache(options.cache);
+    this.context.db = this._db;
+    this.context.logger = this._logger;
+    this.context.resourcer = this._resourcer;
+    this.context.cache = this._cache;
+
+    const plugins = this._pm ? this._pm.options.plugins : options.plugins;
+
+    this._pm = new PluginManager({
+      app: this,
+      plugins: plugins || [],
+    });
+
+    this._authManager = new AuthManager({
+      authKey: 'X-Authenticator',
+      default: 'basic',
+    });
+
+    this.resource({
+      name: 'auth',
+      actions: authActions,
+    });
+
+    this._resourcer.use(this._authManager.middleware(), { tag: 'auth' });
+
+    if (this.options.acl !== false) {
+      this._resourcer.use(this._acl.middleware(), { tag: 'acl', after: ['auth'] });
+    }
+
+    this._locales = new Locale(createAppProxy(this));
+
+    registerMiddlewares(this, options);
+
+    if (options.registerActions !== false) {
+      registerActions(this);
+    }
+
+    registerCli(this);
+
+    this._version = new ApplicationVersion(this);
+  }
+
+  private createDatabase(options: ApplicationOptions) {
+    const db = new Database({
+      ...(options.database instanceof Database ? options.database.options : options.database),
+      migrator: {
+        context: { app: this },
+      },
+    });
+
+    db.setLogger(this._logger);
+
+    return db;
   }
 }
 

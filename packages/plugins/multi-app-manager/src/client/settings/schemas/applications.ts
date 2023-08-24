@@ -57,8 +57,13 @@ const collection = {
         type: 'string',
         title: i18nText('App status'),
         enum: [
-          { label: 'Pending', value: 'pending' },
+          { label: 'Initializing', value: 'initializing' },
+          { label: 'Initialized', value: 'initialized' },
           { label: 'Running', value: 'running' },
+          { label: 'Commanding', value: 'commanding' },
+          { label: 'Stopped', value: 'stopped' },
+          { label: 'Error', value: 'error' },
+          { label: 'Not found', value: 'not_found' },
         ],
         'x-component': 'Radio.Group',
       },
@@ -347,6 +352,18 @@ export const schema: ISchema = {
               'x-component': 'Table.Column',
               properties: {
                 pinned: {
+                  type: 'string',
+                  'x-component': 'CollectionField',
+                  'x-read-pretty': true,
+                },
+              },
+            },
+            status: {
+              type: 'void',
+              'x-decorator': 'Table.Column.Decorator',
+              'x-component': 'Table.Column',
+              properties: {
+                status: {
                   type: 'string',
                   'x-component': 'CollectionField',
                   'x-read-pretty': true,

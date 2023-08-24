@@ -29,7 +29,7 @@ describe('workflow > instructions > loop', () => {
     });
   });
 
-  afterEach(() => app.stop());
+  afterEach(() => app.destroy());
 
   describe('branch', () => {
     it('no branch just pass', async () => {

@@ -1,8 +1,6 @@
 import { Plugin, PluginManager, getPackageClientStaticUrl } from '@nocobase/server';
 import fs from 'fs';
-import send from 'koa-send';
-import serve from 'koa-static';
-import { isAbsolute, resolve } from 'path';
+import { resolve } from 'path';
 import { getAntdLocale } from './antd';
 import { getCronLocale } from './cron';
 import { getCronstrueLocale } from './cronstrue';
@@ -125,7 +123,7 @@ export class ClientPlugin extends Plugin {
     this.app.acl.allow('plugins', '*', 'public');
     this.app.acl.registerSnippet({
       name: 'app',
-      actions: ['app:reboot', 'app:clearCache'],
+      actions: ['app:restart', 'app:clearCache'],
     });
     const dialect = this.app.db.sequelize.getDialect();
     const restartMark = resolve(process.cwd(), 'storage', 'restart');
@@ -153,6 +151,7 @@ export class ClientPlugin extends Plugin {
             },
             version: await ctx.app.version.get(),
             lang,
+            name: ctx.app.name,
             theme: currentUser?.systemSettings?.theme || systemSetting?.options?.theme || 'default',
           };
           await next();
@@ -194,19 +193,9 @@ export class ClientPlugin extends Plugin {
           await ctx.cache.reset();
           await next();
         },
-        reboot(ctx) {
-          const RESTART_CODE = 100;
-          process.on('exit', (code) => {
-            if (code === RESTART_CODE && process.env.APP_ENV === 'production') {
-              fs.writeFileSync(restartMark, '1');
-              console.log('Restart mark created.');
-            }
-          });
-          ctx.app.on('afterStop', () => {
-            // Exit with code 100 will restart the process
-            process.exit(RESTART_CODE);
-          });
-          ctx.app.stop();
+        async restart(ctx, next) {
+          ctx.app.runAsCLI(['restart'], { from: 'user' });
+          await next();
         },
       },
     });
@@ -242,25 +231,6 @@ export class ClientPlugin extends Plugin {
         },
       },
     });
-    let root = this.options.dist || `${process.env.APP_PACKAGE_ROOT}/dist/client`;
-    if (!isAbsolute(root)) {
-      root = resolve(process.cwd(), root);
-    }
-    if (process.env.APP_ENV !== 'production' && root) {
-      this.app.use(
-        async (ctx, next) => {
-          if (ctx.path.startsWith(this.app.resourcer.options.prefix)) {
-            return next();
-          }
-          await serve(root)(ctx, next);
-          // console.log('koa-send', root, ctx.status);
-          if (ctx.status == 404) {
-            return send(ctx, 'index.html', { root });
-          }
-        },
-        { tag: 'clientStatic', before: 'cors' },
-      );
-    }
   }
 }
 

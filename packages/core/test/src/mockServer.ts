@@ -1,5 +1,5 @@
 import { Database, mockDatabase } from '@nocobase/database';
-import Application, { ApplicationOptions, PluginManager } from '@nocobase/server';
+import Application, { AppSupervisor, ApplicationOptions, Gateway, PluginManager } from '@nocobase/server';
 import jwt from 'jsonwebtoken';
 import qs from 'qs';
 import supertest, { SuperAgentTest } from 'supertest';
@@ -81,12 +81,19 @@ export class MockServer extends Application {
     await this.db.clean({ drop: true });
   }
 
+  async destroy(options: any = {}): Promise<void> {
+    await super.destroy(options);
+
+    Gateway.getInstance().destroy();
+    await AppSupervisor.getInstance().destroy();
+  }
+
   agent(): SuperAgentTest & {
     login: (user: any) => SuperAgentTest;
     loginUsingId: (userId: number) => SuperAgentTest;
     resource: (name: string, resourceOf?: any) => Resource;
   } {
-    const agent = supertest.agent(this.appManager.callback());
+    const agent = supertest.agent(this.callback());
     const prefix = this.resourcer.options.prefix;
     const proxy = new Proxy(agent, {
       get(target, method: string, receiver) {
@@ -116,7 +123,8 @@ export class MockServer extends Application {
               {
                 get(target, method: string, receiver) {
                   return (params: ActionParams = {}) => {
-                    let { filterByTk, values = {}, file, ...restParams } = params;
+                    let { filterByTk } = params;
+                    const { values = {}, file, ...restParams } = params;
                     if (params.associatedIndex) {
                       resourceOf = params.associatedIndex;
                     }
@@ -171,6 +179,9 @@ export function mockServer(options: ApplicationOptions = {}) {
   if (typeof TextDecoder === 'undefined') {
     global.TextDecoder = require('util').TextDecoder;
   }
+
+  Gateway.getInstance().reset();
+  AppSupervisor.getInstance().reset();
 
   // @ts-ignore
   if (!PluginManager.findPackagePatched) {

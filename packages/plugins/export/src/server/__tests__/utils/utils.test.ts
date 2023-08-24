@@ -10,7 +10,10 @@ describe('utils', () => {
     app = mockServer();
     db = app.db;
   });
-  afterEach(async () => {});
+
+  afterEach(async () => {
+    await app.destroy();
+  });
 
   it('first columns2Appends', async () => {
     columns = [
@@ -27,8 +30,6 @@ describe('utils', () => {
       { dataIndex: ['f_qhvvfuignh2', 'createdBy', 'id'], defaultTitle: 'ID' },
       { dataIndex: ['f_wu28mus1c65', 'roles', 'title'], defaultTitle: '角色名称' },
     ];
-    // const appends = columns2Appends(columns, app);
-    // expect(appends).toMatchObject(['f_qhvvfuignh2.createdBy', 'f_wu28mus1c65.roles']);
   });
 
   it('second columns2Appends', async () => {
@@ -46,7 +47,5 @@ describe('utils', () => {
       { dataIndex: ['f_qhvvfuignh2', 'createdBy', 'id'], defaultTitle: 'ID' },
       { dataIndex: ['f_qhvvfuignh2', 'createdBy', 'nickname'], defaultTitle: '角色名称' },
     ];
-    // const appends = columns2Appends(columns, app);
-    // expect(appends).toMatchObject(['f_qhvvfuignh2.createdBy']);
   });
 });
