@@ -1,3 +1,5 @@
+import { useCollection } from '@nocobase/client';
+
 // 表格操作配置
 export const MapActionInitializers = {
   title: "{{t('Configure actions')}}",
@@ -28,6 +30,10 @@ export const MapActionInitializers = {
             'x-acl-action-props': {
               skipScopeCheck: true,
             },
+          },
+          visible: function useVisible() {
+            const collection = useCollection();
+            return collection.template !== 'sql';
           },
         },
         {
@@ -77,6 +83,10 @@ export const MapActionInitializers = {
               useProps: '{{ useCustomizeBulkUpdateActionProps }}',
             },
           },
+          visible: function useVisible() {
+            const collection = useCollection();
+            return collection.template !== 'sql';
+          },
         },
         {
           type: 'item',
@@ -89,6 +99,10 @@ export const MapActionInitializers = {
             'x-acl-action-props': {
               skipScopeCheck: true,
             },
+          },
+          visible: function useVisible() {
+            const collection = useCollection();
+            return collection.template !== 'sql';
           },
         },
       ],
