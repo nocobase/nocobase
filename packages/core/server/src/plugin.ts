@@ -1,3 +1,4 @@
+import { Model } from '@nocobase/database';
 import { Application } from './application';
 import { InstallOptions } from './plugin-manager';
 
@@ -22,22 +23,27 @@ export interface PluginOptions {
   [key: string]: any;
 }
 
-export type PluginType = typeof Plugin;
-
 export abstract class Plugin<O = any> implements PluginInterface {
   options: any;
   app: Application;
+  model: Model;
+  state: any = {};
 
   constructor(app: Application, options?: any) {
-    this.setOptions(options);
-
     this.app = app;
     this.setOptions(options);
-    this.afterAdd();
+  }
+
+  get log() {
+    return this.app.log;
   }
 
   get name() {
     return this.options.name as string;
+  }
+
+  get pm() {
+    return this.app.pm;
   }
 
   get db() {
@@ -50,6 +56,14 @@ export abstract class Plugin<O = any> implements PluginInterface {
 
   set enabled(value) {
     this.options.enabled = value;
+  }
+
+  get installed() {
+    return this.options.installed;
+  }
+
+  set installed(value) {
+    this.options.installed = value;
   }
 
   setOptions(options: any) {
@@ -72,9 +86,13 @@ export abstract class Plugin<O = any> implements PluginInterface {
 
   async afterEnable() {}
 
+  async beforeDisable() {}
+
   async afterDisable() {}
 
-  async remove() {}
+  async beforeRemove() {}
+
+  async afterRemove() {}
 
   async importCollections(collectionsPath: string) {
     await this.db.import({

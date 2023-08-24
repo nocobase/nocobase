@@ -34,7 +34,7 @@ describe('workflow > triggers > form', () => {
     userAgents = users.map((user) => app.agent().login(user));
   });
 
-  afterEach(() => app.stop());
+  afterEach(() => app.destroy());
 
   describe('create', () => {
     it('enabled / disabled', async () => {

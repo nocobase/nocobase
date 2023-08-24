@@ -41,16 +41,6 @@ module.exports = (cli) => {
         return;
       }
       await postCheck(opts);
-      const restartMark = resolve(process.cwd(), 'storage', 'restart');
-      if (!existsSync(restartMark)) {
-        if (opts.quickstart) {
-          await run('node', [`${APP_PACKAGE_ROOT}/lib/index.js`, 'install', '--ignore-installed']);
-          await run('node', [`${APP_PACKAGE_ROOT}/lib/index.js`, 'upgrade']);
-        }
-        if (opts.dbSync) {
-          await run('node', [`${APP_PACKAGE_ROOT}/lib/index.js`, 'db:sync']);
-        }
-      }
       if (opts.daemon) {
         run('pm2', ['start', `${APP_PACKAGE_ROOT}/lib/index.js`, '--', ...process.argv.slice(2)]);
       } else {

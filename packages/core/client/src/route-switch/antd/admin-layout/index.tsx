@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { Layout, Spin } from 'antd';
+import { Layout } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Outlet, useMatch, useNavigate, useParams } from 'react-router-dom';
 import {
@@ -22,6 +22,7 @@ import {
   useToken,
 } from '../../../';
 import { Plugin } from '../../../application/Plugin';
+import { useAppSpin } from '../../../application/hooks/useAppSpin';
 import { useCollectionManager } from '../../../collection-manager';
 
 const filterByACL = (schema, options) => {
@@ -74,7 +75,7 @@ const MenuEditor = (props) => {
     setCurrent(schema);
     navigate(`/admin/${schema['x-uid']}`);
   };
-
+  const { render } = useAppSpin();
   const adminSchemaUid = useAdminSchemaUid();
   const { data, loading } = useRequest<{
     data: any;
@@ -140,7 +141,7 @@ const MenuEditor = (props) => {
     return s;
   }, [data?.data]);
   if (loading) {
-    return <Spin />;
+    return render();
   }
   return (
     <SchemaIdContext.Provider value={defaultSelectedUid}>
@@ -155,6 +156,7 @@ export const InternalAdminLayout = (props: any) => {
   const { service } = useCollectionManager();
   const params = useParams<any>();
   const { token } = useToken();
+  const { render } = useAppSpin();
 
   return (
     <Layout>
@@ -299,7 +301,7 @@ export const InternalAdminLayout = (props: any) => {
             pointer-events: none;
           `}
         ></header>
-        {service.contentLoading ? <Spin /> : <Outlet />}
+        {service.contentLoading ? render() : <Outlet />}
       </Layout.Content>
     </Layout>
   );

@@ -1,0 +1,156 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "NocoBase API - Localization management plugin"
+  },
+  "tags": [],
+  "paths": {
+    "/localization:sync": {
+      "post": {
+        "tags": ["localization"],
+        "description": "Synchronize localization resources",
+        "parameters": [
+          {
+            "name": "X-Locale",
+            "in": "header",
+            "defalut": "en-US",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": ["local", "menu", "db"]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/localization:publish": {
+      "post": {
+        "tags": ["localization"],
+        "description": "Publish localization resources (Reset cache)",
+        "parameters": [
+          {
+            "name": "X-Locale",
+            "in": "header",
+            "defalut": "en-US",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/localizationTexts:list": {
+      "get": {
+        "tags": ["localizationTexts"],
+        "description": "Retrive localization texts with translations",
+        "parameters": [
+          {
+            "name": "X-Locale",
+            "in": "header",
+            "defalut": "en-US",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "description": "Search keyword",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "hasTranslation",
+            "in": "query",
+            "description": "true - list all, false - list only untranslated",
+            "schema": {
+              "type": "boolean"
+            },
+            "defalut": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/localizationTranslations:updateOrCreate": {
+      "post": {
+        "tags": ["localizationTranslations"],
+        "description": "Update or create localization translations",
+        "parameters": [
+          {
+            "name": "textId",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "required": true
+          },
+          {
+            "name": "locale",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "textId": {
+                    "type": "integer"
+                  },
+                  "locale": {
+                    "type": "string"
+                  },
+                  "translation": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  }
+}

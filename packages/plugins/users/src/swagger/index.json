@@ -1,0 +1,117 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "NocoBase API - Users plugin"
+  },
+  "tags": [],
+  "paths": {
+    "/users:list": {
+      "get": {
+        "tags": ["users"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/users:get": {
+      "get": {
+        "tags": ["users"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/users:create": {
+      "post": {
+        "tags": ["users"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/users:update": {
+      "post": {
+        "tags": ["users"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/users:updateProfile": {
+      "post": {
+        "tags": ["users"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/users:changePassword": {
+      "post": {
+        "tags": ["users"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/users:destroy": {
+      "post": {
+        "tags": ["users"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/{collectionName}/{collectionIndex}/createdBy:get": {
+      "post": {
+        "tags": ["$collection.createdBy"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/{collectionName}/{collectionIndex}/updatedBy:get": {
+      "post": {
+        "tags": ["$collection.updatedBy"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  }
+}

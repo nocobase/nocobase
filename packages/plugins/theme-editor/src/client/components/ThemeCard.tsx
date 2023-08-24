@@ -314,7 +314,7 @@ const ThemeCard = (props: Props) => {
     <Card
       hoverable
       extra={extra}
-      title={t(item.config.name)}
+      title={t(item.config?.name)}
       size="small"
       style={cardStyle}
       headStyle={{ minHeight: 38 }}

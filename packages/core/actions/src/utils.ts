@@ -28,7 +28,9 @@ export function RelationRepositoryActionBuilder(method: 'remove' | 'set') {
   return async function (ctx: Context, next) {
     const repository = getRepositoryFromParams(ctx);
 
-    await repository[method](ctx.action.params.values);
+    const filterByTk = ctx.action.params.filterByTk || ctx.action.params.filterByTks || ctx.action.params.values;
+
+    await repository[method](filterByTk);
 
     ctx.status = 200;
     await next();

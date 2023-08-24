@@ -1,9 +1,10 @@
 import PluginMultiAppManager from '@nocobase/plugin-multi-app-manager';
-import { Application, Plugin } from '@nocobase/server';
+import { Application, AppSupervisor, Plugin } from '@nocobase/server';
 import lodash from 'lodash';
 import { resolve } from 'path';
 
 const subAppFilteredPlugins = ['multi-app-share-collection', 'multi-app-manager'];
+const unSyncPlugins = ['localization-management'];
 
 class SubAppPlugin extends Plugin {
   beforeLoad() {
@@ -83,6 +84,9 @@ class SubAppPlugin extends Plugin {
 
     // new subApp sync plugins from mainApp
     subApp.on('beforeInstall', async () => {
+      // sync applicationPlugins collection
+      await subApp.db.sync();
+
       const subAppPluginsCollection = subApp.db.getCollection('applicationPlugins');
       const mainAppPluginsCollection = mainApp.db.getCollection('applicationPlugins');
 
@@ -107,6 +111,8 @@ class SubAppPlugin extends Plugin {
         }', (SELECT max("id") FROM ${subAppPluginsCollection.quotedTableName()}));
       `);
 
+      await subApp.reload();
+
       console.log(`sync plugins from ${mainApp.name} app to sub app ${subApp.name}`);
     });
   }
@@ -118,6 +124,10 @@ export class MultiAppShareCollectionPlugin extends Plugin {
   async beforeEnable() {
     if (!this.db.inDialect('postgres')) {
       throw new Error('multi-app-share-collection plugin only support postgres');
+    }
+    const plugin = this.pm.get('multi-app-manager');
+    if (!plugin.enabled) {
+      throw new Error(`${this.name} plugin need multi-app-manager plugin enabled`);
     }
   }
 
@@ -135,34 +145,48 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       if (lodash.get(options, 'loadFromDatabase')) {
         for (const application of await this.app.db.getCollection('applications').repository.find()) {
           const appName = application.get('name');
-          const subApp = await this.app.appManager.getApplication(appName);
+          const subApp = await AppSupervisor.getInstance().getApp(appName);
           await callback(subApp);
         }
 
         return;
       }
 
-      const subApps = [...this.app.appManager.applications.values()];
+      const subApps = [...AppSupervisor.getInstance().subApps()];
 
       for (const subApp of subApps) {
         await callback(subApp);
       }
     };
 
-    this.app.on('afterSubAppAdded', (subApp) => {
-      subApp.plugin(SubAppPlugin, { name: 'sub-app', mainApp: this.app });
-    });
+    const mainApp = this.app;
+
+    function addPluginToSubApp(app) {
+      if (app.name !== 'main') {
+        app.plugin(SubAppPlugin, { name: 'sub-app', mainApp });
+      }
+    }
+
+    // if supervisor not has listen event, add listener
+    if (
+      AppSupervisor.getInstance()
+        .listeners('afterAppAdded')
+        .filter((f) => f.name == addPluginToSubApp.name).length == 0
+    ) {
+      AppSupervisor.getInstance().on('afterAppAdded', addPluginToSubApp);
+    }
 
     this.app.db.on('users.afterCreateWithAssociations', async (model, options) => {
       await traverseSubApps(async (subApp) => {
         const { transaction } = options;
         const repository = subApp.db.getRepository('roles');
-        const subAppModel = await subApp.db.getCollection('users').repository.findOne({
+        const subAppUserModel = await subApp.db.getCollection('users').repository.findOne({
           filter: {
             id: model.get('id'),
           },
           transaction,
         });
+
         const defaultRole = await repository.findOne({
           filter: {
             default: true,
@@ -170,80 +194,38 @@ export class MultiAppShareCollectionPlugin extends Plugin {
           transaction,
         });
 
-        if (defaultRole && (await subAppModel.countRoles({ transaction })) == 0) {
-          await subAppModel.addRoles(defaultRole, { transaction });
+        if (defaultRole && (await subAppUserModel.countRoles({ transaction })) == 0) {
+          await subAppUserModel.addRoles(defaultRole, { transaction });
         }
       });
     });
 
-    this.app.db.on('collection:loaded', async ({ transaction, collection }) => {
-      await traverseSubApps(async (subApp) => {
-        const name = collection.name;
-
-        const collectionRecord = await subApp.db.getRepository('collections').findOne({
-          filter: {
-            name,
-          },
-          transaction,
-        });
-
-        await collectionRecord.load({ transaction });
+    this.app.on('__restarted', () => {
+      traverseSubApps((subApp) => {
+        subApp.runCommand('restart');
       });
     });
 
-    this.app.db.on('field:loaded', async ({ transaction, fieldKey }) => {
-      await traverseSubApps(async (subApp) => {
-        const fieldRecord = await subApp.db.getRepository('fields').findOne({
-          filterByTk: fieldKey,
-          transaction,
-        });
-
-        if (fieldRecord) {
-          await fieldRecord.load({ transaction });
-        }
-      });
-    });
-
-    this.app.on('afterEnablePlugin', async (pluginName) => {
-      await traverseSubApps(
-        async (subApp) => {
+    this.app.on('afterEnablePlugin', (pluginNames) => {
+      traverseSubApps((subApp) => {
+        for (const pluginName of lodash.castArray(pluginNames)) {
           if (subAppFilteredPlugins.includes(pluginName)) return;
-          await subApp.pm.enable(pluginName);
-        },
-        {
-          loadFromDatabase: true,
-        },
-      );
-    });
-
-    this.app.on('afterDisablePlugin', async (pluginName) => {
-      await traverseSubApps(
-        async (subApp) => {
-          if (subAppFilteredPlugins.includes(pluginName)) return;
-          await subApp.pm.disable(pluginName);
-        },
-        {
-          loadFromDatabase: true,
-        },
-      );
-    });
-
-    this.app.db.on('field.afterRemove', (removedField) => {
-      const subApps = [...this.app.appManager.applications.values()];
-      for (const subApp of subApps) {
-        const collectionName = removedField.collection.name;
-        const collection = subApp.db.getCollection(collectionName);
-        if (!collection) {
-          subApp.log.warn(`collection ${collectionName} not found in ${subApp.name}`);
-          continue;
+          subApp.runAsCLI(['pm', 'enable', pluginName], { from: 'user' });
         }
+      });
+    });
 
-        collection.removeField(removedField.name);
-      }
+    this.app.on('afterDisablePlugin', (pluginNames) => {
+      traverseSubApps((subApp) => {
+        for (const pluginName of lodash.castArray(pluginNames)) {
+          if (subAppFilteredPlugins.includes(pluginName)) return;
+          subApp.runAsCLI(['pm', 'disable', pluginName], { from: 'user' });
+        }
+      });
     });
 
     this.app.db.on(`afterRemoveCollection`, (collection) => {
-      const subApps = [...this.app.appManager.applications.values()];
+      const subApps = [...AppSupervisor.getInstance().subApps()];
       for (const subApp of subApps) {
         subApp.db.removeCollection(collection.name);
       }
@@ -279,7 +261,7 @@ export class MultiAppShareCollectionPlugin extends Plugin {
     });
 
     // 子应用启动参数
-    multiAppManager.setAppOptionsFactory((appName, mainApp) => {
+    multiAppManager.setAppOptionsFactory((appName, mainApp: Application) => {
       const mainAppDbConfig = PluginMultiAppManager.getDatabaseConfig(mainApp);
 
       const databaseOptions = {
@@ -287,7 +269,7 @@ export class MultiAppShareCollectionPlugin extends Plugin {
         schema: appName,
       };
 
-      const plugins = [...mainApp.pm.getPlugins().keys()].filter(
+      const plugins = [...mainApp.pm.getAliases()].filter(
         (name) => name !== 'multi-app-manager' && name !== 'multi-app-share-collection',
       );
 
@@ -322,10 +304,6 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       const schema = app.options.database.schema;
       await this.app.db.sequelize.query(`CREATE SCHEMA IF NOT EXISTS ${schema}`);
     });
-  }
-
-  requiredPlugins(): any[] {
-    return ['multi-app-manager'];
   }
 }
 

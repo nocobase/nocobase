@@ -68,7 +68,7 @@ describe('auth-manager', () => {
     });
 
     afterEach(async () => {
-      await db.close();
+      await app.destroy();
     });
 
     describe('blacklist', () => {
