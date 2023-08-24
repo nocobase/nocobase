@@ -14,11 +14,17 @@ export class Locale {
     this.app = app;
     this.cache = createCache();
 
-    this.app.on('afterLoad', () => this.load());
+    this.app.on('afterLoad', async () => {
+      this.app.log.debug('load locale resource');
+      this.app.setMaintainingMessage('load locale resource');
+      await this.load();
+      this.app.log.debug('locale resource loaded');
+      this.app.setMaintainingMessage('locale resource loaded');
+    });
   }
 
-  load() {
-    this.getCacheResources(this.defaultLang);
+  async load() {
+    await this.get(this.defaultLang);
   }
 
   setLocaleFn(name: string, fn: (lang: string) => Promise<any>) {
@@ -30,6 +36,7 @@ export class Locale {
       resources: await this.getCacheResources(lang),
     };
     for (const [name, fn] of this.localeFn) {
+      // this.app.log.debug(`load [${name}] locale resource `);
       const result = await this.wrapCache(`locale:${name}:${lang}`, async () => await fn(lang));
       if (result) {
         defaults[name] = result;
@@ -57,10 +64,12 @@ export class Locale {
 
   getResources(lang: string) {
     const resources = {};
-    const plugins = this.app.pm.getPlugins();
-    for (const name of plugins.keys()) {
+    const names = this.app.pm.getAliases();
+    for (const name of names) {
       try {
         const packageName = PluginManager.getPackageName(name);
+        // this.app.log.debug(`load [${packageName}] locale resource `);
+        // this.app.setMaintainingMessage(`load [${packageName}] locale resource `);
         const res = getResource(packageName, lang);
         if (res) {
           resources[name] = { ...res };
@@ -68,10 +77,6 @@ export class Locale {
       } catch (err) {
         // empty
       }
-    }
-    const res = getResource('@nocobase/client', lang, false);
-    if (res) {
-      resources['client'] = { ...(resources['client'] || {}), ...res };
     }
     return resources;
   }

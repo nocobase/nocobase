@@ -12,16 +12,12 @@ cd my-nocobase-app
 git pull
 ```
 
-## 3. 删除旧依赖文件（非必须）
-
-v0.10 进行了依赖的重大升级，如果 v0.9 升级 v0.10，需要删掉以下目录之后再升级
+## 3. Delete cache and dependencies (optional)
 
 ```bash
-# Remove .umi cache
-yarn rimraf -rf "./**/{.umi,.umi-production}"
-# Delete compiled files
-yarn rimraf -rf "./packages/*/*/{lib,esm,es,dist,node_modules}"
-# Remove dependencies
+# delete nocobase cache
+yarn nocobase clean
+# delete dependencies
 yarn rimraf -rf node_modules
 ```
 

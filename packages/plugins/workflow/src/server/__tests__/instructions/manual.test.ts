@@ -49,7 +49,7 @@ describe('workflow > instructions > manual', () => {
     });
   });
 
-  afterEach(() => db.close());
+  afterEach(() => app.destroy());
 
   describe('actions configuration', () => {
     it('no action configured', async () => {
@@ -58,8 +58,7 @@ describe('workflow > instructions > manual', () => {
         config: {
           assignees: [users[0].id],
           forms: {
-            f1: {
-            },
+            f1: {},
           },
         },
       });
@@ -96,9 +95,7 @@ describe('workflow > instructions > manual', () => {
           assignees: [users[0].id],
           forms: {
             f1: {
-              actions: [
-                { status: JOB_STATUS.RESOLVED, key: 'resolve' },
-              ],
+              actions: [{ status: JOB_STATUS.RESOLVED, key: 'resolve' }],
             },
           },
         },
@@ -346,9 +343,7 @@ describe('workflow > instructions > manual', () => {
           assignees: [users[0].id],
           forms: {
             f1: {
-              actions: [
-                { status: JOB_STATUS.RESOLVED, key: 'resolve' },
-              ],
+              actions: [{ status: JOB_STATUS.RESOLVED, key: 'resolve' }],
             },
           },
         },
@@ -418,9 +413,7 @@ describe('workflow > instructions > manual', () => {
           assignees: [users[0].id, users[1].id],
           forms: {
             f1: {
-              actions: [
-                { status: JOB_STATUS.RESOLVED, key: 'resolve' },
-              ]
+              actions: [{ status: JOB_STATUS.RESOLVED, key: 'resolve' }],
             },
           },
         },
@@ -467,9 +460,7 @@ describe('workflow > instructions > manual', () => {
           assignees: [users[0].id],
           forms: {
             f1: {
-              actions: [
-                { status: JOB_STATUS.RESOLVED, key: 'resolve' },
-              ],
+              actions: [{ status: JOB_STATUS.RESOLVED, key: 'resolve' }],
             },
           },
         },
@@ -512,9 +503,7 @@ describe('workflow > instructions > manual', () => {
           mode: 1,
           forms: {
             f1: {
-              actions: [
-                { status: JOB_STATUS.RESOLVED, key: 'resolve' },
-              ],
+              actions: [{ status: JOB_STATUS.RESOLVED, key: 'resolve' }],
             },
           },
         },
@@ -575,9 +564,7 @@ describe('workflow > instructions > manual', () => {
           mode: 1,
           forms: {
             f1: {
-              actions: [
-                { status: JOB_STATUS.REJECTED, key: 'reject' },
-              ],
+              actions: [{ status: JOB_STATUS.REJECTED, key: 'reject' }],
             },
           },
         },
@@ -808,9 +795,7 @@ describe('workflow > instructions > manual', () => {
           mode: -1,
           forms: {
             f1: {
-              actions: [
-                { status: JOB_STATUS.REJECTED, key: 'reject' },
-              ],
+              actions: [{ status: JOB_STATUS.REJECTED, key: 'reject' }],
             },
           },
         },
@@ -872,9 +857,7 @@ describe('workflow > instructions > manual', () => {
           assignees: [users[0].id, users[1].id],
           forms: {
             f1: {
-              actions: [
-                { status: JOB_STATUS.RESOLVED, key: 'resolve' },
-              ],
+              actions: [{ status: JOB_STATUS.RESOLVED, key: 'resolve' }],
             },
           },
         },
@@ -1013,9 +996,7 @@ describe('workflow > instructions > manual', () => {
             forms: {
               f1: {
                 type: 'create',
-                actions: [
-                  { status: JOB_STATUS.RESOLVED, key: 'resolve' },
-                ],
+                actions: [{ status: JOB_STATUS.RESOLVED, key: 'resolve' }],
                 collection: 'comments',
               },
             },
@@ -1129,9 +1110,7 @@ describe('workflow > instructions > manual', () => {
             forms: {
               f1: {
                 type: 'update',
-                actions: [
-                  { status: JOB_STATUS.RESOLVED, key: 'resolve' },
-                ],
+                actions: [{ status: JOB_STATUS.RESOLVED, key: 'resolve' }],
                 collection: 'posts',
               },
             },

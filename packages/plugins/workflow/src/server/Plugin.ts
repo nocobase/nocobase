@@ -1,22 +1,22 @@
 import path from 'path';
 
-import winston from 'winston';
 import LRUCache from 'lru-cache';
+import winston from 'winston';
 
 import { Op } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 
-import initFields from './fields';
+import { createLogger, getLoggerFilePath, getLoggerLevel, Logger, LoggerOptions } from '@nocobase/logger';
+import Processor from './Processor';
 import initActions from './actions';
 import { EXECUTION_STATUS } from './constants';
-import initInstructions, { Instruction } from './instructions';
-import Processor from './Processor';
-import initTriggers, { Trigger } from './triggers';
+import initFields from './fields';
 import initFunctions, { CustomFunction } from './functions';
-import { createLogger, Logger, LoggerOptions, getLoggerLevel, getLoggerFilePath } from '@nocobase/logger';
+import initInstructions, { Instruction } from './instructions';
+import initTriggers, { Trigger } from './triggers';
 
-import type { WorkflowModel, ExecutionModel, JobModel } from './types';
+import type { ExecutionModel, JobModel, WorkflowModel } from './types';
 
 type Pending = [ExecutionModel, JobModel?];
 
@@ -169,6 +169,7 @@ export default class WorkflowPlugin extends Plugin {
     });
 
     this.app.on('afterStart', () => {
+      this.app.setMaintainingMessage('check for not started executions');
       // check for not started executions
       this.dispatch();
     });
@@ -219,6 +220,19 @@ export default class WorkflowPlugin extends Plugin {
 
     // NOTE: no await for quick return
     setTimeout(this.prepare);
+  }
+
+  public async resume(job) {
+    if (!job.execution) {
+      job.execution = await job.getExecution();
+    }
+
+    this.pending.push([job.execution, job]);
+    this.dispatch();
+  }
+
+  public createProcessor(execution: ExecutionModel, options = {}): Processor {
+    return new Processor(execution, { ...options, plugin: this });
   }
 
   private prepare = async () => {
@@ -290,15 +304,6 @@ export default class WorkflowPlugin extends Plugin {
     }
   };
 
-  public async resume(job) {
-    if (!job.execution) {
-      job.execution = await job.getExecution();
-    }
-
-    this.pending.push([job.execution, job]);
-    this.dispatch();
-  }
-
   private async dispatch() {
     if (this.executing) {
       return;
@@ -355,9 +360,5 @@ export default class WorkflowPlugin extends Plugin {
     } catch (err) {
       this.getLogger(execution.workflowId).error(`execution (${execution.id}) error: ${err.message}`, err);
     }
-  }
-
-  public createProcessor(execution: ExecutionModel, options = {}): Processor {
-    return new Processor(execution, { ...options, plugin: this });
   }
 }

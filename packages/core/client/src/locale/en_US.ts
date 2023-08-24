@@ -719,5 +719,7 @@ export default {
   "Tag color field":"Tag color field",
   "Sync successfully":"Sync successfully",
   "Sync from form fields":"Sync from form fields",
-  "Select all":"Select all"
+  "Select all":"Select all",
+  "Restart": "Restart",
+  "Restart application": "Restart application",
 };

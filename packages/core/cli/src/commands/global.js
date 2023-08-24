@@ -12,11 +12,10 @@ module.exports = (cli) => {
     .option('-h, --help')
     .option('--ts-node-dev')
     .action((options) => {
-      const { tsNodeDev } = options;
       if (isDev()) {
         promptForTs();
-        run(tsNodeDev ? 'ts-node-dev' : 'ts-node', [
-          '-P',
+        run('tsx', [
+          '--tsconfig',
           './tsconfig.server.json',
           '-r',
           'tsconfig-paths/register',

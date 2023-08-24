@@ -12,7 +12,7 @@ const pluginPrefix = (process.env.PLUGIN_PACKAGE_PREFIX || '').split(',').filter
 const pluginDirs = (process.env.PLUGIN_PATH || 'packages/plugins/,packages/samples/')
   .split(',').map(item => path.join(__dirname, '..', '..', '..', '..', item));
 
-const outputPluginPath = path.join(__dirname, 'src', '.plugins', 'index.ts');
+const outputPluginPath = path.join(__dirname, 'src', '.plugins');
 const indexGenerator = new IndexGenerator(outputPluginPath, pluginDirs);
 indexGenerator.generate();
 

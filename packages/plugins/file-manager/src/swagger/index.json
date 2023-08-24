@@ -1,0 +1,81 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "NocoBase API - File manager plugin"
+  },
+  "tags": [],
+  "paths": {
+    "/{fileCollectionName}:create": {
+      "post": {
+        "tags": ["$collection"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/storages:list": {
+      "get": {
+        "tags": ["storages"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/storages:get": {
+      "get": {
+        "tags": ["storages"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/storages:create": {
+      "post": {
+        "tags": ["storages"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/storages:update": {
+      "post": {
+        "tags": ["storages"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/storages:destroy": {
+      "post": {
+        "tags": ["storages"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  }
+}

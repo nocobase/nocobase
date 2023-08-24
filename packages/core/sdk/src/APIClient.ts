@@ -45,7 +45,7 @@ export class Auth {
   }
 
   initKeys() {
-    if (!window) {
+    if (typeof window === 'undefined') {
       return;
     }
     const appName = getSubAppName();

@@ -28,7 +28,7 @@ describe('storage:tx-cos', () => {
   });
 
   afterEach(async () => {
-    await db.close();
+    await app.destroy();
   });
 
   describe('direct attachment', () => {

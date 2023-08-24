@@ -24,6 +24,8 @@ describe('action test', () => {
         drop: false,
       },
     });
+
+    await app.start();
   });
 
   afterEach(async () => {

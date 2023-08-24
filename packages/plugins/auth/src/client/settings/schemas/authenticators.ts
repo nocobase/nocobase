@@ -21,7 +21,7 @@ const collection = {
       name: 'name',
       uiSchema: {
         type: 'string',
-        title: '{{t("Name")}}',
+        title: '{{t("Auth UID")}}',
         'x-component': 'Input',
         required: true,
       },
@@ -32,8 +32,9 @@ const collection = {
       name: 'authType',
       uiSchema: {
         type: 'string',
-        title: '{{t("Auth Type", {ns: "auth"})}}',
+        title: '{{t("Auth Type")}}',
         'x-component': 'Select',
+        dataSource: '{{ types }}',
         required: true,
       },
     },
@@ -251,14 +252,16 @@ export const authenticatorsSchema: ISchema = {
           },
         },
         authType: {
+          title: '{{t("Auth Type")}}',
           type: 'void',
           'x-decorator': 'Table.Column.Decorator',
           'x-component': 'Table.Column',
           properties: {
             authType: {
               type: 'string',
-              'x-component': 'CollectionField',
+              'x-component': 'Select',
               'x-read-pretty': true,
+              enum: '{{ types }}',
             },
           },
         },

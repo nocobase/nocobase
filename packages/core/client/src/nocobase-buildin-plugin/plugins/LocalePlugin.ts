@@ -10,12 +10,13 @@ export class LocalePlugin extends Plugin {
     const api = this.app.apiClient;
     const locale = api.auth.locale;
     try {
-      const { data } = await api.request({
+      const res = await api.request({
         url: 'app:getLang',
         params: {
           locale,
         },
       });
+      const data = res?.data;
       this.locales = data?.data || {};
       this.app.use(ConfigProvider, { locale: this.locales.antd, popupMatchSelectWidth: false });
       if (data?.data?.lang && !locale) {

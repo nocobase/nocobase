@@ -5,6 +5,8 @@ import {
   CheckOutlined,
   MinusOutlined,
   ExclamationOutlined,
+  HourglassOutlined,
+  LoadingOutlined,
 } from '@ant-design/icons';
 import { NAMESPACE } from './locale';
 
@@ -24,48 +26,56 @@ export const ExecutionStatusOptions = [
     value: EXECUTION_STATUS.QUEUEING,
     label: `{{t("Queueing", { ns: "${NAMESPACE}" })}}`,
     color: 'blue',
+    icon: <HourglassOutlined />,
     description: `{{t("Triggered but still waiting in queue to execute.", { ns: "${NAMESPACE}" })}}`,
   },
   {
     value: EXECUTION_STATUS.STARTED,
     label: `{{t("On going", { ns: "${NAMESPACE}" })}}`,
     color: 'gold',
+    icon: <LoadingOutlined />,
     description: `{{t("Started and executing, maybe waiting for an async callback (manual, delay etc.).", { ns: "${NAMESPACE}" })}}`,
   },
   {
     value: EXECUTION_STATUS.RESOLVED,
     label: `{{t("Resolved", { ns: "${NAMESPACE}" })}}`,
     color: 'green',
+    icon: <CheckOutlined />,
     description: `{{t("Successfully finished.", { ns: "${NAMESPACE}" })}}`,
   },
   {
     value: EXECUTION_STATUS.FAILED,
     label: `{{t("Failed", { ns: "${NAMESPACE}" })}}`,
     color: 'red',
+    icon: <ExclamationOutlined />,
     description: `{{t("Failed to satisfy node configurations.", { ns: "${NAMESPACE}" })}}`,
   },
   {
     value: EXECUTION_STATUS.ERROR,
     label: `{{t("Error", { ns: "${NAMESPACE}" })}}`,
     color: 'red',
+    icon: <CloseOutlined />,
     description: `{{t("Some node meets error.", { ns: "${NAMESPACE}" })}}`,
   },
   {
     value: EXECUTION_STATUS.ABORTED,
     label: `{{t("Aborted", { ns: "${NAMESPACE}" })}}`,
     color: 'red',
+    icon: <MinusOutlined rotate={90} />,
     description: `{{t("Running of some node was aborted by program flow.", { ns: "${NAMESPACE}" })}}`,
   },
   {
     value: EXECUTION_STATUS.CANCELED,
     label: `{{t("Canceled", { ns: "${NAMESPACE}" })}}`,
     color: 'volcano',
+    icon: <MinusOutlined rotate={45} />,
     description: `{{t("Manually canceled whole execution when waiting.", { ns: "${NAMESPACE}" })}}`,
   },
   {
     value: EXECUTION_STATUS.REJECTED,
     label: `{{t("Rejected", { ns: "${NAMESPACE}" })}}`,
     color: 'volcano',
+    icon: <MinusOutlined />,
     description: `{{t("Rejected from a manual node.", { ns: "${NAMESPACE}" })}}`,
   },
 ];

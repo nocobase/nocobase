@@ -27,7 +27,7 @@ describe('workflow > instructions > destroy', () => {
     });
   });
 
-  afterEach(() => db.close());
+  afterEach(() => app.destroy());
 
   describe('destroy one', () => {
     it('params: from context', async () => {

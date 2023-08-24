@@ -34,6 +34,19 @@ export default {
       },
     },
     {
+      interface: 'username',
+      type: 'string',
+      name: 'username',
+      unique: true,
+      uiSchema: {
+        type: 'string',
+        title: '{{t("Username")}}',
+        'x-component': 'Input',
+        'x-validator': { username: true },
+        required: true,
+      },
+    },
+    {
       interface: 'email',
       type: 'string',
       name: 'email',

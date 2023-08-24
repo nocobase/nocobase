@@ -1,4 +1,4 @@
-import { Database, Repository } from '@nocobase/database';
+import { Database, Repository, Field, DataTypes } from '@nocobase/database';
 import { MockServer } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
 import { createApp } from '../index';
@@ -52,6 +52,73 @@ SELECT * FROM numbers;
 
   afterEach(async () => {
     await app.destroy();
+  });
+
+  it('should support preview field with getter', async () => {
+    class TestField extends Field {
+      get dataType() {
+        return DataTypes.STRING;
+      }
+
+      constructor(options: any, context: any) {
+        const { name } = options;
+        super(
+          {
+            get() {
+              return 'test_' + this.getDataValue(name);
+            },
+            ...options,
+          },
+          context,
+        );
+      }
+    }
+
+    db.registerFieldTypes({
+      test: TestField,
+    });
+
+    const C1 = db.collection({
+      name: 'c1',
+      fields: [
+        {
+          type: 'test',
+          name: 'test_field',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await C1.repository.create({
+      values: {
+        test_field: '1',
+      },
+    });
+
+    const c1 = await C1.repository.findOne();
+    expect(c1.get('test_field')).toEqual('test_1');
+
+    // create view from C1
+    const viewName = `test_view_${uid(6)}`;
+    await db.sequelize.query(`DROP VIEW IF EXISTS ${viewName}`);
+
+    const createSQL = `CREATE VIEW ${viewName} AS SELECT * FROM ${C1.quotedTableName()}`;
+
+    await db.sequelize.query(createSQL);
+
+    const response = await agent.resource('dbViews').query({
+      filterByTk: viewName,
+      pageSize: 20,
+      fieldTypes: {
+        test_field: 'test',
+      },
+    });
+
+    expect(response.status).toBe(200);
+    const data = response.body.data;
+    const firstRow = data[0];
+    expect(firstRow.test_field).toEqual('test_1');
   });
 
   it('should list views', async () => {
