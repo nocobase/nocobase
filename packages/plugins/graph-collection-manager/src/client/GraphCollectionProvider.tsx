@@ -5,9 +5,6 @@ import { useGCMTranslation } from './utils';
 
 export const GraphCollectionProvider = React.memo((props) => {
   const ctx = useContext(PluginManagerContext);
-  // i18n.addResources('en-US', 'graphPositions', enUS);
-  // i18n.addResources('ja-JP', 'graphPositions', jaJP);
-  // i18n.addResources('zh-CN', 'graphPositions', zhCN);
   const { t } = useGCMTranslation();
   const items = useContext(SettingsCenterContext);
 

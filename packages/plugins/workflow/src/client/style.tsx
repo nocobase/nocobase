@@ -15,12 +15,11 @@ const useStyles = createStyles(({ css, token }) => {
         position: relative;
         padding: 0.5rem 1rem;
         background: ${token.colorBgContainer};
-        border-bottom: 1px solid ${token.colorBorder};
+        border-bottom: 1px solid ${token.colorBorderSecondary};
 
         header {
           display: flex;
           align-items: center;
-          min-height: 2rem;
         }
 
         aside {
@@ -55,7 +54,7 @@ const useStyles = createStyles(({ css, token }) => {
       }
     `,
 
-    workflowVersionDropdownClass: css`
+    dropdownClass: css`
       .ant-dropdown-menu-item {
         justify-content: flex-end;
         .ant-dropdown-menu-title-content {
@@ -65,11 +64,16 @@ const useStyles = createStyles(({ css, token }) => {
           text-align: right;
 
           time {
-            width: 12em;
-            color: ${token.colorText};
+            width: 14em;
             font-size: 80%;
           }
+        }
+      }
+    `,
 
+    workflowVersionDropdownClass: css`
+      .ant-dropdown-menu-item {
+        .ant-dropdown-menu-title-content {
           strong {
             font-weight: normal;
           }
@@ -90,23 +94,10 @@ const useStyles = createStyles(({ css, token }) => {
     `,
 
     executionsDropdownRowClass: css`
-      .row {
-        display: flex;
-        align-items: baseline;
-
-        &.current {
-          font-weight: bold;
-        }
-
+      .ant-dropdown-menu-item {
         .id {
           flex-grow: 1;
           text-align: right;
-        }
-
-        time {
-          width: 12em;
-          color: ${token.colorText};
-          font-size: 80%;
         }
       }
     `,
@@ -283,10 +274,6 @@ const useStyles = createStyles(({ css, token }) => {
       justify-content: center;
       align-items: center;
       color: ${token.colorTextLightSolid};
-
-      &[type='button'] {
-        border: none;
-      }
     `,
 
     nodeHeaderClass: css`
@@ -318,6 +305,11 @@ const useStyles = createStyles(({ css, token }) => {
       display: flex;
       flex-direction: column-reverse;
       align-items: center;
+    `,
+
+    nodeJobResultClass: css`
+      padding: 1em;
+      background-color: ${token.colorBgContainer};
     `,
 
     addButtonClass: css`

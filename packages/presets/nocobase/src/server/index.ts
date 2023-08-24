@@ -43,6 +43,7 @@ export class PresetNocoBase extends Plugin {
     'api-keys',
     'localization-management',
     'theme-editor',
+    'api-doc',
   ];
 
   splitNames(name: string) {
@@ -82,6 +83,40 @@ export class PresetNocoBase extends Plugin {
       }
       const version = await this.app.version.get();
       console.log(`The version number before upgrade is ${version}`);
+    });
+
+    this.app.on('beforeUpgrade', async () => {
+      if (!this.db.inDialect('sqlite')) {
+        return;
+      }
+      await this.app.load({ method: 'upgrade' });
+      const Field = this.db.getRepository('fields');
+      const existed = await Field.count({
+        filter: {
+          name: 'username',
+          collectionName: 'users',
+        },
+      });
+      if (!existed) {
+        await this.db.getRepository('fields').create({
+          values: {
+            name: 'username',
+            collectionName: 'users',
+            type: 'string',
+            unique: true,
+            interface: 'input',
+            uiSchema: {
+              type: 'string',
+              title: '{{t("Username")}}',
+              'x-component': 'Input',
+              'x-validator': { username: true },
+              required: true,
+            },
+          },
+          // NOTE: to trigger hook
+          context: {},
+        });
+      }
     });
 
     this.app.on('beforeUpgrade', async () => {

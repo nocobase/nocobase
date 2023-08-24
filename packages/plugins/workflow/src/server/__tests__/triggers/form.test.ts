@@ -180,6 +180,29 @@ describe('workflow > triggers > form', () => {
       expect(e1[0].status).toBe(EXECUTION_STATUS.RESOLVED);
       expect(e1[0].context.data).toHaveProperty('createdBy');
     });
+
+    it('user submitted form', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'form',
+        config: {
+          collection: 'posts',
+        },
+      });
+
+      const res1 = await userAgents[0].resource('posts').create({
+        values: { title: 't1' },
+        triggerWorkflows: `${workflow.key}`,
+      });
+      expect(res1.status).toBe(200);
+
+      await sleep(500);
+
+      const [e1] = await workflow.getExecutions();
+      expect(e1.status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e1.context.user).toBeDefined();
+      expect(e1.context.user.id).toBe(users[0].id);
+    });
   });
 
   describe('update', () => {
@@ -262,6 +285,30 @@ describe('workflow > triggers > form', () => {
       const [e2] = await w2.getExecutions();
       expect(e2.status).toBe(EXECUTION_STATUS.RESOLVED);
       expect(e2.context.data).toMatchObject({ title: 't1' });
+    });
+
+    it('user submitted form', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'form',
+        config: {
+          collection: 'posts',
+          appends: ['createdBy'],
+        },
+      });
+
+      const res1 = await userAgents[0].resource('posts').create({
+        values: { title: 't1' },
+        triggerWorkflows: `${workflow.key}`,
+      });
+      expect(res1.status).toBe(200);
+
+      await sleep(500);
+
+      const [e1] = await workflow.getExecutions();
+      expect(e1.status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e1.context.user).toBeDefined();
+      expect(e1.context.user.id).toBe(users[0].id);
     });
   });
 

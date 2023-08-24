@@ -155,7 +155,7 @@ export class EagerLoadingTree {
     };
 
     const loadRecursive = async (node, ids) => {
-      const modelPrimaryKey = node.model.primaryKeyAttribute;
+      const modelPrimaryKey = node.model.primaryKeyField || node.model.primaryKeyAttribute;
 
       let instances = [];
 

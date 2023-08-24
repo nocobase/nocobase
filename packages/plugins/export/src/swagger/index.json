@@ -1,0 +1,21 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "NocoBase API - Export plugin"
+  },
+  "tags": [],
+  "paths": {
+    "/{collectionName}:export": {
+      "post": {
+        "tags": ["$collection"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,4 +1,4 @@
-import { useFieldSchema } from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import { cx, SchemaComponent, SortableItem, useDesigner, useToken } from '@nocobase/client';
 import React, { useEffect } from 'react';
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
@@ -36,6 +36,8 @@ const InternalContainer: React.FC = (props) => {
   const navigate = useNavigate();
   const params = useParams<{ name: string }>();
   const location = useLocation();
+  const field = useField();
+  const isTabBarEnabled = field.componentProps.tabBarEnabled !== false;
   const tabBarSchema = fieldSchema?.properties?.['tabBar'];
   const tabBarCurrentFirstKey = tabBarSchema?.properties ? Object.keys(tabBarSchema.properties)[0] : null;
   let redirectToUid = null;
@@ -69,15 +71,17 @@ const InternalContainer: React.FC = (props) => {
           />
         )}
       </div>
-      <div className={cx('nb-mobile-container-tab-bar', styles.tabBar)}>
-        <SchemaComponent
-          onlyRenderProperties
-          filterProperties={(schema) => {
-            return schema['x-component'] === 'MTabBar';
-          }}
-          schema={fieldSchema}
-        ></SchemaComponent>
-      </div>
+      {isTabBarEnabled && (
+        <div className={cx('nb-mobile-container-tab-bar', styles.tabBar)}>
+          <SchemaComponent
+            onlyRenderProperties
+            filterProperties={(schema) => {
+              return schema['x-component'] === 'MTabBar';
+            }}
+            schema={fieldSchema}
+          ></SchemaComponent>
+        </div>
+      )}
     </SortableItem>
   );
 };
