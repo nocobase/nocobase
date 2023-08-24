@@ -538,6 +538,7 @@ SchemaSettings.Remove = function Remove(props: any) {
             } else {
               dn.remove(null, options);
             }
+            confirm?.onOk?.();
             delete form.values[fieldSchema.name];
           },
         });

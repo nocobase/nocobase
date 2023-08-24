@@ -8,16 +8,21 @@ import {
   useCollection,
   useRequest,
 } from '@nocobase/client';
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CustomRequestConfigurationFieldsSchema } from '../schemas';
 import { useCustomRequestVariableOptions } from '../hooks';
 
+const useCustomRequestsResource = () => {
+  const apiClient = useAPIClient();
+  return apiClient.resource('customRequests');
+};
+
 function CustomRequestSettingsItem() {
   const { t } = useTranslation();
   const { name } = useCollection();
-  const apiClient = useAPIClient();
   const fieldSchema = useFieldSchema();
+  const customRequestsResource = useCustomRequestsResource();
   const url = `customRequests:get/${fieldSchema['x-uid']}`;
   const { data } = useRequest<{ data: { options: any } }>(
     {
@@ -27,7 +32,6 @@ function CustomRequestSettingsItem() {
       cacheKey: url,
     },
   );
-  const customRequests = apiClient.resource('customRequests');
 
   return data ? (
     <SchemaSettings.ActionModalItem
@@ -39,7 +43,7 @@ function CustomRequestSettingsItem() {
       schema={CustomRequestConfigurationFieldsSchema}
       initialValues={data?.data?.options}
       onSubmit={(requestSettings) => {
-        customRequests.updateOrCreate({
+        customRequestsResource.updateOrCreate({
           values: {
             key: fieldSchema['x-uid'],
             options: {
@@ -55,8 +59,18 @@ function CustomRequestSettingsItem() {
 }
 
 export const CustomRequestActionDesigner: React.FC = () => {
+  const customRequestsResource = useCustomRequestsResource();
+  const fieldSchema = useFieldSchema();
   return (
-    <Action.Designer>
+    <Action.Designer
+      removeButtonProps={{
+        onConfirmOk() {
+          customRequestsResource.destroy({
+            filterByTk: fieldSchema['x-uid'],
+          });
+        },
+      }}
+    >
       <CustomRequestSettingsItem />
     </Action.Designer>
   );
