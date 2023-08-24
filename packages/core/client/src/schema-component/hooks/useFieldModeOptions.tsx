@@ -33,7 +33,7 @@ export const useFieldModeOptions = (props?) => {
             !isSubTableField && { label: t('File manager'), value: 'FileManager' },
           ];
     }
-    if (collection?.template === 'tree' && ['o2m', 'm2m'].includes(collectionField.interface)) {
+    if (collection?.template === 'tree' && ['m2m'].includes(collectionField.interface)) {
       return isReadPretty
         ? [
             { label: t('Title'), value: 'Select' },
