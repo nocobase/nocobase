@@ -2,10 +2,10 @@ import { transformValue } from '../../hooks/useSpecialCase';
 
 describe('transformValue', () => {
   it('value is an array', () => {
-    const value = [{ a: 1 }, { b: 1 }];
+    const value = [{ a: 3 }, { a: 4 }];
     const deps = {
       field: {
-        value: [{ a: 2 }, { b: 2 }],
+        value: [{ a: 1, b: 11 }],
       },
       subFieldSchema: {
         name: 'a',
@@ -16,14 +16,16 @@ describe('transformValue', () => {
       [
         {
           "a": {
-            "a": 1,
+            "a": 3,
           },
+          "b": 11,
         },
         {
+          "__notFromDatabase": true,
           "a": {
-            "b": 1,
+            "a": 4,
           },
-          "b": 2,
+          "b": 11,
         },
       ]
     `);
