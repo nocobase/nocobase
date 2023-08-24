@@ -1,19 +1,25 @@
-import { ISchema } from '@formily/json-schema';
+import { ISchema, Schema } from '@formily/json-schema';
 import React, { useContext, useMemo } from 'react';
-import { CollectionFieldOptions } from '../../../collection-manager';
+import { CollectionFieldOptions, useCollectionManager } from '../../../collection-manager';
 import { useCompile, useGetFilterOptions } from '../../../schema-component';
+import { isSpecialCaseField } from '../../../schema-component/antd/form-item/hooks/useSpecialCase';
 import { FieldOption, Option } from '../type';
 
 export interface IsDisabledParams {
   option: FieldOption;
   collectionField: CollectionFieldOptions;
   uiSchema: ISchema;
+  /** 消费变量值的字段 */
+  targetFieldSchema: Schema;
+  getCollectionField: (name: string) => CollectionFieldOptions;
 }
 
 interface GetOptionsParams {
   collectionField: CollectionFieldOptions;
   uiSchema: any;
   depth: number;
+  /** 消费变量值的字段 */
+  targetFieldSchema?: Schema;
   maxDepth?: number;
   /**
    * 不需要禁用选项，一般会在表达式中使用
@@ -22,6 +28,7 @@ interface GetOptionsParams {
   loadChildren?: (option: Option) => Promise<void>;
   compile: (value: string) => any;
   isDisabled?: (params: IsDisabledParams) => boolean;
+  getCollectionField?: (name: string) => CollectionFieldOptions;
 }
 
 interface BaseProps {
@@ -29,6 +36,8 @@ interface BaseProps {
   collectionField: CollectionFieldOptions;
   /** 当前字段的 `uiSchema`，和 `collectionField.uiSchema` 不同，该值也包含操作符中 schema（参见 useValues） */
   uiSchema: any;
+  /** 消费变量值的字段 */
+  targetFieldSchema?: Schema;
   maxDepth?: number;
   name: string;
   title: string;
@@ -64,7 +73,18 @@ export const BaseVariableProvider = (props: BaseVariableProviderProps) => {
 
 const getChildren = (
   options: FieldOption[],
-  { collectionField, uiSchema, depth, maxDepth, noDisabled, loadChildren, compile, isDisabled }: GetOptionsParams,
+  {
+    collectionField,
+    uiSchema,
+    depth,
+    maxDepth,
+    noDisabled,
+    loadChildren,
+    compile,
+    isDisabled,
+    targetFieldSchema,
+    getCollectionField,
+  }: GetOptionsParams,
 ): Option[] => {
   const result = options
     .map((option): Option => {
@@ -73,7 +93,9 @@ const getChildren = (
           key: option.name,
           value: option.name,
           label: compile(option.title),
-          disabled: noDisabled ? false : isDisabled({ option, collectionField, uiSchema }),
+          disabled: noDisabled
+            ? false
+            : isDisabled({ option, collectionField, uiSchema, targetFieldSchema, getCollectionField }),
           isLeaf: true,
           depth,
         };
@@ -90,7 +112,9 @@ const getChildren = (
         isLeaf: false,
         field: option,
         depth,
-        disabled: noDisabled ? false : isDisabled({ option, collectionField, uiSchema }),
+        disabled: noDisabled
+          ? false
+          : isDisabled({ option, collectionField, uiSchema, targetFieldSchema, getCollectionField }),
         loadChildren,
       };
     })
@@ -102,6 +126,7 @@ const getChildren = (
 export const useBaseVariable = ({
   collectionField,
   uiSchema,
+  targetFieldSchema,
   maxDepth = 3,
   name,
   title,
@@ -112,6 +137,7 @@ export const useBaseVariable = ({
   const compile = useCompile();
   const getFilterOptions = useGetFilterOptions();
   const { isDisabled } = useContext(BaseVariableContext) || {};
+  const { getCollectionField } = useCollectionManager();
 
   const loadChildren = (option: Option): Promise<void> => {
     if (!option.field?.target) {
@@ -125,12 +151,14 @@ export const useBaseVariable = ({
           getChildren(returnFields(getFilterOptions(target), option), {
             collectionField,
             uiSchema,
+            targetFieldSchema,
             depth: option.depth + 1,
             maxDepth,
             noDisabled,
             loadChildren,
             compile,
             isDisabled: isDisabled || isDisabledDefault,
+            getCollectionField,
           }) || [];
 
         if (children.length === 0) {
@@ -170,7 +198,7 @@ export const useBaseVariable = ({
  * @returns
  */
 function isDisabledDefault(params: IsDisabledParams) {
-  const { option, collectionField, uiSchema } = params;
+  const { option, collectionField, uiSchema, targetFieldSchema, getCollectionField } = params;
 
   if (!uiSchema) {
     return false;
@@ -186,6 +214,10 @@ function isDisabledDefault(params: IsDisabledParams) {
     return true;
   }
   if (!collectionField.target && ['hasOne', 'belongsTo'].includes(option.type)) {
+    return false;
+  }
+
+  if (option.target && isSpecialCaseField({ collectionField, fieldSchema: targetFieldSchema, getCollectionField })) {
     return false;
   }
 

@@ -1,3 +1,4 @@
+import { Schema } from '@formily/json-schema';
 import { useTranslation } from 'react-i18next';
 import { useFormActiveFields } from '../../../block-provider';
 import { CollectionFieldOptions } from '../../../collection-manager';
@@ -8,6 +9,8 @@ interface Props {
   collectionField: CollectionFieldOptions;
   schema?: any;
   noDisabled?: boolean;
+  /** 消费变量值的字段 */
+  targetFieldSchema?: Schema;
 }
 
 /**
@@ -15,12 +18,13 @@ interface Props {
  * @param param0
  * @returns
  */
-export const useFormVariable = ({ collectionName, collectionField, schema, noDisabled }: Props) => {
+export const useFormVariable = ({ collectionName, collectionField, schema, noDisabled, targetFieldSchema }: Props) => {
   const { getActiveFieldsName } = useFormActiveFields();
   const { t } = useTranslation();
   const result = useBaseVariable({
     collectionField,
     uiSchema: schema,
+    targetFieldSchema,
     maxDepth: 4,
     name: '$nForm',
     title: t('Current form'),

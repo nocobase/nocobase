@@ -145,6 +145,7 @@ export const AssignedField = (props: AssignedFieldProps) => {
       collectionField={collectionField}
       shouldChange={shouldChange}
       returnScope={returnScope}
+      targetFieldSchema={fieldSchema}
     />
   );
 };

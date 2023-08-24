@@ -8,6 +8,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RemoteSelect, useCompile, useDesignable } from '../..';
 import { CollectionOptions, useCollection, useCollectionManager } from '../../../collection-manager';
+import { FlagProvider } from '../../../flag-provider';
 import { useRecord } from '../../../record-provider';
 import { OpenModeSchemaItems } from '../../../schema-items';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
@@ -495,14 +496,16 @@ function AssignedFieldValues() {
   );
 
   return (
-    <SchemaSettings.ActionModalItem
-      title={t('Assign field values')}
-      initialSchema={initialSchema}
-      initialValues={fieldSchema?.['x-action-settings']?.assignedValues}
-      modalTip={tips[actionType]}
-      uid={fieldSchema?.['x-action-settings']?.schemaUid}
-      onSubmit={onSubmit}
-    />
+    <FlagProvider isInAssignFieldValues={true}>
+      <SchemaSettings.ActionModalItem
+        title={t('Assign field values')}
+        initialSchema={initialSchema}
+        initialValues={fieldSchema?.['x-action-settings']?.assignedValues}
+        modalTip={tips[actionType]}
+        uid={fieldSchema?.['x-action-settings']?.schemaUid}
+        onSubmit={onSubmit}
+      />
+    </FlagProvider>
   );
 }
 

@@ -1,5 +1,5 @@
 import { Form } from '@formily/core';
-import { ISchema } from '@formily/react';
+import { ISchema, Schema } from '@formily/react';
 import _ from 'lodash';
 import { useMemo } from 'react';
 import { CollectionFieldOptions } from '../../../collection-manager';
@@ -34,31 +34,50 @@ interface Props {
    * 不需要禁用选项，一般会在表达式中使用
    */
   noDisabled?: boolean;
+  /** 消费变量值的字段 */
+  targetFieldSchema?: Schema;
 }
 
-export const useVariableOptions = ({ collectionField, form, record, uiSchema, operator, noDisabled }: Props) => {
+export const useVariableOptions = ({
+  collectionField,
+  form,
+  record,
+  uiSchema,
+  operator,
+  noDisabled,
+  targetFieldSchema,
+}: Props) => {
   const { name: blockCollectionName } = useBlockCollection();
 
   const fieldCollectionName = collectionField?.collectionName;
-  const userVariable = useUserVariable({ maxDepth: 3, uiSchema: uiSchema, collectionField, noDisabled });
+  const userVariable = useUserVariable({
+    maxDepth: 3,
+    uiSchema: uiSchema,
+    collectionField,
+    noDisabled,
+    targetFieldSchema,
+  });
   const dateVariable = useDateVariable({ operator, schema: uiSchema, noDisabled });
   const formVariable = useFormVariable({
     schema: uiSchema,
     collectionName: blockCollectionName,
     collectionField,
     noDisabled,
+    targetFieldSchema,
   });
   const iterationVariable = useIterationVariable({
     currentCollection: fieldCollectionName,
     collectionField,
     schema: uiSchema,
     noDisabled,
+    targetFieldSchema,
   });
   const currentRecordVariable = useRecordVariable({
     schema: uiSchema,
     collectionName: blockCollectionName,
     collectionField,
     noDisabled,
+    targetFieldSchema,
   });
 
   // 保证下面的 `_.isEmpty(record)` 结果符合预期，如果存在 `__parent` 字段，需要删除

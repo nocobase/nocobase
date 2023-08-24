@@ -1,5 +1,6 @@
 import { Form } from '@formily/core';
 // @ts-ignore
+import { Schema } from '@formily/json-schema';
 import _ from 'lodash';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -31,6 +32,8 @@ type Props = {
   onChange: (value: any, optionPath?: any[]) => void;
   renderSchemaComponent: (props: RenderSchemaComponentProps) => any;
   schema?: any;
+  /** 消费变量值的字段 */
+  targetFieldSchema?: Schema;
   children?: any;
   className?: string;
   style?: React.CSSProperties;
@@ -76,6 +79,7 @@ export const VariableInput = (props: Props) => {
     form,
     record,
     returnScope = _.identity,
+    targetFieldSchema,
   } = props;
   const { name: blockCollectionName } = useBlockCollection();
   const { t } = useTranslation();
@@ -83,7 +87,7 @@ export const VariableInput = (props: Props) => {
   const { operator, schema: uiSchema = collectionField?.uiSchema } = useValues();
 
   const variableOptions = compatOldVariables(
-    useVariableOptions({ collectionField, form, record, operator, uiSchema }),
+    useVariableOptions({ collectionField, form, record, operator, uiSchema, targetFieldSchema }),
     {
       value,
       collectionName: blockCollectionName,

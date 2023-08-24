@@ -76,6 +76,7 @@ import {
   isSameCollection,
   useSupportedBlocks,
 } from '../filter-provider/utils';
+import { FlagProvider } from '../flag-provider';
 import { useCollectMenuItem, useCollectMenuItems, useMenuItem } from '../hooks/useMenuItem';
 import { getTargetKey } from '../schema-component/antd/association-filter/utilts';
 import { DynamicComponentProps } from '../schema-component/antd/filter/DynamicComponent';
@@ -1581,6 +1582,7 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props: { fieldSchem
                 collectionField,
                 contextCollectionName: isAllowContextVariable && tableCtx.collection,
                 schema: collectionField?.uiSchema,
+                targetFieldSchema: fieldSchema,
                 className: defaultInputStyle,
                 form,
                 record,
@@ -1600,7 +1602,7 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props: { fieldSchem
 
                   const defaultValue = getFieldDefaultValue(s, collectionField);
 
-                  if (collectionField.target) {
+                  if (collectionField.target && s['x-component-props']) {
                     s['x-component-props'].mode = 'Select';
                   }
 
@@ -1636,7 +1638,9 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props: { fieldSchem
 
                   return (
                     <FormProvider>
-                      <SchemaComponent schema={schema} />
+                      <FlagProvider isSetDefaultValueDialog={true}>
+                        <SchemaComponent schema={schema} />
+                      </FlagProvider>
                     </FormProvider>
                   );
                 },

@@ -1,3 +1,4 @@
+import { Schema } from '@formily/json-schema';
 import { useTranslation } from 'react-i18next';
 import { CollectionFieldOptions } from '../../../collection-manager';
 import { useBaseVariable } from './useBaseVariable';
@@ -7,6 +8,8 @@ interface Props {
   schema: any;
   collectionName: string;
   noDisabled?: boolean;
+  /** 消费变量值的字段 */
+  targetFieldSchema?: Schema;
 }
 
 export const useRecordVariable = (props: Props) => {
@@ -19,6 +22,7 @@ export const useRecordVariable = (props: Props) => {
     title: t('Current record'),
     collectionName: props.collectionName,
     noDisabled: props.noDisabled,
+    targetFieldSchema: props.targetFieldSchema,
   });
 
   return currentRecordVariable;

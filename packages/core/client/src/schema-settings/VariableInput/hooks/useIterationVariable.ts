@@ -1,3 +1,4 @@
+import { Schema } from '@formily/json-schema';
 import { useTranslation } from 'react-i18next';
 import { useFormActiveFields } from '../../../block-provider';
 import { CollectionFieldOptions } from '../../../collection-manager';
@@ -13,17 +14,21 @@ export const useIterationVariable = ({
   collectionField,
   schema,
   noDisabled,
+  targetFieldSchema,
 }: {
   currentCollection: string;
   collectionField: CollectionFieldOptions;
   schema?: any;
   noDisabled?: boolean;
+  /** 消费变量值的字段 */
+  targetFieldSchema?: Schema;
 }) => {
   const { getActiveFieldsName } = useFormActiveFields();
   const { t } = useTranslation();
   const result = useBaseVariable({
     collectionField,
     uiSchema: schema,
+    targetFieldSchema,
     maxDepth: 4,
     name: '$iteration',
     title: t('Current object'),

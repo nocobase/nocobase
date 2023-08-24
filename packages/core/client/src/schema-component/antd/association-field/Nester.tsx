@@ -10,7 +10,7 @@ import _ from 'lodash';
 import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FormActiveFieldsProvider } from '../../../block-provider';
-import { RecordProvider, useRecord } from '../../../record-provider';
+import { RecordIndexProvider, RecordProvider, useRecord } from '../../../record-provider';
 import { isPatternDisabled, isSystemField } from '../../../schema-settings';
 import {
   DefaultValueProvider,
@@ -158,9 +158,15 @@ const ToManyNester = observer(
               </div>
               <FormActiveFieldsProvider name="nester">
                 <RecordProvider record={value}>
-                  <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
-                    <RecursionField onlyRenderProperties basePath={field.address.concat(index)} schema={fieldSchema} />
-                  </DefaultValueProvider>
+                  <RecordIndexProvider index={index}>
+                    <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
+                      <RecursionField
+                        onlyRenderProperties
+                        basePath={field.address.concat(index)}
+                        schema={fieldSchema}
+                      />
+                    </DefaultValueProvider>
+                  </RecordIndexProvider>
                 </RecordProvider>
               </FormActiveFieldsProvider>
               <Divider />
