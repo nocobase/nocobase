@@ -47,6 +47,7 @@ const EagerLoadingNodeProto = {
 export class EagerLoadingTree {
   public root: EagerLoadingNode;
   db: Database;
+  private rootQueryOptions: any = {};
 
   constructor(root: EagerLoadingNode) {
     this.root = root;
@@ -56,10 +57,11 @@ export class EagerLoadingTree {
     model: ModelStatic<any>;
     rootAttributes: Array<string>;
     rootOrder?: any;
+    rootQueryOptions?: any;
     includeOption: Includeable | Includeable[];
     db: Database;
   }): EagerLoadingTree {
-    const { model, rootAttributes, includeOption, db } = options;
+    const { model, rootAttributes, includeOption, db, rootQueryOptions } = options;
 
     const buildNode = (node) => {
       Object.setPrototypeOf(node, EagerLoadingNodeProto);
@@ -137,10 +139,11 @@ export class EagerLoadingTree {
 
     const tree = new EagerLoadingTree(root);
     tree.db = db;
+    tree.rootQueryOptions = rootQueryOptions;
     return tree;
   }
 
-  async load(pks: Array<string | number>, transaction?: Transaction) {
+  async load(transaction?: Transaction) {
     const result = {};
 
     const orderOption = (association) => {
@@ -154,26 +157,80 @@ export class EagerLoadingTree {
       return order;
     };
 
-    const loadRecursive = async (node, ids) => {
-      const modelPrimaryKey = node.model.primaryKeyField || node.model.primaryKeyAttribute;
-
+    const loadRecursive = async (node, ids = []) => {
       let instances = [];
 
-      // load instances from database
       if (!node.parent) {
-        const findOptions = {
-          where: { [modelPrimaryKey]: ids },
-          attributes: node.attributes,
-        };
+        // load root instances
+        const rootInclude = this.rootQueryOptions?.include || node.includeOption;
 
-        if (node.order) {
-          findOptions['order'] = node.order;
+        const includeForFilter = rootInclude.filter((include) => {
+          return (
+            Object.keys(include.where || {}).length > 0 ||
+            JSON.stringify(this.rootQueryOptions?.filter)?.includes(include.association)
+          );
+        });
+
+        const belongsToAssociationsOnly = includeForFilter.every((include) => {
+          const association = node.model.associations[include.association];
+          if (!association) {
+            return false;
+          }
+          return association.associationType == 'BelongsTo';
+        });
+
+        if (belongsToAssociationsOnly) {
+          instances = await node.model.findAll({
+            ...this.rootQueryOptions,
+            attributes: node.attributes,
+            distinct: true,
+            include: includeForFilter,
+            transaction,
+          });
+        } else {
+          const primaryKeyField = node.model.primaryKeyField || node.model.primaryKeyAttribute;
+
+          if (!primaryKeyField) {
+            throw new Error(`Model ${node.model.name} does not have primary key`);
+          }
+
+          // find all ids
+          const ids = (
+            await node.model.findAll({
+              ...this.rootQueryOptions,
+              includeIgnoreAttributes: false,
+              attributes: [primaryKeyField],
+              group: `${node.model.name}.${primaryKeyField}`,
+              transaction,
+              include: includeForFilter,
+            } as any)
+          ).map((row) => {
+            return { row, pk: row.get(primaryKeyField) };
+          });
+
+          const findOptions = {
+            where: { [primaryKeyField]: ids.map((i) => i.pk) },
+            attributes: node.attributes,
+          };
+
+          if (node.order) {
+            findOptions['order'] = node.order;
+          }
+
+          instances = await node.model.findAll({
+            ...findOptions,
+            transaction,
+          });
         }
 
-        instances = await node.model.findAll({
-          ...findOptions,
-          transaction,
-        });
+        // clear filter association value
+        const associations = node.model.associations;
+        for (const association of Object.keys(associations)) {
+          for (const instance of instances) {
+            delete instance[association];
+            delete instance.dataValues[association];
+          }
+        }
       } else if (ids.length > 0) {
         const association = node.association;
         const associationType = association.associationType;
@@ -241,8 +298,8 @@ export class EagerLoadingTree {
       node.instances = instances;
 
       for (const child of node.children) {
+        const modelPrimaryKey = node.model.primaryKeyField || node.model.primaryKeyAttribute;
         const nodeIds = instances.map((instance) => instance.get(modelPrimaryKey));
-
         await loadRecursive(child, nodeIds);
       }
 
@@ -343,7 +400,7 @@ export class EagerLoadingTree {
       }
     };
 
-    await loadRecursive(this.root, pks);
+    await loadRecursive(this.root);
 
     const appendChildCollectionName = appendChildCollectionNameAfterRepositoryFind(this.db);
 
@@ -377,8 +434,7 @@ export class EagerLoadingTree {
       }
 
       for (const instance of node.instances) {
-        const attributes = lodash.pick(instance.dataValues, includeAttributes);
-        instance.dataValues = attributes;
+        instance.dataValues = lodash.pick(instance.dataValues, includeAttributes);
       }
     };
 

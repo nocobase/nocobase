@@ -62,7 +62,6 @@ describe('find collection that without primary key', () => {
     const aWithB = await A.repository.find({
       appends: ['b'],
       filter: {
-        name: 'a1',
         'b.name': 'b1',
       },
     });
