@@ -1,7 +1,7 @@
 import { useFieldSchema } from '@formily/react';
 import { ArrayItems } from '@formily/antd-v5';
 import { Action, SchemaSettings, useAPIClient, useCollection, useRequest } from '@nocobase/client';
-import React, { useCallback } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { CustomRequestConfigurationFieldsSchema } from '../schemas';
 import { useCustomRequestVariableOptions } from '../hooks';
@@ -17,7 +17,7 @@ function CustomRequestSettingsItem() {
   const fieldSchema = useFieldSchema();
   const customRequestsResource = useCustomRequestsResource();
   const url = `customRequests:get/${fieldSchema['x-uid']}`;
-  const { data } = useRequest<{ data: { options: any } }>(
+  const { data, refresh } = useRequest<{ data: { options: any } }>(
     {
       url,
     },
@@ -35,8 +35,8 @@ function CustomRequestSettingsItem() {
       scope={{ useCustomRequestVariableOptions }}
       schema={CustomRequestConfigurationFieldsSchema}
       initialValues={data?.data?.options}
-      onSubmit={(requestSettings) => {
-        customRequestsResource.updateOrCreate({
+      onSubmit={async (requestSettings) => {
+        await customRequestsResource.updateOrCreate({
           values: {
             key: fieldSchema['x-uid'],
             options: {
@@ -46,6 +46,7 @@ function CustomRequestSettingsItem() {
           },
           filterKeys: ['key'],
         });
+        refresh();
       }}
     />
   ) : null;
