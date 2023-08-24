@@ -55,6 +55,10 @@ export const GridCardActionInitializers = {
               skipScopeCheck: true,
             },
           },
+          visible: function useVisible() {
+            const collection = useCollection();
+            return collection.template !== 'sql';
+          },
         },
         {
           type: 'item',
@@ -177,6 +181,10 @@ export const GridCardItemActionInitializers = {
             'x-action': 'destroy',
             'x-decorator': 'ACLActionProvider',
             'x-align': 'left',
+          },
+          visible: function useVisible() {
+            const collection = useCollection();
+            return collection.template !== 'sql';
           },
         },
       ],
