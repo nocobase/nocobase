@@ -41,7 +41,7 @@ describe('string field', () => {
       },
     });
 
-    Test.setField('sort', { type: 'sort', scopeKey: 'scopeKey' });
+    Test.setField('scopeKeySort', { type: 'sort', scopeKey: 'scopeKey' });
     await db.sync();
   });
 
