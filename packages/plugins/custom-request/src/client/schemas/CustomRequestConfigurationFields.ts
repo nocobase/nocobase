@@ -28,10 +28,10 @@ export const CustomRequestConfigurationFieldsSchema = {
       required: true,
       title: `{{t("URL", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
-      'x-decorator-props': {},
       'x-component': 'Variable.RawTextArea',
       'x-component-props': {
         scope: '{{useCustomRequestVariableOptions}}',
+        autoSize: true,
         fieldNames: {
           value: 'name',
           label: 'title',
