@@ -171,6 +171,6 @@ export default {
     }
 
     // pass control to upper scope by ending current scope
-    return processor.exit(branchJob.status);
+    return processor.exit(branchJob);
   },
 } as Instruction;

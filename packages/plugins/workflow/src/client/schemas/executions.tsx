@@ -2,10 +2,10 @@ import React from 'react';
 import { ISchema } from '@formily/react';
 import { Link } from 'react-router-dom';
 import { useActionContext, useRecord, useResourceActionContext, useResourceContext } from '@nocobase/client';
-import { ExecutionStatusOptions } from '../constants';
+import { EXECUTION_STATUS, ExecutionStatusOptions, ExecutionStatusOptionsMap } from '../constants';
 import { NAMESPACE } from '../locale';
 import { useTranslation } from 'react-i18next';
-import { message } from 'antd';
+import { Tag, message } from 'antd';
 
 export const executionCollection = {
   name: 'executions',
@@ -48,7 +48,8 @@ export const executionCollection = {
       uiSchema: {
         title: `{{t("Status", { ns: "${NAMESPACE}" })}}`,
         type: 'string',
-        'x-component': 'Select',
+        'x-component': 'ExecutionStatusColumn',
+        // 'x-component': 'Select',
         'x-decorator': 'FormItem',
         enum: ExecutionStatusOptions,
       } as ISchema,
@@ -72,7 +73,15 @@ export const executionSchema = {
           resource: 'executions',
           action: 'list',
           params: {
-            appends: ['workflow.id', 'workflow.title'],
+            appends: [
+              'workflow.id',
+              'workflow.title',
+              'lastJob.status',
+              'lastJob.nodeId',
+              'lastJob.node.title',
+              'lastJob.node.type',
+            ],
+            except: ['context'],
             pageSize: 20,
             sort: ['-createdAt'],
             filter: {},

@@ -109,7 +109,8 @@ export default class Processor {
       const head = this.nodes.find((item) => !item.upstream);
       await this.run(head, { result: execution.context });
     } else {
-      await this.exit(JOB_STATUS.RESOLVED);
+      await this.execution.update({ status: EXECUTION_STATUS.RESOLVED }, { transaction: this.transaction });
+      await this.exit();
     }
   }
 
@@ -204,7 +205,7 @@ export default class Processor {
 
     // really done for all nodes
     // * should mark execution as done with last job status
-    return this.exit(job.status);
+    return this.exit(job);
   }
 
   async recall(node, job) {
@@ -217,10 +218,18 @@ export default class Processor {
     return this.exec(instruction.resume.bind(instruction), node, job);
   }
 
-  async exit(s?: number) {
-    if (typeof s === 'number') {
-      const status = (<typeof Processor>this.constructor).StatusMap[s] ?? Math.sign(s);
-      await this.execution.update({ status }, { transaction: this.transaction });
+  async exit(job?: JobModel) {
+    if (job) {
+      const status = (<typeof Processor>this.constructor).StatusMap[job.status] ?? Math.sign(job.status);
+      await this.execution.update(
+        {
+          status,
+          lastJobId: job.id,
+        },
+        {
+          transaction: this.transaction,
+        },
+      );
     }
     this.logger.info(`execution (${this.execution.id}) exiting with status ${this.execution.status}`);
     await this.commit();

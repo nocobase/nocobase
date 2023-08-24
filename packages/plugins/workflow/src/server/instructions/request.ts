@@ -75,7 +75,7 @@ export default class implements Instruction {
 
     processor.logger.info(`request (#${node.id}) sent to "${config.url}", waiting for response...`);
 
-    return processor.exit();
+    return processor.exit(job);
   }
 
   async resume(node: FlowNodeModel, job, processor: Processor) {

@@ -113,7 +113,7 @@ export default {
 
     if (job.status === JOB_STATUS.PENDING) {
       await job.save({ transaction: processor.transaction });
-      return processor.exit();
+      return processor.exit(job);
     }
 
     return job;

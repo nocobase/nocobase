@@ -31,5 +31,11 @@ export default {
       type: 'integer',
       name: 'status',
     },
+    {
+      type: 'belongsTo',
+      name: 'lastJob',
+      target: 'jobs',
+      foreignKey: 'lastJobId',
+    },
   ],
 } as CollectionOptions;

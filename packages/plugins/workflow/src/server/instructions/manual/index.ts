@@ -151,7 +151,7 @@ export default class implements Instruction {
       },
     );
 
-    return job;
+    return processor.exit(job);
   }
 
   async resume(node, job, processor: Processor) {

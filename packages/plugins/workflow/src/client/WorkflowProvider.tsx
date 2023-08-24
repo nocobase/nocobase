@@ -16,6 +16,7 @@ import { instructions } from './nodes';
 import { workflowSchema } from './schemas/workflows';
 import { triggers } from './triggers';
 import { ExecutionStatusSelect } from './components/ExecutionStatusSelect';
+import { ExecutionStatusColumn } from './components/ExecutionStatusColumn';
 
 // registerField(expressionField.group, 'expression', expressionField);
 
@@ -37,6 +38,7 @@ function WorkflowPane() {
           ExecutionLink,
           OpenDrawer,
           ExecutionStatusSelect,
+          ExecutionStatusColumn,
         }}
       />
     </Card>
