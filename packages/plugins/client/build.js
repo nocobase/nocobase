@@ -20,8 +20,22 @@ exports.run = async (log) => {
   });
 
   log('coping antd locale');
-  await fs.cp(path.resolve(path.dirname(antd)), path.resolve(localeDir, 'antd'), {
-    recursive: true,
-    force: true,
-  });
+  const files = await fs.readdir(path.resolve(path.dirname(antd), 'locale'));
+  await fs.mkdir(path.resolve(localeDir, 'antd'), { force: true, recursive: true });
+  for (const file of files) {
+    if (path.extname(file) !== '.js') {
+      continue;
+    }
+    const content = require(path.resolve(path.dirname(antd), 'locale', file)).default;
+    try {
+      await fs.writeFile(
+        path.resolve(localeDir, 'antd', file),
+        `module.exports = ${JSON.stringify(content)}`,
+        'utf-8',
+        {},
+      );
+    } catch (error) {
+      log(`skip ${file}`);
+    }
+  }
 };
