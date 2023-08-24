@@ -32,7 +32,7 @@ export async function send(ctx: Context, next: Next) {
   });
 
   if (!requestConfig) {
-    ctx.throw(500, 'request config not found');
+    ctx.throw(404, 'request config not found');
   }
 
   ctx.withoutDataWrapping = true;
@@ -56,8 +56,8 @@ export async function send(ctx: Context, next: Next) {
       ...options,
       url: parse(url)(variables),
       headers: {
-        ...omitNullAndUndefined(parse(arrayToObject(headers))(variables)),
         Authorization: 'Bearer ' + ctx.getBearerToken(),
+        ...omitNullAndUndefined(parse(arrayToObject(headers))(variables)),
       },
       params: parse(arrayToObject(params))(variables),
       data: parse({

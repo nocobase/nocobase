@@ -1,13 +1,6 @@
 import { useFieldSchema } from '@formily/react';
 import { ArrayItems } from '@formily/antd-v5';
-import {
-  Action,
-  SchemaComponentOptions,
-  SchemaSettings,
-  useAPIClient,
-  useCollection,
-  useRequest,
-} from '@nocobase/client';
+import { Action, SchemaSettings, useAPIClient, useCollection, useRequest } from '@nocobase/client';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CustomRequestConfigurationFieldsSchema } from '../schemas';
