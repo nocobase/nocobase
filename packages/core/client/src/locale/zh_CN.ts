@@ -772,7 +772,7 @@ export default {
   'Restart application': '重启应用',
   "Allows to clear cache, reboot application": "允许清除缓存，重启应用",
   'The will interrupt service, it may take a few seconds to restart. Are you sure to continue?': '重启将会中断当前服务，这个过程可能需要一点时间，确定要继续吗？',
-  'Reboot': '重启',
+  'Restart': '重启',
   'Clear cache': '清除缓存',
   "Duplicate":"复制",
   "Duplicating":"复制中",
