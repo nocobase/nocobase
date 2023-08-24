@@ -9,8 +9,9 @@ jest.setTimeout(300000);
 describe('notifications', () => {
   let db: Database;
 
+  let app;
   beforeEach(async () => {
-    const app = mockServer();
+    app = mockServer();
     app.plugin(plugin);
     await app.load();
     db = app.db;
@@ -18,7 +19,7 @@ describe('notifications', () => {
     NotificationService.createTransport = nodemailerMock.createTransport;
   });
 
-  afterEach(() => db.close());
+  afterEach(() => app.destroy());
 
   it('create', async () => {
     const Notification = db.getCollection('notifications');

@@ -10,6 +10,8 @@ NocoBase v0.10 has been released, see [v0.10: update instructions](http://docs.n
 
 ## Recent major updates
 
+- [v0.13: New application status flow - 2023/08/24](https://docs.nocobase.com/welcome/release/v13-changelog)
+- [v0.12: New plugin build tool - 2023/08/01](https://docs.nocobase.com/welcome/release/v12-changelog)
 - [v0.11: New client application, plugin and router - 2023/07/08](http://docs.nocobase.com/welcome/release/v11-changelog)
 - [v0.10: Update instructions - 2023/06/23](http://docs.nocobase.com/welcome/release/v10-changelog)
 

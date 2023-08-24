@@ -28,7 +28,7 @@ describe('workflow > instructions > delay', () => {
     });
   });
 
-  afterEach(() => app.stop());
+  afterEach(() => app.destroy());
 
   describe('runtime', () => {
     it('delay to resolved', async () => {
