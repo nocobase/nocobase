@@ -25180,6 +25180,11 @@ svgson@^4.1.0:
     omit-deep "0.3.0"
     xml-reader "2.4.3"
 
+swagger-ui-dist@^5.3.1:
+  version "5.3.1"
+  resolved "https://registry.npmmirror.com/swagger-ui-dist/-/swagger-ui-dist-5.3.1.tgz#ae76a74136152d790b06a8b71ca389cac35ab78f"
+  integrity sha512-El78OvXp9zMasfPrshtkW1CRx8AugAKoZuGGOTW+8llJzOV1RtDJYqQRz/6+2OakjeWWnZuRlN2Qj1Y0ilux3w==
+
 swr@^2.0.0:
   version "2.2.0"
   resolved "https://registry.npmmirror.com/swr/-/swr-2.2.0.tgz#575c6ac1bec087847f4c86a39ccbc0043c834d6a"

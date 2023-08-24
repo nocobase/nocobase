@@ -44,9 +44,11 @@ export class SortField extends Field {
   initRecordsSortValue = async ({ transaction }) => {
     const orderField = (() => {
       const model = this.collection.model;
+
       if (model.primaryKeyAttribute) {
         return model.primaryKeyAttribute;
       }
+
       if (model.rawAttributes['createdAt']) {
         return model.rawAttributes['createdAt'].field;
       }
@@ -79,7 +81,18 @@ export class SortField extends Field {
     const doInit = async (scopeKey = null, scopeValue = null) => {
       const queryInterface = this.collection.db.sequelize.getQueryInterface();
 
+      if (scopeKey) {
+        const scopeField = this.collection.getField(scopeKey);
+        if (!scopeField) {
+          throw new Error(`can not find scope field ${scopeKey} for collection ${this.collection.name}`);
+        }
+
+        scopeKey = this.collection.model.rawAttributes[scopeKey].field;
+      }
+
       const quotedOrderField = queryInterface.quoteIdentifier(orderField);
+
+      const sortColumnName = this.collection.model.rawAttributes[this.name].field;
 
       const sql = `
         WITH ordered_table AS (
@@ -105,16 +118,16 @@ export class SortField extends Field {
           this.collection.db.inDialect('mysql')
             ? `
              UPDATE ${this.collection.quotedTableName()}, ordered_table
-             SET ${this.collection.quotedTableName()}.${this.name} = ordered_table.new_sequence_number
+             SET ${this.collection.quotedTableName()}.${sortColumnName} = ordered_table.new_sequence_number
              WHERE ${this.collection.quotedTableName()}.${quotedOrderField} = ordered_table.${quotedOrderField}
             `
             : `
           UPDATE ${this.collection.quotedTableName()}
-        SET ${queryInterface.quoteIdentifier(this.name)} = ordered_table.new_sequence_number
+        SET ${queryInterface.quoteIdentifier(sortColumnName)} = ordered_table.new_sequence_number
         FROM ordered_table
         WHERE ${this.collection.quotedTableName()}.${quotedOrderField} = ${queryInterface.quoteIdentifier(
-                'ordered_table',
-              )}.${quotedOrderField};
+          'ordered_table',
+        )}.${quotedOrderField};
         `
         }
 
