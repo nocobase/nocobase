@@ -44,8 +44,12 @@ export default (collection: Collection) => {
       name: 'filter',
       in: 'query',
       description: 'filter items',
-      schema: {
-        type: 'object',
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+          },
+        },
       },
     },
     sort: {
