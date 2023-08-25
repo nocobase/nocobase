@@ -89,7 +89,7 @@ function useUpdateAction() {
         return;
       }
       await form.submit();
-      await api.resource('flow_nodes', data.id).update?.({
+      await api.resource('flow_nodes').update?.({
         filterByTk: data.id,
         values: {
           config: form.values,
@@ -181,7 +181,7 @@ export function RemoveButton() {
   if (!workflow) {
     return null;
   }
-  const resource = api.resource('workflows.nodes', workflow.id);
+  const resource = api.resource('flow_nodes');
 
   async function onRemove() {
     async function onOk() {

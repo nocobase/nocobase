@@ -7,6 +7,7 @@ export const app = new Application({
     baseURL: process.env.API_BASE_URL,
   },
   plugins: [NocoBaseClientPresetPlugin],
+  ws: true,
   devDynamicImport,
 });
 

@@ -133,22 +133,9 @@ export class BelongsToManyRepository extends MultipleRelationRepository {
     call: 'add' | 'set',
     options: TargetKey | TargetKey[] | PrimaryKeyWithThroughValues | PrimaryKeyWithThroughValues[] | AssociatedOptions,
   ) {
-    let handleKeys: TargetKey[] | PrimaryKeyWithThroughValues[];
+    const handleKeys: TargetKey[] | PrimaryKeyWithThroughValues[] = this.convertTks(options) as any;
 
     const transaction = await this.getTransaction(options, false);
-
-    if (lodash.isPlainObject(options)) {
-      options = (<AssociatedOptions>options).tk || [];
-    }
-
-    if (lodash.isString(options) || lodash.isNumber(options)) {
-      handleKeys = [<TargetKey>options];
-    } // if it is type primaryKeyWithThroughValues
-    else if (lodash.isArray(options) && options.length == 2 && lodash.isPlainObject(options[0][1])) {
-      handleKeys = [<PrimaryKeyWithThroughValues>options];
-    } else {
-      handleKeys = <TargetKey[] | PrimaryKeyWithThroughValues[]>options;
-    }
 
     const sourceModel = await this.getSourceModel(transaction);
 
