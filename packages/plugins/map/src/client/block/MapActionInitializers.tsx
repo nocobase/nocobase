@@ -48,6 +48,10 @@ export const MapActionInitializers = {
     },
     {
       type: 'divider',
+      visible: function useVisible() {
+        const collection = useCollection();
+        return collection.template !== 'sql';
+      },
     },
     {
       type: 'subMenu',
