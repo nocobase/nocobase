@@ -28,7 +28,11 @@ export async function send(ctx: Context, next: Next) {
   const requestConfig = await repo.findOne({
     filter: {
       key: filterByTk,
+      roles: {
+        name: ctx.state.currentRole,
+      },
     },
+    appends: ['roles'],
   });
 
   if (!requestConfig) {
@@ -62,7 +66,7 @@ export async function send(ctx: Context, next: Next) {
       params: parse(arrayToObject(params))(variables),
       data: parse({
         ...data,
-        ...requestConfig?.data,
+        ...requestConfigFirst?.data,
       })(variables),
     }).then((res) => {
       return res.data;

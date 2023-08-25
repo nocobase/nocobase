@@ -15,6 +15,7 @@ import {
 import { App } from 'antd';
 import { isURL } from '@nocobase/utils/client';
 import { useNavigate } from 'react-router-dom';
+import { useGetCustomRequest } from './useGetCustomRequest';
 
 export const useCustomizeRequestActionProps = () => {
   const apiClient = useAPIClient();
@@ -27,16 +28,7 @@ export const useCustomizeRequestActionProps = () => {
   const { field, resource, __parent, service } = useBlockRequestContext();
   const record = useRecord();
   const fieldSchema = useFieldSchema();
-  const url = `customRequests:get/${fieldSchema['x-uid']}`;
-  const { data } = useRequest<{ data: { options: any } }>(
-    {
-      url,
-    },
-    {
-      cacheKey: url,
-    },
-  );
-
+  const { data } = useGetCustomRequest();
   const actionField = useField();
   const { setVisible } = useActionContext();
   const { modal, message } = App.useApp();

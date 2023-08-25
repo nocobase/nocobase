@@ -1,14 +1,12 @@
-import { BlockInitializer, useCollection } from '@nocobase/client';
+import { BlockInitializer } from '@nocobase/client';
 import React from 'react';
 
 export const CustomRequestInitializer: React.FC = (props) => {
-  const collection = useCollection();
-
   const schema = {
     title: '{{ t("Custom request") }}',
-    'x-component': 'Action',
+    'x-component': 'CustomRequestAction',
     'x-action': 'customize:form:request',
-    'x-designer': 'CustomRequestActionDesigner',
+    'x-designer': 'CustomRequestAction.Designer',
     'x-action-settings': {
       skipValidator: false,
       onSuccess: {
@@ -22,9 +20,5 @@ export const CustomRequestInitializer: React.FC = (props) => {
     },
   };
 
-  if (collection && schema['x-acl-action']) {
-    schema['x-acl-action'] = `${collection.name}:${schema['x-acl-action']}`;
-    schema['x-decorator'] = 'ACLActionProvider';
-  }
   return <BlockInitializer {...props} schema={schema} />;
 };

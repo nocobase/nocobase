@@ -12,6 +12,22 @@ export default {
       primaryKey: true,
     },
     {
+      type: 'string',
+      name: 'title',
+      title: '{{t("Title")}}',
+    },
+    {
+      type: 'belongsToMany',
+      name: 'roles',
+      onDelete: 'CASCADE',
+      through: 'customRequestsRoles',
+      target: 'roles',
+      foreignKey: 'customRequestId',
+      otherKey: 'roleName',
+      sourceKey: 'key',
+      targetKey: 'name',
+    },
+    {
       type: 'json',
       name: 'options', // 配置的请求参数都放这里
     },

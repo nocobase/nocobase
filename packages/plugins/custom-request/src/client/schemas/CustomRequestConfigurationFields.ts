@@ -3,6 +3,15 @@ import { NAMESPACE } from '../../locale';
 export const CustomRequestConfigurationFieldsSchema = {
   type: 'object',
   properties: {
+    title: {
+      type: 'string',
+      title: `{{t("Title", { ns: "${NAMESPACE}" })}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'Input',
+      'x-component-props': {
+        placeholder: `{{t("Input title", { ns: "${NAMESPACE}" })}}`,
+      },
+    },
     method: {
       type: 'string',
       required: true,

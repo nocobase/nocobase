@@ -233,7 +233,6 @@ export const TableActionColumnInitializers = (props: any) => {
               title: '{{t("Custom request")}}',
               component: 'CustomRequestInitializer',
               schema: {
-                'x-component': 'Action.Link',
                 'x-action': 'customize:table:request',
               },
               visible: () => {

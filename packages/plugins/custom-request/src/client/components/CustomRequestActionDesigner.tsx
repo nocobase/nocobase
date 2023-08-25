@@ -1,10 +1,11 @@
 import { useFieldSchema } from '@formily/react';
 import { ArrayItems } from '@formily/antd-v5';
-import { Action, SchemaSettings, useAPIClient, useCollection, useRequest } from '@nocobase/client';
+import { Action, SchemaSettings, useAPIClient, useCollection, useCurrentRoles } from '@nocobase/client';
 import React from 'react';
-import { useTranslation } from 'react-i18next';
-import { CustomRequestConfigurationFieldsSchema } from '../schemas';
-import { useCustomRequestVariableOptions } from '../hooks';
+import { CustomRequestACLSchema, CustomRequestConfigurationFieldsSchema } from '../schemas';
+import { useCustomRequestVariableOptions, useGetCustomRequest } from '../hooks';
+import { message } from 'antd';
+import { useTranslation } from '../../locale';
 
 const useCustomRequestsResource = () => {
   const apiClient = useAPIClient();
@@ -16,39 +17,75 @@ function CustomRequestSettingsItem() {
   const { name } = useCollection();
   const fieldSchema = useFieldSchema();
   const customRequestsResource = useCustomRequestsResource();
-  const url = `customRequests:get/${fieldSchema['x-uid']}`;
-  const { data, refresh } = useRequest<{ data: { options: any } }>(
-    {
-      url,
-    },
-    {
-      cacheKey: url,
-    },
-  );
+  const [messageInstance, messageDom] = message.useMessage();
+  const { data, refresh } = useGetCustomRequest();
+  return data ? (
+    <>
+      {messageDom}
+      <SchemaSettings.ActionModalItem
+        title={t('Request settings')}
+        components={{
+          ArrayItems,
+        }}
+        scope={{ useCustomRequestVariableOptions }}
+        schema={CustomRequestConfigurationFieldsSchema}
+        initialValues={{
+          title: data?.data?.title,
+          ...data?.data?.options,
+        }}
+        onSubmit={async (config) => {
+          const { title, ...requestSettings } = config;
+          await customRequestsResource.updateOrCreate({
+            values: {
+              key: fieldSchema['x-uid'],
+              title,
+              options: {
+                ...requestSettings,
+                collectionName: name,
+              },
+            },
+            filterKeys: ['key'],
+          });
+          refresh();
+          messageInstance.success(t('Saved successfully'));
+        }}
+      />
+    </>
+  ) : null;
+}
+
+function CustomRequestACL() {
+  const { t } = useTranslation();
+  const fieldSchema = useFieldSchema();
+  const customRequestsResource = useCustomRequestsResource();
+  const [messageInstance, messageDom] = message.useMessage();
+  const { data, refresh } = useGetCustomRequest();
+
+  const currentRoles = useCurrentRoles();
 
   return data ? (
-    <SchemaSettings.ActionModalItem
-      title={t('Request settings')}
-      components={{
-        ArrayItems,
-      }}
-      scope={{ useCustomRequestVariableOptions }}
-      schema={CustomRequestConfigurationFieldsSchema}
-      initialValues={data?.data?.options}
-      onSubmit={async (requestSettings) => {
-        await customRequestsResource.updateOrCreate({
-          values: {
-            key: fieldSchema['x-uid'],
-            options: {
-              ...requestSettings,
-              collectionName: name,
+    <>
+      {messageDom}
+      <SchemaSettings.ActionModalItem
+        title={t('Access Control')}
+        schema={CustomRequestACLSchema}
+        scope={{ currentRoles }}
+        initialValues={{
+          roles: data?.data?.roles,
+        }}
+        onSubmit={async ({ roles }) => {
+          await customRequestsResource.updateOrCreate({
+            values: {
+              key: fieldSchema['x-uid'],
+              roles,
             },
-          },
-          filterKeys: ['key'],
-        });
-        refresh();
-      }}
-    />
+            filterKeys: ['key'],
+          });
+          refresh();
+          messageInstance.success(t('Saved successfully'));
+        }}
+      />
+    </>
   ) : null;
 }
 
@@ -66,6 +103,7 @@ export const CustomRequestActionDesigner: React.FC = () => {
       }}
     >
       <CustomRequestSettingsItem />
+      <CustomRequestACL />
     </Action.Designer>
   );
 };

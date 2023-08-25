@@ -815,6 +815,7 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
 
   const cancelHandler = () => {
     setVisible(false);
+    form.reset();
   };
 
   const submitHandler = async () => {

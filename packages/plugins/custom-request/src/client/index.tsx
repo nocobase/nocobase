@@ -2,7 +2,7 @@ import { CollectionManagerProvider, Plugin, SchemaComponentOptions } from '@noco
 import React from 'react';
 import { useCustomizeRequestActionProps } from './hooks';
 import { CustomRequestConfigurationFieldsSchema, CustomRequestSchema } from './schemas';
-import { CustomRequestActionDesigner } from './components';
+import { CustomRequestAction } from './components';
 import { CustomRequestInitializer } from './initializer';
 
 const CustomRequestProvider: React.FC = (props) => {
@@ -13,7 +13,7 @@ const CustomRequestProvider: React.FC = (props) => {
         CustomRequestConfigurationFieldsSchema,
         CustomRequestSchema,
       }}
-      components={{ CustomRequestActionDesigner, CustomRequestInitializer }}
+      components={{ CustomRequestAction, CustomRequestInitializer }}
     >
       <CollectionManagerProvider>{props.children}</CollectionManagerProvider>
     </SchemaComponentOptions>

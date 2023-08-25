@@ -1,1 +1,1 @@
-export * from './CustomRequestActionDesigner';
+export * from './CustomRequestAction';

@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-custom-request",
-  "version": "0.12.0-alpha.3",
+  "version": "0.13.0-alpha.2",
   "main": "dist/server/index.js",
   "dependencies": {
     "@formily/react": "2.x",
