@@ -9,16 +9,16 @@ export async function createApp(
   const app = mockServer({
     acl: false,
     ...options,
+    // plugins: ['error-handler', 'collection-manager', 'ui-schema-storage'],
   });
-
-  await app.db.clean({ drop: true });
-  await app.db.sync({});
 
   options.beforePlugin && options.beforePlugin(app);
 
   app.plugin(PluginErrorHandler, { name: 'error-handler' });
   app.plugin(Plugin, { name: 'collection-manager' });
   app.plugin(PluginUiSchema, { name: 'ui-schema-storage' });
+
+  await app.load();
 
   if (options.beforeInstall) {
     await options.beforeInstall(app);

@@ -1,3 +1,5 @@
+import Application from '../../application';
+
 export default {
   name: 'pm',
   actions: {
@@ -14,10 +16,11 @@ export default {
     async enable(ctx, next) {
       const pm = ctx.app.pm;
       const { filterByTk } = ctx.action.params;
+      const app = ctx.app as Application;
       if (!filterByTk) {
         ctx.throw(400, 'plugin name invalid');
       }
-      await pm.enable(filterByTk);
+      app.runAsCLI(['pm', 'enable', filterByTk], { from: 'user' });
       ctx.body = filterByTk;
       await next();
     },
@@ -27,7 +30,8 @@ export default {
       if (!filterByTk) {
         ctx.throw(400, 'plugin name invalid');
       }
-      await pm.disable(filterByTk);
+      const app = ctx.app as Application;
+      app.runAsCLI(['pm', 'disable', filterByTk], { from: 'user' });
       ctx.body = filterByTk;
       await next();
     },
@@ -41,7 +45,8 @@ export default {
       if (!filterByTk) {
         ctx.throw(400, 'plugin name invalid');
       }
-      await pm.remove(filterByTk);
+      const app = ctx.app as Application;
+      app.runAsCLI(['pm', 'remove', filterByTk], { from: 'user' });
       ctx.body = filterByTk;
       await next();
     },

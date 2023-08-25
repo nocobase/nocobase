@@ -348,6 +348,18 @@ const useStyles = createStyles(({ css, token }) => {
       width: 2em;
       height: 6em;
     `,
+
+    terminalClass: css`
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      width: 4em;
+      height: 4em;
+      border-radius: 50%;
+      background-color: ${token.colorText};
+      color: ${token.colorBgContainer};
+    `,
   };
 });
 

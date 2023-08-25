@@ -78,19 +78,17 @@ export const SettingsMenu: React.FC<{
       },
       {
         key: 'reboot',
-        label: t('Reboot application'),
+        label: t('Restart application'),
         onClick: async () => {
           modal.confirm({
-            title: t('Reboot application'),
-            content: t('The will interrupt service, it may take a few seconds to restart. Are you sure to continue?'),
-            okText: t('Reboot'),
+            title: t('Restart application'),
+            // content: t('The will interrupt service, it may take a few seconds to restart. Are you sure to continue?'),
+            okText: t('Restart'),
             okButtonProps: {
               danger: true,
             },
             onOk: async () => {
-              await api.resource('app').reboot();
-              await check();
-              window.location.reload();
+              await api.resource('app').restart();
             },
           });
         },

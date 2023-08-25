@@ -47,7 +47,7 @@ describe('application', () => {
   });
 
   afterEach(async () => {
-    return app.db.close();
+    return app.destroy();
   });
 
   it('resourcer.define', async () => {
@@ -126,5 +126,26 @@ describe('application', () => {
     expect(response.body).toEqual([1, 2]);
   });
 
-  it('should create application with plugins config', async () => {});
+  it('should call application with command', async () => {
+    await app.runCommand('start');
+    const jestFn = jest.fn();
+
+    app.on('beforeInstall', async () => {
+      jestFn();
+    });
+
+    const runningJest = jest.fn();
+
+    app.on('maintaining', ({ status }) => {
+      if (status === 'command_running') {
+        runningJest();
+      }
+    });
+
+    await app.runCommand('install');
+
+    expect(runningJest).toBeCalledTimes(1);
+
+    expect(jestFn).toBeCalledTimes(1);
+  });
 });

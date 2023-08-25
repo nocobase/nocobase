@@ -8,7 +8,7 @@ export interface registerAppOptions extends Transactionable {
 }
 
 export class ApplicationModel extends Model {
-  registerToMainApp(mainApp: Application, options: registerAppOptions) {
+  registerToSupervisor(mainApp: Application, options: registerAppOptions) {
     const appName = this.get('name') as string;
     const appOptions = (this.get('options') as any) || {};
 
@@ -18,11 +18,6 @@ export class ApplicationModel extends Model {
       name: appName,
     };
 
-    const subApp = new Application(subAppOptions);
-
-    mainApp.appManager.addSubApp(subApp);
-
-    console.log(`register application ${appName} to main app`);
-    return subApp;
+    return new Application(subAppOptions);
   }
 }

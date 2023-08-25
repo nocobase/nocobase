@@ -2,13 +2,14 @@ import { PlusOutlined } from '@ant-design/icons';
 import { PageHeader as AntdPageHeader } from '@ant-design/pro-layout';
 import { FormLayout } from '@formily/antd-v5';
 import { Schema, SchemaOptionsContext, useFieldSchema } from '@formily/react';
-import { Button, Spin, Tabs } from 'antd';
+import { Button, Tabs } from 'antd';
 import classNames from 'classnames';
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { FormDialog } from '..';
+import { useAppSpin } from '../../../application/hooks/useAppSpin';
 import { useDocumentTitle } from '../../../document-title';
 import { FilterBlockProvider } from '../../../filter-provider/FilterProvider';
 import { useGlobalTheme } from '../../../global-theme';
@@ -194,9 +195,10 @@ function PageContent(
   props: any,
 ): React.ReactNode {
   const { token } = useToken();
+  const { render } = useAppSpin();
 
   if (loading) {
-    return <Spin />;
+    return render();
   }
 
   return !disablePageHeader && enablePageTabs ? (
