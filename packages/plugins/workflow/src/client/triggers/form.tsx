@@ -65,12 +65,21 @@ export default {
           title: lang('Trigger data'),
         },
       },
+      {
+        collectionName: 'users',
+        name: 'user',
+        type: 'hasOne',
+        target: 'users',
+        uiSchema: {
+          title: lang('User submitted form'),
+        },
+      },
     ];
     const result = getCollectionFieldOptions({
       // depth,
       ...options,
       fields: rootFields,
-      appends: ['data', ...(config.appends?.map((item) => `data.${item}`) || [])],
+      appends: ['data', 'user', ...(config.appends?.map((item) => `data.${item}`) || [])],
       compile,
       getCollectionFields,
     });

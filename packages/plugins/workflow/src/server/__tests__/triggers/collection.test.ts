@@ -13,7 +13,9 @@ describe('workflow > triggers > collection', () => {
   let WorkflowModel;
 
   beforeEach(async () => {
-    app = await getApp();
+    app = await getApp({
+      plugins: ['error-handler', 'collection-manager'],
+    });
 
     db = app.db;
     WorkflowModel = db.getCollection('workflows').model;
@@ -23,7 +25,7 @@ describe('workflow > triggers > collection', () => {
     TagRepo = db.getCollection('tags').repository;
   });
 
-  afterEach(() => db.close());
+  afterEach(() => app.destroy());
 
   describe('toggle', () => {
     it('when collection change', async () => {
@@ -49,6 +51,51 @@ describe('workflow > triggers > collection', () => {
 
       const executions = await workflow.getExecutions();
       expect(executions.length).toBe(0);
+    });
+
+    it('restart server and listen a collection managed by collection-manager', async () => {
+      await db.getRepository('collections').create({
+        values: {
+          name: 'temp',
+          title: 'Temp',
+        },
+        // to trigger collection sync to db.collections
+        context: {},
+      });
+
+      const workflow = await WorkflowModel.create({
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'temp',
+        },
+        enabled: true,
+      });
+
+      await db.getRepository('temp').create({ values: {} });
+
+      await sleep(500);
+
+      const e1 = await workflow.getExecutions();
+      expect(e1.length).toBe(1);
+
+      await app.destroy();
+
+      app = await getApp({
+        plugins: ['error-handler', 'collection-manager'],
+        database: {
+          tablePrefix: db.options.tablePrefix,
+        },
+      });
+
+      db = app.db;
+
+      await db.getRepository('temp').create({ values: {} });
+
+      await sleep(500);
+
+      const e2 = await db.getModel('executions').findAll();
+      expect(e2.length).toBe(2);
     });
   });
 

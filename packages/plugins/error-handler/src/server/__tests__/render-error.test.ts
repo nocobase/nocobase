@@ -1,15 +1,15 @@
 import { Database } from '@nocobase/database';
 import { MockServer, mockServer } from '@nocobase/test';
-import supertest from 'supertest';
-import { PluginErrorHandler } from '../server';
 describe('create with exception', () => {
   let app: MockServer;
   beforeEach(async () => {
     app = mockServer({
       acl: false,
+      plugins: ['error-handler'],
     });
-    await app.cleanDb();
-    app.plugin(PluginErrorHandler, { name: 'error-handler' });
+    // app.plugin(PluginErrorHandler, { name: 'error-handler' });
+    await app.loadAndInstall({ clean: true });
+    await app.start();
   });
 
   afterEach(async () => {
@@ -17,7 +17,7 @@ describe('create with exception', () => {
   });
 
   it('should handle not null error', async () => {
-    app.collection({
+    const collection = app.collection({
       name: 'users',
       fields: [
         {
@@ -28,7 +28,7 @@ describe('create with exception', () => {
       ],
     });
 
-    await app.loadAndInstall();
+    await collection.sync();
 
     const response = await app
       .agent()
@@ -51,7 +51,7 @@ describe('create with exception', () => {
   });
 
   it('should handle unique error', async () => {
-    app.collection({
+    const collection = app.collection({
       name: 'users',
       fields: [
         {
@@ -62,7 +62,7 @@ describe('create with exception', () => {
       ],
     });
 
-    await app.loadAndInstall();
+    await collection.sync();
 
     await app
       .agent()
@@ -94,7 +94,7 @@ describe('create with exception', () => {
   });
 
   it('should render error with field title', async () => {
-    app.collection({
+    const collection = app.collection({
       name: 'users',
       fields: [
         {
@@ -108,7 +108,7 @@ describe('create with exception', () => {
       ],
     });
 
-    await app.loadAndInstall();
+    await collection.sync();
 
     const response = await app.agent().resource('users').create({});
 
@@ -137,7 +137,7 @@ describe('create with exception', () => {
       ],
     });
 
-    await app.loadAndInstall();
+    await userCollection.sync();
 
     app.resourcer.define({
       name: 'test',
@@ -156,7 +156,7 @@ describe('create with exception', () => {
       },
     });
 
-    const agent = supertest.agent(app.callback());
+    const agent = app.agent();
 
     await agent.post('/test:test').send({
       name: 'u1',

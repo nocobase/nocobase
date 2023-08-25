@@ -44,10 +44,10 @@ const myCollectionTemplate: ICollectionTemplate = {
   },
 };
 
-registerTemplate('myCollection', myCollectionTemplate);
-
 class CustomCollectionPlugin extends Plugin {
-  async load() { }
+  async load() {
+    registerTemplate('myCollection', myCollectionTemplate);
+  }
 }
 
 export default CustomCollectionPlugin;

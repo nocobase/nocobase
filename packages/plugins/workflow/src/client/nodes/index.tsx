@@ -36,7 +36,7 @@ import query from './query';
 import request from './request';
 import sql from './sql';
 import update from './update';
-import { StatusIcon } from '../components/StatusIcon';
+import { StatusButton } from '../components/StatusButton';
 
 export interface Instruction {
   title: string;
@@ -89,7 +89,7 @@ function useUpdateAction() {
         return;
       }
       await form.submit();
-      await api.resource('flow_nodes', data.id).update?.({
+      await api.resource('flow_nodes').update?.({
         filterByTk: data.id,
         values: {
           config: form.values,
@@ -181,7 +181,7 @@ export function RemoveButton() {
   if (!workflow) {
     return null;
   }
-  const resource = api.resource('workflows.nodes', workflow.id);
+  const resource = api.resource('flow_nodes');
 
   async function onRemove() {
     async function onOk() {
@@ -237,16 +237,6 @@ export function RemoveButton() {
   );
 }
 
-function InnerJobButton({ job, ...props }) {
-  const { styles } = useStyles();
-
-  return (
-    <Button {...props} shape="circle" size="small" className={cx(styles.nodeJobButtonClass, props.className)}>
-      <StatusIcon status={job.status} />
-    </Button>
-  );
-}
-
 export function JobButton() {
   const { execution, setViewJob } = useFlowContext();
   const { jobs } = useNodeContext() ?? {};
@@ -257,18 +247,7 @@ export function JobButton() {
   }
 
   if (!jobs.length) {
-    return (
-      <span
-        className={cx(
-          styles.nodeJobButtonClass,
-          css`
-            border: 2px solid #d9d9d9;
-            border-radius: 50%;
-            cursor: not-allowed;
-          `,
-        )}
-      />
-    );
+    return <StatusButton className={styles.nodeJobButtonClass} disabled />;
   }
 
   function onOpenJob({ key }) {
@@ -283,31 +262,30 @@ export function JobButton() {
           return {
             key: job.id,
             label: (
-              <div
-                className={css`
-                  display: flex;
-                  align-items: center;
-                  gap: 0.5em;
-
-                  time {
-                    color: #999;
-                    font-size: 0.8em;
-                  }
-                `}
-              >
-                <StatusIcon status={job.status} />
+              <>
+                <StatusButton statusMap={JobStatusOptionsMap} status={job.status} />
                 <time>{str2moment(job.updatedAt).format('YYYY-MM-DD HH:mm:ss')}</time>
-              </div>
+              </>
             ),
           };
         }),
         onClick: onOpenJob,
+        className: styles.dropdownClass,
       }}
     >
-      <InnerJobButton job={jobs[jobs.length - 1]} />
+      <StatusButton
+        statusMap={JobStatusOptionsMap}
+        status={jobs[jobs.length - 1].status}
+        className={styles.nodeJobButtonClass}
+      />
     </Dropdown>
   ) : (
-    <InnerJobButton job={jobs[0]} onClick={() => setViewJob(jobs[0])} />
+    <StatusButton
+      statusMap={JobStatusOptionsMap}
+      status={jobs[0].status}
+      onClick={() => setViewJob(jobs[0])}
+      className={styles.nodeJobButtonClass}
+    />
   );
 }
 

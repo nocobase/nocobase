@@ -1,4 +1,4 @@
-import { Application } from '@nocobase/server';
+import { Application, Gateway } from '@nocobase/server';
 import Database from '@nocobase/database';
 import { getApp, sleep } from '..';
 import { RequestConfig } from '../../instructions/request';
@@ -6,9 +6,9 @@ import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
 
 const PORT = 12345;
 
-const URL_DATA = `http://localhost:${PORT}/data`;
+const URL_DATA = `http://localhost:${PORT}/api/data`;
 const URL_400 = `http://localhost:${PORT}/api/400`;
-const URL_TIMEOUT = `http://localhost:${PORT}/timeout`;
+const URL_TIMEOUT = `http://localhost:${PORT}/api/timeout`;
 
 describe('workflow > instructions > request', () => {
   let app: Application;
@@ -24,11 +24,11 @@ describe('workflow > instructions > request', () => {
       if (ctx.path === '/api/400') {
         return ctx.throw(400);
       }
-      if (ctx.path === '/timeout') {
+      if (ctx.path === '/api/timeout') {
         await sleep(2000);
         return ctx.throw(new Error('timeout'));
       }
-      if (ctx.path === '/data') {
+      if (ctx.path === '/api/data') {
         ctx.withoutDataWrapping = true;
         ctx.body = {
           meta: { title: ctx.query.title },
@@ -38,7 +38,12 @@ describe('workflow > instructions > request', () => {
       next();
     });
 
-    await app.start({ listen: { port: PORT } });
+    Gateway.getInstance().start({
+      port: PORT,
+      host: 'localhost',
+    });
+
+    await app.start();
 
     db = app.db;
     WorkflowModel = db.getCollection('workflows').model;
@@ -55,7 +60,7 @@ describe('workflow > instructions > request', () => {
     });
   });
 
-  afterEach(() => app.stop());
+  afterEach(() => app.destroy());
 
   describe('request', () => {
     it('request', async () => {
@@ -214,7 +219,7 @@ describe('workflow > instructions > request', () => {
       expect(job.result.data).toEqual({ title });
     });
 
-    it('request inside loop',async () => {
+    it('request inside loop', async () => {
       const n1 = await workflow.createNode({
         type: 'loop',
         config: {
@@ -229,7 +234,7 @@ describe('workflow > instructions > request', () => {
         config: {
           url: URL_DATA,
           method: 'GET',
-        }
+        },
       });
 
       await PostRepo.create({ values: { title: 't1' } });
@@ -240,7 +245,7 @@ describe('workflow > instructions > request', () => {
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
       expect(jobs.length).toBe(3);
-      expect(jobs.map(item => item.status)).toEqual(Array(3).fill(JOB_STATUS.RESOLVED));
+      expect(jobs.map((item) => item.status)).toEqual(Array(3).fill(JOB_STATUS.RESOLVED));
       expect(jobs[0].result).toBe(2);
     });
   });

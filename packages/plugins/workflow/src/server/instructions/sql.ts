@@ -4,11 +4,11 @@ import type { FlowNodeModel } from '../types';
 export default {
   async run(node: FlowNodeModel, input, processor: Processor) {
     const { sequelize } = (<typeof FlowNodeModel>node.constructor).database;
-    const sql = processor.getParsedValue(node.config.sql ?? '', node).trim();
+    const sql = processor.getParsedValue(node.config.sql ?? '', node.id).trim();
     if (!sql) {
       return {
         status: JOB_STATUS.RESOLVED,
-      }
+      };
     }
 
     const result = await sequelize.query(sql, {

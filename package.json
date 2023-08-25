@@ -15,6 +15,7 @@
     "nocobase": "nocobase",
     "pm": "nocobase pm",
     "dev": "nocobase dev",
+    "dev-server": "nocobase dev --server",
     "start": "nocobase start",
     "build": "nocobase build",
     "test": "nocobase test",

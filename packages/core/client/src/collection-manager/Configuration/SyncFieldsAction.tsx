@@ -166,7 +166,7 @@ export const SyncFieldsActionCom = (props) => {
   return (
     record.template === 'view' && (
       <RecordProvider record={record}>
-        <ActionContextProvider value={{ visible, setVisible }}>
+        <ActionContextProvider value={{ visible, setVisible, drawerProps: { width: 900 } }}>
           {children || (
             <Button
               icon={<PlusOutlined />}

@@ -15,3 +15,4 @@ packages/core/client/src/locale/*
 **/.dumi/tmp-production
 packages/core/cli/templates/plugin/src/client/*.tpl
 packages/app/client/src/.plugins
+packages/**/locale/**

@@ -247,7 +247,7 @@ export const PluginCard = (props: { data: IPluginData }) => {
               url: `pm:remove/${name}`,
             });
             message.success(t('插件删除成功'));
-            window.location.reload();
+            // window.location.reload();
           }}
           onCancel={(e) => e.stopPropagation()}
           okText={t('Yes')}
@@ -260,19 +260,19 @@ export const PluginCard = (props: { data: IPluginData }) => {
           size={'small'}
           onChange={async (checked, e) => {
             e.stopPropagation();
-            modal.warning({
-              title: checked ? t('Plugin starting') : t('Plugin stopping'),
-              content: t('The application is reloading, please do not close the page.'),
-              okButtonProps: {
-                style: {
-                  display: 'none',
-                },
-              },
-            });
+            // modal.warning({
+            //   title: checked ? t('Plugin starting') : t('Plugin stopping'),
+            //   content: t('The application is reloading, please do not close the page.'),
+            //   okButtonProps: {
+            //     style: {
+            //       display: 'none',
+            //     },
+            //   },
+            // });
             await api.request({
               url: `pm:${checked ? 'enable' : 'disable'}/${name}`,
             });
-            window.location.reload();
+            // window.location.reload();
             // message.success(checked ? t('插件激活成功') : t('插件禁用成功'));
           }}
           defaultChecked={enabled}

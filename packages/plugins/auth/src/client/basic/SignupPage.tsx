@@ -2,19 +2,20 @@ import { SchemaComponent, useSignup } from '@nocobase/client';
 import { ISchema } from '@formily/react';
 import React from 'react';
 import { uid } from '@formily/shared';
+import { useAuthTranslation } from '../locale';
 
 const signupPageSchema: ISchema = {
   type: 'object',
   name: uid(),
   'x-component': 'FormV2',
   properties: {
-    email: {
+    username: {
       type: 'string',
       required: true,
       'x-component': 'Input',
-      'x-validator': 'email',
+      'x-validator': { username: true },
       'x-decorator': 'FormItem',
-      'x-component-props': { placeholder: '{{t("Email")}}', style: {} },
+      'x-component-props': { placeholder: '{{t("Username")}}', style: {} },
     },
     password: {
       type: 'string',
@@ -84,8 +85,9 @@ const signupPageSchema: ISchema = {
 };
 
 export default (props: { name: string }) => {
+  const { t } = useAuthTranslation();
   const useBasicSignup = () => {
     return useSignup({ authenticator: props.name });
   };
-  return <SchemaComponent schema={signupPageSchema} scope={{ useBasicSignup }} />;
+  return <SchemaComponent schema={signupPageSchema} scope={{ useBasicSignup, t }} />;
 };

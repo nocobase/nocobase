@@ -28,14 +28,13 @@ describe('workflow > instructions > condition', () => {
     });
   });
 
-  afterEach(() => db.close());
+  afterEach(() => app.destroy());
 
   describe('config.rejectOnFalse', () => {});
 
   describe('single calculation', () => {
     it('calculation to true downstream', async () => {
       const n1 = await workflow.createNode({
-        title: 'condition',
         type: 'condition',
         config: {
           engine: 'math.js',
@@ -44,18 +43,23 @@ describe('workflow > instructions > condition', () => {
       });
 
       const n2 = await workflow.createNode({
-        title: 'true to echo',
         type: 'echo',
         branchIndex: BRANCH_INDEX.ON_TRUE,
         upstreamId: n1.id,
       });
 
       const n3 = await workflow.createNode({
-        title: 'false to echo',
         type: 'echo',
         branchIndex: BRANCH_INDEX.ON_FALSE,
         upstreamId: n1.id,
       });
+
+      const n4 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+      });
+
+      await n1.setDownstream(n4);
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
@@ -64,9 +68,12 @@ describe('workflow > instructions > condition', () => {
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
 
-      const jobs = await execution.getJobs();
-      expect(jobs.length).toEqual(2);
+      const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
+      expect(jobs.length).toEqual(3);
       expect(jobs[1].result).toEqual(true);
+      expect(jobs[1].nodeId).toEqual(n2.id);
+      expect(jobs[2].result).toEqual(true);
+      expect(jobs[2].nodeId).toEqual(n4.id);
     });
 
     it('calculation to false downstream', async () => {

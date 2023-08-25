@@ -15,11 +15,7 @@ export function CanvasContent({ entry }) {
       <div className={styles.branchBlockClass}>
         <Branch entry={entry} />
       </div>
-      <div className={cx('end', styles.nodeCardClass)}>
-        <div className={cx(styles.nodeMetaClass)}>
-          <Tag color="#333">{lang('End')}</Tag>
-        </div>
-      </div>
+      <div className={styles.terminalClass}>{lang('End')}</div>
     </div>
   );
 }
