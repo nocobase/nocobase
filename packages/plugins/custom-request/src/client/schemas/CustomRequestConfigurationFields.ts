@@ -1,21 +1,21 @@
-import { NAMESPACE } from '../../locale';
+import { NAMESPACE, generateNTemplate } from '../../locale';
 
 export const CustomRequestConfigurationFieldsSchema = {
   type: 'object',
   properties: {
     title: {
       type: 'string',
-      title: `{{t("Title", { ns: "${NAMESPACE}" })}}`,
+      title: generateNTemplate('Title'),
       'x-decorator': 'FormItem',
       'x-component': 'Input',
       'x-component-props': {
-        placeholder: `{{t("Input title", { ns: "${NAMESPACE}" })}}`,
+        placeholder: generateNTemplate('Enter description info'),
       },
     },
     method: {
       type: 'string',
       required: true,
-      title: `{{t("HTTP method", { ns: "${NAMESPACE}" })}}`,
+      title: generateNTemplate('HTTP method'),
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       'x-component-props': {
@@ -35,7 +35,7 @@ export const CustomRequestConfigurationFieldsSchema = {
     url: {
       type: 'string',
       required: true,
-      title: `{{t("URL", { ns: "${NAMESPACE}" })}}`,
+      title: generateNTemplate('URL'),
       'x-decorator': 'FormItem',
       'x-component': 'Variable.RawTextArea',
       'x-component-props': {
@@ -52,8 +52,8 @@ export const CustomRequestConfigurationFieldsSchema = {
       type: 'array',
       'x-component': 'ArrayItems',
       'x-decorator': 'FormItem',
-      title: `{{t("Headers", { ns: "${NAMESPACE}" })}}`,
-      description: `{{t('"Content-Type" only support "application/json", and no need to specify', { ns: "${NAMESPACE}" })}}`,
+      title: generateNTemplate('Headers'),
+      description: generateNTemplate('"Content-Type" only support "application/json", and no need to specify'),
       items: {
         type: 'object',
         properties: {
@@ -66,7 +66,7 @@ export const CustomRequestConfigurationFieldsSchema = {
                 'x-decorator': 'FormItem',
                 'x-component': 'Input',
                 'x-component-props': {
-                  placeholder: `{{t("Name")}}`,
+                  placeholder: generateNTemplate('Name'),
                 },
               },
               value: {
@@ -94,7 +94,7 @@ export const CustomRequestConfigurationFieldsSchema = {
       properties: {
         add: {
           type: 'void',
-          title: `{{t("Add request header", { ns: "${NAMESPACE}" })}}`,
+          title: generateNTemplate('Add request header'),
           'x-component': 'ArrayItems.Addition',
         },
       },
@@ -103,7 +103,7 @@ export const CustomRequestConfigurationFieldsSchema = {
       type: 'array',
       'x-component': 'ArrayItems',
       'x-decorator': 'FormItem',
-      title: `{{t("Parameters", { ns: "${NAMESPACE}" })}}`,
+      title: generateNTemplate('Parameters'),
       items: {
         type: 'object',
         properties: {
@@ -116,7 +116,7 @@ export const CustomRequestConfigurationFieldsSchema = {
                 'x-decorator': 'FormItem',
                 'x-component': 'Input',
                 'x-component-props': {
-                  placeholder: `{{t("Name")}}`,
+                  placeholder: generateNTemplate('Name'),
                 },
               },
               value: {
@@ -144,14 +144,14 @@ export const CustomRequestConfigurationFieldsSchema = {
       properties: {
         add: {
           type: 'void',
-          title: `{{t("Add parameter", { ns: "${NAMESPACE}" })}}`,
+          title: generateNTemplate('Add parameter'),
           'x-component': 'ArrayItems.Addition',
         },
       },
     },
     data: {
       type: 'string',
-      title: `{{t("Body", { ns: "${NAMESPACE}" })}}`,
+      title: generateNTemplate('Body'),
       'x-decorator': 'FormItem',
       'x-decorator-props': {},
       'x-component': 'Variable.JSON',
@@ -165,18 +165,18 @@ export const CustomRequestConfigurationFieldsSchema = {
         autoSize: {
           minRows: 10,
         },
-        placeholder: `{{t("Input request data", { ns: "${NAMESPACE}" })}}`,
+        placeholder: generateNTemplate('Input request data'),
       },
-      description: `{{t("Only support standard JSON data", { ns: "${NAMESPACE}" })}}`,
+      description: generateNTemplate('Only support standard JSON data'),
     },
     timeout: {
       type: 'number',
-      title: `{{t("Timeout config", { ns: "${NAMESPACE}" })}}`,
+      title: generateNTemplate('Timeout config'),
       'x-decorator': 'FormItem',
       'x-decorator-props': {},
       'x-component': 'InputNumber',
       'x-component-props': {
-        addonAfter: `{{t("ms", { ns: "${NAMESPACE}" })}}`,
+        addonAfter: generateNTemplate('ms'),
         min: 1,
         step: 1000,
         defaultValue: 5000,
