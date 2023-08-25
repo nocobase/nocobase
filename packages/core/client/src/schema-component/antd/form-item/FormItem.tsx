@@ -19,6 +19,7 @@ import { useIsShowMultipleSwitch } from '../../../schema-settings/hooks/useIsSho
 import { useLocalVariables, useVariables } from '../../../variables';
 import useContextVariable from '../../../variables/hooks/useContextVariable';
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
+import { isSubMode } from '../association-field/util';
 import { BlockItem } from '../block-item';
 import { removeNullCondition } from '../filter';
 import { DynamicComponentProps } from '../filter/DynamicComponent';
@@ -368,6 +369,15 @@ FormItem.Designer = function Designer() {
             schema['x-component-props'] = fieldSchema['x-component-props'];
             field.componentProps = field.componentProps || {};
             field.componentProps.mode = mode;
+
+            // 子表单状态不允许设置默认值
+            if (isSubMode(fieldSchema)) {
+              // @ts-ignore
+              schema.default = null;
+              fieldSchema.default = null;
+              field.reset();
+            }
+
             dn.emit('patch', {
               schema,
             });

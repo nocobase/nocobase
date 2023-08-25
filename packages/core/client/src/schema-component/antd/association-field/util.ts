@@ -1,4 +1,4 @@
-import { ISchema } from '@formily/react';
+import { ISchema, Schema } from '@formily/react';
 import { isArr } from '@formily/shared';
 import { getDefaultFormat, str2moment } from '@nocobase/utils/client';
 import { Tag } from 'antd';
@@ -85,4 +85,11 @@ export function flatData(data) {
 
 export function isShowFilePicker(labelUiSchema) {
   return labelUiSchema?.['x-component'] === 'Preview';
+}
+
+/**
+ * 当前字段的模式是否是 `子表格` 或者 `子表单`
+ */
+export function isSubMode(fieldSchema: Schema) {
+  return ['Nester', 'SubTable', 'PopoverNester'].includes(fieldSchema['x-component-props']?.mode);
 }

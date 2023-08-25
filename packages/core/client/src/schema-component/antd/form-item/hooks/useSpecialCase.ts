@@ -3,6 +3,7 @@ import { Schema, useFieldSchema, useForm } from '@formily/react';
 import _ from 'lodash';
 import { useCallback, useMemo } from 'react';
 import { CollectionFieldOptions, useCollection, useCollectionManager } from '../../../../collection-manager';
+import { isSubMode } from '../../association-field/util';
 
 /**
  * #### 处理 `子表单` 和 `子表格` 中的特殊情况
@@ -55,7 +56,7 @@ export function getParentFieldSchema(fieldSchema: Schema) {
   while (fieldSchema?.parent) {
     fieldSchema = fieldSchema.parent;
 
-    if (['Nester', 'SubTable', 'PopoverNester'].includes(fieldSchema['x-component-props']?.mode)) {
+    if (isSubMode(fieldSchema)) {
       return fieldSchema;
     }
   }

@@ -11,6 +11,7 @@ import { getPath } from '../../../../variables/utils/getPath';
 import { getVariableName } from '../../../../variables/utils/getVariableName';
 import { isVariable } from '../../../../variables/utils/isVariable';
 import { transformVariableValue } from '../../../../variables/utils/transformVariableValue';
+import { isSubMode } from '../../association-field/util';
 import { isFromDatabase, useSpecialCase } from './useSpecialCase';
 
 /**
@@ -35,6 +36,7 @@ const useParseDefaultValue = () => {
     if (
       fieldSchema.default == null ||
       isInSetDefaultValueDialog ||
+      isSubMode(fieldSchema) ||
       (!_.isEmpty(recordRef.current) && isFromDatabase(record) && !isInAssignFieldValues)
     ) {
       return;
