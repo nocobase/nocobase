@@ -146,6 +146,11 @@ export const getShouldChange = ({
       return true;
     }
 
+    // `json` 可以选择任意类型的变量，详见：https://nocobase.feishu.cn/docx/EmNEdEBOnoQohUx2UmBcqIQ5nyh#FPLfdSRDEoXR65xW0mBcdfL5n0c
+    if (collectionField.interface === 'json') {
+      return true;
+    }
+
     const lastOption = optionPath[optionPath.length - 1];
 
     // 点击叶子节点时，必须更新 value
