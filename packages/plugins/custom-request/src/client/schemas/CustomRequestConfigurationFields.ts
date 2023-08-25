@@ -16,6 +16,11 @@ export const CustomRequestConfigurationFieldsSchema = {
       type: 'string',
       required: true,
       title: generateNTemplate('HTTP method'),
+      'x-decorator-props': {
+        tooltip: generateNTemplate(
+          'When the HTTP method is Post, Put or Patch, and this custom request inside the form, the request body will be automatically filled in with the form data',
+        ),
+      },
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       'x-component-props': {

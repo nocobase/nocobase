@@ -56,6 +56,7 @@ export const useCustomizeRequestActionProps = () => {
       try {
         await apiClient.request({
           url: `/customRequests:send/${fieldSchema['x-uid']}`,
+          method: 'POST',
           data: {
             requestConfig,
             currentRecord: record[getPrimaryKey()],
