@@ -30,7 +30,7 @@ export async function submit(context: Context, next) {
   }
 
   const { forms = {} } = userJob.node.config;
-  const [formKey] = Object.keys(values.result ?? {}).filter(((key)) => key !== '_');
+  const [formKey] = Object.keys(values.result ?? {}).filter((key) => key !== '_');
   const actionKey = values.result?._;
 
   const actionItem = forms[formKey]?.actions?.find((item) => item.key === actionKey);
@@ -41,7 +41,6 @@ export async function submit(context: Context, next) {
     userJob.execution.status !== EXECUTION_STATUS.STARTED ||
     !userJob.workflow.enabled ||
     !actionKey ||
-
     actionItem?.status == null
   ) {
     return context.throw(400);
