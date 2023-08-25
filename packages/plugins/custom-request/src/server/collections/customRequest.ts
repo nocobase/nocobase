@@ -22,7 +22,7 @@ export default {
       onDelete: 'CASCADE',
       through: 'customRequestsRoles',
       target: 'roles',
-      foreignKey: 'customRequestId',
+      foreignKey: 'customRequestKey',
       otherKey: 'roleName',
       sourceKey: 'key',
       targetKey: 'name',
