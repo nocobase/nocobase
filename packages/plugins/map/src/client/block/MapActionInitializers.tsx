@@ -83,10 +83,6 @@ export const MapActionInitializers = {
               useProps: '{{ useCustomizeBulkUpdateActionProps }}',
             },
           },
-          visible: function useVisible() {
-            const collection = useCollection();
-            return collection.template !== 'sql';
-          },
         },
         {
           type: 'item',
@@ -100,12 +96,12 @@ export const MapActionInitializers = {
               skipScopeCheck: true,
             },
           },
-          visible: function useVisible() {
-            const collection = useCollection();
-            return collection.template !== 'sql';
-          },
         },
       ],
+      visible: function useVisible() {
+        const collection = useCollection();
+        return collection.template !== 'sql';
+      },
     },
   ],
 };
