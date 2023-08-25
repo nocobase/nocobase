@@ -22,7 +22,7 @@ const useParseDefaultValue = () => {
   const variables = useVariables();
   const localVariables = useLocalVariables();
   const record = useRecord();
-  const { isInAssignFieldValues, isSetDefaultValueDialog } = useFlag() || {};
+  const { isInAssignFieldValues, isInSetDefaultValueDialog } = useFlag() || {};
   const { getField } = useCollection();
   const { isSpecialCase, setDefaultValue } = useSpecialCase();
   const index = useRecordIndex();
@@ -34,7 +34,7 @@ const useParseDefaultValue = () => {
     // 根据 record 是否为空，判断当前是否是新建状态，编辑状态下不需要设置默认值，否则会覆盖用户输入的值，只有新建状态下才需要设置默认值
     if (
       fieldSchema.default == null ||
-      isSetDefaultValueDialog ||
+      isInSetDefaultValueDialog ||
       (!_.isEmpty(recordRef.current) && isFromDatabase(record) && !isInAssignFieldValues)
     ) {
       return;

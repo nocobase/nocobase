@@ -1638,7 +1638,7 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props: { fieldSchem
 
                   return (
                     <FormProvider>
-                      <FlagProvider isSetDefaultValueDialog={true}>
+                      <FlagProvider isInSetDefaultValueDialog={true}>
                         <SchemaComponent schema={schema} />
                       </FlagProvider>
                     </FormProvider>

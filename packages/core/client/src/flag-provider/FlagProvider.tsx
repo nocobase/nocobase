@@ -8,7 +8,7 @@ export interface FlagProviderProps {
   /**
    * 是否存在于 `设置默认值` 弹窗中
    */
-  isSetDefaultValueDialog?: boolean;
+  isInSetDefaultValueDialog?: boolean;
   children: any;
 }
 
@@ -18,9 +18,9 @@ export const FlagProvider = (props: FlagProviderProps) => {
   const value = useMemo(() => {
     return {
       isInAssignFieldValues: props.isInAssignFieldValues,
-      isSetDefaultValueDialog: props.isSetDefaultValueDialog,
+      isInSetDefaultValueDialog: props.isInSetDefaultValueDialog,
     };
-  }, [props.isInAssignFieldValues, props.isSetDefaultValueDialog]);
+  }, [props.isInAssignFieldValues, props.isInSetDefaultValueDialog]);
 
   return <FlagContext.Provider value={value}>{props.children}</FlagContext.Provider>;
 };
