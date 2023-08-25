@@ -97,7 +97,7 @@ module.exports = (cli) => {
           env: {
             PORT: clientPort,
             APP_ROOT: `${APP_PACKAGE_ROOT}/client`,
-            WEBSOCKET_URL: process.env.WEBSOCKET_URL || `ws://localhost:${serverPort}/ws`,
+            WEBSOCKET_URL: process.env.WEBSOCKET_URL || (serverPort ? `ws://localhost:${serverPort}/ws` : undefined),
             PROXY_TARGET_URL:
               process.env.PROXY_TARGET_URL || (serverPort ? `http://127.0.0.1:${serverPort}` : undefined),
           },
