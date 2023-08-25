@@ -7,7 +7,6 @@ export const getWebSocketURL = () => {
   }
   const subApp = getSubAppName();
   const queryString = subApp ? `?__appName=${subApp}` : '';
-  console.log(queryString);
   if (process.env.WEBSOCKET_URL) {
     return `${process.env.WEBSOCKET_URL}${queryString}`;
   }
