@@ -17,21 +17,7 @@ export const useCustomRequestVariableOptions = () => {
       {
         name: 'currentRecord',
         title: t('Current record'),
-        children: [
-          ...fields,
-          // {
-          //   name: 'createdBy',
-          //   title: 'Created By',
-          //   children: userFields,
-          //   hidden: !collection.getField('createdBy'),
-          // },
-          // {
-          //   name: 'updatedBy',
-          //   title: 'Updated By',
-          //   children: userFields,
-          //   hidden: !collection.getField('updatedBy'),
-          // },
-        ],
+        children: [...fields],
       },
       {
         name: 'currentUser',
