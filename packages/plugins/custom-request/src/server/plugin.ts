@@ -19,10 +19,10 @@ export class CustomRequestPlugin extends Plugin {
       },
     });
 
-    // this.app.acl.registerSnippet({
-    //   name: `pm.${this.name}.configuration`,
-    //   actions: ['map-configuration:send'],
-    // });
+    this.app.acl.registerSnippet({
+      name: `pm.${this.name}.acl`,
+      actions: ['customRequests:*'],
+    });
 
     this.app.acl.allow('customRequests', 'send', 'loggedIn');
   }
