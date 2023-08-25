@@ -11,6 +11,7 @@ describe('infer fields', () => {
 
     db.collection({
       name: 'users',
+      schema: 'public',
       fields: [
         { name: 'id', type: 'bigInt', interface: 'id' },
         { name: 'nickname', type: 'string', interface: 'input' },
@@ -18,6 +19,7 @@ describe('infer fields', () => {
     });
     db.collection({
       name: 'roles',
+      schema: 'public',
       fields: [
         { name: 'id', type: 'bigInt', interface: 'id' },
         { name: 'title', type: 'string', interface: 'input' },
@@ -26,6 +28,7 @@ describe('infer fields', () => {
     });
     db.collection({
       name: 'roles_users',
+      schema: 'public',
       fields: [
         { name: 'id', type: 'bigInt', interface: 'id' },
         { name: 'userId', type: 'bigInt', interface: 'id' },
