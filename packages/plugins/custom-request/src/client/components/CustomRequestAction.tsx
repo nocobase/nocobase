@@ -3,6 +3,7 @@ import React from 'react';
 import { CustomRequestActionDesigner } from './CustomRequestActionDesigner';
 import { useGetCustomRequest } from '../hooks';
 import { useFieldSchema } from '@formily/react';
+import { Tooltip } from 'antd';
 
 export const CustomRequestActionACL = (props) => {
   const { data } = useGetCustomRequest();
@@ -19,7 +20,7 @@ export const CustomRequestActionACL = (props) => {
     return null;
   }
 
-  return props.children;
+  return <Tooltip title={data?.data?.title}>{props.children}</Tooltip>;
 };
 
 const components = {
