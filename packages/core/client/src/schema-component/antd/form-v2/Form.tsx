@@ -107,7 +107,7 @@ const WithForm = (props: WithFormProps) => {
     form.addEffects(id, () => {
       linkageRules.forEach((v) => {
         v.actions?.forEach((h) => {
-          if (h.targetFields) {
+          if (h.targetFields?.length) {
             const fields = h.targetFields.join(',');
 
             // 当 `linkageRules` 变更时，需要把 `field` 上之前已设置的值还原成初始值，以防止下面所述的情况：
