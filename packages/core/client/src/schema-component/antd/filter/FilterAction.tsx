@@ -1,13 +1,14 @@
 import { css } from '@emotion/css';
 import { createForm, Field, Form } from '@formily/core';
 import { observer, useField, useFieldSchema, useForm } from '@formily/react';
-import { Button, Popover, Space } from 'antd';
+import { Button, Space } from 'antd';
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FormProvider, SchemaComponent } from '../../core';
 import { useDesignable } from '../../hooks';
 import { useProps } from '../../hooks/useProps';
 import { Action } from '../action';
+import { Popover } from '../popover';
 
 export const FilterActionContext = createContext<any>(null);
 
@@ -22,15 +23,7 @@ export const FilterAction = observer(
     const { options, onSubmit, onReset, ...others } = useProps(props);
     const shouldNotClosePopoverRef = React.useRef(false);
     const onOpenChange = useCallback((visible: boolean): void => {
-      if (shouldNotClosePopoverRef.current) {
-        return;
-      }
       setVisible(visible);
-    }, []);
-
-    // 参考：https://github.com/ant-design/ant-design/issues/44119
-    const avoidClosePopover = useCallback(() => {
-      shouldNotClosePopoverRef.current = true;
     }, []);
 
     return (
@@ -42,7 +35,7 @@ export const FilterAction = observer(
           onOpenChange={onOpenChange}
           trigger={'click'}
           content={
-            <form onClick={avoidClosePopover}>
+            <form>
               <FormProvider form={form}>
                 <SchemaComponent
                   schema={{
