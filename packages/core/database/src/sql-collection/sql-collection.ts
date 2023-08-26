@@ -13,6 +13,10 @@ export class SqlCollection extends Collection {
     return true;
   }
 
+  public collectionSchema() {
+    return undefined;
+  }
+
   modelInit() {
     if (this.model) {
       return;
@@ -22,7 +26,7 @@ export class SqlCollection extends Collection {
     const model = class extends SQLModel {};
     model.init(null, {
       ...this.sequelizeModelOptions(),
-      schema: '',
+      schema: undefined,
     });
 
     if (!autoGenId) {
