@@ -77,6 +77,10 @@ const ToManyNester = observer(
     const { options, field, allowMultiple, allowDissociate } = useAssociationFieldContext<ArrayField>();
     const { t } = useTranslation();
 
+    if (!Array.isArray(field.value)) {
+      field.value = [];
+    }
+
     const isAllowToSetDefaultValue = useCallback(({ form, fieldSchema, collectionField, getInterface }) => {
       // 当 Field component 不是下列组件时，不允许设置默认值
       if (
@@ -95,7 +99,7 @@ const ToManyNester = observer(
       );
     }, []);
 
-    return (field.value || []).length > 0 ? (
+    return field.value.length > 0 ? (
       <Card
         bordered={true}
         style={{ position: 'relative' }}
@@ -105,7 +109,7 @@ const ToManyNester = observer(
           }
         `}
       >
-        {(field.value || []).map((value, index) => {
+        {field.value.map((value, index) => {
           let allowed = allowDissociate;
           if (!allowDissociate) {
             allowed = !value?.[options.targetKey];
