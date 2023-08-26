@@ -86,8 +86,6 @@ export const useVariableOptions = ({
   record = { ...record };
   delete record.__parent;
 
-  console.log(isInSetDefaultValueDialog);
-
   return useMemo(() => {
     return [
       userVariable,

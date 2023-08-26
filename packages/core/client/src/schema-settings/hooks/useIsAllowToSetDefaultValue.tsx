@@ -80,6 +80,7 @@ export const interfacesOfUnsupportedDefaultValue = [
   'circle',
   'polygon',
   'sequence',
+  'formula',
 ];
 
 function _isAllowToSetDefaultValue({
