@@ -32,7 +32,7 @@ export const FormActiveFieldsProvider = ({
           if (!_name || _name === name) {
             return Array.from(activeFieldsNameRef.current);
           }
-          return upLevelContext.getActiveFieldsName(_name);
+          return upLevelContext?.getActiveFieldsName(_name);
         }),
       addActiveFieldName:
         addActiveFieldName ||

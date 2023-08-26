@@ -3,6 +3,7 @@ import { ISchema, Schema } from '@formily/react';
 import _ from 'lodash';
 import { useMemo } from 'react';
 import { CollectionFieldOptions } from '../../../collection-manager';
+import { useFlag } from '../../../flag-provider';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { Option } from '../type';
 import { useBlockCollection } from './useBlockCollection';
@@ -48,6 +49,7 @@ export const useVariableOptions = ({
   targetFieldSchema,
 }: Props) => {
   const { name: blockCollectionName } = useBlockCollection();
+  const { isInSetDefaultValueDialog } = useFlag() || {};
 
   const fieldCollectionName = collectionField?.collectionName;
   const userVariable = useUserVariable({
@@ -84,6 +86,8 @@ export const useVariableOptions = ({
   record = { ...record };
   delete record.__parent;
 
+  console.log(isInSetDefaultValueDialog);
+
   return useMemo(() => {
     return [
       userVariable,
@@ -93,6 +97,7 @@ export const useVariableOptions = ({
         fieldCollectionName &&
         blockCollectionName &&
         fieldCollectionName !== blockCollectionName &&
+        isInSetDefaultValueDialog &&
         iterationVariable,
       !_.isEmpty(record) && currentRecordVariable,
     ].filter(Boolean);

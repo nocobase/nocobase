@@ -39,7 +39,7 @@ export const useIterationVariable = ({
 
       return option.depth === 0
         ? fields.filter((field) => {
-            return activeFieldsName.includes(field.name);
+            return activeFieldsName?.includes(field.name);
           })
         : fields;
     },

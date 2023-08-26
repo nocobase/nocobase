@@ -1568,7 +1568,17 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props: { fieldSchem
   return (
     <SchemaSettings.ModalItem
       title={t('Set default value')}
-      components={{ ArrayCollapse, FormLayout, VariableInput }}
+      components={{
+        ArrayCollapse,
+        FormLayout,
+        VariableInput: (props) => {
+          return (
+            <FlagProvider isInSetDefaultValueDialog={true}>
+              <VariableInput {...props} />
+            </FlagProvider>
+          );
+        },
+      }}
       width={800}
       schema={
         {
@@ -1639,9 +1649,7 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props: { fieldSchem
 
                   return (
                     <FormProvider>
-                      <FlagProvider isInSetDefaultValueDialog={true}>
-                        <SchemaComponent schema={schema} />
-                      </FlagProvider>
+                      <SchemaComponent schema={schema} />
                     </FormProvider>
                   );
                 },
