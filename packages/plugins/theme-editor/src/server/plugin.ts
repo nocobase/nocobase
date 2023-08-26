@@ -28,7 +28,7 @@ export class ThemeEditorPlugin extends Plugin {
         },
       ],
     });
-    this.app.acl.allow('themeConfig', '*');
+    this.app.acl.allow('themeConfig', 'list', 'loggedIn');
   }
 
   async install(options?: InstallOptions) {
