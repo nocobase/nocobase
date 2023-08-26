@@ -47,7 +47,7 @@ export function FormBlockProvider(props) {
   const resource = api.resource(props.collection);
   const __parent = useContext(BlockRequestContext);
 
-  return (
+  return !userJob.status || values ? (
     <CollectionProvider collection={props.collection}>
       <RecordProvider record={values} parent={false}>
         <BlockRequestContext.Provider value={{ block: 'form', props, field, service, resource, __parent }}>
@@ -71,5 +71,5 @@ export function FormBlockProvider(props) {
         </BlockRequestContext.Provider>
       </RecordProvider>
     </CollectionProvider>
-  );
+  ) : null;
 }

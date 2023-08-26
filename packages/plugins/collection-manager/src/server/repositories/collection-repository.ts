@@ -1,4 +1,5 @@
 import { Repository } from '@nocobase/database';
+import { Application } from '@nocobase/server';
 import { CollectionsGraph } from '@nocobase/utils';
 import lodash from 'lodash';
 import { CollectionModel } from '../models/collection';
@@ -9,9 +10,17 @@ interface LoadOptions {
 }
 
 export class CollectionRepository extends Repository {
+  private app: Application;
+
+  setApp(app) {
+    this.app = app;
+  }
+
   async load(options: LoadOptions = {}) {
     const { filter, skipExist } = options;
+    console.log('start load collections');
     const instances = (await this.find({ filter, appends: ['fields'] })) as CollectionModel[];
+    console.log('end load collections');
 
     const graphlib = CollectionsGraph.graphlib();
 
@@ -83,19 +92,27 @@ export class CollectionRepository extends Repository {
       if (lodash.isArray(skipField) && skipField.length) {
         lazyCollectionFields[instanceName] = skipField;
       }
+      this.database.logger.debug(`load ${instanceName} collection`);
+      this.app.setMaintainingMessage(`load ${instanceName} collection`);
 
       await nameMap[instanceName].load({ skipField });
     }
 
     // load view fields
     for (const viewCollectionName of viewCollections) {
+      this.database.logger.debug(`load ${viewCollectionName} collection fields`);
+      this.app.setMaintainingMessage(`load ${viewCollectionName} collection fields`);
       await nameMap[viewCollectionName].loadFields({});
     }
 
     // load lazy collection field
     for (const [collectionName, skipField] of Object.entries(lazyCollectionFields)) {
+      this.database.logger.debug(`load ${collectionName} collection fields`);
+      this.app.setMaintainingMessage(`load ${collectionName} collection fields`);
       await nameMap[collectionName].loadFields({ includeFields: skipField });
     }
+
+    console.log('finished load collection');
   }
 
   async db2cm(collectionName: string) {

@@ -49,7 +49,7 @@ describe('signin', () => {
   });
 
   afterAll(async () => {
-    await db.close();
+    await app.destroy();
   });
 
   it('should create new user and sign in via phone number', async () => {

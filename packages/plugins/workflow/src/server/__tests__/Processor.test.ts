@@ -29,7 +29,7 @@ describe('workflow > Processor', () => {
     });
   });
 
-  afterEach(() => db.close());
+  afterEach(() => app.destroy());
 
   describe('base', () => {
     it('empty workflow without any nodes', async () => {

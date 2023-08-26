@@ -37,7 +37,7 @@ describe('action', () => {
   });
 
   afterEach(async () => {
-    await db.close();
+    await app.destroy();
   });
 
   describe('create / upload', () => {
@@ -153,7 +153,7 @@ describe('action', () => {
       });
 
       it('upload to storage which is not default', async () => {
-        const BASE_URL = `http://localhost:${APP_PORT}/another-uploads`;
+        const BASE_URL = `http://localhost:${APP_PORT}/storage/uploads/another`;
         const urlPath = 'test/path';
 
         // 动态添加 storage
@@ -167,7 +167,7 @@ describe('action', () => {
             path: urlPath,
             baseUrl: BASE_URL,
             options: {
-              documentRoot: 'uploads/another',
+              documentRoot: 'storage/uploads/another',
             },
           },
         });

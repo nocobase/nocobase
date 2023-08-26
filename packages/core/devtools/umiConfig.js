@@ -35,6 +35,7 @@ function getUmiConfig() {
       'process.env.API_BASE_URL': API_BASE_URL || API_BASE_PATH,
       'process.env.APP_ENV': process.env.APP_ENV,
       'process.env.VERSION': packageJson.version,
+      'process.env.WEBSOCKET_URL': process.env.WEBSOCKET_URL,
     },
     // only proxy when using `umi dev`
     // if the assets are built, will not proxy
@@ -105,70 +106,101 @@ class IndexGenerator {
     this.pluginsPath = pluginsPath;
   }
 
+  get indexPath() {
+    return path.join(this.outputPath, 'index.ts');
+  }
+
+  get packageMapPath() {
+    return path.join(this.outputPath, 'packageMap.json');
+  }
+
+  get packagesPath() {
+    return path.join(this.outputPath, 'packages');
+  }
+
   generate() {
-    this.generatePluginIndex();
+    this.generatePluginContent();
     if (process.env.NODE_ENV === 'production') return;
     this.pluginsPath.forEach((pluginPath) => {
       if (!fs.existsSync(pluginPath)) {
         return;
       }
       fs.watch(pluginPath, { recursive: false }, () => {
-        this.generatePluginIndex();
+        this.generatePluginContent();
       });
     });
   }
 
-  generatePluginIndex() {
-    if (!fs.existsSync(this.outputPath)) {
-      fs.mkdirSync(path.dirname(this.outputPath), { recursive: true });
-      fs.writeFileSync(this.outputPath, 'export default {}');
+  get indexContent() {
+    return `// @ts-nocheck
+import packageMap from './packageMap.json';
+
+function devDynamicImport(packageName: string): Promise<any> {
+  const fileName = packageMap[packageName];
+  if (!fileName) {
+    return Promise.resolve(null);
+  }
+  return import(\`./packages/\${fileName}\`)
+}
+export default devDynamicImport;`;
+  }
+
+  get emptyIndexContent() {
+    return `
+export default function devDynamicImport(packageName: string): Promise<any> {
+  return Promise.resolve(null);
+}`;
+  }
+
+  generatePluginContent() {
+    if (fs.existsSync(this.outputPath)) {
+      fs.rmdirSync(this.outputPath, { recursive: true, force: true });
     }
+    fs.mkdirSync(this.outputPath);
     const validPluginPaths = this.pluginsPath.filter((pluginPath) => fs.existsSync(pluginPath));
-    if (!validPluginPaths.length) {
+    if (!validPluginPaths.length || process.env.NODE_ENV === 'production') {
+      fs.writeFileSync(this.indexPath, this.emptyIndexContent);
       return;
     }
-    if (process.env.NODE_ENV === 'production') {
-      fs.writeFileSync(this.outputPath, 'export default {}');
-      return;
-    }
-    const pluginInfo = validPluginPaths.map((pluginPath) => this.getContent(pluginPath));
-    const importContent = pluginInfo.map(({ indexContent }) => indexContent).join('\n');
-    const exportContent = pluginInfo.map(({ exportContent }) => exportContent).join('\n');
 
-    const fileContent = `${importContent}\n\nexport default {\n${exportContent}\n}`;
+    const pluginInfos = validPluginPaths.map((pluginPath) => this.getContent(pluginPath)).flat();
 
-    fs.writeFileSync(this.outputPath, fileContent);
+    // index.ts
+    fs.writeFileSync(this.indexPath, this.indexContent);
+    // packageMap.json
+    const packageMapContent = pluginInfos.reduce((memo, item) => {
+      memo[item.packageJsonName] = item.pluginFileName + '.ts';
+      return memo;
+    }, {});
+    fs.writeFileSync(this.packageMapPath, JSON.stringify(packageMapContent, null, 2));
+    // packages
+    fs.mkdirSync(this.packagesPath, { recursive: true });
+    pluginInfos.forEach((item) => {
+      const pluginPackagePath = path.join(this.packagesPath, item.pluginFileName + '.ts');
+      fs.writeFileSync(pluginPackagePath, item.exportStatement);
+    });
   }
 
   getContent(pluginPath) {
     const pluginFolders = fs.readdirSync(pluginPath);
-    const pluginImports = pluginFolders
+    const pluginInfos = pluginFolders
       .filter((folder) => {
         const pluginPackageJsonPath = path.join(pluginPath, folder, 'package.json');
         const pluginSrcClientPath = path.join(pluginPath, folder, 'src', 'client');
         return fs.existsSync(pluginPackageJsonPath) && fs.existsSync(pluginSrcClientPath);
       })
-      .map((folder, index) => {
+      .map((folder) => {
         const pluginPackageJsonPath = path.join(pluginPath, folder, 'package.json');
         const pluginPackageJson = require(pluginPackageJsonPath);
         const pluginSrcClientPath = path
-          .relative(path.dirname(this.outputPath), path.join(pluginPath, folder, 'src', 'client'))
+          .relative(this.packagesPath, path.join(pluginPath, folder, 'src', 'client'))
           .replaceAll('\\', '/');
-        const pluginName = `${folder.replaceAll('-', '_')}${index}`;
-        const importStatement = `const ${pluginName} = import('${pluginSrcClientPath}');`;
-        return { importStatement, pluginName, packageJsonName: pluginPackageJson.name };
+        const pluginFileName = `${path.basename(pluginPath)}_${folder.replaceAll('-', '_')}`;
+        const exportStatement = `export { default } from '${pluginSrcClientPath}';`;
+        return { exportStatement, pluginFileName, packageJsonName: pluginPackageJson.name };
       });
 
-    const indexContent = pluginImports.map(({ importStatement }) => importStatement).join('\n');
-
-    const exportContent = pluginImports
-      .map(({ pluginName, packageJsonName }) => `  "${packageJsonName}": ${pluginName},`)
-      .join('\n');
-
-    return {
-      indexContent,
-      exportContent,
-    };
+    return pluginInfos;
   }
 }
 

@@ -1,11 +1,11 @@
+import {
+  ArrayFieldRepository,
+  BelongsToManyRepository,
+  HasManyRepository,
+  MultipleRelationRepository,
+} from '@nocobase/database';
 import { Context } from '..';
 import { getRepositoryFromParams } from '../utils';
-import {
-  BelongsToManyRepository,
-  MultipleRelationRepository,
-  HasManyRepository,
-  ArrayFieldRepository,
-} from '@nocobase/database';
 
 export async function add(ctx: Context, next) {
   const repository = getRepositoryFromParams(ctx);
@@ -19,8 +19,9 @@ export async function add(ctx: Context, next) {
   ) {
     return await next();
   }
+  const filterByTk = ctx.action.params.filterByTk || ctx.action.params.filterByTks || ctx.action.params.values;
 
-  await (<HasManyRepository | BelongsToManyRepository>repository).add(ctx.action.params.values);
+  await (<HasManyRepository | BelongsToManyRepository>repository).add(filterByTk);
 
   ctx.status = 200;
 

@@ -9,8 +9,9 @@ import { MockServer, mockServer } from '@nocobase/test';
 describe('app test', () => {
   let app: MockServer;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     app = mockServer();
+    await app.start();
   });
 
   test('test1', async () => {

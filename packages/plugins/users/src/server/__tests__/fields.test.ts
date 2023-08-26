@@ -16,7 +16,7 @@ describe('createdBy/updatedBy', () => {
   });
 
   afterEach(async () => {
-    await db.close();
+    await api.destroy();
   });
 
   describe('collection definition', () => {

@@ -3,7 +3,7 @@ import { resolve } from 'path';
 
 export const getAntdLocale = (lang) => {
   const lng = lang.replace('-', '_');
-  const files = [resolve(__dirname, `./../locale/antd/locale/${lng}`)];
+  const files = [resolve(__dirname, `../locale/antd/${lng}`)];
   if (process.env.APP_ENV !== 'production') {
     files.unshift(`antd/lib/locale/${lng}`);
     files.push(`antd/lib/locale/en_US`);

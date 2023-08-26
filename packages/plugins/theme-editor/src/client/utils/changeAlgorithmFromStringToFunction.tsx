@@ -11,7 +11,7 @@ export function changeAlgorithmFromStringToFunction(themeConfig: ThemeItem) {
   if (_.isString(themeConfig.config.algorithm)) {
     themeConfig.config.algorithm = theme[themeConfig.config.algorithm];
   }
-  if (Array.isArray(themeConfig.config.algorithm)) {
+  if (Array.isArray(themeConfig.config?.algorithm)) {
     themeConfig.config.algorithm = themeConfig.config.algorithm.map((item) => {
       if (_.isString(item)) {
         return theme[item];

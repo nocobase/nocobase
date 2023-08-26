@@ -44,6 +44,22 @@ export abstract class RelationRepository {
     return this.db.getCollection(this.targetModel.name);
   }
 
+  convertTk(options: any) {
+    let tk = options;
+    if (typeof options === 'object' && options['tk']) {
+      tk = options['tk'];
+    }
+    return tk;
+  }
+
+  convertTks(options: any) {
+    let tk = this.convertTk(options);
+    if (typeof tk === 'string') {
+      tk = tk.split(',');
+    }
+    return lodash.castArray(tk);
+  }
+
   targetKey() {
     return this.associationField.targetKey;
   }

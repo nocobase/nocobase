@@ -10,11 +10,8 @@ describe('actions test', () => {
       registerActions: true,
     });
 
-    await app.cleanDb();
-
     app.plugin(Plugin);
-    await app.load();
-    await app.db.sync();
+    await app.loadAndInstall({ clean: true });
 
     db = app.db;
   });
