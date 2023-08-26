@@ -37,6 +37,13 @@ export class SqlCollection extends Collection {
     model.database = this.context.database;
     model.collection = this;
 
-    this.model = model;
+    this.model = new Proxy(model, {
+      get(target, prop) {
+        if (prop === '_schema') {
+          return undefined;
+        }
+        return Reflect.get(target, prop);
+      },
+    });
   }
 }
