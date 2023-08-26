@@ -41,65 +41,62 @@ describe('api', () => {
     const repo = db.getRepository('chart_test');
     await repo.create({
       values: [
-        { price: 1, count: 1, title: 'title1' },
-        { price: 2, count: 2, title: 'title2' },
+        { price: 1, count: 1, title: 'title1', createdAt: '2023-02-02' },
+        { price: 2, count: 2, title: 'title2', createdAt: '2023-01-01' },
       ],
     });
   });
 
   afterAll(async () => {
-    await db.close();
+    await app.destroy();
   });
 
-  test('query', () => {
-    expect.assertions(1);
-    return expect(
-      queryData({ db } as any, {
-        collection: 'chart_test',
-        measures: [
-          {
-            field: ['price'],
-            alias: 'Price',
-          },
-          {
-            field: ['count'],
-            alias: 'Count',
-          },
-        ],
-        dimensions: [
-          {
-            field: ['title'],
-            alias: 'Title',
-          },
-        ],
-      }),
-    ).resolves.toBeDefined();
+  test('query', async () => {
+    const result = await queryData({ db } as any, {
+      collection: 'chart_test',
+      measures: [
+        {
+          field: ['price'],
+          alias: 'Price',
+        },
+        {
+          field: ['count'],
+          alias: 'Count',
+        },
+      ],
+      dimensions: [
+        {
+          field: ['title'],
+          alias: 'Title',
+        },
+      ],
+    });
+    expect(result).toBeDefined();
   });
 
-  test('query with sort', () => {
-    expect.assertions(1);
-    return expect(
-      queryData({ db } as any, {
-        collection: 'chart_test',
-        measures: [
-          {
-            field: ['price'],
-            aggregation: 'sum',
-            alias: 'Price',
-          },
-        ],
-        dimensions: [
-          {
-            field: ['title'],
-            alias: 'Title',
-          },
-          {
-            field: ['createdAt'],
-            format: 'YYYY',
-          },
-        ],
-        orders: [{ field: 'createdAt', order: 'asc' }],
-      }),
-    ).resolves.toBeDefined();
+  test('query with sort', async () => {
+    const result = await queryData({ db } as any, {
+      collection: 'chart_test',
+      measures: [
+        {
+          field: ['price'],
+          aggregation: 'sum',
+          alias: 'Price',
+        },
+      ],
+      dimensions: [
+        {
+          field: ['title'],
+          alias: 'Title',
+        },
+        {
+          field: ['createdAt'],
+          format: 'YYYY-MM',
+        },
+      ],
+      orders: [{ field: 'createdAt', order: 'asc' }],
+    });
+    expect(result).toBeDefined();
+    expect(result).toMatchObject([{ createdAt: '2023-01' }, { createdAt: '2023-02' }]);
   });
 });

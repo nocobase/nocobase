@@ -105,7 +105,9 @@ export const getCronstrueLocale = (lang) => {
   for (const method of methods) {
     try {
       items[method] = locale[method]();
-    } catch (error) {}
+    } catch (error) {
+      // empty
+    }
   }
   return items;
 };

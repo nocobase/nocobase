@@ -26,7 +26,7 @@ export const actionDesignerCss = css`
     left: 0;
     right: 0;
     display: none;
-    background: rgba(241, 139, 98, 0.06);
+    background: var(--colorBgSettingsHover);
     border: 0;
     top: 0;
     bottom: 0;
@@ -40,11 +40,12 @@ export const actionDesignerCss = css`
       line-height: 16px;
       pointer-events: all;
       .ant-space-item {
-        background-color: #f18b62;
+        background-color: var(--colorSettings);
         color: #fff;
         line-height: 16px;
         width: 16px;
         padding-left: 1px;
+        align-self: stretch;
       }
     }
   }

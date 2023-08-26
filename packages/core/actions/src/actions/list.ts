@@ -1,22 +1,7 @@
 import { assign } from '@nocobase/utils';
 import { Context } from '..';
-import { getRepositoryFromParams } from '../utils';
-
-export const DEFAULT_PAGE = 1;
-export const DEFAULT_PER_PAGE = 20;
-
-function pageArgsToLimitArgs(
-  page: number,
-  pageSize: number,
-): {
-  offset: number;
-  limit: number;
-} {
-  return {
-    offset: (page - 1) * pageSize,
-    limit: pageSize,
-  };
-}
+import { getRepositoryFromParams, pageArgsToLimitArgs } from '../utils';
+import { DEFAULT_PAGE, DEFAULT_PER_PAGE } from '../constants';
 
 function totalPage(total, pageSize): number {
   return Math.ceil(total / pageSize);

@@ -1,30 +1,33 @@
 import { ArrayField } from '@formily/core';
+import { useField } from '@formily/react';
 import React, { useCallback, useState } from 'react';
 import { useCollectionManager } from '../../../collection-manager';
 import { useCompile } from '../../../schema-component';
 import { TreeNode } from '../TreeLabel';
 
+// 过滤掉系统字段
+export const systemKeys = [
+  // 'id',
+  'sort',
+  'createdById',
+  'createdBy',
+  'createdAt',
+  'updatedById',
+  'updatedBy',
+  'updatedAt',
+  'password',
+  'sequence',
+];
 export const useCollectionState = (currentCollectionName: string) => {
-  const { getCollectionFields, getAllCollectionsInheritChain, getCollection } = useCollectionManager();
+  const { getCollectionFields, getAllCollectionsInheritChain, getCollection, getInterface } = useCollectionManager();
   const [collectionList] = useState(getCollectionList);
   const compile = useCompile();
+  const templateField: any = useField();
 
   function getCollectionList() {
     const collections = getAllCollectionsInheritChain(currentCollectionName);
     return collections.map((name) => ({ label: getCollection(name)?.title, value: name }));
   }
-
-  // 过滤掉系统字段
-  const systemKeys = [
-    // 'id',
-    'sort',
-    'createdById',
-    'createdBy',
-    'createdAt',
-    'updatedById',
-    'updatedBy',
-    'updatedAt',
-  ];
 
   /**
    * maxDepth: 从 0 开始，0 表示一层，1 表示两层，以此类推
@@ -114,12 +117,25 @@ export const useCollectionState = (currentCollectionName: string) => {
       })
       .filter(Boolean);
   };
+  const parseTreeData = (data) => {
+    return data.map((v) => {
+      return {
+        ...v,
+        title: React.createElement(TreeNode, { ...v, type: v.type }),
+        children: v.children ? parseTreeData(v.children) : null,
+      };
+    });
+  };
 
-  const getEnableFieldTree = useCallback((collectionName: string) => {
+  const getEnableFieldTree = useCallback((collectionName: string, field, treeData?) => {
+    const index = field.index;
+    const targetTemplate = templateField.initialValue?.items?.[index];
     if (!collectionName) {
       return [];
     }
-
+    if (targetTemplate?.treeData || treeData) {
+      return parseTreeData(treeData || targetTemplate.treeData);
+    }
     try {
       return traverseFields(collectionName, { exclude: ['id', ...systemKeys], maxDepth: 1 });
     } catch (error) {
@@ -150,11 +166,78 @@ export const useCollectionState = (currentCollectionName: string) => {
     };
   }, []);
 
+  const getScopeDataSource = (resource: string) => {
+    const fields = getCollectionFields(resource);
+    const field2option = (field, depth) => {
+      if (!field.interface) {
+        return;
+      }
+      const fieldInterface = getInterface(field.interface);
+      if (!fieldInterface?.filterable) {
+        return;
+      }
+      const { nested, children, operators } = fieldInterface.filterable;
+      const option = {
+        name: field.name,
+        title: field?.uiSchema?.title || field.name,
+        schema: field?.uiSchema,
+        operators:
+          operators?.filter?.((operator) => {
+            return !operator?.visible || operator.visible(field);
+          }) || [],
+        interface: field.interface,
+      };
+      if (field.target && depth > 2) {
+        return;
+      }
+      if (depth > 2) {
+        return option;
+      }
+      if (children?.length) {
+        option['children'] = children;
+      }
+      if (nested) {
+        const targetFields = getCollectionFields(field.target);
+        const options = getOptions(targetFields, depth + 1).filter(Boolean);
+        option['children'] = option['children'] || [];
+        option['children'].push(...options);
+      }
+      return option;
+    };
+    const getOptions = (fields, depth) => {
+      const options = [];
+      fields.forEach((field) => {
+        const option = field2option(field, depth);
+        if (option) {
+          options.push(option);
+        }
+      });
+      return options;
+    };
+    const options = getOptions(fields, 1);
+    return options;
+  };
+  const useTitleFieldDataSource = (field) => {
+    const fieldPath = field.path.entire.replace('titleField', 'collection');
+    const collectionName = field.query(fieldPath).get('value');
+    const targetFields = getCollectionFields(collectionName);
+    const options = targetFields
+      .filter((field) => {
+        return !field.isForeignKey && getInterface(field.interface)?.titleUsable;
+      })
+      .map((field) => ({
+        value: field?.name,
+        label: compile(field?.uiSchema?.title) || field?.name,
+      }));
+    field.dataSource = options;
+  };
   return {
     collectionList,
     getEnableFieldTree,
     getOnLoadData,
     getOnCheck,
+    getScopeDataSource,
+    useTitleFieldDataSource,
   };
 };
 
@@ -174,17 +257,16 @@ function findNode(treeData, item) {
 }
 
 function loadChildren({ node, traverseAssociations, traverseFields, systemKeys, fields }) {
-  const activeNode = findNode(fields.componentProps.treeData, node);
+  const activeNode = findNode(fields.dataSource || fields.componentProps.treeData, node);
   let children = [];
-
   // 多对多和多对一只展示关系字段
-  if (['belongsTo', 'belongsToMany'].includes(node.field.type)) {
+  if (['belongsTo', 'belongsToMany'].includes(node.field.type) && node?.type === 'reference') {
     children = traverseAssociations(node.field.target, {
       exclude: systemKeys,
       prefix: node.key,
       maxDepth: 1,
     });
-  } else if (['hasOne', 'hasMany'].includes(node.field.type)) {
+  } else if (['hasOne', 'hasMany'].includes(node.field.type) || node?.type === 'duplicate') {
     children = traverseFields(node.field.target, {
       exclude: ['id', ...systemKeys],
       prefix: node.key,

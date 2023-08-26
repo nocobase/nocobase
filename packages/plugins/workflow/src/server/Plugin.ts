@@ -1,22 +1,22 @@
 import path from 'path';
 
-import winston from 'winston';
 import LRUCache from 'lru-cache';
+import winston from 'winston';
 
 import { Op } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 
-import initFields from './fields';
+import { createLogger, getLoggerFilePath, getLoggerLevel, Logger, LoggerOptions } from '@nocobase/logger';
+import Processor from './Processor';
 import initActions from './actions';
 import { EXECUTION_STATUS } from './constants';
-import initInstructions, { Instruction } from './instructions';
-import Processor from './Processor';
-import initTriggers, { Trigger } from './triggers';
+import initFields from './fields';
 import initFunctions, { CustomFunction } from './functions';
-import { createLogger, Logger, LoggerOptions, getLoggerLevel, getLoggerFilePath } from '@nocobase/logger';
+import initInstructions, { Instruction } from './instructions';
+import initTriggers, { Trigger } from './triggers';
 
-import type { WorkflowModel, ExecutionModel, JobModel } from './types';
+import type { ExecutionModel, JobModel, WorkflowModel } from './types';
 
 type Pending = [ExecutionModel, JobModel?];
 
@@ -129,7 +129,13 @@ export default class WorkflowPlugin extends Plugin {
       ],
     });
 
+    this.app.acl.registerSnippet({
+      name: 'ui.*',
+      actions: ['workflows:list'],
+    });
+
     this.app.acl.allow('users_jobs', ['list', 'get', 'submit'], 'loggedIn');
+    this.app.acl.allow('workflows', ['trigger'], 'loggedIn');
 
     await db.import({
       directory: path.resolve(__dirname, 'collections'),
@@ -163,6 +169,7 @@ export default class WorkflowPlugin extends Plugin {
     });
 
     this.app.on('afterStart', () => {
+      this.app.setMaintainingMessage('check for not started executions');
       // check for not started executions
       this.dispatch();
     });
@@ -194,7 +201,7 @@ export default class WorkflowPlugin extends Plugin {
     }
   }
 
-  public trigger(workflow: WorkflowModel, context: { [key: string]: any }, options: { context?: any } = {}): void {
+  public trigger(workflow: WorkflowModel, context: object, options: { context?: any } = {}): void {
     // `null` means not to trigger
     if (context == null) {
       return;
@@ -215,8 +222,21 @@ export default class WorkflowPlugin extends Plugin {
     setTimeout(this.prepare);
   }
 
+  public async resume(job) {
+    if (!job.execution) {
+      job.execution = await job.getExecution();
+    }
+
+    this.pending.push([job.execution, job]);
+    this.dispatch();
+  }
+
+  public createProcessor(execution: ExecutionModel, options = {}): Processor {
+    return new Processor(execution, { ...options, plugin: this });
+  }
+
   private prepare = async () => {
-    const event = this.events.shift();
+    const [event] = this.events;
     if (!event) {
       return;
     }
@@ -247,7 +267,6 @@ export default class WorkflowPlugin extends Plugin {
             context,
             key: workflow.key,
             status: EXECUTION_STATUS.QUEUEING,
-            useTransaction: workflow.useTransaction,
           },
           { transaction },
         );
@@ -276,21 +295,14 @@ export default class WorkflowPlugin extends Plugin {
       }
     }
 
+    this.events.shift();
+
     if (this.events.length) {
       await this.prepare();
     } else {
       this.dispatch();
     }
   };
-
-  public async resume(job) {
-    if (!job.execution) {
-      job.execution = await job.getExecution();
-    }
-
-    this.pending.push([job.execution, job]);
-    this.dispatch();
-  }
 
   private async dispatch() {
     if (this.executing) {
@@ -303,6 +315,7 @@ export default class WorkflowPlugin extends Plugin {
     // resuming has high priority
     if (this.pending.length) {
       next = this.pending.shift() as Pending;
+      this.getLogger(next[0].workflowId).info(`pending execution (${next[0].id}) ready to process`);
     } else {
       const execution = (await this.db.getRepository('executions').findOne({
         filter: {
@@ -312,13 +325,18 @@ export default class WorkflowPlugin extends Plugin {
         sort: 'createdAt',
       })) as ExecutionModel;
       if (execution && execution.workflow.enabled) {
+        this.getLogger(execution.workflowId).info(`execution (${execution.id}) fetched from db`);
         next = [execution];
       }
     }
     if (next) {
-      this.process(...next);
-    } else {
-      this.executing = false;
+      await this.process(...next);
+    }
+
+    this.executing = false;
+
+    if (next) {
+      this.dispatch();
     }
   }
 
@@ -336,16 +354,11 @@ export default class WorkflowPlugin extends Plugin {
       this.getLogger(execution.workflowId).info(
         `execution (${execution.id}) finished with status: ${execution.status}`,
       );
+      if (execution.status && execution.workflow.options?.deleteExecutionOnStatus?.includes(execution.status)) {
+        await execution.destroy();
+      }
     } catch (err) {
       this.getLogger(execution.workflowId).error(`execution (${execution.id}) error: ${err.message}`, err);
     }
-
-    this.executing = false;
-
-    this.dispatch();
-  }
-
-  public createProcessor(execution: ExecutionModel, options = {}): Processor {
-    return new Processor(execution, { ...options, plugin: this });
   }
 }

@@ -2,6 +2,8 @@ import { CollectionOptions } from '@nocobase/database';
 
 export default {
   name: 'posts',
+  createdBy: true,
+  updatedBy: true,
   fields: [
     {
       type: 'string',

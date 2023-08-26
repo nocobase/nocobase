@@ -13,7 +13,7 @@ import { useResourceActionContext, useResourceContext } from '../ResourceActionP
 import { useCancelAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
 import * as components from './components';
-import { TemplateSummay } from './components/TemplateSummay';
+import { TemplateSummary } from './components/TemplateSummary';
 import { templateOptions } from './templates';
 
 const getSchema = (schema, category, compile): ISchema => {
@@ -97,7 +97,10 @@ const getSchema = (schema, category, compile): ISchema => {
   };
 };
 
-const useDefaultCollectionFields = (values) => {
+const getDefaultCollectionFields = (values) => {
+  if (values?.template === 'view') {
+    return values.fields;
+  }
   const defaults = values.fields ? [...values.fields] : [];
   const { autoGenId = true, createdAt = true, createdBy = true, updatedAt = true, updatedBy = true } = values;
   if (autoGenId) {
@@ -139,7 +142,7 @@ const useDefaultCollectionFields = (values) => {
       uiSchema: {
         type: 'object',
         title: '{{t("Created by")}}',
-        'x-component': 'RecordPicker',
+        'x-component': 'AssociationField',
         'x-component-props': {
           fieldNames: {
             value: 'id',
@@ -175,7 +178,7 @@ const useDefaultCollectionFields = (values) => {
       uiSchema: {
         type: 'object',
         title: '{{t("Last updated by")}}',
-        'x-component': 'RecordPicker',
+        'x-component': 'AssociationField',
         'x-component-props': {
           fieldNames: {
             value: 'id',
@@ -207,9 +210,8 @@ const useCreateCollection = (schema?: any) => {
         if (schema?.events?.beforeSubmit) {
           schema.events.beforeSubmit(values);
         }
-        const fields = values?.template !== 'view' ? useDefaultCollectionFields(values) : values.fields;
-        if (values.autoCreateReverseField) {
-        } else {
+        const fields = getDefaultCollectionFields(values);
+        if (!values.autoCreateReverseField) {
           delete values.reverseField;
         }
         delete values.id;
@@ -289,7 +291,7 @@ export const AddCollectionAction = (props) => {
         </Dropdown>
         <SchemaComponent
           schema={schema}
-          components={{ ...components, ArrayTable, TemplateSummay }}
+          components={{ ...components, ArrayTable, TemplateSummay: TemplateSummary }}
           scope={{
             getContainer,
             useCancelAction,

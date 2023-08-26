@@ -28,12 +28,12 @@ module.exports = (cli) => {
           './tsconfig.server.json',
           '-r',
           'tsconfig-paths/register',
-          `./packages/${APP_PACKAGE_ROOT}/server/src/index.ts`,
+          `${APP_PACKAGE_ROOT}/src/index.ts`,
           ...process.argv.slice(2),
         ]);
         return;
       }
-      if (!existsSync(resolve(process.cwd(), `./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`))) {
+      if (!existsSync(resolve(process.cwd(), `${APP_PACKAGE_ROOT}/lib/index.js`))) {
         console.log('The code is not compiled, please execute it first');
         console.log(chalk.yellow('$ yarn build'));
         console.log('If you want to run in development mode, please execute');
@@ -41,24 +41,14 @@ module.exports = (cli) => {
         return;
       }
       await postCheck(opts);
-      const restartMark = resolve(process.cwd(), 'storage', 'restart');
-      if (!existsSync(restartMark)) {
-        if (opts.quickstart) {
-          await run('node', [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, 'install', '--ignore-installed']);
-          await run('node', [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, 'upgrade']);
-        }
-        if (opts.dbSync) {
-          await run('node', [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, 'db:sync']);
-        }
-      }
       if (opts.daemon) {
-        run('pm2', ['start', `packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, '--', ...process.argv.slice(2)]);
+        run('pm2', ['start', `${APP_PACKAGE_ROOT}/lib/index.js`, '--', ...process.argv.slice(2)]);
       } else {
         run(
           'pm2-runtime',
           [
             'start',
-            `packages/${APP_PACKAGE_ROOT}/server/lib/index.js`,
+            `${APP_PACKAGE_ROOT}/lib/index.js`,
             NODE_ARGS ? `--node-args="${NODE_ARGS}"` : undefined,
             '--',
             ...process.argv.slice(2),

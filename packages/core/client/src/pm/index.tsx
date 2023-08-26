@@ -14,6 +14,7 @@ import { CollectionManagerPane } from '../collection-manager';
 import { Icon } from '../icon';
 import { useCompile } from '../schema-component';
 import { BlockTemplatesPane } from '../schema-templates';
+import { useToken } from '../style';
 import { SystemSettingsPane } from '../system-settings';
 import { BuiltInPluginCard, PluginCard } from './Card';
 import { PluginManagerLink, SettingsCenterDropdown } from './PluginManagerLink';
@@ -58,7 +59,7 @@ export const SettingsCenterContext = createContext<any>({});
 
 const LocalPlugins = () => {
   // TODO: useRequest types for data ts type
-  const { data, loading }: { data: TData; loading: boolean } = useRequest<TData>({
+  const { data, loading } = useRequest<TData>({
     url: 'applicationPlugins:list',
     params: {
       filter: {
@@ -83,7 +84,10 @@ const LocalPlugins = () => {
 };
 
 const BuiltinPlugins = () => {
-  const { data, loading } = useRequest({
+  const { data, loading } = useRequest<{
+    data: IPluginData[];
+    meta: IMetaData;
+  }>({
     url: 'applicationPlugins:list',
     params: {
       filter: {
@@ -107,8 +111,9 @@ const BuiltinPlugins = () => {
 };
 
 const MarketplacePlugins = () => {
+  const { token } = useToken();
   const { t } = useTranslation();
-  return <div style={{ fontSize: 18 }}>{t('Coming soon...')}</div>;
+  return <div style={{ fontSize: token.fontSizeXL, color: token.colorText }}>{t('Coming soon...')}</div>;
 };
 
 const PluginList = () => {
@@ -155,7 +160,7 @@ const PluginList = () => {
           />
         }
       />
-      <div className={'m24'} style={{ margin: 24, display: 'flex', flexFlow: 'row wrap' }}>
+      <div className={styles.pageContent} style={{ display: 'flex', flexFlow: 'row wrap' }}>
         {React.createElement(
           {
             local: LocalPlugins,
@@ -333,7 +338,7 @@ const SettingsCenter = () => {
               }
             />
           )}
-          <div className={'m24'} style={{ margin: 24 }}>
+          <div className={styles.pageContent}>
             {aclPluginTabCheck ? (
               component && React.createElement(component)
             ) : (

@@ -11,6 +11,7 @@ import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useCancelAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
+import useDialect from '../hooks/useDialect';
 import { IField } from '../interfaces/types';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import * as components from './components';
@@ -25,6 +26,7 @@ const getSchema = (schema: IField, record: any, compile) => {
 
   if (schema.hasDefaultValue === true) {
     properties['defaultValue'] = cloneDeep(schema?.default?.uiSchema);
+    properties.defaultValue.required = false;
     properties['defaultValue']['title'] = compile('{{ t("Default value") }}');
     properties['defaultValue']['x-decorator'] = 'FormItem';
     properties['defaultValue']['x-reactions'] = {
@@ -120,6 +122,7 @@ export const useCollectionFieldFormValues = () => {
     getValues() {
       const values = cloneDeep(form.values);
       if (values.autoCreateReverseField) {
+        /* empty */
       } else {
         delete values.reverseField;
       }
@@ -143,6 +146,7 @@ const useCreateCollectionField = () => {
       field.data.loading = true;
       const values = cloneDeep(form.values);
       if (values.autoCreateReverseField) {
+        /* empty */
       } else {
         delete values.reverseField;
       }
@@ -174,6 +178,8 @@ export const AddFieldAction = (props) => {
   const [schema, setSchema] = useState({});
   const compile = useCompile();
   const { t } = useTranslation();
+  const { isDialect } = useDialect();
+
   const currentCollections = useMemo(() => {
     return collections.map((v) => {
       return {
@@ -296,6 +302,8 @@ export const AddFieldAction = (props) => {
               showReverseFieldConfig: true,
               targetScope,
               collections: currentCollections,
+              isDialect,
+              disabledJSONB: false,
               ...scope,
             }}
           />

@@ -3,23 +3,25 @@ import { createForm } from '@formily/core';
 import { ISchema, useForm } from '@formily/react';
 import {
   ActionContextProvider,
-  css,
-  cx,
   SchemaComponent,
   SchemaInitializerItemOptions,
-  useActionContext,
+  css,
+  cx,
   useAPIClient,
+  useActionContext,
   useCompile,
   useResourceActionContext,
 } from '@nocobase/client';
 import { Registry } from '@nocobase/utils/client';
-import { Alert, Button, Input, message, Tag } from 'antd';
+import { Alert, Button, Input, Tag, message } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useFlowContext } from '../FlowContext';
-import { lang, NAMESPACE } from '../locale';
-import { nodeCardClass, nodeJobButtonClass, nodeMetaClass, nodeTitleClass } from '../style';
+import { DrawerDescription } from '../components/DrawerDescription';
+import { NAMESPACE, lang } from '../locale';
+import useStyles from '../style';
 import { VariableOptions } from '../variable';
 import collection from './collection';
+import formTrigger from './form';
 import schedule from './schedule/';
 
 function useUpdateConfigAction() {
@@ -50,6 +52,7 @@ function useUpdateConfigAction() {
 export interface Trigger {
   title: string;
   type: string;
+  description?: string;
   // group: string;
   useVariables?(config: any, options?): VariableOptions;
   fieldset: { [key: string]: ISchema };
@@ -62,12 +65,15 @@ export interface Trigger {
 
 export const triggers = new Registry<Trigger>();
 
+triggers.register(formTrigger.type, formTrigger);
 triggers.register(collection.type, collection);
 triggers.register(schedule.type, schedule);
 
 function TriggerExecution() {
   const compile = useCompile();
   const { workflow, execution } = useFlowContext();
+  const { styles } = useStyles();
+
   if (!execution) {
     return null;
   }
@@ -83,7 +89,8 @@ function TriggerExecution() {
         'x-component-props': {
           title: <InfoOutlined />,
           shape: 'circle',
-          className: nodeJobButtonClass,
+          size: 'small',
+          className: styles.nodeJobButtonClass,
           type: 'primary',
         },
         properties: {
@@ -95,7 +102,7 @@ function TriggerExecution() {
             },
             'x-component': 'Action.Modal',
             title: (
-              <div className={cx(nodeTitleClass)}>
+              <div className={cx(styles.nodeTitleClass)}>
                 <Tag>{compile(trigger.title)}</Tag>
                 <strong>{workflow.title}</strong>
                 <span className="workflow-node-id">#{execution.id}</span>
@@ -139,6 +146,7 @@ export const TriggerConfig = () => {
   const { workflow, refresh } = useFlowContext();
   const [editingTitle, setEditingTitle] = useState<string>('');
   const [editingConfig, setEditingConfig] = useState(false);
+  const { styles } = useStyles();
   let typeTitle = '';
   useEffect(() => {
     if (workflow) {
@@ -164,7 +172,7 @@ export const TriggerConfig = () => {
   const { fieldset, scope, components } = trigger;
   typeTitle = trigger.title;
   const detailText = executed ? '{{t("View")}}' : '{{t("Configure")}}';
-  const titleText = `${lang('Trigger')}: ${compile(typeTitle)}`;
+  const titleText = lang('Trigger');
 
   async function onChangeTitle(next) {
     const t = next || typeTitle;
@@ -197,8 +205,8 @@ export const TriggerConfig = () => {
   }
 
   return (
-    <div className={cx(nodeCardClass)} onClick={onOpenDrawer}>
-      <div className={cx(nodeMetaClass, 'workflow-node-meta')}>
+    <div className={cx(styles.nodeCardClass)} onClick={onOpenDrawer}>
+      <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
         <Tag color="gold">{titleText}</Tag>
       </div>
       <div>
@@ -250,13 +258,25 @@ export const TriggerConfig = () => {
                           },
                         },
                       }
+                    : trigger.description
+                    ? {
+                        description: {
+                          type: 'void',
+                          'x-component': DrawerDescription,
+                          'x-component-props': {
+                            label: lang('Trigger type'),
+                            title: trigger.title,
+                            description: trigger.description,
+                          },
+                        },
+                      }
                     : {}),
                   fieldset: {
                     type: 'void',
                     'x-component': 'fieldset',
                     'x-component-props': {
                       className: css`
-                        .ant-select:not(.full-width) {
+                        .ant-select.auto-width {
                           width: auto;
                           min-width: 6em;
                         }

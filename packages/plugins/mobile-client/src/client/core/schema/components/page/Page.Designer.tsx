@@ -6,15 +6,19 @@ import { Button } from 'antd';
 import React from 'react';
 import { generateNTemplate, useTranslation } from '../../../../locale';
 import { findGridSchema } from '../../helpers';
+import { useSchemaPatch } from '../../hooks';
 
 export const PageDesigner = (props) => {
   const { showBack } = props;
   const { t } = useTranslation();
+  const field = useField();
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
+  const { onUpdateComponentProps } = useSchemaPatch();
   const headerSchema = fieldSchema?.properties?.['header'];
+  const isHeaderEnabled = !!headerSchema && field.componentProps?.headerEnabled !== false;
   const tabsSchema = fieldSchema?.properties?.['tabs'];
-  const field = useField();
+  const isTabsEnabled = !!tabsSchema && field.componentProps?.tabsEnabled !== false;
   const schemaSettingsProps = {
     dn,
     field,
@@ -26,8 +30,8 @@ export const PageDesigner = (props) => {
       title={
         <Button
           style={{
-            borderColor: 'rgb(241, 139, 98)',
-            color: 'rgb(241, 139, 98)',
+            borderColor: 'var(--colorSettings)',
+            color: 'var(--colorSettings)',
             width: '100%',
           }}
           icon={<MenuOutlined />}
@@ -39,10 +43,10 @@ export const PageDesigner = (props) => {
       {...schemaSettingsProps}
     >
       <SchemaSettings.SwitchItem
-        checked={!!headerSchema}
+        checked={isHeaderEnabled}
         title={t('Enable Header')}
         onChange={async (v) => {
-          if (v) {
+          if (!headerSchema) {
             await dn.insertAfterBegin({
               type: 'void',
               name: 'header',
@@ -53,53 +57,49 @@ export const PageDesigner = (props) => {
                 showBack,
               },
             });
-          } else {
-            await dn.remove(headerSchema);
           }
-          dn.refresh();
+          await onUpdateComponentProps({
+            headerEnabled: v,
+          });
         }}
       />
       <SchemaSettings.SwitchItem
-        checked={!!tabsSchema}
+        checked={isTabsEnabled}
         title={t('Enable Tabs')}
         onChange={async (v) => {
-          if (v) {
+          if (!tabsSchema) {
             const gridSchema = findGridSchema(fieldSchema);
-            if (gridSchema) {
-              return dn.remove(gridSchema).then(() => {
-                return dn.insertBeforeEnd({
+            await dn.remove(gridSchema);
+            return dn.insertBeforeEnd({
+              type: 'void',
+              name: 'tabs',
+              'x-component': 'Tabs',
+              'x-component-props': {},
+              'x-initializer': 'TabPaneInitializers',
+              'x-initializer-props': {
+                gridInitializer: 'MBlockInitializers',
+              },
+              properties: {
+                tab1: {
                   type: 'void',
-                  name: 'tabs',
-                  'x-component': 'Tabs',
+                  title: generateNTemplate('Untitled'),
+                  'x-component': 'Tabs.TabPane',
+                  'x-designer': 'Tabs.Designer',
                   'x-component-props': {},
-                  'x-initializer': 'TabPaneInitializers',
-                  'x-initializer-props': {
-                    gridInitializer: 'MBlockInitializers',
-                  },
                   properties: {
-                    tab1: {
-                      type: 'void',
-                      title: generateNTemplate('Untitled'),
-                      'x-component': 'Tabs.TabPane',
-                      'x-designer': 'Tabs.Designer',
-                      'x-component-props': {},
-                      properties: {
-                        grid: {
-                          ...gridSchema,
-                          'x-uid': uid(),
-                        },
-                      },
+                    grid: {
+                      ...gridSchema,
+                      'x-uid': uid(),
                     },
                   },
-                });
-              });
-            }
-          } else {
-            const gridSchema = findGridSchema(tabsSchema.properties[Object.keys(tabsSchema.properties)[0]]);
-            if (gridSchema) {
-              return dn.remove(tabsSchema).then(() => dn.insertBeforeEnd(gridSchema, {}));
-            }
+                },
+              },
+            });
           }
+
+          await onUpdateComponentProps({
+            tabsEnabled: v,
+          });
         }}
       />
     </SchemaSettings>

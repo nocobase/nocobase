@@ -1,38 +1,9 @@
 import { omit } from 'lodash';
 import { HasMany, Op } from 'sequelize';
-import { Model } from '../model';
-import {
-  AggregateOptions,
-  CreateOptions,
-  DestroyOptions,
-  FindOneOptions,
-  FindOptions,
-  TargetKey,
-  TK,
-  UpdateOptions,
-} from '../repository';
-import { AssociatedOptions, FindAndCountOptions, MultipleRelationRepository } from './multiple-relation-repository';
+import { AggregateOptions, DestroyOptions, FindOptions, TK, TargetKey } from '../repository';
+import { AssociatedOptions, MultipleRelationRepository } from './multiple-relation-repository';
 import { transaction } from './relation-repository';
-
-interface IHasManyRepository<M extends Model> {
-  find(options?: FindOptions): Promise<M>;
-  findAndCount(options?: FindAndCountOptions): Promise<[M[], number]>;
-  findOne(options?: FindOneOptions): Promise<M>;
-  // 新增并关联
-  create(options?: CreateOptions): Promise<M>;
-  // 更新
-  update(options?: UpdateOptions): Promise<M>;
-  // 删除
-  destroy(options?: TK | DestroyOptions): Promise<boolean>;
-  // 建立关联
-  set(options: TargetKey | TargetKey[] | AssociatedOptions): Promise<void>;
-  // 附加关联
-  add(options: TargetKey | TargetKey[] | AssociatedOptions): Promise<void>;
-  // 移除关联
-  remove(options: TargetKey | TargetKey[] | AssociatedOptions): Promise<void>;
-}
-
-export class HasManyRepository extends MultipleRelationRepository implements IHasManyRepository<any> {
+export class HasManyRepository extends MultipleRelationRepository {
   async find(options?: FindOptions): Promise<any> {
     const targetRepository = this.targetCollection.repository;
 
@@ -118,20 +89,9 @@ export class HasManyRepository extends MultipleRelationRepository implements IHa
     return true;
   }
 
-  handleKeyOfAdd(options) {
-    let handleKeys;
-
-    if (typeof options !== 'object' && !Array.isArray(options)) {
-      handleKeys = [options];
-    } else {
-      handleKeys = options['pk'];
-    }
-    return handleKeys;
-  }
-
   @transaction((args, transaction) => {
     return {
-      pk: args[0],
+      tk: args[0],
       transaction,
     };
   })
@@ -140,23 +100,22 @@ export class HasManyRepository extends MultipleRelationRepository implements IHa
 
     const sourceModel = await this.getSourceModel(transaction);
 
-    await sourceModel[this.accessors().set](this.handleKeyOfAdd(options), {
+    await sourceModel[this.accessors().set](this.convertTks(options), {
       transaction,
     });
   }
 
   @transaction((args, transaction) => {
     return {
-      pk: args[0],
+      tk: args[0],
       transaction,
     };
   })
   async add(options: TargetKey | TargetKey[] | AssociatedOptions): Promise<void> {
     const transaction = await this.getTransaction(options);
-
     const sourceModel = await this.getSourceModel(transaction);
 
-    await sourceModel[this.accessors().add](this.handleKeyOfAdd(options), {
+    await sourceModel[this.accessors().add](this.convertTks(options), {
       transaction,
     });
   }

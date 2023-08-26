@@ -34,6 +34,9 @@ export const SubTable: any = observer(
     return (
       <div
         className={css`
+          .ant-table-content {
+            overflow: unset !important;
+          }
           .ant-table-footer {
             padding: 0 !important;
           }
@@ -63,19 +66,11 @@ export const SubTable: any = observer(
       >
         <Table
           className={css`
-            .ant-select-selector {
-              /* min-height: 31px; */
-            }
             .ant-formily-item.ant-formily-item-feedback-layout-loose {
               margin-bottom: 0px !important;
             }
             .ant-formily-editable {
               vertical-align: sub;
-            }
-            .ant-table table {
-            }
-            td:not(.ant-table-selection-column) {
-              padding: 5px !important;
             }
           `}
           bordered
@@ -105,6 +100,7 @@ export const SubTable: any = observer(
               </Button>
             )
           }
+          isSubTable={true}
         />
       </div>
     );

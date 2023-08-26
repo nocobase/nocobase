@@ -41,4 +41,5 @@ export const time: IField = {
   filterable: {
     operators: operators.time,
   },
+  titleUsable: true,
 };

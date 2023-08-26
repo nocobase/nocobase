@@ -3,7 +3,7 @@ import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import cloneDeep from 'lodash/cloneDeep';
 import set from 'lodash/set';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
 import { RecordProvider, useRecord } from '../../record-provider';
@@ -29,6 +29,9 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
       [uid()]: {
         type: 'void',
         'x-component': 'Action.Drawer',
+        'x-component-props': {
+          getContainer: '{{ getContainer }}',
+        },
         'x-decorator': 'Form',
         'x-decorator-props': {
           useValues(options) {
@@ -65,14 +68,21 @@ export const ViewCollectionField = (props) => {
 
 export const ViewFieldAction = (props) => {
   const { scope, getContainer, item: record, children } = props;
-  const { getInterface } = useCollectionManager();
+  const { getInterface, collections } = useCollectionManager();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
   const api = useAPIClient();
   const { t } = useTranslation();
   const compile = useCompile();
   const [data, setData] = useState<any>({});
-
+  const currentCollections = useMemo(() => {
+    return collections.map((v) => {
+      return {
+        label: compile(v.title),
+        value: v.name,
+      };
+    });
+  }, []);
   return (
     <RecordProvider record={record}>
       <ActionContextProvider value={{ visible, setVisible }}>
@@ -113,6 +123,7 @@ export const ViewFieldAction = (props) => {
             getContainer,
             showReverseFieldConfig: !data?.reverseField,
             createOnly: !true,
+            collections: currentCollections,
             ...scope,
           }}
         />

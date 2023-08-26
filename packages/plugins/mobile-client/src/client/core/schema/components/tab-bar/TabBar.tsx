@@ -37,6 +37,12 @@ export const InternalTabBar: React.FC = (props) => {
       properties: {
         [uid()]: PageSchema,
       },
+      'x-server-hooks': [
+        {
+          type: 'onSelfSave',
+          method: 'extractTextToLocale',
+        },
+      ],
     });
   }, []);
 
@@ -76,7 +82,7 @@ export const InternalTabBar: React.FC = (props) => {
                 key={`tab_${schema['x-uid']}`}
                 title={
                   <>
-                    {compile(cp.title)}
+                    {t(compile(cp.title))}
                     <SchemaComponent schema={schema} name={name} />
                   </>
                 }

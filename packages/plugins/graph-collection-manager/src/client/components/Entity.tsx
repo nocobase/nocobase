@@ -1,33 +1,21 @@
 import { DeleteOutlined, DownOutlined, EditOutlined, UpOutlined } from '@ant-design/icons';
-import '@antv/x6-react-shape';
 import { uid } from '@formily/shared';
+import { css } from '@emotion/css';
 import {
-  Action,
-  Checkbox,
-  collection,
   CollectionCategroriesContext,
-  CollectionField,
   CollectionProvider,
-  css,
-  cx,
-  Form,
-  FormItem,
-  Formula,
-  Grid,
-  Input,
-  InputNumber,
-  Radio,
-  ResourceActionProvider,
   SchemaComponent,
   SchemaComponentProvider,
   Select,
+  collection,
   useCollectionManager,
   useCompile,
   useCurrentAppInfo,
   useRecord,
 } from '@nocobase/client';
-import { lodash } from '@nocobase/utils/client';
-import { Badge, Dropdown, Popover, Tag } from 'antd';
+import lodash from 'lodash';
+import { SchemaOptionsContext } from '@formily/react';
+import { Badge, Popover, Tag } from 'antd';
 import React, { useContext, useRef, useState } from 'react';
 import {
   useAsyncDataSource,
@@ -37,7 +25,7 @@ import {
   useUpdateCollectionActionAndRefreshCM,
   useValuesFromRecord,
 } from '../action-hooks';
-import { collectiionPopoverClass, entityContainer, headClass, tableBtnClass, tableNameClass } from '../style';
+import useStyles from '../style';
 import { getPopupContainer, useGCMTranslation } from '../utils';
 import { AddFieldAction } from './AddFieldAction';
 import { CollectionNodeProvder } from './CollectionNodeProvder';
@@ -47,169 +35,158 @@ import { FieldSummary } from './FieldSummary';
 import { OverrideFieldAction } from './OverrideFieldAction';
 import { ViewFieldAction } from './ViewFieldAction';
 
-const Entity: React.FC<{
-  node?: Node | any;
-  setTargetNode: Function | any;
-  targetGraph: any;
-}> = (props) => {
-  const { node, setTargetNode, targetGraph } = props;
+const OperationButton: any = React.memo((props: any) => {
+  const { property, loadCollections, collectionData, setTargetNode, node, handelOpenPorts, title, name } = props;
+  const isInheritField = !(property.collectionName !== name);
+  const options = useContext(SchemaOptionsContext);
   const {
-    store: {
-      data: { title, name, item, attrs, select },
-    },
-    id,
-  } = node;
-  const database = useCurrentAppInfo();
-  const collectionData = useRef();
-  const categoryData = useContext(CollectionCategroriesContext);
-  collectionData.current = { ...item, title, inherits: item.inherits && new Proxy(item.inherits, {}) };
-  const { category } = item;
-  const compile = useCompile();
-  const loadCollections = async (field: any) => {
-    return targetGraph.collections?.map((collection: any) => ({
-      label: compile(collection.title),
-      value: collection.name,
-    }));
-  };
-  const loadCategories = async () => {
-    return categoryData?.data.map((item: any) => ({
-      label: compile(item.name),
-      value: item.id,
-    }));
-  };
-  const portsProps = {
-    targetGraph,
-    collectionData,
-    setTargetNode,
-    node,
-    loadCollections,
-  };
-  return (
-    <div
-      className={cx(entityContainer)}
-      style={{ boxShadow: attrs?.boxShadow, border: select ? '2px dashed #f5a20a' : 0 }}
-    >
-      {category.map((v, index) => {
-        return (
-          <Badge.Ribbon
-            color={v.color}
-            style={{ width: '103%', height: '3px', marginTop: index * 5 - 8, borderRadius: 0 }}
-            placement="start"
-          />
-        );
-      })}
-      <div
-        className={headClass}
-        style={{ background: attrs?.hightLight ? '#1890ff' : null, paddingTop: category.length * 3 }}
-      >
-        <span className={tableNameClass}>{compile(title)}</span>
-
-        <div className={tableBtnClass}>
-          <SchemaComponentProvider>
-            <CollectionNodeProvder setTargetNode={setTargetNode} node={node}>
-              <CollectionProvider collection={collection}>
-                <SchemaComponent
-                  scope={{
-                    useUpdateCollectionActionAndRefreshCM,
-                    useCancelAction,
-                    loadCollections,
-                    loadCategories,
-                    useAsyncDataSource,
-                    Action,
-                    DeleteOutlined,
-                    enableInherits: database?.dialect === 'postgres',
-                  }}
-                  components={{
-                    Action,
-                    EditOutlined,
-                    FormItem,
-                    CollectionField,
-                    Input,
-                    Form,
-                    Select,
-                    EditCollectionAction,
-                    Checkbox,
-                  }}
-                  schema={{
-                    type: 'object',
-                    properties: {
-                      update: {
-                        type: 'void',
-                        title: '{{ t("Edit") }}',
-                        'x-component': 'EditCollectionAction',
-                        'x-component-props': {
-                          type: 'primary',
-                          item: collectionData.current,
-                        },
-                      },
-                      delete: {
-                        type: 'void',
-                        'x-action': 'destroy',
-                        'x-component': 'Action',
-                        'x-component-props': {
-                          component: DeleteOutlined,
-                          icon: 'DeleteOutlined',
-                          className: css`
-                            background-color: rgb(255 236 232);
-                            border-color: transparent;
-                            color: #e31c1c;
-                            height: 20px;
-                            padding: 5px;
-                            &:hover {
-                              background-color: rgb(253 205 197);
-                            }
-                          `,
-
-                          confirm: {
-                            title: "{{t('Delete record')}}",
-                            getContainer: getPopupContainer,
-                            collectionConten: "{{t('Are you sure you want to delete it?')}}",
-                          },
-                          useAction: () => useDestroyActionAndRefreshCM({ name, id }),
-                        },
-                      },
-                    },
-                  }}
-                />
-              </CollectionProvider>
-            </CollectionNodeProvder>
-          </SchemaComponentProvider>
-        </div>
-      </div>
-
-      <PortsCom {...portsProps} />
-    </div>
-  );
-};
-
-const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, node, loadCollections }) => {
-  const {
-    store: {
-      data: { title, name, item, ports, data, sourcePort, associated, targetPort },
-    },
-  } = node;
-  const [collapse, setCollapse] = useState(false);
-  const { t } = useGCMTranslation();
-  const compile = useCompile();
-  const database = useCurrentAppInfo();
-  const portsData = lodash.groupBy(ports.items, (v) => {
-    if (
-      v.isForeignKey ||
-      v.primaryKey ||
-      ['obo', 'oho', 'o2o', 'o2m', 'm2o', 'm2m', 'linkTo', 'id'].includes(v.interface)
-    ) {
-      return 'initPorts';
-    } else {
-      return 'morePorts';
-    }
-  });
+    data: { database },
+  } = useCurrentAppInfo();
   const useNewId = (prefix) => {
     return `${prefix || ''}${uid()}`;
   };
-  const CollectionConten = (data) => {
+  // 获取当前字段列表
+  const useCurrentFields = () => {
+    const record = useRecord();
+    const { getCollectionFields } = useCollectionManager();
+    const fields = getCollectionFields(record.collectionName || record.name) as any[];
+    return fields;
+  };
+  return (
+    <div className="field-operator">
+      <SchemaComponentProvider
+        components={{
+          Select: (props) => <Select popupMatchSelectWidth={false} {...props} getPopupContainer={getPopupContainer} />,
+          FieldSummary,
+          AddFieldAction,
+          OverrideFieldAction,
+          ViewFieldAction,
+          EditFieldAction,
+          ...options.components,
+        }}
+        scope={{
+          useAsyncDataSource,
+          loadCollections,
+          useCancelAction,
+          useNewId,
+          useCurrentFields,
+          useValuesFromRecord,
+          useUpdateCollectionActionAndRefreshCM,
+          isInheritField,
+          ...options.scope,
+        }}
+      >
+        <CollectionNodeProvder
+          record={collectionData.current}
+          setTargetNode={setTargetNode}
+          node={node}
+          handelOpenPorts={() => handelOpenPorts(true)}
+        >
+          <SchemaComponent
+            scope={useCancelAction}
+            schema={{
+              type: 'object',
+              properties: {
+                create: {
+                  type: 'void',
+                  'x-action': 'create',
+                  'x-component': 'AddFieldAction',
+                  'x-visible': '{{isInheritField}}',
+                  'x-component-props': {
+                    item: {
+                      ...property,
+                      title,
+                    },
+                    database,
+                  },
+                },
+                update: {
+                  type: 'void',
+                  'x-action': 'update',
+                  'x-component': 'EditFieldAction',
+                  'x-visible': '{{isInheritField}}',
+                  'x-component-props': {
+                    item: {
+                      ...property,
+                      title,
+                      __parent: collectionData.current,
+                    },
+                  },
+                },
+                delete: {
+                  type: 'void',
+                  'x-action': 'destroy',
+                  'x-component': 'Action',
+                  'x-visible': '{{isInheritField}}',
+                  'x-component-props': {
+                    component: DeleteOutlined,
+                    icon: 'DeleteOutlined',
+                    className: 'btn-del',
+                    confirm: {
+                      title: "{{t('Delete record')}}",
+                      getContainer: getPopupContainer,
+                      collectionConten: "{{t('Are you sure you want to delete it?')}}",
+                    },
+                    useAction: () =>
+                      useDestroyFieldActionAndRefreshCM({
+                        collectionName: property.collectionName,
+                        name: property.name,
+                      }),
+                  },
+                },
+                override: {
+                  type: 'void',
+                  'x-action': 'create',
+                  'x-visible': '{{!isInheritField}}',
+                  'x-component': 'OverrideFieldAction',
+                  'x-component-props': {
+                    icon: 'ReconciliationOutlined',
+                    item: {
+                      ...property,
+                      title,
+                      __parent: collectionData.current,
+                      targetCollection: name,
+                    },
+                  },
+                },
+                view: {
+                  type: 'void',
+                  'x-action': 'view',
+                  'x-visible': '{{!isInheritField}}',
+                  'x-component': 'ViewFieldAction',
+                  'x-component-props': {
+                    icon: 'ReconciliationOutlined',
+                    item: {
+                      ...property,
+                      title,
+                      __parent: collectionData.current,
+                    },
+                  },
+                },
+              },
+            }}
+          />
+        </CollectionNodeProvder>
+      </SchemaComponentProvider>
+    </div>
+  );
+});
+
+const PopoverContent = React.memo((props: any) => {
+  const { property, node, ...other } = props;
+  const {
+    store: {
+      data: { title, name, sourcePort, associated, targetPort },
+    },
+  } = node;
+  const compile = useCompile();
+  const { styles } = useStyles();
+  const { getInterface } = useCollectionManager();
+  const [isHovered, setIsHovered] = useState(false);
+  const CollectionConten = React.useCallback((data) => {
     const { type, name, primaryKey, allowNull, autoIncrement } = data;
     return (
-      <div className={cx(collectiionPopoverClass)}>
+      <div className={styles.collectionPopoverClass}>
         <div className="field-content">
           <div>
             <span>name</span>: <span className="field-type">{name}</span>
@@ -225,6 +202,12 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
         </p>
       </div>
     );
+  }, []);
+  const operatioBtnProps = {
+    title,
+    name,
+    node,
+    ...other,
   };
   const typeColor = (v) => {
     if (v.isForeignKey || v.primaryKey || v.interface === 'id') {
@@ -233,159 +216,64 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
       return 'orange';
     }
   };
-
-  const OperationButton = ({ property }) => {
-    const isInheritField = !(property.collectionName !== name);
-    return (
-      <div className="field-operator">
-        <SchemaComponentProvider
-          components={{
-            FormItem,
-            CollectionField,
-            Input,
-            Form,
-            ResourceActionProvider,
-            Select: (props) => (
-              <Select popupMatchSelectWidth={false} {...props} getPopupContainer={getPopupContainer} />
-            ),
-            Checkbox,
-            Radio,
-            InputNumber,
-            Grid,
-            FieldSummary,
-            Action,
-            EditOutlined,
-            DeleteOutlined,
-            AddFieldAction,
-            OverrideFieldAction,
-            ViewFieldAction,
-            Dropdown,
-            Formula,
-          }}
-          scope={{
-            useAsyncDataSource,
-            loadCollections,
-            useCancelAction,
-            useNewId,
-            useCurrentFields,
-            useValuesFromRecord,
-            useUpdateCollectionActionAndRefreshCM,
-            isInheritField,
-          }}
-        >
-          <CollectionNodeProvder
-            record={collectionData.current}
-            setTargetNode={setTargetNode}
-            node={node}
-            handelOpenPorts={() => handelOpenPorts(true)}
-          >
-            <SchemaComponent
-              scope={useCancelAction}
-              schema={{
-                type: 'object',
-                properties: {
-                  create: {
-                    type: 'void',
-                    'x-action': 'create',
-                    'x-component': 'AddFieldAction',
-                    'x-visible': '{{isInheritField}}',
-                    'x-component-props': {
-                      item: {
-                        ...property,
-                        title,
-                      },
-                      database,
-                    },
-                  },
-                  update: {
-                    type: 'void',
-                    'x-action': 'update',
-                    'x-component': EditFieldAction,
-                    'x-visible': '{{isInheritField}}',
-                    'x-component-props': {
-                      item: {
-                        ...property,
-                        title,
-                        __parent: collectionData.current,
-                      },
-                    },
-                  },
-                  delete: {
-                    type: 'void',
-                    'x-action': 'destroy',
-                    'x-component': 'Action',
-                    'x-visible': '{{isInheritField}}',
-                    'x-component-props': {
-                      component: DeleteOutlined,
-                      icon: 'DeleteOutlined',
-                      className: css`
-                        background-color: rgb(255 236 232);
-                        border-color: transparent;
-                        color: #e31c1c;
-                        height: 20px;
-                        width: 20px;
-                        padding: 5px;
-                        &:hover {
-                          background-color: rgb(253 205 197);
-                        }
-                      `,
-                      confirm: {
-                        title: "{{t('Delete record')}}",
-                        getContainer: getPopupContainer,
-                        collectionConten: "{{t('Are you sure you want to delete it?')}}",
-                      },
-                      useAction: () =>
-                        useDestroyFieldActionAndRefreshCM({
-                          collectionName: property.collectionName,
-                          name: property.name,
-                        }),
-                    },
-                  },
-                  override: {
-                    type: 'void',
-                    'x-action': 'create',
-                    'x-visible': '{{!isInheritField}}',
-                    'x-component': 'OverrideFieldAction',
-                    'x-component-props': {
-                      icon: 'ReconciliationOutlined',
-                      item: {
-                        ...property,
-                        title,
-                        __parent: collectionData.current,
-                        targetCollection: name,
-                      },
-                    },
-                  },
-                  view: {
-                    type: 'void',
-                    'x-action': 'view',
-                    'x-visible': '{{!isInheritField}}',
-                    'x-component': 'ViewFieldAction',
-                    'x-component-props': {
-                      icon: 'ReconciliationOutlined',
-                      item: {
-                        ...property,
-                        title,
-                        __parent: collectionData.current,
-                      },
-                    },
-                  },
-                },
-              }}
-            />
-          </CollectionNodeProvder>
-        </SchemaComponentProvider>
+  return (
+    <Popover
+      content={CollectionConten(property)}
+      getPopupContainer={getPopupContainer}
+      mouseLeaveDelay={0}
+      zIndex={100}
+      title={
+        <div>
+          {compile(property.uiSchema?.title)}
+          <span style={{ color: '#ffa940', float: 'right' }}>{compile(getInterface(property.interface)?.title)}</span>
+        </div>
+      }
+      key={property.id}
+      placement="right"
+    >
+      <div
+        className="body-item"
+        key={property.id}
+        id={property.id}
+        style={{
+          background:
+            targetPort || sourcePort === property.id || associated?.includes(property.name) ? '#e6f7ff' : null,
+        }}
+        onMouseEnter={() => {
+          setIsHovered(true);
+        }}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <div className="name">
+          <Badge color={typeColor(property)} />
+          {compile(property.uiSchema?.title)}
+        </div>
+        <div className={`type  field_type`}>{compile(getInterface(property.interface)?.title)}</div>
+        {isHovered && <OperationButton property={property} {...operatioBtnProps} />}
       </div>
-    );
-  };
-  const { getInterface } = useCollectionManager();
-  // 获取当前字段列表
-  const useCurrentFields = () => {
-    const record = useRecord();
-    const { getCollectionFields } = useCollectionManager();
-    const fields = getCollectionFields(record.collectionName || record.name) as any[];
-    return fields;
-  };
+    </Popover>
+  );
+});
+
+const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, node, loadCollections }) => {
+  const {
+    store: {
+      data: { item, ports, data },
+    },
+  } = node;
+  const [collapse, setCollapse] = useState(false);
+  const { t } = useGCMTranslation();
+  const portsData = lodash.groupBy(ports.items, (v) => {
+    if (
+      v.isForeignKey ||
+      v.primaryKey ||
+      ['obo', 'oho', 'o2o', 'o2m', 'm2o', 'm2m', 'linkTo', 'id'].includes(v.interface)
+    ) {
+      return 'initPorts';
+    } else {
+      return 'morePorts';
+    }
+  });
   const handelOpenPorts = (isCollapse?) => {
     targetGraph.getCellById(item.name)?.toFront();
     setCollapse(isCollapse);
@@ -397,89 +285,22 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
     targetGraph.getCellById(item.name).setData({ collapse: true });
   };
   const isCollapse = collapse && data?.collapse;
+  const popoverProps = {
+    collectionData,
+    setTargetNode,
+    loadCollections,
+    handelOpenPorts,
+    node,
+  };
   return (
     <div className="body">
       {portsData['initPorts']?.map((property) => {
-        return (
-          property.uiSchema && (
-            <Popover
-              content={CollectionConten(property)}
-              getPopupContainer={getPopupContainer}
-              mouseLeaveDelay={0}
-              zIndex={100}
-              title={
-                <div>
-                  {compile(property.uiSchema?.title)}
-                  <span style={{ color: '#ffa940', float: 'right' }}>
-                    {compile(getInterface(property.interface)?.title)}
-                  </span>
-                </div>
-              }
-              key={property.id}
-              placement="right"
-            >
-              <div
-                className="body-item"
-                key={property.id}
-                id={property.id}
-                style={{
-                  background:
-                    targetPort || sourcePort === property.id || associated?.includes(property.name) ? '#e6f7ff' : null,
-                }}
-              >
-                <div className="name">
-                  <Badge color={typeColor(property)} />
-                  {compile(property.uiSchema?.title)}
-                </div>
-                <div className={`type  field_type`}>{compile(getInterface(property.interface)?.title)}</div>
-                <OperationButton property={property} />
-              </div>
-            </Popover>
-          )
-        );
+        return property.uiSchema && <PopoverContent {...popoverProps} property={property} key={property.id} />;
       })}
       <div className="morePorts">
         {isCollapse &&
           portsData['morePorts']?.map((property) => {
-            return (
-              property.uiSchema && (
-                <Popover
-                  content={CollectionConten(property)}
-                  getPopupContainer={getPopupContainer}
-                  mouseLeaveDelay={0}
-                  zIndex={100}
-                  title={
-                    <div>
-                      {compile(property.uiSchema?.title)}
-                      <span style={{ color: '#ffa940', float: 'right' }}>
-                        {compile(getInterface(property.interface)?.title)}
-                      </span>
-                    </div>
-                  }
-                  key={property.id}
-                  placement="right"
-                >
-                  <div
-                    className="body-item"
-                    key={property.id}
-                    id={property.id}
-                    style={{
-                      background:
-                        targetPort || sourcePort === property.id || associated?.includes(property.name)
-                          ? '#e6f7ff'
-                          : null,
-                    }}
-                  >
-                    <div className="name">
-                      <Badge color="green" />
-                      {compile(property.uiSchema?.title)}
-                    </div>
-                    <div className={`type field_type`}>{compile(getInterface(property.interface)?.title)}</div>
-                    <OperationButton property={property} />
-                  </div>
-                </Popover>
-              )
-            );
+            return property.uiSchema && <PopoverContent {...popoverProps} property={property} key={property.id} />;
           })}
       </div>
       <a
@@ -506,5 +327,128 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
     </div>
   );
 });
+
+const Entity: React.FC<{
+  node?: Node | any;
+  setTargetNode: Function | any;
+  targetGraph: any;
+}> = (props) => {
+  const { styles } = useStyles();
+  const options = useContext(SchemaOptionsContext);
+  const { node, setTargetNode, targetGraph } = props;
+  const {
+    store: {
+      data: { title, name, item, attrs, select },
+    },
+    id,
+  } = node;
+  const {
+    data: { database },
+  } = useCurrentAppInfo();
+  const collectionData = useRef();
+  const categoryData = useContext(CollectionCategroriesContext);
+  collectionData.current = { ...item, title, inherits: item.inherits && new Proxy(item.inherits, {}) };
+  const { category } = item;
+  const compile = useCompile();
+  const loadCollections = async (field: any) => {
+    return targetGraph.collections?.map((collection: any) => ({
+      label: compile(collection.title),
+      value: collection.name,
+    }));
+  };
+  const loadCategories = async () => {
+    return categoryData?.data.map((item: any) => ({
+      label: compile(item.name),
+      value: item.id,
+    }));
+  };
+  const portsProps = {
+    targetGraph,
+    collectionData,
+    setTargetNode,
+    node,
+    loadCollections,
+  };
+  return (
+    <div
+      className={styles.entityContainer}
+      style={{ boxShadow: attrs?.boxShadow, border: select ? '2px dashed #f5a20a' : 0 }}
+    >
+      {category.map((v, index) => {
+        return (
+          <Badge.Ribbon
+            key={index}
+            color={v.color}
+            style={{ width: '103%', height: '3px', marginTop: index * 5 - 8, borderRadius: 0 }}
+            placement="start"
+          />
+        );
+      })}
+      <div
+        className={styles.headClass}
+        style={{ background: attrs?.hightLight ? '#1890ff' : null, paddingTop: category.length * 3 }}
+      >
+        <span className={styles.tableNameClass}>{compile(title)}</span>
+
+        <div className={styles.tableBtnClass}>
+          <SchemaComponentProvider>
+            <CollectionNodeProvder setTargetNode={setTargetNode} node={node}>
+              <CollectionProvider collection={collection}>
+                <SchemaComponent
+                  scope={{
+                    useUpdateCollectionActionAndRefreshCM,
+                    useCancelAction,
+                    loadCollections,
+                    loadCategories,
+                    useAsyncDataSource,
+                    enableInherits: database?.dialect === 'postgres',
+                  }}
+                  components={{
+                    EditOutlined,
+                    EditCollectionAction,
+                    ...options.components,
+                  }}
+                  schema={{
+                    type: 'object',
+                    properties: {
+                      update: {
+                        type: 'void',
+                        title: '{{ t("Edit") }}',
+                        'x-component': 'EditCollectionAction',
+                        'x-component-props': {
+                          type: 'primary',
+                          item: collectionData.current,
+                          className: 'btn-edit-in-head',
+                        },
+                      },
+                      delete: {
+                        type: 'void',
+                        'x-action': 'destroy',
+                        'x-component': 'Action',
+                        'x-component-props': {
+                          component: DeleteOutlined,
+                          icon: 'DeleteOutlined',
+                          className: 'btn-del',
+
+                          confirm: {
+                            title: "{{t('Delete record')}}",
+                            getContainer: getPopupContainer,
+                            collectionConten: "{{t('Are you sure you want to delete it?')}}",
+                          },
+                          useAction: () => useDestroyActionAndRefreshCM({ name, id }),
+                        },
+                      },
+                    },
+                  }}
+                />
+              </CollectionProvider>
+            </CollectionNodeProvder>
+          </SchemaComponentProvider>
+        </div>
+      </div>
+      <PortsCom {...portsProps} />
+    </div>
+  );
+};
 
 export default Entity;

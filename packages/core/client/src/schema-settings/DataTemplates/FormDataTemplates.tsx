@@ -7,17 +7,13 @@ import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { mergeFilter } from '../../block-provider';
 import { useCollectionManager } from '../../collection-manager';
-import {
-  AssociationSelect,
-  SchemaComponent,
-  SchemaComponentContext,
-  removeNullCondition,
-} from '../../schema-component';
+import { SchemaComponent, SchemaComponentContext, removeNullCondition } from '../../schema-component';
 import { ITemplate } from '../../schema-component/antd/form-v2/Templates';
 import { AsDefaultTemplate } from './components/AsDefaultTemplate';
 import { ArrayCollapse } from './components/DataTemplateTitle';
-import { Designer, getSelectedIdFilter } from './components/Designer';
+import { getSelectedIdFilter } from './components/Designer';
 import { useCollectionState } from './hooks/useCollectionState';
+import { useSyncFromForm } from './utils';
 
 const Tree = connect(
   AntdTree,
@@ -27,23 +23,44 @@ const Tree = connect(
   }),
 );
 
+export const compatibleDataId = (data, config?) => {
+  return data?.map((v) => {
+    const { dataId, ...others } = v;
+    const obj = { ...others };
+    if (dataId) {
+      obj.dataScope = { $and: [{ id: { $eq: dataId } }] };
+      obj.titleField = obj?.titleField || config?.[v.collection]?.['titleField'] || 'id';
+    }
+    return obj;
+  });
+};
+
 export const FormDataTemplates = observer(
   (props: any) => {
     const { useProps, formSchema, designerCtx } = props;
     const { defaultValues, collectionName } = useProps();
-    const { collectionList, getEnableFieldTree, getOnLoadData, getOnCheck } = useCollectionState(collectionName);
+    const {
+      collectionList,
+      getEnableFieldTree,
+      getOnLoadData,
+      getOnCheck,
+      getScopeDataSource,
+      useTitleFieldDataSource,
+    } = useCollectionState(collectionName);
     const { getCollection, getCollectionField } = useCollectionManager();
     const { t } = useTranslation();
-
     // 不要在后面的数组中依赖 defaultValues，否则会因为 defaultValues 的变化导致 activeData 响应性丢失
     const activeData = useMemo<ITemplate>(
       () =>
         observable(
-          defaultValues || { items: [], display: true, config: { [collectionName]: { titleField: '', filter: {} } } },
+          { ...defaultValues, items: compatibleDataId(defaultValues?.items || [], defaultValues?.config) } || {
+            items: [],
+            display: true,
+            config: { [collectionName]: { titleField: '', filter: {} } },
+          },
         ),
       [],
     );
-
     const getTargetField = (collectionName: string) => {
       const collection = getCollection(collectionName);
       return getCollectionField(
@@ -63,8 +80,8 @@ export const FormDataTemplates = observer(
       const filter = activeData.config?.[collectionName]?.filter;
       return _.isEmpty(filter) ? {} : removeNullCondition(mergeFilter([filter, getSelectedIdFilter(value)], '$or'));
     };
-
     const components = useMemo(() => ({ ArrayCollapse }), []);
+
     const scope = useMemo(
       () => ({
         getEnableFieldTree,
@@ -75,6 +92,8 @@ export const FormDataTemplates = observer(
         getOnLoadData,
         getOnCheck,
         collectionName,
+        getScopeDataSource,
+        useTitleFieldDataSource,
       }),
       [],
     );
@@ -117,48 +136,48 @@ export const FormDataTemplates = observer(
                         options: collectionList,
                       },
                     },
-                    dataId: {
-                      type: 'number',
-                      title: '{{ t("Template Data") }}',
-                      required: true,
-                      description: t('Select an existing piece of data as the initialization data for the form'),
-                      'x-designer': Designer,
-                      'x-designer-props': {
-                        formSchema,
-                        data: activeData,
-                      },
+                    dataScope: {
+                      type: 'object',
+                      title: '{{ t("Assign  data scope for the template") }}',
                       'x-decorator': 'FormItem',
-                      'x-component': AssociationSelect,
-                      'x-component-props': {
-                        service: {
-                          resource: '{{ $record.collection || collectionName }}',
-                          params: {
-                            filter: '{{ getFilter($self.componentProps.service.resource, $self.value) }}',
-                          },
+                      'x-component': 'Filter',
+                      'x-decorator-props': {
+                        style: {
+                          marginBottom: '0px',
                         },
-                        action: 'list',
-                        multiple: false,
-                        objectValue: false,
-                        manual: false,
-                        targetField: '{{ getTargetField($self.componentProps.service.resource) }}',
-                        mapOptions: getMapOptions(),
-                        fieldNames: '{{ getFieldNames($self.componentProps.service.resource) }}',
                       },
+                      required: true,
                       'x-reactions': [
                         {
                           dependencies: ['.collection'],
                           fulfill: {
                             state: {
                               disabled: '{{ !$deps[0] }}',
-                              componentProps: {
-                                service: {
-                                  resource: '{{ getResource($deps[0], $self) }}',
-                                },
-                              },
+                            },
+                            schema: {
+                              enum: '{{ getScopeDataSource($deps[0]) }}',
                             },
                           },
                         },
                       ],
+                    },
+                    titleField: {
+                      type: 'string',
+                      'x-decorator': 'FormItem',
+                      title: '{{ t("Title field") }}',
+                      'x-component': 'Select',
+                      required: true,
+                      'x-reactions': '{{useTitleFieldDataSource}}',
+                    },
+                    syncFromForm: {
+                      type: 'void',
+                      title: '{{ t("Sync from form fields") }}',
+                      'x-component': 'Action.Link',
+                      'x-component-props': {
+                        type: 'primary',
+                        style: { float: 'right', position: 'relative', zIndex: 1200 },
+                        useAction: () => useSyncFromForm(formSchema),
+                      },
                     },
                     fields: {
                       type: 'array',
@@ -244,15 +263,6 @@ export const FormDataTemplates = observer(
 
 export function getLabel(titleField) {
   return titleField || 'label';
-}
-
-function getMapOptions() {
-  return (option) => {
-    if (option?.id === undefined) {
-      return null;
-    }
-    return option;
-  };
 }
 
 function getResource(resource: string, field: Field) {

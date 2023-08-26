@@ -3,7 +3,7 @@ import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import crypto from 'crypto';
 import EventEmitter from 'events';
 import fsPromises from 'fs/promises';
-import { lodash } from '@nocobase/utils';
+import lodash from 'lodash';
 import * as os from 'os';
 import path from 'path';
 import { CollectionGroupManager } from './collection-group-manager';
@@ -42,7 +42,7 @@ abstract class AppMigrator extends EventEmitter {
   async getAppPlugins() {
     const plugins = await this.app.db.getCollection('applicationPlugins').repository.find();
 
-    return lodash.uniq(['core', ...this.app.pm.plugins.keys(), ...plugins.map((plugin) => plugin.get('name'))]);
+    return lodash.uniq(['core', ...this.app.pm.getAliases(), ...plugins.map((plugin) => plugin.get('name'))]);
   }
 
   async getAppPluginCollectionGroups() {

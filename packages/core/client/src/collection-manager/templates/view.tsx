@@ -1,7 +1,7 @@
-import { getConfigurableProperties } from './properties';
-import { ICollectionTemplate } from './types';
 import { PreviewFields } from './components/PreviewFields';
 import { PreviewTable } from './components/PreviewTable';
+import { getConfigurableProperties } from './properties';
+import { ICollectionTemplate } from './types';
 
 export const view: ICollectionTemplate = {
   name: 'view',
@@ -91,6 +91,13 @@ export const view: ICollectionTemplate = {
         },
       },
     },
+    writableView: {
+      type: 'boolean',
+      'x-content': '{{t("Allow add new, update and delete actions")}}',
+      'x-decorator': 'FormItem',
+      'x-component': 'Checkbox',
+      default: false,
+    },
     sources: {
       type: 'array',
       title: '{{ t("Source collections") }}',
@@ -128,6 +135,7 @@ export const view: ICollectionTemplate = {
         },
       },
     },
+
     ...getConfigurableProperties('category'),
   },
 };

@@ -1,7 +1,7 @@
 import { Database } from '@nocobase/database';
 import { Application } from '@nocobase/server';
 import { mockServer } from '@nocobase/test';
-import { dayjs } from '@nocobase/utils';
+import dayjs from 'dayjs';
 import Plugin, { SequenceField } from '..';
 
 describe('sequence field', () => {
@@ -23,7 +23,7 @@ describe('sequence field', () => {
   });
 
   afterEach(async () => {
-    await db.close();
+    await app.destroy();
   });
 
   describe('define', () => {

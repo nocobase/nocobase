@@ -31,7 +31,10 @@ export default class Processor {
   jobsMap = new Map<number, JobModel>();
   jobsMapByNodeId: { [key: number]: any } = {};
 
-  constructor(public execution: ExecutionModel, public options: ProcessorOptions) {
+  constructor(
+    public execution: ExecutionModel,
+    public options: ProcessorOptions,
+  ) {
     this.logger = options.plugin.getLogger(execution.workflowId);
   }
 
@@ -63,7 +66,7 @@ export default class Processor {
   }
 
   private async getTransaction() {
-    if (!this.execution.useTransaction) {
+    if (!this.execution.workflow.options?.useTransaction) {
       return;
     }
 
@@ -76,15 +79,15 @@ export default class Processor {
   }
 
   public async prepare() {
+    const { execution } = this;
+    if (!execution.workflow) {
+      execution.workflow = await execution.getWorkflow();
+    }
+
     const transaction = await this.getTransaction();
     this.transaction = transaction;
 
-    const { execution } = this;
-    if (!execution.workflow) {
-      execution.workflow = await execution.getWorkflow({ transaction });
-    }
-
-    const nodes = await execution.workflow.getNodes({ transaction });
+    const nodes = await execution.workflow.getNodes();
 
     this.makeNodes(nodes);
 
@@ -315,7 +318,8 @@ export default class Processor {
     return null;
   }
 
-  public getScope(node?) {
+  public getScope(sourceNodeId: number) {
+    const node = this.nodesMap.get(sourceNodeId);
     const systemFns = {};
     const scope = {
       execution: this.execution,
@@ -326,12 +330,10 @@ export default class Processor {
     }
 
     const $scopes = {};
-    if (node) {
-      for (let n = this.findBranchParentNode(node); n; n = this.findBranchParentNode(n)) {
-        const instruction = this.options.plugin.instructions.get(n.type);
-        if (typeof instruction.getScope === 'function') {
-          $scopes[n.id] = instruction.getScope(n, this.jobsMapByNodeId[n.id], this);
-        }
+    for (let n = this.findBranchParentNode(node); n; n = this.findBranchParentNode(n)) {
+      const instruction = this.options.plugin.instructions.get(n.type);
+      if (typeof instruction.getScope === 'function') {
+        $scopes[n.id] = instruction.getScope(n, this.jobsMapByNodeId[n.id], this);
       }
     }
 
@@ -343,9 +345,9 @@ export default class Processor {
     };
   }
 
-  public getParsedValue(value, node?) {
+  public getParsedValue(value, sourceNodeId: number, additionalScope?: object) {
     const template = parse(value);
-    const scope = this.getScope(node);
+    const scope = Object.assign(this.getScope(sourceNodeId), additionalScope);
     template.parameters.forEach(({ key }) => {
       appendArrayColumn(scope, key);
     });

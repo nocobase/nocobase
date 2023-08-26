@@ -1,8 +1,8 @@
-import { Association, HasOne, Includeable, Model, ModelStatic, Transaction } from 'sequelize';
 import lodash from 'lodash';
+import { Association, HasOne, Includeable, Model, ModelStatic, Op, Transaction } from 'sequelize';
 import Database from '../database';
-import { OptionsParser } from '../options-parser';
 import { appendChildCollectionNameAfterRepositoryFind } from '../listeners/append-child-collection-name-after-repository-find';
+import { OptionsParser } from '../options-parser';
 
 interface EagerLoadingNode {
   model: ModelStatic<any>;
@@ -13,6 +13,7 @@ interface EagerLoadingNode {
   parent?: EagerLoadingNode;
   instances?: Array<Model>;
   order?: any;
+  where?: any;
   inspectInheritAttribute?: boolean;
 }
 
@@ -89,7 +90,10 @@ export class EagerLoadingTree {
           continue;
         }
 
-        const association = eagerLoadingTreeParent.model.associations[include.association];
+        const association = lodash.isString(include.association)
+          ? eagerLoadingTreeParent.model.associations[include.association]
+          : include.association;
+
         const associationType = association.associationType;
 
         const child = buildNode({
@@ -98,6 +102,7 @@ export class EagerLoadingTree {
           rawAttributes: lodash.cloneDeep(include.attributes),
           attributes: lodash.cloneDeep(include.attributes),
           parent: eagerLoadingTreeParent,
+          where: include.where,
           children: [],
         });
 
@@ -150,7 +155,7 @@ export class EagerLoadingTree {
     };
 
     const loadRecursive = async (node, ids) => {
-      const modelPrimaryKey = node.model.primaryKeyAttribute;
+      const modelPrimaryKey = node.model.primaryKeyField || node.model.primaryKeyAttribute;
 
       let instances = [];
 
@@ -177,8 +182,15 @@ export class EagerLoadingTree {
           const foreignKey = association.foreignKey;
           const foreignKeyValues = node.parent.instances.map((instance) => instance.get(association.sourceKey));
 
+          let where: any = { [foreignKey]: foreignKeyValues };
+          if (node.where) {
+            where = {
+              [Op.and]: [where, node.where],
+            };
+          }
+
           const findOptions = {
-            where: { [foreignKey]: foreignKeyValues },
+            where,
             attributes: node.attributes,
             order: orderOption(association),
             transaction,
@@ -275,7 +287,8 @@ export class EagerLoadingTree {
               }
 
               if (associationType == 'HasOne') {
-                parentInstance.setDataValue(association.as, instance);
+                const key = association.options.realAs || association.as;
+                parentInstance[key] = parentInstance.dataValues[key] = instance;
               }
             }
           }
@@ -341,6 +354,11 @@ export class EagerLoadingTree {
           data: node.instances,
           dataCollection: this.db.modelCollection.get(node.model),
         });
+      }
+
+      // skip pivot attributes
+      if (node.association?.as == '_pivot_') {
+        return;
       }
 
       // if no attributes are specified, return empty fields

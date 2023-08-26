@@ -12,6 +12,7 @@ import React, { useMemo } from 'react';
 import { Outlet, useParams } from 'react-router-dom';
 import { MobileCore } from '../core';
 import { useInterfaceContext } from './InterfaceProvider';
+import { OpenInNewTab } from './OpenInNewTab';
 
 const commonCSSVariables = css`
   --nb-spacing: 14px;
@@ -43,11 +44,12 @@ const commonDesignerCSS = css`
       line-height: 16px;
       pointer-events: all;
       .ant-space-item {
-        background-color: #f18b62;
+        background-color: var(--colorSettings);
         color: #fff;
         line-height: 16px;
         width: 16px;
         padding-left: 1px;
+        align-self: stretch;
       }
     }
   }
@@ -91,6 +93,7 @@ const MApplication: React.FC = (props) => {
   return (
     <Provider>
       <MobileCore>
+        <OpenInNewTab />
         <ActionContextProvider modalProps={modalProps as ModalProps} drawerProps={drawerProps}>
           <div
             className={cx(

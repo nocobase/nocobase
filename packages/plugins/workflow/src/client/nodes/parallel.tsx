@@ -4,10 +4,10 @@ import { Button, Tooltip } from 'antd';
 import React, { useState } from 'react';
 import { NodeDefaultView } from '.';
 import { Branch } from '../Branch';
-import { RadioWithTooltip } from '../components/RadioWithTooltip';
 import { useFlowContext } from '../FlowContext';
-import { lang, NAMESPACE } from '../locale';
-import { branchBlockClass, nodeSubtreeClass } from '../style';
+import { RadioWithTooltip } from '../components/RadioWithTooltip';
+import { NAMESPACE, lang } from '../locale';
+import useStyles from '../style';
 
 export default {
   title: `{{t("Parallel branch", { ns: "${NAMESPACE}" })}}`,
@@ -44,6 +44,7 @@ export default {
   },
   view: {},
   component: function Component({ data }) {
+    const { styles } = useStyles();
     const {
       id,
       config: { mode },
@@ -64,8 +65,8 @@ export default {
 
     return (
       <NodeDefaultView data={data}>
-        <div className={cx(nodeSubtreeClass)}>
-          <div className={cx(branchBlockClass)}>
+        <div className={cx(styles.nodeSubtreeClass)}>
+          <div className={cx(styles.branchBlockClass)}>
             {branches.map((branch) => (
               <Branch key={branch.id} from={data} entry={branch} branchIndex={branch.branchIndex} />
             ))}

@@ -1,4 +1,4 @@
-import { Plugin, PluginManager } from '@nocobase/server';
+import { AppSupervisor, Plugin, PluginManager } from '@nocobase/server';
 import { mockServer } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
 import { PluginMultiAppManager } from '../server';
@@ -22,16 +22,20 @@ describe('test with start', () => {
       }
     }
 
-    const mockGetPluginByName = jest.fn();
-    mockGetPluginByName.mockReturnValue(TestPlugin);
-    PluginManager.resolvePlugin = mockGetPluginByName;
+    const resolvePlugin = PluginManager.resolvePlugin;
+
+    PluginManager.resolvePlugin = (name) => {
+      if (name === 'test-package') {
+        return TestPlugin;
+      }
+      return resolvePlugin(name);
+    };
 
     const app = mockServer();
-    await app.cleanDb();
 
     app.plugin(PluginMultiAppManager);
 
-    await app.loadAndInstall();
+    await app.loadAndInstall({ clean: true });
     await app.start();
 
     const db = app.db;
@@ -45,22 +49,25 @@ describe('test with start', () => {
           plugins: ['test-package'],
         },
       },
+      context: {
+        waitSubAppInstall: true,
+      },
     });
 
     expect(loadFn).toHaveBeenCalled();
     expect(installFn).toHaveBeenCalledTimes(1);
 
-    const subApp = await app.appManager.getApplication(name);
+    const subApp = await AppSupervisor.getInstance().getApp(name);
     await subApp.destroy();
     await app.destroy();
+    PluginManager.resolvePlugin = resolvePlugin;
   });
 
   it('should install into difference database', async () => {
     const app = mockServer();
-    await app.cleanDb();
     app.plugin(PluginMultiAppManager);
 
-    await app.loadAndInstall();
+    await app.loadAndInstall({ clean: true });
     await app.start();
 
     const db = app.db;
@@ -74,73 +81,12 @@ describe('test with start', () => {
           plugins: ['ui-schema-storage'],
         },
       },
-    });
-    const subApp = await app.appManager.getApplication(name);
-    await subApp.destroy();
-    await app.destroy();
-  });
-
-  it('should lazy load applications', async () => {
-    class TestPlugin extends Plugin {
-      getName(): string {
-        return 'test-package';
-      }
-    }
-
-    const app = mockServer();
-    await app.cleanDb();
-
-    app.plugin(PluginMultiAppManager);
-
-    await app.loadAndInstall();
-    await app.start();
-
-    const db = app.db;
-
-    const mockGetPluginByName = jest.fn();
-    mockGetPluginByName.mockReturnValue(TestPlugin);
-    PluginManager.resolvePlugin = mockGetPluginByName;
-
-    const name = `d_${uid()}`;
-    console.log(name);
-
-    await db.getRepository('applications').create({
-      values: {
-        name,
-        options: {
-          plugins: ['test-package'],
-        },
+      context: {
+        waitSubAppInstall: true,
       },
     });
-
-    expect(app.appManager.applications.get(name)).toBeDefined();
-
-    await app.appManager.applications.get(name).destroy();
-    await app.stop();
-
-    const newApp = mockServer({
-      database: app.db,
-    });
-
-    newApp.plugin(PluginMultiAppManager);
-    await newApp.db.reconnect();
-
-    await newApp.load();
-    await newApp.start();
-
-    expect(await newApp.db.getRepository('applications').count()).toEqual(1);
-    expect(newApp.appManager.applications.get(name)).not.toBeDefined();
-
-    newApp.appManager.setAppSelector(() => {
-      return name;
-    });
-
-    await newApp.agent().resource('test').test();
-    expect(newApp.appManager.applications.get(name)).toBeDefined();
-
-    await newApp.appManager.applications.get(name).destroy();
-
-    await newApp.destroy();
+    const subApp = await AppSupervisor.getInstance().getApp(name);
+    await subApp.destroy();
     await app.destroy();
   });
 });

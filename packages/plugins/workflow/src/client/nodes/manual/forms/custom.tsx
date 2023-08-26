@@ -17,7 +17,8 @@ import {
   useCollectionManager,
   useRecord,
 } from '@nocobase/client';
-import { lodash, merge, uid } from '@nocobase/utils/client';
+import { merge, uid } from '@nocobase/utils/client';
+import lodash from 'lodash';
 import { JOB_STATUS } from '../../../constants';
 import { NAMESPACE, lang } from '../../../locale';
 import { ManualFormType } from '../SchemaConfig';
@@ -39,7 +40,7 @@ function CustomFormBlockProvider(props) {
     [values],
   );
 
-  return (
+  return !userJob.status || values ? (
     <CollectionProvider
       collection={{
         ...props.collection,
@@ -58,7 +59,7 @@ function CustomFormBlockProvider(props) {
         </FormBlockContext.Provider>
       </RecordProvider>
     </CollectionProvider>
-  );
+  ) : null;
 }
 
 function CustomFormBlockInitializer({ insert, ...props }) {
@@ -103,9 +104,6 @@ function CustomFormBlockInitializer({ insert, ...props }) {
                   'x-component': 'ActionBar',
                   'x-component-props': {
                     layout: 'one-column',
-                    style: {
-                      marginTop: '1.5em',
-                    },
                   },
                   'x-initializer': 'AddActionButton',
                   properties: {
@@ -121,8 +119,7 @@ function CustomFormBlockInitializer({ insert, ...props }) {
                         type: 'primary',
                         useAction: '{{ useSubmit }}',
                       },
-                      'x-designer': 'Action.Designer',
-                      'x-action': `${JOB_STATUS.RESOLVED}`,
+                      'x-designer': 'ManualActionDesigner',
                     },
                   },
                 },
@@ -371,7 +368,11 @@ export default {
           type: 'custom',
           title: formBlock['x-component-props']?.title || formKey,
           actions: findSchema(formSchema.properties.actions, (item) => item['x-component'] === 'Action').map(
-            (item) => item['x-decorator-props'].value,
+            (item) => ({
+              status: item['x-decorator-props'].value,
+              values: item['x-action-settings']?.assignedValues?.values,
+              key: item.name,
+            }),
           ),
           collection: formBlock['x-decorator-props'].collection,
         };

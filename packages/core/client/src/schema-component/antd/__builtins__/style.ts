@@ -2,6 +2,7 @@ import type { CSSInterpolation, CSSObject } from '@ant-design/cssinjs';
 import { useStyleRegister } from '@ant-design/cssinjs';
 import { merge } from '@formily/shared';
 import type { ComponentTokenMap, GlobalToken } from 'antd/es/theme/interface';
+import { CustomToken } from '../../../global-theme';
 import { useConfig, usePrefixCls, useToken } from './hooks';
 
 export type OverrideComponent = keyof ComponentTokenMap | string;
@@ -26,7 +27,7 @@ export type TokenWithCommonCls<T> = T & {
 
 export type GenerateStyle<
   ComponentToken extends object = TokenWithCommonCls<GlobalToken>,
-  ReturnType = CSSInterpolation,
+  ReturnType = CSSInterpolation
 > = (token: ComponentToken, options?: any) => ReturnType;
 
 export const genCommonStyle = (token: any, componentPrefixCls: string): CSSObject => {
@@ -58,11 +59,12 @@ export type UseComponentStyleResult = {
   wrapSSR: ReturnType<typeof useStyleRegister>;
   hashId: string;
   componentCls: string;
+  rootPrefixCls: string;
 };
 
 export const genStyleHook = <ComponentName extends OverrideComponent>(
   component: ComponentName,
-  styleFn: (token: TokenWithCommonCls<GlobalToken>, props: any, info: StyleInfo) => CSSInterpolation,
+  styleFn: (token: TokenWithCommonCls<CustomToken>, props: any, info: StyleInfo) => CSSInterpolation,
 ) => {
   return (props?: any): UseComponentStyleResult => {
     const { theme, token, hashId } = useToken();
@@ -73,14 +75,14 @@ export const genStyleHook = <ComponentName extends OverrideComponent>(
     return {
       wrapSSR: useStyleRegister(
         {
-          theme,
+          theme: theme as any,
           token,
           hashId,
           path: ['formily-antd', component, prefixCls, iconPrefixCls],
         },
         () => {
           const componentCls = `.${prefixCls}`;
-          const mergedToken: TokenWithCommonCls<GlobalToken> = merge(token, {
+          const mergedToken: TokenWithCommonCls<CustomToken> = merge(token, {
             componentCls,
             prefixCls,
             iconCls: `.${iconPrefixCls}`,
@@ -98,6 +100,7 @@ export const genStyleHook = <ComponentName extends OverrideComponent>(
       ),
       hashId,
       componentCls: prefixCls,
+      rootPrefixCls,
     };
   };
 };

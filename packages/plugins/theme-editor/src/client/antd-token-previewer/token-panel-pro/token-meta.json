@@ -1,0 +1,1715 @@
+{
+  "boxShadow": {
+    "name": "一级阴影",
+    "nameEn": "Box shadow",
+    "desc": "控制元素阴影样式。",
+    "descEn": "Control the box shadow style of an element.",
+    "type": "string",
+    "source": "alias"
+  },
+  "boxShadowSecondary": {
+    "name": "二级阴影",
+    "nameEn": "Secondary box shadow",
+    "desc": "控制元素二级阴影样式。",
+    "descEn": "Control the secondary box shadow style of an element.",
+    "type": "string",
+    "source": "alias"
+  },
+  "boxShadowTertiary": {
+    "name": "三级阴影",
+    "nameEn": "Tertiary box shadow",
+    "desc": "控制元素三级盒子阴影样式。",
+    "descEn": "Control the tertiary box shadow style of an element.",
+    "type": "string",
+    "source": "alias"
+  },
+  "colorBgContainerDisabled": {
+    "name": "容器禁用态下的背景色",
+    "nameEn": "Disabled container background color",
+    "desc": "控制容器在禁用状态下的背景色。",
+    "descEn": "Control the background color of container in disabled state.",
+    "type": "string",
+    "source": "alias"
+  },
+  "colorBgTextActive": {
+    "name": "文本激活态背景色",
+    "nameEn": "Text active background color",
+    "desc": "控制文本在激活状态下的背景色。",
+    "descEn": "Control the background color of text in active state.",
+    "type": "string",
+    "source": "alias"
+  },
+  "colorBgTextHover": {
+    "name": "文本悬停态背景色",
+    "nameEn": "Text hover background color",
+    "desc": "控制文本在悬停状态下的背景色。",
+    "descEn": "Control the background color of text in hover state.",
+    "type": "string",
+    "source": "alias"
+  },
+  "colorBorderBg": {
+    "name": "背景边框颜色",
+    "nameEn": "Background border color",
+    "desc": "控制元素背景边框的颜色。",
+    "descEn": "Control the color of background border of element.",
+    "type": "string",
+    "source": "alias"
+  },
+  "colorErrorOutline": {
+    "name": "错误状态下的 Outline 颜色",
+    "nameEn": "Error outline color",
+    "desc": "控制输入组件错误状态下的外轮廓线颜色。",
+    "descEn": "Control the outline color of input component in error state.",
+    "type": "string",
+    "source": "alias"
+  },
+  "colorFillAlter": {
+    "name": "替代背景色",
+    "nameEn": "Alternative background color",
+    "desc": "控制元素替代背景色。",
+    "descEn": "Control the alternative background color of element.",
+    "type": "string",
+    "source": "alias"
+  },
+  "colorFillContent": {
+    "name": "内容区域背景色",
+    "nameEn": "Background color of content area",
+    "desc": "控制内容区域的背景色。",
+    "descEn": "Control the background color of content area.",
+    "type": "string",
+    "source": "alias"
+  },
+  "colorFillContentHover": {
+    "name": "内容区域背景色（悬停）",
+    "nameEn": "Background color of content area (hover)",
+    "desc": "控制内容区域背景色在鼠标悬停时的样式。",
+    "descEn": "Control the style of background color of content area when mouse hovers over it.",
+    "type": "string",
+    "source": "alias"
+  },
+  "colorHighlight": {
+    "name": "高亮颜色",
+    "nameEn": "Highlight color",
+    "desc": "控制页面元素高亮时的颜色。",
+    "descEn": "Control the color of page element when highlighted.",
+    "type": "string",
+    "source": "alias"
+  },
+  "colorIcon": {
+    "name": "弱操作图标颜色\n *",
+    "nameEn": "Weak action icon color\n *",
+    "desc": "控制弱操作图标的颜色，例如 allowClear 或 Alert 关闭按钮。\n *",
+    "descEn": "Weak action. Such as `allowClear` or Alert close button",
+    "type": "string",
+    "source": "alias"
+  },
+  "colorIconHover": {
+    "name": "弱操作图标悬浮态颜色",
+    "nameEn": "Weak action icon hover color",
+    "desc": "控制弱操作图标在悬浮状态下的颜色，例如 allowClear 或 Alert 关闭按钮。",
+    "descEn": "Weak action hover color. Such as `allowClear` or Alert close button",
+    "type": "string",
+    "source": "alias"
+  },
+  "colorLink": {
+    "name": "超链接颜色",
+    "nameEn": "Hyperlink color",
+    "desc": "控制超链接的颜色。",
+    "descEn": "Control the color of hyperlink.",
+    "type": "string",
+    "source": "alias"
+  },
+  "colorLinkActive": {
+    "name": "超链接激活颜色",
+    "nameEn": "Hyperlink active color",
+    "desc": "控制超链接被点击时的颜色。",
+    "descEn": "Control the color of hyperlink when clicked.",
+    "type": "string",
+    "source": "alias"
+  },
+  "colorLinkHover": {
+    "name": "超链接悬浮颜色",
+    "nameEn": "Hyperlink hover color",
+    "desc": "控制超链接悬浮时的颜色。",
+    "descEn": "Control the color of hyperlink when hovering.",
+    "type": "string",
+    "source": "alias"
+  },
+  "colorSplit": {
+    "name": "分割线颜色",
+    "nameEn": "Separator color",
+    "desc": "用于作为分割线的颜色，此颜色和 colorBorderSecondary 的颜色一致，但是用的是透明色。",
+    "descEn": "Used as the color of separator, this color is the same as colorBorderSecondary but with transparency.",
+    "type": "string",
+    "source": "alias"
+  },
+  "colorTextDescription": {
+    "name": "文本描述字体颜色",
+    "nameEn": "Text description font color",
+    "desc": "控制文本描述字体颜色。",
+    "descEn": "Control the font color of text description.",
+    "type": "string",
+    "source": "alias"
+  },
+  "colorTextDisabled": {
+    "name": "禁用字体颜色",
+    "nameEn": "Disabled text color",
+    "desc": "控制禁用状态下的字体颜色。",
+    "descEn": "Control the color of text in disabled state.",
+    "type": "string",
+    "source": "alias"
+  },
+  "colorTextHeading": {
+    "name": "标题字体颜色",
+    "nameEn": "Heading font color",
+    "desc": "控制标题字体颜色。",
+    "descEn": "Control the font color of heading.",
+    "type": "string",
+    "source": "alias"
+  },
+  "colorTextLabel": {
+    "name": "文本标签字体颜色",
+    "nameEn": "Text label font color",
+    "desc": "控制文本标签字体颜色。",
+    "descEn": "Control the font color of text label.",
+    "type": "string",
+    "source": "alias"
+  },
+  "colorTextLightSolid": {
+    "name": "固定文本高亮颜色",
+    "nameEn": "Fixed text highlight color",
+    "desc": "控制带背景色的文本，例如 Primary Button 组件中的文本高亮颜色。",
+    "descEn": "Control the highlight color of text with background color, such as the text in Primary Button components.",
+    "type": "string",
+    "source": "alias"
+  },
+  "colorTextPlaceholder": {
+    "name": "占位文本颜色",
+    "nameEn": "Placeholder text color",
+    "desc": "控制占位文本的颜色。",
+    "descEn": "Control the color of placeholder text.",
+    "type": "string",
+    "source": "alias"
+  },
+  "colorWarningOutline": {
+    "name": "警告状态下的 Outline 颜色",
+    "nameEn": "Warning outline color",
+    "desc": "控制输入组件警告状态下的外轮廓线颜色。",
+    "descEn": "Control the outline color of input component in warning state.",
+    "type": "string",
+    "source": "alias"
+  },
+  "controlInteractiveSize": {
+    "name": "控制组件的交互大小",
+    "nameEn": "Interactive size of control component",
+    "desc": "控制组件的交互大小。",
+    "descEn": "Control the interactive size of control component.",
+    "type": "number",
+    "source": "alias"
+  },
+  "controlItemBgActive": {
+    "name": "控制组件项在激活状态下的背景颜色",
+    "nameEn": "Background color of control component item when active",
+    "desc": "控制组件项在激活状态下的背景颜色。",
+    "descEn": "Control the background color of control component item when active.",
+    "type": "string",
+    "source": "alias"
+  },
+  "controlItemBgActiveDisabled": {
+    "name": "控制组件项在禁用状态下的激活背景颜色",
+    "nameEn": "Background color of control component item when active and disabled",
+    "desc": "控制组件项在禁用状态下的激活背景颜色。",
+    "descEn": "Control the background color of control component item when active and disabled.",
+    "type": "string",
+    "source": "alias"
+  },
+  "controlItemBgActiveHover": {
+    "name": "控制组件项在鼠标悬浮且激活状态下的背景颜色",
+    "nameEn": "Background color of control component item when hovering and active",
+    "desc": "控制组件项在鼠标悬浮且激活状态下的背景颜色。",
+    "descEn": "Control the background color of control component item when hovering and active.",
+    "type": "string",
+    "source": "alias"
+  },
+  "controlItemBgHover": {
+    "name": "控制组件项在鼠标悬浮时的背景颜色",
+    "nameEn": "Background color of control component item when hovering",
+    "desc": "控制组件项在鼠标悬浮时的背景颜色。",
+    "descEn": "Control the background color of control component item when hovering.",
+    "type": "string",
+    "source": "alias"
+  },
+  "controlOutline": {
+    "name": "输入组件的 Outline 颜色",
+    "nameEn": "Input component outline color",
+    "desc": "控制输入组件的外轮廓线颜色。",
+    "descEn": "Control the outline color of input component.",
+    "type": "string",
+    "source": "alias"
+  },
+  "controlOutlineWidth": {
+    "name": "输入组件的外轮廓线宽度",
+    "nameEn": "Input component outline width",
+    "desc": "控制输入组件的外轮廓线宽度。",
+    "descEn": "Control the outline width of input component.",
+    "type": "number",
+    "source": "alias"
+  },
+  "controlPaddingHorizontal": {
+    "name": "控制水平内间距",
+    "nameEn": "Control horizontal padding",
+    "desc": "控制元素水平内间距。",
+    "descEn": "Control the horizontal padding of an element.",
+    "type": "number",
+    "source": "alias"
+  },
+  "controlPaddingHorizontalSM": {
+    "name": "控制中小尺寸水平内间距",
+    "nameEn": "Control horizontal padding with a small-medium size",
+    "desc": "控制元素中小尺寸水平内间距。",
+    "descEn": "Control the horizontal padding of an element with a small-medium size.",
+    "type": "number",
+    "source": "alias"
+  },
+  "controlTmpOutline": {
+    "name": "",
+    "nameEn": "",
+    "desc": "默认样式的 Outline 颜色",
+    "descEn": "Default style outline color.",
+    "type": "string",
+    "source": "alias"
+  },
+  "fontSizeIcon": {
+    "name": "选择器、级联选择器等中的操作图标字体大小",
+    "nameEn": "Operation icon font size in Select, Cascader, etc.",
+    "desc": "控制选择器、级联选择器等中的操作图标字体大小。正常情况下与 fontSizeSM 相同。",
+    "descEn": "Control the font size of operation icon in Select, Cascader, etc. Normally same as fontSizeSM.",
+    "type": "number",
+    "source": "alias"
+  },
+  "fontWeightStrong": {
+    "name": "标题类组件（如 h1、h2、h3）或选中项的字体粗细",
+    "nameEn": "Font weight for heading components (such as h1, h2, h3) or selected item",
+    "desc": "控制标题类组件（如 h1、h2、h3）或选中项的字体粗细。",
+    "descEn": "Control the font weight of heading components (such as h1, h2, h3) or selected item.",
+    "type": "number",
+    "source": "alias"
+  },
+  "lineWidthFocus": {
+    "name": "线条宽度(聚焦态)",
+    "nameEn": "Line width(focus state)",
+    "desc": "控制线条的宽度，当组件处于聚焦态时。",
+    "descEn": "Control the width of the line when the component is in focus state.",
+    "type": "number",
+    "source": "alias"
+  },
+  "linkDecoration": {
+    "name": "链接文本装饰",
+    "nameEn": "Link text decoration",
+    "desc": "控制链接文本的装饰样式。",
+    "descEn": "Control the text decoration style of a link.",
+    "type": "undefined | TextDecoration<string | number>",
+    "source": "alias"
+  },
+  "linkFocusDecoration": {
+    "name": "链接聚焦时文本装饰",
+    "nameEn": "Link text decoration on focus",
+    "desc": "控制链接聚焦时文本的装饰样式。",
+    "descEn": "Control the text decoration style of a link on focus.",
+    "type": "undefined | TextDecoration<string | number>",
+    "source": "alias"
+  },
+  "linkHoverDecoration": {
+    "name": "链接鼠标悬浮时文本装饰",
+    "nameEn": "Link text decoration on mouse hover",
+    "desc": "控制链接鼠标悬浮时文本的装饰样式。",
+    "descEn": "Control the text decoration style of a link on mouse hover.",
+    "type": "undefined | TextDecoration<string | number>",
+    "source": "alias"
+  },
+  "margin": {
+    "name": "外边距",
+    "nameEn": "Margin",
+    "desc": "控制元素外边距，中等尺寸。",
+    "descEn": "Control the margin of an element, with a medium size.",
+    "type": "number",
+    "source": "alias"
+  },
+  "marginLG": {
+    "name": "外边距 LG",
+    "nameEn": "Margin LG",
+    "desc": "控制元素外边距，大尺寸。",
+    "descEn": "Control the margin of an element, with a large size.",
+    "type": "number",
+    "source": "alias"
+  },
+  "marginMD": {
+    "name": "外边距 MD",
+    "nameEn": "Margin MD",
+    "desc": "控制元素外边距，中大尺寸。",
+    "descEn": "Control the margin of an element, with a medium-large size.",
+    "type": "number",
+    "source": "alias"
+  },
+  "marginSM": {
+    "name": "外边距 SM",
+    "nameEn": "Margin SM",
+    "desc": "控制元素外边距，中小尺寸。",
+    "descEn": "Control the margin of an element, with a medium-small size.",
+    "type": "number",
+    "source": "alias"
+  },
+  "marginXL": {
+    "name": "外边距 XL",
+    "nameEn": "Margin XL",
+    "desc": "控制元素外边距，超大尺寸。",
+    "descEn": "Control the margin of an element, with an extra-large size.",
+    "type": "number",
+    "source": "alias"
+  },
+  "marginXS": {
+    "name": "外边距 XS",
+    "nameEn": "Margin XS",
+    "desc": "控制元素外边距，小尺寸。",
+    "descEn": "Control the margin of an element, with a small size.",
+    "type": "number",
+    "source": "alias"
+  },
+  "marginXXL": {
+    "name": "外边距 XXL",
+    "nameEn": "Margin XXL",
+    "desc": "控制元素外边距，最大尺寸。",
+    "descEn": "Control the margin of an element, with the largest size.",
+    "type": "number",
+    "source": "alias"
+  },
+  "marginXXS": {
+    "name": "外边距 XXS",
+    "nameEn": "Margin XXS",
+    "desc": "控制元素外边距，最小尺寸。",
+    "descEn": "Control the margin of an element, with the smallest size.",
+    "type": "number",
+    "source": "alias"
+  },
+  "opacityLoading": {
+    "name": "加载状态透明度",
+    "nameEn": "Loading opacity",
+    "desc": "控制加载状态的透明度。",
+    "descEn": "Control the opacity of the loading state.",
+    "type": "number",
+    "source": "alias"
+  },
+  "padding": {
+    "name": "内间距",
+    "nameEn": "Padding",
+    "desc": "控制元素的内间距。",
+    "descEn": "Control the padding of the element.",
+    "type": "number",
+    "source": "alias"
+  },
+  "paddingContentHorizontal": {
+    "name": "内容水平内间距",
+    "nameEn": "Content horizontal padding",
+    "desc": "控制内容元素水平内间距。",
+    "descEn": "Control the horizontal padding of content element.",
+    "type": "number",
+    "source": "alias"
+  },
+  "paddingContentHorizontalLG": {
+    "name": "内容水平内间距（LG）",
+    "nameEn": "Content horizontal padding (LG)",
+    "desc": "控制内容元素水平内间距，适用于大屏幕设备。",
+    "descEn": "Control the horizontal padding of content element, suitable for large screen devices.",
+    "type": "number",
+    "source": "alias"
+  },
+  "paddingContentHorizontalSM": {
+    "name": "内容水平内间距（SM）",
+    "nameEn": "Content horizontal padding (SM)",
+    "desc": "控制内容元素水平内间距，适用于小屏幕设备。",
+    "descEn": "Control the horizontal padding of content element, suitable for small screen devices.",
+    "type": "number",
+    "source": "alias"
+  },
+  "paddingContentVertical": {
+    "name": "内容垂直内间距",
+    "nameEn": "Content vertical padding",
+    "desc": "控制内容元素垂直内间距。",
+    "descEn": "Control the vertical padding of content element.",
+    "type": "number",
+    "source": "alias"
+  },
+  "paddingContentVerticalLG": {
+    "name": "内容垂直内间距（LG）",
+    "nameEn": "Content vertical padding (LG)",
+    "desc": "控制内容元素垂直内间距，适用于大屏幕设备。",
+    "descEn": "Control the vertical padding of content element, suitable for large screen devices.",
+    "type": "number",
+    "source": "alias"
+  },
+  "paddingContentVerticalSM": {
+    "name": "内容垂直内间距（SM）",
+    "nameEn": "Content vertical padding (SM)",
+    "desc": "控制内容元素垂直内间距，适用于小屏幕设备。",
+    "descEn": "Control the vertical padding of content element, suitable for small screen devices.",
+    "type": "number",
+    "source": "alias"
+  },
+  "paddingLG": {
+    "name": "大内间距",
+    "nameEn": "Large padding",
+    "desc": "控制元素的大内间距。",
+    "descEn": "Control the large padding of the element.",
+    "type": "number",
+    "source": "alias"
+  },
+  "paddingMD": {
+    "name": "中等内间距",
+    "nameEn": "Medium padding",
+    "desc": "控制元素的中等内间距。",
+    "descEn": "Control the medium padding of the element.",
+    "type": "number",
+    "source": "alias"
+  },
+  "paddingSM": {
+    "name": "小内间距",
+    "nameEn": "Small padding",
+    "desc": "控制元素的小内间距。",
+    "descEn": "Control the small padding of the element.",
+    "type": "number",
+    "source": "alias"
+  },
+  "paddingXL": {
+    "name": "特大内间距",
+    "nameEn": "Extra large padding",
+    "desc": "控制元素的特大内间距。",
+    "descEn": "Control the extra large padding of the element.",
+    "type": "number",
+    "source": "alias"
+  },
+  "paddingXS": {
+    "name": "特小内间距",
+    "nameEn": "Extra small padding",
+    "desc": "控制元素的特小内间距。",
+    "descEn": "Control the extra small padding of the element.",
+    "type": "number",
+    "source": "alias"
+  },
+  "paddingXXS": {
+    "name": "极小内间距",
+    "nameEn": "Extra extra small padding",
+    "desc": "控制元素的极小内间距。",
+    "descEn": "Control the extra extra small padding of the element.",
+    "type": "number",
+    "source": "alias"
+  },
+  "screenLG": {
+    "name": "屏幕宽度（像素） - 大屏幕",
+    "nameEn": "Screen width (pixels) - Large screens",
+    "desc": "控制大屏幕的屏幕宽度。",
+    "descEn": "Control the screen width of large screens.",
+    "type": "number",
+    "source": "alias"
+  },
+  "screenLGMax": {
+    "name": "屏幕宽度（像素） - 大屏幕最大值",
+    "nameEn": "Screen width (pixels) - Large screens maximum value",
+    "desc": "控制大屏幕的最大宽度。",
+    "descEn": "Control the maximum width of large screens.",
+    "type": "number",
+    "source": "alias"
+  },
+  "screenLGMin": {
+    "name": "屏幕宽度（像素） - 大屏幕最小值",
+    "nameEn": "Screen width (pixels) - Large screens minimum value",
+    "desc": "控制大屏幕的最小宽度。",
+    "descEn": "Control the minimum width of large screens.",
+    "type": "number",
+    "source": "alias"
+  },
+  "screenMD": {
+    "name": "屏幕宽度（像素） - 中等屏幕",
+    "nameEn": "Screen width (pixels) - Medium screens",
+    "desc": "控制中等屏幕的屏幕宽度。",
+    "descEn": "Control the screen width of medium screens.",
+    "type": "number",
+    "source": "alias"
+  },
+  "screenMDMax": {
+    "name": "屏幕宽度（像素） - 中等屏幕最大值",
+    "nameEn": "Screen width (pixels) - Medium screens maximum value",
+    "desc": "控制中等屏幕的最大宽度。",
+    "descEn": "Control the maximum width of medium screens.",
+    "type": "number",
+    "source": "alias"
+  },
+  "screenMDMin": {
+    "name": "屏幕宽度（像素） - 中等屏幕最小值",
+    "nameEn": "Screen width (pixels) - Medium screens minimum value",
+    "desc": "控制中等屏幕的最小宽度。",
+    "descEn": "Control the minimum width of medium screens.",
+    "type": "number",
+    "source": "alias"
+  },
+  "screenSM": {
+    "name": "屏幕宽度（像素） - 小屏幕",
+    "nameEn": "Screen width (pixels) - Small screens",
+    "desc": "控制小屏幕的屏幕宽度。",
+    "descEn": "Control the screen width of small screens.",
+    "type": "number",
+    "source": "alias"
+  },
+  "screenSMMax": {
+    "name": "屏幕宽度（像素） - 小屏幕最大值",
+    "nameEn": "Screen width (pixels) - Small screens maximum value",
+    "desc": "控制小屏幕的最大宽度。",
+    "descEn": "Control the maximum width of small screens.",
+    "type": "number",
+    "source": "alias"
+  },
+  "screenSMMin": {
+    "name": "屏幕宽度（像素） - 小屏幕最小值",
+    "nameEn": "Screen width (pixels) - Small screens minimum value",
+    "desc": "控制小屏幕的最小宽度。",
+    "descEn": "Control the minimum width of small screens.",
+    "type": "number",
+    "source": "alias"
+  },
+  "screenXL": {
+    "name": "屏幕宽度（像素） - 超大屏幕",
+    "nameEn": "Screen width (pixels) - Extra large screens",
+    "desc": "控制超大屏幕的屏幕宽度。",
+    "descEn": "Control the screen width of extra large screens.",
+    "type": "number",
+    "source": "alias"
+  },
+  "screenXLMax": {
+    "name": "屏幕宽度（像素） - 超大屏幕最大值",
+    "nameEn": "Screen width (pixels) - Extra large screens maximum value",
+    "desc": "控制超大屏幕的最大宽度。",
+    "descEn": "Control the maximum width of extra large screens.",
+    "type": "number",
+    "source": "alias"
+  },
+  "screenXLMin": {
+    "name": "屏幕宽度（像素） - 超大屏幕最小值",
+    "nameEn": "Screen width (pixels) - Extra large screens minimum value",
+    "desc": "控制超大屏幕的最小宽度。",
+    "descEn": "Control the minimum width of extra large screens.",
+    "type": "number",
+    "source": "alias"
+  },
+  "screenXS": {
+    "name": "屏幕宽度（像素） - 超小屏幕",
+    "nameEn": "Screen width (pixels) - Extra small screens",
+    "desc": "控制超小屏幕的屏幕宽度。",
+    "descEn": "Control the screen width of extra small screens.",
+    "type": "number",
+    "source": "alias"
+  },
+  "screenXSMax": {
+    "name": "屏幕宽度（像素） - 超小屏幕最大值",
+    "nameEn": "Screen width (pixels) - Extra small screens maximum value",
+    "desc": "控制超小屏幕的最大宽度。",
+    "descEn": "Control the maximum width of extra small screens.",
+    "type": "number",
+    "source": "alias"
+  },
+  "screenXSMin": {
+    "name": "屏幕宽度（像素） - 超小屏幕最小值",
+    "nameEn": "Screen width (pixels) - Extra small screens minimum value",
+    "desc": "控制超小屏幕的最小宽度。",
+    "descEn": "Control the minimum width of extra small screens.",
+    "type": "number",
+    "source": "alias"
+  },
+  "screenXXL": {
+    "name": "屏幕宽度（像素） - 超超大屏幕",
+    "nameEn": "Screen width (pixels) - Extra extra large screens",
+    "desc": "控制超超大屏幕的屏幕宽度。",
+    "descEn": "Control the screen width of extra extra large screens.",
+    "type": "number",
+    "source": "alias"
+  },
+  "screenXXLMin": {
+    "name": "屏幕宽度（像素） - 超超大屏幕最小值",
+    "nameEn": "Screen width (pixels) - Extra extra large screens minimum value",
+    "desc": "控制超超大屏幕的最小宽度。",
+    "descEn": "Control the minimum width of extra extra large screens.",
+    "type": "number",
+    "source": "alias"
+  },
+  "borderRadiusLG": {
+    "name": "LG号圆角",
+    "nameEn": "LG Border Radius",
+    "desc": "LG号圆角，用于组件中的一些大圆角，如 Card、Modal 等一些组件样式。",
+    "descEn": "LG size border radius, used in some large border radius components, such as Card, Modal and other components.",
+    "type": "number",
+    "source": "map"
+  },
+  "borderRadiusOuter": {
+    "name": "外部圆角",
+    "nameEn": "Outer Border Radius",
+    "desc": "外部圆角",
+    "descEn": "Outer border radius",
+    "type": "number",
+    "source": "map"
+  },
+  "borderRadiusSM": {
+    "name": "SM号圆角",
+    "nameEn": "SM Border Radius",
+    "desc": "SM号圆角，用于组件小尺寸下的圆角，如 Button、Input、Select 等输入类控件在 small size 下的圆角",
+    "descEn": "SM size border radius, used in small size components, such as Button, Input, Select and other input components in small size",
+    "type": "number",
+    "source": "map"
+  },
+  "borderRadiusXS": {
+    "name": "XS号圆角",
+    "nameEn": "XS Border Radius",
+    "desc": "XS号圆角，用于组件中的一些小圆角，如 Segmented 、Arrow 等一些内部圆角的组件样式中。",
+    "descEn": "XS size border radius, used in some small border radius components, such as Segmented, Arrow and other components with small border radius.",
+    "type": "number",
+    "source": "map"
+  },
+  "colorBgContainer": {
+    "name": "组件容器背景色",
+    "nameEn": "",
+    "desc": "组件的容器背景色，例如：默认按钮、输入框等。务必不要将其与 `colorBgElevated` 混淆。",
+    "descEn": "Container background color, e.g: default button, input box, etc. Be sure not to confuse this with `colorBgElevated`.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorBgElevated": {
+    "name": "浮层容器背景色",
+    "nameEn": "",
+    "desc": "浮层容器背景色，在暗色模式下该 token 的色值会比 `colorBgContainer` 要亮一些。例如：模态框、弹出框、菜单等。",
+    "descEn": "Container background color of the popup layer, in dark mode the color value of this token will be a little brighter than `colorBgContainer`. E.g: modal, pop-up, menu, etc.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorBgLayout": {
+    "name": "布局背景色",
+    "nameEn": "",
+    "desc": "该色用于页面整体布局的背景色，只有需要在页面中处于 B1 的视觉层级时才会使用该 token，其他用法都是错误的",
+    "descEn": "This color is used for the background color of the overall layout of the page. This token will only be used when it is necessary to be at the B1 visual level in the page. Other usages are wrong.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorBgMask": {
+    "name": "浮层的背景蒙层颜色",
+    "nameEn": "Background color of the mask",
+    "desc": "浮层的背景蒙层颜色，用于遮罩浮层下面的内容，Modal、Drawer 等组件的蒙层使用的是该 token",
+    "descEn": "The background color of the mask, used to cover the content below the mask, Modal, Drawer and other components use this token",
+    "type": "string",
+    "source": "map"
+  },
+  "colorBgSpotlight": {
+    "name": "引起注意的背景色",
+    "nameEn": "",
+    "desc": "该色用于引起用户强烈关注注意的背景色，目前只用在 Tooltip 的背景色上。",
+    "descEn": "This color is used to draw the user's strong attention to the background color, and is currently only used in the background color of Tooltip.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorBorder": {
+    "name": "一级边框色",
+    "nameEn": "Default Border Color",
+    "desc": "默认使用的边框颜色, 用于分割不同的元素，例如：表单的分割线、卡片的分割线等。",
+    "descEn": "Default border color, used to separate different elements, such as: form separator, card separator, etc.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorBorderSecondary": {
+    "name": "二级边框色",
+    "nameEn": "Secondary Border Color",
+    "desc": "比默认使用的边框色要浅一级，此颜色和 colorSplit 的颜色一致。使用的是实色。",
+    "descEn": "Slightly lighter than the default border color, this color is the same as `colorSplit`. Solid color is used.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorErrorActive": {
+    "name": "错误色的深色激活态",
+    "nameEn": "Error active color",
+    "desc": "错误色的深色激活态",
+    "descEn": "The active state of the error color.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorErrorBg": {
+    "name": "错误色的浅色背景颜色",
+    "nameEn": "Error background color",
+    "desc": "错误色的浅色背景颜色",
+    "descEn": "The background color of the error state.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorErrorBgHover": {
+    "name": "错误色的浅色背景色悬浮态",
+    "nameEn": "Error background color hover state",
+    "desc": "错误色的浅色背景色悬浮态",
+    "descEn": "The hover state background color of the error state.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorErrorBorder": {
+    "name": "错误色的描边色",
+    "nameEn": "Error border color",
+    "desc": "错误色的描边色",
+    "descEn": "The border color of the error state.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorErrorBorderHover": {
+    "name": "错误色的描边色悬浮态",
+    "nameEn": "Error border color hover state",
+    "desc": "错误色的描边色悬浮态",
+    "descEn": "The hover state border color of the error state.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorErrorHover": {
+    "name": "错误色的深色悬浮态",
+    "nameEn": "Error hover color",
+    "desc": "错误色的深色悬浮态",
+    "descEn": "The hover state of the error color.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorErrorText": {
+    "name": "错误色的文本默认态",
+    "nameEn": "Error text default state",
+    "desc": "错误色的文本默认态",
+    "descEn": "The default state of the text in the error color.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorErrorTextActive": {
+    "name": "错误色的文本激活态",
+    "nameEn": "Error text active state",
+    "desc": "错误色的文本激活态",
+    "descEn": "The active state of the text in the error color.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorErrorTextHover": {
+    "name": "错误色的文本悬浮态",
+    "nameEn": "Error text hover state",
+    "desc": "错误色的文本悬浮态",
+    "descEn": "The hover state of the text in the error color.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorFill": {
+    "name": "一级填充色",
+    "nameEn": "",
+    "desc": "最深的填充色，用于拉开与二、三级填充色的区分度，目前只用在 Slider 的 hover 效果。",
+    "descEn": "The darkest fill color is used to distinguish between the second and third level of fill color, and is currently only used in the hover effect of Slider.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorFillQuaternary": {
+    "name": "四级填充色",
+    "nameEn": "",
+    "desc": "最弱一级的填充色，适用于不易引起注意的色块，例如斑马纹、区分边界的色块等。",
+    "descEn": "The weakest level of fill color is suitable for color blocks that are not easy to attract attention, such as zebra stripes, color blocks that distinguish boundaries, etc.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorFillSecondary": {
+    "name": "二级填充色",
+    "nameEn": "",
+    "desc": "二级填充色可以较为明显地勾勒出元素形体，如 Rate、Skeleton 等。也可以作为三级填充色的 Hover 状态，如 Table 等。",
+    "descEn": "The second level of fill color can outline the shape of the element more clearly, such as Rate, Skeleton, etc. It can also be used as the Hover state of the third level of fill color, such as Table, etc.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorFillTertiary": {
+    "name": "三级填充色",
+    "nameEn": "",
+    "desc": "三级填充色用于勾勒出元素形体的场景，如 Slider、Segmented 等。如无强调需求的情况下，建议使用三级填色作为默认填色。",
+    "descEn": "The third level of fill color is used to outline the shape of the element, such as Slider, Segmented, etc. If there is no emphasis requirement, it is recommended to use the third level of fill color as the default fill color.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorInfoActive": {
+    "name": "信息色的深色激活态",
+    "nameEn": "Active state of dark color of information color",
+    "desc": "信息色的深色激活态。",
+    "descEn": "Active state of dark color of information color.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorInfoBg": {
+    "name": "信息色的浅色背景颜色",
+    "nameEn": "Light background color of information color",
+    "desc": "信息色的浅色背景颜色。",
+    "descEn": "Light background color of information color.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorInfoBgHover": {
+    "name": "信息色的浅色背景色悬浮态",
+    "nameEn": "Hover state of light background color of information color",
+    "desc": "信息色的浅色背景色悬浮态。",
+    "descEn": "Hover state of light background color of information color.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorInfoBorder": {
+    "name": "信息色的描边色",
+    "nameEn": "Border color of information color",
+    "desc": "信息色的描边色。",
+    "descEn": "Border color of information color.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorInfoBorderHover": {
+    "name": "信息色的描边色悬浮态",
+    "nameEn": "Hover state of border color of information color",
+    "desc": "信息色的描边色悬浮态。",
+    "descEn": "Hover state of border color of information color.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorInfoHover": {
+    "name": "信息色的深色悬浮态",
+    "nameEn": "Hover state of dark color of information color",
+    "desc": "信息色的深色悬浮态。",
+    "descEn": "Hover state of dark color of information color.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorInfoText": {
+    "name": "信息色的文本默认态",
+    "nameEn": "Default state of text color of information color",
+    "desc": "信息色的文本默认态。",
+    "descEn": "Default state of text color of information color.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorInfoTextActive": {
+    "name": "信息色的文本激活态",
+    "nameEn": "Active state of text color of information color",
+    "desc": "信息色的文本激活态。",
+    "descEn": "Active state of text color of information color.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorInfoTextHover": {
+    "name": "信息色的文本悬浮态",
+    "nameEn": "Hover state of text color of information color",
+    "desc": "信息色的文本悬浮态。",
+    "descEn": "Hover state of text color of information color.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorPrimaryActive": {
+    "name": "主色激活态",
+    "nameEn": "Active state of primary color",
+    "desc": "主色梯度下的深色激活态。",
+    "descEn": "Dark active state under the main color gradient.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorPrimaryBg": {
+    "name": "主色浅色背景色",
+    "nameEn": "Light background color of primary color",
+    "desc": "主色浅色背景颜色，一般用于视觉层级较弱的选中状态。",
+    "descEn": "Light background color of primary color, usually used for weak visual level selection state.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorPrimaryBgHover": {
+    "name": "主色浅色背景悬浮态",
+    "nameEn": "Hover state of light background color of primary color",
+    "desc": "与主色浅色背景颜色相对应的悬浮态颜色。",
+    "descEn": "The hover state color corresponding to the light background color of the primary color.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorPrimaryBorder": {
+    "name": "主色描边色",
+    "nameEn": "Border color of primary color",
+    "desc": "主色梯度下的描边用色，用在 Slider 等组件的描边上。",
+    "descEn": "The stroke color under the main color gradient, used on the stroke of components such as Slider.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorPrimaryBorderHover": {
+    "name": "主色描边色悬浮态",
+    "nameEn": "Hover state of border color of primary color",
+    "desc": "主色梯度下的描边用色的悬浮态，Slider 、Button 等组件的描边 Hover 时会使用。",
+    "descEn": "The hover state of the stroke color under the main color gradient, which will be used when the stroke Hover of components such as Slider and Button.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorPrimaryHover": {
+    "name": "主色悬浮态",
+    "nameEn": "Hover state of primary color",
+    "desc": "主色梯度下的悬浮态。",
+    "descEn": "Hover state under the main color gradient.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorPrimaryText": {
+    "name": "主色文本",
+    "nameEn": "Text color of primary color",
+    "desc": "主色梯度下的文本颜色。",
+    "descEn": "Text color under the main color gradient.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorPrimaryTextActive": {
+    "name": "主色文本激活态",
+    "nameEn": "Active state of text color of primary color",
+    "desc": "主色梯度下的文本激活态。",
+    "descEn": "Active state of text color under the main color gradient.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorPrimaryTextHover": {
+    "name": "主色文本悬浮态",
+    "nameEn": "Hover state of text color of primary color",
+    "desc": "主色梯度下的文本悬浮态。",
+    "descEn": "Hover state of text color under the main color gradient.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorSuccessActive": {
+    "name": "成功色的深色激活态",
+    "nameEn": "Active State Color of Dark Success",
+    "desc": "成功色的深色激活态",
+    "descEn": "Active state color of dark success color",
+    "type": "string",
+    "source": "map"
+  },
+  "colorSuccessBg": {
+    "name": "成功色的浅色背景颜色",
+    "nameEn": "Light Background Color of Success Color",
+    "desc": "成功色的浅色背景颜色，用于 Tag 和 Alert 的成功态背景色",
+    "descEn": "Light background color of success color, used for Tag and Alert success state background color",
+    "type": "string",
+    "source": "map"
+  },
+  "colorSuccessBgHover": {
+    "name": "成功色的浅色背景色悬浮态",
+    "nameEn": "Hover State Color of Light Success Background",
+    "desc": "成功色浅色背景颜色，一般用于视觉层级较弱的选中状态，不过 antd 目前没有使用到该 token",
+    "descEn": "Light background color of success color, but antd does not use this token currently",
+    "type": "string",
+    "source": "map"
+  },
+  "colorSuccessBorder": {
+    "name": "成功色的描边色",
+    "nameEn": "Border Color of Success Color",
+    "desc": "成功色的描边色，用于 Tag 和 Alert 的成功态描边色",
+    "descEn": "Border color of success color, used for Tag and Alert success state border color",
+    "type": "string",
+    "source": "map"
+  },
+  "colorSuccessBorderHover": {
+    "name": "成功色的描边色悬浮态",
+    "nameEn": "Hover State Color of Success Border",
+    "desc": "成功色的描边色悬浮态",
+    "descEn": "Hover state color of success color border",
+    "type": "string",
+    "source": "map"
+  },
+  "colorSuccessHover": {
+    "name": "成功色的深色悬浮态",
+    "nameEn": "Hover State Color of Dark Success",
+    "desc": "成功色的深色悬浮态",
+    "descEn": "Hover state color of dark success color",
+    "type": "string",
+    "source": "map"
+  },
+  "colorSuccessText": {
+    "name": "成功色的文本默认态",
+    "nameEn": "Default State Color of Success Text",
+    "desc": "成功色的文本默认态",
+    "descEn": "Default state color of success color text",
+    "type": "string",
+    "source": "map"
+  },
+  "colorSuccessTextActive": {
+    "name": "成功色的文本激活态",
+    "nameEn": "Active State Color of Success Text",
+    "desc": "成功色的文本激活态",
+    "descEn": "Active state color of success color text",
+    "type": "string",
+    "source": "map"
+  },
+  "colorSuccessTextHover": {
+    "name": "成功色的文本悬浮态",
+    "nameEn": "Hover State Color of Success Text",
+    "desc": "成功色的文本悬浮态",
+    "descEn": "Hover state color of success color text",
+    "type": "string",
+    "source": "map"
+  },
+  "colorText": {
+    "name": "一级文本色",
+    "nameEn": "",
+    "desc": "最深的文本色。为了符合W3C标准，默认的文本颜色使用了该色，同时这个颜色也是最深的中性色。",
+    "descEn": "Default text color which comply with W3C standards, and this color is also the darkest neutral color.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorTextQuaternary": {
+    "name": "四级文本色",
+    "nameEn": "",
+    "desc": "第四级文本色是最浅的文本色，例如表单的输入提示文本、禁用色文本等。",
+    "descEn": "The fourth level of text color is the lightest text color, such as form input prompt text, disabled color text, etc.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorTextSecondary": {
+    "name": "二级文本色",
+    "nameEn": "",
+    "desc": "作为第二梯度的文本色，一般用在不那么需要强化文本颜色的场景，例如 Label 文本、Menu 的文本选中态等场景。",
+    "descEn": "The second level of text color is generally used in scenarios where text color is not emphasized, such as label text, menu text selection state, etc.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorTextTertiary": {
+    "name": "三级文本色",
+    "nameEn": "",
+    "desc": "第三级文本色一般用于描述性文本，例如表单的中的补充说明文本、列表的描述性文本等场景。",
+    "descEn": "The third level of text color is generally used for descriptive text, such as form supplementary explanation text, list descriptive text, etc.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorWarningActive": {
+    "name": "警戒色的深色激活态",
+    "nameEn": "Warning active color",
+    "desc": "警戒色的深色激活态",
+    "descEn": "The active state of the warning color.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorWarningBg": {
+    "name": "警戒色的浅色背景颜色",
+    "nameEn": "Warning background color",
+    "desc": "警戒色的浅色背景颜色",
+    "descEn": "The background color of the warning state.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorWarningBgHover": {
+    "name": "警戒色的浅色背景色悬浮态",
+    "nameEn": "Warning background color hover state",
+    "desc": "警戒色的浅色背景色悬浮态",
+    "descEn": "The hover state background color of the warning state.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorWarningBorder": {
+    "name": "警戒色的描边色",
+    "nameEn": "Warning border color",
+    "desc": "警戒色的描边色",
+    "descEn": "The border color of the warning state.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorWarningBorderHover": {
+    "name": "警戒色的描边色悬浮态",
+    "nameEn": "Warning border color hover state",
+    "desc": "警戒色的描边色悬浮态",
+    "descEn": "The hover state border color of the warning state.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorWarningHover": {
+    "name": "警戒色的深色悬浮态",
+    "nameEn": "Warning hover color",
+    "desc": "警戒色的深色悬浮态",
+    "descEn": "The hover state of the warning color.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorWarningText": {
+    "name": "警戒色的文本默认态",
+    "nameEn": "Warning text default state",
+    "desc": "警戒色的文本默认态",
+    "descEn": "The default state of the text in the warning color.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorWarningTextActive": {
+    "name": "警戒色的文本激活态",
+    "nameEn": "Warning text active state",
+    "desc": "警戒色的文本激活态",
+    "descEn": "The active state of the text in the warning color.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorWarningTextHover": {
+    "name": "警戒色的文本悬浮态",
+    "nameEn": "Warning text hover state",
+    "desc": "警戒色的文本悬浮态",
+    "descEn": "The hover state of the text in the warning color.",
+    "type": "string",
+    "source": "map"
+  },
+  "colorWhite": {
+    "name": "纯白色",
+    "nameEn": "",
+    "desc": "不随主题变化的纯白色",
+    "descEn": "Pure white color don't changed by theme",
+    "type": "string",
+    "source": "map"
+  },
+  "controlHeightLG": {
+    "name": "较高的组件高度",
+    "nameEn": "LG component height",
+    "desc": "较高的组件高度",
+    "descEn": "LG component height",
+    "type": "number",
+    "source": "map"
+  },
+  "controlHeightSM": {
+    "name": "较小的组件高度",
+    "nameEn": "SM component height",
+    "desc": "较小的组件高度",
+    "descEn": "SM component height",
+    "type": "number",
+    "source": "map"
+  },
+  "controlHeightXS": {
+    "name": "更小的组件高度",
+    "nameEn": "XS component height",
+    "desc": "更小的组件高度",
+    "descEn": "XS component height",
+    "type": "number",
+    "source": "map"
+  },
+  "fontSizeHeading1": {
+    "name": "一级标题字号",
+    "nameEn": "Font size of heading level 1",
+    "desc": "H1 标签所使用的字号",
+    "descEn": "Font size of h1 tag.",
+    "type": "number",
+    "source": "map"
+  },
+  "fontSizeHeading2": {
+    "name": "二级标题字号",
+    "nameEn": "Font size of heading level 2",
+    "desc": "h2 标签所使用的字号",
+    "descEn": "Font size of h2 tag.",
+    "type": "number",
+    "source": "map"
+  },
+  "fontSizeHeading3": {
+    "name": "三级标题字号",
+    "nameEn": "Font size of heading level 3",
+    "desc": "h3 标签使用的字号",
+    "descEn": "Font size of h3 tag.",
+    "type": "number",
+    "source": "map"
+  },
+  "fontSizeHeading4": {
+    "name": "四级标题字号",
+    "nameEn": "Font size of heading level 4",
+    "desc": "h4 标签使用的字号",
+    "descEn": "Font size of h4 tag.",
+    "type": "number",
+    "source": "map"
+  },
+  "fontSizeHeading5": {
+    "name": "五级标题字号",
+    "nameEn": "Font size of heading level 5",
+    "desc": "h5 标签使用的字号",
+    "descEn": "Font size of h5 tag.",
+    "type": "number",
+    "source": "map"
+  },
+  "fontSizeLG": {
+    "name": "",
+    "nameEn": "",
+    "desc": "大号字体大小",
+    "descEn": "Large font size",
+    "type": "number",
+    "source": "map"
+  },
+  "fontSizeSM": {
+    "name": "",
+    "nameEn": "",
+    "desc": "小号字体大小",
+    "descEn": "Small font size",
+    "type": "number",
+    "source": "map"
+  },
+  "fontSizeXL": {
+    "name": "",
+    "nameEn": "",
+    "desc": "超大号字体大小",
+    "descEn": "Super large font size",
+    "type": "number",
+    "source": "map"
+  },
+  "lineHeight": {
+    "name": "",
+    "nameEn": "",
+    "desc": "文本行高",
+    "descEn": "Line height of text.",
+    "type": "number",
+    "source": "map"
+  },
+  "lineHeightHeading1": {
+    "name": "一级标题行高",
+    "nameEn": "Line height of heading level 1",
+    "desc": "H1 标签所使用的行高",
+    "descEn": "Line height of h1 tag.",
+    "type": "number",
+    "source": "map"
+  },
+  "lineHeightHeading2": {
+    "name": "二级标题行高",
+    "nameEn": "Line height of heading level 2",
+    "desc": "h2 标签所使用的行高",
+    "descEn": "Line height of h2 tag.",
+    "type": "number",
+    "source": "map"
+  },
+  "lineHeightHeading3": {
+    "name": "三级标题行高",
+    "nameEn": "Line height of heading level 3",
+    "desc": "h3 标签所使用的行高",
+    "descEn": "Line height of h3 tag.",
+    "type": "number",
+    "source": "map"
+  },
+  "lineHeightHeading4": {
+    "name": "四级标题行高",
+    "nameEn": "Line height of heading level 4",
+    "desc": "h4 标签所使用的行高",
+    "descEn": "Line height of h4 tag.",
+    "type": "number",
+    "source": "map"
+  },
+  "lineHeightHeading5": {
+    "name": "五级标题行高",
+    "nameEn": "Line height of heading level 5",
+    "desc": "h5 标签所使用的行高",
+    "descEn": "Line height of h5 tag.",
+    "type": "number",
+    "source": "map"
+  },
+  "lineHeightLG": {
+    "name": "",
+    "nameEn": "",
+    "desc": "大型文本行高",
+    "descEn": "Line height of large text.",
+    "type": "number",
+    "source": "map"
+  },
+  "lineHeightSM": {
+    "name": "",
+    "nameEn": "",
+    "desc": "小型文本行高",
+    "descEn": "Line height of small text.",
+    "type": "number",
+    "source": "map"
+  },
+  "lineWidthBold": {
+    "name": "线宽",
+    "nameEn": "Line Width",
+    "desc": "描边类组件的默认线宽，如 Button、Input、Select 等输入类控件。",
+    "descEn": "The default line width of the outline class components, such as Button, Input, Select, etc.",
+    "type": "number",
+    "source": "map"
+  },
+  "motionDurationFast": {
+    "name": "",
+    "nameEn": "",
+    "desc": "动效播放速度，快速。用于小型元素动画交互",
+    "descEn": "Motion speed, fast speed. Used for small element animation interaction.",
+    "type": "string",
+    "source": "map"
+  },
+  "motionDurationMid": {
+    "name": "",
+    "nameEn": "",
+    "desc": "动效播放速度，中速。用于中型元素动画交互",
+    "descEn": "Motion speed, medium speed. Used for medium element animation interaction.",
+    "type": "string",
+    "source": "map"
+  },
+  "motionDurationSlow": {
+    "name": "",
+    "nameEn": "",
+    "desc": "动效播放速度，慢速。用于大型元素如面板动画交互",
+    "descEn": "Motion speed, slow speed. Used for large element animation interaction.",
+    "type": "string",
+    "source": "map"
+  },
+  "size": { "name": "默认", "nameEn": "", "desc": "默认尺寸", "descEn": "", "type": "number", "source": "map" },
+  "sizeLG": { "name": "LG", "nameEn": "", "desc": "", "descEn": "", "type": "number", "source": "map" },
+  "sizeMD": { "name": "MD", "nameEn": "", "desc": "", "descEn": "", "type": "number", "source": "map" },
+  "sizeMS": { "name": "", "nameEn": "", "desc": "", "descEn": "", "type": "number", "source": "map" },
+  "sizeSM": { "name": "SM", "nameEn": "", "desc": "", "descEn": "", "type": "number", "source": "map" },
+  "sizeXL": { "name": "XL", "nameEn": "", "desc": "", "descEn": "", "type": "number", "source": "map" },
+  "sizeXS": { "name": "XS", "nameEn": "", "desc": "", "descEn": "", "type": "number", "source": "map" },
+  "sizeXXL": { "name": "XXL", "nameEn": "", "desc": "", "descEn": "", "type": "number", "source": "map" },
+  "sizeXXS": { "name": "XXS", "nameEn": "", "desc": "", "descEn": "", "type": "number", "source": "map" },
+  "borderRadius": {
+    "name": "基础圆角",
+    "nameEn": "Base Border Radius",
+    "desc": "基础组件的圆角大小，例如按钮、输入框、卡片等",
+    "descEn": "Border radius of base components",
+    "type": "number",
+    "source": "seed"
+  },
+  "colorBgBase": {
+    "name": "基础背景色",
+    "nameEn": "Seed Background Color",
+    "desc": "用于派生背景色梯度的基础变量，v5 中我们添加了一层背景色的派生算法可以产出梯度明确的背景色的梯度变量。但请不要在代码中直接使用该 Seed Token ！",
+    "descEn": "Used to derive the base variable of the background color gradient. In v5, we added a layer of background color derivation algorithm to produce map token of background color. But PLEASE DO NOT USE this Seed Token directly in the code!",
+    "type": "string",
+    "source": "seed"
+  },
+  "colorError": {
+    "name": "错误色",
+    "nameEn": "Error Color",
+    "desc": "用于表示操作失败的 Token 序列，如失败按钮、错误状态提示（Result）组件等。",
+    "descEn": "Used to represent the visual elements of the operation failure, such as the error Button, error Result component, etc.",
+    "type": "string",
+    "source": "seed"
+  },
+  "colorInfo": {
+    "name": "信息色",
+    "nameEn": "Info Color",
+    "desc": "用于表示操作信息的 Token 序列，如 Alert 、Tag、 Progress 等组件都有用到该组梯度变量。",
+    "descEn": "Used to represent the operation information of the Token sequence, such as Alert, Tag, Progress, and other components use these map tokens.",
+    "type": "string",
+    "source": "seed"
+  },
+  "colorPrimary": {
+    "name": "品牌主色",
+    "nameEn": "Brand Color",
+    "desc": "品牌色是体现产品特性和传播理念最直观的视觉元素之一。在你完成品牌主色的选取之后，我们会自动帮你生成一套完整的色板，并赋予它们有效的设计语义",
+    "descEn": "Brand color is one of the most direct visual elements to reflect the characteristics and communication of the product. After you have selected the brand color, we will automatically generate a complete color palette and assign it effective design semantics.",
+    "type": "string",
+    "source": "seed"
+  },
+  "colorSuccess": {
+    "name": "成功色",
+    "nameEn": "Success Color",
+    "desc": "用于表示操作成功的 Token 序列，如 Result、Progress 等组件会使用该组梯度变量。",
+    "descEn": "Used to represent the token sequence of operation success, such as Result, Progress and other components will use these map tokens.",
+    "type": "string",
+    "source": "seed"
+  },
+  "colorTextBase": {
+    "name": "基础文本色",
+    "nameEn": "Seed Text Color",
+    "desc": "用于派生文本色梯度的基础变量，v5 中我们添加了一层文本色的派生算法可以产出梯度明确的文本色的梯度变量。但请不要在代码中直接使用该 Seed Token ！",
+    "descEn": "Used to derive the base variable of the text color gradient. In v5, we added a layer of text color derivation algorithm to produce gradient variables of text color gradient. But please do not use this Seed Token directly in the code!",
+    "type": "string",
+    "source": "seed"
+  },
+  "colorWarning": {
+    "name": "警戒色",
+    "nameEn": "Warning Color",
+    "desc": "用于表示操作警告的 Token 序列，如 Notification、 Alert等警告类组件或 Input 输入类等组件会使用该组梯度变量。",
+    "descEn": "Used to represent the warning map token, such as Notification, Alert, etc. Alert or Control component(like Input) will use these map tokens.",
+    "type": "string",
+    "source": "seed"
+  },
+  "controlHeight": {
+    "name": "基础高度",
+    "nameEn": "Base Control Height",
+    "desc": "Ant Design 中按钮和输入框等基础控件的高度",
+    "descEn": "The height of the basic controls such as buttons and input boxes in Ant Design",
+    "type": "number",
+    "source": "seed"
+  },
+  "fontFamily": {
+    "name": "字体",
+    "nameEn": "Font family for default text",
+    "desc": "Ant Design 的字体家族中优先使用系统默认的界面字体，同时提供了一套利于屏显的备用字体库，来维护在不同平台以及浏览器的显示下，字体始终保持良好的易读性和可读性，体现了友好、稳定和专业的特性。",
+    "descEn": "The font family of Ant Design prioritizes the default interface font of the system, and provides a set of alternative font libraries that are suitable for screen display to maintain the readability and readability of the font under different platforms and browsers, reflecting the friendly, stable and professional characteristics.",
+    "type": "string",
+    "source": "seed"
+  },
+  "fontFamilyCode": {
+    "name": "代码字体",
+    "nameEn": "Font family for code text",
+    "desc": "代码字体，用于 Typography 内的 code、pre 和 kbd 类型的元素",
+    "descEn": "Code font, used for code, pre and kbd elements in Typography",
+    "type": "string",
+    "source": "seed"
+  },
+  "fontSize": {
+    "name": "默认字号",
+    "nameEn": "Default Font Size",
+    "desc": "设计系统中使用最广泛的字体大小，文本梯度也将基于该字号进行派生。",
+    "descEn": "The most widely used font size in the design system, from which the text gradient will be derived.",
+    "type": "number",
+    "source": "seed"
+  },
+  "lineType": {
+    "name": "线条样式",
+    "nameEn": "Line Style",
+    "desc": "用于控制组件边框、分割线等的样式，默认是实线",
+    "descEn": "Border style of base components",
+    "type": "string",
+    "source": "seed"
+  },
+  "lineWidth": {
+    "name": "基础线宽",
+    "nameEn": "Base Line Width",
+    "desc": "用于控制组件边框、分割线等的宽度",
+    "descEn": "Border width of base components",
+    "type": "number",
+    "source": "seed"
+  },
+  "motion": {
+    "name": "动画风格",
+    "nameEn": "Motion Style",
+    "desc": "用于配置动画效果，为 `false` 时则关闭动画",
+    "descEn": "Used to configure the motion effect, when it is `false`, the motion is turned off",
+    "type": "boolean",
+    "source": "seed"
+  },
+  "motionBase": {
+    "name": "动画基础时长。",
+    "nameEn": "Animation Base Duration.",
+    "desc": "",
+    "descEn": "",
+    "type": "number",
+    "source": "seed"
+  },
+  "motionEaseInBack": {
+    "name": "",
+    "nameEn": "",
+    "desc": "预设动效曲率",
+    "descEn": "Preset motion curve.",
+    "type": "string",
+    "source": "seed"
+  },
+  "motionEaseInOut": {
+    "name": "",
+    "nameEn": "",
+    "desc": "预设动效曲率",
+    "descEn": "Preset motion curve.",
+    "type": "string",
+    "source": "seed"
+  },
+  "motionEaseInOutCirc": {
+    "name": "",
+    "nameEn": "",
+    "desc": "预设动效曲率",
+    "descEn": "Preset motion curve.",
+    "type": "string",
+    "source": "seed"
+  },
+  "motionEaseInQuint": {
+    "name": "",
+    "nameEn": "",
+    "desc": "预设动效曲率",
+    "descEn": "Preset motion curve.",
+    "type": "string",
+    "source": "seed"
+  },
+  "motionEaseOut": {
+    "name": "",
+    "nameEn": "",
+    "desc": "预设动效曲率",
+    "descEn": "Preset motion curve.",
+    "type": "string",
+    "source": "seed"
+  },
+  "motionEaseOutBack": {
+    "name": "",
+    "nameEn": "",
+    "desc": "预设动效曲率",
+    "descEn": "Preset motion curve.",
+    "type": "string",
+    "source": "seed"
+  },
+  "motionEaseOutCirc": {
+    "name": "",
+    "nameEn": "",
+    "desc": "预设动效曲率",
+    "descEn": "Preset motion curve.",
+    "type": "string",
+    "source": "seed"
+  },
+  "motionEaseOutQuint": {
+    "name": "",
+    "nameEn": "",
+    "desc": "预设动效曲率",
+    "descEn": "Preset motion curve.",
+    "type": "string",
+    "source": "seed"
+  },
+  "motionUnit": {
+    "name": "动画时长变化单位",
+    "nameEn": "Animation Duration Unit",
+    "desc": "用于控制动画时长的变化单位",
+    "descEn": "The unit of animation duration change",
+    "type": "number",
+    "source": "seed"
+  },
+  "opacityImage": {
+    "name": "图片不透明度",
+    "nameEn": "Define default Image opacity. Useful when in dark-like theme",
+    "desc": "",
+    "descEn": "",
+    "type": "number",
+    "source": "seed"
+  },
+  "sizePopupArrow": {
+    "name": "组件箭头尺寸",
+    "nameEn": "",
+    "desc": "组件箭头的尺寸",
+    "descEn": "The size of the component arrow",
+    "type": "number",
+    "source": "seed"
+  },
+  "sizeStep": {
+    "name": "尺寸步长",
+    "nameEn": "Size Base Step",
+    "desc": "用于控制组件尺寸的基础步长，尺寸步长结合尺寸变化单位，就可以派生各种尺寸梯度。通过调整步长即可得到不同的布局模式，例如 V5 紧凑模式下的尺寸步长为 2",
+    "descEn": "The base step of size change, the size step combined with the size change unit, can derive various size steps. By adjusting the step, you can get different layout modes, such as the size step of the compact mode of V5 is 2",
+    "type": "number",
+    "source": "seed"
+  },
+  "sizeUnit": {
+    "name": "尺寸变化单位",
+    "nameEn": "Size Change Unit",
+    "desc": "用于控制组件尺寸的变化单位，在 Ant Design 中我们的基础单位为 4 ，便于更加细致地控制尺寸梯度",
+    "descEn": "The unit of size change, in Ant Design, our base unit is 4, which is more fine-grained control of the size step",
+    "type": "number",
+    "source": "seed"
+  },
+  "wireframe": {
+    "name": "线框风格",
+    "nameEn": "Wireframe Style",
+    "desc": "用于将组件的视觉效果变为线框化，如果需要使用 V4 的效果，需要开启配置项",
+    "descEn": "Used to change the visual effect of the component to wireframe, if you need to use the V4 effect, you need to enable the configuration item",
+    "type": "boolean",
+    "source": "seed"
+  },
+  "zIndexBase": {
+    "name": "基础 zIndex",
+    "nameEn": "Base zIndex",
+    "desc": "所有组件的基础 Z 轴值，用于一些悬浮类的组件的可以基于该值 Z 轴控制层级，例如 BackTop、 Affix 等",
+    "descEn": "The base Z axis value of all components, which can be used to control the level of some floating components based on the Z axis value, such as BackTop, Affix, etc.",
+    "type": "number",
+    "source": "seed"
+  },
+  "zIndexPopupBase": {
+    "name": "浮层基础 zIndex",
+    "nameEn": "popup base zIndex",
+    "desc": "浮层类组件的基础 Z 轴值，用于一些悬浮类的组件的可以基于该值 Z 轴控制层级，例如 FloatButton、 Affix、Modal 等",
+    "descEn": "Base zIndex of component like FloatButton, Affix which can be cover by large popup",
+    "type": "number",
+    "source": "seed"
+  },
+  "colorPrimaryHeader": {
+    "name": "顶部导航栏的主色",
+    "nameEn": "Primary color of header",
+    "desc": "用于配置顶部导航栏的主色，会根据该色派生出背景色、文本色等变量",
+    "descEn": "Used to configure the primary color of the header, background color, text color and other variables will be derived from this color",
+    "type": "string",
+    "source": "seed"
+  },
+  "colorBgHeader": {
+    "name": "导航栏背景色",
+    "nameEn": "Background color of header",
+    "desc": "顶部导航栏的背景色",
+    "descEn": "Configure the background color of the header",
+    "type": "string",
+    "source": "seed"
+  },
+  "colorBgHeaderMenuHover": {
+    "name": "导航栏菜单背景悬浮态",
+    "nameEn": "Background color of header menu when hover",
+    "desc": "鼠标悬浮在导航栏菜单上时的背景色",
+    "descEn": "Background color of header menu when hover",
+    "type": "string",
+    "source": "seed"
+  },
+  "colorBgHeaderMenuActive": {
+    "name": "导航栏菜单背景激活态",
+    "nameEn": "Background color of header menu when active",
+    "desc": "已选中的导航栏菜单的背景色",
+    "descEn": "Background color of header menu when active",
+    "type": "string",
+    "source": "seed"
+  },
+  "colorTextHeaderMenu": {
+    "name": "导航栏菜单文本色",
+    "nameEn": "Text color of header menu",
+    "desc": "导航栏菜单文本色",
+    "descEn": "Text color of header menu",
+    "type": "string",
+    "source": "seed"
+  },
+  "colorTextHeaderMenuHover": {
+    "name": "导航栏菜单文本色悬浮态",
+    "nameEn": "Text color of header menu when hover",
+    "desc": "导航栏菜单文本色悬浮态",
+    "descEn": "Text color of header menu when hover",
+    "type": "string",
+    "source": "seed"
+  },
+  "colorTextHeaderMenuActive": {
+    "name": "导航栏菜单文本色激活态",
+    "nameEn": "Text color of header menu when active",
+    "desc": "导航栏菜单文本色激活态",
+    "descEn": "Text color of header menu when active",
+    "type": "string",
+    "source": "seed"
+  },
+  "colorSettings": {
+    "name": "UI 配置色",
+    "nameEn": "Primary color of settings",
+    "desc": "用于更改 UI 配置组件的颜色",
+    "descEn": "Used to change the primary color of the UI configuration component.",
+    "type": "string",
+    "source": "seed"
+  },
+  "colorBgSettings": {
+    "name": "UI 配置背景色",
+    "nameEn": "Background color of settings",
+    "desc": "UI 配置组件的背景色",
+    "descEn": "Background color of settings",
+    "type": "string",
+    "source": "seed"
+  },
+  "colorBgSettingsHover": {
+    "name": "UI 配置背景色悬浮态",
+    "nameEn": "Background color of settings when hover",
+    "desc": "鼠标悬浮时显示的背景色",
+    "descEn": "Background color of settings when hover",
+    "type": "string",
+    "source": "seed"
+  },
+  "colorBorderSettings": {
+    "name": "UI 配置边框色",
+    "nameEn": "Border color of settings",
+    "desc": "UI 配置组件的边框色",
+    "descEn": "Border color of settings",
+    "type": "string",
+    "source": "seed"
+  },
+  "colorBorderSettingsHover": {
+    "name": "UI 配置边框色悬浮态",
+    "nameEn": "Border color of settings when hover",
+    "desc": "鼠标悬浮时显示的边框色",
+    "descEn": "Border color of settings when hover",
+    "type": "string",
+    "source": "seed"
+  },
+  "colorTextSettings": {
+    "name": "UI 配置文本色",
+    "nameEn": "Text color of settings",
+    "desc": "UI 配置组件的文本色",
+    "descEn": "Text color of settings",
+    "type": "string",
+    "source": "seed"
+  }
+}

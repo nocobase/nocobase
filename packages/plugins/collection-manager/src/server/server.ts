@@ -1,8 +1,8 @@
 import { InheritedCollection, UniqueConstraintError } from '@nocobase/database';
 import PluginErrorHandler from '@nocobase/plugin-error-handler';
 import { Plugin } from '@nocobase/server';
-import { lodash } from '@nocobase/utils';
 import { Mutex } from 'async-mutex';
+import lodash from 'lodash';
 import path from 'path';
 import * as process from 'process';
 import { CollectionRepository } from '.';
@@ -208,28 +208,24 @@ export class CollectionManagerPlugin extends Plugin {
       });
     });
 
-    this.app.on('afterLoad', async (app, options) => {
-      if (options?.method === 'install') {
-        return;
-      }
-      if (options?.method === 'upgrade') {
-        return;
-      }
-      const exists = await this.app.db.collectionExistsInDb('collections');
-      if (exists) {
-        try {
-          await this.app.db.getRepository<CollectionRepository>('collections').load();
-        } catch (error) {
-          this.app.logger.warn(error);
-          await this.app.db.sync();
+    const loadCollections = async () => {
+      this.app.log.debug('loading custom collections');
+      this.app.setMaintainingMessage('loading custom collections');
+      await this.app.db.getRepository<CollectionRepository>('collections').load();
+    };
 
-          try {
-            await this.app.db.getRepository<CollectionRepository>('collections').load();
-          } catch (error) {
-            throw error;
-          }
-        }
-      }
+    this.app.on('beforeStart', loadCollections);
+    this.app.on('beforeUpgrade', async () => {
+      const syncOptions = {
+        alter: {
+          drop: false,
+        },
+        force: false,
+      };
+      await this.db.getCollection('collections').sync(syncOptions);
+      await this.db.getCollection('fields').sync(syncOptions);
+      await this.db.getCollection('collectionCategories').sync(syncOptions);
+      await loadCollections();
     });
 
     this.app.resourcer.use(async (ctx, next) => {
@@ -250,8 +246,9 @@ export class CollectionManagerPlugin extends Plugin {
 
   async load() {
     await this.importCollections(path.resolve(__dirname, './collections'));
+    this.db.getRepository<CollectionRepository>('collections').setApp(this.app);
 
-    const errorHandlerPlugin = <PluginErrorHandler>this.app.getPlugin('error-handler');
+    const errorHandlerPlugin = this.app.getPlugin<PluginErrorHandler>('error-handler');
     errorHandlerPlugin.errorHandler.register(
       (err) => {
         return err instanceof UniqueConstraintError;
@@ -287,7 +284,7 @@ export class CollectionManagerPlugin extends Plugin {
           const newOptions = {};
 
           // write original field options
-          lodash.merge(newOptions, collectionField.options);
+          lodash.merge(newOptions, lodash.omit(collectionField.options, 'name'));
 
           // merge with current field options
           lodash.mergeWith(newOptions, field.get(), (objValue, srcValue) => {

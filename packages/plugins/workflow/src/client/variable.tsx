@@ -6,17 +6,37 @@ import { triggers } from './triggers';
 
 export type VariableOption = {
   key?: string;
-  value: string;
-  label: string;
+  value?: string;
+  label?: string;
   children?: VariableOptions;
+  [key: string]: any;
 };
 
 export type VariableOptions = VariableOption[] | null;
 
+export type VariableDataType =
+  | string
+  | {
+      type: string;
+      options?: { entity?: boolean; collection?: string };
+    }
+  | ((field: any, appends?: string[]) => boolean);
+
+export type OptionsOfUseVariableOptions = {
+  types?: VariableDataType[];
+  fieldNames?: {
+    label?: string;
+    value?: string;
+    children?: string;
+  };
+};
+
+export const defaultFieldNames = { label: 'label', value: 'value', children: 'children' } as const;
+
 export const nodesOptions = {
   label: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
   value: '$jobsMapByNodeId',
-  useOptions(options) {
+  useOptions(options: OptionsOfUseVariableOptions) {
     const current = useNodeContext();
     const upstreams = useAvailableUpstreams(current);
     const result: VariableOption[] = [];
@@ -34,7 +54,7 @@ export const nodesOptions = {
 export const triggerOptions = {
   label: `{{t("Trigger variables", { ns: "${NAMESPACE}" })}}`,
   value: '$context',
-  useOptions(options) {
+  useOptions(options: OptionsOfUseVariableOptions) {
     const { workflow } = useFlowContext();
     const trigger = triggers.get(workflow.type);
     return trigger?.useVariables?.(workflow.config, options) ?? null;
@@ -44,7 +64,8 @@ export const triggerOptions = {
 export const scopeOptions = {
   label: `{{t("Scope variables", { ns: "${NAMESPACE}" })}}`,
   value: '$scopes',
-  useOptions(options) {
+  useOptions(options: OptionsOfUseVariableOptions) {
+    const { fieldNames = defaultFieldNames } = options;
     const current = useNodeContext();
     const scopes = useUpstreamScopes(current);
     const result: VariableOption[] = [];
@@ -54,9 +75,9 @@ export const scopeOptions = {
       if (subOptions) {
         result.push({
           key: node.id.toString(),
-          value: node.id.toString(),
-          label: node.title ?? `#${node.id}`,
-          children: subOptions,
+          [fieldNames.value]: node.id.toString(),
+          [fieldNames.label]: node.title ?? `#${node.id}`,
+          [fieldNames.children]: subOptions,
         });
       }
     });
@@ -67,14 +88,14 @@ export const scopeOptions = {
 export const systemOptions = {
   label: `{{t("System variables", { ns: "${NAMESPACE}" })}}`,
   value: '$system',
-  useOptions({ types }) {
+  useOptions({ types, fieldNames = defaultFieldNames }: OptionsOfUseVariableOptions) {
     return [
       ...(!types || types.includes('date')
         ? [
             {
               key: 'now',
-              value: 'now',
-              label: lang('System time'),
+              [fieldNames.label]: lang('System time'),
+              [fieldNames.value]: 'now',
             },
           ]
         : []),
@@ -105,7 +126,7 @@ export const BaseTypeSets = {
 // { type: 'reference', options: { collection: 'attachments', multiple: false } }
 // { type: 'reference', options: { collection: 'myExpressions', entity: false } }
 
-function matchFieldType(field, type, appends): boolean {
+function matchFieldType(field, type, appends?: string[]): boolean {
   const inputType = typeof type;
   if (inputType === 'string') {
     return BaseTypeSets[type]?.has(field.interface);
@@ -144,41 +165,40 @@ function getNextAppends(field, appends: string[]) {
 
 function filterTypedFields({ fields, types, appends, compile, getCollectionFields }) {
   return fields.filter((field) => {
-    const match = types?.length ? types.some((type) => matchFieldType(field, type, appends)) : true;
+    if (types?.length) {
+      return types.some((type) => matchFieldType(field, type, appends));
+    }
     if (isAssociationField(field)) {
       const nextAppends = getNextAppends(field, appends);
       const included = appends.includes(field.name);
-      if (match) {
-        return included;
-      } else {
-        return (
-          (nextAppends.length || included) &&
-          filterTypedFields({
-            fields: getNormalizedFields(field.target, { compile, getCollectionFields }),
-            types,
-            // depth: depth - 1,
-            appends: nextAppends,
-            compile,
-            getCollectionFields,
-          }).length
-        );
-      }
-    } else {
-      return match;
+      return (
+        (nextAppends.length || included) &&
+        filterTypedFields({
+          fields: getNormalizedFields(field.target, { compile, getCollectionFields }),
+          types,
+          // depth: depth - 1,
+          appends: nextAppends,
+          compile,
+          getCollectionFields,
+        }).length
+      );
     }
+    return true;
   });
 }
 
-export function useWorkflowVariableOptions(options = {}) {
+export function useWorkflowVariableOptions(options: OptionsOfUseVariableOptions = {}) {
+  const fieldNames = Object.assign({}, defaultFieldNames, options.fieldNames ?? {});
+  const opts = Object.assign(options, { fieldNames });
   const compile = useCompile();
   const result = [scopeOptions, nodesOptions, triggerOptions, systemOptions].map((item: any) => {
-    const opts = item.useOptions(options).filter(Boolean);
+    const children = item.useOptions(opts).filter(Boolean);
     return {
-      label: compile(item.label),
-      value: item.value,
-      key: item.value,
-      children: opts,
-      disabled: opts && !opts.length,
+      [fieldNames.label]: compile(item.label),
+      [fieldNames.value]: item.value,
+      key: item[fieldNames.value],
+      [fieldNames.children]: children,
+      disabled: children && !children.length,
     };
   });
 
@@ -241,20 +261,19 @@ function getNormalizedFields(collectionName, { compile, getCollectionFields }) {
 }
 
 async function loadChildren(option) {
+  const appends = getNextAppends(option.field, option.appends);
   const result = getCollectionFieldOptions({
     collection: option.field.target,
     types: option.types,
-    appends: getNextAppends(option.field, option.appends),
-    sourceKey: option.field.key,
-    compile: this.compile,
-    getCollectionFields: this.getCollectionFields,
+    appends,
+    ...this,
   });
+  option.loadChildren = null;
   if (result.length) {
     option.children = result;
   } else {
     option.isLeaf = true;
-    option.loadChildren = null;
-    const matchingType = option.types?.some((type) => matchFieldType(option.field, type, 0));
+    const matchingType = option.types ? option.types.some((type) => matchFieldType(option.field, type, appends)) : true;
     if (!matchingType) {
       option.disabled = true;
     }
@@ -262,10 +281,18 @@ async function loadChildren(option) {
 }
 
 export function getCollectionFieldOptions(options): VariableOption[] {
-  const { fields, collection, types, appends = [], compile, getCollectionFields } = options;
+  const {
+    fields,
+    collection,
+    types,
+    appends = [],
+    compile,
+    getCollectionFields,
+    fieldNames = defaultFieldNames,
+  } = options;
   const normalizedFields = getNormalizedFields(collection, { compile, getCollectionFields });
   const computedFields = fields ?? normalizedFields;
-  const boundLoadChildren = loadChildren.bind({ compile, getCollectionFields });
+  const boundLoadChildren = loadChildren.bind({ compile, getCollectionFields, fieldNames });
 
   const result: VariableOption[] = filterTypedFields({
     fields: computedFields,
@@ -276,13 +303,14 @@ export function getCollectionFieldOptions(options): VariableOption[] {
     getCollectionFields,
   }).map((field) => {
     const label = compile(field.uiSchema?.title || field.name);
+    // console.log('===', label, field);
     const nextAppends = getNextAppends(field, appends);
     // TODO: no matching fields in next appends should consider isLeaf as true
     const isLeaf = !isAssociationField(field) || (!nextAppends.length && !appends.includes(field.name));
     return {
-      label,
+      [fieldNames.label]: label,
       key: field.name,
-      value: field.name,
+      [fieldNames.value]: field.name,
       isLeaf,
       loadChildren: isLeaf ? null : boundLoadChildren,
       field,

@@ -10,7 +10,7 @@ export const collection = {
   'x-decorator': 'FormItem',
   'x-component': 'CollectionSelect',
   'x-component-props': {
-    popupMatchSelectWidth: false,
+    className: 'auto-width',
   },
 };
 
@@ -49,17 +49,134 @@ export const filter = {
   },
 };
 
+export const sort = {
+  type: 'array',
+  title: '{{t("Sort")}}',
+  'x-decorator': 'FormItem',
+  'x-component': 'ArrayItems',
+  items: {
+    type: 'object',
+    properties: {
+      space: {
+        type: 'void',
+        'x-component': 'Space',
+        properties: {
+          sort: {
+            type: 'void',
+            'x-decorator': 'FormItem',
+            'x-component': 'ArrayItems.SortHandle',
+          },
+          field: {
+            type: 'string',
+            enum: '{{useSortableFields()}}',
+            required: true,
+            'x-decorator': 'FormItem',
+            'x-component': 'Select',
+            'x-component-props': {
+              style: {
+                width: 260,
+              },
+            },
+          },
+          direction: {
+            type: 'string',
+            'x-decorator': 'FormItem',
+            'x-component': 'Radio.Group',
+            'x-component-props': {
+              optionType: 'button',
+            },
+            enum: [
+              {
+                label: '{{t("ASC")}}',
+                value: 'asc',
+              },
+              {
+                label: '{{t("DESC")}}',
+                value: 'desc',
+              },
+            ],
+          },
+          remove: {
+            type: 'void',
+            'x-decorator': 'FormItem',
+            'x-component': 'ArrayItems.Remove',
+          },
+        },
+      },
+    },
+  },
+  properties: {
+    add: {
+      type: 'void',
+      title: '{{t("Add sort field")}}',
+      'x-component': 'ArrayItems.Addition',
+    },
+  },
+};
+
+export const pagination = {
+  type: 'void',
+  title: '{{t("Pagination")}}',
+  'x-decorator': 'SchemaComponentContext.Provider',
+  'x-decorator-props': {
+    value: { designable: false },
+  },
+  'x-component': 'Grid',
+  properties: {
+    row: {
+      type: 'void',
+      'x-component': 'Grid.Row',
+      properties: {
+        page: {
+          type: 'void',
+          'x-component': 'Grid.Col',
+          properties: {
+            page: {
+              type: 'number',
+              title: '{{t("Page number")}}',
+              'x-decorator': 'FormItem',
+              'x-component': 'Variable.Input',
+              'x-component-props': {
+                scope: '{{useWorkflowVariableOptions()}}',
+                useTypedConstant: ['number', 'null'],
+              },
+              default: 1,
+            },
+          },
+        },
+        pageSize: {
+          type: 'void',
+          'x-component': 'Grid.Col',
+          properties: {
+            pageSize: {
+              type: 'number',
+              title: '{{t("Page size")}}',
+              'x-decorator': 'FormItem',
+              'x-component': 'InputNumber',
+              'x-component-props': {
+                min: 1,
+                max: 100,
+              },
+              default: 20,
+            },
+          },
+        },
+      },
+    },
+  },
+};
+
 export const appends = {
   type: 'array',
   title: `{{t("Preload associations", { ns: "${NAMESPACE}" })}}`,
-  description: `{{t("Please select the associated fields that need to be accessed in subsequent nodes", { ns: "${NAMESPACE}" })}}`,
+  description: `{{t("Please select the associated fields that need to be accessed in subsequent nodes. With more than two levels of to-many associations may cause performance issue, please use with caution.", { ns: "${NAMESPACE}" })}}`,
   'x-decorator': 'FormItem',
-  'x-component': 'FieldsSelect',
+  'x-component': 'AppendsTreeSelect',
   'x-component-props': {
-    mode: 'multiple',
-    placeholder: '{{t("Select field")}}',
-    filter(field) {
-      return ['linkTo', 'belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type);
+    multiple: true,
+    useCollection() {
+      const { values } = useForm();
+      return values?.collection;
     },
   },
   'x-reactions': [

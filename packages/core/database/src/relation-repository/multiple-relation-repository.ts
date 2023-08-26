@@ -1,4 +1,6 @@
-import { MultiAssociationAccessors, Sequelize, Transaction, Transactionable } from 'sequelize';
+import lodash from 'lodash';
+import { HasOne, MultiAssociationAccessors, Sequelize, Transaction, Transactionable } from 'sequelize';
+import injectTargetCollection from '../decorators/target-collection-decorator';
 import {
   CommonFindOptions,
   CountOptions,
@@ -6,14 +8,13 @@ import {
   Filter,
   FindOneOptions,
   FindOptions,
-  TargetKey,
   TK,
+  TargetKey,
   UpdateOptions,
 } from '../repository';
 import { updateModelByValues } from '../update-associations';
 import { UpdateGuard } from '../update-guard';
 import { RelationRepository, transaction } from './relation-repository';
-import { EagerLoadingTree } from '../eager-loading/eager-loading-tree';
 
 export type FindAndCountOptions = CommonFindOptions;
 
@@ -27,67 +28,31 @@ export abstract class MultipleRelationRepository extends RelationRepository {
   }
 
   async find(options?: FindOptions): Promise<any> {
-    const transaction = await this.getTransaction(options);
+    const targetRepository = this.targetCollection.repository;
 
-    const findOptions = {
-      ...this.extendFindOptions(
-        this.buildQueryOptions({
-          ...options,
-        }),
-      ),
-      subQuery: false,
+    const association = this.association as any;
+
+    const oneFromTargetOptions = {
+      as: '_pivot_',
+      foreignKey: association.otherKey,
+      sourceKey: association.targetKey,
+      realAs: association.through.model.name,
     };
 
-    const getAccessor = this.accessors().get;
-    const sourceModel = await this.getSourceModel(transaction);
+    const pivotAssoc = new HasOne(association.target, association.through.model, oneFromTargetOptions);
 
-    if (!sourceModel) return [];
+    const appendFilter = {
+      isPivotFilter: true,
+      association: pivotAssoc,
+      where: {
+        [association.foreignKey]: this.sourceKeyValue,
+      },
+    };
 
-    if (findOptions.include && findOptions.include.length > 0) {
-      const ids = (
-        await sourceModel[getAccessor]({
-          ...findOptions,
-          includeIgnoreAttributes: false,
-          attributes: [this.targetKey()],
-          group: `${this.targetModel.name}.${this.targetKey()}`,
-          transaction,
-        })
-      ).map((row) => {
-        return { row, pk: row.get(this.targetKey()) };
-      });
-
-      if (ids.length == 0) {
-        return [];
-      }
-
-      const eagerLoadingTree = EagerLoadingTree.buildFromSequelizeOptions({
-        model: this.targetModel,
-        rootAttributes: findOptions.attributes,
-        includeOption: findOptions.include,
-        rootOrder: findOptions.order,
-        db: this.db,
-      });
-
-      await eagerLoadingTree.load(
-        ids.map((i) => i.pk),
-        transaction,
-      );
-
-      return eagerLoadingTree.root.instances;
-    }
-
-    const data = await sourceModel[getAccessor]({
-      ...findOptions,
-      transaction,
+    return targetRepository.find({
+      include: [appendFilter],
+      ...options,
     });
-
-    await this.collection.db.emitAsync('afterRepositoryFind', {
-      findOptions: options,
-      dataCollection: this.collection,
-      data,
-    });
-
-    return data;
   }
 
   async findAndCount(options?: FindAndCountOptions): Promise<[any[], number]> {
@@ -148,20 +113,15 @@ export abstract class MultipleRelationRepository extends RelationRepository {
   })
   async remove(options: TargetKey | TargetKey[] | AssociatedOptions): Promise<void> {
     const transaction = await this.getTransaction(options);
-    let handleKeys = options['tk'];
-
-    if (!Array.isArray(handleKeys)) {
-      handleKeys = [handleKeys];
-    }
-
     const sourceModel = await this.getSourceModel(transaction);
-    await sourceModel[this.accessors().removeMultiple](handleKeys, {
+    await sourceModel[this.accessors().removeMultiple](this.convertTks(options), {
       transaction,
     });
     return;
   }
 
   @transaction()
+  @injectTargetCollection
   async update(options?: UpdateOptions): Promise<any> {
     const transaction = await this.getTransaction(options);
 
@@ -169,10 +129,8 @@ export abstract class MultipleRelationRepository extends RelationRepository {
 
     const values = guard.sanitize(options.values);
 
-    const queryOptions = this.buildQueryOptions(options as any);
-
     const instances = await this.find({
-      ...queryOptions,
+      ...(lodash.omit(options, ['values']) as any),
       transaction,
     });
 
@@ -180,7 +138,7 @@ export abstract class MultipleRelationRepository extends RelationRepository {
       await updateModelByValues(instance, values, {
         ...options,
         sanitized: true,
-        sourceModel: this.sourceInstance,
+        sourceModel: await this.getSourceModel(transaction),
         transaction,
       });
     }

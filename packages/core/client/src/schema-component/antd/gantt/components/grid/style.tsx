@@ -1,19 +1,30 @@
-import { css } from '@emotion/css';
-export const gridRow = css`
-  fill: #fff;
-`;
+import { genStyleHook } from '../../../__builtins__';
 
-export const gridHeightRow = css`
-  fill: #e6f7ff;
-  border-color: rgba(0, 0, 0, 0.03);
-`;
+const useStyles = genStyleHook('nb-grid-body', (token) => {
+  const { componentCls } = token;
 
-export const gridRowLine = css`
-  stroke: #f0f0f0;
-  stroke-width: 0;
-  border-bottom: 1px solid #f0f0f0;
-`;
+  return {
+    [componentCls]: {
+      '.gridRow': {
+        fill: token.colorBgContainer,
+      },
 
-export const gridTick = css`
-  stroke: #f0f0f0;
-`;
+      '.gridHeightRow': {
+        fill: '#e6f7ff',
+        borderColor: token.colorBorder,
+      },
+
+      '.gridRowLine': {
+        stroke: token.colorBorderSecondary,
+        strokeWidth: 0,
+        borderBottom: `1px solid ${token.colorBorderSecondary}`,
+      },
+
+      '.gridTick': {
+        stroke: token.colorBorderSecondary,
+      },
+    },
+  };
+});
+
+export default useStyles;

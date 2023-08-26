@@ -4,7 +4,7 @@ import { SyncOutlined } from '@ant-design/icons';
 import { useFieldSchema } from '@formily/react';
 import { css, useCollection } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
-import { Alert, Button, Modal, Spin } from 'antd';
+import { Alert, App, Button, Spin } from 'antd';
 import React, { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMapConfiguration } from '../../hooks';
@@ -102,6 +102,7 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
   const editor = useRef(null);
   const navigate = useNavigate();
   const id = useRef(`nocobase-map-${type || ''}-${Date.now().toString(32)}`);
+  const { modal } = App.useApp();
 
   const [commonOptions] = useState<AMap.PolylineOptions & AMap.PolygonOptions>({
     strokeWeight: 5,
@@ -210,11 +211,12 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
       }
       onChange?.(null);
     };
-    Modal.confirm({
+    modal.confirm({
       title: t('Clear the canvas'),
       content: t('Are you sure to clear the canvas?'),
       okText: t('Confirm'),
       cancelText: t('Cancel'),
+      getContainer: () => document.getElementById(id.current),
       onOk() {
         ok();
       },
@@ -309,12 +311,15 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
       };
     }
 
+    const _define = (window as any).define;
+    (window as any).define = undefined;
     AMapLoader.load({
       key: accessKey,
       version: '2.0',
       plugins: ['AMap.MouseTool', 'AMap.PolygonEditor', 'AMap.PolylineEditor', 'AMap.CircleEditor'],
     })
       .then((amap) => {
+        (window as any).define = _define;
         return requestIdleCallback(() => {
           map.current = new amap.Map(id.current, {
             resizeEnable: true,

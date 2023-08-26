@@ -1,10 +1,9 @@
-import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Drawer } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import { useTranslation } from 'react-i18next';
 import { OpenSize } from './';
+import { useStyles } from './Action.Drawer.style';
 import { useActionContext } from './hooks';
 import { ComposedActionDrawer } from './types';
 
@@ -16,12 +15,10 @@ const openSizeWidthMap = new Map<OpenSize, string>([
 export const ActionDrawer: ComposedActionDrawer = observer(
   (props) => {
     const { footerNodeName = 'Action.Drawer.Footer', ...others } = props;
-    const { t } = useTranslation();
     const { visible, setVisible, openSize = 'middle', drawerProps, modalProps } = useActionContext();
     const schema = useFieldSchema();
     const field = useField();
-    const openSizeFromParent = schema.parent?.['x-component-props']?.['openSize'];
-    const finalOpenSize = openSizeFromParent || openSize;
+    const { componentCls, hashId } = useStyles();
     const footerSchema = schema.reduceProperties((buf, s) => {
       if (s['x-component'] === footerNodeName) {
         return s;
@@ -35,7 +32,6 @@ export const ActionDrawer: ComposedActionDrawer = observer(
         title={field.title}
         {...others}
         {...drawerProps}
-        {...modalProps}
         rootStyle={{
           ...drawerProps?.style,
           ...others?.style,
@@ -43,51 +39,10 @@ export const ActionDrawer: ComposedActionDrawer = observer(
         destroyOnClose
         open={visible}
         onClose={() => setVisible(false, true)}
-        rootClassName={classNames(
-          drawerProps?.className,
-          others.className,
-          css`
-            &.nb-action-popup {
-              .ant-drawer-header {
-                display: none;
-              }
-
-              .ant-drawer-body {
-                padding-top: 14px;
-              }
-
-              .ant-drawer-content {
-                background: var(--nb-box-bg);
-              }
-            }
-
-            &.nb-record-picker-selector {
-              .nb-block-item {
-                margin-bottom: 24px;
-
-                .general-schema-designer {
-                  top: -8px;
-                  bottom: -8px;
-                  left: -8px;
-                  right: -8px;
-                }
-              }
-            }
-          `,
-        )}
+        rootClassName={classNames(componentCls, hashId, drawerProps?.className, others.className, 'reset')}
         footer={
           footerSchema && (
-            <div
-              className={css`
-                display: flex;
-                justify-content: flex-end;
-                width: 100%;
-
-                .ant-btn {
-                  margin-right: 8px;
-                }
-              `}
-            >
+            <div className={'footer'}>
               <RecursionField
                 basePath={field.address}
                 schema={schema}

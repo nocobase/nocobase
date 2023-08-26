@@ -5,10 +5,14 @@ export function useAppPluginLoad(app: Application) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   useEffect(() => {
+    app.ws.on('message', (event) => {
+      console.log(event.data);
+    });
     async function run() {
       try {
         await app.load();
       } catch (err) {
+        console.error(err);
         setError(err);
       }
       setLoading(false);

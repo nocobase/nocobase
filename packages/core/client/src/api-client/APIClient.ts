@@ -2,14 +2,15 @@ import { APIClient as APIClientSDK } from '@nocobase/sdk';
 import { Result } from 'ahooks/es/useRequest/src/types';
 import { notification } from 'antd';
 import React from 'react';
+import { Application } from '../application';
 
-const handleErrorMessage = (error) => {
+const handleErrorMessage = (error, notification) => {
   const reader = new FileReader();
   reader.readAsText(error?.response?.data, 'utf-8');
   reader.onload = function () {
     notification.error({
       message: JSON.parse(reader.result as string).errors?.map?.((error: any) => {
-        return React.createElement('div', { children: error.message });
+        return React.createElement('div', {}, error.message);
       }),
     });
   };
@@ -19,6 +20,9 @@ const errorCache = new Map();
 export class APIClient extends APIClientSDK {
   services: Record<string, Result<any, any>> = {};
   silence = false;
+  app: Application;
+  /** 该值会在 AntdAppProvider 中被重新赋值 */
+  notification: any = notification;
 
   service(uid: string) {
     return this.services[uid];
@@ -34,10 +38,10 @@ export class APIClient extends APIClientSDK {
       return config;
     });
     super.interceptors();
-    this.notification();
+    this.useNotificationMiddleware();
   }
 
-  notification() {
+  useNotificationMiddleware() {
     this.axios.interceptors.response.use(
       (response) => response,
       (error) => {
@@ -49,10 +53,20 @@ export class APIClient extends APIClientSDK {
           return (window.location.href = redirectTo);
         }
         if (error?.response?.data?.type === 'application/json') {
-          handleErrorMessage(error);
+          handleErrorMessage(error, this.notification);
         } else {
           if (errorCache.size > 10) {
             errorCache.clear();
+          }
+          const maintaining = !!error?.response?.data?.error?.maintaining;
+          if (this.app.maintaining !== maintaining) {
+            this.app.maintaining = maintaining;
+          }
+          if (this.app.maintaining) {
+            this.app.error = error?.response?.data?.error;
+            return;
+          } else if (this.app.error) {
+            this.app.error = null;
           }
           let errs = error?.response?.data?.errors || [{ message: 'Server error' }];
           errs = errs.filter((error) => {
@@ -66,7 +80,7 @@ export class APIClient extends APIClientSDK {
           if (errs.length === 0) {
             throw error;
           }
-          notification.error({
+          this.notification.error({
             message: errs?.map?.((error: any) => {
               return React.createElement('div', {}, error.message);
             }),

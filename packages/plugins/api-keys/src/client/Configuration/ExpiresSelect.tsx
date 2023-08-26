@@ -1,7 +1,6 @@
-import { css } from '@emotion/css';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
-import { useRecord } from '@nocobase/client';
-import { dayjs } from '@nocobase/utils/client';
+import { css, useRecord } from '@nocobase/client';
+import dayjs from 'dayjs';
 import { useBoolean } from 'ahooks';
 import { DatePicker, Select, Space, Typography } from 'antd';
 import React, { useMemo } from 'react';

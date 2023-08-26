@@ -1,7 +1,7 @@
-import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { APIClientContext, useRequest } from '../api-client';
+import { useAPIClient, useRequest } from '../api-client';
+import { useAppSpin } from '../application/hooks/useAppSpin';
 
 export interface CollectionHistoryContextValue {
   historyCollections: any[];
@@ -14,7 +14,7 @@ const CollectionHistoryContext = createContext<CollectionHistoryContextValue>({
 });
 
 export const CollectionHistoryProvider: React.FC = (props) => {
-  const api = useContext(APIClientContext);
+  const api = useAPIClient();
 
   const options = {
     resource: 'collectionsHistory',
@@ -33,12 +33,15 @@ export const CollectionHistoryProvider: React.FC = (props) => {
 
   // console.log('location', location);
 
-  const service = useRequest(options, {
+  const service = useRequest<{
+    data: any;
+  }>(options, {
     manual: true,
   });
 
   const isAdminPage = location.pathname.startsWith('/admin');
   const token = api.auth.getToken() || '';
+  const { render } = useAppSpin();
 
   useEffect(() => {
     if (isAdminPage && token) {
@@ -54,7 +57,7 @@ export const CollectionHistoryProvider: React.FC = (props) => {
   };
 
   if (service.loading) {
-    return <Spin />;
+    return render();
   }
 
   return (

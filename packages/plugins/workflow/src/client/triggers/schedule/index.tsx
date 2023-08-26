@@ -1,15 +1,20 @@
-import { useCollectionDataSource, SchemaInitializerItemOptions, useCompile, useCollectionManager } from '@nocobase/client';
+import {
+  SchemaInitializerItemOptions,
+  useCollectionDataSource,
+  useCollectionManager,
+  useCompile,
+} from '@nocobase/client';
 
+import { CollectionBlockInitializer } from '../../components/CollectionBlockInitializer';
+import { NAMESPACE, lang } from '../../locale';
+import { getCollectionFieldOptions } from '../../variable';
 import { ScheduleConfig } from './ScheduleConfig';
 import { SCHEDULE_MODE } from './constants';
-import { NAMESPACE, lang } from '../../locale';
-import { CollectionBlockInitializer } from '../../components/CollectionBlockInitializer';
-import { getCollectionFieldOptions } from '../../variable';
-import { FieldsSelect } from '../../components/FieldsSelect';
 
 export default {
   title: `{{t("Schedule event", { ns: "${NAMESPACE}" })}}`,
   type: 'schedule',
+  description: `{{t("Event will be scheduled and triggered base on time conditions.", { ns: "${NAMESPACE}" })}}`,
   fieldset: {
     config: {
       type: 'void',
@@ -22,7 +27,6 @@ export default {
   },
   components: {
     ScheduleConfig,
-    FieldsSelect,
   },
   useVariables(config, opts) {
     const compile = useCompile();
@@ -32,25 +36,31 @@ export default {
       options.push({ key: 'date', value: 'date', label: lang('Trigger time') });
     }
 
-    const depth = config.appends?.length
-      ? config.appends.reduce((max, item) => Math.max(max, item.split('.').length), 1) + 1
-      : 1;
+    // const depth = config.appends?.length
+    //   ? config.appends.reduce((max, item) => Math.max(max, item.split('.').length), 1) + 1
+    //   : 1;
 
-    const fieldOptions = getCollectionFieldOptions({
-      depth,
-      ...opts,
-      collection: config.collection,
-      compile,
-      getCollectionFields,
-    });
     if (config.mode === SCHEDULE_MODE.COLLECTION_FIELD) {
-      if (fieldOptions.length) {
-        options.push({
-          key: 'data',
-          value: 'data',
-          label: lang('Trigger data'),
-          children: fieldOptions,
-        });
+      const [fieldOption] = getCollectionFieldOptions({
+        // depth,
+        ...opts,
+        fields: [
+          {
+            collectionName: config.collection,
+            name: 'data',
+            type: 'hasOne',
+            target: config.collection,
+            uiSchema: {
+              title: lang('Trigger data'),
+            },
+          },
+        ],
+        appends: ['data', ...(config.appends?.map((item) => `data.${item}`) || [])],
+        compile,
+        getCollectionFields,
+      });
+      if (fieldOption) {
+        options.push(fieldOption);
       }
     }
     return options;

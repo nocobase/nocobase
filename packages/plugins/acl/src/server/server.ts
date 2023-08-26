@@ -2,7 +2,7 @@ import { NoPermissionError } from '@nocobase/acl';
 import { Context, utils as actionUtils } from '@nocobase/actions';
 import { Collection, RelationField, snakeCase } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
-import { lodash } from '@nocobase/utils';
+import lodash from 'lodash';
 import { resolve } from 'path';
 import { availableActionResource } from './actions/available-actions';
 import { checkAction } from './actions/role-check';
@@ -342,23 +342,17 @@ export class PluginACL extends Plugin {
       }
     });
 
-    // sync database role data to acl
-    this.app.on('afterLoad', async (app, options) => {
-      if (options?.method === 'install' || options?.method === 'upgrade') {
-        return;
-      }
+    const writeRolesToACL = async (app, options) => {
       const exists = await this.app.db.collectionExistsInDb('roles');
       if (exists) {
+        this.log.info('write roles to ACL');
         await this.writeRolesToACL();
       }
-    });
+    };
 
-    this.app.on('afterInstall', async (app, options) => {
-      const exists = await this.app.db.collectionExistsInDb('roles');
-      if (exists) {
-        await this.writeRolesToACL();
-      }
-    });
+    // sync database role data to acl
+    this.app.on('afterLoad', writeRolesToACL);
+    this.app.on('afterInstall', writeRolesToACL);
 
     this.app.on('afterInstallPlugin', async (plugin) => {
       if (plugin.getName() !== 'users') {

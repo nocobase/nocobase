@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import qs from 'qs';
+import getSubAppName from './getSubAppName';
 
 export interface ActionParams {
   filterByTk?: any;
@@ -30,6 +31,7 @@ export class Auth {
     role: 'NOCOBASE_ROLE',
     token: 'NOCOBASE_TOKEN',
     authenticator: 'NOCOBASE_AUTH',
+    theme: 'NOCOBASE_THEME',
   };
 
   protected options = {
@@ -46,14 +48,13 @@ export class Auth {
   }
 
   initKeys() {
-    if (!window) {
+    if (typeof window === 'undefined') {
       return;
     }
-    const match = window.location.pathname.match(/^\/apps\/([^/]*)\//);
-    if (!match) {
+    const appName = getSubAppName();
+    if (!appName) {
       return;
     }
-    const appName = match[1];
     this.KEYS['role'] = `${appName.toUpperCase()}_` + this.KEYS['role'];
     this.KEYS['locale'] = `${appName.toUpperCase()}_` + this.KEYS['locale'];
   }

@@ -1,24 +1,25 @@
 import { DownOutlined, EllipsisOutlined, RightOutlined } from '@ant-design/icons';
 import {
   ActionContextProvider,
-  cx,
   ResourceActionProvider,
   SchemaComponent,
+  cx,
   useDocumentTitle,
   useResourceActionContext,
   useResourceContext,
 } from '@nocobase/client';
-import { Breadcrumb, Button, Dropdown, message, Modal, Switch } from 'antd';
-import classnames from 'classnames';
+import { str2moment } from '@nocobase/utils/client';
+import { App, Breadcrumb, Button, Dropdown, Switch, message } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
+
 import { CanvasContent } from './CanvasContent';
 import { ExecutionLink } from './ExecutionLink';
 import { FlowContext, useFlowContext } from './FlowContext';
 import { lang } from './locale';
 import { executionSchema } from './schemas/executions';
-import { workflowVersionDropdownClass } from './style';
+import useStyles from './style';
 import { linkNodes } from './utils';
 
 function ExecutionResourceProvider({ request, filter = {}, ...others }) {
@@ -47,6 +48,9 @@ export function WorkflowCanvas() {
   const { resource } = useResourceContext();
   const { setTitle } = useDocumentTitle();
   const [visible, setVisible] = useState(false);
+  const { styles } = useStyles();
+  const { modal } = App.useApp();
+
   useEffect(() => {
     const { title } = data?.data ?? {};
     setTitle?.(`${lang('Workflow')}${title ? `: ${title}` : ''}`);
@@ -95,7 +99,7 @@ export function WorkflowCanvas() {
     const content = workflow.current
       ? lang('Delete a main version will cause all other revisions to be deleted too.')
       : '';
-    Modal.confirm({
+    modal.confirm({
       title: t('Are you sure you want to delete it?'),
       content,
       async onOk() {
@@ -141,14 +145,12 @@ export function WorkflowCanvas() {
     >
       <div className="workflow-toolbar">
         <header>
-          <Breadcrumb>
-            <Breadcrumb.Item>
-              <Link to={`/admin/settings/workflow/workflows`}>{lang('Workflow')}</Link>
-            </Breadcrumb.Item>
-            <Breadcrumb.Item>
-              <strong>{workflow.title}</strong>
-            </Breadcrumb.Item>
-          </Breadcrumb>
+          <Breadcrumb
+            items={[
+              { title: <Link to={`/admin/settings/workflow/workflows`}>{lang('Workflow')}</Link> },
+              { title: <strong>{workflow.title}</strong> },
+            ]}
+          />
         </header>
         <aside>
           <div className="workflow-versions">
@@ -157,23 +159,22 @@ export function WorkflowCanvas() {
               menu={{
                 onClick: onSwitchVersion,
                 defaultSelectedKeys: [`${workflow.id}`],
-                className: cx(workflowVersionDropdownClass),
+                className: cx(styles.dropdownClass, styles.workflowVersionDropdownClass),
                 items: revisions
                   .sort((a, b) => b.id - a.id)
                   .map((item, index) => ({
                     key: `${item.id}`,
                     icon: item.current ? <RightOutlined /> : null,
+                    className: cx({
+                      executed: item.executed,
+                      unexecuted: !item.executed,
+                      enabled: item.enabled,
+                    }),
                     label: (
-                      <span
-                        className={classnames({
-                          executed: item.executed,
-                          unexecuted: !item.executed,
-                          enabled: item.enabled,
-                        })}
-                      >
+                      <>
                         <strong>{`#${item.id}`}</strong>
-                        <time>{new Date(item.createdAt).toLocaleString()}</time>
-                      </span>
+                        <time>{str2moment(item.createdAt).format('YYYY-MM-DD HH:mm:ss')}</time>
+                      </>
                     ),
                   })),
               }}

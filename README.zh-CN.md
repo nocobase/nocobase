@@ -8,8 +8,10 @@ NocoBase 正处在早期开发阶段，可能变动频繁，请谨慎用于生�
 
 ## 最近重要更新
 
-- [v0.11: New client application, plugin and router - 2023/07/08](http://docs-cn.nocobase.com/welcome/release/v11-changelog)
-- [v0.10: Update instructions - 2023/06/23](http://docs-cn.nocobase.com/welcome/release/v10-changelog)
+- [v0.13: 全新的应用状态流转 - 2023/08/24](https://docs-cn.nocobase.com/welcome/release/v13-changelog)
+- [v0.12: 全新的插件构建工具 - 2023/08/01](https://docs-cn.nocobase.com/welcome/release/v12-changelog)
+- [v0.11: 全新的客户端 Application、Plugin 和 Router - 2023/07/08](https://docs-cn.nocobase.com/welcome/release/v11-changelog)
+- [v0.10: Update instructions - 2023/06/23](https://docs-cn.nocobase.com/welcome/release/v10-changelog)
 
 ## 我们在招聘
 
@@ -67,7 +69,7 @@ NocoBase 采用插件化架构，所有新功能都可以通过开发和安装�
 
 如果你需要商业版本和商业服务，欢迎通过邮件联系我们：hello@nocobase.com  
 
-也可以添加我们的微信，沟通商业合作或者加入微信群：  
+也可以添加我们的微信，沟通商业合作或者加入用户交流群：  
 
 ![](https://www.nocobase.com/images/wechat.png)  
 

@@ -1,14 +1,9 @@
-import { Plugin, PluginManager } from '@nocobase/server';
-import { lodash } from '@nocobase/utils';
+import { Plugin, PluginManager, getPackageClientStaticUrl } from '@nocobase/server';
 import fs from 'fs';
-import send from 'koa-send';
-import serve from 'koa-static';
-import { isAbsolute, resolve } from 'path';
+import { resolve } from 'path';
 import { getAntdLocale } from './antd';
 import { getCronLocale } from './cron';
 import { getCronstrueLocale } from './cronstrue';
-import { getMomentLocale } from './moment-locale';
-import { getResourceLocale } from './resource';
 
 async function getReadMe(name: string, locale: string) {
   const packageName = PluginManager.getPackageName(name);
@@ -112,6 +107,9 @@ export class ClientPlugin extends Plugin {
   }
 
   async load() {
+    this.app.locales.setLocaleFn('antd', async (lang) => getAntdLocale(lang));
+    this.app.locales.setLocaleFn('cronstrue', async (lang) => getCronstrueLocale(lang));
+    this.app.locales.setLocaleFn('cron', async (lang) => getCronLocale(lang));
     this.db.addMigrations({
       namespace: 'client',
       directory: resolve(__dirname, './migrations'),
@@ -125,16 +123,16 @@ export class ClientPlugin extends Plugin {
     this.app.acl.allow('plugins', '*', 'public');
     this.app.acl.registerSnippet({
       name: 'app',
-      actions: ['app:reboot', 'app:clearCache'],
+      actions: ['app:restart', 'app:clearCache'],
     });
     const dialect = this.app.db.sequelize.getDialect();
-    const locales = require('./locale').default;
     const restartMark = resolve(process.cwd(), 'storage', 'restart');
     this.app.on('beforeStart', async () => {
       if (fs.existsSync(restartMark)) {
         fs.unlinkSync(restartMark);
       }
     });
+
     this.app.resource({
       name: 'app',
       actions: {
@@ -153,31 +151,17 @@ export class ClientPlugin extends Plugin {
             },
             version: await ctx.app.version.get(),
             lang,
+            name: ctx.app.name,
             theme: currentUser?.systemSettings?.theme || systemSetting?.options?.theme || 'default',
           };
           await next();
         },
         async getLang(ctx, next) {
           const lang = await getLang(ctx);
-          if (lodash.isEmpty(locales[lang])) {
-            locales[lang] = {};
-          }
-          if (lodash.isEmpty(locales[lang].resources)) {
-            locales[lang].resources = await getResourceLocale(lang, ctx.db);
-          }
-          if (lodash.isEmpty(locales[lang].antd)) {
-            locales[lang].antd = getAntdLocale(lang);
-          }
-          if (lodash.isEmpty(locales[lang].cronstrue)) {
-            locales[lang].cronstrue = getCronstrueLocale(lang);
-          }
-          if (lodash.isEmpty(locales[lang].cron)) {
-            locales[lang].cron = getCronLocale(lang);
-          }
+          const resources = await ctx.app.locales.get(lang);
           ctx.body = {
             lang,
-            moment: getMomentLocale(lang),
-            ...locales[lang],
+            ...resources,
           };
           await next();
         },
@@ -189,34 +173,29 @@ export class ClientPlugin extends Plugin {
             },
           });
           ctx.body = items
-            .filter((item) => {
+            .map((item) => {
               try {
                 const packageName = PluginManager.getPackageName(item.name);
                 require.resolve(`${packageName}/client`);
-                return true;
-              } catch (error) {}
-              return false;
+                return {
+                  ...item.toJSON(),
+                  packageName,
+                  url: getPackageClientStaticUrl(packageName, 'index'),
+                };
+              } catch {
+                return false;
+              }
             })
-            .map((item) => item.name);
+            .filter(Boolean);
           await next();
         },
         async clearCache(ctx, next) {
           await ctx.cache.reset();
           await next();
         },
-        reboot(ctx) {
-          const RESTART_CODE = 100;
-          process.on('exit', (code) => {
-            if (code === RESTART_CODE && process.env.APP_ENV === 'production') {
-              fs.writeFileSync(restartMark, '1');
-              console.log('Restart mark created.');
-            }
-          });
-          ctx.app.on('afterStop', () => {
-            // Exit with code 100 will restart the process
-            process.exit(RESTART_CODE);
-          });
-          ctx.app.stop();
+        async restart(ctx, next) {
+          ctx.app.runAsCLI(['restart'], { from: 'user' });
+          await next();
         },
       },
     });
@@ -252,25 +231,6 @@ export class ClientPlugin extends Plugin {
         },
       },
     });
-    let root = this.options.dist || `./packages/app/client/dist`;
-    if (!isAbsolute(root)) {
-      root = resolve(process.cwd(), root);
-    }
-    if (process.env.APP_ENV !== 'production' && root) {
-      this.app.use(
-        async (ctx, next) => {
-          if (ctx.path.startsWith(this.app.resourcer.options.prefix)) {
-            return next();
-          }
-          await serve(root)(ctx, next);
-          // console.log('koa-send', root, ctx.status);
-          if (ctx.status == 404) {
-            return send(ctx, 'index.html', { root });
-          }
-        },
-        { tag: 'clientStatic', before: 'cors' },
-      );
-    }
   }
 }
 

@@ -563,10 +563,10 @@ export const useFilterInheritsFormItemInitializerFields = (options?) => {
   const { getInterface, getInheritCollections, getCollection, getParentCollectionFields } = useCollectionManager();
   const inherits = getInheritCollections(name);
   const { snapshot } = useActionContext();
+  const form = useForm();
 
   return inherits?.map((v) => {
     const fields = getParentCollectionFields(v, name);
-    const form = useForm();
     const { readPretty = form.readPretty, block = 'Form' } = options || {};
     const targetCollection = getCollection(v);
     return {
@@ -710,10 +710,13 @@ const findSchema = (schema: Schema, key: string, action: string) => {
     if (s[key] === action) {
       return s;
     }
-    const c = findSchema(s, key, action);
-    if (c) {
-      return c;
+    if (s['x-component'] !== 'Action.Container') {
+      const c = findSchema(s, key, action);
+      if (c) {
+        return c;
+      }
     }
+
     return buf;
   });
 };
@@ -741,7 +744,6 @@ export const useCurrentSchema = (action: string, key: string, find = findSchema,
   const { remove } = useDesignable();
   const schema = find(fieldSchema, key, action);
   const ctx = useContext(BlockRequestContext);
-
   return {
     schema,
     exists: !!schema,
@@ -860,7 +862,7 @@ export const useCollectionDataSourceItems = (componentName) => {
           const fields = getCollectionFields(item.name);
           if (item.autoGenId === false && !fields.find((v) => v.primaryKey)) {
             return false;
-          } else if (['Kanban', 'FormItem'].includes(componentName) && item.template === 'view') {
+          } else if (['Kanban', 'FormItem'].includes(componentName) && item.template === 'view' && !item.writableView) {
             return false;
           } else if (item.template === 'file' && ['Kanban', 'FormItem', 'Calendar'].includes(componentName)) {
             return false;
