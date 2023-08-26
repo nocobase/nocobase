@@ -25,6 +25,7 @@ export function selectQuery(
 
   // Add WHERE to sub or main query
   if (Object.prototype.hasOwnProperty.call(options, 'where')) {
+    console.log('options.where', options.where, tableName, model, options);
     options.where = this.getWhereConditions(options.where, tableName, model, options);
     if (options.where) {
       queryItems.push(` WHERE ${options.where}`);
