@@ -13,6 +13,10 @@ interface Deps {
 export const transformVariableValue = (value: any, deps: Deps) => {
   const { targetCollectionField } = deps;
 
+  if (!targetCollectionField) {
+    return value;
+  }
+
   if (['hasMany', 'belongsToMany'].includes(targetCollectionField.type)) {
     if (!Array.isArray(value)) {
       return [value];
