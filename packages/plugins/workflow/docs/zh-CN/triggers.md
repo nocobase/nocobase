@@ -9,7 +9,7 @@
 创建工作流以后，在工作流查看页面中，触发器会以入口节点的样式显示在流程的开始位置，点击该卡片即可打开配置弹窗。根据触发器的类型不同，可以配置触发器的相关条件。
 
 <figure>
-  <img alt="触发器_入口节点" src="https://github.com/nocobase/nocobase/assets/525658/c8d99091-8160-44af-8f09-98d01f4c0d74" width="410">
+  <img alt="触发器_入口节点" src="https://github.com/nocobase/nocobase/assets/525658/83e38fef-db0b-41d9-a2c1-afecf7f00ca1" width="287">
 </figure>
 
 ## 表单事件
@@ -21,23 +21,23 @@
 针对“提交”按钮（含“保存数据”按钮）配置的工作流，将在用户提交对应表单且数据操作完成后被触发。
 
 <figure>
-  <img alt="表单事件_提交按钮" src="https://github.com/nocobase/nocobase/assets/525658/60fa8e45-0b1a-4d5a-b1ec-c0279458b27d" width="508">
+  <img alt="表单事件_提交按钮" src="https://github.com/nocobase/nocobase/assets/525658/d321f964-859f-4d72-86a6-57301fb471fc" width="510">
 </figure>
 
 针对自定义的“提交至工作流”按钮配置的工作流，将在用户点击对应按钮时，直接将已配置的表单数据提交到对应工作流进行处理。
 
 <figure>
-  <img alt="表单事件_提交至工作流按钮" src="https://github.com/nocobase/nocobase/assets/525658/f726a8d8-b866-469f-989a-8623e8f34f58" width="613">
+  <img alt="表单事件_提交至工作流按钮" src="https://github.com/nocobase/nocobase/assets/525658/2b4a37bc-ca5c-4bea-b864-1b59bc17df32" width="504">
 </figure>
 
 从按钮配置的菜单中选择“绑定工作流”，即可打开绑定配置弹窗。弹窗中可以配置任意多个要触发的工作流，如果一个都不配置，则代表无需触发。针对每一个工作流，需要先限定触发的数据是整个表单的数据还是表单中的某个关系字段的数据，之后再根据所选的数据模型对应的数据表，选择已配置了匹配该表模型的表单工作流。
 
 <figure>
-  <img alt="表单事件_绑定工作流配置_上下文选择" src="https://github.com/nocobase/nocobase/assets/525658/d0561e6c-8931-496c-bc62-8cac5096ce9b" width="594">
+  <img alt="表单事件_绑定工作流配置_上下文选择" src="https://github.com/nocobase/nocobase/assets/525658/d0e410c9-ab98-43f7-8431-1fe4c8731f01" width="589">
 </figure>
 
 <figure>
-  <img alt="表单事件_绑定工作流配置_工作流选择" src="https://github.com/nocobase/nocobase/assets/525658/c804950e-d9ae-43ee-b9c1-c0c12cc3dc14" width="596">
+  <img alt="表单事件_绑定工作流配置_工作流选择" src="https://github.com/nocobase/nocobase/assets/525658/ceb114ba-5aa7-4f00-971c-6426e5bd2390" width="581">
 </figure>
 
 ### 相关提示
@@ -68,7 +68,7 @@
 之后先创建一个“表单事件”类型的工作流，并且把触发器中的数据表模型配置为“费用报销”表：
 
 <figure>
-  <img alt="配置表单事件工作流的数据模型" src="https://github.com/nocobase/nocobase/assets/525658/62084cc7-0071-4430-96e2-6853c7918e6f" width="549">
+  <img alt="配置表单事件工作流的数据模型" src="https://github.com/nocobase/nocobase/assets/525658/e8665221-b7d3-40a0-ab6e-de7a77cb47d0" width="478">
 </figure>
 
 将工作流设置为启用状态后，流程的具体处理节点稍后再回来配置。
@@ -76,13 +76,13 @@
 然后我们在界面上创建“费用报销”数据表的表格区块，并且在工具栏增加一个“添加”按钮，配置对应的表单字段。这里我们不使用默认的“提交”按钮，而是移除后重新添加一个“提交至工作流”的按钮：
 
 <figure>
-  <img alt="配置提交表单" src="https://github.com/nocobase/nocobase/assets/525658/9bb35856-b674-40c0-9b80-df2598e7b4c3" width="659">
+  <img alt="配置提交表单" src="https://github.com/nocobase/nocobase/assets/525658/c339aaa5-d116-4f05-b911-241a4e414ea2" width="510">
 </figure>
 
 并打开按钮的“绑定工作流”配置对话框，选择整个表单数据作为上下文，以及工作流为我们之前创建的工作流：
 
 <figure>
-  <img alt="配置绑定工作流" src="https://github.com/nocobase/nocobase/assets/525658/d53dcfeb-b81a-4af4-8934-b9132a363d54" width="592">
+  <img alt="配置绑定工作流" src="https://github.com/nocobase/nocobase/assets/525658/d0e410c9-ab98-43f7-8431-1fe4c8731f01" width="589">
 </figure>
 
 表单配置完成后，再回到工作流的逻辑编排。比如我们需要金额大于 500 元时要求管理员进行人工审核，否则直接通过，审核通过后才创建报销记录，并由财务进一步处理（略）。

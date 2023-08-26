@@ -11,7 +11,7 @@
 一个典型的工作流如下图所示：
 
 <figure>
-  <img alt="工作流示例" src="https://github.com/nocobase/nocobase/assets/525658/7b8fd56c-9aa1-4027-81df-d8c25c6bc80f" width="960">
+  <img alt="工作流示例" src="https://github.com/nocobase/nocobase/assets/525658/22654549-bb2e-49cd-acfb-217d7ccc6628" width="1022" />
 </figure>
 
 ## 基本概念
@@ -70,17 +70,17 @@
 在一个工作流被触发执行后，可以通过工作流的执行历史查看对应的执行记录细节，以检查执行是否正常，或者查看节点的执行结果，每个已执行的节点都可以查看对应的执行状态和结果数据。如下例：
 
 <figure>
-  <img alt="执行流程记录：流程全图" src="https://github.com/nocobase/nocobase/assets/525658/237087f0-3fd7-4ae4-969f-acee3857bd10" width="959">
+  <img alt="执行流程记录：流程全图" src="https://github.com/nocobase/nocobase/assets/525658/d6dfb579-6931-4bda-afbe-4ca2929bf996" width="1022">
   <figcaption>执行流程记录：流程全图</figcaption>
 </figure>
 
 <figure>
-  <img alt="执行流程记录：节点信息" src="https://github.com/nocobase/nocobase/assets/525658/0f80beee-77db-4c64-9bff-9044a98b3107" width="1139">
+  <img alt="执行流程记录：节点信息" src="https://github.com/nocobase/nocobase/assets/525658/f76e15d0-6d27-40e0-98a3-53316171f16c" width="852">
   <figcaption>执行流程记录：节点信息</figcaption>
 </figure>
 
 <figure>
-  <img alt="执行流程记录：多次执行的节点信息" src="https://github.com/nocobase/nocobase/assets/525658/75f746ef-c0dd-48b7-9248-d87470120ebf" width="669">
+  <img alt="执行流程记录：多次执行的节点信息" src="https://github.com/nocobase/nocobase/assets/525658/e2d37676-e0ae-49f6-872d-eec04d44083b" width="643">
   <figcaption>执行流程记录：多次执行的节点信息</figcaption>
 </figure>
 
@@ -101,7 +101,7 @@
 变量是在工作流触发后以及按节点逐个执行时，在每个节点配置中可以使用的前序数据。例如可以将数据表触发工作流的数据，使用在后续的更新数据操作中，用以达成通过关联关系更新关联数据的结果。一个简单的场景，就是当用户对一个商品购买下单时，通过订单对应的商品，更新商品的库存为之前的库存 -1。
 
 <figure>
-  <img alt="商品下单更新商品库存" src="https://github.com/nocobase/nocobase/assets/525658/fefbb0cc-e9ac-4f34-86a7-201289786bb5" width="678">
+  <img alt="商品下单更新商品库存" src="https://github.com/nocobase/nocobase/assets/525658/0749a949-b9ba-4d8a-8c35-e1ace3d5c56d" width="637">
   <figcaption>图中两处“x”按钮为选择变量</figcaption>
 </figure>
 
@@ -125,7 +125,7 @@
 同样在工作流的新建和编辑弹窗中可以配置对应流程是否自动删除历史记录：
 
 <figure>
-  <img alt="自动删除历史记录配置" src="https://github.com/nocobase/nocobase/assets/525658/c108a19b-7e5c-4c21-a8dc-03a9274e499c" width="673">
+  <img alt="自动删除历史记录配置" src="https://github.com/nocobase/nocobase/assets/525658/e80d8a9d-4691-42c3-8d2f-13709144b82d" width="509">
 </figure>
 
 自动删除可以根据执行结果的状态来进行配置，大部分情况下，建议仅勾选“完成”状态，这样可以保留执行失败的记录，以便后续排查问题。

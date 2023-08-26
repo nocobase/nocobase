@@ -35,7 +35,7 @@
 条件判断有两种模式，分别是“‘是’则继续”和“‘是’和‘否’分别继续”，在创建节点时需要选择其中一种模式，之后在节点的配置中不能修改。
 
 <figure>
-  <img alt="条件判断_模式选择" src="https://github.com/nocobase/nocobase/assets/525658/2af1907a-686d-4ae5-a60e-602c038b3388" width="457">
+  <img alt="条件判断_模式选择" src="https://github.com/nocobase/nocobase/assets/525658/2f18fba5-c83e-4456-8185-505ba3bca167" width="440">
 </figure>
 
 “‘是’则继续”的模式下，当条件判断的结果为“是”时，流程将继续执行后续节点，否则流程将终止，并以失败的状态提前退出。这种模式适合于不满足条件的情况下，流程不再继续的场景，例如使用“提交至工作流”表单按钮配置了提交订单的表单，但在订单对应商品库存不足的情况下，不继续生成订单，而是失败退出。
@@ -69,7 +69,7 @@ TODO
 在流程中增加并行分支节点后，会默认增加两个子分支，同时也可以点击增加分支的按钮增加任意多个分支，每个分支都可以增加任意的节点，不需要的分支可以点击分支开始处的删除按钮删除。
 
 <figure>
-  <img alt="并行分支_分支管理" src="https://github.com/nocobase/nocobase/assets/525658/4cbd6c3a-3599-4284-9aff-438f1db0d81f" width="970"/>
+  <img alt="并行分支_分支管理" src="https://github.com/nocobase/nocobase/assets/525658/9325a206-e043-4b5b-aac5-eee5164b40b5" width="800"/>
 </figure>
 
 #### 节点配置
@@ -93,6 +93,10 @@ TODO
 #### 基本使用
 
 创建循环节点后，会生成一个循环内部的分支，可以在分支中增加任意多个节点，这些节点除了可以使用流程上下文的变量，还可以使用循环上下文的局部变量，例如循环集合中每次循环到的数据对象，或者是循环次数的索引（索引从 `0` 开始计数）。局部变量的作用域仅限于循环内部，如果有多层循环嵌套，内层循环的局部变量会覆盖外层循环的局部变量。
+
+<figure>
+  <img width="576" alt="循环_流程示意" src="https://github.com/nocobase/nocobase/assets/525658/32ad891b-6bb5-4f6f-ae3f-70c7c00f6946" />
+</figure>
 
 #### 节点配置
 
@@ -125,7 +129,7 @@ TODO
 #### 节点配置
 
 <figure>
-    <img alt="延时节点_节点配置" src="https://github.com/nocobase/nocobase/assets/525658/8ff4d17f-99a3-43bd-bf51-b55cd83dd8ce" width="619" />
+    <img alt="延时节点_节点配置" src="https://github.com/nocobase/nocobase/assets/525658/3b48495d-50f1-4f97-aec9-a6db275c0ebf" width="497" />
 </figure>
 
 ##### 延时时间
@@ -151,7 +155,7 @@ TODO
 #### 节点配置
 
 <figure>
-    <img alt="运算节点_节点配置" src="https://github.com/nocobase/nocobase/assets/525658/a4d27149-d32d-4320-8426-5434ad0b84e1" width="707" />
+    <img alt="运算节点_节点配置" src="https://github.com/nocobase/nocobase/assets/525658/d9d4637f-9671-4827-8e22-5ffc22192c66" width="510" />
 </figure>
 
 ##### 运算引擎
@@ -169,7 +173,7 @@ TODO
 通常一个订单内可能有多个商品，每个商品的价格和数量都不同，订单的总价需要计算所有商品的价格和数量的乘积之和。可以在加载订单明细列表（对多关系数据集）之后使用运算节点来计算订单的总价：
 
 <figure>
-    <img alt="运算节点_示例_节点配置" src="https://github.com/nocobase/nocobase/assets/525658/6a81347b-e5cd-4b16-8c55-ea62141ebba4" width="783" />
+    <img alt="运算节点_示例_节点配置" src="https://github.com/nocobase/nocobase/assets/525658/e0a8198a-44dd-4cc5-a34a-e58ce89e19d2" width="989" />
 </figure>
 
 其中 Formula.js 的 `SUMPRODUCT` 函数可以计算两个相同长度数组每行的乘积之和，加总就可以得到订单的总价。
@@ -189,7 +193,7 @@ TODO
 #### 节点配置
 
 <figure>
-    <img alt="运算节点_示例_节点配置" src="https://github.com/nocobase/nocobase/assets/525658/f16ebb35-44f2-4d11-845f-655d561d7083" width="793" />
+    <img alt="新增节点_示例_节点配置" src="https://github.com/nocobase/nocobase/assets/525658/e2353bc7-cedb-4391-982c-0f04aa44c945" width="509" />
 </figure>
 
 ##### 数据表
@@ -211,12 +215,12 @@ TODO
 例如当“文章”表的数据变更时，需要自动新增一条“文章版本”数据，记录文章的变更历史，可以使用新增节点来实现：
 
 <figure>
-    <img alt="新增节点_示例_流程配置" src="https://github.com/nocobase/nocobase/assets/525658/c58526c9-b49b-4cca-a41a-5a02ea218d14" width="340" />
+    <img alt="新增节点_示例_流程配置" src="https://github.com/nocobase/nocobase/assets/525658/69f29210-0c58-47e9-a661-8e24cfc7ae03" width="340" />
     <figcaption>流程配置</figcaption>
 </figure>
 
 <figure>
-    <img alt="新增节点_示例_节点配置" src="https://github.com/nocobase/nocobase/assets/525658/3aac7675-49b4-4854-8f94-5c72f238636f" width="792" />
+    <img alt="新增节点_示例_节点配置" src="https://github.com/nocobase/nocobase/assets/525658/27a4bbbc-7af7-48b1-b64a-5cbde666a44f" width="638" />
     <figcaption>节点配置</figcaption>
 </figure>
 
@@ -233,7 +237,7 @@ TODO
 #### 节点配置
 
 <figure>
-    <img alt="更新节点_节点配置" src="https://github.com/nocobase/nocobase/assets/525658/14734301-9c5a-4645-81e4-e591d0c2432a" width="614" />
+    <img alt="更新节点_节点配置" src="https://github.com/nocobase/nocobase/assets/525658/a078620a-b82a-4000-be57-325dfd22fcd8" width="635" />
 </figure>
 
 ##### 数据表
@@ -259,7 +263,7 @@ TODO
 例如当新增“文章”时，需要自动更新“文章分类”表的“文章数量”字段，可以使用更新节点来实现：
 
 <figure>
-    <img alt="更新节点_示例_节点配置" src="https://github.com/nocobase/nocobase/assets/525658/bf230f38-7d0c-4d7e-b68f-a6c3834535d0" width="835" />
+    <img alt="更新节点_示例_节点配置" src="https://github.com/nocobase/nocobase/assets/525658/d903dea3-b301-4b09-9497-de4803dc04b3" width="797" />
 </figure>
 
 当工作流触发后，会自动更新“文章分类”表的“文章数量”字段为当前文章数量 +1。
@@ -277,7 +281,7 @@ TODO
 #### 节点配置
 
 <figure>
-    <img alt="删除节点_节点配置" src="https://github.com/nocobase/nocobase/assets/525658/5e1050ed-d3c2-47bb-a4aa-2b53530ef4cb" width="718" />
+    <img alt="删除节点_节点配置" src="https://github.com/nocobase/nocobase/assets/525658/2984b455-9639-418c-bda9-6c69a55f30c6" width="636" />
 </figure>
 
 ##### 数据表
@@ -293,7 +297,7 @@ TODO
 例如定时清理已取消的无效历史订单数据，可以使用删除节点来实现：
 
 <figure>
-    <img alt="删除节点_示例_节点配置" src="https://github.com/nocobase/nocobase/assets/525658/46022d53-641e-4e67-beb9-1f4ce29357f6" width="694" />
+    <img alt="删除节点_示例_节点配置" src="https://github.com/nocobase/nocobase/assets/525658/665213ae-2a42-4166-9cba-5a12350a26b1" width="610" />
 </figure>
 
 工作流将定时触发，并执行删除所有已取消的无效历史订单数据。
@@ -309,7 +313,7 @@ TODO
 #### 节点配置
 
 <figure>
-    <img alt="查询节点_节点配置" src="https://github.com/nocobase/nocobase/assets/525658/78d2c6ad-6d39-4f92-a0c8-79e16677b641" width="979" />
+    <img alt="查询节点_节点配置" src="https://github.com/nocobase/nocobase/assets/525658/ad3a892e-0bdb-447e-9491-71f31ea23a2b" width="638" />
 </figure>
 
 ##### 数据表
@@ -347,7 +351,7 @@ TODO
 #### 节点配置
 
 <figure>
-    <img alt="聚合查询节点_节点配置" src="https://github.com/nocobase/nocobase/assets/525658/a7ae9b56-f774-4e7d-b9d3-c03be7806c82" width="671" />
+    <img alt="聚合查询节点_节点配置" src="https://github.com/nocobase/nocobase/assets/525658/33a1e1ea-37dd-40db-a0d7-f4654a30f238" width="636" />
 </figure>
 
 ##### 聚合函数
@@ -387,7 +391,7 @@ TODO
 之后增加一个聚合查询节点，配置如下：
 
 <figure>
-    <img alt="聚合查询节点_示例_节点配置" src="https://github.com/nocobase/nocobase/assets/525658/0006ab1a-16c2-4922-ac07-6be81abdbafa" width="674" />
+    <img alt="聚合查询节点_示例_节点配置" src="https://github.com/nocobase/nocobase/assets/525658/9bd9c581-a669-469d-acb7-c80bfe859b3a" width="636" />
 </figure>
 
 这样在工作流被触发后，聚合查询节点中将会统计新增文章的分类下所有文章的数量，并保存为节点的结果。
@@ -407,7 +411,7 @@ TODO
 通过编辑框右上角的变量按钮插入需要的变量，会在执行前通过文本替换为对应变量的值：
 
 <figure>
-    <img alt="SQL节点_节点配置" src="https://github.com/nocobase/nocobase/assets/525658/d8daacec-8fd6-40e8-a13e-ef6d910cf290" width="670" />
+    <img alt="SQL节点_节点配置" src="https://github.com/nocobase/nocobase/assets/525658/dc8d5081-7a6e-4f23-b41a-82a86ec5e569" width="638" />
 </figure>
 
 ## 人工处理
@@ -597,7 +601,7 @@ TODO
 #### 节点配置
 
 <figure>
-    <img alt="HTTP请求节点_节点配置" src="https://github.com/nocobase/nocobase/assets/525658/980457f0-9637-4479-a78f-a3973c894a15" width="680" />
+    <img alt="HTTP请求节点_节点配置" src="https://github.com/nocobase/nocobase/assets/525658/d147aa52-8253-40c2-9761-b6cd1059b744" width="637" />
 </figure>
 
 ##### 请求方法
@@ -637,7 +641,7 @@ HTTP 服务的 URL，需要包含协议部分（`http://` 或 `https://`），�
 例如我们可以使用请求节点来对接云平台发送通知短信，以阿里云发送短信接口为例配置如下（相关参数需自行查阅文档适配）：
 
 <figure>
-    <img alt="HTTP请求节点_示例_节点配置" src="https://github.com/nocobase/nocobase/assets/525658/980457f0-9637-4479-a78f-a3973c894a15" width="680" />
+    <img alt="HTTP请求节点_示例_节点配置" src="https://github.com/nocobase/nocobase/assets/525658/d147aa52-8253-40c2-9761-b6cd1059b744" width="637" />
 </figure>
 
 工作流触发该节点执行时会以配置的内容调用阿里云的短信接口，请求成功的话将通过短信云服务发送一条短信。
