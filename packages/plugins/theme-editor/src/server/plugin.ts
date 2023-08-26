@@ -28,6 +28,7 @@ export class ThemeEditorPlugin extends Plugin {
         },
       ],
     });
+    this.app.acl.allow('themeConfig', '*');
   }
 
   async install(options?: InstallOptions) {
