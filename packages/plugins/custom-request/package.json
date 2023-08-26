@@ -2,6 +2,10 @@
   "name": "@nocobase/plugin-custom-request",
   "version": "0.13.0-alpha.2",
   "main": "dist/server/index.js",
+  "displayName": "Custom Request",
+  "displayName.zh-CN": "自定义请求",
+  "description": "Provide custom request for nocobase.",
+  "description.zh-CN": "为 nocobase 提供自定义请求。",
   "dependencies": {
     "@formily/react": "2.x",
     "@formily/shared": "2.x",
