@@ -1229,6 +1229,7 @@ SchemaSettings.DataTemplates = function DataTemplates(props) {
       title: t('Form data templates'),
       properties: {
         fieldReaction: {
+          'x-decorator': (props) => <FlagProvider {...props} isInFormDataTemplate />,
           'x-component': FormDataTemplates,
           'x-component-props': {
             designerCtx,

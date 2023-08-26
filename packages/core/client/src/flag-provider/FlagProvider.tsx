@@ -9,6 +9,10 @@ export interface FlagProviderProps {
    * 是否存在于 `设置默认值` 弹窗中
    */
   isInSetDefaultValueDialog?: boolean;
+  /**
+   * 是否存在于 `表单数据模板` 中
+   */
+  isInFormDataTemplate?: boolean;
   children: any;
 }
 
@@ -19,8 +23,9 @@ export const FlagProvider = (props: FlagProviderProps) => {
     return {
       isInAssignFieldValues: props.isInAssignFieldValues,
       isInSetDefaultValueDialog: props.isInSetDefaultValueDialog,
+      isInFormDataTemplate: props.isInFormDataTemplate,
     };
-  }, [props.isInAssignFieldValues, props.isInSetDefaultValueDialog]);
+  }, [props.isInAssignFieldValues, props.isInFormDataTemplate, props.isInSetDefaultValueDialog]);
 
   return <FlagContext.Provider value={value}>{props.children}</FlagContext.Provider>;
 };

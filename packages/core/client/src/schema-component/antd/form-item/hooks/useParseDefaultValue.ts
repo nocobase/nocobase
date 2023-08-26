@@ -23,7 +23,7 @@ const useParseDefaultValue = () => {
   const variables = useVariables();
   const localVariables = useLocalVariables();
   const record = useRecord();
-  const { isInAssignFieldValues, isInSetDefaultValueDialog } = useFlag() || {};
+  const { isInAssignFieldValues, isInSetDefaultValueDialog, isInFormDataTemplate } = useFlag() || {};
   const { getField } = useCollection();
   const { isSpecialCase, setDefaultValue } = useSpecialCase();
   const index = useRecordIndex();
@@ -32,11 +32,12 @@ const useParseDefaultValue = () => {
   const recordRef = useRef(_.omit(record, '__parent'));
 
   useEffect(() => {
-    // 根据 record 是否为空，判断当前是否是新建状态，编辑状态下不需要设置默认值，否则会覆盖用户输入的值，只有新建状态下才需要设置默认值
     if (
       fieldSchema.default == null ||
       isInSetDefaultValueDialog ||
+      isInFormDataTemplate ||
       isSubMode(fieldSchema) ||
+      // 根据 record 是否为空，判断当前是否是新建状态，编辑状态下不需要设置默认值，否则会覆盖用户输入的值，只有新建状态下才需要设置默认值
       (!_.isEmpty(recordRef.current) && isFromDatabase(record) && !isInAssignFieldValues)
     ) {
       return;
