@@ -39,6 +39,7 @@ import {
   CollectionFieldOptions,
   CollectionManagerContext,
   CollectionProvider,
+  DatePickerProvider,
   Designable,
   FormDialog,
   FormProvider,
@@ -1796,17 +1797,19 @@ SchemaSettings.DataScope = function DataScopeConfigure(props: DataScopeProps) {
 
   const dynamicComponent = (props: DynamicComponentProps) => {
     return (
-      <VariableInput
-        {...props}
-        form={form}
-        record={record}
-        shouldChange={getShouldChange({
-          collectionField: props.collectionField,
-          variables,
-          localVariables,
-          getAllCollectionsInheritChain,
-        })}
-      />
+      <DatePickerProvider value={{ utc: false }}>
+        <VariableInput
+          {...props}
+          form={form}
+          record={record}
+          shouldChange={getShouldChange({
+            collectionField: props.collectionField,
+            variables,
+            localVariables,
+            getAllCollectionsInheritChain,
+          })}
+        />
+      </DatePickerProvider>
     );
   };
 
