@@ -236,6 +236,13 @@ export function Input(props) {
             }
             prevOption = prevOption.children.find((item) => item[names.value] === key);
           }
+
+          // 如果为空则说明相关字段已被删除
+          // fix T-1565
+          if (!prevOption) {
+            return;
+          }
+
           labels.push(prevOption[names.label]);
         } catch (err) {
           error(err);

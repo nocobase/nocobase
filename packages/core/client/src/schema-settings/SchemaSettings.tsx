@@ -549,6 +549,7 @@ SchemaSettings.Remove = function Remove(props: any) {
   const ctx = useBlockTemplateContext();
   const form = useForm();
   const { modal } = App.useApp();
+  const { removeActiveFieldName } = useFormActiveFields() || {};
 
   return (
     <SchemaSettings.Item
@@ -573,6 +574,7 @@ SchemaSettings.Remove = function Remove(props: any) {
               dn.remove(null, options);
             }
             delete form.values[fieldSchema.name];
+            removeActiveFieldName?.(fieldSchema.name as string);
           },
         });
       }}
