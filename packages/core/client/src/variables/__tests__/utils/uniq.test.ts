@@ -10,7 +10,7 @@ describe('uniq', () => {
   test('uniq method with array elements as strings', () => {
     const value = ['apple', 'banana', 'apple', 'orange'];
     const result = uniq(value);
-    expect(result).toEqual(['apple', 'banana', 'orange']);
+    expect(result).toEqual(['apple', 'banana', 'apple', 'orange']);
   });
 
   test('uniq method with array elements as objects with an id property', () => {
@@ -27,8 +27,15 @@ describe('uniq', () => {
   });
 
   test('uniq method with array elements as objects without an id property', () => {
-    const value = [{ name: 'John' }, { name: 'John' }, { name: 'John Doe' }];
+    const value = [
+      { id: 1, name: 'John' },
+      { id: 1, name: 'John' },
+      { id: 2, name: 'John Doe' },
+    ];
     const result = uniq(value);
-    expect(result).toEqual([{ name: 'John' }, { name: 'John Doe' }]);
+    expect(result).toEqual([
+      { id: 1, name: 'John' },
+      { id: 2, name: 'John Doe' },
+    ]);
   });
 });

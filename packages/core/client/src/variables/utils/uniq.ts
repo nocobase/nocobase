@@ -10,10 +10,9 @@ export const uniq = (value: any) => {
     return value;
   }
 
-  return _.uniqBy(value, (item) => {
-    if (_.isObject(item)) {
-      return _.get(item, 'id', JSON.stringify(item));
-    }
-    return item;
-  });
+  if (!_.isObject(value[0])) {
+    return value;
+  }
+
+  return _.uniqBy(value, 'id');
 };

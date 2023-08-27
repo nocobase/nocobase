@@ -1,7 +1,7 @@
 import { Field } from '@formily/core';
 import { evaluators } from '@nocobase/evaluators/client';
 import { uid } from '@nocobase/utils';
-import { cloneDeep } from 'lodash';
+import _, { cloneDeep } from 'lodash';
 import { ActionType } from '../../../schema-settings/LinkageRules/type';
 import { VariableOption, VariablesContextType } from '../../../variables/types';
 import { REGEX_OF_VARIABLE } from '../../../variables/utils/isVariable';
@@ -67,7 +67,10 @@ export const linkageMergeAction = async ({
       break;
     case ActionType.Value:
       {
-        if (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables })) {
+        if (
+          isConditionEmpty(condition) ||
+          (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables }))
+        ) {
           let result = null;
           if (value?.mode === 'express') {
             const scope = cloneDeep(values);
@@ -137,4 +140,11 @@ async function replaceVariables(
     }),
     scope,
   };
+}
+
+function isConditionEmpty(rules: { $and?: any; $or?: any }) {
+  const type = Object.keys(rules)[0] || '$and';
+  const conditions = rules[type];
+
+  return _.isEmpty(conditions);
 }
