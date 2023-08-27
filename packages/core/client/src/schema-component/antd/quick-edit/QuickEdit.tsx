@@ -2,9 +2,9 @@ import { css } from '@emotion/css';
 import { FormItem } from '@formily/antd-v5';
 import { Field, createForm } from '@formily/core';
 import { FormContext, RecursionField, observer, useField, useFieldSchema } from '@formily/react';
+import { Popover } from 'antd';
 import React, { useMemo, useRef } from 'react';
 import { useCollectionManager } from '../../../collection-manager';
-import { Popover } from '../popover';
 
 export const Editable = observer((props) => {
   const field: any = useField();
