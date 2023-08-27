@@ -439,7 +439,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this.setMaintainingMessage('emit afterStart');
     await this.emitAsync('afterStart', this, options);
-    await this.emitAsync('__started', this, options);
+    await this.emitAsync('__started', this, {
+      maintainingStatus: lodash.cloneDeep(this._maintainingCommandStatus),
+    });
+
     this.stopped = false;
   }
 

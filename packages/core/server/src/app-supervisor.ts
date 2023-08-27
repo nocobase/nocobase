@@ -90,7 +90,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     AppSupervisor.instance = null;
   }
 
-  setAppStatus(appName: string, status: AppStatus) {
+  setAppStatus(appName: string, status: AppStatus, options = {}) {
     if (this.appStatus[appName] === status) {
       return;
     }
@@ -100,6 +100,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     this.emit('appStatusChanged', {
       appName,
       status,
+      options,
     });
   }
 
@@ -257,8 +258,18 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
       });
     });
 
-    app.on('__started', async () => {
-      this.setAppStatus(app.name, 'running');
+    app.on('__started', async (_app, options) => {
+      const { maintainingStatus } = options;
+      if (
+        maintainingStatus &&
+        ['install', 'upgrade', 'pm.enable', 'pm.disable'].includes(maintainingStatus.command.name)
+      ) {
+        this.setAppStatus(app.name, 'running', {
+          refresh: true,
+        });
+      } else {
+        this.setAppStatus(app.name, 'running');
+      }
     });
 
     app.on('afterStop', async () => {
@@ -266,7 +277,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     });
 
     app.on('maintaining', (maintainingStatus: MaintainingCommandStatus) => {
-      const { status } = maintainingStatus;
+      const { status, command } = maintainingStatus;
 
       switch (status) {
         case 'command_begin':

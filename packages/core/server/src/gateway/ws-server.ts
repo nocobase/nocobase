@@ -76,16 +76,18 @@ export class WSServer {
       });
     });
 
-    AppSupervisor.getInstance().on('appStatusChanged', async ({ appName, status }) => {
+    AppSupervisor.getInstance().on('appStatusChanged', async ({ appName, status, options }) => {
       const app = await AppSupervisor.getInstance().getApp(appName, {
         withOutBootStrap: true,
       });
 
       const payload = getPayloadByErrorCode(status, { app, appName });
-      console.log(`send payload ${JSON.stringify(payload)}`);
       this.sendToConnectionsByTag('app', appName, {
         type: 'maintaining',
-        payload,
+        payload: {
+          ...payload,
+          ...options,
+        },
       });
     });
   }
