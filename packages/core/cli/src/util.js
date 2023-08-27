@@ -2,8 +2,8 @@ const net = require('net');
 const chalk = require('chalk');
 const execa = require('execa');
 const { dirname, resolve } = require('path');
-const { readFile, writeFile } = require('fs').promises;
 const { existsSync, mkdirSync, cpSync } = require('fs');
+const { readFile, writeFile, readdir, symlink, unlink, mkdir, stat } = require('fs').promises;
 
 exports.isPackageValid = (package) => {
   try {
@@ -174,3 +174,56 @@ exports.generateAppDir = function generateAppDir() {
     process.env.APP_PACKAGE_ROOT = appPkgPath;
   }
 };
+
+async function getStoragePluginNames(target) {
+  const plugins = [];
+  const items = await readdir(target);
+  for (const item of items) {
+    if (item.startsWith('@')) {
+      const children = await getStoragePluginNames(resolve(target, item));
+      plugins.push(
+        ...children.map((child) => {
+          return `${item}/${child}`;
+        }),
+      );
+    } else if (await fsExists(resolve(target, item, 'package.json'))) {
+      plugins.push(item);
+    }
+  }
+  return plugins;
+}
+
+async function fsExists(path) {
+  try {
+    await stat(path);
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+async function createStoragePluginSymLink(pluginName) {
+  const storagePluginsPath = resolve(process.cwd(), 'storage/plugins');
+  // const nodeModulesPath = resolve(dirname(require.resolve('@nocobase/server/package.json')), 'node_modules');
+  const nodeModulesPath = resolve(process.cwd(), 'node_modules');
+  if (pluginName.startsWith('@')) {
+    const [orgName] = pluginName.split('/');
+    if (!(await fsExists(resolve(nodeModulesPath, orgName)))) {
+      await mkdir(resolve(nodeModulesPath, orgName), { recursive: true });
+    }
+  }
+  const link = resolve(nodeModulesPath, pluginName);
+  if (await fsExists(link)) {
+    await unlink(link);
+  }
+  await symlink(resolve(storagePluginsPath, pluginName), link);
+}
+
+async function createStoragePluginsSymlink() {
+  const pluginNames = await getStoragePluginNames(resolve(process.cwd(), 'storage/plugins'));
+  for (const pluginName of pluginNames) {
+    await createStoragePluginSymLink(pluginName);
+  }
+}
+
+exports.createStoragePluginsSymlink = createStoragePluginsSymlink;

@@ -6,10 +6,11 @@ import net from 'net';
 import { resolve } from 'path';
 import Application from '../application';
 import { createAppProxy } from '../helper';
-import { Plugin } from '../plugin';
+import { Plugin, PluginOptions } from '../plugin';
 import collectionOptions from './options/collection';
 import resourceOptions from './options/resource';
 import { PluginManagerRepository } from './plugin-manager-repository';
+import { PluginResolver } from './plugin-resolver';
 
 export interface PluginManagerOptions {
   app: Application;
@@ -22,17 +23,39 @@ export interface InstallOptions {
   sync?: SyncOptions;
 }
 
+export type PluginResolverResult = {
+  name?: string;
+  packageName?: string;
+  version?: string;
+  Plugin: any;
+};
+
+export type PluginResolverHandleOptions = {
+  isPackageName?: boolean;
+  pluginName?: string;
+  packageName?: string;
+  authToken?: string;
+  registry?: string;
+  upgrading?: boolean;
+};
+
+export type AddingPluginType = string | typeof Plugin;
+
+export type PMAddOptions = PluginOptions & {};
+
 export class AddPresetError extends Error {}
 
 export class PluginManager {
   app: Application;
-  collection: Collection;
-  _repository: PluginManagerRepository;
-  pluginInstances = new Map<typeof Plugin, Plugin>();
-  pluginAliases = new Map<string, Plugin>();
   server: net.Server;
+  collection: Collection;
+  protected pluginInstances = new Map<typeof Plugin, Plugin>();
+  protected pluginAliases = new Map<string, Plugin>();
+  protected PluginResolver: typeof PluginResolver;
+  protected _repository: PluginManagerRepository;
 
   constructor(public options: PluginManagerOptions) {
+    this.PluginResolver = PluginResolver;
     this.app = options.app;
     this.app.db.registerRepositories({
       PluginManagerRepository,
@@ -75,6 +98,8 @@ export class PluginManager {
   }
 
   static getPackageJson(packageName: string) {
+    const file = require.resolve(`${packageName}/package.json`);
+    delete require.cache[file];
     return require(`${packageName}/package.json`);
   }
 
@@ -119,6 +144,16 @@ export class PluginManager {
       }
     }
     throw new Error(`No available packages found, ${name} plugin does not exist`);
+  }
+
+  setPluginResolver(Resolver: typeof PluginResolver) {
+    this.PluginResolver = Resolver;
+  }
+
+  async resolvePlugin(pluginName: AddingPluginType, options) {
+    const Resolver = this.PluginResolver;
+    const resolver = new Resolver(this.app);
+    return resolver.handle(pluginName, options);
   }
 
   static resolvePlugin(pluginName: string | typeof Plugin) {
@@ -189,7 +224,7 @@ export class PluginManager {
     await run('yarn', ['install']);
   }
 
-  async add(plugin?: any, options: any = {}) {
+  async add(plugin?: AddingPluginType, options: PMAddOptions = {}) {
     if (this.has(plugin)) {
       const name = typeof plugin === 'string' ? plugin : plugin.name;
       this.app.log.warn(`plugin [${name}] added`);
@@ -199,19 +234,24 @@ export class PluginManager {
       options.name = plugin;
     }
     this.app.log.debug(`adding plugin [${options.name}]...`);
-    let P: any;
     try {
-      P = PluginManager.resolvePlugin(plugin);
+      const { Plugin: P, ...opts } = await this.resolvePlugin(plugin, options);
+      const instance: Plugin = new P(createAppProxy(this.app), opts);
+      this.pluginInstances.set(P, instance);
+      if (!options.isPreset && opts.name) {
+        await this.repository.updateOrCreate({
+          values: {
+            ...options,
+            ...opts,
+          },
+          filterKeys: ['name'],
+        });
+        this.pluginAliases.set(options.name, instance);
+      }
+      await instance.afterAdd();
     } catch (error) {
       this.app.log.warn('plugin not found', error);
-      return;
     }
-    const instance: Plugin = new P(createAppProxy(this.app), options);
-    this.pluginInstances.set(P, instance);
-    if (options.name) {
-      this.pluginAliases.set(options.name, instance);
-    }
-    await instance.afterAdd();
   }
 
   async initPlugins() {

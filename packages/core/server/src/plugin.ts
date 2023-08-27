@@ -11,25 +11,22 @@ export interface PluginInterface {
 }
 
 export interface PluginOptions {
-  activate?: boolean;
-  displayName?: string;
-  description?: string;
+  name?: string;
+  packageName?: string;
   version?: string;
   enabled?: boolean;
-  install?: (this: Plugin) => void;
-  load?: (this: Plugin) => void;
-  plugin?: typeof Plugin;
-
+  installed?: boolean;
+  isPreset?: boolean;
   [key: string]: any;
 }
 
-export abstract class Plugin<O = any> implements PluginInterface {
+export abstract class Plugin implements PluginInterface {
   options: any;
   app: Application;
   model: Model;
   state: any = {};
 
-  constructor(app: Application, options?: any) {
+  constructor(app: Application, options?: PluginOptions) {
     this.app = app;
     this.setOptions(options);
   }

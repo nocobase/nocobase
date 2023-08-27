@@ -25,7 +25,7 @@ module.exports = {
       },
     ],
   },
-  modulePathIgnorePatterns: ['/esm/', '/es/', '/dist/', '/lib/', '/client/', '/sdk/', '\\.test\\.tsx$'],
+  modulePathIgnorePatterns: ['/storage/', '/esm/', '/es/', '/dist/', '/lib/', '/client/', '/sdk/', '\\.test\\.tsx$'],
   coveragePathIgnorePatterns: [
     '/node_modules/',
     '/__tests__/',

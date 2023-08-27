@@ -1,6 +1,6 @@
 const { Command } = require('commander');
-const { run, isDev, isPackageValid } = require('../util');
-const { resolve } = require('path');
+const { run, isDev, isPackageValid, createStoragePluginsSymlink } = require('../util');
+const { resolve, dirname } = require('path');
 const { existsSync } = require('fs');
 const { readFile, writeFile } = require('fs').promises;
 
@@ -13,10 +13,11 @@ module.exports = (cli) => {
     .command('postinstall')
     .allowUnknownOption()
     .action(async () => {
+      const cwd = process.cwd();
+      await createStoragePluginsSymlink();
       if (!isDev()) {
         return;
       }
-      const cwd = process.cwd();
       if (!existsSync(resolve(cwd, '.env')) && existsSync(resolve(cwd, '.env.example'))) {
         const content = await readFile(resolve(cwd, '.env.example'), 'utf-8');
         await writeFile(resolve(cwd, '.env'), content, 'utf-8');

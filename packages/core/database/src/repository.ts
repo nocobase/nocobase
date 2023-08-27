@@ -3,16 +3,16 @@ import lodash from 'lodash';
 import {
   Association,
   BulkCreateOptions,
-  CountOptions as SequelizeCountOptions,
-  CreateOptions as SequelizeCreateOptions,
-  DestroyOptions as SequelizeDestroyOptions,
-  FindAndCountOptions as SequelizeAndCountOptions,
-  FindOptions as SequelizeFindOptions,
   ModelStatic,
   Op,
   Sequelize,
-  Transactionable,
+  FindAndCountOptions as SequelizeAndCountOptions,
+  CountOptions as SequelizeCountOptions,
+  CreateOptions as SequelizeCreateOptions,
+  DestroyOptions as SequelizeDestroyOptions,
+  FindOptions as SequelizeFindOptions,
   UpdateOptions as SequelizeUpdateOptions,
+  Transactionable,
   WhereOperators,
 } from 'sequelize';
 import { Collection } from './collection';
@@ -37,6 +37,7 @@ import { UpdateGuard } from './update-guard';
 
 const debug = require('debug')('noco-database');
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface IRepository {}
 
 interface CreateManyOptions extends BulkCreateOptions {
@@ -216,7 +217,12 @@ export interface AggregateOptions {
   distinct?: boolean;
 }
 
-interface FirstOrCreateOptions extends Transactionable {
+export interface FirstOrCreateOptions extends Transactionable {
+  filterKeys: string[];
+  values?: Values;
+}
+
+export interface UpdateOrCreateOptions extends Transactionable {
   filterKeys: string[];
   values?: Values;
 }
@@ -242,7 +248,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       const chunks = key.split('.');
       return chunks
         .filter((chunk) => {
-          return !Boolean(chunk.match(/\d+/));
+          return !chunk.match(/\d+/);
         })
         .join('.');
     };
@@ -503,7 +509,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     return this.create({ values, transaction });
   }
 
-  async updateOrCreate(options: FirstOrCreateOptions) {
+  async updateOrCreate(options: UpdateOrCreateOptions) {
     const { filterKeys, values, transaction } = options;
     const filter = Repository.valuesToFilter(values, filterKeys);
 

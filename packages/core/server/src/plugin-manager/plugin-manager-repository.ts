@@ -1,9 +1,10 @@
-import { Repository } from '@nocobase/database';
-import lodash from 'lodash';
+import { Repository, UpdateOrCreateOptions } from '@nocobase/database';
+import lodash, { isBoolean } from 'lodash';
 import { PluginManager } from './plugin-manager';
 
 export class PluginManagerRepository extends Repository {
   pm: PluginManager;
+  _authenticated: boolean;
 
   setPluginManager(pm: PluginManager) {
     this.pm = pm;
@@ -68,6 +69,9 @@ export class PluginManagerRepository extends Repository {
   }
 
   async getItems() {
+    if (!(await this.authenticate())) {
+      return [];
+    }
     try {
       // sort plugins by id
       return await this.find({
@@ -86,9 +90,22 @@ export class PluginManagerRepository extends Repository {
     }
   }
 
+  async authenticate() {
+    if (!isBoolean(this._authenticated)) {
+      this._authenticated = await this.collection.existsInDb();
+    }
+    return this._authenticated;
+  }
+
+  async updateOrCreate(options: UpdateOrCreateOptions) {
+    if (!(await this.authenticate())) {
+      return;
+    }
+    return super.updateOrCreate(options);
+  }
+
   async init() {
-    const exists = await this.collection.existsInDb();
-    if (!exists) {
+    if (!(await this.authenticate())) {
       return;
     }
 
