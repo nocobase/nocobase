@@ -32,14 +32,14 @@ export class ThemeEditorPlugin extends Plugin {
   }
 
   async install(options?: InstallOptions) {
-    const themRepo = this.db.getRepository('themeConfig');
+    const themeRepo = this.db.getRepository('themeConfig');
 
-    if (!themRepo) {
+    if (!themeRepo) {
       throw new Error(`themeConfig repository does not exist`);
     }
 
-    if ((await themRepo.count()) === 0) {
-      await themRepo.create({
+    if ((await themeRepo.count()) === 0) {
+      await themeRepo.create({
         values: [antd, dark, compact, compactDark],
       });
     }
