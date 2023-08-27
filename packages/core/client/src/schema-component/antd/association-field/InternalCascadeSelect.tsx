@@ -23,7 +23,7 @@ const SchemaField = createSchemaField({
 });
 
 const CascadeSelect = connect((props) => {
-  const { fieldNames, data, mapOptions, onChange } = props;
+  const { data, mapOptions, onChange } = props;
   const [selectedOptions, setSelectedOptions] = useState<{ key: string; children: any; value?: any }[]>([
     { key: null, children: [], value: null },
   ]);
@@ -37,6 +37,7 @@ const CascadeSelect = connect((props) => {
   const { getCollectionJoinField, getInterface } = useCollectionManager();
   const initValue = isVariable(props.value) ? undefined : props.value;
   const value = Array.isArray(initValue) ? initValue.filter(Boolean) : initValue;
+  const fieldNames = associationField?.componentProps?.fieldNames;
   const targetField =
     collectionField?.target &&
     fieldNames?.label &&
@@ -142,6 +143,7 @@ const CascadeSelect = connect((props) => {
     }
     onChange?.(options);
   };
+
   const onDropdownVisibleChange = async (visible, selectedValue) => {
     if (visible) {
       setLoading(true);
@@ -167,6 +169,7 @@ const CascadeSelect = connect((props) => {
     setLoading(false);
     setOptions(result);
   };
+
   return (
     <Space wrap>
       {selectedOptions.map((value, index) => {
@@ -205,37 +208,6 @@ const AssociationCascadeSelect = connect((props: any) => {
     </div>
   );
 });
-
-function extractLastNonNullValueObjects(data) {
-  let result = [];
-  if (!Array.isArray(data)) {
-    return data;
-  }
-  for (const sublist of data) {
-    let lastNonNullValue = null;
-    if (Array.isArray(sublist)) {
-      for (let i = sublist?.length - 1; i >= 0; i--) {
-        if (sublist[i].value) {
-          lastNonNullValue = sublist[i].value;
-          break;
-        }
-      }
-      if (lastNonNullValue) {
-        result.push(lastNonNullValue);
-      }
-    } else {
-      if (sublist?.value) {
-        lastNonNullValue = sublist.value;
-      } else {
-        lastNonNullValue = null;
-      }
-      if (lastNonNullValue) {
-        result = lastNonNullValue;
-      }
-    }
-  }
-  return result;
-}
 
 export const InternalCascadeSelect = observer(
   (props: any) => {
@@ -286,9 +258,6 @@ export const InternalCascadeSelect = observer(
                 type: 'string',
                 'x-decorator': 'FormItem',
                 'x-component': AssociationCascadeSelect,
-                'x-component-props': {
-                  fieldNames: props.fieldNames,
-                },
               },
               remove: {
                 type: 'void',
@@ -327,3 +296,34 @@ export const InternalCascadeSelect = observer(
   },
   { displayName: 'InternalCascadeSelect' },
 );
+
+function extractLastNonNullValueObjects(data) {
+  let result = [];
+  if (!Array.isArray(data)) {
+    return data;
+  }
+  for (const sublist of data) {
+    let lastNonNullValue = null;
+    if (Array.isArray(sublist)) {
+      for (let i = sublist?.length - 1; i >= 0; i--) {
+        if (sublist[i].value) {
+          lastNonNullValue = sublist[i].value;
+          break;
+        }
+      }
+      if (lastNonNullValue) {
+        result.push(lastNonNullValue);
+      }
+    } else {
+      if (sublist?.value) {
+        lastNonNullValue = sublist.value;
+      } else {
+        lastNonNullValue = null;
+      }
+      if (lastNonNullValue) {
+        result = lastNonNullValue;
+      }
+    }
+  }
+  return result;
+}
