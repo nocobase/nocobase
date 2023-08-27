@@ -3,7 +3,21 @@ export default {
   info: {
     title: 'NocoBase API - Collection manager plugin',
   },
-  tags: [],
+  tags: [
+    {
+      name: 'collections',
+    },
+    {
+      name: 'collections.fields',
+    },
+    {
+      name: 'collectionCategories',
+    },
+    {
+      name: 'dbViews',
+      description: 'manager db views',
+    },
+  ],
   paths: {
     '/collections:list': {
       get: {
@@ -236,11 +250,59 @@ export default {
     '/dbViews:get': {
       get: {
         tags: ['dbViews'],
-        description: '',
-        parameters: [],
+        summary: 'get db view fields',
+        parameters: [
+          {
+            name: 'filterByTk',
+            in: 'query',
+            description: 'view name in database',
+            schema: {
+              type: 'string',
+            },
+            required: true,
+            example: 'posts_view',
+          },
+          {
+            name: 'schema',
+            in: 'query',
+            description: 'postgres schema of view in database',
+            schema: {
+              type: 'string',
+            },
+          },
+        ],
         responses: {
           '200': {
             description: 'OK',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    data: {
+                      type: 'object',
+                      properties: {
+                        fields: {
+                          type: 'object',
+                          additionalProperties: {
+                            type: 'object',
+                            properties: {
+                              name: { type: 'string', description: 'field name' },
+                              type: { type: 'string', description: 'field type' },
+                              source: { type: 'string', required: false, description: 'source field of view field' },
+                            },
+                          },
+                        },
+                        sources: {
+                          type: 'array',
+                          items: { type: 'string' },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -248,11 +310,30 @@ export default {
     '/dbViews:list': {
       get: {
         tags: ['dbViews'],
-        description: '',
-        parameters: [],
+        summary: 'list views that not connected to collections in database',
         responses: {
           '200': {
             description: 'OK',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    data: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          name: { type: 'string', description: 'name of view' },
+                          definition: { type: 'string', description: 'definition of view' },
+                          schema: { type: 'string', description: 'schema of view' },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -260,11 +341,66 @@ export default {
     '/dbViews:query': {
       get: {
         tags: ['dbViews'],
-        description: '',
-        parameters: [],
+        summary: 'query db view data',
+        parameters: [
+          {
+            name: 'filterByTk',
+            in: 'query',
+            description: 'view name in database',
+            schema: {
+              type: 'string',
+            },
+            required: true,
+            example: 'posts_view',
+          },
+          {
+            name: 'schema',
+            in: 'query',
+            description: 'postgres schema of view in database',
+            schema: {
+              type: 'string',
+            },
+          },
+          {
+            name: 'page',
+            in: 'query',
+            description: 'page number',
+            schema: {
+              type: 'integer',
+            },
+          },
+          {
+            name: 'pageSize',
+            in: 'query',
+            description: 'page size',
+            schema: {
+              type: 'integer',
+            },
+          },
+        ],
         responses: {
           '200': {
             description: 'OK',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    data: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        description: 'row data of view',
+                        additionalProperties: {
+                          type: 'object',
+                          description: "row data's field value",
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
         },
       },
