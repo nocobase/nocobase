@@ -1,9 +1,9 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { isValid } from '@formily/shared';
-import { Icon, Popover, css } from '@nocobase/client';
+import { css, Icon } from '@nocobase/client';
 import type { SelectProps } from 'antd';
-import { Select as AntdSelect } from 'antd';
+import { Popover, Select as AntdSelect } from 'antd';
 import React from 'react';
 import { lang } from '../locale';
 import { ReadPretty } from './ReadPretty';
@@ -35,7 +35,7 @@ const InternalSelect = connect(
       >
         <OptGroup label={lang('Basic charts')}>
           {group1.map((option) => (
-            <Option key={option.key} value={option.key} label={lang(option.title)}>
+            <Option value={option.key} label={lang(option.title)}>
               <Popover
                 placement={'right'}
                 zIndex={99999999999}
@@ -43,7 +43,9 @@ const InternalSelect = connect(
                   <span>
                     {lang(option?.description)
                       ?.split(',')
-                      .map((item) => <div key={item}>{item}</div>)}
+                      .map((item) => (
+                        <div>{item}</div>
+                      ))}
                   </span>
                 )}
                 trigger="hover"
@@ -66,7 +68,7 @@ const InternalSelect = connect(
         </OptGroup>
         <OptGroup label={lang('More charts')}>
           {group2.map((option) => (
-            <Option key={option.key} value={option.key} label={lang(option.title)}>
+            <Option value={option.key} label={lang(option.title)}>
               <Popover
                 placement={'right'}
                 zIndex={99999999999}
@@ -74,7 +76,9 @@ const InternalSelect = connect(
                   <span>
                     {lang(option?.description)
                       ?.split(',')
-                      .map((item) => <div key={item}>{item}</div>)}
+                      .map((item) => (
+                        <div>{item}</div>
+                      ))}
                   </span>
                 )}
                 trigger="hover"
