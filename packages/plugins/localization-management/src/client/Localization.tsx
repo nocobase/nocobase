@@ -4,7 +4,6 @@ import { Field, useField, useForm } from '@formily/react';
 import {
   FormProvider,
   Input,
-  Popover,
   Radio,
   SchemaComponent,
   locale,
@@ -14,7 +13,7 @@ import {
   useResourceActionContext,
   useResourceContext,
 } from '@nocobase/client';
-import { Input as AntdInput, Button, Card, Checkbox, Col, Divider, Row, Tag, Typography, message } from 'antd';
+import { Input as AntdInput, Button, Card, Checkbox, Col, Divider, Popover, Row, Tag, Typography, message } from 'antd';
 import React, { useMemo, useState } from 'react';
 import { useLocalTranslation } from './locale';
 import { localizationSchema } from './schemas/localization';

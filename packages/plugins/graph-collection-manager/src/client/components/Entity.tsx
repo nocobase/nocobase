@@ -1,11 +1,9 @@
 import { DeleteOutlined, DownOutlined, EditOutlined, UpOutlined } from '@ant-design/icons';
-import { css } from '@emotion/css';
-import { SchemaOptionsContext } from '@formily/react';
 import { uid } from '@formily/shared';
+import { css } from '@emotion/css';
 import {
   CollectionCategroriesContext,
   CollectionProvider,
-  Popover,
   SchemaComponent,
   SchemaComponentProvider,
   Select,
@@ -15,8 +13,9 @@ import {
   useCurrentAppInfo,
   useRecord,
 } from '@nocobase/client';
-import { Badge, Tag } from 'antd';
 import lodash from 'lodash';
+import { SchemaOptionsContext } from '@formily/react';
+import { Badge, Popover, Tag } from 'antd';
 import React, { useContext, useRef, useState } from 'react';
 import {
   useAsyncDataSource,

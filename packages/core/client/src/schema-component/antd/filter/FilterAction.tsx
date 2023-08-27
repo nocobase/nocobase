@@ -1,14 +1,13 @@
 import { css } from '@emotion/css';
 import { createForm, Field, Form } from '@formily/core';
 import { observer, useField, useFieldSchema, useForm } from '@formily/react';
-import { Button, Space } from 'antd';
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { Button, Popover, Space } from 'antd';
+import React, { createContext, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FormProvider, SchemaComponent } from '../../core';
 import { useDesignable } from '../../hooks';
 import { useProps } from '../../hooks/useProps';
 import { Action } from '../action';
-import { Popover } from '../popover';
 
 export const FilterActionContext = createContext<any>(null);
 
@@ -21,17 +20,15 @@ export const FilterAction = observer(
     const fieldSchema = useFieldSchema();
     const form = useMemo<Form>(() => props.form || createForm(), []);
     const { options, onSubmit, onReset, ...others } = useProps(props);
-    const onOpenChange = useCallback((visible: boolean): void => {
-      setVisible(visible);
-    }, []);
-
     return (
       <FilterActionContext.Provider value={{ field, fieldSchema, designable, dn }}>
         <Popover
           destroyTooltipOnHide
           placement={'bottomLeft'}
           open={visible}
-          onOpenChange={onOpenChange}
+          onOpenChange={(visible) => {
+            setVisible(visible);
+          }}
           trigger={'click'}
           content={
             <form>

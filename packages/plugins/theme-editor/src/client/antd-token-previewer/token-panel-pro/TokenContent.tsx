@@ -1,6 +1,5 @@
 import { CaretRightOutlined, ExpandOutlined, QuestionCircleOutlined } from '@ant-design/icons';
-import { Popover } from '@nocobase/client';
-import { Button, Checkbox, Collapse, ConfigProvider, Switch, Tooltip, Typography } from 'antd';
+import { Button, Checkbox, Collapse, ConfigProvider, Popover, Switch, Tooltip, Typography } from 'antd';
 import type { ThemeConfig } from 'antd/es/config-provider/context';
 import seed from 'antd/es/theme/themes/seed';
 import classNames from 'classnames';
@@ -61,10 +60,9 @@ const useStyle = makeStyle('ColorTokenContent', (token) => ({
         transition: 'box-shadow 0.2s ease-in-out',
         borderRadius: 8,
       },
-      [`> ${token.rootCls}-collapse-item > ${token.rootCls}-collapse-content > ${token.rootCls}-collapse-content-box`]:
-        {
-          paddingBlock: '0 12px',
-        },
+      [`> ${token.rootCls}-collapse-item > ${token.rootCls}-collapse-content > ${token.rootCls}-collapse-content-box`]: {
+        paddingBlock: '0 12px',
+      },
 
       '.token-panel-pro-token-collapse-description': {
         color: token.colorTextTertiary,

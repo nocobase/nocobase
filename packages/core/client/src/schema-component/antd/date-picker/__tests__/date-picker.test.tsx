@@ -1,7 +1,6 @@
 import React from 'react';
 import { render, screen, sleep, userEvent, waitFor } from 'testUtils';
 import App1 from '../demos/demo1';
-import App11 from '../demos/demo11';
 import App2 from '../demos/demo2';
 import App3 from '../demos/demo3';
 import App4 from '../demos/demo4';
@@ -69,11 +68,8 @@ describe('DatePicker', () => {
     await userEvent.click(picker);
     await userEvent.type(input, '2023/05/01');
 
-    let selected;
-    await waitFor(() => {
-      selected = document.querySelector('.ant-picker-cell-selected') as HTMLElement;
-      expect(selected).toBeInTheDocument();
-    });
+    const selected = document.querySelector('.ant-picker-cell-selected') as HTMLElement;
+    expect(selected).toBeInTheDocument();
     await userEvent.click(selected);
 
     expect(input).toHaveValue('2023/05/01');
@@ -142,20 +138,15 @@ describe('RangePicker', () => {
     const endInput = getByPlaceholderText('End date');
 
     await userEvent.click(picker);
-    await sleep();
     await userEvent.click(document.querySelector('[title="2023-05-01"]') as HTMLElement);
     await userEvent.click(document.querySelector('[title="2023-05-02"]') as HTMLElement);
 
-    await waitFor(() => expect(startInput).toHaveValue('2023-05-01'));
-    await waitFor(() => expect(endInput).toHaveValue('2023-05-02'));
-
+    expect(startInput).toHaveValue('2023-05-01');
+    expect(endInput).toHaveValue('2023-05-02');
     // Read pretty
-    await waitFor(() =>
-      expect(screen.getByText('2023-05-01~2023-05-02', { selector: '.ant-description-text' })).toBeInTheDocument(),
-    );
-
+    expect(screen.getByText('2023-05-01~2023-05-02', { selector: '.ant-description-text' })).toBeInTheDocument();
     // Value
-    await waitFor(() => expect(screen.getByText('2023-05-01 ~ 2023-05-02')).toBeInTheDocument());
+    expect(screen.getByText('2023-05-01 ~ 2023-05-02')).toBeInTheDocument();
   });
 
   it('showTime=false,gmt=true,utc=true', async () => {
@@ -227,26 +218,5 @@ describe('RangePicker', () => {
       // Value
       expect(screen.getByText(`${currentDateString}T00:00:00.000Z`)).toBeInTheDocument();
     });
-  });
-
-  // fix T-1506
-  it('shortcut', async () => {
-    const { container } = render(<App11 />);
-
-    await sleep();
-
-    const picker = container.querySelector('.ant-picker') as HTMLElement;
-    const startInput = screen.getByPlaceholderText('Start date');
-    const endInput = screen.getByPlaceholderText('End date');
-
-    await userEvent.click(picker);
-
-    // shortcut: Today
-    await userEvent.click(screen.getByText(/today/i));
-    await sleep();
-
-    // 因为 Today 快捷键的值是动态生成的，所以这里没有断言具体的值
-    await waitFor(() => expect(startInput.getAttribute('value')).toBeTruthy());
-    await waitFor(() => expect(endInput.getAttribute('value')).toBeTruthy());
   });
 });

@@ -1,13 +1,13 @@
-import { EditOutlined } from '@ant-design/icons';
+import { Popover } from 'antd';
 import { css } from '@emotion/css';
+import { EditOutlined } from '@ant-design/icons';
 import { observer } from '@formily/react';
 import React, { useContext, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActionContext, ActionContextProvider } from '../action/context';
-import { Popover } from '../popover';
-import { InternalNester } from './InternalNester';
 import { ReadPrettyInternalViewer } from './InternalViewer';
+import { InternalNester } from './InternalNester';
 import { useAssociationFieldContext } from './hooks';
+import { ActionContextProvider, ActionContext } from '../action/context';
 
 export const InternaPopoverNester = observer(
   (props) => {

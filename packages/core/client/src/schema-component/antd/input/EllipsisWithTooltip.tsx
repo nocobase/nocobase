@@ -1,5 +1,5 @@
-import React, { CSSProperties, forwardRef, useImperativeHandle, useRef, useState } from 'react';
-import { Popover } from '../popover';
+import { Popover } from 'antd';
+import React, { CSSProperties, forwardRef, useImperativeHandle, useState, useRef } from 'react';
 
 const getContentWidth = (element) => {
   if (element) {

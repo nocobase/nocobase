@@ -9,7 +9,7 @@ export class ThemeEditorPlugin extends Plugin {
   beforeLoad() {}
 
   async load() {
-    this.theme = this.db.collection({
+    this.db.collection({
       name: 'themeConfig',
       fields: [
         // 主题配置内容，一个 JSON 字符串
@@ -32,8 +32,14 @@ export class ThemeEditorPlugin extends Plugin {
   }
 
   async install(options?: InstallOptions) {
-    if ((await this.theme.repository.count()) === 0) {
-      await this.theme.repository.create({
+    const themeRepo = this.db.getRepository('themeConfig');
+
+    if (!themeRepo) {
+      throw new Error(`themeConfig repository does not exist`);
+    }
+
+    if ((await themeRepo.count()) === 0) {
+      await themeRepo.create({
         values: [antd, dark, compact, compactDark],
       });
     }

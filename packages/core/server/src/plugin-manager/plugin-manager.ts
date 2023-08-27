@@ -189,7 +189,7 @@ export class PluginManager {
     await run('yarn', ['install']);
   }
 
-  async add(plugin?: any, options: any = {}) {
+  async add(plugin?: any, options: any = {}, insert = false) {
     if (this.has(plugin)) {
       const name = typeof plugin === 'string' ? plugin : plugin.name;
       this.app.log.warn(`plugin [${name}] added`);
@@ -210,6 +210,17 @@ export class PluginManager {
     this.pluginInstances.set(P, instance);
     if (options.name) {
       this.pluginAliases.set(options.name, instance);
+    }
+    if (insert && options.name) {
+      const packageName = PluginManager.getPackageName(options.name);
+      const packageJson = PluginManager.getPackageJson(packageName);
+      await this.repository.updateOrCreate({
+        values: {
+          ...options,
+          version: packageJson.version,
+        },
+        filterKeys: ['name'],
+      });
     }
     await instance.afterAdd();
   }
