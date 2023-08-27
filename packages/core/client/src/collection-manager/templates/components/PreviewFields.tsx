@@ -1,6 +1,5 @@
-import { Cascader } from '@formily/antd-v5';
 import { useField, useForm } from '@formily/react';
-import { Input, Select, Spin, Table, Tag } from 'antd';
+import { Cascader, Input, Select, Spin, Table, Tag } from 'antd';
 import { last } from 'lodash';
 import React, { useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
