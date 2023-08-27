@@ -5,7 +5,7 @@ import associations from './associations';
 export default (collection: Collection, options) => {
   const paths = list(collection);
 
-  if (options.withAssociation) {
+  if (options.withAssociation && !isViewCollection(collection)) {
     Object.assign(paths, associations(collection));
   }
 
@@ -20,4 +20,12 @@ export function hasSortField(collection: Collection) {
   }
 
   return false;
+}
+
+export function readOnlyCollection(collection: Collection) {
+  return isViewCollection(collection) && collection.options?.writableView == false;
+}
+
+export function isViewCollection(collection: Collection) {
+  return collection.isView();
 }
