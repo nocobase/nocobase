@@ -21,7 +21,6 @@ export const FilterAction = observer(
     const fieldSchema = useFieldSchema();
     const form = useMemo<Form>(() => props.form || createForm(), []);
     const { options, onSubmit, onReset, ...others } = useProps(props);
-    const shouldNotClosePopoverRef = React.useRef(false);
     const onOpenChange = useCallback((visible: boolean): void => {
       setVisible(visible);
     }, []);
@@ -66,7 +65,6 @@ export const FilterAction = observer(
                         onReset?.(form.values);
                         field.title = t('Filter');
                         setVisible(false);
-                        shouldNotClosePopoverRef.current = false;
                       }}
                     >
                       {t('Reset')}
@@ -79,7 +77,6 @@ export const FilterAction = observer(
                         e.stopPropagation();
                         onSubmit?.(form.values);
                         setVisible(false);
-                        shouldNotClosePopoverRef.current = false;
                       }}
                     >
                       {t('Submit')}
