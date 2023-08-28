@@ -140,7 +140,7 @@ export const file = {
       ...getConfigurableProperties('inherits').inherits,
       'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
     },
-    ...getConfigurableProperties('category'),
+    ...getConfigurableProperties('category', 'description'),
     storage: {
       title: `{{t("File storage", { ns: "${NAMESPACE}" })}}`,
       type: 'hasOne',
