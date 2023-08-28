@@ -7,6 +7,7 @@ import { resolve } from 'path';
 import qs from 'qs';
 import handler from 'serve-handler';
 import { parse } from 'url';
+import xpipe from 'xpipe';
 import { AppSupervisor } from '../app-supervisor';
 import { ApplicationOptions } from '../application';
 import { applyErrorWithArgs, getErrorWithCode } from './errors';
@@ -44,7 +45,7 @@ export class Gateway extends EventEmitter {
   private port: number = process.env.APP_PORT ? parseInt(process.env.APP_PORT) : null;
   private host = '0.0.0.0';
   private wsServer: WSServer;
-  private socketPath = resolve(process.cwd(), 'storage', 'gateway.sock');
+  private socketPath = xpipe.eq(resolve(process.cwd(), 'storage', 'gateway.sock'));
 
   private constructor() {
     super();

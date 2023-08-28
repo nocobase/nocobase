@@ -1,5 +1,5 @@
 import { Collection, RelationField } from '@nocobase/database';
-import { hasSortField } from './index';
+import { hasSortField, readOnlyCollection } from './index';
 
 type TemplateOptions = {
   collection: Collection;
@@ -327,10 +327,15 @@ export default (collection: Collection) => {
   const apiDoc: any = {
     [`/${collection.name}:list`]: ListActionTemplate(options),
     [`/${collection.name}:get`]: GetActionTemplate(options),
-    [`/${collection.name}:create`]: CreateActionTemplate(options),
-    [`/${collection.name}:update`]: UpdateActionTemplate(options),
-    [`/${collection.name}:destroy`]: DestroyActionTemplate(options),
   };
+
+  if (!readOnlyCollection(collection)) {
+    Object.assign(apiDoc, {
+      [`/${collection.name}:create`]: CreateActionTemplate(options),
+      [`/${collection.name}:update`]: UpdateActionTemplate(options),
+      [`/${collection.name}:destroy`]: DestroyActionTemplate(options),
+    });
+  }
 
   if (hasSortField(collection)) {
     apiDoc[`/${collection.name}:move`] = MoveActionTemplate(options);
