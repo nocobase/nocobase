@@ -1,13 +1,13 @@
-import * as association from './association';
-import * as date from './date';
-import * as array from './array';
-import * as empty from './empty';
-import * as string from './string';
-import * as eq from './eq';
-import * as ne from './ne';
-import * as notIn from './notIn';
-import * as boolean from './boolean';
-import * as childCollection from './child-collection';
+import association from './association';
+import date from './date';
+import array from './array';
+import empty from './empty';
+import string from './string';
+import eq from './eq';
+import ne from './ne';
+import notIn from './notIn';
+import boolean from './boolean';
+import childCollection from './child-collection';
 
 export default {
   ...association,
