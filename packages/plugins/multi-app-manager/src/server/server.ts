@@ -1,10 +1,11 @@
-import Database, { IDatabaseOptions, Transactionable } from '@nocobase/database';
-import Application, { AppManager, Plugin } from '@nocobase/server';
-import lodash from 'lodash';
-import * as path from 'path';
-import { resolve } from 'path';
-import { ApplicationModel } from './models/application';
+import { Database, IDatabaseOptions, Transactionable } from '@nocobase/database';
+import Application, { AppSupervisor, Gateway, Plugin } from '@nocobase/server';
 import { Mutex } from 'async-mutex';
+import lodash from 'lodash';
+import path, { resolve } from 'path';
+import qs from 'qs';
+import { parse } from 'url';
+import { ApplicationModel } from '../server';
 
 export type AppDbCreator = (app: Application, transaction?: Transactionable) => Promise<void>;
 export type AppOptionsFactory = (appName: string, mainApp: Application) => any;
@@ -35,7 +36,9 @@ const defaultDbCreator = async (app: Application) => {
 
     try {
       await client.query(`CREATE DATABASE "${database}"`);
-    } catch (e) {}
+    } catch (e) {
+      console.log(e);
+    }
 
     await client.end();
   }
@@ -72,14 +75,6 @@ export class PluginMultiAppManager extends Plugin {
 
   private beforeGetApplicationMutex = new Mutex();
 
-  setAppOptionsFactory(factory: AppOptionsFactory) {
-    this.appOptionsFactory = factory;
-  }
-
-  setAppDbCreator(appDbCreator: AppDbCreator) {
-    this.appDbCreator = appDbCreator;
-  }
-
   static getDatabaseConfig(app: Application): IDatabaseOptions {
     const oldConfig =
       app.options.database instanceof Database
@@ -89,6 +84,14 @@ export class PluginMultiAppManager extends Plugin {
     return lodash.cloneDeep(lodash.omit(oldConfig, ['migrator']));
   }
 
+  setAppOptionsFactory(factory: AppOptionsFactory) {
+    this.appOptionsFactory = factory;
+  }
+
+  setAppDbCreator(appDbCreator: AppDbCreator) {
+    this.appDbCreator = appDbCreator;
+  }
+
   beforeLoad() {
     this.db.registerModels({
       ApplicationModel,
@@ -96,10 +99,90 @@ export class PluginMultiAppManager extends Plugin {
   }
 
   async load() {
-    this.app.appManager.setAppSelector(async (req) => {
+    await this.db.import({
+      directory: resolve(__dirname, 'collections'),
+    });
+
+    // after application created
+    this.db.on('applications.afterCreateWithAssociations', async (model: ApplicationModel, options) => {
+      const { transaction } = options;
+
+      const subApp = model.registerToSupervisor(this.app, {
+        appOptionsFactory: this.appOptionsFactory,
+      });
+
+      // create database
+      await this.appDbCreator(subApp, transaction);
+
+      const startPromise = subApp.runAsCLI(['start', '--quickstart'], { from: 'user' });
+
+      if (options?.context?.waitSubAppInstall) {
+        await startPromise;
+      }
+    });
+
+    this.db.on('applications.afterDestroy', async (model: ApplicationModel) => {
+      await AppSupervisor.getInstance().removeApp(model.get('name') as string);
+    });
+
+    const self = this;
+
+    async function LazyLoadApplication({
+      appSupervisor,
+      appName,
+      options,
+    }: {
+      appSupervisor: AppSupervisor;
+      appName: string;
+      options: any;
+    }) {
+      const name = appName;
+      if (appSupervisor.hasApp(name)) {
+        return;
+      }
+
+      const applicationRecord = (await self.app.db.getRepository('applications').findOne({
+        filter: {
+          name,
+        },
+      })) as ApplicationModel | null;
+
+      if (!applicationRecord) {
+        return;
+      }
+
+      const instanceOptions = applicationRecord.get('options');
+
+      if (instanceOptions?.standaloneDeployment && appSupervisor.runningMode !== 'single') {
+        return;
+      }
+
+      if (!applicationRecord) {
+        return;
+      }
+
+      const subApp = applicationRecord.registerToSupervisor(self.app, {
+        appOptionsFactory: self.appOptionsFactory,
+      });
+
+      // must skip load on upgrade
+      if (!options?.upgrading) {
+        await subApp.runCommand('start');
+      }
+    }
+
+    AppSupervisor.getInstance().setAppBootstrapper(LazyLoadApplication);
+
+    Gateway.getInstance().setAppSelector(async (req) => {
+      const appName = qs.parse(parse(req.url).query)?.__appName;
+      if (appName) {
+        return appName;
+      }
+
       if (req.headers['x-app']) {
         return req.headers['x-app'];
       }
+
       if (req.headers['x-hostname']) {
         const repository = this.db.getRepository('applications');
         if (!repository) {
@@ -110,115 +193,50 @@ export class PluginMultiAppManager extends Plugin {
             cname: req.headers['x-hostname'],
           },
         });
+
         if (appInstance) {
           return appInstance.name;
         }
       }
+
       return null;
     });
 
-    await this.db.import({
-      directory: resolve(__dirname, 'collections'),
-    });
-
-    // after application created
-    this.db.on('applications.afterCreateWithAssociations', async (model: ApplicationModel, options) => {
-      const { transaction } = options;
-
-      const subApp = model.registerToMainApp(this.app, {
-        appOptionsFactory: this.appOptionsFactory,
-      });
-
-      // create database
-      await this.appDbCreator(subApp, transaction);
-
-      // reload subApp plugin
-      await subApp.reload();
-
-      // sync subApp collections
-      await subApp.db.sync();
-
-      // install subApp
-      await subApp.install();
-
-      await subApp.reload();
-    });
-
-    this.db.on('applications.afterDestroy', async (model: ApplicationModel) => {
-      await this.app.appManager.removeApplication(model.get('name') as string);
-    });
-
-    // lazy load application
-    // if application not in appManager, load it from database
-    this.app.on(
-      'beforeGetApplication',
-      async ({ appManager, name, options }: { appManager: AppManager; name: string; options: any }) => {
-        await this.beforeGetApplicationMutex.runExclusive(async () => {
-          if (appManager.applications.has(name)) {
-            return;
-          }
-
-          const applicationRecord = (await this.app.db.getRepository('applications').findOne({
-            filter: {
-              name,
-            },
-          })) as ApplicationModel | null;
-
-          const instanceOptions = applicationRecord.get('options');
-
-          // skip standalone deployment application
-          if (instanceOptions?.standaloneDeployment && appManager.runningMode !== 'single') {
-            return;
-          }
-
-          if (!applicationRecord) {
-            return;
-          }
-
-          const subApp = await applicationRecord.registerToMainApp(this.app, {
-            appOptionsFactory: this.appOptionsFactory,
-          });
-
-          // must skip load on upgrade
-          if (!options?.upgrading) {
-            await subApp.load();
-          }
-        });
-      },
-    );
-
     this.app.on('afterStart', async (app) => {
       const repository = this.db.getRepository('applications');
-      const appManager = this.app.appManager;
-      if (appManager.runningMode == 'single') {
+      const appSupervisor = AppSupervisor.getInstance();
+
+      this.app.setMaintainingMessage('starting sub applications...');
+      if (appSupervisor.runningMode == 'single') {
+        Gateway.getInstance().setAppSelector(() => appSupervisor.singleAppName);
+
         // If the sub application is running in single mode, register the application automatically
         try {
-          const subApp = await repository.findOne({
-            filter: {
-              name: appManager.singleAppName,
-            },
-          });
-          const registeredApp = await subApp.registerToMainApp(this.app, {
-            appOptionsFactory: this.appOptionsFactory,
-          });
-          await registeredApp.load();
+          await AppSupervisor.getInstance().getApp(appSupervisor.singleAppName);
         } catch (err) {
-          console.error('Auto register sub application in single mode failed: ', appManager.singleAppName, err);
+          console.error('Auto register sub application in single mode failed: ', appSupervisor.singleAppName, err);
         }
         return;
       }
+
       try {
         const subApps = await repository.find({
           filter: {
             'options.autoStart': true,
           },
         });
-        for (const subApp of subApps) {
-          const registeredApp = await subApp.registerToMainApp(this.app, {
-            appOptionsFactory: this.appOptionsFactory,
-          });
-          await registeredApp.load();
+
+        const promises = [];
+
+        for (const subAppInstance of subApps) {
+          promises.push(
+            (async () => {
+              await AppSupervisor.getInstance().getApp(subAppInstance.name);
+            })(),
+          );
         }
+
+        await Promise.all(promises);
       } catch (err) {
         console.error('Auto register sub applications failed: ', err);
       }
@@ -230,11 +248,11 @@ export class PluginMultiAppManager extends Plugin {
       const repository = this.db.getRepository('applications');
       const findOptions = {};
 
-      const appManager = this.app.appManager;
+      const appSupervisor = AppSupervisor.getInstance();
 
-      if (appManager.runningMode == 'single') {
+      if (appSupervisor.runningMode == 'single') {
         findOptions['filter'] = {
-          name: appManager.singleAppName,
+          name: appSupervisor.singleAppName,
         };
       }
 
@@ -244,24 +262,25 @@ export class PluginMultiAppManager extends Plugin {
         const instanceOptions = instance.get('options');
 
         // skip standalone deployment application
-        if (instanceOptions?.standaloneDeployment && appManager.runningMode !== 'single') {
+        if (instanceOptions?.standaloneDeployment && appSupervisor.runningMode !== 'single') {
           continue;
         }
 
-        const subApp = await appManager.getApplication(instance.name, {
+        const beforeSubAppStatus = AppSupervisor.getInstance().getAppStatus(instance.name);
+
+        const subApp = await appSupervisor.getApp(instance.name, {
           upgrading: true,
         });
 
+        console.log({ beforeSubAppStatus });
         try {
+          this.app.setMaintainingMessage(`upgrading sub app ${instance.name}...`);
           console.log(`${instance.name}: upgrading...`);
 
-          await subApp.upgrade({
-            cliArgs,
-          });
-
-          await subApp.stop({
-            cliArgs,
-          });
+          await subApp.runAsCLI(['upgrade'], { from: 'user' });
+          if (!beforeSubAppStatus && AppSupervisor.getInstance().getAppStatus(instance.name) === 'initialized') {
+            await AppSupervisor.getInstance().removeApp(instance.name);
+          }
         } catch (error) {
           console.log(`${instance.name}: upgrade failed`);
           this.app.logger.error(error);
@@ -292,6 +311,18 @@ export class PluginMultiAppManager extends Plugin {
       .
         applications`,
       actions: ['applications:*'],
+    });
+
+    this.app.resourcer.use(async (ctx, next) => {
+      await next();
+      const { actionName, resourceName, params } = ctx.action;
+      if (actionName === 'list' && resourceName === 'applications') {
+        const applications = ctx.body.rows;
+        for (const application of applications) {
+          const appStatus = AppSupervisor.getInstance().getAppStatus(application.name, 'stopped');
+          application.status = appStatus;
+        }
+      }
     });
   }
 }

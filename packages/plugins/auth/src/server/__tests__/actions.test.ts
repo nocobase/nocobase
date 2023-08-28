@@ -27,7 +27,7 @@ describe('actions', () => {
     });
 
     afterAll(async () => {
-      await db.close();
+      await app.destroy();
     });
 
     it('should list authenticator types', async () => {
@@ -146,6 +146,27 @@ describe('actions', () => {
         password: process.env.INIT_ROOT_PASSWORD,
       });
       expect(res.statusCode).toEqual(403);
+    });
+
+    it('should compitible with old api', async () => {
+      // Create a user without username
+      const userRepo = db.getRepository('users');
+      const email = 'test2@nocobase.com';
+      const password = '1234567';
+      await userRepo.create({
+        values: {
+          email,
+          password,
+        },
+      });
+      const res = await agent.post('/auth:signIn').set({ 'X-Authenticator': 'basic' }).send({
+        email: 'test@nocobase.com',
+        password: '123456',
+      });
+      expect(res.statusCode).toEqual(200);
+      const data = res.body.data;
+      const token = data.token;
+      expect(token).toBeDefined();
     });
   });
 });

@@ -34,7 +34,7 @@ describe('storage:s3', () => {
   });
 
   afterEach(async () => {
-    await db.close();
+    await app.destroy();
   });
 
   describe('direct attachment', () => {

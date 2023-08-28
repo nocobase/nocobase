@@ -38,11 +38,10 @@ export abstract class SingleRelationRepository extends RelationRepository {
   })
   async set(options: TargetKey | SetOption): Promise<void> {
     const transaction = await this.getTransaction(options);
-    const handleKey = lodash.isPlainObject(options) ? (<SetOption>options).tk : options;
 
     const sourceModel = await this.getSourceModel(transaction);
 
-    return await sourceModel[this.accessors().set](handleKey, {
+    return await sourceModel[this.accessors().set](this.convertTk(options), {
       transaction,
     });
   }

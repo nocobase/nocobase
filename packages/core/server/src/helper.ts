@@ -1,6 +1,7 @@
 import cors from '@koa/cors';
 import Database from '@nocobase/database';
 import Resourcer from '@nocobase/resourcer';
+import { Command } from 'commander';
 import i18next from 'i18next';
 import bodyParser from 'koa-bodyparser';
 import Application, { ApplicationOptions } from './application';
@@ -78,3 +79,31 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
   app.use(db2resource, { tag: 'db2resource', after: 'dataWrapping' });
   app.use(app.resourcer.restApiMiddleware(), { tag: 'restApi', after: 'db2resource' });
 }
+
+export const createAppProxy = (app: Application) => {
+  return new Proxy(app, {
+    get(target, prop, ...args) {
+      if (typeof prop === 'string' && ['on', 'once', 'addListener'].includes(prop)) {
+        return (eventName: string, listener: any) => {
+          listener['_reinitializable'] = true;
+          return target[prop](eventName, listener);
+        };
+      }
+      return Reflect.get(target, prop, ...args);
+    },
+  });
+};
+
+export const getCommandFullName = (command: Command) => {
+  const names = [];
+  names.push(command.name());
+  let parent = command?.parent;
+  while (parent) {
+    if (!parent?.parent) {
+      break;
+    }
+    names.unshift(parent.name());
+    parent = parent.parent;
+  }
+  return names.join('.');
+};

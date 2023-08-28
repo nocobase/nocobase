@@ -26,7 +26,7 @@ describe('actions', () => {
     await repo.destroy({
       truncate: true,
     });
-    await db.close();
+    await app.destroy();
   });
 
   let user;

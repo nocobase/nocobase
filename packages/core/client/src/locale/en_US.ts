@@ -720,6 +720,8 @@ export default {
   "Sync successfully":"Sync successfully",
   "Sync from form fields":"Sync from form fields",
   "Select all":"Select all",
+  "Restart": "Restart",
+  "Restart application": "Restart application",
   "All loaded, nothing more":"All loaded, nothing more",
   "Loading":"Loading"
 };

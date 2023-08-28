@@ -1,5 +1,5 @@
 import inquirer from 'inquirer';
-import { Application } from '@nocobase/server';
+import { Application, AppSupervisor } from '@nocobase/server';
 import { Dumper } from '../dumper';
 import InquireQuestionBuilder from './inquire-question-builder';
 
@@ -11,7 +11,8 @@ export default function addDumpCommand(app: Application) {
       let dumpApp = app;
 
       if (options.app) {
-        const subApp = await app.appManager.getApplication(options.app);
+        const subApp = await AppSupervisor.getInstance().getApp(options.app);
+
         if (!subApp) {
           app.log.error(`app ${options.app} not found`);
           await app.stop();

@@ -42,6 +42,7 @@ export class PresetNocoBase extends Plugin {
     'api-keys',
     'localization-management',
     'theme-editor',
+    'api-doc',
   ];
 
   splitNames(name: string) {
@@ -60,98 +61,6 @@ export class PresetNocoBase extends Plugin {
     return _.uniq(this.splitNames(APPEND_PRESET_LOCAL_PLUGINS).concat(this.localPlugins));
   }
 
-  async addBuiltInPlugins(options?: any) {
-    const builtInPlugins = this.getBuiltInPlugins();
-
-    await this.app.pm.add(builtInPlugins, {
-      enabled: true,
-      builtIn: true,
-      installed: true,
-    });
-
-    const localPlugins = this.getLocalPlugins();
-    await this.app.pm.add(localPlugins, {});
-    await this.app.reload({ method: options.method });
-  }
-
-  afterAdd() {
-    this.app.on('beforeLoad', async (app, options) => {
-      if (options?.method !== 'upgrade') {
-        return;
-      }
-      const version = await this.app.version.get();
-      console.log(`The version number before upgrade is ${version}`);
-    });
-
-    this.app.on('beforeUpgrade', async () => {
-      if (!this.db.inDialect('sqlite')) {
-        return;
-      }
-      await this.app.load({ method: 'upgrade' });
-      const Field = this.db.getRepository('fields');
-      const existed = await Field.count({
-        filter: {
-          name: 'username',
-          collectionName: 'users',
-        },
-      });
-      if (!existed) {
-        await this.db.getRepository('fields').create({
-          values: {
-            name: 'username',
-            collectionName: 'users',
-            type: 'string',
-            unique: true,
-            interface: 'input',
-            uiSchema: {
-              type: 'string',
-              title: '{{t("Username")}}',
-              'x-component': 'Input',
-              'x-validator': { username: true },
-              required: true,
-            },
-          },
-          // NOTE: to trigger hook
-          context: {},
-        });
-      }
-    });
-
-    this.app.on('beforeUpgrade', async () => {
-      const result = await this.app.version.satisfies('<0.8.0-alpha.1');
-
-      if (result) {
-        console.log(`Initialize all built-in plugins beforeUpgrade`);
-        await this.addBuiltInPlugins({ method: 'upgrade' });
-      }
-
-      const builtInPlugins = this.getBuiltInPlugins();
-      const plugins = await this.app.db.getRepository('applicationPlugins').find();
-      const pluginNames = plugins.map((p) => p.name);
-      await this.app.pm.add(
-        builtInPlugins.filter((plugin) => !pluginNames.includes(plugin)),
-        {
-          enabled: true,
-          builtIn: true,
-          installed: true,
-        },
-      );
-      const localPlugins = this.getLocalPlugins();
-      await this.app.pm.add(
-        localPlugins.filter((plugin) => !pluginNames.includes(plugin)),
-        {},
-      );
-      await this.app.reload({ method: 'upgrade' });
-      await this.app.db.sync();
-      await this.app.db.getRepository<any>('collections').load();
-    });
-
-    this.app.on('beforeInstall', async () => {
-      console.log(`Initialize all built-in plugins beforeInstall in ${this.app.name}`);
-      await this.addBuiltInPlugins({ method: 'install' });
-    });
-  }
-
   beforeLoad() {
     this.db.addMigrations({
       namespace: this.getName(),
@@ -160,6 +69,37 @@ export class PresetNocoBase extends Plugin {
         plugin: this,
       },
     });
+    this.app.on('beforeUpgrade', async () => {
+      await this.createIfNotExist();
+    });
+  }
+
+  get allPlugins() {
+    return this.builtInPlugins
+      .map((name) => {
+        return { name, enabled: true, builtIn: true } as any;
+      })
+      .concat(this.localPlugins.map((name) => ({ name })));
+  }
+
+  async createIfNotExist() {
+    const repository = this.app.db.getRepository<any>('applicationPlugins');
+    const existPlugins = await repository.find();
+    const existPluginNames = existPlugins.map((item) => item.name);
+    const plugins = this.allPlugins.filter((item) => !existPluginNames.includes(item.name));
+    await repository.create({ values: plugins });
+  }
+
+  async install() {
+    const repository = this.app.db.getRepository<any>('applicationPlugins');
+    const existPlugins = await repository.find();
+    const existPluginNames = existPlugins.map((item) => item.name);
+    const plugins = this.allPlugins.filter((item) => !existPluginNames.includes(item.name));
+    await repository.create({ values: plugins });
+    this.log.debug('install preset plugins');
+    await repository.init();
+    await this.app.pm.load();
+    await this.app.pm.install();
   }
 }
 
