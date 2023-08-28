@@ -129,12 +129,12 @@ export class Gateway extends EventEmitter {
         public: resolve(process.cwd(), 'node_modules'),
         rewrites: [
           {
-            source: '/api/plugins/client/:plugin/index.js',
-            destination: '/:plugin/dist/client/index.js',
+            source: '/api/plugins/client/:plugin/:file',
+            destination: '/:plugin/dist/client/:file',
           },
           {
-            source: '/api/plugins/client/@:org/:plugin/index.js',
-            destination: '/@:org/:plugin/dist/client/index.js',
+            source: '/api/plugins/client/@:org/:plugin/:file',
+            destination: '/@:org/:plugin/dist/client/:file',
           },
         ],
       });
