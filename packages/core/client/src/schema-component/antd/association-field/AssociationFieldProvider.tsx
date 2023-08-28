@@ -31,6 +31,7 @@ export const AssociationFieldProvider = observer(
     const fieldValue = useMemo(() => JSON.stringify(field.value), [field.value]);
 
     const [loading, setLoading] = useState(true);
+    console.log(currentMode);
 
     useEffect(() => {
       setLoading(true);
@@ -64,7 +65,7 @@ export const AssociationFieldProvider = observer(
         setLoading(false);
         return;
       }
-      if (['Nester', 'PopoverNester'].includes(currentMode)) {
+      if (['Nester', 'PopoverNester', 'CascadeSelect'].includes(currentMode)) {
         if (['belongsTo', 'hasOne'].includes(collectionField.type)) {
           field.value = {};
         } else if (['belongsToMany', 'hasMany'].includes(collectionField.type)) {

@@ -169,7 +169,6 @@ const CascadeSelect = connect((props) => {
     setLoading(false);
     setOptions(result);
   };
-
   return (
     <Space wrap>
       {selectedOptions.map((value, index) => {
@@ -245,6 +244,7 @@ export const InternalCascadeSelect = observer(
           type: 'array',
           'x-component': 'ArrayItems',
           'x-decorator': 'FormItem',
+          default: field.value,
           items: {
             type: 'void',
             'x-component': 'Space',
@@ -280,6 +280,7 @@ export const InternalCascadeSelect = observer(
       <FormProvider form={selectForm}>
         {collectionField.interface === 'm2o' ? (
           <SchemaComponent
+            components={{ FormItem }}
             schema={{
               ...fieldSchema,
               'x-component': AssociationCascadeSelect,
