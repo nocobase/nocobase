@@ -22,7 +22,7 @@ export function buildCjs(cwd: string, sourcemap: boolean = false, log: PkgLog) {
     bundle: false,
     silent: true,
     sourcemap,
-    treeshake: true,
+    treeshake: false,
     target: 'node16',
     keepNames: true,
     outDir,

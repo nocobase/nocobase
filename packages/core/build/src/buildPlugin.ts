@@ -246,7 +246,7 @@ export async function buildPluginServer(cwd: string, sourcemap: boolean, log: Pk
     clean: false,
     bundle: false,
     silent: true,
-    treeshake: true,
+    treeshake: false,
     target: 'node16',
     sourcemap,
     outDir: path.join(cwd, target_dir),
