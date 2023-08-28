@@ -234,6 +234,11 @@ function isDisabledDefault(params: IsDisabledParams) {
     return false;
   }
 
+  // 对多字段可以选择对一和对多字段作为默认值
+  if (['hasMany', 'belongsToMany'].includes(collectionField.type) && option.target) {
+    return false;
+  }
+
   if (uiSchema?.['x-component'] !== option.schema?.['x-component']) {
     return true;
   }

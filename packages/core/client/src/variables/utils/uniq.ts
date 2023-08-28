@@ -14,5 +14,10 @@ export const uniq = (value: any) => {
     return value;
   }
 
-  return _.uniqBy(value, 'id');
+  return _.uniqBy(value, (item) => {
+    if ('id' in item) {
+      return item.id;
+    }
+    return JSON.stringify(item);
+  });
 };
