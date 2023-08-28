@@ -141,7 +141,8 @@ export function deleteJsFiles(cwd: string, log: PkgLog) {
 export async function buildServerDeps(cwd: string, serverFiles: string[], log: PkgLog) {
   log('build plugin server dependencies');
   const outDir = path.join(cwd, target_dir, 'node_modules');
-  const sourcePackages = getSourcePackages(serverFiles);
+  const serverFileSource = serverFiles.map((item) => fs.readFileSync(item, 'utf-8'));
+  const sourcePackages = getSourcePackages(serverFileSource);
   const includePackages = getIncludePackages(sourcePackages, external, pluginPrefix);
   const excludePackages = getExcludePackages(sourcePackages, external, pluginPrefix);
 
