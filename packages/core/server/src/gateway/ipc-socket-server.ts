@@ -35,7 +35,11 @@ export class IPCSocketServer {
           const dataObj = JSON.parse(message);
 
           IPCSocketServer.handleClientMessage(dataObj)
-            .then(() => {})
+            .then(() => {
+              writeJSON(c, {
+                type: 'success',
+              });
+            })
             .catch((err) => {
               writeJSON(c, {
                 type: 'error',
