@@ -309,9 +309,10 @@ export async function buildPluginClient(cwd: string, sourcemap: boolean, log: Pk
 
   checkRequire(clientFiles, log);
   buildCheck({ cwd, packageJson, entry: 'client', files: clientFiles, log });
-  const hasDynamicImport = clientFileSource.some((source) => {
-    return source.match(dynamicImportRegexp);
-  });
+  const hasDynamicImport = false;
+  // const hasDynamicImport = clientFileSource.some((source) => {
+  //   return source.match(dynamicImportRegexp);
+  // });
   const outDir = path.join(cwd, target_dir, 'client');
 
   const globals = excludePackages.reduce<Record<string, string>>((prev, curr) => {
@@ -364,9 +365,9 @@ export async function buildPluginClient(cwd: string, sourcemap: boolean, log: Pk
 
   checkFileSize(outDir, log);
 
-  if (hasDynamicImport) {
-    await transformClientFilesToAmd(outDir, outputFileName, packageJson.name, log);
-  }
+  // if (hasDynamicImport) {
+  //   await transformClientFilesToAmd(outDir, outputFileName, packageJson.name, log);
+  // }
 }
 
 export async function buildPlugin(cwd: string, sourcemap: boolean, log: PkgLog) {
