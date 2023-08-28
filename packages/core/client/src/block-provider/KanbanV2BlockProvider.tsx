@@ -2,11 +2,13 @@ import { createForm } from '@formily/core';
 import { Schema, useField, useFieldSchema, useForm } from '@formily/react';
 import { Spin } from 'antd';
 import flat from 'flat';
-import uniq from 'lodash/uniq';
+import isEqual from 'lodash/isEqual';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { SchemaComponentOptions } from '../';
 import { useAssociationCreateActionProps as useCAP } from '../block-provider/hooks';
-import { useCollectionManager } from '../collection-manager';
+import { mergeFilter } from '../block-provider/SharedFilterProvider';
+import { useCollectionManager, useCollection } from '../collection-manager';
+import { useFilterActionProps as useFAP } from '../';
 import { RecordProvider } from '../record-provider';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 
@@ -22,7 +24,7 @@ const InternalKanbanV2BlockProvider = (props) => {
       }),
     [],
   );
-  const { resource, service, params } = useBlockRequestContext();
+  const { resource, service } = useBlockRequestContext();
   if (service.loading && !field.loaded) {
     return <Spin />;
   }
@@ -31,7 +33,6 @@ const InternalKanbanV2BlockProvider = (props) => {
     <KanbanV2BlockContext.Provider
       value={{
         ...props,
-        params,
         action,
         form,
         field,
@@ -98,27 +99,26 @@ const useGroupField = (props) => {
 
 export const KanbanV2BlockProvider = (props) => {
   const { columns } = props;
-  const params = { ...props.params };
+  const enableColumns = columns?.filter((v) => v.enabled) || [];
+  enableColumns.push({
+    value: '__unknown__',
+    label: 'Unknown',
+    color: 'default',
+    cards: null,
+  });
   const groupField: any = useGroupField(props);
-  const [kanbanColumns, setKanbanColumns] = useState(columns);
   const [targetColumn, setTargetColumn] = useState(null);
-
+  const [params, setParams] = useState(props.params);
   useEffect(() => {
-    const Columns = columns?.filter((v) => v.enabled) || [];
-    Columns.push({
-      value: '__unknown__',
-      label: 'Unknown',
-      color: 'default',
-      cards: null,
-    });
-    setKanbanColumns(Columns);
-  }, []);
+    if (isEqual(params, props.params)) {
+      return;
+    }
+    setParams(props.params);
+  }, [props.params]);
+
   if (!groupField) {
     return null;
   }
-
-  params['filter'] = props.params.filter;
-
   const useCreateActionProps = () => {
     const form = useForm();
     const { onClick } = useCAP();
@@ -128,22 +128,39 @@ export const KanbanV2BlockProvider = (props) => {
         await onClick();
         const targetKey = props.groupField.join('.');
         const target = values[targetKey] || '__unknown__';
-        setTargetColumn(null);
-        setTimeout(() => {
-          setTargetColumn(target);
+        setTargetColumn(target);
+      },
+    };
+  };
+
+  const useFilterActionProps = () => {
+    const { options } = useFAP();
+    return {
+      options,
+      onSubmit: (values) => {
+        setParams({
+          ...params,
+          filter: mergeFilter([params.filter, values?.filter]),
+        });
+      },
+      onReset: () => {
+        setParams({
+          ...params,
+          filter: mergeFilter([params.filter]),
         });
       },
     };
   };
+
   return (
-    <SchemaComponentOptions scope={{ useCreateActionProps }}>
-      <BlockProvider {...props} params={params}>
+    <SchemaComponentOptions scope={{ useCreateActionProps, useFilterActionProps }}>
+      <BlockProvider {...props} params={params} requestOptions={{ manual: true }}>
         <InternalKanbanV2BlockProvider
           {...props}
           params={params}
           groupField={groupField}
           associateCollectionField={props.groupField}
-          columns={kanbanColumns}
+          columns={enableColumns}
           targetColumn={targetColumn}
           setTargetColumn={setTargetColumn}
         />

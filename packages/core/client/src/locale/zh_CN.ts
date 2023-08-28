@@ -811,5 +811,5 @@ export default {
   "Select all":"全选",
   "Determine whether a record exists by the following fields": "通过以下字段判断记录是否存在",
   "All loaded, nothing more":"已加载所有数据",
-  "Loading more":"加载更多"
+  "Loading":"加载中"
 }

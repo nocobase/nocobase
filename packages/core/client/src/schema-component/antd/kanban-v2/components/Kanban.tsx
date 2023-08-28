@@ -1,6 +1,6 @@
 import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { message, Tag } from 'antd';
-import { cloneDeep, isFunction } from 'lodash';
+import { cloneDeep, isFunction, uniqBy } from 'lodash';
 import React, { useCallback, useEffect, useState } from 'react';
 import { DragDropContext } from 'react-beautiful-dnd';
 import { useTranslation } from 'react-i18next';
@@ -108,17 +108,10 @@ export const KanbanV2: any = observer(
         .then(({ data }) => {
           isFunction(fun) && fun();
           if (data) {
-            if (page !== 1) {
-              newColumn.cards = [...(newColumn?.cards || []), ...data.data];
-              newColumn.meta = { ...(newColumn?.meta || {}), ...data.meta };
-              newState[index] = newColumn;
-              setColumnData(newState);
-            } else {
-              newColumn.cards = data.data || [];
-              newColumn.meta = data.meta;
-              newState[index] = newColumn;
-              setColumnData(newState);
-            }
+            newColumn.cards = data.data || [];
+            newColumn.meta = data.meta;
+            newState[index] = newColumn;
+            setColumnData(newState);
             return newColumn;
           }
         });
@@ -164,6 +157,7 @@ export const KanbanV2: any = observer(
         await resource.move({
           values: values,
         });
+        setTargetColumn(null);
         setTargetColumn([fromColumnId, toColumnId]);
         message.success(t('Saved successfully'));
       } catch (error) {

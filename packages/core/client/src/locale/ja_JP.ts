@@ -628,5 +628,5 @@ export default {
   "Sync from form fields":"フォームフィールドの同期",
   "Select all":"すべて選択",
   "All loaded, nothing more":"すべてロード完了",
-  "Loading more":"追加のロード"
+  "Loading":"ロード中"
 }

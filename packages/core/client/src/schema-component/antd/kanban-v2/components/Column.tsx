@@ -6,15 +6,8 @@ import React, { useContext, useEffect, useState } from 'react';
 import { Draggable, Droppable } from 'react-beautiful-dnd';
 import { useTranslation } from 'react-i18next';
 import { useInfiniteScroll } from 'ahooks';
-import {
-  BlockItem,
-  KanbanCardBlockProvider,
-  KanbanCardContext,
-  useBlockRequestContext,
-  useKanbanV2BlockContext,
-} from '../../../../';
+import { BlockItem, KanbanCardBlockProvider, KanbanCardContext, useKanbanV2BlockContext } from '../../../../';
 import { useProps } from '../../../hooks/useProps';
-import { uniqBy } from 'lodash';
 
 const grid = 8;
 const getItemStyle = (isDragging, draggableStyle) => ({
@@ -85,12 +78,7 @@ const List = (props) => {
 export const Column = observer(
   (props: any) => {
     const { ind, data, getColumnDatas } = props;
-    const {
-      service,
-      params: { appends },
-    } = useBlockRequestContext();
-    const { groupField, form, targetColumn } = useKanbanV2BlockContext();
-    const params = service?.params?.[0] || {};
+    const { groupField, form, targetColumn, params, setTargetColumn } = useKanbanV2BlockContext();
     const fieldSchema = useFieldSchema();
     const { t } = useTranslation();
     const [disabledCardDrag, setDisableCardDrag] = useState(false);
@@ -102,19 +90,22 @@ export const Column = observer(
     } = useInfiniteScroll((d) => getLoadMoreList(d?.nextId, 10), {
       target: document.getElementById(`scrollableDiv${ind}`),
       isNoMore: (d) => d?.nextId === undefined,
-      reloadDeps: [targetColumn === data.value, params, appends.length],
+      reloadDeps: [params],
     });
     useEffect(() => {
-      if (Array.isArray(targetColumn) && targetColumn?.includes(data.value)) {
+      if ((Array.isArray(targetColumn) && targetColumn?.includes(data.value)) || targetColumn === data.value) {
         reload();
       }
     }, [targetColumn]);
+
     const getLoadMoreList = async (nextId: string | undefined, limit: number): Promise<any> => {
-      const res = await getColumnDatas(data, ind, params, appends, nextId + 1, () => {});
+      const res = await getColumnDatas(data, ind, params, params?.appends, nextId, () => {
+        setTargetColumn(null);
+      });
       return {
         ...res,
-        list: uniqBy(res.cards, 'id'),
-        nextId: res?.meta?.count > res.cards.length ? Math.ceil(res.cards.length / 10) : undefined,
+        list: res.cards,
+        nextId: res?.meta?.totalPage > res?.meta?.page ? res?.meta?.page + 1 : undefined,
       };
     };
     const displayLable = fieldSchema['x-label-disabled'];
@@ -172,11 +163,12 @@ export const Column = observer(
                 ))}
               </Spin>
               <div style={{ marginTop: 8 }}>
-                {result?.nextId && result?.list?.length > 0 ? <span onClick={loadMore}>{'Loading more...'}</span> : ''}
+                {result?.nextId && result?.list?.length > 0 ? <span onClick={loadMore}>{t('Loading')} ...</span> : ''}
                 {!result?.nextId && !loading && result?.list?.length > 0 && (
-                  <span>{t('All loaded, nothing more')}</span>
+                  <span>{t('All loaded, nothing more')}.</span>
                 )}
                 {!result?.nextId && !loading && result?.list?.length === 0 && <Empty />}
+                <span> {!loading && t('Total {{count}} items', { count: result?.meta?.count })}</span>
               </div>
               {provided.placeholder}
             </div>

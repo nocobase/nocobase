@@ -106,7 +106,6 @@ export const KanabanDesigner = () => {
           params.pageSize = pageSize;
           field.decoratorProps.params = params;
           fieldSchema['x-decorator-props']['params'] = params;
-          service.run({ ...service.params?.[0], pageSize, page: 1 });
           dn.emit('patch', {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],
@@ -142,7 +141,6 @@ export const KanabanDesigner = () => {
           params.filter = filter;
           field.decoratorProps.params = params;
           fieldSchema['x-decorator-props']['params'] = params;
-          service.run({ ...service?.params?.[0], filter });
           dn.emit('patch', {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],
