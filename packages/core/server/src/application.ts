@@ -360,7 +360,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   createCli() {
-    return new Command('nocobase')
+    const command = new Command('nocobase')
       .usage('[command] [options]')
       .hook('preAction', async (_, actionCommand) => {
         this.activatedCommand = {
@@ -385,9 +385,15 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
           await this.restart();
         }
       });
+
+    command.exitOverride((err) => {
+      throw err;
+    });
+
+    return command;
   }
 
-  async runAsCLI(argv = process.argv, options?: ParseOptions) {
+  async runAsCLI(argv = process.argv, options?: ParseOptions & { throwError?: boolean }) {
     if (this.activatedCommand) {
       return;
     }
@@ -404,12 +410,21 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
       return command;
     } catch (error) {
-      console.log(`run command ${this.activatedCommand.name} error:`, error);
+      if (!this.activatedCommand) {
+        this.activatedCommand = {
+          name: 'unknown',
+        };
+      }
+
       this.setMaintaining({
         status: 'command_error',
         command: this.activatedCommand,
         error,
       });
+
+      if (options?.throwError) {
+        throw error;
+      }
     } finally {
       this.activatedCommand = null;
     }
