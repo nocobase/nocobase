@@ -1,5 +1,7 @@
+import { LoadingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { Button, Result, Spin } from 'antd';
+import { observer } from '@formily/reactive-react';
+import { Button, Modal, Result, Spin } from 'antd';
 import React, { FC } from 'react';
 import { Navigate } from 'react-router-dom';
 import { ACLPlugin } from '../acl';
@@ -21,9 +23,13 @@ import { SystemSettingsPlugin } from '../system-settings';
 import { CurrentUserProvider, CurrentUserSettingsMenuProvider } from '../user';
 import { LocalePlugin } from './plugins/LocalePlugin';
 
-const AppSpin = Spin;
+const AppSpin = () => {
+  return (
+    <Spin style={{ position: 'fixed', top: '50%', left: '50%', fontSize: 72, transform: 'translate(-50%, -50%)' }} />
+  );
+};
 
-const AppError: FC<{ app: Application; error: Error }> = ({ app, error }) => (
+const AppError: FC<{ app: Application }> = observer(({ app }) => (
   <div>
     <Result
       className={css`
@@ -34,7 +40,7 @@ const AppError: FC<{ app: Application; error: Error }> = ({ app, error }) => (
       `}
       status="error"
       title={app.i18n.t('Failed to load plugin')}
-      subTitle={app.i18n.t(error?.message)}
+      subTitle={app.i18n.t(app.error?.message)}
       extra={[
         <Button type="primary" key="try" onClick={() => window.location.reload()}>
           {app.i18n.t('Try again')}
@@ -42,13 +48,142 @@ const AppError: FC<{ app: Application; error: Error }> = ({ app, error }) => (
       ]}
     />
   </div>
-);
+));
+
+const getProps = (app: Application) => {
+  if (app.ws.serverDown) {
+    return {
+      status: 'error',
+      title: 'App error',
+      subTitle: 'The server is down',
+    };
+  }
+
+  if (!app.error) {
+    return {};
+  }
+
+  if (app.error.code === 'APP_NOT_FOUND') {
+    return {
+      status: 'warning',
+      title: 'App not found',
+      subTitle: app.error?.message,
+    };
+  }
+
+  if (app.error.code === 'APP_INITIALIZING') {
+    return {
+      status: 'info',
+      icon: <LoadingOutlined />,
+      title: 'App initializing',
+      subTitle: app.error?.message,
+    };
+  }
+
+  if (app.error.code === 'APP_INITIALIZED') {
+    return {
+      status: 'warning',
+      title: 'App initialized',
+      subTitle: app.error?.message,
+    };
+  }
+
+  if (app.error.code === 'APP_ERROR') {
+    return {
+      status: 'error',
+      title: 'App error',
+      subTitle: app.error?.message,
+    };
+  }
+
+  if (app.error.code === 'APP_NOT_INSTALLED_ERROR') {
+    return {
+      status: 'warning',
+      title: 'App not installed',
+      subTitle: app.error?.message,
+    };
+  }
+
+  if (app.error.code === 'APP_STOPPED') {
+    return {
+      status: 'warning',
+      title: 'App stopped',
+      subTitle: app.error?.message,
+    };
+  }
+
+  if (app.error.code === 'APP_COMMANDING') {
+    const props = {
+      status: 'info',
+      icon: <LoadingOutlined />,
+      title: app.error?.command?.name,
+      subTitle: app.error?.message,
+    };
+    const commands = {
+      start: {
+        title: 'App starting',
+      },
+      restart: {
+        title: 'App restarting',
+      },
+      install: {
+        title: 'App installing',
+      },
+      upgrade: {
+        title: 'App upgrading',
+      },
+      'pm.enable': {
+        title: 'Enabling plugin',
+      },
+      'pm.disable': {
+        title: 'Disabling plugin',
+      },
+    };
+    return { ...props, ...commands[app.error?.command?.name] };
+  }
+};
+
+const AppMaintaining: FC<{ app: Application; error: Error }> = observer(({ app }) => {
+  const { icon, status, title, subTitle } = getProps(app);
+  return (
+    <div>
+      <Result
+        className={css`
+          top: 50%;
+          position: absolute;
+          width: 100%;
+          transform: translate(0, -50%);
+        `}
+        icon={icon}
+        status={status}
+        title={app.i18n.t(title)}
+        subTitle={app.i18n.t(subTitle)}
+        // extra={[
+        //   <Button type="primary" key="try" onClick={() => window.location.reload()}>
+        //     {app.i18n.t('Try again')}
+        //   </Button>,
+        // ]}
+      />
+    </div>
+  );
+});
+
+const AppMaintainingDialog: FC<{ app: Application; error: Error }> = observer(({ app }) => {
+  const { icon, status, title, subTitle } = getProps(app);
+  return (
+    <Modal open={true} footer={null} closable={false}>
+      <Result icon={icon} status={status} title={app.i18n.t(title)} subTitle={app.i18n.t(subTitle)} />
+    </Modal>
+  );
+});
 
 export class NocoBaseBuildInPlugin extends Plugin {
   async afterAdd() {
     this.app.addComponents({
       AppSpin,
       AppError,
+      AppMaintaining,
+      AppMaintainingDialog,
     });
     await this.addPlugins();
   }

@@ -8,6 +8,7 @@ import {
 } from '@nocobase/database';
 import multipleAssociation from './multiple-association';
 import singleAssociation from './single-association';
+import { isViewCollection } from '..';
 
 export default (collection: Collection) => {
   return associationFields(collection)
@@ -27,6 +28,10 @@ export default (collection: Collection) => {
 };
 
 export function associationFields(collection: Collection): Array<RelationField> {
+  if (isViewCollection(collection)) {
+    return [];
+  }
+
   return Array.from(collection.fields.values())
     .filter((field) => field instanceof RelationField)
     .filter((field) => field.name !== 'createdBy' && field.name !== 'updatedBy');

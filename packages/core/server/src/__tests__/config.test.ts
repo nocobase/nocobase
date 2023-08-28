@@ -35,6 +35,8 @@ describe('config', () => {
 
     const app = new Application(config);
 
+    await app.load();
+
     const appPluginA = app.getPlugin('test-a');
 
     expect(appPluginA).toBeInstanceOf(TestA);

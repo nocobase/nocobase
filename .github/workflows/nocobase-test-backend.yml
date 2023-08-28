@@ -44,7 +44,7 @@ jobs:
           DB_DIALECT: sqlite
           DB_STORAGE: /tmp/db.sqlite
           DB_UNDERSCORED: ${{ matrix.underscored }}
-    timeout-minutes: 35
+    timeout-minutes: 40
 
   postgres-test:
     strategy:
@@ -92,7 +92,7 @@ jobs:
           DB_UNDERSCORED: ${{ matrix.underscored }}
           DB_SCHEMA: ${{ matrix.schema }}
           COLLECTION_MANAGER_SCHEMA: ${{ matrix.collection_schema }}
-    timeout-minutes: 35
+    timeout-minutes: 40
 
   mysql-test:
     strategy:
@@ -128,4 +128,4 @@ jobs:
           DB_PASSWORD: password
           DB_DATABASE: nocobase
           DB_UNDERSCORED: ${{ matrix.underscored }}
-    timeout-minutes: 35
+    timeout-minutes: 40

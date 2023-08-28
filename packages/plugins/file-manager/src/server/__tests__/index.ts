@@ -1,4 +1,5 @@
 import { MockServer, mockServer } from '@nocobase/test';
+import send from 'koa-send';
 import path from 'path';
 import supertest from 'supertest';
 
@@ -11,6 +12,14 @@ export async function getApp(options = {}): Promise<MockServer> {
       origin: '*',
     },
     acl: false,
+  });
+
+  app.use(async (ctx, next) => {
+    if (ctx.path.startsWith('/storage/uploads')) {
+      await send(ctx, ctx.path, { root: process.cwd() });
+      return;
+    }
+    await next();
   });
 
   await app.cleanDb();
