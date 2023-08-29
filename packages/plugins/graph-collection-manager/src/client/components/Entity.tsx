@@ -294,10 +294,9 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
   };
   return (
     <div className="body">
-      {/* {portsData['initPorts']?.map((property) => {
+      {portsData['initPorts']?.map((property) => {
         return property.uiSchema && <PopoverContent {...popoverProps} property={property} key={property.id} />;
       })}
-      */}
       <div className="morePorts">
         {isCollapse &&
           portsData['morePorts']?.map((property) => {
