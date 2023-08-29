@@ -12,6 +12,7 @@ export const CustomRequestActionACL = (props) => {
     return null;
   }
   if (
+    apiClient.auth.role !== 'root' &&
     data.data?.roles?.length &&
     !data.data.roles.find((role) => {
       return role.name === apiClient.auth.role;

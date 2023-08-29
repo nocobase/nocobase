@@ -24,20 +24,23 @@ export async function send(ctx: Context, next: Next) {
   const { filterByTk, resourceName, values = {} } = ctx.action.params;
   const { currentRecord: currentRecordId, requestConfig: requestConfigFirst = {} } = values;
 
-  const crRepo = ctx.db.getRepository('customRequestsRoles');
-  const hasRoles = await crRepo.find({
-    filter: {
-      $or: [
-        {
-          customRequestKey: filterByTk,
-        },
-      ],
-    },
-  });
+  // root role has all permissions
+  if (ctx.state.currentRole !== 'root') {
+    const crRepo = ctx.db.getRepository('customRequestsRoles');
+    const hasRoles = await crRepo.find({
+      filter: {
+        $or: [
+          {
+            customRequestKey: filterByTk,
+          },
+        ],
+      },
+    });
 
-  if (hasRoles) {
-    if (!hasRoles.find((item) => item.roleName === ctx.state.currentRole)) {
-      return ctx.throw(403, 'no permission');
+    if (hasRoles) {
+      if (!hasRoles.find((item) => item.roleName === ctx.state.currentRole)) {
+        return ctx.throw(403, 'no permission');
+      }
     }
   }
 
