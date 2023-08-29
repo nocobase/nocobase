@@ -106,6 +106,7 @@ export const useVariableOptions = ({
     formVariable,
     fieldCollectionName,
     blockCollectionName,
+    isInSetDefaultValueDialog,
     iterationVariable,
     record,
     currentRecordVariable,
