@@ -114,6 +114,7 @@ FormItem.Designer = function Designer() {
   const variables = useVariables();
   const localVariables = useLocalVariables();
   const { isAllowToSetDefaultValue } = useIsAllowToSetDefaultValue();
+  const isAddNewForm = useIsAddNewForm();
 
   const targetCollection = getCollection(collectionField?.target);
   const interfaceConfig = getInterface(collectionField?.interface);
@@ -371,11 +372,12 @@ FormItem.Designer = function Designer() {
             field.componentProps.mode = mode;
 
             // 子表单状态不允许设置默认值
-            if (isSubMode(fieldSchema)) {
+            if (isSubMode(fieldSchema) && isAddNewForm) {
               // @ts-ignore
               schema.default = null;
               fieldSchema.default = null;
-              field.reset();
+              field.setInitialValue(null);
+              field.setValue(null);
             }
 
             dn.emit('patch', {
@@ -699,3 +701,10 @@ export function isFileCollection(collection: Collection) {
 }
 
 FormItem.FilterFormDesigner = FilterFormDesigner;
+
+function useIsAddNewForm() {
+  const record = useRecord();
+  const isAddNewForm = _.isEmpty(_.omit(record, '__parent'));
+
+  return isAddNewForm;
+}
