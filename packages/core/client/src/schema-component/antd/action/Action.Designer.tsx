@@ -46,12 +46,12 @@ const MenuGroup = (props) => {
   );
 };
 
-function ButtonEditor() {
+function ButtonEditor(props) {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
   const { t } = useTranslation();
-  const isLink = fieldSchema['x-component'] === 'Action.Link';
+  const isLink = props?.isLink || fieldSchema['x-component'] === 'Action.Link';
 
   return (
     <SchemaSettings.ModalItem
@@ -829,7 +829,7 @@ function WorkflowConfig() {
 }
 
 export const ActionDesigner = (props) => {
-  const { modalTip, linkageAction, removeButtonProps, ...restProps } = props;
+  const { modalTip, linkageAction, removeButtonProps, buttonEditorProps, ...restProps } = props;
   const fieldSchema = useFieldSchema();
   const { name } = useCollection();
   const { getChildrenCollections } = useCollectionManager();
@@ -846,7 +846,7 @@ export const ActionDesigner = (props) => {
   return (
     <GeneralSchemaDesigner {...restProps} disableInitializer draggable={isDraggable}>
       <MenuGroup>
-        <ButtonEditor />
+        <ButtonEditor {...buttonEditorProps} />
         {fieldSchema['x-action'] === 'submit' &&
           fieldSchema.parent?.['x-initializer'] === 'CreateFormActionInitializers' && <SaveMode />}
         {isLinkageAction && <SchemaSettings.LinkageRules collectionName={name} />}

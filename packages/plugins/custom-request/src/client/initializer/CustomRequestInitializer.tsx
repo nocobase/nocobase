@@ -8,7 +8,6 @@ export const CustomRequestInitializer: React.FC = (props) => {
     'x-action': 'customize:form:request',
     'x-designer': 'CustomRequestAction.Designer',
     'x-action-settings': {
-      skipValidator: false,
       onSuccess: {
         manualClose: false,
         redirecting: false,
