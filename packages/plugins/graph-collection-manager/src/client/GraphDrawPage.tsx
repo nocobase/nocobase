@@ -1,11 +1,4 @@
-import {
-  ApartmentOutlined,
-  FullscreenExitOutlined,
-  FullscreenOutlined,
-  LineHeightOutlined,
-  MenuOutlined,
-  ShareAltOutlined,
-} from '@ant-design/icons';
+import { ApartmentOutlined } from '@ant-design/icons';
 import { Graph } from '@antv/x6';
 import { register } from '@antv/x6-react-shape';
 import { Scroller } from '@antv/x6-plugin-scroller';
@@ -30,10 +23,9 @@ import {
   useCurrentAppInfo,
   useGlobalTheme,
 } from '@nocobase/client';
-import { css, cx } from '@emotion/css';
+import { cx } from '@emotion/css';
 import lodash from 'lodash';
-import { useFullscreen } from 'ahooks';
-import { Button, ConfigProvider, Input, Layout, Menu, Popover, Switch, Tooltip, App, Spin } from 'antd';
+import { Button, ConfigProvider, Layout, Switch, Tooltip, App, Spin } from 'antd';
 import dagre from 'dagre';
 import React, { createContext, forwardRef, useContext, useEffect, useLayoutEffect, useState } from 'react';
 import { useAsyncDataSource, useCreateActionAndRefreshCM } from './action-hooks';
@@ -50,6 +42,11 @@ import {
   getPopupContainer,
   useGCMTranslation,
 } from './utils';
+import { LocateCollectionAction } from './components/LocateCollectionAction';
+import { SelectCollectionsAction } from './components/SelectCollectionsAction';
+import { DirectionAction } from './components/DirectionAction';
+import { ConnectorAction } from './components/ConnectorAction';
+import { FullscreenAction } from './components/FullScreenAction';
 const { drop, groupBy, last, maxBy, minBy, take } = lodash;
 
 const LINE_HEIGHT = 40;
@@ -219,7 +216,7 @@ function optimizeEdge(edge) {
   }
 }
 
-const CollapsedContext = createContext<any>({});
+export const CollapsedContext = createContext<any>({});
 const formatNodeData = () => {
   const layoutNodes = [];
   const edges = targetGraph.getEdges();
@@ -946,11 +943,16 @@ export const GraphDrawPage = React.memo(() => {
         };
       }, 0);
     } else {
+      targetGraph.filterConfig = null;
       handleCleanHighlight();
     }
   };
 
+  //切换连线类型
   const handleSetRelationshipType = (type) => {
+    targetGraph.connectionType = type;
+    const { filterConfig } = targetGraph;
+    filterConfig && handleFiterCollections(filterConfig.key);
     handleSetEdgeVisible(type);
   };
 
@@ -979,6 +981,14 @@ export const GraphDrawPage = React.memo(() => {
         v.setVisible(true);
       }
     });
+  };
+
+  const handleDirectionChange = (direction) => {
+    targetGraph.direction = direction;
+    const { filterConfig } = targetGraph;
+    if (filterConfig) {
+      handleFiterCollections(filterConfig.key);
+    }
   };
 
   useLayoutEffect(() => {
@@ -1025,6 +1035,11 @@ export const GraphDrawPage = React.memo(() => {
                       <Select popupMatchSelectWidth={false} {...props} getPopupContainer={getPopupContainer} />
                     ),
                     AddCollectionAction,
+                    LocateCollectionAction,
+                    SelectCollectionsAction,
+                    DirectionAction,
+                    ConnectorAction,
+                    FullscreenAction,
                   }}
                   schema={{
                     type: 'void',
@@ -1068,96 +1083,13 @@ export const GraphDrawPage = React.memo(() => {
                               },
                               fullScreen: {
                                 type: 'void',
-                                'x-component': 'Action',
-                                'x-component-props': {
-                                  component: forwardRef(() => {
-                                    const [isFullscreen, { toggleFullscreen }] = useFullscreen(
-                                      document.getElementById('graph_container'),
-                                    );
-                                    return (
-                                      <Tooltip title={t('Full Screen')} getPopupContainer={getPopupContainer}>
-                                        <Button
-                                          onClick={() => {
-                                            toggleFullscreen();
-                                          }}
-                                        >
-                                          {isFullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
-                                        </Button>
-                                      </Tooltip>
-                                    );
-                                  }),
-                                  useAction: () => {
-                                    return {
-                                      run() {},
-                                    };
-                                  },
-                                },
+                                'x-component': 'FullscreenAction',
                               },
-                              collectionList: {
+                              locateCollection: {
                                 type: 'void',
-                                'x-component': function Com() {
-                                  const { handleSearchCollection, collectionList } = useContext(CollapsedContext);
-                                  const [selectedKeys, setSelectKey] = useState([]);
-                                  const content = (
-                                    <div>
-                                      <Input
-                                        style={{ margin: '4px 0' }}
-                                        bordered={false}
-                                        placeholder={t('Collection Search')}
-                                        onChange={handleSearchCollection}
-                                      />
-                                      <Menu
-                                        selectedKeys={selectedKeys}
-                                        selectable={true}
-                                        className={css`
-                                          .ant-menu-item {
-                                            height: 32px;
-                                            line-height: 32px;
-                                          }
-                                        `}
-                                        style={{ maxHeight: '70vh', overflowY: 'auto', border: 'none' }}
-                                        items={[
-                                          { type: 'divider' },
-                                          ...collectionList.map((v) => {
-                                            return {
-                                              key: v.name,
-                                              label: compile(v.title),
-                                              onClick: (e: any) => {
-                                                if (e.key !== selectedKeys[0]) {
-                                                  setSelectKey([e.key]);
-                                                  handleFiterCollections(e.key);
-                                                } else {
-                                                  targetGraph.filterConfig = null;
-                                                  handleFiterCollections(false);
-                                                  setSelectKey([]);
-                                                }
-                                              },
-                                            };
-                                          }),
-                                        ]}
-                                      />
-                                    </div>
-                                  );
-                                  return (
-                                    <Popover
-                                      content={content}
-                                      autoAdjustOverflow
-                                      placement="bottomRight"
-                                      trigger={['click']}
-                                      getPopupContainer={getPopupContainer}
-                                      overlayClassName={css`
-                                        .ant-popover-inner-content {
-                                          padding: 0;
-                                        }
-                                      `}
-                                    >
-                                      <Button>
-                                        <MenuOutlined />
-                                      </Button>
-                                    </Popover>
-                                  );
-                                },
+                                'x-component': 'LocateCollectionAction',
                                 'x-component-props': {
+                                  handleFiterCollections,
                                   icon: 'MenuOutlined',
                                   useAction: () => {
                                     return {
@@ -1192,71 +1124,9 @@ export const GraphDrawPage = React.memo(() => {
                               },
                               connectionType: {
                                 type: 'void',
-                                'x-component': () => {
-                                  const menuItems = [
-                                    {
-                                      key: ConnectionType.Both,
-                                      label: 'All relationships',
-                                    },
-                                    {
-                                      key: ConnectionType.Entity,
-                                      label: 'Entity relationship only',
-                                    },
-                                    {
-                                      key: ConnectionType.Inherit,
-                                      label: 'Inheritance relationship only',
-                                    },
-                                  ];
-                                  const content = (
-                                    <div>
-                                      <Menu
-                                        defaultSelectedKeys={[ConnectionType.Both]}
-                                        selectable={true}
-                                        className={css`
-                                          .ant-menu-item {
-                                            height: 32px;
-                                            line-height: 32px;
-                                          }
-                                        `}
-                                        style={{ maxHeight: '70vh', overflowY: 'auto', border: 'none' }}
-                                        items={[
-                                          { type: 'divider' },
-                                          ...menuItems.map((v) => {
-                                            return {
-                                              key: v.key,
-                                              label: t(v.label),
-                                              onClick: (e: any) => {
-                                                targetGraph.connectionType = v.key;
-                                                const { filterConfig } = targetGraph;
-                                                filterConfig && handleFiterCollections(filterConfig.key);
-                                                handleSetRelationshipType(v.key);
-                                              },
-                                            };
-                                          }),
-                                        ]}
-                                      />
-                                    </div>
-                                  );
-                                  return (
-                                    <Popover
-                                      content={content}
-                                      autoAdjustOverflow
-                                      placement="bottomRight"
-                                      trigger={['click']}
-                                      getPopupContainer={getPopupContainer}
-                                      overlayClassName={css`
-                                        .ant-popover-inner-content {
-                                          padding: 0;
-                                        }
-                                      `}
-                                    >
-                                      <Button>
-                                        <ShareAltOutlined />
-                                      </Button>
-                                    </Popover>
-                                  );
-                                },
+                                'x-component': 'ConnectorAction',
                                 'x-component-props': {
+                                  onClick: handleSetRelationshipType,
                                   icon: 'MenuOutlined',
                                   useAction: () => {
                                     return {
@@ -1267,70 +1137,9 @@ export const GraphDrawPage = React.memo(() => {
                               },
                               direction: {
                                 type: 'void',
-                                'x-component': () => {
-                                  const menuItems = [
-                                    {
-                                      key: DirectionType.Both,
-                                      label: 'All directions',
-                                    },
-                                    {
-                                      key: DirectionType.Target,
-                                      label: 'Target index',
-                                    },
-                                    {
-                                      key: DirectionType.Source,
-                                      label: 'Source index',
-                                    },
-                                  ];
-                                  const content = (
-                                    <div>
-                                      <Menu
-                                        defaultSelectedKeys={[DirectionType.Target]}
-                                        selectable={true}
-                                        className={css`
-                                          .ant-menu-item {
-                                            height: 32px;
-                                            line-height: 32px;
-                                          }
-                                        `}
-                                        style={{ maxHeight: '70vh', overflowY: 'auto', border: 'none' }}
-                                        items={[
-                                          { type: 'divider' },
-                                          ...menuItems.map((v) => {
-                                            return {
-                                              key: v.key,
-                                              label: t(v.label),
-                                              onClick: (e: any) => {
-                                                targetGraph.direction = v.key;
-                                                const { filterConfig } = targetGraph;
-                                                if (filterConfig) {
-                                                  handleFiterCollections(filterConfig.key);
-                                                }
-                                              },
-                                            };
-                                          }),
-                                        ]}
-                                      />
-                                    </div>
-                                  );
-                                  return (
-                                    <Popover
-                                      content={content}
-                                      autoAdjustOverflow
-                                      placement="bottomRight"
-                                      trigger={['click']}
-                                      getPopupContainer={getPopupContainer}
-                                      overlayClassName={css`
-                                        .ant-popover-inner-content {
-                                          padding: 0;
-                                        }
-                                      `}
-                                    >
-                                      <Button>
-                                        <LineHeightOutlined />
-                                      </Button>
-                                    </Popover>
-                                  );
+                                'x-component': 'DirectionAction',
+                                'x-component-props': {
+                                  onClick: handleDirectionChange,
                                 },
                               },
                               selectMode: {
@@ -1346,6 +1155,10 @@ export const GraphDrawPage = React.memo(() => {
                                     </Tooltip>
                                   );
                                 },
+                              },
+                              selectCollections: {
+                                type: 'array',
+                                'x-component': 'SelectCollectionsAction',
                               },
                             },
                           },
