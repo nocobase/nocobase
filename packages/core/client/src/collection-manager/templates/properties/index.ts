@@ -118,7 +118,7 @@ export const defaultConfigurableProperties = {
     type: 'string',
     name: 'description',
     'x-decorator': 'FormItem',
-    'x-component': 'Input',
+    'x-component': 'Input.TextArea',
   },
   ...moreOptions,
   moreOptions: {
