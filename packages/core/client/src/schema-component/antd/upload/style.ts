@@ -25,15 +25,8 @@ export const useStyles = genStyleHook('upload', (token) => {
           margin: '0 3px 3px 0 !important',
           height: '160px !important',
           width: '160px !important',
-          marginBlock: '0 !important',
+          marginBlock: '0 28px !important',
         },
-        [`${componentCls}-list-picture-card ${componentCls}-list-item-name${componentCls}-list-item-name`]: {
-          display: 'none !important',
-        },
-        [`${componentCls}-list-picture ${componentCls}-list-item, ${componentCls}-list-picture-card ${componentCls}-list-item`]:
-          {
-            padding: '1px !important',
-          },
       },
       '&.nb-upload': {
         [`${componentCls}-list-item${componentCls}-list-item-list-type-picture-card`]: {
