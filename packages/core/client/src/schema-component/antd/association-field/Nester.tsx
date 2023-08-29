@@ -16,6 +16,7 @@ import {
   DefaultValueProvider,
   interfacesOfUnsupportedDefaultValue,
 } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
+import { LocalVariablesProvider } from '../../../variables/hooks/useLocalVariables';
 import { AssociationFieldContext } from './context';
 import { useAssociationFieldContext } from './hooks';
 
@@ -63,9 +64,11 @@ const ToOneNester = (props) => {
   return (
     <FormActiveFieldsProvider name="nester">
       <RecordProvider record={field.value}>
-        <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
-          <Card bordered={true}>{props.children}</Card>
-        </DefaultValueProvider>
+        <LocalVariablesProvider iterationCtx={field.value}>
+          <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
+            <Card bordered={true}>{props.children}</Card>
+          </DefaultValueProvider>
+        </LocalVariablesProvider>
       </RecordProvider>
     </FormActiveFieldsProvider>
   );
@@ -162,15 +165,17 @@ const ToManyNester = observer(
               </div>
               <FormActiveFieldsProvider name="nester">
                 <RecordProvider record={value}>
-                  <RecordIndexProvider index={index}>
-                    <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
-                      <RecursionField
-                        onlyRenderProperties
-                        basePath={field.address.concat(index)}
-                        schema={fieldSchema}
-                      />
-                    </DefaultValueProvider>
-                  </RecordIndexProvider>
+                  <LocalVariablesProvider iterationCtx={value}>
+                    <RecordIndexProvider index={index}>
+                      <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
+                        <RecursionField
+                          onlyRenderProperties
+                          basePath={field.address.concat(index)}
+                          schema={fieldSchema}
+                        />
+                      </DefaultValueProvider>
+                    </RecordIndexProvider>
+                  </LocalVariablesProvider>
                 </RecordProvider>
               </FormActiveFieldsProvider>
               <Divider />

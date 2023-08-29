@@ -21,6 +21,7 @@ import {
   useTableSelectorContext,
 } from '../../../';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
+import { LocalVariablesProvider } from '../../../variables/hooks/useLocalVariables';
 import { useToken } from '../__builtins__';
 import { ColumnFieldProvider } from './components/ColumnFieldProvider';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
@@ -30,7 +31,7 @@ const useArrayField = (props) => {
   return (props.field || field) as ArrayField;
 };
 
-const useTableColumns = (props) => {
+const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => {
   const field = useArrayField(props);
   const schema = useFieldSchema();
   const { schemaInWhitelist } = useACLFieldWhitelist();
@@ -61,15 +62,17 @@ const useTableColumns = (props) => {
           const index = field.value?.indexOf(record);
           return (
             <RecordIndexProvider index={record.__index || index}>
-              <RecordProvider record={record}>
-                <ColumnFieldProvider schema={s} basePath={field.address.concat(record.__index || index)}>
-                  <RecursionField
-                    basePath={field.address.concat(record.__index || index)}
-                    schema={s}
-                    onlyRenderProperties
-                  />
-                </ColumnFieldProvider>
-              </RecordProvider>
+              <LocalVariablesProvider iterationCtx={record}>
+                <RecordProvider record={record}>
+                  <ColumnFieldProvider schema={s} basePath={field.address.concat(record.__index || index)}>
+                    <RecursionField
+                      basePath={field.address.concat(record.__index || index)}
+                      schema={s}
+                      onlyRenderProperties
+                    />
+                  </ColumnFieldProvider>
+                </RecordProvider>
+              </LocalVariablesProvider>
             </RecordIndexProvider>
           );
         },
@@ -206,7 +209,21 @@ const useValidator = (validator: (value: any) => string) => {
 };
 
 export const Table: any = observer(
-  (props: any) => {
+  (props: {
+    useProps?: () => any;
+    onChange?: (pagination, filters, sorter, extra) => void;
+    onRowSelectionChange?: (selectedRowKeys: any[], selectedRows: any[]) => void;
+    onRowDragEnd?: (e: { from: any; to: any }) => void;
+    onClickRow?: (record: any, setSelectedRow: (selectedRow: any[]) => void, selectedRow: any[]) => void;
+    pagination?: any;
+    showIndex?: boolean;
+    dragSort?: boolean;
+    rowKey?: string | ((record: any) => string);
+    rowSelection?: any;
+    required?: boolean;
+    onExpand?: (flag: boolean, record: any) => void;
+    isSubTable?: boolean;
+  }) => {
     const { token } = useToken();
     const { pagination: pagination1, useProps, onChange, ...others1 } = props;
     const { pagination: pagination2, onClickRow, ...others2 } = useProps?.() || {};
