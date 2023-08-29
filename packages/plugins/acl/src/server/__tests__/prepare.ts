@@ -8,6 +8,7 @@ export async function prepareApp(): Promise<MockServer> {
     plugins: ['error-handler', 'users', 'ui-schema-storage', 'collection-manager', 'auth'],
   });
 
+  await app.db.clean({ drop: true });
   app.plugin(PluginACL, {
     name: 'acl',
   });
