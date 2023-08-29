@@ -52,17 +52,5 @@ export default defineConfig({
         link: '/contributing',
       }
     ]
-  }),
-  chainWebpack(memo, args) {
-    memo.module
-      .rule('template')
-      .test(/\.tpl$/)
-      .type('asset/source')
-      .use('raw-loader')
-      .loader('raw-loader')
-      .options({
-        esModule: false,
-      });
-    return memo;
-  },
+  })
 });
