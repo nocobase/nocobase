@@ -4,6 +4,7 @@ import _ from 'lodash';
 import { useEffect } from 'react';
 import { useRecord } from '../../../..';
 import { useCollection, useCollectionManager } from '../../../../collection-manager';
+import { useFlag } from '../../../../flag-provider';
 import { useVariables } from '../../../../variables';
 import { transformVariableValue } from '../../../../variables/utils/transformVariableValue';
 
@@ -17,10 +18,15 @@ const useLazyLoadAssociationFieldOfSubForm = () => {
   const fieldSchema = useFieldSchema();
   const variables = useVariables();
   const field = useField<Field>();
+  const { isInAssignFieldValues } = useFlag() || {};
 
   const schemaName = fieldSchema.name.toString();
 
   useEffect(() => {
+    if (isInAssignFieldValues) {
+      return;
+    }
+
     const cloneRecord = { ...record };
     delete cloneRecord['__parent'];
 
@@ -51,7 +57,7 @@ const useLazyLoadAssociationFieldOfSubForm = () => {
       .catch((err) => {
         console.error(err);
       });
-  }, [field, name, record, schemaName]);
+  }, [field, name, record, schemaName, isInAssignFieldValues]);
 };
 
 export default useLazyLoadAssociationFieldOfSubForm;
