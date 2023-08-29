@@ -13,7 +13,7 @@ export const InputNumber: ComposedInputNumber = connect((props) => {
   const { onChange, ...others } = props;
   const handleChange = (v) => {
     const result = parseFloat(v);
-    onChange(Number.isNaN(result) ? '' : result);
+    onChange(Number.isNaN(result) ? null : result);
   };
   return <AntdNumber onChange={handleChange} {...others} />;
 }, mapReadPretty(ReadPretty));
