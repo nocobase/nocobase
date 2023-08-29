@@ -38,6 +38,11 @@ export default {
       allowNull: true,
     },
     {
+      type: 'string',
+      name: 'description',
+      allowNull: true,
+    },
+    {
       type: 'belongsTo',
       name: 'collection',
       target: 'collections',

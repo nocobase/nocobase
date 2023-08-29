@@ -20,6 +20,20 @@ describe('collections repository', () => {
     await app.destroy();
   });
 
+  it('should create collection with description', async () => {
+    const description = 'this collection is for tests';
+    await Collection.repository.create({
+      values: {
+        name: 'posts',
+        description,
+      },
+      context: {},
+    });
+
+    const postsCollection = db.getCollection('posts');
+    expect(postsCollection.options.description).toEqual(description);
+  });
+
   it('should extend collections collection', async () => {
     expect(db.getRepository<CollectionRepository>('collections')).toBeTruthy();
 

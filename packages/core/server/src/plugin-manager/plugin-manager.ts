@@ -141,32 +141,32 @@ export class PluginManager {
   }
 
   getPlugins() {
-    return this.pluginInstances;
+    return this.app.pm.pluginInstances;
   }
 
   getAliases() {
-    return this.pluginAliases.keys();
+    return this.app.pm.pluginAliases.keys();
   }
 
   get(name: string | typeof Plugin) {
     if (typeof name === 'string') {
-      return this.pluginAliases.get(name);
+      return this.app.pm.pluginAliases.get(name);
     }
-    return this.pluginInstances.get(name);
+    return this.app.pm.pluginInstances.get(name);
   }
 
   has(name: string | typeof Plugin) {
     if (typeof name === 'string') {
-      return this.pluginAliases.has(name);
+      return this.app.pm.pluginAliases.has(name);
     }
-    return this.pluginInstances.has(name);
+    return this.app.pm.pluginInstances.has(name);
   }
 
   del(name: string | typeof Plugin) {
     const instance = this.get(name);
     if (instance) {
-      this.pluginAliases.delete(instance.name);
-      this.pluginInstances.delete(instance.constructor as typeof Plugin);
+      this.app.pm.pluginAliases.delete(instance.name);
+      this.app.pm.pluginInstances.delete(instance.constructor as typeof Plugin);
     }
   }
 
@@ -189,7 +189,7 @@ export class PluginManager {
     await run('yarn', ['install']);
   }
 
-  async add(plugin?: any, options: any = {}) {
+  async add(plugin?: any, options: any = {}, insert = false) {
     if (this.has(plugin)) {
       const name = typeof plugin === 'string' ? plugin : plugin.name;
       this.app.log.warn(`plugin [${name}] added`);
@@ -210,6 +210,17 @@ export class PluginManager {
     this.pluginInstances.set(P, instance);
     if (options.name) {
       this.pluginAliases.set(options.name, instance);
+    }
+    if (insert && options.name) {
+      const packageName = PluginManager.getPackageName(options.name);
+      const packageJson = PluginManager.getPackageJson(packageName);
+      await this.repository.updateOrCreate({
+        values: {
+          ...options,
+          version: packageJson.version,
+        },
+        filterKeys: ['name'],
+      });
     }
     await instance.afterAdd();
   }
