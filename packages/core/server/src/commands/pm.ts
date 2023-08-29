@@ -12,7 +12,7 @@ export default (app: Application) => {
   pm.command('add')
     .arguments('plugin')
     .action(async (plugin) => {
-      await app.pm.add(plugin);
+      await app.pm.add(plugin, {}, true);
     });
 
   pm.command('enable')

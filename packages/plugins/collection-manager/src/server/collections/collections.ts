@@ -45,6 +45,11 @@ export default {
       defaultValue: {},
     },
     {
+      type: 'string',
+      name: 'description',
+      allowNull: true,
+    },
+    {
       type: 'hasMany',
       name: 'fields',
       target: 'fields',
