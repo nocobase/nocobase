@@ -172,7 +172,7 @@ const OperationButton: any = React.memo((props: any) => {
   );
 });
 
-const PopoverContent = React.memo((props: any) => {
+const PopoverContent = React.forwardRef((props: any, ref) => {
   const { property, node, ...other } = props;
   const {
     store: {
@@ -218,10 +218,10 @@ const PopoverContent = React.memo((props: any) => {
   };
   return (
     <Popover
+      ref={ref}
       content={CollectionConten(property)}
       getPopupContainer={getPopupContainer}
       mouseLeaveDelay={0}
-      zIndex={100}
       title={
         <div>
           {compile(property.uiSchema?.title)}
@@ -294,9 +294,10 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
   };
   return (
     <div className="body">
-      {portsData['initPorts']?.map((property) => {
+      {/* {portsData['initPorts']?.map((property) => {
         return property.uiSchema && <PopoverContent {...popoverProps} property={property} key={property.id} />;
       })}
+      */}
       <div className="morePorts">
         {isCollapse &&
           portsData['morePorts']?.map((property) => {
