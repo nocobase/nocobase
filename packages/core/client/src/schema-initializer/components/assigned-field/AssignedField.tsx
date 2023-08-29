@@ -67,7 +67,7 @@ const InternalField: React.FC = (props) => {
     }
     setRequired();
     // @ts-ignore
-    field.dataSource = uiSchema.enum || [];
+    field.dataSource = uiSchema.enum;
     const originalProps = compile(uiSchema['x-component-props']) || {};
     const componentProps = merge(originalProps, field.componentProps || {});
     field.componentProps = componentProps;

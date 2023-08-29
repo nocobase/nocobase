@@ -194,6 +194,7 @@ const InternalRemoteSelect = connect(
       }
       firstRun.current = true;
     };
+
     return (
       <Select
         open={open}
