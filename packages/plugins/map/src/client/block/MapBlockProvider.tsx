@@ -33,6 +33,7 @@ const InternalMapBlockProvider = (props) => {
 };
 
 export const MapBlockProvider = (props) => {
+  const uField = useField();
   const { params, fieldNames } = props;
   const appends = params.appends || [];
   const { field } = fieldNames || {};
@@ -40,7 +41,7 @@ export const MapBlockProvider = (props) => {
     appends.push(field[0]);
   }
   return (
-    <BlockProvider {...props} params={{ ...params, appends, paginate: false }}>
+    <BlockProvider {...props} params={{ ...params, appends, paginate: false, sort: uField.componentProps.lineSort }}>
       <InternalMapBlockProvider {...props} />
     </BlockProvider>
   );
@@ -57,5 +58,6 @@ export const useMapBlockProps = () => {
     ...ctx,
     dataSource: ctx?.service?.data?.data,
     zoom: ctx?.field?.componentProps?.zoom || 13,
+    lineSort: ctx?.field?.componentProps?.lineSort,
   };
 };

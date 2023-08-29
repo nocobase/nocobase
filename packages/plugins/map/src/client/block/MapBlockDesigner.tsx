@@ -86,7 +86,7 @@ export const MapBlockDesigner = () => {
         />
       ) : null}
       <SchemaSettings.DefaultSortingRules
-        path="x-decorator-props.params.sort"
+        path="x-component-props.lineSort"
         onSubmitAfter={() => {
           service.refresh();
         }}

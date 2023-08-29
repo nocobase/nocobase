@@ -1,5 +1,5 @@
 import { CheckOutlined, EnvironmentOutlined, ExpandOutlined } from '@ant-design/icons';
-import { RecursionField, Schema, useFieldSchema } from '@formily/react';
+import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import {
   ActionContextProvider,
   RecordProvider,
@@ -19,7 +19,8 @@ import { AMapComponent, AMapForwardedRefProps } from './Map';
 import { getSource } from '../../utils';
 
 export const AMapBlock = (props) => {
-  const { collectionField, fieldNames, dataSource, fixedBlock, zoom, setSelectedRecordKeys } = useProps(props);
+  const { collectionField, fieldNames, dataSource, fixedBlock, zoom, setSelectedRecordKeys, lineSort } =
+    useProps(props);
   const { name, getPrimaryKey } = useCollection();
   const { getCollectionJoinField } = useCollectionManager();
   const primaryKey = getPrimaryKey();
@@ -118,9 +119,9 @@ export const AMapBlock = (props) => {
     const cf = getCollectionJoinField([name, ...fieldPaths].flat().join('.'));
     const overlays = dataSource
       .map((item) => {
-        const data = getSource(item, fieldNames?.field, cf?.interface);
+        const data = getSource(item, fieldNames?.field, cf?.interface)?.filter(Boolean);
         if (!data?.length) return [];
-        return data?.filter(Boolean).map((mapItem) => {
+        return data.map((mapItem) => {
           const overlay = mapRef.current?.setOverlay(collectionField.type, mapItem, {
             strokeColor: '#4e9bff',
             fillColor: '#4e9bff',
@@ -139,6 +140,36 @@ export const AMapBlock = (props) => {
       })
       .flat()
       .filter(Boolean);
+
+    if (collectionField.type === 'point' && lineSort?.length) {
+      const positions = overlays.map((o: AMap.Marker) => o.getPosition());
+      console.log('🚀 ~ file: Block.tsx:146 ~ useEffect ~ positions:', positions);
+      const lineOverlay = mapRef.current?.setOverlay('lineString', positions, {
+        strokeColor: '#4e9bff',
+        fillColor: '#4e9bff',
+        cursor: 'pointer',
+      });
+      const overlay = mapRef.current?.setOverlay('point', positions[0], {
+        strokeColor: '#4e9bff',
+        fillColor: '#4e9bff',
+        cursor: 'pointer',
+        label: {
+          direction: 'top',
+          offset: [0, 5],
+          content: '起点',
+        },
+      });
+      mapRef.current?.setOverlay('point', positions[positions.length - 1], {
+        strokeColor: '#4e9bff',
+        fillColor: '#4e9bff',
+        cursor: 'pointer',
+        label: {
+          direction: 'top',
+          offset: [0, 5],
+          content: '终点',
+        },
+      });
+    }
 
     mapRef.current?.map?.setFitView(overlays);
 
@@ -194,7 +225,7 @@ export const AMapBlock = (props) => {
       });
       events.forEach((e) => e());
     };
-  }, [dataSource, isMapInitialization, fieldNames, name, primaryKey, collectionField.type, isConnected]);
+  }, [dataSource, isMapInitialization, fieldNames, name, primaryKey, collectionField.type, isConnected, lineSort]);
 
   useEffect(() => {
     setTimeout(() => {
