@@ -17,10 +17,10 @@ export default function ({ app }) {
     ...make('workflows', workflows),
     ...make('workflows.nodes', {
       create: nodes.create,
-      destroy: nodes.destroy,
     }),
     ...make('flow_nodes', {
       update: nodes.update,
+      destroy: nodes.destroy,
     }),
     ...make('executions', executions),
   });
