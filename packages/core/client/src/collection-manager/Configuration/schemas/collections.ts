@@ -74,23 +74,12 @@ export const collection: CollectionOptions = {
     },
     {
       type: 'string',
-      name: 'options.description',
+      name: 'description',
       interface: 'input',
       uiSchema: {
         title: '{{ t("Description") }}',
         type: 'string',
         'x-component': 'Input',
-      },
-    },
-    {
-      type: 'string',
-      name: 'description',
-      interface: 'input',
-      unableFilter: true,
-      uiSchema: {
-        title: '{{ t("Description") }}',
-        type: 'string',
-        'x-component': 'Input.TextArea',
       },
     },
   ],

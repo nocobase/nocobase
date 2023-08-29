@@ -127,14 +127,12 @@ export const useFilterFieldOptions = (fields) => {
   };
   const getOptions = (fields, depth) => {
     const options = [];
-    fields
-      .filter((v) => !v.unableFilter)
-      .forEach((field) => {
-        const option = field2option(field, depth);
-        if (option) {
-          options.push(option);
-        }
-      });
+    fields.forEach((field) => {
+      const option = field2option(field, depth);
+      if (option) {
+        options.push(option);
+      }
+    });
     return options;
   };
   return getOptions(fields, 1);
