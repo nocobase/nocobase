@@ -50,5 +50,17 @@ export default defineConfig({
       { id: 'en-US', switchPrefix: 'en', hostname: 'docs.nocobase.com' }
     ],
   }),
+  chainWebpack(memo, args) {
+    memo.module
+      .rule('template')
+      .test(/\.tpl$/)
+      .type('asset/source')
+      .use('raw-loader')
+      .loader('raw-loader')
+      .options({
+        esModule: false,
+      });
+    return memo;
+  },
   // mfsu: true, // 报错
 });
