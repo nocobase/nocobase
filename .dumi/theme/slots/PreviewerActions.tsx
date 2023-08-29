@@ -215,7 +215,7 @@ const PreviewerActions: typeof DumiPreviewerActions = (props) => {
     }
   }, [div])
 
-  return <Spin spinning={loading}><div ref={div}><DumiPreviewerActions {...props} /></div></Spin>
+  return <Spin spinning={loading}><div ref={div}><DumiPreviewerActions {...props} disabledActions={['STACKBLITZ']} /></div></Spin>
 };
 
 export default PreviewerActions;
