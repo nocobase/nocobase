@@ -10,6 +10,7 @@ export interface RoleActionParams {
   own?: boolean;
   whitelist?: string[];
   blacklist?: string[];
+
   [key: string]: any;
 }
 
@@ -22,7 +23,10 @@ export class ACLRole {
   resources = new Map<string, ACLResource>();
   snippets: Set<string> = new Set();
 
-  constructor(public acl: ACL, public name: string) {}
+  constructor(
+    public acl: ACL,
+    public name: string,
+  ) {}
 
   getResource(name: string): ACLResource | undefined {
     return this.resources.get(name);
@@ -56,7 +60,8 @@ export class ACLRole {
   }
 
   public grantAction(path: string, options?: RoleActionParams) {
-    let { resource, resourceName, actionName } = this.getResourceActionFromPath(path);
+    let { resource } = this.getResourceActionFromPath(path);
+    const { resourceName, actionName } = this.getResourceActionFromPath(path);
 
     if (!resource) {
       resource = new ACLResource({
