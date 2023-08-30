@@ -564,7 +564,7 @@ SchemaSettings.Remove = function Remove(props: any) {
               removeParentsIfNoChildren,
               breakRemoveOn,
             };
-            if (field && field.required) {
+            if (field?.required) {
               field.required = false;
               fieldSchema['required'] = false;
             }
@@ -575,8 +575,10 @@ SchemaSettings.Remove = function Remove(props: any) {
             }
             delete form.values[fieldSchema.name];
             removeActiveFieldName?.(fieldSchema.name as string);
-            field.setInitialValue(null);
-            field.reset();
+            if (field?.setInitialValue && field?.reset) {
+              field.setInitialValue(null);
+              field.reset();
+            }
           },
         });
       }}

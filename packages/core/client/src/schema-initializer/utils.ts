@@ -757,7 +757,7 @@ export const useCurrentSchema = (action: string, key: string, find = findSchema,
     exists: !!schema,
     remove() {
       removeActiveFieldName?.(schema.name);
-      form.query(schema.name).forEach((field: Field) => {
+      form?.query(schema.name).forEach((field: Field) => {
         field.setInitialValue(null);
         field.reset();
       });
