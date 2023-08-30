@@ -1887,9 +1887,12 @@ function isDisabled(params: IsDisabledParams) {
     return false;
   }
 
-  // 数字可以赋值给字符串
-  if (uiSchema.type === 'string' && option.schema?.type === 'number') {
-    return false;
+  if (['input', 'markdown', 'richText', 'textarea', 'username'].includes(collectionField.interface)) {
+    return !['string', 'number'].includes(option.schema?.type);
+  }
+
+  if (collectionField.interface && option.interface) {
+    return collectionField.interface !== option.interface;
   }
 
   if (uiSchema?.['x-component'] !== option.schema?.['x-component']) {

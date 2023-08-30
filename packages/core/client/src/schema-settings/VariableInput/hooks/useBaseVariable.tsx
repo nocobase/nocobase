@@ -147,7 +147,7 @@ export const useBaseVariable = ({
     const target = option.field.target;
     return new Promise((resolve) => {
       setTimeout(() => {
-        const children =
+        const children = (
           getChildren(returnFields(getFilterOptions(target), option), {
             collectionField,
             uiSchema,
@@ -159,7 +159,28 @@ export const useBaseVariable = ({
             compile,
             isDisabled: isDisabled || isDisabledDefault,
             getCollectionField,
-          }) || [];
+          }) || []
+        )
+          // 将叶子节点排列在上面，方便用户选择
+          .sort((a, b) => {
+            if (a.isLeaf && !b.isLeaf) {
+              return -1;
+            }
+            if (!a.isLeaf && b.isLeaf) {
+              return 1;
+            }
+            return 0;
+          })
+          // 将禁用项排列在下面，方便用户选择
+          .sort((a, b) => {
+            if (a.disabled && !b.disabled) {
+              return 1;
+            }
+            if (!a.disabled && b.disabled) {
+              return -1;
+            }
+            return 0;
+          });
 
         if (children.length === 0) {
           option.disabled = true;
@@ -229,14 +250,17 @@ function isDisabledDefault(params: IsDisabledParams) {
     return false;
   }
 
-  // 数字可以赋值给字符串
-  if (uiSchema.type === 'string' && option.schema?.type === 'number') {
-    return false;
-  }
-
   // 对多字段可以选择对一和对多字段作为默认值
   if (['hasMany', 'belongsToMany'].includes(collectionField.type) && option.target) {
     return false;
+  }
+
+  if (['input', 'markdown', 'richText', 'textarea', 'username'].includes(collectionField.interface)) {
+    return !['string', 'number'].includes(option.schema?.type);
+  }
+
+  if (collectionField.interface && option.interface) {
+    return collectionField.interface !== option.interface;
   }
 
   if (uiSchema?.['x-component'] !== option.schema?.['x-component']) {
