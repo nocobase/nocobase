@@ -65,7 +65,7 @@ export const Cascader = connect(
       );
     };
     const handelDropDownVisible = (value) => {
-      if (value && !field.dataSource.length) {
+      if (value && !field.dataSource?.length) {
         run();
       }
     };
