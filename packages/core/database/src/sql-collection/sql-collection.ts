@@ -18,10 +18,6 @@ export class SqlCollection extends Collection {
   }
 
   modelInit() {
-    if (this.model) {
-      return;
-    }
-
     const { autoGenId, sql } = this.options;
     const model = class extends SQLModel {};
     model.init(null, {

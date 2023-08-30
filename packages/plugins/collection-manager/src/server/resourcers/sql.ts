@@ -89,6 +89,10 @@ export default {
         transaction,
       });
       await setFields(ctx, transaction);
+      if (values?.sql) {
+        const collection = ctx.db.getCollection(filterByTk) as SqlCollection;
+        collection.modelInit();
+      }
       ctx.body = res;
       await next();
     },
