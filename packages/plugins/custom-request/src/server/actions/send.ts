@@ -45,7 +45,7 @@ export async function send(ctx: Context, next: Next) {
 
     if (hasRoles) {
       if (!hasRoles.find((item) => item.roleName === ctx.state.currentRole)) {
-        return ctx.throw(403, 'no permission');
+        return ctx.throw(403, 'custom request no permission');
       }
     }
   }
