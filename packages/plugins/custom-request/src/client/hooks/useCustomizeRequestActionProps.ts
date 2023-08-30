@@ -59,7 +59,10 @@ export const useCustomizeRequestActionProps = () => {
           method: 'POST',
           data: {
             requestConfig,
-            currentRecord: record[getPrimaryKey()],
+            currentRecord: {
+              id: record[getPrimaryKey()],
+              appends: service.params[0].appends,
+            },
           },
         });
         actionField.data.loading = false;

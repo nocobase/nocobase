@@ -22,7 +22,13 @@ const omitNullAndUndefined = (obj: any) => {
 
 export async function send(ctx: Context, next: Next) {
   const { filterByTk, resourceName, values = {} } = ctx.action.params;
-  const { currentRecord: currentRecordId, requestConfig: requestConfigFirst = {} } = values;
+  const {
+    currentRecord: { id: currentRecordId, appends: currentRecordAppends } = {
+      id: 0,
+      appends: [],
+    },
+    requestConfig: requestConfigFirst = {},
+  } = values;
 
   // root role has all permissions
   if (ctx.state.currentRole !== 'root') {
@@ -63,6 +69,7 @@ export async function send(ctx: Context, next: Next) {
     const recordRepo = ctx.db.getRepository(collectionName);
     currentRecord = await recordRepo.findOne({
       filterByTk: currentRecordId,
+      appends: currentRecordAppends,
     });
   }
 
