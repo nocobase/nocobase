@@ -1,10 +1,16 @@
+import { Field, Form } from '@formily/core';
 import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { error } from '@nocobase/utils/client';
 import _ from 'lodash';
 import React, { useCallback, useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializerButtonContext, SchemaInitializerItemOptions, useFormActiveFields } from '../';
+import {
+  SchemaInitializerButtonContext,
+  SchemaInitializerItemOptions,
+  useFormActiveFields,
+  useFormBlockContext,
+} from '../';
 import { FieldOptions, useCollection, useCollectionManager } from '../collection-manager';
 import { isAssocField } from '../filter-provider/utils';
 import { useActionContext, useDesignable } from '../schema-component';
@@ -735,7 +741,9 @@ const recursiveParent = (schema: Schema) => {
 
 export const useCurrentSchema = (action: string, key: string, find = findSchema, rm = removeSchema) => {
   const { removeActiveFieldName } = useFormActiveFields() || {};
+  const { form }: { form: Form } = useFormBlockContext();
   let fieldSchema = useFieldSchema();
+
   if (!fieldSchema?.['x-initializer']) {
     const recursiveInitializerSchema = recursiveParent(fieldSchema);
     if (recursiveInitializerSchema) {
@@ -749,6 +757,10 @@ export const useCurrentSchema = (action: string, key: string, find = findSchema,
     exists: !!schema,
     remove() {
       removeActiveFieldName?.(schema.name);
+      form.query(schema.name).forEach((field: Field) => {
+        field.setInitialValue(null);
+        field.reset();
+      });
       schema && rm(schema, remove);
     },
   };

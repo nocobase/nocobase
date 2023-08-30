@@ -575,6 +575,8 @@ SchemaSettings.Remove = function Remove(props: any) {
             }
             delete form.values[fieldSchema.name];
             removeActiveFieldName?.(fieldSchema.name as string);
+            field.setInitialValue(null);
+            field.reset();
           },
         });
       }}
