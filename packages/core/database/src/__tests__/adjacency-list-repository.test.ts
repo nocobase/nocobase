@@ -58,6 +58,7 @@ describe('adjacency list repository', () => {
     });
 
     const c111 = await Tree.repository.findOne({ where: { name: 'c1-1-1' }, appends: ['parent(recursively=true)'] });
-    console.log(c111);
+    expect(c111.parent.name).toBe('c1-1');
+    expect(c111.parent.parent.name).toBe('c1');
   });
 });

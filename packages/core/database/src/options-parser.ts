@@ -335,7 +335,7 @@ export class OptionsParser {
         // association not exists
         queryParams['include'].push({
           association: appendAssociation,
-          ...(appendWithOptions.options || {}),
+          options: appendWithOptions.options || {},
         });
 
         existIncludeIndex = queryParams['include'].length - 1;

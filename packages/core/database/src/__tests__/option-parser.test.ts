@@ -143,7 +143,7 @@ describe('option parser', () => {
 
       expect(include[0].association).toEqual('posts');
       expect(include[0].association);
-      expect(include[0].recursively).toBeTruthy();
+      expect(include[0].options.recursively).toBeTruthy();
     });
 
     it('should handle field with association', () => {
