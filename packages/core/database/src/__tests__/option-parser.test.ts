@@ -130,6 +130,22 @@ describe('option parser', () => {
       expect(params['include'][0]['association']).toEqual('posts');
     });
 
+    it('should support append with options', () => {
+      const options = {
+        appends: ['posts(recursively=true)'],
+      };
+
+      const parser = new OptionsParser(options, {
+        collection: User,
+      });
+
+      const { include } = parser.toSequelizeParams();
+
+      expect(include[0].association).toEqual('posts');
+      expect(include[0].association);
+      expect(include[0].options.recursively).toBeTruthy();
+    });
+
     it('should handle field with association', () => {
       const options = {
         appends: ['posts'],
