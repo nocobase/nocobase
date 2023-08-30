@@ -90,7 +90,7 @@ export const linkageAction = async ({
         field.data = field.data || {};
         field.data.hidden = false;
 
-        field._display = field._display || field.display;
+        field._display = '_display' in field ? field._display : field.display;
         field.display = operator;
       } else {
         field.display = field._display;

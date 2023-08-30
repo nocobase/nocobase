@@ -4,7 +4,7 @@ import { Field } from '@formily/core';
 import { ISchema, observer, useField, useFieldSchema } from '@formily/react';
 import { Select } from 'antd';
 import _ from 'lodash';
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ACLCollectionFieldProvider } from '../../../acl/ACLProvider';
 import { useFormActiveFields } from '../../../block-provider';
@@ -54,37 +54,38 @@ export const FormItem: any = observer(
     }, [addActiveFieldName, schema.name]);
 
     const showTitle = schema['x-decorator-props']?.showTitle ?? true;
+    const extra = useMemo(() => {
+      return typeof field.description === 'string' ? (
+        <div
+          dangerouslySetInnerHTML={{
+            __html: HTMLEncode(field.description).split('\n').join('<br/>'),
+          }}
+        />
+      ) : (
+        field.description
+      );
+    }, [field.description]);
+    const className = useMemo(() => {
+      return cx(
+        css`
+          & .ant-space {
+            flex-wrap: wrap;
+          }
+        `,
+        {
+          [css`
+            > .ant-formily-item-label {
+              display: none;
+            }
+          `]: showTitle === false,
+        },
+      );
+    }, [showTitle]);
+
     return (
       <ACLCollectionFieldProvider>
         <BlockItem className={'nb-form-item'}>
-          <Item
-            className={cx(
-              css`
-                & .ant-space {
-                  flex-wrap: wrap;
-                }
-              `,
-              {
-                [css`
-                  > .ant-formily-item-label {
-                    display: none;
-                  }
-                `]: showTitle === false,
-              },
-            )}
-            {...props}
-            extra={
-              typeof field.description === 'string' ? (
-                <div
-                  dangerouslySetInnerHTML={{
-                    __html: HTMLEncode(field.description).split('\n').join('<br/>'),
-                  }}
-                />
-              ) : (
-                field.description
-              )
-            }
-          />
+          <Item className={className} {...props} extra={extra} />
         </BlockItem>
       </ACLCollectionFieldProvider>
     );

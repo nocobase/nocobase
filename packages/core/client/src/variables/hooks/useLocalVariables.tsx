@@ -76,7 +76,7 @@ const useLocalVariables = (props?: Props) => {
         iterationCtx && { name: '$iteration', ctx: iterationCtx, collectionName: currentCollectionName },
       ] as VariableOption[]
     ).filter(Boolean);
-  }, [JSON.stringify(currentRecord), JSON.stringify(form?.values || {}), name, iterationCtx]); // 尽量保持返回的值不变，这样可以减少接口的请求次数，因为关系字段会缓存到变量的 ctx 中
+  }, [blockRecord, name, form?.values, iterationCtx, currentCollectionName]); // 尽量保持返回的值不变，这样可以减少接口的请求次数，因为关系字段会缓存到变量的 ctx 中
 };
 
 export default useLocalVariables;

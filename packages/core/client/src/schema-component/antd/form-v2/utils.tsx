@@ -49,7 +49,7 @@ export const linkageMergeAction = async ({
     case ActionType.None:
     case ActionType.Hidden:
       if (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables })) {
-        field._display = field._display || field.display;
+        field._display = '_display' in field ? field._display : field.display;
         field.display = operator;
       } else {
         field.display = field._display;
@@ -59,7 +59,7 @@ export const linkageMergeAction = async ({
     case ActionType.ReadOnly:
     case ActionType.ReadPretty:
       if (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables })) {
-        field._pattern = field._pattern || field.pattern;
+        field._pattern = '_pattern' in field ? field._pattern : field.pattern;
         field.pattern = operator;
       } else {
         field.pattern = field._pattern;
@@ -94,7 +94,7 @@ export const linkageMergeAction = async ({
           } else {
             result = null;
           }
-          field._value = field._value || field.value;
+          field._value = '_value' in field ? field._value : field.value;
           field.value = result === undefined ? field.value : result;
         } else {
           field.value = field._value;
