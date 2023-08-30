@@ -11,6 +11,14 @@ describe('select query', () => {
     }),
   });
   model.sql = 'SELECT * FROM "users"';
+  model.collection = {
+    fields: new Map(
+      Object.entries({
+        id: {},
+        name: {},
+      }),
+    ),
+  } as any;
   const queryGenerator = model.queryInterface.queryGenerator as any;
 
   test('plain sql', () => {
