@@ -165,19 +165,19 @@ export const getShouldChange = ({
     }
 
     // `一对一` 和 `一对多` 的不能用于设置默认值，因为其具有唯一性
-    if (['o2o', 'o2m', 'oho'].includes(collectionFieldOfVariable.interface)) {
+    if (['o2o', 'o2m', 'oho'].includes(collectionFieldOfVariable?.interface)) {
       return false;
     }
-    if (!collectionField.target && collectionFieldOfVariable.target) {
+    if (!collectionField.target && collectionFieldOfVariable?.target) {
       return false;
     }
-    if (collectionField.target && !collectionFieldOfVariable.target) {
+    if (collectionField.target && !collectionFieldOfVariable?.target) {
       return false;
     }
     if (
       collectionField.target &&
-      collectionFieldOfVariable.target &&
-      !collectionsInheritChain.includes(collectionFieldOfVariable.target)
+      collectionFieldOfVariable?.target &&
+      !collectionsInheritChain.includes(collectionFieldOfVariable?.target)
     ) {
       return false;
     }
