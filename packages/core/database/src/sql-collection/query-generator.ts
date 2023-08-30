@@ -21,7 +21,7 @@ export function selectQuery(
   }
   const queryItems = [];
   let attributes = options.attributes && options.attributes.slice();
-  const fields = Array.from((model.collection as Collection).fields.keys());
+  const fields = Array.from((model.collection as Collection)?.fields.keys() || []);
   attributes = attributes.filter((attr: any) => attr === '*' || typeof attr !== 'string' || fields.includes(attr));
   attributes = this.escapeAttributes(attributes, { model });
   attributes = attributes || ['*'];
