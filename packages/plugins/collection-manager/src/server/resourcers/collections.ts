@@ -25,18 +25,15 @@ export default {
         transaction,
       });
 
-      await db.getRepository('collections').update({
-        filterByTk,
-        values: {
-          fields,
-        },
-        transaction,
-      });
+      for (const key of existFields.map((f) => f.key)) {
+        await db.getRepository('fields').destroy({
+          filterByTk: key,
+          transaction,
+        });
+      }
 
-      await db.getRepository('fields').destroy({
-        filter: {
-          key: existFields.map((f) => f.key),
-        },
+      await db.getRepository('collections.fields', filterByTk).create({
+        values: fields,
         transaction,
       });
 
