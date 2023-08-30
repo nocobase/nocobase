@@ -60,7 +60,8 @@ export async function send(ctx: Context, next: Next) {
   const { collectionName, url, headers = {}, params = {}, data = {}, ...options } = requestConfig.options;
   let currentRecord = {};
   if (collectionName && typeof currentRecordId !== 'undefined') {
-    currentRecord = ctx.db.getRepository(collectionName).findOne({
+    const recordRepo = ctx.db.getRepository(collectionName);
+    currentRecord = await recordRepo.findOne({
       filterByTk: currentRecordId,
     });
   }
