@@ -31,7 +31,6 @@ export const AssociationFieldProvider = observer(
     const fieldValue = useMemo(() => JSON.stringify(field.value), [field.value]);
 
     const [loading, setLoading] = useState(true);
-    console.log(currentMode);
 
     useEffect(() => {
       setLoading(true);

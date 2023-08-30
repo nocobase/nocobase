@@ -35,8 +35,6 @@ const CascadeSelect = connect((props) => {
   const { options: collectionField, field: associationField } = useAssociationFieldContext<any>();
   const resource = api.resource(collectionField.target);
   const { getCollectionJoinField, getInterface } = useCollectionManager();
-  const initValue = isVariable(props.value) ? undefined : props.value;
-  const value = Array.isArray(initValue) ? initValue.filter(Boolean) : initValue;
   const fieldNames = associationField?.componentProps?.fieldNames;
   const targetField =
     collectionField?.target &&
@@ -50,12 +48,13 @@ const CascadeSelect = connect((props) => {
   }, [targetField]);
   const field: any = useField();
   useEffect(() => {
-    if (props.value && Array.isArray(props.value) && props.value.length > 0) {
-      const options = value?.map?.((v) => {
+    if (props.value) {
+      const values = transformNestedData(props.value);
+      const options = values?.map?.((v) => {
         return {
           key: v.parentId,
-          children: v.children,
-          value: v.value,
+          children: [],
+          value: v,
         };
       });
       setSelectedOptions(options);
@@ -169,6 +168,7 @@ const CascadeSelect = connect((props) => {
     setLoading(false);
     setOptions(result);
   };
+
   return (
     <Space wrap>
       {selectedOptions.map((value, index) => {
@@ -327,4 +327,21 @@ function extractLastNonNullValueObjects(data) {
     }
   }
   return result;
+}
+
+function transformNestedData(inputData) {
+  const resultArray = [];
+
+  function recursiveTransform(data) {
+    if (data?.parent) {
+      const { parent } = data;
+      recursiveTransform(parent);
+    }
+    const { parent, ...other } = data;
+    resultArray.push(other);
+  }
+  if (inputData) {
+    recursiveTransform(inputData);
+  }
+  return resultArray;
 }
