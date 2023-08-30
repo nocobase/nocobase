@@ -357,6 +357,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
       if (collection.options.schema) {
         collection.model._schema = collection.options.schema;
       }
+      if (collection.options.sql) {
+        collection.modelInit();
+      }
     });
 
     this.on('beforeDefineCollection', (options) => {

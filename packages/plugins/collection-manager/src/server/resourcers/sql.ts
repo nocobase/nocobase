@@ -1,43 +1,31 @@
 import { Context, Next } from '@nocobase/actions';
 import { SQLModel, SqlCollection } from '@nocobase/database';
 import { omit } from 'lodash';
+import { CollectionModel } from '../models';
 
-const setFields = async (ctx: Context, transaction?: any) => {
+const updateCollection = async (ctx: Context, transaction: any) => {
   const { filterByTk, values } = ctx.action.params;
-  if (!transaction) {
-    transaction = await ctx.app.db.sequelize.transaction();
-  }
-  try {
-    const fields = values.fields?.map((f: any) => {
-      delete f.key;
-      return f;
-    });
-    const repo = ctx.db.getRepository('collections');
-    const collection = await repo.findOne({
-      filter: {
-        name: filterByTk,
-      },
-      transaction,
-    });
+  const fields = values.fields?.map((f: any) => {
+    delete f.key;
+    return f;
+  });
+  const repo = ctx.db.getRepository('collections');
+  const upRes = await repo.update({
+    filterByTk,
+    values: {
+      ...values,
+      fields,
+    },
+    transaction,
+  });
+  const collection: CollectionModel = await repo.findOne({
+    filter: {
+      name: filterByTk,
+    },
+    transaction,
+  });
 
-    await repo.update({
-      filterByTk,
-      values: {
-        fields,
-        sources: values.sources,
-      },
-      transaction,
-    });
-
-    await collection.loadFields({
-      transaction,
-    });
-
-    await transaction.commit();
-  } catch (e) {
-    await transaction.rollback();
-    throw e;
-  }
+  return { collection, upRes };
 };
 
 export default {
@@ -77,23 +65,30 @@ export default {
       await next();
     },
     setFields: async (ctx: Context, next: Next) => {
-      await setFields(ctx);
+      const transaction = await ctx.app.db.sequelize.transaction();
+      try {
+        const { collection } = await updateCollection(ctx, transaction);
+        await collection.loadFields({
+          transaction,
+        });
+        await transaction.commit();
+      } catch (e) {
+        await transaction.rollback();
+        throw e;
+      }
       await next();
     },
     update: async (ctx: Context, next: Next) => {
-      const { filterByTk, values } = ctx.action.params;
       const transaction = await ctx.app.db.sequelize.transaction();
-      const res = await ctx.db.getRepository('collections').update({
-        filterByTk,
-        values: omit(values, ['fields']),
-        transaction,
-      });
-      await setFields(ctx, transaction);
-      if (values?.sql) {
-        const collection = ctx.db.getCollection(filterByTk) as SqlCollection;
-        collection.modelInit();
+      try {
+        const { collection, upRes } = await updateCollection(ctx, transaction);
+        await collection.load({ transaction });
+        await transaction.commit();
+        ctx.body = upRes;
+      } catch (e) {
+        await transaction.rollback();
+        throw e;
       }
-      ctx.body = res;
       await next();
     },
   },
