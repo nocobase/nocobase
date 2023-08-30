@@ -21,10 +21,21 @@ export default {
         transaction,
       });
 
+      const existFields = await collection.getFields({
+        transaction,
+      });
+
       await db.getRepository('collections').update({
         filterByTk,
         values: {
           fields,
+        },
+        transaction,
+      });
+
+      await db.getRepository('fields').destroy({
+        filter: {
+          key: existFields.map((f) => f.key),
         },
         transaction,
       });
