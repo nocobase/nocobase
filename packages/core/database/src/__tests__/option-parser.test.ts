@@ -77,6 +77,7 @@ describe('option parser', () => {
         {
           association: 'tags',
           attributes: ['id', 'name'],
+          options: {},
         },
       ],
     });
