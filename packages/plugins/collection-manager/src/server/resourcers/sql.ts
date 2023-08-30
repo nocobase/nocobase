@@ -82,7 +82,7 @@ export default {
       const transaction = await ctx.app.db.sequelize.transaction();
       try {
         const { collection, upRes } = await updateCollection(ctx, transaction);
-        await collection.load({ transaction });
+        await collection.load({ transaction, resetFields: true });
         await transaction.commit();
         ctx.body = upRes;
       } catch (e) {
