@@ -4,6 +4,7 @@ import { Collection } from './collection';
 import { Database } from './database';
 import FilterParser from './filter-parser';
 import { Appends, Except, FindOptions } from './repository';
+import qs from 'qs';
 
 const debug = require('debug')('noco-database');
 
@@ -237,6 +238,20 @@ export class OptionsParser {
     return filterParams;
   }
 
+  protected parseAppendWithOptions(append: string) {
+    const parts = append.split('(');
+    const obj: { name: string; options?: object } = {
+      name: parts[0],
+    };
+
+    if (parts.length > 1) {
+      const optionsStr = parts[1].replace(')', '');
+      obj.options = qs.parse(optionsStr);
+    }
+
+    return obj;
+  }
+
   protected parseAppends(appends: Appends, filterParams: any) {
     if (!appends) return filterParams;
 
@@ -250,6 +265,10 @@ export class OptionsParser {
      * @param append
      */
     const setInclude = (model: ModelStatic<any>, queryParams: any, append: string) => {
+      const appendWithOptions = this.parseAppendWithOptions(append);
+
+      append = appendWithOptions.name;
+
       const appendFields = append.split('.');
       const appendAssociation = appendFields[0];
 
@@ -316,6 +335,7 @@ export class OptionsParser {
         // association not exists
         queryParams['include'].push({
           association: appendAssociation,
+          ...(appendWithOptions.options || {}),
         });
 
         existIncludeIndex = queryParams['include'].length - 1;
