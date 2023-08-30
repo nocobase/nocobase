@@ -25,6 +25,7 @@ import React, {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   // @ts-ignore
   useTransition as useReactTransition,
@@ -812,6 +813,10 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
       }),
     [],
   );
+
+  useEffect(() => {
+    form.setInitialValues(cloneDeep(initialValues));
+  }, [JSON.stringify(initialValues || {})]);
 
   const cancelHandler = () => {
     setVisible(false);

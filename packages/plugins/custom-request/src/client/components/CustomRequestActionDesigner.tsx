@@ -19,7 +19,7 @@ function CustomRequestSettingsItem() {
   const customRequestsResource = useCustomRequestsResource();
   const [messageInstance, messageDom] = message.useMessage();
   const { data, refresh } = useGetCustomRequest();
-  return data ? (
+  return (
     <>
       {messageDom}
       <SchemaSettings.ActionModalItem
@@ -51,7 +51,7 @@ function CustomRequestSettingsItem() {
         }}
       />
     </>
-  ) : null;
+  );
 }
 
 function CustomRequestACL() {
