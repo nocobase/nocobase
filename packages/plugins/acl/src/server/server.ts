@@ -332,7 +332,6 @@ export class PluginACL extends Plugin {
         const fields = resourceAction.get('fields') as string[];
         const newFields = fields.filter((field) => field != fieldName);
 
-        await resourceAction.save({ transaction: options.transaction });
         await this.app.db.getRepository('rolesResourcesActions').update({
           filterByTk: resourceAction.get('id') as number,
           values: {
