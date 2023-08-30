@@ -27,6 +27,12 @@ const useLazyLoadAssociationFieldOfSubForm = () => {
       return;
     }
 
+    const collectionField = getCollectionJoinField(`${name}.${schemaName}`);
+
+    if (!collectionField) {
+      return;
+    }
+
     const cloneRecord = { ...record };
     delete cloneRecord['__parent'];
 
@@ -41,13 +47,6 @@ const useLazyLoadAssociationFieldOfSubForm = () => {
       collectionName: name,
     };
     const variableString = `{{ $nRecord.${schemaName} }}`;
-    const collectionField = getCollectionJoinField(`${name}.${schemaName}`);
-
-    if (process.env.NODE_ENV !== 'production') {
-      if (!collectionField) {
-        throw new Error(`useLazyLoadAssociationFieldOfSubForm: ${schemaName} not found in collection ${name}`);
-      }
-    }
 
     variables
       .parseVariable(variableString, recordVariable)
