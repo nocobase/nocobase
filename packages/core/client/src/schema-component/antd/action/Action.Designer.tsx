@@ -829,7 +829,7 @@ function WorkflowConfig() {
 }
 
 export const ActionDesigner = (props) => {
-  const { modalTip, linkageAction, removeButtonProps, buttonEditorProps, ...restProps } = props;
+  const { modalTip, linkageAction, removeButtonProps, buttonEditorProps, linkageRulesProps, ...restProps } = props;
   const fieldSchema = useFieldSchema();
   const { name } = useCollection();
   const { getChildrenCollections } = useCollectionManager();
@@ -849,7 +849,7 @@ export const ActionDesigner = (props) => {
         <ButtonEditor {...buttonEditorProps} />
         {fieldSchema['x-action'] === 'submit' &&
           fieldSchema.parent?.['x-initializer'] === 'CreateFormActionInitializers' && <SaveMode />}
-        {isLinkageAction && <SchemaSettings.LinkageRules collectionName={name} />}
+        {isLinkageAction && <SchemaSettings.LinkageRules {...linkageRulesProps} collectionName={name} />}
         {isDuplicateAction && <DuplicationMode />}
         <OpenModeSchemaItems openMode={isPopupAction} openSize={isPopupAction} />
         {isUpdateModePopupAction && <UpdateMode />}

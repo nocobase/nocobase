@@ -98,6 +98,9 @@ export const CustomRequestActionDesigner: React.FC = () => {
       buttonEditorProps={{
         isLink: fieldSchema['x-action'] === 'customize:table:request',
       }}
+      linkageRulesProps={{
+        type: 'button',
+      }}
       removeButtonProps={{
         onConfirmOk() {
           customRequestsResource.destroy({
