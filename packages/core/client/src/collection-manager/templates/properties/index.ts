@@ -113,6 +113,13 @@ export const defaultConfigurableProperties = {
     },
     'x-reactions': ['{{useAsyncDataSource(loadCategories)}}'],
   },
+  description: {
+    title: '{{t("Description")}}',
+    type: 'string',
+    name: 'description',
+    'x-decorator': 'FormItem',
+    'x-component': 'Input.TextArea',
+  },
   ...moreOptions,
   moreOptions: {
     title: '{{t("More options")}}',
@@ -142,6 +149,7 @@ export type DefaultConfigurableKeys =
   | 'createdAt'
   | 'updatedAt'
   | 'sortable'
+  | 'description'
   | 'moreOptions';
 
 export const getConfigurableProperties = (...keys: DefaultConfigurableKeys[]) => {

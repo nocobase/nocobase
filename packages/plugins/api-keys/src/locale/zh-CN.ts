@@ -17,6 +17,7 @@ const locale = {
   '30 Days': '30 天',
   '90 Days': '90 天',
   'Role not found': '角色不存在',
+  'Allow only your own roles to be selected': '只允许选择你自己拥有的角色',
 };
 
 export default locale;

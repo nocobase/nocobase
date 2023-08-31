@@ -25,6 +25,7 @@ import { OverridingCollectionField } from './OverridingCollectionField';
 import { collection } from './schemas/collectionFields';
 import { SyncFieldsAction } from './SyncFieldsAction';
 import { ViewCollectionField } from './ViewInheritedField';
+import { Input } from '../../schema-component/antd/input';
 
 const indentStyle = css`
   .ant-table {
@@ -111,6 +112,11 @@ const CurrentFields = (props) => {
           </Tooltip>
         ) : null;
       },
+    },
+    {
+      dataIndex: 'description',
+      title: t('Descriptio '),
+      render: (value) => <Input.ReadPretty value={value} ellipsis={true} />,
     },
     {
       dataIndex: 'actions',
@@ -295,6 +301,10 @@ export const CollectionFields = () => {
       title: t('Title field'),
     },
     {
+      dataIndex: 'description',
+      title: t('Description'),
+    },
+    {
       dataIndex: 'actions',
       title: t('Actions'),
     },
@@ -395,6 +405,7 @@ export const CollectionFields = () => {
   );
   const addProps = { type: 'primary', database };
   const syncProps = { type: 'primary' };
+  console.log(dataSource);
   return (
     <ResourceActionProvider {...resourceActionProps}>
       <FormContext.Provider value={form}>

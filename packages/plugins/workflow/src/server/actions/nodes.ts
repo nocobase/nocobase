@@ -1,5 +1,5 @@
 import { Context, utils } from '@nocobase/actions';
-import { MultipleRelationRepository, Op } from '@nocobase/database';
+import { MultipleRelationRepository, Op, Repository } from '@nocobase/database';
 import type { WorkflowModel } from '../types';
 
 export async function create(context: Context, next) {
@@ -109,22 +109,20 @@ function searchBranchDownstreams(nodes, from) {
 
 export async function destroy(context: Context, next) {
   const { db } = context;
-  const repository = utils.getRepositoryFromParams(context) as MultipleRelationRepository;
+  const repository = utils.getRepositoryFromParams(context) as Repository;
   const { filterByTk } = context.action.params;
 
-  context.body = await db.sequelize.transaction(async (transaction) => {
-    const workflow = (await repository.getSourceModel(transaction)) as WorkflowModel;
-    if (workflow.executed) {
-      context.throw(400, 'Nodes in executed workflow could not be deleted');
-    }
+  const fields = ['id', 'upstreamId', 'downstreamId', 'branchIndex'];
+  const instance = await repository.findOne({
+    filterByTk,
+    fields: [...fields, 'workflowId'],
+    appends: ['upstream', 'downstream', 'workflow'],
+  });
+  if (instance.workflow.executed) {
+    context.throw(400, 'Nodes in executed workflow could not be deleted');
+  }
 
-    const fields = ['id', 'upstreamId', 'downstreamId', 'branchIndex'];
-    const instance = await repository.findOne({
-      filterByTk,
-      fields: [...fields, 'workflowId'],
-      appends: ['upstream', 'downstream'],
-      transaction,
-    });
+  await db.sequelize.transaction(async (transaction) => {
     const { upstream, downstream } = instance.get();
 
     if (upstream && upstream.downstreamId === instance.id) {
@@ -159,7 +157,7 @@ export async function destroy(context: Context, next) {
       nodesMap.set(item.id, item);
     });
     // overwrite
-    nodesMap.set(instance.id, instance);
+    // nodesMap.set(instance.id, instance);
     // make linked list
     nodes.forEach((item) => {
       if (item.upstreamId) {
@@ -170,15 +168,15 @@ export async function destroy(context: Context, next) {
       }
     });
 
-    const branchNodes = searchBranchNodes(nodes, instance);
+    const branchNodes = searchBranchNodes(nodes, nodesMap.get(instance.id));
 
     await repository.destroy({
       filterByTk: [instance.id, ...branchNodes.map((item) => item.id)],
       transaction,
     });
-
-    return instance;
   });
+
+  context.body = instance;
 
   await next();
 }

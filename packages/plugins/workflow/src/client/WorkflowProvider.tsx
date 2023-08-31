@@ -2,6 +2,7 @@ import {
   CollectionManagerContext,
   PluginManagerContext,
   SchemaComponent,
+  SchemaComponentContext,
   SettingsCenterProvider,
 } from '@nocobase/client';
 import { Card, Tooltip } from 'antd';
@@ -26,19 +27,22 @@ export function useWorkflowContext() {
 }
 
 function WorkflowPane() {
+  const ctx = useContext(SchemaComponentContext);
   return (
     <Card bordered={false}>
-      <SchemaComponent
-        schema={workflowSchema}
-        components={{
-          Tooltip,
-          WorkflowLink,
-          ExecutionResourceProvider,
-          ExecutionLink,
-          OpenDrawer,
-          ExecutionStatusSelect,
-        }}
-      />
+      <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
+        <SchemaComponent
+          schema={workflowSchema}
+          components={{
+            Tooltip,
+            WorkflowLink,
+            ExecutionResourceProvider,
+            ExecutionLink,
+            OpenDrawer,
+            ExecutionStatusSelect,
+          }}
+        />
+      </SchemaComponentContext.Provider>
     </Card>
   );
 }

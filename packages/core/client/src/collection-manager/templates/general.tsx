@@ -9,5 +9,12 @@ export const general: ICollectionTemplate = {
   default: {
     fields: [],
   },
-  configurableProperties: getConfigurableProperties('title', 'name', 'inherits', 'category', 'moreOptions'),
+  configurableProperties: getConfigurableProperties(
+    'title',
+    'name',
+    'inherits',
+    'category',
+    'description',
+    'moreOptions',
+  ),
 };
