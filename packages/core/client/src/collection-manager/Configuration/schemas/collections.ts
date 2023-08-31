@@ -72,6 +72,16 @@ export const collection: CollectionOptions = {
         },
       },
     },
+    {
+      type: 'string',
+      name: 'description',
+      interface: 'input',
+      uiSchema: {
+        title: '{{ t("Description") }}',
+        type: 'string',
+        'x-component': 'Input',
+      },
+    },
   ],
 };
 
@@ -231,6 +241,20 @@ export const collectionTableSchema: ISchema = {
           },
         },
         column5: {
+          type: 'void',
+          'x-decorator': 'Table.Column.Decorator',
+          'x-component': 'Table.Column',
+          properties: {
+            description: {
+              'x-component': 'CollectionField',
+              'x-read-pretty': true,
+              'x-component-props': {
+                ellipsis: true,
+              },
+            },
+          },
+        },
+        column6: {
           type: 'void',
           title: '{{ t("Actions") }}',
           'x-component': 'Table.Column',

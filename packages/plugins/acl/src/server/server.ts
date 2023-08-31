@@ -517,6 +517,39 @@ export class PluginACL extends Plugin {
 
     const parseJsonTemplate = this.app.acl.parseJsonTemplate;
 
+    this.app.acl.beforeGrantAction(async (ctx) => {
+      const actionName = this.app.acl.resolveActionAlias(ctx.actionName);
+
+      if (lodash.isPlainObject(ctx.params)) {
+        if (actionName === 'view' && ctx.params.fields) {
+          const appendFields = [];
+
+          const collection = this.app.db.getCollection(ctx.resourceName);
+
+          if (!collection) {
+            return;
+          }
+
+          if (collection.model.primaryKeyAttribute) {
+            appendFields.push(collection.model.primaryKeyAttribute);
+          }
+
+          if (collection.model.rawAttributes['createdAt']) {
+            appendFields.push('createdAt');
+          }
+
+          if (collection.model.rawAttributes['updatedAt']) {
+            appendFields.push('updatedAt');
+          }
+
+          ctx.params = {
+            ...lodash.omit(ctx.params, 'fields'),
+            fields: [...ctx.params.fields, ...appendFields],
+          };
+        }
+      }
+    });
+
     this.app.acl.use(
       async (ctx: Context, next) => {
         const { actionName, resourceName, resourceOf } = ctx.action;
