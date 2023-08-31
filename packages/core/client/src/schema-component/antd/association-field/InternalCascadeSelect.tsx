@@ -168,20 +168,19 @@ const CascadeSelect = connect((props) => {
     setLoading(false);
     setOptions(result);
   };
-
   return (
     <Space wrap>
       {selectedOptions.map((value, index) => {
         return (
           value.children && (
             <AntdSelect
-              key={value.key}
+              key={value.value?.id}
               allowClear
               showSearch
               autoClearSearchValue
               filterOption={false}
               filterSort={null}
-              value={{
+              defaultValue={{
                 label: value?.value?.[fieldNames.label],
                 value: value?.value?.[fieldNames.value],
               }}
