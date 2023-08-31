@@ -48,7 +48,7 @@ export const ReadPrettyInternalViewer: React.FC = observer(
         const label = isTreeCollection
           ? transformNestedData(record)
               .map((o) => o?.[fieldNames?.label || 'label'])
-              .join('/')
+              .join(' / ')
           : record?.[fieldNames?.label || 'label'];
         const val = toValue(compile(label), 'N/A');
         const labelUiSchema = useLabelUiSchema(

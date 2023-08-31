@@ -328,7 +328,7 @@ function extractLastNonNullValueObjects(data) {
       if (lastNonNullValue) {
         result = lastNonNullValue;
       } else {
-        result.push(sublist);
+        result?.push?.(sublist);
       }
     }
   }
