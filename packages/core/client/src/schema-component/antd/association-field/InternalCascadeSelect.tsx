@@ -174,7 +174,7 @@ const CascadeSelect = connect((props) => {
         return (
           value.children && (
             <AntdSelect
-              key={value.value?.id}
+              key={value.value?.id + fieldNames.label}
               allowClear
               showSearch
               autoClearSearchValue
