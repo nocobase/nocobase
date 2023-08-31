@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import {
   Action,
   ActionContextProvider,
+  FormActiveFieldsProvider,
   GeneralSchemaDesigner,
   InitializerWithSwitch,
   SchemaComponent,
@@ -19,6 +20,7 @@ import {
   VariableScopeProvider,
   gridRowColWrap,
   useCompile,
+  useFormActiveFields,
   useFormBlockContext,
   useSchemaOptionsContext,
 } from '@nocobase/client';
@@ -197,6 +199,7 @@ function AssignedFieldValues() {
       values: lodash.cloneDeep(initialValues),
     });
   }, []);
+  const upLevelActiveFields = useFormActiveFields();
 
   const title = t('Assign field values');
 
@@ -237,26 +240,30 @@ function AssignedFieldValues() {
         }
       >
         <VariableScopeProvider scope={scope}>
-          <FormProvider form={form}>
-            <FormLayout layout={'vertical'}>
-              <Alert
-                message={lang('Values preset in this form will override user submitted ones when continue or reject.')}
-              />
-              <br />
-              {open && schema && (
-                <SchemaComponentContext.Provider
-                  value={{
-                    ...ctx,
-                    refresh() {
-                      setInitialSchema(lodash.get(schema.toJSON(), 'properties.grid'));
-                    },
-                  }}
-                >
-                  <SchemaComponent schema={schema} components={components} />
-                </SchemaComponentContext.Provider>
-              )}
-            </FormLayout>
-          </FormProvider>
+          <FormActiveFieldsProvider name="form" getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}>
+            <FormProvider form={form}>
+              <FormLayout layout={'vertical'}>
+                <Alert
+                  message={lang(
+                    'Values preset in this form will override user submitted ones when continue or reject.',
+                  )}
+                />
+                <br />
+                {open && schema && (
+                  <SchemaComponentContext.Provider
+                    value={{
+                      ...ctx,
+                      refresh() {
+                        setInitialSchema(lodash.get(schema.toJSON(), 'properties.grid'));
+                      },
+                    }}
+                  >
+                    <SchemaComponent schema={schema} components={components} />
+                  </SchemaComponentContext.Provider>
+                )}
+              </FormLayout>
+            </FormProvider>
+          </FormActiveFieldsProvider>
         </VariableScopeProvider>
       </Modal>
     </>
