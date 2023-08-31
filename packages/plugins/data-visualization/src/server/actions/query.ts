@@ -48,7 +48,7 @@ export const parseFieldAndAssociations = (ctx: Context, params: QueryParams) => 
   const { collection: collectionName, measures, dimensions, orders, filter } = params;
   const collection = ctx.db.getCollection(collectionName);
   const fields = collection.fields;
-  const underscored = ctx.db.options.underscored;
+  const underscored = collection.options.underscored;
   const models: {
     [target: string]: {
       type: string;
