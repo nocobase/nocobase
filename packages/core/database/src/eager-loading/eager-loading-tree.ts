@@ -217,7 +217,7 @@ export class EagerLoadingTree {
           });
 
           // load parent instances recursively
-          if (node.includeOption.recursively) {
+          if (node.includeOption.recursively && instances.length > 0) {
             const targetKey = association.targetKey;
             const sql = AdjacencyListRepository.queryParentSQL({
               db: this.db,
