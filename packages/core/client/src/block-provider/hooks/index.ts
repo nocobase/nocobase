@@ -1,7 +1,7 @@
 import { SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { isURL, parse } from '@nocobase/utils/client';
 import { App, message } from 'antd';
-import { cloneDeep } from 'lodash';
+import _, { cloneDeep } from 'lodash';
 import get from 'lodash/get';
 import omit from 'lodash/omit';
 import { ChangeEvent, useContext, useEffect } from 'react';
@@ -1283,6 +1283,21 @@ export const useAssociationNames = () => {
       const isAssociationSubfield = s.name.includes('.');
       const isAssociationField =
         collectionfield && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionfield.type);
+
+      // 根据联动规则中条件的字段获取一些 appends
+      if (s['x-linkage-rules']) {
+        const rules = s['x-linkage-rules'];
+        rules.forEach(({ condition }) => {
+          const type = Object.keys(condition)[0] || '$and';
+          const list = condition[type];
+
+          list.forEach((item) => {
+            const fieldNames = getTargetField(item);
+            appends.add(fieldNames.join('.'));
+          });
+        });
+      }
+
       if (collectionfield && (isAssociationField || isAssociationSubfield) && s['x-component'] !== 'TableField') {
         const fieldPath = !isAssociationField && isAssociationSubfield ? getAssociationPath(s.name) : s.name;
         const path = prefix === '' || !prefix ? fieldPath : prefix + '.' + fieldPath;
@@ -1313,3 +1328,30 @@ export const useAssociationNames = () => {
   getAssociationAppends(fieldSchema, '');
   return { appends: [...appends], updateAssociationValues: [...updateAssociationValues] };
 };
+
+function getTargetField(obj) {
+  function getAllKeys(obj) {
+    const keys = [];
+    function traverse(o) {
+      Object.keys(o)
+        .sort()
+        .forEach(function (key) {
+          keys.push(key);
+          if (o[key] && typeof o[key] === 'object') {
+            traverse(o[key]);
+          }
+        });
+    }
+    traverse(obj);
+    return keys;
+  }
+
+  const keys = getAllKeys(obj);
+  const index = _.findIndex(keys, (key: string, index: number) => {
+    if (key.includes('$') && index > 0) {
+      return true;
+    }
+  });
+  const result = keys.slice(0, index);
+  return result;
+}

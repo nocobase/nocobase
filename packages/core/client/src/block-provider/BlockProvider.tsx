@@ -102,7 +102,7 @@ const useActionParams = (props) => {
   return { ...props.params, ...params };
 };
 
-export const useResourceAction = (props, opts = {}) => {
+const useResourceAction = (props, opts = {}) => {
   /**
    * fieldName: 来自 TableFieldProvider
    */

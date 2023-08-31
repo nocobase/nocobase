@@ -99,6 +99,7 @@ export const TableBlockProvider = (props) => {
     }
   }
   const form = useMemo(() => createForm(), [treeTable]);
+
   return (
     <SchemaComponentOptions scope={{ treeTable }}>
       <FormContext.Provider value={form}>
