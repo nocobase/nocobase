@@ -148,7 +148,7 @@ export const FieldsConfigure = observer(() => {
     return <Spin />;
   }
   if (!data && !error) {
-    return <Alert showIcon message={t('Please use a valid SELECT or WITH AS query')} />;
+    return <Alert showIcon message={t('Please use a valid SELECT or WITH AS statement')} />;
   }
   const err = error as any;
   if (err) {

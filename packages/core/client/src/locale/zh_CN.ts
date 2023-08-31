@@ -784,9 +784,10 @@ export default {
   'The application is reloading, please do not close the page.': '应用正在重新加载，请勿关闭页面。',
   'Application reloading': '应用重新加载中',
   'Restart application': '重启应用',
-  "Allows to clear cache, reboot application": "允许清除缓存，重启应用",
-  'The will interrupt service, it may take a few seconds to restart. Are you sure to continue?': '重启将会中断当前服务，这个过程可能需要一点时间，确定要继续吗？',
-  'Restart': '重启',
+  'Allows to clear cache, reboot application': '允许清除缓存，重启应用',
+  'The will interrupt service, it may take a few seconds to restart. Are you sure to continue?':
+    '重启将会中断当前服务，这个过程可能需要一点时间，确定要继续吗？',
+  Restart: '重启',
   'Clear cache': '清除缓存',
   Duplicate: '复制',
   Duplicating: '复制中',
@@ -824,6 +825,8 @@ export default {
   'Select all': '全选',
   'Determine whether a record exists by the following fields': '通过以下字段判断记录是否存在',
   'Sync from database': '从数据库同步',
-  'Please use a valid SELECT or WITH AS query': '请使用正确的SELECT或WITH AS SQL语句',
+  'Please use a valid SELECT or WITH AS statement': '请使用正确的SELECT或WITH AS SQL语句',
   'Select field source': '选择字段来源',
+  Execute: '执行',
+  'Please confirm the SQL statement first': '请先确认SQL语句',
 };

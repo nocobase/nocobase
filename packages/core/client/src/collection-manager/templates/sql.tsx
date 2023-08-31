@@ -1,7 +1,9 @@
+import { Field } from '@formily/core';
 import { useAsyncData } from '../../async-data-provider';
 import { SQLInput, PreviewTable, FieldsConfigure, SQLRequestProvider } from './components/sql-collection';
 import { getConfigurableProperties } from './properties';
 import { ICollectionTemplate } from './types';
+import { i18n } from '../../i18n';
 
 export const sql: ICollectionTemplate = {
   name: 'sql',
@@ -34,12 +36,19 @@ export const sql: ICollectionTemplate = {
       type: 'void',
       'x-decorator': SQLRequestProvider,
       properties: {
-        sqlInput: {
-          type: 'void',
+        sql: {
+          type: 'string',
           title: '{{t("SQL")}}',
           'x-decorator': 'FormItem',
           'x-component': SQLInput,
           required: true,
+          'x-validator': (value: string, rules, { form }) => {
+            const field = form.query('sql').take() as Field;
+            if (!field.componentProps.disabled) {
+              return i18n.t('Please confirm the SQL statement first');
+            }
+            return '';
+          },
         },
         sources: {
           type: 'array',

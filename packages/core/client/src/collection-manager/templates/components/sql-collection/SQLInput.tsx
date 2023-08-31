@@ -1,19 +1,33 @@
-import { useForm } from '@formily/react';
+import { useField, useForm } from '@formily/react';
 import { useAsyncData } from '../../../../async-data-provider';
-import React from 'react';
-import { SchemaComponent } from '../../../../schema-component';
+import React, { useEffect } from 'react';
+import { Input, SchemaComponent } from '../../../../schema-component';
 import { css } from '@emotion/css';
 import { Button } from 'antd';
-import { RightSquareOutlined } from '@ant-design/icons';
+import { EditOutlined, RightSquareOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
+import { Field } from '@formily/core';
 
-export const SQLInput = () => {
+export const SQLInput = ({ disabled }) => {
+  const { t } = useTranslation();
   const { run, loading } = useAsyncData();
-  const form = useForm();
+  const field = useField<Field>();
   const execute = () => {
-    if (!form.values.sql) {
+    if (!field.value) {
       return;
     }
-    run(form.values.sql);
+    run(field.value);
+  };
+  const toggleEditing = () => {
+    if (!disabled && !field.value) {
+      return;
+    }
+    field.setComponentProps({
+      disabled: !disabled,
+    });
+    if (!disabled) {
+      execute();
+    }
   };
 
   return (
@@ -25,30 +39,11 @@ export const SQLInput = () => {
         }
       `}
     >
-      <SchemaComponent
-        schema={{
-          type: 'void',
-          properties: {
-            sql: {
-              type: 'string',
-              'x-component': 'Input.TextArea',
-              'x-component-props': {
-                onBlur: () => execute(),
-              },
-            },
-          },
-        }}
-      />
-      <Button.Group
-        className={css`
-          position: absolute;
-          right: 0;
-          top: 0;
-          .ant-btn-sm {
-            font-size: 85%;
-          }
-        `}
-      >
+      <Input.TextArea value={field.value} disabled={disabled} onChange={(e) => (field.value = e.target.value)} />
+      <Button.Group>
+        <Button onClick={toggleEditing} ghost size="small" type="primary" icon={<EditOutlined />}>
+          {t(!disabled ? 'Confirm' : 'Edit')}
+        </Button>
         <Button
           onClick={() => execute()}
           loading={loading}
@@ -56,7 +51,9 @@ export const SQLInput = () => {
           size="small"
           type="primary"
           icon={<RightSquareOutlined />}
-        />
+        >
+          {t('Execute')}
+        </Button>
       </Button.Group>
     </div>
   );
