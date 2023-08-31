@@ -357,6 +357,10 @@ describe('association field acl', () => {
             name: 'name',
             type: 'string',
           },
+          {
+            name: 'content',
+            type: 'text',
+          },
         ],
       },
     });
@@ -372,7 +376,7 @@ describe('association field acl', () => {
       resource: 'posts',
       action: 'create',
       params: {
-        whitelist: ['name'],
+        whitelist: ['content', 'name'],
       },
     });
   });

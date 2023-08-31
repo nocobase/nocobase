@@ -25,15 +25,45 @@ export default {
         transaction,
       });
 
-      await db.getRepository('fields').destroy({
-        filterByTk: existFields.map((f) => f.key),
-        transaction,
+      const needUpdateFields = fields
+        .filter((f) => {
+          return existFields.find((ef) => ef.name === f.name);
+        })
+        .map((f) => {
+          return {
+            ...f,
+            key: existFields.find((ef) => ef.name === f.name).key,
+          };
+        });
+
+      const needDestroyFields = existFields.filter((ef) => {
+        return !fields.find((f) => f.name === ef.name);
       });
 
-      await db.getRepository('collections.fields', filterByTk).create({
-        values: fields,
-        transaction,
+      const needCreatedFields = fields.filter((f) => {
+        return !existFields.find((ef) => ef.name === f.name);
       });
+
+      if (needDestroyFields.length) {
+        await db.getRepository('fields').destroy({
+          filterByTk: needDestroyFields.map((f) => f.key),
+          transaction,
+        });
+      }
+
+      if (needUpdateFields.length) {
+        await db.getRepository('fields').updateMany({
+          records: needUpdateFields,
+          transaction,
+        });
+      }
+
+      if (needCreatedFields.length) {
+        await db.getRepository('collections.fields', filterByTk).create({
+          values: needCreatedFields,
+          transaction,
+        });
+      }
 
       await collection.loadFields({
         transaction,
