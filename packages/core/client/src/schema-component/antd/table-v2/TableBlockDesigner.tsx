@@ -29,6 +29,7 @@ export const TableBlockDesigner = () => {
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
   const supportTemplate = !fieldSchema?.['x-decorator-props']?.disableTemplate;
+  const isAssociationTable = fieldSchema?.['x-decorator-props']?.association;
   const sort = defaultSort?.map((item: string) => {
     return item?.startsWith('-')
       ? {
@@ -88,7 +89,7 @@ export const TableBlockDesigner = () => {
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettings.BlockTitleItem />
-      {collection?.tree && (
+      {collection?.tree && !isAssociationTable && (
         <SchemaSettings.SwitchItem
           title={t('Tree table')}
           defaultChecked={true}
