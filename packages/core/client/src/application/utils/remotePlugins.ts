@@ -38,7 +38,6 @@ export function getRemotePlugins(
       (...plugins: (typeof Plugin & { default?: typeof Plugin })[]) => {
         const res = plugins.filter((item) => item).map((item) => item.default || item);
         resolve(res);
-        console.log(plugins);
         const emptyPlugins = plugins
           .map((item, index) => (!item ? index : null))
           .filter((i) => i !== null)
