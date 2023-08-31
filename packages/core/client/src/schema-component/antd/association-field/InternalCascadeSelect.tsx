@@ -335,7 +335,7 @@ function extractLastNonNullValueObjects(data) {
   return result;
 }
 
-function transformNestedData(inputData) {
+export function transformNestedData(inputData) {
   const resultArray = [];
 
   function recursiveTransform(data) {
