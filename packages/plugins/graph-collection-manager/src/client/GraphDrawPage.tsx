@@ -6,6 +6,7 @@ import { MiniMap } from '@antv/x6-plugin-minimap';
 import { Selection } from '@antv/x6-plugin-selection';
 import { Snapline } from '@antv/x6-plugin-snapline';
 import { SchemaOptionsContext } from '@formily/react';
+import { useSearchParams } from 'react-router-dom';
 import {
   APIClientProvider,
   CollectionCategroriesContext,
@@ -27,7 +28,7 @@ import { cx } from '@emotion/css';
 import lodash from 'lodash';
 import { Button, ConfigProvider, Layout, Switch, Tooltip, App, Spin } from 'antd';
 import dagre from 'dagre';
-import React, { createContext, forwardRef, useContext, useEffect, useLayoutEffect, useState } from 'react';
+import React, { createContext, forwardRef, useCallback, useContext, useEffect, useLayoutEffect, useState } from 'react';
 import { useAsyncDataSource, useCreateActionAndRefreshCM } from './action-hooks';
 import { AddCollectionAction } from './components/AddCollectionAction';
 import Entity from './components/Entity';
@@ -47,7 +48,7 @@ import { SelectCollectionsAction } from './components/SelectCollectionsAction';
 import { DirectionAction } from './components/DirectionAction';
 import { ConnectorAction } from './components/ConnectorAction';
 import { FullscreenAction } from './components/FullScreenAction';
-const { drop, groupBy, last, maxBy, minBy, take } = lodash;
+const { drop, groupBy, last, maxBy, minBy, take, uniq } = lodash;
 
 const LINE_HEIGHT = 40;
 const NODE_WIDTH = 250;
@@ -68,7 +69,7 @@ export enum ConnectionType {
 }
 const getGridData = (num, arr) => {
   const newArr = [];
-  while (arr.length > 0 && num) {
+  while (arr?.length > 0 && num) {
     newArr.push(arr.splice(0, num));
   }
   return newArr;
@@ -138,8 +139,8 @@ function optimizeEdge(edge) {
   } = edge;
   const source = edge.getSource();
   const target = edge.getTarget();
-  const sorceNodeX = targetGraph.getCellById(source.cell).position().x;
-  const targeNodeX = targetGraph.getCellById(target.cell).position().x;
+  const sorceNodeX = targetGraph.getCellById(source.cell)?.position().x;
+  const targeNodeX = targetGraph.getCellById(target.cell)?.position().x;
   const leftAnchor = connectionType
     ? {
         name: 'topLeft',
@@ -235,10 +236,10 @@ const formatNodeData = () => {
   return nodeGroup;
 };
 //自动布局
-const handelResetLayout = () => {
-  const { linkNodes = [], rawNodes } = formatNodeData();
+const handelResetLayout = (isTemporaryLayout?) => {
+  const { linkNodes = [], rawNodes = [] } = formatNodeData();
   const { positions } = targetGraph;
-  const nodes = linkNodes.concat(rawNodes);
+  const nodes = linkNodes.concat(rawNodes || []);
   const edges = targetGraph.getEdges();
   const g = new dagre.graphlib.Graph();
   let alternateNum;
@@ -338,12 +339,16 @@ const handelResetLayout = () => {
     optimizeEdge(edge);
   });
   targetGraph.positionCell(nodes[0], 'top-left', { padding: 100 });
-  targetGraph.updatePositionAction(updatePositionData, true);
+  if (!isTemporaryLayout) {
+    targetGraph.updatePositionAction(updatePositionData, true);
+  }
 };
 
 export const GraphDrawPage = React.memo(() => {
   const { theme } = useGlobalTheme();
   const { styles } = useStyles();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedCollections = searchParams.get('collections');
   const options = useContext(SchemaOptionsContext);
   const ctx = useContext(CollectionManagerContext);
   const api = useAPIClient();
@@ -360,22 +365,25 @@ export const GraphDrawPage = React.memo(() => {
   const categoryCtx = useContext(CollectionCategroriesContext);
   const scope = { ...options?.scope };
   const components = { ...options?.components };
+
   const saveGraphPositionAction = async (data) => {
     await api.resource('graphPositions').create({ values: data });
     await refreshPositions();
   };
   const updatePositionAction = async (data, isbatch = false) => {
-    if (isbatch) {
-      await api.resource('graphPositions').update({
-        values: data,
-      });
-    } else {
-      await api.resource('graphPositions').update({
-        filter: { collectionName: data.collectionName },
-        values: { ...data },
-      });
+    if (!selectedCollections) {
+      if (isbatch) {
+        await api.resource('graphPositions').update({
+          values: data,
+        });
+      } else {
+        await api.resource('graphPositions').update({
+          filter: { collectionName: data.collectionName },
+          values: { ...data },
+        });
+      }
+      await refreshPositions();
     }
-    await refreshPositions();
   };
   const refreshPositions = async () => {
     const { data } = await api.resource('graphPositions').list({ paginate: false });
@@ -396,7 +404,9 @@ export const GraphDrawPage = React.memo(() => {
     setCollectionData(data);
     setCollectionList(data);
     if (!currentNodes.length) {
-      renderInitGraphCollection(data);
+      if (!selectedCollections) {
+        renderInitGraphCollection(data);
+      }
     } else {
       renderDiffGraphCollection(data);
     }
@@ -424,6 +434,7 @@ export const GraphDrawPage = React.memo(() => {
     targetGraph.connectionType = ConnectionType.Both;
     targetGraph.direction = DirectionType.Target;
     targetGraph.cacheCollection = {};
+    targetGraph.onConnectionAssociation = handleConnectionAssociation;
     Graph.registerPortLayout(
       'erPortPosition',
       (portsPositionArgs) => {
@@ -576,7 +587,7 @@ export const GraphDrawPage = React.memo(() => {
       }
       targetGraph.collapseNodes?.map((v) => {
         const node = targetGraph.getCellById(Object.keys(v)[0]);
-        Object.values(v)[0] && node.setData({ collapse: false });
+        Object.values(v)[0] && node?.setData({ collapse: false });
       });
       targetGraph.cleanSelection();
     });
@@ -587,7 +598,14 @@ export const GraphDrawPage = React.memo(() => {
       node.setProp({ select: false });
     });
   };
-
+  const handleConnectionAssociation = useCallback(
+    ({ target }) => {
+      const data = selectedCollections.split(',') || [];
+      data.push(target);
+      setSearchParams([['collections', uniq(data).toString()]]);
+    },
+    [searchParams],
+  );
   const handleEdgeUnActive = (targetEdge) => {
     targetGraph.activeEdge = null;
     const { m2m, connectionType } = targetEdge.store?.data ?? {};
@@ -676,11 +694,14 @@ export const GraphDrawPage = React.memo(() => {
     lightUp(targetEdge);
     m2mEdge && lightUp(m2mEdge);
   };
-  // 首次渲染
+  // 全量渲染
   const renderInitGraphCollection = (rawData) => {
+    targetGraph.clearCells();
     const { nodesData, edgesData, inheritEdges } = formatData(rawData);
     targetGraph.data = { nodes: nodesData, edges: edgesData };
-    targetGraph.fromJSON({ nodes: nodesData, edges: inheritEdges.concat(edgesData) });
+    targetGraph.fromJSON({ nodes: nodesData });
+    targetGraph.addEdges(edgesData);
+    targetGraph.addEdges(inheritEdges);
     layout(saveGraphPositionAction);
   };
 
@@ -1016,6 +1037,16 @@ export const GraphDrawPage = React.memo(() => {
       });
   }, []);
 
+  useEffect(() => {
+    if (selectedCollections && collectionList.length) {
+      const data = collectionList.filter((v) => selectedCollections?.split(',').includes(v.name));
+      renderInitGraphCollection(data);
+      handelResetLayout(true);
+    } else {
+      !selectedCollections && renderInitGraphCollection(collections);
+    }
+  }, [searchParams, collectionList]);
+
   const loadCollections = async () => {
     return targetGraph.collections?.map((collection: any) => ({
       label: compile(collection.title),
@@ -1064,6 +1095,10 @@ export const GraphDrawPage = React.memo(() => {
                           },
                         },
                         properties: {
+                          selectCollections: {
+                            type: 'array',
+                            'x-component': 'SelectCollectionsAction',
+                          },
                           actions: {
                             type: 'void',
                             'x-component': 'ActionBar',
@@ -1155,10 +1190,6 @@ export const GraphDrawPage = React.memo(() => {
                                     </Tooltip>
                                   );
                                 },
-                              },
-                              selectCollections: {
-                                type: 'array',
-                                'x-component': 'SelectCollectionsAction',
                               },
                             },
                           },

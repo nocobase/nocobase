@@ -121,6 +121,14 @@ const useStyles = createStyles(({ token, css }) => {
               .btn-view:hover {
                 background: ${token.colorBgTextHover};
               }
+              .btn-assocition {
+                border-color: transparent;
+                color: ${token.colorPrimary};
+                width: 20px;
+              }
+              .btn-assocition:hover {
+                background: ${token.colorBgTextHover};
+              }
             }
             .field_type {
               display: none;
@@ -187,30 +195,32 @@ const useStyles = createStyles(({ token, css }) => {
     `,
 
     collectionListClass: css`
-      float: right;
-      position: fixed;
-      margin-top: 24px;
-      right: 24px;
-      z-index: 1000;
-      .trigger {
+      .nb-action-bar {
         float: right;
-        margin: 2px 4px;
-        font-size: 16px;
-      }
-      .ant-input {
-        margin: 4px;
-      }
-      .ant-menu-inline {
-        border-top: 1px solid ${token.colorBorderSecondary};
-      }
-      .ant-layout-sider {
+        position: fixed;
         margin-top: 24px;
-      }
-      .ant-menu-item {
-        height: 32px;
-      }
-      .ant-btn {
-        border: 0;
+        right: 24px;
+        z-index: 1000;
+        .trigger {
+          float: right;
+          margin: 2px 4px;
+          font-size: 16px;
+        }
+        .ant-input {
+          margin: 4px;
+        }
+        .ant-menu-inline {
+          border-top: 1px solid ${token.colorBorderSecondary};
+        }
+        .ant-layout-sider {
+          margin-top: 24px;
+        }
+        .ant-menu-item {
+          height: 32px;
+        }
+        .ant-btn {
+          border: 0;
+        }
       }
     `,
 

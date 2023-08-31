@@ -34,11 +34,17 @@ import { EditFieldAction } from './EditFieldAction';
 import { FieldSummary } from './FieldSummary';
 import { OverrideFieldAction } from './OverrideFieldAction';
 import { ViewFieldAction } from './ViewFieldAction';
+import { ConnectAssociationAction } from './ConnectAssociationAction';
 
 const OperationButton: any = React.memo((props: any) => {
-  const { property, loadCollections, collectionData, setTargetNode, node, handelOpenPorts, title, name } = props;
+  const { property, loadCollections, collectionData, setTargetNode, node, handelOpenPorts, title, name, targetGraph } =
+    props;
   const isInheritField = !(property.collectionName !== name);
   const options = useContext(SchemaOptionsContext);
+  const isAssociationField = ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(property.type);
+  const edgeId =
+    isAssociationField && property.collectionName + property.foreignKey + property.target + property.targetKey;
+  const isShowAssocition = isAssociationField && !targetGraph.hasCell(edgeId);
   const {
     data: { database },
   } = useCurrentAppInfo();
@@ -62,6 +68,7 @@ const OperationButton: any = React.memo((props: any) => {
           OverrideFieldAction,
           ViewFieldAction,
           EditFieldAction,
+          ConnectAssociationAction,
           ...options.components,
         }}
         scope={{
@@ -73,6 +80,7 @@ const OperationButton: any = React.memo((props: any) => {
           useValuesFromRecord,
           useUpdateCollectionActionAndRefreshCM,
           isInheritField,
+          isShowAssocition,
           ...options.scope,
         }}
       >
@@ -161,6 +169,20 @@ const OperationButton: any = React.memo((props: any) => {
                       title,
                       __parent: collectionData.current,
                     },
+                  },
+                },
+                connectAssociation: {
+                  type: 'void',
+                  'x-action': 'view',
+                  'x-visible': '{{isShowAssocition}}',
+                  'x-component': 'ConnectAssociationAction',
+                  'x-component-props': {
+                    item: {
+                      ...property,
+                      title,
+                      __parent: collectionData.current,
+                    },
+                    targetGraph,
                   },
                 },
               },
@@ -291,6 +313,7 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
     loadCollections,
     handelOpenPorts,
     node,
+    targetGraph,
   };
   return (
     <div className="body">
