@@ -13,6 +13,7 @@ describe('query', () => {
 
     beforeAll(() => {
       app = mockServer();
+      app.db.options.underscored = true;
       app.db.collection({
         name: 'orders',
         fields: [
