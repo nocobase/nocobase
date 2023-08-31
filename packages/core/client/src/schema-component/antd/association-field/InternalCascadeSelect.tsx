@@ -189,7 +189,7 @@ const CascadeSelect = connect((props) => {
               fieldNames={fieldNames}
               style={{ minWidth: 150 }}
               onChange={((value, option) => handleSelect(value, option, index)) as any}
-              options={mapOptionsToTags(options)}
+              options={!loading ? mapOptionsToTags(options) : []}
               onDropdownVisibleChange={(open) => onDropdownVisibleChange(open, value)}
               notFoundContent={loading ? <Spin size="small" /> : null}
             />
