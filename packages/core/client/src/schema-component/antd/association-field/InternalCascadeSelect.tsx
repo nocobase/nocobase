@@ -8,7 +8,6 @@ import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { useCompile, SchemaComponent } from '../../../schema-component';
 import { useAPIClient, useCollectionManager } from '../../../';
-import { isVariable } from '../../common/utils/uitls';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import useServiceOptions, { useAssociationFieldContext } from './hooks';
 
@@ -120,6 +119,7 @@ const CascadeSelect = connect((props) => {
       pageSize: 200,
       params: service?.params,
       filter: mergeFilter([service?.params?.filter, filter]),
+      tree: !filter.parentId ? true : undefined,
     });
     return response?.data?.data;
   };
@@ -227,7 +227,9 @@ export const InternalCascadeSelect = observer(
               field.value = value;
             });
           } else {
-            const value = extractLastNonNullValueObjects(form.values?.select_array);
+            const value = extractLastNonNullValueObjects(form.values?.select_array).filter(
+              (v) => v && Object.keys(v).length > 0,
+            );
             field.value = value;
             props.onChange(value);
           }
@@ -237,6 +239,7 @@ export const InternalCascadeSelect = observer(
         selectForm.removeEffects(id);
       };
     }, []);
+
     const schema = {
       type: 'object',
       properties: {
@@ -283,6 +286,7 @@ export const InternalCascadeSelect = observer(
             components={{ FormItem }}
             schema={{
               ...fieldSchema,
+              default: field.value,
               'x-component': AssociationCascadeSelect,
               'x-component-props': {
                 ...props,
@@ -323,6 +327,8 @@ function extractLastNonNullValueObjects(data) {
       }
       if (lastNonNullValue) {
         result = lastNonNullValue;
+      } else {
+        result.push(sublist);
       }
     }
   }
