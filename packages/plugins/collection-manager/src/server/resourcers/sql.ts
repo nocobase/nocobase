@@ -1,27 +1,25 @@
 import { Context, Next } from '@nocobase/actions';
 import { SQLModel, SqlCollection } from '@nocobase/database';
-import { omit } from 'lodash';
 import { CollectionModel } from '../models';
 
 const updateCollection = async (ctx: Context, transaction: any) => {
   const { filterByTk, values } = ctx.action.params;
-  const fields = values.fields?.map((f: any) => {
-    delete f.key;
-    return f;
-  });
   const repo = ctx.db.getRepository('collections');
-  const upRes = await repo.update({
-    filterByTk,
-    values: {
-      ...values,
-      fields,
-    },
-    transaction,
-  });
   const collection: CollectionModel = await repo.findOne({
     filter: {
       name: filterByTk,
     },
+    transaction,
+  });
+  const existFields = await collection.getFields({ transaction });
+  const deletedFields = existFields.filter((field: any) => !values.fields?.find((f: any) => f.name === field.name));
+  for (const field of deletedFields) {
+    await field.destroy({ transaction });
+  }
+  const upRes = await repo.update({
+    filterByTk,
+    values,
+    updateAssociationValues: ['fields'],
     transaction,
   });
 
@@ -67,7 +65,9 @@ export default {
     setFields: async (ctx: Context, next: Next) => {
       const transaction = await ctx.app.db.sequelize.transaction();
       try {
-        const { collection } = await updateCollection(ctx, transaction);
+        const {
+          upRes: [collection],
+        } = await updateCollection(ctx, transaction);
         await collection.loadFields({
           transaction,
         });
@@ -81,8 +81,9 @@ export default {
     update: async (ctx: Context, next: Next) => {
       const transaction = await ctx.app.db.sequelize.transaction();
       try {
-        const { collection, upRes } = await updateCollection(ctx, transaction);
-        await collection.load({ transaction, resetFields: true });
+        const { upRes } = await updateCollection(ctx, transaction);
+        const [collection] = upRes;
+        await (collection as CollectionModel).load({ transaction, resetFields: true });
         await transaction.commit();
         ctx.body = upRes;
       } catch (e) {
