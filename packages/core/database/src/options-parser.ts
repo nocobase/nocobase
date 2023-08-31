@@ -240,13 +240,14 @@ export class OptionsParser {
 
   protected parseAppendWithOptions(append: string) {
     const parts = append.split('(');
-    const obj: { name: string; options?: object } = {
+    const obj: { name: string; options?: object; raw?: string } = {
       name: parts[0],
     };
 
     if (parts.length > 1) {
       const optionsStr = parts[1].replace(')', '');
       obj.options = qs.parse(optionsStr);
+      obj.raw = `(${optionsStr})`;
     }
 
     return obj;
@@ -381,10 +382,15 @@ export class OptionsParser {
           };
         }
 
+        let nextAppend = appendFields.filter((_, index) => index !== 0).join('.');
+        if (appendWithOptions.raw) {
+          nextAppend += appendWithOptions.raw;
+        }
+
         setInclude(
           model.associations[queryParams['include'][existIncludeIndex].association].target,
           queryParams['include'][existIncludeIndex],
-          appendFields.filter((_, index) => index !== 0).join('.'),
+          nextAppend,
         );
       }
     };
