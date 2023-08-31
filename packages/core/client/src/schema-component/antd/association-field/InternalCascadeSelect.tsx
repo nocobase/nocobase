@@ -24,7 +24,7 @@ const SchemaField = createSchemaField({
 const CascadeSelect = connect((props) => {
   const { data, mapOptions, onChange } = props;
   const [selectedOptions, setSelectedOptions] = useState<{ key: string; children: any; value?: any }[]>([
-    { key: null, children: [], value: null },
+    { key: undefined, children: [], value: null },
   ]);
   const [options, setOptions] = useState(data);
   const [loading, setLoading] = useState(false);
@@ -174,7 +174,7 @@ const CascadeSelect = connect((props) => {
         return (
           value.children && (
             <AntdSelect
-              key={value.value?.id + value.key + fieldNames.label}
+              key={`${value.value?.id}+ ${value.key} + ${fieldNames.label}`}
               allowClear
               showSearch
               autoClearSearchValue
