@@ -9,81 +9,6 @@ import { useAPIClient, useRequest } from '../../../api-client';
 import { SchemaComponent } from '../../../schema-component';
 import { IPluginData } from '../../types';
 
-const id = uid();
-const schema: ISchema = {
-  type: 'object',
-  properties: {
-    [id]: {
-      'x-decorator': 'Form',
-      'x-component': 'div',
-      type: 'void',
-      'x-decorator-props': {
-        useValues: '{{ useValuesFromProps }}',
-      },
-      properties: {
-        packageName: {
-          type: 'string',
-          title: "{{t('Npm package name')}}",
-          'x-decorator': 'FormItem',
-          'x-component': 'Input',
-          required: true,
-          'x-component-props': {
-            disabled: true,
-          },
-        },
-        registry: {
-          type: 'string',
-          title: "{{t('Registry url')}}",
-          'x-decorator': 'FormItem',
-          'x-component': 'Input',
-          required: true,
-          'x-decorator-props': {
-            help: 'Example: https://registry.npmjs.org/',
-          },
-        },
-        authToken: {
-          type: 'string',
-          title: "{{t('Npm authToken')}}",
-          'x-decorator': 'FormItem',
-          'x-component': 'Input',
-        },
-        version: {
-          type: 'string',
-          title: "{{t('Version')}}",
-          'x-decorator': 'FormItem',
-          'x-component': 'Select',
-          enum: '{{versionList}}',
-        },
-        footer: {
-          type: 'void',
-          'x-component': 'ActionBar',
-          'x-component-props': {
-            layout: 'one-column',
-          },
-          properties: {
-            submit: {
-              title: '{{t("Submit")}}',
-              'x-component': 'Action',
-              'x-component-props': {
-                type: 'primary',
-                htmlType: 'submit',
-                useAction: '{{ useSaveValues }}',
-              },
-            },
-            cancel: {
-              title: 'Cancel',
-              'x-component': 'Action',
-              'x-component-props': {
-                useAction: '{{ useCancel }}',
-              },
-            },
-          },
-        },
-      },
-    },
-  },
-};
-
 interface IPluginNpmFormProps {
   onClose: (refresh?: boolean) => void;
   isUpgrade: boolean;
@@ -105,7 +30,7 @@ export const PluginNpmForm: FC<IPluginNpmFormProps> = ({ onClose, isUpgrade, plu
   const versionList = useMemo(() => {
     return data?.data.map((item) => ({ label: item, value: item })) || [];
   }, [data?.data]);
-  console.log('versionList', versionList, data);
+
   const useSaveValues = () => {
     const api = useAPIClient();
     const { t } = useTranslation();
@@ -133,7 +58,7 @@ export const PluginNpmForm: FC<IPluginNpmFormProps> = ({ onClose, isUpgrade, plu
     return useRequest(
       () =>
         Promise.resolve({
-          data: pluginData,
+          data: isUpgrade ? pluginData : {},
         }),
       options,
     );
@@ -146,14 +71,91 @@ export const PluginNpmForm: FC<IPluginNpmFormProps> = ({ onClose, isUpgrade, plu
       },
     };
   };
+  const schema = useMemo<ISchema>(() => {
+    const id = uid();
+    const schema = {
+      type: 'object',
+      properties: {
+        [id]: {
+          'x-decorator': 'Form',
+          'x-component': 'div',
+          type: 'void',
+          'x-decorator-props': {
+            useValues: '{{ useValuesFromProps }}',
+          },
+          properties: {
+            packageName: {
+              type: 'string',
+              title: "{{t('Npm package name')}}",
+              'x-decorator': 'FormItem',
+              'x-component': 'Input',
+              required: true,
+              'x-component-props': {
+                disabled: true,
+              },
+            },
+            registry: {
+              type: 'string',
+              title: "{{t('Registry url')}}",
+              'x-decorator': 'FormItem',
+              'x-component': 'Input',
+              required: true,
+              'x-decorator-props': {
+                help: 'Example: https://registry.npmjs.org/',
+              },
+            },
+            authToken: {
+              type: 'string',
+              title: "{{t('Npm authToken')}}",
+              'x-decorator': 'FormItem',
+              'x-component': 'Input',
+            },
+            version: {
+              type: 'string',
+              title: "{{t('Version')}}",
+              'x-decorator': 'FormItem',
+              'x-component': 'Select',
+              enum: '{{versionList}}',
+            },
+            footer: {
+              type: 'void',
+              'x-component': 'ActionBar',
+              'x-component-props': {
+                layout: 'one-column',
+              },
+              properties: {
+                submit: {
+                  title: '{{t("Submit")}}',
+                  'x-component': 'Action',
+                  'x-component-props': {
+                    type: 'primary',
+                    htmlType: 'submit',
+                    useAction: '{{ useSaveValues }}',
+                  },
+                },
+                cancel: {
+                  title: 'Cancel',
+                  'x-component': 'Action',
+                  'x-component-props': {
+                    useAction: '{{ useCancel }}',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    };
 
-  schema.properties[id].properties.packageName['x-component-props'].disabled = isUpgrade;
-  if (!isUpgrade) {
-    delete schema.properties[id].properties.version;
-  }
-
+    schema.properties[id].properties.packageName['x-component-props'].disabled = isUpgrade;
+    if (!isUpgrade) {
+      delete schema.properties[id].properties.version;
+    }
+    return schema;
+  }, [isUpgrade]);
   if (loading) {
     return <Spin />;
   }
   return <SchemaComponent scope={{ useCancel, useSaveValues, versionList, useValuesFromProps }} schema={schema} />;
 };
+PluginNpmForm.displayName = 'PluginNpmForm';
