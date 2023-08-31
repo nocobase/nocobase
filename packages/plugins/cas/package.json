@@ -1,0 +1,17 @@
+{
+  "name": "@nocobase/plugin-case",
+  "version": "0.1.0",
+  "main": "lib/server/index.js",
+  "devDependencies": {
+    "@nocobase/actions": "0.13.0-alpha.4",
+    "@nocobase/client": "0.13.0-alpha.4",
+    "@nocobase/database": "0.13.0-alpha.4",
+    "@nocobase/server": "0.13.0-alpha.4",
+    "@nocobase/test": "0.13.0-alpha.4",
+    "antd": "5.x"
+  },
+  "displayName": "CasLogin",
+  "displayName.zh-CN": "Cas统一身份认证",
+  "description": "Unified identity authentication.",
+  "description.zh-CN": "提供CAS登录功能。"
+}
