@@ -42,6 +42,14 @@ export default class PluginFileManager extends Plugin {
       actions: ['storages:*'],
     });
 
+    this.db.addMigrations({
+      namespace: 'file-manager',
+      directory: resolve(__dirname, 'migrations'),
+      context: {
+        plugin: this,
+      },
+    });
+
     initActions(this);
 
     this.app.acl.allow('attachments', 'upload', 'loggedIn');
