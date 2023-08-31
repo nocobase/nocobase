@@ -3,7 +3,7 @@ import { isPortalInBody } from '@nocobase/utils/client';
 import { App, Button, Popover } from 'antd';
 import classnames from 'classnames';
 import lodash from 'lodash';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useActionContext } from '../..';
 import { useDesignable } from '../../';
@@ -53,7 +53,7 @@ export const Action: ComposedAction = observer(
     const values = useRecord();
     const designerProps = fieldSchema['x-designer-props'];
     const openMode = fieldSchema?.['x-component-props']?.['openMode'];
-    const disabled = form.disabled || field.disabled || props.disabled;
+    const disabled = form.disabled || field.disabled || field.data?.disabled || props.disabled;
     const openSize = fieldSchema?.['x-component-props']?.['openSize'];
     const linkageRules = fieldSchema?.['x-linkage-rules'] || [];
     const { designable } = useDesignable();
@@ -80,46 +80,56 @@ export const Action: ComposedAction = observer(
             });
           });
         });
-    }, [JSON.stringify(linkageRules), values, designable]);
+    }, [JSON.stringify(linkageRules), values, designable, field]);
+
+    const handleButtonClick = useCallback(
+      (e: React.MouseEvent) => {
+        if (isPortalInBody(e.target as Element)) {
+          return;
+        }
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (!disabled) {
+          const onOk = () => {
+            onClick?.(e);
+            setVisible(true);
+            run();
+          };
+          if (confirm) {
+            modal.confirm({
+              ...confirm,
+              onOk,
+            });
+          } else {
+            onOk();
+          }
+        }
+      },
+      [confirm, disabled, modal, onClick, run],
+    );
+
+    const buttonStyle = useMemo(() => {
+      return {
+        ...others.style,
+        opacity: designable && field?.data?.hidden && 0.1,
+      };
+    }, [designable, field?.data?.hidden, others.style]);
 
     const renderButton = () => {
       if (!designable && field?.data?.hidden) {
         return null;
       }
+
       return (
         <SortableItem
           {...others}
           loading={field?.data?.loading}
           icon={icon ? <Icon type={icon} /> : null}
           disabled={disabled}
-          style={{
-            ...others.style,
-            opacity: designable && field?.data?.hidden && 0.1,
-          }}
-          onClick={(e: React.MouseEvent) => {
-            if (isPortalInBody(e.target as Element)) {
-              return;
-            }
-
-            e.preventDefault();
-            e.stopPropagation();
-
-            if (!disabled) {
-              const onOk = () => {
-                onClick?.(e);
-                setVisible(true);
-                run();
-              };
-              if (confirm) {
-                modal.confirm({
-                  ...confirm,
-                  onOk,
-                });
-              } else {
-                onOk();
-              }
-            }
-          }}
+          style={buttonStyle}
+          onClick={handleButtonClick}
           component={tarComponent || Button}
           className={classnames(componentCls, hashId, className, 'nb-action')}
           type={props.type === 'danger' ? undefined : props.type}

@@ -84,12 +84,12 @@ export const linkageAction = async ({
   variables: VariablesContextType;
   localVariables: VariableOption[];
 }) => {
+  field.data = field.data || {};
+
   switch (operator) {
     case ActionType.Visible:
+      reset(field);
       if (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables })) {
-        field.data = field.data || {};
-        field.data.hidden = false;
-
         field._display = '_display' in field ? field._display : field.display;
         field.display = operator;
       } else {
@@ -97,25 +97,30 @@ export const linkageAction = async ({
       }
       break;
     case ActionType.Hidden:
+      reset(field);
       if (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables })) {
-        field.data = field.data || {};
         field.data.hidden = true;
       } else {
-        field.data = field.data || {};
         field.data.hidden = false;
       }
       break;
     case ActionType.Disabled:
+      reset(field);
       if (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables })) {
+        field.data.disabled = true;
         field.disabled = true;
       } else {
+        field.data.disabled = false;
         field.disabled = false;
       }
       break;
     case ActionType.Active:
+      reset(field);
       if (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables })) {
+        field.data.disabled = false;
         field.disabled = false;
       } else {
+        field.data.disabled = true;
         field.disabled = true;
       }
       break;
@@ -123,3 +128,10 @@ export const linkageAction = async ({
       return null;
   }
 };
+
+function reset(field: any) {
+  field.display = field._display;
+  field.data.hidden = false;
+  field.data.disabled = false;
+  field.disabled = false;
+}
