@@ -10,7 +10,7 @@ import { Field } from '@formily/core';
 
 export const SQLInput = ({ disabled }) => {
   const { t } = useTranslation();
-  const { run, loading } = useAsyncData();
+  const { run, loading, error } = useAsyncData();
   const field = useField<Field>();
   const execute = () => {
     if (!field.value) {
@@ -22,13 +22,21 @@ export const SQLInput = ({ disabled }) => {
     if (!disabled && !field.value) {
       return;
     }
+    if (!disabled) {
+      run(field.value);
+    }
     field.setComponentProps({
       disabled: !disabled,
     });
-    if (!disabled) {
-      execute();
-    }
   };
+
+  useEffect(() => {
+    if (error) {
+      field.setComponentProps({
+        disabled: false,
+      });
+    }
+  }, [field, error]);
 
   return (
     <div

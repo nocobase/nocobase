@@ -101,23 +101,36 @@ export const FieldsConfigure = observer(() => {
   const refGetInterface = useRef(getInterface);
   useEffect(() => {
     const fieldsMp = new Map();
-    if (!loading && data) {
-      Object.entries(data?.[0] || {}).forEach(([col, val]) => {
-        const sourceField = sourceFields[col];
-        const fieldInterface = inferInterface(col, val);
-        const defaultConfig = refGetInterface.current(fieldInterface)?.default;
-        const uiSchema = sourceField?.uiSchema || defaultConfig?.uiSchema || {};
-        fieldsMp.set(col, {
-          name: col,
-          interface: sourceField?.interface || fieldInterface,
-          type: sourceField?.type || defaultConfig?.type,
-          source: sourceField?.source,
-          uiSchema: {
-            title: col,
-            ...uiSchema,
-          },
+    if (!loading) {
+      if (data && data.length) {
+        Object.entries(data?.[0] || {}).forEach(([col, val]) => {
+          const sourceField = sourceFields[col];
+          const fieldInterface = inferInterface(col, val);
+          const defaultConfig = refGetInterface.current(fieldInterface)?.default;
+          const uiSchema = sourceField?.uiSchema || defaultConfig?.uiSchema || {};
+          fieldsMp.set(col, {
+            name: col,
+            interface: sourceField?.interface || fieldInterface,
+            type: sourceField?.type || defaultConfig?.type,
+            source: sourceField?.source,
+            uiSchema: {
+              title: col,
+              ...uiSchema,
+            },
+          });
         });
-      });
+      } else {
+        Object.entries(sourceFields || {}).forEach(([col, val]: [string, any]) =>
+          fieldsMp.set(col, {
+            name: col,
+            ...val,
+            uiSchema: {
+              title: col,
+              ...(val?.uiSchema || {}),
+            },
+          }),
+        );
+      }
     }
 
     if (field.value?.length) {
