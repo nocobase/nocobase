@@ -35,6 +35,8 @@ import { FieldSummary } from './FieldSummary';
 import { OverrideFieldAction } from './OverrideFieldAction';
 import { ViewFieldAction } from './ViewFieldAction';
 import { ConnectAssociationAction } from './ConnectAssociationAction';
+import { ConnectChildAction } from './ConnectChildAction';
+import { ConnectParentAction } from './ConnectParentAction';
 
 const OperationButton: any = React.memo((props: any) => {
   const { property, loadCollections, collectionData, setTargetNode, node, handelOpenPorts, title, name, targetGraph } =
@@ -429,6 +431,8 @@ const Entity: React.FC<{
                   components={{
                     EditOutlined,
                     EditCollectionAction,
+                    ConnectChildAction,
+                    ConnectParentAction,
                     ...options.components,
                   }}
                   schema={{
@@ -459,6 +463,20 @@ const Entity: React.FC<{
                             collectionConten: "{{t('Are you sure you want to delete it?')}}",
                           },
                           useAction: () => useDestroyActionAndRefreshCM({ name, id }),
+                        },
+                      },
+                      connectParent: {
+                        type: 'void',
+                        'x-component': 'ConnectParentAction',
+                        'x-component-props': {
+                          item: collectionData.current,
+                        },
+                      },
+                      connectChild: {
+                        type: 'void',
+                        'x-component': 'ConnectChildAction',
+                        'x-component-props': {
+                          item: collectionData.current,
                         },
                       },
                     },

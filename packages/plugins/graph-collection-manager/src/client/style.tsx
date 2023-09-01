@@ -52,6 +52,28 @@ const useStyles = createStyles(({ token, css }) => {
           background: ${token.colorBgTextHover};
         }
       }
+      .btn-inheriedParent {
+        background: ${token.colorInfoBg};
+        border-color: transparent;
+        color: ${token.colorInfo};
+        width: 20px;
+        height: 20px;
+        line-height: 25px;
+        &:hover {
+          background-color: ${token.colorInfoBgHover};
+        }
+      }
+      .btn-inheriedChild {
+        background: ${token.colorInfoBg};
+        border-color: transparent;
+        color: ${token.colorInfo};
+        width: 20px;
+        height: 20px;
+        margin: 0px 5px 4px;
+        &:hover {
+          background-color: ${token.colorInfoBgHover};
+        }
+      }
       width: 250px;
       height: 100%;
       border-radius: ${token.borderRadiusLG}px;
