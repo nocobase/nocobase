@@ -331,7 +331,7 @@ FormItem.Designer = function Designer() {
               <VariableInput
                 {...props}
                 form={form}
-                collectionField={collectionField}
+                collectionField={props.collectionField}
                 record={record}
                 shouldChange={getShouldChange({
                   collectionField: props.collectionField,
