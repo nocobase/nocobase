@@ -11,7 +11,8 @@
     "@types/jsonwebtoken": "^8.5.8",
     "jsonwebtoken": "^8.5.1",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "async-mutex": "^0.4.0"
   },
   "peerDependencies": {
     "@nocobase/acl": "0.x",

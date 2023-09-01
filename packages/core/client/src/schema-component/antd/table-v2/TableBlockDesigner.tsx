@@ -40,9 +40,8 @@ export const TableBlockDesigner = () => {
   const template = useSchemaTemplate();
   const collection = useCollection();
   const { dragSort, resource } = field.decoratorProps;
-  const treeCollection = resource?.includes('.')
-    ? getCollection(getCollectionField(resource)?.target)?.tree
-    : !!collection?.tree;
+  const collectionField = getCollectionField(resource);
+  const treeCollection = resource?.includes('.') ? getCollection(collectionField?.target)?.tree : !!collection?.tree;
   const onDataScopeSubmit = useCallback(
     ({ filter }) => {
       filter = removeNullCondition(filter);
@@ -64,11 +63,10 @@ export const TableBlockDesigner = () => {
     },
     [dn, field.decoratorProps, fieldSchema, service],
   );
-
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettings.BlockTitleItem />
-      {collection?.tree && (
+      {collection?.tree && collectionField?.collectionName === collectionField?.target && (
         <SchemaSettings.SwitchItem
           title={t('Tree table')}
           defaultChecked={true}

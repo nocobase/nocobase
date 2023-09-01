@@ -12,6 +12,7 @@ import { setCurrentRole } from './middlewares/setCurrentRole';
 import { RoleModel } from './model/RoleModel';
 import { RoleResourceActionModel } from './model/RoleResourceActionModel';
 import { RoleResourceModel } from './model/RoleResourceModel';
+import { Mutex } from 'async-mutex';
 
 export interface AssociationFieldAction {
   associationActions: string[];
@@ -316,30 +317,34 @@ export class PluginACL extends Plugin {
       }
     });
 
+    const mutex = new Mutex();
+
     this.app.db.on('fields.afterDestroy', async (model, options) => {
-      const collectionName = model.get('collectionName');
-      const fieldName = model.get('name');
+      await mutex.runExclusive(async () => {
+        const collectionName = model.get('collectionName');
+        const fieldName = model.get('name');
 
-      const resourceActions = await this.app.db.getRepository('rolesResourcesActions').find({
-        filter: {
-          'resource.name': collectionName,
-          'fields.$anyOf': [fieldName],
-        },
-        transaction: options.transaction,
-      });
-
-      for (const resourceAction of resourceActions) {
-        const fields = resourceAction.get('fields') as string[];
-        const newFields = fields.filter((field) => field != fieldName);
-
-        await this.app.db.getRepository('rolesResourcesActions').update({
-          filterByTk: resourceAction.get('id') as number,
-          values: {
-            fields: newFields,
+        const resourceActions = await this.app.db.getRepository('rolesResourcesActions').find({
+          filter: {
+            'resource.name': collectionName,
+            'fields.$anyOf': [fieldName],
           },
           transaction: options.transaction,
         });
-      }
+
+        for (const resourceAction of resourceActions) {
+          const fields = resourceAction.get('fields') as string[];
+          const newFields = fields.filter((field) => field != fieldName);
+
+          await this.app.db.getRepository('rolesResourcesActions').update({
+            filterByTk: resourceAction.get('id') as number,
+            values: {
+              fields: newFields,
+            },
+            transaction: options.transaction,
+          });
+        }
+      });
     });
 
     const writeRolesToACL = async (app, options) => {
