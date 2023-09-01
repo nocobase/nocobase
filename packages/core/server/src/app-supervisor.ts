@@ -2,7 +2,7 @@ import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import { Mutex } from 'async-mutex';
 import { EventEmitter } from 'events';
 import Application, { ApplicationOptions, MaintainingCommandStatus } from './application';
-import { getErrorLevel, shouldReport } from './errors/handler';
+import { getErrorLevel } from './errors/handler';
 
 type BootOptions = {
   appName: string;
