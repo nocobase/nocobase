@@ -1,6 +1,6 @@
 {
-  "name": "@nocobase/plugin-case",
-  "version": "0.1.0",
+  "name": "@nocobase/plugin-cas",
+  "version": "0.13.0-alpha.4",
   "main": "lib/server/index.js",
   "devDependencies": {
     "@nocobase/actions": "0.13.0-alpha.4",
