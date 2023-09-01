@@ -48,7 +48,7 @@ export const uiSchemaActions = {
     () =>
       ({
         readFromCache: true,
-      } as GetPropertiesOptions),
+      }) as GetPropertiesOptions,
   ),
   insert: callRepositoryMethod('insert', 'values'),
   insertNewSchema: callRepositoryMethod('insertNewSchema', 'values'),

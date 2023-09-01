@@ -42,7 +42,7 @@ abstract class AppMigrator extends EventEmitter {
   async getAppPlugins() {
     const plugins = await this.app.db.getCollection('applicationPlugins').repository.find();
 
-    return lodash.uniq(['core', ...this.app.pm.plugins.keys(), ...plugins.map((plugin) => plugin.get('name'))]);
+    return lodash.uniq(['core', ...this.app.pm.getAliases(), ...plugins.map((plugin) => plugin.get('name'))]);
   }
 
   async getAppPluginCollectionGroups() {

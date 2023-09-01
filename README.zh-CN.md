@@ -8,6 +8,7 @@ NocoBase 正处在早期开发阶段，可能变动频繁，请谨慎用于生�
 
 ## 最近重要更新
 
+- [v0.13: 全新的应用状态流转 - 2023/08/24](https://docs-cn.nocobase.com/welcome/release/v13-changelog)
 - [v0.12: 全新的插件构建工具 - 2023/08/01](https://docs-cn.nocobase.com/welcome/release/v12-changelog)
 - [v0.11: 全新的客户端 Application、Plugin 和 Router - 2023/07/08](https://docs-cn.nocobase.com/welcome/release/v11-changelog)
 - [v0.10: Update instructions - 2023/06/23](https://docs-cn.nocobase.com/welcome/release/v10-changelog)

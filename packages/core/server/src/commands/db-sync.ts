@@ -11,8 +11,5 @@ export default (app: Application) => {
         drop: force,
       },
     });
-    await app.stop({
-      cliArgs,
-    });
   });
 };

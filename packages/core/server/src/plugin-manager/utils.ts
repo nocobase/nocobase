@@ -455,7 +455,7 @@ export interface DepCompatible {
   packageVersion: string;
 }
 export function getCompatible(packageName: string) {
-  const realPath = getRealPath(packageName, 'dist/externalVersion.js');
+  const { realPath } = getRealPath(packageName, 'dist/externalVersion.js');
 
   const exists = fs.existsSync(realPath);
   if (!exists) {
@@ -467,7 +467,7 @@ export function getCompatible(packageName: string) {
     externalVersion = requireNoCache(realPath);
   } catch (e) {
     console.error(e);
-    return false;
+    return process.env.NODE_ENV === 'production' ? false : [];
   }
   return Object.keys(externalVersion).reduce<DepCompatible[]>((result, packageName) => {
     const packageVersion = externalVersion[packageName];

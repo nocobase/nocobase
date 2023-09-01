@@ -1,12 +1,14 @@
 import { SchemaComponent } from '@nocobase/client';
 import React from 'react';
 import { useAuthTranslation } from '../locale';
+import { Alert } from 'antd';
 
 export const Options = () => {
   const { t } = useAuthTranslation();
   return (
     <SchemaComponent
       scope={{ t }}
+      components={{ Alert }}
       schema={{
         type: 'object',
         properties: {
@@ -22,6 +24,14 @@ export const Options = () => {
                   defaultChecked: true,
                 },
               },
+            },
+          },
+          notice: {
+            type: 'void',
+            'x-component': 'Alert',
+            'x-component-props': {
+              showIcon: true,
+              message: '{{t("The authentication allows users to sign in via username or email.")}}',
             },
           },
         },

@@ -10,7 +10,7 @@ export default async function (this: ManualInstruction, instance, { collection, 
   const { _, ...form } = instance.result;
   const [values] = Object.values(form);
   await repo.update({
-    filter: processor.getParsedValue(filter),
+    filter: processor.getParsedValue(filter, instance.nodeId),
     values: {
       ...((values as { [key: string]: any }) ?? {}),
       updatedBy: instance.userId,

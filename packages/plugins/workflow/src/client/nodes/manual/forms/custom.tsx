@@ -40,7 +40,7 @@ function CustomFormBlockProvider(props) {
     [values],
   );
 
-  return (
+  return !userJob.status || values ? (
     <CollectionProvider
       collection={{
         ...props.collection,
@@ -59,7 +59,7 @@ function CustomFormBlockProvider(props) {
         </FormBlockContext.Provider>
       </RecordProvider>
     </CollectionProvider>
-  );
+  ) : null;
 }
 
 function CustomFormBlockInitializer({ insert, ...props }) {
@@ -104,10 +104,6 @@ function CustomFormBlockInitializer({ insert, ...props }) {
                   'x-component': 'ActionBar',
                   'x-component-props': {
                     layout: 'one-column',
-                    style: {
-                      marginTop: '1.5em',
-                      flexWrap: 'wrap',
-                    },
                   },
                   'x-initializer': 'AddActionButton',
                   properties: {

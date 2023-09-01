@@ -12,7 +12,7 @@ export default class AddBasicAuthMigration extends Migration {
       values: {
         name: presetAuthenticator,
         authType: presetAuthType,
-        description: 'Sign in with email and password.',
+        description: 'Sign in with username/email.',
         enabled: true,
       },
     });

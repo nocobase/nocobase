@@ -69,7 +69,7 @@ function PluginInfo(props: IPluginInfo) {
                 url: `pm:remove/${name}`,
               });
               message.success(t('The deletion was successful.'));
-              window.location.reload();
+              // window.location.reload();
             }}
             onCancel={(e) => e.stopPropagation()}
             okText={t('Yes')}
@@ -94,20 +94,20 @@ function PluginInfo(props: IPluginInfo) {
                 message.error(t("Dependencies check failed, can't enable."));
                 return;
               }
-              modal.warning({
-                title: checked ? t('Plugin starting...') : t('Plugin stopping...'),
-                content: t('The application is reloading, please do not close the page.'),
-                okButtonProps: {
-                  style: {
-                    display: 'none',
-                  },
-                },
-              });
+              // modal.warning({
+              //   title: checked ? t('Plugin starting...') : t('Plugin stopping...'),
+              //   content: t('The application is reloading, please do not close the page.'),
+              //   okButtonProps: {
+              //     style: {
+              //       display: 'none',
+              //     },
+              //   },
+              // });
               setEnabledVal(checked);
               await api.request({
                 url: `pm:${checked ? 'enable' : 'disable'}/${name}`,
               });
-              window.location.reload();
+              // window.location.reload();
             }}
             checked={enabledVal}
           ></Switch>,

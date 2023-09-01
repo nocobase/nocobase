@@ -6,6 +6,7 @@ import { EllipsisWithTooltip, useCompile } from '../../../';
 import { useAPIClient } from '../../../api-client';
 import { useCollectionManager } from '../../hooks/useCollectionManager';
 
+const mapFields = ['lineString', 'point', 'circle', 'polygon'];
 export const PreviewTable = (props) => {
   const { databaseView, schema, viewName, fields } = props;
   const [previewColumns, setPreviewColumns] = useState([]);
@@ -20,7 +21,7 @@ export const PreviewTable = (props) => {
     if (databaseView) {
       getPreviewData();
     }
-  }, [databaseView]);
+  }, [form.values.fields]);
 
   useEffect(() => {
     const pColumns = formatPreviewColumns(fields);
@@ -28,10 +29,16 @@ export const PreviewTable = (props) => {
   }, [form.values.fields]);
 
   const getPreviewData = () => {
+    const fieldTypes = {};
+    form.values.fields.map((v) => {
+      if (mapFields.includes(v.type)) {
+        fieldTypes[v.name] = v.type;
+      }
+    });
     setLoading(true);
     api
       .resource(`dbViews`)
-      .query({ filterByTk: viewName, schema })
+      .query({ filterByTk: viewName, schema, fieldTypes })
       .then(({ data }) => {
         if (data) {
           setLoading(false);
@@ -58,7 +65,13 @@ export const PreviewTable = (props) => {
             const objSchema: any = {
               type: 'object',
               properties: {
-                [item.name]: { ...schema, default: content, 'x-read-pretty': true, title: null },
+                [item.name]: {
+                  name: `${item.name}`,
+                  'x-component': schema && fieldSource ? 'CollectionField' : 'Input',
+                  'x-read-pretty': true,
+                  'x-collection-field': fieldSource?.join('.'),
+                  default: content,
+                },
               },
             };
             return (
@@ -71,35 +84,37 @@ export const PreviewTable = (props) => {
       });
   };
   return (
-    <Spin spinning={loading}>
+    <Spin spinning={loading} key="preview">
       <div
         style={{
           marginBottom: 22,
         }}
       >
-        {previewColumns?.length > 0 && [
-          <div
-            className="ant-formily-item-label"
-            style={{ marginTop: 24, display: 'flex', padding: '0 0 8px' }}
-            key={viewName}
-          >
-            <div className="ant-formily-item-label-content">
-              <span>
-                <label>{t('Preview')}</label>
-              </span>
-            </div>
-            <span className="ant-formily-item-colon">:</span>
-          </div>,
-          <Table
-            size={'middle'}
-            pagination={false}
-            bordered
-            columns={previewColumns}
-            dataSource={previewData}
-            scroll={{ x: 1000, y: 300 }}
-            key={viewName}
-          />,
-        ]}
+        <div
+          className="ant-formily-item-label"
+          style={{ marginTop: 24, display: 'flex', padding: '0 0 8px' }}
+          key={viewName}
+        >
+          <div className="ant-formily-item-label-content">
+            <span>
+              <label>{t('Preview')}</label>
+            </span>
+          </div>
+          <span className="ant-formily-item-colon">:</span>
+        </div>
+        {previewColumns?.length > 0 && (
+          <>
+            <Table
+              size={'middle'}
+              pagination={false}
+              bordered
+              columns={previewColumns}
+              dataSource={previewData}
+              scroll={{ x: 1000, y: 300 }}
+              key={`${viewName}-preview`}
+            />
+          </>
+        )}
       </div>
     </Spin>
   );

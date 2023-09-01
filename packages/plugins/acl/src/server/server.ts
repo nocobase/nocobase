@@ -342,23 +342,17 @@ export class PluginACL extends Plugin {
       }
     });
 
-    // sync database role data to acl
-    this.app.on('afterLoad', async (app, options) => {
-      if (options?.method === 'install' || options?.method === 'upgrade') {
-        return;
-      }
+    const writeRolesToACL = async (app, options) => {
       const exists = await this.app.db.collectionExistsInDb('roles');
       if (exists) {
+        this.log.info('write roles to ACL');
         await this.writeRolesToACL();
       }
-    });
+    };
 
-    this.app.on('afterInstall', async (app, options) => {
-      const exists = await this.app.db.collectionExistsInDb('roles');
-      if (exists) {
-        await this.writeRolesToACL();
-      }
-    });
+    // sync database role data to acl
+    this.app.on('afterLoad', writeRolesToACL);
+    this.app.on('afterInstall', writeRolesToACL);
 
     this.app.on('afterInstallPlugin', async (plugin) => {
       if (plugin.getName() !== 'users') {
@@ -522,6 +516,39 @@ export class PluginACL extends Plugin {
     });
 
     const parseJsonTemplate = this.app.acl.parseJsonTemplate;
+
+    this.app.acl.beforeGrantAction(async (ctx) => {
+      const actionName = this.app.acl.resolveActionAlias(ctx.actionName);
+
+      if (lodash.isPlainObject(ctx.params)) {
+        if (actionName === 'view' && ctx.params.fields) {
+          const appendFields = [];
+
+          const collection = this.app.db.getCollection(ctx.resourceName);
+
+          if (!collection) {
+            return;
+          }
+
+          if (collection.model.primaryKeyAttribute) {
+            appendFields.push(collection.model.primaryKeyAttribute);
+          }
+
+          if (collection.model.rawAttributes['createdAt']) {
+            appendFields.push('createdAt');
+          }
+
+          if (collection.model.rawAttributes['updatedAt']) {
+            appendFields.push('updatedAt');
+          }
+
+          ctx.params = {
+            ...lodash.omit(ctx.params, 'fields'),
+            fields: [...ctx.params.fields, ...appendFields],
+          };
+        }
+      }
+    });
 
     this.app.acl.use(
       async (ctx: Context, next) => {

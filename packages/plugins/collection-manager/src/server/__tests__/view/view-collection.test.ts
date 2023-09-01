@@ -1,4 +1,4 @@
-import Database, { Repository, ViewCollection, ViewFieldInference } from '@nocobase/database';
+import Database, { Field, Repository, ViewCollection, ViewFieldInference, DataTypes } from '@nocobase/database';
 import Application from '@nocobase/server';
 import { uid } from '@nocobase/utils';
 import { createApp } from '../index';

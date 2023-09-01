@@ -118,6 +118,9 @@ export const configurationSchema: ISchema = {
                       type: 'string',
                       title: generateNTemplate('Role'),
                       required: true,
+                      'x-decorator-props': {
+                        tooltip: generateNTemplate('Allow only your own roles to be selected'),
+                      },
                       'x-collection-field': 'apiKeys.role',
                       'x-component': 'CollectionField',
                       'x-decorator': 'FormItem',
