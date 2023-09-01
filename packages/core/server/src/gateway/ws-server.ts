@@ -64,6 +64,7 @@ export class WSServer {
         type: 'notification',
         payload: {
           message: error.message,
+          type: 'error',
         },
       });
     });
