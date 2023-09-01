@@ -8,7 +8,6 @@ export const ConnectAssociationAction = (props) => {
     <BranchesOutlined
       className="btn-assocition"
       onClick={() => {
-        console.log(item);
         targetGraph.onConnectionAssociation(item);
       }}
     />
