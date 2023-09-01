@@ -512,15 +512,15 @@ export const GraphDrawPage = React.memo(() => {
       new Scroller({
         enabled: true,
         pannable: true,
-        padding: { top: 0, left: 500, right: 300, bottom: 400 },
+        padding: { top: 10, left: 500, right: 300, bottom: 300 },
       }),
     );
     targetGraph.use(
       new MiniMap({
         container: document.getElementById('graph-minimap'),
         width: 300,
-        height: 250,
-        padding: 10,
+        height: 350,
+        padding: 50,
         graphOptions: {
           async: true,
           createCellView(cell) {
@@ -598,14 +598,15 @@ export const GraphDrawPage = React.memo(() => {
       node.setProp({ select: false });
     });
   };
-  const handleConnectionAssociation = useCallback(
-    ({ target }) => {
-      const data = selectedCollections.split(',') || [];
-      data.push(target);
-      setSearchParams([['collections', uniq(data).toString()]]);
-    },
-    [searchParams],
-  );
+  const handleConnectionAssociation = ({ target, through }) => {
+    const data = targetGraph.selectedCollections.split(',') || [];
+    data.push(target);
+    through && data.push(through);
+    const queryString = uniq(data).toString();
+    setSearchParams([['collections', queryString]]);
+    targetGraph.selectedCollections = queryString;
+  };
+
   const handleEdgeUnActive = (targetEdge) => {
     targetGraph.activeEdge = null;
     const { m2m, connectionType } = targetEdge.store?.data ?? {};
@@ -721,8 +722,8 @@ export const GraphDrawPage = React.memo(() => {
     const diffNodes = getDiffNode(nodesData, currentNodes);
     const diffEdges = getDiffEdge(edgesData, currentEdgesGroup.currentRelateEdges || []);
     const diffInheritEdge = getDiffEdge(inheritEdges, currentEdgesGroup.currentInheritEdges || []);
-    const maxY = maxBy(positions, 'y').y;
-    const minX = minBy(positions, 'x').x;
+    const maxY = maxBy(positions, 'y')?.y;
+    const minX = minBy(positions, 'x')?.x;
     const yNodes = positions.filter((v) => {
       return Math.abs(v.y - maxY) < 100;
     });
@@ -1039,9 +1040,11 @@ export const GraphDrawPage = React.memo(() => {
 
   useEffect(() => {
     if (selectedCollections && collectionList.length) {
-      const data = collectionList.filter((v) => selectedCollections?.split(',').includes(v.name));
+      const selectKeys = selectedCollections?.split(',');
+      const data = collectionList.filter((v) => selectKeys.includes(v.name));
       renderInitGraphCollection(data);
       handelResetLayout(true);
+      targetGraph.selectedCollections = selectedCollections;
     } else {
       !selectedCollections && renderInitGraphCollection(collections);
     }
