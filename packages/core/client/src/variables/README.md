@@ -17,6 +17,6 @@ registerVariable({
 });
 
 // 解析变量
-const userName = await parseVariable('$user.name');
+const userName = await parseVariable('{{ $user.name }}');
 console.log(userName); // '张三'
 ```

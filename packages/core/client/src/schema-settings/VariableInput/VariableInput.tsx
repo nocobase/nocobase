@@ -93,7 +93,7 @@ export const VariableInput = (props: Props) => {
       collectionName: blockCollectionName,
       t,
     },
-  ).concat(scope);
+  );
   const contextVariable = useContextAssociationFields({ schema, maxDepth: 2, contextCollectionName, collectionField });
 
   if (contextCollectionName && variableOptions.every((item) => item.value !== contextVariable.value)) {
@@ -121,7 +121,7 @@ export const VariableInput = (props: Props) => {
       className={className}
       value={value}
       onChange={handleChange}
-      scope={returnScope(variableOptions)}
+      scope={returnScope(_.isEmpty(scope) ? variableOptions : scope)}
       style={style}
       changeOnSelect
     >

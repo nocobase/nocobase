@@ -63,10 +63,10 @@ export async function submit(context: Context, next) {
     // @deprecated
     currentTime: new Date(),
     $user: currentUser.toJSON(),
-    $nDate: {
-      now: () => new Date().toISOString(),
-    },
     $nForm: values.result[formKey],
+    $nDate: {
+      now: new Date(),
+    },
   });
 
   userJob.set({

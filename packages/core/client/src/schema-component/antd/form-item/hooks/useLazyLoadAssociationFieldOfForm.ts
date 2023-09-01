@@ -32,10 +32,8 @@ const useLazyLoadAssociationFieldOfForm = () => {
     const variableString = `{{ $nForm.${schemaName} }}`;
     const collectionField = getCollectionJoinField(`${name}.${schemaName}`);
 
-    if (process.env.NODE_ENV !== 'production') {
-      if (!collectionField) {
-        throw new Error(`useLazyLoadAssociationField: ${schemaName} not found in collection ${name}`);
-      }
+    if (!collectionField) {
+      return console.error(new Error(`useLazyLoadAssociationField: ${schemaName} not found in collection ${name}`));
     }
 
     variables

@@ -168,7 +168,7 @@ export function useTriggerWorkflowsActionProps() {
         $nRecord: currentRecord,
         $nForm: form.values,
         $nDate: {
-          now: () => new Date().toISOString(),
+          now: new Date(),
         },
       });
       if (!skipValidator) {
