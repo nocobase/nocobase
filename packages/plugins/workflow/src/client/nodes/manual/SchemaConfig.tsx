@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import {
   Action,
   ActionContextProvider,
+  DefaultValueProvider,
   FormActiveFieldsProvider,
   GeneralSchemaDesigner,
   InitializerWithSwitch,
@@ -239,32 +240,34 @@ function AssignedFieldValues() {
           </Space>
         }
       >
-        <VariableScopeProvider scope={scope}>
-          <FormActiveFieldsProvider name="form" getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}>
-            <FormProvider form={form}>
-              <FormLayout layout={'vertical'}>
-                <Alert
-                  message={lang(
-                    'Values preset in this form will override user submitted ones when continue or reject.',
+        <DefaultValueProvider isAllowToSetDefaultValue={() => false}>
+          <VariableScopeProvider scope={scope}>
+            <FormActiveFieldsProvider name="form" getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}>
+              <FormProvider form={form}>
+                <FormLayout layout={'vertical'}>
+                  <Alert
+                    message={lang(
+                      'Values preset in this form will override user submitted ones when continue or reject.',
+                    )}
+                  />
+                  <br />
+                  {open && schema && (
+                    <SchemaComponentContext.Provider
+                      value={{
+                        ...ctx,
+                        refresh() {
+                          setInitialSchema(lodash.get(schema.toJSON(), 'properties.grid'));
+                        },
+                      }}
+                    >
+                      <SchemaComponent schema={schema} components={components} />
+                    </SchemaComponentContext.Provider>
                   )}
-                />
-                <br />
-                {open && schema && (
-                  <SchemaComponentContext.Provider
-                    value={{
-                      ...ctx,
-                      refresh() {
-                        setInitialSchema(lodash.get(schema.toJSON(), 'properties.grid'));
-                      },
-                    }}
-                  >
-                    <SchemaComponent schema={schema} components={components} />
-                  </SchemaComponentContext.Provider>
-                )}
-              </FormLayout>
-            </FormProvider>
-          </FormActiveFieldsProvider>
-        </VariableScopeProvider>
+                </FormLayout>
+              </FormProvider>
+            </FormActiveFieldsProvider>
+          </VariableScopeProvider>
+        </DefaultValueProvider>
       </Modal>
     </>
   );

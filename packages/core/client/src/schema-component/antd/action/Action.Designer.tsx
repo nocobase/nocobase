@@ -14,6 +14,7 @@ import { OpenModeSchemaItems } from '../../../schema-items';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useCollectionState } from '../../../schema-settings/DataTemplates/hooks/useCollectionState';
 import { useSyncFromForm } from '../../../schema-settings/DataTemplates/utils';
+import { DefaultValueProvider } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useLinkageAction } from './hooks';
 import { requestSettingsSchema } from './utils';
 
@@ -497,14 +498,16 @@ function AssignedFieldValues() {
 
   return (
     <FlagProvider isInAssignFieldValues={true}>
-      <SchemaSettings.ActionModalItem
-        title={t('Assign field values')}
-        initialSchema={initialSchema}
-        initialValues={fieldSchema?.['x-action-settings']?.assignedValues}
-        modalTip={tips[actionType]}
-        uid={fieldSchema?.['x-action-settings']?.schemaUid}
-        onSubmit={onSubmit}
-      />
+      <DefaultValueProvider isAllowToSetDefaultValue={() => false}>
+        <SchemaSettings.ActionModalItem
+          title={t('Assign field values')}
+          initialSchema={initialSchema}
+          initialValues={fieldSchema?.['x-action-settings']?.assignedValues}
+          modalTip={tips[actionType]}
+          uid={fieldSchema?.['x-action-settings']?.schemaUid}
+          onSubmit={onSubmit}
+        />
+      </DefaultValueProvider>
     </FlagProvider>
   );
 }
