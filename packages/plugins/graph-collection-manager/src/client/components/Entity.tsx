@@ -42,9 +42,8 @@ const OperationButton: any = React.memo((props: any) => {
   const isInheritField = !(property.collectionName !== name);
   const options = useContext(SchemaOptionsContext);
   const isAssociationField = ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(property.type);
-  const edgeId =
-    isAssociationField && property.collectionName + property.foreignKey + property.target + property.targetKey;
-  const isShowAssocition = isAssociationField && !targetGraph.hasCell(edgeId);
+  const isShowAssocition =
+    isAssociationField && !(targetGraph.hasCell(property.target) || targetGraph.hasCell(property.through));
   const {
     data: { database },
   } = useCurrentAppInfo();
