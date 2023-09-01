@@ -4,8 +4,6 @@ import _ from 'lodash';
 import { useMemo } from 'react';
 import { CollectionFieldOptions } from '../../../collection-manager';
 import { useFlag } from '../../../flag-provider';
-import { isVariable } from '../../../variables/utils/isVariable';
-import { Option } from '../type';
 import { useBlockCollection } from './useBlockCollection';
 import { useDateVariable } from './useDateVariable';
 import { useFormVariable } from './useFormVariable';
@@ -111,76 +109,4 @@ export const useVariableOptions = ({
     record,
     currentRecordVariable,
   ]);
-};
-
-/**
- * 兼容老版本的变量
- * @param variables
- */
-export const compatOldVariables = (variables: Option[], { value, collectionName, t }) => {
-  if (!isVariable(value)) {
-    return variables;
-  }
-
-  variables = _.cloneDeep(variables);
-
-  const systemVariable: Option = {
-    value: '$system',
-    key: '$system',
-    label: t('System variables'),
-    isLeaf: false,
-    children: [
-      {
-        value: 'now',
-        key: 'now',
-        label: t('Current time'),
-        isLeaf: true,
-        depth: 1,
-      },
-    ],
-    depth: 0,
-  };
-  const currentTime = {
-    value: 'currentTime',
-    label: t('Current time'),
-    children: null,
-  };
-
-  if (value.includes('$system')) {
-    variables.push(systemVariable);
-  }
-
-  if (value.includes(`${collectionName}.`)) {
-    const formVariable = variables.find((item) => item.value === '$nForm');
-    if (formVariable) {
-      formVariable.value = collectionName;
-    }
-  }
-
-  if (value.includes('currentUser')) {
-    const userVariable = variables.find((item) => item.value === '$user');
-    if (userVariable) {
-      userVariable.value = 'currentUser';
-    }
-  }
-
-  if (value.includes('currentRecord')) {
-    const formVariable = variables.find((item) => item.value === '$nRecord');
-    if (formVariable) {
-      formVariable.value = 'currentRecord';
-    }
-  }
-
-  if (value.includes('currentTime')) {
-    variables.push(currentTime);
-  }
-
-  if (value.includes('$date')) {
-    const formVariable = variables.find((item) => item.value === '$nDate');
-    if (formVariable) {
-      formVariable.value = '$date';
-    }
-  }
-
-  return variables;
 };
