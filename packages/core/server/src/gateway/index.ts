@@ -15,7 +15,7 @@ import { applyErrorWithArgs, getErrorWithCode } from './errors';
 import { IPCSocketClient } from './ipc-socket-client';
 import { IPCSocketServer } from './ipc-socket-server';
 import { WSServer } from './ws-server';
-import { NODE_MODULES_PATH, PLUGIN_PREFIX, getRewritesPath } from '../plugin-manager';
+import { PLUGIN_PREFIX, getRewritesPath } from '../plugin-manager';
 
 const compress = promisify(compression());
 
