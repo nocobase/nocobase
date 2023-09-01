@@ -1,4 +1,5 @@
 import Application from '../application';
+import { PluginCommandError } from '../errors/plugin-command-error';
 
 export default (app: Application) => {
   const pm = app.command('pm');
@@ -21,11 +22,7 @@ export default (app: Application) => {
       try {
         await app.pm.enable(plugins);
       } catch (error) {
-        app.log.debug(`Failed to enable plugin: ${error.message}`);
-        app.setMaintainingMessage(`Failed to enable plugin: ${error.message}`);
-        await new Promise((resolve) => {
-          setTimeout(() => resolve(null), 10000);
-        });
+        throw new PluginCommandError(`Failed to enable plugin: ${error.message}`);
       }
     });
 
@@ -35,11 +32,7 @@ export default (app: Application) => {
       try {
         await app.pm.disable(plugins);
       } catch (error) {
-        app.log.debug(`Failed to disable plugin: ${error.message}`);
-        app.setMaintainingMessage(`Failed to disable plugin: ${error.message}`);
-        await new Promise((resolve) => {
-          setTimeout(() => resolve(null), 10000);
-        });
+        throw new PluginCommandError(`Failed to disable plugin: ${error.message}`);
       }
     });
 
