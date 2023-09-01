@@ -63,7 +63,7 @@ export default {
     // Get resources have individual configuration
     const resources = Array.from(role.resources.values());
     // Exclude resources without view action permission
-    const excludes = resources.filter((resource) => !resource.actions.get('view')).map((resource) => resource.name);
+    const excludes = resources.filter((resource) => !resource.getAction('view')).map((resource) => resource.name);
     ctx.action.mergeParams({
       filter: excludes.length
         ? {
@@ -75,11 +75,14 @@ export default {
     });
     return defaultActions.list(ctx, async () => {
       const collections = (ctx.body || []).map((collection: any) => {
-        const resource = role.resources.get(collection.name);
+        const resource = role.getResource(collection.name);
         if (!resource) {
           return collection;
         }
-        const allowFields = resource.actions.get('view').fields;
+        const associationFields = Array.from(role.resources.keys())
+          .filter((key) => key.startsWith(`${collection.name}.`))
+          .map((key) => key.split('.')[1]);
+        const allowFields = [...(resource.getAction('view').fields || []), ...associationFields];
         collection.set(
           'fields',
           collection.fields.filter((field: any) => allowFields.includes(field.name)),
