@@ -510,8 +510,11 @@ export const GraphDrawPage = React.memo(() => {
     });
     targetGraph.use(
       new Scroller({
+        autoResize: true,
         enabled: true,
         pannable: true,
+        pageVisible: true,
+        pageBreak: false,
         padding: { top: 10, left: 500, right: 300, bottom: 300 },
       }),
     );
@@ -519,8 +522,8 @@ export const GraphDrawPage = React.memo(() => {
       new MiniMap({
         container: document.getElementById('graph-minimap'),
         width: 300,
-        height: 350,
-        padding: 50,
+        height: 200,
+        padding: 10,
         graphOptions: {
           async: true,
           createCellView(cell) {

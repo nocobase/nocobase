@@ -43,7 +43,8 @@ const OperationButton: any = React.memo((props: any) => {
   const options = useContext(SchemaOptionsContext);
   const isAssociationField = ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(property.type);
   const isShowAssocition =
-    isAssociationField && !(targetGraph.hasCell(property.target) || targetGraph.hasCell(property.through));
+    isAssociationField &&
+    !(property.through ? targetGraph.hasCell(property.through) : targetGraph.hasCell(property.target));
   const {
     data: { database },
   } = useCurrentAppInfo();
