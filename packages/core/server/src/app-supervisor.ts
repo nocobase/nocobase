@@ -2,7 +2,7 @@ import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import { Mutex } from 'async-mutex';
 import { EventEmitter } from 'events';
 import Application, { ApplicationOptions, MaintainingCommandStatus } from './application';
-import { shouldReport } from './errors/handler';
+import { getErrorLevel, shouldReport } from './errors/handler';
 
 type BootOptions = {
   appName: string;
@@ -306,14 +306,22 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
           break;
         case 'command_error':
           {
-            if (shouldReport(maintainingStatus.error)) {
+            const errorLevel = getErrorLevel(maintainingStatus.error);
+
+            if (errorLevel === 'fatal') {
               this.setAppError(app.name, maintainingStatus.error);
               this.setAppStatus(app.name, 'error');
-            } else {
-              if (this.getAppStatus(app.name) == 'commanding') {
-                this.setAppStatus(app.name, this.statusBeforeCommanding[app.name]);
-              }
+              break;
             }
+
+            if (errorLevel === 'warn') {
+              this.emit('appError', {
+                appName: app.name,
+                error: maintainingStatus.error,
+              });
+            }
+
+            this.setAppStatus(app.name, this.statusBeforeCommanding[app.name]);
           }
           break;
       }

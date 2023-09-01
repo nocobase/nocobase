@@ -59,6 +59,15 @@ export class WSServer {
       });
     });
 
+    AppSupervisor.getInstance().on('appError', async ({ appName, error }) => {
+      this.sendToConnectionsByTag('app', appName, {
+        type: 'notification',
+        payload: {
+          message: error.message,
+        },
+      });
+    });
+
     AppSupervisor.getInstance().on('appMaintainingMessageChanged', async ({ appName, message, command, status }) => {
       const app = await AppSupervisor.getInstance().getApp(appName, {
         withOutBootStrap: true,
