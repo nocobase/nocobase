@@ -63,4 +63,35 @@ describe('recreate field', () => {
 
     expect(response.statusCode).toBe(200);
   });
+
+  it('should reset fields', async () => {
+    await agent.resource('collections').create({
+      values: {
+        name: 'a1',
+        fields: [
+          {
+            name: 'a',
+            type: 'string',
+          },
+        ],
+      },
+    });
+
+    expect(await app.db.getRepository('fields').count()).toBe(1);
+    const response = await agent.resource('collections').setFields({
+      filterByTk: 'a1',
+      values: {
+        fields: [
+          {
+            name: 'a',
+            type: 'bigInt',
+          },
+        ],
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+
+    expect(await app.db.getRepository('fields').count()).toBe(1);
+  });
 });
