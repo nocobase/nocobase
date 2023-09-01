@@ -344,7 +344,7 @@ export const useSourceIdFromParentRecord = () => {
 export const useParamsFromRecord = () => {
   const filterByTk = useFilterByTk();
   const record = useRecord();
-  const { fields } = useCollection();
+  const { fields, name } = useCollection();
   const filterFields = fields
     .filter((v) => {
       return ['boolean', 'date', 'integer', 'radio', 'sort', 'string', 'time', 'uid', 'uuid'].includes(v.type);
@@ -361,7 +361,7 @@ export const useParamsFromRecord = () => {
     filterByTk: filterByTk,
   };
   if (record.__collection) {
-    obj['targetCollection'] = record.__collection;
+    obj['targetCollection'] = name || record.__collection;
   }
   if (!filterByTk) {
     obj['filter'] = filter;

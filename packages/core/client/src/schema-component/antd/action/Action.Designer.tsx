@@ -52,7 +52,6 @@ function ButtonEditor() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const isLink = fieldSchema['x-component'] === 'Action.Link';
-
   return (
     <SchemaSettings.ModalItem
       title={t('Edit button')}
@@ -834,7 +833,10 @@ export const ActionDesigner = (props) => {
   );
   const isUpdateModePopupAction = ['customize:bulkUpdate', 'customize:bulkEdit'].includes(fieldSchema['x-action']);
   const isLinkageAction = linkageAction || isAction;
-  const isChildCollectionAction = getChildrenCollections(name).length > 0 && fieldSchema['x-action'] === 'create';
+  const isChildCollectionAction =
+    getChildrenCollections(name).length > 0 &&
+    fieldSchema['x-action'] === 'create' &&
+    fieldSchema['x-component'] === 'Action';
   const isDraggable = fieldSchema?.parent['x-component'] !== 'CollectionField';
   const isDuplicateAction = fieldSchema['x-action'] === 'duplicate';
 

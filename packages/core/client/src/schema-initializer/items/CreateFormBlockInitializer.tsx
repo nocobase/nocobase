@@ -1,6 +1,5 @@
 import React from 'react';
 import { FormOutlined } from '@ant-design/icons';
-
 import { useBlockAssociationContext } from '../../block-provider';
 import { useCollection } from '../../collection-manager';
 import { useSchemaTemplateManager } from '../../schema-templates';
@@ -8,10 +7,11 @@ import { SchemaInitializer } from '../SchemaInitializer';
 import { createFormBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
 
 export const CreateFormBlockInitializer = (props) => {
-  const { onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
+  const { onCreateBlockSchema, componentType, createBlockSchema, insert, targetCollection, ...others } = props;
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const association = useBlockAssociationContext();
   const collection = useCollection();
+  const currentCollection = targetCollection || collection;
   return (
     <SchemaInitializer.Item
       icon={<FormOutlined />}
@@ -23,7 +23,7 @@ export const CreateFormBlockInitializer = (props) => {
             const blockSchema = createFormBlockSchema({
               actionInitializers: 'CreateFormActionInitializers',
               association,
-              collection: collection.name,
+              collection: currentCollection.name,
               template: s,
             });
             if (item.mode === 'reference') {
@@ -38,7 +38,7 @@ export const CreateFormBlockInitializer = (props) => {
             createFormBlockSchema({
               actionInitializers: 'CreateFormActionInitializers',
               association,
-              collection: collection.name,
+              collection: currentCollection.name,
             }),
           );
         }
