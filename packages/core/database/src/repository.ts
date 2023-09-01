@@ -37,9 +37,6 @@ import { UpdateGuard } from './update-guard';
 
 const debug = require('debug')('noco-database');
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface IRepository {}
-
 interface CreateManyOptions extends BulkCreateOptions {
   records: Values[];
 }
@@ -146,7 +143,7 @@ export interface UpdateOptions extends Omit<SequelizeUpdateOptions, 'where'> {
   context?: any;
 }
 
-interface UpdateManyOptions extends UpdateOptions {
+interface UpdateManyOptions extends Omit<UpdateOptions, 'values'> {
   records: Values[];
 }
 
@@ -222,8 +219,7 @@ interface FirstOrCreateOptions extends Transactionable {
   values?: Values;
 }
 
-export class Repository<TModelAttributes extends {} = any, TCreationAttributes extends {} = TModelAttributes>
-  implements IRepository {
+export class Repository<TModelAttributes extends {} = any, TCreationAttributes extends {} = TModelAttributes> {
   database: Database;
   collection: Collection;
   model: ModelStatic<Model>;

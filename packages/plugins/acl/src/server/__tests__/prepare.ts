@@ -6,9 +6,6 @@ export async function prepareApp(): Promise<MockServer> {
     registerActions: true,
     acl: true,
     plugins: ['error-handler', 'users', 'ui-schema-storage', 'collection-manager', 'auth'],
-    database: {
-      tablePrefix: '',
-    },
   });
 
   await app.db.clean({ drop: true });
