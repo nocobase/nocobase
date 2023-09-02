@@ -1,7 +1,7 @@
 import { SchemaComponent } from '@nocobase/client';
 import React from 'react';
 import { Space } from 'antd';
-import { useAuthTranslation, generateNTemplate } from '../locale';
+import { useAuthTranslation, generateNTemplate } from './locale';
 
 export const Options = () => {
   const { t } = useAuthTranslation();
