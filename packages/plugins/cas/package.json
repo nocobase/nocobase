@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/plugin-cas",
-  "displayName": "CAS Login",
-  "displayName.zh-CN": "CAS 统一身份认证",
+  "displayName": "SSO login - CAS",
+  "displayName.zh-CN": "SSO 登录 - CAS",
   "description": "Unified identity authentication.",
   "description.zh-CN": "提供CAS登录功能",
   "version": "0.13.0-alpha.4",
