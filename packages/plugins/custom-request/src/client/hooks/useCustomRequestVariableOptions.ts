@@ -1,5 +1,5 @@
 import { useCollection, useCollectionFilterOptions, useCompile } from '@nocobase/client';
-import { useTranslation } from '../../locale';
+import { useTranslation } from '../locale';
 import { useMemo } from 'react';
 
 export const useCustomRequestVariableOptions = () => {

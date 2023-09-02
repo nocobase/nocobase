@@ -1,4 +1,4 @@
-import { generateNTemplate } from '../../locale';
+import { generateNTemplate } from '../locale';
 
 export const CustomRequestACLSchema = {
   type: 'object',

@@ -7,10 +7,8 @@ import {
   useBlockRequestContext,
   useCollection,
   useCompile,
-  useCurrentUserContext,
   useFilterByTk,
   useRecord,
-  useRequest,
 } from '@nocobase/client';
 import { App } from 'antd';
 import { isURL } from '@nocobase/utils/client';

@@ -5,7 +5,7 @@ import React from 'react';
 import { CustomRequestACLSchema, CustomRequestConfigurationFieldsSchema } from '../schemas';
 import { useCustomRequestVariableOptions, useGetCustomRequest } from '../hooks';
 import { message } from 'antd';
-import { useTranslation } from '../../locale';
+import { useTranslation } from '../locale';
 
 const useCustomRequestsResource = () => {
   const apiClient = useAPIClient();

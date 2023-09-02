@@ -1,4 +1,4 @@
-import { NAMESPACE, generateNTemplate } from '../../locale';
+import { generateNTemplate } from '../locale';
 
 export const CustomRequestConfigurationFieldsSchema = {
   type: 'object',
