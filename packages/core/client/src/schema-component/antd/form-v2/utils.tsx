@@ -66,39 +66,37 @@ export const linkageMergeAction = async ({
       }
       break;
     case ActionType.Value:
-      {
-        if (
-          isConditionEmpty(condition) ||
-          (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables }))
-        ) {
-          let result = null;
-          if (value?.mode === 'express') {
-            const scope = cloneDeep(values);
+      if (
+        isConditionEmpty(condition) ||
+        (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables }))
+      ) {
+        let result = null;
+        if (value?.mode === 'express') {
+          const scope = cloneDeep(values);
 
-            // 1. 解析如 `{{$user.name}}` 之类的变量
-            const { exp, scope: expScope } = await replaceVariables(value.result || value.value, {
-              variables,
-              localVariables,
-            });
+          // 1. 解析如 `{{$user.name}}` 之类的变量
+          const { exp, scope: expScope } = await replaceVariables(value.value || value.result, {
+            variables,
+            localVariables,
+          });
 
-            try {
-              // 2. TODO: 需要把里面解析变量的逻辑删除，因为在上一步已经解析过了
-              result = evaluate(exp, { ...scope, now: () => new Date().toString(), ...expScope });
-            } catch (error) {
-              if (process.env.NODE_ENV !== 'production') {
-                throw error;
-              }
+          try {
+            // 2. TODO: 需要把里面解析变量的逻辑删除，因为在上一步已经解析过了
+            result = evaluate(exp, { ...scope, now: () => new Date().toString(), ...expScope });
+          } catch (error) {
+            if (process.env.NODE_ENV !== 'production') {
+              throw error;
             }
-          } else if (value?.mode === 'constant') {
-            result = value?.value || value;
-          } else {
-            result = null;
           }
-          field._value = '_value' in field ? field._value : field.value;
-          field.value = result === undefined ? field.value : result;
+        } else if (value?.mode === 'constant') {
+          result = value?.value || value;
         } else {
-          field.value = field._value;
+          result = null;
         }
+        field._value = '_value' in field ? field._value : field.value;
+        field.value = result === undefined ? field.value : result;
+      } else {
+        field.value = field._value;
       }
       break;
     default:

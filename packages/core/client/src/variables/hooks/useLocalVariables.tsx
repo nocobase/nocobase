@@ -51,16 +51,22 @@ const useLocalVariables = (props?: Props) => {
   return useMemo(() => {
     return (
       [
-        // 兼容老版本
+        /**
+         * @deprecated
+         * 兼容老版本
+         */
         {
           name: 'currentRecord',
           ctx: blockRecord,
           collectionName: name,
         },
-        // 兼容旧版本的以数据表名称命名的变量，新版本已更名为 `$nForm`
+        /**
+         * @deprecated
+         * 兼容旧版本的以数据表名称命名的变量，新版本已更名为 `$nForm`
+         */
         {
           name,
-          ctx: form?.values,
+          ctx: form?.values || blockRecord,
           collectionName: name,
         },
         {

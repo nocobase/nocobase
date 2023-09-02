@@ -84,7 +84,6 @@ export const VariableInput = (props: Props) => {
     targetFieldSchema,
   } = props;
   const { name: blockCollectionName } = useBlockCollection();
-  const { t } = useTranslation();
   const scope = useVariableScope();
   const { operator, schema: uiSchema = collectionField?.uiSchema } = useValues();
 
@@ -210,12 +209,12 @@ export interface FormatVariableScopeReturn {
  * 兼容老版本的变量
  * @param variables
  */
-function useCompatOldVariables(props: {
+export function useCompatOldVariables(props: {
   uiSchema: any;
   collectionField: CollectionFieldOptions;
+  blockCollectionName: string;
   noDisabled?: boolean;
   targetFieldSchema?: Schema;
-  blockCollectionName?: string;
 }) {
   const { uiSchema, collectionField, noDisabled, targetFieldSchema, blockCollectionName } = props;
   const { t } = useTranslation();
@@ -234,77 +233,80 @@ function useCompatOldVariables(props: {
     targetFieldSchema,
   });
 
-  const compatOldVariables = useCallback((variables: Option[], { value }) => {
-    if (!isVariable(value)) {
+  const compatOldVariables = useCallback(
+    (variables: Option[], { value }) => {
+      if (!isVariable(value)) {
+        return variables;
+      }
+
+      variables = _.cloneDeep(variables);
+
+      const systemVariable: Option = {
+        value: '$system',
+        key: '$system',
+        label: t('System variables'),
+        isLeaf: false,
+        children: [
+          {
+            value: 'now',
+            key: 'now',
+            label: t('Current time'),
+            isLeaf: true,
+            depth: 1,
+          },
+        ],
+        depth: 0,
+      };
+      const currentTime = {
+        value: 'currentTime',
+        label: t('Current time'),
+        children: null,
+      };
+
+      if (value.includes('$system')) {
+        variables.push(systemVariable);
+      }
+
+      if (value.includes(`${blockCollectionName}.`)) {
+        const variable = variables.find((item) => item.value === '$nForm' || item.value === '$nRecord');
+        if (variable) {
+          variable.value = blockCollectionName;
+        }
+      }
+
+      if (value.includes('currentUser')) {
+        const userVariable = variables.find((item) => item.value === '$user');
+        if (userVariable) {
+          userVariable.value = 'currentUser';
+        } else {
+          variables.unshift({ ...lowLevelUserVariable, value: 'currentUser' });
+        }
+      }
+
+      if (value.includes('currentRecord')) {
+        const formVariable = variables.find((item) => item.value === '$nRecord');
+        if (formVariable) {
+          formVariable.value = 'currentRecord';
+        } else {
+          variables.unshift({ ...currentRecordVariable, value: 'currentRecord' });
+        }
+      }
+
+      if (value.includes('currentTime')) {
+        variables.push(currentTime);
+      }
+
+      if (value.includes('$date')) {
+        const formVariable = variables.find((item) => item.value === '$nDate');
+        if (formVariable) {
+          formVariable.value = '$date';
+        }
+      }
+
       return variables;
-    }
-
-    variables = _.cloneDeep(variables);
-
-    const systemVariable: Option = {
-      value: '$system',
-      key: '$system',
-      label: t('System variables'),
-      isLeaf: false,
-      children: [
-        {
-          value: 'now',
-          key: 'now',
-          label: t('Current time'),
-          isLeaf: true,
-          depth: 1,
-        },
-      ],
-      depth: 0,
-    };
-    const currentTime = {
-      value: 'currentTime',
-      label: t('Current time'),
-      children: null,
-    };
-
-    if (value.includes('$system')) {
-      variables.push(systemVariable);
-    }
-
-    if (value.includes(`${blockCollectionName}.`)) {
-      const formVariable = variables.find((item) => item.value === '$nForm');
-      if (formVariable) {
-        formVariable.value = blockCollectionName;
-      }
-    }
-
-    if (value.includes('currentUser')) {
-      const userVariable = variables.find((item) => item.value === '$user');
-      if (userVariable) {
-        userVariable.value = 'currentUser';
-      } else {
-        variables.unshift({ ...lowLevelUserVariable, value: 'currentUser' });
-      }
-    }
-
-    if (value.includes('currentRecord')) {
-      const formVariable = variables.find((item) => item.value === '$nRecord');
-      if (formVariable) {
-        formVariable.value = 'currentRecord';
-      } else {
-        variables.unshift({ ...currentRecordVariable, value: 'currentRecord' });
-      }
-    }
-
-    if (value.includes('currentTime')) {
-      variables.push(currentTime);
-    }
-
-    if (value.includes('$date')) {
-      const formVariable = variables.find((item) => item.value === '$nDate');
-      if (formVariable) {
-        formVariable.value = '$date';
-      }
-    }
-
-    return variables;
-  }, []);
+    },
+    [blockCollectionName],
+  );
 
   return { compatOldVariables };
 }

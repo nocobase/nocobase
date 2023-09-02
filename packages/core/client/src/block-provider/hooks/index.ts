@@ -1293,7 +1293,11 @@ export const useAssociationNames = () => {
 
           list.forEach((item) => {
             const fieldNames = getTargetField(item);
-            appends.add(fieldNames.join('.'));
+
+            // 只应该收集关系字段，只有大于 1 的时候才是关系字段
+            if (fieldNames.length > 1) {
+              appends.add(fieldNames.join('.'));
+            }
           });
         });
       }

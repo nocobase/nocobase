@@ -17,7 +17,10 @@ const useBuiltInVariables = () => {
         ctx: currentUser,
         collectionName: 'users',
       },
-      // 兼容老版本
+      /**
+       * @deprecated
+       * 兼容老版本
+       */
       {
         name: 'currentUser',
         ctx: currentUser,
@@ -27,7 +30,10 @@ const useBuiltInVariables = () => {
         name: '$nDate',
         ctx: dateVars,
       },
-      // 兼容旧版本的 `$system` 变量，新版本已弃用
+      /**
+       * @deprecated
+       * 兼容旧版本的 `$system` 变量，新版本已弃用
+       */
       {
         name: '$system',
         ctx: {
@@ -36,7 +42,7 @@ const useBuiltInVariables = () => {
       },
       /**
        * @deprecated
-       * 旧版本的一个变量，新版用 `$date` 代替
+       * 旧版本的一个变量，新版用 `$nDate` 代替
        */
       {
         name: 'currentTime',
