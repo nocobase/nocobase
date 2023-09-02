@@ -1,7 +1,8 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
-import { getAuthUrl } from './actions/getAuthUrl';
+import { service } from './actions/service';
 import { authType } from '../constants';
 import { CASAuth } from './auth';
+import { login } from './actions/login';
 
 export class CasPlugin extends Plugin {
   afterAdd() {}
@@ -13,11 +14,11 @@ export class CasPlugin extends Plugin {
       auth: CASAuth,
     });
 
-    // // 注册接口
     this.app.resource({
       name: 'cas',
       actions: {
-        getAuthUrl,
+        service,
+        login,
       },
     });
 

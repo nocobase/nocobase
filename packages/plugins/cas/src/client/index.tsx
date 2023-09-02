@@ -3,8 +3,6 @@ import React from 'react';
 import { Plugin } from '@nocobase/client';
 
 import { SigninPage } from './SigninPage';
-import SignupPage from './SignupPage';
-import { useAuthTranslation } from '../locale';
 import { Options } from './Options';
 import { authType } from '../constants';
 
@@ -12,9 +10,7 @@ export function CASProvider(props) {
   return (
     <OptionsComponentProvider authType={authType} component={Options}>
       <SigninPageExtensionProvider authType={authType} component={SigninPage}>
-        <SignupPageProvider authType={authType} component={SignupPage}>
-          {props.children}
-        </SignupPageProvider>
+        {props.children}
       </SigninPageExtensionProvider>
     </OptionsComponentProvider>
   );

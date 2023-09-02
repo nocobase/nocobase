@@ -1,33 +1,41 @@
-import { Authenticator, SchemaComponent, useSignIn, useRecord, useAPIClient, useRedirect } from '@nocobase/client';
-import { ISchema } from '@formily/react';
+import { Authenticator, useAPIClient, useRedirect, useCurrentUserContext } from '@nocobase/client';
 import React, { useEffect } from 'react';
 import { LoginOutlined } from '@ant-design/icons';
-import { Button, Space } from 'antd';
-import Cookies from 'js-cookie';
+import { Button, Space, App } from 'antd';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export const SigninPage = (props: { authenticator: Authenticator }) => {
+  const { message } = App.useApp();
   const api = useAPIClient();
+  const navigate = useNavigate();
   const redirect = useRedirect();
-  const record = useRecord();
+  const location = useLocation();
+  const { refreshAsync } = useCurrentUserContext();
+
   const authenticator = props.authenticator;
-  const casUrl = authenticator.options.casUrl;
-  const loctionUrl = authenticator.options.loctionUrl;
-  // console.log('==========record===',authenticator)
-  const isCasLogin = Boolean(Cookies.get('_sop_session_'));
 
   const login = async () => {
-    Cookies.set('_sop_name_', authenticator.name);
-    Cookies.set('_sop_casUrl_', casUrl);
-    Cookies.set('_sop_loctionUrl_', loctionUrl);
-    if (!api.storage['NOCOBASE_TOKEN'] || !isCasLogin) {
-      window.location.replace(`${casUrl}/login?service=${location.origin}/api/cas:getAuthUrl`);
-      redirect();
-    }
-    if (api.storage['NOCOBASE_TOKEN']) {
-      await api.auth.signIn({ nickname: 'pages' }, authenticator.name || 's_75h40l1cjvk');
-      redirect();
-    }
+    window.location.replace(`/api/cas:login?authenticator=${authenticator.name}`);
+    redirect();
   };
+
+  useEffect(() => {
+    const usp = new URLSearchParams(location.search);
+    if (usp.get('authenticator') === authenticator.name) {
+      api.auth
+        .signIn({}, authenticator.name)
+        .then(async () => {
+          await refreshAsync();
+          redirect();
+        })
+        .catch((error) => {
+          navigate({
+            pathname: location.pathname,
+          });
+          message.error(error.message);
+        });
+    }
+  }, [location.search, authenticator.name]);
 
   return (
     <Space direction="vertical" style={{ display: 'flex' }}>

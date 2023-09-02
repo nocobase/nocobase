@@ -1,11 +1,8 @@
 import { AuthConfig, BaseAuth } from '@nocobase/auth';
 import { Model } from '@nocobase/database';
 import { AuthModel } from '@nocobase/plugin-auth';
-import jwt from 'jsonwebtoken';
-
-interface JwtPayload {
-  nickname: string;
-}
+import axios from 'axios';
+import { COOKIE_KEY_AUTHENTICATOR, COOKIE_KEY_TICKET } from '../constants';
 
 export class CASAuth extends BaseAuth {
   constructor(config: AuthConfig) {
@@ -18,26 +15,40 @@ export class CASAuth extends BaseAuth {
 
   async signOut() {
     const ctx = this.ctx;
-    ctx.cookies.set('_sop_session_', '');
-    // ctx.redirect('/signup?authType=loginOut');
+    ctx.cookies.set(COOKIE_KEY_TICKET, '');
+    ctx.cookies.set(COOKIE_KEY_AUTHENTICATOR, '');
+    await super.signOut();
   }
 
   getOptions() {
+    const opts = this.options || {};
     return {
-      callbackUrl: '',
+      ...opts,
+      serviceUrl: `${opts.serviceDomain}/api/cas:service`,
+    } as {
+      casUrl?: string;
+      serviceUrl?: string;
+      autoSignup?: boolean;
     };
+  }
+
+  serviceValidate(ticket) {
+    const { casUrl, serviceUrl } = this.getOptions();
+    const url = `${casUrl}/serviceValidate?ticket=${ticket}&service=${serviceUrl}`;
+    return axios.get(url).catch((err) => {
+      throw new Error('CSA serviceValidate error: ' + err.message);
+    });
   }
 
   async validate() {
     const ctx = this.ctx;
     let user: Model;
-    // const {
-    //   values: { nickname },
-    // } = ctx.action.params;
-    const useID = await ctx.cookies.get('_sop_session_');
-    const { nickname } = await (useID && (jwt.verify(useID, 'cas') as JwtPayload));
+    const { autoSignup } = this.getOptions();
+    const ticket = ctx.cookies.get(COOKIE_KEY_TICKET);
+    const res = ticket ? await this.serviceValidate(ticket) : null;
+    const pattern = /<(?:cas|sso):user>(.*?)<\/(?:cas|sso):user>/;
+    const nickname = res?.data.match(pattern)?.[1];
     if (nickname) {
-      // History data compatible processing
       const userRepo = this.userCollection.repository;
       user = await userRepo.findOne({
         filter: { nickname },
@@ -52,7 +63,6 @@ export class CASAuth extends BaseAuth {
       }
     }
     // New data
-    const { autoSignup } = this.authenticator.options?.public || {};
     const authenticator = this.authenticator as AuthModel;
     if (autoSignup) {
       user = await authenticator.findOrCreateUser(nickname, {
@@ -60,14 +70,6 @@ export class CASAuth extends BaseAuth {
       });
       return user;
     }
-    // user = await authenticator.findUser(nickname);
-    // if (!user) {
-    //   throw new Error(
-    //     ctx.t("The phone number is not registered, please register first", {
-    //       ns: namespace,
-    //     })
-    //   );
-    // }
     return user;
   }
 }

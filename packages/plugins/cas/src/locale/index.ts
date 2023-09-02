@@ -9,3 +9,7 @@ i18n.addResources('zh-CN', NAMESPACE, zhCN);
 export function useAuthTranslation() {
   return useTranslation(NAMESPACE);
 }
+
+export function generateNTemplate(key: string) {
+  return `{{t('${key}', { ns: '${NAMESPACE}', nsMode: 'fallback' })}}`;
+}
