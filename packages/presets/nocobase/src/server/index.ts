@@ -19,7 +19,6 @@ export class PresetNocoBase extends Plugin {
     'client',
     'export',
     'import',
-    'audit-logs',
     'duplicator',
     'iframe-block',
     'formula-field',
@@ -30,11 +29,13 @@ export class PresetNocoBase extends Plugin {
   ];
 
   localPlugins = [
+    'audit-logs',
     'sample-hello',
     'multi-app-manager',
     'multi-app-share-collection',
     'oidc',
     'saml',
+    'cas',
     'map',
     'snapshot-field',
     'graph-collection-manager',

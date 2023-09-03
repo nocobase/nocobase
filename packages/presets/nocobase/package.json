@@ -32,6 +32,7 @@
     "@nocobase/plugin-multi-app-share-collection": "0.13.0-alpha.4",
     "@nocobase/plugin-oidc": "0.13.0-alpha.4",
     "@nocobase/plugin-saml": "0.13.0-alpha.4",
+    "@nocobase/plugin-cas": "0.13.0-alpha.4",
     "@nocobase/plugin-sample-hello": "0.13.0-alpha.4",
     "@nocobase/plugin-sequence-field": "0.13.0-alpha.4",
     "@nocobase/plugin-sms-auth": "0.13.0-alpha.4",

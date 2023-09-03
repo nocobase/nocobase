@@ -297,6 +297,90 @@ describe('association field acl', () => {
     ).toBeNull();
   });
 
+  it('should not redundant fields after field set', async () => {
+    await db.getRepository('collections').create({
+      values: {
+        name: 'posts',
+      },
+      context: {},
+    });
+
+    await db.getRepository('collections.fields', 'posts').create({
+      values: {
+        name: 'title',
+        type: 'string',
+      },
+      context: {},
+    });
+
+    await db.getRepository('collections.fields', 'posts').create({
+      values: {
+        name: 'content',
+        type: 'string',
+      },
+      context: {},
+    });
+
+    await adminAgent.resource('roles.resources', 'new').create({
+      values: {
+        name: 'posts',
+        usingActionsConfig: true,
+        actions: [
+          {
+            name: 'create',
+            fields: ['content', 'title'],
+          },
+        ],
+      },
+    });
+
+    expect(
+      acl.can({
+        role: 'new',
+        resource: 'posts',
+        action: 'create',
+      }),
+    ).toMatchObject({
+      role: 'new',
+      resource: 'posts',
+      action: 'create',
+      params: {
+        whitelist: ['content', 'title'],
+      },
+    });
+
+    await adminAgent.resource('collections').setFields({
+      filterByTk: 'posts',
+      values: {
+        fields: [
+          {
+            name: 'name',
+            type: 'string',
+          },
+          {
+            name: 'content',
+            type: 'text',
+          },
+        ],
+      },
+    });
+
+    expect(
+      acl.can({
+        role: 'new',
+        resource: 'posts',
+        action: 'create',
+      }),
+    ).toMatchObject({
+      role: 'new',
+      resource: 'posts',
+      action: 'create',
+      params: {
+        whitelist: ['content', 'name'],
+      },
+    });
+  });
+
   it('should revoke association action on field deleted', async () => {
     await adminAgent.resource('roles.resources', 'new').update({
       filterByTk: 'users',

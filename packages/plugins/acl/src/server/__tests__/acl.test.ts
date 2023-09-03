@@ -386,6 +386,58 @@ describe('acl', () => {
     ).toBeNull();
   });
 
+  it('should not append createdAt field when collection has no createdAt field', async () => {
+    const role = await db.getRepository('roles').create({
+      values: {
+        name: 'new',
+        strategy: {
+          actions: ['list'],
+        },
+      },
+    });
+
+    await db.getRepository('collections').create({
+      values: {
+        name: 'c1',
+        autoGenId: false,
+        fields: [
+          { name: 'name', type: 'string', primaryKey: true },
+          { name: 'title', type: 'string' },
+        ],
+        timestamps: false,
+      },
+      context: {},
+    });
+
+    await adminAgent.resource('roles.resources', 'new').create({
+      values: {
+        name: 'c1',
+        usingActionsConfig: true,
+        actions: [
+          {
+            name: 'view',
+            fields: ['title'],
+          },
+        ],
+      },
+    });
+
+    expect(
+      acl.can({
+        role: 'new',
+        resource: 'c1',
+        action: 'view',
+      }),
+    ).toMatchObject({
+      role: 'new',
+      resource: 'c1',
+      action: 'view',
+      params: {
+        fields: ['title', 'name'],
+      },
+    });
+  });
+
   it('should works with resources actions', async () => {
     const role = await db.getRepository('roles').create({
       values: {
@@ -402,6 +454,7 @@ describe('acl', () => {
         name: 'c1',
         title: 'table1',
       },
+      context: {},
     });
 
     // create c2 collection
