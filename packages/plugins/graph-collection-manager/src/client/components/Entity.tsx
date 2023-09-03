@@ -363,7 +363,7 @@ const Entity: React.FC<{
   const { node, setTargetNode, targetGraph } = props;
   const {
     store: {
-      data: { title, name, item, attrs, select },
+      data: { title, name, item, attrs, select, actived },
     },
     id,
   } = node;
@@ -427,6 +427,7 @@ const Entity: React.FC<{
                     loadCategories,
                     useAsyncDataSource,
                     enableInherits: database?.dialect === 'postgres',
+                    actived: actived === true,
                   }}
                   components={{
                     EditOutlined,
@@ -437,6 +438,7 @@ const Entity: React.FC<{
                   }}
                   schema={{
                     type: 'object',
+                    name: uid(),
                     properties: {
                       update: {
                         type: 'void',
@@ -456,7 +458,6 @@ const Entity: React.FC<{
                           component: DeleteOutlined,
                           icon: 'DeleteOutlined',
                           className: 'btn-del',
-
                           confirm: {
                             title: "{{t('Delete record')}}",
                             getContainer: getPopupContainer,
@@ -467,6 +468,7 @@ const Entity: React.FC<{
                       },
                       connectParent: {
                         type: 'void',
+                        'x-visible': '{{actived}}',
                         'x-component': 'ConnectParentAction',
                         'x-component-props': {
                           item: collectionData.current,
@@ -478,6 +480,7 @@ const Entity: React.FC<{
                         'x-component-props': {
                           item: collectionData.current,
                         },
+                        'x-visible': '{{actived}}',
                       },
                     },
                   }}

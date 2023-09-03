@@ -556,6 +556,10 @@ export const GraphDrawPage = React.memo(() => {
       e.stopPropagation();
       handleEdgeUnActive(targetEdge);
     });
+    targetGraph.on('node:mouseleave', ({ e, node }) => {
+      e.stopPropagation();
+      node.setProp({ actived: false });
+    });
     targetGraph.on('node:moved', ({ e, node }) => {
       e.stopPropagation();
       const connectEdges = targetGraph.getConnectedEdges(node);
@@ -577,9 +581,13 @@ export const GraphDrawPage = React.memo(() => {
         optimizeEdge(edge);
       });
     });
-    targetGraph.on('cell:mouseenter', ({ e, cell, edge }) => {
+    targetGraph.on('cell:mouseenter', ({ e, cell, edge, node }) => {
       e.stopPropagation();
       cell.toFront();
+      if (node) {
+        cell.setProp({ actived: true });
+      }
+
       if (edge) {
         handleEdgeActive(edge);
       }
