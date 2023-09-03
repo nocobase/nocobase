@@ -48,7 +48,9 @@ const CascadeSelect = connect((props) => {
   const field: any = useField();
   useEffect(() => {
     if (props.value) {
-      const values = transformNestedData(props.value);
+      const values = Array.isArray(props.value)
+        ? extractLastNonNullValueObjects(props.value?.filter((v) => v.value), true)
+        : transformNestedData(props.value);
       const options = values?.map?.((v) => {
         return {
           key: v.parentId,
@@ -238,7 +240,6 @@ export const InternalCascadeSelect = observer(
         selectForm.removeEffects(id);
       };
     }, []);
-
     const schema = {
       type: 'object',
       properties: {
@@ -301,7 +302,7 @@ export const InternalCascadeSelect = observer(
   { displayName: 'InternalCascadeSelect' },
 );
 
-function extractLastNonNullValueObjects(data) {
+function extractLastNonNullValueObjects(data, flag?) {
   let result = [];
   if (!Array.isArray(data)) {
     return data;
@@ -325,7 +326,11 @@ function extractLastNonNullValueObjects(data) {
         lastNonNullValue = null;
       }
       if (lastNonNullValue) {
-        result = lastNonNullValue;
+        if (flag) {
+          result?.push?.(lastNonNullValue);
+        } else {
+          result = lastNonNullValue;
+        }
       } else {
         result?.push?.(sublist);
       }
