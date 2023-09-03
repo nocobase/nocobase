@@ -2,7 +2,7 @@ import _, { every, findIndex, some } from 'lodash';
 import { VariableOption, VariablesContextType } from '../../../variables/types';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { transformVariableValue } from '../../../variables/utils/transformVariableValue';
-import jsonLogic from '../../common/utils/logic';
+import { getJsonLogic } from '../../common/utils/logic';
 
 type VariablesCtx = {
   /** 当前登录的用户 */
@@ -102,6 +102,7 @@ export const conditionAnalyses = async ({
       : [jsonlogic?.value, variables.parseVariable(targetVariableName, localVariables)];
 
     try {
+      const jsonLogic = getJsonLogic();
       const [value, targetValue] = await Promise.all(parsingResult);
       const targetCollectionFiled = await variables.getCollectionField(targetVariableName, localVariables);
       return jsonLogic.apply({

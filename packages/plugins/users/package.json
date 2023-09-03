@@ -4,7 +4,7 @@
   "displayName.zh-CN": "用户",
   "description": "Provide a basic user model and a password-based user authentication type, and extended the createdBy and updatedBy field types",
   "description.zh-CN": "提供了基础的用户模型和基于密码的用户认证方式，并拓展了创建人和最后更新人字段类型",
-  "version": "0.13.0-alpha.4",
+  "version": "0.13.0-alpha.5",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "devDependencies": {

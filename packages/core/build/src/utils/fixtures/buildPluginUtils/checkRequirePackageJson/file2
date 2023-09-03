@@ -1,3 +1,0 @@
-
-
-const namespace = require('../../../package.json').name;

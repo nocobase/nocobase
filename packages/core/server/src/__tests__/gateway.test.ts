@@ -253,6 +253,31 @@ describe('gateway', () => {
       });
     });
 
+    it('should receive refresh true when app installed', async () => {
+      await connectClient(port);
+      const app = new Application({
+        database: {
+          dialect: 'sqlite',
+          storage: ':memory:',
+        },
+      });
+
+      await waitSecond();
+
+      await app.runCommand('start');
+      await app.runCommand('install');
+
+      await waitSecond();
+
+      expect(getLastMessage()).toMatchObject({
+        type: 'maintaining',
+        payload: {
+          code: 'APP_RUNNING',
+          refresh: true,
+        },
+      });
+    });
+
     it('should receive app running message when command end', async () => {
       await connectClient(port);
       const app = new Application({

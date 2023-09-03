@@ -2,6 +2,7 @@ import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import { Mutex } from 'async-mutex';
 import { EventEmitter } from 'events';
 import Application, { ApplicationOptions, MaintainingCommandStatus } from './application';
+import { getErrorLevel } from './errors/handler';
 
 type BootOptions = {
   appName: string;
@@ -90,7 +91,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     AppSupervisor.instance = null;
   }
 
-  setAppStatus(appName: string, status: AppStatus) {
+  setAppStatus(appName: string, status: AppStatus, options = {}) {
     if (this.appStatus[appName] === status) {
       return;
     }
@@ -100,6 +101,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     this.emit('appStatusChanged', {
       appName,
       status,
+      options,
     });
   }
 
@@ -257,8 +259,18 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
       });
     });
 
-    app.on('__started', async () => {
-      this.setAppStatus(app.name, 'running');
+    app.on('__started', async (_app, options) => {
+      const { maintainingStatus } = options;
+      if (
+        maintainingStatus &&
+        ['install', 'upgrade', 'pm.enable', 'pm.disable'].includes(maintainingStatus.command.name)
+      ) {
+        this.setAppStatus(app.name, 'running', {
+          refresh: true,
+        });
+      } else {
+        this.setAppStatus(app.name, 'running');
+      }
     });
 
     app.on('afterStop', async () => {
@@ -266,7 +278,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     });
 
     app.on('maintaining', (maintainingStatus: MaintainingCommandStatus) => {
-      const { status } = maintainingStatus;
+      const { status, command } = maintainingStatus;
 
       switch (status) {
         case 'command_begin':
@@ -294,8 +306,22 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
           break;
         case 'command_error':
           {
-            this.setAppError(app.name, maintainingStatus.error);
-            this.setAppStatus(app.name, 'error');
+            const errorLevel = getErrorLevel(maintainingStatus.error);
+
+            if (errorLevel === 'fatal') {
+              this.setAppError(app.name, maintainingStatus.error);
+              this.setAppStatus(app.name, 'error');
+              break;
+            }
+
+            if (errorLevel === 'warn') {
+              this.emit('appError', {
+                appName: app.name,
+                error: maintainingStatus.error,
+              });
+            }
+
+            this.setAppStatus(app.name, this.statusBeforeCommanding[app.name]);
           }
           break;
       }
