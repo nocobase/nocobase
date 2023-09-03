@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/build",
-  "version": "0.13.0-alpha.4",
+  "version": "0.13.0-alpha.5",
   "description": "Library build tool based on rollup.",
   "main": "lib/index.js",
   "bin": {
@@ -8,33 +8,31 @@
   },
   "typings": "./index.d.ts",
   "dependencies": {
+    "@babel/core": "7.22.10",
+    "@babel/plugin-transform-modules-amd": "7.22.5",
+    "@babel/preset-env": "7.22.10",
     "@hapi/topo": "^6.0.0",
     "@lerna/project": "4.0.0",
+    "@types/gulp": "^4.0.13",
+    "@types/lerna__package": "5.1.0",
+    "@types/lerna__project": "5.1.0",
     "@vercel/ncc": "0.36.1",
     "chalk": "2.4.2",
     "fast-glob": "3.3.0",
     "glob": "^7.1.4",
     "gulp": "4.0.2",
-    "@types/gulp": "^4.0.13",
     "gulp-typescript": "6.0.0-alpha.1",
     "pkg-up": "3.1.0",
     "tsup": "7.2.0",
     "typescript": "5.1.3",
     "update-notifier": "3.0.0",
-    "vite-plugin-lib-inject-css": "1.2.0",
     "vite-plugin-css-injected-by-js": "^3.2.1",
-    "yargs-parser": "13.1.2",
-    "@types/lerna__project": "5.1.0",
-    "@types/lerna__package": "5.1.0",
-    "@babel/core": "7.22.10",
-    "@babel/preset-env": "7.22.10",
-    "@babel/plugin-transform-modules-amd": "7.22.5"
+    "vite-plugin-lib-inject-css": "1.2.0",
+    "yargs-parser": "13.1.2"
   },
   "license": "Apache-2.0",
   "scripts": {
     "build": "tsup"
-  },
-  "devDependencies": {
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
 }

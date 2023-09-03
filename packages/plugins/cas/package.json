@@ -4,19 +4,19 @@
   "displayName.zh-CN": "SSO 登录 - CAS",
   "description": "Unified identity authentication.",
   "description.zh-CN": "提供CAS登录功能",
-  "version": "0.13.0-alpha.4",
+  "version": "0.13.0-alpha.5",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
-  "devDependencies": {
-    "@nocobase/actions": "0.13.0-alpha.4",
-    "@nocobase/client": "0.13.0-alpha.4",
-    "@nocobase/database": "0.13.0-alpha.4",
-    "@nocobase/server": "0.13.0-alpha.4",
-    "@nocobase/test": "0.13.0-alpha.4"
+  "peerDependencies": {
+    "@nocobase/actions": "0.x",
+    "@nocobase/client": "0.x",
+    "@nocobase/database": "0.x",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x"
   },
-  "dependencies": {
+  "devDependencies": {
+    "@ant-design/icons": "5.x",
     "antd": "5.x",
-    "@ant-design/icons": "^5.1.4",
-    "react-router-dom": "^6.11.2"
+    "react-router-dom": "6.x"
   }
 }
