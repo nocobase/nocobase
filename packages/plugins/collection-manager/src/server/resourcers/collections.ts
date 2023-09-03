@@ -111,6 +111,9 @@ export default {
     });
     return defaultActions.list(ctx, async () => {
       const collections = (ctx.body || []).map((collection: any) => {
+        if (!collection.fields) {
+          return collection;
+        }
         const resource = role.getResource(collection.name);
         if (!resource) {
           return collection;

@@ -1,6 +1,7 @@
-import { Database } from '@nocobase/database';
-import { MockServer } from '@nocobase/test';
+import { Database, Repository } from '@nocobase/database';
+import { MockServer, mockServer } from '@nocobase/test';
 import { createApp } from '.';
+import Plugin from '../';
 
 describe('action test', () => {
   let db: Database;
@@ -51,5 +52,101 @@ describe('action test', () => {
     expect(data[0].uiSchema).toMatchObject({
       'x-uid': 'test',
     });
+  });
+});
+
+describe('collection list by role', () => {
+  let app: MockServer;
+  let db: Database;
+  let repo: Repository;
+  let adminAgent: any;
+
+  beforeAll(async () => {
+    app = mockServer({
+      plugins: ['acl', 'users', 'error-handler', 'auth'],
+    });
+    app.plugin(Plugin);
+    await app.loadAndInstall({ clean: true });
+    db = app.db;
+    repo = db.getRepository('rolesResources');
+
+    const userRepo = db.getRepository('users');
+    const admin = await userRepo.create({
+      values: {
+        roles: ['admin'],
+      },
+    });
+    adminAgent = app.agent().login(admin);
+  });
+
+  afterEach(async () => {
+    await repo.destroy({ truncate: true });
+  });
+
+  it('should list collections by role', async () => {
+    await repo.create({
+      values: {
+        name: 'users',
+        roleName: 'admin',
+        usingActionsConfig: true,
+      },
+    });
+    await repo.update({
+      filter: {
+        name: 'users',
+        roleName: 'admin',
+      },
+      values: {
+        actions: [],
+      },
+    });
+
+    const res = await adminAgent
+      .get('/collections:listByRole?paginate=false&appends[]=fields')
+      .set({
+        'X-Role': 'admin',
+      })
+      .send();
+    expect(res.statusCode).toBe(200);
+    expect(res.body.data).toBeDefined();
+    const users = res.body.data.find((item: any) => item.name === 'users');
+    expect(users).toBeUndefined();
+  });
+
+  it('should list collections and fields by role', async () => {
+    await repo.create({
+      values: {
+        name: 'users',
+        roleName: 'admin',
+        usingActionsConfig: true,
+      },
+    });
+    await repo.update({
+      filter: {
+        name: 'users',
+        roleName: 'admin',
+      },
+      values: {
+        actions: [
+          {
+            name: 'view',
+            fields: ['id', 'username', 'roles'],
+          },
+        ],
+      },
+    });
+
+    const res = await adminAgent
+      .get('/collections:listByRole?paginate=false&appends[]=fields')
+      .set({
+        'X-Role': 'admin',
+      })
+      .send();
+    expect(res.statusCode).toBe(200);
+    expect(res.body.data).toBeDefined();
+    const users = res.body.data.find((item: any) => item.name === 'users');
+    expect(users).toBeDefined();
+    expect(users.fields).toBeDefined();
+    expect(users.fields.length).toBe(3);
   });
 });
