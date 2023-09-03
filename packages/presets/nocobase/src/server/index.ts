@@ -19,7 +19,6 @@ export class PresetNocoBase extends Plugin {
     'client',
     'export',
     'import',
-    'audit-logs',
     'duplicator',
     'iframe-block',
     'formula-field',
@@ -30,11 +29,13 @@ export class PresetNocoBase extends Plugin {
   ];
 
   localPlugins = [
+    'audit-logs',
     'sample-hello',
     'multi-app-manager',
     'multi-app-share-collection',
     'oidc',
     'saml',
+    'cas',
     'map',
     'snapshot-field',
     'graph-collection-manager',
@@ -69,6 +70,9 @@ export class PresetNocoBase extends Plugin {
         plugin: this,
       },
     });
+    this.app.on('beforeUpgrade', async () => {
+      await this.createIfNotExist();
+    });
   }
 
   get allPlugins() {
@@ -77,6 +81,14 @@ export class PresetNocoBase extends Plugin {
         return { name, enabled: true, builtIn: true } as any;
       })
       .concat(this.localPlugins.map((name) => ({ name })));
+  }
+
+  async createIfNotExist() {
+    const repository = this.app.db.getRepository<any>('applicationPlugins');
+    const existPlugins = await repository.find();
+    const existPluginNames = existPlugins.map((item) => item.name);
+    const plugins = this.allPlugins.filter((item) => !existPluginNames.includes(item.name));
+    await repository.create({ values: plugins });
   }
 
   async install() {

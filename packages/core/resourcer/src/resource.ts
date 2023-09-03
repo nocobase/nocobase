@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import Action, { ActionName, ActionType } from './action';
 import Middleware, { MiddlewareType } from './middleware';
-import Resourcer from './resourcer';
+import { Resourcer } from './resourcer';
 
 export type ResourceType = 'single' | 'hasOne' | 'hasMany' | 'belongsTo' | 'belongsToMany';
 

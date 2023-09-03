@@ -1,6 +1,6 @@
 import React from 'react';
 import { useCompile } from '../../schema-component';
-import { useFilterOptions } from '../../schema-component/antd/filter';
+import { useGetFilterOptions } from '../../schema-component/antd/filter';
 import { useValues } from '../../schema-component/antd/filter/useValues';
 import { Variable } from '../../schema-component/antd/variable';
 
@@ -8,31 +8,36 @@ interface GetOptionsParams {
   schema: any;
   operator: string;
   maxDepth: number;
+  getFilterOptions: (collectionName: string) => any[];
   count?: number;
 }
 
-const useOptions = (collectionName: string, { schema, operator, maxDepth, count = 1 }: GetOptionsParams) => {
+const getOptions = (
+  collectionName: string,
+  { schema, operator, maxDepth, getFilterOptions, count = 1 }: GetOptionsParams,
+) => {
   if (count > maxDepth) {
     return [];
   }
 
-  const result = useFilterOptions(collectionName).map((option) => {
+  const result = getFilterOptions(collectionName).map((option) => {
     if ((option.type !== 'belongsTo' && option.type !== 'hasOne') || !option.target) {
       return {
         key: option.name,
         value: option.name,
         label: option.title,
         // TODO: 现在是通过组件的名称来过滤能够被选择的选项，这样的坏处是不够精确，后续可以优化
-        disabled: schema?.['x-component'] !== option.schema['x-component'],
+        disabled: schema?.['x-component'] !== option.schema?.['x-component'],
       };
     }
 
     const children =
-      useOptions(option.target, {
+      getOptions(option.target, {
         schema,
         operator,
         maxDepth,
         count: count + 1,
+        getFilterOptions,
       }) || [];
 
     return {
@@ -48,7 +53,8 @@ const useOptions = (collectionName: string, { schema, operator, maxDepth, count 
 };
 
 const useUserVariable = ({ schema, operator }) => {
-  const options = useOptions('users', { schema, operator, maxDepth: 1 }) || [];
+  const getFilterOptions = useGetFilterOptions();
+  const options = getOptions('users', { schema, operator, maxDepth: 1, getFilterOptions }) || [];
 
   return {
     label: `{{t("Current user")}}`,

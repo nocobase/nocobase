@@ -1,6 +1,5 @@
 import { merge } from '@formily/shared';
-import { useSetState } from 'ahooks';
-import { default as useReq } from 'ahooks/es/useRequest';
+import { useRequest as useReq, useSetState } from 'ahooks';
 import { Options } from 'ahooks/es/useRequest/src/types';
 import { AxiosRequestConfig } from 'axios';
 import cloneDeep from 'lodash/cloneDeep';

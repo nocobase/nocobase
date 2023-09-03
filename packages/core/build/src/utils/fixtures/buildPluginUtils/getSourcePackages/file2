@@ -1,7 +1,0 @@
-const dayjs = require("dayjs");
-import bar from './file1'
-
-function foo() {
-  const lang = 'zh-cn'
-  const res = require(`antd/locale/${lang}`)
-}

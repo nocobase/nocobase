@@ -54,7 +54,7 @@ describe('actions', () => {
       },
     });
 
-    role = await ((db.getRepository('users.roles', user.id) as unknown) as Repository).findOne({
+    role = await (db.getRepository('users.roles', user.id) as unknown as Repository).findOne({
       where: {
         default: true,
       },
