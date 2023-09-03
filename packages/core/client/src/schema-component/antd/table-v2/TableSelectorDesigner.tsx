@@ -4,16 +4,18 @@ import { cloneDeep } from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTableSelectorContext } from '../../../block-provider';
-import { useCollection } from '../../../collection-manager';
+import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { useCollectionFilterOptions, useSortFields } from '../../../collection-manager/action-hooks';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
 import { FilterDynamicComponent } from './FilterDynamicComponent';
+import { recursiveParent } from '../../../block-provider/TableSelectorProvider';
 
 export const TableSelectorDesigner = () => {
   const { name, title } = useCollection();
+  const { getCollectionJoinField } = useCollectionManager();
   const field = useField();
   const fieldSchema = useFieldSchema();
   const dataSource = useCollectionFilterOptions(name);
@@ -23,6 +25,8 @@ export const TableSelectorDesigner = () => {
   const { dn } = useDesignable();
   const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
+  const collectionFieldSchema = recursiveParent(fieldSchema, 'CollectionField');
+  const collectionField = getCollectionJoinField(collectionFieldSchema?.['x-collection-field']);
   const sort = defaultSort?.map((item: string) => {
     return item.startsWith('-')
       ? {
@@ -83,7 +87,7 @@ export const TableSelectorDesigner = () => {
           });
         }}
       />
-      {collection?.tree && (
+      {collection?.tree && collectionField?.target === collectionField?.collectionName && (
         <SchemaSettings.SwitchItem
           title={t('Tree table')}
           defaultChecked={true}

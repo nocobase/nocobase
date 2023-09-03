@@ -76,14 +76,6 @@ export class ACL extends EventEmitter {
             whitelist: ctx.params.fields,
           };
         }
-
-        if (actionName === 'view' && ctx.params.fields) {
-          const appendFields = ['id', 'createdAt', 'updatedAt'];
-          ctx.params = {
-            ...lodash.omit(ctx.params, 'fields'),
-            fields: [...ctx.params.fields, ...appendFields],
-          };
-        }
       }
     });
 

@@ -50,7 +50,7 @@ const collection = {
     {
       type: 'boolean',
       name: 'enabled',
-      interface: 'radio',
+      interface: 'radioGroup',
       uiSchema: {
         title: `{{t("Status", { ns: "${NAMESPACE}" })}}`,
         type: 'string',
@@ -159,6 +159,20 @@ export const workflowSchema: ISchema = {
             },
           },
           properties: {
+            filter: {
+              type: 'void',
+              title: '{{ t("Filter") }}',
+              default: {
+                $and: [{ title: { $includes: '' } }],
+              },
+              'x-action': 'filter',
+              'x-component': 'Filter.Action',
+              'x-component-props': {
+                icon: 'FilterOutlined',
+                useProps: '{{ cm.useFilterActionProps }}',
+              },
+              'x-align': 'left',
+            },
             create: {
               type: 'void',
               title: '{{t("Add new")}}',

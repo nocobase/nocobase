@@ -9,18 +9,21 @@ export default {
       get: {
         tags: ['workflows'],
         description: '',
-        parameters: [],
+        parameters: [
+          {
+            $ref: '#/components/schemas/workflow/filter',
+          },
+        ],
         responses: {
           200: {
             description: 'OK',
             content: {
               'application/json': {
                 schema: {
-                  allOf: [
-                    {
-                      $ref: '#/components/schemas/workflow',
-                    },
-                  ],
+                  type: 'array',
+                  items: {
+                    $ref: '#/components/schemas/workflow/model',
+                  },
                 },
               },
             },
@@ -32,7 +35,14 @@ export default {
       get: {
         tags: ['workflows'],
         description: 'Get single workflow',
-        parameters: [],
+        parameters: [
+          {
+            $ref: '#/components/schemas/workflow/filterByTk',
+          },
+          {
+            $ref: '#/components/schemas/workflow/filter',
+          },
+        ],
         responses: {
           200: {
             description: 'OK',
@@ -41,7 +51,7 @@ export default {
                 schema: {
                   allOf: [
                     {
-                      $ref: '#/components/schemas/workflow',
+                      $ref: '#/components/schemas/workflow/model',
                     },
                     {
                       type: 'object',
@@ -74,13 +84,13 @@ export default {
                 type: 'object',
                 properties: {
                   title: {
-                    $ref: '#/components/schemas/workflow/properties/title',
+                    $ref: '#/components/schemas/workflow/model/properties/title',
                   },
                   type: {
-                    $ref: '#/components/schemas/workflow/properties/type',
+                    $ref: '#/components/schemas/workflow/model/properties/type',
                   },
                   description: {
-                    $ref: '#/components/schemas/workflow/properties/description',
+                    $ref: '#/components/schemas/workflow/model/properties/description',
                   },
                 },
               },
@@ -117,16 +127,16 @@ export default {
                 type: 'object',
                 properties: {
                   title: {
-                    $ref: '#/components/schemas/workflow/properties/title',
+                    $ref: '#/components/schemas/workflow/model/properties/title',
                   },
                   enabled: {
-                    $ref: '#/components/schemas/workflow/properties/enabled',
+                    $ref: '#/components/schemas/workflow/model/properties/enabled',
                   },
                   description: {
-                    $ref: '#/components/schemas/workflow/properties/description',
+                    $ref: '#/components/schemas/workflow/model/properties/description',
                   },
                   config: {
-                    $ref: '#/components/schemas/workflow/properties/config',
+                    $ref: '#/components/schemas/workflow/model/properties/config',
                   },
                 },
               },
@@ -222,7 +232,7 @@ export default {
             name: 'triggerWorkflows',
             in: 'query',
             description:
-              'A combined string to describe workflows to trigger and context data to use. e.g. `?triggerWorkflows=1,2!category`',
+              'A combined string to describe workflows to trigger and context data to use. e.g. `?triggerWorkflows=1,2!category`. Each comma separated part is a trigger pair,  as `1` and `2!category`. The number part is the ID of workflow, exclamation means the path of association to use in form data. If ignored, will trigger with the full form data object.',
             schema: {
               type: 'string',
             },
@@ -512,60 +522,105 @@ export default {
   components: {
     schemas: {
       workflow: {
-        type: 'object',
-        description: 'Workflow',
-        properties: {
-          id: {
+        model: {
+          type: 'object',
+          description: 'Workflow',
+          properties: {
+            id: {
+              type: 'integer',
+              description: 'ID',
+            },
+            key: {
+              type: 'string',
+              description: 'Key. Variant versions of the same workflow share the same key.',
+            },
+            title: {
+              type: 'string',
+              description: 'Title',
+            },
+            description: {
+              type: 'string',
+              description: 'Description',
+            },
+            current: {
+              type: 'boolean',
+              description: 'Current version',
+            },
+            enabled: {
+              type: 'boolean',
+              description: 'Enabled',
+            },
+            type: {
+              type: 'string',
+              description: 'Event type',
+            },
+            config: {
+              type: 'object',
+              description: 'Configuration JSON object',
+            },
+            nodes: {
+              type: 'array',
+              description: 'Workflow nodes',
+            },
+            executions: {
+              type: 'array',
+              description: 'Executions',
+            },
+            revisions: {
+              type: 'array',
+              description: 'Revisions',
+            },
+            executed: {
+              type: 'integer',
+              description: 'Executed count for a single version',
+            },
+            allExecuted: {
+              type: 'integer',
+              description: 'Executed count for all versions of the same workflow',
+            },
+          },
+        },
+        filterByTk: {
+          name: 'filterByTk',
+          in: 'query',
+          description: 'Primary key of a record',
+          schema: {
             type: 'integer',
             description: 'ID',
           },
-          key: {
-            type: 'string',
-            description: 'Key. Variant versions of the same workflow share the same key.',
-          },
-          title: {
-            type: 'string',
-            description: 'Title',
-          },
-          description: {
-            type: 'string',
-            description: 'Description',
-          },
-          current: {
-            type: 'boolean',
-            description: 'Current version',
-          },
-          enabled: {
-            type: 'boolean',
-            description: 'Enabled',
-          },
-          type: {
-            type: 'string',
-            description: 'Event type',
-          },
-          config: {
+        },
+        filter: {
+          name: 'filter',
+          in: 'query',
+          description: 'Filter parameters in JSON format',
+          schema: {
             type: 'object',
-            description: 'Configuration JSON object',
-          },
-          nodes: {
-            type: 'array',
-            description: 'Workflow nodes',
-          },
-          executions: {
-            type: 'array',
-            description: 'Executions',
-          },
-          revisions: {
-            type: 'array',
-            description: 'Revisions',
-          },
-          executed: {
-            type: 'integer',
-            description: 'Executed count for a single version',
-          },
-          allExecuted: {
-            type: 'integer',
-            description: 'Executed count for all versions of the same workflow',
+            properties: {
+              id: {
+                $ref: '#/components/schemas/workflow/model/properties/id',
+              },
+              title: {
+                $ref: '#/components/schemas/workflow/model/properties/title',
+              },
+              type: {
+                $ref: '#/components/schemas/workflow/model/properties/type',
+              },
+              enabled: {
+                $ref: '#/components/schemas/workflow/model/properties/enabled',
+              },
+              current: {
+                $ref: '#/components/schemas/workflow/model/properties/current',
+              },
+              key: {
+                $ref: '#/components/schemas/workflow/model/properties/key',
+              },
+              executed: {
+                $ref: '#/components/schemas/workflow/model/properties/executed',
+              },
+              allExecuted: {
+                $ref: '#/components/schemas/workflow/model/properties/allExecuted',
+              },
+            },
           },
         },
       },

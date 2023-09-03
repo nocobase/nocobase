@@ -1,7 +1,7 @@
 import net from 'net';
 import fs from 'fs';
-import { Gateway } from '../gateway';
 import { AppSupervisor } from '../app-supervisor';
+import { writeJSON } from './ipc-socket-client';
 
 export class IPCSocketServer {
   socketServer: net.Server;
@@ -34,7 +34,20 @@ export class IPCSocketServer {
 
           const dataObj = JSON.parse(message);
 
-          IPCSocketServer.handleClientMessage(dataObj);
+          IPCSocketServer.handleClientMessage(dataObj)
+            .then(() => {
+              writeJSON(c, {
+                type: 'success',
+              });
+            })
+            .catch((err) => {
+              writeJSON(c, {
+                type: 'error',
+                payload: {
+                  message: err.message,
+                },
+              });
+            });
         }
       });
     });
@@ -53,8 +66,14 @@ export class IPCSocketServer {
       const argv = payload.argv;
 
       const mainApp = await AppSupervisor.getInstance().getApp('main');
-      mainApp.runAsCLI(argv);
+
+      return mainApp.runAsCLI(argv, {
+        from: 'node',
+        throwError: true,
+      });
     }
+
+    throw new Error(`Unknown message type ${type}`);
   }
 
   close() {

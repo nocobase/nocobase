@@ -129,12 +129,12 @@ export class Gateway extends EventEmitter {
         public: resolve(process.cwd(), 'node_modules'),
         rewrites: [
           {
-            source: '/api/plugins/client/:plugin/index.js',
-            destination: '/:plugin/dist/client/index.js',
+            source: '/api/plugins/client/:plugin/:file',
+            destination: '/:plugin/dist/client/:file',
           },
           {
-            source: '/api/plugins/client/@:org/:plugin/index.js',
-            destination: '/@:org/:plugin/dist/client/index.js',
+            source: '/api/plugins/client/@:org/:plugin/:file',
+            destination: '/@:org/:plugin/dist/client/:file',
           },
         ],
       });
@@ -207,7 +207,8 @@ export class Gateway extends EventEmitter {
       const ipcClient = await this.tryConnectToIPCServer();
 
       if (ipcClient) {
-        ipcClient.write({ type: 'passCliArgv', payload: { argv: process.argv } });
+        await ipcClient.write({ type: 'passCliArgv', payload: { argv: process.argv } });
+        // should wait for server response
         ipcClient.close();
         return;
       }

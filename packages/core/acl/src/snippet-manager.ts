@@ -1,4 +1,3 @@
-import { ACL } from './acl';
 import minimatch from 'minimatch';
 
 export type SnippetOptions = {
@@ -7,7 +6,10 @@ export type SnippetOptions = {
 };
 
 class Snippet {
-  constructor(public name: string, public actions: Array<string>) {}
+  constructor(
+    public name: string,
+    public actions: Array<string>,
+  ) {}
 }
 
 export type SnippetGroup = {
