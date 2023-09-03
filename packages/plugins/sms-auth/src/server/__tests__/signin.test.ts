@@ -5,7 +5,10 @@ import VerificationPlugin from '@nocobase/plugin-verification';
 import { authType } from '../../constants';
 
 class Provider {
-  constructor(protected plugin: VerificationPlugin, protected options) {}
+  constructor(
+    protected plugin: VerificationPlugin,
+    protected options,
+  ) {}
 
   async send(receiver: string, data: { [key: string]: any }): Promise<any> {}
 }
