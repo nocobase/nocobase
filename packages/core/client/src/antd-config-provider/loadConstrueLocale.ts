@@ -1,7 +1,7 @@
 import cronstrue from 'cronstrue';
 
 class CronstrueLocale {
-  constructor(protected data: any) {}
+  constructor(protected data: any) { }
   atX0SecondsPastTheMinuteGt20(): string | null {
     return this.data['atX0SecondsPastTheMinuteGt20'];
   }
@@ -164,7 +164,9 @@ class CronstrueLocale {
 }
 
 export const loadConstrueLocale = (data) => {
-  cronstrue.initialize({
+  // vite bug: https://github.com/vitejs/vite/issues/2139
+  const cronstrueVal = (cronstrue as any).default ? (cronstrue as any).default : cronstrue;
+  cronstrueVal.initialize({
     load(availableLocales) {
       availableLocales[data?.lang] = new CronstrueLocale(data?.cronstrue);
     },

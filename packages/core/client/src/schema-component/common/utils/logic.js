@@ -3,15 +3,7 @@
 Using a Universal Module Loader that should be browser, require, and AMD friendly
 http://ricostacruz.com/cheatsheets/umdjs.html
 */
-(function (root, factory) {
-  if (typeof define === 'function' && define.amd) {
-    define(factory);
-  } else if (typeof exports === 'object') {
-    module.exports = factory();
-  } else {
-    root.jsonLogic = factory();
-  }
-})(this, function () {
+export function getJsonLogic() {
   'use strict';
   /* globals console:false */
 
@@ -320,7 +312,7 @@ http://ricostacruz.com/cheatsheets/umdjs.html
 
   /*
     This helper will defer to the JsonLogic spec as a tie-breaker when different language interpreters define different behavior for the truthiness of primitives.  E.g., PHP considers empty arrays to be falsy, but Javascript considers them to be truthy. JsonLogic, as an ecosystem, needs one consistent answer.
-  
+
     Spec and rationale here: http://jsonlogic.com/truthy
     */
   jsonLogic.truthy = function (value) {
@@ -370,7 +362,7 @@ http://ricostacruz.com/cheatsheets/umdjs.html
         if( 0 ){ 1 }else{ 2 };
         if( 0 ){ 1 }else if( 2 ){ 3 }else{ 4 };
         if( 0 ){ 1 }else if( 2 ){ 3 }else if( 4 ){ 5 }else{ 6 };
-  
+
         The implementation is:
         For pairs of values (0,1 then 2,3 then 4,5 etc)
         If the first evaluates truthy, evaluate and return the second
@@ -600,4 +592,4 @@ http://ricostacruz.com/cheatsheets/umdjs.html
   };
 
   return jsonLogic;
-});
+}

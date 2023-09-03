@@ -3,6 +3,7 @@
 const dotenv = require('dotenv');
 const { resolve } = require('path');
 const { existsSync } = require('fs');
+const chalk = require('chalk');
 
 const env = {
   APP_ENV: 'development',
@@ -33,6 +34,11 @@ for (const key in env) {
   if (!process.env[key]) {
     process.env[key] = env[key];
   }
+}
+
+if (require('semver').satisfies(process.version, '<16')) {
+  console.error(chalk.red('[nocobase cli]: Node.js version must be >= 16'));
+  process.exit(1);
 }
 
 if (require('semver').satisfies(process.version, '>16') && !process.env.UNSET_NODE_OPTIONS) {
