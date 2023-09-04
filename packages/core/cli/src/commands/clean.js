@@ -10,11 +10,11 @@ module.exports = (cli) => {
   cli
     .command('clean')
     .allowUnknownOption()
-    .action(async () => {
+    .action(() => {
       if (!isDev()) {
         return;
       }
-      await run('rimraf', ['-rf', './storage/app-dev']);
-      await run('rimraf', ['-rf', 'packages/*/*/{lib,esm,es,dist,node_modules}']);
+      run('rimraf', ['-rf', './storage/app-dev']);
+      run('rimraf', ['-rf', 'packages/*/*/{lib,esm,es,dist,node_modules}']);
     });
 };
