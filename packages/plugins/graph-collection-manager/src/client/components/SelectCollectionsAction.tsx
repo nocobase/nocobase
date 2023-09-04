@@ -10,7 +10,7 @@ export const SelectCollectionsAction = (props) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const initCollections = searchParams.get('collections');
   const selectKeys = initCollections?.split(',');
-  const data = selectKeys.filter((v) => collectionList.find((k) => k.name === v));
+  const data = selectKeys?.filter((v) => collectionList.find((k) => k.name === v));
   const collectionOptions = useMemo(() => {
     return collectionList.map((v) => {
       return {
