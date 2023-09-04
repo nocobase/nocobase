@@ -1,18 +1,30 @@
 import Application from '../application';
+import console from './console';
+import dbAuth from './db-auth';
+import dbClean from './db-clean';
+import dbSync from './db-sync';
+import destroy from './destroy';
+import install from './install';
+import migrator from './migrator';
+import pm from './pm';
+import restart from './restart';
+import start from './start';
+import stop from './stop';
+import upgrade from './upgrade';
 
 export function registerCli(app: Application) {
-  require('./console').default(app);
-  require('./db-auth').default(app);
-  require('./db-clean').default(app);
-  require('./db-sync').default(app);
-  require('./install').default(app);
-  require('./migrator').default(app);
-  require('./start').default(app);
-  require('./restart').default(app);
-  require('./stop').default(app);
-  require('./destroy').default(app);
-  require('./upgrade').default(app);
-  require('./pm').default(app);
+  console(app);
+  dbAuth(app);
+  dbClean(app);
+  dbSync(app);
+  install(app);
+  migrator(app);
+  start(app);
+  upgrade(app);
+  pm(app);
+  restart(app);
+  stop(app);
+  destroy(app);
 
   // development only with @nocobase/cli
   app.command('build').argument('[packages...]');

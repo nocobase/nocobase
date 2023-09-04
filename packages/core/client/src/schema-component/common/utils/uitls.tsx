@@ -4,7 +4,7 @@ import _, { every, findIndex, isArray, some } from 'lodash';
 import { useMemo } from 'react';
 import { useTableBlockContext } from '../../../block-provider';
 import { useCurrentUserContext } from '../../../user';
-import jsonLogic from '../../common/utils/logic';
+import { getJsonLogic } from '../../common/utils/logic';
 
 type VariablesCtx = {
   /** 当前登录的用户 */
@@ -152,6 +152,8 @@ export const conditionAnalyse = (rules, scope) => {
     }
     try {
       const isArrayField = isArray(values[targetField[0]]);
+      const jsonLogic = getJsonLogic();
+
       if (isArrayField && targetField.length > 1) {
         //对多关系字段比较
         const currentValue = getFieldValue(targetField, values);

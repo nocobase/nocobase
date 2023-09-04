@@ -1,6 +1,6 @@
 import cors from '@koa/cors';
 import Database from '@nocobase/database';
-import Resourcer from '@nocobase/resourcer';
+import { Resourcer } from '@nocobase/resourcer';
 import { Command } from 'commander';
 import i18next from 'i18next';
 import bodyParser from 'koa-bodyparser';

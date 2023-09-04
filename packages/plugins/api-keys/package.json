@@ -4,7 +4,7 @@
   "displayName.zh-CN": "API 秘钥",
   "description": "Allow users to use API key to access NocoBase server API",
   "description.zh-CN": "允许用户使用 API key 访问 NocoBase server API",
-  "version": "0.13.0-alpha.4",
+  "version": "0.13.0-alpha.5",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "devDependencies": {
