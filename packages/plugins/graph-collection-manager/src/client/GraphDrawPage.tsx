@@ -102,7 +102,7 @@ async function layout(createPositions) {
               return v.collectionName === node.store.data.name;
             })) ||
           {};
-        const calculatedPosition = { x: col * 325 + 50, y: row * 400 + 60 };
+        const calculatedPosition = { x: col * 325 + 50, y: row * 400 + 100 };
         node.position(targetPosition.x || calculatedPosition.x, targetPosition.y || calculatedPosition.y);
         if (positions && !positions.find((v) => v.collectionName === node.store.data.name)) {
           // 位置表中没有的表都自动保存
@@ -435,6 +435,8 @@ export const GraphDrawPage = React.memo(() => {
     targetGraph.direction = DirectionType.Target;
     targetGraph.cacheCollection = {};
     targetGraph.onConnectionAssociation = handleConnectionAssociation;
+    targetGraph.onConnectionChilds = handleConnectionChilds;
+    targetGraph.onConnectionParents = handleConnectionParents;
     Graph.registerPortLayout(
       'erPortPosition',
       (portsPositionArgs) => {
@@ -613,6 +615,22 @@ export const GraphDrawPage = React.memo(() => {
     const data = targetGraph.selectedCollections.split(',') || [];
     data.push(target);
     through && data.push(through);
+    const queryString = uniq(data).toString();
+    setSearchParams([['collections', queryString]]);
+    targetGraph.selectedCollections = queryString;
+  };
+
+  const handleConnectionChilds = (collections) => {
+    let data = targetGraph.selectedCollections.split(',') || [];
+    data = data.concat(collections);
+    const queryString = uniq(data).toString();
+    setSearchParams([['collections', queryString]]);
+    targetGraph.selectedCollections = queryString;
+  };
+  const handleConnectionParents = (collections) => {
+    console.log(collections);
+    let data = targetGraph.selectedCollections.split(',') || [];
+    data = data.concat(collections);
     const queryString = uniq(data).toString();
     setSearchParams([['collections', queryString]]);
     targetGraph.selectedCollections = queryString;

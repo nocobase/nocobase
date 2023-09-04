@@ -440,6 +440,24 @@ const Entity: React.FC<{
                     type: 'object',
                     name: uid(),
                     properties: {
+                      connectParent: {
+                        type: 'void',
+                        'x-visible': '{{actived}}',
+                        'x-component': 'ConnectParentAction',
+                        'x-component-props': {
+                          item: collectionData.current,
+                          targetGraph,
+                        },
+                      },
+                      connectChild: {
+                        type: 'void',
+                        'x-component': 'ConnectChildAction',
+                        'x-component-props': {
+                          item: collectionData.current,
+                          targetGraph,
+                        },
+                        'x-visible': '{{actived}}',
+                      },
                       update: {
                         type: 'void',
                         title: '{{ t("Edit") }}',
@@ -465,22 +483,6 @@ const Entity: React.FC<{
                           },
                           useAction: () => useDestroyActionAndRefreshCM({ name, id }),
                         },
-                      },
-                      connectParent: {
-                        type: 'void',
-                        'x-visible': '{{actived}}',
-                        'x-component': 'ConnectParentAction',
-                        'x-component-props': {
-                          item: collectionData.current,
-                        },
-                      },
-                      connectChild: {
-                        type: 'void',
-                        'x-component': 'ConnectChildAction',
-                        'x-component-props': {
-                          item: collectionData.current,
-                        },
-                        'x-visible': '{{actived}}',
                       },
                     },
                   }}
