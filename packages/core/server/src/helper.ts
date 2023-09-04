@@ -48,8 +48,12 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
   );
 
   if (options.bodyParser !== false) {
+    const bodyLimit = '10mb';
     app.use(
       bodyParser({
+        jsonLimit: bodyLimit,
+        formLimit: bodyLimit,
+        textLimit: bodyLimit,
         ...options.bodyParser,
       }),
       {
