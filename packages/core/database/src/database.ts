@@ -221,8 +221,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
       require('pg').defaults.parseInt8 = true;
     }
     if (options.dialect === 'mysql') {
-      // tn
-      const exoCa = fs.readFileSync(options.capath);
+      // tn process.env.DB_CAPATH
+      //      const exoCa = fs.readFileSync(options.capath);
+      const exoCa = fs.readFileSync(process.env.DB_CAPATH);
       const opts2 = {
         ssl: {
           rejectUnauthorized: true,
