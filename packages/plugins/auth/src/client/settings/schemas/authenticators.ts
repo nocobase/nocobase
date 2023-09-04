@@ -1,6 +1,6 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { useAPIClient, useActionContext, useRequest } from '@nocobase/client';
+import { i18n, useAPIClient, useActionContext, useRequest } from '@nocobase/client';
 import { message } from 'antd';
 import { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -23,6 +23,12 @@ const collection = {
         type: 'string',
         title: '{{t("Auth UID")}}',
         'x-component': 'Input',
+        'x-validator': (value: string) => {
+          if (!/^[a-zA-Z0-9_-]+$/.test(value)) {
+            return i18n.t('a-z, A-Z, 0-9, _, -');
+          }
+          return '';
+        },
         required: true,
       },
     },
