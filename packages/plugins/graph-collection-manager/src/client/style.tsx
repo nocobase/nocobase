@@ -248,6 +248,9 @@ const useStyles = createStyles(({ token, css }) => {
 
     graphCollectionContainerClass: css`
       overflow: hidden;
+      #container {
+        height: 100% !important;
+      }
       .x6-graph-scroller {
         height: calc(100vh) !important;
         width: calc(100vw) !important;
