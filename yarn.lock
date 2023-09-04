@@ -2893,9 +2893,12 @@
   version "0.6.2"
   resolved "https://registry.npmmirror.com/@floating-ui/core/-/core-0.6.2.tgz#f2813f0e5f3d5ed7af5029e1a082203dadf02b7d"
 
-"@floating-ui/core@^1.3.1":
-  version "1.3.1"
-  resolved "https://registry.npmmirror.com/@floating-ui/core/-/core-1.3.1.tgz#4d795b649cc3b1cbb760d191c80dcb4353c9a366"
+"@floating-ui/core@^1.4.1":
+  version "1.4.1"
+  resolved "https://registry.npmmirror.com/@floating-ui/core/-/core-1.4.1.tgz#0d633f4b76052668afb932492ac452f7ebe97f17"
+  integrity sha512-jk3WqquEJRlcyu7997NtR5PibI+y5bi+LS3hPmguVClypenMsCY3CBa3LAQnozRCtCrYWSEtAdiskpamuJRFOQ==
+  dependencies:
+    "@floating-ui/utils" "^0.1.1"
 
 "@floating-ui/dom@^0.4.5":
   version "0.4.5"
@@ -2903,11 +2906,13 @@
   dependencies:
     "@floating-ui/core" "^0.6.2"
 
-"@floating-ui/dom@^1.2.6":
-  version "1.4.3"
-  resolved "https://registry.npmmirror.com/@floating-ui/dom/-/dom-1.4.3.tgz#0854a3297ea03894932381f3ea1403fab3a6e602"
+"@floating-ui/dom@^1.4.2":
+  version "1.5.1"
+  resolved "https://registry.npmmirror.com/@floating-ui/dom/-/dom-1.5.1.tgz#88b70defd002fe851f17b4a25efb2d3c04d7a8d7"
+  integrity sha512-KwvVcPSXg6mQygvA1TjbN/gh///36kKtllIF8SUm0qpFj8+rvYrpvlYdL1JoA71SHpDqgSSdGOSoQ0Mp3uY5aw==
   dependencies:
-    "@floating-ui/core" "^1.3.1"
+    "@floating-ui/core" "^1.4.1"
+    "@floating-ui/utils" "^0.1.1"
 
 "@floating-ui/react-dom-interactions@^0.3.1":
   version "0.3.1"
@@ -2924,6 +2929,11 @@
   dependencies:
     "@floating-ui/dom" "^0.4.5"
     use-isomorphic-layout-effect "^1.1.1"
+
+"@floating-ui/utils@^0.1.1":
+  version "0.1.1"
+  resolved "https://registry.npmmirror.com/@floating-ui/utils/-/utils-0.1.1.tgz#1a5b1959a528e374e8037c4396c3e825d6cf4a83"
+  integrity sha512-m0G6wlnhm/AX0H12IOWtK8gASEMffnX08RtKkCgTdHb9JpHKGloI7icFfLg9ZmQeavcvR0PKmzxClyuFPSjKWw==
 
 "@formatjs/ecma402-abstract@1.17.0":
   version "1.17.0"
@@ -6038,7 +6048,7 @@
     "@types/prop-types" "*"
     "@types/react" "*"
 
-"@types/react-dom@^17.0.0", "@types/react-dom@^18.0.0":
+"@types/react-dom@17.x", "@types/react-dom@^17.0.0", "@types/react-dom@^18.0.0":
   version "17.0.20"
   resolved "https://registry.npmmirror.com/@types/react-dom/-/react-dom-17.0.20.tgz#e0c8901469d732b36d8473b40b679ad899da1b53"
   dependencies:
@@ -6053,7 +6063,7 @@
     hoist-non-react-statics "^3.3.0"
     redux "^4.0.0"
 
-"@types/react@*", "@types/react@16 || 17 || 18", "@types/react@>=16.9.11", "@types/react@^17", "@types/react@^17.0.0", "@types/react@^18.0.0":
+"@types/react@*", "@types/react@16 || 17 || 18", "@types/react@17.x", "@types/react@>=16.9.11", "@types/react@^17", "@types/react@^17.0.0", "@types/react@^18.0.0":
   version "17.0.62"
   resolved "https://registry.npmmirror.com/@types/react/-/react-17.0.62.tgz#2efe8ddf8533500ec44b1334dd1a97caa2f860e3"
   dependencies:
@@ -6900,7 +6910,7 @@ ahooks-v3-count@^1.0.0:
   version "1.0.0"
   resolved "https://registry.npmmirror.com/ahooks-v3-count/-/ahooks-v3-count-1.0.0.tgz#ddeb392e009ad6e748905b3cbf63a9fd8262ca80"
 
-ahooks@^3.7.2, ahooks@^3.7.6:
+ahooks@3.x, ahooks@^3.7.2, ahooks@^3.7.6:
   version "3.7.8"
   resolved "https://registry.npmmirror.com/ahooks/-/ahooks-3.7.8.tgz#3fa3c491cd153e884a32b0c4192fc72cf84c4332"
   dependencies:
@@ -7097,10 +7107,11 @@ antd-mobile-v5-count@^1.0.1:
   resolved "https://registry.npmmirror.com/antd-mobile-v5-count/-/antd-mobile-v5-count-1.0.1.tgz#85f20c46d1635c24e856bcf5ad55e8c98e44a523"
 
 antd-mobile@^5.29.1:
-  version "5.31.1"
-  resolved "https://registry.npmmirror.com/antd-mobile/-/antd-mobile-5.31.1.tgz#634f3fefe641527bcc39c51509e39cce82eacd45"
+  version "5.32.1"
+  resolved "https://registry.npmmirror.com/antd-mobile/-/antd-mobile-5.32.1.tgz#513211e25356015c24c6288a49baa950b8857676"
+  integrity sha512-COLyXa6PO0bF3ytYxp/ut87cB3b69IonHoFbQb5F48zHrppckjx47Dbn6DZ/EZdqirWDN8kBjs4CCkOeZa34LA==
   dependencies:
-    "@floating-ui/dom" "^1.2.6"
+    "@floating-ui/dom" "^1.4.2"
     "@rc-component/mini-decimal" "^1.1.0"
     "@react-spring/web" "~9.6.1"
     "@use-gesture/react" "10.2.20"
@@ -7118,7 +7129,7 @@ antd-mobile@^5.29.1:
     tslib "^2.5.0"
     use-sync-external-store "^1.2.0"
 
-antd-style@3.4.5:
+antd-style@3.4.5, antd-style@3.x:
   version "3.4.5"
   resolved "https://registry.npmmirror.com/antd-style/-/antd-style-3.4.5.tgz#ed1c81a738b3ae9c4079824b13a30c27ab934f4e"
   integrity sha512-6aC4P9XyuVy0O7eZ+HZXd8GbbFX9HgzsXsJ341ihJhgqrfsQZNx8lDQvS2kCV6ao99QqtyTDphK9gWOgV2bHEw==
@@ -19804,7 +19815,7 @@ react-hotkeys-hook@^3.4.7:
   dependencies:
     hotkeys-js "3.9.4"
 
-react-i18next@^11.15.1:
+react-i18next@11.x, react-i18next@^11.15.1:
   version "11.18.6"
   resolved "https://registry.npmmirror.com/react-i18next/-/react-i18next-11.18.6.tgz#e159c2960c718c1314f1e8fcaa282d1c8b167887"
   dependencies:
