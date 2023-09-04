@@ -162,6 +162,7 @@ const useStyles = createStyles(({ token, css }) => {
             white-space: nowrap;
             overflow: hidden;
             margin-left: 8px;
+            min-width: 50%;
           }
 
           .type {

@@ -241,20 +241,7 @@ const PopoverContent = React.forwardRef((props: any, ref) => {
     }
   };
   return (
-    <Popover
-      ref={ref}
-      content={CollectionConten(property)}
-      getPopupContainer={getPopupContainer}
-      mouseLeaveDelay={0}
-      title={
-        <div>
-          {compile(property.uiSchema?.title)}
-          <span style={{ color: '#ffa940', float: 'right' }}>{compile(getInterface(property.interface)?.title)}</span>
-        </div>
-      }
-      key={property.id}
-      placement="right"
-    >
+    <div>
       <div
         className="body-item"
         key={property.id}
@@ -268,14 +255,31 @@ const PopoverContent = React.forwardRef((props: any, ref) => {
         }}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <div className="name">
-          <Badge color={typeColor(property)} />
-          {compile(property.uiSchema?.title)}
-        </div>
+        <Popover
+          ref={ref}
+          content={CollectionConten(property)}
+          getPopupContainer={getPopupContainer}
+          mouseLeaveDelay={0}
+          title={
+            <div>
+              {compile(property.uiSchema?.title)}
+              <span style={{ color: '#ffa940', float: 'right' }}>
+                {compile(getInterface(property.interface)?.title)}
+              </span>
+            </div>
+          }
+          key={property.id}
+          placement="right"
+        >
+          <div className="name">
+            <Badge color={typeColor(property)} />
+            {compile(property.uiSchema?.title)}
+          </div>
+        </Popover>
         <div className={`type  field_type`}>{compile(getInterface(property.interface)?.title)}</div>
         {isHovered && <OperationButton property={property} {...operatioBtnProps} />}
       </div>
-    </Popover>
+    </div>
   );
 });
 
