@@ -91,24 +91,39 @@ export default {
       ctx.body = [];
       return next();
     }
-    const actions = strategy.options.actions;
-    if (!actions || (actions !== '*' && !actions.includes('view'))) {
-      ctx.body = [];
-      return next();
-    }
     // Get resources have individual configuration
     const resources = Array.from(role.resources.values());
-    // Exclude resources without view action permission
-    const excludes = resources.filter((resource) => !resource.getAction('view')).map((resource) => resource.name);
-    ctx.action.mergeParams({
-      filter: excludes.length
-        ? {
-            name: {
-              $notIn: excludes,
-            },
-          }
-        : {},
-    });
+    const actions = strategy.options.actions;
+    if (!actions || (actions !== '*' && !actions.includes('view'))) {
+      // Do not have global view action permission
+      // Include resources with view action permission
+      const includes = resources.filter((resource) => resource.getAction('view')).map((resource) => resource.name);
+      if (!includes.length) {
+        ctx.body = [];
+        return next();
+      }
+      ctx.action.mergeParams({
+        filter: includes.length
+          ? {
+              name: {
+                $in: includes,
+              },
+            }
+          : {},
+      });
+    } else {
+      // Exclude resources without view action permission
+      const excludes = resources.filter((resource) => !resource.getAction('view')).map((resource) => resource.name);
+      ctx.action.mergeParams({
+        filter: excludes.length
+          ? {
+              name: {
+                $notIn: excludes,
+              },
+            }
+          : {},
+      });
+    }
     return defaultActions.list(ctx, async () => {
       const collections = (ctx.body || []).map((collection: any) => {
         if (!collection.fields) {
