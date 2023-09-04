@@ -1,10 +1,11 @@
 import { ApartmentOutlined } from '@ant-design/icons';
 import { Graph } from '@antv/x6';
-import { register } from '@antv/x6-react-shape';
-import { Scroller } from '@antv/x6-plugin-scroller';
 import { MiniMap } from '@antv/x6-plugin-minimap';
+import { Scroller } from '@antv/x6-plugin-scroller';
 import { Selection } from '@antv/x6-plugin-selection';
 import { Snapline } from '@antv/x6-plugin-snapline';
+import { register } from '@antv/x6-react-shape';
+import { cx } from '@emotion/css';
 import { SchemaOptionsContext } from '@formily/react';
 import { useSearchParams } from 'react-router-dom';
 import {
@@ -24,11 +25,10 @@ import {
   useCurrentAppInfo,
   useGlobalTheme,
 } from '@nocobase/client';
-import { cx } from '@emotion/css';
 import lodash from 'lodash';
 import { Button, ConfigProvider, Layout, Switch, Tooltip, App, Spin } from 'antd';
 import dagre from 'dagre';
-import React, { createContext, forwardRef, useCallback, useContext, useEffect, useLayoutEffect, useState } from 'react';
+import React, { createContext, forwardRef, useContext, useEffect, useLayoutEffect, useState } from 'react';
 import { useAsyncDataSource, useCreateActionAndRefreshCM } from './action-hooks';
 import { AddCollectionAction } from './components/AddCollectionAction';
 import Entity from './components/Entity';
