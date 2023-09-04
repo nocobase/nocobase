@@ -32,8 +32,9 @@ ReadPretty.File = function File(props: UploadProps) {
   const [fileType, setFileType] = useState<'image' | 'pdf'>();
   const { size } = props;
   const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
+  const useUploadStyleVal = (useUploadStyle as any).default ? (useUploadStyle as any).default : useUploadStyle;
   // 加载 antd 的样式
-  useUploadStyle(prefixCls);
+  useUploadStyleVal(prefixCls);
 
   function closeIFrameModal() {
     setVisible(false);

@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-theme-editor",
-  "version": "0.13.0-alpha.4",
+  "version": "0.13.0-alpha.5",
   "main": "dist/server/index.js",
   "displayName": "Theme editor",
   "displayName.zh-CN": "主题编辑器",

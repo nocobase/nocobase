@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-sample-shop-i18n",
-  "version": "0.13.0-alpha.4",
+  "version": "0.13.0-alpha.5",
   "main": "./dist/server/index.js",
   "devDependencies": {
     "antd": "5.x",
