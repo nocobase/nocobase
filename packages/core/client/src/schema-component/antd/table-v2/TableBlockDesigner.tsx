@@ -43,7 +43,7 @@ export const TableBlockDesigner = () => {
   const template = useSchemaTemplate();
   const collection = useCollection();
   const { dragSort, resource } = field.decoratorProps;
-  const collectionField = getCollectionField(resource);
+  const collectionField = resource && getCollectionField(resource);
   const treeCollection = resource?.includes('.') ? getCollection(collectionField?.target)?.tree : !!collection?.tree;
   const dataScopeSchema = useMemo(() => {
     return {
