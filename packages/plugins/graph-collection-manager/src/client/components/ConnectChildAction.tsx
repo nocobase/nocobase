@@ -9,14 +9,15 @@ export const ConnectChildAction = (props) => {
   const { t } = useGCMTranslation();
   const { getChildrenCollections } = useCollectionManager();
   const childs = getChildrenCollections(item.name);
-  const isShowChild = childs.length > 0;
 
+  const isShowChild = childs?.some(({ name }) => {
+    return !targetGraph.hasCell(name);
+  });
   return isShowChild ? (
     <Tooltip title={t('Show child')} getPopupContainer={getPopupContainer}>
       <FallOutlined
         className="btn-inheriedChild"
         onClick={() => {
-          console.log(childs);
           targetGraph.onConnectionChilds(childs.map((v) => v.name));
         }}
       />

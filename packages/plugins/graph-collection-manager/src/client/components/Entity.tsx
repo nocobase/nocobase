@@ -257,7 +257,6 @@ const PopoverContent = React.forwardRef((props: any, ref) => {
         onMouseLeave={() => setIsHovered(false)}
       >
         <Popover
-          ref={ref}
           content={CollectionConten(property)}
           getPopupContainer={getPopupContainer}
           mouseLeaveDelay={0}

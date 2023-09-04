@@ -9,7 +9,9 @@ export const ConnectParentAction = (props) => {
   const { t } = useGCMTranslation();
   const { getInheritCollections } = useCollectionManager();
   const parents = getInheritCollections(item.name);
-  const isShowParent = parents.length > 0;
+  const isShowParent = parents?.some((name) => {
+    return !targetGraph.hasCell(name);
+  });
   return isShowParent ? (
     <Tooltip title={t('Show parent')} getPopupContainer={getPopupContainer}>
       <RiseOutlined

@@ -282,7 +282,6 @@ export const AddFieldAction = (props) => {
       items,
     };
   }, [getInterface, items, record]);
-  console.log(visible);
   return (
     record.template !== 'view' && (
       <RecordProvider record={record}>
