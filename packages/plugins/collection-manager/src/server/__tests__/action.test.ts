@@ -61,7 +61,7 @@ describe('collection list by role', () => {
   let repo: Repository;
   let adminAgent: any;
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     app = mockServer({
       plugins: ['acl', 'users', 'error-handler', 'auth'],
     });
@@ -80,10 +80,10 @@ describe('collection list by role', () => {
   });
 
   afterEach(async () => {
-    await repo.destroy({ truncate: true });
+    await app.destroy();
   });
 
-  it('should list collections by role', async () => {
+  it('should list collections by role with global view actions', async () => {
     await repo.create({
       values: {
         name: 'users',
@@ -145,6 +145,54 @@ describe('collection list by role', () => {
     expect(res.statusCode).toBe(200);
     expect(res.body.data).toBeDefined();
     const users = res.body.data.find((item: any) => item.name === 'users');
+    expect(users).toBeDefined();
+    expect(users.fields).toBeDefined();
+    expect(users.fields.length).toBe(3);
+  });
+
+  it('should list collections and fields by role without global view action', async () => {
+    const rolesRepo = db.getRepository('roles');
+    await rolesRepo.update({
+      filter: {
+        name: 'admin',
+      },
+      values: {
+        strategy: null,
+      },
+    });
+
+    await repo.create({
+      values: {
+        name: 'users',
+        roleName: 'admin',
+        usingActionsConfig: true,
+      },
+    });
+    await repo.update({
+      filter: {
+        name: 'users',
+        roleName: 'admin',
+      },
+      values: {
+        actions: [
+          {
+            name: 'view',
+            fields: ['id', 'username', 'roles'],
+          },
+        ],
+      },
+    });
+
+    const res = await adminAgent
+      .get('/collections:listByRole?paginate=false&appends[]=fields')
+      .set({
+        'X-Role': 'admin',
+      })
+      .send();
+    expect(res.statusCode).toBe(200);
+    expect(res.body.data).toBeDefined();
+    expect(res.body.data.length).toBe(1);
+    const users = res.body.data[0];
     expect(users).toBeDefined();
     expect(users.fields).toBeDefined();
     expect(users.fields.length).toBe(3);
