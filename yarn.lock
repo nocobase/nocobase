@@ -7118,10 +7118,10 @@ antd-mobile@^5.29.1:
     tslib "^2.5.0"
     use-sync-external-store "^1.2.0"
 
-antd-style@3.x:
-  version "3.4.4"
-  resolved "https://registry.npmmirror.com/antd-style/-/antd-style-3.4.4.tgz#7224491a0b3998711d93e2e6395468a85e9f0458"
-  integrity sha512-Pf/Ewbnz8s1hcvBLKZO5B5Tmiqs85bFU3itq9vi/7J4MUKWyUgnrn4URtWQV4lUPvhc2qTlPUw68qon484ooaA==
+antd-style@3.4.5:
+  version "3.4.5"
+  resolved "https://registry.npmmirror.com/antd-style/-/antd-style-3.4.5.tgz#ed1c81a738b3ae9c4079824b13a30c27ab934f4e"
+  integrity sha512-6aC4P9XyuVy0O7eZ+HZXd8GbbFX9HgzsXsJ341ihJhgqrfsQZNx8lDQvS2kCV6ao99QqtyTDphK9gWOgV2bHEw==
   dependencies:
     "@ant-design/cssinjs" "^1"
     "@babel/runtime" "^7"
