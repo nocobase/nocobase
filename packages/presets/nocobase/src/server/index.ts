@@ -35,6 +35,7 @@ export class PresetNocoBase extends Plugin {
     'multi-app-share-collection',
     'oidc',
     'saml',
+    'cas',
     'map',
     'snapshot-field',
     'graph-collection-manager',

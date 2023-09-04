@@ -4,7 +4,7 @@ import { actions as authActions, AuthManager } from '@nocobase/auth';
 import { Cache, createCache, ICacheConfig } from '@nocobase/cache';
 import Database, { CollectionOptions, IDatabaseOptions } from '@nocobase/database';
 import { AppLoggerOptions, createAppLogger, Logger } from '@nocobase/logger';
-import Resourcer, { ResourceOptions } from '@nocobase/resourcer';
+import { Resourcer, ResourceOptions } from '@nocobase/resourcer';
 import { applyMixins, AsyncEmitter, Toposort, ToposortOptions } from '@nocobase/utils';
 import chalk from 'chalk';
 import { Command, CommandOptions, ParseOptions } from 'commander';
@@ -360,7 +360,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   createCli() {
-    return new Command('nocobase')
+    const command = new Command('nocobase')
       .usage('[command] [options]')
       .hook('preAction', async (_, actionCommand) => {
         this.activatedCommand = {
@@ -385,9 +385,15 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
           await this.restart();
         }
       });
+
+    command.exitOverride((err) => {
+      throw err;
+    });
+
+    return command;
   }
 
-  async runAsCLI(argv = process.argv, options?: ParseOptions) {
+  async runAsCLI(argv = process.argv, options?: ParseOptions & { throwError?: boolean }) {
     if (this.activatedCommand) {
       return;
     }
@@ -404,12 +410,21 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
       return command;
     } catch (error) {
-      console.log(`run command ${this.activatedCommand.name} error:`, error);
+      if (!this.activatedCommand) {
+        this.activatedCommand = {
+          name: 'unknown',
+        };
+      }
+
       this.setMaintaining({
         status: 'command_error',
         command: this.activatedCommand,
         error,
       });
+
+      if (options?.throwError) {
+        throw error;
+      }
     } finally {
       this.activatedCommand = null;
     }
@@ -439,7 +454,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this.setMaintainingMessage('emit afterStart');
     await this.emitAsync('afterStart', this, options);
-    await this.emitAsync('__started', this, options);
+    await this.emitAsync('__started', this, {
+      maintainingStatus: lodash.cloneDeep(this._maintainingCommandStatus),
+    });
+
     this.stopped = false;
   }
 
