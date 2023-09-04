@@ -7,6 +7,7 @@ export default {
   username: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE,
+  capath: process.env.DB_CAPATH, // tn
   host: process.env.DB_HOST,
   port: process.env.DB_PORT as any,
   timezone: process.env.DB_TIMEZONE,

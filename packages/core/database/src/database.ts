@@ -69,7 +69,7 @@ import {
 import { patchSequelizeQueryInterface, snakeCase } from './utils';
 import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
 import { ViewCollection } from './view-collection';
-
+import * as fs from 'fs'; // tn
 export type MergeOptions = merge.Options;
 
 export interface PendingOptions {
@@ -220,6 +220,18 @@ export class Database extends EventEmitter implements AsyncEmitter {
       // https://github.com/sequelize/sequelize/issues/1774
       require('pg').defaults.parseInt8 = true;
     }
+    if (options.dialect === 'mysql') {
+      // tn
+      const exoCa = fs.readFileSync(options.capath);
+      const opts2 = {
+        ssl: {
+          rejectUnauthorized: true,
+          ca: exoCa,
+        },
+      };
+      opts.dialectOptions = opts2;
+    }
+
     this.options = opts;
 
     this.sequelize = new Sequelize(this.sequelizeOptions(this.options));
