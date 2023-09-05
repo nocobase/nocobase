@@ -26,6 +26,70 @@ describe('destroy action with acl', () => {
     await app.destroy();
   });
 
+  it('should parse association acl params', async () => {
+    const Comment = app.db.collection({
+      name: 'comments',
+      fields: [
+        { type: 'string', name: 'content' },
+        { type: 'belongsToMany', name: 'posts' },
+      ],
+    });
+
+    await app.db.sync();
+
+    await Post.repository.create({
+      values: [
+        {
+          title: 'p1',
+          comments: [
+            {
+              content: 'c11',
+            },
+            {
+              content: 'c12',
+            },
+          ],
+        },
+        {
+          title: 'p2',
+          comments: [
+            {
+              content: 'c21',
+            },
+            {
+              content: 'c22',
+            },
+          ],
+        },
+      ],
+    });
+
+    const userRole = app.acl.define({
+      role: 'user',
+      strategy: {
+        actions: ['view:own'],
+      },
+    });
+
+    app.resourcer.use(
+      (ctx, next) => {
+        ctx.state.currentRole = 'user';
+        ctx.state.currentUser = {
+          id: 1,
+        };
+        return next();
+      },
+      {
+        before: 'acl',
+      },
+    );
+
+    const p1 = await Post.repository.findOne({ filter: { title: 'p1' } });
+
+    const response = await app.agent().resource('posts.comments', p1.get('id')).list();
+    expect(response.statusCode).toEqual(403);
+  });
+
   it('should throw error when user has no permission to destroy record', async () => {
     const userRole = app.acl.define({
       role: 'user',
