@@ -577,11 +577,14 @@ export class PluginACL extends Plugin {
               ctx.permission.can = false;
             }
           } else {
-            const params = await parseJsonTemplate(action?.params || {}, ctx);
+            const filteredParams = this.app.acl.filterParams(ctx, collectionName, action?.params || {});
+            const params = await parseJsonTemplate(filteredParams, ctx);
+
             const sourceInstance = await ctx.db.getRepository(collectionName).findOne({
               filterByTk: resourceOf,
               filter: params.filter || {},
             });
+
             if (!sourceInstance) {
               ctx.permission.can = false;
             }
