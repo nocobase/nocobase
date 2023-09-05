@@ -45,7 +45,7 @@ export class CollectionManagerPlugin extends Plugin {
 
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.collections`,
-      actions: ['collections:*', 'collections.fields:*', 'dbViews:*'],
+      actions: ['collections:*', 'collections.fields:*', 'dbViews:*', 'collectionCategories:*'],
     });
 
     this.app.db.on('collections.beforeCreate', async (model) => {
