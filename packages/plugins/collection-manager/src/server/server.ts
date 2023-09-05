@@ -240,7 +240,7 @@ export class CollectionManagerPlugin extends Plugin {
       await next();
     });
 
-    this.app.acl.allow('collections', 'list', 'loggedIn');
+    this.app.acl.allow('collections', 'listByRole', 'loggedIn');
     this.app.acl.allow('collectionCategories', 'list', 'loggedIn');
   }
 
@@ -305,7 +305,7 @@ export class CollectionManagerPlugin extends Plugin {
       // handle collections:list
       if (
         ctx.action.resourceName === 'collections' &&
-        ctx.action.actionName == 'list' &&
+        (ctx.action.actionName == 'list' || ctx.action.actionName == 'listByRole') &&
         ctx.action.params?.paginate == 'false'
       ) {
         for (const collection of ctx.body) {
