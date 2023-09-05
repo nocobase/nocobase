@@ -159,7 +159,7 @@ export default {
     CalculationExpression(props) {
       const scope = useWorkflowVariableOptions();
 
-      return <Variable.TextArea scope={scope} {...props} />;
+      return <Variable.TextArea scope={scope} changeOnSelect {...props} />;
     },
     ScopeSelect(props) {
       const scope = useWorkflowVariableOptions({

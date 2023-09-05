@@ -103,6 +103,7 @@ const CollectionFieldSet = observer(
                     <Variable.Input
                       scope={scope}
                       value={value[field.name]}
+                      changeOnSelect
                       onChange={(next) => {
                         onChange({ ...value, [field.name]: next });
                       }}
