@@ -7,11 +7,12 @@ import {
   ShareAltOutlined,
 } from '@ant-design/icons';
 import { Graph } from '@antv/x6';
-import { register } from '@antv/x6-react-shape';
-import { Scroller } from '@antv/x6-plugin-scroller';
 import { MiniMap } from '@antv/x6-plugin-minimap';
+import { Scroller } from '@antv/x6-plugin-scroller';
 import { Selection } from '@antv/x6-plugin-selection';
 import { Snapline } from '@antv/x6-plugin-snapline';
+import { register } from '@antv/x6-react-shape';
+import { css, cx } from '@emotion/css';
 import { SchemaOptionsContext } from '@formily/react';
 import {
   APIClientProvider,
@@ -20,6 +21,7 @@ import {
   CollectionManagerContext,
   CollectionManagerProvider,
   CurrentAppInfoContext,
+  Popover,
   SchemaComponent,
   SchemaComponentOptions,
   Select,
@@ -30,11 +32,10 @@ import {
   useCurrentAppInfo,
   useGlobalTheme,
 } from '@nocobase/client';
-import { css, cx } from '@emotion/css';
-import lodash from 'lodash';
 import { useFullscreen } from 'ahooks';
-import { Button, ConfigProvider, Input, Layout, Menu, Popover, Switch, Tooltip, App, Spin } from 'antd';
+import { App, Button, ConfigProvider, Input, Layout, Menu, Spin, Switch, Tooltip } from 'antd';
 import dagre from 'dagre';
+import lodash from 'lodash';
 import React, { createContext, forwardRef, useContext, useEffect, useLayoutEffect, useState } from 'react';
 import { useAsyncDataSource, useCreateActionAndRefreshCM } from './action-hooks';
 import { AddCollectionAction } from './components/AddCollectionAction';

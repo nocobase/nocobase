@@ -1,13 +1,12 @@
 import { RightOutlined } from '@ant-design/icons';
 import { Plugin, SettingsCenterProvider } from '@nocobase/client';
 import { Button, Tooltip } from 'antd';
-import React from 'react';
-import { useTranslation } from '../locale';
-import Documentation from './Document';
-
 import { createStyles } from 'antd-style';
+import React, { lazy } from 'react';
+import { useTranslation } from '../locale';
 
 const DOCUMENTATION_PATH = '/api-documentation';
+const Documentation = lazy(() => import('./Document'));
 
 export const useStyles = createStyles(({ css, token }) => {
   return css`

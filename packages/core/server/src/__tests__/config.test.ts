@@ -13,7 +13,6 @@ describe('config', () => {
     expect(config['fake']).toBeUndefined();
     expect(config['not-exists']).toBeUndefined();
     expect(config['database']).toEqual(databaseConfiguration);
-    expect(config['database']).toEqual(databaseConfiguration);
     expect(config['plugins-options']['users']).toEqual(userConfiguration);
   });
 
