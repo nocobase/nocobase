@@ -129,7 +129,7 @@ export class ClientPlugin extends Plugin {
                 return {
                   ...item.toJSON(),
                   packageName,
-                  url: getPackageClientStaticUrl(packageName, 'index'),
+                  url: '/api' + getPackageClientStaticUrl(packageName, 'index'),
                 };
               } catch {
                 return false;

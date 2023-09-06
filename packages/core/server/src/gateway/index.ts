@@ -5,17 +5,16 @@ import http, { IncomingMessage, ServerResponse } from 'http';
 import { promisify } from 'node:util';
 import { resolve } from 'path';
 import qs from 'qs';
-import fs from 'fs';
 import handler from 'serve-handler';
 import { parse } from 'url';
 import xpipe from 'xpipe';
 import { AppSupervisor } from '../app-supervisor';
 import { ApplicationOptions } from '../application';
+import { PLUGIN_PREFIX, getRewritesPath } from '../plugin-manager';
 import { applyErrorWithArgs, getErrorWithCode } from './errors';
 import { IPCSocketClient } from './ipc-socket-client';
 import { IPCSocketServer } from './ipc-socket-server';
 import { WSServer } from './ws-server';
-import { PLUGIN_PREFIX, getRewritesPath } from '../plugin-manager';
 
 const compress = promisify(compression());
 
