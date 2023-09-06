@@ -1,4 +1,4 @@
-import { InheritedCollection, UniqueConstraintError } from '@nocobase/database';
+import { Filter, InheritedCollection, UniqueConstraintError } from '@nocobase/database';
 import PluginErrorHandler from '@nocobase/plugin-error-handler';
 import { Plugin } from '@nocobase/server';
 import { Mutex } from 'async-mutex';
@@ -20,6 +20,12 @@ import viewResourcer from './resourcers/views';
 
 export class CollectionManagerPlugin extends Plugin {
   public schema: string;
+
+  private loadFilter: Filter = {};
+
+  setLoadFilter(filter: Filter) {
+    this.loadFilter = filter;
+  }
 
   async beforeLoad() {
     if (this.app.db.inDialect('postgres')) {
@@ -211,7 +217,9 @@ export class CollectionManagerPlugin extends Plugin {
     const loadCollections = async () => {
       this.app.log.debug('loading custom collections');
       this.app.setMaintainingMessage('loading custom collections');
-      await this.app.db.getRepository<CollectionRepository>('collections').load();
+      await this.app.db.getRepository<CollectionRepository>('collections').load({
+        filter: this.loadFilter,
+      });
     };
 
     this.app.on('beforeStart', loadCollections);
