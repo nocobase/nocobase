@@ -5,7 +5,7 @@ import { uid } from '@formily/shared';
 import {
   CollectionCategroriesContext,
   CollectionProvider,
-  Popover,
+  PopoverWithStopPropagation,
   SchemaComponent,
   SchemaComponentProvider,
   Select,
@@ -218,7 +218,7 @@ const PopoverContent = React.memo((props: any) => {
     }
   };
   return (
-    <Popover
+    <PopoverWithStopPropagation
       content={CollectionConten(property)}
       getPopupContainer={getPopupContainer}
       mouseLeaveDelay={0}
@@ -252,7 +252,7 @@ const PopoverContent = React.memo((props: any) => {
         <div className={`type  field_type`}>{compile(getInterface(property.interface)?.title)}</div>
         {isHovered && <OperationButton property={property} {...operatioBtnProps} />}
       </div>
-    </Popover>
+    </PopoverWithStopPropagation>
   );
 });
 

@@ -21,7 +21,7 @@ import {
   CollectionManagerContext,
   CollectionManagerProvider,
   CurrentAppInfoContext,
-  Popover,
+  PopoverWithStopPropagation,
   SchemaComponent,
   SchemaComponentOptions,
   Select,
@@ -1140,7 +1140,7 @@ export const GraphDrawPage = React.memo(() => {
                                     </div>
                                   );
                                   return (
-                                    <Popover
+                                    <PopoverWithStopPropagation
                                       content={content}
                                       autoAdjustOverflow
                                       placement="bottomRight"
@@ -1155,7 +1155,7 @@ export const GraphDrawPage = React.memo(() => {
                                       <Button>
                                         <MenuOutlined />
                                       </Button>
-                                    </Popover>
+                                    </PopoverWithStopPropagation>
                                   );
                                 },
                                 'x-component-props': {
@@ -1239,7 +1239,7 @@ export const GraphDrawPage = React.memo(() => {
                                     </div>
                                   );
                                   return (
-                                    <Popover
+                                    <PopoverWithStopPropagation
                                       content={content}
                                       autoAdjustOverflow
                                       placement="bottomRight"
@@ -1254,7 +1254,7 @@ export const GraphDrawPage = React.memo(() => {
                                       <Button>
                                         <ShareAltOutlined />
                                       </Button>
-                                    </Popover>
+                                    </PopoverWithStopPropagation>
                                   );
                                 },
                                 'x-component-props': {
@@ -1315,7 +1315,7 @@ export const GraphDrawPage = React.memo(() => {
                                     </div>
                                   );
                                   return (
-                                    <Popover
+                                    <PopoverWithStopPropagation
                                       content={content}
                                       autoAdjustOverflow
                                       placement="bottomRight"
@@ -1330,7 +1330,7 @@ export const GraphDrawPage = React.memo(() => {
                                       <Button>
                                         <LineHeightOutlined />
                                       </Button>
-                                    </Popover>
+                                    </PopoverWithStopPropagation>
                                   );
                                 },
                               },

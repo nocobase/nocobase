@@ -1,5 +1,5 @@
 import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
-import { App, Button } from 'antd';
+import { App, Button, Popover } from 'antd';
 import classnames from 'classnames';
 import lodash from 'lodash';
 import React, { useEffect, useState } from 'react';
@@ -11,7 +11,6 @@ import { useRecord } from '../../../record-provider';
 import { SortableItem } from '../../common';
 import { useCompile, useComponent, useDesigner } from '../../hooks';
 import { useProps } from '../../hooks/useProps';
-import { Popover } from '../popover';
 import ActionContainer from './Action.Container';
 import { ActionDesigner } from './Action.Designer';
 import { ActionDrawer } from './Action.Drawer';
