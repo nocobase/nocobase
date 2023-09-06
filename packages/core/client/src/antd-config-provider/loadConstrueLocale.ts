@@ -1,7 +1,7 @@
 import cronstrue from 'cronstrue';
 
 class CronstrueLocale {
-  constructor(protected data: any) { }
+  constructor(protected data: any) {}
   atX0SecondsPastTheMinuteGt20(): string | null {
     return this.data['atX0SecondsPastTheMinuteGt20'];
   }

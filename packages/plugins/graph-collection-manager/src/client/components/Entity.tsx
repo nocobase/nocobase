@@ -35,11 +35,19 @@ import { EditFieldAction } from './EditFieldAction';
 import { FieldSummary } from './FieldSummary';
 import { OverrideFieldAction } from './OverrideFieldAction';
 import { ViewFieldAction } from './ViewFieldAction';
+import { ConnectAssociationAction } from './ConnectAssociationAction';
+import { ConnectChildAction } from './ConnectChildAction';
+import { ConnectParentAction } from './ConnectParentAction';
 
 const OperationButton: any = React.memo((props: any) => {
-  const { property, loadCollections, collectionData, setTargetNode, node, handelOpenPorts, title, name } = props;
+  const { property, loadCollections, collectionData, setTargetNode, node, handelOpenPorts, title, name, targetGraph } =
+    props;
   const isInheritField = !(property.collectionName !== name);
   const options = useContext(SchemaOptionsContext);
+  const isAssociationField = ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(property.type);
+  const isShowAssocition =
+    isAssociationField &&
+    !(property.through ? targetGraph.hasCell(property.through) : targetGraph.hasCell(property.target));
   const {
     data: { database },
   } = useCurrentAppInfo();
@@ -63,6 +71,7 @@ const OperationButton: any = React.memo((props: any) => {
           OverrideFieldAction,
           ViewFieldAction,
           EditFieldAction,
+          ConnectAssociationAction,
           ...options.components,
         }}
         scope={{
@@ -74,6 +83,7 @@ const OperationButton: any = React.memo((props: any) => {
           useValuesFromRecord,
           useUpdateCollectionActionAndRefreshCM,
           isInheritField,
+          isShowAssocition,
           ...options.scope,
         }}
       >
@@ -164,6 +174,20 @@ const OperationButton: any = React.memo((props: any) => {
                     },
                   },
                 },
+                connectAssociation: {
+                  type: 'void',
+                  'x-action': 'view',
+                  'x-visible': '{{isShowAssocition}}',
+                  'x-component': 'ConnectAssociationAction',
+                  'x-component-props': {
+                    item: {
+                      ...property,
+                      title,
+                      __parent: collectionData.current,
+                    },
+                    targetGraph,
+                  },
+                },
               },
             }}
           />
@@ -173,7 +197,7 @@ const OperationButton: any = React.memo((props: any) => {
   );
 });
 
-const PopoverContent = React.memo((props: any) => {
+const PopoverContent = React.forwardRef((props: any, ref) => {
   const { property, node, ...other } = props;
   const {
     store: {
@@ -218,20 +242,7 @@ const PopoverContent = React.memo((props: any) => {
     }
   };
   return (
-    <Popover
-      content={CollectionConten(property)}
-      getPopupContainer={getPopupContainer}
-      mouseLeaveDelay={0}
-      zIndex={100}
-      title={
-        <div>
-          {compile(property.uiSchema?.title)}
-          <span style={{ color: '#ffa940', float: 'right' }}>{compile(getInterface(property.interface)?.title)}</span>
-        </div>
-      }
-      key={property.id}
-      placement="right"
-    >
+    <div>
       <div
         className="body-item"
         key={property.id}
@@ -245,14 +256,30 @@ const PopoverContent = React.memo((props: any) => {
         }}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <div className="name">
-          <Badge color={typeColor(property)} />
-          {compile(property.uiSchema?.title)}
-        </div>
+        <Popover
+          content={CollectionConten(property)}
+          getPopupContainer={getPopupContainer}
+          mouseLeaveDelay={0}
+          title={
+            <div>
+              {compile(property.uiSchema?.title)}
+              <span style={{ color: '#ffa940', float: 'right' }}>
+                {compile(getInterface(property.interface)?.title)}
+              </span>
+            </div>
+          }
+          key={property.id}
+          placement="right"
+        >
+          <div className="name">
+            <Badge color={typeColor(property)} />
+            {compile(property.uiSchema?.title)}
+          </div>
+        </Popover>
         <div className={`type  field_type`}>{compile(getInterface(property.interface)?.title)}</div>
         {isHovered && <OperationButton property={property} {...operatioBtnProps} />}
       </div>
-    </Popover>
+    </div>
   );
 });
 
@@ -292,6 +319,7 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
     loadCollections,
     handelOpenPorts,
     node,
+    targetGraph,
   };
   return (
     <div className="body">
@@ -339,7 +367,7 @@ const Entity: React.FC<{
   const { node, setTargetNode, targetGraph } = props;
   const {
     store: {
-      data: { title, name, item, attrs, select },
+      data: { title, name, item, attrs, select, actived },
     },
     id,
   } = node;
@@ -403,15 +431,37 @@ const Entity: React.FC<{
                     loadCategories,
                     useAsyncDataSource,
                     enableInherits: database?.dialect === 'postgres',
+                    actived: actived === true,
                   }}
                   components={{
                     EditOutlined,
                     EditCollectionAction,
+                    ConnectChildAction,
+                    ConnectParentAction,
                     ...options.components,
                   }}
                   schema={{
                     type: 'object',
+                    name: uid(),
                     properties: {
+                      connectParent: {
+                        type: 'void',
+                        'x-visible': '{{actived}}',
+                        'x-component': 'ConnectParentAction',
+                        'x-component-props': {
+                          item: collectionData.current,
+                          targetGraph,
+                        },
+                      },
+                      connectChild: {
+                        type: 'void',
+                        'x-component': 'ConnectChildAction',
+                        'x-component-props': {
+                          item: collectionData.current,
+                          targetGraph,
+                        },
+                        'x-visible': '{{actived}}',
+                      },
                       update: {
                         type: 'void',
                         title: '{{ t("Edit") }}',
@@ -430,7 +480,6 @@ const Entity: React.FC<{
                           component: DeleteOutlined,
                           icon: 'DeleteOutlined',
                           className: 'btn-del',
-
                           confirm: {
                             title: "{{t('Delete record')}}",
                             getContainer: getPopupContainer,
