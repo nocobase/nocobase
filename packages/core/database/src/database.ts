@@ -223,16 +223,17 @@ export class Database extends EventEmitter implements AsyncEmitter {
     if (options.dialect === 'mysql') {
       // tn process.env.DB_CAPATH
       //      const exoCa = fs.readFileSync(options.capath);
-      const exoCa = fs.readFileSync(process.env.DB_CAPATH);
-      const opts2 = {
-        ssl: {
-          rejectUnauthorized: true,
-          ca: exoCa,
-        },
-      };
-      opts.dialectOptions = opts2;
+      if (process.env.DB_CAPATH) {
+        const exoCa = fs.readFileSync(process.env.DB_CAPATH);
+        const opts2 = {
+          ssl: {
+            rejectUnauthorized: true,
+            ca: exoCa,
+          },
+        };
+        opts.dialectOptions = opts2;
+      }
     }
-
     this.options = opts;
 
     this.sequelize = new Sequelize(this.sequelizeOptions(this.options));
