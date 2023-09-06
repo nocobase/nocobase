@@ -611,7 +611,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     this.operators = operators;
 
     this.registerOperators({
-      ...extendOperators,
+      ...(extendOperators as unknown as MapOf<OperatorFunc>),
     });
   }
 

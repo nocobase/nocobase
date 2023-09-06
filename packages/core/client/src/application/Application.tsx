@@ -51,6 +51,7 @@ export class Application {
   public pm: PluginManager;
   public devDynamicImport: DevDynamicImport;
   public requirejs: RequireJS;
+  public notification;
   loading = true;
   maintained = false;
   maintaining = false;
@@ -128,14 +129,18 @@ export class Application {
     this.ws.on('message', (event) => {
       const data = JSON.parse(event.data);
       console.log(data.payload);
+      if (data?.payload?.refresh) {
+        window.location.reload();
+        return;
+      }
+      if (data.type === 'notification') {
+        this.notification[data.payload?.type || 'info']({ message: data.payload?.message });
+        return;
+      }
       const maintaining = data.type === 'maintaining' && data.payload.code !== 'APP_RUNNING';
       if (maintaining) {
         this.maintaining = true;
         this.error = data.payload;
-      } else if (this.maintaining) {
-        //  && !this.maintained
-        window.location.reload();
-        return;
       } else {
         this.maintaining = false;
         this.maintained = true;

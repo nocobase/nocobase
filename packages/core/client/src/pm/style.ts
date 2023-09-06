@@ -15,6 +15,9 @@ export const useStyles = createStyles(({ token }) => {
       '& .ant-tabs-nav': {
         marginBottom: 0,
       },
+      '.ant-page-header-heading-title': {
+        color: token.colorText,
+      },
     },
     pageContent: {
       margin: token.marginLG,
