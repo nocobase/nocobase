@@ -6,6 +6,7 @@ interface LoadOptions extends Transactionable {
   // TODO
   skipField?: boolean | Array<string>;
   skipExist?: boolean;
+  schema?: string;
 }
 
 export class CollectionModel extends MagicAttributeModel {
@@ -14,7 +15,7 @@ export class CollectionModel extends MagicAttributeModel {
   }
 
   async load(loadOptions: LoadOptions = {}) {
-    const { skipExist, skipField, transaction } = loadOptions;
+    const { skipExist, skipField, transaction, schema } = loadOptions;
     const name = this.get('name');
 
     let collection: Collection;
@@ -23,6 +24,10 @@ export class CollectionModel extends MagicAttributeModel {
       ...this.get(),
       fields: [],
     };
+
+    if (schema && !collectionOptions.schema) {
+      collectionOptions.schema = schema;
+    }
 
     if (this.db.hasCollection(name)) {
       collection = this.db.getCollection(name);

@@ -6,6 +6,7 @@ import { CollectionModel } from '../models/collection';
 
 interface LoadOptions {
   filter?: any;
+  schema?: string;
   skipExist?: boolean;
 }
 
@@ -17,7 +18,7 @@ export class CollectionRepository extends Repository {
   }
 
   async load(options: LoadOptions = {}) {
-    const { filter, skipExist } = options;
+    const { filter, schema } = options;
     console.log('start load collections');
     const instances = (await this.find({ filter, appends: ['fields'] })) as CollectionModel[];
     console.log('end load collections');
@@ -95,7 +96,7 @@ export class CollectionRepository extends Repository {
       this.database.logger.debug(`load ${instanceName} collection`);
       this.app.setMaintainingMessage(`load ${instanceName} collection`);
 
-      await nameMap[instanceName].load({ skipField });
+      await nameMap[instanceName].load({ schema, skipField });
     }
 
     // load view fields

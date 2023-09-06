@@ -27,9 +27,13 @@ export class CollectionManagerPlugin extends Plugin {
     this.loadFilter = filter;
   }
 
+  setSchema(schema: string) {
+    this.schema = schema;
+  }
+
   async beforeLoad() {
-    if (this.app.db.inDialect('postgres')) {
-      this.schema = process.env.COLLECTION_MANAGER_SCHEMA || this.db.options.schema || 'public';
+    if (this.app.db.inDialect('postgres') && !this.schema) {
+      this.setSchema(process.env.COLLECTION_MANAGER_SCHEMA || this.db.options.schema || 'public');
     }
 
     this.app.db.registerModels({
@@ -52,12 +56,6 @@ export class CollectionManagerPlugin extends Plugin {
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.collections`,
       actions: ['collections:*', 'collections.fields:*', 'dbViews:*', 'collectionCategories:*'],
-    });
-
-    this.app.db.on('collections.beforeCreate', async (model) => {
-      if (this.app.db.inDialect('postgres') && this.schema && model.get('from') != 'db2cm' && !model.get('schema')) {
-        model.set('schema', this.schema);
-      }
     });
 
     this.app.db.on('collections.beforeCreate', beforeCreateForViewCollection(this.db));
@@ -219,6 +217,7 @@ export class CollectionManagerPlugin extends Plugin {
       this.app.setMaintainingMessage('loading custom collections');
       await this.app.db.getRepository<CollectionRepository>('collections').load({
         filter: this.loadFilter,
+        schema: this.schema,
       });
     };
 

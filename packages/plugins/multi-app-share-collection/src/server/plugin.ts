@@ -42,6 +42,8 @@ class SubAppPlugin extends Plugin {
         plugin.setLoadFilter({
           'name.$ne': 'roles',
         });
+
+        plugin.setSchema(process.env.COLLECTION_MANAGER_SCHEMA || mainApp.db.options.schema || 'public');
       }
     });
 
