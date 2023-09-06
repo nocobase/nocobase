@@ -1,4 +1,5 @@
 import { getDateVars, parseFilter } from '@nocobase/utils';
+import lodash from 'lodash';
 
 function getUser(ctx) {
   return async ({ fields }) => {
@@ -28,14 +29,15 @@ function isNumeric(str: any) {
 }
 
 export const parseVariables = async (ctx, next) => {
-  const filter = ctx.action.params.filter;
+  const reqPath = ctx.method === 'POST' ? 'values.filter' : 'filter';
+  const filter = lodash.get(ctx.action.params, reqPath);
   if (!filter) {
     return next();
   }
-  ctx.action.params.filter = await parseFilter(filter, {
+  const parsedFilter = await parseFilter(filter, {
     timezone: ctx.get('x-timezone'),
     now: new Date().toISOString(),
-    getField: (path) => {
+    getField: (path: string) => {
       const fieldPath = path
         .split('.')
         .filter((p) => !p.startsWith('$') && !isNumeric(p))
@@ -51,5 +53,6 @@ export const parseVariables = async (ctx, next) => {
       $user: getUser(ctx),
     },
   });
+  lodash.set(ctx.action.params, reqPath, parsedFilter);
   await next();
 };
