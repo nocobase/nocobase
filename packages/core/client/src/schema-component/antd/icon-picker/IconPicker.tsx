@@ -6,7 +6,7 @@ import { Button, Input } from 'antd';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon, hasIcon, icons } from '../../../icon';
-import { Popover } from '../popover';
+import { PopoverWithStopPropagation } from '../popover';
 
 function IconField(props: any) {
   const layout = useFormLayout();
@@ -16,7 +16,7 @@ function IconField(props: any) {
   return (
     <div>
       <Input.Group compact>
-        <Popover
+        <PopoverWithStopPropagation
           placement={'bottom'}
           open={visible}
           onOpenChange={(val) => {
@@ -47,7 +47,7 @@ function IconField(props: any) {
           <Button size={layout.size as any} disabled={disabled}>
             {hasIcon(value) ? <Icon type={value} /> : t('Select icon')}
           </Button>
-        </Popover>
+        </PopoverWithStopPropagation>
         {value && !disabled && (
           <Button
             size={layout.size as any}

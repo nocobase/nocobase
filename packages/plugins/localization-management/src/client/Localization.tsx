@@ -4,7 +4,7 @@ import { Field, useField, useForm } from '@formily/react';
 import {
   FormProvider,
   Input,
-  Popover,
+  PopoverWithStopPropagation,
   Radio,
   SchemaComponent,
   locale,
@@ -115,7 +115,7 @@ const Sync = () => {
   };
 
   return (
-    <Popover
+    <PopoverWithStopPropagation
       placement="bottomRight"
       content={
         <>
@@ -158,7 +158,7 @@ const Sync = () => {
       >
         {t('Sync')}
       </Button>
-    </Popover>
+    </PopoverWithStopPropagation>
   );
 };
 
