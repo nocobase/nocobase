@@ -1,18 +1,11 @@
-import {
-  ApartmentOutlined,
-  FullscreenExitOutlined,
-  FullscreenOutlined,
-  LineHeightOutlined,
-  MenuOutlined,
-  ShareAltOutlined,
-} from '@ant-design/icons';
+import { ApartmentOutlined } from '@ant-design/icons';
 import { Graph } from '@antv/x6';
 import { MiniMap } from '@antv/x6-plugin-minimap';
 import { Scroller } from '@antv/x6-plugin-scroller';
 import { Selection } from '@antv/x6-plugin-selection';
 import { Snapline } from '@antv/x6-plugin-snapline';
 import { register } from '@antv/x6-react-shape';
-import { css, cx } from '@emotion/css';
+import { cx } from '@emotion/css';
 import { SchemaOptionsContext } from '@formily/react';
 import {
   APIClientProvider,
@@ -21,7 +14,6 @@ import {
   CollectionManagerContext,
   CollectionManagerProvider,
   CurrentAppInfoContext,
-  PopoverWithStopPropagation,
   SchemaComponent,
   SchemaComponentOptions,
   Select,
@@ -32,14 +24,19 @@ import {
   useCurrentAppInfo,
   useGlobalTheme,
 } from '@nocobase/client';
-import { useFullscreen } from 'ahooks';
-import { App, Button, ConfigProvider, Input, Layout, Menu, Spin, Switch, Tooltip } from 'antd';
+import { App, Button, ConfigProvider, Layout, Spin, Switch, Tooltip } from 'antd';
 import dagre from 'dagre';
 import lodash from 'lodash';
 import React, { createContext, forwardRef, useContext, useEffect, useLayoutEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAsyncDataSource, useCreateActionAndRefreshCM } from './action-hooks';
 import { AddCollectionAction } from './components/AddCollectionAction';
+import { ConnectorAction } from './components/ConnectorAction';
+import { DirectionAction } from './components/DirectionAction';
 import Entity from './components/Entity';
+import { FullscreenAction } from './components/FullScreenAction';
+import { LocateCollectionAction } from './components/LocateCollectionAction';
+import { SelectCollectionsAction } from './components/SelectCollectionsAction';
 import { SimpleNodeView } from './components/ViewNode';
 import useStyles from './style';
 import {
@@ -51,7 +48,7 @@ import {
   getPopupContainer,
   useGCMTranslation,
 } from './utils';
-const { drop, groupBy, last, maxBy, minBy, take } = lodash;
+const { drop, groupBy, last, maxBy, minBy, take, uniq } = lodash;
 
 const LINE_HEIGHT = 40;
 const NODE_WIDTH = 250;
@@ -72,7 +69,7 @@ export enum ConnectionType {
 }
 const getGridData = (num, arr) => {
   const newArr = [];
-  while (arr.length > 0 && num) {
+  while (arr?.length > 0 && num) {
     newArr.push(arr.splice(0, num));
   }
   return newArr;
@@ -105,7 +102,7 @@ async function layout(createPositions) {
               return v.collectionName === node.store.data.name;
             })) ||
           {};
-        const calculatedPosition = { x: col * 325 + 50, y: row * 400 + 60 };
+        const calculatedPosition = { x: col * 325 + 50, y: row * 400 + 100 };
         node.position(targetPosition.x || calculatedPosition.x, targetPosition.y || calculatedPosition.y);
         if (positions && !positions.find((v) => v.collectionName === node.store.data.name)) {
           // 位置表中没有的表都自动保存
@@ -142,8 +139,8 @@ function optimizeEdge(edge) {
   } = edge;
   const source = edge.getSource();
   const target = edge.getTarget();
-  const sorceNodeX = targetGraph.getCellById(source.cell).position().x;
-  const targeNodeX = targetGraph.getCellById(target.cell).position().x;
+  const sorceNodeX = targetGraph.getCellById(source.cell)?.position().x;
+  const targeNodeX = targetGraph.getCellById(target.cell)?.position().x;
   const leftAnchor = connectionType
     ? {
         name: 'topLeft',
@@ -220,7 +217,7 @@ function optimizeEdge(edge) {
   }
 }
 
-const CollapsedContext = createContext<any>({});
+export const CollapsedContext = createContext<any>({});
 const formatNodeData = () => {
   const layoutNodes = [];
   const edges = targetGraph.getEdges();
@@ -239,10 +236,10 @@ const formatNodeData = () => {
   return nodeGroup;
 };
 //自动布局
-const handelResetLayout = () => {
-  const { linkNodes = [], rawNodes } = formatNodeData();
+const handelResetLayout = (isTemporaryLayout?) => {
+  const { linkNodes = [], rawNodes = [] } = formatNodeData();
   const { positions } = targetGraph;
-  const nodes = linkNodes.concat(rawNodes);
+  const nodes = linkNodes.concat(rawNodes || []);
   const edges = targetGraph.getEdges();
   const g = new dagre.graphlib.Graph();
   let alternateNum;
@@ -342,12 +339,16 @@ const handelResetLayout = () => {
     optimizeEdge(edge);
   });
   targetGraph.positionCell(nodes[0], 'top-left', { padding: 100 });
-  targetGraph.updatePositionAction(updatePositionData, true);
+  if (!isTemporaryLayout) {
+    targetGraph.updatePositionAction(updatePositionData, true);
+  }
 };
 
 export const GraphDrawPage = React.memo(() => {
   const { theme } = useGlobalTheme();
   const { styles } = useStyles();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedCollections = searchParams.get('collections');
   const options = useContext(SchemaOptionsContext);
   const ctx = useContext(CollectionManagerContext);
   const api = useAPIClient();
@@ -364,22 +365,25 @@ export const GraphDrawPage = React.memo(() => {
   const categoryCtx = useContext(CollectionCategroriesContext);
   const scope = { ...options?.scope };
   const components = { ...options?.components };
+
   const saveGraphPositionAction = async (data) => {
     await api.resource('graphPositions').create({ values: data });
     await refreshPositions();
   };
   const updatePositionAction = async (data, isbatch = false) => {
-    if (isbatch) {
-      await api.resource('graphPositions').update({
-        values: data,
-      });
-    } else {
-      await api.resource('graphPositions').update({
-        filter: { collectionName: data.collectionName },
-        values: { ...data },
-      });
+    if (!selectedCollections) {
+      if (isbatch) {
+        await api.resource('graphPositions').update({
+          values: data,
+        });
+      } else {
+        await api.resource('graphPositions').update({
+          filter: { collectionName: data.collectionName },
+          values: { ...data },
+        });
+      }
+      await refreshPositions();
     }
-    await refreshPositions();
   };
   const refreshPositions = async () => {
     const { data } = await api.resource('graphPositions').list({ paginate: false });
@@ -400,7 +404,9 @@ export const GraphDrawPage = React.memo(() => {
     setCollectionData(data);
     setCollectionList(data);
     if (!currentNodes.length) {
-      renderInitGraphCollection(data);
+      if (!selectedCollections) {
+        renderInitGraphCollection(data);
+      }
     } else {
       renderDiffGraphCollection(data);
     }
@@ -428,6 +434,9 @@ export const GraphDrawPage = React.memo(() => {
     targetGraph.connectionType = ConnectionType.Both;
     targetGraph.direction = DirectionType.Target;
     targetGraph.cacheCollection = {};
+    targetGraph.onConnectionAssociation = handleConnectionAssociation;
+    targetGraph.onConnectionChilds = handleConnectionChilds;
+    targetGraph.onConnectionParents = handleConnectionParents;
     Graph.registerPortLayout(
       'erPortPosition',
       (portsPositionArgs) => {
@@ -503,16 +512,19 @@ export const GraphDrawPage = React.memo(() => {
     });
     targetGraph.use(
       new Scroller({
+        autoResize: true,
         enabled: true,
         pannable: true,
-        padding: { top: 0, left: 500, right: 300, bottom: 400 },
+        pageVisible: true,
+        pageBreak: false,
+        padding: { top: 10, left: 500, right: 300, bottom: 300 },
       }),
     );
     targetGraph.use(
       new MiniMap({
         container: document.getElementById('graph-minimap'),
         width: 300,
-        height: 250,
+        height: 200,
         padding: 10,
         graphOptions: {
           async: true,
@@ -546,6 +558,10 @@ export const GraphDrawPage = React.memo(() => {
       e.stopPropagation();
       handleEdgeUnActive(targetEdge);
     });
+    targetGraph.on('node:mouseleave', ({ e, node }) => {
+      e.stopPropagation();
+      node.setProp({ actived: false });
+    });
     targetGraph.on('node:moved', ({ e, node }) => {
       e.stopPropagation();
       const connectEdges = targetGraph.getConnectedEdges(node);
@@ -567,9 +583,13 @@ export const GraphDrawPage = React.memo(() => {
         optimizeEdge(edge);
       });
     });
-    targetGraph.on('cell:mouseenter', ({ e, cell, edge }) => {
+    targetGraph.on('cell:mouseenter', ({ e, cell, edge, node }) => {
       e.stopPropagation();
       cell.toFront();
+      if (node) {
+        cell.setProp({ actived: true });
+      }
+
       if (edge) {
         handleEdgeActive(edge);
       }
@@ -580,7 +600,7 @@ export const GraphDrawPage = React.memo(() => {
       }
       targetGraph.collapseNodes?.map((v) => {
         const node = targetGraph.getCellById(Object.keys(v)[0]);
-        Object.values(v)[0] && node.setData({ collapse: false });
+        Object.values(v)[0] && node?.setData({ collapse: false });
       });
       targetGraph.cleanSelection();
     });
@@ -590,6 +610,30 @@ export const GraphDrawPage = React.memo(() => {
     targetGraph.on('node:unselected', ({ e, node }) => {
       node.setProp({ select: false });
     });
+  };
+  const handleConnectionAssociation = ({ target, through }) => {
+    const data = targetGraph.selectedCollections.split(',') || [];
+    data.push(target);
+    through && data.push(through);
+    const queryString = uniq(data).toString();
+    setSearchParams([['collections', queryString]]);
+    targetGraph.selectedCollections = queryString;
+  };
+
+  const handleConnectionChilds = (collections) => {
+    let data = targetGraph.selectedCollections.split(',') || [];
+    data = data.concat(collections);
+    const queryString = uniq(data).toString();
+    setSearchParams([['collections', queryString]]);
+    targetGraph.selectedCollections = queryString;
+  };
+  const handleConnectionParents = (collections) => {
+    console.log(collections);
+    let data = targetGraph.selectedCollections.split(',') || [];
+    data = data.concat(collections);
+    const queryString = uniq(data).toString();
+    setSearchParams([['collections', queryString]]);
+    targetGraph.selectedCollections = queryString;
   };
 
   const handleEdgeUnActive = (targetEdge) => {
@@ -680,11 +724,14 @@ export const GraphDrawPage = React.memo(() => {
     lightUp(targetEdge);
     m2mEdge && lightUp(m2mEdge);
   };
-  // 首次渲染
+  // 全量渲染
   const renderInitGraphCollection = (rawData) => {
+    targetGraph.clearCells();
     const { nodesData, edgesData, inheritEdges } = formatData(rawData);
     targetGraph.data = { nodes: nodesData, edges: edgesData };
-    targetGraph.fromJSON({ nodes: nodesData, edges: inheritEdges.concat(edgesData) });
+    targetGraph.fromJSON({ nodes: nodesData });
+    targetGraph.addEdges(edgesData);
+    targetGraph.addEdges(inheritEdges);
     layout(saveGraphPositionAction);
   };
 
@@ -704,8 +751,8 @@ export const GraphDrawPage = React.memo(() => {
     const diffNodes = getDiffNode(nodesData, currentNodes);
     const diffEdges = getDiffEdge(edgesData, currentEdgesGroup.currentRelateEdges || []);
     const diffInheritEdge = getDiffEdge(inheritEdges, currentEdgesGroup.currentInheritEdges || []);
-    const maxY = maxBy(positions, 'y').y;
-    const minX = minBy(positions, 'x').x;
+    const maxY = maxBy(positions, 'y')?.y;
+    const minX = minBy(positions, 'x')?.x;
     const yNodes = positions.filter((v) => {
       return Math.abs(v.y - maxY) < 100;
     });
@@ -726,10 +773,12 @@ export const GraphDrawPage = React.memo(() => {
             ...node,
             position,
           });
-          saveGraphPositionAction({
-            collectionName: node.name,
-            ...position,
-          });
+          if (!selectedCollections) {
+            saveGraphPositionAction({
+              collectionName: node.name,
+              ...position,
+            });
+          }
           targetGraph && targetGraph.positionCell(targetNode, 'top', { padding: 200 });
           break;
         case 'insertPort':
@@ -947,11 +996,16 @@ export const GraphDrawPage = React.memo(() => {
         };
       }, 0);
     } else {
+      targetGraph.filterConfig = null;
       handleCleanHighlight();
     }
   };
 
+  //切换连线类型
   const handleSetRelationshipType = (type) => {
+    targetGraph.connectionType = type;
+    const { filterConfig } = targetGraph;
+    filterConfig && handleFiterCollections(filterConfig.key);
     handleSetEdgeVisible(type);
   };
 
@@ -982,6 +1036,14 @@ export const GraphDrawPage = React.memo(() => {
     });
   };
 
+  const handleDirectionChange = (direction) => {
+    targetGraph.direction = direction;
+    const { filterConfig } = targetGraph;
+    if (filterConfig) {
+      handleFiterCollections(filterConfig.key);
+    }
+  };
+
   useLayoutEffect(() => {
     initGraphCollections();
     return () => {
@@ -1007,6 +1069,18 @@ export const GraphDrawPage = React.memo(() => {
       });
   }, []);
 
+  useEffect(() => {
+    if (selectedCollections && collectionList.length) {
+      const selectKeys = selectedCollections?.split(',');
+      const data = collectionList.filter((v) => selectKeys.includes(v.name));
+      renderInitGraphCollection(data);
+      handelResetLayout(true);
+      targetGraph.selectedCollections = selectedCollections;
+    } else {
+      !selectedCollections && renderInitGraphCollection(collections);
+    }
+  }, [searchParams, collectionList]);
+
   const loadCollections = async () => {
     return targetGraph.collections?.map((collection: any) => ({
       label: compile(collection.title),
@@ -1026,6 +1100,11 @@ export const GraphDrawPage = React.memo(() => {
                       <Select popupMatchSelectWidth={false} {...props} getPopupContainer={getPopupContainer} />
                     ),
                     AddCollectionAction,
+                    LocateCollectionAction,
+                    SelectCollectionsAction,
+                    DirectionAction,
+                    ConnectorAction,
+                    FullscreenAction,
                   }}
                   schema={{
                     type: 'void',
@@ -1050,6 +1129,10 @@ export const GraphDrawPage = React.memo(() => {
                           },
                         },
                         properties: {
+                          selectCollections: {
+                            type: 'array',
+                            'x-component': 'SelectCollectionsAction',
+                          },
                           actions: {
                             type: 'void',
                             'x-component': 'ActionBar',
@@ -1069,96 +1152,13 @@ export const GraphDrawPage = React.memo(() => {
                               },
                               fullScreen: {
                                 type: 'void',
-                                'x-component': 'Action',
-                                'x-component-props': {
-                                  component: forwardRef(() => {
-                                    const [isFullscreen, { toggleFullscreen }] = useFullscreen(
-                                      document.getElementById('graph_container'),
-                                    );
-                                    return (
-                                      <Tooltip title={t('Full Screen')} getPopupContainer={getPopupContainer}>
-                                        <Button
-                                          onClick={() => {
-                                            toggleFullscreen();
-                                          }}
-                                        >
-                                          {isFullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
-                                        </Button>
-                                      </Tooltip>
-                                    );
-                                  }),
-                                  useAction: () => {
-                                    return {
-                                      run() {},
-                                    };
-                                  },
-                                },
+                                'x-component': 'FullscreenAction',
                               },
-                              collectionList: {
+                              locateCollection: {
                                 type: 'void',
-                                'x-component': function Com() {
-                                  const { handleSearchCollection, collectionList } = useContext(CollapsedContext);
-                                  const [selectedKeys, setSelectKey] = useState([]);
-                                  const content = (
-                                    <div>
-                                      <Input
-                                        style={{ margin: '4px 0' }}
-                                        bordered={false}
-                                        placeholder={t('Collection Search')}
-                                        onChange={handleSearchCollection}
-                                      />
-                                      <Menu
-                                        selectedKeys={selectedKeys}
-                                        selectable={true}
-                                        className={css`
-                                          .ant-menu-item {
-                                            height: 32px;
-                                            line-height: 32px;
-                                          }
-                                        `}
-                                        style={{ maxHeight: '70vh', overflowY: 'auto', border: 'none' }}
-                                        items={[
-                                          { type: 'divider' },
-                                          ...collectionList.map((v) => {
-                                            return {
-                                              key: v.name,
-                                              label: compile(v.title),
-                                              onClick: (e: any) => {
-                                                if (e.key !== selectedKeys[0]) {
-                                                  setSelectKey([e.key]);
-                                                  handleFiterCollections(e.key);
-                                                } else {
-                                                  targetGraph.filterConfig = null;
-                                                  handleFiterCollections(false);
-                                                  setSelectKey([]);
-                                                }
-                                              },
-                                            };
-                                          }),
-                                        ]}
-                                      />
-                                    </div>
-                                  );
-                                  return (
-                                    <PopoverWithStopPropagation
-                                      content={content}
-                                      autoAdjustOverflow
-                                      placement="bottomRight"
-                                      trigger={['click']}
-                                      getPopupContainer={getPopupContainer}
-                                      overlayClassName={css`
-                                        .ant-popover-inner-content {
-                                          padding: 0;
-                                        }
-                                      `}
-                                    >
-                                      <Button>
-                                        <MenuOutlined />
-                                      </Button>
-                                    </PopoverWithStopPropagation>
-                                  );
-                                },
+                                'x-component': 'LocateCollectionAction',
                                 'x-component-props': {
+                                  handleFiterCollections,
                                   icon: 'MenuOutlined',
                                   useAction: () => {
                                     return {
@@ -1193,71 +1193,9 @@ export const GraphDrawPage = React.memo(() => {
                               },
                               connectionType: {
                                 type: 'void',
-                                'x-component': () => {
-                                  const menuItems = [
-                                    {
-                                      key: ConnectionType.Both,
-                                      label: 'All relationships',
-                                    },
-                                    {
-                                      key: ConnectionType.Entity,
-                                      label: 'Entity relationship only',
-                                    },
-                                    {
-                                      key: ConnectionType.Inherit,
-                                      label: 'Inheritance relationship only',
-                                    },
-                                  ];
-                                  const content = (
-                                    <div>
-                                      <Menu
-                                        defaultSelectedKeys={[ConnectionType.Both]}
-                                        selectable={true}
-                                        className={css`
-                                          .ant-menu-item {
-                                            height: 32px;
-                                            line-height: 32px;
-                                          }
-                                        `}
-                                        style={{ maxHeight: '70vh', overflowY: 'auto', border: 'none' }}
-                                        items={[
-                                          { type: 'divider' },
-                                          ...menuItems.map((v) => {
-                                            return {
-                                              key: v.key,
-                                              label: t(v.label),
-                                              onClick: (e: any) => {
-                                                targetGraph.connectionType = v.key;
-                                                const { filterConfig } = targetGraph;
-                                                filterConfig && handleFiterCollections(filterConfig.key);
-                                                handleSetRelationshipType(v.key);
-                                              },
-                                            };
-                                          }),
-                                        ]}
-                                      />
-                                    </div>
-                                  );
-                                  return (
-                                    <PopoverWithStopPropagation
-                                      content={content}
-                                      autoAdjustOverflow
-                                      placement="bottomRight"
-                                      trigger={['click']}
-                                      getPopupContainer={getPopupContainer}
-                                      overlayClassName={css`
-                                        .ant-popover-inner-content {
-                                          padding: 0;
-                                        }
-                                      `}
-                                    >
-                                      <Button>
-                                        <ShareAltOutlined />
-                                      </Button>
-                                    </PopoverWithStopPropagation>
-                                  );
-                                },
+                                'x-component': 'ConnectorAction',
                                 'x-component-props': {
+                                  onClick: handleSetRelationshipType,
                                   icon: 'MenuOutlined',
                                   useAction: () => {
                                     return {
@@ -1268,70 +1206,9 @@ export const GraphDrawPage = React.memo(() => {
                               },
                               direction: {
                                 type: 'void',
-                                'x-component': () => {
-                                  const menuItems = [
-                                    {
-                                      key: DirectionType.Both,
-                                      label: 'All directions',
-                                    },
-                                    {
-                                      key: DirectionType.Target,
-                                      label: 'Target index',
-                                    },
-                                    {
-                                      key: DirectionType.Source,
-                                      label: 'Source index',
-                                    },
-                                  ];
-                                  const content = (
-                                    <div>
-                                      <Menu
-                                        defaultSelectedKeys={[DirectionType.Target]}
-                                        selectable={true}
-                                        className={css`
-                                          .ant-menu-item {
-                                            height: 32px;
-                                            line-height: 32px;
-                                          }
-                                        `}
-                                        style={{ maxHeight: '70vh', overflowY: 'auto', border: 'none' }}
-                                        items={[
-                                          { type: 'divider' },
-                                          ...menuItems.map((v) => {
-                                            return {
-                                              key: v.key,
-                                              label: t(v.label),
-                                              onClick: (e: any) => {
-                                                targetGraph.direction = v.key;
-                                                const { filterConfig } = targetGraph;
-                                                if (filterConfig) {
-                                                  handleFiterCollections(filterConfig.key);
-                                                }
-                                              },
-                                            };
-                                          }),
-                                        ]}
-                                      />
-                                    </div>
-                                  );
-                                  return (
-                                    <PopoverWithStopPropagation
-                                      content={content}
-                                      autoAdjustOverflow
-                                      placement="bottomRight"
-                                      trigger={['click']}
-                                      getPopupContainer={getPopupContainer}
-                                      overlayClassName={css`
-                                        .ant-popover-inner-content {
-                                          padding: 0;
-                                        }
-                                      `}
-                                    >
-                                      <Button>
-                                        <LineHeightOutlined />
-                                      </Button>
-                                    </PopoverWithStopPropagation>
-                                  );
+                                'x-component': 'DirectionAction',
+                                'x-component-props': {
+                                  onClick: handleDirectionChange,
                                 },
                               },
                               selectMode: {
@@ -1364,7 +1241,7 @@ export const GraphDrawPage = React.memo(() => {
               </div>
             </CollapsedContext.Provider>
           </CollectionManagerProvider>
-          <div id="container" style={{ width: '100vw', height: '100vh' }}></div>
+          <div id="container" style={{ width: '100vw' }}></div>
           <div
             id="graph-minimap"
             className={styles.graphMinimap}
