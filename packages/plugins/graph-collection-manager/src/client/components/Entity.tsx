@@ -5,7 +5,7 @@ import { uid } from '@formily/shared';
 import {
   CollectionCategroriesContext,
   CollectionProvider,
-  Popover,
+  PopoverWithStopPropagation,
   SchemaComponent,
   SchemaComponentProvider,
   Select,
@@ -30,14 +30,14 @@ import useStyles from '../style';
 import { getPopupContainer, useGCMTranslation } from '../utils';
 import { AddFieldAction } from './AddFieldAction';
 import { CollectionNodeProvder } from './CollectionNodeProvder';
+import { ConnectAssociationAction } from './ConnectAssociationAction';
+import { ConnectChildAction } from './ConnectChildAction';
+import { ConnectParentAction } from './ConnectParentAction';
 import { EditCollectionAction } from './EditCollectionAction';
 import { EditFieldAction } from './EditFieldAction';
 import { FieldSummary } from './FieldSummary';
 import { OverrideFieldAction } from './OverrideFieldAction';
 import { ViewFieldAction } from './ViewFieldAction';
-import { ConnectAssociationAction } from './ConnectAssociationAction';
-import { ConnectChildAction } from './ConnectChildAction';
-import { ConnectParentAction } from './ConnectParentAction';
 
 const OperationButton: any = React.memo((props: any) => {
   const { property, loadCollections, collectionData, setTargetNode, node, handelOpenPorts, title, name, targetGraph } =
@@ -256,7 +256,7 @@ const PopoverContent = React.forwardRef((props: any, ref) => {
         }}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <Popover
+        <PopoverWithStopPropagation
           content={CollectionConten(property)}
           getPopupContainer={getPopupContainer}
           mouseLeaveDelay={0}
@@ -275,7 +275,7 @@ const PopoverContent = React.forwardRef((props: any, ref) => {
             <Badge color={typeColor(property)} />
             {compile(property.uiSchema?.title)}
           </div>
-        </Popover>
+        </PopoverWithStopPropagation>
         <div className={`type  field_type`}>{compile(getInterface(property.interface)?.title)}</div>
         {isHovered && <OperationButton property={property} {...operatioBtnProps} />}
       </div>
