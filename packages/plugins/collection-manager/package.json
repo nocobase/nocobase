@@ -4,7 +4,7 @@
   "displayName.zh-CN": "数据表管理",
   "description": "Provide convenient collection management capabilities",
   "description.zh-CN": "提供便捷的数据表管理能力",
-  "version": "0.13.0-alpha.5",
+  "version": "0.13.0-alpha.7",
   "main": "./dist/server/index.js",
   "license": "AGPL-3.0",
   "devDependencies": {

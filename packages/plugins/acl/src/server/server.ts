@@ -570,7 +570,6 @@ export class PluginACL extends Plugin {
           const action = ctx.can({ resource: collectionName, action: actionName });
 
           const availableAction = this.app.acl.getAvailableAction(actionName);
-
           if (availableAction?.options?.onNewRecord) {
             if (action) {
               ctx.permission.skip = true;
@@ -578,11 +577,14 @@ export class PluginACL extends Plugin {
               ctx.permission.can = false;
             }
           } else {
-            const filter = await parseJsonTemplate(action?.params?.filter || {}, ctx);
+            const filteredParams = this.app.acl.filterParams(ctx, collectionName, action?.params || {});
+            const params = await parseJsonTemplate(filteredParams, ctx);
+
             const sourceInstance = await ctx.db.getRepository(collectionName).findOne({
               filterByTk: resourceOf,
-              filter,
+              filter: params.filter || {},
             });
+
             if (!sourceInstance) {
               ctx.permission.can = false;
             }

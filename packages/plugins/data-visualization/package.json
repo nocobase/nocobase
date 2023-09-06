@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-data-visualization",
-  "version": "0.13.0-alpha.5",
+  "version": "0.13.0-alpha.7",
   "displayName": "Data Visualization",
   "displayName.zh-CN": "数据可视化",
   "description": "Provides business intelligence and data visualization features",
@@ -21,7 +21,7 @@
     "react": "^18.2.0",
     "react-error-boundary": "^4.0.10",
     "react-i18next": "^11.15.1",
-    "vitest": "^0.33.0"
+    "vitest": "0.x"
   },
   "peerDependencies": {
     "@nocobase/actions": "0.x",

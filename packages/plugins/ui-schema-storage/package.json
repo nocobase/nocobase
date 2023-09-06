@@ -4,7 +4,7 @@
   "displayName.zh-CN": "UI schema 存储服务",
   "description": "用于存储用户动态自定义的 UI schema",
   "description.zh-CN": "用于存储用户动态自定义的 UI schema",
-  "version": "0.13.0-alpha.5",
+  "version": "0.13.0-alpha.7",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "devDependencies": {

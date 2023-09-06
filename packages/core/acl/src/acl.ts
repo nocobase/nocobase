@@ -321,19 +321,19 @@ export class ACL extends EventEmitter {
     this.snippetManager.register(snippet);
   }
 
+  filterParams(ctx, resourceName, params) {
+    if (params?.filter?.createdById) {
+      const collection = ctx.db.getCollection(resourceName);
+      if (!collection || !collection.getField('createdById')) {
+        return lodash.omit(params, 'filter.createdById');
+      }
+    }
+
+    return params;
+  }
+
   protected addCoreMiddleware() {
     const acl = this;
-
-    const filterParams = (ctx, resourceName, params) => {
-      if (params?.filter?.createdById) {
-        const collection = ctx.db.getCollection(resourceName);
-        if (!collection || !collection.getField('createdById')) {
-          return lodash.omit(params, 'filter.createdById');
-        }
-      }
-
-      return params;
-    };
 
     this.middlewares.add(
       async (ctx, next) => {
@@ -354,7 +354,7 @@ export class ACL extends EventEmitter {
         ctx.log?.info && ctx.log.info('acl params', params);
 
         if (params && resourcerAction.mergeParams) {
-          const filteredParams = filterParams(ctx, resourceName, params);
+          const filteredParams = acl.filterParams(ctx, resourceName, params);
           const parsedParams = await acl.parseJsonTemplate(filteredParams, ctx);
 
           ctx.permission.parsedParams = parsedParams;

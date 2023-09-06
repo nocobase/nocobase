@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-auth",
-  "version": "0.13.0-alpha.5",
+  "version": "0.13.0-alpha.7",
   "main": "./dist/server/index.js",
   "devDependencies": {
     "@ant-design/icons": "5.x",

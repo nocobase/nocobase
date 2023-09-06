@@ -1,6 +1,6 @@
 import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
 import { isPortalInBody } from '@nocobase/utils/client';
-import { App, Button, Popover } from 'antd';
+import { App, Button } from 'antd';
 import classnames from 'classnames';
 import lodash from 'lodash';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -13,6 +13,7 @@ import { useLocalVariables, useVariables } from '../../../variables';
 import { SortableItem } from '../../common';
 import { useCompile, useComponent, useDesigner } from '../../hooks';
 import { useProps } from '../../hooks/useProps';
+import { Popover } from '../popover';
 import ActionContainer from './Action.Container';
 import { ActionDesigner } from './Action.Designer';
 import { ActionDrawer } from './Action.Drawer';

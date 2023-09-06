@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-file-manager",
-  "version": "0.13.0-alpha.5",
+  "version": "0.13.0-alpha.7",
   "displayName": "File manager",
   "displayName.zh-CN": "文件管理器",
   "description": "file management plugin.",

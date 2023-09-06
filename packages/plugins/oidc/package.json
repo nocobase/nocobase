@@ -4,7 +4,7 @@
   "displayName.zh-CN": "SSO 登录 - OpenID Connect",
   "description": "Provides SAML authentication and authorization functionality for applications or authentication systems.",
   "description.zh-CN": "为应用程序或身份验证系统提供SAML认证和授权功能。",
-  "version": "0.13.0-alpha.5",
+  "version": "0.13.0-alpha.7",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "devDependencies": {

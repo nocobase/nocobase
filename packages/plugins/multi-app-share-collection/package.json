@@ -4,7 +4,7 @@
   "displayName.zh-CN": "多应用数据共享",
   "description": "multi app share collection",
   "description.zh-CN": "多应用数据共享",
-  "version": "0.13.0-alpha.5",
+  "version": "0.13.0-alpha.7",
   "main": "./dist/server/index.js",
   "devDependencies": {
     "@formily/react": "2.x",
