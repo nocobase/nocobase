@@ -52,6 +52,28 @@ const useStyles = createStyles(({ token, css }) => {
           background: ${token.colorBgTextHover};
         }
       }
+      .btn-inheriedParent {
+        background: ${token.colorInfoBg};
+        border-color: transparent;
+        color: ${token.colorInfo};
+        width: 20px;
+        height: 20px;
+        line-height: 25px;
+        &:hover {
+          background-color: ${token.colorInfoBgHover};
+        }
+      }
+      .btn-inheriedChild {
+        background: ${token.colorInfoBg};
+        border-color: transparent;
+        color: ${token.colorInfo};
+        width: 20px;
+        height: 20px;
+        margin: 0px 5px 4px;
+        &:hover {
+          background-color: ${token.colorInfoBgHover};
+        }
+      }
       width: 250px;
       height: 100%;
       border-radius: ${token.borderRadiusLG}px;
@@ -121,6 +143,14 @@ const useStyles = createStyles(({ token, css }) => {
               .btn-view:hover {
                 background: ${token.colorBgTextHover};
               }
+              .btn-assocition {
+                border-color: transparent;
+                color: ${token.colorPrimary};
+                width: 20px;
+              }
+              .btn-assocition:hover {
+                background: ${token.colorBgTextHover};
+              }
             }
             .field_type {
               display: none;
@@ -132,6 +162,7 @@ const useStyles = createStyles(({ token, css }) => {
             white-space: nowrap;
             overflow: hidden;
             margin-left: 8px;
+            min-width: 50%;
           }
 
           .type {
@@ -187,35 +218,40 @@ const useStyles = createStyles(({ token, css }) => {
     `,
 
     collectionListClass: css`
-      float: right;
-      position: fixed;
-      margin-top: 24px;
-      right: 24px;
-      z-index: 1000;
-      .trigger {
+      .nb-action-bar {
         float: right;
-        margin: 2px 4px;
-        font-size: 16px;
-      }
-      .ant-input {
-        margin: 4px;
-      }
-      .ant-menu-inline {
-        border-top: 1px solid ${token.colorBorderSecondary};
-      }
-      .ant-layout-sider {
+        position: fixed;
         margin-top: 24px;
-      }
-      .ant-menu-item {
-        height: 32px;
-      }
-      .ant-btn {
-        border: 0;
+        right: 24px;
+        z-index: 1000;
+        .trigger {
+          float: right;
+          margin: 2px 4px;
+          font-size: 16px;
+        }
+        .ant-input {
+          margin: 4px;
+        }
+        .ant-menu-inline {
+          border-top: 1px solid ${token.colorBorderSecondary};
+        }
+        .ant-layout-sider {
+          margin-top: 24px;
+        }
+        .ant-menu-item {
+          height: 32px;
+        }
+        .ant-btn {
+          border: 0;
+        }
       }
     `,
 
     graphCollectionContainerClass: css`
       overflow: hidden;
+      #container {
+        height: 100% !important;
+      }
       .x6-graph-scroller {
         height: calc(100vh) !important;
         width: calc(100vw) !important;
