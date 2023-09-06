@@ -3,9 +3,8 @@ import compression from 'compression';
 import { EventEmitter } from 'events';
 import http, { IncomingMessage, ServerResponse } from 'http';
 import { promisify } from 'node:util';
-import { resolve } from 'path';
+import { resolve, dirname } from 'path';
 import qs from 'qs';
-import fs from 'fs';
 import handler from 'serve-handler';
 import { parse } from 'url';
 import xpipe from 'xpipe';
@@ -15,7 +14,7 @@ import { applyErrorWithArgs, getErrorWithCode } from './errors';
 import { IPCSocketClient } from './ipc-socket-client';
 import { IPCSocketServer } from './ipc-socket-server';
 import { WSServer } from './ws-server';
-import { PLUGIN_PREFIX, getRewritesPath } from '../plugin-manager';
+import { PLUGIN_STATICS_PATH, getPackageDirByExposeUrl, getPackageNameByExposeUrl } from '../plugin-manager';
 
 const compress = promisify(compression());
 
@@ -118,23 +117,29 @@ export class Gateway extends EventEmitter {
   async requestHandler(req: IncomingMessage, res: ServerResponse) {
     const { pathname } = parse(req.url);
 
-    if (pathname.startsWith('/storage/uploads/')) {
+    const LOCAL_STORAGE_BASE_URL = process.env.LOCAL_STORAGE_BASE_URL || '/storage/uploads/';
+    if (pathname.startsWith(LOCAL_STORAGE_BASE_URL)) {
       await compress(req, res);
       return handler(req, res, {
         public: resolve(process.cwd()),
       });
     }
 
-    if (pathname.startsWith('/api' + PLUGIN_PREFIX)) {
-      const rewritesPath = await getRewritesPath(pathname, req, res);
-      if (!rewritesPath) return;
+    // pathname example: /plugins/statics/@nocobase/plugins-acl/README.md
+    // protect server files
+    if (pathname.startsWith(PLUGIN_STATICS_PATH) && !pathname.includes('/server/')) {
       await compress(req, res);
+      const packageName = getPackageNameByExposeUrl(pathname);
+      // /plugins/statics/@nocobase/plugins-acl/README.md => /User/projects/nocobase/plugins/acl
+      const publicDir = getPackageDirByExposeUrl(pathname);
+      // /plugins/statics/@nocobase/plugins-acl/README.md => README.md
+      const destination = pathname.replace(PLUGIN_STATICS_PATH, '').replace(packageName, '');
       return handler(req, res, {
-        public: rewritesPath.baseDir,
+        public: publicDir,
         rewrites: [
           {
             source: pathname,
-            destination: rewritesPath.relativePath,
+            destination,
           },
         ],
       });

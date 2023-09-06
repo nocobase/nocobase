@@ -142,7 +142,7 @@ export function deleteJsFiles(cwd: string, log: PkgLog) {
 
 export function writeExternalPackageVersion(cwd: string, log: PkgLog) {
   log('write external version');
-  const sourceFiles = fg.globSync(sourceGlobalFiles, { cwd, absolute: true });
+  const sourceFiles = fg.globSync(sourceGlobalFiles, { cwd, absolute: true }).map((item) => fs.readFileSync(item, 'utf-8'));
   const sourcePackages = getSourcePackages(sourceFiles);
   const excludePackages = getExcludePackages(sourcePackages, external, pluginPrefix);
   const data = excludePackages.reduce<Record<string, string>>((prev, packageName) => {

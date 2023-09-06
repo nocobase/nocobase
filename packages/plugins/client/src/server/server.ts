@@ -1,4 +1,4 @@
-import { Plugin, PluginManager, getPackageClientStaticUrl } from '@nocobase/server';
+import { Plugin, PluginManager, getExposeUrl } from '@nocobase/server';
 import fs from 'fs';
 import { resolve } from 'path';
 import { getAntdLocale } from './antd';
@@ -117,6 +117,7 @@ export class ClientPlugin extends Plugin {
         },
         async getPlugins(ctx, next) {
           const pm = ctx.db.getRepository('applicationPlugins');
+          const PLUGIN_CLIENT_ENTRY_FILE = 'dist/client/index.js';
           const items = await pm.find({
             filter: {
               enabled: true,
@@ -129,7 +130,7 @@ export class ClientPlugin extends Plugin {
                 return {
                   ...item.toJSON(),
                   packageName,
-                  url: getPackageClientStaticUrl(packageName, 'index'),
+                  url: getExposeUrl(packageName, PLUGIN_CLIENT_ENTRY_FILE),
                 };
               } catch {
                 return false;

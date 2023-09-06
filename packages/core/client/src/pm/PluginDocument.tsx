@@ -7,6 +7,8 @@ import { useParseMarkdown } from '../schema-component/antd/markdown/util';
 import { useStyles } from './style';
 import { useGlobalTheme } from '../global-theme';
 
+const PLUGIN_STATICS_PATH = process.env.PLUGIN_STATICS_PATH || '/plugins/statics/';
+
 interface PluginDocumentProps {
   url: string;
 }
@@ -18,7 +20,7 @@ export const PluginDocument: React.FC<PluginDocumentProps> = memo((props) => {
   const { url } = props;
   const [docUrl, setDocUrl] = useState(url);
   const { data, loading, error } = useRequest<string>(
-    { url: docUrl },
+    { url: docUrl, baseURL: '/' },
     {
       refreshDeps: [docUrl],
     },
@@ -34,7 +36,7 @@ export const PluginDocument: React.FC<PluginDocumentProps> = memo((props) => {
       // replace img src
       res = res.replace(/src="(.*?)"/g, (match, src: string) => {
         if (src.startsWith('http') || src.startsWith('//:')) return match;
-        return `src="/api/plugins/client/@nocobase/plugin-dumu-saas-store/${src}"`;
+        return `src="${PLUGIN_STATICS_PATH}/@nocobase/plugin-dumu-saas-store/${src}"`;
       });
       return res;
     }

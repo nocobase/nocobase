@@ -1,103 +1,78 @@
 import fs from 'fs';
 import path from 'path';
 import pkgUp from 'pkg-up';
-import { NODE_MODULES_PATH } from './constants';
 
-export const PLUGIN_PREFIX = '/plugins/client/';
-
-/**
- * get plugin client static file url
- *
- * @example
- * @nocobase/plugin-acl, index.js => /api/plugins/client/@nocobase/plugin-acl/index.js
- * my-plugin, README.md => /api/plugins/client/my-plugin/README.md
- */
-export const getPackageClientStaticUrl = (packageName: string, filePath: string) => {
-  return `${PLUGIN_PREFIX}${packageName}/${filePath}`;
-};
-
-export function getReadmeUrl(packageName: string, lang: string) {
-  const { realPath: langReadmeRealPath } = getRealPath(packageName, `README.${lang}.md`);
-  if (langReadmeRealPath) return getPackageClientStaticUrl(packageName, `README.${lang}.md`);
-
-  const { realPath } = getRealPath(packageName, 'README.md');
-  return realPath ? getPackageClientStaticUrl(packageName, 'README.md') : null;
-}
-
-export function getChangelogUrl(packageName: string) {
-  const { realPath } = getRealPath(packageName, 'CHANGELOG.md');
-  return realPath ? getPackageClientStaticUrl(packageName, 'CHANGELOG.md') : null;
-}
-
-/**
- * get package name from url
- *
- * @example
- * /api/plugins/client/@nocobase/plugin-acl/index.js => @nocobase/plugin-acl
- * /api/plugins/client/my-plugin/README.md => my-plugin
- */
-export const getPackageName = (url: string) => {
-  const urlArr = url.replace(PLUGIN_PREFIX, '').replace('/api', '').split('/').filter(Boolean);
-  return urlArr[0].startsWith('@') ? `${urlArr[0]}/${urlArr[1]}` : urlArr[0];
-};
-
-/**
- * get plugin client static file real path
- *
- * @example
- * /api/plugins/client/@nocobase/plugin-acl/index.js => /node_modules/@nocobase/plugin-acl/dist/client/index.js
- * /api/plugins/client/my-plugin/README.md => /node_modules/my-plugin/dist/client/README.md
- */
-const clientExtensions = ['.js', '.css', '.map', '.json'];
-export const getRealPathByUrl = (packageName: string, url: string) => {
-  const ext = path.extname(url);
-  let filePath = url.replace(`${PLUGIN_PREFIX}${packageName}/`, '').replace(`/api`, '');
-
-  // 保护作用，包目录下仅允许访问 md 文件，其他文件会被重定向到 dist/client 目录下
-  if (clientExtensions.includes(ext.toLowerCase())) {
-    filePath = path.join('dist', 'client', filePath);
-  }
-
-  return getRealPath(packageName, filePath);
-};
+export const PLUGIN_STATICS_PATH = process.env.PLUGIN_STATICS_PATH || '/plugins/statics/';
 
 /**
  * get package.json path for specific NPM package
  */
-export function getDepPkgPath(packageName: string, cwd: string) {
+export function getDepPkgPath(packageName: string) {
   try {
-    return require.resolve(`${packageName}/package.json`, { paths: [cwd] });
+    return require.resolve(`${packageName}/package.json`);
   } catch {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     return pkgUp.sync({
-      cwd: require.resolve(`${packageName}/package.json`, { paths: [cwd] }),
+      cwd: require.resolve(`${packageName}/package.json`),
     })!;
   }
 }
 
-export function getRealPath(packageName: string, filePath?: string) {
-  const pkgPath = getDepPkgPath(packageName, NODE_MODULES_PATH);
-  const baseDir = path.dirname(pkgPath);
-  const realPath = path.join(baseDir, filePath);
-  return fs.existsSync(realPath) ? { realPath, baseDir } : {};
+function getPackageDir(packageName: string) {
+  const packageJsonPath = getDepPkgPath(packageName);
+  return path.dirname(packageJsonPath);
 }
 
-export async function getRewritesPath(pathname: string, req: any, res: any) {
-  const packageName = getPackageName(pathname);
-  const { baseDir, realPath } = getRealPathByUrl(packageName, pathname);
-  if (!realPath) return;
+export function getPackageFilePath(packageName: string, filePath: string) {
+  const packageDir = getPackageDir(packageName);
+  return path.join(packageDir, filePath);
+}
 
-  // get file stats
-  const stats = await fs.promises.stat(realPath);
-  const ifModifiedSince = req.headers['if-modified-since'];
-  const lastModified = stats.mtime.toUTCString();
+export function getPackageFilePathWithExistCheck(packageName: string, filePath: string) {
+  const absolutePath = getPackageFilePath(packageName, filePath);
+  const exists = fs.existsSync(absolutePath);
+  return {
+    filePath: absolutePath,
+    exists,
+  };
+}
 
-  // check cache headers
-  if (ifModifiedSince === lastModified) {
-    res.statusCode = 304;
-    return;
+export function getExposeUrl(packageName: string, filePath: string) {
+  return `${PLUGIN_STATICS_PATH}${packageName}/${filePath}`;
+}
+
+export function getExposeReadmeUrl(packageName: string, lang: string) {
+  let READMEPath = null;
+  if (getPackageFilePathWithExistCheck(packageName, `README.${lang}.md`).exists) {
+    READMEPath = `README.${lang}.md`;
+  } else if (getPackageFilePathWithExistCheck(packageName, 'README.md').exists) {
+    READMEPath = 'README.md';
   }
 
-  const relativePath = realPath.slice(baseDir.length + 1);
-  return { baseDir, relativePath };
+  return READMEPath ? getExposeUrl(packageName, READMEPath) : null;
+}
+
+export function getExposeChangelogUrl(packageName: string) {
+  const { exists } = getPackageFilePathWithExistCheck(packageName, 'CHANGELOG.md');
+  return exists ? getExposeUrl(packageName, 'CHANGELOG.md') : null;
+}
+
+/**
+ * get package name by client static url
+ *
+ * @example
+ * getPluginNameByClientStaticUrl('/plugins/statics/dayjs/index.js') => 'dayjs'
+ * getPluginNameByClientStaticUrl('/plugins/statics/@nocobase/foo/README.md') => '@nocobase/foo'
+ */
+export function getPackageNameByExposeUrl(pathname: string) {
+  pathname = pathname.replace(PLUGIN_STATICS_PATH, '');
+  const pathArr = pathname.split('/');
+  if (pathname.startsWith('@')) {
+    return pathArr.slice(0, 2).join('/');
+  }
+  return pathArr[0];
+}
+
+export function getPackageDirByExposeUrl(pathname: string) {
+  return getPackageDir(getPackageNameByExposeUrl(pathname));
 }

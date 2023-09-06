@@ -24,7 +24,7 @@ import {
   getNpmInfo,
 } from './utils';
 import { PluginData } from './types';
-import { getChangelogUrl, getReadmeUrl } from './clientStaticMiddleware';
+import { getExposeChangelogUrl, getExposeReadmeUrl } from './clientStaticMiddleware';
 
 export interface PluginManagerOptions {
   app: Application;
@@ -85,8 +85,8 @@ export class PluginManager {
                 packageName,
                 displayName: packageJson[`displayName.${lng}`] || packageJson.displayName,
                 description: packageJson[`description.${lng}`] || packageJson.description,
-                readmeUrl: getReadmeUrl(packageName, lng),
-                changelogUrl: getChangelogUrl(packageName),
+                readmeUrl: getExposeReadmeUrl(packageName, lng),
+                changelogUrl: getExposeChangelogUrl(packageName),
                 isCompatible: checkCompatible(packageName),
               };
             }),

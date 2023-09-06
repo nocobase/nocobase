@@ -8,8 +8,8 @@ import os from 'os';
 import path from 'path';
 import { APP_NAME, DEFAULT_PLUGIN_PATH, DEFAULT_PLUGIN_STORAGE_PATH, NODE_MODULES_PATH } from './constants';
 import { PluginData } from './types';
-import { getRealPath } from './clientStaticMiddleware';
 import deps from './deps';
+import { getPackageFilePathWithExistCheck } from './clientStaticMiddleware';
 
 /**
  * get temp dir
@@ -364,22 +364,6 @@ export function getPackageJsonByLocalPath(localPath: string) {
   }
 }
 
-/**
- * get package name by client static url
- *
- * @example
- * getPluginNameByClientStaticUrl('/plugins/dayjs/index.js') => 'dayjs'
- * getPluginNameByClientStaticUrl('/plugins/@nocobase/foo/README.md') => '@nocobase/foo'
- */
-export function getPluginNameByClientStaticUrl(pathname: string) {
-  pathname = pathname.replace('/plugins/', '');
-  const pathArr = pathname.split('/');
-  if (pathname.startsWith('@')) {
-    return pathArr.slice(0, 2).join('/');
-  }
-  return pathArr[0];
-}
-
 export async function updatePluginByCompressedFileUrl(
   options: Partial<Pick<PluginData, 'compressedFileUrl' | 'packageName' | 'authToken'>>,
 ) {
@@ -455,16 +439,15 @@ export interface DepCompatible {
   packageVersion: string;
 }
 export function getCompatible(packageName: string) {
-  const { realPath } = getRealPath(packageName, 'dist/externalVersion.js');
+  const { exists, filePath } = getPackageFilePathWithExistCheck(packageName, 'dist/externalVersion.js');
 
-  const exists = fs.existsSync(realPath);
   if (!exists) {
-    return false;
+    return process.env.NODE_ENV === 'production' ? false : [];
   }
 
   let externalVersion: Record<string, string>;
   try {
-    externalVersion = requireNoCache(realPath);
+    externalVersion = requireNoCache(filePath);
   } catch (e) {
     console.error(e);
     return process.env.NODE_ENV === 'production' ? false : [];
