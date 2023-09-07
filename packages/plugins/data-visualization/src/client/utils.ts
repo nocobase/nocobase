@@ -1,6 +1,6 @@
 import { Schema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { SelectedField } from './block';
+import { SelectedField } from './configure/ChartConfigure';
 import { FieldOption } from './hooks';
 import { QueryProps } from './renderer';
 
