@@ -57,7 +57,7 @@ describe('belongsToMany', () => {
     const mainSchema = process.env.DB_SCHEMA || 'public';
 
     if (collectionManagerSchema && mainSchema != collectionManagerSchema && db.inDialect('postgres')) {
-      expect(throughCollection.get('schema')).toEqual(collectionManagerSchema);
+      expect(db.getCollection('post_tags').options.schema).toEqual(collectionManagerSchema);
 
       const tableName = db.getCollection('post_tags').model.tableName;
 
