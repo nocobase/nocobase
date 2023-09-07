@@ -58,6 +58,12 @@ export class CollectionManagerPlugin extends Plugin {
       actions: ['collections:*', 'collections.fields:*', 'dbViews:*', 'collectionCategories:*'],
     });
 
+    this.app.db.on('collections.beforeCreate', async (model) => {
+      if (this.app.db.inDialect('postgres') && this.schema && model.get('from') != 'db2cm' && !model.get('schema')) {
+        model.set('schema', this.schema);
+      }
+    });
+
     this.app.db.on('collections.beforeCreate', beforeCreateForViewCollection(this.db));
 
     this.app.db.on(
