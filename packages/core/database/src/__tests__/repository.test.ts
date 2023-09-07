@@ -30,6 +30,7 @@ describe('find by targetKey', function () {
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
   });
 
   afterEach(async () => {
@@ -81,6 +82,8 @@ describe('repository.find', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
+
     User = db.collection({
       name: 'users',
       fields: [
@@ -316,6 +319,8 @@ describe('repository.create', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
+
     User = db.collection({
       name: 'users',
       fields: [
@@ -386,6 +391,8 @@ describe('repository.update', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
+
     User = db.collection({
       name: 'users',
       fields: [
@@ -608,7 +615,7 @@ describe('repository.update', () => {
       filter: {
         user: {
           id: {
-            $eq: u1.id
+            $eq: u1.id,
           },
         },
       },
@@ -623,9 +630,9 @@ describe('repository.update', () => {
     const updated = await Post.repository.find({
       filter: {
         id: [p1.id, p2.id],
-      }
+      },
     });
-    expect(updated.map(item => item.name)).toEqual(['p1_1', 'p1_1']);
+    expect(updated.map((item) => item.name)).toEqual(['p1_1', 'p1_1']);
   });
 });
 
@@ -637,6 +644,8 @@ describe('repository.destroy', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
+
     User = db.collection({
       name: 'users',
       fields: [
@@ -689,6 +698,8 @@ describe('repository.relatedQuery', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
+
     User = db.collection({
       name: 'users',
       fields: [

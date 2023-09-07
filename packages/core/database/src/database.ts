@@ -668,6 +668,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
       return;
     }
 
+    await this.collectionSnapshotManager.clean();
+
     if (this.options.schema) {
       const tableNames = (await this.sequelize.getQueryInterface().showAllTables()).map((table) => {
         return `"${this.options.schema}"."${table}"`;

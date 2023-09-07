@@ -50,11 +50,17 @@ export class CollectionSnapshotManager {
     await fsPromises.writeFile(storagePath, JSON.stringify(snapshot));
   }
 
+  async clean() {
+    if (this.enabled()) {
+      return fsPromises.rm(this.storageDir(), { recursive: true, force: true });
+    }
+  }
+
   private storagePath(collection: Collection) {
     if (!this.enabled()) {
       throw new Error('collection Snapshot directory is not set');
     }
 
-    return path.join(this.storageDir(), `${collection.name}.json`);
+    return path.join(this.storageDir(), `${collection.getTableNameWithSchemaAsString()}.json`);
   }
 }
