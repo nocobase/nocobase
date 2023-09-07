@@ -117,22 +117,21 @@ export class Gateway extends EventEmitter {
   async requestHandler(req: IncomingMessage, res: ServerResponse) {
     const { pathname } = parse(req.url);
 
-    const LOCAL_STORAGE_BASE_URL = process.env.LOCAL_STORAGE_BASE_URL || '/storage/uploads/';
-    if (pathname.startsWith(LOCAL_STORAGE_BASE_URL)) {
+    if (pathname.startsWith('/storage/uploads/')) {
       await compress(req, res);
       return handler(req, res, {
         public: resolve(process.cwd()),
       });
     }
 
-    // pathname example: /plugins/statics/@nocobase/plugins-acl/README.md
+    // pathname example: /static/plugins/@nocobase/plugins-acl/README.md
     // protect server files
     if (pathname.startsWith(PLUGIN_STATICS_PATH) && !pathname.includes('/server/')) {
       await compress(req, res);
       const packageName = getPackageNameByExposeUrl(pathname);
-      // /plugins/statics/@nocobase/plugins-acl/README.md => /User/projects/nocobase/plugins/acl
+      // /static/plugins/@nocobase/plugins-acl/README.md => /User/projects/nocobase/plugins/acl
       const publicDir = getPackageDirByExposeUrl(pathname);
-      // /plugins/statics/@nocobase/plugins-acl/README.md => README.md
+      // /static/plugins/@nocobase/plugins-acl/README.md => README.md
       const destination = pathname.replace(PLUGIN_STATICS_PATH, '').replace(packageName, '');
       return handler(req, res, {
         public: publicDir,

@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import pkgUp from 'pkg-up';
 
-export const PLUGIN_STATICS_PATH = process.env.PLUGIN_STATICS_PATH || '/plugins/statics/';
+export const PLUGIN_STATICS_PATH = '/static/plugins/';
 
 /**
  * get package.json path for specific NPM package
@@ -61,8 +61,8 @@ export function getExposeChangelogUrl(packageName: string) {
  * get package name by client static url
  *
  * @example
- * getPluginNameByClientStaticUrl('/plugins/statics/dayjs/index.js') => 'dayjs'
- * getPluginNameByClientStaticUrl('/plugins/statics/@nocobase/foo/README.md') => '@nocobase/foo'
+ * getPluginNameByClientStaticUrl('/static/plugins/dayjs/index.js') => 'dayjs'
+ * getPluginNameByClientStaticUrl('/static/plugins/@nocobase/foo/README.md') => '@nocobase/foo'
  */
 export function getPackageNameByExposeUrl(pathname: string) {
   pathname = pathname.replace(PLUGIN_STATICS_PATH, '');

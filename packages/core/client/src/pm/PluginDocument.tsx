@@ -7,7 +7,7 @@ import { useParseMarkdown } from '../schema-component/antd/markdown/util';
 import { useStyles } from './style';
 import { useGlobalTheme } from '../global-theme';
 
-const PLUGIN_STATICS_PATH = process.env.PLUGIN_STATICS_PATH || '/plugins/statics/';
+const PLUGIN_STATICS_PATH = '/static/plugins/';
 
 interface PluginDocumentProps {
   url: string;
