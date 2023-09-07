@@ -1,7 +1,7 @@
 import { SchemaInitializerButtonContext, useDesignable } from '@nocobase/client';
 import React, { useState } from 'react';
 import { ChartRendererProvider } from '../renderer';
-import { ChartConfigContext, ChartConfigCurrent, ChartConfigure } from './ChartConfigure';
+import { ChartConfigContext, ChartConfigCurrent, ChartConfigure } from '../configure/ChartConfigure';
 
 export const ChartV2Block: React.FC = (props) => {
   const { insertAdjacent } = useDesignable();

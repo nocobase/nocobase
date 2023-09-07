@@ -30,6 +30,7 @@ import { ChartRenderer, ChartRendererContext } from '../renderer';
 import { createRendererSchema, getField, getSelectedFields } from '../utils';
 import { getConfigSchema, querySchema, transformSchema } from './schemas/configure';
 import { useChartTypes, useCharts, useDefaultChartType } from '../chart/library';
+import { FilterDynamicComponent } from './FilterDynamicComponent';
 const { Paragraph, Text } = Typography;
 
 export type ChartConfigCurrent = {
@@ -353,7 +354,7 @@ ChartConfigure.Query = function Query() {
         collection: current?.collection,
         useOrderReaction: useOrderReaction(compiledFieldOptions, fields),
       }}
-      components={{ ArrayItems, Editable, FormCollapse, FormItem, Space, Switch, FromSql }}
+      components={{ ArrayItems, Editable, FormCollapse, FormItem, Space, Switch, FromSql, FilterDynamicComponent }}
     />
   );
 };

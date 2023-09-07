@@ -1,6 +1,7 @@
 import { MockServer, mockServer } from '@nocobase/test';
 import * as formatter from '../actions/formatter';
-import { cacheWrap, parseBuilder, parseFieldAndAssociations } from '../actions/query';
+import { cacheMiddleware, parseBuilder, parseFieldAndAssociations } from '../actions/query';
+import compose from 'koa-compose';
 
 describe('query', () => {
   describe('parseBuilder', () => {
@@ -51,6 +52,7 @@ describe('query', () => {
         ],
       });
       ctx = {
+        app,
         db: {
           sequelize,
           getRepository: (name: string) => app.db.getRepository(name),
@@ -63,13 +65,21 @@ describe('query', () => {
       };
     });
 
-    it('should parse field and associations', () => {
-      const associations = parseFieldAndAssociations(ctx, {
-        collection: 'orders',
-        measures: [{ field: ['price'], aggregation: 'sum', alias: 'price' }],
-        dimensions: [{ field: ['createdAt'] }, { field: ['user', 'name'] }],
-      });
-      expect(associations).toMatchObject({
+    it('should parse field and associations', async () => {
+      const context = {
+        ...ctx,
+        action: {
+          params: {
+            values: {
+              collection: 'orders',
+              measures: [{ field: ['price'], aggregation: 'sum', alias: 'price' }],
+              dimensions: [{ field: ['createdAt'] }, { field: ['user', 'name'] }],
+            },
+          },
+        },
+      };
+      await parseFieldAndAssociations(context, async () => {});
+      expect(context.action.params.values).toMatchObject({
         measures: [{ field: 'orders.price', aggregation: 'sum', alias: 'price', type: 'double' }],
         dimensions: [
           { field: 'orders.created_at', alias: 'createdAt', type: 'date' },
@@ -79,14 +89,22 @@ describe('query', () => {
       });
     });
 
-    it('should parse measures', () => {
+    it('should parse measures', async () => {
       const measures1 = [
         {
           field: ['price'],
         },
       ];
-      const { queryParams: result1 } = parseBuilder(ctx, { collection: 'orders', measures: measures1 });
-      expect(result1.attributes).toEqual([['orders.price', 'price']]);
+      const context = {
+        ...ctx,
+        action: {
+          params: {
+            values: { collection: 'orders', measures: measures1 },
+          },
+        },
+      };
+      await compose([parseFieldAndAssociations, parseBuilder])(context, async () => {});
+      expect(context.action.params.values.queryParams.attributes).toEqual([['orders.price', 'price']]);
 
       const measures2 = [
         {
@@ -95,11 +113,19 @@ describe('query', () => {
           alias: 'price-alias',
         },
       ];
-      const { queryParams: result2 } = parseBuilder(ctx, { collection: 'orders', measures: measures2 });
-      expect(result2.attributes).toEqual([[['sum', 'orders.price'], 'price-alias']]);
+      const context2 = {
+        ...ctx,
+        action: {
+          params: {
+            values: { collection: 'orders', measures: measures2 },
+          },
+        },
+      };
+      await compose([parseFieldAndAssociations, parseBuilder])(context2, async () => {});
+      expect(context2.action.params.values.queryParams.attributes).toEqual([[['sum', 'orders.price'], 'price-alias']]);
     });
 
-    it('should parse dimensions', () => {
+    it('should parse dimensions', async () => {
       jest.spyOn(formatter, 'formatter').mockReturnValue('formatted-field');
       const dimensions = [
         {
@@ -108,9 +134,17 @@ describe('query', () => {
           alias: 'Created at',
         },
       ];
-      const { queryParams: result } = parseBuilder(ctx, { collection: 'orders', dimensions });
-      expect(result.attributes).toEqual([['formatted-field', 'Created at']]);
-      expect(result.group).toEqual([]);
+      const context = {
+        ...ctx,
+        action: {
+          params: {
+            values: { collection: 'orders', dimensions },
+          },
+        },
+      };
+      await compose([parseFieldAndAssociations, parseBuilder])(context, async () => {});
+      expect(context.action.params.values.queryParams.attributes).toEqual([['formatted-field', 'Created at']]);
+      expect(context.action.params.values.queryParams.group).toEqual([]);
 
       const measures = [
         {
@@ -118,30 +152,46 @@ describe('query', () => {
           aggregation: 'sum',
         },
       ];
-      const { queryParams: result2 } = parseBuilder(ctx, { collection: 'orders', measures, dimensions });
-      expect(result2.group).toEqual(['formatted-field']);
+      const context2 = {
+        ...ctx,
+        action: {
+          params: {
+            values: { collection: 'orders', measures, dimensions },
+          },
+        },
+      };
+      await compose([parseFieldAndAssociations, parseBuilder])(context2, async () => {});
+      expect(context2.action.params.values.queryParams.group).toEqual(['formatted-field']);
     });
 
-    it('should parse filter', () => {
+    it('should parse filter', async () => {
       const filter = {
         createdAt: {
           $gt: '2020-01-01',
         },
       };
-      const { queryParams: result } = parseBuilder(ctx, { collection: 'orders', filter });
-      expect(result.where.createdAt).toBeDefined();
+      const context = {
+        ...ctx,
+        action: {
+          params: {
+            values: { collection: 'orders', filter },
+          },
+        },
+      };
+      await compose([parseFieldAndAssociations, parseBuilder])(context, async () => {});
+      expect(context.action.params.values.queryParams.where.createdAt).toBeDefined();
     });
   });
 
-  describe('cacheWrap', () => {
+  describe('cacheMiddleware', () => {
     const key = 'test-key';
     const value = 'test-val';
+    const query = jest.fn().mockImplementation(async (ctx, next) => {
+      ctx.body = value;
+      await next();
+    });
     class MockCache {
       map: Map<string, any> = new Map();
-      async func() {
-        return value;
-      }
-
       get(key: string) {
         return this.map.get(key);
       }
@@ -149,72 +199,74 @@ describe('query', () => {
         this.map.set(key, value);
       }
     }
-    let cache: any;
-    let query: () => Promise<any>;
-
+    let ctx: any;
     beforeEach(() => {
-      cache = new MockCache();
+      const cache = new MockCache();
+      ctx = {
+        app: {
+          getPlugin: () => ({ cache }),
+        },
+      };
     });
 
     it('should use cache', async () => {
-      query = async () =>
-        await cacheWrap(cache, {
-          key,
-          func: cache.func,
-          useCache: true,
-          refresh: false,
-        });
-
-      const spy = jest.spyOn(cache, 'func');
+      const context = {
+        ...ctx,
+        action: {
+          params: {
+            values: { cache: { enabled: true }, refresh: false, uid: key },
+          },
+        },
+      };
+      const cache = context.app.getPlugin().cache;
       expect(cache.get(key)).toBeUndefined();
-      const result = await query();
-      expect(cache.func).toBeCalled();
-      expect(result).toEqual(value);
+      await compose([cacheMiddleware, query])(context, async () => {});
+      expect(query).toBeCalled();
+      expect(context.body).toEqual(value);
       expect(cache.get(key)).toEqual(value);
 
-      spy.mockReset();
-      const result2 = await query();
-      expect(result2).toEqual(value);
-      expect(cache.func).not.toBeCalled();
+      jest.clearAllMocks();
+      await compose([cacheMiddleware, query])(context, async () => {});
+      expect(context.body).toEqual(value);
+      expect(query).not.toBeCalled();
     });
 
     it('should not use cache', async () => {
-      query = async () =>
-        await cacheWrap(cache, {
-          key,
-          func: cache.func,
-          useCache: false,
-          refresh: false,
-        });
-
+      const context = {
+        ...ctx,
+        action: {
+          params: {
+            values: { uid: key },
+          },
+        },
+      };
+      const cache = context.app.getPlugin().cache;
       cache.set(key, value);
       expect(cache.get(key)).toBeDefined();
-      jest.spyOn(cache, 'func');
-      const result = await query();
-      expect(cache.func).toBeCalled();
-      expect(result).toEqual(value);
+      await compose([cacheMiddleware, query])(context, async () => {});
+      expect(query).toBeCalled();
+      expect(context.body).toEqual(value);
     });
 
     it('should refresh', async () => {
-      query = async () =>
-        await cacheWrap(cache, {
-          key,
-          func: cache.func,
-          useCache: true,
-          refresh: true,
-        });
-
-      const spy = jest.spyOn(cache, 'func');
+      const context = {
+        ...ctx,
+        action: {
+          params: {
+            values: { cache: { enabled: true }, refresh: true, uid: key },
+          },
+        },
+      };
+      const cache = context.app.getPlugin().cache;
       expect(cache.get(key)).toBeUndefined();
-      const result = await query();
-      expect(cache.func).toBeCalled();
-      expect(result).toEqual(value);
+      await compose([cacheMiddleware, query])(context, async () => {});
+      expect(query).toBeCalled();
+      expect(context.body).toEqual(value);
       expect(cache.get(key)).toEqual(value);
 
-      spy.mockClear();
-      const result2 = await query();
-      expect(cache.func).toBeCalled();
-      expect(result2).toEqual(value);
+      await compose([cacheMiddleware, query])(context, async () => {});
+      expect(query).toBeCalled();
+      expect(context.body).toEqual(value);
     });
   });
 });
