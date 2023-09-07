@@ -10,6 +10,7 @@ import { parse } from 'url';
 import xpipe from 'xpipe';
 import { AppSupervisor } from '../app-supervisor';
 import { ApplicationOptions } from '../application';
+import { PLUGIN_PREFIX, getRewritesPath } from '../plugin-manager';
 import { applyErrorWithArgs, getErrorWithCode } from './errors';
 import { IPCSocketClient } from './ipc-socket-client';
 import { IPCSocketServer } from './ipc-socket-server';
