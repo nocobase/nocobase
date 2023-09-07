@@ -10,9 +10,18 @@ export class CollectionSnapshotGenerator {
     // @ts-ignore
     const attributes = JSON.parse(JSON.stringify(this.collection.model.tableAttributes));
 
+    const tableInfo = {
+      tableName: this.collection.getTableNameWithSchemaAsString(),
+    };
+
+    if (this.collection.isInherited()) {
+      tableInfo['inherits'] = this.collection.options.inherits;
+    }
+
     return {
       hash: hashSortCoerce.hash(attributes),
       attributes,
+      tableInfo,
     };
   }
 }

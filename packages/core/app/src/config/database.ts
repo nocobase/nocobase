@@ -1,4 +1,5 @@
 import { IDatabaseOptions } from '@nocobase/database';
+import path from 'path';
 
 export default {
   logging: process.env.DB_LOGGING == 'on' ? customLogger : false,
@@ -13,6 +14,8 @@ export default {
   tablePrefix: process.env.DB_TABLE_PREFIX,
   schema: process.env.DB_SCHEMA,
   underscored: process.env.DB_UNDERSCORED === 'true',
+  collectionSnapshotDir:
+    process.env.COLLECTION_SNAPSHOT_DIR || path.resolve(process.cwd(), 'storage', 'collection-snapshots'),
 } as IDatabaseOptions;
 
 function customLogger(queryString, queryObject) {

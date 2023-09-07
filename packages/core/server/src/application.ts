@@ -4,7 +4,7 @@ import { actions as authActions, AuthManager } from '@nocobase/auth';
 import { Cache, createCache, ICacheConfig } from '@nocobase/cache';
 import Database, { CollectionOptions, IDatabaseOptions } from '@nocobase/database';
 import { AppLoggerOptions, createAppLogger, Logger } from '@nocobase/logger';
-import { Resourcer, ResourceOptions } from '@nocobase/resourcer';
+import { ResourceOptions, Resourcer } from '@nocobase/resourcer';
 import { applyMixins, AsyncEmitter, Toposort, ToposortOptions } from '@nocobase/utils';
 import chalk from 'chalk';
 import { Command, CommandOptions, ParseOptions } from 'commander';
@@ -22,6 +22,7 @@ import { ApplicationVersion } from './helpers/application-version';
 import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
+import path from 'path';
 
 const packageJson = require('../package.json');
 
@@ -595,14 +596,15 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   async upgrade(options: any = {}) {
     await this.emitAsync('beforeUpgrade', this, options);
-    const force = false;
+
     await this.db.migrator.up();
     await this.db.sync({
-      force,
+      force: false,
       alter: {
-        drop: force,
+        drop: false,
       },
     });
+
     await this.version.update();
     await this.emitAsync('afterUpgrade', this, options);
     this.log.debug(chalk.green(`✨  NocoBase has been upgraded to v${this.getVersion()}`));
@@ -701,12 +703,18 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   private createDatabase(options: ApplicationOptions) {
-    const db = new Database({
+    const config = {
       ...(options.database instanceof Database ? options.database.options : options.database),
       migrator: {
         context: { app: this },
       },
-    });
+    };
+
+    if (config.collectionSnapshotDir) {
+      config.collectionSnapshotDir = path.resolve(config.collectionSnapshotDir, this.name);
+    }
+
+    const db = new Database(config);
 
     db.setLogger(this._logger);
 

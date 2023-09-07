@@ -14,13 +14,13 @@ export class MockDatabase extends Database {
 }
 
 export function getConfigByEnv() {
-  const options = {
+  const options: IDatabaseOptions = {
     username: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_DATABASE,
     host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    dialect: process.env.DB_DIALECT || 'sqlite',
+    port: parseInt(process.env.DB_PORT),
+    dialect: (process.env.DB_DIALECT as any) || 'sqlite',
     logging: process.env.DB_LOGGING === 'on' ? customLogger : false,
     storage:
       process.env.DB_STORAGE && process.env.DB_STORAGE !== ':memory:'
@@ -34,6 +34,8 @@ export function getConfigByEnv() {
     underscored: process.env.DB_UNDERSCORED === 'true',
     schema: process.env.DB_SCHEMA !== 'public' ? process.env.DB_SCHEMA : undefined,
     dialectOptions: {},
+    collectionSnapshotDir:
+      process.env.DB_COLLECTION_SNAPSHOT_DIR || resolve(process.cwd(), 'storage', 'collection-snapshots'),
   };
 
   if (process.env.DB_DIALECT == 'postgres') {
