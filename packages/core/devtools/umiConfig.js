@@ -12,8 +12,8 @@ function getUmiConfig() {
   const API_BASE_PATH = process.env.API_BASE_PATH || '/api/';
   const PROXY_TARGET_URL = process.env.PROXY_TARGET_URL || `http://127.0.0.1:${APP_PORT}`;
   const LOCAL_STORAGE_BASE_URL = '/storage/uploads/';
-  const PLUGIN_STATICS_PATH = '/plugins/statics/';
   const DOCS_PATH = '/docs';
+  const STATIC_PATH = '/static/';
 
   function getLocalStorageProxy() {
     if (LOCAL_STORAGE_BASE_URL.startsWith('http')) {
@@ -25,7 +25,7 @@ function getUmiConfig() {
         target: PROXY_TARGET_URL,
         changeOrigin: true,
       },
-      [PLUGIN_STATICS_PATH]: {
+      [STATIC_PATH]: {
         target: PROXY_TARGET_URL,
         changeOrigin: true,
       },
