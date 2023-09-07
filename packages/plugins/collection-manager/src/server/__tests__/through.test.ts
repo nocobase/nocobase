@@ -8,6 +8,7 @@ describe('collections repository', () => {
       database: {
         tablePrefix: 'through_',
       },
+      name: 'app1',
       acl: false,
     });
     app1.plugin(PluginErrorHandler, { name: 'error-handler' });
@@ -120,6 +121,7 @@ describe('collections repository', () => {
       database: {
         tablePrefix: 'through_',
       },
+      name: 'app2',
     });
     app2.plugin(PluginErrorHandler, { name: 'error-handler' });
     app2.plugin(Plugin, { name: 'collection-manager' });
@@ -129,6 +131,7 @@ describe('collections repository', () => {
     await app2.db.sync({
       force: true,
     });
+
     const job = await app2.db.getRepository('jobs').create({});
     await app2.db.getRepository('resumes').create({
       values: {
