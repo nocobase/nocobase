@@ -24,7 +24,9 @@ import {
   getNpmInfo,
 } from './utils';
 import { PluginData } from './types';
-import { getExposeChangelogUrl, getExposeReadmeUrl } from './clientStaticMiddleware';
+import { getExposeChangelogUrl, getExposeReadmeUrl } from './clientStaticUtils';
+import { DOCS_README, DOCS_SIDE_BAR, DOCS_SPECIAL_FILES, getDocReadme } from './docsUtils';
+import { getDocSidebar } from './docsUtils';
 
 export interface PluginManagerOptions {
   app: Application;
@@ -58,7 +60,32 @@ export class PluginManager {
     this._repository = this.collection.repository as PluginManagerRepository;
     this._repository.setPluginManager(this);
     this.app.resourcer.define(resourceOptions);
+    let lastPluginIds: string[];
+    this.app.use(async (ctx, next) => {
+      await next();
+      if (DOCS_SPECIAL_FILES.includes(ctx.path)) {
+        const plugins = await this.repository.getItems();
 
+        // cache
+        const pluginIds = plugins.map((item) => item.id);
+        if (ctx.get('If-Modified-Since') && _.isEqual(pluginIds, lastPluginIds)) {
+          ctx.status = 304;
+          return;
+        }
+        ctx.set('Last-Modified', new Date().toUTCString());
+        lastPluginIds = pluginIds;
+
+        const currentLang = ctx.getCurrentLocale();
+        let body = '';
+        if (ctx.path === DOCS_README) {
+          body = getDocReadme(plugins, currentLang);
+        } else if (ctx.path === DOCS_SIDE_BAR) {
+          body = getDocSidebar(plugins, currentLang);
+        }
+        ctx.body = body;
+        return;
+      }
+    });
     this.app.resourcer.use(async (ctx, next) => {
       await next();
       const { resourceName, actionName } = ctx.action;

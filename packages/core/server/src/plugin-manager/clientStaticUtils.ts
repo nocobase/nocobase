@@ -7,7 +7,7 @@ export const PLUGIN_STATICS_PATH = '/static/plugins/';
 /**
  * get package.json path for specific NPM package
  */
-export function getDepPkgPath(packageName: string) {
+export function getPackageJsonPath(packageName: string) {
   try {
     return require.resolve(`${packageName}/package.json`);
   } catch {
@@ -19,7 +19,7 @@ export function getDepPkgPath(packageName: string) {
 }
 
 function getPackageDir(packageName: string) {
-  const packageJsonPath = getDepPkgPath(packageName);
+  const packageJsonPath = getPackageJsonPath(packageName);
   return path.dirname(packageJsonPath);
 }
 

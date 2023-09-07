@@ -1,4 +1,4 @@
-import { DeleteOutlined, SettingOutlined } from '@ant-design/icons';
+import { DeleteOutlined, FileWordOutlined, SettingOutlined } from '@ant-design/icons';
 import { App, Button, Card, Col, Popconfirm, Row, Space, Switch, Typography, message } from 'antd';
 import React, { FC, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -58,6 +58,15 @@ function PluginInfo(props: IPluginInfo) {
                 navigate(`/admin/settings/${name}`);
               }}
             />
+          </div>,
+          <div
+            key={'document'}
+            onClick={(e) => {
+              e.stopPropagation();
+              window.open(`/docs/#/statics/plugins/${packageName}/README`);
+            }}
+          >
+            <FileWordOutlined />
           </div>,
           <Popconfirm
             key={'delete'}

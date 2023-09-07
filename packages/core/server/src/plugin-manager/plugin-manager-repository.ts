@@ -67,7 +67,6 @@ export class PluginManagerRepository extends Repository {
       name,
     };
 
-    console.log(JSON.stringify(filter, null, 2));
     await this.update({
       filter,
       values: {

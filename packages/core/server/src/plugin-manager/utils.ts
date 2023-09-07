@@ -1,4 +1,4 @@
-import axios, { Axios, AxiosRequestConfig } from 'axios';
+import axios, { AxiosRequestConfig } from 'axios';
 import decompress from 'decompress';
 import fs from 'fs-extra';
 import semver from 'semver';
@@ -9,7 +9,7 @@ import path from 'path';
 import { APP_NAME, DEFAULT_PLUGIN_PATH, DEFAULT_PLUGIN_STORAGE_PATH, NODE_MODULES_PATH } from './constants';
 import { PluginData } from './types';
 import deps from './deps';
-import { getPackageFilePathWithExistCheck } from './clientStaticMiddleware';
+import { getPackageFilePathWithExistCheck } from './clientStaticUtils';
 
 /**
  * get temp dir
