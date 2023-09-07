@@ -30,9 +30,6 @@ export const SelectCollectionsAction = (props) => {
       getPopupContainer={getPopupContainer}
       mode="multiple"
       allowClear
-      onSearch={(value) => {
-        console.log(value);
-      }}
       options={collectionOptions}
       onChange={handleChange}
       style={{ minWidth: 200, position: 'fixed', margin: '24px', zIndex: 1000, maxWidth: '60%' }}

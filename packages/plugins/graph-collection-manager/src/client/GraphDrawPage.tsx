@@ -628,7 +628,6 @@ export const GraphDrawPage = React.memo(() => {
     targetGraph.selectedCollections = queryString;
   };
   const handleConnectionParents = (collections) => {
-    console.log(collections);
     let data = targetGraph.selectedCollections.split(',') || [];
     data = data.concat(collections);
     const queryString = uniq(data).toString();
