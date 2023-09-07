@@ -17218,6 +17218,11 @@ node-libs-browser@2.2.1:
     util "^0.11.0"
     vm-browserify "^1.0.1"
 
+node-object-hash@v3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/node-object-hash/-/node-object-hash-3.0.0.tgz#52526f6f42cef098e5cac1d74b96a7137d5c5226"
+  integrity sha512-jLF6tlyletktvSAawuPmH1SReP0YfZQ+tBrDiTCK+Ai7eXPMS9odi5xW/iKC7ZhrWJJ0Z5xYcW/x+1fVMn1Qvw==
+
 node-releases@^2.0.12:
   version "2.0.12"
   resolved "https://registry.npmmirror.com/node-releases/-/node-releases-2.0.12.tgz#35627cc224a23bfb06fb3380f2b3afaaa7eb1039"
