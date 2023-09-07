@@ -1,9 +1,9 @@
-import { Collection } from './collection';
+import { Collection } from '../collection';
 import { hasher } from 'node-object-hash';
 
 const hashSortCoerce = hasher({ sort: true, coerce: true });
 
-export class CollectionSnapshot {
+export class CollectionSnapshotGenerator {
   constructor(public collection: Collection) {}
 
   toJSON() {

@@ -36,6 +36,12 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
       return;
     }
 
+    const snapshotManager = this.database.collectionSnapshotManager;
+    const snapshotEnabled = snapshotManager.enabled();
+    if (snapshotEnabled && !(await snapshotManager.hasChanged(this.collection))) {
+      return;
+    }
+
     const model = this as any;
 
     const _schema = model._schema;
@@ -74,11 +80,15 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
       }
     }
 
-    if (this.collection.isInherited()) {
-      return SyncRunner.syncInheritModel(model, options);
+    const syncResult = this.collection.isInherited()
+      ? await SyncRunner.syncInheritModel(model, options)
+      : await SequelizeModel.sync.call(this, options);
+
+    if (snapshotEnabled) {
+      await snapshotManager.saveSnapshot(this.collection);
     }
 
-    return SequelizeModel.sync.call(this, options);
+    return syncResult;
   }
 
   // TODO

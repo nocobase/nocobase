@@ -15,7 +15,7 @@ import { Model } from './model';
 import { AdjacencyListRepository } from './repositories/tree-repository/adjacency-list-repository';
 import { Repository } from './repository';
 import { checkIdentifier, md5, snakeCase } from './utils';
-import { CollectionSnapshot } from './collection-snapshot';
+import { CollectionSnapshotGenerator } from './collection-snapshot/generator';
 
 export type RepositoryType = typeof Repository;
 
@@ -649,7 +649,7 @@ export class Collection<
   }
 
   public getDefinitionSnapshot() {
-    return new CollectionSnapshot(this).toJSON();
+    return new CollectionSnapshotGenerator(this).toJSON();
   }
 
   protected sequelizeModelOptions() {

@@ -69,6 +69,7 @@ import {
 import { patchSequelizeQueryInterface, snakeCase } from './utils';
 import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
 import { ViewCollection } from './view-collection';
+import { CollectionSnapshotManager } from './collection-snapshot/manager';
 
 export type MergeOptions = merge.Options;
 
@@ -86,6 +87,7 @@ export interface IDatabaseOptions extends Options {
   migrator?: any;
   usingBigIntForId?: boolean;
   underscored?: boolean;
+  collectionSnapshotDir?: string;
 }
 
 export type DatabaseOptions = IDatabaseOptions;
@@ -187,6 +189,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
   logger: Logger;
 
   collectionGroupManager = new CollectionGroupManager(this);
+  collectionSnapshotManager = new CollectionSnapshotManager(this);
+
   declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
 
   constructor(options: DatabaseOptions) {

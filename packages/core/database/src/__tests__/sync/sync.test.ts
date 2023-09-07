@@ -1,10 +1,13 @@
 import { Database, mockDatabase } from '@nocobase/database';
+import path from 'path';
 
 describe('sync', function () {
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = mockDatabase({
+      collectionSnapshotDir: path.resolve(__dirname, 'collection-snapshots'),
+    });
 
     await db.clean({ drop: true });
   });
