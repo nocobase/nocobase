@@ -63,7 +63,7 @@ function PluginInfo(props: IPluginInfo) {
             key={'document'}
             onClick={(e) => {
               e.stopPropagation();
-              window.open(`/docs/#/statics/plugins/${packageName}/README`);
+              window.open(`/docs/#/static/plugins/${packageName}/README`);
             }}
           >
             <FileWordOutlined />
