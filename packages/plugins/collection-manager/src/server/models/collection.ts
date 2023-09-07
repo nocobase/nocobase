@@ -114,9 +114,10 @@ export class CollectionModel extends MagicAttributeModel {
     });
   }
 
-  async migrate(options?: SyncOptions & Transactionable) {
+  async migrate(options?: SyncOptions & Transactionable & { schema?: string }) {
     const collection = await this.load({
       transaction: options?.transaction,
+      schema: options?.schema,
     });
 
     // postgres support zero column table, other database should not sync it to database

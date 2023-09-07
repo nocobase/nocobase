@@ -54,7 +54,7 @@ describe('collections repository', () => {
     }
 
     const plugin = app.getPlugin<CollectionManagerPlugin>('collection-manager');
-    plugin.schema = 'testSchema';
+    plugin.setSchema('testSchema');
 
     await Collection.repository.create({
       values: {

@@ -66,6 +66,7 @@ export class CollectionManagerPlugin extends Plugin {
         if (context) {
           await model.migrate({
             transaction,
+            schema: this.schema,
           });
         }
       },
