@@ -1,8 +1,9 @@
 import { Context, Next } from '@nocobase/actions';
-import { Cache } from '@nocobase/cache';
 import { Field, FilterParser, snakeCase } from '@nocobase/database';
 import ChartsV2Plugin from '../plugin';
 import { formatter } from './formatter';
+import compose from 'koa-compose';
+import { parseFilter, getDateVars } from '@nocobase/utils';
 
 type MeasureProps = {
   field: string | string[];
@@ -44,8 +45,126 @@ type QueryParams = Partial<{
   refresh: boolean;
 }>;
 
-export const parseFieldAndAssociations = (ctx: Context, params: QueryParams) => {
-  const { collection: collectionName, measures, dimensions, orders, filter } = params;
+export const postProcess = async (ctx: Context, next: Next) => {
+  const { sequelize } = ctx.db;
+  const dialect = sequelize.getDialect();
+  const { data, fieldMap } = ctx.action.params.values as {
+    data: any[];
+    fieldMap: { [source: string]: { type?: string } };
+  };
+  switch (dialect) {
+    case 'postgres':
+      // https://github.com/sequelize/sequelize/issues/4550
+      ctx.body = data.map((record) => {
+        const result = {};
+        Object.entries(record).forEach(([key, value]) => {
+          const { type } = fieldMap[key] || {};
+          switch (type) {
+            case 'bigInt':
+            case 'integer':
+            case 'float':
+            case 'double':
+              value = Number(value);
+              break;
+          }
+          result[key] = value;
+        });
+        return result;
+      });
+      break;
+    default:
+      ctx.body = data;
+  }
+  await next();
+};
+
+export const queryData = async (ctx: Context, next: Next) => {
+  const { collection, queryParams, fieldMap } = ctx.action.params.values;
+  const model = ctx.db.getModel(collection);
+  const data = await model.findAll(queryParams);
+  ctx.action.params.values = {
+    data,
+    fieldMap,
+  };
+  await next();
+  // if (!sql) {
+  //   return await repository.find(parseBuilder(ctx, { collection, measures, dimensions, orders, filter, limit }));
+  // }
+
+  // const statement = `SELECT ${sql.fields} FROM ${collection} ${sql.clauses}`;
+  // const [data] = await ctx.db.sequelize.query(statement);
+  // return data;
+};
+
+export const parseBuilder = async (ctx: Context, next: Next) => {
+  const { sequelize } = ctx.db;
+  const { measures, dimensions, orders, include, where, limit } = ctx.action.params.values;
+  const attributes = [];
+  const group = [];
+  const order = [];
+  const fieldMap = {};
+  let hasAgg = false;
+
+  measures.forEach((measure: MeasureProps & { field: string }) => {
+    const { field, aggregation, alias } = measure;
+    const attribute = [];
+    const col = sequelize.col(field);
+    if (aggregation) {
+      hasAgg = true;
+      attribute.push(sequelize.fn(aggregation, col));
+    } else {
+      attribute.push(col);
+    }
+    if (alias) {
+      attribute.push(alias);
+    }
+    attributes.push(attribute.length > 1 ? attribute : attribute[0]);
+    fieldMap[alias || field] = measure;
+  });
+
+  dimensions.forEach((dimension: DimensionProps & { field: string }) => {
+    const { field, format, alias, type } = dimension;
+    const attribute = [];
+    const col = sequelize.col(field);
+    if (format) {
+      attribute.push(formatter(sequelize, type, field, format));
+    } else {
+      attribute.push(col);
+    }
+    if (alias) {
+      attribute.push(alias);
+    }
+    attributes.push(attribute.length > 1 ? attribute : attribute[0]);
+    if (hasAgg) {
+      group.push(attribute[0]);
+    }
+    fieldMap[alias || field] = dimension;
+  });
+
+  orders.forEach((item: OrderProps) => {
+    const alias = sequelize.getQueryInterface().quoteIdentifier(item.alias);
+    const name = hasAgg ? sequelize.literal(alias) : sequelize.col(item.field as string);
+    order.push([name, item.order || 'ASC']);
+  });
+
+  ctx.action.params.values = {
+    ...ctx.action.params.values,
+    queryParams: {
+      where,
+      attributes,
+      include,
+      group,
+      order,
+      limit: limit > 2000 ? 2000 : limit,
+      raw: true,
+    },
+    fieldMap,
+  };
+  await next();
+};
+
+export const parseFieldAndAssociations = async (ctx: Context, next: Next) => {
+  const { collection: collectionName, measures, dimensions, orders, filter } = ctx.action.params.values as QueryParams;
   const collection = ctx.db.getCollection(collectionName);
   const fields = collection.fields;
   const underscored = ctx.db.options.underscored;
@@ -109,182 +228,114 @@ export const parseFieldAndAssociations = (ctx: Context, params: QueryParams) => 
     return item;
   });
 
-  return {
+  ctx.action.params.values = {
+    ...ctx.action.params.values,
     where,
     measures: parsedMeasures,
     dimensions: parsedDimensions,
     orders: parsedOrders,
     include: [...include, ...(parsedFilterInclude || [])],
   };
+  await next();
 };
 
-export const parseBuilder = (ctx: Context, builder: QueryParams) => {
-  const { sequelize } = ctx.db;
-  const { limit } = builder;
-  const { measures, dimensions, orders, include, where } = parseFieldAndAssociations(ctx, builder);
-  const attributes = [];
-  const group = [];
-  const order = [];
-  const fieldMap = {};
-  let hasAgg = false;
-
-  measures.forEach((measure: MeasureProps & { field: string }) => {
-    const { field, aggregation, alias } = measure;
-    const attribute = [];
-    const col = sequelize.col(field);
-    if (aggregation) {
-      hasAgg = true;
-      attribute.push(sequelize.fn(aggregation, col));
-    } else {
-      attribute.push(col);
-    }
-    if (alias) {
-      attribute.push(alias);
-    }
-    attributes.push(attribute.length > 1 ? attribute : attribute[0]);
-    fieldMap[alias || field] = measure;
-  });
-
-  dimensions.forEach((dimension: DimensionProps & { field: string }) => {
-    const { field, format, alias, type } = dimension;
-    const attribute = [];
-    const col = sequelize.col(field);
-    if (format) {
-      attribute.push(formatter(sequelize, type, field, format));
-    } else {
-      attribute.push(col);
-    }
-    if (alias) {
-      attribute.push(alias);
-    }
-    attributes.push(attribute.length > 1 ? attribute : attribute[0]);
-    if (hasAgg) {
-      group.push(attribute[0]);
-    }
-    fieldMap[alias || field] = dimension;
-  });
-
-  orders.forEach((item: OrderProps) => {
-    const alias = sequelize.getQueryInterface().quoteIdentifier(item.alias);
-    const name = hasAgg ? sequelize.literal(alias) : sequelize.col(item.field as string);
-    order.push([name, item.order || 'ASC']);
-  });
-
-  return {
-    queryParams: {
-      where,
-      attributes,
-      include,
-      group,
-      order,
-      limit: limit > 2000 ? 2000 : limit,
-      raw: true,
-    },
-    fieldMap,
+export const parseVariables = async (ctx: Context, next: Next) => {
+  const { filter } = ctx.action.params.values;
+  if (!filter) {
+    return next();
+  }
+  const isNumeric = (str: any) => {
+    if (typeof str === 'number') return true;
+    if (typeof str != 'string') return false;
+    return !isNaN(str as any) && !isNaN(parseFloat(str));
   };
-};
-
-export const processData = (ctx: Context, data: any[], fieldMap: { [source: string]: { type?: string } }) => {
-  const { sequelize } = ctx.db;
-  const dialect = sequelize.getDialect();
-  switch (dialect) {
-    case 'postgres':
-      // https://github.com/sequelize/sequelize/issues/4550
-      return data.map((record) => {
-        const result = {};
-        Object.entries(record).forEach(([key, value]) => {
-          const { type } = fieldMap[key] || {};
-          switch (type) {
-            case 'bigInt':
-            case 'integer':
-            case 'float':
-            case 'double':
-              value = Number(value);
-              break;
-          }
-          result[key] = value;
-        });
-        return result;
+  const getUser = () => {
+    return async ({ fields }) => {
+      const userFields = fields.filter((f) => f && ctx.db.getFieldByPath('users.' + f));
+      ctx.logger?.info('filter-parse: ', { userFields });
+      if (!ctx.state.currentUser) {
+        return;
+      }
+      if (!userFields.length) {
+        return;
+      }
+      const user = await ctx.db.getRepository('users').findOne({
+        filterByTk: ctx.state.currentUser.id,
+        fields: userFields,
       });
-    default:
-      return data;
-  }
+      ctx.logger?.info('filter-parse: ', {
+        $user: user?.toJSON(),
+      });
+      return user;
+    };
+  };
+  ctx.action.params.values.filter = await parseFilter(filter, {
+    timezone: ctx.get('x-timezone'),
+    now: new Date().toISOString(),
+    getField: (path: string) => {
+      const fieldPath = path
+        .split('.')
+        .filter((p) => !p.startsWith('$') && !isNumeric(p))
+        .join('.');
+      const { resourceName } = ctx.action;
+      return ctx.db.getFieldByPath(`${resourceName}.${fieldPath}`);
+    },
+    vars: {
+      $system: {
+        now: new Date().toISOString(),
+      },
+      $date: getDateVars(),
+      $user: getUser(),
+    },
+  });
+  await next();
 };
 
-export const queryData = async (ctx: Context, builder: QueryParams) => {
-  const { collection, measures, dimensions, orders, filter, limit, sql } = builder;
-  const model = ctx.db.getModel(collection);
-  const { queryParams, fieldMap } = parseBuilder(ctx, { collection, measures, dimensions, orders, filter, limit });
-  const data = await model.findAll(queryParams);
-  return processData(ctx, data, fieldMap);
-  // if (!sql) {
-  //   return await repository.find(parseBuilder(ctx, { collection, measures, dimensions, orders, filter, limit }));
-  // }
+export const cacheMiddleware = async (ctx: Context, next: Next) => {
+  const { uid, cache: cacheConfig, refresh } = ctx.action.params.values as QueryParams;
+  const plugin = ctx.app.getPlugin('data-visualization') as ChartsV2Plugin;
+  const cache = plugin.cache;
+  const useCache = cacheConfig?.enabled && uid;
 
-  // const statement = `SELECT ${sql.fields} FROM ${collection} ${sql.clauses}`;
-  // const [data] = await ctx.db.sequelize.query(statement);
-  // return data;
-};
-
-export const cacheWrap = async (
-  cache: Cache,
-  options: {
-    func: () => Promise<any>;
-    key: string;
-    ttl?: number;
-    useCache?: boolean;
-    refresh?: boolean;
-  },
-) => {
-  const { func, key, ttl, useCache, refresh } = options;
   if (useCache && !refresh) {
-    const data = await cache.get(key);
+    const data = await cache.get(uid);
     if (data) {
-      return data;
+      ctx.body = data;
+      return;
     }
   }
-  const data = await func();
+  await next();
   if (useCache) {
-    await cache.set(key, data, ttl);
+    console.log(uid, ctx.body);
+    await cache.set(uid, ctx.body, cacheConfig?.ttl || 30);
+    console.log(cache.get(uid));
   }
-  return data;
 };
 
-export const query = async (ctx: Context, next: Next) => {
-  const {
-    uid,
-    collection,
-    measures,
-    dimensions,
-    orders,
-    filter,
-    limit,
-    sql,
-    cache: cacheConfig,
-    refresh,
-  } = ctx.action.params.values as QueryParams;
+const checkPermission = (ctx: Context, next: Next) => {
+  const { collection } = ctx.action.params.values as QueryParams;
   const roleName = ctx.state.currentRole || 'anonymous';
   const can = ctx.app.acl.can({ role: roleName, resource: collection, action: 'list' });
   if (!can && roleName !== 'root') {
     ctx.throw(403, 'No permissions');
   }
+  return next();
+};
 
-  const plugin = ctx.app.getPlugin('data-visualization') as ChartsV2Plugin;
-  const cache = plugin.cache;
-  const useCache = cacheConfig?.enabled && uid;
-
+export const query = async (ctx: Context, next: Next) => {
   try {
-    ctx.body = await cacheWrap(cache, {
-      func: async () => await queryData(ctx, { collection, measures, dimensions, orders, filter, limit, sql }),
-      key: uid,
-      ttl: cacheConfig?.ttl || 30,
-      useCache: useCache ? true : false,
-      refresh,
-    });
+    await compose([
+      checkPermission,
+      cacheMiddleware,
+      parseVariables,
+      parseFieldAndAssociations,
+      parseBuilder,
+      queryData,
+      postProcess,
+    ])(ctx, async () => {});
   } catch (err) {
     ctx.app.logger.error('charts query: ', err);
     ctx.throw(500, err);
   }
-
   await next();
 };

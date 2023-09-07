@@ -29,15 +29,14 @@ function isNumeric(str: any) {
 }
 
 export const parseVariables = async (ctx, next) => {
-  const reqPath = ctx.method === 'POST' ? 'values.filter' : 'filter';
-  const filter = lodash.get(ctx.action.params, reqPath);
+  const filter = ctx.action.params.filter;
   if (!filter) {
     return next();
   }
-  const parsedFilter = await parseFilter(filter, {
+  ctx.action.params.filter = await parseFilter(filter, {
     timezone: ctx.get('x-timezone'),
     now: new Date().toISOString(),
-    getField: (path: string) => {
+    getField: (path) => {
       const fieldPath = path
         .split('.')
         .filter((p) => !p.startsWith('$') && !isNumeric(p))
@@ -53,6 +52,5 @@ export const parseVariables = async (ctx, next) => {
       $user: getUser(ctx),
     },
   });
-  lodash.set(ctx.action.params, reqPath, parsedFilter);
   await next();
 };
