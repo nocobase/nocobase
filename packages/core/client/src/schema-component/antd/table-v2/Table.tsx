@@ -204,340 +204,338 @@ const useValidator = (validator: (value: any) => string) => {
   }, []);
 };
 
-export const Table: any = React.memo((props: any) => {
-  const { token } = useToken();
-  const { pagination: pagination1, useProps, onChange, ...others1 } = props;
-  const { pagination: pagination2, onClickRow, ...others2 } = useProps?.() || {};
-  const {
-    dragSort = false,
-    showIndex = true,
-    onRowSelectionChange,
-    onChange: onTableChange,
-    rowSelection,
-    rowKey,
-    required,
-    onExpand,
-    ...others
-  } = { ...others1, ...others2 } as any;
-  const field = useArrayField(others);
-  const columns = useTableColumns(others);
-  const schema = useFieldSchema();
-  const isTableSelector = schema?.parent?.['x-decorator'] === 'TableSelectorProvider';
-  const selectorCtx = useTableSelectorContext();
-  const tableCtx = useTableBlockContext();
-  const ctx = isTableSelector ? selectorCtx : tableCtx;
-  const { expandFlag, allIncludesChildren } = ctx;
-  const onRowDragEnd = useMemoizedFn(others.onRowDragEnd || (() => {}));
-  const paginationProps = usePaginationProps(pagination1, pagination2);
-  const [expandedKeys, setExpandesKeys] = useState([]);
-  const [selectedRowKeys, setSelectedRowKeys] = useState<any[]>(field?.data?.selectedRowKeys || []);
-  const [selectedRow, setSelectedRow] = useState([]);
-  const dataSource = field?.value?.slice?.()?.filter?.(Boolean) || [];
-  const isRowSelect = rowSelection?.type !== 'none';
-  console.log(props);
-  let onRow = null,
-    highlightRow = '';
+export const Table: any = observer(
+  (props: any) => {
+    const { token } = useToken();
+    const { pagination: pagination1, useProps, onChange, ...others1 } = props;
+    const { pagination: pagination2, onClickRow, ...others2 } = useProps?.() || {};
+    const {
+      dragSort = false,
+      showIndex = true,
+      onRowSelectionChange,
+      onChange: onTableChange,
+      rowSelection,
+      rowKey,
+      required,
+      onExpand,
+      ...others
+    } = { ...others1, ...others2 } as any;
+    const field = useArrayField(others);
+    const columns = useTableColumns(others);
+    const schema = useFieldSchema();
+    const isTableSelector = schema?.parent?.['x-decorator'] === 'TableSelectorProvider';
+    const ctx = isTableSelector ? useTableSelectorContext() : useTableBlockContext();
+    const { expandFlag, allIncludesChildren } = ctx;
+    const onRowDragEnd = useMemoizedFn(others.onRowDragEnd || (() => {}));
+    const paginationProps = usePaginationProps(pagination1, pagination2);
+    const [expandedKeys, setExpandesKeys] = useState([]);
+    const [selectedRowKeys, setSelectedRowKeys] = useState<any[]>(field?.data?.selectedRowKeys || []);
+    const [selectedRow, setSelectedRow] = useState([]);
+    const dataSource = field?.value?.slice?.()?.filter?.(Boolean) || [];
+    const isRowSelect = rowSelection?.type !== 'none';
+    let onRow = null,
+      highlightRow = '';
 
-  if (onClickRow) {
-    onRow = (record) => {
-      return {
-        onClick: (e) => {
-          if (isPortalInBody(e.target)) {
-            return;
-          }
-          onClickRow(record, setSelectedRow, selectedRow);
-        },
+    if (onClickRow) {
+      onRow = (record) => {
+        return {
+          onClick: (e) => {
+            if (isPortalInBody(e.target)) {
+              return;
+            }
+            onClickRow(record, setSelectedRow, selectedRow);
+          },
+        };
       };
-    };
-    highlightRow = css`
-      & > td {
-        background-color: ${token.controlItemBgActiveHover} !important;
-      }
-      &:hover > td {
-        background-color: ${token.controlItemBgActiveHover} !important;
-      }
-    `;
-  }
-
-  useEffect(() => {
-    if (expandFlag) {
-      setExpandesKeys(allIncludesChildren);
-    } else {
-      setExpandesKeys([]);
+      highlightRow = css`
+        & > td {
+          background-color: ${token.controlItemBgActiveHover} !important;
+        }
+        &:hover > td {
+          background-color: ${token.controlItemBgActiveHover} !important;
+        }
+      `;
     }
-  }, [expandFlag, allIncludesChildren]);
 
-  const components = useMemo(() => {
-    return {
-      header: {
-        wrapper: (props) => {
-          return (
-            <DndContext>
-              <thead {...props} />
-            </DndContext>
-          );
+    useEffect(() => {
+      if (expandFlag) {
+        setExpandesKeys(allIncludesChildren);
+      } else {
+        setExpandesKeys([]);
+      }
+    }, [expandFlag, allIncludesChildren]);
+
+    const components = useMemo(() => {
+      return {
+        header: {
+          wrapper: (props) => {
+            return (
+              <DndContext>
+                <thead {...props} />
+              </DndContext>
+            );
+          },
+          cell: (props) => {
+            return (
+              <th
+                {...props}
+                className={cls(
+                  props.className,
+                  css`
+                    max-width: 300px;
+                    white-space: nowrap;
+                    &:hover .general-schema-designer {
+                      display: block;
+                    }
+                  `,
+                )}
+              />
+            );
+          },
         },
-        cell: (props) => {
-          return (
-            <th
+        body: {
+          wrapper: (props) => {
+            return (
+              <DndContext
+                onDragEnd={(e) => {
+                  if (!e.active || !e.over) {
+                    console.warn('move cancel');
+                    return;
+                  }
+                  const fromIndex = e.active?.data.current?.sortable?.index;
+                  const toIndex = e.over?.data.current?.sortable?.index;
+                  const from = field.value[fromIndex] || e.active;
+                  const to = field.value[toIndex] || e.over;
+                  onRowDragEnd({ from, to });
+                }}
+              >
+                <tbody {...props} />
+              </DndContext>
+            );
+          },
+          row: (props) => {
+            return <SortableRow {...props}></SortableRow>;
+          },
+          cell: (props) => (
+            <td
               {...props}
-              className={cls(
+              className={classNames(
                 props.className,
                 css`
                   max-width: 300px;
                   white-space: nowrap;
-                  &:hover .general-schema-designer {
-                    display: block;
+                  .nb-read-pretty-input-number {
+                    text-align: right;
+                  }
+                  .ant-color-picker-trigger {
+                    position: absolute;
+                    top: 50%;
+                    transform: translateY(-50%);
                   }
                 `,
               )}
             />
-          );
+          ),
         },
-      },
-      body: {
-        wrapper: (props) => {
-          return (
-            <DndContext
-              onDragEnd={(e) => {
-                if (!e.active || !e.over) {
-                  console.warn('move cancel');
-                  return;
-                }
-                const fromIndex = e.active?.data.current?.sortable?.index;
-                const toIndex = e.over?.data.current?.sortable?.index;
-                const from = field.value[fromIndex] || e.active;
-                const to = field.value[toIndex] || e.over;
-                onRowDragEnd({ from, to });
-              }}
-            >
-              <tbody {...props} />
-            </DndContext>
-          );
-        },
-        row: (props) => {
-          return <SortableRow {...props}></SortableRow>;
-        },
-        cell: (props) => (
-          <td
-            {...props}
-            className={classNames(
-              props.className,
-              css`
-                max-width: 300px;
-                white-space: nowrap;
-                .nb-read-pretty-input-number {
-                  text-align: right;
-                }
-                .ant-color-picker-trigger {
-                  position: absolute;
-                  top: 50%;
-                  transform: translateY(-50%);
-                }
-              `,
-            )}
-          />
-        ),
-      },
+      };
+    }, [field, onRowDragEnd, dragSort]);
+
+    const defaultRowKey = (record: any) => {
+      return field.value?.indexOf?.(record);
     };
-  }, [field, onRowDragEnd, dragSort]);
 
-  const defaultRowKey = (record: any) => {
-    return field.value?.indexOf?.(record);
-  };
+    const getRowKey = (record: any) => {
+      if (typeof rowKey === 'string') {
+        return record[rowKey]?.toString();
+      } else {
+        return (rowKey ?? defaultRowKey)(record)?.toString();
+      }
+    };
 
-  const getRowKey = (record: any) => {
-    if (typeof rowKey === 'string') {
-      return record[rowKey]?.toString();
-    } else {
-      return (rowKey ?? defaultRowKey)(record)?.toString();
-    }
-  };
-
-  const restProps = {
-    rowSelection: rowSelection
-      ? {
-          type: 'checkbox',
-          selectedRowKeys: selectedRowKeys,
-          onChange(selectedRowKeys: any[], selectedRows: any[]) {
-            field.data = field.data || {};
-            field.data.selectedRowKeys = selectedRowKeys;
-            setSelectedRowKeys(selectedRowKeys);
-            onRowSelectionChange?.(selectedRowKeys, selectedRows);
-          },
-          renderCell: (checked, record, index, originNode) => {
-            if (!dragSort && !showIndex) {
-              return originNode;
-            }
-            const current = props?.pagination?.current;
-            const pageSize = props?.pagination?.pageSize || 20;
-            if (current) {
-              index = index + (current - 1) * pageSize + 1;
-            } else {
-              index = index + 1;
-            }
-            if (record.__index) {
-              index = extractIndex(record.__index);
-            }
-            return (
-              <div
-                className={classNames(
-                  checked ? 'checked' : null,
-                  css`
-                    position: relative;
-                    display: flex;
-                    float: left;
-                    align-items: center;
-                    justify-content: space-evenly;
-                    padding-right: 8px;
-                    .nb-table-index {
-                      opacity: 0;
-                    }
-                    &:not(.checked) {
-                      .nb-table-index {
-                        opacity: 1;
-                      }
-                    }
-                  `,
-                  {
-                    [css`
-                      &:hover {
-                        .nb-table-index {
-                          opacity: 0;
-                        }
-                        .nb-origin-node {
-                          display: block;
-                        }
-                      }
-                    `]: isRowSelect,
-                  },
-                )}
-              >
+    const restProps = {
+      rowSelection: rowSelection
+        ? {
+            type: 'checkbox',
+            selectedRowKeys: selectedRowKeys,
+            onChange(selectedRowKeys: any[], selectedRows: any[]) {
+              field.data = field.data || {};
+              field.data.selectedRowKeys = selectedRowKeys;
+              setSelectedRowKeys(selectedRowKeys);
+              onRowSelectionChange?.(selectedRowKeys, selectedRows);
+            },
+            renderCell: (checked, record, index, originNode) => {
+              if (!dragSort && !showIndex) {
+                return originNode;
+              }
+              const current = props?.pagination?.current;
+              const pageSize = props?.pagination?.pageSize || 20;
+              if (current) {
+                index = index + (current - 1) * pageSize + 1;
+              } else {
+                index = index + 1;
+              }
+              if (record.__index) {
+                index = extractIndex(record.__index);
+              }
+              return (
                 <div
                   className={classNames(
                     checked ? 'checked' : null,
                     css`
                       position: relative;
                       display: flex;
+                      float: left;
                       align-items: center;
                       justify-content: space-evenly;
+                      padding-right: 8px;
+                      .nb-table-index {
+                        opacity: 0;
+                      }
+                      &:not(.checked) {
+                        .nb-table-index {
+                          opacity: 1;
+                        }
+                      }
                     `,
+                    {
+                      [css`
+                        &:hover {
+                          .nb-table-index {
+                            opacity: 0;
+                          }
+                          .nb-origin-node {
+                            display: block;
+                          }
+                        }
+                      `]: isRowSelect,
+                    },
                   )}
                 >
-                  {dragSort && <SortHandle id={getRowKey(record)} />}
-                  {showIndex && <TableIndex index={index} />}
-                </div>
-                {isRowSelect && (
                   <div
                     className={classNames(
-                      'nb-origin-node',
                       checked ? 'checked' : null,
                       css`
-                        position: absolute;
-                        right: 50%;
-                        transform: translateX(50%);
-                        &:not(.checked) {
-                          display: none;
-                        }
+                        position: relative;
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-evenly;
                       `,
                     )}
                   >
-                    {originNode}
+                    {dragSort && <SortHandle id={getRowKey(record)} />}
+                    {showIndex && <TableIndex index={index} />}
                   </div>
-                )}
-              </div>
-            );
-          },
-          ...rowSelection,
-        }
-      : undefined,
-  };
-  const SortableWrapper = useCallback<React.FC>(
-    ({ children }) => {
-      return dragSort
-        ? React.createElement<Omit<SortableContextProps, 'children'>>(
-            SortableContext,
-            {
-              items: field.value?.map?.(getRowKey) || [],
+                  {isRowSelect && (
+                    <div
+                      className={classNames(
+                        'nb-origin-node',
+                        checked ? 'checked' : null,
+                        css`
+                          position: absolute;
+                          right: 50%;
+                          transform: translateX(50%);
+                          &:not(.checked) {
+                            display: none;
+                          }
+                        `,
+                      )}
+                    >
+                      {originNode}
+                    </div>
+                  )}
+                </div>
+              );
             },
-            children,
-          )
-        : React.createElement(React.Fragment, {}, children);
-    },
-    [field, dragSort],
-  );
-  const fieldSchema = useFieldSchema();
-  const fixedBlock = fieldSchema?.parent?.['x-decorator-props']?.fixedBlock;
+            ...rowSelection,
+          }
+        : undefined,
+    };
+    const SortableWrapper = useCallback<React.FC>(
+      ({ children }) => {
+        return dragSort
+          ? React.createElement<Omit<SortableContextProps, 'children'>>(
+              SortableContext,
+              {
+                items: field.value?.map?.(getRowKey) || [],
+              },
+              children,
+            )
+          : React.createElement(React.Fragment, {}, children);
+      },
+      [field, dragSort],
+    );
+    const fieldSchema = useFieldSchema();
+    const fixedBlock = fieldSchema?.parent?.['x-decorator-props']?.fixedBlock;
 
-  const { height: tableHeight, tableSizeRefCallback } = useTableSize();
-  const scroll = useMemo(() => {
-    return fixedBlock
-      ? {
-          x: 'max-content',
-          y: tableHeight,
-        }
-      : {
-          x: 'max-content',
-        };
-  }, [fixedBlock, tableHeight]);
-  return (
-    <div
-      className={css`
-        height: 100%;
-        overflow: hidden;
-        .ant-table-wrapper {
+    const { height: tableHeight, tableSizeRefCallback } = useTableSize();
+    const scroll = useMemo(() => {
+      return fixedBlock
+        ? {
+            x: 'max-content',
+            y: tableHeight,
+          }
+        : {
+            x: 'max-content',
+          };
+    }, [fixedBlock, tableHeight]);
+    return (
+      <div
+        className={css`
           height: 100%;
-          .ant-spin-nested-loading {
+          overflow: hidden;
+          .ant-table-wrapper {
             height: 100%;
-            .ant-spin-container {
+            .ant-spin-nested-loading {
               height: 100%;
-              display: flex;
-              flex-direction: column;
+              .ant-spin-container {
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+              }
             }
           }
-        }
-        .ant-table {
-          overflow-x: auto;
-          overflow-y: hidden;
-        }
-      `}
-    >
-      <SortableWrapper>
-        <AntdTable
-          ref={tableSizeRefCallback}
-          rowKey={rowKey ?? defaultRowKey}
-          dataSource={dataSource}
-          {...others}
-          {...restProps}
-          pagination={paginationProps}
-          components={components}
-          onChange={(pagination, filters, sorter, extra) => {
-            onTableChange?.(pagination, filters, sorter, extra);
-          }}
-          onRow={onRow}
-          rowClassName={(record) => (selectedRow.includes(record[rowKey]) ? highlightRow : '')}
-          tableLayout={'auto'}
-          scroll={scroll}
-          columns={columns}
-          expandable={{
-            onExpand: (flag, record) => {
-              const newKeys = flag ? [...expandedKeys, record.id] : expandedKeys.filter((i) => record.id !== i);
-              setExpandesKeys(newKeys);
-              onExpand?.(flag, record);
-            },
-            expandedRowKeys: expandedKeys,
-          }}
-        />
-      </SortableWrapper>
-      {field.errors.length > 0 && (
-        <div className="ant-formily-item-error-help ant-formily-item-help ant-formily-item-help-enter ant-formily-item-help-enter-active">
-          {field.errors.map((error) => {
-            return error.messages.map((message) => <div key={message}>{message}</div>);
-          })}
-        </div>
-      )}
-    </div>
-  );
-});
-
-Table.displayName = 'Table';
+          .ant-table {
+            overflow-x: auto;
+            overflow-y: hidden;
+          }
+        `}
+      >
+        <SortableWrapper>
+          <AntdTable
+            ref={tableSizeRefCallback}
+            rowKey={rowKey ?? defaultRowKey}
+            dataSource={dataSource}
+            {...others}
+            {...restProps}
+            pagination={paginationProps}
+            components={components}
+            onChange={(pagination, filters, sorter, extra) => {
+              onTableChange?.(pagination, filters, sorter, extra);
+            }}
+            onRow={onRow}
+            rowClassName={(record) => (selectedRow.includes(record[rowKey]) ? highlightRow : '')}
+            tableLayout={'auto'}
+            scroll={scroll}
+            columns={columns}
+            expandable={{
+              onExpand: (flag, record) => {
+                const newKeys = flag ? [...expandedKeys, record.id] : expandedKeys.filter((i) => record.id !== i);
+                setExpandesKeys(newKeys);
+                onExpand?.(flag, record);
+              },
+              expandedRowKeys: expandedKeys,
+            }}
+          />
+        </SortableWrapper>
+        {field.errors.length > 0 && (
+          <div className="ant-formily-item-error-help ant-formily-item-help ant-formily-item-help-enter ant-formily-item-help-enter-active">
+            {field.errors.map((error) => {
+              return error.messages.map((message) => <div key={message}>{message}</div>);
+            })}
+          </div>
+        )}
+      </div>
+    );
+  },
+  { displayName: 'Table' },
+);

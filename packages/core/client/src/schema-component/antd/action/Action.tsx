@@ -22,6 +22,7 @@ import { ActionContextProvider } from './context';
 import { useA } from './hooks';
 import { ComposedAction } from './types';
 import { linkageAction } from './utils';
+import { FormProvider } from '../../';
 
 export const Action: ComposedAction = observer(
   (props: any) => {
@@ -113,7 +114,6 @@ export const Action: ComposedAction = observer(
         </SortableItem>
       );
     };
-
     return wrapSSR(
       <ActionContextProvider
         button={renderButton()}
@@ -126,10 +126,13 @@ export const Action: ComposedAction = observer(
         containerRefKey={containerRefKey}
         fieldSchema={fieldSchema}
       >
-        {popover && <RecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
         {!popover && renderButton()}
-        {!popover && props.children}
-        {element}
+
+        <FormProvider>
+          {popover && <RecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
+          {!popover && props.children}
+          {element}
+        </FormProvider>
       </ActionContextProvider>,
     );
   },
