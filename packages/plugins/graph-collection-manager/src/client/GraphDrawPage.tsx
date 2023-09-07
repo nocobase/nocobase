@@ -7,7 +7,6 @@ import { Snapline } from '@antv/x6-plugin-snapline';
 import { register } from '@antv/x6-react-shape';
 import { cx } from '@emotion/css';
 import { SchemaOptionsContext } from '@formily/react';
-import { useSearchParams } from 'react-router-dom';
 import {
   APIClientProvider,
   CollectionCategroriesContext,
@@ -25,13 +24,19 @@ import {
   useCurrentAppInfo,
   useGlobalTheme,
 } from '@nocobase/client';
-import lodash from 'lodash';
-import { Button, ConfigProvider, Layout, Switch, Tooltip, App, Spin } from 'antd';
+import { App, Button, ConfigProvider, Layout, Spin, Switch, Tooltip } from 'antd';
 import dagre from 'dagre';
+import lodash from 'lodash';
 import React, { createContext, forwardRef, useContext, useEffect, useLayoutEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAsyncDataSource, useCreateActionAndRefreshCM } from './action-hooks';
 import { AddCollectionAction } from './components/AddCollectionAction';
+import { ConnectorAction } from './components/ConnectorAction';
+import { DirectionAction } from './components/DirectionAction';
 import Entity from './components/Entity';
+import { FullscreenAction } from './components/FullScreenAction';
+import { LocateCollectionAction } from './components/LocateCollectionAction';
+import { SelectCollectionsAction } from './components/SelectCollectionsAction';
 import { SimpleNodeView } from './components/ViewNode';
 import useStyles from './style';
 import {
@@ -43,11 +48,6 @@ import {
   getPopupContainer,
   useGCMTranslation,
 } from './utils';
-import { LocateCollectionAction } from './components/LocateCollectionAction';
-import { SelectCollectionsAction } from './components/SelectCollectionsAction';
-import { DirectionAction } from './components/DirectionAction';
-import { ConnectorAction } from './components/ConnectorAction';
-import { FullscreenAction } from './components/FullScreenAction';
 const { drop, groupBy, last, maxBy, minBy, take, uniq } = lodash;
 
 const LINE_HEIGHT = 40;

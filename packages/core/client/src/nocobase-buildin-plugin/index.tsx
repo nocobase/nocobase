@@ -141,6 +141,8 @@ const getProps = (app: Application) => {
     };
     return { ...props, ...commands[app.error?.command?.name] };
   }
+
+  return {};
 };
 
 const AppMaintaining: FC<{ app: Application; error: Error }> = observer(({ app }) => {
