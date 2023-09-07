@@ -127,12 +127,11 @@ export const Action: ComposedAction = observer(
         fieldSchema={fieldSchema}
       >
         {!popover && renderButton()}
-
         <FormProvider>
           {popover && <RecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
           {!popover && props.children}
-          {element}
         </FormProvider>
+        {element}
       </ActionContextProvider>,
     );
   },
