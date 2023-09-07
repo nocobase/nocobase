@@ -25,7 +25,7 @@ export function getRemotePlugins(
     waitSeconds: 120,
     paths: pluginData.reduce<Record<string, string>>((memo, item) => {
       memo[item.packageName] = `${baseURL}${item.url}?noExt`;
-      memo[`${item.packageName}/client`] = `${baseURL}${item.url}.js?noExtAndIsClient`;
+      memo[`${item.packageName}/client`] = `${baseURL}${item.url}?noExtAndIsClient`;
       return memo;
     }, {}),
   });
