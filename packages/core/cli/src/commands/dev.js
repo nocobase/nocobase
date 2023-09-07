@@ -25,7 +25,7 @@ module.exports = (cli) => {
           './tsconfig.server.json',
           '-r',
           'tsconfig-paths/register',
-          `${APP_PACKAGE_ROOT}/src/index.ts`,
+          `"${APP_PACKAGE_ROOT}/src/index.ts"`,
           ...process.argv.slice(2),
         ]);
         return;
@@ -63,7 +63,7 @@ module.exports = (cli) => {
           './tsconfig.server.json',
           '-r',
           'tsconfig-paths/register',
-          `${APP_PACKAGE_ROOT}/src/index.ts`,
+          `"${APP_PACKAGE_ROOT}/src/index.ts"`,
           'start',
           ...process.argv.slice(3),
           `--port=${serverPort}`,

@@ -28,7 +28,7 @@ module.exports = (cli) => {
           './tsconfig.server.json',
           '-r',
           'tsconfig-paths/register',
-          `${APP_PACKAGE_ROOT}/src/index.ts`,
+          `"${APP_PACKAGE_ROOT}/src/index.ts"`,
           ...process.argv.slice(2),
         ]);
         return;
@@ -42,13 +42,13 @@ module.exports = (cli) => {
       }
       await postCheck(opts);
       if (opts.daemon) {
-        run('pm2', ['start', `${APP_PACKAGE_ROOT}/lib/index.js`, '--', ...process.argv.slice(2)]);
+        run('pm2', ['start', `"${APP_PACKAGE_ROOT}/lib/index.js"`, '--', ...process.argv.slice(2)]);
       } else {
         run(
           'pm2-runtime',
           [
             'start',
-            `${APP_PACKAGE_ROOT}/lib/index.js`,
+            `"${APP_PACKAGE_ROOT}/lib/index.js"`,
             NODE_ARGS ? `--node-args="${NODE_ARGS}"` : undefined,
             '--',
             ...process.argv.slice(2),

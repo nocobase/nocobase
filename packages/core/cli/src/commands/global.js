@@ -19,11 +19,11 @@ module.exports = (cli) => {
           './tsconfig.server.json',
           '-r',
           'tsconfig-paths/register',
-          `${APP_PACKAGE_ROOT}/src/index.ts`,
+          `"${APP_PACKAGE_ROOT}/src/index.ts"`,
           ...process.argv.slice(2),
         ]);
       } else if (isProd()) {
-        run('node', [`${APP_PACKAGE_ROOT}/lib/index.js`, ...process.argv.slice(2)]);
+        run('node', [`"${APP_PACKAGE_ROOT}/lib/index.js"`, ...process.argv.slice(2)]);
       }
     });
 };
