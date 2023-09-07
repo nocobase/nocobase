@@ -281,10 +281,7 @@ export const parseVariables = async (ctx: Context, next: Next) => {
       return ctx.db.getFieldByPath(`${resourceName}.${fieldPath}`);
     },
     vars: {
-      $system: {
-        now: new Date().toISOString(),
-      },
-      $date: getDateVars(),
+      $nDate: getDateVars(),
       $user: getUser(),
     },
   });
