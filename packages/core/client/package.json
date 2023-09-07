@@ -2,8 +2,8 @@
   "name": "@nocobase/client",
   "version": "0.13.0-alpha.8",
   "license": "Apache-2.0",
-  "main": "lib",
-  "module": "es/index.js",
+  "main": "lib/index.js",
+  "module": "es/index.mjs",
   "types": "es/index.d.ts",
   "dependencies": {
     "@ant-design/cssinjs": "^1.11.1",
