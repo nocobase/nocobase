@@ -2,10 +2,10 @@
   "name": "@nocobase/plugin-mobile-client",
   "version": "0.13.0-alpha.7",
   "main": "./dist/server/index.js",
-  "displayName": "Mobile-client",
+  "displayName": "Mobile client",
   "displayName.zh-CN": "移动端",
-  "description": "Provide mobile client access",
-  "description.zh-CN": "提供移动端访问",
+  "description": "Provides the ability to configure mobile pages",
+  "description.zh-CN": "提供移动端页面配置的能力",
   "devDependencies": {
     "@ant-design/icons": "5.x",
     "@formily/antd-v5": "1.x",

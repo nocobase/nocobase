@@ -1,9 +1,9 @@
 {
   "name": "@nocobase/plugin-saml",
-  "displayName": "SSO login - SAML",
-  "displayName.zh-CN": "SSO 登录 - SAML",
-  "description": "",
-  "description.zh-CN": "",
+  "displayName": "SAML auth - SSO login",
+  "displayName.zh-CN": "SAML 认证 - SSO 登录",
+  "description": "SAML authentication for NocoBase",
+  "description.zh-CN": "NocoBase 的 SAML 身份验证",
   "version": "0.13.0-alpha.7",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",

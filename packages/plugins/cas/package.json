@@ -1,9 +1,9 @@
 {
   "name": "@nocobase/plugin-cas",
-  "displayName": "SSO login - CAS",
-  "displayName.zh-CN": "SSO 登录 - CAS",
-  "description": "Unified identity authentication.",
-  "description.zh-CN": "提供CAS登录功能",
+  "displayName": "CAS auth - SSO login",
+  "displayName.zh-CN": "CAS 认证 - SSO 登录",
+  "description": "CAS authentication for NocoBase",
+  "description.zh-CN": "NocoBase 的 CAS 身份验证",
   "version": "0.13.0-alpha.7",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",

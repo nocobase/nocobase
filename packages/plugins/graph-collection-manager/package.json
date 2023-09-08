@@ -1,9 +1,9 @@
 {
   "name": "@nocobase/plugin-graph-collection-manager",
-  "displayName": "graph collection manager",
-  "displayName.zh-CN": "数据库可视化管理",
-  "description": "database collection manage",
-  "description.zh-CN": "数据库管理。",
+  "displayName": "Graph collection manager",
+  "displayName.zh-CN": "可视化的数据表管理",
+  "description": "An ER diagram-like tool",
+  "description.zh-CN": "类似 ER 图的工具",
   "version": "0.13.0-alpha.7",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",

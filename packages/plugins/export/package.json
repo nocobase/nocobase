@@ -1,9 +1,9 @@
 {
   "name": "@nocobase/plugin-export",
-  "displayName": "Export",
-  "displayName.zh-CN": "导出",
-  "description": "Export collection records to Excel table",
-  "description.zh-CN": "导出数据表记录为 Excel 表格",
+  "displayName": "Data export",
+  "displayName.zh-CN": "数据导出",
+  "description": "Export data in excel format",
+  "description.zh-CN": "导出 excel 格式的数据",
   "version": "0.13.0-alpha.7",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
