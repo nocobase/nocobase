@@ -1,15 +1,16 @@
-import { DeleteOutlined, FileWordOutlined, SettingOutlined } from '@ant-design/icons';
-import { App, Button, Card, Col, Popconfirm, Row, Space, Switch, Typography, message } from 'antd';
+import { App, Card, Divider, Popconfirm, Space, Switch, Typography, message } from 'antd';
+import classnames from 'classnames';
 import React, { FC, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import classnames from 'classnames';
 
-import type { IPluginData } from './types';
+import { ArrowUpOutlined, DeleteOutlined, FileWordOutlined, ReadOutlined, SettingOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
 import { useAPIClient } from '../api-client';
-import { useStyles } from './style';
 import { PluginDetail } from './PluginDetail';
 import { PluginUpgradeModal } from './PluginForm/modal/PluginUpgradeModal';
+import { useStyles } from './style';
+import type { IPluginData } from './types';
 
 interface IPluginInfo extends IPluginCard {
   onClick: () => void;
@@ -40,59 +41,91 @@ function PluginInfo(props: IPluginInfo) {
         />
       )}
       <Card
+        size={'small'}
         bordered={false}
         onClick={() => {
           !error && onClick();
         }}
-        headStyle={{ border: 'none' }}
-        bodyStyle={{ paddingTop: 5 }}
+        headStyle={{ border: 'none', minHeight: 'inherit', paddingTop: 14 }}
+        bodyStyle={{ paddingTop: 10 }}
         style={{ marginBottom: theme.marginLG }}
         title={<div>{displayName || name || packageName}</div>}
         hoverable
+        className={css`
+          .ant-card-actions {
+            li .ant-space {
+              gap: 2px !important;
+            }
+            li a {
+              font-size: 12px;
+              .anticon {
+                margin-right: 3px;
+                /* display: none; */
+              }
+            }
+            li:last-child {
+              width: 20% !important;
+            }
+            li:first-child {
+              width: 80% !important;
+              border-inline-end: 0;
+              text-align: left;
+              padding-left: 16px;
+            }
+          }
+        `}
         actions={[
-          <div key="setting" className={classnames({ [styles.cardActionDisabled]: !enabled || error })}>
-            <SettingOutlined
-              onClick={(e) => {
-                e.stopPropagation();
-                if (!enabled || error) return;
-                navigate(`/admin/settings/${name}`);
-              }}
-            />
-          </div>,
-          <div
-            key={'document'}
-            onClick={(e) => {
-              e.stopPropagation();
-              window.open(`/docs/#/static/plugins/${packageName}/README`);
-            }}
-          >
-            <FileWordOutlined />
-          </div>,
-          <Popconfirm
-            key={'delete'}
-            disabled={builtIn}
-            title={t('Are you sure to delete this plugin?')}
-            onConfirm={async (e) => {
-              e.stopPropagation();
-              await api.request({
-                url: `pm:remove/${name}`,
-              });
-              message.success(t('The deletion was successful.'));
-              // window.location.reload();
-            }}
-            onCancel={(e) => e.stopPropagation()}
-            okText={t('Yes')}
-            cancelText={t('No')}
-          >
-            <div
-              onClick={(e) => {
-                e.stopPropagation();
-              }}
-              className={classnames({ [styles.cardActionDisabled]: builtIn })}
-            >
-              <DeleteOutlined />
-            </div>
-          </Popconfirm>,
+          <Space split={<Divider type="vertical" />} key={'1'}>
+            <a key={'5'}>
+              <ReadOutlined /> {t('Docs')}
+            </a>
+            {!builtIn && type && (
+              <a
+                key={'3'}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowUploadForm(true);
+                }}
+              >
+                <ArrowUpOutlined /> {t('Update')}
+              </a>
+            )}
+            {enabled ? (
+              <a
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/admin/settings/${name}`);
+                }}
+              >
+                <SettingOutlined /> {t('Settings')}
+              </a>
+            ) : (
+              <Popconfirm
+                key={'delete'}
+                disabled={builtIn}
+                title={t('Are you sure to delete this plugin?')}
+                onConfirm={async (e) => {
+                  e.stopPropagation();
+                  await api.request({
+                    url: `pm:remove/${name}`,
+                  });
+                  window.location.reload();
+                }}
+                onCancel={(e) => e.stopPropagation()}
+                okText={t('Yes')}
+                cancelText={t('No')}
+              >
+                <a
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                  className={classnames({ [styles.cardActionDisabled]: builtIn })}
+                >
+                  <DeleteOutlined /> {t('Remove')}
+                </a>
+              </Popconfirm>
+            )}
+          </Space>,
           <Switch
             key={'enable'}
             size={'small'}
@@ -103,51 +136,37 @@ function PluginInfo(props: IPluginInfo) {
                 message.error(t("Dependencies check failed, can't enable."));
                 return;
               }
-              // modal.warning({
-              //   title: checked ? t('Plugin starting...') : t('Plugin stopping...'),
-              //   content: t('The application is reloading, please do not close the page.'),
-              //   okButtonProps: {
-              //     style: {
-              //       display: 'none',
-              //     },
-              //   },
-              // });
-              setEnabledVal(checked);
               await api.request({
                 url: `pm:${checked ? 'enable' : 'disable'}/${name}`,
               });
-              // window.location.reload();
             }}
             checked={enabledVal}
           ></Switch>,
-        ]}
+        ].filter(Boolean)}
       >
-        <Row justify="space-between">
-          <Col span={16}>
-            <Card.Meta
-              description={
-                <Space direction="vertical" style={{ width: '100%' }}>
-                  <Typography.Text ellipsis type="secondary">
-                    {version}
-                  </Typography.Text>
-                  {!error ? (
-                    <Typography.Paragraph
-                      style={{ height: theme.fontSize * theme.lineHeight * 3 }}
-                      type="secondary"
-                      ellipsis={{ rows: 3 }}
-                    >
-                      {description}
-                    </Typography.Paragraph>
-                  ) : (
-                    <Typography.Text type="danger">
-                      {t('Plugin loading failed. Please check the server logs.')}
-                    </Typography.Text>
-                  )}
-                </Space>
-              }
-            />
-          </Col>
-
+        <Card.Meta
+          description={
+            !error ? (
+              <Typography.Paragraph
+                style={{ height: theme.fontSize * theme.lineHeight * 3 }}
+                type={isCompatible ? 'secondary' : 'danger'}
+                ellipsis={{ rows: 3 }}
+              >
+                {isCompatible ? description : t('Plugin dependencies check failed')}
+              </Typography.Paragraph>
+            ) : (
+              <Typography.Text type="danger">
+                {t('Plugin loading failed. Please check the server logs.')}
+              </Typography.Text>
+            )
+          }
+        />
+        {/* {!isCompatible && !error && (
+          <Button style={{ padding: 0 }} type="link">
+            <Typography.Text type="danger">{t('Dependencies check failed')}</Typography.Text>
+          </Button>
+        )} */}
+        {/*
           <Col span={8}>
             <Space direction="vertical" align="end" style={{ display: 'flex', marginTop: -10 }}>
               {type && (
@@ -162,19 +181,14 @@ function PluginInfo(props: IPluginInfo) {
                   {t('Upgrade plugin')}
                 </Button>
               )}
-              {!isCompatible && !error && (
-                <Button style={{ padding: 0 }} type="link">
-                  <Typography.Text type="danger">{t('Dependencies check failed')}</Typography.Text>
-                </Button>
-              )}
+
               {!error && (
                 <Button style={{ padding: 0 }} type="link">
                   {t('More details')}
                 </Button>
               )}
             </Space>
-          </Col>
-        </Row>
+          </Col> */}
       </Card>
     </>
   );
