@@ -2,11 +2,11 @@ import { Modal } from 'antd';
 import React, { FC } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useStyles } from '../../style';
+import { IPluginData } from '../../types';
 import { PluginNpmForm } from '../form/PluginNpmForm';
 import { PluginUploadForm } from '../form/PluginUploadForm';
 import { PluginUrlForm } from '../form/PluginUrlForm';
-import { IPluginData } from '../../types';
-import { useStyles } from '../../style';
 
 interface IPluginUpgradeModalProps {
   onClose: (refresh?: boolean) => void;
@@ -22,7 +22,7 @@ export const PluginUpgradeModal: FC<IPluginUpgradeModalProps> = ({ onClose, isSh
       onCancel={() => onClose()}
       footer={null}
       destroyOnClose
-      title={t('Upgrade plugin')}
+      title={t('Update plugin')}
       width={580}
       open={isShow}
       bodyStyle={{ marginTop: theme.marginLG }}

@@ -665,7 +665,7 @@ export default {
   "Add type": "Añadir tipo",
   "Changelog": "Registro de cambios",
   "Dependencies check": "Comprobación de dependencias",
-  "Upgrade plugin": "Actualizar plugin",
+  "Update plugin": "Actualizar plugin",
   "Installing": "Instalando",
   "The deletion was successful.": "Eliminación correcta",
   "Plugin Zip File": "Archivo Zip del plugin",

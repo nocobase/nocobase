@@ -640,7 +640,7 @@ export default {
   "Add type": "タイプを追加",
   "Changelog": "変更履歴",
   "Dependencies check": "依存関係のチェック",
-  "Upgrade plugin": "プラグインをアップグレード",
+  "Update plugin": "プラグインをアップグレード",
   "Installing": "インストール中",
   "The deletion was successful.": "削除に成功しました。",
   "Plugin Zip File": "プラグインZipファイル",

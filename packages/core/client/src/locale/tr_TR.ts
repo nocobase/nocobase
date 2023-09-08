@@ -517,7 +517,7 @@ export default {
   "Add type": "Tür ekle",
   "Changelog": "Değişiklik günlüğü",
   "Dependencies check": "Bağımlılıkların kontrolü",
-  "Upgrade plugin": "Eklentiyi yükselt",
+  "Update plugin": "Eklentiyi yükselt",
   "Installing": "Yükleniyor",
   "The deletion was successful.": "Silme başarılı.",
   "Plugin Zip File": "Eklenti Zip Dosyası",

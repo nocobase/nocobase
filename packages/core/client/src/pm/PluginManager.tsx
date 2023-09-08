@@ -1,19 +1,20 @@
 export * from './PluginManagerLink';
 import { PageHeader } from '@ant-design/pro-layout';
-import { Button, Col, Divider, Result, Row, Space, Spin, Tabs, Input } from 'antd';
+import { useDebounce } from 'ahooks';
+import { Button, Divider, Input, Result, Space, Spin, Tabs } from 'antd';
 import _ from 'lodash';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useDebounce } from 'ahooks';
 
+import { css } from '@emotion/css';
 import { useACLRoleContext } from '../acl/ACLProvider';
 import { useRequest } from '../api-client';
 import { useToken } from '../style';
 import { PluginCard } from './PluginCard';
+import { PluginAddModal } from './PluginForm/modal/PluginAddModal';
 import { useStyles } from './style';
 import { IPluginData } from './types';
-import { PluginAddModal } from './PluginForm/modal/PluginAddModal';
 
 export interface TData {
   data: IPluginData[];
@@ -65,7 +66,7 @@ const LocalPlugins = () => {
         list: _.filter(list, (item) => !item.enabled),
       },
       {
-        type: 'Dependencies Check Failed',
+        type: 'Problematic',
         list: _.filter(list, (item) => !item.isCompatible),
       },
     ];
@@ -108,20 +109,28 @@ const LocalPlugins = () => {
           if (isRefresh) refresh();
         }}
       />
-      <Space direction="vertical" size="middle" style={{ display: 'flex', width: '100%' }}>
-        <Row justify="space-between">
-          <Col>
-            <Space size={0} split={<Divider type="vertical" />}>
+      <div style={{ width: '100%' }}>
+        <div
+          style={{ marginBottom: theme.margin }}
+          className={css`
+            justify-content: space-between;
+            display: flex;
+          `}
+        >
+          <div>
+            <Space size={theme.marginXXS} split={<Divider type="vertical" />}>
               {filterList.map((item, index) => (
-                <Button onClick={() => setFilterIndex(index)} key={item.type} type="link">
-                  <span style={{ fontWeight: filterIndex === index ? 'bold' : 'normal' }}>
-                    {t(item.type)}({item.list?.length})
-                  </span>
-                </Button>
+                <a
+                  onClick={() => setFilterIndex(index)}
+                  key={item.type}
+                  style={{ fontWeight: filterIndex === index ? 'bold' : 'normal' }}
+                >
+                  {t(item.type)}({item.list?.length})
+                </a>
               ))}
             </Space>
-          </Col>
-          <Col>
+          </div>
+          <div>
             <Space>
               <Input
                 allowClear
@@ -129,19 +138,28 @@ const LocalPlugins = () => {
                 onChange={(e) => handleSearch(e.currentTarget.value)}
               />
               <Button onClick={() => setShowAddForm(true)} type="primary">
-                {t('New plugin')}
+                {t('Add new')}
               </Button>
             </Space>
-          </Col>
-        </Row>
-        <Row gutter={theme.marginLG}>
+          </div>
+        </div>
+        <div
+          className={css`
+            --grid-gutter: ${theme.margin}px;
+            --extensions-card-width: 300px;
+            display: grid;
+            grid-column-gap: var(--grid-gutter);
+            grid-row-gap: var(--grid-gutter);
+            grid-template-columns: repeat(auto-fill, var(--extensions-card-width));
+            justify-content: center;
+            margin: auto;
+          `}
+        >
           {pluginList.map((item) => (
-            <Col key={item.id} xs={24} sm={24} md={12} lg={8} xl={6} xxl={6}>
-              <PluginCard data={item} />
-            </Col>
+            <PluginCard key={item.name} data={item} />
           ))}
-        </Row>
-      </Space>
+        </div>
+      </div>
     </>
   );
 };

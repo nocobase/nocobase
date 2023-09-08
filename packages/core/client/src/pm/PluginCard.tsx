@@ -48,7 +48,7 @@ function PluginInfo(props: IPluginInfo) {
         }}
         headStyle={{ border: 'none', minHeight: 'inherit', paddingTop: 14 }}
         bodyStyle={{ paddingTop: 10 }}
-        style={{ marginBottom: theme.marginLG }}
+        // style={{ marginBottom: theme.marginLG }}
         title={<div>{displayName || name || packageName}</div>}
         hoverable
         className={css`
@@ -97,7 +97,7 @@ function PluginInfo(props: IPluginInfo) {
                   navigate(`/admin/settings/${name}`);
                 }}
               >
-                <SettingOutlined /> {t('Settings')}
+                <SettingOutlined /> {t('Setting')}
               </a>
             ) : (
               <Popconfirm
@@ -178,7 +178,7 @@ function PluginInfo(props: IPluginInfo) {
                   ghost
                   type="primary"
                 >
-                  {t('Upgrade plugin')}
+                  {t('Update plugin')}
                 </Button>
               )}
               
