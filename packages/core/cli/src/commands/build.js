@@ -18,7 +18,7 @@ module.exports = (cli) => {
     .option('--no-dts', 'not generate dts')
     .action(async (pkgs, options) => {
       nodeCheck();
-      if (options.compile || options.watch || isPackageValid('@nocobase/build/src/index.ts')) {
+      if (options.compile || options.watch || !isPackageValid('@nocobase/build/lib')) {
         await run('yarn', ['build', options.watch ? '--watch' : ''], {
           cwd: resolve(process.cwd(), 'packages/core/build'),
         });
