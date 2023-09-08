@@ -125,6 +125,10 @@ export class CollectionRepository extends Repository {
     }
 
     const options = collection.options;
+    if (!options.schema && this.database.inDialect('postgres')) {
+      options.schema = this.database.options.schema || 'public';
+    }
+
     const fields = [];
     for (const [name, field] of collection.fields) {
       fields.push({
