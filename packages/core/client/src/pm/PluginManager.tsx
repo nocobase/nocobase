@@ -64,6 +64,10 @@ const LocalPlugins = () => {
         type: 'Not enabled',
         list: _.filter(list, (item) => !item.enabled),
       },
+      {
+        type: 'Dependencies Check Failed',
+        list: _.filter(list, (item) => !item.isCompatible),
+      },
     ];
   }, [data?.data]);
 
@@ -132,7 +136,7 @@ const LocalPlugins = () => {
         </Row>
         <Row gutter={theme.marginLG}>
           {pluginList.map((item) => (
-            <Col key={item.id} xs={24} sm={24} md={12} lg={8} xl={6} xxl={4}>
+            <Col key={item.id} xs={24} sm={24} md={12} lg={8} xl={6} xxl={6}>
               <PluginCard data={item} />
             </Col>
           ))}
