@@ -11,13 +11,14 @@ const PLUGIN_STATICS_PATH = '/static/plugins/';
 
 interface PluginDocumentProps {
   url: string;
+  packageName?: string;
 }
 
 export const PluginDocument: React.FC<PluginDocumentProps> = memo((props) => {
   const { isDarkTheme } = useGlobalTheme();
   const { componentCls, hashId } = useMarkdownStyles({ isDarkTheme });
   const { styles } = useStyles();
-  const { url } = props;
+  const { url, packageName } = props;
   const [docUrl, setDocUrl] = useState(url);
   const { data, loading, error } = useRequest<string>(
     { url: docUrl, baseURL: '/' },
@@ -36,12 +37,12 @@ export const PluginDocument: React.FC<PluginDocumentProps> = memo((props) => {
       // replace img src
       res = res.replace(/src="(.*?)"/g, (match, src: string) => {
         if (src.startsWith('http') || src.startsWith('//:')) return match;
-        return `src="${PLUGIN_STATICS_PATH}/@nocobase/plugin-dumu-saas-store/${src}"`;
+        return `src="${PLUGIN_STATICS_PATH}${packageName}/${src}"`;
       });
       return res;
     }
     return '';
-  }, [html]);
+  }, [html, packageName]);
 
   const handleSwitchDocLang = useCallback((e: MouseEvent) => {
     const url = (e.target as HTMLDivElement).getAttribute('href');

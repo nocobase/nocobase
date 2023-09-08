@@ -108,7 +108,13 @@ export const PluginDetail: FC<IPluginDetail> = ({ plugin, onCancel }) => {
       label: t('Readme'),
       children: (
         <Row gutter={20}>
-          <Col span={16}>{plugin?.readmeUrl ? <PluginDocument url={plugin?.readmeUrl} /> : t('No README.md file')}</Col>
+          <Col span={16}>
+            {plugin?.readmeUrl ? (
+              <PluginDocument url={plugin?.readmeUrl} packageName={plugin.packageName} />
+            ) : (
+              t('No README.md file')
+            )}
+          </Col>
           <Col span={8}>
             <Row>
               {plugin.name && (
