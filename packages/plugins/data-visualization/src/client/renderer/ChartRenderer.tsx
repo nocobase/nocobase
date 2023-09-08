@@ -10,7 +10,7 @@ import {
 import { Empty, Result, Spin, Typography } from 'antd';
 import React, { useContext } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { ChartConfigContext } from '../block';
+import { ChartConfigContext } from '../configure/ChartConfigure';
 import { useData, useFieldTransformer, useFieldsWithAssociation } from '../hooks';
 import { useChartsTranslation } from '../locale';
 import { createRendererSchema, getField } from '../utils';

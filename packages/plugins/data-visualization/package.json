@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-data-visualization",
-  "version": "0.13.0-alpha.7",
+  "version": "0.13.0-alpha.9",
   "displayName": "Data Visualization",
   "displayName.zh-CN": "数据可视化",
   "description": "Provides business intelligence and data visualization features",
@@ -17,6 +17,7 @@
     "@testing-library/react": "^14.0.0",
     "antd": "5.x",
     "classnames": "^2.3.1",
+    "koa-compose": "^4.1.0",
     "lodash": "^4.17.21",
     "react": "^18.2.0",
     "react-error-boundary": "^4.0.10",

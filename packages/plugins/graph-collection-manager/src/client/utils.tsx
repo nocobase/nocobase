@@ -63,14 +63,14 @@ export const formatData = (data) => {
           ?.fields.map((v) => {
             return { ...v, sourceCollectionName: item.name };
           });
-        return arr.concat(parentFields);
+        return parentFields ? arr.concat(parentFields) : arr;
       },
       [],
     );
     uniqBy(totalFields.concat(inheritedFields), 'name').forEach((field) => {
       field.uiSchema &&
         ports.push({
-          id: field.key,
+          id: field.name,
           group: 'list',
           ...field,
         });
@@ -551,4 +551,8 @@ export const getPopupContainer = () => {
     return graphContainer;
   }
   return (graphContainer = document.getElementById('graph_container'));
+};
+
+export const cleanGraphContainer = () => {
+  graphContainer = null;
 };

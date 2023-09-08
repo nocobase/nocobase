@@ -1,7 +1,8 @@
 import { Database } from '@nocobase/database';
 import { MockServer, mockServer } from '@nocobase/test';
-import { queryData } from '../actions/query';
+import { parseBuilder, parseFieldAndAssociations, queryData } from '../actions/query';
 import ChartsV2Plugin from '../plugin';
+import compose from 'koa-compose';
 
 describe('api', () => {
   let app: MockServer;
@@ -52,51 +53,67 @@ describe('api', () => {
   });
 
   test('query', async () => {
-    const result = await queryData({ db } as any, {
-      collection: 'chart_test',
-      measures: [
-        {
-          field: ['price'],
-          alias: 'Price',
+    const ctx = {
+      db,
+      action: {
+        params: {
+          values: {
+            collection: 'chart_test',
+            measures: [
+              {
+                field: ['price'],
+                alias: 'Price',
+              },
+              {
+                field: ['count'],
+                alias: 'Count',
+              },
+            ],
+            dimensions: [
+              {
+                field: ['title'],
+                alias: 'Title',
+              },
+            ],
+          },
         },
-        {
-          field: ['count'],
-          alias: 'Count',
-        },
-      ],
-      dimensions: [
-        {
-          field: ['title'],
-          alias: 'Title',
-        },
-      ],
-    });
-    expect(result).toBeDefined();
+      },
+    } as any;
+    await compose([parseFieldAndAssociations, parseBuilder, queryData])(ctx, async () => {});
+    expect(ctx.action.params.values.data).toBeDefined();
   });
 
   test('query with sort', async () => {
-    const result = await queryData({ db } as any, {
-      collection: 'chart_test',
-      measures: [
-        {
-          field: ['price'],
-          aggregation: 'sum',
-          alias: 'Price',
+    const ctx = {
+      db,
+      action: {
+        params: {
+          values: {
+            collection: 'chart_test',
+            measures: [
+              {
+                field: ['price'],
+                aggregation: 'sum',
+                alias: 'Price',
+              },
+            ],
+            dimensions: [
+              {
+                field: ['title'],
+                alias: 'Title',
+              },
+              {
+                field: ['createdAt'],
+                format: 'YYYY-MM',
+              },
+            ],
+            orders: [{ field: 'createdAt', order: 'asc' }],
+          },
         },
-      ],
-      dimensions: [
-        {
-          field: ['title'],
-          alias: 'Title',
-        },
-        {
-          field: ['createdAt'],
-          format: 'YYYY-MM',
-        },
-      ],
-      orders: [{ field: 'createdAt', order: 'asc' }],
-    });
-    expect(result).toBeDefined();
-    expect(result).toMatchObject([{ createdAt: '2023-01' }, { createdAt: '2023-02' }]);
+      },
+    } as any;
+    await compose([parseFieldAndAssociations, parseBuilder, queryData])(ctx, async () => {});
+    expect(ctx.action.params.values.data).toBeDefined();
+    expect(ctx.action.params.values.data).toMatchObject([{ createdAt: '2023-01' }, { createdAt: '2023-02' }]);
   });
 });

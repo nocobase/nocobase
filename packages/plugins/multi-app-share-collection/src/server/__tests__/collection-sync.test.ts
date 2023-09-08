@@ -240,6 +240,33 @@ pgOnly()('collection sync', () => {
     ).toBeFalsy();
   });
 
+  it('should use sub app role model', async () => {
+    await mainApp.db.getRepository('collections.fields', 'roles').create({
+      values: {
+        name: 'role-field',
+        type: 'string',
+      },
+      context: {},
+    });
+
+    await mainDb.getRepository('applications').create({
+      values: {
+        name: 'sub1',
+      },
+      context: {
+        waitSubAppInstall: true,
+      },
+    });
+
+    const subApp1 = await AppSupervisor.getInstance().getApp('sub1');
+
+    await subApp1.db.getRepository('roles').create({
+      values: {
+        name: 'role1',
+      },
+    });
+  });
+
   it('should sync user collections', async () => {
     const subApp1Record = await mainDb.getRepository('applications').create({
       values: {

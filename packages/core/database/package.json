@@ -1,13 +1,13 @@
 {
   "name": "@nocobase/database",
-  "version": "0.13.0-alpha.7",
+  "version": "0.13.0-alpha.9",
   "description": "",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "license": "Apache-2.0",
   "dependencies": {
-    "@nocobase/logger": "0.13.0-alpha.7",
-    "@nocobase/utils": "0.13.0-alpha.7",
+    "@nocobase/logger": "0.13.0-alpha.9",
+    "@nocobase/utils": "0.13.0-alpha.9",
     "async-mutex": "^0.3.2",
     "cron-parser": "4.4.0",
     "dayjs": "^1.11.8",
