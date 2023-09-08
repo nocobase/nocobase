@@ -762,4 +762,5 @@ export default {
   "Select all":"Select all",
   "Restart": "Restart",
   "Restart application": "Restart application",
+  "Plugins Document": "Plugins Document"
 };

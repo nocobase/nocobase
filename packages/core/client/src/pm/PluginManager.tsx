@@ -124,6 +124,14 @@ const LocalPlugins = () => {
                 placeholder={t('Search plugin')}
                 onChange={(e) => handleSearch(e.currentTarget.value)}
               />
+              <Button
+                onClick={() => {
+                  window.open('/docs/');
+                }}
+                type="primary"
+              >
+                {t('Plugins Document')}
+              </Button>
               <Button onClick={() => setShowAddForm(true)} type="primary">
                 {t('New plugin')}
               </Button>

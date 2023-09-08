@@ -667,4 +667,5 @@ export default {
   "Search plugin": "プラグインを検索",
   "Author": "著者",
   "Plugin loading failed. Please check the server logs.": "プラグインのロードに失敗しました。サーバーログを確認してください。",
+  "Plugins Document": "プラグインドキュメント",
 }

@@ -747,5 +747,6 @@ export default {
   "Current form": "Formulaire actuel",
   "Current object":"Objet actuel",
   "Linkage with form fields":"Lien avec les champs de formulaire",
-  "Allow add new, update and delete actions":"Autoriser les actions d'ajout, de mise à jour et de suppression"
+  "Allow add new, update and delete actions": "Autoriser les actions d'ajout, de mise à jour et de suppression",
+  "Plugins Document": "Document de plugins",
 };
