@@ -1,13 +1,12 @@
-import React, { useMemo } from 'react';
 import { Alert, Col, Modal, Row, Space, Spin, Table, Tabs, TabsProps, Tag, Typography } from 'antd';
-import { FC } from 'react';
-import { IPluginData } from './types';
-import { useRequest } from '../api-client';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import { useStyles } from './style';
-import { PluginDocument } from './PluginDocument';
+import React, { FC, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useRequest } from '../api-client';
+import { PluginDocument } from './PluginDocument';
+import { useStyles } from './style';
+import { IPluginData } from './types';
 
 dayjs.extend(relativeTime);
 
@@ -202,11 +201,15 @@ export const PluginDetail: FC<IPluginDetail> = ({ plugin, onCancel }) => {
             </Typography.Text>
           ) : (
             <>
-              <Alert
-                message={t(
-                  'If the compatibility check fails, you should change the dependent version to meet the version requirements.',
-                )}
-              ></Alert>
+              {!data?.data?.['isCompatible'] && (
+                <Alert
+                  showIcon
+                  type={'error'}
+                  message={t(
+                    'Plugin dependencies check failed, you should change the dependent version to meet the version requirements.',
+                  )}
+                />
+              )}
               <Table
                 style={{ marginTop: theme.margin }}
                 rowKey={'name'}

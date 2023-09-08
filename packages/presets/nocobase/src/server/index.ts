@@ -1,4 +1,4 @@
-import { Plugin } from '@nocobase/server';
+import { Plugin, PluginManager } from '@nocobase/server';
 import _ from 'lodash';
 import path from 'path';
 
@@ -78,9 +78,17 @@ export class PresetNocoBase extends Plugin {
   get allPlugins() {
     return this.builtInPlugins
       .map((name) => {
-        return { name, enabled: true, builtIn: true } as any;
+        const packageName = PluginManager.getPackageName(name);
+        const packageJson = PluginManager.getPackageJson(packageName);
+        return { name, enabled: true, builtIn: true, version: packageJson.version } as any;
       })
-      .concat(this.localPlugins.map((name) => ({ name })));
+      .concat(
+        this.localPlugins.map((name) => {
+          const packageName = PluginManager.getPackageName(name);
+          const packageJson = PluginManager.getPackageJson(packageName);
+          return { name, version: packageJson.version };
+        }),
+      );
   }
 
   async createIfNotExist() {

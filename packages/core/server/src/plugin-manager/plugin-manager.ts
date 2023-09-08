@@ -1,30 +1,30 @@
 import { CleanOptions, Collection, SyncOptions } from '@nocobase/database';
 import execa from 'execa';
-import _ from 'lodash';
 import fs from 'fs';
+import _ from 'lodash';
 import net from 'net';
 import { resolve, sep } from 'path';
 import Application from '../application';
 import { createAppProxy } from '../helper';
 import { Plugin } from '../plugin';
+import { getExposeChangelogUrl, getExposeReadmeUrl } from './clientStaticMiddleware';
 import collectionOptions from './options/collection';
 import resourceOptions from './options/resource';
 import { PluginManagerRepository } from './plugin-manager-repository';
+import { PluginData } from './types';
 import {
-  updatePluginByCompressedFileUrl,
   checkCompatible,
   copyTempPackageToStorageAndLinkToNodeModules,
   downloadAndUnzipToTempDir,
   getCompatible,
+  getNpmInfo,
   getPluginInfoByNpm,
   removePluginPackage,
+  removeTmpDir,
   requireModule,
   requireNoCache,
-  removeTmpDir,
-  getNpmInfo,
+  updatePluginByCompressedFileUrl,
 } from './utils';
-import { PluginData } from './types';
-import { getExposeChangelogUrl, getExposeReadmeUrl } from './clientStaticMiddleware';
 
 export interface PluginManagerOptions {
   app: Application;
@@ -641,6 +641,7 @@ export class PluginManager {
     const file = require.resolve(PluginManager.getPackageName(name));
     return {
       packageJson,
+      isCompatible: checkCompatible(packageName),
       depsCompatible: getCompatible(packageName),
       lastUpdated: fs.statSync(file).ctime,
     };

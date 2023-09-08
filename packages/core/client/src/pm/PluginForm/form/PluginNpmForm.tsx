@@ -1,9 +1,9 @@
+import { ISchema } from '@formily/json-schema';
+import { useForm } from '@formily/react';
+import { uid } from '@formily/shared';
 import { App, Spin } from 'antd';
 import React, { FC, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ISchema } from '@formily/json-schema';
-import { uid } from '@formily/shared';
-import { useForm } from '@formily/react';
 
 import { useAPIClient, useRequest } from '../../../api-client';
 import { SchemaComponent } from '../../../schema-component';
@@ -97,11 +97,12 @@ export const PluginNpmForm: FC<IPluginNpmFormProps> = ({ onClose, isUpgrade, plu
             registry: {
               type: 'string',
               title: "{{t('Registry url')}}",
+              default: 'https://registry.npmjs.org/',
               'x-decorator': 'FormItem',
               'x-component': 'Input',
-              required: true,
+              // required: true,
               'x-decorator-props': {
-                help: 'Example: https://registry.npmjs.org/',
+                tooltip: 'Example: https://registry.npmjs.org/',
               },
             },
             authToken: {
