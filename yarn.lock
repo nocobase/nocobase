@@ -4286,6 +4286,11 @@
   dependencies:
     eslint-scope "5.1.1"
 
+"@nocobase/plugin-sample-hello@0.13.0-alpha.7":
+  version "0.13.0-alpha.7"
+  resolved "https://registry.yarnpkg.com/@nocobase/plugin-sample-hello/-/plugin-sample-hello-0.13.0-alpha.7.tgz#e2e2b712e9f4fc25c5823b96302cf310f470c072"
+  integrity sha512-Dn71dlmfwdZ4iwbXLMlJE7bZ+VjtRWNfnUfcEWA5Y4Mv52jeck3/nknjrZhnoMImptoCx0TtweMjxT4dlieQ9w==
+
 "@node-saml/node-saml@^4.0.2":
   version "4.0.4"
   resolved "https://registry.npmmirror.com/@node-saml/node-saml/-/node-saml-4.0.4.tgz#472a6b17021a0c9d8261964bf6e1dd686ae2d515"

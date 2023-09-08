@@ -76,7 +76,13 @@ function PluginInfo(props: IPluginInfo) {
         `}
         actions={[
           <Space split={<Divider type="vertical" />} key={'1'}>
-            <a key={'5'}>
+            <a
+              key={'5'}
+              onClick={(e) => {
+                e.stopPropagation();
+                window.open(`/docs/#/static/plugins/${packageName}/README`);
+              }}
+            >
               <ReadOutlined /> {t('Docs')}
             </a>
             {!builtIn && type && (
