@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-verification",
-  "displayName": "verification",
+  "displayName": "Verification",
   "displayName.zh-CN": "验证码",
   "description": "verification setting.",
   "description.zh-CN": "验证码配置。",

@@ -7,7 +7,7 @@ export class PresetNocoBase extends Plugin {
     'error-handler',
     'collection-manager',
     'ui-schema-storage',
-    'ui-routes-storage',
+    // 'ui-routes-storage',
     'file-manager',
     'system-settings',
     'sequence-field',

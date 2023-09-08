@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-sequence-field",
-  "displayName": "sequence field",
+  "displayName": "Sequence field",
   "displayName.zh-CN": "自动编码字段",
   "description": "",
   "description.zh-CN": "",
