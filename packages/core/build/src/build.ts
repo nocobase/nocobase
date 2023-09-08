@@ -19,6 +19,8 @@ import { getPackages } from './utils/getPackages';
 import { Package } from '@lerna/package';
 
 export async function build(pkgs: string[]) {
+  process.env.NODE_ENV = 'production';
+
   const packages = getPackages(pkgs);
   const pluginPackages = getPluginPackages(packages);
   const cjsPackages = getCjsPackages(packages);
