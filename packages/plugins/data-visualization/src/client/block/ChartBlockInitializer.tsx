@@ -4,7 +4,7 @@ import { uid } from '@formily/shared';
 import { SchemaInitializer, useACLRoleContext, useCollectionDataSourceItems } from '@nocobase/client';
 import React, { useContext } from 'react';
 import { useChartsTranslation } from '../locale';
-import { ChartConfigContext } from './ChartConfigure';
+import { ChartConfigContext } from '../configure/ChartConfigure';
 
 const itemWrap = SchemaInitializer.itemWrap;
 const ConfigureButton = itemWrap((props) => {

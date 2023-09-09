@@ -315,7 +315,7 @@ export const querySchema: ISchema = {
                       'x-component': 'Filter',
                       'x-component-props': {
                         options: '{{ filterOptions }}',
-                        // dynamicComponent: 'Input',
+                        dynamicComponent: 'FilterDynamicComponent',
                       },
                     },
                   },
