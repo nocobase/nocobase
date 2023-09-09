@@ -4,7 +4,7 @@
   "displayName.zh-CN": "数据库可视化管理",
   "description": "database collection manage",
   "description.zh-CN": "数据库管理。",
-  "version": "0.13.0-alpha.9",
+  "version": "0.13.0-alpha.10",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "devDependencies": {

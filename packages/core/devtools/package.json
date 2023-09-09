@@ -1,12 +1,12 @@
 {
   "name": "@nocobase/devtools",
-  "version": "0.13.0-alpha.9",
+  "version": "0.13.0-alpha.10",
   "description": "",
   "license": "Apache-2.0",
   "main": "./src/index.js",
   "dependencies": {
-    "@nocobase/build": "0.13.0-alpha.9",
-    "@nocobase/client": "0.13.0-alpha.9",
+    "@nocobase/build": "0.13.0-alpha.10",
+    "@nocobase/client": "0.13.0-alpha.10",
     "@testing-library/react": "^14.0.0",
     "@types/jest": "^29.0.0",
     "@types/koa": "^2.13.4",

@@ -4,7 +4,7 @@
   "displayName.zh-CN": "工作流",
   "description": "A powerful workflow plugin designed to support business process management and automation.",
   "description.zh-CN": "工作流插件，为业务流程管理和自动化提供支持。",
-  "version": "0.13.0-alpha.9",
+  "version": "0.13.0-alpha.10",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "devDependencies": {
