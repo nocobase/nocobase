@@ -532,7 +532,7 @@ export interface DepCompatible {
 }
 export async function getCompatible(packageName: string) {
   let externalVersion: Record<string, string>;
-  if (process.env.NODE_ENV === 'production') {
+  if (!process.env.IS_DEV_CMD) {
     const res = getExternalVersionFromDistFile(packageName);
     if (!res) {
       return false;
