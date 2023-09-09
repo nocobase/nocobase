@@ -40,6 +40,19 @@
     {
       "type": "node",
       "request": "launch",
+      "name": "Debug E2E Tests",
+      "runtimeExecutable": "yarn",
+      "runtimeArgs": ["test:e2e", "${file}"],
+      "skipFiles": ["<node_internals>/**"],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "windows": {
+        "runtimeArgs": ["test:e2e", "${fileBasename}"]
+      }
+    },
+    {
+      "type": "node",
+      "request": "launch",
       "name": "Debug Migration",
       "runtimeExecutable": "yarn",
       "runtimeArgs": ["run", "--inspect-brk", "nocobase", "migrator", "up"],
