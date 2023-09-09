@@ -110,6 +110,11 @@ export abstract class Plugin<O = any> implements PluginInterface {
   async toJSON(options: any = {}) {
     const { locale = 'en-US' } = options;
     const { packageName, packageJson } = this.options;
+    if (!packageName) {
+      return {
+        ...this.options,
+      };
+    }
     const file = require.resolve(packageName);
     const lastUpdated = (await fs.promises.stat(file)).ctime;
     const others = await checkAndGetCompatible(packageName);

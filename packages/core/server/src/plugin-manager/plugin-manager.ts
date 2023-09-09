@@ -18,7 +18,6 @@ import {
   getCompatible,
   getNpmInfo,
   getPluginInfoByNpm,
-  removePluginPackage,
   removeTmpDir,
   requireModule,
   requireNoCache,
@@ -200,12 +199,16 @@ export class PluginManager {
     if (!options.name && typeof plugin === 'string') {
       options.name = plugin;
     }
-    if (options.name && !options.packageName) {
-      const packageName = PluginManager.getPackageName(options.name);
-      options['packageName'] = packageName;
+    try {
+      if (options.name && !options.packageName) {
+        const packageName = PluginManager.getPackageName(options.name);
+        options['packageName'] = packageName;
+      }
+      const packageJson = PluginManager.getPackageJson(options.packageName);
+      options['packageJson'] = packageJson;
+    } catch (error) {
+      // empty
     }
-    const packageJson = PluginManager.getPackageJson(options.packageName);
-    options['packageJson'] = packageJson;
     this.app.log.debug(`adding plugin [${options.name}]...`);
     let P: any;
     try {
@@ -479,9 +482,9 @@ export class PluginManager {
       }
       plugins.push(plugin);
       this.del(pluginName);
-      if (plugin.options.type && plugin.options.packageName) {
-        await removePluginPackage(plugin.options.packageName);
-      }
+      // if (plugin.options.type && plugin.options.packageName) {
+      //   await removePluginPackage(plugin.options.packageName);
+      // }
     }
     await this.app.reload();
     for (const plugin of plugins) {
