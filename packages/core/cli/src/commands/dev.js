@@ -60,6 +60,7 @@ module.exports = (cli) => {
 
         const argv = [
           'watch',
+          '--ignore=./storage/plugins/**',
           '--tsconfig',
           './tsconfig.server.json',
           '-r',
