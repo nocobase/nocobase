@@ -7,7 +7,6 @@ import { resolve, sep } from 'path';
 import Application from '../application';
 import { createAppProxy } from '../helper';
 import { Plugin } from '../plugin';
-import { getExposeChangelogUrl, getExposeReadmeUrl } from './clientStaticMiddleware';
 import collectionOptions from './options/collection';
 import resourceOptions from './options/resource';
 import { PluginManagerRepository } from './plugin-manager-repository';
@@ -58,47 +57,10 @@ export class PluginManager {
     this._repository = this.collection.repository as PluginManagerRepository;
     this._repository.setPluginManager(this);
     this.app.resourcer.define(resourceOptions);
-
-    this.app.resourcer.use(async (ctx, next) => {
-      await next();
-      const { resourceName, actionName } = ctx.action;
-      if (resourceName === 'applicationPlugins' && actionName === 'list') {
-        const lng = ctx.getCurrentLocale();
-        if (Array.isArray(ctx.body)) {
-          ctx.body = await Promise.all(
-            ctx.body.map(async (plugin) => {
-              const json = plugin.toJSON();
-              let packageName;
-              let packageJson;
-              try {
-                packageName = PluginManager.getPackageName(json.name);
-                packageJson = PluginManager.getPackageJson(packageName);
-              } catch (e) {
-                return {
-                  ...json,
-                  error: true,
-                };
-              }
-
-              return {
-                ...json,
-                packageName,
-                displayName: packageJson[`displayName.${lng}`] || packageJson.displayName,
-                description: packageJson[`description.${lng}`] || packageJson.description,
-                readmeUrl: getExposeReadmeUrl(packageName, lng),
-                changelogUrl: getExposeChangelogUrl(packageName),
-                isCompatible: await checkCompatible(packageName),
-              };
-            }),
-          );
-          ctx.body = ctx.body.filter((item) => item);
-        }
-      }
-    });
-
+    this.app.acl.allow('pm', 'listEnabled', 'public');
     this.app.acl.registerSnippet({
       name: 'pm',
-      actions: ['pm:*', 'applicationPlugins:list'],
+      actions: ['pm:*'],
     });
   }
 
@@ -238,6 +200,12 @@ export class PluginManager {
     if (!options.name && typeof plugin === 'string') {
       options.name = plugin;
     }
+    if (options.name && !options.packageName) {
+      const packageName = PluginManager.getPackageName(options.name);
+      options['packageName'] = packageName;
+    }
+    const packageJson = PluginManager.getPackageJson(options.packageName);
+    options['packageJson'] = packageJson;
     this.app.log.debug(`adding plugin [${options.name}]...`);
     let P: any;
     try {
@@ -633,6 +601,21 @@ export class PluginManager {
       );
     }
     return packageName.replace(prefix, '');
+  }
+
+  async list(options: any = {}) {
+    const { locale = 'en-US', isPreset = false } = options;
+    return Promise.all(
+      [...this.getAliases()]
+        .map((name) => {
+          const plugin = this.get(name);
+          if (!isPreset && plugin.options.isPreset) {
+            return;
+          }
+          return plugin.toJSON({ locale });
+        })
+        .filter(Boolean),
+    );
   }
 
   async detail(name: string) {

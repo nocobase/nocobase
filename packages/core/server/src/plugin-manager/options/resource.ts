@@ -1,4 +1,6 @@
 import Application from '../../application';
+import { getExposeUrl } from '../clientStaticMiddleware';
+import PluginManager from '../plugin-manager';
 
 export default {
   name: 'pm',
@@ -108,13 +110,44 @@ export default {
       ctx.body = filterByTk;
       await next();
     },
-    async detail(ctx, next) {
-      const pm = ctx.app.pm;
+    async list(ctx, next) {
+      const locale = ctx.getCurrentLocale();
+      const pm = ctx.app.pm as PluginManager;
+      ctx.body = await pm.list({ locale, isPreset: false });
+      await next();
+    },
+    async listEnabled(ctx, next) {
+      const pm = ctx.db.getRepository('applicationPlugins');
+      const PLUGIN_CLIENT_ENTRY_FILE = 'dist/client/index.js';
+      const items = await pm.find({
+        filter: {
+          enabled: true,
+        },
+      });
+      ctx.body = items
+        .map((item) => {
+          try {
+            const packageName = PluginManager.getPackageName(item.name);
+            return {
+              ...item.toJSON(),
+              packageName,
+              url: getExposeUrl(packageName, PLUGIN_CLIENT_ENTRY_FILE),
+            };
+          } catch {
+            return false;
+          }
+        })
+        .filter(Boolean);
+      await next();
+    },
+    async get(ctx, next) {
+      const locale = ctx.getCurrentLocale();
+      const pm = ctx.app.pm as PluginManager;
       const { filterByTk } = ctx.action.params;
       if (!filterByTk) {
         ctx.throw(400, 'plugin name invalid');
       }
-      ctx.body = await pm.detail(filterByTk);
+      ctx.body = await pm.get(filterByTk).toJSON({ locale });
       await next();
     },
   },

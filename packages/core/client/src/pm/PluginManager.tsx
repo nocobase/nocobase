@@ -39,11 +39,7 @@ const LocalPlugins = () => {
   const { t } = useTranslation();
   const { theme } = useStyles();
   const { data, loading, refresh } = useRequest<TData>({
-    url: 'applicationPlugins:list',
-    params: {
-      sort: 'id',
-      paginate: false,
-    },
+    url: 'pm:list',
   });
   const filterList = useMemo(() => {
     let list = data?.data || [];

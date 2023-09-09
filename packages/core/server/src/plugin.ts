@@ -1,6 +1,8 @@
 import { Model } from '@nocobase/database';
+import fs from 'fs';
 import { Application } from './application';
-import { InstallOptions } from './plugin-manager';
+import { InstallOptions, getExposeChangelogUrl, getExposeReadmeUrl } from './plugin-manager';
+import { checkAndGetCompatible } from './plugin-manager/utils';
 
 export interface PluginInterface {
   beforeLoad?: () => void;
@@ -103,6 +105,23 @@ export abstract class Plugin<O = any> implements PluginInterface {
 
   requiredPlugins() {
     return [];
+  }
+
+  async toJSON(options: any = {}) {
+    const { locale = 'en-US' } = options;
+    const { packageName, packageJson } = this.options;
+    const file = require.resolve(packageName);
+    const lastUpdated = (await fs.promises.stat(file)).ctime;
+    const others = await checkAndGetCompatible(packageName);
+    return {
+      ...this.options,
+      ...others,
+      readmeUrl: getExposeReadmeUrl(packageName, locale),
+      changelogUrl: getExposeChangelogUrl(packageName),
+      lastUpdated,
+      displayName: packageJson[`displayName.${locale}`] || packageJson.displayName,
+      description: packageJson[`description.${locale}`] || packageJson.description,
+    };
   }
 }
 

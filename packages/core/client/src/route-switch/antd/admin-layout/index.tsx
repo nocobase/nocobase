@@ -1,6 +1,7 @@
 import { css } from '@emotion/css';
+import { useSessionStorageState } from 'ahooks';
 import { App, Layout } from 'antd';
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Outlet, useMatch, useNavigate, useParams } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
@@ -24,7 +25,6 @@ import {
 import { Plugin } from '../../../application/Plugin';
 import { useAppSpin } from '../../../application/hooks/useAppSpin';
 import { useCollectionManager } from '../../../collection-manager';
-import { useSessionStorageState } from 'ahooks';
 
 const filterByACL = (schema, options) => {
   const { allowAll, allowMenuItemIds = [] } = options;
@@ -177,7 +177,8 @@ const MenuEditor = (props) => {
           });
         }
       },
-      ready: !hasNotice,
+      manual: true,
+      // ready: !hasNotice,
     },
   );
 

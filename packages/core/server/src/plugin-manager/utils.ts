@@ -1,25 +1,25 @@
 import axios, { AxiosRequestConfig } from 'axios';
 import decompress from 'decompress';
-import fs from 'fs-extra';
 import fg from 'fast-glob';
-import semver from 'semver';
+import fs from 'fs-extra';
 import ini from 'ini';
 import { builtinModules } from 'module';
 import os from 'os';
 import path from 'path';
+import semver from 'semver';
+import { getDepPkgPath, getPackageDir, getPackageFilePathWithExistCheck } from './clientStaticMiddleware';
 import {
   APP_NAME,
   DEFAULT_PLUGIN_PATH,
   DEFAULT_PLUGIN_STORAGE_PATH,
-  NODE_MODULES_PATH,
   EXTERNAL,
-  pluginPrefix,
+  NODE_MODULES_PATH,
   importRegex,
+  pluginPrefix,
   requireRegex,
 } from './constants';
-import { PluginData } from './types';
 import deps from './deps';
-import { getDepPkgPath, getPackageDir, getPackageFilePathWithExistCheck } from './clientStaticMiddleware';
+import { PluginData } from './types';
 
 /**
  * get temp dir
@@ -568,4 +568,18 @@ export async function checkCompatible(packageName: string) {
   const compatible = await getCompatible(packageName);
   if (!compatible) return false;
   return compatible.every((item) => item.result);
+}
+
+export async function checkAndGetCompatible(packageName: string) {
+  const compatible = await getCompatible(packageName);
+  if (!compatible) {
+    return {
+      isCompatible: false,
+      depsCompatible: [],
+    };
+  }
+  return {
+    isCompatible: compatible.every((item) => item.result),
+    depsCompatible: compatible,
+  };
 }

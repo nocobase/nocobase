@@ -78,7 +78,7 @@ export const PluginDetail: FC<IPluginDetail> = ({ plugin, onCancel }) => {
   );
   const { data, loading } = useRequest<{ data: IPluginDetailData }>(
     {
-      url: `/pm:detail/${plugin.name}`,
+      url: `/pm:get/${plugin.name}`,
     },
     {
       refreshDeps: [plugin.name],
