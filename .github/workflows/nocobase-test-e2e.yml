@@ -1,27 +1,35 @@
 name: NocoBase E2E Test
+
 on:
   push:
-    branches: [ main, master ]
+    branches:
+      - 'main'
+      - 'develop'
+    paths:
+      - '.github/workflows/nocobase-build-test.yml'
+      - 'packages/**'
   pull_request:
-    branches: [ main, master ]
+    branches:
+      - '**'
+    paths:
+      - '.github/workflows/nocobase-build-test.yml'
+      - 'packages/**'
+
 jobs:
-  test:
-    timeout-minutes: 60
+  e2e-test:
+    strategy:
+      matrix:
+        node_version: ['18']
     runs-on: ubuntu-latest
+    container: node:${{ matrix.node_version }}
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-node@v3
-      with:
-        node-version: 18
-    - name: Install dependencies
-      run: yarn install
-    - name: Install Playwright Browsers
-      run: npx playwright install --with-deps
-    - name: Run Playwright tests
-      run: yarn test:e2e
-    - uses: actions/upload-artifact@v3
-      if: always()
-      with:
-        name: playwright-report
-        path: playwright-report/
-        retention-days: 30
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node_version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node_version }}
+          cache: 'yarn'
+      - run: yarn install
+      - run: npx playwright install --with-deps
+      - run: yarn test:e2e
+    timeout-minutes: 30
