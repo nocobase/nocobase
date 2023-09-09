@@ -83,6 +83,9 @@ export const PluginUrlForm: FC<IPluginUrlFormProps> = ({ onClose, pluginData, is
               'x-component': 'ActionBar',
               'x-component-props': {
                 layout: 'one-column',
+                style: {
+                  justifyContent: 'right',
+                },
               },
               properties: {
                 submit: {

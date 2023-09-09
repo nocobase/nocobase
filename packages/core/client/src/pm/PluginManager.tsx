@@ -111,10 +111,11 @@ const LocalPlugins = () => {
       />
       <div style={{ width: '100%' }}>
         <div
-          style={{ marginBottom: theme.margin }}
+          style={{ marginBottom: theme.marginLG }}
           className={css`
             justify-content: space-between;
             display: flex;
+            align-items: center;
           `}
         >
           <div>

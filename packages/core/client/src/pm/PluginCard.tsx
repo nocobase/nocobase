@@ -4,7 +4,7 @@ import React, { FC, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
-import { ArrowUpOutlined, DeleteOutlined, ReadOutlined, SettingOutlined } from '@ant-design/icons';
+import { DeleteOutlined, ReadOutlined, ReloadOutlined, SettingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { useAPIClient } from '../api-client';
 import { PluginDetail } from './PluginDetail';
@@ -87,7 +87,7 @@ function PluginInfo(props: IPluginInfo) {
                   setShowUploadForm(true);
                 }}
               >
-                <ArrowUpOutlined /> {t('Update')}
+                <ReloadOutlined /> {t('Update')}
               </a>
             )}
             {enabled ? (

@@ -1,10 +1,10 @@
-import { App, message } from 'antd';
+import { ISchema } from '@formily/json-schema';
+import { useForm } from '@formily/react';
+import { uid } from '@formily/shared';
+import { App } from 'antd';
+import type { RcFile } from 'antd/es/upload';
 import React, { FC, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ISchema } from '@formily/json-schema';
-import { uid } from '@formily/shared';
-import { useForm } from '@formily/react';
-import type { RcFile } from 'antd/es/upload';
 
 import { useAPIClient } from '../../../api-client';
 import { SchemaComponent } from '../../../schema-component';
@@ -98,6 +98,9 @@ export const PluginUploadForm: FC<IPluginUploadFormProps> = ({ onClose, pluginDa
               'x-component': 'ActionBar',
               'x-component-props': {
                 layout: 'one-column',
+                style: {
+                  justifyContent: 'right',
+                },
               },
               properties: {
                 submit: {

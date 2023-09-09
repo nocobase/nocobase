@@ -18,13 +18,15 @@ export const PluginAddModal: FC<IPluginFormProps> = ({ onClose, isShow }) => {
   const [type, setType] = useState<'npm' | 'upload' | 'url'>('npm');
 
   return (
-    <Modal onCancel={() => onClose()} footer={null} destroyOnClose title={t('New plugin')} width={580} open={isShow}>
-      <label style={{ fontWeight: 'bold' }}>{t('Add type')}:</label>
-      <Radio.Group style={{ margin: theme.margin }} defaultValue={type} onChange={(e) => setType(e.target.value)}>
-        <Radio value="npm">{t('Npm package')}</Radio>
-        <Radio value="upload">{t('Upload plugin')}</Radio>
-        <Radio value="url">{t('Compressed file url')}</Radio>
-      </Radio.Group>
+    <Modal onCancel={() => onClose()} footer={null} destroyOnClose title={t('Add plugin')} width={580} open={isShow}>
+      {/* <label style={{ fontWeight: 'bold' }}>{t('Source')}:</label> */}
+      <div style={{ marginTop: theme.marginLG, marginBottom: theme.marginLG }}>
+        <Radio.Group optionType="button" defaultValue={type} onChange={(e) => setType(e.target.value)}>
+          <Radio value="npm">{t('Npm package')}</Radio>
+          <Radio value="upload">{t('Upload plugin')}</Radio>
+          <Radio value="url">{t('Compressed file url')}</Radio>
+        </Radio.Group>
+      </div>
       {type === 'npm' && <PluginNpmForm onClose={onClose} isUpgrade={false} />}
       {type === 'upload' && <PluginUploadForm onClose={onClose} isUpgrade={false} />}
       {type === 'url' && <PluginUrlForm onClose={onClose} />}

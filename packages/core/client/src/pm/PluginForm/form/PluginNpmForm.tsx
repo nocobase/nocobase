@@ -123,6 +123,9 @@ export const PluginNpmForm: FC<IPluginNpmFormProps> = ({ onClose, isUpgrade, plu
               'x-component': 'ActionBar',
               'x-component-props': {
                 layout: 'one-column',
+                style: {
+                  justifyContent: 'right',
+                },
               },
               properties: {
                 submit: {
