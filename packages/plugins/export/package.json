@@ -4,7 +4,7 @@
   "displayName.zh-CN": "导出",
   "description": "Export collection records to Excel table",
   "description.zh-CN": "导出数据表记录为 Excel 表格",
-  "version": "0.13.0-alpha.9",
+  "version": "0.13.0-alpha.10",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "devDependencies": {

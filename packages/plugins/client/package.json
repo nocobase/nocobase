@@ -4,7 +4,7 @@
   "displayName.zh-CN": "WEB 客户端",
   "description": "",
   "description.zh-CN": "",
-  "version": "0.13.0-alpha.9",
+  "version": "0.13.0-alpha.10",
   "main": "./dist/server/index.js",
   "license": "AGPL-3.0",
   "devDependencies": {

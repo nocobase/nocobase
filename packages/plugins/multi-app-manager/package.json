@@ -4,7 +4,7 @@
   "displayName.zh-CN": "多应用管理",
   "description": "manage app",
   "description.zh-CN": "管理应用",
-  "version": "0.13.0-alpha.9",
+  "version": "0.13.0-alpha.10",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "devDependencies": {
