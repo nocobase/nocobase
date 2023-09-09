@@ -1,24 +1,22 @@
 import fs from 'fs';
 import path from 'path';
-import pkgUp from 'pkg-up';
 
 export const PLUGIN_STATICS_PATH = '/static/plugins/';
 
 /**
  * get package.json path for specific NPM package
  */
-export function getDepPkgPath(packageName: string) {
+export function getDepPkgPath(packageName: string, cwd?: string) {
   try {
-    return require.resolve(`${packageName}/package.json`);
+    return require.resolve(`${packageName}/package.json`, { paths: cwd ? [cwd] : undefined });
   } catch {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    return pkgUp.sync({
-      cwd: require.resolve(`${packageName}/package.json`),
-    })!;
+    const mainFile = require.resolve(`${packageName}`, { paths: cwd ? [cwd] : undefined });
+    const packageDir = mainFile.slice(0, mainFile.indexOf(packageName.replace('/', path.sep)) + packageName.length);
+    return path.join(packageDir, 'package.json');
   }
 }
 
-function getPackageDir(packageName: string) {
+export function getPackageDir(packageName: string) {
   const packageJsonPath = getDepPkgPath(packageName);
   return path.dirname(packageJsonPath);
 }

@@ -87,7 +87,7 @@ export class PluginManager {
                 description: packageJson[`description.${lng}`] || packageJson.description,
                 readmeUrl: getExposeReadmeUrl(packageName, lng),
                 changelogUrl: getExposeChangelogUrl(packageName),
-                isCompatible: checkCompatible(packageName),
+                isCompatible: await checkCompatible(packageName),
               };
             }),
           );
@@ -642,7 +642,7 @@ export class PluginManager {
     return {
       packageJson,
       isCompatible: checkCompatible(packageName),
-      depsCompatible: getCompatible(packageName),
+      depsCompatible: await getCompatible(packageName),
       lastUpdated: fs.statSync(file).ctime,
     };
   }

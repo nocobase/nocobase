@@ -1,15 +1,25 @@
-import axios, { Axios, AxiosRequestConfig } from 'axios';
+import axios, { AxiosRequestConfig } from 'axios';
 import decompress from 'decompress';
 import fs from 'fs-extra';
+import fg from 'fast-glob';
 import semver from 'semver';
 import ini from 'ini';
 import { builtinModules } from 'module';
 import os from 'os';
 import path from 'path';
-import { APP_NAME, DEFAULT_PLUGIN_PATH, DEFAULT_PLUGIN_STORAGE_PATH, NODE_MODULES_PATH } from './constants';
+import {
+  APP_NAME,
+  DEFAULT_PLUGIN_PATH,
+  DEFAULT_PLUGIN_STORAGE_PATH,
+  NODE_MODULES_PATH,
+  EXTERNAL,
+  pluginPrefix,
+  importRegex,
+  requireRegex,
+} from './constants';
 import { PluginData } from './types';
 import deps from './deps';
-import { getPackageFilePathWithExistCheck } from './clientStaticMiddleware';
+import { getDepPkgPath, getPackageDir, getPackageFilePathWithExistCheck } from './clientStaticMiddleware';
 
 /**
  * get temp dir
@@ -432,26 +442,107 @@ export function requireModule(m: any) {
   return m.__esModule ? m.default : m;
 }
 
+function getExternalVersionFromDistFile(packageName: string): false | Record<string, string> {
+  const { exists, filePath } = getPackageFilePathWithExistCheck(packageName, 'dist/externalVersion.js');
+  if (!exists) {
+    return false;
+  }
+
+  try {
+    return requireNoCache(filePath);
+  } catch (e) {
+    console.error(e);
+    return false;
+  }
+}
+export function isNotBuiltinModule(packageName: string) {
+  return !builtinModules.includes(packageName);
+}
+
+export const isValidPackageName = (str: string) => {
+  const pattern = /^(?:@[a-zA-Z0-9_-]+\/)?[a-zA-Z0-9_-]+$/;
+  return pattern.test(str);
+};
+
+export function getPackageNameFromString(str: string) {
+  // ./xx or ../xx
+  if (str.startsWith('.')) return null;
+
+  const arr = str.split('/');
+  let packageName: string;
+  if (arr[0].startsWith('@')) {
+    // @aa/bb/ccFile => @aa/bb
+    packageName = arr.slice(0, 2).join('/');
+  } else {
+    // aa/bbFile => aa
+    packageName = arr[0];
+  }
+
+  packageName = packageName.trim();
+
+  return isValidPackageName(packageName) ? packageName : null;
+}
+
+export function getPackagesFromFiles(files: string[]): string[] {
+  const packageNames = files
+    .map((item) => [
+      ...[...item.matchAll(importRegex)].map((item) => item[2]),
+      ...[...item.matchAll(requireRegex)].map((item) => item[1]),
+    ])
+    .flat()
+    .map(getPackageNameFromString)
+    .filter(Boolean)
+    .filter(isNotBuiltinModule);
+
+  return [...new Set(packageNames)];
+}
+
+export function getIncludePackages(sourcePackages: string[], external: string[], pluginPrefix: string[]): string[] {
+  return sourcePackages
+    .filter((packageName) => !external.includes(packageName)) // exclude external
+    .filter((packageName) => !pluginPrefix.some((prefix) => packageName.startsWith(prefix))); // exclude other plugin
+}
+
+export function getExcludePackages(sourcePackages: string[], external: string[], pluginPrefix: string[]): string[] {
+  const includePackages = getIncludePackages(sourcePackages, external, pluginPrefix);
+  return sourcePackages.filter((packageName) => !includePackages.includes(packageName));
+}
+
+export async function getExternalVersionFromSource(packageName: string) {
+  const packageDir = getPackageDir(packageName);
+  const sourceGlobalFiles: string[] = ['src/**/*.{ts,js,tsx,jsx}', '!src/**/__tests__'];
+  const sourceFilePaths = await fg.glob(sourceGlobalFiles, { cwd: packageDir, absolute: true });
+  const sourceFiles = await Promise.all(sourceFilePaths.map((item) => fs.readFile(item, 'utf-8')));
+  const sourcePackages = getPackagesFromFiles(sourceFiles);
+  const excludePackages = getExcludePackages(sourcePackages, EXTERNAL, pluginPrefix);
+  const data = excludePackages.reduce<Record<string, string>>((prev, packageName) => {
+    const depPkgPath = getDepPkgPath(packageName, packageDir);
+    const depPkg = require(depPkgPath);
+    prev[packageName] = depPkg.version;
+    return prev;
+  }, {});
+  return data;
+}
+
 export interface DepCompatible {
   name: string;
   result: boolean;
   versionRange: string;
   packageVersion: string;
 }
-export function getCompatible(packageName: string) {
-  const { exists, filePath } = getPackageFilePathWithExistCheck(packageName, 'dist/externalVersion.js');
-
-  if (!exists) {
-    return process.env.NODE_ENV === 'production' ? false : [];
-  }
-
+export async function getCompatible(packageName: string) {
   let externalVersion: Record<string, string>;
-  try {
-    externalVersion = requireNoCache(filePath);
-  } catch (e) {
-    console.error(e);
-    return process.env.NODE_ENV === 'production' ? false : [];
+  if (process.env.NODE_ENV === 'production') {
+    const res = getExternalVersionFromDistFile(packageName);
+    if (!res) {
+      return false;
+    } else {
+      externalVersion = res;
+    }
+  } else {
+    externalVersion = await getExternalVersionFromSource(packageName);
   }
+
   return Object.keys(externalVersion).reduce<DepCompatible[]>((result, packageName) => {
     const packageVersion = externalVersion[packageName];
     const globalPackageName = deps[packageName]
@@ -473,8 +564,8 @@ export function getCompatible(packageName: string) {
   }, []);
 }
 
-export function checkCompatible(packageName: string) {
-  const compatible = getCompatible(packageName);
+export async function checkCompatible(packageName: string) {
+  const compatible = await getCompatible(packageName);
   if (!compatible) return false;
   return compatible.every((item) => item.result);
 }
