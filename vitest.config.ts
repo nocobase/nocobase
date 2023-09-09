@@ -8,7 +8,7 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    setupFiles: 'scripts/setupVitest.ts',
+    setupFiles: 'scripts/vitest.setup.ts',
     environment: 'jsdom',
     css: false,
     threads: true,
@@ -25,7 +25,14 @@ export default defineConfig({
       { find: /^@nocobase\/(.*)/, replacement: 'packages/core/$1/src' },
     ],
     include: ['packages/**/{dumi-theme-nocobase,sdk,client}/**/__tests__/**/*.{test,spec}.{ts,tsx}'],
-    exclude: ['**/node_modules/**', '**/dist/**', '**/lib/**', '**/es/**', '**/{vitest,commitlint}.config.*'],
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/lib/**',
+      '**/es/**',
+      '**/e2e/**',
+      '**/{vitest,commitlint}.config.*',
+    ],
     testTimeout: 300000,
     bail: 1,
     // 在 GitHub Actions 中不输出日志
