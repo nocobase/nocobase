@@ -1,20 +1,21 @@
+import { createStoragePluginsSymlink } from '@nocobase/utils/plugin-symlink';
 import { Command } from 'commander';
 import compression from 'compression';
 import { EventEmitter } from 'events';
 import http, { IncomingMessage, ServerResponse } from 'http';
 import { promisify } from 'node:util';
-import { resolve, dirname } from 'path';
+import { resolve } from 'path';
 import qs from 'qs';
 import handler from 'serve-handler';
 import { parse } from 'url';
 import xpipe from 'xpipe';
 import { AppSupervisor } from '../app-supervisor';
 import { ApplicationOptions } from '../application';
+import { PLUGIN_STATICS_PATH, getPackageDirByExposeUrl, getPackageNameByExposeUrl } from '../plugin-manager';
 import { applyErrorWithArgs, getErrorWithCode } from './errors';
 import { IPCSocketClient } from './ipc-socket-client';
 import { IPCSocketServer } from './ipc-socket-server';
 import { WSServer } from './ws-server';
-import { PLUGIN_STATICS_PATH, getPackageDirByExposeUrl, getPackageNameByExposeUrl } from '../plugin-manager';
 
 const compress = promisify(compression());
 
@@ -198,6 +199,7 @@ export class Gateway extends EventEmitter {
 
   async run(options: RunOptions) {
     const isStart = this.isStart();
+    let ipcClient: IPCSocketClient | false;
     if (isStart) {
       const startOptions = this.getStartOptions();
       const port = startOptions.port || process.env.APP_PORT || 13000;
@@ -208,7 +210,7 @@ export class Gateway extends EventEmitter {
         host,
       });
     } else if (!this.isHelp()) {
-      const ipcClient = await this.tryConnectToIPCServer();
+      ipcClient = await this.tryConnectToIPCServer();
 
       if (ipcClient) {
         await ipcClient.write({ type: 'passCliArgv', payload: { argv: process.argv } });
@@ -216,6 +218,10 @@ export class Gateway extends EventEmitter {
         ipcClient.close();
         return;
       }
+    }
+
+    if (isStart || !ipcClient) {
+      await createStoragePluginsSymlink();
     }
 
     const mainApp = AppSupervisor.getInstance().bootMainApp(options.mainAppOptions);

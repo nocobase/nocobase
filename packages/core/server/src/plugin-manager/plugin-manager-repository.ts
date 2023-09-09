@@ -1,7 +1,6 @@
 import { Repository } from '@nocobase/database';
 import lodash from 'lodash';
 import { PluginManager } from './plugin-manager';
-import { checkPluginPackage } from './utils';
 import { PluginData } from './types';
 
 export class PluginManagerRepository extends Repository {
@@ -106,34 +105,11 @@ export class PluginManagerRepository extends Repository {
     const items = await this.getItems();
 
     for (const item of items) {
-      const json = item.toJSON();
       const { options, ...others } = item.toJSON();
-      let hasError = false;
-      try {
-        await checkPluginPackage(json);
-      } catch (e) {
-        console.error(e);
-        // if (json.enabled) {
-        //   await this.disable(json.name);
-        // }
-        hasError = true;
-      }
-
-      // 如果插件资源有问题，跳过，否则会导致后续插件无法正常加载
-      if (hasError) {
-        continue;
-      }
-      try {
-        await this.pm.add(item.get('name'), {
-          ...others,
-          ...options,
-        });
-      } catch (e) {
-        console.error(e);
-        // if (json.enabled) {
-        //   await this.disable(json.name);
-        // }
-      }
+      await this.pm.add(item.get('name'), {
+        ...others,
+        ...options,
+      });
     }
   }
 }
