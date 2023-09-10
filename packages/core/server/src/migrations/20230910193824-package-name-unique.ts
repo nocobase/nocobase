@@ -3,8 +3,12 @@ import { Migration } from '../migration';
 
 export default class extends Migration {
   async up() {
-    const tableNameWithSchema = this.db.getCollection('applicationPlugins').getTableNameWithSchema();
-    const field = this.db.getCollection('applicationPlugins').getField('packageName');
+    const collection = this.db.getCollection('applicationPlugins');
+    if (!collection) {
+      return;
+    }
+    const tableNameWithSchema = collection.getTableNameWithSchema();
+    const field = collection.getField('packageName');
     if (await field.existsInDb()) {
       return;
     }
