@@ -1,6 +1,6 @@
 import { expect, test } from 'e2eUtils';
 
-test.describe('createDataBlock', () => {
+test.describe('create data block', () => {
   test('table', async ({ page }) => {
     await page.getByRole('button', { name: 'plus Add block' }).hover();
     await page.getByRole('menuitem', { name: 'table Table right' }).hover();
