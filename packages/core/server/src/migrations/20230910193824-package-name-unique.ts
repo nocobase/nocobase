@@ -1,5 +1,5 @@
 import { DataTypes } from '@nocobase/database';
-import { Migration } from '@nocobase/server';
+import { Migration } from '../migration';
 
 export default class extends Migration {
   async up() {
