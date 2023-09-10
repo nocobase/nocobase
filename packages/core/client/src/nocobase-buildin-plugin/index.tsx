@@ -132,6 +132,12 @@ const getProps = (app: Application) => {
       upgrade: {
         title: 'App upgrading',
       },
+      'pm.add': {
+        title: 'Adding plugin',
+      },
+      'pm.update': {
+        title: 'Updating plugin',
+      },
       'pm.enable': {
         title: 'Enabling plugin',
       },

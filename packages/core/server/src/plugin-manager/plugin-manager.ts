@@ -1,4 +1,5 @@
 import { CleanOptions, Collection, SyncOptions } from '@nocobase/database';
+import { isURL } from '@nocobase/utils';
 import execa from 'execa';
 import _ from 'lodash';
 import net from 'net';
@@ -513,6 +514,22 @@ export class PluginManager {
     this.app.setMaintainingMessage(`loaded plugin ${plugin.name}`);
   }
 
+  async addViaCLI(name: string, options?: PluginData) {
+    if (isURL(name)) {
+      return this.addByCompressedFileUrl({
+        ...options,
+        compressedFileUrl: name,
+      });
+    }
+    if (options?.registry) {
+      return this.addByNpm({
+        ...(options as any),
+        packageName: name,
+      });
+    }
+    return this.add(name, options, true);
+  }
+
   async addByNpm(options: { packageName: string; name?: string; registry: string; authToken?: string }) {
     let { name = '', registry, packageName, authToken } = options;
     name = name.trim();
@@ -551,7 +568,22 @@ export class PluginManager {
     return this.add(name, { packageName }, true);
   }
 
-  async upgradeByNpm(values: { name: string; registry: string; version: string; authToken?: string }) {
+  async update(options: PluginData) {
+    console.log('options', options);
+    if (options['url']) {
+      options.compressedFileUrl = options['url'];
+    }
+    if (!options.name) {
+      const model = await this.repository.findOne({ filter: { packageName: options.packageName } });
+      options['name'] = model.name;
+    }
+    if (options.compressedFileUrl) {
+      return this.upgradeByCompressedFileUrl(options);
+    }
+    return this.upgradeByNpm(options as any);
+  }
+
+  async upgradeByNpm(values: PluginData) {
     const name = values.name;
     const plugin = this.get(name);
     if (!this.has(name)) {
@@ -581,6 +613,7 @@ export class PluginManager {
       authToken: authToken,
     });
     await this.add(name, { version, packageName: data.packageName }, true, true);
+    await this.app.upgrade();
   }
 
   getNameByPackageName(packageName: string) {

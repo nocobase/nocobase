@@ -41,16 +41,14 @@ export const PluginNpmForm: FC<IPluginNpmFormProps> = ({ onClose, isUpgrade, plu
     return {
       async run() {
         await form.submit();
-        await api.request({
-          url: isUpgrade ? 'pm:upgradeByNpm' : 'pm:addByNpm',
+        api.request({
+          url: isUpgrade ? 'pm:update' : 'pm:add',
           method: 'post',
           data: {
             ...form.values,
           },
         });
-        message.success(t('Saved successfully'), 2, () => {
-          onClose(true);
-        });
+        onClose(true);
       },
     };
   };

@@ -6,49 +6,43 @@ export default {
   name: 'pm',
   actions: {
     async add(ctx, next) {
-      const pm = ctx.app.pm;
-      const { filterByTk } = ctx.action.params;
-      if (!filterByTk) {
-        ctx.throw(400, 'plugin name invalid');
+      const app = ctx.app as Application;
+      const { values } = ctx.action.params;
+      if (values.packageName) {
+        const args = [];
+        if (values.registry) {
+          args.push('--registry=' + values.registry);
+        }
+        if (values.version) {
+          args.push('--version=' + values.version);
+        }
+        if (values.authToken) {
+          args.push('--auth-token=' + values.authToken);
+        }
+        app.runAsCLI(['pm', 'add', values.packageName, ...args], { from: 'user' });
+      } else {
+        app.runAsCLI(['pm', 'add', values.compressedFileUrl], { from: 'user' });
       }
-      await pm.add(filterByTk);
-      ctx.body = filterByTk;
+      ctx.body = 'ok';
       await next();
     },
-    async addByNpm(ctx, next) {
-      const pm = ctx.app.pm;
+    async update(ctx, next) {
+      const app = ctx.app as Application;
       const { values } = ctx.action.params;
-      if (!values['packageName']) {
-        ctx.throw(400, 'plugin packageName is required');
+      const args = [];
+      if (values.registry) {
+        args.push('--registry=' + values.registry);
       }
-      if (!values['registry']) {
-        ctx.throw(400, 'plugin registry is required');
+      if (values.version) {
+        args.push('--version=' + values.version);
       }
-      ctx.body = await pm.addByNpm(values);
-      await next();
-    },
-    async addByCompressedFileUrl(ctx, next) {
-      const pm = ctx.app.pm;
-      const { values } = ctx.action.params;
-      if (!values['compressedFileUrl']) {
-        ctx.throw(400, 'plugin CompressedFileUrl is required');
+      if (values.authToken) {
+        args.push('--auth-token=' + values.authToken);
       }
-      if (!values['type']) {
-        ctx.throw(400, 'type is required');
+      if (values.compressedFileUrl) {
+        args.push('--url=' + values.compressedFileUrl);
       }
-      ctx.body = await pm.addByCompressedFileUrl(values);
-      await next();
-    },
-    async upgradeByNpm(ctx, next) {
-      const { values } = ctx.action.params;
-      if (!values['registry']) {
-        ctx.throw(400, 'plugin registry is required');
-      }
-      if (!values['version']) {
-        ctx.throw(400, 'plugin version is required');
-      }
-      const pm = ctx.app.pm as PluginManager;
-      await pm.upgradeByNpm(values);
+      app.runAsCLI(['pm', 'update', values.packageName, ...args], { from: 'user' });
       ctx.body = 'ok';
       await next();
     },
@@ -61,21 +55,7 @@ export default {
       ctx.body = await pm.getNpmVersionList(filterByTk);
       await next();
     },
-    async upgradeByCompressedFileUrl(ctx, next) {
-      const { values } = ctx.action.params;
-      if (!values.name) {
-        ctx.throw(400, 'plugin name invalid');
-      }
-      if (!values['compressedFileUrl']) {
-        ctx.throw(400, 'compressedFileUrl is required');
-      }
-      const pm = ctx.app.pm;
-      await pm.upgradeByCompressedFileUrl(values);
-      ctx.body = 'ok';
-      await next();
-    },
     async enable(ctx, next) {
-      const pm = ctx.app.pm;
       const { filterByTk } = ctx.action.params;
       const app = ctx.app as Application;
       if (!filterByTk) {
@@ -86,7 +66,6 @@ export default {
       await next();
     },
     async disable(ctx, next) {
-      const pm = ctx.app.pm;
       const { filterByTk } = ctx.action.params;
       if (!filterByTk) {
         ctx.throw(400, 'plugin name invalid');
@@ -97,7 +76,6 @@ export default {
       await next();
     },
     async remove(ctx, next) {
-      const pm = ctx.app.pm;
       const { filterByTk } = ctx.action.params;
       if (!filterByTk) {
         ctx.throw(400, 'plugin name invalid');

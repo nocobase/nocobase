@@ -11,9 +11,34 @@ export default (app: Application) => {
     });
 
   pm.command('add')
-    .arguments('plugin')
-    .action(async (plugin) => {
-      await app.pm.add(plugin, {}, true);
+    .argument('<name>')
+    .option('--registry [registry]')
+    .option('--auth-token [authToken]')
+    .option('--version [version]')
+    .action(async (name, options) => {
+      try {
+        await app.pm.addViaCLI(name, options);
+      } catch (error) {
+        throw new PluginCommandError(`Failed to add plugin: ${error.message}`);
+      }
+    });
+
+  pm.command('update')
+    .argument('<packageName>')
+    .option('--path [path]')
+    .option('--url [url]')
+    .option('--registry [registry]')
+    .option('--auth-token [authToken]')
+    .option('--version [version]')
+    .action(async (packageName, options) => {
+      try {
+        await app.pm.update({
+          ...options,
+          packageName,
+        });
+      } catch (error) {
+        throw new PluginCommandError(`Failed to update plugin: ${error.message}`);
+      }
     });
 
   pm.command('enable')

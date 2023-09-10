@@ -38,17 +38,15 @@ export const PluginUploadForm: FC<IPluginUploadFormProps> = ({ onClose, pluginDa
         const data = {
           compressedFileUrl,
         };
-        if (pluginData?.name) {
-          data['name'] = pluginData.name;
+        if (pluginData?.packageName) {
+          data['packageName'] = pluginData.packageName;
         }
-        await api.request({
-          url: `pm:${isUpgrade ? 'upgradeByCompressedFileUrl' : 'addByCompressedFileUrl'}`,
+        api.request({
+          url: `pm:${isUpgrade ? 'update' : 'add'}`,
           method: 'post',
           data,
         });
-        message.success(t('Saved successfully'), 2, () => {
-          onClose(true);
-        });
+        onClose(true);
       },
     };
   };

@@ -36,7 +36,6 @@ function PluginInfo(props: IPluginInfo) {
           pluginData={data}
           onClose={(isRefresh) => {
             setShowUploadForm(false);
-            if (isRefresh) reload();
           }}
         />
       )}

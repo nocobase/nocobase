@@ -102,7 +102,7 @@ const LocalPlugins = () => {
         isShow={isShowAddForm}
         onClose={(isRefresh) => {
           setShowAddForm(false);
-          if (isRefresh) refresh();
+          // if (isRefresh) refresh();
         }}
       />
       <div style={{ width: '100%' }}>
