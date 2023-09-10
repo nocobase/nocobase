@@ -19,4 +19,5 @@ export interface IPluginData {
   readmeUrl: string;
   changelogUrl: string;
   error: boolean;
+  updatable?: boolean;
 }

@@ -1,10 +1,11 @@
 import { ISchema } from '@formily/json-schema';
 import { useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import { App, Spin } from 'antd';
+import { App } from 'antd';
 import React, { FC, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { pick } from 'lodash';
 import { useAPIClient, useRequest } from '../../../api-client';
 import { SchemaComponent } from '../../../schema-component';
 import { IPluginData } from '../../types';
@@ -17,19 +18,20 @@ interface IPluginNpmFormProps {
 
 export const PluginNpmForm: FC<IPluginNpmFormProps> = ({ onClose, isUpgrade, pluginData }) => {
   const { message } = App.useApp();
-  const { data, loading } = useRequest<{ data: string[] }>(
-    {
-      url: `/pm:npmVersionList/${pluginData?.name}`,
-    },
-    {
-      refreshDeps: [pluginData?.name],
-      ready: !!pluginData?.name,
-    },
-  );
+  // const { data, loading } = useRequest<{ data: string[] }>(
+  //   {
+  //     url: `/pm:npmVersionList/${pluginData?.name}`,
+  //   },
+  //   {
+  //     refreshDeps: [pluginData?.name],
+  //     ready: !!pluginData?.name,
+  //   },
+  // );
 
-  const versionList = useMemo(() => {
-    return data?.data.map((item) => ({ label: item, value: item })) || [];
-  }, [data?.data]);
+  const versionList = [];
+  // useMemo(() => {
+  //   return data?.data.map((item) => ({ label: item, value: item })) || [];
+  // }, [data?.data]);
 
   const useSaveValues = () => {
     const api = useAPIClient();
@@ -40,11 +42,10 @@ export const PluginNpmForm: FC<IPluginNpmFormProps> = ({ onClose, isUpgrade, plu
       async run() {
         await form.submit();
         await api.request({
-          url: isUpgrade ? 'pm:upgradeByNpm/' + pluginData?.name : 'pm:addByNpm',
+          url: isUpgrade ? 'pm:upgradeByNpm' : 'pm:addByNpm',
           method: 'post',
           data: {
             ...form.values,
-            type: 'npm',
           },
         });
         message.success(t('Saved successfully'), 2, () => {
@@ -58,7 +59,7 @@ export const PluginNpmForm: FC<IPluginNpmFormProps> = ({ onClose, isUpgrade, plu
     return useRequest(
       () =>
         Promise.resolve({
-          data: isUpgrade ? pluginData : {},
+          data: isUpgrade ? pick(pluginData, ['name', 'packageName', 'version']) : {},
         }),
       options,
     );
@@ -115,8 +116,8 @@ export const PluginNpmForm: FC<IPluginNpmFormProps> = ({ onClose, isUpgrade, plu
               type: 'string',
               title: "{{t('Version')}}",
               'x-decorator': 'FormItem',
-              'x-component': 'Select',
-              enum: '{{versionList}}',
+              'x-component': 'Input',
+              // enum: '{{versionList}}',
             },
             footer: {
               type: 'void',
@@ -153,13 +154,13 @@ export const PluginNpmForm: FC<IPluginNpmFormProps> = ({ onClose, isUpgrade, plu
 
     schema.properties[id].properties.packageName['x-component-props'].disabled = isUpgrade;
     if (!isUpgrade) {
-      delete schema.properties[id].properties.version;
+      delete schema.properties[id].properties['version'];
     }
     return schema;
   }, [isUpgrade]);
-  if (loading) {
-    return <Spin />;
-  }
+  // if (loading) {
+  //   return <Spin />;
+  // }
   return <SchemaComponent scope={{ useCancel, useSaveValues, versionList, useValuesFromProps }} schema={schema} />;
 };
 PluginNpmForm.displayName = 'PluginNpmForm';

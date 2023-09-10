@@ -80,6 +80,7 @@ export default {
   Value: '字段值',
   Disabled: '禁用',
   Enabled: '启用',
+  Problematic: '有问题',
   Empty: '赋空值',
   'Linkage rule': '联动规则',
   'Linkage rules': '联动规则',

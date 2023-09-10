@@ -18,7 +18,7 @@ interface IPluginInfo extends IPluginCard {
 
 function PluginInfo(props: IPluginInfo) {
   const { data, onClick } = props;
-  const { name, displayName, isCompatible, packageName, version, builtIn, enabled, description, type, error } = data;
+  const { name, displayName, isCompatible, packageName, updatable, builtIn, enabled, description, type, error } = data;
   const { styles, theme } = useStyles();
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -78,7 +78,7 @@ function PluginInfo(props: IPluginInfo) {
             <a key={'5'}>
               <ReadOutlined /> {t('Docs')}
             </a>
-            {!builtIn && type && (
+            {updatable && (
               <a
                 key={'3'}
                 onClick={(e) => {
@@ -106,7 +106,10 @@ function PluginInfo(props: IPluginInfo) {
                 onConfirm={async (e) => {
                   e.stopPropagation();
                   await api.request({
-                    url: `pm:remove/${name}`,
+                    url: `pm:remove`,
+                    params: {
+                      filterByTk: name,
+                    },
                   });
                   window.location.reload();
                 }}
@@ -136,7 +139,10 @@ function PluginInfo(props: IPluginInfo) {
                 return;
               }
               await api.request({
-                url: `pm:${checked ? 'enable' : 'disable'}/${name}`,
+                url: `pm:${checked ? 'enable' : 'disable'}`,
+                params: {
+                  filterByTk: name,
+                },
               });
             }}
             checked={enabledVal}

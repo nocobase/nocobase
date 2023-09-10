@@ -40,18 +40,15 @@ export default {
       await next();
     },
     async upgradeByNpm(ctx, next) {
-      const { filterByTk, values } = ctx.action.params;
-      if (!filterByTk) {
-        ctx.throw(400, 'plugin name invalid');
-      }
+      const { values } = ctx.action.params;
       if (!values['registry']) {
         ctx.throw(400, 'plugin registry is required');
       }
       if (!values['version']) {
         ctx.throw(400, 'plugin version is required');
       }
-      const pm = ctx.app.pm;
-      await pm.upgradeByNpm(filterByTk, values);
+      const pm = ctx.app.pm as PluginManager;
+      await pm.upgradeByNpm(values);
       ctx.body = 'ok';
       await next();
     },
@@ -65,15 +62,15 @@ export default {
       await next();
     },
     async upgradeByCompressedFileUrl(ctx, next) {
-      const { filterByTk, values } = ctx.action.params;
-      if (!filterByTk) {
+      const { values } = ctx.action.params;
+      if (!values.name) {
         ctx.throw(400, 'plugin name invalid');
       }
       if (!values['compressedFileUrl']) {
         ctx.throw(400, 'compressedFileUrl is required');
       }
       const pm = ctx.app.pm;
-      await pm.upgradeByCompressedFileUrl({ name: filterByTk, compressedFileUrl: values['compressedFileUrl'] });
+      await pm.upgradeByCompressedFileUrl(values);
       ctx.body = 'ok';
       await next();
     },

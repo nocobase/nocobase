@@ -27,13 +27,16 @@ export const PluginUrlForm: FC<IPluginUrlFormProps> = ({ onClose, pluginData, is
         const compressedFileUrl = form.values.compressedFileUrl;
         if (!compressedFileUrl) return;
         await form.submit();
+        const data = {
+          compressedFileUrl,
+        };
+        if (pluginData?.name) {
+          data['name'] = pluginData.name;
+        }
         await api.request({
-          url: `pm:${isUpgrade ? 'upgradeByCompressedFileUrl/' + name : 'addByCompressedFileUrl'}`,
+          url: `pm:${isUpgrade ? 'upgradeByCompressedFileUrl' : 'addByCompressedFileUrl'}`,
           method: 'post',
-          data: {
-            compressedFileUrl,
-            type: 'url',
-          },
+          data,
         });
         message.success(t('Saved successfully'), 2, () => {
           onClose(true);

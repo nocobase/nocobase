@@ -1,5 +1,6 @@
 import { Model } from '@nocobase/database';
 import fs from 'fs';
+import { resolve } from 'path';
 import { Application } from './application';
 import { InstallOptions, getExposeChangelogUrl, getExposeReadmeUrl } from './plugin-manager';
 import { checkAndGetCompatible } from './plugin-manager/utils';
@@ -115,7 +116,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
         ...this.options,
       };
     }
-    const file = require.resolve(packageName);
+    const file = await fs.promises.realpath(resolve(process.env.NODE_MODULES_PATH, packageName));
     const lastUpdated = (await fs.promises.stat(file)).ctime;
     const others = await checkAndGetCompatible(packageName);
     return {
@@ -124,6 +125,8 @@ export abstract class Plugin<O = any> implements PluginInterface {
       readmeUrl: getExposeReadmeUrl(packageName, locale),
       changelogUrl: getExposeChangelogUrl(packageName),
       lastUpdated,
+      file,
+      updatable: file.startsWith(process.env.PLUGIN_STORAGE_PATH),
       displayName: packageJson[`displayName.${locale}`] || packageJson.displayName,
       description: packageJson[`description.${locale}`] || packageJson.description,
     };

@@ -13,7 +13,6 @@ import {
   DEFAULT_PLUGIN_PATH,
   DEFAULT_PLUGIN_STORAGE_PATH,
   EXTERNAL,
-  NODE_MODULES_PATH,
   importRegex,
   pluginPrefix,
   requireRegex,
@@ -63,7 +62,7 @@ export function getLocalPluginDir(packageDirBasename: string) {
 }
 
 export function getNodeModulesPluginDir(packageName: string) {
-  return path.join(NODE_MODULES_PATH, packageName);
+  return path.join(process.env.NODE_MODULES_PATH, packageName);
 }
 
 export function getAuthorizationHeaders(registry?: string, authToken?: string) {

@@ -78,7 +78,10 @@ export const PluginDetail: FC<IPluginDetail> = ({ plugin, onCancel }) => {
   );
   const { data, loading } = useRequest<{ data: IPluginDetailData }>(
     {
-      url: `/pm:get/${plugin.name}`,
+      url: `pm:get`,
+      params: {
+        filterByTk: plugin.name,
+      },
     },
     {
       refreshDeps: [plugin.name],
