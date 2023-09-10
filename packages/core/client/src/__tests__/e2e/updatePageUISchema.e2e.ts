@@ -1,7 +1,9 @@
 import { expect, test } from '@playwright/test';
-import { createPageWithUISchema } from 'e2eUtils';
+import { createPageWithUISchema, registerHooks } from 'e2eUtils';
 
-test('updatePageUISchema', async ({ page }) => {
+registerHooks();
+
+test('createPageWithUISchema', async ({ page }) => {
   await createPageWithUISchema(page, {
     _isJSONSchemaObject: true,
     version: '2.0',

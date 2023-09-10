@@ -1,8 +1,6 @@
 import { uid } from '@formily/shared';
 import { Page, request, test } from '@playwright/test';
 
-export * from '@playwright/test';
-
 interface CollectionSetting {
   title: string;
   name: string;
@@ -78,30 +76,32 @@ interface CollectionSetting {
   }>;
 }
 
-test.beforeEach(async ({ page }) => {
-  // 每个测试运行前，都新建一个页面
-  await page.goto(`/admin/${await createPage()}`);
+export const registerHooks = () => {
+  test.beforeEach(async ({ page }) => {
+    // 每个测试运行前，都新建一个页面
+    await page.goto(`/admin/${await createPage()}`);
 
-  // 确保每个测试中配置按钮都是可见的
-  if (!(await page.getByRole('button', { name: 'plus Add menu item' }).isVisible({ timeout: 100 }))) {
-    await page.getByRole('button', { name: 'highlight' }).click();
-  }
-});
+    // 确保每个测试中配置按钮都是可见的
+    if (!(await page.getByRole('button', { name: 'plus Add menu item' }).isVisible({ timeout: 100 }))) {
+      await page.getByRole('button', { name: 'highlight' }).click();
+    }
+  });
 
-test.afterEach(async ({ page }) => {
-  const pageUid = page.url().split('/').pop();
-  // 每个测试运行结束后，删除当前页面
-  if (pageUid) {
-    await deletePage(pageUid);
-  }
+  test.afterEach(async ({ page }) => {
+    const pageUid = page.url().split('/').pop();
+    // 每个测试运行结束后，删除当前页面
+    if (pageUid) {
+      await deletePage(pageUid);
+    }
 
-  // 删除创建的 collections
-  // @ts-ignore
-  if (page._collectionNames) {
+    // 删除创建的 collections
     // @ts-ignore
-    await deleteCollections(page._collectionNames);
-  }
-});
+    if (page._collectionNames) {
+      // @ts-ignore
+      await deleteCollections(page._collectionNames);
+    }
+  });
+};
 
 const getStorageItem = (key: string, storageState: any) => {
   return storageState.origins

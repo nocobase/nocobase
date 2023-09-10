@@ -1,4 +1,7 @@
-import { expect, test } from 'e2eUtils';
+import { expect, test } from '@playwright/test';
+import { registerHooks } from 'e2eUtils';
+
+registerHooks();
 
 test.describe('create data block', () => {
   test('table', async ({ page }) => {

@@ -3,6 +3,8 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   globalTeardown: require.resolve('./scripts/teardown.setup.ts'),
 
+  timeout: 10000,
+
   // Look for test files in the "tests" directory, relative to this configuration file.
   testDir: './packages',
 
@@ -18,7 +20,8 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
 
   // Opt out of parallel tests on CI.
-  workers: process.env.CI ? 1 : undefined,
+  // workers: process.env.CI ? 1 : undefined,
+  workers: 1,
 
   // Reporter to use
   reporter: [['html', { outputFolder: './playwright/tests-report' }]],
