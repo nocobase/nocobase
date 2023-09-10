@@ -57,7 +57,6 @@ function PluginInfo(props: IPluginInfo) {
               gap: 2px !important;
             }
             li a {
-              font-size: 12px;
               .anticon {
                 margin-right: 3px;
                 /* display: none; */

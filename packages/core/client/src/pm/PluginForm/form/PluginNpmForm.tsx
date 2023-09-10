@@ -128,6 +128,13 @@ export const PluginNpmForm: FC<IPluginNpmFormProps> = ({ onClose, isUpgrade, plu
                 },
               },
               properties: {
+                cancel: {
+                  title: 'Cancel',
+                  'x-component': 'Action',
+                  'x-component-props': {
+                    useAction: '{{ useCancel }}',
+                  },
+                },
                 submit: {
                   title: '{{t("Submit")}}',
                   'x-component': 'Action',
@@ -135,13 +142,6 @@ export const PluginNpmForm: FC<IPluginNpmFormProps> = ({ onClose, isUpgrade, plu
                     type: 'primary',
                     htmlType: 'submit',
                     useAction: '{{ useSaveValues }}',
-                  },
-                },
-                cancel: {
-                  title: 'Cancel',
-                  'x-component': 'Action',
-                  'x-component-props': {
-                    useAction: '{{ useCancel }}',
                   },
                 },
               },

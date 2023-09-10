@@ -1,9 +1,9 @@
+import { ISchema } from '@formily/json-schema';
+import { useForm } from '@formily/react';
+import { uid } from '@formily/shared';
 import { App } from 'antd';
 import React, { FC, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ISchema } from '@formily/json-schema';
-import { uid } from '@formily/shared';
-import { useForm } from '@formily/react';
 
 import { useAPIClient, useRequest } from '../../../api-client';
 import { SchemaComponent } from '../../../schema-component';
@@ -88,6 +88,13 @@ export const PluginUrlForm: FC<IPluginUrlFormProps> = ({ onClose, pluginData, is
                 },
               },
               properties: {
+                cancel: {
+                  title: 'Cancel',
+                  'x-component': 'Action',
+                  'x-component-props': {
+                    useAction: '{{ useCancel }}',
+                  },
+                },
                 submit: {
                   title: '{{t("Submit")}}',
                   'x-component': 'Action',
@@ -95,13 +102,6 @@ export const PluginUrlForm: FC<IPluginUrlFormProps> = ({ onClose, pluginData, is
                     type: 'primary',
                     htmlType: 'submit',
                     useAction: '{{ useSaveValues }}',
-                  },
-                },
-                cancel: {
-                  title: 'Cancel',
-                  'x-component': 'Action',
-                  'x-component-props': {
-                    useAction: '{{ useCancel }}',
                   },
                 },
               },

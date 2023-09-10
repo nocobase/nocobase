@@ -18,33 +18,16 @@
     "downlevelIteration": true,
     "baseUrl": ".",
     "paths": {
-      "@nocobase/app-*": [
-        "packages/app/*/src"
-      ],
-      "@nocobase/plugin-sample-*": [
-        "packages/samples/*/src"
-      ],
-      "@nocobase/plugin-pro-*": [
-        "packages/pro-plugins/*/src"
-      ],
-      "@nocobase/plugin-*": [
-        "packages/plugins/*/src"
-      ],
-      "@nocobase/preset-*": [
-        "packages/presets/*/src"
-      ],
-      "@nocobase/evaluators/client": [
-        "packages/core/evaluators/src/client"
-      ],
-      "@nocobase/utils/client": [
-        "packages/core/utils/src/client"
-      ],
-      "@nocobase/*": [
-        "packages/core/*/src"
-      ],
-      "@@/*": [
-        ".dumi/tmp/*"
-      ]
+      "@nocobase/app-*": ["packages/app/*/src"],
+      "@nocobase/plugin-sample-*": ["packages/samples/*/src"],
+      "@nocobase/plugin-pro-*": ["packages/pro-plugins/*/src"],
+      "@nocobase/plugin-*": ["packages/plugins/*/src"],
+      "@nocobase/preset-*": ["packages/presets/*/src"],
+      "@nocobase/evaluators/client": ["packages/core/evaluators/src/client"],
+      "@nocobase/utils/plugin-symlink": ["packages/core/utils/plugin-symlink"],
+      "@nocobase/utils/client": ["packages/core/utils/src/client"],
+      "@nocobase/*": ["packages/core/*/src"],
+      "@@/*": [".dumi/tmp/*"]
     }
   },
   "ts-node": {
@@ -52,12 +35,7 @@
       "module": "commonjs"
     }
   },
-  "include": [
-    "packages/**/*",
-    ".dumi/**/*",
-    ".dumirc.ts",
-    "scripts/setupVitest.ts"
-  ],
+  "include": ["packages/**/*", ".dumi/**/*", ".dumirc.ts", "scripts/setupVitest.ts"],
   "exclude": [
     "packages/**/node_modules",
     "packages/**/dist",

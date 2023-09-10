@@ -103,6 +103,13 @@ export const PluginUploadForm: FC<IPluginUploadFormProps> = ({ onClose, pluginDa
                 },
               },
               properties: {
+                cancel: {
+                  title: 'Cancel',
+                  'x-component': 'Action',
+                  'x-component-props': {
+                    useAction: '{{ useCancel }}',
+                  },
+                },
                 submit: {
                   title: '{{t("Submit")}}',
                   'x-component': 'Action',
@@ -110,13 +117,6 @@ export const PluginUploadForm: FC<IPluginUploadFormProps> = ({ onClose, pluginDa
                     type: 'primary',
                     htmlType: 'submit',
                     useAction: '{{ useSaveValues }}',
-                  },
-                },
-                cancel: {
-                  title: 'Cancel',
-                  'x-component': 'Action',
-                  'x-component-props': {
-                    useAction: '{{ useCancel }}',
                   },
                 },
               },

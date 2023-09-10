@@ -1,6 +1,5 @@
 import { CleanOptions, Collection, SyncOptions } from '@nocobase/database';
 import execa from 'execa';
-import fs from 'fs';
 import _ from 'lodash';
 import net from 'net';
 import { resolve, sep } from 'path';
@@ -12,10 +11,8 @@ import resourceOptions from './options/resource';
 import { PluginManagerRepository } from './plugin-manager-repository';
 import { PluginData } from './types';
 import {
-  checkCompatible,
   copyTempPackageToStorageAndLinkToNodeModules,
   downloadAndUnzipToTempDir,
-  getCompatible,
   getNpmInfo,
   getPluginInfoByNpm,
   removeTmpDir,
@@ -619,18 +616,6 @@ export class PluginManager {
         })
         .filter(Boolean),
     );
-  }
-
-  async detail(name: string) {
-    const packageName = PluginManager.getPackageName(name);
-    const packageJson = PluginManager.getPackageJson(packageName);
-    const file = require.resolve(PluginManager.getPackageName(name));
-    return {
-      packageJson,
-      isCompatible: checkCompatible(packageName),
-      depsCompatible: await getCompatible(packageName),
-      lastUpdated: fs.statSync(file).ctime,
-    };
   }
 
   async getNpmVersionList(name: string) {
