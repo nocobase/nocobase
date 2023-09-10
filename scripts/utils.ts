@@ -9,7 +9,11 @@ export const commonConfig: any = {
 };
 
 export const deleteNocoBase = () => {
-  execSync(`yarn pm2 delete 0`);
+  try {
+    execSync(`yarn pm2 delete 0`);
+  } catch (err) {
+    return;
+  }
 };
 
 export const runNocoBase = () => {
