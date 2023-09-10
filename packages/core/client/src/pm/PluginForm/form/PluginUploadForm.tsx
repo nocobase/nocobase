@@ -25,26 +25,16 @@ export const PluginUploadForm: FC<IPluginUploadFormProps> = ({ onClose, pluginDa
 
     return {
       async run() {
-        if (!form.values.uploadFile[0]?.response?.data?.url) return;
-        let compressedFileUrl = form.values.uploadFile[0].response.data.url;
-        if (!compressedFileUrl) return;
-        if (!(compressedFileUrl.startsWith('http') || compressedFileUrl.startsWith('//'))) {
-          if (!compressedFileUrl.startsWith('/')) {
-            compressedFileUrl = `/${compressedFileUrl}`;
-          }
-          compressedFileUrl = `${window.origin}${compressedFileUrl}`;
-        }
         await form.submit();
-        const data = {
-          compressedFileUrl,
-        };
+        const formData = new FormData();
+        formData.append('file', form.values.uploadFile?.[0]?.originFileObj);
         if (pluginData?.packageName) {
-          data['packageName'] = pluginData.packageName;
+          formData.append('packageName', pluginData.packageName);
         }
         api.request({
           url: `pm:${isUpgrade ? 'update' : 'add'}`,
           method: 'post',
-          data,
+          data: formData,
         });
         onClose(true);
       },
@@ -74,7 +64,7 @@ export const PluginUploadForm: FC<IPluginUploadFormProps> = ({ onClose, pluginDa
               'x-component': 'Upload.Dragger',
               required: true,
               'x-component-props': {
-                action: 'attachments:create',
+                action: '',
                 multiple: false,
                 maxCount: 1,
                 height: '150px',
@@ -90,6 +80,7 @@ export const PluginUploadForm: FC<IPluginUploadFormProps> = ({ onClose, pluginDa
                   if (!fileSizeLimit) {
                     message.error('File must smaller than 30MB!');
                   }
+                  return false;
                   return isCompressedFile && fileSizeLimit;
                 },
               },

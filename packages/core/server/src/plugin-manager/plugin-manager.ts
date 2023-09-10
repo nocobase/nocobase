@@ -1,5 +1,6 @@
 import { CleanOptions, Collection, SyncOptions } from '@nocobase/database';
 import { isURL } from '@nocobase/utils';
+import { fsExists } from '@nocobase/utils/plugin-symlink';
 import execa from 'execa';
 import _ from 'lodash';
 import net from 'net';
@@ -7,6 +8,7 @@ import { resolve, sep } from 'path';
 import Application from '../application';
 import { createAppProxy } from '../helper';
 import { Plugin } from '../plugin';
+import { uploadMiddleware } from './middleware';
 import collectionOptions from './options/collection';
 import resourceOptions from './options/resource';
 import { PluginManagerRepository } from './plugin-manager-repository';
@@ -59,6 +61,11 @@ export class PluginManager {
       name: 'pm',
       actions: ['pm:*'],
     });
+    this.app.db.addMigrations({
+      namespace: 'core/pm',
+      directory: resolve(__dirname, '../migrations'),
+    });
+    this.app.resourcer.use(uploadMiddleware);
   }
 
   get repository() {
@@ -526,6 +533,11 @@ export class PluginManager {
         ...(options as any),
         packageName: urlOrName,
       });
+    } else if (await fsExists(urlOrName)) {
+      await this.addByCompressedFileUrl({
+        ...(options as any),
+        compressedFileUrl: urlOrName,
+      });
     } else {
       await this.add(urlOrName, options, true);
     }
@@ -544,6 +556,21 @@ export class PluginManager {
       authToken,
     });
     return this.addByCompressedFileUrl({ name, compressedFileUrl, registry, authToken, type: 'npm' });
+  }
+
+  async addByFile(options: { file: string; registry?: string; authToken?: string; type?: string; name?: string }) {
+    const { file, authToken } = options;
+
+    const { packageName, tempFile, tempPackageContentDir } = await downloadAndUnzipToTempDir(file, authToken);
+
+    const name = options.name || packageName;
+
+    if (this.has(name)) {
+      await removeTmpDir(tempFile, tempPackageContentDir);
+      throw new Error(`plugin name [${name}] already exists`);
+    }
+    await copyTempPackageToStorageAndLinkToNodeModules(tempFile, tempPackageContentDir, packageName);
+    return this.add(name, { packageName }, true);
   }
 
   async addByCompressedFileUrl(options: {
@@ -580,9 +607,11 @@ export class PluginManager {
       options['name'] = model.name;
     }
     if (options.compressedFileUrl) {
-      return this.upgradeByCompressedFileUrl(options);
+      await this.upgradeByCompressedFileUrl(options);
+    } else {
+      await this.upgradeByNpm(options as any);
     }
-    return this.upgradeByNpm(options as any);
+    await this.app.upgrade();
   }
 
   async upgradeByNpm(values: PluginData) {
@@ -615,7 +644,6 @@ export class PluginManager {
       authToken: authToken,
     });
     await this.add(name, { version, packageName: data.packageName }, true, true);
-    await this.app.upgrade();
   }
 
   getNameByPackageName(packageName: string) {

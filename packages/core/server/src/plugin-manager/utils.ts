@@ -1,3 +1,4 @@
+import { isURL } from '@nocobase/utils';
 import axios, { AxiosRequestConfig } from 'axios';
 import decompress from 'decompress';
 import fg from 'fast-glob';
@@ -150,9 +151,15 @@ export async function downloadAndUnzipToTempDir(fileUrl: string, authToken?: str
   await fs.remove(tempPackageDir);
   await fs.remove(tempFile);
 
-  await download(fileUrl, tempFile, {
-    headers: getAuthorizationHeaders(fileUrl, authToken),
-  });
+  if (isURL(fileUrl)) {
+    await download(fileUrl, tempFile, {
+      headers: getAuthorizationHeaders(fileUrl, authToken),
+    });
+  } else if (await fs.exists(fileUrl)) {
+    await fs.copy(fileUrl, tempFile);
+  } else {
+    throw new Error(`${fileUrl} does not exist`);
+  }
 
   if (!fs.existsSync(tempFile)) {
     throw new Error(`download ${fileUrl} failed`);

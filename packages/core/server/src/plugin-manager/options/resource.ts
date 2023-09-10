@@ -1,3 +1,6 @@
+import { uid } from '@nocobase/utils';
+import fs from 'fs';
+import path from 'path';
 import Application from '../../application';
 import { getExposeUrl } from '../clientStaticMiddleware';
 import PluginManager from '../plugin-manager';
@@ -7,8 +10,8 @@ export default {
   actions: {
     async add(ctx, next) {
       const app = ctx.app as Application;
-      const { values } = ctx.action.params;
-      if (values.packageName) {
+      const { values = {} } = ctx.action.params;
+      if (values?.packageName) {
         const args = [];
         if (values.registry) {
           args.push('--registry=' + values.registry);
@@ -20,7 +23,17 @@ export default {
           args.push('--auth-token=' + values.authToken);
         }
         app.runAsCLI(['pm', 'add', values.packageName, ...args], { from: 'user' });
-      } else {
+      } else if (ctx.file) {
+        const tmpDir = path.resolve(process.cwd(), 'storage', 'tmp');
+        try {
+          await fs.promises.mkdir(tmpDir, { recursive: true });
+        } catch (error) {
+          // empty
+        }
+        const tempFile = path.join(process.cwd(), 'storage/tmp', uid() + path.extname(ctx.file.originalname));
+        await fs.promises.writeFile(tempFile, ctx.file.buffer, 'binary');
+        app.runAsCLI(['pm', 'add', tempFile], { from: 'user' });
+      } else if (values.compressedFileUrl) {
         app.runAsCLI(['pm', 'add', values.compressedFileUrl], { from: 'user' });
       }
       ctx.body = 'ok';
@@ -28,7 +41,7 @@ export default {
     },
     async update(ctx, next) {
       const app = ctx.app as Application;
-      const { values } = ctx.action.params;
+      const values = ctx.action.params.values || {};
       const args = [];
       if (values.registry) {
         args.push('--registry=' + values.registry);
@@ -41,6 +54,18 @@ export default {
       }
       if (values.compressedFileUrl) {
         args.push('--url=' + values.compressedFileUrl);
+      }
+      if (ctx.file) {
+        values.packageName = ctx.request.body.packageName;
+        const tmpDir = path.resolve(process.cwd(), 'storage', 'tmp');
+        try {
+          await fs.promises.mkdir(tmpDir, { recursive: true });
+        } catch (error) {
+          // empty
+        }
+        const tempFile = path.join(process.cwd(), 'storage/tmp', uid() + path.extname(ctx.file.originalname));
+        await fs.promises.writeFile(tempFile, ctx.file.buffer, 'binary');
+        args.push(`--url=${tempFile}`);
       }
       app.runAsCLI(['pm', 'update', values.packageName, ...args], { from: 'user' });
       ctx.body = 'ok';
