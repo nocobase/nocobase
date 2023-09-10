@@ -144,6 +144,9 @@ const getProps = (app: Application) => {
       'pm.disable': {
         title: 'Disabling plugin',
       },
+      'pm.remove': {
+        title: 'Removing plugin',
+      },
     };
     return { ...props, ...commands[app.error?.command?.name] };
   }

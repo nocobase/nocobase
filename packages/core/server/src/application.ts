@@ -4,7 +4,7 @@ import { actions as authActions, AuthManager } from '@nocobase/auth';
 import { Cache, createCache, ICacheConfig } from '@nocobase/cache';
 import Database, { CollectionOptions, IDatabaseOptions } from '@nocobase/database';
 import { AppLoggerOptions, createAppLogger, Logger } from '@nocobase/logger';
-import { Resourcer, ResourceOptions } from '@nocobase/resourcer';
+import { ResourceOptions, Resourcer } from '@nocobase/resourcer';
 import { applyMixins, AsyncEmitter, Toposort, ToposortOptions } from '@nocobase/utils';
 import chalk from 'chalk';
 import { Command, CommandOptions, ParseOptions } from 'commander';
@@ -454,11 +454,15 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this.setMaintainingMessage('emit afterStart');
     await this.emitAsync('afterStart', this, options);
+    await this.emitStartedEvent();
+
+    this.stopped = false;
+  }
+
+  async emitStartedEvent() {
     await this.emitAsync('__started', this, {
       maintainingStatus: lodash.cloneDeep(this._maintainingCommandStatus),
     });
-
-    this.stopped = false;
   }
 
   async isStarted() {

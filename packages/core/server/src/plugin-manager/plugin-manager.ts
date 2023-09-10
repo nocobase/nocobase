@@ -487,6 +487,7 @@ export class PluginManager {
     for (const plugin of plugins) {
       await plugin.afterRemove();
     }
+    await this.app.emitStartedEvent();
   }
 
   protected async initPresetPlugins() {
@@ -514,20 +515,21 @@ export class PluginManager {
     this.app.setMaintainingMessage(`loaded plugin ${plugin.name}`);
   }
 
-  async addViaCLI(name: string, options?: PluginData) {
-    if (isURL(name)) {
-      return this.addByCompressedFileUrl({
+  async addViaCLI(urlOrName: string, options?: PluginData) {
+    if (isURL(urlOrName)) {
+      await this.addByCompressedFileUrl({
         ...options,
-        compressedFileUrl: name,
+        compressedFileUrl: urlOrName,
       });
-    }
-    if (options?.registry) {
-      return this.addByNpm({
+    } else if (options?.registry) {
+      await this.addByNpm({
         ...(options as any),
-        packageName: name,
+        packageName: urlOrName,
       });
+    } else {
+      await this.add(urlOrName, options, true);
     }
-    return this.add(name, options, true);
+    await this.app.emitStartedEvent();
   }
 
   async addByNpm(options: { packageName: string; name?: string; registry: string; authToken?: string }) {

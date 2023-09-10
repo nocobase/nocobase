@@ -104,13 +104,12 @@ function PluginInfo(props: IPluginInfo) {
                 title={t('Are you sure to delete this plugin?')}
                 onConfirm={async (e) => {
                   e.stopPropagation();
-                  await api.request({
+                  api.request({
                     url: `pm:remove`,
                     params: {
                       filterByTk: name,
                     },
                   });
-                  window.location.reload();
                 }}
                 onCancel={(e) => e.stopPropagation()}
                 okText={t('Yes')}
