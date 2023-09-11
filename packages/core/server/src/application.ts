@@ -108,7 +108,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   public rawOptions: ApplicationOptions;
   public activatedCommand: {
     name: string;
-    actionCommand?: Command;
   } = null;
   public running = false;
   protected plugins = new Map<string, Plugin>();
@@ -118,6 +117,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   private _maintaining = false;
   private _maintainingCommandStatus: MaintainingCommandStatus;
   private _maintainingStatusBeforeCommand: MaintainingCommandStatus | null;
+  private _actionCommand: Command;
 
   constructor(public options: ApplicationOptions) {
     super();
@@ -364,9 +364,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     const command = new Command('nocobase')
       .usage('[command] [options]')
       .hook('preAction', async (_, actionCommand) => {
+        this._actionCommand = actionCommand;
+
         this.activatedCommand = {
           name: getCommandFullName(actionCommand),
-          actionCommand,
         };
 
         this.setMaintaining({
@@ -428,12 +429,13 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
         throw error;
       }
     } finally {
-      const cmd = this.activatedCommand?.actionCommand;
-      if (cmd) {
-        cmd['_optionValues'] = {};
-        cmd['_optionValueSources'] = {};
+      const _actionCommand = this._actionCommand;
+      if (_actionCommand) {
+        _actionCommand['_optionValues'] = {};
+        _actionCommand['_optionValueSources'] = {};
       }
       this.activatedCommand = null;
+      this._actionCommand = null;
     }
   }
 

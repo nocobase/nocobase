@@ -1,4 +1,3 @@
-import { Command } from 'commander';
 import _ from 'lodash';
 import Application from '../application';
 import { PluginCommandError } from '../errors/plugin-command-error';
@@ -18,7 +17,7 @@ export default (app: Application) => {
     .option('--auth-token [authToken]')
     .option('--version [version]')
     .action(async (name, options, cli) => {
-      console.log('pm.add', name, options, cli, (cli as Command).args);
+      console.log('pm.add', name, options);
       try {
         await app.pm.addViaCLI(name, _.cloneDeep(options));
       } catch (error) {
