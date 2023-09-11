@@ -3,6 +3,12 @@ import { presetAuthType, presetAuthenticator } from '../../preset';
 
 export default class AddBasicAuthMigration extends Migration {
   async up() {
+    await this.db.getCollection('authenticators').sync({
+      force: false,
+      alter: {
+        drop: false,
+      },
+    });
     const repo = this.context.db.getRepository('authenticators');
     const existed = await repo.count();
     if (existed) {
