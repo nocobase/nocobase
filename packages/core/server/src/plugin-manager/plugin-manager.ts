@@ -77,22 +77,12 @@ export class PluginManager {
   }
 
   static getPackageName(name: string) {
-    const prefixes = this.getPluginPkgPrefix();
-    for (const prefix of prefixes) {
-      try {
-        require.resolve(`${prefix}${name}`);
-        return `${prefix}${name}`;
-      } catch (error) {
-        continue;
-      }
+    try {
+      require.resolve(name);
+      return name;
+    } catch (error) {
+      throw new Error(`[${name}] plugin does not exist`);
     }
-    throw new Error(`${name} plugin does not exist`);
-  }
-
-  static getPluginPkgPrefix() {
-    return (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro-').split(
-      ',',
-    );
   }
 
   static async findPackage(name: string) {
@@ -101,22 +91,17 @@ export class PluginManager {
       return packageName;
     } catch (error) {
       console.log(`\`${name}\` plugin not found locally`);
-      const prefixes = this.getPluginPkgPrefix();
-      for (const prefix of prefixes) {
-        try {
-          const packageName = `${prefix}${name}`;
-          console.log(`Try to find ${packageName}`);
-          await execa('npm', ['v', packageName, 'versions']);
-          console.log(`${packageName} downloading`);
-          await execa('yarn', ['add', packageName, '-W']);
-          console.log(`${packageName} downloaded`);
-          return packageName;
-        } catch (error) {
-          continue;
-        }
+      try {
+        console.log(`Try to find ${name}`);
+        await execa('npm', ['v', name, 'versions']);
+        console.log(`${name} downloading`);
+        await execa('yarn', ['add', name, '-W']);
+        console.log(`${name} downloaded`);
+        return name;
+      } catch (error) {
+        throw new Error(`No available packages found, ${name} plugin does not exist`);
       }
     }
-    throw new Error(`No available packages found, ${name} plugin does not exist`);
   }
 
   static resolvePlugin(pluginName: string | typeof Plugin, isUpgrade = false, isPkg = false) {
@@ -644,19 +629,6 @@ export class PluginManager {
       authToken: authToken,
     });
     await this.add(name, { version, packageName: data.packageName }, true, true);
-  }
-
-  getNameByPackageName(packageName: string) {
-    const prefixes = PluginManager.getPluginPkgPrefix();
-    const prefix = prefixes.find((prefix) => packageName.startsWith(prefix));
-    if (!prefix) {
-      throw new Error(
-        `package name [${packageName}] invalid, just support ${prefixes.join(
-          ', ',
-        )}. You can modify process.env.PLUGIN_PACKAGE_PREFIX add more prefix.`,
-      );
-    }
-    return packageName.replace(prefix, '');
   }
 
   async list(options: any = {}) {
