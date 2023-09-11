@@ -143,7 +143,7 @@ const LocalPlugins = () => {
         <div
           className={css`
             --grid-gutter: ${theme.margin}px;
-            --extensions-card-width: 300px;
+            --extensions-card-width: 350px;
             display: grid;
             grid-column-gap: var(--grid-gutter);
             grid-row-gap: var(--grid-gutter);
