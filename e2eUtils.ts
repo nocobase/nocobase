@@ -76,6 +76,14 @@ interface CollectionSetting {
   }>;
 }
 
+/**
+ * 为每个测试文件注册 beforeEach 和 afterEach 钩子。
+ *
+ * 主要的作用有：
+ * 1. 在每个测试运行前，创建一个页面，运行后，删除这个页面。
+ * 2. 在每个测试运行结束后，删除测试期间创建的一个或多个 collection。
+ * 3. 确保每个测试中配置按钮都是可见的。
+ */
 export const registerHooks = () => {
   test.beforeEach(async ({ page }) => {
     // 每个测试运行前，都新建一个页面
@@ -185,7 +193,7 @@ export const createPage = async ({ name, pageSchema }: { name?: string; pageSche
 };
 
 /**
- * 删除一个 NocoBase 的页面
+ * 根据页面 uid 删除一个 NocoBase 的页面
  */
 export const deletePage = async (pageUid: string) => {
   const api = await request.newContext({
@@ -280,6 +288,11 @@ export const createCollections = async (page: Page, collectionSettings: Collecti
   await page.reload();
 };
 
+/**
+ * 根据传进来的 uiSchema 创建一个新的页面，并跳转过去
+ * @param page
+ * @param uiSchema
+ */
 export const createPageWithUISchema = async (page: Page, uiSchema: any) => {
   // 1. 先把之前创建的空页面删除
   await deletePage(page.url().split('/').pop());
