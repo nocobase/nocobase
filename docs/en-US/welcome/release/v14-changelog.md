@@ -1,6 +1,6 @@
 # v0.14: New plugin manager, supports adding plugins through UI
 
-This release finally enables plug-and-play plugins in production environments. You can now add plugins directly through the UI, and support downloading from the npm registry (which can be private), local uploads, and URL downloads.
+This release enables plug-and-play plugins in production environments. You can now add plugins directly through the UI, and support downloading from the npm registry (which can be private), local uploads, and URL downloads.
 
 ## New features
 
@@ -25,11 +25,11 @@ The storage/plugins directory is used to upload plugins, and is organized as npm
 
 ### Plugin updates
 
-Currently, only plugins under storage/plugins are updated, as shown here:
+Currently, only plugins under storage/plugins can be updated, as shown here:
 
 <img src="https://demo-cn.nocobase.com/storage/uploads/703809b8cd74cc95e1ab2ab766980817.gif" />
 
-Note: For maintenance and upgrade purposes, for example, if the storage plugin is unavailable due to an upgrade, you can put the new plugin directly into storage/plugins and then perform the upgrade operation.
+Note: In order to facilitate maintenance and upgrading, and to avoid unavailability of the storage plugins due to upgrading, you can put the new plugin directly into storage/plugins and then perform the upgrade operation.
 
 ## Incompatible changes
 
