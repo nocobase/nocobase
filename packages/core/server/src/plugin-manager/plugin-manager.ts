@@ -530,6 +530,11 @@ export class PluginManager {
         ...options,
         compressedFileUrl: urlOrName,
       });
+    } else if (await fsExists(urlOrName)) {
+      await this.addByCompressedFileUrl({
+        ...(options as any),
+        compressedFileUrl: urlOrName,
+      });
     } else if (options?.registry) {
       if (!options?.name) {
         const model = await this.repository.findOne({ filter: { packageName: urlOrName } });
@@ -540,11 +545,6 @@ export class PluginManager {
       await this.addByNpm({
         ...(options as any),
         packageName: urlOrName,
-      });
-    } else if (await fsExists(urlOrName)) {
-      await this.addByCompressedFileUrl({
-        ...(options as any),
-        compressedFileUrl: urlOrName,
       });
     } else {
       const opts = {

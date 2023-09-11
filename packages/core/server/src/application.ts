@@ -108,6 +108,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   public rawOptions: ApplicationOptions;
   public activatedCommand: {
     name: string;
+    actionCommand?: Command;
   } = null;
   public running = false;
   protected plugins = new Map<string, Plugin>();
@@ -365,6 +366,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       .hook('preAction', async (_, actionCommand) => {
         this.activatedCommand = {
           name: getCommandFullName(actionCommand),
+          actionCommand,
         };
 
         this.setMaintaining({
@@ -426,6 +428,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
         throw error;
       }
     } finally {
+      const cmd = this.activatedCommand?.actionCommand;
+      if (cmd) {
+        cmd['_optionValues'] = {};
+        cmd['_optionValueSources'] = {};
+      }
       this.activatedCommand = null;
     }
   }
