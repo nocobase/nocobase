@@ -29,7 +29,7 @@ v0.14 实现了生产环境下插件的即插即用，可以直接通过界面�
 
 <img src="https://demo-cn.nocobase.com/storage/uploads/703809b8cd74cc95e1ab2ab766980817.gif" />
 
-备注：为了便于维护和升级，例如因为升级导致 storage 插件不可用，也可以直接将新插件放到 storage/plugins 目录下，再执行升级操作
+备注：为了便于维护和升级，避免因为升级导致 storage 插件不可用，也可以直接将新插件放到 storage/plugins 目录下，再执行升级操作
 
 ## 不兼容的变化
 
