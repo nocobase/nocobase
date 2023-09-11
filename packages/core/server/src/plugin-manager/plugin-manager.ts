@@ -119,17 +119,19 @@ export class PluginManager {
     throw new Error(`No available packages found, ${name} plugin does not exist`);
   }
 
+  static clearCache(packageName: string) {
+    const packageNamePath = packageName.replace('/', sep);
+    Object.keys(require.cache).forEach((key) => {
+      if (key.includes(packageNamePath)) {
+        delete require.cache[key];
+      }
+    });
+  }
+
   static resolvePlugin(pluginName: string | typeof Plugin, isUpgrade = false, isPkg = false) {
     if (typeof pluginName === 'string') {
       const packageName = isPkg ? pluginName : this.getPackageName(pluginName);
-      if (isUpgrade) {
-        const packageNamePath = packageName.replace('/', sep);
-        Object.keys(require.cache).forEach((key) => {
-          if (key.includes(packageNamePath)) {
-            delete require.cache[key];
-          }
-        });
-      }
+      this.clearCache(packageName);
       return requireModule(packageName);
     } else {
       return pluginName;
@@ -529,6 +531,12 @@ export class PluginManager {
         compressedFileUrl: urlOrName,
       });
     } else if (options?.registry) {
+      if (!options?.name) {
+        const model = await this.repository.findOne({ filter: { packageName: urlOrName } });
+        if (model) {
+          options['name'] = model?.name;
+        }
+      }
       await this.addByNpm({
         ...(options as any),
         packageName: urlOrName,
@@ -539,7 +547,14 @@ export class PluginManager {
         compressedFileUrl: urlOrName,
       });
     } else {
-      await this.add(urlOrName, options, true);
+      const opts = {
+        ...options,
+      };
+      const model = await this.repository.findOne({ filter: { packageName: urlOrName } });
+      if (model) {
+        opts['name'] = model.name;
+      }
+      await this.add(opts['name'] || urlOrName, opts, true);
     }
     await this.app.emitStartedEvent();
   }

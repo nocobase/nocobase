@@ -80,13 +80,13 @@ export class PresetNocoBase extends Plugin {
       .map((name) => {
         const packageName = PluginManager.getPackageName(name);
         const packageJson = PluginManager.getPackageJson(packageName);
-        return { name, enabled: true, builtIn: true, version: packageJson.version } as any;
+        return { name, packageName, enabled: true, builtIn: true, version: packageJson.version } as any;
       })
       .concat(
         this.localPlugins.map((name) => {
           const packageName = PluginManager.getPackageName(name);
           const packageJson = PluginManager.getPackageJson(packageName);
-          return { name, version: packageJson.version };
+          return { name, packageName, version: packageJson.version };
         }),
       );
   }
@@ -100,11 +100,8 @@ export class PresetNocoBase extends Plugin {
   }
 
   async install() {
-    const repository = this.app.db.getRepository<any>('applicationPlugins');
-    const existPlugins = await repository.find();
-    const existPluginNames = existPlugins.map((item) => item.name);
-    const plugins = this.allPlugins.filter((item) => !existPluginNames.includes(item.name));
-    await repository.create({ values: plugins });
+    const repository = this.db.getRepository<any>('applicationPlugins');
+    await repository.create({ values: this.allPlugins });
     this.log.debug('install preset plugins');
     await repository.init();
     await this.app.pm.load();
