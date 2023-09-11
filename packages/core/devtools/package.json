@@ -46,7 +46,8 @@
     "ts-node-dev": "1.1.8",
     "tsconfig-paths": "^3.12.0",
     "typescript": "5.1.3",
-    "umi": "^4.0.69"
+    "umi": "^4.0.69",
+    "fast-glob": "^3.3.1"
   },
   "repository": {
     "type": "git",
