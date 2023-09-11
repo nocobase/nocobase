@@ -2,7 +2,8 @@
   "name": "nocobase",
   "private": true,
   "workspaces": [
-    "packages/*/*"
+    "packages/*/*",
+    "packages/*/*/*"
   ],
   "license": "Apache-2.0",
   "engines": {

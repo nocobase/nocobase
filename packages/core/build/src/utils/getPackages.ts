@@ -1,5 +1,6 @@
 import Topo from '@hapi/topo';
 import fg from 'fast-glob';
+import path from 'path';
 import { PACKAGES_PATH, ROOT_PATH } from '../constant';
 import { getPackagesSync } from '@lerna/project';
 import { Package } from '@lerna/package';
@@ -13,7 +14,13 @@ import { toUnixPath } from './utils';
  */
 function getPackagesPath(pkgs: string[]) {
   if (pkgs.length === 0) {
-    pkgs = ['*/*'];
+    return fg
+      .sync(['*/*/package.json', '*/*/*/package.json'], {
+        cwd: PACKAGES_PATH,
+        absolute: true,
+        onlyFiles: true,
+      })
+      .map(toUnixPath).map(item => path.dirname(item))
   }
   return fg
     .sync(pkgs, {
@@ -36,7 +43,7 @@ export function getPackages(pkgs: string[]) {
 export function sortPackages(packages: Package[]): Package[] {
   const sorter = new Topo.Sorter<Package>();
   for (const pkg of packages) {
-    const pkgJson = require(`${pkg.name}/package.json`);
+    const pkgJson = require(`${pkg.location}/package.json`,);
     const after = Object.keys({ ...pkgJson.dependencies, ...pkgJson.devDependencies, ...pkgJson.peerDependencies });
     sorter.add(pkg, { after, group: pkg.name });
   }
