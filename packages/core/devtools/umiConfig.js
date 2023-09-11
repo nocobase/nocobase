@@ -2,7 +2,7 @@ const { existsSync } = require('fs');
 const { resolve, sep } = require('path');
 const packageJson = require('./package.json');
 const fs = require('fs');
-const glob = require('glob');
+const glob = require('fast-glob');
 const path = require('path');
 
 console.log('VERSION: ', packageJson.version);
@@ -73,24 +73,25 @@ function getPackagePaths() {
   const pkgs = [];
   for (const key in paths) {
     if (Object.hasOwnProperty.call(paths, key)) {
-      const dir = paths[key][0];
-      if (dir.includes('*')) {
-        const files = glob.sync(dir);
-        for (const file of files) {
-          const dirname = resolve(process.cwd(), file);
-          if (existsSync(dirname)) {
-            const re = new RegExp(dir.replace('*', '(.+)'));
-            const p = dirname
-              .substring(process.cwd().length + 1)
-              .split(sep)
-              .join('/');
-            const match = re.exec(p);
-            pkgs.push([key.replace('*', match?.[1]), dirname]);
+      for (let dir of paths[key]) {
+        if (dir.includes('*')) {
+          const files = glob.sync(dir, { cwd: process.cwd(), onlyDirectories: true });
+          for (const file of files) {
+            const dirname = resolve(process.cwd(), file);
+            if (existsSync(dirname)) {
+              const re = new RegExp(dir.replace('*', '(.+)'));
+              const p = dirname
+                .substring(process.cwd().length + 1)
+                .split(sep)
+                .join('/');
+              const match = re.exec(p);
+              pkgs.push([key.replace('*', match?.[1]), dirname]);
+            }
           }
+        } else {
+          const dirname = resolve(process.cwd(), dir);
+          pkgs.push([key, dirname]);
         }
-      } else {
-        const dirname = resolve(process.cwd(), dir);
-        pkgs.push([key, dirname]);
       }
     }
   }
@@ -162,13 +163,13 @@ export default function devDynamicImport(packageName: string): Promise<any> {
       fs.rmdirSync(this.outputPath, { recursive: true, force: true });
     }
     fs.mkdirSync(this.outputPath);
-    const validPluginPaths = this.pluginsPath.filter((pluginPath) => fs.existsSync(pluginPath));
+    const validPluginPaths = this.pluginsPath.filter((pluginsPath) => fs.existsSync(pluginsPath));
     if (!validPluginPaths.length || process.env.NODE_ENV === 'production') {
       fs.writeFileSync(this.indexPath, this.emptyIndexContent);
       return;
     }
 
-    const pluginInfos = validPluginPaths.map((pluginPath) => this.getContent(pluginPath)).flat();
+    const pluginInfos = validPluginPaths.map((pluginsPath) => this.getContent(pluginsPath)).flat();
 
     // index.ts
     fs.writeFileSync(this.indexPath, this.indexContent);
@@ -186,21 +187,23 @@ export default function devDynamicImport(packageName: string): Promise<any> {
     });
   }
 
-  getContent(pluginPath) {
-    const pluginFolders = fs.readdirSync(pluginPath);
+  getContent(pluginsPath) {
+    const pluginFolders = glob
+      .sync(['*/package.json', '*/*/package.json'], { cwd: pluginsPath, onlyFiles: true, absolute: true })
+      .map((item) => path.dirname(item));
     const pluginInfos = pluginFolders
       .filter((folder) => {
-        const pluginPackageJsonPath = path.join(pluginPath, folder, 'package.json');
-        const pluginSrcClientPath = path.join(pluginPath, folder, 'src', 'client');
+        const pluginPackageJsonPath = path.join(folder, 'package.json');
+        const pluginSrcClientPath = path.join(folder, 'src', 'client');
         return fs.existsSync(pluginPackageJsonPath) && fs.existsSync(pluginSrcClientPath);
       })
       .map((folder) => {
-        const pluginPackageJsonPath = path.join(pluginPath, folder, 'package.json');
+        const pluginPackageJsonPath = path.join(folder, 'package.json');
         const pluginPackageJson = require(pluginPackageJsonPath);
         const pluginSrcClientPath = path
-          .relative(this.packagesPath, path.join(pluginPath, folder, 'src', 'client'))
+          .relative(this.packagesPath, path.join(folder, 'src', 'client'))
           .replaceAll('\\', '/');
-        const pluginFileName = `${path.basename(pluginPath)}_${folder.replaceAll('-', '_')}`;
+        const pluginFileName = `${path.basename(pluginsPath)}_${path.basename(folder).replaceAll('-', '_')}`;
         const exportStatement = `export { default } from '${pluginSrcClientPath}';`;
         return { exportStatement, pluginFileName, packageJsonName: pluginPackageJson.name };
       });

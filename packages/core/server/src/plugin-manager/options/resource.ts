@@ -2,7 +2,7 @@ import { uid } from '@nocobase/utils';
 import fs from 'fs';
 import path from 'path';
 import Application from '../../application';
-import { getExposeUrl } from '../clientStaticMiddleware';
+import { getExposeUrl } from '../clientStaticUtils';
 import PluginManager from '../plugin-manager';
 
 export default {
