@@ -10,6 +10,10 @@ export default class extends Migration {
     }
     const uiRoutes = this.db.getRepository('uiRoutes');
     const routes = await uiRoutes.find();
+    if (!uiRoutes) {
+      return;
+    }
+    await this.db.getCollection('systemSettings').sync();
     for (const route of routes) {
       if (route.uiSchemaUid && route?.options?.component === 'AdminLayout') {
         const options = instance.options || {};

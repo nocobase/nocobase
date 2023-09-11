@@ -9,6 +9,10 @@ export default class extends Migration {
       return;
     }
     const uiRoutes = this.db.getRepository('uiRoutes');
+    if (!uiRoutes) {
+      return;
+    }
+    await this.db.getCollection('systemSettings').sync();
     const routes = await uiRoutes.find();
     for (const route of routes) {
       if (route.uiSchemaUid && route?.options?.component === 'MApplication') {
