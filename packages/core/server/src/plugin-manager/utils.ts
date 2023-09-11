@@ -1,4 +1,5 @@
 import { isURL } from '@nocobase/utils';
+import { createStoragePluginSymLink } from '@nocobase/utils/plugin-symlink';
 import axios, { AxiosRequestConfig } from 'axios';
 import decompress from 'decompress';
 import fg from 'fast-glob';
@@ -217,7 +218,7 @@ export async function copyTempPackageToStorageAndLinkToNodeModules(
   await fs.move(tempPackageContentDir, packageDir, { overwrite: true });
 
   // symlink to node_modules
-  await linkToNodeModules(packageName, packageDir);
+  await createStoragePluginSymLink(packageName);
 
   // remove temp dir
   await removeTmpDir(tempFile, tempPackageContentDir);
@@ -225,23 +226,6 @@ export async function copyTempPackageToStorageAndLinkToNodeModules(
   return {
     packageDir,
   };
-}
-
-export async function linkToNodeModules(packageName: string, from: string) {
-  const nodeModulesPluginDir = getNodeModulesPluginDir(packageName);
-  if (!(await fs.pathExists(nodeModulesPluginDir))) {
-    if (!(await fs.pathExists(path.dirname(nodeModulesPluginDir)))) {
-      await fs.mkdirp(path.dirname(nodeModulesPluginDir));
-    }
-    await fs.symlink(from, nodeModulesPluginDir, 'dir');
-  }
-}
-
-export async function linkLocalPackageToNodeModules(packageDir: string) {
-  const { name } = getPackageJsonByLocalPath(packageDir);
-
-  // symlink to node_modules
-  await linkToNodeModules(name, packageDir);
 }
 
 /**
@@ -347,20 +331,6 @@ export function removePluginPackage(packageName: string) {
   return Promise.all([fs.remove(packageDir), fs.remove(nodeModulesPluginDir)]);
 }
 
-export async function checkPluginExist(pluginData: PluginData) {
-  const { packageName, type } = pluginData;
-  if (!type) return true;
-  const packageDir = getStoragePluginDir(packageName);
-  const exists = await fs.exists(packageDir);
-
-  // if packageDir exists create symlink
-  if (exists) {
-    await linkToNodeModules(packageName, packageDir);
-  }
-
-  return exists;
-}
-
 /**
  * get package.json
  *
@@ -404,15 +374,6 @@ export async function updatePluginByCompressedFileUrl(
     packageDir,
     version,
   };
-}
-
-/**
- * reinstall package when reinstall app or other situation
- */
-export async function checkPluginPackage(plugin: PluginData) {
-  if (plugin.type && !(await checkPluginExist(plugin))) {
-    await updatePluginByCompressedFileUrl(plugin);
-  }
 }
 
 export async function getNewVersion(plugin: PluginData): Promise<string | false> {

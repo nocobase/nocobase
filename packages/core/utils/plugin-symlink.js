@@ -51,6 +51,8 @@ async function createStoragePluginSymLink(pluginName) {
   }
 }
 
+exports.createStoragePluginSymLink = createStoragePluginSymLink;
+
 async function createStoragePluginsSymlink() {
   const storagePluginsPath = resolve(process.cwd(), 'storage/plugins');
   if (!(await fsExists(storagePluginsPath))) {
