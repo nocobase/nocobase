@@ -8,7 +8,6 @@ import { builtinModules } from 'module';
 import os from 'os';
 import path from 'path';
 import semver from 'semver';
-import { getDepPkgPath, getPackageDir, getPackageFilePathWithExistCheck } from './clientStaticMiddleware';
 import {
   APP_NAME,
   DEFAULT_PLUGIN_PATH,
@@ -20,6 +19,7 @@ import {
 } from './constants';
 import deps from './deps';
 import { PluginData } from './types';
+import { getDepPkgPath, getPackageDir, getPackageFilePathWithExistCheck } from './clientStaticUtils';
 
 /**
  * get temp dir
