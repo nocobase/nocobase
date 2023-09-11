@@ -361,33 +361,26 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   createCli() {
-    const command = new Command('nocobase')
-      .usage('[command] [options]')
-      .hook('preAction', async (_, actionCommand) => {
-        this._actionCommand = actionCommand;
+    const command = new Command('nocobase').usage('[command] [options]').hook('preAction', async (_, actionCommand) => {
+      this._actionCommand = actionCommand;
 
-        this.activatedCommand = {
-          name: getCommandFullName(actionCommand),
-        };
+      this.activatedCommand = {
+        name: getCommandFullName(actionCommand),
+      };
 
-        this.setMaintaining({
-          status: 'command_begin',
-          command: this.activatedCommand,
-        });
-
-        this.setMaintaining({
-          status: 'command_running',
-          command: this.activatedCommand,
-        });
-
-        await this.authenticate();
-        await this.load();
-      })
-      .hook('postAction', async (_, actionCommand) => {
-        if (this._maintainingStatusBeforeCommand?.error && this._started) {
-          await this.restart();
-        }
+      this.setMaintaining({
+        status: 'command_begin',
+        command: this.activatedCommand,
       });
+
+      this.setMaintaining({
+        status: 'command_running',
+        command: this.activatedCommand,
+      });
+
+      await this.authenticate();
+      await this.load();
+    });
 
     command.exitOverride((err) => {
       throw err;
