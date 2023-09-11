@@ -3,6 +3,12 @@ import { Migration } from '@nocobase/server';
 
 export default class extends Migration {
   async up() {
+    await this.db.getCollection('systemSettings').sync({
+      force: false,
+      alter: {
+        drop: false,
+      },
+    });
     const systemSettings = this.db.getRepository('systemSettings');
     let instance: Model = await systemSettings.findOne();
     if (instance?.options?.adminSchemaUid) {
@@ -13,7 +19,6 @@ export default class extends Migration {
     if (!uiRoutes) {
       return;
     }
-    await this.db.getCollection('systemSettings').sync();
     for (const route of routes) {
       if (route.uiSchemaUid && route?.options?.component === 'AdminLayout') {
         const options = instance.options || {};
