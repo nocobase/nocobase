@@ -41,6 +41,7 @@ const collection = {
           { label: `{{t("Local storage", { ns: "${NAMESPACE}" })}}`, value: 'local' },
           { label: `{{t("Aliyun OSS", { ns: "${NAMESPACE}" })}}`, value: 'ali-oss' },
           { label: `{{t("Amazon S3", { ns: "${NAMESPACE}" })}}`, value: 's3' },
+          { label: `{{t("Minio S3", { ns: "${NAMESPACE}" })}}`, value: 'minio' },
           { label: `{{t("Tencent COS", { ns: "${NAMESPACE}" })}}`, value: 'tx-cos' },
         ],
       } as ISchema,

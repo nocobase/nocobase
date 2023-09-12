@@ -5,9 +5,10 @@ import { Registry } from '@nocobase/utils';
 import local from './local';
 import oss from './ali-oss';
 import s3 from './s3';
+import minio from './minio';
 import cos from './tx-cos';
 
-import { STORAGE_TYPE_LOCAL, STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_S3, STORAGE_TYPE_TX_COS } from '../constants';
+import { STORAGE_TYPE_LOCAL, STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_S3, STORAGE_TYPE_MINIO, STORAGE_TYPE_TX_COS } from '../constants';
 
 export interface StorageModel {
   title: string;
@@ -37,6 +38,7 @@ const storageTypes = new Registry<IStorage>();
 storageTypes.register(STORAGE_TYPE_LOCAL, local);
 storageTypes.register(STORAGE_TYPE_ALI_OSS, oss);
 storageTypes.register(STORAGE_TYPE_S3, s3);
+storageTypes.register(STORAGE_TYPE_MINIO, minio);
 storageTypes.register(STORAGE_TYPE_TX_COS, cos);
 
 export function getStorageConfig(key: string): IStorage {
