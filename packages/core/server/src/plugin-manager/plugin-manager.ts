@@ -1,6 +1,6 @@
 import { CleanOptions, Collection, SyncOptions } from '@nocobase/database';
 import { isURL } from '@nocobase/utils';
-import { createDevPluginSymLink, fsExists } from '@nocobase/utils/plugin-symlink';
+import { fsExists } from '@nocobase/utils/plugin-symlink';
 import execa from 'execa';
 import _ from 'lodash';
 import net from 'net';
@@ -555,6 +555,9 @@ export class PluginManager {
       const model = await this.repository.findOne({ filter: { packageName: urlOrName } });
       if (model) {
         opts['name'] = model.name;
+      }
+      if (!opts['name']) {
+        opts['packageName'] = urlOrName;
       }
       await this.add(opts['name'] || urlOrName, opts, true);
     }
