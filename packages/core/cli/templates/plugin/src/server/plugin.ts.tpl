@@ -1,6 +1,6 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
 
-export class {{{pascalCaseName}}}Plugin extends Plugin {
+export class {{{pascalCaseName}}}Server extends Plugin {
   afterAdd() {}
 
   beforeLoad() {}
@@ -16,4 +16,4 @@ export class {{{pascalCaseName}}}Plugin extends Plugin {
   async remove() {}
 }
 
-export default {{{pascalCaseName}}}Plugin;
+export default {{{pascalCaseName}}}Server;

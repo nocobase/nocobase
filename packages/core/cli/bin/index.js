@@ -15,7 +15,9 @@ const env = {
   DB_TIMEZONE: '+00:00',
   DEFAULT_STORAGE_TYPE: 'local',
   LOCAL_STORAGE_DEST: 'storage/uploads',
+  PLUGIN_STORAGE_PATH: resolve(process.cwd(), 'storage/plugins'),
   MFSU_AD: 'none',
+  NODE_MODULES_PATH: resolve(process.cwd(), 'node_modules'),
   PM2_HOME: resolve(process.cwd(), './storage/.pm2'),
   PLUGIN_PACKAGE_PREFIX: '@nocobase/plugin-,@nocobase/plugin-sample-,@nocobase/preset-',
 };

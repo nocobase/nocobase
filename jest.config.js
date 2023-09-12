@@ -34,5 +34,6 @@ module.exports = {
     'package.json',
     '/demo/',
     'package-lock.json',
+    '/storage/',
   ],
 };
