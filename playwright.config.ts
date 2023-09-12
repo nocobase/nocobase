@@ -26,6 +26,8 @@ export default defineConfig({
   // Reporter to use
   reporter: [['html', { outputFolder: './playwright/tests-report' }]],
 
+  outputDir: './playwright/test-results',
+
   use: {
     // Base URL to use in actions like `await page.goto('/')`.
     baseURL: 'http://localhost:20000',
