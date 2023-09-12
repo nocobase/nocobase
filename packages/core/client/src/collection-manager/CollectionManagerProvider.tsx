@@ -39,7 +39,7 @@ export const RemoteCollectionManagerProvider = (props: any) => {
   const { render } = useAppSpin();
   const options = {
     resource: 'collections',
-    action: 'list',
+    action: 'listByRole',
     params: {
       paginate: false,
       appends: ['fields', 'category'],

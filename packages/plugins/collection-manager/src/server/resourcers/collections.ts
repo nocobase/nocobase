@@ -1,4 +1,6 @@
+import defaultActions, { Context, Next } from '@nocobase/actions';
 import { Database } from '@nocobase/database';
+import { Application } from '@nocobase/server';
 
 export default {
   async ['collections:setFields'](ctx, next) {
@@ -76,5 +78,74 @@ export default {
     }
 
     await next();
+  },
+  async ['collections:listByRole'](ctx: Context, next: Next) {
+    const roleName = ctx.state.currentRole;
+    if (roleName === 'root') {
+      return defaultActions.list(ctx, next);
+    }
+    const role = (ctx.app as Application).acl.getRole(roleName);
+    // Check global actions set in strategy
+    const strategy = role.getStrategy();
+    if (!strategy) {
+      ctx.body = [];
+      return next();
+    }
+    // Get resources have individual configuration
+    const resources = Array.from(role.resources.values());
+    const actions = strategy.options.actions;
+    if (!actions || (actions !== '*' && !actions.includes('view'))) {
+      // Do not have global view action permission
+      // Include resources with view action permission
+      const includes = resources.filter((resource) => resource.getAction('view')).map((resource) => resource.name);
+      if (!includes.length) {
+        ctx.body = [];
+        return next();
+      }
+      ctx.action.mergeParams({
+        filter: includes.length
+          ? {
+              name: {
+                $in: includes,
+              },
+            }
+          : {},
+      });
+    } else {
+      // Exclude resources without view action permission
+      const excludes = resources.filter((resource) => !resource.getAction('view')).map((resource) => resource.name);
+      ctx.action.mergeParams({
+        filter: excludes.length
+          ? {
+              name: {
+                $notIn: excludes,
+              },
+            }
+          : {},
+      });
+    }
+    return defaultActions.list(ctx, async () => {
+      const collections = (ctx.body || []).map((collection: any) => {
+        if (!collection.fields) {
+          return collection;
+        }
+        const resource = role.getResource(collection.name);
+        if (!resource) {
+          return collection;
+        }
+        const associationFields = Array.from(role.resources.keys())
+          .filter((key) => key.startsWith(`${collection.name}.`))
+          .map((key) => key.split('.')[1]);
+        const allowFields = [...(resource.getAction('view').fields || []), ...associationFields];
+        collection.set(
+          'fields',
+          collection.fields.filter((field: any) => allowFields.includes(field.name)),
+          { raw: true },
+        );
+        return collection;
+      });
+      ctx.body = collections;
+      await next();
+    });
   },
 };
