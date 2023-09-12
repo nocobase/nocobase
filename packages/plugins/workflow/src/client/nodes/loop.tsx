@@ -6,7 +6,13 @@ import { Branch } from '../Branch';
 import { useFlowContext } from '../FlowContext';
 import { NAMESPACE, lang } from '../locale';
 import useStyles from '../style';
-import { VariableOption, defaultFieldNames, nodesOptions, triggerOptions, useWorkflowVariableOptions } from '../variable';
+import {
+  VariableOption,
+  defaultFieldNames,
+  nodesOptions,
+  triggerOptions,
+  useWorkflowVariableOptions,
+} from '../variable';
 
 function findOption(options: VariableOption[], paths: string[]) {
   let opts = options;
@@ -15,9 +21,12 @@ function findOption(options: VariableOption[], paths: string[]) {
     const path = paths[i];
     const current = opts.find((item) => item.value === path);
     if (!current) {
-      break;
+      return null;
     }
     option = current;
+    if (!current.isLeaf && current.loadChildren) {
+      current.loadChildren(current);
+    }
     if (current.children) {
       opts = current.children;
     }
@@ -111,7 +120,11 @@ export default {
     // find target data model by path described in `config.target`
     // 1. get options from $context/$jobsMapByNodeId
     // 2. route to sub-options and use as loop target options
-    let targetOption: VariableOption = { key: 'item', [fieldNames.value]: 'item', [fieldNames.label]: lang('Loop target') };
+    let targetOption: VariableOption = {
+      key: 'item',
+      [fieldNames.value]: 'item',
+      [fieldNames.label]: lang('Loop target'),
+    };
 
     if (typeof target === 'string' && target.startsWith('{{') && target.endsWith('}}')) {
       const paths = target
@@ -122,7 +135,7 @@ export default {
       const targetOptions = [nodesOptions, triggerOptions].map((item: any) => {
         const opts = item.useOptions(options).filter(Boolean);
         return {
-          [fieldNames.label]: compile(item.title),
+          [fieldNames.label]: compile(item.label),
           [fieldNames.value]: item.value,
           key: item.value,
           [fieldNames.children]: opts,
@@ -132,7 +145,7 @@ export default {
 
       const found = findOption(targetOptions, paths);
 
-      targetOption = Object.assign({ ...targetOption }, found, targetOption);
+      targetOption = Object.assign({}, found, targetOption);
     }
 
     return [
