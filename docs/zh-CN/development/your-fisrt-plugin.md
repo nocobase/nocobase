@@ -9,7 +9,7 @@
 
 ## 创建插件
 
-通过 CLI 快速的创建一个空插件，命令如下：
+通过 CLI 快速地创建一个空插件，命令如下：
 
 ```bash
 yarn pm create @my-project/plugin-hello
