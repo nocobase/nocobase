@@ -53,3 +53,7 @@ pm add /a/plugin.zip
 # Remote zip, replace it with the same name
 pm add http://url/plugin.zip
 ```
+
+## Plugin development guide
+
+[Develop the first plugin](/development/your-fisrt-plugin)
