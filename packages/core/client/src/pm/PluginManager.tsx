@@ -125,15 +125,15 @@ const LocalPlugins = () => {
                   {t(item.type)}({item.list?.length})
                 </a>
               ))}
-            </Space>
-          </div>
-          <div>
-            <Space>
               <Input
                 allowClear
                 placeholder={t('Search plugin')}
                 onChange={(e) => handleSearch(e.currentTarget.value)}
               />
+            </Space>
+          </div>
+          <div>
+            <Space>
               <Button onClick={() => setShowAddForm(true)} type="primary">
                 {t('Add new')}
               </Button>

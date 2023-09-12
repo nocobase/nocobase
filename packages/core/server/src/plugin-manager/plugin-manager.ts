@@ -530,21 +530,24 @@ export class PluginManager {
         ...options,
         compressedFileUrl: urlOrName,
       });
+    } else if (await fsExists(urlOrName)) {
+      await this.addByCompressedFileUrl({
+        ...(options as any),
+        compressedFileUrl: urlOrName,
+      });
     } else if (options?.registry) {
-      if (!options?.name) {
+      if (!options.name) {
         const model = await this.repository.findOne({ filter: { packageName: urlOrName } });
         if (model) {
           options['name'] = model?.name;
+        }
+        if (!options.name) {
+          options['name'] = urlOrName.replace('@nocobase/plugin-', '');
         }
       }
       await this.addByNpm({
         ...(options as any),
         packageName: urlOrName,
-      });
-    } else if (await fsExists(urlOrName)) {
-      await this.addByCompressedFileUrl({
-        ...(options as any),
-        compressedFileUrl: urlOrName,
       });
     } else {
       const opts = {
@@ -613,7 +616,6 @@ export class PluginManager {
   }
 
   async update(options: PluginData) {
-    console.log('options', options);
     if (options['url']) {
       options.compressedFileUrl = options['url'];
     }

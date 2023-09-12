@@ -261,7 +261,6 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
     app.on('__started', async (_app, options) => {
       const { maintainingStatus } = options;
-      console.log('maintainingStatus', maintainingStatus);
       if (
         maintainingStatus &&
         ['install', 'upgrade', 'pm.add', 'pm.update', 'pm.enable', 'pm.disable', 'pm.remove'].includes(

@@ -84,6 +84,7 @@ export class PluginManagerRepository extends Repository {
         sort: 'id',
       });
     } catch (error) {
+      await this.database.migrator.up();
       await this.collection.sync({
         alter: {
           drop: false,

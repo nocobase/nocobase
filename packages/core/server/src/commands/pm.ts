@@ -1,3 +1,4 @@
+import _ from 'lodash';
 import Application from '../application';
 import { PluginCommandError } from '../errors/plugin-command-error';
 
@@ -11,14 +12,14 @@ export default (app: Application) => {
     });
 
   pm.command('add')
-    .argument('<name>')
+    .argument('<pkg>')
     .option('--registry [registry]')
     .option('--auth-token [authToken]')
     .option('--version [version]')
-    .action(async (name, options) => {
-      console.log(name, options);
+    .action(async (name, options, cli) => {
+      console.log('pm.add', name, options);
       try {
-        await app.pm.addViaCLI(name, options);
+        await app.pm.addViaCLI(name, _.cloneDeep(options));
       } catch (error) {
         throw new PluginCommandError(`Failed to add plugin: ${error.message}`);
       }
