@@ -25,7 +25,9 @@ export default class WorkflowPlugin extends Plugin {
   instructions: Registry<Instruction> = new Registry();
   triggers: Registry<Trigger> = new Registry();
   functions: Registry<CustomFunction> = new Registry();
-  private executing = false;
+
+  private ready = false;
+  private executing: Promise<void> | null = null;
   private pending: Pending[] = [];
   private events: [WorkflowModel, any, { context?: any }][] = [];
 
@@ -142,7 +144,7 @@ export default class WorkflowPlugin extends Plugin {
     });
 
     this.db.addMigrations({
-      namespace: 'workflow',
+      namespace: this.name,
       directory: path.resolve(__dirname, 'migrations'),
       context: {
         plugin: this,
@@ -170,6 +172,7 @@ export default class WorkflowPlugin extends Plugin {
 
     this.app.on('afterStart', () => {
       this.app.setMaintainingMessage('check for not started executions');
+      this.ready = true;
       // check for not started executions
       this.dispatch();
     });
@@ -183,6 +186,12 @@ export default class WorkflowPlugin extends Plugin {
       workflows.forEach((workflow: WorkflowModel) => {
         this.toggle(workflow, false);
       });
+
+      this.ready = false;
+      await this.prepare();
+      if (this.executing) {
+        await this.executing;
+      }
     });
   }
 
@@ -203,7 +212,7 @@ export default class WorkflowPlugin extends Plugin {
 
   public trigger(workflow: WorkflowModel, context: object, options: { context?: any } = {}): void {
     // `null` means not to trigger
-    if (context == null) {
+    if (!this.ready || context == null) {
       return;
     }
 
@@ -304,40 +313,40 @@ export default class WorkflowPlugin extends Plugin {
     }
   };
 
-  private async dispatch() {
-    if (this.executing) {
+  private dispatch() {
+    if (!this.ready || this.executing) {
       return;
     }
 
-    this.executing = true;
-
-    let next: Pending | null = null;
-    // resuming has high priority
-    if (this.pending.length) {
-      next = this.pending.shift() as Pending;
-      this.getLogger(next[0].workflowId).info(`pending execution (${next[0].id}) ready to process`);
-    } else {
-      const execution = (await this.db.getRepository('executions').findOne({
-        filter: {
-          status: EXECUTION_STATUS.QUEUEING,
-        },
-        appends: ['workflow'],
-        sort: 'createdAt',
-      })) as ExecutionModel;
-      if (execution && execution.workflow.enabled) {
-        this.getLogger(execution.workflowId).info(`execution (${execution.id}) fetched from db`);
-        next = [execution];
+    this.executing = (async () => {
+      let next: Pending | null = null;
+      // resuming has high priority
+      if (this.pending.length) {
+        next = this.pending.shift() as Pending;
+        this.getLogger(next[0].workflowId).info(`pending execution (${next[0].id}) ready to process`);
+      } else {
+        const execution = (await this.db.getRepository('executions').findOne({
+          filter: {
+            status: EXECUTION_STATUS.QUEUEING,
+          },
+          appends: ['workflow'],
+          sort: 'createdAt',
+        })) as ExecutionModel;
+        if (execution && execution.workflow.enabled) {
+          this.getLogger(execution.workflowId).info(`execution (${execution.id}) fetched from db`);
+          next = [execution];
+        }
       }
-    }
-    if (next) {
-      await this.process(...next);
-    }
+      if (next) {
+        await this.process(...next);
+      }
 
-    this.executing = false;
+      this.executing = null;
 
-    if (next) {
-      this.dispatch();
-    }
+      if (next) {
+        this.dispatch();
+      }
+    })();
   }
 
   private async process(execution: ExecutionModel, job?: JobModel) {
