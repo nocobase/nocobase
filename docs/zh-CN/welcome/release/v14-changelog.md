@@ -18,9 +18,8 @@ v0.14 实现了生产环境下插件的即插即用，可以直接通过界面�
     |- /@nocobase/
       |- /plugin-hello1/
       |- /plugin-hello2/
-    |- /@foo/
-      |- /bar/
-    |- /my-nocobase-plugin-hello/
+    |- /my-nocobase-plugin-hello1/
+    |- /my-nocobase-plugin-hello2/
 ```
 
 ### 插件的更新
@@ -33,12 +32,55 @@ v0.14 实现了生产环境下插件的即插即用，可以直接通过界面�
 
 ## 不兼容的变化
 
+### 插件目录变更
+
+开发中的插件统一都放到 packages/plugins 目录下，以 npm packages 的方式组织
+
+```diff
+|- /packages/
+- |- /plugins/acl/
++ |- /plugins/@nocobase/plugin-acl/
+- |- /samples/hello/ 
++ |- /plugins/@nocobase/plugin-sample-hello/
+```
+
+全新的目录结构为
+
+```bash
+# 开发中的插件
+|- /packages/
+  |- /plugins/
+    |- /@nocobase/
+      |- /plugin-hello1/
+      |- /plugin-hello2/
+    |- /my-nocobase-plugin-hello1/
+    |- /my-nocobase-plugin-hello2/
+
+# 通过界面添加的插件
+|- /storage/
+  |- /plugins/
+    |- /@nocobase/
+      |- /plugin-hello1/
+      |- /plugin-hello2/
+    |- /my-nocobase-plugin-hello1/
+    |- /my-nocobase-plugin-hello2/
+```
+
 ### 插件名的变化
 
 - 不再提供 PLUGIN_PACKAGE_PREFIX 环境变量
 - 插件名和包名统一，旧的插件名仍然可以以别名的形式存在
 
-### pm.add 的改进
+### pm add 的改进
+
+变更情况
+
+```diff
+- pm add sample-hello
++ pm add @nocobase/plugin-sample-hello
+```
+
+pm add 参数说明
 
 ```bash
 # 用 packageName 代替 pluginName，从本地查找，找不到报错
@@ -53,3 +95,101 @@ pm add /a/plugin.zip
 # 远程压缩包，同名直接替换
 pm add http://url/plugin.zip
 ```
+
+## 插件开发入门指南
+
+### 创建插件
+
+```bash
+yarn pm create @my-org/plugin-hello
+```
+
+### 查看插件
+
+[截图]
+
+插件所在目录 `packages/plugins/@my-org/plugin-hello`，结构为：
+
+```bash
+|- /packages/plugins/@my-org/plugin-hello
+  |- /src
+    |- /client      # 插件客户端代码
+    |- /server      # 插件服务端代码
+  |- client.d.ts
+  |- client.js
+  |- package.json   # 插件包信息
+  |- server.d.ts
+  |- server.js
+```
+
+### 编写插件
+
+查看 `packages/plugins/@my-org/plugin-hello/src/server/plugin.ts` 文件，并修改为：
+
+```ts
+import { InstallOptions, Plugin } from '@nocobase/server';
+
+export class PluginHelloServer extends Plugin {
+  afterAdd() {}
+
+  beforeLoad() {}
+
+  async load() {
+    this.db.collection({
+      name: 'hello',
+      fields: [
+        { type: 'string', name: 'name' }
+      ],
+    });
+    this.app.acl.allow('hello', '*');
+  }
+
+  async install(options?: InstallOptions) {}
+
+  async afterEnable() {}
+
+  async afterDisable() {}
+
+  async remove() {}
+}
+
+export default PluginHelloServer;
+```
+
+### 体验插件功能
+
+向插件的 hello 表里插入数据
+
+```bash
+curl --location --request POST 'http://localhost:13000/api/hello:create' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "name": "Hello world"
+}'
+```
+
+查看 hello 表数据
+
+```bash
+curl --location --request GET 'http://localhost:13000/api/hello:list'
+```
+
+### 构建插件
+
+```bash
+yarn build plugins/@my-org/plugin-hello
+```
+
+### 打包插件
+
+```bash
+yarn tar @my-org/plugin-hello
+```
+
+默认保存路径为 `storage/tar/@my-org/plugin-hello.tar.gz`
+
+### 上传至其他 NocoBase 应用
+
+仅 v0.14 以后的版本支持
+
+[动图]

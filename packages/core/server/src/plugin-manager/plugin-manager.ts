@@ -6,7 +6,7 @@ import _ from 'lodash';
 import net from 'net';
 import { resolve, sep } from 'path';
 import Application from '../application';
-import { createAppProxy } from '../helper';
+import { createAppProxy, tsxRerunning } from '../helper';
 import { Plugin } from '../plugin';
 import { uploadMiddleware } from './middleware';
 import collectionOptions from './options/collection';
@@ -178,10 +178,8 @@ export class PluginManager {
     }
   }
 
-  async create(name: string | string[]) {
+  async create(pluginName: string) {
     console.log('creating...');
-    const pluginNames = Array.isArray(name) ? name : [name];
-    const { run } = require('@nocobase/cli/src/util');
     const createPlugin = async (name) => {
       const { PluginGenerator } = require('@nocobase/cli/src/plugin-generator');
       const generator = new PluginGenerator({
@@ -193,8 +191,17 @@ export class PluginManager {
       });
       await generator.run();
     };
-    await Promise.all(pluginNames.map((pluginName) => createPlugin(pluginName)));
-    await run('yarn', ['install']);
+    await createPlugin(pluginName);
+    await this.repository.create({
+      values: {
+        name: pluginName,
+        packageName: pluginName,
+        version: '0.1.0',
+      },
+    });
+    await tsxRerunning();
+    // await createDevPluginSymLink(pluginName);
+    // await this.add(pluginName, { packageName: pluginName }, true);
   }
 
   async add(plugin?: any, options: any = {}, insert = false, isUpgrade = false) {
@@ -556,6 +563,9 @@ export class PluginManager {
       const model = await this.repository.findOne({ filter: { packageName: urlOrName } });
       if (model) {
         opts['name'] = model.name;
+      }
+      if (!opts['name']) {
+        opts['packageName'] = urlOrName;
       }
       await this.add(opts['name'] || urlOrName, opts, true);
     }

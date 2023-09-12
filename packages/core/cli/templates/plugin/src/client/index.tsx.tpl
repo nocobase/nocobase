@@ -1,6 +1,6 @@
 import { Plugin } from '@nocobase/client';
 
-export class {{{pascalCaseName}}}Plugin extends Plugin {
+export class {{{pascalCaseName}}}Client extends Plugin {
   async afterAdd() {
     // await this.app.pm.add()
   }
@@ -18,4 +18,4 @@ export class {{{pascalCaseName}}}Plugin extends Plugin {
   }
 }
 
-export default {{{pascalCaseName}}}Plugin;
+export default {{{pascalCaseName}}}Client;
