@@ -47,7 +47,7 @@ package.json 信息
 
 访问插件管理器界面，查看刚添加的插件，默认地址为 http://localhost:13000/admin/pm/list/local/
 
-<img src="https://demo.nocobase.com/storage/uploads/d8bb63fb4fc4aba98812b493268dfb60.png" />
+<img src="https://nocobase.oss-cn-beijing.aliyuncs.com/b04d16851fc1bbc2796ecf8f9bc0c3f4.png" />
 
 ## 编写插件
 
@@ -94,7 +94,7 @@ yarn pm enable @my-project/plugin-hello
 访问插件管理器界面，查看刚添加的插件，点击激活。
 插件管理器页面默认为 http://localhost:13000/admin/pm/list/local/ 
 
-<img src="https://demo.nocobase.com/storage/uploads/204888258202ece2c6fcf75b72fdab1b.png" />
+<img src="https://nocobase.oss-cn-beijing.aliyuncs.com/7b7df26a8ecc32bb1ebc3f99767ff9f9.png" />
 
 备注：插件激活时，会自动创建刚才编辑插件配置的 hello 表。
 
@@ -143,4 +143,4 @@ yarn tar plugins/@my-project/plugin-hello
 
 仅 v0.14 以后的版本支持
 
-[动图]
+<img src="https://nocobase.oss-cn-beijing.aliyuncs.com/8aa8a511aa8c1e87a8f7ee82cf8a1359.gif" />
