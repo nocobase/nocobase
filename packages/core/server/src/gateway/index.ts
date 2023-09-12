@@ -1,6 +1,9 @@
+import { uid } from '@nocobase/utils';
+import { createStoragePluginsSymlink } from '@nocobase/utils/plugin-symlink';
 import { Command } from 'commander';
 import compression from 'compression';
 import { EventEmitter } from 'events';
+import fs from 'fs';
 import http, { IncomingMessage, ServerResponse } from 'http';
 import { promisify } from 'node:util';
 import { resolve } from 'path';
@@ -10,6 +13,7 @@ import { parse } from 'url';
 import xpipe from 'xpipe';
 import { AppSupervisor } from '../app-supervisor';
 import { ApplicationOptions } from '../application';
+import { PLUGIN_STATICS_PATH, getPackageDirByExposeUrl, getPackageNameByExposeUrl } from '../plugin-manager';
 import { applyErrorWithArgs, getErrorWithCode } from './errors';
 import { IPCSocketClient } from './ipc-socket-client';
 import { IPCSocketServer } from './ipc-socket-server';
@@ -123,18 +127,21 @@ export class Gateway extends EventEmitter {
       });
     }
 
-    if (pathname.startsWith('/api/plugins/client/')) {
+    // pathname example: /static/plugins/@nocobase/plugins-acl/README.md
+    // protect server files
+    if (pathname.startsWith(PLUGIN_STATICS_PATH) && !pathname.includes('/server/')) {
       await compress(req, res);
+      const packageName = getPackageNameByExposeUrl(pathname);
+      // /static/plugins/@nocobase/plugins-acl/README.md => /User/projects/nocobase/plugins/acl
+      const publicDir = getPackageDirByExposeUrl(pathname);
+      // /static/plugins/@nocobase/plugins-acl/README.md => README.md
+      const destination = pathname.replace(PLUGIN_STATICS_PATH, '').replace(packageName, '');
       return handler(req, res, {
-        public: resolve(process.cwd(), 'node_modules'),
+        public: publicDir,
         rewrites: [
           {
-            source: '/api/plugins/client/:plugin/:file',
-            destination: '/:plugin/dist/client/:file',
-          },
-          {
-            source: '/api/plugins/client/@:org/:plugin/:file',
-            destination: '/@:org/:plugin/dist/client/:file',
+            source: pathname,
+            destination,
           },
         ],
       });
@@ -192,9 +199,23 @@ export class Gateway extends EventEmitter {
     return this.requestHandler.bind(this);
   }
 
+  async watch() {
+    if (!process.env.IS_DEV_CMD) {
+      return;
+    }
+    const file = resolve(process.cwd(), 'storage/app.watch.ts');
+    if (!fs.existsSync(file)) {
+      await fs.promises.writeFile(file, `export const watchId = '${uid()}';`, 'utf-8');
+    }
+    require(file);
+  }
+
   async run(options: RunOptions) {
     const isStart = this.isStart();
+    let ipcClient: IPCSocketClient | false;
     if (isStart) {
+      await this.watch();
+
       const startOptions = this.getStartOptions();
       const port = startOptions.port || process.env.APP_PORT || 13000;
       const host = startOptions.host || process.env.APP_HOST || '0.0.0.0';
@@ -204,7 +225,7 @@ export class Gateway extends EventEmitter {
         host,
       });
     } else if (!this.isHelp()) {
-      const ipcClient = await this.tryConnectToIPCServer();
+      ipcClient = await this.tryConnectToIPCServer();
 
       if (ipcClient) {
         await ipcClient.write({ type: 'passCliArgv', payload: { argv: process.argv } });
@@ -212,6 +233,10 @@ export class Gateway extends EventEmitter {
         ipcClient.close();
         return;
       }
+    }
+
+    if (isStart || !ipcClient) {
+      await createStoragePluginsSymlink();
     }
 
     const mainApp = AppSupervisor.getInstance().bootMainApp(options.mainAppOptions);

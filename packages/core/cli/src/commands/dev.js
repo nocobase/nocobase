@@ -18,6 +18,7 @@ module.exports = (cli) => {
     .allowUnknownOption()
     .action(async (opts) => {
       promptForTs();
+      process.env.IS_DEV_CMD = true;
 
       if (process.argv.includes('-h') || process.argv.includes('--help')) {
         run('ts-node', [
@@ -59,6 +60,7 @@ module.exports = (cli) => {
 
         const argv = [
           'watch',
+          '--ignore=./storage/plugins/**',
           '--tsconfig',
           './tsconfig.server.json',
           '-r',

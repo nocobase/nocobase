@@ -132,11 +132,20 @@ const getProps = (app: Application) => {
       upgrade: {
         title: 'App upgrading',
       },
+      'pm.add': {
+        title: 'Adding plugin',
+      },
+      'pm.update': {
+        title: 'Updating plugin',
+      },
       'pm.enable': {
         title: 'Enabling plugin',
       },
       'pm.disable': {
         title: 'Disabling plugin',
+      },
+      'pm.remove': {
+        title: 'Removing plugin',
       },
     };
     return { ...props, ...commands[app.error?.command?.name] };
