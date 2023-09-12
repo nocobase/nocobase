@@ -1,7 +1,9 @@
+import { uid } from '@nocobase/utils';
 import { createStoragePluginsSymlink } from '@nocobase/utils/plugin-symlink';
 import { Command } from 'commander';
 import compression from 'compression';
 import { EventEmitter } from 'events';
+import fs from 'fs';
 import http, { IncomingMessage, ServerResponse } from 'http';
 import { promisify } from 'node:util';
 import { resolve } from 'path';
@@ -197,10 +199,23 @@ export class Gateway extends EventEmitter {
     return this.requestHandler.bind(this);
   }
 
+  async watch() {
+    if (!process.env.IS_DEV_CMD) {
+      return;
+    }
+    const file = resolve(process.cwd(), 'storage/app.watch.ts');
+    if (!fs.existsSync(file)) {
+      await fs.promises.writeFile(file, `export const watchId = '${uid()}';`, 'utf-8');
+    }
+    require(file);
+  }
+
   async run(options: RunOptions) {
     const isStart = this.isStart();
     let ipcClient: IPCSocketClient | false;
     if (isStart) {
+      await this.watch();
+
       const startOptions = this.getStartOptions();
       const port = startOptions.port || process.env.APP_PORT || 13000;
       const host = startOptions.host || process.env.APP_HOST || '0.0.0.0';
