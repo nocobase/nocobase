@@ -71,7 +71,7 @@ export class PresetNocoBase extends Plugin {
       },
     });
     this.app.on('beforeUpgrade', async () => {
-      await this.createIfNotExist();
+      await this.createIfNotExists();
     });
   }
 
@@ -91,7 +91,7 @@ export class PresetNocoBase extends Plugin {
       );
   }
 
-  async createIfNotExist() {
+  async createIfNotExists() {
     const repository = this.app.db.getRepository<any>('applicationPlugins');
     const existPlugins = await repository.find();
     const existPluginNames = existPlugins.map((item) => item.name);
@@ -101,10 +101,7 @@ export class PresetNocoBase extends Plugin {
 
   async install() {
     const repository = this.db.getRepository<any>('applicationPlugins');
-    const existPlugins = await repository.find();
-    const existPluginNames = existPlugins.map((item) => item.name);
-    const plugins = this.allPlugins.filter((item) => !existPluginNames.includes(item.name));
-    await repository.create({ values: plugins });
+    await this.createIfNotExists();
     this.log.debug('install preset plugins');
     await repository.init();
     await this.app.pm.load();
