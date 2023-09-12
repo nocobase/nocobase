@@ -493,6 +493,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       return;
     }
 
+    this._started = false;
     await this.emitAsync('beforeStop');
     await this.reload(options);
     await this.start(options);
@@ -600,6 +601,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.log.debug('emit afterInstall');
     this.setMaintainingMessage('call afterInstall hook...');
     await this.emitAsync('afterInstall', this, options);
+
+    if (this._maintainingStatusBeforeCommand?.error) {
+      return;
+    }
 
     if (this._started) {
       await this.restart();
