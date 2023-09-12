@@ -260,7 +260,7 @@ function getNormalizedFields(collectionName, { compile, getCollectionFields }) {
   return otherFields.filter((field) => field.interface && !field.hidden);
 }
 
-async function loadChildren(option) {
+function loadChildren(option) {
   const appends = getNextAppends(option.field, option.appends);
   const result = getCollectionFieldOptions({
     collection: option.field.target,
