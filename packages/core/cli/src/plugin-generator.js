@@ -3,6 +3,7 @@ const { existsSync } = require('fs');
 const { join, resolve } = require('path');
 const { Generator } = require('@umijs/utils');
 const { readFile } = require('fs').promises;
+const execa = require('execa');
 
 function camelize(str) {
   return str.trim().replace(/[-_\s]+(.)?/g, (match, c) => c.toUpperCase());
@@ -58,6 +59,7 @@ class PluginGenerator extends Generator {
       path: join(__dirname, '../templates/plugin'),
     });
     console.log('');
+    execa.sync('yarn', ['install'], { shell: true, stdio: 'inherit' });
     console.log(`The plugin folder is in ${chalk.green(`packages/plugins/${name}`)}`);
   }
 }

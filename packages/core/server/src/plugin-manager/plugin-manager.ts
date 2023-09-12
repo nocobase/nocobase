@@ -192,7 +192,7 @@ export class PluginManager {
       await generator.run();
     };
     await createPlugin(pluginName);
-    await createDevPluginSymLink(pluginName);
+    // await createDevPluginSymLink(pluginName);
     await this.add(pluginName, { packageName: pluginName }, true);
   }
 
