@@ -19,7 +19,7 @@ export function tarPlugin(cwd: string, log: PkgLog) {
   // 必须包含的文件
   files.push(...tarIncludesFiles);
 
-  files = files.map((item: string) => item !== '**/*' && fs.statSync(path.join(cwd, item.replace('!', ''))).isDirectory() ? `${item}/**/*` : item);
+  files = files.map((item: string) => item !== '**/*' && fs.existsSync(path.join(cwd, item.replace('!', ''))) && fs.statSync(path.join(cwd, item.replace('!', ''))).isDirectory() ? `${item}/**/*` : item);
 
   const tarball = path.join(TAR_OUTPUT_DIR, `${pkg.name}-${pkg.version}.tgz`);
   const tarFiles = fg.sync(files, { cwd });
