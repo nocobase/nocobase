@@ -21,9 +21,12 @@ function findOption(options: VariableOption[], paths: string[]) {
     const path = paths[i];
     const current = opts.find((item) => item.value === path);
     if (!current) {
-      break;
+      return null;
     }
     option = current;
+    if (!current.isLeaf && current.loadChildren) {
+      current.loadChildren(current);
+    }
     if (current.children) {
       opts = current.children;
     }
@@ -132,7 +135,7 @@ export default {
       const targetOptions = [nodesOptions, triggerOptions].map((item: any) => {
         const opts = item.useOptions(options).filter(Boolean);
         return {
-          [fieldNames.label]: compile(item.title),
+          [fieldNames.label]: compile(item.label),
           [fieldNames.value]: item.value,
           key: item.value,
           [fieldNames.children]: opts,
@@ -142,7 +145,7 @@ export default {
 
       const found = findOption(targetOptions, paths);
 
-      targetOption = Object.assign({ ...targetOption }, found, targetOption);
+      targetOption = Object.assign({}, found, targetOption);
     }
 
     return [
