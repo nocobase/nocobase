@@ -37,23 +37,17 @@ package.json 信息
   "version": "0.1.0",
   "main": "lib/server/index.js",
   "devDependencies": {
-    "@nocobase/client": "0.8.0-alpha.1",
-    "@nocobase/test": "0.8.0-alpha.1"
+    "@nocobase/client": "0.14.0-alpha.1",
+    "@nocobase/test": "0.14.0-alpha.1"
   }
 }
 ```
 
-## 添加插件到 NocoBase
+## 查看插件
 
-请确保 NocoBase 应用已经安装
+访问插件管理器界面，查看刚添加的插件，默认地址为 http://localhost:13000/admin/pm/list/local/
 
-```bash
-yarn pm add @my-project/plugin-hello
-```
-
-访问 http://localhost:13000/admin/pm/list/local/ 查看刚添加的插件
-
-[截图]
+<img src="https://demo.nocobase.com/storage/uploads/d8bb63fb4fc4aba98812b493268dfb60.png" />
 
 ## 编写插件
 
@@ -70,9 +64,7 @@ export class PluginHelloServer extends Plugin {
   async load() {
     this.db.collection({
       name: 'hello',
-      fields: [
-        { type: 'string', name: 'name' }
-      ],
+      fields: [{ type: 'string', name: 'name' }],
     });
     this.app.acl.allow('hello', '*');
   }
@@ -91,15 +83,24 @@ export default PluginHelloServer;
 
 ## 激活插件
 
-插件激活时，会自动创建刚才编辑插件配置的 hello 表。
+**通过命令操作**
 
 ```bash
-yarn pm enable hello
+yarn pm enable @my-project/plugin-hello
 ```
 
-通过插件管理器界面激活也是可以的。访问 http://localhost:13000/admin/pm/list/local/ 查看刚添加的插件，点击激活。
+**通过界面操作**
 
-## 启动应用调试
+访问插件管理器界面，查看刚添加的插件，点击激活。
+插件管理器页面默认为 http://localhost:13000/admin/pm/list/local/ 
+
+<img src="https://demo.nocobase.com/storage/uploads/204888258202ece2c6fcf75b72fdab1b.png" />
+
+备注：插件激活时，会自动创建刚才编辑插件配置的 hello 表。
+
+## 调试插件
+
+如果应用未启动，需要先启动应用
 
 ```bash
 # for development
@@ -129,14 +130,14 @@ curl --location --request GET 'http://localhost:13000/api/hello:list'
 ## 构建并打包插件
 
 ```bash
-yarn build plugins/@my-org/plugin-hello --tar
+yarn build plugins/@my-project/plugin-hello --tar
 
 # 分步骤
-yarn build plugins/@my-org/plugin-hello
-yarn tar plugins/@my-org/plugin-hello
+yarn build plugins/@my-project/plugin-hello
+yarn tar plugins/@my-project/plugin-hello
 ```
 
-打包的插件默认保存路径为 storage/tar/@my-org/plugin-hello.tar.gz
+打包的插件默认保存路径为 storage/tar/@my-project/plugin-hello.tar.gz
 
 ## 上传至其他 NocoBase 应用
 
