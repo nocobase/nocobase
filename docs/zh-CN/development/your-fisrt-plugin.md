@@ -12,13 +12,13 @@
 首先，你可以通过 CLI 快速的创建一个空插件，命令如下：
 
 ```bash
-yarn pm create hello
+yarn pm create @my-project/plugin-hello
 ```
 
-插件所在目录 `packages/plugins/hello`，插件目录结构为：
+插件所在目录 `packages/plugins/@my-project/plugin-hello`，插件目录结构为：
 
 ```bash
-|- /hello
+|- /packages/plugins/@my-project/plugin-hello
   |- /src
     |- /client      # 插件客户端代码
     |- /server      # 插件服务端代码
@@ -33,7 +33,7 @@ package.json 信息
 
 ```json
 {
-  "name": "@nocobase/plugin-hello",
+  "name": "@my-project/plugin-hello",
   "version": "0.1.0",
   "main": "lib/server/index.js",
   "devDependencies": {
@@ -43,18 +43,26 @@ package.json 信息
 }
 ```
 
-NocoBase 插件也是 NPM 包，插件名和 NPM 包名的对应规则为 `${PLUGIN_PACKAGE_PREFIX}-${pluginName}`。
+## 添加插件到 NocoBase
 
-`PLUGIN_PACKAGE_PREFIX` 为插件包前缀，可以在 .env 里自定义，[点此查看 PLUGIN_PACKAGE_PREFIX 说明](/api/env#plugin_package_prefix)。
+请确保 NocoBase 应用已经安装
+
+```bash
+yarn pm add @my-project/plugin-hello
+```
+
+访问 http://localhost:13000/admin/pm/list/local/ 查看刚添加的插件
+
+[截图]
 
 ## 编写插件
 
-查看 `packages/plugins/hello/src/server/plugin.ts` 文件，并修改为：
+查看 `packages/plugins/@my-project/plugin-hello/src/server/plugin.ts` 文件，并修改为：
 
 ```ts
 import { InstallOptions, Plugin } from '@nocobase/server';
 
-export class HelloPlugin extends Plugin {
+export class PluginHelloServer extends Plugin {
   afterAdd() {}
 
   beforeLoad() {}
@@ -78,13 +86,7 @@ export class HelloPlugin extends Plugin {
   async remove() {}
 }
 
-export default HelloPlugin;
-```
-
-## 注册插件
-
-```bash
-yarn pm add hello
+export default PluginHelloServer;
 ```
 
 ## 激活插件
@@ -95,7 +97,9 @@ yarn pm add hello
 yarn pm enable hello
 ```
 
-## 启动应用
+通过插件管理器界面激活也是可以的。访问 http://localhost:13000/admin/pm/list/local/ 查看刚添加的插件，点击激活。
+
+## 启动应用调试
 
 ```bash
 # for development
@@ -105,8 +109,6 @@ yarn dev
 yarn build
 yarn start
 ```
-
-## 体验插件功能
 
 向插件的 hello 表里插入数据
 
@@ -123,3 +125,21 @@ curl --location --request POST 'http://localhost:13000/api/hello:create' \
 ```bash
 curl --location --request GET 'http://localhost:13000/api/hello:list'
 ```
+
+## 构建并打包插件
+
+```bash
+yarn build plugins/@my-org/plugin-hello --tar
+
+# 分步骤
+yarn build plugins/@my-org/plugin-hello
+yarn tar plugins/@my-org/plugin-hello
+```
+
+打包的插件默认保存路径为 storage/tar/@my-org/plugin-hello.tar.gz
+
+## 上传至其他 NocoBase 应用
+
+仅 v0.14 以后的版本支持
+
+[动图]

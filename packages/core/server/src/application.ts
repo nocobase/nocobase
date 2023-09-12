@@ -362,8 +362,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   createCli() {
     const command = new Command('nocobase').usage('[command] [options]').hook('preAction', async (_, actionCommand) => {
-      this._actionCommand = actionCommand;
-
       this.activatedCommand = {
         name: getCommandFullName(actionCommand),
       };
@@ -589,10 +587,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.log.debug('emit afterInstall');
     this.setMaintainingMessage('call afterInstall hook...');
     await this.emitAsync('afterInstall', this, options);
-
-    if (this._maintainingStatusBeforeCommand?.error) {
-      return;
-    }
 
     if (this._started) {
       await this.restart();
