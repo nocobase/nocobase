@@ -9,6 +9,7 @@ module.exports = (cli) => {
   generateAppDir();
   require('./global')(cli);
   require('./build')(cli);
+  require('./tar')(cli);
   require('./dev')(cli);
   require('./start')(cli);
   require('./test')(cli);
