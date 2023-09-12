@@ -2,7 +2,8 @@ const chalk = require('chalk');
 const { existsSync } = require('fs');
 const { join, resolve } = require('path');
 const { Generator } = require('@umijs/utils');
-const { readFile } = require('fs').promises;
+const { readFile, writeFile } = require('fs').promises;
+
 const execa = require('execa');
 
 function camelize(str) {
@@ -45,6 +46,16 @@ class PluginGenerator extends Generator {
     };
   }
 
+  async addTsConfigPaths() {
+    const { name } = this.context;
+    if (name.startsWith('@') && name.split('/')[0] !== '@nocobase') {
+      const target = resolve(process.cwd(), 'tsconfig.json');
+      const content = require(target);
+      content.compilerOptions.paths[name] = [`packages/plugins/${name}/src`];
+      await writeFile(target, JSON.stringify(content, null, 2), 'utf-8');
+    }
+  }
+
   async writing() {
     const { name } = this.context;
     const target = resolve(process.cwd(), 'packages/plugins/', name);
@@ -59,6 +70,7 @@ class PluginGenerator extends Generator {
       path: join(__dirname, '../templates/plugin'),
     });
     console.log('');
+    await this.addTsConfigPaths();
     execa.sync('yarn', ['install'], { shell: true, stdio: 'inherit' });
     console.log(`The plugin folder is in ${chalk.green(`packages/plugins/${name}`)}`);
   }
