@@ -6,7 +6,7 @@ import _ from 'lodash';
 import net from 'net';
 import { resolve, sep } from 'path';
 import Application from '../application';
-import { createAppProxy } from '../helper';
+import { createAppProxy, tsxRerunning } from '../helper';
 import { Plugin } from '../plugin';
 import { uploadMiddleware } from './middleware';
 import collectionOptions from './options/collection';
@@ -192,8 +192,16 @@ export class PluginManager {
       await generator.run();
     };
     await createPlugin(pluginName);
+    await this.repository.create({
+      values: {
+        name: pluginName,
+        packageName: pluginName,
+        version: '0.1.0',
+      },
+    });
+    await tsxRerunning();
     // await createDevPluginSymLink(pluginName);
-    await this.add(pluginName, { packageName: pluginName }, true);
+    // await this.add(pluginName, { packageName: pluginName }, true);
   }
 
   async add(plugin?: any, options: any = {}, insert = false, isUpgrade = false) {

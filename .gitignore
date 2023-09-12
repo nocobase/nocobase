@@ -28,3 +28,5 @@ packages/core/client/docs/contributing.md
 packages/core/app/client/src/.plugins
 storage/plugins
 storage/tar
+storage/tmp
+storage/app.watch.ts
