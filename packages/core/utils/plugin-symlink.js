@@ -63,3 +63,25 @@ async function createStoragePluginsSymlink() {
 }
 
 exports.createStoragePluginsSymlink = createStoragePluginsSymlink;
+
+async function createDevPluginSymLink(pluginName) {
+  const packagePluginsPath = resolve(process.cwd(), 'packages/plugins');
+  const nodeModulesPath = process.env.NODE_MODULES_PATH; // resolve(dirname(require.resolve('@nocobase/server/package.json')), 'node_modules');
+  try {
+    if (pluginName.startsWith('@')) {
+      const [orgName] = pluginName.split('/');
+      if (!(await fsExists(resolve(nodeModulesPath, orgName)))) {
+        await mkdir(resolve(nodeModulesPath, orgName), { recursive: true });
+      }
+    }
+    const link = resolve(nodeModulesPath, pluginName);
+    if (await fsExists(link)) {
+      await unlink(link);
+    }
+    await symlink(resolve(packagePluginsPath, pluginName), link);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+exports.createDevPluginSymLink = createDevPluginSymLink;

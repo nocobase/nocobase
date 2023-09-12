@@ -1,6 +1,6 @@
 import { CleanOptions, Collection, SyncOptions } from '@nocobase/database';
 import { isURL } from '@nocobase/utils';
-import { fsExists } from '@nocobase/utils/plugin-symlink';
+import { createDevPluginSymLink, fsExists } from '@nocobase/utils/plugin-symlink';
 import execa from 'execa';
 import _ from 'lodash';
 import net from 'net';
@@ -178,10 +178,8 @@ export class PluginManager {
     }
   }
 
-  async create(name: string | string[]) {
+  async create(pluginName: string) {
     console.log('creating...');
-    const pluginNames = Array.isArray(name) ? name : [name];
-    const { run } = require('@nocobase/cli/src/util');
     const createPlugin = async (name) => {
       const { PluginGenerator } = require('@nocobase/cli/src/plugin-generator');
       const generator = new PluginGenerator({
@@ -193,8 +191,9 @@ export class PluginManager {
       });
       await generator.run();
     };
-    await Promise.all(pluginNames.map((pluginName) => createPlugin(pluginName)));
-    await run('yarn', ['install']);
+    await createPlugin(pluginName);
+    await createDevPluginSymLink(pluginName);
+    await this.add(pluginName, { packageName: pluginName }, true);
   }
 
   async add(plugin?: any, options: any = {}, insert = false, isUpgrade = false) {
