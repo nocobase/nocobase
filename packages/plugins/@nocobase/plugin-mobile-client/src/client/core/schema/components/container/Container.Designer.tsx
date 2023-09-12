@@ -50,6 +50,7 @@ export const ContainerDesigner = () => {
           if (v) {
             if (!tabBarSchema) {
               const pageSchema = findSchema(fieldSchema, 'MPage');
+              await dn.remove(pageSchema);
               await dn.insertBeforeEnd({
                 type: 'void',
                 'x-component': 'MTabBar',
