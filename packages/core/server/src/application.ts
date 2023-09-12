@@ -304,7 +304,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       this.log.info(`app.reload()`);
       const oldDb = this._db;
       this.init();
-      await oldDb.close();
+      if (!oldDb.closed()) {
+        await oldDb.close();
+      }
     }
 
     this.setMaintainingMessage('init plugins');
@@ -361,24 +363,33 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   createCli() {
-    const command = new Command('nocobase').usage('[command] [options]').hook('preAction', async (_, actionCommand) => {
-      this.activatedCommand = {
-        name: getCommandFullName(actionCommand),
-      };
+    const command = new Command('nocobase')
+      .usage('[command] [options]')
+      .hook('preAction', async (_, actionCommand) => {
+        this._actionCommand = actionCommand;
 
-      this.setMaintaining({
-        status: 'command_begin',
-        command: this.activatedCommand,
+        this.activatedCommand = {
+          name: getCommandFullName(actionCommand),
+        };
+
+        this.setMaintaining({
+          status: 'command_begin',
+          command: this.activatedCommand,
+        });
+
+        this.setMaintaining({
+          status: 'command_running',
+          command: this.activatedCommand,
+        });
+
+        await this.authenticate();
+        await this.load();
+      })
+      .hook('postAction', async (_, actionCommand) => {
+        if (this._maintainingStatusBeforeCommand?.error && this._started) {
+          await this.restart();
+        }
       });
-
-      this.setMaintaining({
-        status: 'command_running',
-        command: this.activatedCommand,
-      });
-
-      await this.authenticate();
-      await this.load();
-    });
 
     command.exitOverride((err) => {
       throw err;
@@ -481,7 +492,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     if (!this._started) {
       return;
     }
-    this._started = false;
+
+    await this.stop();
     await this.reload(options);
     await this.start(options);
     this.emit('__restarted', this, options);
@@ -509,6 +521,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
 
     await this.emitAsync('afterStop', this, options);
+
     this.stopped = true;
     this.log.info(`${this.name} is stopped`);
     this._started = false;

@@ -134,8 +134,7 @@ export const useCreateActionProps = () => {
 
   const currentUser = currentUserContext?.data?.data;
   const action = actionField.componentProps.saveMode || 'create';
-  const filterKeys = actionField.componentProps.filterKeys || [];
-
+  const filterKeys = actionField.componentProps.filterKeys?.checked || [];
   return {
     async onClick() {
       const fieldNames = fields.map((field) => field.name);
@@ -219,8 +218,12 @@ export const useAssociationCreateActionProps = () => {
   return {
     async onClick() {
       const fieldNames = fields.map((field) => field.name);
-      const { assignedValues: originalAssignedValues = {}, onSuccess, overwriteValues, skipValidator } =
-        actionSchema?.['x-action-settings'] ?? {};
+      const {
+        assignedValues: originalAssignedValues = {},
+        onSuccess,
+        overwriteValues,
+        skipValidator,
+      } = actionSchema?.['x-action-settings'] ?? {};
       const addChild = fieldSchema?.['x-component-props']?.addChild;
       const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentRecord, currentUser });
       if (!skipValidator) {
@@ -404,8 +407,11 @@ export const useCustomizeUpdateActionProps = () => {
 
   return {
     async onClick() {
-      const { assignedValues: originalAssignedValues = {}, onSuccess, skipValidator } =
-        actionSchema?.['x-action-settings'] ?? {};
+      const {
+        assignedValues: originalAssignedValues = {},
+        onSuccess,
+        skipValidator,
+      } = actionSchema?.['x-action-settings'] ?? {};
       const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentRecord, currentUser });
       if (skipValidator === false) {
         await form.submit();
@@ -459,8 +465,11 @@ export const useCustomizeBulkUpdateActionProps = () => {
 
   return {
     async onClick() {
-      const { assignedValues: originalAssignedValues = {}, onSuccess, updateMode } =
-        actionSchema?.['x-action-settings'] ?? {};
+      const {
+        assignedValues: originalAssignedValues = {},
+        onSuccess,
+        updateMode,
+      } = actionSchema?.['x-action-settings'] ?? {};
       actionField.data = field.data || {};
       actionField.data.loading = true;
       const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentUser });
