@@ -72,6 +72,7 @@ class PluginGenerator extends Generator {
     console.log('');
     await this.addTsConfigPaths();
     execa.sync('yarn', ['install'], { shell: true, stdio: 'inherit' });
+    execa.sync('yarn', ['build', `plugins/${name}`], { shell: true, stdio: 'inherit' });
     console.log(`The plugin folder is in ${chalk.green(`packages/plugins/${name}`)}`);
   }
 }
