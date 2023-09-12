@@ -214,13 +214,15 @@ export class PluginManager {
       options.name = plugin;
     }
     try {
-      if (options.name && !options.packageName) {
+      if (typeof plugin === 'string' && options.name && !options.packageName) {
         const packageName = PluginManager.getPackageName(options.name);
         options['packageName'] = packageName;
       }
-      const packageJson = PluginManager.getPackageJson(options.packageName);
-      options['packageJson'] = packageJson;
-      options['version'] = packageJson.version;
+      if (options.packageName) {
+        const packageJson = PluginManager.getPackageJson(options.packageName);
+        options['packageJson'] = packageJson;
+        options['version'] = packageJson.version;
+      }
     } catch (error) {
       console.error(error);
       // empty
