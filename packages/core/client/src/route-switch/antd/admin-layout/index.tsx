@@ -1,7 +1,8 @@
 import { css } from '@emotion/css';
-import { Layout } from 'antd';
+import { useSessionStorageState } from 'ahooks';
+import { App, Layout } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Outlet, useMatch, useNavigate, useParams } from 'react-router-dom';
+import { Link, Outlet, useMatch, useNavigate, useParams } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
   CurrentAppInfoProvider,
@@ -61,6 +62,8 @@ const useMenuProps = () => {
 };
 
 const MenuEditor = (props) => {
+  const { notification } = App.useApp();
+  const [hasNotice, setHasNotice] = useSessionStorageState('plugin-notice', { defaultValue: false });
   const { setTitle } = useDocumentTitle();
   const navigate = useNavigate();
   const params = useParams<any>();
@@ -141,6 +144,45 @@ const MenuEditor = (props) => {
     }
     return s;
   }, [data?.data]);
+
+  useRequest(
+    {
+      url: 'applicationPlugins:list',
+      params: {
+        sort: 'id',
+        paginate: false,
+      },
+    },
+    {
+      onSuccess: ({ data }) => {
+        setHasNotice(true);
+        const errorPlugins = data.filter((item) => !item.isCompatible);
+        if (errorPlugins.length) {
+          notification.error({
+            message: 'Plugin dependencies check failed',
+            description: (
+              <div>
+                <div>
+                  These plugins failed dependency checks. Please go to the{' '}
+                  <Link to="/admin/pm/list/local/">plugin management page</Link> for more details.{' '}
+                </div>
+                <ul>
+                  {errorPlugins.map((item) => (
+                    <li key={item.id}>
+                      {item.displayName} - {item.packageName}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ),
+          });
+        }
+      },
+      manual: true,
+      // ready: !hasNotice,
+    },
+  );
+
   if (loading) {
     return render();
   }

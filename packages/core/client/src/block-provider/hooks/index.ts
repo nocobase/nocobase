@@ -154,8 +154,7 @@ export const useCreateActionProps = () => {
   const { getActiveFieldsName } = useFormActiveFields();
 
   const action = actionField.componentProps.saveMode || 'create';
-  const filterKeys = actionField.componentProps.filterKeys || [];
-
+  const filterKeys = actionField.componentProps.filterKeys?.checked || [];
   return {
     async onClick() {
       const fieldNames = fields.map((field) => field.name);
