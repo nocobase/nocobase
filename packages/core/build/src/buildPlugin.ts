@@ -18,13 +18,15 @@ import {
   getPackagesFromFiles,
   getSourcePackages,
 } from './utils/buildPluginUtils';
-import { getDepsConfig } from './utils/getDepsConfig';
+import { getDepPkgPath, getDepsConfig } from './utils/getDepsConfig';
 import { EsbuildSupportExts, globExcludeFiles } from './constant';
 import { PkgLog, getPackageJson } from './utils';
 
 const serverGlobalFiles: string[] = ['src/**', '!src/client/**', ...globExcludeFiles];
 const clientGlobalFiles: string[] = ['src/**', '!src/server/**', ...globExcludeFiles];
 const dynamicImportRegexp = /import\((["'])(.*?)\1\)/g;
+
+const sourceGlobalFiles: string[] = ['src/**/*.{ts,js,tsx,jsx}', '!src/**/__tests__'];
 
 const external = [
   // nocobase
@@ -136,6 +138,21 @@ export function deleteJsFiles(cwd: string, log: PkgLog) {
   jsFiles.forEach((item) => {
     fs.unlinkSync(item);
   });
+}
+
+export function writeExternalPackageVersion(cwd: string, log: PkgLog) {
+  log('write external version');
+  const sourceFiles = fg.globSync(sourceGlobalFiles, { cwd, absolute: true }).map((item) => fs.readFileSync(item, 'utf-8'));
+  const sourcePackages = getSourcePackages(sourceFiles);
+  const excludePackages = getExcludePackages(sourcePackages, external, pluginPrefix);
+  const data = excludePackages.reduce<Record<string, string>>((prev, packageName) => {
+    const depPkgPath = getDepPkgPath(packageName, cwd);
+    const depPkg = require(depPkgPath);
+    prev[packageName] = depPkg.version;
+    return prev;
+  }, {});
+  const externalVersionPath = path.join(cwd, target_dir, 'externalVersion.js');
+  fs.writeFileSync(externalVersionPath, `module.exports = ${JSON.stringify(data, null, 2)};`);
 }
 
 export async function buildServerDeps(cwd: string, serverFiles: string[], log: PkgLog) {
@@ -382,4 +399,5 @@ export async function buildPlugin(cwd: string, sourcemap: boolean, log: PkgLog) 
       console.error(error);
     }
   }
+  writeExternalPackageVersion(cwd, log);
 }

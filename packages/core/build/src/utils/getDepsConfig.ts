@@ -1,5 +1,4 @@
 import path from 'path';
-import pkgUp from 'pkg-up';
 
 export function winPath(path: string) {
   const isExtendedLengthPath = /^\\\\\?\\/.test(path);
@@ -40,9 +39,9 @@ export function getDepPkgPath(dep: string, cwd: string) {
   try {
     return require.resolve(`${dep}/package.json`, { paths: [cwd] });
   } catch {
-    return pkgUp.sync({
-      cwd: require.resolve(dep, { paths: [cwd] }),
-    })!;
+    const mainFile = require.resolve(`${dep}`, { paths: cwd ? [cwd] : undefined });
+    const packageDir = mainFile.slice(0, mainFile.indexOf(dep.replace('/', path.sep)) + dep.length);
+    return path.join(packageDir, 'package.json');
   }
 }
 

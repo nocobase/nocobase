@@ -2,7 +2,8 @@
   "name": "nocobase",
   "private": true,
   "workspaces": [
-    "packages/*/*"
+    "packages/*/*",
+    "packages/*/*/*"
   ],
   "license": "Apache-2.0",
   "engines": {
@@ -21,6 +22,7 @@
     "dev-server": "nocobase dev --server",
     "start": "nocobase start",
     "build": "nocobase build",
+    "tar": "nocobase tar",
     "test": "nocobase test",
     "test:client": "vitest",
     "test:e2e": "yarn test:server -d && cross-env SHOULD_CLOSE_SERVER=true npx playwright test",

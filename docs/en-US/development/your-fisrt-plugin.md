@@ -12,10 +12,10 @@ Once NocoBase is installed, we can start our plugin development journey.
 First, you can quickly create an empty plugin via the CLI with the following command.
 
 ```bash
-yarn pm create hello
+yarn pm create @my-project/plugin-hello
 ```
 
-The directory where the plugin is located ``packages/plugins/hello`` and the plugin directory structure is
+The directory where the plugin located is  `packages/plugins/@my-project/plugin-hello` and the plugin directory structure is
 
 ```bash
 |- /hello
@@ -27,34 +27,26 @@ The directory where the plugin is located ``packages/plugins/hello`` and the plu
   |- package.json # plugin package information
   |- server.d.ts
   |- server.js
-package.json
-
-package.json information
-
-```json
-{
-  "name": "@nocobase/plugin-hello",
-  "version": "0.1.0",
-  "main": "lib/server/index.js",
-  "devDependencies": {
-    "@nocobase/client": "0.8.0-alpha.1",
-    "@nocobase/test": "0.8.0-alpha.1"
-  }
-}
 ```
 
-A NocoBase plugin is also an NPM package, the correspondence rule between plugin name and NPM package name is `${PLUGIN_PACKAGE_PREFIX}-${pluginName}`.
+Visit the Plugin Manager to view the plugin you just added, the default address is http://localhost:13000/admin/pm/list/local/
 
-`PLUGIN_PACKAGE_PREFIX` is the plugin package prefix, which can be customized in .env, [click here for PLUGIN_PACKAGE_PREFIX description](/api/env#plugin_package_prefix).
+<img src="https://nocobase.oss-cn-beijing.aliyuncs.com/b04d16851fc1bbc2796ecf8f9bc0c3f4.png" />
+
+If the plugin is not shown in the plugin manager, you can add it manually with the `pm add` command.
+
+```bash
+yarn pm add @my-project/plugin-hello
+```
 
 ## Code the plugin
 
-Look at the `packages/plugins/hello/src/server/plugin.ts` file and modify it to
+Look at the `packages/plugins/@my-project/plugin-hello/src/server/plugin.ts` file and modify it to
 
 ```ts
 import { InstallOptions, Plugin } from '@nocobase/server';
 
-export class HelloPlugin extends Plugin {
+export class PluginHelloServer extends Plugin {
   afterAdd() {}
 
   beforeLoad() {}
@@ -62,9 +54,7 @@ export class HelloPlugin extends Plugin {
   async load() {
     this.db.collection({
       name: 'hello',
-      fields: [
-        { type: 'string', name: 'name' }
-      ],
+      fields: [{ type: 'string', name: 'name' }],
     });
     this.app.acl.allow('hello', '*');
   }
@@ -78,24 +68,29 @@ export class HelloPlugin extends Plugin {
   async remove() {}
 }
 
-export default HelloPlugin;
-```
-
-## Register the plugin
-
-```bash
-yarn pm add hello
+export default PluginHelloServer;
 ```
 
 ## Activate the plugin
 
-When the plugin is activated, the hello table that you just configured is automatically created.
+**Operated by command**
 
 ```bash
-yarn pm enable hello
+yarn pm enable @my-project/plugin-hello
 ```
 
-## Start the application
+**Operated by UI**
+
+Visit the Plugin Manager to view the plugin you just added and click enable.
+The Plugin Manager page defaults to http://localhost:13000/admin/pm/list/local/
+
+<img src="https://nocobase.oss-cn-beijing.aliyuncs.com/7b7df26a8ecc32bb1ebc3f99767ff9f9.png" />
+
+Node: When the plugin is activated, the hello collection that you just configured is automatically created.
+
+## Debug the Plugin
+
+If the app is not started, you need to start the app first
 
 ```bash
 # for development
@@ -106,9 +101,7 @@ yarn build
 yarn start
 ```
 
-## Experience the plugin
-
-Insert data into the hello table of the plugin
+Insert data into the hello collection of the plugin
 
 ```bash
 curl --location --request POST 'http://localhost:13000/api/hello:create' \
@@ -123,3 +116,21 @@ View the data
 ```bash
 curl --location --request GET 'http://localhost:13000/api/hello:list'
 ```
+
+## Build the plugin
+
+```bash
+yarn build plugins/@my-project/plugin-hello --tar
+
+# step-by-step
+yarn build plugins/@my-project/plugin-hello
+yarn nocobase tar plugins/@my-project/plugin-hello
+```
+
+The default saved path for the plugin tar is `storage/tar/@my-project/plugin-hello.tar.gz`
+
+## Upload to other NocoBase applications
+
+Only supported in v0.14 and above
+
+<img src="https://nocobase.oss-cn-beijing.aliyuncs.com/8aa8a511aa8c1e87a8f7ee82cf8a1359.gif" />

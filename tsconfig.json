@@ -19,11 +19,10 @@
     "baseUrl": ".",
     "paths": {
       "@nocobase/app-*": ["packages/app/*/src"],
-      "@nocobase/plugin-sample-*": ["packages/samples/*/src"],
-      "@nocobase/plugin-pro-*": ["packages/pro-plugins/*/src"],
-      "@nocobase/plugin-*": ["packages/plugins/*/src"],
+      "@nocobase/plugin-*": ["packages/plugins/@nocobase/plugin-*/src"],
       "@nocobase/preset-*": ["packages/presets/*/src"],
       "@nocobase/evaluators/client": ["packages/core/evaluators/src/client"],
+      "@nocobase/utils/plugin-symlink": ["packages/core/utils/plugin-symlink"],
       "@nocobase/utils/client": ["packages/core/utils/src/client"],
       "@nocobase/*": ["packages/core/*/src"],
       "@@/*": [".dumi/tmp/*"]

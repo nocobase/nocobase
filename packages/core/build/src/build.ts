@@ -17,8 +17,11 @@ import { buildDeclaration } from './buildDeclaration';
 import { PkgLog, getPkgLog, toUnixPath, getPackageJson } from './utils';
 import { getPackages } from './utils/getPackages';
 import { Package } from '@lerna/package';
+import { tarPlugin } from './tarPlugin'
 
 export async function build(pkgs: string[]) {
+  process.env.NODE_ENV = 'production';
+
   const packages = getPackages(pkgs);
   const pluginPackages = getPluginPackages(packages);
   const cjsPackages = getCjsPackages(packages);
@@ -63,8 +66,17 @@ export async function buildPackage(
 ) {
   const sourcemap = process.argv.includes('--sourcemap');
   const noDeclaration = process.argv.includes('--no-dts');
+  const hasTar = process.argv.includes('--tar');
+  const onlyTar = process.argv.includes('--only-tar');
+
   const log = getPkgLog(pkg.name);
   const packageJson = getPackageJson(pkg.location);
+
+  if (onlyTar) {
+    await tarPlugin(pkg.location, log);
+    return;
+  }
+
   log(`${chalk.bold(toUnixPath(pkg.location.replace(PACKAGES_PATH, '').slice(1)))} build start`);
 
   // prebuild
@@ -87,6 +99,11 @@ export async function buildPackage(
   if (packageJson?.scripts?.postbuild) {
     log('postbuild');
     await runScript(['postbuild'], pkg.location);
+  }
+
+  // tar
+  if (hasTar) {
+    await tarPlugin(pkg.location, log);
   }
 }
 
