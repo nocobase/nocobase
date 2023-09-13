@@ -134,6 +134,14 @@ const LocalPlugins = () => {
           </div>
           <div>
             <Space>
+              <Button
+                onClick={() => {
+                  window.open('/docs/');
+                }}
+                type="primary"
+              >
+                {t('Plugins Document')}
+              </Button>
               <Button onClick={() => setShowAddForm(true)} type="primary">
                 {t('Add new')}
               </Button>

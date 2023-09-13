@@ -13,7 +13,13 @@ import { parse } from 'url';
 import xpipe from 'xpipe';
 import { AppSupervisor } from '../app-supervisor';
 import { ApplicationOptions } from '../application';
-import { PLUGIN_STATICS_PATH, getPackageDirByExposeUrl, getPackageNameByExposeUrl } from '../plugin-manager';
+import {
+  DOCS_PREFIX,
+  DOCS_SPECIAL_FILES,
+  PLUGIN_STATICS_PATH,
+  getPackageDirByExposeUrl,
+  getPackageNameByExposeUrl,
+} from '../plugin-manager';
 import { applyErrorWithArgs, getErrorWithCode } from './errors';
 import { IPCSocketClient } from './ipc-socket-client';
 import { IPCSocketServer } from './ipc-socket-server';
@@ -129,13 +135,17 @@ export class Gateway extends EventEmitter {
 
     // pathname example: /static/plugins/@nocobase/plugins-acl/README.md
     // protect server files
-    if (pathname.startsWith(PLUGIN_STATICS_PATH) && !pathname.includes('/server/')) {
+    if (
+      (pathname.startsWith(PLUGIN_STATICS_PATH) || pathname.startsWith(`${DOCS_PREFIX}${PLUGIN_STATICS_PATH}`)) &&
+      !pathname.includes('/server/')
+    ) {
       await compress(req, res);
-      const packageName = getPackageNameByExposeUrl(pathname);
+      const pathnameRemovedDocPrefix = pathname.replace(DOCS_PREFIX, '');
+      const packageName = getPackageNameByExposeUrl(pathnameRemovedDocPrefix);
       // /static/plugins/@nocobase/plugins-acl/README.md => /User/projects/nocobase/plugins/acl
-      const publicDir = getPackageDirByExposeUrl(pathname);
+      const publicDir = getPackageDirByExposeUrl(pathnameRemovedDocPrefix);
       // /static/plugins/@nocobase/plugins-acl/README.md => README.md
-      const destination = pathname.replace(PLUGIN_STATICS_PATH, '').replace(packageName, '');
+      const destination = pathnameRemovedDocPrefix.replace(PLUGIN_STATICS_PATH, '').replace(packageName, '');
       return handler(req, res, {
         public: publicDir,
         rewrites: [
@@ -147,7 +157,15 @@ export class Gateway extends EventEmitter {
       });
     }
 
-    if (!pathname.startsWith('/api')) {
+    // docs sites static files
+    if (pathname.startsWith(DOCS_PREFIX) && !DOCS_SPECIAL_FILES.includes(pathname)) {
+      await compress(req, res);
+      return handler(req, res, {
+        public: __dirname,
+      });
+    }
+
+    if (!pathname.startsWith('/api') && !DOCS_SPECIAL_FILES.includes(pathname)) {
       await compress(req, res);
       return handler(req, res, {
         public: `${process.env.APP_PACKAGE_ROOT}/dist/client`,

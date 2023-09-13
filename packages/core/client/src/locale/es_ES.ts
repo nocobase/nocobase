@@ -729,5 +729,6 @@ export default {
     "Enable link": "Activar enlace",
     "Data template": "Plantilla de datos",
     "Not found":"No encontrado",
-    "Add":"Añadir"
+  "Add": "Añadir",
+  "Plugins Document": "Documentación de plugins",
  };

@@ -544,4 +544,5 @@ export default {
   "Search plugin": "Eklenti ara",
   "Author": "Yazar",
   "Plugin loading failed. Please check the server logs.": "Eklenti yüklenemedi. Lütfen sunucu günlüklerini kontrol edin.",
+  "Plugins Document": "Eklentiler belgesi",
 }

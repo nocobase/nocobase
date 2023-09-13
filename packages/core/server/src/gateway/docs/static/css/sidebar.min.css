@@ -1,0 +1,28 @@
+.sidebar-nav>ul {
+  margin-left: 20px
+}
+
+.sidebar-nav ul:not(.app-sub-sidebar)>li {
+  position: relative;
+  margin: 0;
+  cursor: pointer;
+  margin-left: 4px
+}
+
+.sidebar-nav ul:not(.app-sub-sidebar)>li::before {
+  content: '';
+  display: block;
+  position: absolute;
+  top: 8px;
+  left: -16px;
+  height: 18px;
+  width: 14px
+}
+
+.sidebar-nav ul:not(.app-sub-sidebar)>li.folder::before {
+  background: center/contain no-repeat url(/docs/static/images/SolarRemoveFolderBold.svg)
+}
+
+.sidebar-nav ul:not(.app-sub-sidebar)>li.file::before {
+  background: center/contain no-repeat url(/docs/static/images/SolarDocumentTextBold.svg)
+}

@@ -709,5 +709,6 @@ export default {
   'Form data templates': 'Modelos de dados do formulário',
   "Data template": "Modelo de dados",
   "Not found":"Não encontrado",
-  "Add":"Adicionar"
+  "Add": "Adicionar",
+  "Plugins Document": "Documentação de plugins",
 };

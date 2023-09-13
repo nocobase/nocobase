@@ -13,3 +13,10 @@ export interface PluginData {
   builtIn?: boolean;
   options?: any;
 }
+
+export interface PluginResponse extends PluginData {
+  displayName?: string;
+  packageJson: Record<string, any>;
+  readmeUrl: string;
+  description?: string;
+}

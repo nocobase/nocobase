@@ -23,6 +23,7 @@ import {
   requireNoCache,
   updatePluginByCompressedFileUrl,
 } from './utils';
+import { DOCS_README, DOCS_SIDE_BAR, DOCS_SPECIAL_FILES, getDocReadme, getDocSidebar } from './docsUtils';
 
 export interface PluginManagerOptions {
   app: Application;
@@ -66,6 +67,22 @@ export class PluginManager {
       directory: resolve(__dirname, '../migrations'),
     });
     this.app.resourcer.use(uploadMiddleware);
+
+    this.app.use(async (ctx, next) => {
+      await next();
+      if (DOCS_SPECIAL_FILES.includes(ctx.path)) {
+        const plugins = await this.list();
+        const currentLang = ctx.getCurrentLocale();
+        let body = '';
+        if (ctx.path === DOCS_README) {
+          body = getDocReadme(plugins, currentLang);
+        } else if (ctx.path === DOCS_SIDE_BAR) {
+          body = getDocSidebar(plugins, currentLang);
+        }
+        ctx.body = body;
+        return;
+      }
+    });
   }
 
   get repository() {
