@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 const { resolve } = require('path');
 const { existsSync } = require('fs');
 const chalk = require('chalk');
+const { genTsConfigPaths } = require('../src/util');
 
 const env = {
   APP_ENV: 'development',
@@ -27,6 +28,10 @@ if (!process.env.APP_ENV_PATH && process.argv[2] && process.argv[2] === 'test') 
   if (existsSync(resolve(process.cwd(), '.env.test'))) {
     process.env.APP_ENV_PATH = '.env.test';
   }
+}
+
+if (!existsSync(resolve(process.cwd(), 'tsconfig.paths.json'))) {
+  genTsConfigPaths();
 }
 
 dotenv.config({
