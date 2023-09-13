@@ -71,7 +71,7 @@ const TabBar = ({ item }) => {
   const { t } = useTranslation();
   const compile = useCompile();
   return (
-    <Space wrap>
+    <Space>
       <Badge color={item.color} />
       {t(compile(item.name))}
     </Space>
