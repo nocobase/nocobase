@@ -54,6 +54,29 @@ pm add /a/plugin.zip
 pm add http://url/plugin.zip
 ```
 
+### Nginx configuration changes
+
+Add `/static/plugins/` location
+
+```conf
+server {
+    location ^~ /static/plugins/ {
+        proxy_pass http://127.0.0.1:13000/static/plugins/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_connect_timeout 600;
+        proxy_send_timeout 600;
+        proxy_read_timeout 600;
+        send_timeout 600;
+    }
+}
+```
+
+More see full version of [nocobase.conf](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/nocobase.conf)
+
 ## Plugin development guide
 
 [Develop the first plugin](/development/your-fisrt-plugin)
