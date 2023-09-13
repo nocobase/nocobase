@@ -30,7 +30,7 @@ type External = (id: string) => boolean;
 export function buildEsm(cwd: string, sourcemap: boolean, external: External, log: PkgLog) {
   log('build client esm');
   const entry = path.join(cwd, 'src/index.ts').replaceAll(/\\/g, '/');
-  const outDir = path.resolve(cwd, 'lib');
+  const outDir = path.resolve(cwd, 'es');
   return viteBuild({
     mode: 'production',
     define: {
