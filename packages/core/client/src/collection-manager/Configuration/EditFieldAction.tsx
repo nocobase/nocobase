@@ -8,11 +8,11 @@ import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
-import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction, useUpdateAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
 import useDialect from '../hooks/useDialect';
 import { IField } from '../interfaces/types';
+import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import * as components from './components';
 
 const getSchema = (schema: IField, record: any, compile, getContainer): ISchema => {
@@ -26,6 +26,7 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
 
   if (schema.hasDefaultValue === true) {
     properties['defaultValue'] = cloneDeep(schema.default.uiSchema) || {};
+    properties.defaultValue.required = false;
     properties['defaultValue']['title'] = compile('{{ t("Default value") }}');
     properties['defaultValue']['x-decorator'] = 'FormItem';
     properties['defaultValue']['x-reactions'] = {
@@ -54,6 +55,9 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
       [uid()]: {
         type: 'void',
         'x-component': 'Action.Drawer',
+        'x-component-props': {
+          getContainer: '{{ getContainer }}',
+        },
         'x-decorator': 'Form',
         'x-decorator-props': {
           useValues(options) {
@@ -77,6 +81,12 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
           },
           // @ts-ignore
           ...properties,
+          description: {
+            type: 'string',
+            title: '{{t("Description")}}',
+            'x-decorator': 'FormItem',
+            'x-component': 'Input.TextArea',
+          },
           footer: {
             type: 'void',
             'x-component': 'Action.Drawer.Footer',

@@ -14,7 +14,7 @@ module.exports = (cli) => {
       if (!isDev()) {
         return;
       }
-      run('rimraf', ['-rf', './**/{.umi,.umi-production}']);
+      run('rimraf', ['-rf', './storage/app-dev']);
       run('rimraf', ['-rf', 'packages/*/*/{lib,esm,es,dist,node_modules}']);
     });
 };

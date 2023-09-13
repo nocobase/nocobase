@@ -1,0 +1,19 @@
+# Ignore everything under the storage/app-dev directory
+storage/app-dev
+
+# Ignore .umi and .umi-production directories wherever they are
+**/.umi
+**/.umi-production
+
+# Ignore certain directories under packages
+packages/*/*/lib
+packages/*/*/esm
+packages/*/*/es
+packages/*/*/dist
+packages/*/*/node_modules
+
+/.vscode
+/.idea
+
+*.sqlite
+/uploads

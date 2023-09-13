@@ -1,3 +1,5 @@
+import axios from 'axios';
+import MockAdapter from 'axios-mock-adapter';
 import React, { Component } from 'react';
 import { Link, Outlet } from 'react-router-dom';
 import { render, screen, sleep, userEvent, waitFor } from 'testUtils';
@@ -6,6 +8,13 @@ import { Application } from '../Application';
 import { Plugin } from '../Plugin';
 
 describe('Application', () => {
+  beforeAll(() => {
+    const mock = new MockAdapter(axios);
+    mock.onGet('pm:listEnabled').reply(200, {
+      data: [],
+    });
+  });
+
   const router: any = { type: 'memory', initialEntries: ['/'] };
   const initialComponentsLength = 6;
   const initialProvidersLength = 2;

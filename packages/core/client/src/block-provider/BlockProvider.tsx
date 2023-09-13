@@ -56,6 +56,8 @@ const useResource = (props: UseResourceProps) => {
   const association = useAssociation(props);
   const sourceId = useSourceId?.();
   const field = useField<Field>();
+  const withoutTableFieldResource = useContext(WithoutTableFieldResource);
+  const __parent = useContext(BlockRequestContext);
   if (block === 'TableField') {
     const options = {
       field,
@@ -68,8 +70,6 @@ const useResource = (props: UseResourceProps) => {
     return new TableFieldResource(options);
   }
 
-  const withoutTableFieldResource = useContext(WithoutTableFieldResource);
-  const __parent = useContext(BlockRequestContext);
   if (
     !withoutTableFieldResource &&
     __parent?.block === 'TableField' &&
@@ -345,6 +345,9 @@ export const useParamsFromRecord = () => {
   const filterByTk = useFilterByTk();
   const record = useRecord();
   const { fields } = useCollection();
+  const fieldSchema = useFieldSchema();
+  const { getCollectionJoinField } = useCollectionManager();
+  const collectionField = getCollectionJoinField(fieldSchema?.['x-decorator-props']?.resource);
   const filterFields = fields
     .filter((v) => {
       return ['boolean', 'date', 'integer', 'radio', 'sort', 'string', 'time', 'uid', 'uuid'].includes(v.type);
@@ -360,7 +363,7 @@ export const useParamsFromRecord = () => {
   const obj = {
     filterByTk: filterByTk,
   };
-  if (record.__collection) {
+  if (record.__collection && !['oho', 'm2o', 'obo'].includes(collectionField?.interface)) {
     obj['targetCollection'] = record.__collection;
   }
   if (!filterByTk) {

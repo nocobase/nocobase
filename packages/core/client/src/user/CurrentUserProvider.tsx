@@ -1,8 +1,8 @@
-import { Spin } from 'antd';
 import React, { createContext, useContext, useMemo } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useACLRoleContext } from '../acl';
 import { ReturnTypeOfUseRequest, useRequest } from '../api-client';
+import { useAppSpin } from '../application/hooks/useAppSpin';
 import { useCompile } from '../schema-component';
 
 export const CurrentUserContext = createContext<ReturnTypeOfUseRequest>(null);
@@ -29,11 +29,12 @@ export const useCurrentRoles = () => {
 };
 
 export const CurrentUserProvider = (props) => {
+  const { render } = useAppSpin();
   const result = useRequest<any>({
     url: 'auth:check',
   });
   if (result.loading) {
-    return <Spin />;
+    return render();
   }
   return <CurrentUserContext.Provider value={result}>{props.children}</CurrentUserContext.Provider>;
 };

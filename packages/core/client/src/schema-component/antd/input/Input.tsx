@@ -7,7 +7,7 @@ import { JSONTextAreaProps, Json } from './Json';
 import { ReadPretty } from './ReadPretty';
 
 type ComposedInput = React.FC<InputProps> & {
-  ReadPretty: React.FC<InputProps>;
+  ReadPretty: React.FC<InputProps | { ellipsis?: boolean }>;
   TextArea: React.FC<TextAreaProps>;
   URL: React.FC<InputProps>;
   JSON: React.FC<JSONTextAreaProps>;

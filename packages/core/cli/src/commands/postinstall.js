@@ -3,6 +3,7 @@ const { run, isDev, isPackageValid } = require('../util');
 const { resolve } = require('path');
 const { existsSync } = require('fs');
 const { readFile, writeFile } = require('fs').promises;
+const { createStoragePluginsSymlink } = require('@nocobase/utils/plugin-symlink');
 
 /**
  * @param {Command} cli
@@ -13,6 +14,7 @@ module.exports = (cli) => {
     .command('postinstall')
     .allowUnknownOption()
     .action(async () => {
+      await createStoragePluginsSymlink();
       if (!isDev()) {
         return;
       }
@@ -31,7 +33,7 @@ module.exports = (cli) => {
       run('umi', ['generate', 'tmp'], {
         stdio: 'pipe',
         env: {
-          APP_ROOT: `packages/${APP_PACKAGE_ROOT}/client`,
+          APP_ROOT: `${APP_PACKAGE_ROOT}/client`,
         },
       });
     });

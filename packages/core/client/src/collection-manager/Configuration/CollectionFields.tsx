@@ -25,6 +25,7 @@ import { OverridingCollectionField } from './OverridingCollectionField';
 import { collection } from './schemas/collectionFields';
 import { SyncFieldsAction } from './SyncFieldsAction';
 import { ViewCollectionField } from './ViewInheritedField';
+import { Input } from '../../schema-component/antd/input';
 
 const indentStyle = css`
   .ant-table {
@@ -53,12 +54,6 @@ const tableContainer = css`
 
 const titlePrompt = 'Default title for each record';
 
-// 是否可以作为标题字段
-export const isTitleField = (field) => {
-  const { getInterface } = useCollectionManager();
-  return !field.isForeignKey && getInterface(field.interface)?.titleUsable;
-};
-
 const CurrentFields = (props) => {
   const compile = useCompile();
   const { getInterface } = useCollectionManager();
@@ -67,7 +62,7 @@ const CurrentFields = (props) => {
   const { resource, targetKey } = props.collectionResource || {};
   const { [targetKey]: filterByTk, titleField } = useRecord();
   const [loadingRecord, setLoadingRecord] = React.useState<any>(null);
-  const { refreshCM } = useCollectionManager();
+  const { refreshCM, isTitleField } = useCollectionManager();
 
   const columns: TableColumnProps<any>[] = [
     {
@@ -117,6 +112,11 @@ const CurrentFields = (props) => {
           </Tooltip>
         ) : null;
       },
+    },
+    {
+      dataIndex: 'description',
+      title: t('Descriptio '),
+      render: (value) => <Input.ReadPretty value={value} ellipsis={true} />,
     },
     {
       dataIndex: 'actions',
@@ -173,7 +173,7 @@ const InheritFields = (props) => {
   const { [targetKey]: filterByTk, titleField, name } = useRecord();
   const [loadingRecord, setLoadingRecord] = React.useState(null);
   const { t } = useTranslation();
-  const { refreshCM } = useCollectionManager();
+  const { refreshCM, isTitleField } = useCollectionManager();
 
   const columns: TableColumnProps<any>[] = [
     {
@@ -301,6 +301,10 @@ export const CollectionFields = () => {
       title: t('Title field'),
     },
     {
+      dataIndex: 'description',
+      title: t('Description'),
+    },
+    {
       dataIndex: 'actions',
       title: t('Actions'),
     },
@@ -401,6 +405,7 @@ export const CollectionFields = () => {
   );
   const addProps = { type: 'primary', database };
   const syncProps = { type: 'primary' };
+  console.log(dataSource);
   return (
     <ResourceActionProvider {...resourceActionProps}>
       <FormContext.Provider value={form}>

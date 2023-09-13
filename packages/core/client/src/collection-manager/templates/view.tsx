@@ -135,7 +135,7 @@ export const view: ICollectionTemplate = {
         },
       },
     },
- 
-    ...getConfigurableProperties('category'),
+
+    ...getConfigurableProperties('category', 'description'),
   },
 };

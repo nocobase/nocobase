@@ -1,13 +1,15 @@
 const { Command } = require('commander');
-const { isPackageValid } = require('../util');
+const { isPackageValid, generateAppDir } = require('../util');
 
 /**
  *
  * @param {Command} cli
  */
 module.exports = (cli) => {
+  generateAppDir();
   require('./global')(cli);
   require('./build')(cli);
+  require('./tar')(cli);
   require('./dev')(cli);
   require('./start')(cli);
   require('./test')(cli);

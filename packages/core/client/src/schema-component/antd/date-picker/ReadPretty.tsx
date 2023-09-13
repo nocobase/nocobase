@@ -1,11 +1,12 @@
 import { usePrefixCls } from '@formily/antd-v5/esm/__builtins__';
 import { isArr } from '@formily/shared';
-import { dayjs, getDefaultFormat, str2moment } from '@nocobase/utils/client';
+import { getDefaultFormat, str2moment } from '@nocobase/utils/client';
 import type {
   DatePickerProps as AntdDatePickerProps,
   RangePickerProps as AntdRangePickerProps,
 } from 'antd/es/date-picker';
 import cls from 'classnames';
+import dayjs from 'dayjs';
 import React from 'react';
 
 type Composed = {

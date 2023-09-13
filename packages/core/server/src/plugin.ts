@@ -1,5 +1,9 @@
+import { Model } from '@nocobase/database';
+import fs from 'fs';
+import { resolve } from 'path';
 import { Application } from './application';
-import { InstallOptions } from './plugin-manager';
+import { InstallOptions, getExposeChangelogUrl, getExposeReadmeUrl } from './plugin-manager';
+import { checkAndGetCompatible } from './plugin-manager/utils';
 
 export interface PluginInterface {
   beforeLoad?: () => void;
@@ -22,22 +26,27 @@ export interface PluginOptions {
   [key: string]: any;
 }
 
-export type PluginType = typeof Plugin;
-
 export abstract class Plugin<O = any> implements PluginInterface {
   options: any;
   app: Application;
+  model: Model;
+  state: any = {};
 
   constructor(app: Application, options?: any) {
-    this.setOptions(options);
-
     this.app = app;
     this.setOptions(options);
-    this.afterAdd();
+  }
+
+  get log() {
+    return this.app.log;
   }
 
   get name() {
     return this.options.name as string;
+  }
+
+  get pm() {
+    return this.app.pm;
   }
 
   get db() {
@@ -50,6 +59,14 @@ export abstract class Plugin<O = any> implements PluginInterface {
 
   set enabled(value) {
     this.options.enabled = value;
+  }
+
+  get installed() {
+    return this.options.installed;
+  }
+
+  set installed(value) {
+    this.options.installed = value;
   }
 
   setOptions(options: any) {
@@ -72,9 +89,13 @@ export abstract class Plugin<O = any> implements PluginInterface {
 
   async afterEnable() {}
 
+  async beforeDisable() {}
+
   async afterDisable() {}
 
-  async remove() {}
+  async beforeRemove() {}
+
+  async afterRemove() {}
 
   async importCollections(collectionsPath: string) {
     await this.db.import({
@@ -85,6 +106,30 @@ export abstract class Plugin<O = any> implements PluginInterface {
 
   requiredPlugins() {
     return [];
+  }
+
+  async toJSON(options: any = {}) {
+    const { locale = 'en-US' } = options;
+    const { packageName, packageJson } = this.options;
+    if (!packageName) {
+      return {
+        ...this.options,
+      };
+    }
+    const file = await fs.promises.realpath(resolve(process.env.NODE_MODULES_PATH, packageName));
+    const lastUpdated = (await fs.promises.stat(file)).ctime;
+    const others = await checkAndGetCompatible(packageName);
+    return {
+      ...this.options,
+      ...others,
+      readmeUrl: getExposeReadmeUrl(packageName, locale),
+      changelogUrl: getExposeChangelogUrl(packageName),
+      lastUpdated,
+      file,
+      updatable: file.startsWith(process.env.PLUGIN_STORAGE_PATH),
+      displayName: packageJson[`displayName.${locale}`] || packageJson.displayName,
+      description: packageJson[`description.${locale}`] || packageJson.description,
+    };
   }
 }
 

@@ -1,4 +1,4 @@
-import { connect, mapReadPretty } from '@formily/react';
+import { connect, mapReadPretty, mapProps } from '@formily/react';
 import React from 'react';
 import ReactQuill from 'react-quill';
 import { ReadPretty as InputReadPretty } from '../input';
@@ -35,6 +35,13 @@ export const RichText = connect(
       />,
     );
   },
+  mapProps((props) => {
+    const { value } = props;
+    return {
+      ...props,
+      value: typeof value === 'object' ? value?.default : value,
+    };
+  }),
   mapReadPretty((props) => {
     return <InputReadPretty.Html {...props} />;
   }),

@@ -1,3 +1,4 @@
+import { define, observable } from '@formily/reactive';
 import { APIClientOptions } from '@nocobase/sdk';
 import { i18n as i18next } from 'i18next';
 import get from 'lodash/get';
@@ -9,21 +10,34 @@ import { I18nextProvider } from 'react-i18next';
 import { Link, NavLink, Navigate } from 'react-router-dom';
 import { APIClient, APIClientProvider } from '../api-client';
 import { i18n } from '../i18n';
+import type { Plugin } from './Plugin';
 import { PluginManager, PluginType } from './PluginManager';
 import { ComponentTypeAndString, RouterManager, RouterOptions } from './RouterManager';
+import { WebSocketClient, WebSocketClientOptions } from './WebSocketClient';
 import { AppComponent, BlankComponent, defaultAppComponents } from './components';
 import { compose, normalizeContainer } from './utils';
+import { defineGlobalDeps } from './utils/globalDeps';
+import type { RequireJS } from './utils/requirejs';
+import { getRequireJs } from './utils/requirejs';
 
+declare global {
+  interface Window {
+    define: RequireJS['define'];
+  }
+}
+
+export type DevDynamicImport = (packageName: string) => Promise<{ default: typeof Plugin }>;
 export type ComponentAndProps<T = any> = [ComponentType, T];
 export interface ApplicationOptions {
   apiClient?: APIClientOptions;
+  ws?: WebSocketClientOptions | boolean;
   i18n?: i18next;
   providers?: (ComponentType | ComponentAndProps)[];
   plugins?: PluginType[];
   components?: Record<string, ComponentType>;
   scopes?: Record<string, any>;
   router?: RouterOptions;
-  dynamicImport?: any;
+  devDynamicImport?: DevDynamicImport;
 }
 
 export class Application {
@@ -31,14 +45,31 @@ export class Application {
   public router: RouterManager;
   public scopes: Record<string, any> = {};
   public i18n: i18next;
+  public ws: WebSocketClient;
   public apiClient: APIClient;
   public components: Record<string, ComponentType> = { ...defaultAppComponents };
   public pm: PluginManager;
+  public devDynamicImport: DevDynamicImport;
+  public requirejs: RequireJS;
+  public notification;
+  loading = true;
+  maintained = false;
+  maintaining = false;
+  error = null;
 
   constructor(protected options: ApplicationOptions = {}) {
+    this.initRequireJs();
+    define(this, {
+      maintained: observable.ref,
+      loading: observable.ref,
+      maintaining: observable.ref,
+      error: observable.ref,
+    });
+    this.devDynamicImport = options.devDynamicImport;
     this.scopes = merge(this.scopes, options.scopes);
     this.components = merge(this.components, options.components);
     this.apiClient = new APIClient(options.apiClient);
+    this.apiClient.app = this;
     this.i18n = options.i18n || i18n;
     this.router = new RouterManager({
       ...options.router,
@@ -48,6 +79,13 @@ export class Application {
     this.addDefaultProviders();
     this.addReactRouterComponents();
     this.addProviders(options.providers || []);
+    this.ws = new WebSocketClient(options.ws);
+  }
+
+  private initRequireJs() {
+    this.requirejs = getRequireJs();
+    defineGlobalDeps(this.requirejs);
+    window.define = this.requirejs.define;
   }
 
   private addDefaultProviders() {
@@ -61,10 +99,6 @@ export class Application {
       Navigate: Navigate as ComponentType,
       NavLink,
     });
-  }
-
-  get dynamicImport() {
-    return this.options.dynamicImport;
   }
 
   getComposeProviders() {
@@ -92,7 +126,48 @@ export class Application {
   }
 
   async load() {
-    return this.pm.load();
+    let loadFailed = false;
+    this.ws.on('message', (event) => {
+      const data = JSON.parse(event.data);
+      console.log(data.payload);
+      if (data?.payload?.refresh) {
+        window.location.reload();
+        return;
+      }
+      if (data.type === 'notification') {
+        this.notification[data.payload?.type || 'info']({ message: data.payload?.message });
+        return;
+      }
+      const maintaining = data.type === 'maintaining' && data.payload.code !== 'APP_RUNNING';
+      if (maintaining) {
+        this.maintaining = true;
+        this.error = data.payload;
+      } else {
+        console.log('loadFailed', loadFailed);
+        if (loadFailed) {
+          window.location.reload();
+        }
+        this.maintaining = false;
+        this.maintained = true;
+        this.error = null;
+      }
+    });
+    this.ws.on('serverDown', () => {
+      this.maintaining = true;
+    });
+    this.ws.connect();
+    try {
+      this.loading = true;
+      await this.pm.load();
+    } catch (error) {
+      loadFailed = true;
+      this.error = {
+        code: 'LOAD_ERROR',
+        message: error.message,
+      };
+      console.error(error);
+    }
+    this.loading = false;
   }
 
   getComponent<T = any>(Component: ComponentTypeAndString<T>, isShowError = true): ComponentType<T> | undefined {

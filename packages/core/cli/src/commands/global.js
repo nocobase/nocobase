@@ -12,19 +12,18 @@ module.exports = (cli) => {
     .option('-h, --help')
     .option('--ts-node-dev')
     .action((options) => {
-      const { tsNodeDev } = options;
       if (isDev()) {
         promptForTs();
-        run(tsNodeDev ? 'ts-node-dev' : 'ts-node', [
-          '-P',
+        run('tsx', [
+          '--tsconfig',
           './tsconfig.server.json',
           '-r',
           'tsconfig-paths/register',
-          `./packages/${APP_PACKAGE_ROOT}/server/src/index.ts`,
+          `${APP_PACKAGE_ROOT}/src/index.ts`,
           ...process.argv.slice(2),
         ]);
       } else if (isProd()) {
-        run('node', [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, ...process.argv.slice(2)]);
+        run('node', [`${APP_PACKAGE_ROOT}/lib/index.js`, ...process.argv.slice(2)]);
       }
     });
 };

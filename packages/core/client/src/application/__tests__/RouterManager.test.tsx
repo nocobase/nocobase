@@ -1,13 +1,19 @@
+import axios from 'axios';
+import MockAdapter from 'axios-mock-adapter';
 import React, { FC } from 'react';
 import { Link, Outlet } from 'react-router-dom';
 import { render, screen, userEvent } from 'testUtils';
 import { beforeAll } from 'vitest';
 import { Application } from '../Application';
-import { RouterManager, RouteType } from '../RouterManager';
+import { RouteType, RouterManager } from '../RouterManager';
 
 describe('Router', () => {
   let app: Application;
   beforeAll(() => {
+    const mock = new MockAdapter(axios);
+    mock.onGet('pm:listEnabled').reply(200, {
+      data: [],
+    });
     app = new Application();
   });
 

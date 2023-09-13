@@ -1,5 +1,5 @@
 import path from 'path';
-import Resourcer, { Action, ResourcerContext } from '..';
+import { Resourcer, Action, ResourcerContext } from '..';
 import Resource from '../resource';
 
 describe('resourcer', () => {

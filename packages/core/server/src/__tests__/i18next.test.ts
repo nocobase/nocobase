@@ -29,7 +29,7 @@ describe('i18next', () => {
   });
 
   afterEach(async () => {
-    return app.db.close();
+    return app.destroy();
   });
 
   it('global', async () => {

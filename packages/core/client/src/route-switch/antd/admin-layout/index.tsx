@@ -1,7 +1,8 @@
 import { css } from '@emotion/css';
-import { Layout, Spin } from 'antd';
+import { useSessionStorageState } from 'ahooks';
+import { App, Layout } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Outlet, useMatch, useNavigate, useParams } from 'react-router-dom';
+import { Link, Outlet, useMatch, useNavigate, useParams } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
   CurrentAppInfoProvider,
@@ -22,6 +23,7 @@ import {
   useToken,
 } from '../../../';
 import { Plugin } from '../../../application/Plugin';
+import { useAppSpin } from '../../../application/hooks/useAppSpin';
 import { useCollectionManager } from '../../../collection-manager';
 
 const filterByACL = (schema, options) => {
@@ -59,6 +61,8 @@ const useMenuProps = () => {
 };
 
 const MenuEditor = (props) => {
+  const { notification } = App.useApp();
+  const [hasNotice, setHasNotice] = useSessionStorageState('plugin-notice', { defaultValue: false });
   const { setTitle } = useDocumentTitle();
   const navigate = useNavigate();
   const params = useParams<any>();
@@ -74,7 +78,7 @@ const MenuEditor = (props) => {
     setCurrent(schema);
     navigate(`/admin/${schema['x-uid']}`);
   };
-
+  const { render } = useAppSpin();
   const adminSchemaUid = useAdminSchemaUid();
   const { data, loading } = useRequest<{
     data: any;
@@ -139,8 +143,47 @@ const MenuEditor = (props) => {
     }
     return s;
   }, [data?.data]);
+
+  useRequest(
+    {
+      url: 'applicationPlugins:list',
+      params: {
+        sort: 'id',
+        paginate: false,
+      },
+    },
+    {
+      onSuccess: ({ data }) => {
+        setHasNotice(true);
+        const errorPlugins = data.filter((item) => !item.isCompatible);
+        if (errorPlugins.length) {
+          notification.error({
+            message: 'Plugin dependencies check failed',
+            description: (
+              <div>
+                <div>
+                  These plugins failed dependency checks. Please go to the{' '}
+                  <Link to="/admin/pm/list/local/">plugin management page</Link> for more details.{' '}
+                </div>
+                <ul>
+                  {errorPlugins.map((item) => (
+                    <li key={item.id}>
+                      {item.displayName} - {item.packageName}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ),
+          });
+        }
+      },
+      manual: true,
+      // ready: !hasNotice,
+    },
+  );
+
   if (loading) {
-    return <Spin />;
+    return render();
   }
   return (
     <SchemaIdContext.Provider value={defaultSelectedUid}>
@@ -155,6 +198,7 @@ export const InternalAdminLayout = (props: any) => {
   const { service } = useCollectionManager();
   const params = useParams<any>();
   const { token } = useToken();
+  const { render } = useAppSpin();
 
   return (
     <Layout>
@@ -299,7 +343,7 @@ export const InternalAdminLayout = (props: any) => {
             pointer-events: none;
           `}
         ></header>
-        {service.contentLoading ? <Spin /> : <Outlet />}
+        {service.contentLoading ? render() : <Outlet />}
       </Layout.Content>
     </Layout>
   );
@@ -328,8 +372,10 @@ export const AdminLayout = (props) => {
 };
 
 export class AdminLayoutPlugin extends Plugin {
+  async afterAdd() {
+    await this.app.pm.add(RemoteSchemaTemplateManagerPlugin);
+  }
   async load() {
-    this.app.pm.add(RemoteSchemaTemplateManagerPlugin);
     this.app.addComponents({ AdminLayout });
   }
 }

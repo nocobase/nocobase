@@ -1,6 +1,5 @@
 import { merge } from '@formily/shared';
-import { useSetState } from 'ahooks';
-import { default as useReq } from 'ahooks/es/useRequest';
+import { useRequest as useReq, useSetState } from 'ahooks';
 import { Options } from 'ahooks/es/useRequest/src/types';
 import { AxiosRequestConfig } from 'axios';
 import cloneDeep from 'lodash/cloneDeep';
@@ -30,7 +29,7 @@ export function useRequest<P>(
 
   if (typeof service === 'function') {
     tempService = service;
-  } else {
+  } else if (service) {
     tempService = async (params = {}) => {
       const { resource } = service as ResourceActionOptions;
       let args = cloneDeep(service);
@@ -43,8 +42,9 @@ export function useRequest<P>(
       const response = await api.request(args);
       return response?.data;
     };
+  } else {
+    tempService = async () => {};
   }
-
   const tempOptions = {
     ...options,
     onSuccess(...args) {
@@ -57,6 +57,5 @@ export function useRequest<P>(
   };
 
   const result = useReq<P, any>(tempService, tempOptions);
-
   return { ...result, state, setState };
 }

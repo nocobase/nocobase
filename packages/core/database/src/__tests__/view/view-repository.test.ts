@@ -16,7 +16,7 @@ describe('view repository', () => {
   });
 
   it('should support find view without primary key', async () => {
-    const UserCollection = await db.collection({
+    const UserCollection = db.collection({
       name: 'users',
       fields: [
         {

@@ -1,3 +1,5 @@
+import { requireModule } from '@nocobase/utils';
+
 const arr2obj = (items: any[]) => {
   const obj = {};
   for (const item of items) {
@@ -6,16 +8,29 @@ const arr2obj = (items: any[]) => {
   return obj;
 };
 
-export const getResource = (packageName: string, lang: string) => {
+export const getResource = (packageName: string, lang: string, isPlugin = true) => {
   const resources = [];
-  const prefixes = ['src', 'lib'];
+  const prefixes = [isPlugin ? 'dist' : 'lib'];
+  if (process.env.APP_ENV !== 'production') {
+    try {
+      require.resolve('@nocobase/client/src');
+      if (packageName === '@nocobase/plugin-client') {
+        packageName = '@nocobase/client';
+      }
+    } catch (error) {
+      // empty
+    }
+    prefixes.unshift('src');
+  }
   for (const prefix of prefixes) {
     try {
       const file = `${packageName}/${prefix}/locale/${lang}`;
       require.resolve(file);
-      const resource = require(file).default;
+      const resource = requireModule(file);
       resources.push(resource);
-    } catch (error) {}
+    } catch (error) {
+      // empty
+    }
     if (resources.length) {
       break;
     }

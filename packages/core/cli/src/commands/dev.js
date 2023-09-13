@@ -18,6 +18,7 @@ module.exports = (cli) => {
     .allowUnknownOption()
     .action(async (opts) => {
       promptForTs();
+      process.env.IS_DEV_CMD = true;
 
       if (process.argv.includes('-h') || process.argv.includes('--help')) {
         run('ts-node', [
@@ -25,7 +26,7 @@ module.exports = (cli) => {
           './tsconfig.server.json',
           '-r',
           'tsconfig-paths/register',
-          `./packages/${APP_PACKAGE_ROOT}/server/src/index.ts`,
+          `${APP_PACKAGE_ROOT}/src/index.ts`,
           ...process.argv.slice(2),
         ]);
         return;
@@ -54,18 +55,17 @@ module.exports = (cli) => {
         });
       }
 
-      await runAppCommand('install', ['--silent']);
-
       if (server || !client) {
         console.log('starting server', serverPort);
 
         const argv = [
           'watch',
+          '--ignore=./storage/plugins/**',
           '--tsconfig',
           './tsconfig.server.json',
           '-r',
           'tsconfig-paths/register',
-          `./packages/${APP_PACKAGE_ROOT}/server/src/index.ts`,
+          `${APP_PACKAGE_ROOT}/src/index.ts`,
           'start',
           ...process.argv.slice(3),
           `--port=${serverPort}`,
@@ -98,7 +98,8 @@ module.exports = (cli) => {
         run('umi', ['dev'], {
           env: {
             PORT: clientPort,
-            APP_ROOT: `packages/${APP_PACKAGE_ROOT}/client`,
+            APP_ROOT: `${APP_PACKAGE_ROOT}/client`,
+            WEBSOCKET_URL: process.env.WEBSOCKET_URL || (serverPort ? `ws://localhost:${serverPort}/ws` : undefined),
             PROXY_TARGET_URL:
               process.env.PROXY_TARGET_URL || (serverPort ? `http://127.0.0.1:${serverPort}` : undefined),
           },

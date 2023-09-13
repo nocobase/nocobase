@@ -1,11 +1,12 @@
 import { CloseCircleFilled } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
 import { useForm } from '@formily/react';
-import { dayjs, error } from '@nocobase/utils/client';
+import { error } from '@nocobase/utils/client';
 import { Input as AntInput, Cascader, DatePicker, InputNumber, Select, Space, Tag } from 'antd';
 import useAntdInputStyle from 'antd/es/input/style';
 import type { DefaultOptionType } from 'antd/lib/cascader';
 import classNames from 'classnames';
+import dayjs from 'dayjs';
 import { cloneDeep } from 'lodash';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -208,7 +209,7 @@ export function Input(props) {
 
   const loadData = async (selectedOptions: DefaultOptionType[]) => {
     const option = selectedOptions[selectedOptions.length - 1];
-    if (!option.children && !option.isLeaf && option.loadChildren) {
+    if (!option.children?.length && !option.isLeaf && option.loadChildren) {
       await option.loadChildren(option);
       setOptions((prev) => [...prev]);
     }
@@ -294,6 +295,7 @@ export function Input(props) {
                   margin: 0;
                   padding: 2px 7px;
                   border-radius: 10px;
+                  white-space: nowrap;
                 }
               }
             `,

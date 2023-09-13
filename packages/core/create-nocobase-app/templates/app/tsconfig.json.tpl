@@ -21,7 +21,7 @@
         "packages/app/*/src"
       ],
       "@{{{name}}}/plugin-*": [
-        "packages/plugins/*/src"
+        "packages/plugins/plugin-*/src"
       ]
     }
   }

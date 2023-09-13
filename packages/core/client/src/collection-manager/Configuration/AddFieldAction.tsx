@@ -9,11 +9,11 @@ import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
-import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
 import useDialect from '../hooks/useDialect';
 import { IField } from '../interfaces/types';
+import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import * as components from './components';
 import { getOptions } from './interfaces';
 
@@ -26,6 +26,7 @@ const getSchema = (schema: IField, record: any, compile) => {
 
   if (schema.hasDefaultValue === true) {
     properties['defaultValue'] = cloneDeep(schema?.default?.uiSchema);
+    properties.defaultValue.required = false;
     properties['defaultValue']['title'] = compile('{{ t("Default value") }}');
     properties['defaultValue']['x-decorator'] = 'FormItem';
     properties['defaultValue']['x-reactions'] = {
@@ -88,6 +89,12 @@ const getSchema = (schema: IField, record: any, compile) => {
           },
           // @ts-ignore
           ...properties,
+          description: {
+            type: 'string',
+            title: '{{t("Description")}}',
+            'x-decorator': 'FormItem',
+            'x-component': 'Input.TextArea',
+          },
           footer: {
             type: 'void',
             'x-component': 'Action.Drawer.Footer',
@@ -275,7 +282,6 @@ export const AddFieldAction = (props) => {
       items,
     };
   }, [getInterface, items, record]);
-
   return (
     record.template !== 'view' && (
       <RecordProvider record={record}>

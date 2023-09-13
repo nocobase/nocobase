@@ -1,5 +1,5 @@
 import { SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
-import { parse } from '@nocobase/utils/client';
+import { isURL, parse } from '@nocobase/utils/client';
 import { App, message } from 'antd';
 import { cloneDeep } from 'lodash';
 import get from 'lodash/get';
@@ -38,18 +38,6 @@ function renderTemplate(str: string, data: any) {
   });
 }
 
-function isURL(string) {
-  let url;
-
-  try {
-    url = new URL(string);
-  } catch (e) {
-    return false;
-  }
-
-  return url.protocol === 'http:' || url.protocol === 'https:';
-}
-
 const filterValue = (value) => {
   if (typeof value !== 'object') {
     return value;
@@ -84,7 +72,7 @@ function getFormValues(filterByTk, field, form, fieldNames, getField, resource) 
       return omit({ ...form.values }, keys);
     }
   }
-  console.log('form.values', form.values);
+
   return form.values;
   const values = {};
   for (const key in form.values) {
@@ -146,8 +134,7 @@ export const useCreateActionProps = () => {
 
   const currentUser = currentUserContext?.data?.data;
   const action = actionField.componentProps.saveMode || 'create';
-  const filterKeys = actionField.componentProps.filterKeys || [];
-
+  const filterKeys = actionField.componentProps.filterKeys?.checked || [];
   return {
     async onClick() {
       const fieldNames = fields.map((field) => field.name);
@@ -156,6 +143,7 @@ export const useCreateActionProps = () => {
         onSuccess,
         overwriteValues,
         skipValidator,
+        triggerWorkflows,
       } = actionSchema?.['x-action-settings'] ?? {};
       const addChild = fieldSchema?.['x-component-props']?.addChild;
       const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentRecord, currentUser });
@@ -179,6 +167,10 @@ export const useCreateActionProps = () => {
             ...assignedValues,
           },
           filterKeys: filterKeys,
+          // TODO(refactor): should change to inject by plugin
+          triggerWorkflows: triggerWorkflows?.length
+            ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
+            : undefined,
         });
         actionField.data.loading = false;
         actionField.data.data = data;
@@ -737,6 +729,7 @@ export const useUpdateActionProps = () => {
         onSuccess,
         overwriteValues,
         skipValidator,
+        triggerWorkflows,
       } = actionSchema?.['x-action-settings'] ?? {};
       const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentRecord, currentUser });
       if (!skipValidator) {
@@ -756,6 +749,10 @@ export const useUpdateActionProps = () => {
           },
           ...data,
           updateAssociationValues,
+          // TODO(refactor): should change to inject by plugin
+          triggerWorkflows: triggerWorkflows?.length
+            ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
+            : undefined,
         });
         actionField.data.loading = false;
         __parent?.service?.refresh?.();
@@ -1124,7 +1121,7 @@ export const useAssociationNames = () => {
         const fieldPath = !isAssociationField && isAssociationSubfield ? getAssociationPath(s.name) : s.name;
         const path = prefix === '' || !prefix ? fieldPath : prefix + '.' + fieldPath;
         appends.add(path);
-        if (['Nester', 'SubTable'].includes(s['x-component-props']?.mode)) {
+        if (['Nester', 'SubTable', 'PopoverNester'].includes(s['x-component-props']?.mode)) {
           updateAssociationValues.add(path);
           const bufPrefix = prefix && prefix !== '' ? prefix + '.' + s.name : s.name;
           getAssociationAppends(s, bufPrefix);

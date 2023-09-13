@@ -1,9 +1,9 @@
 import { css, cx } from '@emotion/css';
-import { ArrayCollapse, ArrayItems, FormItem as Item, FormLayout } from '@formily/antd-v5';
+import { ArrayCollapse, FormLayout, FormItem as Item } from '@formily/antd-v5';
 import { Field } from '@formily/core';
-import { ISchema, observer, Schema, useField, useFieldSchema } from '@formily/react';
-import { dayjs } from '@nocobase/utils/client';
+import { ISchema, observer, useField, useFieldSchema } from '@formily/react';
 import { Select } from 'antd';
+import dayjs from 'dayjs';
 import _ from 'lodash';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -16,11 +16,9 @@ import {
   useCollection,
   useCollectionFilterOptions,
   useCollectionManager,
-  useSortFields,
 } from '../../../collection-manager';
-import { isTitleField } from '../../../collection-manager/Configuration/CollectionFields';
 import { GeneralSchemaItems } from '../../../schema-items/GeneralSchemaItems';
-import { GeneralSchemaDesigner, isPatternDisabled, isShowDefaultValue, SchemaSettings } from '../../../schema-settings';
+import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isShowDefaultValue } from '../../../schema-settings';
 import { useIsShowMultipleSwitch } from '../../../schema-settings/hooks/useIsShowMultipleSwitch';
 import { isVariable, parseVariables, useVariablesCtx } from '../../common/utils/uitls';
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
@@ -49,7 +47,20 @@ export const findColumnFieldSchema = (fieldSchema, getCollectionJoinField) => {
   getAssociationAppends(fieldSchema);
   return [...childsSchema];
 };
+function transformData(inputData) {
+  const transformedData = [];
+  const keys = Object.keys(inputData) || [];
+  const values: any[] = Object.values(inputData) || [];
+  for (let i = 0; i < values[0]?.length; i++) {
+    const newObj = {};
+    keys.forEach((key, index) => {
+      newObj[key] = values[index][i];
+    });
+    transformedData.push(newObj);
+  }
 
+  return transformedData;
+}
 export const FormItem: any = observer(
   (props: any) => {
     useEnsureOperatorsValid();
@@ -59,6 +70,7 @@ export const FormItem: any = observer(
     const variablesCtx = useVariablesCtx();
     const { getCollectionJoinField } = useCollectionManager();
     const collectionField = getCollectionJoinField(schema['x-collection-field']);
+
     useEffect(() => {
       if (ctx?.block === 'form') {
         ctx.field.data = ctx.field.data || {};
@@ -77,9 +89,13 @@ export const FormItem: any = observer(
           let iniValues = [];
           contextData?.map((v) => {
             const data = parseVariables(schema.default, { $context: v });
-            iniValues = iniValues.concat(data);
+            iniValues = iniValues.concat(data).map((v) => {
+              delete v[collectionField.through];
+              return v;
+            });
           });
-          field.setInitialValue?.(_.uniqBy(iniValues, 'id'));
+          const data = _.uniqBy(iniValues, 'id');
+          field.setInitialValue?.(data.length > 0 ? data : [{}]);
         } else if (
           collectionField?.interface === 'o2m' &&
           ['SubTable', 'Nester'].includes(schema?.['x-component-props']?.['mode']) // 间接对多
@@ -87,15 +103,19 @@ export const FormItem: any = observer(
           const childrenFieldWithDefault = findColumnFieldSchema(schema, getCollectionJoinField);
           // 子表格/子表单中找出所有belongsTo字段的上下文默认值
           if (childrenFieldWithDefault.length > 0) {
-            const contextData = parseVariables('{{$context}}', variablesCtx);
-            const initValues = contextData?.map((v) => {
-              const obj = {};
-              childrenFieldWithDefault.forEach((s: any) => {
-                const child = JSON.parse(s);
-                obj[child.name] = parseVariables(child.default, { $context: v });
+            const tableData = parseVariables('{{$context}}', variablesCtx);
+            const contextData = {};
+            // 将数据拍平
+            childrenFieldWithDefault?.forEach((s: any) => {
+              const child = JSON.parse(s);
+              tableData?.map((v) => {
+                contextData[child.name] = _.uniqBy(
+                  (contextData[child.name] || []).concat(parseVariables(child.default, { $context: v })),
+                  'id',
+                );
               });
-              return obj;
             });
+            const initValues = transformData(contextData);
             field.setInitialValue?.(initValues);
           }
         }
@@ -142,7 +162,8 @@ export const FormItem: any = observer(
 
 FormItem.Designer = function Designer() {
   let targetField;
-  const { getCollectionFields, getInterface, getCollectionJoinField, getCollection } = useCollectionManager();
+  const { getCollectionFields, getInterface, getCollectionJoinField, getCollection, isTitleField } =
+    useCollectionManager();
   const { getField } = useCollection();
   const { form } = useFormBlockContext();
   const ctx = useBlockRequestContext();
@@ -195,21 +216,8 @@ FormItem.Designer = function Designer() {
   }
   const dataSource = useCollectionFilterOptions(collectionField?.target);
   const defaultFilter = fieldSchema?.['x-component-props']?.service?.params?.filter || {};
-  const sortFields = useSortFields(collectionField?.target);
-  const defaultSort = field.componentProps?.service?.params?.sort || [];
   const fieldMode = field?.componentProps?.['mode'] || (isFileField ? 'FileManager' : 'Select');
   const isSelectFieldMode = isAssociationField && fieldMode === 'Select';
-  const sort = defaultSort?.map((item: string) => {
-    return item?.startsWith('-')
-      ? {
-          field: item.substring(1),
-          direction: 'desc',
-        }
-      : {
-          field: item,
-          direction: 'asc',
-        };
-  });
   const isSubFormMode = fieldSchema['x-component-props']?.mode === 'Nester';
   const isPickerMode = fieldSchema['x-component-props']?.mode === 'Picker';
   const showFieldMode = isAssociationField && fieldModeOptions && !isTableField;
@@ -424,98 +432,7 @@ FormItem.Designer = function Designer() {
           }}
         />
       )}
-      {isSelectFieldMode && !field.readPretty && (
-        <SchemaSettings.ModalItem
-          title={t('Set default sorting rules')}
-          components={{ ArrayItems }}
-          schema={
-            {
-              type: 'object',
-              title: t('Set default sorting rules'),
-              properties: {
-                sort: {
-                  type: 'array',
-                  default: sort,
-                  'x-component': 'ArrayItems',
-                  'x-decorator': 'FormItem',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      space: {
-                        type: 'void',
-                        'x-component': 'Space',
-                        properties: {
-                          sort: {
-                            type: 'void',
-                            'x-decorator': 'FormItem',
-                            'x-component': 'ArrayItems.SortHandle',
-                          },
-                          field: {
-                            type: 'string',
-                            enum: sortFields,
-                            required: true,
-                            'x-decorator': 'FormItem',
-                            'x-component': 'Select',
-                            'x-component-props': {
-                              style: {
-                                width: 260,
-                              },
-                            },
-                          },
-                          direction: {
-                            type: 'string',
-                            'x-decorator': 'FormItem',
-                            'x-component': 'Radio.Group',
-                            'x-component-props': {
-                              optionType: 'button',
-                            },
-                            enum: [
-                              {
-                                label: t('ASC'),
-                                value: 'asc',
-                              },
-                              {
-                                label: t('DESC'),
-                                value: 'desc',
-                              },
-                            ],
-                          },
-                          remove: {
-                            type: 'void',
-                            'x-decorator': 'FormItem',
-                            'x-component': 'ArrayItems.Remove',
-                          },
-                        },
-                      },
-                    },
-                  },
-                  properties: {
-                    add: {
-                      type: 'void',
-                      title: t('Add sort field'),
-                      'x-component': 'ArrayItems.Addition',
-                    },
-                  },
-                },
-              },
-            } as ISchema
-          }
-          onSubmit={({ sort }) => {
-            const sortArr = sort.map((item) => {
-              return item.direction === 'desc' ? `-${item.field}` : item.field;
-            });
-
-            _.set(field.componentProps, 'service.params.sort', sortArr);
-            fieldSchema['x-component-props'] = field.componentProps;
-            dn.emit('patch', {
-              schema: {
-                ['x-uid']: fieldSchema['x-uid'],
-                'x-component-props': field.componentProps,
-              },
-            });
-          }}
-        />
-      )}
+      {isSelectFieldMode && !field.readPretty && <SchemaSettings.SortingRule />}
       {showFieldMode && (
         <SchemaSettings.SelectItem
           key="field-mode"

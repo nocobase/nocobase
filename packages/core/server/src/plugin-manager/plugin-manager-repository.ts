@@ -1,5 +1,7 @@
 import { Repository } from '@nocobase/database';
+import lodash from 'lodash';
 import { PluginManager } from './plugin-manager';
+import { PluginData } from './types';
 
 export class PluginManagerRepository extends Repository {
   pm: PluginManager;
@@ -17,13 +19,13 @@ export class PluginManagerRepository extends Repository {
   }
 
   async enable(name: string | string[]) {
-    const pluginNames = typeof name === 'string' ? [name] : name;
-    const plugins = pluginNames.map((name) => this.pm.plugins.get(name));
+    const pluginNames = lodash.castArray(name);
+    const plugins = pluginNames.map((name) => this.pm.get(name));
 
     for (const plugin of plugins) {
       const requiredPlugins = plugin.requiredPlugins();
       for (const requiredPluginName of requiredPlugins) {
-        const requiredPlugin = this.pm.plugins.get(requiredPluginName);
+        const requiredPlugin = this.pm.get(requiredPluginName);
         if (!requiredPlugin.enabled) {
           throw new Error(`${plugin.name} plugin need ${requiredPluginName} plugin enabled`);
         }
@@ -46,12 +48,27 @@ export class PluginManagerRepository extends Repository {
     return pluginNames;
   }
 
-  async disable(name: string | string[]) {
-    const pluginNames = typeof name === 'string' ? [name] : name;
-    await this.update({
+  async upgrade(name: string, data: PluginData) {
+    return this.update({
       filter: {
         name,
       },
+      values: data,
+    });
+  }
+
+  async disable(name: string | string[]) {
+    name = lodash.cloneDeep(name);
+
+    const pluginNames = lodash.castArray(name);
+    console.log(`disable ${name}, ${pluginNames}`);
+    const filter = {
+      name,
+    };
+
+    console.log(JSON.stringify(filter, null, 2));
+    await this.update({
+      filter,
       values: {
         enabled: false,
         installed: false,
@@ -60,19 +77,39 @@ export class PluginManagerRepository extends Repository {
     return pluginNames;
   }
 
-  async load() {
-    // sort plugins by id
-    const items = await this.find({
-      sort: 'id',
-    });
+  async getItems() {
+    try {
+      // sort plugins by id
+      return await this.find({
+        sort: 'id',
+      });
+    } catch (error) {
+      await this.database.migrator.up();
+      await this.collection.sync({
+        alter: {
+          drop: false,
+        },
+        force: false,
+      });
+      return await this.find({
+        sort: 'id',
+      });
+    }
+  }
+
+  async init() {
+    const exists = await this.collection.existsInDb();
+    if (!exists) {
+      return;
+    }
+
+    const items = await this.getItems();
 
     for (const item of items) {
-      await this.pm.addStatic(item.get('name'), {
-        ...item.get('options'),
-        name: item.get('name'),
-        version: item.get('version'),
-        enabled: item.get('enabled'),
-        async: true,
+      const { options, ...others } = item.toJSON();
+      await this.pm.add(item.get('name'), {
+        ...others,
+        ...options,
       });
     }
   }

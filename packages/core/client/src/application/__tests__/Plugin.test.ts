@@ -1,7 +1,16 @@
+import axios from 'axios';
+import MockAdapter from 'axios-mock-adapter';
 import { Application } from '../Application';
 import { Plugin } from '../Plugin';
 
 describe('Plugin', () => {
+  beforeAll(() => {
+    const mock = new MockAdapter(axios);
+    mock.onGet('pm:listEnabled').reply(200, {
+      data: [],
+    });
+  });
+
   it('lifecycle', async () => {
     const afterAdd = vitest.fn();
     const beforeLoad = vitest.fn();
@@ -68,7 +77,7 @@ describe('PluginManager', () => {
 
     class Demo1Plugin extends Plugin {
       async afterAdd() {
-        this.app.pm.add(Demo2, { name: 'demo2', config });
+        await this.app.pm.add(Demo2, { name: 'demo2', config });
       }
     }
     const app = new Application({
@@ -91,7 +100,7 @@ describe('PluginManager', () => {
   });
 
   it('get', async () => {
-    class DemoPlugin extends Plugin { }
+    class DemoPlugin extends Plugin {}
     const app = new Application({ plugins: [[DemoPlugin, { name: 'demo' }]] });
     await app.load();
     expect(app.pm.get('demo')).toBeInstanceOf(DemoPlugin);

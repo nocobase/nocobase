@@ -1,10 +1,10 @@
-import { dayjs } from '@nocobase/utils/client';
+import dayjs from 'dayjs';
 import flat from 'flat';
 import _, { every, findIndex, isArray, some } from 'lodash';
 import { useMemo } from 'react';
 import { useTableBlockContext } from '../../../block-provider';
 import { useCurrentUserContext } from '../../../user';
-import jsonLogic from '../../common/utils/logic';
+import { getJsonLogic } from '../../common/utils/logic';
 
 type VariablesCtx = {
   /** 当前登录的用户 */
@@ -13,10 +13,22 @@ type VariablesCtx = {
   $form?: Record<string, any>;
 };
 
+function flattenDeep(data, result = []) {
+  for (let i = 0; i < data?.length; i++) {
+    const { children, ...rest } = data[i];
+    result.push(rest);
+    if (children) {
+      flattenDeep(children, result);
+    }
+  }
+  return result;
+}
+
 export const useVariablesCtx = (): VariablesCtx => {
   const currentUser = useCurrentUserContext();
   const { field, service, rowKey } = useTableBlockContext();
-  const contextData = service?.data?.data?.filter((v) => (field?.data?.selectedRowKeys || [])?.includes(v[rowKey]));
+  const tableData = flattenDeep(service?.data?.data);
+  const contextData = tableData?.filter((v) => (field?.data?.selectedRowKeys || [])?.includes(v[rowKey]));
   return useMemo(() => {
     return {
       $user: currentUser?.data?.data || {},
@@ -140,6 +152,8 @@ export const conditionAnalyse = (rules, scope) => {
     }
     try {
       const isArrayField = isArray(values[targetField[0]]);
+      const jsonLogic = getJsonLogic();
+
       if (isArrayField && targetField.length > 1) {
         //对多关系字段比较
         const currentValue = getFieldValue(targetField, values);

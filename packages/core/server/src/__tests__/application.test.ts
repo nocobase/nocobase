@@ -1,6 +1,7 @@
 import supertest from 'supertest';
 import { Application } from '../application';
 import { Plugin } from '../plugin';
+import longJson from './fixtures/long-json';
 
 class MyPlugin extends Plugin {
   async load() {}
@@ -29,6 +30,7 @@ describe('application', () => {
       dataWrapping: false,
       registerActions: false,
     });
+
     app.resourcer.registerActionHandlers({
       list: async (ctx, next) => {
         ctx.body = [1, 2];
@@ -47,7 +49,23 @@ describe('application', () => {
   });
 
   afterEach(async () => {
-    return app.db.close();
+    return app.destroy();
+  });
+
+  it('should request long json', async () => {
+    app.resourcer.define({
+      name: 'test',
+      actions: {
+        test: async (ctx, next) => {
+          ctx.body = ctx.request.body;
+          await next();
+        },
+      },
+    });
+
+    const response = await agent.post('/api/test:test').send(longJson).set('Content-Type', 'application/json');
+
+    expect(response.statusCode).toBe(200);
   });
 
   it('resourcer.define', async () => {
@@ -126,5 +144,26 @@ describe('application', () => {
     expect(response.body).toEqual([1, 2]);
   });
 
-  it('should create application with plugins config', async () => {});
+  it('should call application with command', async () => {
+    await app.runCommand('start');
+    const jestFn = jest.fn();
+
+    app.on('beforeInstall', async () => {
+      jestFn();
+    });
+
+    const runningJest = jest.fn();
+
+    app.on('maintaining', ({ status }) => {
+      if (status === 'command_running') {
+        runningJest();
+      }
+    });
+
+    await app.runCommand('install');
+
+    expect(runningJest).toBeCalledTimes(1);
+
+    expect(jestFn).toBeCalledTimes(1);
+  });
 });

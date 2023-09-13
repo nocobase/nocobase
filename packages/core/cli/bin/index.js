@@ -3,9 +3,9 @@
 const dotenv = require('dotenv');
 const { resolve } = require('path');
 const { existsSync } = require('fs');
+const chalk = require('chalk');
 
 const env = {
-  APP_PACKAGE_ROOT: 'app',
   APP_ENV: 'development',
   APP_KEY: 'test-jwt-secret',
   APP_PORT: 13000,
@@ -15,8 +15,11 @@ const env = {
   DB_TIMEZONE: '+00:00',
   DEFAULT_STORAGE_TYPE: 'local',
   LOCAL_STORAGE_DEST: 'storage/uploads',
+  PLUGIN_STORAGE_PATH: resolve(process.cwd(), 'storage/plugins'),
   MFSU_AD: 'none',
+  NODE_MODULES_PATH: resolve(process.cwd(), 'node_modules'),
   PM2_HOME: resolve(process.cwd(), './storage/.pm2'),
+  PLUGIN_PACKAGE_PREFIX: '@nocobase/plugin-,@nocobase/plugin-sample-,@nocobase/preset-',
 };
 
 if (!process.env.APP_ENV_PATH && process.argv[2] && process.argv[2] === 'test') {
@@ -33,6 +36,11 @@ for (const key in env) {
   if (!process.env[key]) {
     process.env[key] = env[key];
   }
+}
+
+if (require('semver').satisfies(process.version, '<16')) {
+  console.error(chalk.red('[nocobase cli]: Node.js version must be >= 16'));
+  process.exit(1);
 }
 
 if (require('semver').satisfies(process.version, '>16') && !process.env.UNSET_NODE_OPTIONS) {

@@ -1,3 +1,4 @@
+import lodash from 'lodash';
 import { HasOne, MultiAssociationAccessors, Sequelize, Transaction, Transactionable } from 'sequelize';
 import injectTargetCollection from '../decorators/target-collection-decorator';
 import {
@@ -7,8 +8,8 @@ import {
   Filter,
   FindOneOptions,
   FindOptions,
-  TargetKey,
   TK,
+  TargetKey,
   UpdateOptions,
 } from '../repository';
 import { updateModelByValues } from '../update-associations';
@@ -112,14 +113,8 @@ export abstract class MultipleRelationRepository extends RelationRepository {
   })
   async remove(options: TargetKey | TargetKey[] | AssociatedOptions): Promise<void> {
     const transaction = await this.getTransaction(options);
-    let handleKeys = options['tk'];
-
-    if (!Array.isArray(handleKeys)) {
-      handleKeys = [handleKeys];
-    }
-
     const sourceModel = await this.getSourceModel(transaction);
-    await sourceModel[this.accessors().removeMultiple](handleKeys, {
+    await sourceModel[this.accessors().removeMultiple](this.convertTks(options), {
       transaction,
     });
     return;
@@ -134,10 +129,8 @@ export abstract class MultipleRelationRepository extends RelationRepository {
 
     const values = guard.sanitize(options.values);
 
-    const queryOptions = this.buildQueryOptions(options as any);
-
     const instances = await this.find({
-      ...queryOptions,
+      ...(lodash.omit(options, ['values']) as any),
       transaction,
     });
 
