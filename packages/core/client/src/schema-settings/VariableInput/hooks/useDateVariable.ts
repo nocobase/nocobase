@@ -20,9 +20,7 @@ interface Props {
 export const useDateVariable = ({ operator, schema, noDisabled }: Props) => {
   const { t } = useTranslation();
   const operatorValue = operator?.value || '';
-  const disabled = noDisabled
-    ? false
-    : schema?.['x-component'] !== 'DatePicker.RangePicker' && operatorValue !== '$dateBetween';
+  const disabled = noDisabled ? false : !['DatePicker', 'DatePicker.RangePicker'].includes(schema?.['x-component']);
   const dateOptions = [
     {
       key: 'now',
