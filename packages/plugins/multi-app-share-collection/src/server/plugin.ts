@@ -37,18 +37,20 @@ class SubAppPlugin extends Plugin {
 
     const sharedCollections = [...sharedCollectionGroupsCollections.flat(), 'users', 'users_jobs'];
 
-    subApp.db.on('beforeDefineCollection', (options) => {
-      const name = options.name;
-
-      // 指向主应用的 系统schema
-      if (sharedCollections.includes(name)) {
-        options.schema = mainApp.db.options.schema || 'public';
+    subApp.on('beforeLoadPlugin', (plugin) => {
+      if (plugin.name === 'collection-manager') {
+        plugin.setLoadFilter({
+          'name.$ne': 'roles',
+        });
       }
     });
 
-    subApp.db.on('beforeUpdateCollection', (collection, newOptions) => {
-      if (collection.name === 'roles') {
-        newOptions.schema = subApp.db.options.schema;
+    subApp.db.on('beforeDefineCollection', (options) => {
+      const name = options.name;
+
+      // 共享的Collection指向主应用的 系统schema
+      if (sharedCollections.includes(name)) {
+        options.schema = mainApp.db.options.schema || 'public';
       }
     });
 

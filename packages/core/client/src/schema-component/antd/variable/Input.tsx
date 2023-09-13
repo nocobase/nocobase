@@ -285,6 +285,7 @@ export function Input(props) {
                   margin: 0;
                   padding: 2px 7px;
                   border-radius: 10px;
+                  white-space: nowrap;
                 }
               }
             `,

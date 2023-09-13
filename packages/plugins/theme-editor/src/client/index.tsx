@@ -2,10 +2,12 @@ import {
   Plugin,
   SettingsCenterProvider,
   createStyles,
+  defaultTheme,
   useCurrentUserSettingsMenu,
   useGlobalTheme,
 } from '@nocobase/client';
 import { ConfigProvider } from 'antd';
+import _ from 'lodash';
 import React, { useEffect, useMemo } from 'react';
 import InitializeTheme from './components/InitializeTheme';
 import { ThemeEditorProvider } from './components/ThemeEditorProvider';
@@ -77,6 +79,10 @@ const CustomThemeProvider = React.memo((props) => {
       ) : null}
     </div>
   );
+
+  if (!theme?.token?.motionUnit) {
+    _.set(theme, 'token.motionUnit', defaultTheme.token.motionUnit);
+  }
 
   return (
     <ConfigProvider theme={theme}>

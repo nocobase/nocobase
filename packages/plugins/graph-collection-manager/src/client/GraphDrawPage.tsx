@@ -47,6 +47,7 @@ import {
   getInheritCollections,
   getPopupContainer,
   useGCMTranslation,
+  cleanGraphContainer,
 } from './utils';
 const { drop, groupBy, last, maxBy, minBy, take, uniq } = lodash;
 
@@ -628,7 +629,6 @@ export const GraphDrawPage = React.memo(() => {
     targetGraph.selectedCollections = queryString;
   };
   const handleConnectionParents = (collections) => {
-    console.log(collections);
     let data = targetGraph.selectedCollections.split(',') || [];
     data = data.concat(collections);
     const queryString = uniq(data).toString();
@@ -1079,6 +1079,9 @@ export const GraphDrawPage = React.memo(() => {
     } else {
       !selectedCollections && renderInitGraphCollection(collections);
     }
+    return () => {
+      cleanGraphContainer();
+    };
   }, [searchParams, collectionList]);
 
   const loadCollections = async () => {

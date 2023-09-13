@@ -34,7 +34,7 @@ export default {
       },
     },
     {
-      interface: 'username',
+      interface: 'input',
       type: 'string',
       name: 'username',
       unique: true,
