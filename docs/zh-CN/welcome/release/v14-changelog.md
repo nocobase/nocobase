@@ -96,6 +96,29 @@ pm add /a/plugin.zip
 pm add http://url/plugin.zip
 ```
 
+### Nginx 配置的变化
+
+新增 `/static/plugins/` location
+
+```conf
+server {
+    location ^~ /static/plugins/ {
+        proxy_pass http://127.0.0.1:13000/static/plugins/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_connect_timeout 600;
+        proxy_send_timeout 600;
+        proxy_read_timeout 600;
+        send_timeout 600;
+    }
+}
+```
+
+更多查看完整版的 [nocobase.conf](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/nocobase.conf)
+
 ## 插件开发指南
 
 [编写第一个插件](/development/your-fisrt-plugin)
