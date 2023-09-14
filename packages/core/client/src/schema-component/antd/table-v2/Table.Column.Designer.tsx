@@ -110,7 +110,7 @@ export const TableColumnDesigner = (props) => {
           dn.refresh();
         }}
       />
-      {isSelectFieldMode && !field.readPretty && !uiSchema?.['x-read-pretty'] && (
+      {isSelectFieldMode && !field.readPretty && !uiSchema?.['x-read-pretty'] && isSubTableColumn && (
         <SchemaSettings.ModalItem
           title={t('Set the data scope')}
           schema={

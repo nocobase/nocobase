@@ -1,0 +1,26 @@
+{
+  "name": "@nocobase/plugin-users",
+  "displayName": "Users",
+  "displayName.zh-CN": "用户",
+  "description": "Provides a basic user model and a password-based user authentication type, and extended the createdBy and updatedBy field types",
+  "description.zh-CN": "提供了基础的用户模型和基于密码的用户认证方式，并拓展了创建人和最后更新人字段类型",
+  "version": "0.14.0-alpha.3",
+  "license": "AGPL-3.0",
+  "main": "./dist/server/index.js",
+  "devDependencies": {
+    "@types/jsonwebtoken": "^8.5.8",
+    "jsonwebtoken": "^8.5.1"
+  },
+  "peerDependencies": {
+    "@nocobase/actions": "0.x",
+    "@nocobase/client": "0.x",
+    "@nocobase/database": "0.x",
+    "@nocobase/plugin-acl": "0.x",
+    "@nocobase/plugin-auth": "0.x",
+    "@nocobase/resourcer": "0.x",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x",
+    "@nocobase/utils": "0.x"
+  },
+  "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
+}

@@ -1,0 +1,11 @@
+{
+  "name": "@nocobase/plugin-sample-shop-actions",
+  "version": "0.14.0-alpha.3",
+  "main": "./dist/server/index.js",
+  "peerDependencies": {
+    "@nocobase/client": "0.x",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x"
+  },
+  "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
+}

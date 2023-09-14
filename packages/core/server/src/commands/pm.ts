@@ -1,4 +1,6 @@
+import _ from 'lodash';
 import Application from '../application';
+import { PluginCommandError } from '../errors/plugin-command-error';
 
 export default (app: Application) => {
   const pm = app.command('pm');
@@ -10,9 +12,35 @@ export default (app: Application) => {
     });
 
   pm.command('add')
-    .arguments('plugin')
-    .action(async (plugin) => {
-      await app.pm.add(plugin);
+    .argument('<pkg>')
+    .option('--registry [registry]')
+    .option('--auth-token [authToken]')
+    .option('--version [version]')
+    .action(async (name, options, cli) => {
+      console.log('pm.add', name, options);
+      try {
+        await app.pm.addViaCLI(name, _.cloneDeep(options));
+      } catch (error) {
+        throw new PluginCommandError(`Failed to add plugin: ${error.message}`);
+      }
+    });
+
+  pm.command('update')
+    .argument('<packageName>')
+    .option('--path [path]')
+    .option('--url [url]')
+    .option('--registry [registry]')
+    .option('--auth-token [authToken]')
+    .option('--version [version]')
+    .action(async (packageName, options) => {
+      try {
+        await app.pm.update({
+          ...options,
+          packageName,
+        });
+      } catch (error) {
+        throw new PluginCommandError(`Failed to update plugin: ${error.message}`);
+      }
     });
 
   pm.command('enable')
@@ -21,11 +49,7 @@ export default (app: Application) => {
       try {
         await app.pm.enable(plugins);
       } catch (error) {
-        app.log.debug(`Failed to enable plugin: ${error.message}`);
-        app.setMaintainingMessage(`Failed to enable plugin: ${error.message}`);
-        await new Promise((resolve) => {
-          setTimeout(() => resolve(null), 10000);
-        });
+        throw new PluginCommandError(`Failed to enable plugin: ${error.message}`);
       }
     });
 
@@ -35,11 +59,7 @@ export default (app: Application) => {
       try {
         await app.pm.disable(plugins);
       } catch (error) {
-        app.log.debug(`Failed to disable plugin: ${error.message}`);
-        app.setMaintainingMessage(`Failed to disable plugin: ${error.message}`);
-        await new Promise((resolve) => {
-          setTimeout(() => resolve(null), 10000);
-        });
+        throw new PluginCommandError(`Failed to disable plugin: ${error.message}`);
       }
     });
 

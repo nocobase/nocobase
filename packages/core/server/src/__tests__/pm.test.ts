@@ -399,4 +399,70 @@ describe('pm', () => {
     expect(record.installed).toBeTruthy();
     PluginManager.resolvePlugin = resolvePlugin;
   });
+
+  test('life-cycle', async () => {
+    const resolvePlugin = PluginManager.resolvePlugin;
+    PluginManager.resolvePlugin = (pluginName) => {
+      return Plugin1;
+    };
+    const hooks = [];
+    const result = [];
+    class Plugin1 extends Plugin {
+      prop: any;
+      async afterAdd() {
+        hooks.push('afterAdd');
+      }
+      async beforeLoad() {
+        hooks.push('beforeLoad');
+      }
+      async load() {
+        this.prop = 'a';
+        hooks.push('load');
+      }
+      async beforeEnable() {
+        hooks.push('beforeEnable');
+        result.push(this.prop === 'a');
+      }
+      async install() {
+        hooks.push('install');
+        result.push(this.prop === 'a');
+      }
+      async afterEnable() {
+        hooks.push('afterEnable');
+        result.push(this.prop === 'a');
+      }
+      async beforeDisable() {
+        hooks.push('beforeDisable');
+        result.push(this.prop === 'a');
+      }
+      async afterDisable() {
+        hooks.push('afterDisable');
+        result.push(this.prop === 'a');
+      }
+    }
+    app = mockServer();
+    await app.load();
+    await app.install();
+    await app.pm.repository.create({
+      values: {
+        name: 'Plugin1',
+        // enabled: true,
+        // installed: true,
+      },
+    });
+    await app.reload();
+    // console.log(hooks);
+    expect(app.pm.get('Plugin1')['prop']).toBeUndefined();
+    expect(result).toEqual([]);
+    await app.pm.enable('Plugin1');
+    expect(app.pm.get('Plugin1')['prop']).toBe('a');
+    // console.log(hooks.join('/'));
+    expect(result).toEqual([false, true, true]);
+    await app.pm.disable('Plugin1');
+    // console.log(hooks.join('/'));
+    expect(app.pm.get('Plugin1')['prop']).toBeUndefined();
+    expect(result).toEqual([false, true, true, true, false]);
+    // console.log(hooks.join('/'));
+    PluginManager.resolvePlugin = resolvePlugin;
+  });
 });

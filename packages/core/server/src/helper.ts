@@ -1,9 +1,12 @@
 import cors from '@koa/cors';
 import Database from '@nocobase/database';
-import Resourcer from '@nocobase/resourcer';
+import { Resourcer } from '@nocobase/resourcer';
+import { uid } from '@nocobase/utils';
 import { Command } from 'commander';
+import fs from 'fs';
 import i18next from 'i18next';
 import bodyParser from 'koa-bodyparser';
+import { resolve } from 'path';
 import Application, { ApplicationOptions } from './application';
 import { parseVariables } from './middlewares';
 import { dateTemplate } from './middlewares/data-template';
@@ -48,8 +51,12 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
   );
 
   if (options.bodyParser !== false) {
+    const bodyLimit = '10mb';
     app.use(
       bodyParser({
+        jsonLimit: bodyLimit,
+        formLimit: bodyLimit,
+        textLimit: bodyLimit,
         ...options.bodyParser,
       }),
       {
@@ -106,4 +113,9 @@ export const getCommandFullName = (command: Command) => {
     parent = parent.parent;
   }
   return names.join('.');
+};
+
+export const tsxRerunning = async () => {
+  const file = resolve(process.cwd(), 'storage/app.watch.ts');
+  await fs.promises.writeFile(file, `export const watchId = '${uid()}';`, 'utf-8');
 };

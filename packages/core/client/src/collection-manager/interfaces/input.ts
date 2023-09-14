@@ -2,6 +2,13 @@ import { ISchema } from '@formily/react';
 import { defaultProps, operators, unique } from './properties';
 import { IField } from './types';
 import { i18n } from '../../i18n';
+import { registerValidateRules } from '@formily/validator';
+
+registerValidateRules({
+  username(value) {
+    return /^[^@.<>"'/]{2,16}$/.test(value) || i18n.t('Must be 2-16 characters in length (excluding @.<>"\'/)');
+  },
+});
 
 export const input: IField = {
   name: 'input',

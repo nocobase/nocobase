@@ -11,7 +11,7 @@ import {
 } from '@dnd-kit/core';
 import { RecursionField, observer } from '@formily/react';
 import { uid } from '@formily/shared';
-import { App, Badge, Card, Dropdown, Tabs } from 'antd';
+import { App, Badge, Card, Dropdown, Space, Tabs } from 'antd';
 import _ from 'lodash';
 import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -71,10 +71,10 @@ const TabBar = ({ item }) => {
   const { t } = useTranslation();
   const compile = useCompile();
   return (
-    <span>
+    <Space>
       <Badge color={item.color} />
       {t(compile(item.name))}
-    </span>
+    </Space>
   );
 };
 const DndProvider = observer(

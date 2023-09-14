@@ -1,0 +1,14 @@
+{
+  "name": "@nocobase/plugin-sample-custom-page",
+  "version": "0.14.0-alpha.3",
+  "main": "./dist/server/index.js",
+  "devDependencies": {
+    "react": "^18.2.0"
+  },
+  "peerDependencies": {
+    "@nocobase/client": "0.x",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x"
+  },
+  "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
+}

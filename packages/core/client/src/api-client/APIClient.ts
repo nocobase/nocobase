@@ -64,6 +64,7 @@ export class APIClient extends APIClientSDK {
           }
           if (this.app.maintaining) {
             this.app.error = error?.response?.data?.error;
+            throw error;
             return;
           } else if (this.app.error) {
             this.app.error = null;

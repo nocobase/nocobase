@@ -24,8 +24,8 @@ export function getRemotePlugins(
   requirejs.requirejs.config({
     waitSeconds: 120,
     paths: pluginData.reduce<Record<string, string>>((memo, item) => {
-      memo[item.packageName] = `${baseURL}${item.url}`;
-      memo[`${item.packageName}/client`] = `${baseURL}${item.url}.js?client`;
+      memo[item.packageName] = `${baseURL}${item.url}?noExt`;
+      memo[`${item.packageName}/client`] = `${baseURL}${item.url}?noExtAndIsClient`;
       return memo;
     }, {}),
   });
@@ -34,7 +34,19 @@ export function getRemotePlugins(
     requirejs.requirejs(
       pluginData.map((item) => item.packageName),
       (...plugins: (typeof Plugin & { default?: typeof Plugin })[]) => {
-        resolve(plugins.map((item) => item.default || item));
+        const res = plugins.filter((item) => item).map((item) => item.default || item);
+        resolve(res);
+        const emptyPlugins = plugins
+          .map((item, index) => (!item ? index : null))
+          .filter((i) => i !== null)
+          .map((i) => pluginData[i].packageName);
+
+        if (emptyPlugins.length > 0) {
+          console.error(
+            '[nocobase load plugin error]: These plugins do not have an `export.default` exported content or there is an error in the plugins. error plugins: \r\n%s',
+            emptyPlugins.join(', \r\n'),
+          );
+        }
       },
       reject,
     );

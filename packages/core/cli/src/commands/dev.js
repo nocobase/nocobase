@@ -18,11 +18,13 @@ module.exports = (cli) => {
     .allowUnknownOption()
     .action(async (opts) => {
       promptForTs();
+      const { SERVER_TSCONFIG_PATH } = process.env;
+      process.env.IS_DEV_CMD = true;
 
       if (process.argv.includes('-h') || process.argv.includes('--help')) {
         run('ts-node', [
           '-P',
-          './tsconfig.server.json',
+          SERVER_TSCONFIG_PATH,
           '-r',
           'tsconfig-paths/register',
           `${APP_PACKAGE_ROOT}/src/index.ts`,
@@ -59,8 +61,9 @@ module.exports = (cli) => {
 
         const argv = [
           'watch',
+          '--ignore=./storage/plugins/**',
           '--tsconfig',
-          './tsconfig.server.json',
+          SERVER_TSCONFIG_PATH,
           '-r',
           'tsconfig-paths/register',
           `${APP_PACKAGE_ROOT}/src/index.ts`,
