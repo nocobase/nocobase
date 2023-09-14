@@ -8,6 +8,10 @@ export const getWebSocketURL = () => {
   const subApp = getSubAppName();
   const queryString = subApp ? `?__appName=${subApp}` : '';
   if (process.env.WEBSOCKET_URL) {
+    const url = new URL(process.env.WEBSOCKET_URL);
+    if (url.hostname === 'localhost') {
+      return `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.hostname}:${url.port}/ws${queryString}`;
+    }
     return `${process.env.WEBSOCKET_URL}${queryString}`;
   }
   try {
