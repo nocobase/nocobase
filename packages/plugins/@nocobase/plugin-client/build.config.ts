@@ -4,7 +4,7 @@ import { defineConfig } from '@nocobase/build';
 
 const existsSync = require('fs').existsSync;
 
-const client = require.resolve('@nocobase/client');
+const client = path.dirname(require.resolve('@nocobase/client/package.json'));
 const antd = require.resolve('antd');
 
 export default defineConfig({
@@ -15,7 +15,7 @@ export default defineConfig({
     }
 
     log('coping client locale');
-    await fs.cp(path.resolve(path.dirname(client), 'locale'), localeDir, {
+    await fs.cp(path.resolve(client, 'lib', 'locale'), localeDir, {
       recursive: true,
       force: true,
     });
