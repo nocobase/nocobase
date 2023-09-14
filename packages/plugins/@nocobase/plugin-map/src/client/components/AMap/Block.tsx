@@ -141,36 +141,6 @@ export const AMapBlock = (props) => {
       .flat()
       .filter(Boolean);
 
-    if (collectionField.type === 'point' && lineSort?.length) {
-      const positions = overlays.map((o: AMap.Marker) => o.getPosition());
-      console.log('🚀 ~ file: Block.tsx:146 ~ useEffect ~ positions:', positions);
-      const lineOverlay = mapRef.current?.setOverlay('lineString', positions, {
-        strokeColor: '#4e9bff',
-        fillColor: '#4e9bff',
-        cursor: 'pointer',
-      });
-      const overlay = mapRef.current?.setOverlay('point', positions[0], {
-        strokeColor: '#4e9bff',
-        fillColor: '#4e9bff',
-        cursor: 'pointer',
-        label: {
-          direction: 'top',
-          offset: [0, 5],
-          content: '起点',
-        },
-      });
-      mapRef.current?.setOverlay('point', positions[positions.length - 1], {
-        strokeColor: '#4e9bff',
-        fillColor: '#4e9bff',
-        cursor: 'pointer',
-        label: {
-          direction: 'top',
-          offset: [0, 5],
-          content: '终点',
-        },
-      });
-    }
-
     mapRef.current?.map?.setFitView(overlays);
 
     const events = overlays.map((o: AMap.Marker) => {
@@ -218,6 +188,39 @@ export const AMapBlock = (props) => {
       o.on('click', onClick);
       return () => o.off('click', onClick);
     });
+
+    if (collectionField.type === 'point' && lineSort?.length && overlays?.length > 1) {
+      const positions = overlays.map((o: AMap.Marker) => o.getPosition());
+
+      (overlays[0] as AMap.Marker).setzIndex(13);
+      (overlays[overlays.length - 1] as AMap.Marker).setzIndex(13);
+
+      const createText = (start = true) => {
+        if (!mapRef.current?.map) return;
+        return new AMap.Text({
+          label: {
+            direction: 'top',
+            offset: [0, 0],
+            content: start ? t('Start point') : t('End point'),
+          },
+          position: positions[start ? 0 : positions.length - 1],
+          map: mapRef.current?.map,
+        });
+      };
+
+      overlays.push(
+        ...[
+          mapRef.current?.setOverlay('lineString', positions, {
+            strokeColor: '#4e9bff',
+            fillColor: '#4e9bff',
+            strokeWeight: 2,
+            cursor: 'pointer',
+          }),
+          createText(),
+          createText(false),
+        ].filter(Boolean),
+      );
+    }
 
     return () => {
       overlays.forEach((ov) => {

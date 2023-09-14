@@ -47,6 +47,9 @@ const locale = {
   'Load google maps failed, Please check the Api key and refresh the page':
     '加载谷歌地图失败，请检查 Api key 并刷新页面',
   'Create map block': '创建地图区块',
+  'Start point': '起点',
+  'End point': '终点',
+  'Concatenation order field': '连接顺序字段',
 };
 
 export default locale;
