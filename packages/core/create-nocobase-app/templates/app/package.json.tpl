@@ -15,7 +15,6 @@
     "clean": "nocobase clean",
     "build": "nocobase build",
     "test": "nocobase test",
-    "gen-tsconfig-paths": "nocobase gen-tsconfig-paths",
     "postinstall": "nocobase postinstall",
     "lint": "eslint ."
   },

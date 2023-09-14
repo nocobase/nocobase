@@ -27,7 +27,6 @@
     "test:client": "vitest",
     "tc": "yarn test:client",
     "doc": "nocobase doc",
-    "gen-tsconfig-paths": "nocobase gen-tsconfig-paths",
     "postinstall": "nocobase postinstall",
     "lint": "eslint .",
     "clean": "nocobase clean",

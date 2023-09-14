@@ -20,7 +20,7 @@ import {
 } from './utils/buildPluginUtils';
 import { getDepPkgPath, getDepsConfig } from './utils/getDepsConfig';
 import { EsbuildSupportExts, globExcludeFiles } from './constant';
-import { PkgLog, getPackageJson } from './utils';
+import { PkgLog, getPackageJson, readUserConfig } from './utils';
 
 const serverGlobalFiles: string[] = ['src/**', '!src/client/**', ...globExcludeFiles];
 const clientGlobalFiles: string[] = ['src/**', '!src/server/**', ...globExcludeFiles];
@@ -257,7 +257,8 @@ export async function buildPluginServer(cwd: string, sourcemap: boolean, log: Pk
     log('%s will not be processed, only be copied to the dist directory.', chalk.yellow(otherExts.join(',')));
   }
 
-  await tsupBuild({
+  const { modifyTsupConfig } = readUserConfig(cwd);
+  await tsupBuild(modifyTsupConfig({
     entry: serverFiles,
     splitting: false,
     clean: false,
@@ -273,48 +274,48 @@ export async function buildPluginServer(cwd: string, sourcemap: boolean, log: Pk
       ...otherExts.reduce((prev, cur) => ({ ...prev, [cur]: 'copy' }), {}),
       '.json': 'copy',
     },
-  });
+  }));
 
   await buildServerDeps(cwd, serverFiles, log);
 }
 
-export function transformClientFilesToAmd(outDir: string, outputFileName: string, packageName: string, log: PkgLog) {
-  const files = fs.readdirSync(outDir);
+// export function transformClientFilesToAmd(outDir: string, outputFileName: string, packageName: string, log: PkgLog) {
+//   const files = fs.readdirSync(outDir);
 
-  return Promise.all(files.map(async file => {
-    const filePath = path.join(outDir, file);
+//   return Promise.all(files.map(async file => {
+//     const filePath = path.join(outDir, file);
 
-    // 只编译 JavaScript 文件
-    if (path.extname(filePath) === '.mjs' || path.extname(filePath) === '.js') {
-      let fileContent = fs.readFileSync(filePath, 'utf-8');
+//     // 只编译 JavaScript 文件
+//     if (path.extname(filePath) === '.mjs' || path.extname(filePath) === '.js') {
+//       let fileContent = fs.readFileSync(filePath, 'utf-8');
 
-      // import('./dayjs.mjs') => import(window.staticBaseUrl + '/@nocobase/plugin-acl/dayjs.mjs?noExt')
-      if (file === outputFileName) {
-        fileContent = fileContent.replace(dynamicImportRegexp, (match, _1, dynamicImportPath) => {
-          let absolutePath = path.join(outDir, dynamicImportPath).replace(outDir, '');
-          if (absolutePath.startsWith(path.sep)) {
-            absolutePath = absolutePath.slice(1);
-          }
-          return `import(window.staticBaseUrl + '/${packageName}/${absolutePath}?noExt')`;
-        })
-      }
+//       // import('./dayjs.mjs') => import(window.staticBaseUrl + '/@nocobase/plugin-acl/dayjs.mjs?noExt')
+//       if (file === outputFileName) {
+//         fileContent = fileContent.replace(dynamicImportRegexp, (match, _1, dynamicImportPath) => {
+//           let absolutePath = path.join(outDir, dynamicImportPath).replace(outDir, '');
+//           if (absolutePath.startsWith(path.sep)) {
+//             absolutePath = absolutePath.slice(1);
+//           }
+//           return `import(window.staticBaseUrl + '/${packageName}/${absolutePath}?noExt')`;
+//         })
+//       }
 
-      const { code } = await transformAsync(fileContent, {
-        presets: [['@babel/preset-env', {
-          modules: 'amd',
-          targets: {
-            'edge': 88,
-            'firefox': 78,
-            'chrome': 87,
-            'safari': 14,
-          }
-        }]],
-        plugins: ['@babel/plugin-transform-modules-amd'],
-      });
-      fs.writeFileSync(filePath, code, 'utf-8');
-    }
-  }));
-}
+//       const { code } = await transformAsync(fileContent, {
+//         presets: [['@babel/preset-env', {
+//           modules: 'amd',
+//           targets: {
+//             'edge': 88,
+//             'firefox': 78,
+//             'chrome': 87,
+//             'safari': 14,
+//           }
+//         }]],
+//         plugins: ['@babel/plugin-transform-modules-amd'],
+//       });
+//       fs.writeFileSync(filePath, code, 'utf-8');
+//     }
+//   }));
+// }
 
 export async function buildPluginClient(cwd: string, sourcemap: boolean, log: PkgLog) {
   log('build plugin client');
@@ -342,7 +343,9 @@ export async function buildPluginClient(cwd: string, sourcemap: boolean, log: Pk
 
   const entry = fg.globSync('src/client/index.{ts,tsx,js,jsx}', { absolute: true, cwd });
   const outputFileName = 'index.js';
-  await viteBuild({
+
+  const { modifyViteConfig } = readUserConfig(cwd);
+  await viteBuild(modifyViteConfig({
     mode: 'production',
     define: {
       'process.env.NODE_ENV': JSON.stringify('production'),
@@ -378,7 +381,7 @@ export async function buildPluginClient(cwd: string, sourcemap: boolean, log: Pk
       react(),
       cssInjectedByJsPlugin({ styleId: packageJson.name }),
     ],
-  });
+  }));
 
   checkFileSize(outDir, log);
 

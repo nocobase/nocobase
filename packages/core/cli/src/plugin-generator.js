@@ -3,6 +3,7 @@ const { existsSync } = require('fs');
 const { join, resolve } = require('path');
 const { Generator } = require('@umijs/utils');
 const { readFile, writeFile } = require('fs').promises;
+const { genTsConfigPaths } = require('./util');
 
 const execa = require('execa');
 
@@ -60,7 +61,7 @@ class PluginGenerator extends Generator {
       path: join(__dirname, '../templates/plugin'),
     });
     console.log('');
-    execa.sync('yarn', ['gen-tsconfig-paths'], { shell: true, stdio: 'inherit' });
+    genTsConfigPaths();
     execa.sync('yarn', ['install'], { shell: true, stdio: 'inherit' });
     // execa.sync('yarn', ['build', `plugins/${name}`], { shell: true, stdio: 'inherit' });
     console.log(`The plugin folder is in ${chalk.green(`packages/plugins/${name}`)}`);

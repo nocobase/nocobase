@@ -1,5 +1,8 @@
 import chalk from 'chalk';
 import path from 'path';
+import fs from 'fs-extra';
+import { Options as TsupConfig } from 'tsup'
+import { InlineConfig as ViteConfig } from 'vite'
 
 let previousColor = '';
 function randomColor() {
@@ -43,4 +46,21 @@ export function toUnixPath(filepath: string) {
 
 export function getPackageJson(cwd: string) {
   return require(path.join(cwd, 'package.json'));
+}
+
+export function readUserConfig(cwd: string) {
+  const configPath = path.join(cwd, 'config.js');
+  const config = {
+    modifyTsupConfig(config: TsupConfig): TsupConfig {
+      return config;
+    },
+    modifyViteConfig(config: ViteConfig): ViteConfig {
+      return config;
+    }
+  }
+  if (fs.existsSync(configPath)) {
+    const userConfig = require(path.join(cwd, 'config.js'));
+    Object.assign(config, userConfig);
+  }
+  return config;
 }

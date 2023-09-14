@@ -6,7 +6,7 @@ import { build as tsupBuild } from 'tsup';
 import { libInjectCss } from 'vite-plugin-lib-inject-css';
 import react from '@vitejs/plugin-react';
 
-import { PkgLog } from './utils';
+import { PkgLog, readUserConfig } from './utils';
 import { globExcludeFiles } from './constant';
 
 
@@ -66,8 +66,9 @@ export async function buildLib(cwd: string, sourcemap: boolean, external: Extern
 
   fs.removeSync(entry);
   fs.linkSync(path.join(cwd, 'es/index.mjs'), entry);
+  const { modifyViteConfig } = readUserConfig(cwd);
 
-  await viteBuild({
+  await viteBuild(modifyViteConfig({
     mode: 'production',
     esbuild: {
       format: 'cjs'
@@ -85,7 +86,7 @@ export async function buildLib(cwd: string, sourcemap: boolean, external: Extern
         external,
       },
     },
-  });
+  }));
 
   fs.removeSync(entry);
 
@@ -98,7 +99,9 @@ export async function buildLib(cwd: string, sourcemap: boolean, external: Extern
 export function buildLocale(cwd: string) {
   const entry = fg.globSync(['src/locale/**', ...globExcludeFiles], { cwd, absolute: true });
   const outDir = path.resolve(cwd, 'lib', 'locale');
-  return tsupBuild({
+  const { modifyTsupConfig } = readUserConfig(cwd);
+
+  return tsupBuild(modifyTsupConfig({
     entry,
     splitting: false,
     clean: false,
@@ -110,5 +113,5 @@ export function buildLocale(cwd: string) {
     outDir,
     format: 'cjs',
     skipNodeModulesBundle: true,
-  });
+  }));
 }
