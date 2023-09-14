@@ -433,8 +433,13 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     } finally {
       const _actionCommand = this._actionCommand;
       if (_actionCommand) {
+        const options = _actionCommand['options'];
         _actionCommand['_optionValues'] = {};
         _actionCommand['_optionValueSources'] = {};
+        _actionCommand['options'] = [];
+        for (const option of options) {
+          _actionCommand.addOption(option);
+        }
       }
       this.activatedCommand = null;
       this._actionCommand = null;

@@ -102,12 +102,12 @@ exports.postCheck = async (opts) => {
 };
 
 exports.runInstall = async () => {
-  const { APP_PACKAGE_ROOT } = process.env;
+  const { APP_PACKAGE_ROOT, SERVER_TSCONFIG_PATH } = process.env;
 
   if (exports.isDev()) {
     const argv = [
       '--tsconfig',
-      './tsconfig.server.json',
+      SERVER_TSCONFIG_PATH,
       '-r',
       'tsconfig-paths/register',
       `${APP_PACKAGE_ROOT}/src/index.ts`,
@@ -123,12 +123,12 @@ exports.runInstall = async () => {
 };
 
 exports.runAppCommand = async (command, args = []) => {
-  const { APP_PACKAGE_ROOT } = process.env;
+  const { APP_PACKAGE_ROOT, SERVER_TSCONFIG_PATH } = process.env;
 
   if (exports.isDev()) {
     const argv = [
       '--tsconfig',
-      './tsconfig.server.json',
+      SERVER_TSCONFIG_PATH,
       '-r',
       'tsconfig-paths/register',
       `${APP_PACKAGE_ROOT}/src/index.ts`,

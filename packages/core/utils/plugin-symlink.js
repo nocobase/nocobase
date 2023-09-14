@@ -45,7 +45,7 @@ async function createStoragePluginSymLink(pluginName) {
     if (await fsExists(link)) {
       await unlink(link);
     }
-    await symlink(resolve(storagePluginsPath, pluginName), link);
+    await symlink(resolve(storagePluginsPath, pluginName), link, 'dir');
   } catch (error) {
     console.error(error);
   }

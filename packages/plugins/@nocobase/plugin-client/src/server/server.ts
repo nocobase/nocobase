@@ -1,4 +1,4 @@
-import { Plugin, PluginManager, getExposeUrl } from '@nocobase/server';
+import { Plugin } from '@nocobase/server';
 import fs from 'fs';
 import { resolve } from 'path';
 import { getAntdLocale } from './antd';
@@ -69,7 +69,6 @@ export class ClientPlugin extends Plugin {
     });
     this.app.acl.allow('app', 'getLang');
     this.app.acl.allow('app', 'getInfo');
-    this.app.acl.allow('app', 'getPlugins');
     this.app.acl.allow('plugins', '*', 'public');
     this.app.acl.registerSnippet({
       name: 'app',
@@ -113,30 +112,6 @@ export class ClientPlugin extends Plugin {
             lang,
             ...resources,
           };
-          await next();
-        },
-        async getPlugins(ctx, next) {
-          const pm = ctx.db.getRepository('applicationPlugins');
-          const PLUGIN_CLIENT_ENTRY_FILE = 'dist/client/index.js';
-          const items = await pm.find({
-            filter: {
-              enabled: true,
-            },
-          });
-          ctx.body = items
-            .map((item) => {
-              try {
-                const packageName = PluginManager.getPackageName(item.name);
-                return {
-                  ...item.toJSON(),
-                  packageName,
-                  url: getExposeUrl(packageName, PLUGIN_CLIENT_ENTRY_FILE),
-                };
-              } catch {
-                return false;
-              }
-            })
-            .filter(Boolean);
           await next();
         },
         async clearCache(ctx, next) {
