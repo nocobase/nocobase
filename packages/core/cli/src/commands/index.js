@@ -10,7 +10,6 @@ module.exports = (cli) => {
   require('./global')(cli);
   require('./build')(cli);
   require('./tar')(cli);
-  require('./gen-tsconfig-paths')(cli);
   require('./dev')(cli);
   require('./start')(cli);
   require('./test')(cli);

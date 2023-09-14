@@ -191,7 +191,7 @@ exports.genTsConfigPaths = function genTsConfigPaths() {
     const packageDir = dirname(packageFile);
     const relativePath = packageDir.slice(cwdLength + 1).replace(/\\/, '/');
     const hasClient = fg.sync(['client', 'client.ts', 'client.tsx', 'client.js', 'client.jsx'], {
-      cwd: join(cwd, 'src'),
+      cwd: join(packageDir, 'src'),
     }).length;
     if (hasClient) {
       paths[`${packageJsonName}/client`] = [`${relativePath}/src/client`];
