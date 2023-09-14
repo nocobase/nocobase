@@ -6,11 +6,11 @@ import { build as tsupBuild } from 'tsup';
 import { libInjectCss } from 'vite-plugin-lib-inject-css';
 import react from '@vitejs/plugin-react';
 
-import { PkgLog, readUserConfig } from './utils';
+import { PkgLog, UserConfig } from './utils';
 import { globExcludeFiles } from './constant';
 
 
-export async function buildClient(cwd: string, sourcemap: boolean = false, log: PkgLog) {
+export async function buildClient(cwd: string, userConfig: UserConfig, sourcemap: boolean = false, log: PkgLog) {
   log('build client');
   const cwdWin = cwd.replaceAll(/\\/g, '/');
   const cwdUnix = cwd.replaceAll(/\//g, '\\');
@@ -20,18 +20,18 @@ export async function buildClient(cwd: string, sourcemap: boolean = false, log: 
     }
     return true;
   }
-  await buildEsm(cwd, sourcemap, external, log);
-  await buildLib(cwd, sourcemap, external, log);
-  await buildLocale(cwd);
+  await buildEsm(cwd, userConfig, sourcemap, external, log);
+  await buildLib(cwd, userConfig, sourcemap, external, log);
+  await buildLocale(cwd, userConfig, log);
 }
 
 type External = (id: string) => boolean;
 
-export function buildEsm(cwd: string, sourcemap: boolean, external: External, log: PkgLog) {
+export function buildEsm(cwd: string, userConfig: UserConfig, sourcemap: boolean, external: External, log: PkgLog) {
   log('build client esm');
   const entry = path.join(cwd, 'src/index.ts').replaceAll(/\\/g, '/');
   const outDir = path.resolve(cwd, 'es');
-  return viteBuild({
+  return viteBuild(userConfig.modifyViteConfig({
     mode: 'production',
     define: {
       'process.env.NODE_ENV': JSON.stringify('production'),
@@ -55,10 +55,10 @@ export function buildEsm(cwd: string, sourcemap: boolean, external: External, lo
       },
     },
     plugins: [react(), libInjectCss()],
-  });
+  }));
 }
 
-export async function buildLib(cwd: string, sourcemap: boolean, external: External, log: PkgLog) {
+export async function buildLib(cwd: string, userConfig: UserConfig, sourcemap: boolean, external: External, log: PkgLog) {
   log('build client lib');
   const outDir = path.resolve(cwd, 'lib');
   const esDir = path.resolve(cwd, 'es');
@@ -66,9 +66,8 @@ export async function buildLib(cwd: string, sourcemap: boolean, external: Extern
 
   fs.removeSync(entry);
   fs.linkSync(path.join(cwd, 'es/index.mjs'), entry);
-  const { modifyViteConfig } = readUserConfig(cwd);
 
-  await viteBuild(modifyViteConfig({
+  await viteBuild(userConfig.modifyViteConfig({
     mode: 'production',
     esbuild: {
       format: 'cjs'
@@ -96,12 +95,12 @@ export async function buildLib(cwd: string, sourcemap: boolean, external: Extern
   });
 }
 
-export function buildLocale(cwd: string) {
+export function buildLocale(cwd: string, userConfig: UserConfig, log: PkgLog) {
+  log('build client locale');
+
   const entry = fg.globSync(['src/locale/**', ...globExcludeFiles], { cwd, absolute: true });
   const outDir = path.resolve(cwd, 'lib', 'locale');
-  const { modifyTsupConfig } = readUserConfig(cwd);
-
-  return tsupBuild(modifyTsupConfig({
+  return tsupBuild(userConfig.modifyTsupConfig({
     entry,
     splitting: false,
     clean: false,
