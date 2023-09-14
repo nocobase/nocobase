@@ -127,11 +127,9 @@ export default {
       ctx.body = items
         .map((item) => {
           try {
-            const packageName = PluginManager.getPackageName(item.name);
             return {
               ...item.toJSON(),
-              packageName,
-              url: getExposeUrl(packageName, PLUGIN_CLIENT_ENTRY_FILE),
+              url: getExposeUrl(item.packageName, PLUGIN_CLIENT_ENTRY_FILE),
             };
           } catch {
             return false;

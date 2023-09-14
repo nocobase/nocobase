@@ -6,7 +6,7 @@ const { run, isDev, isProd, promptForTs } = require('../util');
  * @param {Command} cli
  */
 module.exports = (cli) => {
-  const { APP_PACKAGE_ROOT } = process.env;
+  const { APP_PACKAGE_ROOT, SERVER_TSCONFIG_PATH } = process.env;
   cli
     .allowUnknownOption()
     .option('-h, --help')
@@ -16,7 +16,7 @@ module.exports = (cli) => {
         promptForTs();
         run('tsx', [
           '--tsconfig',
-          './tsconfig.server.json',
+          SERVER_TSCONFIG_PATH,
           '-r',
           'tsconfig-paths/register',
           `${APP_PACKAGE_ROOT}/src/index.ts`,

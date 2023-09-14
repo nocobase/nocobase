@@ -20,6 +20,7 @@ const env = {
   NODE_MODULES_PATH: resolve(process.cwd(), 'node_modules'),
   PM2_HOME: resolve(process.cwd(), './storage/.pm2'),
   PLUGIN_PACKAGE_PREFIX: '@nocobase/plugin-,@nocobase/plugin-sample-,@nocobase/preset-',
+  SERVER_TSCONFIG_PATH: './tsconfig.server.json',
 };
 
 if (!process.env.APP_ENV_PATH && process.argv[2] && process.argv[2] === 'test') {
