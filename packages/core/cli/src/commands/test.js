@@ -1,5 +1,5 @@
 const { Command } = require('commander');
-const { nodeCheck, runAppCommand, promptForTs } = require('../util');
+const { nodeCheck, runAppCommand, promptForTs, genTsConfigPaths } = require('../util');
 
 /**
  *
@@ -12,6 +12,7 @@ module.exports = (cli) => {
     .allowUnknownOption()
     .action(async (options) => {
       nodeCheck();
+      genTsConfigPaths();
       if (options.dbClean) {
         promptForTs();
         await runAppCommand('db:clean', ['-y']);

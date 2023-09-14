@@ -4,7 +4,7 @@ const execa = require('execa');
 const fg = require('fast-glob');
 const { dirname, join, resolve } = require('path');
 const { readFile, writeFile } = require('fs').promises;
-const { existsSync, mkdirSync, cpSync } = require('fs');
+const { existsSync, mkdirSync, cpSync, writeFileSync } = require('fs');
 
 exports.isPackageValid = (package) => {
   try {
@@ -176,13 +176,13 @@ exports.generateAppDir = function generateAppDir() {
   }
 };
 
-exports.genTsConfigPaths = async function genTsConfigPaths() {
+exports.genTsConfigPaths = function genTsConfigPaths() {
   const cwd = process.cwd();
   const cwdLength = cwd.length;
   const paths = {
     '@@/*': ['.dumi/tmp/*'],
   };
-  const packages = await fg(['packages/*/*/package.json', 'packages/*/*/*/package.json'], {
+  const packages = fg.sync(['packages/*/*/package.json', 'packages/*/*/*/package.json'], {
     absolute: true,
     onlyFiles: true,
   });
@@ -198,5 +198,5 @@ exports.genTsConfigPaths = async function genTsConfigPaths() {
   });
 
   const tsConfigJsonPath = join(cwd, './tsconfig.paths.json');
-  await writeFile(tsConfigJsonPath, JSON.stringify({ compilerOptions: { paths } }, null, 2), 'utf-8');
+  writeFileSync(tsConfigJsonPath, JSON.stringify({ compilerOptions: { paths } }, null, 2), 'utf-8');
 };
