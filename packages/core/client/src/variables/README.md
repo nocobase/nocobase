@@ -1,22 +1,50 @@
 # useVariables
 
-## 使用方法
+## Usage
 
 ```ts
 const { registerVariable, parseVariable } = useVariables();
 
-// 注册变量
+// Register variable
 registerVariable({
   name: '$user',
-  // 如果确定变量中不需要按需加载 `关系字段` 数据，则可以省略该字段
+  // If you are certain that the `association field` data does not need to be loaded on-demand in the variable, you can omit this field
   collectionName: 'users',
   ctx: {
-    name: '张三',
-    nickname: '小张',
+    name: 'Zhang San',
+    nickname: 'Xiao Zhang',
   },
 });
 
-// 解析变量
+// Parse variable
 const userName = await parseVariable('{{ $user.name }}');
-console.log(userName); // '张三'
+console.log(userName); // 'Zhang San'
 ```
+
+## Built-in Global Variables
+Some variables that are used globally are registered within the `VariablesProvider`. These variables are defined in `useBuiltinVariables` and can be modified by changing the return value of `useBuiltinVariables`.
+
+## Local Variables
+When using the `parseVariable` method in `useVariables`, in addition to parsing based on the built-in global variables, you can also use some temporary local variables.
+
+```ts
+const { parseVariable } = useVariables();
+const localVariable = {
+  name: '$user',
+  // If you are certain that the `association field` data does not need to be loaded on-demand in the variable, you can omit this field
+  collectionName: 'users',
+  ctx: {
+    name: 'Zhang San',
+    nickname: 'Xiao Zhang',
+  },
+}
+
+// Use local variable for parsing
+const userName = await parseVariable('{{ $user.name }}', localVariable);
+console.log(userName); // 'Zhang San'
+```
+
+The registered local variables will be automatically destroyed after parsing and will not affect the value of global variables.
+
+### useLocalVariables
+This hook encapsulates some variables that are quite common but cannot be treated as global variables.
