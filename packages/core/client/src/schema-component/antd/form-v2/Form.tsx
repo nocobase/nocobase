@@ -2,17 +2,13 @@ import { css } from '@emotion/css';
 import { FormLayout } from '@formily/antd-v5';
 import { createForm, Field, Form as FormilyForm, onFieldInit, onFormInputChange } from '@formily/core';
 import { FieldContext, FormContext, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { reaction } from '@formily/reactive';
+import { autorun } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { ConfigProvider, Spin } from 'antd';
-import _ from 'lodash';
 import React, { useEffect, useMemo } from 'react';
 import { useActionContext } from '..';
 import { useAttach, useComponent } from '../..';
-import { DEBOUNCE_WAIT, useLocalVariables, useVariables } from '../../../variables';
-import { getPath } from '../../../variables/utils/getPath';
-import { getVariableName } from '../../../variables/utils/getVariableName';
-import { isVariable, REGEX_OF_VARIABLE } from '../../../variables/utils/isVariable';
+import { useLocalVariables, useVariables } from '../../../variables';
 import { useProps } from '../../hooks/useProps';
 import { linkageMergeAction } from './utils';
 
@@ -130,41 +126,18 @@ const WithForm = (props: WithFormProps) => {
 
             // `onFieldReact` 有问题，没有办法被取消监听，所以这里用 `onFieldInit` 代替
             onFieldInit(`*(${fields})`, (field: any, form) => {
-              const _run = () =>
-                linkageMergeAction({
-                  operator: h.operator,
-                  value: h.value,
-                  field,
-                  condition: v.condition,
-                  values: form?.values,
-                  variables,
-                  localVariables,
-                });
-
-              // 使用防抖，提高性能和用户体验
-              const run = _.debounce(_run, DEBOUNCE_WAIT);
-
-              _run();
-
               disposes.push(
-                reaction(() => {
-                  const expressString = h.value?.value || h.value?.result;
-
-                  const result = expressString.match(REGEX_OF_VARIABLE)?.map((variableString) => {
-                    if (!isVariable(variableString)) {
-                      return;
-                    }
-
-                    const variableName = getVariableName(variableString);
-                    const variableValue = localVariables.find((item) => item.name === variableName);
-
-                    if (variableValue) {
-                      return _.get({ [variableName]: variableValue?.ctx }, getPath(variableString));
-                    }
+                autorun(() => {
+                  linkageMergeAction({
+                    operator: h.operator,
+                    value: h.value,
+                    field,
+                    condition: v.condition,
+                    values: form?.values,
+                    variables,
+                    localVariables,
                   });
-
-                  return JSON.stringify(result);
-                }, run),
+                }),
               );
             });
           }

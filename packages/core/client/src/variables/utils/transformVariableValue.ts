@@ -45,48 +45,6 @@ export const transformVariableValue = (value: any, deps: Deps) => {
     }
   }
 
-  // 下拉多选
-  if (targetCollectionField.interface === 'multipleSelect') {
-    const options = _.isArray(targetCollectionField.uiSchema.enum) ? targetCollectionField.uiSchema.enum : [];
-    if (Array.isArray(value)) {
-      return value.filter((item) => options.some((enumItem: { value: any }) => enumItem.value === item));
-    }
-    return [value].filter((item) => options.some((enumItem: { value: any }) => enumItem.value === item));
-  }
-
-  // 下拉单选
-  if (targetCollectionField.interface === 'select') {
-    const options = _.isArray(targetCollectionField.uiSchema.enum) ? targetCollectionField.uiSchema.enum : [];
-    if (Array.isArray(value)) {
-      return value.find((item) => options.some((enumItem: { value: any }) => enumItem.value === item));
-    }
-    return options.some((item: { value: any }) => item.value === value) ? value : undefined;
-  }
-
-  // 勾选
-  if (targetCollectionField.type === 'boolean') {
-    if (Array.isArray(value)) {
-      return value[0];
-    }
-    return value;
-  }
-
-  // Radio 单选
-  if (targetCollectionField.uiSchema['x-component'] === 'Radio.Group') {
-    if (Array.isArray(value)) {
-      return value[0];
-    }
-    return value;
-  }
-
-  // Checkbox 多选
-  if (targetCollectionField.uiSchema['x-component'] === 'Checkbox.Group') {
-    if (Array.isArray(value)) {
-      return value;
-    }
-    return [value];
-  }
-
   if (['hasMany', 'belongsToMany'].includes(targetCollectionField.type)) {
     if (!Array.isArray(value)) {
       return [value];

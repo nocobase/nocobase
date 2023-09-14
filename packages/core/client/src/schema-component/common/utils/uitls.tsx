@@ -104,17 +104,15 @@ export const conditionAnalyses = async ({
     try {
       const jsonLogic = getJsonLogic();
       const [value, targetValue] = await Promise.all(parsingResult);
-      const targetCollectionFiled = await variables.getCollectionField(targetVariableName, localVariables);
+      const targetCollectionField = await variables.getCollectionField(targetVariableName, localVariables);
       return jsonLogic.apply({
         [operator]: [
-          transformVariableValue(targetValue, { targetCollectionField: targetCollectionFiled }),
-          transformVariableValue(value, { targetCollectionField: targetCollectionFiled }),
+          transformVariableValue(targetValue, { targetCollectionField }),
+          transformVariableValue(value, { targetCollectionField }),
         ],
       });
     } catch (error) {
-      if (process.env.NODE_ENV !== 'production') {
-        throw error;
-      }
+      throw error;
     }
   });
   results = await Promise.all(results);

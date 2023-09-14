@@ -1,5 +1,6 @@
-import { dayjs, getDateVars } from '@nocobase/utils/client';
+import { dayjs } from '@nocobase/utils/client';
 import { useMemo } from 'react';
+import { getDateRanges } from '../../schema-component/antd/date-picker/util';
 import { useCurrentUserContext } from '../../user';
 import { VariableOption } from '../types';
 
@@ -7,7 +8,7 @@ const useBuiltInVariables = () => {
   const data = useCurrentUserContext();
 
   const currentUser = data?.data?.data;
-  const dateVars = getDateVars();
+  const dateVars = getDateRanges();
   // 使用函数方便测试断言
   dateVars.now = (() => dayjs().toISOString()) as any;
   const builtinVariables: VariableOption[] = useMemo(() => {
