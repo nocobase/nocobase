@@ -9,6 +9,18 @@ export default class AddBasicAuthMigration extends Migration {
         drop: false,
       },
     });
+    await this.db.getCollection('tokenBlacklist').sync({
+      force: false,
+      alter: {
+        drop: false,
+      },
+    });
+    await this.db.getCollection('usersAuthenticators').sync({
+      force: false,
+      alter: {
+        drop: false,
+      },
+    });
     const repo = this.context.db.getRepository('authenticators');
     const existed = await repo.count();
     if (existed) {
