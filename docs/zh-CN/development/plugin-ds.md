@@ -12,6 +12,26 @@
   |- package.json   # 插件包信息
   |- server.d.ts
   |- server.js
+  |- config.js  # 自定义打包配置
 ```
 
 `/src/server` 的教程参考 [服务端](./server) 章节，`/src/client` 的教程参考 [客户端](./client) 章节。
+
+如果你想要自定义打包配置，可以在根目录下创建 `config.js` 文件，内容如下：
+
+```js
+module.exports = {
+  modifyViteConfig: (config) => {
+    // vite 是用来打包 `src/client` 端代码的
+
+    // 修改 Vite 配置，具体可参考：https://vitejs.dev/guide/
+    return config
+  },
+  modifyTsupConfig: (config) => {
+    // tsup 是用来打包 `src/server` 端代码的
+
+    // 修改 tsup 配置，具体可参考：https://tsup.egoist.dev/#using-custom-configuration
+    return config
+  },
+}
+```
