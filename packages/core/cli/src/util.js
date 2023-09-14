@@ -198,5 +198,7 @@ exports.genTsConfigPaths = function genTsConfigPaths() {
   });
 
   const tsConfigJsonPath = join(cwd, './tsconfig.paths.json');
-  writeFileSync(tsConfigJsonPath, JSON.stringify({ compilerOptions: { paths } }, null, 2), 'utf-8');
+  const content = { compilerOptions: { paths } };
+  writeFileSync(tsConfigJsonPath, JSON.stringify(content, null, 2), 'utf-8');
+  return content;
 };

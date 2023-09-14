@@ -4,7 +4,6 @@ const { resolve } = require('path');
 const { existsSync } = require('fs');
 const { readFile, writeFile } = require('fs').promises;
 const { createStoragePluginsSymlink } = require('@nocobase/utils/plugin-symlink');
-const { genTsConfigPaths } = require('../util');
 
 /**
  * @param {Command} cli
@@ -15,7 +14,6 @@ module.exports = (cli) => {
     .command('postinstall')
     .allowUnknownOption()
     .action(async () => {
-      genTsConfigPaths();
       await createStoragePluginsSymlink();
       if (!isDev()) {
         return;

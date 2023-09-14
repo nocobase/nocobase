@@ -1,6 +1,6 @@
 const chalk = require('chalk');
 const { Command } = require('commander');
-const { runAppCommand, runInstall, run, postCheck, nodeCheck, promptForTs, genTsConfigPaths } = require('../util');
+const { runAppCommand, runInstall, run, postCheck, nodeCheck, promptForTs } = require('../util');
 const { getPortPromise } = require('portfinder');
 
 /**
@@ -77,7 +77,6 @@ module.exports = (cli) => {
         }
 
         const runDevServer = () => {
-          genTsConfigPaths();
           run('tsx', argv, {
             env: {
               APP_PORT: serverPort,

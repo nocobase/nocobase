@@ -12,7 +12,6 @@ module.exports = (cli) => {
     .allowUnknownOption()
     .action(async (options) => {
       nodeCheck();
-      genTsConfigPaths();
       if (options.dbClean) {
         promptForTs();
         await runAppCommand('db:clean', ['-y']);

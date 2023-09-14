@@ -1,6 +1,6 @@
 const { resolve } = require('path');
 const { Command } = require('commander');
-const { run, nodeCheck, isPackageValid, genTsConfigPaths } = require('../util');
+const { run, nodeCheck, isPackageValid } = require('../util');
 
 /**
  *
@@ -24,8 +24,6 @@ module.exports = (cli) => {
         });
         if (options.watch) return;
       }
-
-      genTsConfigPaths();
 
       await run('nocobase-build', [
         ...pkgs,

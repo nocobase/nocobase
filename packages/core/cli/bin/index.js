@@ -30,9 +30,7 @@ if (!process.env.APP_ENV_PATH && process.argv[2] && process.argv[2] === 'test') 
   }
 }
 
-if (!existsSync(resolve(process.cwd(), 'tsconfig.paths.json'))) {
-  genTsConfigPaths();
-}
+genTsConfigPaths();
 
 dotenv.config({
   path: resolve(process.cwd(), process.env.APP_ENV_PATH || '.env'),
