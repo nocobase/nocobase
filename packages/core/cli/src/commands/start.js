@@ -1,5 +1,5 @@
 const { Command } = require('commander');
-const { isDev, run, postCheck, runInstall, promptForTs } = require('../util');
+const { isDev, run, postCheck, runInstall, promptForTs, genTsConfigPaths } = require('../util');
 const { existsSync, unlink } = require('fs');
 const { resolve } = require('path');
 const chalk = require('chalk');
@@ -21,6 +21,7 @@ module.exports = (cli) => {
       if (opts.port) {
         process.env.APP_PORT = opts.port;
       }
+      genTsConfigPaths();
       if (process.argv.includes('-h') || process.argv.includes('--help')) {
         promptForTs();
         run('ts-node', [
