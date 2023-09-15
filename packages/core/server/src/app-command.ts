@@ -1,5 +1,4 @@
 import { Command } from 'commander';
-
 export class AppCommand extends Command {
   private _handleByIPCServer = false;
 
@@ -8,14 +7,34 @@ export class AppCommand extends Command {
     return this;
   }
 
+  isHandleByIPCServer() {
+    return this._handleByIPCServer;
+  }
+
   createCommand(name?: string): AppCommand {
     return new AppCommand(name);
   }
 
-  findCommand(argv, options) {
-    // @ts-ignore
-    const userArgs = this._prepareUserArgs(argv, options);
+  parseHandleByIPCServer(argv, parseOptions?): Boolean {
+    //@ts-ignore
+    const userArgs = this._prepareUserArgs(argv, parseOptions);
 
-    console.log('userArgs', userArgs);
+    if (userArgs[0] === 'nocobase') {
+      userArgs.shift();
+    }
+
+    let lastCommand = this;
+
+    for (const arg of userArgs) {
+      // @ts-ignore
+      const subCommand = lastCommand._findCommand(arg);
+      if (subCommand) {
+        lastCommand = subCommand;
+      } else {
+        break;
+      }
+    }
+
+    return lastCommand && lastCommand.isHandleByIPCServer();
   }
 }

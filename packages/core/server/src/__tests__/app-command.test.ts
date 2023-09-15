@@ -24,11 +24,20 @@ describe('app command', () => {
     await app.install();
   });
 
-  it('should get command', () => {
-    app.command('test');
+  it('should test command should handle by IPC Server or not', () => {
+    app.command('testaa').handleByIPCServer();
+    app.command('testbb');
 
-    app.cli.findCommand(['test'], {
-      from: 'user',
-    });
+    expect(app.cli.parseHandleByIPCServer(['node', 'cli', 'nocobase', 'testaa'])).toBeTruthy();
+    expect(app.cli.parseHandleByIPCServer(['node', 'cli', 'nocobase', 'testbb'])).toBeFalsy();
+  });
+
+  it('should test sub command should handle by IPC Server or not', () => {
+    const subParent = app.command('subparent');
+    subParent.command('testaa').handleByIPCServer();
+    subParent.command('testbb');
+
+    expect(app.cli.parseHandleByIPCServer(['node', 'cli', 'nocobase', 'subparent', 'testaa'])).toBeTruthy();
+    expect(app.cli.parseHandleByIPCServer(['node', 'cli', 'nocobase', 'subparent', 'testbb'])).toBeFalsy();
   });
 });
