@@ -30,6 +30,7 @@ jobs:
           node-version: ${{ matrix.node_version }}
           cache: 'yarn'
       - run: yarn install
+      - run: yarn build
       - run: npx playwright install --with-deps
       - run: yarn test:e2e
     timeout-minutes: 30

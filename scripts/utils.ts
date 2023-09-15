@@ -59,6 +59,7 @@ export const runNocoBase = async (options?: CommonOptions<any>) => {
   if (process.env.CI) {
     console.log('yarn nocobase install');
     await run('yarn', ['nocobase', 'install'], options);
+    console.log(`yarn start -d -p ${PORT}`);
     run('yarn', ['start', '-d', `-p ${PORT}`], options);
     return {};
   }
