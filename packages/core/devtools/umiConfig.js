@@ -68,7 +68,7 @@ function getNamespace() {
 }
 
 function getTsconfigPaths() {
-  const content = fs.readFileSync(resolve(process.cwd(), 'tsconfig.json'), 'utf-8');
+  const content = fs.readFileSync(resolve(process.cwd(), 'tsconfig.paths.json'), 'utf-8');
   const json = JSON.parse(content);
   return json.compilerOptions.paths;
 }

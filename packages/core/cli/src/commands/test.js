@@ -1,5 +1,5 @@
 const { Command } = require('commander');
-const { nodeCheck, runAppCommand, promptForTs } = require('../util');
+const { nodeCheck, runAppCommand, promptForTs, genTsConfigPaths } = require('../util');
 
 /**
  *
