@@ -128,14 +128,19 @@ export const createPage = async ({ name, pageSchema }: { name?: string; pageSche
   });
 
   const state = await api.storageState();
-  const systemSettings = getStorageItem('NOCOBASE_SYSTEM_SETTINGS', state);
   const token = getStorageItem('NOCOBASE_TOKEN', state);
+
+  const systemSettings = await api.get(`/api/systemSettings:get/1`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 
   const pageUid = uid();
   const gridName = uid();
 
-  if (systemSettings) {
-    const { data } = JSON.parse(systemSettings);
+  if (systemSettings.ok()) {
+    const { data } = await systemSettings.json();
     const result = await api.post(`/api/uiSchemas:insertAdjacent/${data.options.adminSchemaUid}?position=beforeEnd`, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -186,7 +191,7 @@ export const createPage = async ({ name, pageSchema }: { name?: string; pageSche
       throw new Error(await result.text());
     }
   } else {
-    throw new Error('systemSettings is null');
+    throw new Error('systemSettings is not ok');
   }
 
   return pageUid;

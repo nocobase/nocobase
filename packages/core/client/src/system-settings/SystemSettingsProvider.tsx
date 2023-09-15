@@ -18,8 +18,5 @@ export const SystemSettingsProvider: React.FC<{ children?: ReactNode }> = (props
     return render();
   }
 
-  // 主要是为了方便在 e2e 测试中获取到 adminSchemaUid
-  localStorage.setItem('NOCOBASE_SYSTEM_SETTINGS', JSON.stringify(result.data));
-
   return <SystemSettingsContext.Provider value={result}>{props.children}</SystemSettingsContext.Provider>;
 };
