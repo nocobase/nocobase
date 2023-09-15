@@ -1,0 +1,14 @@
+[
+  {
+    "title": "Introduction",
+    "path": "index"
+  },
+  {
+    "title": "Triggers",
+    "path": "triggers"
+  },
+  {
+    "title": "Node types",
+    "path": "nodes"
+  }
+]
