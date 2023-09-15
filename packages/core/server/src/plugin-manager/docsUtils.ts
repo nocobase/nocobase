@@ -300,8 +300,8 @@ export function buildDocsMenuTree(arr: string[], packageDir: string) {
  * }
  * ]
  */
-export function getPluginMenu(packageName: string, currentLang: string, defaultLang: string, locale: object) {
-  const packageDocs = getPackageDocsWithLang(packageName, currentLang, defaultLang);
+export function getPluginMenu(plugin: PluginResponse, currentLang: string, defaultLang: string, locale: object) {
+  const packageDocs = getPackageDocsWithLang(plugin.packageName, currentLang, defaultLang);
   const menu: DocMenu[] = [];
   const { docsPath, packageDir } = packageDocs;
   if (docsPath.README) {
@@ -310,7 +310,10 @@ export function getPluginMenu(packageName: string, currentLang: string, defaultL
       path: docsPath.README,
     });
   }
-
+  menu.push({
+    title: 'Swagger API',
+    path: `swagger?q=plugins/${plugin.name}`,
+  });
   if (docsPath.docs.length > 0) {
     menu.push(...buildDocsMenuTree(docsPath.docs, packageDir));
   }
@@ -322,10 +325,10 @@ export function getPluginMenu(packageName: string, currentLang: string, defaultL
     });
   }
 
-  menu.forEach((item) => transformMenuPathAndTitle(item, packageName, currentLang, locale));
+  menu.forEach((item) => transformMenuPathAndTitle(item, plugin.packageName, currentLang, locale));
   const res: DocMenu[] = [
     {
-      title: packageName,
+      title: plugin.displayName || plugin.name,
       children: menu,
     },
   ];
@@ -354,9 +357,6 @@ export const transformMenuPathAndTitle = (item: DocMenu, packageName: string, la
       if (item.children.length === 0) {
         item.children = null;
       }
-    } else {
-      // TODO: 如果没有 index.md || README.md 则翻译成多语言
-      // item.title =
     }
   }
 };
@@ -413,8 +413,7 @@ function getPluginsSidebar(menuData: DocMenu[], currentLang: string) {
 }
 
 function getMenuData(plugins: PluginResponse[], currentLang: string, defaultLang = 'en-US', locale: object = {}) {
-  const packages = plugins.map((plugin) => plugin.packageName || plugin.packageJson.name);
-  const menuData = packages.map((packageName) => getPluginMenu(packageName, currentLang, defaultLang, locale));
+  const menuData = plugins.map((plugin) => getPluginMenu(plugin, currentLang, defaultLang, locale));
   return menuData.flat();
 }
 
@@ -426,7 +425,7 @@ export const getDocSidebar = (plugins: PluginResponse[], currentLang: string, de
   const tagsSidebar = getTagsSidebar(menuData, currentLang);
   const pluginsSidebar = getPluginsSidebar(menuData, currentLang);
   const Overview = docsI18n[currentLang]?.Overview || 'Overview';
-  return `* [${Overview}](/)\n${tagsSidebar}\n${pluginsSidebar}`;
+  return `* [${Overview}](/)\n* [Swagger API](${PLUGIN_STATICS_PATH}swagger)${tagsSidebar}\n${pluginsSidebar}`;
 };
 
 function getPluginList(plugins: PluginResponse[], lang: string) {

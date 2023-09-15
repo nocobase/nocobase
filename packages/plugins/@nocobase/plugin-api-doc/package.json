@@ -8,6 +8,9 @@
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "types": "./dist/server/index.d.ts",
+  "dependencies": {
+    "@ahooksjs/use-url-state": "^3.5.1"
+  },
   "devDependencies": {
     "swagger-ui-dist": "^5.3.1"
   },

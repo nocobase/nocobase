@@ -88,7 +88,7 @@ export class SwaggerManager {
           const schema = res[name];
           return {
             name: schema.info?.title || name,
-            url: `/api/swagger:get?ns=${encodeURIComponent(`plugins/${name}`)}`,
+            query: `plugins/${name}`,
           };
         });
       })
@@ -102,25 +102,25 @@ export class SwaggerManager {
     return [
       {
         name: 'NocoBase API',
-        url: '/api/swagger:get',
+        query: '',
       },
       {
         name: 'NocoBase API - Core',
-        url: '/api/swagger:get?ns=core',
+        query: 'core',
       },
       {
         name: 'NocoBase API - All plugins',
-        url: '/api/swagger:get?ns=plugins',
+        query: 'plugins',
       },
       {
         name: 'NocoBase API - Custom collections',
-        url: '/api/swagger:get?ns=collections',
+        query: 'collections',
       },
       ...plugins,
       ...collections.map((collection) => {
         return {
           name: `Collection API - ${collection.title}`,
-          url: `/api/swagger:get?ns=${encodeURIComponent('collections/' + collection.name)}`,
+          url: encodeURIComponent('collections/' + collection.name),
         };
       }),
     ];

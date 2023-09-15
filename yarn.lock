@@ -10,6 +10,15 @@
   version "4.2.0"
   resolved "https://registry.npmmirror.com/@adobe/css-tools/-/css-tools-4.2.0.tgz#e1a84fca468f4b337816fcb7f0964beb620ba855"
 
+"@ahooksjs/use-url-state@^3.5.1":
+  version "3.5.1"
+  resolved "https://registry.npmmirror.com/@ahooksjs/use-url-state/-/use-url-state-3.5.1.tgz#c3ad04e98cbcbc8f9eba476bcbd3237e9809aa5b"
+  integrity sha512-XTrOLZKOAXahDD1Evg+aSN6qNzoh/FuvRKbUtB/0RhYvz57tyXRPbED0KXK4h2C3ZyHUKBJcVCSDcd6EsTyMyQ==
+  dependencies:
+    ahooks "^3.4.1"
+    query-string "^6.9.0"
+    tslib "^2.4.1"
+
 "@alicloud/credentials@^2":
   version "2.2.6"
   resolved "https://registry.npmmirror.com/@alicloud/credentials/-/credentials-2.2.6.tgz#24b0c188e8ad4b3c5a51a1bc4d75e9c127771975"
@@ -6920,7 +6929,7 @@ ahooks-v3-count@^1.0.0:
   version "1.0.0"
   resolved "https://registry.npmmirror.com/ahooks-v3-count/-/ahooks-v3-count-1.0.0.tgz#ddeb392e009ad6e748905b3cbf63a9fd8262ca80"
 
-ahooks@3.x, ahooks@^3.7.2, ahooks@^3.7.6:
+ahooks@3.x, ahooks@^3.4.1, ahooks@^3.7.2, ahooks@^3.7.6:
   version "3.7.8"
   resolved "https://registry.npmmirror.com/ahooks/-/ahooks-3.7.8.tgz#3fa3c491cd153e884a32b0c4192fc72cf84c4332"
   dependencies:
@@ -19226,7 +19235,7 @@ qs@~6.5.2:
   version "6.5.3"
   resolved "https://registry.npmmirror.com/qs/-/qs-6.5.3.tgz#3aeeffc91967ef6e35c0e488ef46fb296ab76aad"
 
-query-string@^6.13.6, query-string@^6.13.8:
+query-string@^6.13.6, query-string@^6.13.8, query-string@^6.9.0:
   version "6.14.1"
   resolved "https://registry.npmmirror.com/query-string/-/query-string-6.14.1.tgz#7ac2dca46da7f309449ba0f86b1fd28255b0c86a"
   dependencies:

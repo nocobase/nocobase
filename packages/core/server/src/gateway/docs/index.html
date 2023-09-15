@@ -33,13 +33,16 @@
     .sidebar {
       width: 340px !important;
     }
-    .level-1 > ul > li {
+
+    .level-1>ul>li {
       width: 278px;
       white-space: nowrap;
     }
+
     .sidebar li>p {
       margin-left: 4px !important;
     }
+
     #docsify-darklight-theme {
       position: fixed !important;
     }
@@ -60,23 +63,23 @@
       return content.replace(regex, '');
     }
 
-  /**
-   * get package name by client static url
-   *
-   * @example
-   * getPluginNameByClientStaticUrl('/static/plugins/dayjs/index.js') => 'dayjs'
-   * getPluginNameByClientStaticUrl('/static/plugins/@nocobase/foo/README.md') => '@nocobase/foo'
-   */
-  const PLUGIN_STATICS_PATH = '/static/plugins/'
-  function getPackageNameByPathname(pathname) {
-    pathname = pathname.replace(PLUGIN_STATICS_PATH, '');
-    const pathArr = pathname.split('/');
-    if (!pathArr.length) return false;
-    if (pathname.startsWith('@')) {
-      return pathArr.slice(0, 2).join('/');
-    }
-    return pathArr[0];
-  }
+      /**
+       * get package name by client static url
+       *
+       * @example
+       * getPluginNameByClientStaticUrl('/static/plugins/dayjs/index.js') => 'dayjs'
+       * getPluginNameByClientStaticUrl('/static/plugins/@nocobase/foo/README.md') => '@nocobase/foo'
+       */
+      const PLUGIN_STATICS_PATH = '/static/plugins/'
+      function getPackageNameByPathname(pathname) {
+        pathname = pathname.replace(PLUGIN_STATICS_PATH, '');
+        const pathArr = pathname.split('/');
+        if (!pathArr.length) return false;
+        if (pathname.startsWith('@')) {
+          return pathArr.slice(0, 2).join('/');
+        }
+        return pathArr[0];
+      }
     window.$docsify = {
       coverpage: false,
       subMaxLevel: 0,
@@ -158,13 +161,20 @@
       plugins: [
         function (hook, vm) {
           hook.beforeEach(function (content) {
+            if (window.location.hash.includes('swagger')) {
+              let queryIndex = window.location.hash.indexOf('?q=');
+              let url = '/api-documentation';
+              if (queryIndex > -1) {
+                url += window.location.hash.slice(queryIndex);
+              }
+              content = content.replace('REPLACE', url);
+            }
             return removeFrontmatter(content);
           });
         }
       ]
     };
-  </script>
-
+</script>
   <!-- load docsify v4 -->
   <script src="/docs/static/js/docsify.js"></script>
 
@@ -188,4 +198,5 @@
   <script src="/docs/static/js/docsify-sidebar-collapse.min.js"></script>
   <!-- toc -->
   <script src="/docs/static/js/docsify-toc.js"></script>
+
 </html>

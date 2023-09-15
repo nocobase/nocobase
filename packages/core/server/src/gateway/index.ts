@@ -133,6 +133,19 @@ export class Gateway extends EventEmitter {
       });
     }
 
+    if (pathname.endsWith('swagger.md')) {
+      await compress(req, res);
+      return handler(req, res, {
+        public: __dirname,
+        rewrites: [
+          {
+            source: pathname,
+            destination: '/docs/swagger.md',
+          },
+        ],
+      });
+    }
+
     // pathname example: /static/plugins/@nocobase/plugins-acl/README.md
     // protect server files
     if (

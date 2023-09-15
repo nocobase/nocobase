@@ -1,51 +1,55 @@
 import { css, useAPIClient, useRequest } from '@nocobase/client';
 import { Select, Space, Spin, Typography } from 'antd';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { SwaggerUIBundle } from 'swagger-ui-dist';
 import 'swagger-ui-dist/swagger-ui.css';
-import { useTranslation } from '../locale';
+import useUrlState from '@ahooksjs/use-url-state';
 
-const DESTINATION_URL_KEY = 'API_DOC:DESTINATION_URL_KEY';
-const getUrl = () => localStorage.getItem(DESTINATION_URL_KEY);
+import { useTranslation } from '../locale';
 
 const Documentation = () => {
   const apiClient = useAPIClient();
   const { t } = useTranslation();
   const swaggerUIRef = useRef();
 
-  const { data: urls } = useRequest<{ data: { name: string; url: string }[] }>({ url: 'swagger:getUrls' });
-  const requestInterceptor = (req) => {
-    if (!req.headers['Authorization']) {
-      req.headers['Authorization'] = `Bearer ${apiClient.auth.getToken()}`;
-    }
-    return req;
-  };
+  const { data: urls, loading } = useRequest<{ data: { name: string; query: string }[] }>({ url: 'swagger:getUrls' });
+  const requestInterceptor = useCallback(
+    (req) => {
+      if (!req.headers['Authorization']) {
+        req.headers['Authorization'] = `Bearer ${apiClient.auth.getToken()}`;
+      }
+      return req;
+    },
+    [apiClient.auth],
+  );
 
-  const [destination, onDestinationChange] = useState<string>(getUrl());
-
-  useEffect(() => {
-    if (destination) {
-      localStorage.setItem(DESTINATION_URL_KEY, destination);
-    }
-  }, [destination]);
+  const [urlObj, setUrlObj] = useUrlState({ q: undefined });
+  const destination = useMemo(() => urlObj.q, [urlObj.q]);
+  const onDestinationChange = useCallback(
+    (q: string) => {
+      setUrlObj({ q });
+    },
+    [setUrlObj],
+  );
 
   useEffect(() => {
     if (!urls?.data?.length) return;
 
-    if (!destination || !urls.data.find((item) => item.url === getUrl())) {
-      onDestinationChange(urls.data[0].url);
+    if (!destination) {
+      onDestinationChange(urls.data[0].query);
     }
-  }, [destination, urls]);
+  }, [destination, onDestinationChange, urls]);
 
   useEffect(() => {
+    if (loading) return;
     SwaggerUIBundle({
       requestInterceptor,
-      url: destination,
+      url: destination ? `/api/swagger:get?ns=${destination}` : `/api/swagger:get`,
       domNode: swaggerUIRef.current,
     });
-  }, [destination]);
+  }, [destination, loading, requestInterceptor]);
 
-  if (!destination) {
+  if (loading) {
     return <Spin />;
   }
   return (
@@ -89,7 +93,7 @@ const Documentation = () => {
             }}
             fieldNames={{
               label: 'name',
-              value: 'url',
+              value: 'query',
             }}
             onChange={onDestinationChange}
           />
