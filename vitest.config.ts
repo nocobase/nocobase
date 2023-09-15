@@ -1,5 +1,19 @@
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
+import tsConfigPaths from './tsconfig.paths.json';
+
+const paths = tsConfigPaths.compilerOptions.paths;
+
+const alias = Object.keys(paths).reduce<{ find: string; replacement: string }[]>((acc, key) => {
+  if (key !== '@@/*') {
+    const value = paths[key][0];
+    acc.push({
+      find: key,
+      replacement: value,
+    });
+  }
+  return acc;
+}, []);
 
 export default defineConfig({
   plugins: [react()],
@@ -14,15 +28,8 @@ export default defineConfig({
     threads: true,
     alias: [
       { find: 'testUtils', replacement: 'testUtils.ts' },
-      { find: '@nocobase/evaluators/client', replacement: 'packages/core/evaluators/src/client' },
-      { find: '@nocobase/utils/client', replacement: 'packages/core/utils/src/client' },
       { find: /^~antd\/(.*)/, replacement: 'antd/$1' },
-      { find: /^@nocobase\/app-(.*)/, replacement: 'packages/$1/src' },
-      { find: /^@nocobase\/plugin-sample-(.*)/, replacement: 'packages/samples/$1/src' },
-      { find: /^@nocobase\/plugin-pro-(.*)/, replacement: 'packages/pro-plugins/$1/src' },
-      { find: /^@nocobase\/plugin-(.*)/, replacement: 'packages/plugins/$1/src' },
-      { find: /^@nocobase\/preset-(.*)/, replacement: 'packages/presets/$1/src' },
-      { find: /^@nocobase\/(.*)/, replacement: 'packages/core/$1/src' },
+      ...alias,
     ],
     include: ['packages/**/{dumi-theme-nocobase,sdk,client}/**/__tests__/**/*.{test,spec}.{ts,tsx}'],
     exclude: ['**/node_modules/**', '**/dist/**', '**/lib/**', '**/es/**', '**/{vitest,commitlint}.config.*'],
