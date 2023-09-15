@@ -2,9 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import glob from 'fast-glob';
 import matter from 'gray-matter';
-import { PluginData, PluginResponse } from './types';
-import { PLUGIN_STATICS_PATH, getExposeReadmeUrl } from './clientStaticUtils';
-import { PluginManager } from './plugin-manager';
+import { PluginResponse } from './types';
+import { PLUGIN_STATICS_PATH } from './clientStaticUtils';
 
 export const DOCS_PREFIX = '/docs';
 export const DOCS_README = '/docs/README.md';
@@ -62,10 +61,12 @@ interface DocMenu {
   title: string;
   path?: string;
   tags?: string[];
+  sort?: number;
   children?: DocMenu[];
 }
 export function arrToMarkdown(arr: DocMenu[], depth = 0) {
   let result = '';
+  arr.sort((a, b) => a.sort - b.sort);
   for (const item of arr) {
     const indent = '  '.repeat(depth); // 根据深度计算缩进
     result += item.path ? `${indent}* [${item.title}](${item.path})\n` : `${indent}* ${item.title}\n`;
@@ -238,11 +239,12 @@ export function buildDocsMenuTree(arr: string[], packageDir: string) {
         // 如果是路径的最后一个部分，则创建叶子节点
         const markdown = fs.readFileSync(path.join(packageDir, filePath), 'utf-8');
         const title = getMarkdownTitleFromFilePath(markdown, filePath);
-        const tags = matter(markdown).data?.tags || [];
+        const { tags = [], sort = 0 } = matter(markdown).data || {};
         currentNode.push({
           title,
           path: filePath,
           tags: Array.isArray(tags) ? tags : [tags],
+          sort,
         });
       } else {
         // 如果不是最后一个部分，则查找或创建目录节点
@@ -311,7 +313,7 @@ export function getPluginMenu(plugin: PluginResponse, currentLang: string, defau
     });
   }
   menu.push({
-    title: 'Swagger API',
+    title: 'HTTP API',
     path: `swagger?q=plugins/${plugin.name}`,
   });
   if (docsPath.docs.length > 0) {
@@ -353,6 +355,7 @@ export const transformMenuPathAndTitle = (item: DocMenu, packageName: string, la
       // 如果目录下有 index.md || README.md 则从 children 里面提取出来
       item.title = item.children[dirReadmeIndex].title;
       item.path = item.children[dirReadmeIndex].path;
+      item.tags = item.children[dirReadmeIndex].tags;
       item.children.splice(dirReadmeIndex, 1);
       if (item.children.length === 0) {
         item.children = null;
@@ -382,6 +385,7 @@ function getTagsMenu(menuData: DocMenu[], lang: string) {
         }
         acc[tagI18n].push({
           ...menu,
+          path: menu.path + '?tag',
           children: null,
         });
       });
@@ -399,7 +403,12 @@ function getTagsMenu(menuData: DocMenu[], lang: string) {
 // 根据 menu 中的 tags，生成聚合目录信息
 function getTagsSidebar(menuData: DocMenu[], lang: string) {
   const tagsMenu = getTagsMenu(menuData, lang);
-  return arrToMarkdown(tagsMenu);
+  return arrToMarkdown([
+    {
+      title: docsI18n[lang]?.tags || 'Tags',
+      children: tagsMenu,
+    },
+  ]);
 }
 
 // 根据 menu，生成插件自己的 sidebar
@@ -425,7 +434,7 @@ export const getDocSidebar = (plugins: PluginResponse[], currentLang: string, de
   const tagsSidebar = getTagsSidebar(menuData, currentLang);
   const pluginsSidebar = getPluginsSidebar(menuData, currentLang);
   const Overview = docsI18n[currentLang]?.Overview || 'Overview';
-  return `* [${Overview}](/)\n* [Swagger API](${PLUGIN_STATICS_PATH}swagger)${tagsSidebar}\n${pluginsSidebar}`;
+  return `* [${Overview}](/)\n* [HTTP API](${PLUGIN_STATICS_PATH}swagger)\n${tagsSidebar}\n${pluginsSidebar}`;
 };
 
 function getPluginList(plugins: PluginResponse[], lang: string) {
