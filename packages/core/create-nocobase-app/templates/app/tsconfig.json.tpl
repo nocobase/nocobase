@@ -1,4 +1,5 @@
 {
+  "extends": "./tsconfig.paths.json",
   "compilerOptions": {
     "esModuleInterop": true,
     "moduleResolution": "node",
