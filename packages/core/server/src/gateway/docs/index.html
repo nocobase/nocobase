@@ -27,12 +27,9 @@
     :root {
       --theme-color: #1677ff !important;
       --accent: #1677ff !important;
+      --text-color-tertiary: #1677ff !important;
     }
 
-    /* 没有 nav 导航，顶部可以不用留空 */
-    .content {
-      padding-top: 0 !important;
-    }
     .sidebar {
       width: 340px !important;
     }
@@ -43,11 +40,15 @@
     .sidebar li>p {
       margin-left: 4px !important;
     }
+    #docsify-darklight-theme {
+      position: fixed !important;
+    }
   </style>
   <link rel="stylesheet" href="/docs/static/css/vue.css">
   <link rel="stylesheet" href="/docs/static/css/docsify-darklight-theme.min.css" title="docsify-darklight-theme"
     type="text/css">
   <link rel="stylesheet" href="/docs/static/css/sidebar.min.css">
+  <link rel="stylesheet" href="/docs/static/css/docsify-toc.css">
 </head>
 
 <body>
@@ -78,7 +79,8 @@
   }
     window.$docsify = {
       coverpage: false,
-      subMaxLevel: 2,
+      subMaxLevel: 0,
+      maxLevel: 0,
       loadSidebar: true,
       routerMode: 'hash',
       themeColor: '#1677ff',
@@ -98,7 +100,12 @@
       alias: {
         '/.*/_sidebar.md': '/_sidebar.md',
       },
-      sidebarDisplayLevel: 0, // set sidebar display level
+      toc: {
+        scope: '.markdown-section',
+        headings: 'h1, h2, h3, h4, h5, h6',
+        title: 'Table of Contents',
+      },
+      sidebarDisplayLevel: 1, // set sidebar display level
       // search: 'auto',
       // search: [
       //   '/profiles'            // => /profiles.md
@@ -179,5 +186,6 @@
   <script src="/docs/static/js/progress.min.js"></script>
   <!-- https://github.com/iPeng6/docsify-sidebar-collapse -->
   <script src="/docs/static/js/docsify-sidebar-collapse.min.js"></script>
-
+  <!-- toc -->
+  <script src="/docs/static/js/docsify-toc.js"></script>
 </html>
