@@ -1,9 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
+import { PORT } from './scripts/utils';
 
 export default defineConfig({
-  globalTeardown: require.resolve('./scripts/teardown.setup.ts'),
-
-  timeout: 10000,
+  timeout: 60 * 1000,
 
   // Look for test files in the "tests" directory, relative to this configuration file.
   testDir: './packages',
@@ -30,7 +29,7 @@ export default defineConfig({
 
   use: {
     // Base URL to use in actions like `await page.goto('/')`.
-    baseURL: 'http://localhost:20000',
+    baseURL: `http://localhost:${PORT}`,
 
     // Collect trace when retrying the failed test.
     trace: 'on-first-retry',

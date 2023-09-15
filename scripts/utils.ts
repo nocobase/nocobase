@@ -1,49 +1,81 @@
-import { execSync } from 'node:child_process';
+import dotenv from 'dotenv';
+import type { CommonOptions } from 'execa';
+import execa from 'execa';
+import net from 'net';
 import fs from 'node:fs';
+import path from 'path';
 
 export const PORT = 20000;
-export const APP_DIRECTORY = 'my-nocobase-app';
-
 export const commonConfig: any = {
   stdio: 'inherit',
 };
 
-export const deleteNocoBase = () => {
-  execSync(`yarn pm2 delete 0`);
+const run = (command, argv, options = {}) => {
+  return execa(command, argv, {
+    shell: true,
+    stdio: 'inherit',
+    ...options,
+    env: {
+      ...process.env,
+    },
+  });
 };
 
-export const runNocoBase = () => {
+/**
+ * 检查端口是否被占用
+ * @param port
+ * @returns
+ */
+function checkPort(port) {
+  return new Promise((resolve, reject) => {
+    const socket = net.createConnection(port, '127.0.0.1');
+
+    socket.on('connect', () => {
+      socket.destroy();
+      resolve(true); // 端口可用
+    });
+
+    socket.on('error', (error) => {
+      resolve(false); // 端口被占用或不可访问
+    });
+  });
+}
+
+export const runNocoBase = async (options?: CommonOptions<any>) => {
+  // 用于存放 playwright 自动生成的相关的文件
   if (!fs.existsSync('playwright')) {
     fs.mkdirSync('playwright');
   }
 
-  process.chdir('playwright');
-
-  // 检查文件夹是否存在
-  if (!fs.existsSync(APP_DIRECTORY)) {
-    try {
-      execSync(`yarn create nocobase-app ${APP_DIRECTORY}`, commonConfig);
-    } catch (error) {
-      console.error('Error creating directory:', error);
-      process.exit(1);
-    }
+  if (!fs.existsSync('.env.e2e') && fs.existsSync('.env.example')) {
+    const env = fs.readFileSync('.env.example');
+    fs.writeFileSync('.env.e2e', env);
   }
 
-  try {
-    process.chdir(APP_DIRECTORY);
-
-    if (!fs.existsSync('node_modules')) {
-      // 只安装必要的依赖
-      execSync('yarn install --production', commonConfig);
-    }
-
-    // 加上 -f 比较保险
-    execSync('yarn nocobase install -f', commonConfig);
-    // 加参数 -d，后台运行
-    execSync(`yarn start -p ${PORT} ${process.argv.slice(2).join(' ')}`, commonConfig);
-
-    process.chdir('..');
-  } catch (error) {
-    console.error('Script execution error:', error);
+  if (!fs.existsSync('.env.e2e')) {
+    throw new Error('Please create .env.e2e file first!');
   }
+
+  if (process.env.CI) {
+    console.log('yarn nocobase install');
+    await run('yarn', ['nocobase', 'install'], options);
+    run('yarn', ['start', '-d', `-p ${PORT}`], options);
+    return {};
+  }
+
+  if (await checkPort(PORT)) {
+    console.error(`Port ${PORT} is already in use!`);
+    return {};
+  }
+
+  dotenv.config({ path: path.resolve(process.cwd(), '.env.e2e') });
+
+  // 加上 -f 会清空数据库
+  console.log('yarn nocobase install -f');
+  await run('yarn', ['nocobase', 'install', '-f'], options);
+
+  console.log('starting server...');
+  const { cancel, kill } = run('yarn', ['dev', `-p ${PORT}`], options);
+
+  return { cancel, kill };
 };
