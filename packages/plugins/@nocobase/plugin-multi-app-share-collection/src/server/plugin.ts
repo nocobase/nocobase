@@ -95,9 +95,17 @@ class SubAppPlugin extends Plugin {
       // delete old collection
       await subApp.db.sequelize.query(`TRUNCATE ${subAppPluginsCollection.quotedTableName()}`);
 
+      const columnsInfo = await subApp.db.sequelize
+        .getQueryInterface()
+        .describeTable(subAppPluginsCollection.getTableNameWithSchema());
+
+      const columns = Object.keys(columnsInfo).sort();
+
+      const columnsInSql = columns.map((column) => `"${column}"`).join(', ');
+
       await subApp.db.sequelize.query(`
-        INSERT INTO ${subAppPluginsCollection.quotedTableName()}
-        SELECT *
+        INSERT INTO ${subAppPluginsCollection.quotedTableName()} (${columnsInSql})
+        SELECT ${columnsInSql}
         FROM ${mainAppPluginsCollection.quotedTableName()}
         WHERE "name" not in ('multi-app-manager', 'multi-app-share-collection');
       `);

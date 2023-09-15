@@ -22,6 +22,7 @@ export default class extends Migration {
       const exists = await field.existsInDb({ transaction });
 
       if (!exists) {
+        collection.removeField('uiSchemaUid');
         return;
       }
 

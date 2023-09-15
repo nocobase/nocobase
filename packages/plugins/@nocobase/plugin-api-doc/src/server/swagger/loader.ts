@@ -1,4 +1,3 @@
-import { PluginManager } from '@nocobase/server';
 import { requireModule } from '@nocobase/utils';
 import { merge } from './merge';
 
@@ -30,7 +29,10 @@ export const getPluginsSwagger = async (db: any, pluginNames?: string[]) => {
   });
   const swaggers = {};
   for (const plugin of plugins) {
-    const packageName = PluginManager.getPackageName(plugin.get('name'));
+    const packageName = plugin.get('packageName');
+    if (!packageName) {
+      continue;
+    }
     const res = loadSwagger(packageName);
     if (Object.keys(res).length) {
       swaggers[plugin.get('name')] = res;

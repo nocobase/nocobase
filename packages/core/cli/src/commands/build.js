@@ -24,6 +24,7 @@ module.exports = (cli) => {
         });
         if (options.watch) return;
       }
+
       await run('nocobase-build', [
         ...pkgs,
         options.version ? '--version' : '',
