@@ -228,7 +228,7 @@ export class Gateway extends EventEmitter {
       ipcClient = await this.tryConnectToIPCServer();
 
       if (ipcClient) {
-        await ipcClient.write({ type: 'passCliArgv', payload: { argv: process.argv } });
+        const response = await ipcClient.write({ type: 'passCliArgv', payload: { argv: process.argv } });
         // should wait for server response
         ipcClient.close();
         return;

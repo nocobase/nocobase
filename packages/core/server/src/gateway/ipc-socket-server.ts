@@ -66,7 +66,7 @@ export class IPCSocketServer {
       const argv = payload.argv;
 
       const mainApp = await AppSupervisor.getInstance().getApp('main');
-
+      const cli = mainApp.cli;
       return mainApp.runAsCLI(argv, {
         from: 'node',
         throwError: true,

@@ -17,7 +17,6 @@ export default (app: Application) => {
     .option('--auth-token [authToken]')
     .option('--version [version]')
     .action(async (name, options, cli) => {
-      console.log('pm.add', name, options);
       try {
         await app.pm.addViaCLI(name, _.cloneDeep(options));
       } catch (error) {
