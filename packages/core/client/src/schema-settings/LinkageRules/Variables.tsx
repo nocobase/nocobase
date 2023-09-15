@@ -39,7 +39,7 @@ const useVariableTypes = (currentCollection, excludes = []) => {
             return;
           }
           const fieldInterface = getInterface(field.interface);
-          if (!fieldInterface.filterable) {
+          if (!fieldInterface?.filterable) {
             return;
           }
           const { nested, children } = fieldInterface.filterable;

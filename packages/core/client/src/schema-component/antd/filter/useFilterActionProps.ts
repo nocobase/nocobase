@@ -36,7 +36,7 @@ export const useGetFilterFieldOptions = () => {
       return;
     }
     const fieldInterface = getInterface(field.interface);
-    if (!fieldInterface.filterable) {
+    if (!fieldInterface?.filterable) {
       return;
     }
     const { nested, children, operators } = fieldInterface.filterable;
@@ -94,7 +94,7 @@ export const useFilterFieldOptions = (fields) => {
       return;
     }
     const fieldInterface = getInterface(field.interface);
-    if (!fieldInterface.filterable) {
+    if (!fieldInterface?.filterable) {
       return;
     }
     const { nested, children, operators } = fieldInterface.filterable;
