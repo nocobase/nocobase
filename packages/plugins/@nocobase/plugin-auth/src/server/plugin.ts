@@ -50,8 +50,8 @@ export class AuthPlugin extends Plugin {
       title: 'Password',
     });
     // Register actions
-    Object.entries(authActions).forEach(([action, handler]) =>
-      this.app.resourcer.registerAction(`auth:${action}`, handler),
+    Object.entries(authActions).forEach(
+      ([action, handler]) => this.app.resourcer.getResource('auth')?.addAction(action, handler),
     );
     Object.entries(authenticatorsActions).forEach(([action, handler]) =>
       this.app.resourcer.registerAction(`authenticators:${action}`, handler),
