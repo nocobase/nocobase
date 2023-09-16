@@ -1,8 +1,9 @@
 import { ISchema } from '@formily/react';
-import type { CollectionOptions } from '@nocobase/database';
 import { ReactNode } from 'react';
 
-export { CollectionOptions };
+export interface CollectionOptions {
+  [key: string]: any;
+}
 
 export interface CollectionManagerOptions {
   service?: any;
