@@ -1875,8 +1875,8 @@ function getFieldDefaultValue(fieldSchema: ISchema, collectionField: CollectionF
 function isDisabled(params: IsDisabledParams) {
   const { option, collectionField, uiSchema } = params;
 
-  if (!uiSchema) {
-    return false;
+  if (!uiSchema || !collectionField) {
+    return true;
   }
 
   // json 类型的字段，允许设置任意类型的值

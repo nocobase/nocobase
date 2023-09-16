@@ -146,7 +146,7 @@ export const getShouldChange = ({
   const collectionsInheritChain = collectionField ? getAllCollectionsInheritChain(collectionField.target) : [];
 
   return async (value: any, optionPath: any[]) => {
-    if (!isVariable(value) || !variables) {
+    if (!isVariable(value) || !variables || !collectionField) {
       return true;
     }
 
