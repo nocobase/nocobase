@@ -26,7 +26,7 @@ const useSaveCurrentUserValues = () => {
   return {
     async run() {
       await form.submit();
-      await api.resource('users').changePassword({
+      await api.resource('auth').changePassword({
         values: form.values,
       });
       await form.reset();

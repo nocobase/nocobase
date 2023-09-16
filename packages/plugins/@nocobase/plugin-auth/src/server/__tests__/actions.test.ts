@@ -168,5 +168,36 @@ describe('actions', () => {
       const token = data.token;
       expect(token).toBeDefined();
     });
+
+    it('should change password', async () => {
+      // Create a user without email
+      const userRepo = db.getRepository('users');
+      const user = await userRepo.create({
+        values: {
+          username: 'test',
+          password: '12345',
+        },
+      });
+      const res = await agent.login(user).post('/auth:changePassword').set({ 'X-Authenticator': 'basic' }).send({
+        oldPassword: '12345',
+        newPassword: '123456',
+        confirmPassword: '123456',
+      });
+      expect(res.statusCode).toEqual(200);
+
+      // Create a user without username
+      const user1 = await userRepo.create({
+        values: {
+          username: 'test2',
+          password: '12345',
+        },
+      });
+      const res2 = await agent.login(user1).post('/auth:changePassword').set({ 'X-Authenticator': 'basic' }).send({
+        oldPassword: '12345',
+        newPassword: '123456',
+        confirmPassword: '123456',
+      });
+      expect(res2.statusCode).toEqual(200);
+    });
   });
 });
