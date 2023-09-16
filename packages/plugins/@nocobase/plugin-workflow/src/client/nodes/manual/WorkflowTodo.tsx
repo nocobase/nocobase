@@ -529,7 +529,9 @@ function FooterStatus() {
       >
         {dayjs(updatedAt).format('YYYY-MM-DD HH:mm:ss')}
       </time>
-      <Tag icon={statusOption.icon} color={statusOption.color}>{compile(statusOption.label)}</Tag>
+      <Tag icon={statusOption.icon} color={statusOption.color}>
+        {compile(statusOption.label)}
+      </Tag>
     </Space>
   ) : null;
 }
@@ -565,7 +567,7 @@ function Drawer() {
                 content: {
                   type: 'void',
                   'x-component': 'FooterStatus',
-                }
+                },
               },
             },
           },
@@ -586,7 +588,7 @@ function Decorator({ params = {}, children }) {
       sort: ['-createdAt'],
       ...params,
       appends: ['user', 'node', 'workflow'],
-      except: ['node.config', 'workflow.config'],
+      except: ['node.config', 'workflow.config', 'workflow.options'],
     },
     rowKey: 'id',
     showIndex: true,
