@@ -6,7 +6,6 @@ registerHooks();
 test('createCollections', async ({ page }) => {
   await createCollections(page, [
     {
-      key: 'g0sgziua4f6',
       name: 't_wbjenhqk5dz',
       title: 'collection1',
       inherit: false,
@@ -14,7 +13,6 @@ test('createCollections', async ({ page }) => {
       description: null,
       fields: [
         {
-          key: 'w0gy56o173d',
           name: 'id',
           type: 'bigInt',
           interface: 'id',
@@ -33,7 +31,6 @@ test('createCollections', async ({ page }) => {
           },
         },
         {
-          key: '2wzyq8y9cop',
           name: 'createdAt',
           type: 'date',
           interface: 'createdAt',
@@ -51,7 +48,6 @@ test('createCollections', async ({ page }) => {
           },
         },
         {
-          key: 'rt2rhe1xqp9',
           name: 'createdBy',
           type: 'belongsTo',
           interface: 'createdBy',
@@ -76,7 +72,6 @@ test('createCollections', async ({ page }) => {
           targetKey: 'id',
         },
         {
-          key: 'btmuglswi03',
           name: 'updatedAt',
           type: 'date',
           interface: 'updatedAt',
@@ -94,7 +89,6 @@ test('createCollections', async ({ page }) => {
           },
         },
         {
-          key: '5errwy7nwk5',
           name: 'updatedBy',
           type: 'belongsTo',
           interface: 'updatedBy',
@@ -131,7 +125,6 @@ test('createCollections', async ({ page }) => {
       view: false,
     },
     {
-      key: 's9dxs76mg0x',
       name: 't_u0c1mmzldgo',
       title: 'collection2',
       inherit: false,
@@ -139,7 +132,6 @@ test('createCollections', async ({ page }) => {
       description: null,
       fields: [
         {
-          key: 'v5ocqu46067',
           name: 'id',
           type: 'bigInt',
           interface: 'id',
@@ -158,7 +150,6 @@ test('createCollections', async ({ page }) => {
           },
         },
         {
-          key: '47zki9t7lk1',
           name: 'createdAt',
           type: 'date',
           interface: 'createdAt',
@@ -176,7 +167,6 @@ test('createCollections', async ({ page }) => {
           },
         },
         {
-          key: 'd0a65u9lpqe',
           name: 'createdBy',
           type: 'belongsTo',
           interface: 'createdBy',
@@ -201,7 +191,6 @@ test('createCollections', async ({ page }) => {
           targetKey: 'id',
         },
         {
-          key: '0pqw66fptqr',
           name: 'updatedAt',
           type: 'date',
           interface: 'updatedAt',
@@ -219,7 +208,6 @@ test('createCollections', async ({ page }) => {
           },
         },
         {
-          key: 'f7l8mzwpm9a',
           name: 'updatedBy',
           type: 'belongsTo',
           interface: 'updatedBy',

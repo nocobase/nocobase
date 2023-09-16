@@ -46,6 +46,7 @@ interface CollectionSetting {
    * @default false
    */
   inherit?: boolean;
+  category?: any[];
   hidden?: boolean;
   description?: string;
   view?: boolean;
