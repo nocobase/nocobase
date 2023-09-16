@@ -184,6 +184,7 @@ export const useBaseVariable = ({
 
         if (children.length === 0) {
           option.disabled = true;
+          option.isLeaf = true;
           resolve();
           return;
         }
