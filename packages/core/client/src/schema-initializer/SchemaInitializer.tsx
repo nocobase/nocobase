@@ -1,13 +1,25 @@
 import { ISchema, observer, useForm } from '@formily/react';
 import { error, isString } from '@nocobase/utils/client';
-import { Button, Dropdown, MenuProps, Switch } from 'antd';
+import { Button, Dropdown, Menu, MenuProps, Spin, Switch } from 'antd';
 import classNames from 'classnames';
 // @ts-ignore
-import React, { createContext, useCallback, useContext, useMemo, useRef, useState, useTransition } from 'react';
+import _, { isEmpty } from 'lodash';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  // @ts-ignore
+  useTransition,
+} from 'react';
 import { useCollectMenuItem, useMenuItem } from '../hooks/useMenuItem';
 import { Icon } from '../icon';
 import { SchemaComponent, useActionContext } from '../schema-component';
 import { useCompile, useDesignable } from '../schema-component/hooks';
+import { SelectCollection } from './SelectCollection';
 import { useStyles } from './style';
 import {
   SchemaInitializerButtonProps,
@@ -27,6 +39,108 @@ export const SchemaInitializerButtonContext = createContext<{
 }>({});
 
 export const SchemaInitializer = () => null;
+
+const CollectionSearch = ({ onChange: _onChange }) => {
+  const { searchValue, setSearchValue } = useContext(SchemaInitializerButtonContext);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const onChange = useCallback(
+    _.debounce((value) => {
+      setSearchValue(value);
+      _onChange(value);
+    }, 300),
+    [setSearchValue],
+  );
+
+  if (process.env.NODE_ENV !== 'production' && !setSearchValue) {
+    throw new Error(
+      'useCollectionDataSourceItems: please use in SchemaInitializerButtonContext and provide setSearchValue',
+    );
+  }
+
+  return <SelectCollection value={searchValue} onChange={onChange} />;
+};
+
+const LoadingItem = ({ loadMore }) => {
+  const spinRef = React.useRef(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        loadMore();
+      }
+    });
+
+    observer.observe(spinRef.current);
+    return () => {
+      observer.disconnect();
+    };
+  }, [loadMore]);
+
+  return (
+    <div ref={spinRef}>
+      <Spin size="small" style={{ width: '100%' }} />
+    </div>
+  );
+};
+
+const MenuWithLazyLoadChildren = ({ items: _items, style }: { items: any[]; style?: React.CSSProperties }) => {
+  const [items, setItems] = useState(_items);
+  const [isPending, startTransition] = useTransition();
+  const { setSearchValue } = useContext(SchemaInitializerButtonContext);
+  const minStep = 20;
+
+  const addLoadingItem = (group, allChildren) => {
+    if (group.children?.length < allChildren?.length) {
+      group.children.push({
+        label: (
+          <LoadingItem
+            loadMore={() => {
+              group.children = allChildren?.slice(0, (group.count += minStep)) || [];
+              addLoadingItem(group, allChildren);
+              setItems([...items]);
+            }}
+          />
+        ),
+      });
+    }
+  };
+
+  items.forEach((group1) => {
+    group1.children?.forEach((group2) => {
+      group2.className = 'group2';
+      group2.onMouseEnter = ({ domEvent }) => {
+        if (!isGroup2(domEvent)) {
+          return;
+        }
+
+        group2.children?.forEach((group3) => {
+          if (group3.loadChildren) {
+            group3.label = (
+              <CollectionSearch
+                onChange={(value) => {
+                  if (group3.loadChildren) {
+                    group3.children = group3.loadChildren({ searchValue: value });
+                    setItems([...items]);
+                  }
+                }}
+              />
+            );
+            startTransition(() => {
+              const allChildren = group3.loadChildren();
+              group3.count = minStep;
+              group3.children = allChildren?.slice(0, group3.count) || [];
+              addLoadingItem(group3, allChildren);
+              setSearchValue('');
+              setItems([...items]);
+            });
+          }
+        });
+      };
+    });
+  });
+
+  return <Menu style={style} items={items} />;
+};
 
 SchemaInitializer.Button = observer(
   (props: SchemaInitializerButtonProps) => {
@@ -161,6 +275,16 @@ SchemaInitializer.Button = observer(
       menuItems.current = renderItems(items);
     }
 
+    const dropdownRender = () => (
+      <MenuWithLazyLoadChildren
+        style={{
+          maxHeight: '50vh',
+          overflowY: 'auto',
+        }}
+        items={menuItems.current}
+      />
+    );
+
     return (
       <SchemaInitializerButtonContext.Provider value={{ visible, setVisible, searchValue, setSearchValue }}>
         {visible ? <CollectionComponent /> : null}
@@ -173,16 +297,10 @@ SchemaInitializer.Button = observer(
             setSearchValue('');
             changeMenu(open);
           }}
-          menu={{
-            style: {
-              maxHeight: '50vh',
-              overflowY: 'auto',
-            },
-            items: menuItems.current,
-          }}
+          dropdownRender={dropdownRender}
           {...dropdown}
         >
-          {component ? component : buttonDom}
+          {component || buttonDom}
         </Dropdown>
       </SchemaInitializerButtonContext.Provider>
     );
@@ -197,9 +315,8 @@ SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
   const { items = [], children = info?.title, icon, onClick } = props;
   const { collectMenuItem } = useCollectMenuItem();
 
-  if (!collectMenuItem) {
-    error('SchemaInitializer.Item: collectMenuItem is undefined, please check the context');
-    return null;
+  if (process.env.NODE_ENV !== 'production' && !collectMenuItem) {
+    throw new Error('SchemaInitializer.Item: collectMenuItem is undefined, please check the context');
   }
 
   if (items?.length > 0) {
@@ -220,8 +337,12 @@ SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
             label,
             title: label,
             className: styles.nbMenuItemGroup,
-            children: renderMenuItem(item.children, key),
-          } as MenuProps['items'][0];
+            loadChildren: isEmpty(item.children)
+              ? ({ searchValue } = { searchValue: '' }) =>
+                  renderMenuItem(item.loadChildren?.({ searchValue }) || [], key)
+              : null,
+            children: isEmpty(item.children) ? [] : renderMenuItem(item.children, key),
+          } as MenuProps['items'][0] & { loadChildren?: ({ searchValue }?: { searchValue: string }) => any[] };
         }
         if (item.type === 'subMenu') {
           const label = compile(item.title);
@@ -230,8 +351,12 @@ SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
             key,
             label,
             title: label,
-            children: renderMenuItem(item.children, key),
-          };
+            loadChildren: isEmpty(item.children)
+              ? ({ searchValue } = { searchValue: '' }) =>
+                  renderMenuItem(item.loadChildren?.({ searchValue }) || [], key)
+              : null,
+            children: isEmpty(item.children) ? [] : renderMenuItem(item.children, key),
+          } as MenuProps['items'][0] & { loadChildren?: ({ searchValue }?: { searchValue: string }) => any[] };
         }
         const label = compile(item.title);
         return {
@@ -239,7 +364,6 @@ SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
           label,
           title: label,
           onClick: (info) => {
-            item?.clearKeywords?.();
             if (item.onClick) {
               item.onClick({ ...info, item });
             } else {
@@ -268,7 +392,6 @@ SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
     title: label,
     icon: typeof icon === 'string' ? <Icon type={icon as string} /> : icon,
     onClick: (opts) => {
-      info?.clearKeywords?.();
       onClick({ ...opts, item: info });
     },
   };
@@ -390,3 +513,17 @@ SchemaInitializer.SwitchItem = (props) => {
     </SchemaInitializer.Item>
   );
 };
+
+function isGroup2(domEvent: any) {
+  let el = domEvent.target;
+  let result = false;
+  while (el) {
+    if (el.classList?.contains('group2')) {
+      result = true;
+      break;
+    }
+    el = el.parentNode;
+  }
+
+  return result;
+}
