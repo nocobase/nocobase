@@ -89,6 +89,10 @@ const MenuWithLazyLoadChildren = ({ items: _items, style }: { items: any[]; styl
   const { setSearchValue } = useContext(SchemaInitializerButtonContext);
   const minStep = 20;
 
+  useEffect(() => {
+    setItems(_items);
+  }, [_items]);
+
   const addLoadingItem = (group, allChildren) => {
     if (group.children?.length < allChildren?.length) {
       group.children.push({
