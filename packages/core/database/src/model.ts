@@ -105,8 +105,33 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
       }
     }
 
+    // sync default values
+    for (const columnName in columns) {
+      const column = columns[columnName];
+      if (column.primaryKey) continue;
+
+      const currentAttribute = findAttributeByColumnName(columnName);
+      const attributeDefaultValue = currentAttribute.defaultValue;
+      const columnDefaultValue = columns[columnName].defaultValue;
+
+      if (columnDefaultValue === null && attributeDefaultValue === undefined) continue;
+
+      if (columnDefaultValue !== attributeDefaultValue) {
+        console.log({ columnName, attributeDefaultValue, columnDefaultValue, column: columns[columnName] });
+        await queryInterface.changeColumn(
+          tableName,
+          columnName,
+          {
+            ...currentAttribute,
+            defaultValue: attributeDefaultValue,
+          },
+          options,
+        );
+      }
+    }
+
+    // sync field unique option
     if (!this.database.inDialect('sqlite')) {
-      // sync field unique option
       const existsIndexes: any = await queryInterface.showIndex(tableName, options);
       const existsUniqueIndexes = existsIndexes.filter((index) => index.unique);
 
