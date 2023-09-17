@@ -2,9 +2,10 @@ import { LineChartOutlined } from '@ant-design/icons';
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { SchemaInitializer, useACLRoleContext, useCollectionDataSourceItems } from '@nocobase/client';
+import { isEmpty } from 'lodash';
 import React, { useContext } from 'react';
-import { useChartsTranslation } from '../locale';
 import { ChartConfigContext } from '../configure/ChartConfigure';
+import { useChartsTranslation } from '../locale';
 
 const itemWrap = SchemaInitializer.itemWrap;
 const ConfigureButton = itemWrap((props) => {
@@ -24,6 +25,11 @@ export const ChartInitializers = () => {
   const { t } = useChartsTranslation();
   const collections = useCollectionDataSourceItems('Chart');
   const { allowAll, parseAction } = useACLRoleContext();
+
+  if (collections[0].loadChildren && isEmpty(collections[0].children)) {
+    collections[0].children = collections[0].loadChildren();
+  }
+
   const children = collections[0].children
     .filter((item) => {
       if (allowAll) {

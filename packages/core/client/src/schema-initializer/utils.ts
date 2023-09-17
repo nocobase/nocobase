@@ -838,6 +838,7 @@ export const useCollectionDataSourceItems = (componentName) => {
       key: 'tableBlock',
       type: 'itemGroup',
       title: null,
+      children: [],
       loadChildren: ({ searchValue } = { searchValue: '' }) => {
         return getChildren({
           collections,
