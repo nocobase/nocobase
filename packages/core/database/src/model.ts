@@ -111,13 +111,14 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
       if (column.primaryKey) continue;
 
       const currentAttribute = findAttributeByColumnName(columnName);
+      if (!currentAttribute) continue;
+
       const attributeDefaultValue = currentAttribute.defaultValue;
       const columnDefaultValue = columns[columnName].defaultValue;
 
       if (columnDefaultValue === null && attributeDefaultValue === undefined) continue;
 
       if (columnDefaultValue !== attributeDefaultValue) {
-        console.log({ columnName, attributeDefaultValue, columnDefaultValue, column: columns[columnName] });
         await queryInterface.changeColumn(
           tableName,
           columnName,

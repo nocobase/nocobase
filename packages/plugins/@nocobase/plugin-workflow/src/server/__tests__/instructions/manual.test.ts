@@ -25,6 +25,7 @@ describe('workflow > instructions > manual', () => {
     await app.getPlugin('auth').install();
     agent = app.agent();
     db = app.db;
+
     WorkflowModel = db.getCollection('workflows').model;
     PostRepo = db.getCollection('posts').repository;
     CommentRepo = db.getCollection('comments').repository;
