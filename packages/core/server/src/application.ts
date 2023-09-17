@@ -118,6 +118,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   private _maintaining = false;
   private _maintainingCommandStatus: MaintainingCommandStatus;
   private _maintainingStatusBeforeCommand: MaintainingCommandStatus | null;
+  private _actionCommand: Command;
 
   constructor(public options: ApplicationOptions) {
     super();
@@ -304,7 +305,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       this.log.info(`app.reload()`);
       const oldDb = this._db;
       this.init();
-      await oldDb.close();
+      if (!oldDb.closed()) {
+        await oldDb.close();
+      }
     }
 
     this.setMaintainingMessage('init plugins');
@@ -364,6 +367,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     const command = new Command('nocobase')
       .usage('[command] [options]')
       .hook('preAction', async (_, actionCommand) => {
+        this._actionCommand = actionCommand;
+
         this.activatedCommand = {
           name: getCommandFullName(actionCommand),
         };
@@ -427,7 +432,18 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
         throw error;
       }
     } finally {
+      const _actionCommand = this._actionCommand;
+      if (_actionCommand) {
+        const options = _actionCommand['options'];
+        _actionCommand['_optionValues'] = {};
+        _actionCommand['_optionValueSources'] = {};
+        _actionCommand['options'] = [];
+        for (const option of options) {
+          _actionCommand.addOption(option);
+        }
+      }
       this.activatedCommand = null;
+      this._actionCommand = null;
     }
   }
 
@@ -455,11 +471,15 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this.setMaintainingMessage('emit afterStart');
     await this.emitAsync('afterStart', this, options);
+    await this.emitStartedEvent();
+
+    this.stopped = false;
+  }
+
+  async emitStartedEvent() {
     await this.emitAsync('__started', this, {
       maintainingStatus: lodash.cloneDeep(this._maintainingCommandStatus),
     });
-
-    this.stopped = false;
   }
 
   async isStarted() {
@@ -478,7 +498,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     if (!this._started) {
       return;
     }
+
     this._started = false;
+    await this.emitAsync('beforeStop');
     await this.reload(options);
     await this.start(options);
     this.emit('__restarted', this, options);
@@ -506,6 +528,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
 
     await this.emitAsync('afterStop', this, options);
+
     this.stopped = true;
     this.log.info(`${this.name} is stopped`);
     this._started = false;

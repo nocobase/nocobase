@@ -1,7 +1,6 @@
 import { Cache, createCache } from '@nocobase/cache';
 import { lodash } from '@nocobase/utils';
 import Application from '../application';
-import { PluginManager } from '../plugin-manager';
 import { getResource } from './resource';
 
 export class Locale {
@@ -67,7 +66,14 @@ export class Locale {
     const names = this.app.pm.getAliases();
     for (const name of names) {
       try {
-        const packageName = PluginManager.getPackageName(name);
+        const p = this.app.pm.get(name);
+        if (!p) {
+          continue;
+        }
+        const packageName = p.options?.packageName;
+        if (!packageName) {
+          continue;
+        }
         // this.app.log.debug(`load [${packageName}] locale resource `);
         // this.app.setMaintainingMessage(`load [${packageName}] locale resource `);
         const res = getResource(packageName, lang);

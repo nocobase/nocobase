@@ -1,4 +1,5 @@
 import { getDateVars, parseFilter } from '@nocobase/utils';
+import lodash from 'lodash';
 
 function getUser(ctx) {
   return async ({ fields }) => {

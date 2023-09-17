@@ -1,3 +1,4 @@
+import _ from 'lodash';
 import Application from '../application';
 import { PluginCommandError } from '../errors/plugin-command-error';
 
@@ -11,9 +12,35 @@ export default (app: Application) => {
     });
 
   pm.command('add')
-    .arguments('plugin')
-    .action(async (plugin) => {
-      await app.pm.add(plugin, {}, true);
+    .argument('<pkg>')
+    .option('--registry [registry]')
+    .option('--auth-token [authToken]')
+    .option('--version [version]')
+    .action(async (name, options, cli) => {
+      console.log('pm.add', name, options);
+      try {
+        await app.pm.addViaCLI(name, _.cloneDeep(options));
+      } catch (error) {
+        throw new PluginCommandError(`Failed to add plugin: ${error.message}`);
+      }
+    });
+
+  pm.command('update')
+    .argument('<packageName>')
+    .option('--path [path]')
+    .option('--url [url]')
+    .option('--registry [registry]')
+    .option('--auth-token [authToken]')
+    .option('--version [version]')
+    .action(async (packageName, options) => {
+      try {
+        await app.pm.update({
+          ...options,
+          packageName,
+        });
+      } catch (error) {
+        throw new PluginCommandError(`Failed to update plugin: ${error.message}`);
+      }
     });
 
   pm.command('enable')

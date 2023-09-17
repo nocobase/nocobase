@@ -1,4 +1,4 @@
-import { useField, useFieldSchema } from '@formily/react';
+import { useField, useFieldSchema, useForm } from '@formily/react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollection, useCollectionManager } from '../../collection-manager';
@@ -8,7 +8,8 @@ export const useFieldModeOptions = (props?) => {
   const currentFieldSchema = useFieldSchema();
   const fieldSchema = props?.fieldSchema || currentFieldSchema;
   const field = useField();
-  const isReadPretty = field.readPretty;
+  const form = useForm();
+  const isReadPretty = field.readPretty && form.readPretty;
   const isSubTableField = props?.fieldSchema;
   const { getField } = useCollection();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);

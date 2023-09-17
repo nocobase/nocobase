@@ -1,0 +1,29 @@
+{
+  "name": "@nocobase/plugin-multi-app-manager",
+  "displayName": "Multi-app manager",
+  "displayName.zh-CN": "多应用管理器",
+  "description": "Dynamically create multiple apps without separate deployments",
+  "description.zh-CN": "无需单独部署即可动态创建多个应用",
+  "version": "0.14.0-alpha.3",
+  "license": "AGPL-3.0",
+  "main": "./dist/server/index.js",
+  "devDependencies": {
+    "@formily/react": "2.x",
+    "@formily/shared": "2.x",
+    "antd": "5.x",
+    "async-mutex": "^0.3.2",
+    "mysql2": "^2.3.3",
+    "pg": "^8.7.3",
+    "react": "18.x",
+    "react-i18next": "^11.15.1",
+    "react-router-dom": "^6.11.2"
+  },
+  "peerDependencies": {
+    "@nocobase/client": "0.x",
+    "@nocobase/database": "0.x",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x",
+    "@nocobase/utils": "0.x"
+  },
+  "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
+}

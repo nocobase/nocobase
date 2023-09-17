@@ -2,7 +2,8 @@
   "name": "nocobase",
   "private": true,
   "workspaces": [
-    "packages/*/*"
+    "packages/*/*",
+    "packages/*/*/*"
   ],
   "license": "Apache-2.0",
   "engines": {
@@ -21,6 +22,7 @@
     "dev-server": "nocobase dev --server",
     "start": "nocobase start",
     "build": "nocobase build",
+    "tar": "nocobase tar",
     "test": "nocobase test",
     "test:client": "vitest",
     "tc": "yarn test:client",
@@ -85,7 +87,7 @@
     "react-dom": "^18.0.0",
     "ts-jest": "^29.1.1",
     "typescript": "5.1.3",
-    "vite": "^4.4.1",
+    "vite": "^4.4.9",
     "vitest": "^0.34.3"
   },
   "volta": {

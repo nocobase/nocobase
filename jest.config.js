@@ -1,5 +1,5 @@
 const { pathsToModuleNameMapper } = require('ts-jest');
-const { compilerOptions } = require('./tsconfig.json');
+const { compilerOptions } = require('./tsconfig.paths.json');
 const { defaults } = require('jest-config');
 
 module.exports = {
@@ -34,5 +34,6 @@ module.exports = {
     'package.json',
     '/demo/',
     'package-lock.json',
+    '/storage/',
   ],
 };

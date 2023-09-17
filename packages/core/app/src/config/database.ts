@@ -1,7 +1,27 @@
 import { IDatabaseOptions } from '@nocobase/database';
 import path from 'path';
 
-export default {
+function getEnvValue(key, defaultValue?) {
+  return process.env[key] || defaultValue;
+}
+
+function extractSSLOptionsFromEnv() {
+  const sslOptions = {};
+
+  const ca = getEnvValue('DB_DIALECT_OPTIONS_SSL_CA');
+  const key = getEnvValue('DB_DIALECT_OPTIONS_SSL_KEY');
+  const cert = getEnvValue('DB_DIALECT_OPTIONS_SSL_CERT');
+  const rejectUnauthorized = getEnvValue('DB_DIALECT_OPTIONS_SSL_REJECT_UNAUTHORIZED');
+
+  if (ca) sslOptions['ca'] = ca;
+  if (key) sslOptions['key'] = key;
+  if (cert) sslOptions['cert'] = cert;
+  if (rejectUnauthorized) sslOptions['rejectUnauthorized'] = rejectUnauthorized === 'true';
+
+  return sslOptions;
+}
+
+const databaseOptions = {
   logging: process.env.DB_LOGGING == 'on' ? customLogger : false,
   dialect: process.env.DB_DIALECT as any,
   storage: process.env.DB_STORAGE,
@@ -17,6 +37,15 @@ export default {
   collectionSnapshotDir:
     process.env.COLLECTION_SNAPSHOT_DIR || path.resolve(process.cwd(), 'storage', 'collection-snapshots'),
 } as IDatabaseOptions;
+
+const sslOptions = extractSSLOptionsFromEnv();
+
+if (Object.keys(sslOptions).length) {
+  databaseOptions.dialectOptions = databaseOptions.dialectOptions || {};
+  databaseOptions.dialectOptions['ssl'] = sslOptions;
+}
+
+export default databaseOptions;
 
 function customLogger(queryString, queryObject) {
   console.log(queryString); // outputs a string

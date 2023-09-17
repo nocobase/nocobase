@@ -26,3 +26,4 @@ packages/core/database/src/sql-parser/index.js
 packages/core/cli/templates/plugin/src/client/*.tpl
 packages/app/client/src/.plugins
 docker
+storage
