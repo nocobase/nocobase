@@ -3,8 +3,8 @@ import { registerActions } from '@nocobase/actions';
 import { actions as authActions, AuthManager } from '@nocobase/auth';
 import { Cache, createCache, ICacheConfig } from '@nocobase/cache';
 import Database, { CollectionOptions, IDatabaseOptions } from '@nocobase/database';
-import { AppLoggerOptions, createAppLogger, Logger } from '@nocobase/logger';
-import { ResourceOptions, Resourcer } from '@nocobase/resourcer';
+import { AppLoggerOptions, createAppLogger, logger, Logger, requestLogger, simpleLogger } from '@nocobase/logger';
+import { Resourcer, ResourceOptions } from '@nocobase/resourcer';
 import { applyMixins, AsyncEmitter, Toposort, ToposortOptions } from '@nocobase/utils';
 import chalk from 'chalk';
 import { Command, CommandOptions, ParseOptions } from 'commander';
@@ -22,7 +22,7 @@ import { ApplicationVersion } from './helpers/application-version';
 import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
-
+import { randomUUID } from 'crypto';
 const packageJson = require('../package.json');
 
 export type PluginType = string | typeof Plugin;
@@ -121,6 +121,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   constructor(public options: ApplicationOptions) {
     super();
+    this.context.reqId = randomUUID();
     this.rawOptions = this.name == 'main' ? lodash.cloneDeep(options) : {};
     this.init();
 
@@ -398,11 +399,14 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return command;
   }
 
-  async runAsCLI(argv = process.argv, options?: ParseOptions & { throwError?: boolean }) {
+  async runAsCLI(argv = process.argv, options?: ParseOptions & { throwError?: boolean; reqId?: string }) {
     if (this.activatedCommand) {
       return;
     }
-
+    if (options.reqId) {
+      this.context.reqId = options.reqId;
+      this._logger = this._logger.child({ reqId: this.context.reqId });
+    }
     this._maintainingStatusBeforeCommand = this._maintainingCommandStatus;
 
     try {
@@ -654,22 +658,22 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   protected init() {
     const options = this.options;
 
-    const logger = createAppLogger({
-      ...options.logger,
-      defaultMeta: {
-        app: this.name,
-      },
+    this._logger = logger(`${this.name}_app`, { name: `${this.name}_system` }).child({
+      reqId: this.context.reqId,
+      module: 'application',
     });
-
-    this._logger = logger.instance;
+    // const logger = createAppLogger({
+    //   ...options.logger,
+    //   defaultMeta: {
+    //     app: this.name,
+    //   },
+    // });
 
     this.reInitEvents();
 
     this.middleware = new Toposort<any>();
     this.plugins = new Map<string, Plugin>();
     this._acl = createACL();
-
-    this.use(logger.middleware, { tag: 'logger' });
 
     if (this._db) {
       // MaxListenersExceededWarning
@@ -683,7 +687,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._i18n = createI18n(options);
     this._cache = createCache(options.cache);
     this.context.db = this._db;
-    this.context.logger = this._logger;
+    // this.context.logger = this._logger;
     this.context.resourcer = this._resourcer;
     this.context.cache = this._cache;
 
@@ -724,15 +728,24 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   private createDatabase(options: ApplicationOptions) {
+    const sqlLogger = logger(`${this.name}_sql`, {
+      level: 'debug',
+    });
+    const logging = (msg: any) => {
+      if (typeof msg === 'string') {
+        msg = msg.replace(/[\r\n]/gm, '').replace(/\s+/g, ' ');
+      }
+      sqlLogger.debug({ reqId: this.context.reqId, message: msg });
+    };
+    const dbOptions = options.database instanceof Database ? options.database.options : options.database;
     const db = new Database({
-      ...(options.database instanceof Database ? options.database.options : options.database),
+      ...dbOptions,
+      logging: dbOptions.logging ? logging : false,
       migrator: {
         context: { app: this },
       },
     });
-
-    db.setLogger(this._logger);
-
+    db.setLogger(this._logger.child({ module: 'database' }));
     return db;
   }
 }

@@ -227,7 +227,7 @@ export class PluginManager {
       console.error(error);
       // empty
     }
-    this.app.log.debug(`adding plugin [${options.name}]...`);
+    this.app.log.debug(`adding plugin [${options.name}]...`, {}, 'add', 'plugin-manager');
     let P: any;
     try {
       P = PluginManager.resolvePlugin(options.packageName || plugin, isUpgrade, !!options.packageName);

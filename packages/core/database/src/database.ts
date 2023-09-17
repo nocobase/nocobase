@@ -220,6 +220,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       // https://github.com/sequelize/sequelize/issues/1774
       require('pg').defaults.parseInt8 = true;
     }
+
     this.options = opts;
 
     this.sequelize = new Sequelize(this.sequelizeOptions(this.options));

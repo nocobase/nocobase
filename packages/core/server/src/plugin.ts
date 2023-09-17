@@ -4,6 +4,7 @@ import { resolve } from 'path';
 import { Application } from './application';
 import { InstallOptions, getExposeChangelogUrl, getExposeReadmeUrl } from './plugin-manager';
 import { checkAndGetCompatible } from './plugin-manager/utils';
+import { logger } from '@nocobase/logger';
 
 export interface PluginInterface {
   beforeLoad?: () => void;
@@ -38,7 +39,10 @@ export abstract class Plugin<O = any> implements PluginInterface {
   }
 
   get log() {
-    return this.app.log;
+    return logger(`${this.app.name}_${this.name}`, { name: `${this.app.name}_system` }).child({
+      reqId: this.app.context.reqId,
+      module: this.name,
+    });
   }
 
   get name() {
