@@ -84,6 +84,69 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
       ? await SyncRunner.syncInheritModel(model, options)
       : await SequelizeModel.sync.call(this, options);
 
+    const queryInterface = this.sequelize.getQueryInterface();
+
+    const tableName = this.getTableName();
+
+    const columns = await queryInterface.describeTable(tableName, options);
+
+    const findAttributeByColumnName = (columnName) => {
+      return Object.values(this.rawAttributes).find((attribute) => {
+        return attribute.field == columnName;
+      });
+    };
+
+    // remove columns that not in model
+    for (const columnName in columns) {
+      const currentAttribute = findAttributeByColumnName(columnName);
+      if (!currentAttribute) {
+        await queryInterface.removeColumn(tableName, columnName, options);
+        continue;
+      }
+    }
+
+    if (!this.database.inDialect('sqlite')) {
+      // sync field unique option
+      const existsIndexes: any = await queryInterface.showIndex(tableName, options);
+      const existsUniqueIndexes = existsIndexes.filter((index) => index.unique);
+
+      const uniqueAttributes = Object.keys(this.rawAttributes).filter((key) => {
+        return this.rawAttributes[key].unique;
+      });
+
+      for (const existUniqueIndex of existsUniqueIndexes) {
+        const isSingleField = existUniqueIndex.fields.length == 1;
+        if (!isSingleField) continue;
+        const fieldName = existUniqueIndex.fields[0].attribute;
+        const currentAttribute = this.rawAttributes[fieldName];
+        if (!currentAttribute || (!currentAttribute.unique && !currentAttribute.primaryKey)) {
+          if (this.database.inDialect('postgres')) {
+            // @ts-ignore
+            const constraints = await queryInterface.showConstraint(tableName, existUniqueIndex.name, options);
+            if (constraints.some((c) => c.constraintName === existUniqueIndex.name)) {
+              await queryInterface.removeConstraint(tableName, existUniqueIndex.name, options);
+            }
+          }
+
+          await queryInterface.removeIndex(tableName, existUniqueIndex.name, options);
+        }
+      }
+
+      for (const uniqueAttribute of uniqueAttributes) {
+        // check index exists or not
+        const indexExists = existsUniqueIndexes.find((index) => {
+          return index.fields.length == 1 && index.fields[0].attribute == uniqueAttribute;
+        });
+
+        if (!indexExists) {
+          await queryInterface.addIndex(tableName, [this.rawAttributes[uniqueAttribute].field], {
+            unique: true,
+            transaction: options?.transaction,
+          });
+        }
+      }
+    }
+
     if (snapshotEnabled) {
       await snapshotManager.saveSnapshot(this.collection);
     }

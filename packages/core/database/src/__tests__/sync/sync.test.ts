@@ -1,4 +1,4 @@
-import { Database, mockDatabase } from '@nocobase/database';
+import { Database, mockDatabase } from '../../index';
 import path from 'path';
 
 describe('sync', function () {
