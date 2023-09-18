@@ -20,7 +20,8 @@
     "semver": "^7.3.7",
     "sequelize": "^6.26.0",
     "umzug": "^3.1.1",
-    "node-object-hash": "v3.0.0"
+    "node-object-hash": "v3.0.0",
+    "exponential-backoff": "^3.1.1"
   },
   "devDependencies": {
     "@types/glob": "^7.2.0"
