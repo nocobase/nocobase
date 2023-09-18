@@ -271,25 +271,25 @@ export async function getPluginMenu(plugin: PluginResponse, currentLang: string,
   const packageDocs = await getPackageDocsWithLang(plugin.packageName, currentLang, defaultLang);
   const menu: DocMenu[] = [];
   const { docsPath, packageDir } = packageDocs;
-  if (docsPath.README) {
-    menu.push({
-      title: 'README',
-      path: docsPath.README,
-    });
-  }
-
   const hasSwaggerFile = await glob(['src/swagger.*', 'dist/swagger*'], { onlyFiles: true, cwd: packageDir });
   const hasSwaggerDir = await glob(['src/swagger', 'dist/swagger'], { onlyDirectories: true, cwd: packageDir });
+
+  if (docsPath.docs.length > 0) {
+    menu.push(...(await buildDocsMenuTree(docsPath.docs, packageDir)));
+  } else {
+    if (docsPath.README) {
+      menu.push({
+        title: 'README',
+        path: docsPath.README,
+      });
+    }
+  }
 
   if (hasSwaggerFile.length > 0 || hasSwaggerDir.length > 0) {
     menu.push({
       title: 'HTTP API',
       path: `swagger?q=plugins/${plugin.name}`,
     });
-  }
-
-  if (docsPath.docs.length > 0) {
-    menu.push(...(await buildDocsMenuTree(docsPath.docs, packageDir)));
   }
 
   if (docsPath.CHANGELOG) {
