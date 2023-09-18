@@ -5,7 +5,7 @@ export default defineConfig({
   timeout: 60 * 1000,
 
   // Look for test files in the "tests" directory, relative to this configuration file.
-  testDir: './packages',
+  testDir: 'packages',
 
   testMatch: /.*\/e2e\/.+\.e2e\.[tj]sx*$/,
 

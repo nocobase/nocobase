@@ -10,7 +10,7 @@ export const commonConfig: any = {
   stdio: 'inherit',
 };
 
-const run = (command, argv, options = {}) => {
+export const runCommand = (command, argv, options = {}) => {
   return execa(command, argv, {
     shell: true,
     stdio: 'inherit',
@@ -58,9 +58,9 @@ export const runNocoBase = async (options?: CommonOptions<any>) => {
 
   if (process.env.CI) {
     console.log('yarn nocobase install');
-    await run('yarn', ['nocobase', 'install'], options);
+    await runCommand('yarn', ['nocobase', 'install'], options);
     console.log(`yarn start -d -p ${PORT}`);
-    run('yarn', ['start', '-d', `-p ${PORT}`], options);
+    runCommand('yarn', ['start', '-d', `-p ${PORT}`], options);
     return {};
   }
 
@@ -73,10 +73,10 @@ export const runNocoBase = async (options?: CommonOptions<any>) => {
 
   // 加上 -f 会清空数据库
   console.log('yarn nocobase install -f');
-  await run('yarn', ['nocobase', 'install', '-f'], options);
+  await runCommand('yarn', ['nocobase', 'install', '-f'], options);
 
   console.log('starting server...');
-  const { cancel, kill } = run('yarn', ['dev', `-p ${PORT}`], options);
+  const { cancel, kill } = runCommand('yarn', ['dev', `-p ${PORT}`], options);
 
   return { cancel, kill };
 };

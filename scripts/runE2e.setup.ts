@@ -1,5 +1,4 @@
-import { execSync } from 'node:child_process';
-import { commonConfig, runNocoBase } from './utils';
+import { runCommand, runNocoBase } from './utils';
 
 const run = async () => {
   const { kill } = await runNocoBase({
@@ -8,7 +7,7 @@ const run = async () => {
 
   // 等待服务成功启动
   setTimeout(() => {
-    execSync(`npx playwright test`, commonConfig);
+    runCommand('npx', ['playwright', 'test', ...process.argv.slice(2)]);
     kill?.('SIGKILL');
   }, 5000);
 };
