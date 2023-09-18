@@ -292,17 +292,14 @@ SchemaInitializer.Button = observer(
       menuItems.current = renderItems(items);
     }
 
-    const dropdownRender = useCallback(
-      () => (
-        <MenuWithLazyLoadChildren
-          style={{
-            maxHeight: '50vh',
-            overflowY: 'auto',
-          }}
-          items={menuItems.current}
-        />
-      ),
-      [],
+    const dropdownRender = () => (
+      <MenuWithLazyLoadChildren
+        style={{
+          maxHeight: '50vh',
+          overflowY: 'auto',
+        }}
+        items={menuItems.current}
+      />
     );
 
     return (
