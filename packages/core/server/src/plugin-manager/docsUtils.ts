@@ -9,41 +9,6 @@ export const DOCS_PREFIX = '/docs';
 export const DOCS_README = '/docs/README.md';
 export const DOCS_SIDE_BAR = '/docs/_sidebar.md';
 export const DOCS_SPECIAL_FILES = [DOCS_README, DOCS_SIDE_BAR];
-export const docsI18n = {
-  'zh-CN': {
-    page: '页面',
-    Overview: '总览',
-    Plugins: '插件',
-    'UI config': 'UI 配置',
-    'menu type': '菜单',
-    'page template': '页面模板',
-    block: '区块',
-    'data block': '数据区块',
-    'relation block': '关系区块',
-    'filter block': '选择区块',
-    'action type': '操作',
-    collection: '数据表模板',
-    interface: '数据表字段类型',
-    'interface basic': '基础数据字段',
-    'interface choices': '选项数据字段',
-    'interface media': '媒体数据字段',
-    'interface Date & Time': '日期时间数据字段',
-    'interface relation': '关系数据字段',
-    'interface system': '系统数据字段',
-    'interface advanced': '高级数据字段',
-    'user auth': '用户认证',
-    chart: '图表',
-    'file storage': '文件存储',
-    map: '地图',
-    verification: '验证码',
-    'workflow trigger': '工作流触发器',
-    'workflow node': '工作流节点',
-    'workflow flow control': '工作流流程控制',
-    'workflow table operation': '工作流数据表操作',
-    'workflow manual processing': '工作流人工处理',
-    'workflow extension type': '工作流扩展类型',
-  },
-};
 
 /**
  * JS 实现将数组转换为 markdown 目录格式
@@ -60,7 +25,7 @@ export const docsI18n = {
 interface DocMenu {
   title: string;
   path?: string;
-  tags?: string[];
+  tags?: { key: string; title?: string }[];
   sort?: number;
   children?: DocMenu[];
 }
@@ -243,7 +208,7 @@ export async function buildDocsMenuTree(arr: string[], packageDir: string): Prom
         currentNode.push({
           title,
           path: filePath,
-          tags: Array.isArray(tags) ? tags : [tags],
+          tags: (Array.isArray(tags) ? tags : [tags]).map((item) => (typeof item === 'string' ? { key: item } : item)),
           sort,
         });
       } else {
@@ -381,16 +346,21 @@ export function getFlatMenuList(menu: DocMenu[]) {
   }, []);
 }
 
-function getTagsMenu(menuData: DocMenu[], lang: string) {
+function getTagsMenu(menuData: DocMenu[]) {
   const menuList = getFlatMenuList(menuData);
-  const tagMenuMap = menuList.reduce<Record<string, DocMenu[]>>((acc, menu) => {
+  const tagMenuMap = menuList.reduce<Record<string, DocMenu>>((acc, menu: DocMenu) => {
     if (Array.isArray(menu.tags) && menu.tags.length > 0) {
       menu.tags.forEach((tag) => {
-        const tagI18n = docsI18n[lang]?.[tag] || tag;
-        if (!acc[tagI18n]) {
-          acc[tagI18n] = [];
+        if (!acc[tag.key]) {
+          acc[tag.key] = {
+            title: tag.key,
+            children: [],
+          };
         }
-        acc[tagI18n].push({
+        if (tag.title) {
+          acc[tag.key].title = tag.title;
+        }
+        acc[tag.key].children.push({
           ...menu,
           path: menu.path + '?tag',
           children: null,
@@ -399,20 +369,28 @@ function getTagsMenu(menuData: DocMenu[], lang: string) {
     }
     return acc;
   }, {});
-  const tagsMenu = Object.keys(tagMenuMap).reduce<DocMenu[]>((acc, tag) => {
-    const tagMenu = tagMenuMap[tag];
-    acc.push({ title: tag, children: tagMenu });
-    return acc;
-  }, []);
+  const tagsMenu = Object.values(tagMenuMap).flat();
   return tagsMenu;
 }
 
+function getTagsTitle(currentLang: string) {
+  return currentLang === 'zh-CN' ? '标签' : 'Tags';
+}
+
+function getPluginsTitle(currentLang: string) {
+  return currentLang === 'zh-CN' ? '插件' : 'Plugins';
+}
+
+function getOverviewTitle(currentLang: string) {
+  return currentLang === 'zh-CN' ? '总览' : 'Overview';
+}
+
 // 根据 menu 中的 tags，生成聚合目录信息
-function getTagsSidebar(menuData: DocMenu[], lang: string) {
-  const tagsMenu = getTagsMenu(menuData, lang);
+function getTagsSidebar(menuData: DocMenu[], currentLang: string) {
+  const tagsMenu = getTagsMenu(menuData);
   return arrToMarkdown([
     {
-      title: docsI18n[lang]?.tags || 'Tags',
+      title: getTagsTitle(currentLang),
       children: tagsMenu,
     },
   ]);
@@ -422,7 +400,7 @@ function getTagsSidebar(menuData: DocMenu[], lang: string) {
 function getPluginsSidebar(menuData: DocMenu[], currentLang: string) {
   return arrToMarkdown([
     {
-      title: docsI18n[currentLang]?.Plugins || 'Plugins',
+      title: getPluginsTitle(currentLang),
       children: menuData.flat(),
     },
   ]);
@@ -444,8 +422,8 @@ export const getDocSidebar = async (
   const menuData = await getMenuData(plugins, currentLang, defaultLang);
   const tagsSidebar = getTagsSidebar(menuData, currentLang);
   const pluginsSidebar = getPluginsSidebar(menuData, currentLang);
-  const Overview = docsI18n[currentLang]?.Overview || 'Overview';
-  return `* [${Overview}](/)\n* [HTTP API](${PLUGIN_STATICS_PATH}swagger)\n${tagsSidebar}\n${pluginsSidebar}`;
+  const overviewTitle = getOverviewTitle(currentLang);
+  return `* [${overviewTitle}](/)\n* [HTTP API](${PLUGIN_STATICS_PATH}swagger)\n${tagsSidebar}\n${pluginsSidebar}`;
 };
 
 function getPluginList(plugins: PluginResponse[]) {
@@ -463,7 +441,7 @@ function getPluginList(plugins: PluginResponse[]) {
  */
 export const getDocReadme = async (plugins: PluginResponse[], currentLang: string, defaultLang = 'en-US') => {
   const menuData = await getMenuData(plugins, currentLang, defaultLang);
-  const tagsMenu = getTagsMenu(menuData, currentLang);
+  const tagsMenu = getTagsMenu(menuData);
 
   const tags = tagsMenu
     .map((item) => {
@@ -471,6 +449,8 @@ export const getDocReadme = async (plugins: PluginResponse[], currentLang: strin
     })
     .join('\n');
   const pluginList = getPluginList(plugins);
-  const Overview = docsI18n[currentLang]?.Overview || 'Overview';
-  return `# ${Overview}\n\n${tags.length ? '## Tags\n\n' + tags : ''}\n\n## Plugins\n\n${pluginList}`;
+  const overviewTitle = getOverviewTitle(currentLang);
+  const pluginsTitle = getPluginsTitle(currentLang);
+  const tagsTitle = getTagsTitle(currentLang);
+  return `# ${overviewTitle}\n\n## ${tagsTitle}\n\n${tags}\n\n## ${pluginsTitle}\n\n${pluginList}`;
 };
