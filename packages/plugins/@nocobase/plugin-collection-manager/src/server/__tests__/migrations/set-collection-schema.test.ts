@@ -1,9 +1,9 @@
 import { Database, MigrationContext } from '@nocobase/database';
-import { MockServer } from '@nocobase/test';
+import { MockServer, pgOnly } from '@nocobase/test';
 import Migrator from '../../migrations/20230918024546-set-collection-schema';
 import { createApp } from '../index';
 
-describe('set collection schema', () => {
+pgOnly()('set collection schema', () => {
   let app: MockServer;
   let db: Database;
 
