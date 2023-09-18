@@ -25,7 +25,7 @@ describe('app command', () => {
   });
 
   it('should test command should handle by IPC Server or not', () => {
-    app.command('testaa').handleByIPCServer();
+    app.command('testaa').ipc();
     app.command('testbb');
 
     expect(app.cli.parseHandleByIPCServer(['node', 'cli', 'nocobase', 'testaa'])).toBeTruthy();
@@ -34,7 +34,7 @@ describe('app command', () => {
 
   it('should test sub command should handle by IPC Server or not', () => {
     const subParent = app.command('subparent');
-    subParent.command('testaa').handleByIPCServer();
+    subParent.command('testaa').ipc();
     subParent.command('testbb');
 
     expect(app.cli.parseHandleByIPCServer(['node', 'cli', 'nocobase', 'subparent', 'testaa'])).toBeTruthy();

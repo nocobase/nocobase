@@ -1,8 +1,9 @@
 import { Command } from 'commander';
+
 export class AppCommand extends Command {
   private _handleByIPCServer = false;
 
-  handleByIPCServer() {
+  ipc() {
     this._handleByIPCServer = true;
     return this;
   }

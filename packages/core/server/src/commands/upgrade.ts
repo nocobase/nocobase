@@ -7,7 +7,7 @@ import Application from '../application';
 export default (app: Application) => {
   app
     .command('upgrade')
-    .handleByIPCServer()
+    .ipc()
     .action(async (...cliArgs) => {
       const [opts] = cliArgs;
       console.log('upgrading...');

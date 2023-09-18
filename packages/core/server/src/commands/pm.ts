@@ -12,7 +12,7 @@ export default (app: Application) => {
     });
 
   pm.command('add')
-    .handleByIPCServer()
+    .ipc()
     .argument('<pkg>')
     .option('--registry [registry]')
     .option('--auth-token [authToken]')
@@ -26,7 +26,7 @@ export default (app: Application) => {
     });
 
   pm.command('update')
-    .handleByIPCServer()
+    .ipc()
     .argument('<packageName>')
     .option('--path [path]')
     .option('--url [url]')
@@ -45,7 +45,7 @@ export default (app: Application) => {
     });
 
   pm.command('enable')
-    .handleByIPCServer()
+    .ipc()
     .arguments('<plugins...>')
     .action(async (plugins) => {
       try {
@@ -56,7 +56,7 @@ export default (app: Application) => {
     });
 
   pm.command('disable')
-    .handleByIPCServer()
+    .ipc()
     .arguments('<plugins...>')
     .action(async (plugins) => {
       try {
@@ -67,7 +67,7 @@ export default (app: Application) => {
     });
 
   pm.command('remove')
-    .handleByIPCServer()
+    .ipc()
     .arguments('<plugins...>')
     .action(async (plugins) => {
       await app.pm.remove(plugins);
