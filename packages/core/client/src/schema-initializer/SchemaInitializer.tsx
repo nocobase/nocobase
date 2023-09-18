@@ -113,7 +113,15 @@ const MenuWithLazyLoadChildren = ({ items: _items, style }: { items: any[]; styl
   };
 
   items.forEach((group1) => {
+    if (!group1) {
+      return;
+    }
+
     group1.children?.forEach((group2) => {
+      if (!group2) {
+        return;
+      }
+
       group2.className = 'group2';
       group2.onMouseEnter = ({ domEvent }) => {
         if (!isGroup2(domEvent)) {
@@ -121,6 +129,10 @@ const MenuWithLazyLoadChildren = ({ items: _items, style }: { items: any[]; styl
         }
 
         group2.children?.forEach((group3) => {
+          if (!group3) {
+            return;
+          }
+
           if (group3.loadChildren) {
             group3.label = (
               <CollectionSearch
