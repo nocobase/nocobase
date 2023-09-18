@@ -71,8 +71,10 @@ export class PluginManager {
     this.app.use(async (ctx, next) => {
       await next();
       if (DOCS_SPECIAL_FILES.includes(ctx.path)) {
-        const plugins = await this.list();
         const currentLang = ctx.getCurrentLocale();
+        const plugins = await this.list({ locale: currentLang, isPreset: false }).then((res) =>
+          res.sort((a, b) => a.packageName.localeCompare(b.packageName)),
+        );
         let body = '';
         if (ctx.path === DOCS_README) {
           body = await getDocReadme(plugins, currentLang);
