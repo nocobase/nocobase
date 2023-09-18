@@ -6,23 +6,23 @@
   position: relative;
   margin: 0;
   cursor: pointer;
-  margin-left: 4px
+  margin-left: 14px
 }
 
 .sidebar-nav ul:not(.app-sub-sidebar)>li::before {
-  content: '';
+  content: ' ';
   display: block;
   position: absolute;
   top: 8px;
-  left: -16px;
+  left: -25px;
   height: 18px;
-  width: 14px
+  width: 18px
 }
 
 .sidebar-nav ul:not(.app-sub-sidebar)>li.folder::before {
-  background: center/contain no-repeat url(/docs/static/images/SolarRemoveFolderBold.svg)
+  background: center/contain no-repeat url(/docs/static/images/BiFolder2.svg)
 }
 
 .sidebar-nav ul:not(.app-sub-sidebar)>li.file::before {
-  background: center/contain no-repeat url(/docs/static/images/SolarDocumentTextBold.svg)
+  background: center/contain no-repeat url(/docs/static/images/BiFileEarmarkText.svg)
 }
