@@ -67,7 +67,7 @@ describe('role', () => {
     const throwFn = jest.fn();
     ctx.throw = throwFn;
     await setCurrentRole(ctx, () => {});
-    expect(throwFn).lastCalledWith(401, 'User role not found');
+    expect(throwFn).lastCalledWith(401, { code: 'ROLE_NOT_FOUND_ERR', message: 'The user role does not exist.' });
     expect(ctx.state.currentRole).not.toBeDefined();
   });
 
