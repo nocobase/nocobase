@@ -1,3 +1,6 @@
+.sidebar-nav {
+  font-size: 14px;
+}
 .sidebar-nav>ul {
   margin-left: 20px
 }
@@ -13,7 +16,7 @@
   content: ' ';
   display: block;
   position: absolute;
-  top: 8px;
+  top: 5px;
   left: -25px;
   height: 18px;
   width: 18px
