@@ -19,7 +19,7 @@ export class WorkflowPlugin extends Plugin {
     this.addRoutes();
     this.addScopes();
     this.addComponents();
-    this.app.use(WorkflowProvider);
+    this.app.addProvider(WorkflowProvider);
   }
 
   addScopes() {

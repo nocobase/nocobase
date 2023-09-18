@@ -325,3 +325,11 @@ export function useTrigger() {
   const { workflow } = useFlowContext();
   return triggers.get(workflow.type);
 }
+
+export function getTriggersOptions() {
+  return Array.from(triggers.getEntities()).map(([value, { title }]) => ({
+    value,
+    label: title,
+    color: 'gold',
+  }));
+}
