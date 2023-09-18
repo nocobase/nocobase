@@ -28,9 +28,11 @@ import {
   DOCS_SIDE_BAR,
   DOCS_SPECIAL_FILES,
   DOCS_TAGS,
-  getDocReadme,
+  getOverview,
   getDocSidebar,
-  getTagsContent,
+  getTagContent,
+  PLUGIN_INDEX,
+  getPluginIndexContent,
 } from './docsUtils';
 
 export interface PluginManagerOptions {
@@ -86,11 +88,13 @@ export class PluginManager {
         );
         let body = '';
         if (ctx.path === DOCS_README) {
-          body = await getDocReadme(plugins, currentLang);
+          body = await getOverview(plugins, currentLang);
         } else if (ctx.path === DOCS_SIDE_BAR) {
           body = await getDocSidebar(plugins, currentLang);
+        } else if (ctx.path.endsWith(PLUGIN_INDEX)) {
+          body = await getPluginIndexContent(ctx.path, plugins, currentLang);
         } else if (ctx.path.includes(DOCS_TAGS)) {
-          body = await getTagsContent(ctx.path, plugins, currentLang);
+          body = await getTagContent(ctx.path, plugins, currentLang);
         }
         ctx.body = body;
         return;

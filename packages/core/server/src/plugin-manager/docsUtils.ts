@@ -9,7 +9,8 @@ export const DOCS_PREFIX = '/docs';
 export const DOCS_README = '/docs/README.md';
 export const DOCS_SIDE_BAR = '/docs/_sidebar.md';
 export const DOCS_TAGS = '/tags/';
-export const DOCS_SPECIAL_FILES = [DOCS_README, DOCS_SIDE_BAR, DOCS_TAGS];
+export const PLUGIN_INDEX = '_index.md';
+export const DOCS_SPECIAL_FILES = [DOCS_README, DOCS_SIDE_BAR, DOCS_TAGS, PLUGIN_INDEX];
 
 /**
  * JS 实现将数组转换为 markdown 目录格式
@@ -304,6 +305,7 @@ export async function getPluginMenu(plugin: PluginResponse, currentLang: string,
   const res: DocMenu[] = [
     {
       title: plugin.displayName || plugin.name,
+      path: `${PLUGIN_STATICS_PATH}${plugin.packageName}/_index.md`,
       children: menu,
     },
   ];
@@ -430,18 +432,16 @@ export const getDocSidebar = async (
 
 function getPluginList(plugins: PluginResponse[]) {
   return plugins
-    .map((item) =>
-      item.description
-        ? `* [${item.displayName || item.name}](${item.readmeUrl})- ${item.packageName} - ${item.description}`
-        : `* [${item.displayName || item.name}](${item.readmeUrl})- ${item.packageName}`,
-    )
+    .map((item) => {
+      const title = item.displayName || item.name;
+      const path = `${PLUGIN_STATICS_PATH}${item.packageName}/_index.md`;
+      const description = item.description ? `- ${item.description}` : '';
+      return `* [${title}](${path})- ${item.packageName} ${description}`;
+    })
     .join('\n');
 }
 
-/**
- * get plugin docs README.md
- */
-export const getDocReadme = async (plugins: PluginResponse[], currentLang: string, defaultLang = 'en-US') => {
+export const getOverview = async (plugins: PluginResponse[], currentLang: string, defaultLang = 'en-US') => {
   const menuData = await getMenuData(plugins, currentLang, defaultLang);
   const tagsMenu = getTagsMenu(menuData);
 
@@ -459,7 +459,7 @@ export const getDocReadme = async (plugins: PluginResponse[], currentLang: strin
   return `# ${overviewTitle}\n\n## ${tagsTitle}\n\n${tags}\n\n## ${pluginsTitle}\n\n${pluginList}`;
 };
 
-export const getTagsContent = async (
+export const getTagContent = async (
   pathname: string,
   plugins: PluginResponse[],
   currentLang: string,
@@ -475,4 +475,20 @@ export const getTagsContent = async (
 
   const content = arrToMarkdown(tagMenu.children);
   return `# ${tagMenu.title}\n\n${content}`;
+};
+
+export const getPluginIndexContent = async (
+  pathname: string,
+  plugins: PluginResponse[],
+  currentLang: string,
+  defaultLang = 'en-US',
+) => {
+  const menuData = await getMenuData(plugins, currentLang, defaultLang);
+  const target = pathname.replace(DOCS_PREFIX, '');
+  const pluginMenu = menuData.find((item) => item.path === target);
+  if (!pluginMenu) {
+    return '';
+  }
+  const content = arrToMarkdown(pluginMenu.children);
+  return `# ${pluginMenu.title}\n\n${content}`;
 };

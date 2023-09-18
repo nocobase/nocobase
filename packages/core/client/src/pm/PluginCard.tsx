@@ -78,7 +78,7 @@ function PluginInfo(props: IPluginInfo) {
               key={'5'}
               onClick={(e) => {
                 e.stopPropagation();
-                window.open(`/docs/#/static/plugins/${packageName}/README`);
+                window.open(`/docs/#/static/plugins/${packageName}/_index`);
               }}
             >
               <ReadOutlined /> {t('Docs')}
