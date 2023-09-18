@@ -3,7 +3,7 @@ import { message } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useActionContext, useRecord, useResourceActionContext, useResourceContext } from '@nocobase/client';
 import { NAMESPACE } from '../locale';
-import { triggers } from '../triggers';
+// import { triggers } from '../triggers';
 import { executionSchema } from './executions';
 
 const collection = {
@@ -27,13 +27,11 @@ const collection = {
       uiSchema: {
         title: `{{t("Trigger type", { ns: "${NAMESPACE}" })}}`,
         type: 'string',
-        'x-component': 'Select',
         'x-decorator': 'FormItem',
-        enum: Array.from(triggers.getEntities()).map(([value, { title }]) => ({
-          value,
-          label: title,
-          color: 'gold',
-        })),
+        'x-component': 'Select',
+        'x-component-props': {
+          options: `{{getTriggersOptions()}}`,
+        },
         required: true,
       } as ISchema,
     },
@@ -136,7 +134,6 @@ export const workflowSchema: ISchema = {
           resource: 'workflows',
           action: 'list',
           params: {
-            pageSize: 20,
             filter: {
               current: true,
             },
@@ -218,27 +215,6 @@ export const workflowSchema: ISchema = {
                       },
                     },
                   },
-                },
-              },
-            },
-            sync: {
-              type: 'void',
-              title: `{{t("Sync", { ns: "${NAMESPACE}" })}}`,
-              'x-decorator': 'Tooltip',
-              'x-decorator-props': {
-                title: `{{ t("Sync enabled status of all workflows from database", { ns: "${NAMESPACE}" }) }}`,
-              },
-              'x-component': 'Action',
-              'x-component-props': {
-                useAction() {
-                  const { t } = useTranslation();
-                  const { resource } = useResourceContext();
-                  return {
-                    async run() {
-                      await resource.sync();
-                      message.success(t('Operation succeeded'));
-                    },
-                  };
                 },
               },
             },

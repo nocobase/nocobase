@@ -192,13 +192,13 @@ export function useWorkflowVariableOptions(options: OptionsOfUseVariableOptions 
   const opts = Object.assign(options, { fieldNames });
   const compile = useCompile();
   const result = [scopeOptions, nodesOptions, triggerOptions, systemOptions].map((item: any) => {
-    const children = item.useOptions(opts).filter(Boolean);
+    const children = item.useOptions?.(opts)?.filter(Boolean);
     return {
       [fieldNames.label]: compile(item.label),
       [fieldNames.value]: item.value,
       key: item[fieldNames.value],
       [fieldNames.children]: children,
-      disabled: children && !children.length,
+      disabled: !children || !children.length,
     };
   });
 
