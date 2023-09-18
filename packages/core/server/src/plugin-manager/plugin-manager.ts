@@ -23,7 +23,15 @@ import {
   requireNoCache,
   updatePluginByCompressedFileUrl,
 } from './utils';
-import { DOCS_README, DOCS_SIDE_BAR, DOCS_SPECIAL_FILES, getDocReadme, getDocSidebar } from './docsUtils';
+import {
+  DOCS_README,
+  DOCS_SIDE_BAR,
+  DOCS_SPECIAL_FILES,
+  DOCS_TAGS,
+  getDocReadme,
+  getDocSidebar,
+  getTagsContent,
+} from './docsUtils';
 
 export interface PluginManagerOptions {
   app: Application;
@@ -70,7 +78,8 @@ export class PluginManager {
 
     this.app.use(async (ctx, next) => {
       await next();
-      if (DOCS_SPECIAL_FILES.includes(ctx.path)) {
+      const isSpecialDocsFile = DOCS_SPECIAL_FILES.some((item) => ctx.path.includes(item));
+      if (isSpecialDocsFile) {
         const currentLang = ctx.getCurrentLocale();
         const plugins = await this.list({ locale: currentLang, isPreset: false }).then((res) =>
           res.sort((a, b) => a.packageName.localeCompare(b.packageName)),
@@ -80,6 +89,8 @@ export class PluginManager {
           body = await getDocReadme(plugins, currentLang);
         } else if (ctx.path === DOCS_SIDE_BAR) {
           body = await getDocSidebar(plugins, currentLang);
+        } else if (ctx.path.includes(DOCS_TAGS)) {
+          body = await getTagsContent(ctx.path, plugins, currentLang);
         }
         ctx.body = body;
         return;

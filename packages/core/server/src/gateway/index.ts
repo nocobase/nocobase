@@ -145,10 +145,12 @@ export class Gateway extends EventEmitter {
         ],
       });
     }
+    const isSpecialDocsFile = DOCS_SPECIAL_FILES.some((item) => pathname.includes(item));
 
     // pathname example: /static/plugins/@nocobase/plugins-acl/README.md
     // protect server files
     if (
+      !isSpecialDocsFile &&
       (pathname.startsWith(PLUGIN_STATICS_PATH) || pathname.startsWith(`${DOCS_PREFIX}${PLUGIN_STATICS_PATH}`)) &&
       !pathname.includes('/server/')
     ) {
@@ -171,14 +173,14 @@ export class Gateway extends EventEmitter {
     }
 
     // docs sites static files
-    if (pathname.startsWith(DOCS_PREFIX) && !DOCS_SPECIAL_FILES.includes(pathname)) {
+    if (pathname.startsWith(DOCS_PREFIX) && !isSpecialDocsFile) {
       await compress(req, res);
       return handler(req, res, {
         public: __dirname,
       });
     }
 
-    if (!pathname.startsWith('/api') && !DOCS_SPECIAL_FILES.includes(pathname)) {
+    if (!pathname.startsWith('/api') && !isSpecialDocsFile) {
       await compress(req, res);
       return handler(req, res, {
         public: `${process.env.APP_PACKAGE_ROOT}/dist/client`,
