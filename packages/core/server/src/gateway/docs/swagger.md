@@ -1,3 +1,6 @@
-# Swagger
+- 总览 /api/swagger:get
+- 各个插件 /api/swagger:get?ns=plugins/${name}
 
-<iframe id='iframe' src='REPLACE' style='height: 78vh'></iframe>
+```swagger
+/api/swagger:get
+```
