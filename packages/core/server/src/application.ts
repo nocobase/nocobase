@@ -353,7 +353,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       return;
     }
     this._authenticated = true;
-    await this.db.auth({ retry: 30 });
+    await this.db.auth();
     await this.dbVersionCheck({ exit: true });
     await this.db.prepare();
   }
