@@ -3,7 +3,7 @@ import { error, isString } from '@nocobase/utils/client';
 import { Button, Dropdown, Menu, MenuProps, Spin, Switch } from 'antd';
 import classNames from 'classnames';
 // @ts-ignore
-import _, { isEmpty } from 'lodash';
+import { isEmpty } from 'lodash';
 import React, {
   createContext,
   useCallback,
@@ -34,27 +34,30 @@ export const SchemaInitializerItemContext = createContext(null);
 export const SchemaInitializerButtonContext = createContext<{
   visible?: boolean;
   setVisible?: (v: boolean) => void;
-  searchValue?: string;
-  setSearchValue?: (v: string) => void;
 }>({});
 
 export const SchemaInitializer = () => null;
 
-const CollectionSearch = ({ onChange: _onChange }) => {
-  const { searchValue, setSearchValue } = useContext(SchemaInitializerButtonContext);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+const CollectionSearch = ({
+  onChange: _onChange,
+  clearValueRef,
+}: {
+  onChange: (value: string) => void;
+  clearValueRef?: React.MutableRefObject<() => void>;
+}) => {
+  const [searchValue, setSearchValue] = useState('');
   const onChange = useCallback(
-    _.debounce((value) => {
+    (value) => {
       setSearchValue(value);
       _onChange(value);
-    }, 300),
-    [setSearchValue],
+    },
+    [_onChange],
   );
 
-  if (process.env.NODE_ENV !== 'production' && !setSearchValue) {
-    throw new Error(
-      'useCollectionDataSourceItems: please use in SchemaInitializerButtonContext and provide setSearchValue',
-    );
+  if (clearValueRef) {
+    clearValueRef.current = () => {
+      setSearchValue('');
+    };
   }
 
   return <SelectCollection value={searchValue} onChange={onChange} />;
@@ -86,7 +89,7 @@ const LoadingItem = ({ loadMore }) => {
 const MenuWithLazyLoadChildren = ({ items: _items, style }: { items: any[]; style?: React.CSSProperties }) => {
   const [items, setItems] = useState(_items);
   const [isPending, startTransition] = useTransition();
-  const { setSearchValue } = useContext(SchemaInitializerButtonContext);
+  const clearSearchValueRef = useRef(null);
   const minStep = 20;
 
   useEffect(() => {
@@ -121,10 +124,16 @@ const MenuWithLazyLoadChildren = ({ items: _items, style }: { items: any[]; styl
           if (group3.loadChildren) {
             group3.label = (
               <CollectionSearch
+                clearValueRef={clearSearchValueRef}
                 onChange={(value) => {
                   if (group3.loadChildren) {
-                    group3.children = group3.loadChildren({ searchValue: value });
-                    setItems([...items]);
+                    startTransition(() => {
+                      const result = group3.loadChildren({ searchValue: value });
+                      group3.count = minStep;
+                      group3.children = result?.slice(0, group3.count) || [];
+                      addLoadingItem(group3, result);
+                      setItems([...items]);
+                    });
                   }
                 }}
               />
@@ -134,7 +143,6 @@ const MenuWithLazyLoadChildren = ({ items: _items, style }: { items: any[]; styl
               group3.count = minStep;
               group3.children = allChildren?.slice(0, group3.count) || [];
               addLoadingItem(group3, allChildren);
-              setSearchValue('');
               setItems([...items]);
             });
           }
@@ -143,7 +151,13 @@ const MenuWithLazyLoadChildren = ({ items: _items, style }: { items: any[]; styl
     });
   });
 
-  return <Menu style={style} items={items} />;
+  const clearSearchValue = useCallback((value: string[]) => {
+    if (isEmpty(value) && clearSearchValueRef.current) {
+      clearSearchValueRef.current();
+    }
+  }, []);
+
+  return <Menu style={style} items={items} onOpenChange={clearSearchValue} />;
 };
 
 SchemaInitializer.Button = observer(
@@ -165,7 +179,6 @@ SchemaInitializer.Button = observer(
     const { insertAdjacent, findComponent, designable } = useDesignable();
     const [visible, setVisible] = useState(false);
     const { Component: CollectionComponent, getMenuItem, clean } = useMenuItem();
-    const [searchValue, setSearchValue] = useState('');
     const [isPending, startTransition] = useTransition();
     const menuItems = useRef([]);
     const { styles } = useStyles();
@@ -279,26 +292,27 @@ SchemaInitializer.Button = observer(
       menuItems.current = renderItems(items);
     }
 
-    const dropdownRender = () => (
-      <MenuWithLazyLoadChildren
-        style={{
-          maxHeight: '50vh',
-          overflowY: 'auto',
-        }}
-        items={menuItems.current}
-      />
+    const dropdownRender = useCallback(
+      () => (
+        <MenuWithLazyLoadChildren
+          style={{
+            maxHeight: '50vh',
+            overflowY: 'auto',
+          }}
+          items={menuItems.current}
+        />
+      ),
+      [],
     );
 
     return (
-      <SchemaInitializerButtonContext.Provider value={{ visible, setVisible, searchValue, setSearchValue }}>
+      <SchemaInitializerButtonContext.Provider value={{ visible, setVisible }}>
         {visible ? <CollectionComponent /> : null}
         <Dropdown
           className={classNames('nb-schema-initializer-button')}
           openClassName={`nb-schema-initializer-button-open`}
           open={visible}
           onOpenChange={(open) => {
-            // 如果不清空输入框的值，那么下次打开的时候会出现上次输入的值
-            setSearchValue('');
             changeMenu(open);
           }}
           dropdownRender={dropdownRender}
@@ -326,7 +340,7 @@ SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
   if (items?.length > 0) {
     const renderMenuItem = (items: SchemaInitializerItemOptions[], parentKey: string) => {
       if (!items?.length) {
-        return null;
+        return [];
       }
       return items.map((item, indexA) => {
         if (item.type === 'divider') {
