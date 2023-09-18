@@ -75,9 +75,9 @@ export class PluginManager {
         const currentLang = ctx.getCurrentLocale();
         let body = '';
         if (ctx.path === DOCS_README) {
-          body = getDocReadme(plugins, currentLang);
+          body = await getDocReadme(plugins, currentLang);
         } else if (ctx.path === DOCS_SIDE_BAR) {
-          body = getDocSidebar(plugins, currentLang);
+          body = await getDocSidebar(plugins, currentLang);
         }
         ctx.body = body;
         return;

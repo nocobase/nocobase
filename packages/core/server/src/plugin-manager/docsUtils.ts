@@ -110,15 +110,15 @@ interface PackageDocsWithLangReturn {
   packageDir: string;
   docsPath: PackageDocsPath;
 }
-export function getPackageDocsWithLang(
+export async function getPackageDocsWithLang(
   packageName: string,
   currentLang: string,
   defaultLang: string,
-): PackageDocsWithLangReturn {
+): Promise<PackageDocsWithLangReturn> {
   const packageDir = path.dirname(require.resolve(packageName + '/package.json'));
   const globOptions = { cwd: packageDir, absolute: false, onlyFiles: true, caseSensitiveMatch: false };
-  const readmes = glob.sync(['README*.md'], globOptions);
-  const changeLogs = glob.sync(['CHANGELOG*.md'], globOptions);
+  const readmes = await glob(['README*.md'], globOptions);
+  const changeLogs = await glob(['CHANGELOG*.md'], globOptions);
 
   let docs = [];
   let docsGlobPath = 'docs/**/*.md';
@@ -127,7 +127,7 @@ export function getPackageDocsWithLang(
   } else if (fs.existsSync(path.join(packageDir, 'docs', defaultLang))) {
     docsGlobPath = `docs/${defaultLang}/**/*.md`;
   }
-  docs = glob.sync(docsGlobPath, globOptions);
+  docs = await glob(docsGlobPath, globOptions);
 
   let README = null;
   let CHANGELOG = null;
@@ -222,10 +222,10 @@ export function getPackageDocsWithLang(
  *   }
  * ]
  */
-export function buildDocsMenuTree(arr: string[], packageDir: string) {
+export async function buildDocsMenuTree(arr: string[], packageDir: string): Promise<DocMenu[]> {
   const result: DocMenu[] = [];
   // 遍历每个路径
-  for (const filePath of arr) {
+  for await (const filePath of arr) {
     const parts = filePath.replace('docs/', '').replace('zh-CN', '').split('/').filter(Boolean); // 分割路径并去除空部分
 
     let currentNode: DocMenu[] = result; // 当前节点从根节点开始
@@ -237,7 +237,7 @@ export function buildDocsMenuTree(arr: string[], packageDir: string) {
 
       if (isLastPart) {
         // 如果是路径的最后一个部分，则创建叶子节点
-        const markdown = fs.readFileSync(path.join(packageDir, filePath), 'utf-8');
+        const markdown = await fs.promises.readFile(path.join(packageDir, filePath), 'utf-8');
         const title = getMarkdownTitleFromFilePath(markdown, filePath);
         const { tags = [], sort = 0 } = matter(markdown).data || {};
         currentNode.push({
@@ -302,8 +302,8 @@ export function buildDocsMenuTree(arr: string[], packageDir: string) {
  * }
  * ]
  */
-export function getPluginMenu(plugin: PluginResponse, currentLang: string, defaultLang: string, locale: object) {
-  const packageDocs = getPackageDocsWithLang(plugin.packageName, currentLang, defaultLang);
+export async function getPluginMenu(plugin: PluginResponse, currentLang: string, defaultLang: string, locale: object) {
+  const packageDocs = await getPackageDocsWithLang(plugin.packageName, currentLang, defaultLang);
   const menu: DocMenu[] = [];
   const { docsPath, packageDir } = packageDocs;
   if (docsPath.README) {
@@ -312,12 +312,19 @@ export function getPluginMenu(plugin: PluginResponse, currentLang: string, defau
       path: docsPath.README,
     });
   }
-  menu.push({
-    title: 'HTTP API',
-    path: `swagger?q=plugins/${plugin.name}`,
-  });
+
+  const hasSwaggerFile = await glob(['src/swagger.*', 'dist/swagger*'], { onlyFiles: true, cwd: packageDir });
+  const hasSwaggerDir = await glob(['src/swagger', 'dist/swagger'], { onlyDirectories: true, cwd: packageDir });
+
+  if (hasSwaggerFile.length > 0 || hasSwaggerDir.length > 0) {
+    menu.push({
+      title: 'HTTP API',
+      path: `swagger?q=plugins/${plugin.name}`,
+    });
+  }
+
   if (docsPath.docs.length > 0) {
-    menu.push(...buildDocsMenuTree(docsPath.docs, packageDir));
+    menu.push(...(await buildDocsMenuTree(docsPath.docs, packageDir)));
   }
 
   if (docsPath.CHANGELOG) {
@@ -421,23 +428,27 @@ function getPluginsSidebar(menuData: DocMenu[], currentLang: string) {
   ]);
 }
 
-function getMenuData(plugins: PluginResponse[], currentLang: string, defaultLang = 'en-US', locale: object = {}) {
-  const menuData = plugins.map((plugin) => getPluginMenu(plugin, currentLang, defaultLang, locale));
+async function getMenuData(plugins: PluginResponse[], currentLang: string, defaultLang = 'en-US', locale: object = {}) {
+  const menuData = await Promise.all(plugins.map((plugin) => getPluginMenu(plugin, currentLang, defaultLang, locale)));
   return menuData.flat();
 }
 
 /**
  * get doc sidebar
  */
-export const getDocSidebar = (plugins: PluginResponse[], currentLang: string, defaultLang = 'en-US'): string => {
-  const menuData = getMenuData(plugins, currentLang, defaultLang);
+export const getDocSidebar = async (
+  plugins: PluginResponse[],
+  currentLang: string,
+  defaultLang = 'en-US',
+): Promise<string> => {
+  const menuData = await getMenuData(plugins, currentLang, defaultLang);
   const tagsSidebar = getTagsSidebar(menuData, currentLang);
   const pluginsSidebar = getPluginsSidebar(menuData, currentLang);
   const Overview = docsI18n[currentLang]?.Overview || 'Overview';
   return `* [${Overview}](/)\n* [HTTP API](${PLUGIN_STATICS_PATH}swagger)\n${tagsSidebar}\n${pluginsSidebar}`;
 };
 
-function getPluginList(plugins: PluginResponse[], lang: string) {
+function getPluginList(plugins: PluginResponse[]) {
   return plugins
     .map((item) =>
       item.description
@@ -450,8 +461,8 @@ function getPluginList(plugins: PluginResponse[], lang: string) {
 /**
  * get plugin docs README.md
  */
-export const getDocReadme = (plugins: PluginResponse[], currentLang: string, defaultLang = 'en-US') => {
-  const menuData = getMenuData(plugins, currentLang, defaultLang);
+export const getDocReadme = async (plugins: PluginResponse[], currentLang: string, defaultLang = 'en-US') => {
+  const menuData = await getMenuData(plugins, currentLang, defaultLang);
   const tagsMenu = getTagsMenu(menuData, currentLang);
 
   const tags = tagsMenu
@@ -459,7 +470,7 @@ export const getDocReadme = (plugins: PluginResponse[], currentLang: string, def
       return `* [${item.title}](${item.children[0].path})`;
     })
     .join('\n');
-  const pluginList = getPluginList(plugins, currentLang);
+  const pluginList = getPluginList(plugins);
   const Overview = docsI18n[currentLang]?.Overview || 'Overview';
   return `# ${Overview}\n\n${tags.length ? '## Tags\n\n' + tags : ''}\n\n## Plugins\n\n${pluginList}`;
 };
