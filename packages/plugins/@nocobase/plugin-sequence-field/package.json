@@ -1,0 +1,31 @@
+{
+  "name": "@nocobase/plugin-sequence-field",
+  "displayName": "Sequence field",
+  "displayName.zh-CN": "自动编码字段",
+  "description": "",
+  "description.zh-CN": "",
+  "version": "0.14.0-alpha.3",
+  "license": "AGPL-3.0",
+  "main": "./dist/server/index.js",
+  "devDependencies": {
+    "@formily/antd-v5": "1.x",
+    "@formily/core": "2.x",
+    "@formily/react": "2.x",
+    "antd": "5.x",
+    "classnames": "^2.3.1",
+    "cron-parser": "4.4.0",
+    "react": "18.x",
+    "react-i18next": "^11.15.1",
+    "react-js-cron": "^3.1.0"
+  },
+  "peerDependencies": {
+    "@nocobase/actions": "0.x",
+    "@nocobase/client": "0.x",
+    "@nocobase/database": "0.x",
+    "@nocobase/plugin-collection-manager": "0.x",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x",
+    "@nocobase/utils": "0.x"
+  },
+  "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
+}

@@ -33,4 +33,3 @@ export * from './time';
 export * from './updatedAt';
 export * from './updatedBy';
 export * from './url';
-export * from './username';

@@ -1,4 +1,4 @@
-import { Plugin } from '@nocobase/server';
+import { Plugin, PluginManager } from '@nocobase/server';
 import _ from 'lodash';
 import path from 'path';
 
@@ -7,7 +7,7 @@ export class PresetNocoBase extends Plugin {
     'error-handler',
     'collection-manager',
     'ui-schema-storage',
-    'ui-routes-storage',
+    // 'ui-routes-storage',
     'file-manager',
     'system-settings',
     'sequence-field',
@@ -71,19 +71,27 @@ export class PresetNocoBase extends Plugin {
       },
     });
     this.app.on('beforeUpgrade', async () => {
-      await this.createIfNotExist();
+      await this.createIfNotExists();
     });
   }
 
   get allPlugins() {
     return this.builtInPlugins
       .map((name) => {
-        return { name, enabled: true, builtIn: true } as any;
+        const packageName = PluginManager.getPackageName(name);
+        const packageJson = PluginManager.getPackageJson(packageName);
+        return { name, packageName, enabled: true, builtIn: true, version: packageJson.version } as any;
       })
-      .concat(this.localPlugins.map((name) => ({ name })));
+      .concat(
+        this.localPlugins.map((name) => {
+          const packageName = PluginManager.getPackageName(name);
+          const packageJson = PluginManager.getPackageJson(packageName);
+          return { name, packageName, version: packageJson.version };
+        }),
+      );
   }
 
-  async createIfNotExist() {
+  async createIfNotExists() {
     const repository = this.app.db.getRepository<any>('applicationPlugins');
     const existPlugins = await repository.find();
     const existPluginNames = existPlugins.map((item) => item.name);
@@ -92,11 +100,8 @@ export class PresetNocoBase extends Plugin {
   }
 
   async install() {
-    const repository = this.app.db.getRepository<any>('applicationPlugins');
-    const existPlugins = await repository.find();
-    const existPluginNames = existPlugins.map((item) => item.name);
-    const plugins = this.allPlugins.filter((item) => !existPluginNames.includes(item.name));
-    await repository.create({ values: plugins });
+    const repository = this.db.getRepository<any>('applicationPlugins');
+    await this.createIfNotExists();
     this.log.debug('install preset plugins');
     await repository.init();
     await this.app.pm.load();

@@ -21,8 +21,11 @@ describe('parse date', () => {
 
   it('should parse quarter', async () => {
     expectDate('2023Q1').toEqual(['2023-01-01T00:00:00.000Z', '2023-04-01T00:00:00.000Z']);
+    expectDate('2023Q2').toEqual(['2023-04-01T00:00:00.000Z', '2023-07-01T00:00:00.000Z']);
     expectDate('2023Q1+08:00').toEqual(['2022-12-31T16:00:00.000Z', '2023-03-31T16:00:00.000Z']);
+    expectDate('2023Q2+08:00').toEqual(['2023-03-31T16:00:00.000Z', '2023-06-30T16:00:00.000Z']);
     expectDate('2023Q1', { timezone: '+08:00' }).toEqual(['2022-12-31T16:00:00.000Z', '2023-03-31T16:00:00.000Z']);
+    expectDate('2023Q2', { timezone: '+08:00' }).toEqual(['2023-03-31T16:00:00.000Z', '2023-06-30T16:00:00.000Z']);
   });
 
   it('should parse iso week', async () => {

@@ -1,0 +1,28 @@
+{
+  "name": "@nocobase/plugin-charts",
+  "displayName": "Charts(Deprecated)",
+  "displayName.zh-CN": "图表（废弃）",
+  "description": "Out-of-the-box, feature-rich chart plugins.",
+  "description.zh-CN": "开箱即用、丰富的报表。",
+  "version": "0.14.0-alpha.3",
+  "main": "./dist/server/index.js",
+  "devDependencies": {
+    "@ant-design/icons": "5.x",
+    "@formily/antd-v5": "1.x",
+    "@formily/core": "2.x",
+    "@formily/react": "2.x",
+    "@formily/shared": "2.x",
+    "antd": "5.x",
+    "json5": "^2.2.3",
+    "react": "^18.2.0",
+    "react-i18next": "^11.15.1",
+    "react-router-dom": "^6.11.2"
+  },
+  "peerDependencies": {
+    "@nocobase/client": "0.x",
+    "@nocobase/database": "0.x",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x",
+    "@nocobase/utils": "0.x"
+  }
+}

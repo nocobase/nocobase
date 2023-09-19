@@ -1,0 +1,33 @@
+{
+  "name": "@nocobase/plugin-mobile-client",
+  "version": "0.14.0-alpha.3",
+  "main": "./dist/server/index.js",
+  "displayName": "Mobile client",
+  "displayName.zh-CN": "移动端",
+  "description": "Provides the ability to configure mobile pages",
+  "description.zh-CN": "提供移动端页面配置的能力",
+  "devDependencies": {
+    "@ant-design/icons": "5.x",
+    "@formily/antd-v5": "1.x",
+    "@formily/react": "2.x",
+    "@formily/shared": "2.x",
+    "@types/react": "17.x",
+    "@types/react-dom": "17.x",
+    "ahooks": "3.x",
+    "antd": "5.x",
+    "antd-mobile": "^5.29.1",
+    "antd-style": "3.x",
+    "classnames": "2.x",
+    "react": "18.x",
+    "react-dom": "18.x",
+    "react-i18next": "11.x",
+    "react-router-dom": "6.x"
+  },
+  "peerDependencies": {
+    "@nocobase/client": "0.x",
+    "@nocobase/database": "0.x",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x",
+    "@nocobase/utils": "0.x"
+  }
+}

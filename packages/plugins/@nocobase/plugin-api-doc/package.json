@@ -1,0 +1,24 @@
+{
+  "name": "@nocobase/plugin-api-doc",
+  "version": "0.14.0-alpha.3",
+  "displayName": "API documentation",
+  "displayName.zh-CN": "API 文档",
+  "description": "An OpenAPI documentation generator for NocoBase HTTP API",
+  "description.zh-CN": "NocoBase HTTP API 的 OpenAPI 文档生成器",
+  "license": "AGPL-3.0",
+  "main": "./dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
+  "devDependencies": {
+    "swagger-ui-dist": "^5.3.1"
+  },
+  "peerDependencies": {
+    "@nocobase/client": "0.x",
+    "@nocobase/database": "0.x",
+    "@nocobase/server": "0.x"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nocobase/nocobase.git",
+    "directory": "packages/plugins/api-doc"
+  }
+}

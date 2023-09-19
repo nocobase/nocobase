@@ -1,0 +1,25 @@
+{
+  "name": "@nocobase/plugin-audit-logs",
+  "version": "0.14.0-alpha.3",
+  "displayName": "Audit logs",
+  "displayName.zh-CN": "审计日志",
+  "description": "Data addition, modification, deletion logs",
+  "description.zh-CN": "数据的增删改日志",
+  "main": "./dist/server/index.js",
+  "license": "AGPL-3.0",
+  "devDependencies": {
+    "@ant-design/icons": "5.x",
+    "@formily/antd-v5": "1.x",
+    "@formily/react": "2.x",
+    "@formily/shared": "2.x",
+    "react": "^18.2.0",
+    "react-i18next": "^11.15.1"
+  },
+  "peerDependencies": {
+    "@nocobase/client": "0.x",
+    "@nocobase/database": "0.x",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x"
+  },
+  "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
+}

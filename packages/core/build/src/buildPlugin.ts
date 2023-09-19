@@ -7,7 +7,6 @@ import { build as tsupBuild } from 'tsup';
 import { build as viteBuild } from 'vite';
 import fg from 'fast-glob';
 import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js';
-import { transformAsync } from '@babel/core';
 
 import {
   buildCheck,
@@ -18,13 +17,15 @@ import {
   getPackagesFromFiles,
   getSourcePackages,
 } from './utils/buildPluginUtils';
-import { getDepsConfig } from './utils/getDepsConfig';
+import { getDepPkgPath, getDepsConfig } from './utils/getDepsConfig';
 import { EsbuildSupportExts, globExcludeFiles } from './constant';
-import { PkgLog, getPackageJson } from './utils';
+import { PkgLog, UserConfig, getPackageJson } from './utils';
 
 const serverGlobalFiles: string[] = ['src/**', '!src/client/**', ...globExcludeFiles];
 const clientGlobalFiles: string[] = ['src/**', '!src/server/**', ...globExcludeFiles];
 const dynamicImportRegexp = /import\((["'])(.*?)\1\)/g;
+
+const sourceGlobalFiles: string[] = ['src/**/*.{ts,js,tsx,jsx}', '!src/**/__tests__'];
 
 const external = [
   // nocobase
@@ -138,6 +139,21 @@ export function deleteJsFiles(cwd: string, log: PkgLog) {
   });
 }
 
+export function writeExternalPackageVersion(cwd: string, log: PkgLog) {
+  log('write external version');
+  const sourceFiles = fg.globSync(sourceGlobalFiles, { cwd, absolute: true }).map((item) => fs.readFileSync(item, 'utf-8'));
+  const sourcePackages = getSourcePackages(sourceFiles);
+  const excludePackages = getExcludePackages(sourcePackages, external, pluginPrefix);
+  const data = excludePackages.reduce<Record<string, string>>((prev, packageName) => {
+    const depPkgPath = getDepPkgPath(packageName, cwd);
+    const depPkg = require(depPkgPath);
+    prev[packageName] = depPkg.version;
+    return prev;
+  }, {});
+  const externalVersionPath = path.join(cwd, target_dir, 'externalVersion.js');
+  fs.writeFileSync(externalVersionPath, `module.exports = ${JSON.stringify(data, null, 2)};`);
+}
+
 export async function buildServerDeps(cwd: string, serverFiles: string[], log: PkgLog) {
   log('build plugin server dependencies');
   const outDir = path.join(cwd, target_dir, 'node_modules');
@@ -230,7 +246,7 @@ export async function buildServerDeps(cwd: string, serverFiles: string[], log: P
   }
 }
 
-export async function buildPluginServer(cwd: string, sourcemap: boolean, log: PkgLog) {
+export async function buildPluginServer(cwd: string, userConfig: UserConfig, sourcemap: boolean, log: PkgLog) {
   log('build plugin server source');
   const packageJson = getPackageJson(cwd);
   const serverFiles = fg.globSync(serverGlobalFiles, { cwd, absolute: true });
@@ -240,7 +256,7 @@ export async function buildPluginServer(cwd: string, sourcemap: boolean, log: Pk
     log('%s will not be processed, only be copied to the dist directory.', chalk.yellow(otherExts.join(',')));
   }
 
-  await tsupBuild({
+  await tsupBuild(userConfig.modifyTsupConfig({
     entry: serverFiles,
     splitting: false,
     clean: false,
@@ -256,50 +272,12 @@ export async function buildPluginServer(cwd: string, sourcemap: boolean, log: Pk
       ...otherExts.reduce((prev, cur) => ({ ...prev, [cur]: 'copy' }), {}),
       '.json': 'copy',
     },
-  });
+  }));
 
   await buildServerDeps(cwd, serverFiles, log);
 }
 
-export function transformClientFilesToAmd(outDir: string, outputFileName: string, packageName: string, log: PkgLog) {
-  const files = fs.readdirSync(outDir);
-
-  return Promise.all(files.map(async file => {
-    const filePath = path.join(outDir, file);
-
-    // 只编译 JavaScript 文件
-    if (path.extname(filePath) === '.mjs' || path.extname(filePath) === '.js') {
-      let fileContent = fs.readFileSync(filePath, 'utf-8');
-
-      // import('./dayjs.mjs') => import(window.staticBaseUrl + '/@nocobase/plugin-acl/dayjs.mjs?noExt')
-      if (file === outputFileName) {
-        fileContent = fileContent.replace(dynamicImportRegexp, (match, _1, dynamicImportPath) => {
-          let absolutePath = path.join(outDir, dynamicImportPath).replace(outDir, '');
-          if (absolutePath.startsWith(path.sep)) {
-            absolutePath = absolutePath.slice(1);
-          }
-          return `import(window.staticBaseUrl + '/${packageName}/${absolutePath}?noExt')`;
-        })
-      }
-
-      const { code } = await transformAsync(fileContent, {
-        presets: [['@babel/preset-env', {
-          modules: 'amd',
-          targets: {
-            'edge': 88,
-            'firefox': 78,
-            'chrome': 87,
-            'safari': 14,
-          }
-        }]],
-        plugins: ['@babel/plugin-transform-modules-amd'],
-      });
-      fs.writeFileSync(filePath, code, 'utf-8');
-    }
-  }));
-}
-
-export async function buildPluginClient(cwd: string, sourcemap: boolean, log: PkgLog) {
+export async function buildPluginClient(cwd: string, userConfig: UserConfig, sourcemap: boolean, log: PkgLog) {
   log('build plugin client');
   const packageJson = getPackageJson(cwd);
   const clientFiles = fg.globSync(clientGlobalFiles, { cwd, absolute: true });
@@ -309,10 +287,6 @@ export async function buildPluginClient(cwd: string, sourcemap: boolean, log: Pk
 
   checkRequire(clientFiles, log);
   buildCheck({ cwd, packageJson, entry: 'client', files: clientFiles, log });
-  const hasDynamicImport = false;
-  // const hasDynamicImport = clientFileSource.some((source) => {
-  //   return source.match(dynamicImportRegexp);
-  // });
   const outDir = path.join(cwd, target_dir, 'client');
 
   const globals = excludePackages.reduce<Record<string, string>>((prev, curr) => {
@@ -325,7 +299,8 @@ export async function buildPluginClient(cwd: string, sourcemap: boolean, log: Pk
 
   const entry = fg.globSync('src/client/index.{ts,tsx,js,jsx}', { absolute: true, cwd });
   const outputFileName = 'index.js';
-  await viteBuild({
+
+  await viteBuild(userConfig.modifyViteConfig({
     mode: 'production',
     define: {
       'process.env.NODE_ENV': JSON.stringify('production'),
@@ -339,7 +314,7 @@ export async function buildPluginClient(cwd: string, sourcemap: boolean, log: Pk
       sourcemap,
       lib: {
         entry,
-        formats: [hasDynamicImport ? 'es' : 'umd'],
+        formats: ['umd'],
         name: packageJson.name,
         fileName: () => outputFileName,
       },
@@ -361,25 +336,13 @@ export async function buildPluginClient(cwd: string, sourcemap: boolean, log: Pk
       react(),
       cssInjectedByJsPlugin({ styleId: packageJson.name }),
     ],
-  });
+  }));
 
   checkFileSize(outDir, log);
-
-  // if (hasDynamicImport) {
-  //   await transformClientFilesToAmd(outDir, outputFileName, packageJson.name, log);
-  // }
 }
 
-export async function buildPlugin(cwd: string, sourcemap: boolean, log: PkgLog) {
-  await buildPluginClient(cwd, sourcemap, log);
-  await buildPluginServer(cwd, sourcemap, log);
-  const buildFile = path.join(cwd, 'build.js');
-  if (fs.existsSync(buildFile)) {
-    log('build others');
-    try {
-      await require(buildFile).run(log);
-    } catch (error) {
-      console.error(error);
-    }
-  }
+export async function buildPlugin(cwd: string, userConfig: UserConfig, sourcemap: boolean, log: PkgLog) {
+  await buildPluginClient(cwd, userConfig, sourcemap, log);
+  await buildPluginServer(cwd, userConfig, sourcemap, log);
+  writeExternalPackageVersion(cwd, log);
 }

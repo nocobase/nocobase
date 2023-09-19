@@ -1,6 +1,7 @@
 import supertest from 'supertest';
 import { Application } from '../application';
 import { Plugin } from '../plugin';
+import longJson from './fixtures/long-json';
 
 class MyPlugin extends Plugin {
   async load() {}
@@ -29,6 +30,7 @@ describe('application', () => {
       dataWrapping: false,
       registerActions: false,
     });
+
     app.resourcer.registerActionHandlers({
       list: async (ctx, next) => {
         ctx.body = [1, 2];
@@ -48,6 +50,22 @@ describe('application', () => {
 
   afterEach(async () => {
     return app.destroy();
+  });
+
+  it('should request long json', async () => {
+    app.resourcer.define({
+      name: 'test',
+      actions: {
+        test: async (ctx, next) => {
+          ctx.body = ctx.request.body;
+          await next();
+        },
+      },
+    });
+
+    const response = await agent.post('/api/test:test').send(longJson).set('Content-Type', 'application/json');
+
+    expect(response.statusCode).toBe(200);
   });
 
   it('resourcer.define', async () => {
