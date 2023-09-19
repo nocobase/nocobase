@@ -31,9 +31,9 @@ interface DocMenu {
   sort?: number;
   children?: DocMenu[];
 }
-export function arrToMarkdown(arr: DocMenu[], depth = 0, isSort = true) {
+export function arrToMarkdown(arr: DocMenu[], depth = 0, isTopSort = true) {
   let result = '';
-  if (isSort) {
+  if (isTopSort) {
     arr
       .sort((a, b) => {
         let aPath = a.path || '';
@@ -52,7 +52,7 @@ export function arrToMarkdown(arr: DocMenu[], depth = 0, isSort = true) {
     const indent = '  '.repeat(depth); // 根据深度计算缩进
     result += item.path ? `${indent}* [${item.title}](${item.path})\n` : `${indent}* ${item.title}\n`;
     if (item.children && item.children.length > 0) {
-      result += arrToMarkdown(item.children, depth + 1, isSort); // 递归处理子项
+      result += arrToMarkdown(item.children, depth + 1); // 递归处理子项
     }
   }
   return result;
@@ -316,13 +316,11 @@ export async function getPluginMenu(plugin: PluginResponse, currentLang: string,
   }
 
   menu.forEach((item) => transformMenuPathAndTitle(item, plugin.packageName, currentLang, locale));
-  const res: DocMenu[] = [
-    {
-      title: plugin.displayName || plugin.name,
-      path: `${PLUGIN_STATICS_PATH}${plugin.packageName}/_index.md`,
-      children: menu,
-    },
-  ];
+  const res: DocMenu = {
+    title: plugin.displayName || plugin.name,
+    path: `${PLUGIN_STATICS_PATH}${plugin.packageName}/_index.md`,
+    children: menu,
+  };
   return res;
 }
 
@@ -406,8 +404,7 @@ function getGuideTitle(currentLang: string) {
 }
 
 async function getMenuData(plugins: PluginResponse[], currentLang: string, defaultLang = 'en-US', locale: object = {}) {
-  const menuData = await Promise.all(plugins.map((plugin) => getPluginMenu(plugin, currentLang, defaultLang, locale)));
-  return menuData.flat();
+  return Promise.all(plugins.map((plugin) => getPluginMenu(plugin, currentLang, defaultLang, locale)));
 }
 
 /**
