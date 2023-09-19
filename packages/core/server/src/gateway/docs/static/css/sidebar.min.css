@@ -9,7 +9,7 @@
   position: relative;
   margin: 0;
   cursor: pointer;
-  margin-left: 14px
+  margin-left: 10px
 }
 
 .sidebar-nav ul:not(.app-sub-sidebar)>li::before {
