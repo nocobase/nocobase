@@ -6,7 +6,7 @@ import { EventEmitter } from 'events';
 import fs from 'fs';
 import http, { IncomingMessage, ServerResponse } from 'http';
 import { promisify } from 'node:util';
-import { resolve } from 'path';
+import { resolve, basename } from 'path';
 import qs from 'qs';
 import handler from 'serve-handler';
 import { parse } from 'url';
@@ -133,14 +133,14 @@ export class Gateway extends EventEmitter {
       });
     }
 
-    if (pathname.endsWith('swagger.md')) {
+    if (pathname.includes('/root/')) {
       await compress(req, res);
       return handler(req, res, {
         public: __dirname,
         rewrites: [
           {
             source: pathname,
-            destination: '/docs/swagger.md',
+            destination: `/docs/${basename(pathname)}`,
           },
         ],
       });

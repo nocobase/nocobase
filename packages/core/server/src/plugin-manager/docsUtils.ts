@@ -31,26 +31,28 @@ interface DocMenu {
   sort?: number;
   children?: DocMenu[];
 }
-export function arrToMarkdown(arr: DocMenu[], depth = 0) {
+export function arrToMarkdown(arr: DocMenu[], depth = 0, isSort = true) {
   let result = '';
-  arr
-    .sort((a, b) => {
-      let aPath = a.path || '';
-      let bPath = b.path || '';
-      if (aPath.endsWith('index.md')) {
-        aPath = aPath.replace('index.md', '.md');
-      }
-      if (bPath.endsWith('index.md')) {
-        bPath = bPath.replace('index.md', '.md');
-      }
-      return aPath.localeCompare(bPath);
-    })
-    .sort((a, b) => a.sort - b.sort);
+  if (isSort) {
+    arr
+      .sort((a, b) => {
+        let aPath = a.path || '';
+        let bPath = b.path || '';
+        if (aPath.endsWith('index.md')) {
+          aPath = aPath.replace('index.md', '.md');
+        }
+        if (bPath.endsWith('index.md')) {
+          bPath = bPath.replace('index.md', '.md');
+        }
+        return aPath.localeCompare(bPath);
+      })
+      .sort((a, b) => a.sort - b.sort);
+  }
   for (const item of arr) {
     const indent = '  '.repeat(depth); // 根据深度计算缩进
     result += item.path ? `${indent}* [${item.title}](${item.path})\n` : `${indent}* ${item.title}\n`;
     if (item.children && item.children.length > 0) {
-      result += arrToMarkdown(item.children, depth + 1); // 递归处理子项
+      result += arrToMarkdown(item.children, depth + 1, isSort); // 递归处理子项
     }
   }
   return result;
@@ -302,7 +304,7 @@ export async function getPluginMenu(plugin: PluginResponse, currentLang: string,
   if (hasSwaggerFile.length > 0 || hasSwaggerDir.length > 0) {
     menu.push({
       title: 'HTTP API',
-      path: `swagger?ns=plugins/${plugin.name}`,
+      path: `root/swagger.md?ns=plugins/${plugin.name}`,
     });
   }
 
@@ -399,25 +401,8 @@ function getOverviewTitle(currentLang: string) {
   return currentLang === 'zh-CN' ? '总览' : 'Overview';
 }
 
-// 根据 menu 中的 tags，生成聚合目录信息
-function getTagsSidebar(menuData: DocMenu[], currentLang: string) {
-  const tagsMenu = getTagsMenu(menuData);
-  return arrToMarkdown([
-    {
-      title: getTagsTitle(currentLang),
-      children: tagsMenu,
-    },
-  ]);
-}
-
-// 根据 menu，生成插件自己的 sidebar
-function getPluginsSidebar(menuData: DocMenu[], currentLang: string) {
-  return arrToMarkdown([
-    {
-      title: getPluginsTitle(currentLang),
-      children: menuData.flat(),
-    },
-  ]);
+function getGuideTitle(currentLang: string) {
+  return currentLang === 'zh-CN' ? '指引' : 'Guide';
 }
 
 async function getMenuData(plugins: PluginResponse[], currentLang: string, defaultLang = 'en-US', locale: object = {}) {
@@ -434,10 +419,32 @@ export const getDocSidebar = async (
   defaultLang = 'en-US',
 ): Promise<string> => {
   const menuData = await getMenuData(plugins, currentLang, defaultLang);
-  const tagsSidebar = getTagsSidebar(menuData, currentLang);
-  const pluginsSidebar = getPluginsSidebar(menuData, currentLang);
-  const overviewTitle = getOverviewTitle(currentLang);
-  return `* [${overviewTitle}](/)\n* [HTTP API](${PLUGIN_STATICS_PATH}swagger)\n${tagsSidebar}\n${pluginsSidebar}`;
+  return arrToMarkdown(
+    [
+      {
+        title: getOverviewTitle(currentLang),
+        path: '/',
+      },
+      {
+        title: 'HTTP API',
+        path: `/root/swagger.md`,
+      },
+      {
+        title: getGuideTitle(currentLang),
+        path: `/root/guide.md`,
+      },
+      {
+        title: getTagsTitle(currentLang),
+        children: getTagsMenu(menuData),
+      },
+      {
+        title: getPluginsTitle(currentLang),
+        children: menuData.flat(),
+      },
+    ],
+    0,
+    false,
+  );
 };
 
 function getPluginList(plugins: PluginResponse[]) {
@@ -455,11 +462,7 @@ export const getOverview = async (plugins: PluginResponse[], currentLang: string
   const menuData = await getMenuData(plugins, currentLang, defaultLang);
   const tagsMenu = getTagsMenu(menuData);
 
-  const tags = tagsMenu
-    .map((item) => {
-      return `* [${item.title}](${item.path})`;
-    })
-    .join('\n');
+  const tags = tagsMenu.map((item) => `* [${item.title}](${item.path})`).join('\n');
   const pluginList = getPluginList(plugins);
 
   const overviewTitle = getOverviewTitle(currentLang);

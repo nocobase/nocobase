@@ -60,6 +60,9 @@
       return content.replace(regex, '');
     }
 
+        // 再 docsify.js 中使用到这个
+        window.removeFrontmatter = removeFrontmatter;
+
       /**
        * get package name by client static url
        *
@@ -176,7 +179,7 @@
               }
               content = content.replace('REPLACE', url);
             }
-            return removeFrontmatter(content);
+            return content;
           });
         }
       ]
