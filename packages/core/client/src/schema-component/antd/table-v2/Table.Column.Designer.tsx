@@ -264,8 +264,9 @@ export const TableColumnDesigner = (props) => {
             readOnlyMode === 'read-pretty'
               ? [
                   { label: t('Title'), value: 'Select' },
+                  isFileField && { label: t('File manager'), value: 'FileManager' },
                   { label: t('Tag'), value: 'Tag' },
-                ]
+                ].filter(Boolean)
               : fieldModeOptions
           }
           value={fieldMode}
