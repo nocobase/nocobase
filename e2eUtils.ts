@@ -1,5 +1,7 @@
 import { uid } from '@formily/shared';
-import { Page, request, test } from '@playwright/test';
+import { Page, expect, request, test } from '@playwright/test';
+
+export { expect, test };
 
 interface CollectionSetting {
   title: string;
@@ -85,7 +87,7 @@ interface CollectionSetting {
  * 2. 在每个测试运行结束后，删除测试期间创建的一个或多个 collection。
  * 3. 确保每个测试中配置按钮都是可见的。
  */
-export const registerHooks = () => {
+const registerHooks = () => {
   test.beforeEach(async ({ page }) => {
     // 每个测试运行前，都新建一个页面
     await page.goto(`/admin/${await createPage()}`);
@@ -111,6 +113,18 @@ export const registerHooks = () => {
     }
   });
 };
+
+registerHooks();
+
+// @ts-ignore
+export const describe: typeof test.describe = (title, callback) => {
+  return test.describe(title, () => {
+    registerHooks();
+    callback();
+  });
+};
+
+Object.assign(describe, test.describe);
 
 const getStorageItem = (key: string, storageState: any) => {
   return storageState.origins

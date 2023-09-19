@@ -1,7 +1,4 @@
-import { test } from '@playwright/test';
-import { registerHooks } from 'e2eUtils';
-
-registerHooks();
+import { test } from 'e2eUtils';
 
 test('test', async ({ page }) => {
   await page.goto('/');

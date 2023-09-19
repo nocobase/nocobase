@@ -1,7 +1,4 @@
-import { expect, test } from '@playwright/test';
-import { createPageWithUISchema, registerHooks } from 'e2eUtils';
-
-registerHooks();
+import { createPageWithUISchema, expect, test } from 'e2eUtils';
 
 test('createPageWithUISchema', async ({ page }) => {
   await createPageWithUISchema(page, {

@@ -1,9 +1,6 @@
-import { expect, test } from '@playwright/test';
-import { registerHooks } from 'e2eUtils';
+import { describe, expect, test } from 'e2eUtils';
 
-registerHooks();
-
-test.describe('create data block', () => {
+describe('create data block', () => {
   test('table', async ({ page }) => {
     await page.getByRole('button', { name: 'plus Add block' }).hover();
     await page.getByRole('menuitem', { name: 'table Table right' }).hover();

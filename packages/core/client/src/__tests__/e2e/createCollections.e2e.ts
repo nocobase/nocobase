@@ -1,7 +1,4 @@
-import { expect, test } from '@playwright/test';
-import { createCollections, registerHooks } from 'e2eUtils';
-
-registerHooks();
+import { createCollections, expect, test } from 'e2eUtils';
 
 test('createCollections', async ({ page }) => {
   await createCollections(page, [
