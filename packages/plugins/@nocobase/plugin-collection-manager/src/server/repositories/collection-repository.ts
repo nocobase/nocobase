@@ -18,9 +18,9 @@ export class CollectionRepository extends Repository {
 
   async load(options: LoadOptions = {}) {
     const { filter, skipExist } = options;
-    console.log('start load collections');
+    this.database.logger.info('start load collections', { submodule: 'CollectionRepository', function: 'load' });
     const instances = (await this.find({ filter, appends: ['fields'] })) as CollectionModel[];
-    console.log('end load collections');
+    this.database.logger.info('end load collections', { submodule: 'CollectionRepository', function: 'load' });
 
     const graphlib = CollectionsGraph.graphlib();
 
@@ -92,7 +92,10 @@ export class CollectionRepository extends Repository {
       if (lodash.isArray(skipField) && skipField.length) {
         lazyCollectionFields[instanceName] = skipField;
       }
-      this.database.logger.debug(`load ${instanceName} collection`);
+      this.database.logger.debug(`load collection`, instanceName, {
+        submodule: 'CollectionRepository',
+        function: 'load',
+      });
       this.app.setMaintainingMessage(`load ${instanceName} collection`);
 
       await nameMap[instanceName].load({ skipField });
@@ -100,19 +103,25 @@ export class CollectionRepository extends Repository {
 
     // load view fields
     for (const viewCollectionName of viewCollections) {
-      this.database.logger.debug(`load ${viewCollectionName} collection fields`);
+      this.database.logger.debug(`load collection fields`, viewCollectionName, {
+        submodule: 'CollectionRepository',
+        function: 'load',
+      });
       this.app.setMaintainingMessage(`load ${viewCollectionName} collection fields`);
       await nameMap[viewCollectionName].loadFields({});
     }
 
     // load lazy collection field
     for (const [collectionName, skipField] of Object.entries(lazyCollectionFields)) {
-      this.database.logger.debug(`load ${collectionName} collection fields`);
+      this.database.logger.debug(`load collection fields`, collectionName, {
+        submodule: 'CollectionRepository',
+        function: 'load',
+      });
       this.app.setMaintainingMessage(`load ${collectionName} collection fields`);
       await nameMap[collectionName].loadFields({ includeFields: skipField });
     }
 
-    console.log('finished load collection');
+    this.database.logger.info('finished load collection', { submodule: 'CollectionRepository', function: 'load' });
   }
 
   async db2cm(collectionName: string) {

@@ -227,7 +227,7 @@ export class PluginManager {
       console.error(error);
       // empty
     }
-    this.app.log.debug(`adding plugin [${options.name}]...`, {}, 'add', 'plugin-manager');
+    this.app.log.debug(`adding plugin...`, options.name, { function: 'add', submodule: 'plugin-manager' });
     let P: any;
     try {
       P = PluginManager.resolvePlugin(options.packageName || plugin, isUpgrade, !!options.packageName);
@@ -274,7 +274,7 @@ export class PluginManager {
       if (!plugin.enabled) {
         continue;
       }
-      this.app.logger.debug(`before load plugin [${name}]...`);
+      this.app.logger.debug(`before load plugin...`, name, { submodule: 'plugin-manager', function: 'load' });
       await plugin.beforeLoad();
     }
 
@@ -293,11 +293,11 @@ export class PluginManager {
       }
 
       await this.app.emitAsync('beforeLoadPlugin', plugin, options);
-      this.app.logger.debug(`loading plugin [${name}]...`);
+      this.app.logger.debug(`loading plugin...`, name, { submodule: 'plugin-manager', function: 'load' });
       await plugin.load();
       plugin.state.loaded = true;
       await this.app.emitAsync('afterLoadPlugin', plugin, options);
-      this.app.logger.debug(`after load plugin [${name}]...`);
+      this.app.logger.debug(`after load plugin...`, name, { submodule: 'plugin-manager', function: 'load' });
     }
 
     this.app.setMaintainingMessage('loaded plugins');
@@ -524,11 +524,11 @@ export class PluginManager {
     await plugin.beforeLoad();
 
     await this.app.emitAsync('beforeLoadPlugin', plugin, {});
-    this.app.logger.debug(`loading plugin [${name}]...`);
+    this.app.logger.debug(`loading plugin...`, name, { submodule: 'plugin-manager', function: 'loadOne' });
     await plugin.load();
     plugin.state.loaded = true;
     await this.app.emitAsync('afterLoadPlugin', plugin, {});
-    this.app.logger.debug(`after load plugin [${name}]...`);
+    this.app.logger.debug(`after load plugin...`, name, { submodule: 'plugin-manager', function: 'loadOne' });
 
     this.app.setMaintainingMessage(`loaded plugin ${plugin.name}`);
   }

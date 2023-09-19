@@ -1,6 +1,5 @@
-import { Context, Next } from '@nocobase/actions';
 import { customLogger } from './logger';
-import { logger } from './system-logger';
+import { systemLogger } from './system-logger';
 import { pick } from 'lodash';
 const defaultRequestWhitelist = [
   'action',
@@ -13,13 +12,11 @@ const defaultRequestWhitelist = [
 const defaultResponseWhitelist = ['status'];
 
 export const requestLogger = (appName: string) => {
-  return async (ctx: Context, next: Next) => {
+  return async (ctx, next) => {
     const reqId = ctx.reqId;
     const requestLogger = customLogger(`${appName}_request`);
     const path = /^\/api\/(.+):(.+)/.exec(ctx.path);
-    const contextLogger = logger(`${appName}_context`, {
-      name: `${appName}_system`,
-    }).child({ reqId, module: path?.[1], submodule: path?.[2] });
+    const contextLogger = systemLogger(appName, 'context').child({ reqId, module: path?.[1], submodule: path?.[2] });
     // ctx.reqId = reqId;
     ctx.logger = ctx.log = contextLogger;
     const startTime = Date.now();
@@ -61,10 +58,7 @@ export const requestLogger = (appName: string) => {
       }
     }
 
-    ctx.body.meta = {
-      ...(ctx.body.meta || {}),
-      reqId,
-    };
+    ctx.res.setHeader('X-Request-Id', reqId);
 
     if (error) {
       throw error;

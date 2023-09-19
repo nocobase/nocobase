@@ -3,6 +3,7 @@ import fs from 'fs';
 import { AppSupervisor } from '../app-supervisor';
 import { writeJSON } from './ipc-socket-client';
 import { randomUUID } from 'crypto';
+import { Logger, logger } from '@nocobase/logger';
 
 export class IPCSocketServer {
   socketServer: net.Server;
@@ -49,6 +50,7 @@ export class IPCSocketServer {
                 type: 'error',
                 payload: {
                   message: err.message,
+                  stack: err.stack,
                 },
               });
             });

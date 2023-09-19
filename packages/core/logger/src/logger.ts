@@ -28,14 +28,24 @@ const getTransport = (name: string) => {
       winston.format.printf((info) =>
         Object.entries(info)
           .map(([k, v]) => {
+            if (k === 'message' && info['level'].includes('error')) {
+              return chalk.red(v);
+            }
             if (typeof v === 'object') {
-              return JSON.stringify(v);
+              try {
+                return JSON.stringify(v);
+              } catch (error) {
+                return String(v);
+              }
             }
             if (k === 'reqId' && v) {
               return chalk.gray(v);
             }
             if ((k === 'module' || k === 'submodule') && v) {
               return chalk.cyan(v);
+            }
+            if (v === 'request' || v === 'response') {
+              return chalk.green(v);
             }
             return v;
           })

@@ -5,7 +5,7 @@ import { SPLAT } from 'triple-beam';
 
 interface SystemLoggerOptions extends LoggerOptions {
   name: string; // log file name
-  seperateError?: boolean; // print error seperately
+  seperateError?: boolean; // print error seperately, default true
 }
 
 class SystemLoggerTransport extends Transport {
@@ -30,12 +30,20 @@ class SystemLoggerTransport extends Transport {
   }
 
   parseMessage(args: any[]) {
-    return {
-      meta: args[0] || {},
-      function: args[1] || '',
-      module: args[2] || '',
-      submodule: args[3] || '',
-    };
+    if (args.length === 1) {
+      const arg = args[0];
+      if (typeof arg === 'object' && (arg.module || arg.submodule || arg.function || arg.meta)) {
+        return arg;
+      }
+      return { meta: arg };
+    } else if (args.length === 2) {
+      let result = { meta: args[0] };
+      if (typeof args[1] === 'object') {
+        result = { ...result, ...args[1] };
+      }
+      return result;
+    }
+    return {};
   }
 
   log(info: any, callback: any) {
@@ -55,12 +63,15 @@ class SystemLoggerTransport extends Transport {
   }
 }
 
-export const logger = (name: string, options?: Omit<SystemLoggerOptions, 'name'> & { name?: string }) =>
-  customLogger(name, {
+export const logger = (key: string, options?: Omit<SystemLoggerOptions, 'name'> & { name?: string }) =>
+  customLogger(key, {
     transports: [
       new SystemLoggerTransport({
-        name,
+        name: key,
         ...(options || {}),
       }),
     ],
   });
+
+export const systemLogger = (app: string, key: string) =>
+  logger(`${app}_${key}`, { name: `${app}_system`, seperateError: true });

@@ -8,10 +8,10 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nocobase/nocobase.git",
-    "directory": "packages/logging"
+    "directory": "packages/logger"
   },
   "dependencies": {
-    "chalk": "^5.3.0",
+    "chalk": "^4",
     "lodash": "^4.17.21",
     "triple-beam": "^1.4.1",
     "winston": "^3.8.2",

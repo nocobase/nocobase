@@ -3,7 +3,7 @@ import { registerActions } from '@nocobase/actions';
 import { actions as authActions, AuthManager } from '@nocobase/auth';
 import { Cache, createCache, ICacheConfig } from '@nocobase/cache';
 import Database, { CollectionOptions, IDatabaseOptions } from '@nocobase/database';
-import { AppLoggerOptions, createAppLogger, logger, Logger, requestLogger, simpleLogger } from '@nocobase/logger';
+import { AppLoggerOptions, logger, Logger, systemLogger } from '@nocobase/logger';
 import { Resourcer, ResourceOptions } from '@nocobase/resourcer';
 import { applyMixins, AsyncEmitter, Toposort, ToposortOptions } from '@nocobase/utils';
 import chalk from 'chalk';
@@ -249,7 +249,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   plugin<O = any>(pluginClass: any, options?: O) {
-    this.log.debug(`add plugin ${pluginClass.name}`);
+    this.log.debug(`add plugin`, { function: 'plugin', meta: pluginClass.name });
     this.pm.addPreset(pluginClass, options);
   }
 
@@ -302,7 +302,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     if (options?.reload) {
       this.setMaintainingMessage('app reload');
-      this.log.info(`app.reload()`);
+      this.log.info(`app.reload()`, { function: 'load' });
       const oldDb = this._db;
       this.init();
       if (!oldDb.closed()) {
@@ -326,7 +326,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async reload(options?: any) {
-    this.log.debug(`start reload`);
+    this.log.debug(`start reload`, { function: 'reload' });
 
     this._loaded = false;
 
@@ -335,10 +335,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       reload: true,
     });
 
-    this.log.debug('emit afterReload');
+    this.log.debug('emit afterReload', { function: 'reload' });
     this.setMaintainingMessage('emit afterReload');
     await this.emitAsync('afterReload', this, options);
-    this.log.debug(`finish reload`);
+    this.log.debug(`finish reload`, { function: 'reload' });
   }
 
   getPlugin<P extends Plugin>(name: string | typeof Plugin) {
@@ -510,10 +510,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async stop(options: any = {}) {
-    this.log.debug('stop app...');
+    this.log.debug('stop app...', { function: 'stop' });
     this.setMaintainingMessage('stopping app...');
     if (this.stopped) {
-      this.log.warn(`Application ${this.name} already stopped`);
+      this.log.warn(`Application ${this.name} already stopped`, { function: 'stop' });
       return;
     }
 
@@ -523,30 +523,30 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       // close database connection
       // silent if database already closed
       if (!this.db.closed()) {
-        this.logger.info(`close db`);
+        this.log.info(`close db`, { function: 'stop' });
         await this.db.close();
       }
     } catch (e) {
-      this.log.error(e);
+      this.log.error(e.message, { function: 'stop', meta: e.stack });
     }
 
     await this.emitAsync('afterStop', this, options);
 
     this.stopped = true;
-    this.log.info(`${this.name} is stopped`);
+    this.log.info(`${this.name} is stopped`, { function: 'stop' });
     this._started = false;
   }
 
   async destroy(options: any = {}) {
-    this.logger.debug('start destroy app');
+    this.log.debug('start destroy app', { function: 'destory' });
     this.setMaintainingMessage('destroying app...');
     await this.emitAsync('beforeDestroy', this, options);
     await this.stop(options);
 
-    this.logger.debug('emit afterDestroy');
+    this.log.debug('emit afterDestroy', { function: 'destory' });
     await this.emitAsync('afterDestroy', this, options);
 
-    this.logger.debug('finish destroy app');
+    this.log.debug('finish destroy app', { function: 'destory' });
   }
 
   async dbVersionCheck(options?: { exit?: boolean }) {
@@ -588,26 +588,26 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   async install(options: InstallOptions = {}) {
     this.setMaintainingMessage('installing app...');
-    this.log.debug('Database dialect: ' + this.db.sequelize.getDialect());
+    this.log.debug('Database dialect: ' + this.db.sequelize.getDialect(), { function: 'install' });
 
     if (options?.clean || options?.sync?.force) {
-      this.log.debug('truncate database');
+      this.log.debug('truncate database', { function: 'install' });
       await this.db.clean({ drop: true });
-      this.log.debug('app reloading');
+      this.log.debug('app reloading', { function: 'install' });
       await this.reload();
     } else if (await this.isInstalled()) {
-      this.log.warn('app is installed');
+      this.log.warn('app is installed', { function: 'install' });
       return;
     }
 
-    this.log.debug('emit beforeInstall');
+    this.log.debug('emit beforeInstall', { function: 'install' });
     this.setMaintainingMessage('call beforeInstall hook...');
     await this.emitAsync('beforeInstall', this, options);
-    this.log.debug('start install plugins');
+    this.log.debug('start install plugins', { function: 'install' });
     await this.pm.install(options);
-    this.log.debug('update version');
+    this.log.debug('update version', { function: 'install' });
     await this.version.update();
-    this.log.debug('emit afterInstall');
+    this.log.debug('emit afterInstall', { function: 'install' });
     this.setMaintainingMessage('call afterInstall hook...');
     await this.emitAsync('afterInstall', this, options);
 
@@ -658,7 +658,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   protected init() {
     const options = this.options;
 
-    this._logger = logger(`${this.name}_app`, { name: `${this.name}_system` }).child({
+    this._logger = systemLogger(this.name, 'app').child({
       reqId: this.context.reqId,
       module: 'application',
     });
@@ -734,6 +734,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     const logging = (msg: any) => {
       if (typeof msg === 'string') {
         msg = msg.replace(/[\r\n]/gm, '').replace(/\s+/g, ' ');
+      }
+      if (msg.includes('INSERT INTO')) {
+        msg = msg.substring(0, 2000) + '...';
       }
       sqlLogger.debug({ reqId: this.context.reqId, message: msg });
     };

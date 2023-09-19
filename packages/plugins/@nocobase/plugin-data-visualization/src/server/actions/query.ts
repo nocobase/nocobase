@@ -303,9 +303,7 @@ export const cacheMiddleware = async (ctx: Context, next: Next) => {
   }
   await next();
   if (useCache) {
-    console.log(uid, ctx.body);
     await cache.set(uid, ctx.body, cacheConfig?.ttl || 30);
-    console.log(cache.get(uid));
   }
 };
 
@@ -331,7 +329,6 @@ export const query = async (ctx: Context, next: Next) => {
       postProcess,
     ])(ctx, async () => {});
   } catch (err) {
-    ctx.app.logger.error('charts query: ', err);
     ctx.throw(500, err);
   }
   await next();
