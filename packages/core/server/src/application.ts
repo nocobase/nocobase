@@ -23,6 +23,7 @@ import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
 import path from 'path';
+import { AppCommand } from './app-command';
 
 const packageJson = require('../package.json');
 
@@ -164,7 +165,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._cache;
   }
 
-  protected _cli: Command;
+  protected _cli: AppCommand;
 
   get cli() {
     return this._cli;
@@ -287,7 +288,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this.resourcer.registerActions(handlers);
   }
 
-  command(name: string, desc?: string, opts?: CommandOptions): Command {
+  command(name: string, desc?: string, opts?: CommandOptions): AppCommand {
     return this.cli.command(name, desc, opts).allowUnknownOption();
   }
 
@@ -364,7 +365,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   createCli() {
-    const command = new Command('nocobase')
+    const command = new AppCommand('nocobase')
       .usage('[command] [options]')
       .hook('preAction', async (_, actionCommand) => {
         this._actionCommand = actionCommand;
