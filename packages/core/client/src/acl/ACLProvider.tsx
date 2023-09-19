@@ -182,7 +182,7 @@ export const ACLCollectionProvider = (props) => {
   if (allowAll) {
     return props.children;
   }
-  const actionPath = schema?.['x-acl-action'];
+  const actionPath = schema?.['x-acl-action'] || props.actionPath;
   if (!actionPath) {
     return props.children;
   }
@@ -190,6 +190,8 @@ export const ACLCollectionProvider = (props) => {
   if (!params) {
     return null;
   }
+  const [_, actionName] = actionPath.split(':');
+  params.actionName = actionName;
   return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;
 };
 
