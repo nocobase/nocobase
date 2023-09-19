@@ -1,0 +1,111 @@
+@media only screen and (max-width: 1299px) {
+  aside.toc-nav {
+    max-width: 45px;
+    opacity: 0.6;
+    right: 0 !important;
+    margin-right: 0 !important;
+    background: #fff;
+  }
+  aside.toc-nav:hover {
+    max-width: inherit;
+    opacity: 1;
+  }
+}
+
+@media only screen and (min-width: 1300px) {
+  section.content {
+    padding-right: 250px;
+  }
+}
+
+aside.toc-nav {
+  position: fixed;
+  top: 70px;
+  right: 3%;
+  margin-right: 20px;
+  width: 250px;
+  z-index: 999999;
+  align-self: flex-start;
+  flex: 0 0 auto;
+  overflow-y: auto;
+  max-height: 70%;
+}
+
+aside.toc-nav.nothing {
+  width: 0;
+}
+
+.page_toc {
+  position: relative;
+  left: 0;
+  margin: 10px 0;
+  border: none;
+  font-size: 1.0em;
+}
+
+.page_toc p.title {
+  margin: 0;
+  padding-bottom: 5px;
+  font-weight: 600;
+  font-size: 1.2em;
+}
+
+.page_toc .anchor:hover:after {
+  content: "";
+}
+.page_toc div[class^="lv"] a:hover span {
+  color: var(--sidebar-nav-link-color--active, #42b983);
+}
+
+.page_toc div {
+  border-left: 2px solid #e8e8e8;
+  text-indent: 10px;
+  padding: 2px 0;
+  cursor: pointer;
+}
+
+.page_toc div.active {
+  border-left-color: var(--sidebar-nav-link-color--active, #42b983);
+  transition: border-left-color 0.23s;
+}
+
+.page_toc div.active a span {
+  color: var(--sidebar-nav-link-color--active, #42b983);
+  transition: color 0.23s;
+}
+
+.page_toc div[class^="lv"] a {
+  color: var(--text-color-base, black);
+  text-decoration: none;
+  font-weight: 300;
+  line-height: 2em;
+  display: block;
+}
+
+.page_toc div[class^="lv"] a span {
+  color: var(--sidebar-nav-link-color--hover, var(--sidebar-nav-link-color));
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow:ellipsis;
+}
+
+.page_toc div.lv2 {
+  text-indent: 20px;
+}
+
+.page_toc div.lv3 {
+  text-indent: 30px;
+}
+
+.page_toc div.lv4 {
+  text-indent: 40px;
+}
+
+.page_toc div.lv5 {
+  text-indent: 50px;
+}
+
+.page_toc div.lv6 {
+  text-indent: 60px;
+}
