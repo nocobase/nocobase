@@ -77,6 +77,11 @@ export const ImportActionInitializer = (props) => {
           formLayout: {
             type: 'void',
             'x-component': 'FormLayout',
+            'x-component-props': {
+              labelCol: 6,
+              wrapperCol: 10,
+              layout: 'vertical',
+            },
             properties: {
               download: {
                 type: 'void',

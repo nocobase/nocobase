@@ -28,7 +28,7 @@ export async function setCurrentRole(ctx: Context, next) {
   }
 
   if (!ctx.state.currentRole) {
-    return ctx.throw(401, 'User role not found');
+    return ctx.throw(401, { code: 'ROLE_NOT_FOUND_ERR', message: 'The user role does not exist.' });
   }
 
   await next();

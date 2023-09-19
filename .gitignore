@@ -30,3 +30,4 @@ storage/plugins
 storage/tar
 storage/tmp
 storage/app.watch.ts
+tsconfig.paths.json

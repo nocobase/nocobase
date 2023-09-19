@@ -5,7 +5,7 @@ import {
   SchemaComponentContext,
   SettingsCenterProvider,
 } from '@nocobase/client';
-import { Card, Tooltip } from 'antd';
+import { Card } from 'antd';
 import React, { useContext } from 'react';
 import { ExecutionLink } from './ExecutionLink';
 import { ExecutionResourceProvider } from './ExecutionResourceProvider';
@@ -15,7 +15,7 @@ import expressionField from './interfaces/expression';
 import { lang } from './locale';
 import { instructions } from './nodes';
 import { workflowSchema } from './schemas/workflows';
-import { triggers } from './triggers';
+import { getTriggersOptions, triggers } from './triggers';
 import { ExecutionStatusSelect } from './components/ExecutionStatusSelect';
 
 // registerField(expressionField.group, 'expression', expressionField);
@@ -34,12 +34,14 @@ function WorkflowPane() {
         <SchemaComponent
           schema={workflowSchema}
           components={{
-            Tooltip,
             WorkflowLink,
             ExecutionResourceProvider,
             ExecutionLink,
             OpenDrawer,
             ExecutionStatusSelect,
+          }}
+          scope={{
+            getTriggersOptions,
           }}
         />
       </SchemaComponentContext.Provider>
