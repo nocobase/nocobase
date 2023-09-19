@@ -44,8 +44,6 @@ export const ImportActionInitializer = (props) => {
   const { exists, remove } = useCurrentSchema('importXlsx', 'x-action', item.find, item.remove);
   const { name } = useCollection();
   const fields = useFields(name);
-  const { token } = useToken();
-
   const schema: ISchema = {
     type: 'void',
     title: '{{ t("Import") }}',
@@ -77,16 +75,12 @@ export const ImportActionInitializer = (props) => {
           formLayout: {
             type: 'void',
             'x-component': 'FormLayout',
-            'x-component-props': {
-              labelCol: 6,
-              wrapperCol: 10,
-              layout: 'vertical',
-            },
             properties: {
               download: {
                 type: 'void',
                 title: `{{ t("Step 1: Download template", {ns: "${NAMESPACE}" }) }}`,
                 'x-component': 'FormItem',
+                'x-acl-ignore': true,
                 properties: {
                   tip: {
                     type: 'void',
@@ -120,6 +114,7 @@ export const ImportActionInitializer = (props) => {
                 type: 'array',
                 title: `{{ t("Step 2: Upload Excel", {ns: "${NAMESPACE}" }) }}`,
                 'x-decorator': 'FormItem',
+                'x-acl-ignore': true,
                 'x-component': 'Upload.Dragger',
                 'x-validator': '{{ uploadValidator }}',
                 'x-component-props': {
