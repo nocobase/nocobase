@@ -97,24 +97,35 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
       });
     };
 
+    const tableDescMap = {};
+
+    const isParentColumn = async (columnName) => {
+      if (this.collection.isInherited()) {
+        const parentCollections = (<InheritedCollection>this.collection).getFlatParents();
+        for (const parentCollection of parentCollections) {
+          let parentColumns = tableDescMap[parentCollection.name];
+          if (!parentColumns) {
+            parentColumns = await queryInterface.describeTable(parentCollection.getTableNameWithSchema(), options);
+            tableDescMap[parentCollection.name] = parentColumns;
+          }
+
+          if (parentColumns[columnName]) {
+            return true;
+          }
+        }
+      }
+
+      return false;
+    };
+
     // remove columns that not in model
     for (const columnName in columns) {
       const currentAttribute = findAttributeByColumnName(columnName);
       if (!currentAttribute) {
         let shouldDelete = true;
 
-        if (this.collection.isInherited()) {
-          const parentCollections = (<InheritedCollection>this.collection).getFlatParents();
-          for (const parentCollection of parentCollections) {
-            const parentColumns = await queryInterface.describeTable(
-              parentCollection.getTableNameWithSchema(),
-              options,
-            );
-            if (parentColumns[columnName]) {
-              shouldDelete = false;
-              break;
-            }
-          }
+        if (await isParentColumn(columnName)) {
+          shouldDelete = false;
         }
 
         if (shouldDelete) {
@@ -128,6 +139,7 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
     for (const columnName in columns) {
       const column = columns[columnName];
       if (column.primaryKey) continue;
+      if (await isParentColumn(columnName)) continue;
 
       const currentAttribute = findAttributeByColumnName(columnName);
       if (!currentAttribute) continue;
