@@ -34,6 +34,14 @@
     #main h1#http-api {
       display: none;
     }
+
+    .package-name {
+      color: rgba(0,0,0,.45);
+    }
+
+    .sidebar-nav .open, .sidebar-nav .open > a {
+      color: var(--theme-color) !important;
+    }
   </style>
   <script src="/docs/static/js/swagger-ui-bundle.js" crossorigin></script>
   <script src="/docs/static/js/swagger-ui-standalone-preset.js" crossorigin></script>
@@ -59,8 +67,7 @@
       });
     }
   </script>
-
-  <div id="app"><img src="/docs/static/images/loading.gif"></div>
+  <div id="app"></div>
   <!-- config docsify -->
   <script>
     function removeFrontmatter(content) {

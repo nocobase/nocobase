@@ -25,7 +25,8 @@ export const DOCS_SPECIAL_FILES = [DOCS_README, DOCS_SIDE_BAR, DOCS_TAGS, PLUGIN
  * `
  */
 interface DocMenu {
-  title: string;
+  title?: string;
+  titleWithPackage?: string;
   path?: string;
   tags?: { key: string; title?: string }[];
   sort?: number;
@@ -50,7 +51,9 @@ export function arrToMarkdown(arr: DocMenu[], depth = 0, isTopSort = true) {
   }
   for (const item of arr) {
     const indent = '  '.repeat(depth); // 根据深度计算缩进
-    result += item.path ? `${indent}* [${item.title}](${item.path})\n` : `${indent}* ${item.title}\n`;
+    result += item.path
+      ? `${indent}* [${item.titleWithPackage || item.title}](${item.path})\n`
+      : `${indent}* ${item.titleWithPackage || item.title}\n`;
     if (item.children && item.children.length > 0) {
       result += arrToMarkdown(item.children, depth + 1); // 递归处理子项
     }
@@ -318,6 +321,7 @@ export async function getPluginMenu(plugin: PluginResponse, currentLang: string,
   menu.forEach((item) => transformMenuPathAndTitle(item, plugin.packageName, currentLang, locale));
   const res: DocMenu = {
     title: plugin.displayName || plugin.name,
+    titleWithPackage: `${plugin.displayName || plugin.name} - <span class='package-name'>${plugin.packageName}</span>`,
     path: `${PLUGIN_STATICS_PATH}${plugin.packageName}/_index.md`,
     children: menu,
   };
@@ -450,7 +454,7 @@ function getPluginList(plugins: PluginResponse[]) {
       const title = item.displayName || item.name;
       const path = `${PLUGIN_STATICS_PATH}${item.packageName}/_index.md`;
       const description = item.description ? `- ${item.description}` : '';
-      return `* [${title}](${path})- ${item.packageName} ${description}`;
+      return `* [${title}](${path}) - ${item.packageName} ${description}`;
     })
     .join('\n');
 }
