@@ -23,11 +23,17 @@
   <link rel="icon" type="image/png" sizes="16x16" href="/icon/favicon-16x16.png"> -->
   <!-- Mastodon -->
   <!-- Dark/light theme style -->
+<link rel="stylesheet" href="/docs/static/css/vue.css" />
+<link rel="stylesheet" href="/docs/static/css/docsify-darklight-theme.min.css" title="docsify-darklight-theme" />
+<link rel="stylesheet" href="/docs/static/css/sidebar.min.css" />
+<link rel="stylesheet" href="/docs/static/css/docsify-toc.css" />
+<link rel="stylesheet" href="/docs/static/css/swagger-ui.css" />
   <style>
     :root {
       --theme-color: #1677ff !important;
       --accent: #1677ff !important;
       --text-color-tertiary: #1677ff !important;
+      --bodyFontSize: 14px !important;
     }
 
     .sidebar .folder {
@@ -37,15 +43,26 @@
     #docsify-darklight-theme {
       position: fixed !important;
     }
+
+    .swagger-ui .info .title small pre {
+      background: transparent !important;
+    }
+    .swagger-ui .highlight-code .language-json {
+      background: transparent;
+      color: white;
+      font-weight: normal;
+    }
+    .swagger-ui td,
+    .swagger-ui th,
+    .swagger-ui tr {
+      border: none !important;
+    }
+    .swagger-ui table thead tr td, .swagger-ui table thead tr th P{
+      border-bottom: 1px solid rgba(59,65,81,.2) !important;
+    }
   </style>
-  <link rel="stylesheet" href="/docs/static/css/vue.css">
-  <link rel="stylesheet" href="/docs/static/css/docsify-darklight-theme.min.css" title="docsify-darklight-theme"
-    type="text/css">
-  <link rel="stylesheet" href="/docs/static/css/sidebar.min.css">
-  <link rel="stylesheet" href="/docs/static/css/docsify-toc.css">
-  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@4.5.0/swagger-ui.css" />
-  <script src="https://unpkg.com/swagger-ui-dist@4.5.0/swagger-ui-bundle.js" crossorigin></script>
-  <script src="https://unpkg.com/swagger-ui-dist@4.5.0/swagger-ui-standalone-preset.js" crossorigin></script>
+  <script src="/docs/static/js/swagger-ui-bundle.js" crossorigin></script>
+  <script src="/docs/static/js/swagger-ui-standalone-preset.js" crossorigin></script>
 </head>
 
 <body>
@@ -175,6 +192,10 @@
           },
           code: function(code, lang) {
             if (lang === "swagger") {
+              let queryIndex = window.location.hash.indexOf('?ns=');
+              if (queryIndex > -1) {
+                code += decodeURIComponent(window.location.hash.slice(queryIndex));
+              }
               return (
                 '<div id="swagger-ui"></div><iframe id="swagger-ui-iframe" style="display:none;" onload="loadSwaggerUI(\''+code+'\')" src="/docs"></iframe>'
               );

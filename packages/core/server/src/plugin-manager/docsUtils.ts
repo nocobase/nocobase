@@ -273,8 +273,6 @@ export async function getPluginMenu(plugin: PluginResponse, currentLang: string,
   const packageDocs = await getPackageDocsWithLang(plugin.packageName, currentLang, defaultLang);
   const menu: DocMenu[] = [];
   const { docsPath, packageDir } = packageDocs;
-  const hasSwaggerFile = await glob(['src/swagger.*', 'dist/swagger*'], { onlyFiles: true, cwd: packageDir });
-  const hasSwaggerDir = await glob(['src/swagger', 'dist/swagger'], { onlyDirectories: true, cwd: packageDir });
 
   if (docsPath.docs.length > 0) {
     menu.push(...(await buildDocsMenuTree(docsPath.docs, packageDir)));
@@ -287,10 +285,12 @@ export async function getPluginMenu(plugin: PluginResponse, currentLang: string,
     }
   }
 
+  const hasSwaggerFile = await glob(['src/swagger.*', 'dist/swagger.*'], { onlyFiles: true, cwd: packageDir });
+  const hasSwaggerDir = await glob(['src/swagger', 'dist/swagger'], { onlyDirectories: true, cwd: packageDir });
   if (hasSwaggerFile.length > 0 || hasSwaggerDir.length > 0) {
     menu.push({
       title: 'HTTP API',
-      path: `swagger?q=plugins/${plugin.name}`,
+      path: `swagger?ns=plugins/${plugin.name}`,
     });
   }
 
@@ -328,9 +328,7 @@ export const transformMenuPathAndTitle = (item: DocMenu, packageName: string, la
     );
     if (dirReadmeIndex > -1) {
       // 如果目录下有 index.md || README.md 则从 children 里面提取出来
-      item.title = item.children[dirReadmeIndex].title;
-      item.path = item.children[dirReadmeIndex].path;
-      item.tags = item.children[dirReadmeIndex].tags;
+      Object.assign(item, item.children[dirReadmeIndex], { children: item.children });
       item.children.splice(dirReadmeIndex, 1);
       if (item.children.length === 0) {
         item.children = null;
