@@ -41,7 +41,11 @@ export const MapBlockProvider = (props) => {
     appends.push(field[0]);
   }
   return (
-    <BlockProvider {...props} params={{ ...params, appends, paginate: false, sort: uField.componentProps.lineSort }}>
+    <BlockProvider
+      {...props}
+      runWhenParamsChanged
+      params={{ ...params, appends, paginate: false, sort: uField.componentProps.lineSort }}
+    >
       <InternalMapBlockProvider {...props} />
     </BlockProvider>
   );
