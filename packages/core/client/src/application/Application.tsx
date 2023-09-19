@@ -126,6 +126,7 @@ export class Application {
   }
 
   async load() {
+    let loadFailed = false;
     this.ws.on('message', (event) => {
       const data = JSON.parse(event.data);
       console.log(data.payload);
@@ -142,6 +143,10 @@ export class Application {
         this.maintaining = true;
         this.error = data.payload;
       } else {
+        console.log('loadFailed', loadFailed);
+        if (loadFailed) {
+          window.location.reload();
+        }
         this.maintaining = false;
         this.maintained = true;
         this.error = null;
@@ -155,6 +160,7 @@ export class Application {
       this.loading = true;
       await this.pm.load();
     } catch (error) {
+      loadFailed = true;
       this.error = {
         code: 'LOAD_ERROR',
         message: error.message,

@@ -1,0 +1,20 @@
+{
+  "name": "@nocobase/plugin-notifications",
+  "version": "0.14.0-alpha.3",
+  "description": "",
+  "license": "AGPL-3.0",
+  "main": "./dist/server/index.js",
+  "devDependencies": {
+    "@types/nodemailer": "6.4.4",
+    "nodemailer": "^6.6.1",
+    "nodemailer-mock": "^1.5.11"
+  },
+  "peerDependencies": {
+    "@nocobase/client": "0.x",
+    "@nocobase/database": "0.x",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x",
+    "@nocobase/utils": "0.x"
+  },
+  "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
+}

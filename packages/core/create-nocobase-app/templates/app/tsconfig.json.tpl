@@ -1,4 +1,5 @@
 {
+  "extends": "./tsconfig.paths.json",
   "compilerOptions": {
     "esModuleInterop": true,
     "moduleResolution": "node",
@@ -21,7 +22,7 @@
         "packages/app/*/src"
       ],
       "@{{{name}}}/plugin-*": [
-        "packages/plugins/*/src"
+        "packages/plugins/plugin-*/src"
       ]
     }
   }

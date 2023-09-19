@@ -1,0 +1,29 @@
+{
+  "name": "@nocobase/plugin-oidc",
+  "displayName": "OIDC (OpenID Connect) auth - SSO login",
+  "displayName.zh-CN": "OIDC (OpenID Connect) 认证 - SSO 登录",
+  "description": "OIDC (OpenID Connect) authentication for NocoBase",
+  "description.zh-CN": "OIDC (OpenID Connect) authentication for NocoBase",
+  "version": "0.14.0-alpha.3",
+  "license": "AGPL-3.0",
+  "main": "./dist/server/index.js",
+  "devDependencies": {
+    "@ant-design/icons": "5.x",
+    "@formily/antd-v5": "1.x",
+    "@formily/react": "2.x",
+    "ahooks": "^3.7.2",
+    "antd": "5.x",
+    "nanoid": "3.3.4",
+    "openid-client": "^5.4.2",
+    "react": "18.x",
+    "react-i18next": "^11.15.1"
+  },
+  "peerDependencies": {
+    "@nocobase/actions": "0.x",
+    "@nocobase/auth": "0.x",
+    "@nocobase/client": "0.x",
+    "@nocobase/database": "0.x",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x"
+  }
+}

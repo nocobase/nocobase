@@ -1,0 +1,26 @@
+{
+  "name": "@nocobase/plugin-saml",
+  "displayName": "SAML auth - SSO login",
+  "displayName.zh-CN": "SAML 认证 - SSO 登录",
+  "description": "SAML authentication for NocoBase",
+  "description.zh-CN": "NocoBase 的 SAML 身份验证",
+  "version": "0.14.0-alpha.3",
+  "license": "AGPL-3.0",
+  "main": "./dist/server/index.js",
+  "devDependencies": {
+    "@ant-design/icons": "5.x",
+    "@formily/react": "2.x",
+    "@node-saml/node-saml": "^4.0.2",
+    "antd": "5.x",
+    "react": "18.x",
+    "react-i18next": "^11.15.1"
+  },
+  "peerDependencies": {
+    "@nocobase/actions": "0.x",
+    "@nocobase/auth": "0.x",
+    "@nocobase/client": "0.x",
+    "@nocobase/database": "0.x",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x"
+  }
+}

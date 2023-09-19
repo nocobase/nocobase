@@ -35,6 +35,7 @@ export * from './page';
 export * from './pagination';
 export * from './password';
 export * from './percent';
+export * from './popover';
 export * from './preview';
 export * from './quick-edit';
 export * from './radio';

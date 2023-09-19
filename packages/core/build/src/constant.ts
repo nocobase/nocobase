@@ -44,3 +44,7 @@ export const getCjsPackages = (packages: Package[]) =>
     .filter((item) => !PLUGINS_DIR.some((dir) => item.location.startsWith(dir)))
     .filter((item) => !item.location.startsWith(PRESETS_DIR))
     .filter((item) => !CJS_EXCLUDE_PACKAGES.includes(item.location));
+
+// tar
+export const tarIncludesFiles = ['package.json', 'README.md', 'LICENSE', 'dist', '!node_modules', '!src'];
+export const TAR_OUTPUT_DIR = process.env.TAR_PATH ? process.env.TAR_PATH : path.join(ROOT_PATH, 'storage', 'tar');

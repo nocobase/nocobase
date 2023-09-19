@@ -1,1 +1,3 @@
 .pm2
+tmp
+app.watch.ts

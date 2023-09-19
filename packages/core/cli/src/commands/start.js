@@ -25,7 +25,7 @@ module.exports = (cli) => {
         promptForTs();
         run('ts-node', [
           '-P',
-          './tsconfig.server.json',
+          process.env.SERVER_TSCONFIG_PATH,
           '-r',
           'tsconfig-paths/register',
           `${APP_PACKAGE_ROOT}/src/index.ts`,
