@@ -6,6 +6,7 @@ export default (app: Application) => {
   const pm = app.command('pm');
 
   pm.command('create')
+    .ipc()
     .arguments('plugin')
     .action(async (plugin) => {
       await app.pm.create(plugin);
