@@ -713,4 +713,36 @@ describe('resourcer', () => {
 
     expect(context.arr).toEqual([2, 9, 10, 3]);
   });
+
+  it('add action', async () => {
+    const resourcer = new Resourcer();
+    resourcer.define({
+      name: 'test',
+      middleware: require('./middlewares/demo1'),
+      actions: {
+        list: {
+          handler: require('./actions/demo1'),
+        },
+      },
+    });
+    resourcer.getResource('test').addAction('new', async function (ctx, next) {
+      ctx.arr.push(100);
+      await next();
+      ctx.arr.push(101);
+    });
+
+    const context = {
+      arr: [],
+    };
+
+    await resourcer.execute(
+      {
+        resource: 'test',
+        action: 'new',
+      },
+      context,
+    );
+
+    expect(context.arr).toEqual([2, 100, 101, 3]);
+  });
 });
