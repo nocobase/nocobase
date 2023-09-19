@@ -2,6 +2,7 @@ import lodash from 'lodash';
 import { ModelStatic } from 'sequelize';
 import { Model } from './model';
 import { AssociationKeysToBeUpdate, BlackList, WhiteList } from './repository';
+import { isPlainObject } from '@nocobase/utils/src';
 
 type UpdateValueItem = string | number | UpdateValues;
 
@@ -58,6 +59,19 @@ export class UpdateGuard {
     this.blackList = blackList;
   }
 
+  checkValues(values) {
+    const dfs = (values, model) => {
+      const associations = model.associations;
+      for (const valueKey in values) {
+        if (associations[valueKey]) {
+          console.log(associations);
+        }
+      }
+    };
+
+    dfs(values, this.model);
+  }
+
   /**
    * Sanitize values by whitelist blacklist
    * @param values
@@ -68,6 +82,8 @@ export class UpdateGuard {
     if (!this.model) {
       throw new Error('please set model first');
     }
+
+    this.checkValues(values);
 
     const associations = this.model.associations;
     const associationsValues = lodash.pick(values, Object.keys(associations));

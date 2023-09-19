@@ -13,8 +13,24 @@ describe('update', () => {
   beforeEach(async () => {
     db = mockDatabase();
 
+    await db.clean({ drop: true });
     PostTag = db.collection({
       name: 'post_tag',
+      autoGenId: true,
+      fields: [
+        {
+          type: 'belongsTo',
+          name: 'post',
+          target: 'posts',
+          foreignKey: 'post_id',
+        },
+        {
+          type: 'belongsTo',
+          name: 'tag',
+          target: 'tags',
+          foreignKey: 'tag_id',
+        },
+      ],
     });
 
     Post = db.collection({
@@ -25,6 +41,14 @@ describe('update', () => {
           type: 'belongsToMany',
           name: 'tags',
           through: 'post_tag',
+          foreignKey: 'post_id',
+          otherKey: 'tag_id',
+        },
+        {
+          type: 'hasMany',
+          name: 'posts_tags',
+          foreignKey: 'post_id',
+          target: 'post_tag',
         },
       ],
     });
@@ -40,11 +64,14 @@ describe('update', () => {
           type: 'belongsToMany',
           name: 'posts',
           through: 'post_tag',
+          foreignKey: 'tag_id',
+          otherKey: 'post_id',
         },
       ],
     });
 
     await db.sync();
+    d;
   });
 
   it('should throw error when update data conflicted', async () => {
@@ -53,40 +80,37 @@ describe('update', () => {
         name: 't1',
       },
     });
-
     const t2 = await Tag.repository.create({
       values: {
         name: 't2',
       },
     });
-
     const post1 = await Post.repository.create({
       values: {
         title: 'p1',
         tags: [t1.get('id')],
       },
     });
-
+    const postTag = await PostTag.repository.findOne();
     let error;
-
     try {
       await Post.repository.update({
         filterByTk: post1.get('id'),
         values: {
-          post_tag: [
+          posts_tags: [
             {
-              tag: {
-                id: t1.get('id'),
-              },
+              id: postTag.get('id'),
+              tag: t1.get('id'),
+              post: post1.get('id'),
             },
           ],
           tags: [t2.get('id')],
         },
+        updateAssociationValues: ['posts_tags'],
       });
     } catch (err) {
       error = err;
     }
-
     expect(error).toBeDefined();
   });
 

@@ -423,6 +423,7 @@ export async function updateMultipleAssociation(
     }
   }
 
+  console.log({ setItems, key, value });
   // associate targets in lists1
   await model[setAccessor](setItems, { transaction, context, individualHooks: true });
 
