@@ -13,6 +13,39 @@ describe('belongs to many field', () => {
     await db.close();
   });
 
+  it('should define belongs to many relation through exists pivot collection', async () => {
+    const PostTag = db.collection({
+      name: 'postsTags',
+      fields: [
+        {
+          type: 'bigInt',
+          name: 'id',
+          primaryKey: true,
+        },
+      ],
+    });
+
+    expect(PostTag.model.rawAttributes['id']).toBeDefined();
+
+    const Tag = db.collection({
+      name: 'tags',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'belongsToMany', name: 'posts', through: 'postsTags' },
+      ],
+    });
+
+    const Post = db.collection({
+      name: 'posts',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'belongsToMany', name: 'tags', through: 'postsTags' },
+      ],
+    });
+
+    expect(PostTag.model.rawAttributes['id']).toBeDefined();
+  });
+
   test('association undefined', async () => {
     const Post = db.collection({
       name: 'posts',
