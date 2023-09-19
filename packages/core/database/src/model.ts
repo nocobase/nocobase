@@ -4,6 +4,7 @@ import { Collection } from './collection';
 import { Database } from './database';
 import { Field } from './fields';
 import { SyncRunner } from './sync-runner';
+import { InheritedCollection } from './inherited-collection';
 
 const _ = lodash;
 
@@ -100,8 +101,26 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
     for (const columnName in columns) {
       const currentAttribute = findAttributeByColumnName(columnName);
       if (!currentAttribute) {
-        await queryInterface.removeColumn(tableName, columnName, options);
-        continue;
+        let shouldDelete = true;
+
+        if (this.collection.isInherited()) {
+          const parentCollections = (<InheritedCollection>this.collection).getFlatParents();
+          for (const parentCollection of parentCollections) {
+            const parentColumns = await queryInterface.describeTable(
+              parentCollection.getTableNameWithSchema(),
+              options,
+            );
+            if (parentColumns[columnName]) {
+              shouldDelete = false;
+              break;
+            }
+          }
+        }
+
+        if (shouldDelete) {
+          await queryInterface.removeColumn(tableName, columnName, options);
+          continue;
+        }
       }
     }
 

@@ -66,6 +66,20 @@ export class InheritedCollection extends Collection {
     return this.parents;
   }
 
+  getFlatParents() {
+    // get parents as flat array
+    const parents = [];
+    for (const parent of this.parents) {
+      if (parent.isInherited()) {
+        parents.push(...(<InheritedCollection>parent).getFlatParents());
+      }
+
+      parents.push(parent);
+    }
+
+    return parents;
+  }
+
   parentFields() {
     const fields = new Map<string, Field>();
 
