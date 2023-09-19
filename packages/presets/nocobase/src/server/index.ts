@@ -26,6 +26,7 @@ export class PresetNocoBase extends Plugin {
     'data-visualization',
     'auth',
     'sms-auth',
+    'logger',
   ];
 
   localPlugins = [
