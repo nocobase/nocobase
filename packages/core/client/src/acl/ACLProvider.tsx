@@ -261,8 +261,7 @@ export const ACLCollectionFieldProvider = (props) => {
   const { allowAll } = useACLRoleContext();
   const { whitelist } = useACLFieldWhitelist();
   const [name] = (fieldSchema.name as string).split('.');
-  const allowed = whitelist.length > 0 ? whitelist.includes(name) : true;
-
+  const allowed = !fieldSchema['x-acl-ignore'] && whitelist.length > 0 ? whitelist.includes(name) : true;
   useEffect(() => {
     if (!allowed) {
       field.required = false;

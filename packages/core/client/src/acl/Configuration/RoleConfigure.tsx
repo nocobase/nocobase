@@ -5,7 +5,7 @@ import uniq from 'lodash/uniq';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
-import { SchemaComponent, FormItem } from '../../schema-component';
+import { SchemaComponent } from '../../schema-component';
 import { PermissionContext } from './PermisionProvider';
 
 const SnippetCheckboxGroup = connect((props) => {
@@ -57,7 +57,7 @@ export const RoleConfigure = () => {
   const { t } = useTranslation();
   return (
     <SchemaComponent
-      components={{ SnippetCheckboxGroup, FormItem }}
+      components={{ SnippetCheckboxGroup }}
       schema={{
         type: 'void',
         name: 'form',
