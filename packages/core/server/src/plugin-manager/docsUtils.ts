@@ -33,7 +33,19 @@ interface DocMenu {
 }
 export function arrToMarkdown(arr: DocMenu[], depth = 0) {
   let result = '';
-  arr.sort((a, b) => a.sort - b.sort);
+  arr
+    .sort((a, b) => {
+      let aPath = a.path || '';
+      let bPath = b.path || '';
+      if (aPath.endsWith('index.md')) {
+        aPath = aPath.replace('index.md', '.md');
+      }
+      if (bPath.endsWith('index.md')) {
+        bPath = bPath.replace('index.md', '.md');
+      }
+      return aPath.localeCompare(bPath);
+    })
+    .sort((a, b) => a.sort - b.sort);
   for (const item of arr) {
     const indent = '  '.repeat(depth); // 根据深度计算缩进
     result += item.path ? `${indent}* [${item.title}](${item.path})\n` : `${indent}* ${item.title}\n`;
@@ -364,7 +376,7 @@ function getTagsMenu(menuData: DocMenu[]) {
         }
         acc[tag.key].children.push({
           ...menu,
-          path: menu.path + '?tag',
+          path: `${menu.path}?${tag.key}`,
           children: null,
         });
       });
