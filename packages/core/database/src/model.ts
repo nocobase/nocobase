@@ -137,7 +137,7 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
       const existsUniqueIndexes = existsIndexes.filter((index) => index.unique);
 
       const uniqueAttributes = Object.keys(this.rawAttributes).filter((key) => {
-        return this.rawAttributes[key].unique;
+        return this.rawAttributes[key].unique == true;
       });
 
       for (const existUniqueIndex of existsUniqueIndexes) {

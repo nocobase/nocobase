@@ -1,16 +1,35 @@
 import PluginErrorHandler from '@nocobase/plugin-error-handler';
-import { mockServer } from '@nocobase/test';
+import { MockServer, mockServer } from '@nocobase/test';
 import Plugin from '../server';
 
 describe('collections repository', () => {
-  it('case 1', async () => {
-    const app1 = mockServer({
+  let app1: MockServer;
+
+  let app2: MockServer;
+
+  beforeEach(async () => {
+    app1 = mockServer({
       database: {
         tablePrefix: 'through_',
       },
       name: 'app1',
       acl: false,
     });
+
+    await app1.cleanDb();
+  });
+
+  afterEach(async () => {
+    if (app1.isStarted()) {
+      await app1.destroy();
+    }
+
+    if (app2 && app2.isStarted()) {
+      await app2.destroy();
+    }
+  });
+
+  it('should create items in through table', async () => {
     app1.plugin(PluginErrorHandler, { name: 'error-handler' });
     app1.plugin(Plugin, { name: 'collection-manager' });
     await app1.loadAndInstall({ clean: true });
@@ -117,12 +136,13 @@ describe('collections repository', () => {
     });
     await app1.destroy();
 
-    const app2 = mockServer({
+    app2 = mockServer({
       database: {
         tablePrefix: 'through_',
       },
       name: 'app2',
     });
+
     app2.plugin(PluginErrorHandler, { name: 'error-handler' });
     app2.plugin(Plugin, { name: 'collection-manager' });
     await app2.load();
