@@ -1,21 +1,28 @@
-import { useCurrentUserSettingsMenu } from '@nocobase/client';
-import { MenuProps } from 'antd';
-import React, { useEffect } from 'react';
+import { SettingsCenterProvider, useAPIClient } from '@nocobase/client';
+import React from 'react';
+import { useLoggerTranslation } from './locale';
+import { LogsDownloader } from './LogsDownloader';
 
 export const LoggerProvider = React.memo((props) => {
-  const { addMenuItem } = useCurrentUserSettingsMenu();
+  const { t } = useLoggerTranslation();
 
-  useEffect(() => {
-    addMenuItem(
-      {
-        key: 'logger',
-        eventKey: 'logger',
-        label: '日志下载',
-      } as MenuProps['items'][0],
-      { before: 'divider_4' },
-    );
-  }, [addMenuItem]);
-
-  return <>{props.children}</>;
+  return (
+    <SettingsCenterProvider
+      settings={{
+        logger: {
+          title: t('Logger'),
+          icon: 'FileTextOutlined',
+          tabs: {
+            download: {
+              title: t('Download logs'),
+              component: () => <LogsDownloader />,
+            },
+          },
+        },
+      }}
+    >
+      {props.children}
+    </SettingsCenterProvider>
+  );
 });
 LoggerProvider.displayName = 'LoggerProvider';

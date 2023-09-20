@@ -7,7 +7,8 @@
   "version": "0.14.0-alpha.3",
   "main": "dist/server/index.js",
   "devDependencies": {
-    "tar": "^6.1.13"
+    "tar-fs": "^3.0.4",
+    "@types/tar-fs": "^2.0.2"
   },
   "peerDependencies": {
     "@nocobase/client": "0.x",
