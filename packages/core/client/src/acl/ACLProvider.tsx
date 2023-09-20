@@ -5,7 +5,7 @@ import { Navigate } from 'react-router-dom';
 import { useAPIClient, useRequest } from '../api-client';
 import { useAppSpin } from '../application/hooks/useAppSpin';
 import { useBlockRequestContext } from '../block-provider/BlockProvider';
-import { useCollection } from '../collection-manager';
+import { useCollection, useCollectionManager } from '../collection-manager';
 import { useResourceActionContext } from '../collection-manager/ResourceActionProvider';
 import { useRecord } from '../record-provider';
 import { SchemaComponentOptions, useDesignable } from '../schema-component';
@@ -148,6 +148,7 @@ const useResourceName = () => {
 export function useACLRoleContext() {
   const { data, getActionAlias, inResources, getResourceActionParams, getStrategyActionParams } = useACLRolesCheck();
   const allowedActions = useAllowedActions();
+  const { getCollectionJoinField } = useCollectionManager();
   const verifyScope = (actionName: string, recordPkValue: any) => {
     const actionAlias = getActionAlias(actionName);
     if (!Array.isArray(allowedActions?.[actionAlias])) {
@@ -159,6 +160,7 @@ export function useACLRoleContext() {
     ...data,
     parseAction: (actionPath: string, options: any = {}) => {
       const [resourceName, actionName] = actionPath.split(':');
+      const targetResource = resourceName?.includes('.') && getCollectionJoinField(resourceName)?.target;
       if (!getIgnoreScope(options)) {
         const r = verifyScope(actionName, options.recordPkValue);
         if (r !== null) {
@@ -167,6 +169,9 @@ export function useACLRoleContext() {
       }
       if (data?.allowAll) {
         return {};
+      }
+      if (inResources(targetResource)) {
+        return getResourceActionParams(`${targetResource}:${actionName}`);
       }
       if (inResources(resourceName)) {
         return getResourceActionParams(actionPath);
