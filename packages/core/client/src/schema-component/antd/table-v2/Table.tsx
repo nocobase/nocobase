@@ -37,7 +37,7 @@ const useTableColumns = (props) => {
   const { exists, render } = useSchemaInitializer(schema['x-initializer']);
   const columns = schema
     .reduceProperties((buf, s) => {
-      if (isColumnComponent(s) && schemaInWhitelist(Object.values(s.properties || {}).pop(), props?.isSubTable)) {
+      if (isColumnComponent(s) && schemaInWhitelist(Object.values(s.properties || {}).pop())) {
         return buf.concat([s]);
       }
       return buf;
