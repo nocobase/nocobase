@@ -1,0 +1,35 @@
+:root {
+  --theme-color: #1677ff !important;
+  --accent: #1677ff !important;
+  --text-color-tertiary: #1677ff !important;
+  --bodyFontSize: 14px !important;
+  --sidebar-width: 320px;
+  --sidebar-nav-link-text-decoration--hover: none;
+  --sidebar-nav-strong-font-size: inherit;
+}
+
+.sidebar .folder {
+  white-space: nowrap;
+}
+
+.markdown-section .swagger-ui  tbody tr:nth-child(odd) {
+    background: transparent !important;
+}
+/* 
+.sidebar-nav {
+  margin-left: -20px;
+} */
+
+#main h1#http-api {
+  display: none;
+}
+
+.package-name {
+  color: rgba(0,0,0,.45);
+  display: block;
+  font-size: 12px;
+}
+
+.sidebar-nav .open, .sidebar-nav .open > a {
+  color: var(--theme-color) !important;
+}

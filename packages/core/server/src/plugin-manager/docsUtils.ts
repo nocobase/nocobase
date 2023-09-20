@@ -1,9 +1,9 @@
-import fs from 'fs';
-import path from 'path';
 import glob from 'fast-glob';
+import fs from 'fs';
 import matter from 'gray-matter';
-import { PluginResponse } from './types';
+import path from 'path';
 import { PLUGIN_STATICS_PATH } from './clientStaticUtils';
+import { PluginResponse } from './types';
 
 export const DOCS_PREFIX = '/docs';
 export const DOCS_README = '/docs/README.md';
@@ -321,7 +321,9 @@ export async function getPluginMenu(plugin: PluginResponse, currentLang: string,
   menu.forEach((item) => transformMenuPathAndTitle(item, plugin.packageName, currentLang, locale));
   const res: DocMenu = {
     title: plugin.displayName || plugin.name,
-    titleWithPackage: `${plugin.displayName || plugin.name} - <span class='package-name'>${plugin.packageName}</span>`,
+    titleWithPackage: `<span>${plugin.displayName || plugin.name}</span><span class='package-name'>${
+      plugin.packageName
+    }</span>`,
     path: `${PLUGIN_STATICS_PATH}${plugin.packageName}/_index.md`,
     children: menu,
   };
@@ -435,13 +437,15 @@ export const getDocSidebar = async (
         path: `/root/guide.md`,
       },
       {
-        title: getTagsTitle(currentLang),
-        children: getTagsMenu(menuData),
+        title: `**${getTagsTitle(currentLang)}**`,
+        // children: getTagsMenu(menuData),
       },
+      ...getTagsMenu(menuData),
       {
-        title: getPluginsTitle(currentLang),
-        children: menuData.flat(),
+        title: `**${getPluginsTitle(currentLang)}**`,
+        // children: menuData.flat(),
       },
+      ...menuData.flat(),
     ],
     0,
     false,

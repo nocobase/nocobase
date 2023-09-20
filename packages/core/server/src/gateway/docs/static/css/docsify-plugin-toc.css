@@ -64,12 +64,12 @@ aside.toc-nav.nothing {
   cursor: pointer;
 }
 
-.page_toc div.active {
+.page_toc div[class^="lv"].active {
   border-left-color: var(--sidebar-nav-link-color--active, #42b983);
   transition: border-left-color 0.23s;
 }
 
-.page_toc div.active a span {
+.page_toc div[class^="lv"].active a span {
   color: var(--sidebar-nav-link-color--active, #42b983);
   transition: color 0.23s;
 }
