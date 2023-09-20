@@ -1,5 +1,6 @@
 import { uid } from '@formily/shared';
 import { Page, expect, request, test } from '@playwright/test';
+import { PORT } from './scripts/utils';
 
 export { expect, test };
 
@@ -79,30 +80,23 @@ interface CollectionSetting {
   }>;
 }
 
-/**
- * 为每个测试文件注册 beforeEach 和 afterEach 钩子。
- *
- * 主要的作用有：
- * 1. 在每个测试运行前，创建一个页面，运行后，删除这个页面。
- * 2. 在每个测试运行结束后，删除测试期间创建的一个或多个 collection。
- * 3. 确保每个测试中配置按钮都是可见的。
- */
+interface PageOptions {
+  collections?: CollectionSetting[];
+  pageSchema?: any;
+}
+
+interface CreatePageOptions {
+  name?: string;
+  pageSchema?: any;
+}
+
 const registerHooks = () => {
-  test.beforeEach(async ({ page }) => {
-    // 每个测试运行前，都新建一个页面
-    await page.goto(`/admin/${await createPage()}`);
-
-    // 确保每个测试中配置按钮都是可见的
-    if (!(await page.getByRole('button', { name: 'plus Add menu item' }).isVisible({ timeout: 100 }))) {
-      await page.getByRole('button', { name: 'highlight' }).click();
-    }
-  });
-
   test.afterEach(async ({ page }) => {
-    const pageUid = page.url().split('/').pop();
     // 每个测试运行结束后，删除当前页面
-    if (pageUid) {
-      await deletePage(pageUid);
+    // @ts-ignore
+    if (page._currentPageUidList) {
+      // @ts-ignore
+      await Promise.all(page._currentPageUidList.map((pageUid) => deletePage(pageUid)));
     }
 
     // 删除创建的 collections
@@ -128,16 +122,15 @@ Object.assign(describe, test.describe);
 
 const getStorageItem = (key: string, storageState: any) => {
   return storageState.origins
-    .find((item) => item.origin === 'http://localhost:20000')
+    .find((item) => item.origin === `http://localhost:${PORT}`)
     ?.localStorage.find((item) => item.name === key)?.value;
 };
 
 /**
  * 在 NocoBase 中创建一个页面
- * @param name 页面名称
- * @returns 页面的 uid，可根据此跳转到页面
  */
-export const createPage = async ({ name, pageSchema }: { name?: string; pageSchema?: any } = {}) => {
+const createPage = async (page: Page, options?: CreatePageOptions) => {
+  const { name, pageSchema } = options || {};
   const api = await request.newContext({
     storageState: require.resolve('./playwright/.auth/admin.json'),
   });
@@ -209,13 +202,16 @@ export const createPage = async ({ name, pageSchema }: { name?: string; pageSche
     throw new Error('systemSettings is not ok');
   }
 
+  // @ts-ignore
+  (page._currentPageUidList || (page._currentPageUidList = [])).push(pageUid);
+
   return pageUid;
 };
 
 /**
  * 根据页面 uid 删除一个 NocoBase 的页面
  */
-export const deletePage = async (pageUid: string) => {
+const deletePage = async (pageUid: string) => {
   const api = await request.newContext({
     storageState: require.resolve('./playwright/.auth/admin.json'),
   });
@@ -291,31 +287,44 @@ const deleteCollections = async (collectionNames: string[]) => {
  * @param collectionSettings
  * @returns
  */
-export const createCollections = async (page: Page, collectionSettings: CollectionSetting | CollectionSetting[]) => {
-  if (Array.isArray(collectionSettings)) {
-    // TODO: 这里如果改成并发创建的话性能会更好，但是会出现只创建一个 collection 的情况，暂时不知道原因
-    for (const item of collectionSettings) {
-      await createCollection(item);
-    }
-    // @ts-ignore
-    page._collectionNames = collectionSettings.map((item) => item.name);
-  } else {
-    await createCollection(collectionSettings);
-    // @ts-ignore
-    page._collectionNames = [collectionSettings.name];
+const createCollections = async (page: Page, collectionSettings: CollectionSetting[]) => {
+  // TODO: 这里如果改成并发创建的话性能会更好，但是会出现只创建一个 collection 的情况，暂时不知道原因
+  for (const item of collectionSettings) {
+    await createCollection(item);
   }
-
-  await page.reload();
+  // @ts-ignore
+  page._collectionNames = collectionSettings.map((item) => item.name);
 };
 
 /**
- * 根据传进来的 uiSchema 创建一个新的页面，并跳转过去
+ * 根据提供的 UISchema 创建一个页面并跳转过去
  * @param page
- * @param uiSchema
+ * @param options
  */
-export const createPageWithUISchema = async (page: Page, uiSchema: any) => {
-  // 1. 先把之前创建的空页面删除
-  await deletePage(page.url().split('/').pop());
-  // 2. 再根据传进来的 uiSchema 创建一个新的页面，并跳转过去
-  await page.goto(`/admin/${await createPage({ pageSchema: uiSchema })}`);
+export const gotoPage = async (page: Page, options?: PageOptions) => {
+  if (!options) {
+    await page.goto(`/admin/${await createPage(page)}`);
+    return await enableToConfig(page);
+  }
+
+  if (options.collections) {
+    await createCollections(page, options.collections);
+  }
+
+  if (options.pageSchema) {
+    await page.goto(`/admin/${await createPage(page, { pageSchema: options.pageSchema })}`);
+  } else {
+    await page.goto(`/admin/${await createPage(page)}`);
+  }
+
+  await enableToConfig(page);
 };
+
+/**
+ * 是页面成为可配置态
+ */
+async function enableToConfig(page: Page) {
+  if (!(await page.getByRole('button', { name: 'plus Add menu item' }).isVisible())) {
+    await page.getByRole('button', { name: 'highlight' }).click();
+  }
+}

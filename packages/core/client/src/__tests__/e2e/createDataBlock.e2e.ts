@@ -1,7 +1,8 @@
-import { describe, expect, test } from 'e2eUtils';
+import { describe, expect, gotoPage, test } from 'e2eUtils';
 
 describe('create data block', () => {
   test('table', async ({ page }) => {
+    await gotoPage(page);
     await page.getByRole('button', { name: 'plus Add block' }).hover();
     await page.getByRole('menuitem', { name: 'table Table right' }).hover();
     await page.getByRole('menuitem', { name: 'Users' }).click();
@@ -10,6 +11,7 @@ describe('create data block', () => {
   });
 
   test('form', async ({ page }) => {
+    await gotoPage(page);
     await page.getByRole('button', { name: 'plus Add block' }).hover();
     await page.getByRole('menuitem', { name: 'form Form right' }).first().hover();
     await page.getByRole('menuitem', { name: 'Users' }).click();
@@ -18,6 +20,7 @@ describe('create data block', () => {
   });
 
   test('details', async ({ page }) => {
+    await gotoPage(page);
     await page.getByRole('button', { name: 'plus Add block' }).hover();
     await page.getByRole('menuitem', { name: 'table Details right' }).hover();
     await page.getByRole('menuitem', { name: 'Users' }).click();
@@ -26,6 +29,7 @@ describe('create data block', () => {
   });
 
   test('list', async ({ page }) => {
+    await gotoPage(page);
     await page.getByRole('button', { name: 'plus Add block' }).hover();
     await page.getByRole('menuitem', { name: 'ordered-list List right' }).hover();
     await page.getByRole('menuitem', { name: 'Users' }).click();
@@ -34,6 +38,7 @@ describe('create data block', () => {
   });
 
   test('grid card', async ({ page }) => {
+    await gotoPage(page);
     await page.getByRole('button', { name: 'plus Add block' }).hover();
     await page.getByRole('menuitem', { name: 'ordered-list Grid Card right' }).hover();
     await page.getByRole('menuitem', { name: 'Users' }).click();
