@@ -127,6 +127,27 @@ const getStorageItem = (key: string, storageState: any) => {
 };
 
 /**
+ * 更新直接从浏览器中复制过来的 Schema 中的 uid
+ */
+const updateUidOfPageSchema = (uiSchema: any) => {
+  if (!uiSchema) {
+    return;
+  }
+
+  if (uiSchema['x-uid']) {
+    uiSchema['x-uid'] = uid();
+  }
+
+  if (uiSchema.properties) {
+    Object.keys(uiSchema.properties).forEach((key) => {
+      updateUidOfPageSchema(uiSchema.properties[key]);
+    });
+  }
+
+  return uiSchema;
+};
+
+/**
  * 在 NocoBase 中创建一个页面
  */
 const createPage = async (page: Page, options?: CreatePageOptions) => {
@@ -167,7 +188,7 @@ const createPage = async (page: Page, options?: CreatePageOptions) => {
             { type: 'onSelfSave', method: 'extractTextToLocale' },
           ],
           properties: {
-            page: pageSchema || {
+            page: updateUidOfPageSchema(pageSchema) || {
               _isJSONSchemaObject: true,
               version: '2.0',
               type: 'void',
