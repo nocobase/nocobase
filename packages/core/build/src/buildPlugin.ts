@@ -21,11 +21,9 @@ import { getDepPkgPath, getDepsConfig } from './utils/getDepsConfig';
 import { EsbuildSupportExts, globExcludeFiles } from './constant';
 import { PkgLog, UserConfig, getPackageJson } from './utils';
 
-const serverGlobalFiles: string[] = ['src/**', '!src/client/**', ...globExcludeFiles];
-const clientGlobalFiles: string[] = ['src/**', '!src/server/**', ...globExcludeFiles];
-const dynamicImportRegexp = /import\((["'])(.*?)\1\)/g;
-
-const sourceGlobalFiles: string[] = ['src/**/*.{ts,js,tsx,jsx}', '!src/**/__tests__'];
+const serverGlobalFiles: string[] = ['src/**/*.{ts,js,tsx,jsx,mjs}', '!src/client/**', ...globExcludeFiles];
+const clientGlobalFiles: string[] = ['src/**/*.{ts,js,tsx,jsx,mjs}', '!src/server/**', ...globExcludeFiles];
+const sourceGlobalFiles: string[] = ['src/**/*.{ts,js,tsx,jsx,mjs}', '!src/**/__tests__'];
 
 const external = [
   // nocobase
