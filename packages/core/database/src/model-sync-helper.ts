@@ -52,6 +52,8 @@ export class ModelSyncHelper {
   }
 
   async handleDefaultValues(columns, options) {
+    if (this.database.inDialect('sqlite')) return;
+
     for (const columnName in columns) {
       const column = columns[columnName];
       if (column.primaryKey) continue;
@@ -80,6 +82,7 @@ export class ModelSyncHelper {
   }
 
   async handleUniqueIndex(options) {
+    if (this.database.inDialect('sqlite')) return;
     const existsIndexes: any = await this.queryInterface.showIndex(this.tableName, options);
     const existsUniqueIndexes = existsIndexes.filter((index) => index.unique);
 
