@@ -62,9 +62,32 @@ export class UpdateGuard {
   checkValues(values) {
     const dfs = (values, model) => {
       const associations = model.associations;
-      for (const valueKey in values) {
-        if (associations[valueKey]) {
-          console.log(associations);
+      const belongsToManyThroughNames = [];
+
+      const associationValueKeys = Object.keys(associations).filter((key) => {
+        return Object.keys(values).includes(key);
+      });
+
+      const belongsToManyValueKeys = associationValueKeys.filter((key) => {
+        return associations[key].associationType === 'BelongsToMany';
+      });
+
+      const hasManyValueKeys = associationValueKeys.filter((key) => {
+        return associations[key].associationType === 'HasMany';
+      });
+
+      for (const belongsToManyKey of belongsToManyValueKeys) {
+        const association = associations[belongsToManyKey];
+        const through = association.through.model;
+        belongsToManyThroughNames.push(through.name);
+      }
+
+      for (const hasManyKey of hasManyValueKeys) {
+        const association = associations[hasManyKey];
+        if (belongsToManyThroughNames.includes(association.target.name)) {
+          throw new Error(
+            `HasMany association ${hasManyKey} cannot be used with BelongsToMany association ${association.target.name} with same through model`,
+          );
         }
       }
     };

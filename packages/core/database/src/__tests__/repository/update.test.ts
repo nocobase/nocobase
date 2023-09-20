@@ -16,8 +16,13 @@ describe('update', () => {
     await db.clean({ drop: true });
     PostTag = db.collection({
       name: 'post_tag',
-      autoGenId: true,
       fields: [
+        {
+          type: 'bigInt',
+          name: 'id',
+          primaryKey: true,
+          autoIncrement: true,
+        },
         {
           type: 'belongsTo',
           name: 'post',
@@ -71,7 +76,6 @@ describe('update', () => {
     });
 
     await db.sync();
-    d;
   });
 
   it('should throw error when update data conflicted', async () => {
@@ -91,7 +95,9 @@ describe('update', () => {
         tags: [t1.get('id')],
       },
     });
+
     const postTag = await PostTag.repository.findOne();
+
     let error;
     try {
       await Post.repository.update({
@@ -106,12 +112,74 @@ describe('update', () => {
           ],
           tags: [t2.get('id')],
         },
-        updateAssociationValues: ['posts_tags'],
       });
     } catch (err) {
       error = err;
     }
     expect(error).toBeDefined();
+
+    let error2;
+    try {
+      await Post.repository.update({
+        filterByTk: post1.get('id'),
+        values: {
+          tags: [t2.get('id')],
+          posts_tags: [
+            {
+              id: postTag.get('id'),
+              tag: t1.get('id'),
+              post: post1.get('id'),
+            },
+          ],
+        },
+      });
+    } catch (err) {
+      error2 = err;
+    }
+    expect(error2).toBeDefined();
+
+    const User = db.collection({
+      name: 'users',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'hasMany', name: 'posts', target: 'posts', foreignKey: 'user_id' },
+      ],
+    });
+
+    await db.sync();
+    const u1 = await User.repository.create({
+      values: {
+        name: 'u1',
+        posts: [post1.get('id')],
+      },
+    });
+
+    let error3;
+
+    try {
+      await User.repository.update({
+        filterByTk: u1.get('id'),
+        values: {
+          posts: [
+            {
+              id: post1.get('id'),
+              tags: [t2.get('id')],
+              posts_tags: [
+                {
+                  id: postTag.get('id'),
+                  tag: t1.get('id'),
+                  post: post1.get('id'),
+                },
+              ],
+            },
+          ],
+        },
+      });
+    } catch (err) {
+      error3 = err;
+    }
+
+    expect(error3).toBeDefined();
   });
 
   it('should update tags to null', async () => {
