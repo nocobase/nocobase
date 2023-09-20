@@ -303,12 +303,30 @@ const deleteCollections = async (collectionNames: string[]) => {
 };
 
 /**
+ * 更新 collection name 以保持唯一性
+ *
+ * 注意：目前的方法实现起来比较简单，但问题是容易出错，因为它是全量替换的，可能会替换错。
+ * 防止错误的方法就是尽量在创建 collection name 的时候使用随机值。
+ * @param collectionSettings
+ */
+const updateCollectionName = (collectionSettings: CollectionSetting[]): CollectionSetting[] => {
+  let result = JSON.stringify(collectionSettings);
+
+  collectionSettings.map((item) => {
+    result = result.replaceAll(item.name, uid());
+  });
+
+  return JSON.parse(result);
+};
+
+/**
  * 根据配置创建一个或多个 collection
  * @param page 运行测试的 page 实例
  * @param collectionSettings
  * @returns
  */
 const createCollections = async (page: Page, collectionSettings: CollectionSetting[]) => {
+  collectionSettings = updateCollectionName(collectionSettings);
   // TODO: 这里如果改成并发创建的话性能会更好，但是会出现只创建一个 collection 的情况，暂时不知道原因
   for (const item of collectionSettings) {
     await createCollection(item);
