@@ -6,18 +6,19 @@ export default (app: Application) => {
   const pm = app.command('pm');
 
   pm.command('create')
+    .ipc()
     .arguments('plugin')
     .action(async (plugin) => {
       await app.pm.create(plugin);
     });
 
   pm.command('add')
+    .ipc()
     .argument('<pkg>')
     .option('--registry [registry]')
     .option('--auth-token [authToken]')
     .option('--version [version]')
     .action(async (name, options, cli) => {
-      console.log('pm.add', name, options);
       try {
         await app.pm.addViaCLI(name, _.cloneDeep(options));
       } catch (error) {
@@ -26,6 +27,7 @@ export default (app: Application) => {
     });
 
   pm.command('update')
+    .ipc()
     .argument('<packageName>')
     .option('--path [path]')
     .option('--url [url]')
@@ -44,6 +46,7 @@ export default (app: Application) => {
     });
 
   pm.command('enable')
+    .ipc()
     .arguments('<plugins...>')
     .action(async (plugins) => {
       try {
@@ -54,6 +57,7 @@ export default (app: Application) => {
     });
 
   pm.command('disable')
+    .ipc()
     .arguments('<plugins...>')
     .action(async (plugins) => {
       try {
@@ -64,6 +68,7 @@ export default (app: Application) => {
     });
 
   pm.command('remove')
+    .ipc()
     .arguments('<plugins...>')
     .action(async (plugins) => {
       await app.pm.remove(plugins);
