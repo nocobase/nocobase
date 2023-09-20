@@ -69,6 +69,15 @@ const useLocalVariables = (props?: Props) => {
           ctx: form?.values || blockRecord,
           collectionName: name,
         },
+        /**
+         * @deprecated
+         * 新版本已更名为 `$nForm`
+         */
+        {
+          name: '$form',
+          ctx: form?.values,
+          collectionName: name,
+        },
         {
           name: '$nRecord',
           ctx: blockRecord,
