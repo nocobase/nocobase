@@ -274,6 +274,13 @@ export function useCompatOldVariables(props: {
         }
       }
 
+      if (value.includes('$form')) {
+        const variable = variables.find((item) => item.value === '$nForm');
+        if (variable) {
+          variable.value = '$form';
+        }
+      }
+
       if (value.includes('currentUser')) {
         const userVariable = variables.find((item) => item.value === '$user');
         if (userVariable) {
