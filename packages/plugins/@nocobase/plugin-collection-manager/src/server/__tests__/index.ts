@@ -9,7 +9,6 @@ export async function createApp(
   const app = mockServer({
     acl: false,
     ...options,
-    // plugins: ['error-handler', 'collection-manager', 'ui-schema-storage'],
   });
 
   options.beforePlugin && options.beforePlugin(app);
@@ -24,7 +23,8 @@ export async function createApp(
     await options.beforeInstall(app);
   }
 
-  await app.install({ clean: true });
+  await app.cleanDb();
+  await app.install();
   await app.start();
   return app;
 }

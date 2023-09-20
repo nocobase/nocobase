@@ -79,6 +79,9 @@ export class MockServer extends Application {
 
   async cleanDb() {
     await this.db.clean({ drop: true });
+    if (process.env['COLLECTION_MANAGER_SCHEMA'] !== process.env['DB_SCHEMA']) {
+      await this.db.clean({ drop: true, schema: process.env['COLLECTION_MANAGER_SCHEMA'] });
+    }
   }
 
   async destroy(options: any = {}): Promise<void> {

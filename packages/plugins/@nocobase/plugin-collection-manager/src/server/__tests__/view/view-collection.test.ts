@@ -107,10 +107,6 @@ describe('view collection', function () {
       context: {},
     });
 
-    const UserCollection = db.getCollection('users');
-
-    console.log(UserCollection);
-
     await db.getRepository('users').create({
       values: [{ name: 'u1' }, { name: 'u2' }],
     });
