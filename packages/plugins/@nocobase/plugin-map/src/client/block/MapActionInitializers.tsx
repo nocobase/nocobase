@@ -1,5 +1,6 @@
 // 表格操作配置
 export const MapActionInitializers = {
+  'data-testid': 'configure-actions-button-of-map',
   title: "{{t('Configure actions')}}",
   icon: 'SettingOutlined',
   style: {

@@ -81,6 +81,7 @@ const Documentation = () => {
             {t('Select a definition')}
           </Typography.Text>
           <Select
+            data-testid="antd-select"
             showSearch
             value={destination}
             options={urls?.data}

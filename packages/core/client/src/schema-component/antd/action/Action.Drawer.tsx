@@ -28,6 +28,7 @@ export const ActionDrawer: ComposedActionDrawer = observer(
 
     return (
       <Drawer
+        data-testid="action-drawer"
         width={openSizeWidthMap.get(openSize)}
         title={field.title}
         {...others}

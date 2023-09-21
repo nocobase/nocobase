@@ -34,6 +34,7 @@ export const CustomFormItemInitializers = (props: any) => {
   }
   return (
     <SchemaInitializer.Button
+      data-testid="configure-fields-button-of-custom-form-item"
       wrap={gridRowColWrap}
       icon={'SettingOutlined'}
       items={fieldItems}

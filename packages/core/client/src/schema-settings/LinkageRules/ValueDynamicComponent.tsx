@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
 import { Input, Select } from 'antd';
-import { css } from '@emotion/css';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DynamicComponent } from './DynamicComponent';
 import { Variable } from '.././../schema-component';
+import { DynamicComponent } from './DynamicComponent';
 import { useVariableOptions } from './Variables';
 
 const { Option } = Select;
@@ -16,6 +15,7 @@ export const ValueDynamicComponent = (props) => {
   return (
     <Input.Group compact>
       <Select
+        data-testid="antd-select"
         value={mode}
         style={{ width: 150 }}
         onChange={(value) => {

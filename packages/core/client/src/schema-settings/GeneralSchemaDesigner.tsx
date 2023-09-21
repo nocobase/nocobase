@@ -58,9 +58,7 @@ export const GeneralSchemaDesigner = (props: any) => {
     return {
       insertPosition: 'afterEnd',
       wrap: rowCtx?.cols?.length > 1 ? undefined : gridRowColWrap,
-      component: (
-        <PlusOutlined data-testid="GeneralSchemaDesigner-Initializer" style={{ cursor: 'pointer', fontSize: 14 }} />
-      ),
+      component: <PlusOutlined data-testid="designer-add-block" style={{ cursor: 'pointer', fontSize: 14 }} />,
     };
   }, [rowCtx?.cols?.length]);
 
@@ -86,7 +84,7 @@ export const GeneralSchemaDesigner = (props: any) => {
         <Space size={2} align={'center'}>
           {draggable && (
             <DragHandler>
-              <DragOutlined data-testid="GeneralSchemaDesigner-DragHandler" />
+              <DragOutlined data-testid="designer-drag" />
             </DragHandler>
           )}
           {!disableInitializer &&
@@ -96,12 +94,7 @@ export const GeneralSchemaDesigner = (props: any) => {
               ctx?.renderSchemaInitializer?.(initializerProps)
             ))}
           <SchemaSettings
-            title={
-              <MenuOutlined
-                data-testid="GeneralSchemaDesigner-SchemaSettings"
-                style={{ cursor: 'pointer', fontSize: 12 }}
-              />
-            }
+            title={<MenuOutlined data-testid="designer-schema-settings" style={{ cursor: 'pointer', fontSize: 12 }} />}
             {...schemaSettingsProps}
           >
             {props.children}
