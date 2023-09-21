@@ -123,6 +123,7 @@ export const DuplicateAction = observer((props: any) => {
             </a>
           ) : (
             <Button
+              data-testid={'duplicate-action'}
               disabled={disabled}
               style={{
                 opacity: designable && field?.data?.hidden && 0.1,
