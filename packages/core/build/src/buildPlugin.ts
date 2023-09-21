@@ -306,6 +306,7 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
     entry: './src/client/' + entry[0],
     target: ['web', 'es5'],
     output: {
+      path: outDir,
       filename: outputFileName,
       // publicPath: 'auto',
       clean: true,
