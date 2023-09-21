@@ -120,7 +120,7 @@ export const simpleLogger = () => {
   });
 };
 
-export { Logger, LoggerOptions, createLogger };
+export { Logger, LoggerOptions };
 export interface AppLoggerOptions extends Omit<LoggerOptions, 'transports'> {
   skip?: (ctx?: any) => Promise<boolean>;
   requestWhitelist?: string[];
