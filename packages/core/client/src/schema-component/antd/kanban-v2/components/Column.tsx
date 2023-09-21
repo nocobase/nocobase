@@ -7,7 +7,13 @@ import { Draggable, Droppable } from 'react-beautiful-dnd';
 import { useTranslation } from 'react-i18next';
 import { useInfiniteScroll } from 'ahooks';
 import { useToken } from '../../__builtins__';
-import { BlockItem, KanbanCardBlockProvider, KanbanCardContext, useKanbanV2BlockContext } from '../../../../';
+import {
+  BlockItem,
+  KanbanCardBlockProvider,
+  KanbanCardContext,
+  useKanbanV2BlockContext,
+  useBlockRequestContext,
+} from '../../../../';
 import { useProps } from '../../../hooks/useProps';
 
 const FormComponent: React.FC<any> = (props) => {
@@ -61,6 +67,7 @@ export const Column = observer(
     const { token } = useToken();
     const { ind, data, getColumnDatas } = props;
     const { groupField, form, targetColumn, params, setTargetColumn } = useKanbanV2BlockContext();
+    const { params: blockParams } = useBlockRequestContext();
     const fieldSchema = useFieldSchema();
     const { t } = useTranslation();
     const [disabledCardDrag, setDisableCardDrag] = useState(false);
@@ -99,8 +106,10 @@ export const Column = observer(
       }
     }, [targetColumn]);
 
+    console.log(params, blockParams);
+
     const getLoadMoreList = async (nextId: string | undefined, limit: number): Promise<any> => {
-      const res = await getColumnDatas(data, ind, params, params?.appends, nextId, () => {
+      const res = await getColumnDatas(data, ind, params, nextId, () => {
         setTargetColumn(null);
       });
       return {
