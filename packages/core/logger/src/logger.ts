@@ -9,10 +9,9 @@ const getLoggerFilePath = (...paths: string[]): string => {
 };
 
 const getLoggerTransport = () =>
-  process.env.LOGGER_TRANSPORT || (process.env.APP_ENV === 'development' ? 'console' : 'dailyRotateFile');
+  process.env.LOGGER_TRANSPORT || (process.env.APP_ENV === 'development' ? 'console' : 'console,dailyRotateFile');
 
-const getLoggerFormat = () =>
-  process.env.LOGGER_FORMAT || (process.env.APP_ENV === 'development' ? 'splitter' : 'json');
+const getLoggerFormat = () => process.env.LOGGER_FORMAT || 'splitter';
 
 const getTransport = (name: string) => {
   const configTransports = getLoggerTransport();

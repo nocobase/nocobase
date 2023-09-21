@@ -252,7 +252,7 @@ export const parseVariables = async (ctx: Context, next: Next) => {
   const getUser = () => {
     return async ({ fields }) => {
       const userFields = fields.filter((f) => f && ctx.db.getFieldByPath('users.' + f));
-      ctx.logger?.info('filter-parse: ', { userFields });
+      ctx.logger?.info('parse filter variables', { meta: userFields, function: 'parseVariables' });
       if (!ctx.state.currentUser) {
         return;
       }
@@ -263,8 +263,9 @@ export const parseVariables = async (ctx: Context, next: Next) => {
         filterByTk: ctx.state.currentUser.id,
         fields: userFields,
       });
-      ctx.logger?.info('filter-parse: ', {
-        $user: user?.toJSON(),
+      ctx.logger?.info('parse filter variables', {
+        meta: { $user: user?.toJSON() },
+        function: 'parseVariables',
       });
       return user;
     };
