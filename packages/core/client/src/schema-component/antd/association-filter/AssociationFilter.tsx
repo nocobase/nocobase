@@ -5,7 +5,7 @@ import React from 'react';
 import { useCollection } from '../../../collection-manager';
 import { useSchemaInitializer } from '../../../schema-initializer';
 import { DndContext, SortableItem } from '../../common';
-import { useDesigner, useDesignerControl } from '../../hooks';
+import { useDesigner } from '../../hooks';
 import { useToken } from '../__builtins__';
 import { AssociationFilterBlockDesigner } from './AssociationFilter.BlockDesigner';
 import { AssociationFilterFilterBlockInitializer } from './AssociationFilter.FilterBlockInitializer';
@@ -17,7 +17,6 @@ import { AssociationFilterProvider } from './AssociationFilterProvider';
 export const AssociationFilter = (props) => {
   const { token } = useToken();
   const Designer = useDesigner();
-  const { designerVisible, showDesigner, hideDesigner } = useDesignerControl();
   const filedSchema = useFieldSchema();
 
   const { render } = useSchemaInitializer(filedSchema['x-initializer']);
@@ -76,10 +75,8 @@ export const AssociationFilter = (props) => {
             }
           `,
         )}
-        onMouseEnter={showDesigner}
-        onMouseLeave={hideDesigner}
       >
-        {designerVisible ? <Designer /> : null}
+        <Designer />
         {props.children}
         {render()}
       </SortableItem>
