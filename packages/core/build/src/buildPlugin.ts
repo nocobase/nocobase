@@ -399,7 +399,7 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
     },
     externals: {
       react: 'React',
-      'react/jsx-runtime': 'jsxRuntime',
+      // 'react/jsx-runtime': 'jsxRuntime',
       ...globals,
     },
     stats: 'errors-warnings',
