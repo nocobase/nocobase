@@ -1,5 +1,7 @@
+import { faker } from '@faker-js/faker';
 import { uid } from '@formily/shared';
 import { Page, expect, request, test } from '@playwright/test';
+import _ from 'lodash';
 import { PORT } from './scripts/utils';
 
 export { expect, test };
@@ -58,12 +60,16 @@ interface CollectionSetting {
     type: string;
     interface: string;
     name: string;
+    unique?: boolean;
     uiSchema: {
       type: string;
       title: string;
+      required?: boolean;
       'x-component': string;
-      'x-read-pretty': boolean;
+      'x-read-pretty'?: boolean;
+      'x-validator'?: string;
       'x-component-props'?: Record<string, any>;
+      [key: string]: any;
     };
     field?: string;
     target?: string;
@@ -77,6 +83,7 @@ interface CollectionSetting {
     collectionName?: string;
     parentKey?: any;
     reverseKey?: any;
+    [key: string]: any;
   }>;
 }
 
@@ -91,6 +98,11 @@ interface CreatePageOptions {
 }
 
 const registerHooks = () => {
+  test.beforeEach(() => {
+    // 保证每个测试运行时 faker 的随机值都是一样的
+    faker.seed(1);
+  });
+
   test.afterEach(async ({ page }) => {
     // 每个测试运行结束后，删除当前页面
     // @ts-ignore
@@ -127,6 +139,8 @@ const getStorageItem = (key: string, storageState: any) => {
 };
 
 /**
+ * 注意：该方法暂时用不到，因为现在每个测试用例都是运行在一个空的 NocoBase 环境中
+ *
  * 更新直接从浏览器中复制过来的 Schema 中的 uid
  */
 const updateUidOfPageSchema = (uiSchema: any) => {
@@ -188,7 +202,7 @@ const createPage = async (page: Page, options?: CreatePageOptions) => {
             { type: 'onSelfSave', method: 'extractTextToLocale' },
           ],
           properties: {
-            page: updateUidOfPageSchema(pageSchema) || {
+            page: pageSchema || {
               _isJSONSchemaObject: true,
               version: '2.0',
               type: 'void',
@@ -303,20 +317,17 @@ const deleteCollections = async (collectionNames: string[]) => {
 };
 
 /**
- * 更新 collection name 以保持唯一性
- *
- * 注意：目前的方法实现起来比较简单，但问题是容易出错，因为它是全量替换的，可能会替换错。
- * 防止错误的方法就是尽量在创建 collection name 的时候使用随机值。
+ * 如果不删除 key 会报错
  * @param collectionSettings
+ * @returns
  */
-const updateCollectionName = (collectionSettings: CollectionSetting[]): CollectionSetting[] => {
-  let result = JSON.stringify(collectionSettings);
-
-  collectionSettings.map((item) => {
-    result = result.replaceAll(item.name, uid());
+const deleteKeyOfCollection = (collectionSettings: CollectionSetting[]) => {
+  return collectionSettings.map((collection) => {
+    return {
+      ..._.omit(collection, ['key']),
+      fields: collection.fields.map((field) => _.omit(field, ['key'])),
+    };
   });
-
-  return JSON.parse(result);
 };
 
 /**
@@ -326,13 +337,88 @@ const updateCollectionName = (collectionSettings: CollectionSetting[]): Collecti
  * @returns
  */
 const createCollections = async (page: Page, collectionSettings: CollectionSetting[]) => {
-  collectionSettings = updateCollectionName(collectionSettings);
   // TODO: 这里如果改成并发创建的话性能会更好，但是会出现只创建一个 collection 的情况，暂时不知道原因
   for (const item of collectionSettings) {
     await createCollection(item);
   }
   // @ts-ignore
   page._collectionNames = collectionSettings.map((item) => item.name);
+};
+
+/**
+ * 根据 collection 的配置生成 Faker 数据
+ * @param collectionSetting
+ * @param all
+ * @returns
+ */
+const generateFakerData = (collectionSetting: CollectionSetting, all: CollectionSetting[]) => {
+  const excludeField = ['id', 'createdAt', 'updatedAt', 'createdBy', 'updatedBy'];
+  const basicInterfaceToData = {
+    input: () => faker.lorem.words(),
+    textarea: () => faker.lorem.paragraph(),
+    richText: () => faker.lorem.paragraph(),
+    phone: () => faker.phone.number('1##########'),
+    email: () => faker.internet.email(),
+    url: () => faker.internet.url(),
+    integer: () => faker.datatype.number(),
+    number: () => faker.datatype.number(),
+    percent: () => faker.datatype.float(),
+    password: () => faker.internet.password(),
+    color: () => faker.internet.color(),
+    icon: () => 'checkcircleoutlined',
+    datetime: () => faker.date.anytime({ refDate: '2023-09-21T00:00:00.000Z' }),
+    time: () => '00:00:00',
+  };
+  const result = {};
+
+  collectionSetting.fields.forEach((field) => {
+    if (excludeField.includes(field.name)) {
+      return;
+    }
+
+    if (basicInterfaceToData[field.interface]) {
+      result[field.name] = basicInterfaceToData[field.interface]();
+      return;
+    }
+
+    if (field.target) {
+      const targetCollection = all.find((item) => item.name === field.target);
+
+      if (!targetCollection) {
+        throw new Error(`target collection ${field.target} not found`);
+      }
+
+      result[field.name] = generateFakerData(targetCollection, all);
+    }
+  });
+
+  return result;
+};
+
+/**
+ * 使用 Faker 为 collection 创建数据
+ */
+const createFakerData = async (collectionSettings: CollectionSetting[]) => {
+  const api = await request.newContext({
+    storageState: require.resolve('./playwright/.auth/admin.json'),
+  });
+
+  const state = await api.storageState();
+  const token = getStorageItem('NOCOBASE_TOKEN', state);
+
+  for (const item of collectionSettings) {
+    const data = generateFakerData(item, collectionSettings);
+    const result = await api.post(`/api/${item.name}:create`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      form: data,
+    });
+
+    if (!result.ok()) {
+      throw new Error(await result.text());
+    }
+  }
 };
 
 /**
@@ -347,7 +433,14 @@ export const gotoPage = async (page: Page, options?: PageOptions) => {
   }
 
   if (options.collections) {
+    // @ts-ignore
+    options.collections = deleteKeyOfCollection(options.collections);
     await createCollections(page, options.collections);
+
+    // 默认为每个 collection 生成 3 条数据
+    await createFakerData(options.collections);
+    await createFakerData(options.collections);
+    await createFakerData(options.collections);
   }
 
   if (options.pageSchema) {
