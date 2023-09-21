@@ -21,7 +21,7 @@ export class ModelSyncHelper {
       return;
     }
 
-    if (!(await this.hasChangesSinceLastSnapshot())) {
+    if (this.snapshotManager.enabled() && !(await this.hasChangesSinceLastSnapshot())) {
       return;
     }
 
@@ -230,7 +230,7 @@ export class ModelSyncHelper {
   }
 
   async hasChangesSinceLastSnapshot() {
-    return this.snapshotManager.enabled() && (await this.snapshotManager.hasChanged(this.collection));
+    return await this.snapshotManager.hasChanged(this.collection);
   }
 
   get sequelize() {
