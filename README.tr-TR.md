@@ -10,6 +10,8 @@ NocoBase v0.10 has been released, see [v0.10: update instructions](http://docs.n
 
 ## Recent major updates
 
+- [v0.13: New application status flow - 2023/08/24](https://docs.nocobase.com/welcome/release/v13-changelog)
+- [v0.12: New plugin build tool - 2023/08/01](https://docs.nocobase.com/welcome/release/v12-changelog)
 - [v0.11: New client application, plugin and router - 2023/07/08](http://docs.nocobase.com/welcome/release/v11-changelog)
 - [v0.10: Update instructions - 2023/06/23](http://docs.nocobase.com/welcome/release/v10-changelog)
 
@@ -53,14 +55,13 @@ Aşağıdaki ihtiyaçlarınız varsa NocoBase sizin için tasarlanmıştır.
 
 NocoBase, veri yapısını kullanıcı arayüzünden ayırma tasarım fikrini benimser ve her blokta farklı tür, stil, içerik ve eylemlerle veri koleksiyonları için istediğiniz sayıda blok (veri görünümü) oluşturmanıza olanak tanır. Bu yapısal durum kodsuz işlemin basitliğini ve aynı zamanda yerel geliştirme gibi esnekliği de hesaba katar.
 
-
-![2.collection-block.png](https://docs.nocobase.com/static/2.collection-block.7dcc928f.png)
+![2.collection-block.png](https://nocobase.oss-cn-beijing.aliyuncs.com/25506f38365436d11847b32fc8533bc9.png)
 
 ### 2. ne görüyorsanız onu alırsınız
 
 NocoBase, karmaşık ve farklı iş sistemlerinin geliştirilmesine olanak tanır, ancak bu karmaşık ve özel operasyonların gerekli olduğu anlamına gelmez. Tek bir tıklama ile kullanım arayüzünde yapılandırma seçenekleri görüntülenebilir. Bu da sistem yapılandırma haklarına sahip yöneticilerin kullanıcı arayüzünü doğrudan WYSIWYG işlemleri ile yapılandırılabileceği anlamına gelir.
 
-![2.user-root.gif](https://docs.nocobase.com/static/2.user-root.824f5ef2.gif)
+![2.user-root.gif](https://nocobase.oss-cn-beijing.aliyuncs.com/7991441ff35f05c49e0d72c2a23fa33b.gif)
 
 ### 3. Her şey bir eklenti
 

@@ -1,6 +1,6 @@
 import { css } from '@emotion/css';
 import { ArrayCollapse, ArrayItems, FormItem, FormLayout, Input } from '@formily/antd-v5';
-import { createForm, Field, GeneralField } from '@formily/core';
+import { Field, GeneralField, createForm } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { error } from '@nocobase/utils/client';
@@ -21,33 +21,34 @@ import {
 } from 'antd';
 import _, { cloneDeep } from 'lodash';
 import React, {
-  createContext,
   ReactNode,
+  createContext,
   useCallback,
   useContext,
   useMemo,
-  useState,
   // @ts-ignore
   useTransition as useReactTransition,
+  useState,
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  ActionContextProvider,
   APIClientProvider,
+  ActionContextProvider,
   CollectionFieldOptions,
   CollectionManagerContext,
   CollectionProvider,
-  createDesignable,
   Designable,
-  findFormBlock,
   FormDialog,
   FormProvider,
   RemoteSchemaComponent,
   SchemaComponent,
   SchemaComponentContext,
   SchemaComponentOptions,
+  createDesignable,
+  findFormBlock,
   useAPIClient,
+  useActionContext,
   useBlockRequestContext,
   useCollection,
   useCollectionManager,
@@ -57,7 +58,6 @@ import {
   useGlobalTheme,
   useLinkageCollectionFilterOptions,
   useSortFields,
-  useActionContext,
 } from '..';
 import { useTableBlockContext } from '../block-provider';
 import { findFilterTargets, updateFilterTargets } from '../block-provider/hooks';
@@ -167,6 +167,12 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
         onOpenChange={(open) => {
           changeMenu(open);
         }}
+        overlayClassName={css`
+          .ant-dropdown-menu-item-group-list {
+            max-height: 300px;
+            overflow-y: auto;
+          }
+        `}
         menu={{ items }}
       >
         {typeof title === 'string' ? <span>{title}</span> : title}
@@ -1510,14 +1516,14 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
 
                   s['x-read-pretty'] = false;
                   s['x-disabled'] = false;
-
                   const schema = {
                     ...(s || {}),
+                    'x-decorator': 'FormItem',
                     'x-component-props': {
                       ...s['x-component-props'],
                       collectionName: collectionField?.collectionName,
                       targetField,
-                      onChange: props.onChange,
+                      onChange: collectionField?.interface !== 'richText' ? props.onChange : null,
                       defaultValue: getFieldDefaultValue(s, collectionField),
                       style: {
                         width: '100%',
@@ -1526,7 +1532,6 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
                       },
                     },
                   };
-
                   return <SchemaComponent schema={schema} />;
                 },
               },
@@ -1673,8 +1678,19 @@ SchemaSettings.SortingRule = function SortRuleConfigure(props) {
 // 是否显示默认值配置项
 export const isShowDefaultValue = (collectionField: CollectionFieldOptions, getInterface) => {
   return (
-    !['o2o', 'oho', 'obo', 'o2m', 'attachment', 'expression'].includes(collectionField?.interface) &&
-    !isSystemField(collectionField, getInterface)
+    ![
+      'o2o',
+      'oho',
+      'obo',
+      'o2m',
+      'attachment',
+      'expression',
+      'point',
+      'lineString',
+      'circle',
+      'polygon',
+      'sequence',
+    ].includes(collectionField?.interface) && !isSystemField(collectionField, getInterface)
   );
 };
 

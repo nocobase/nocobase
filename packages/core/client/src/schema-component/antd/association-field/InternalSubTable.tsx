@@ -6,6 +6,7 @@ import { CollectionProvider } from '../../../collection-manager';
 import { useSchemaOptionsContext } from '../../../schema-component';
 import Select from '../select/Select';
 import { useAssociationFieldContext, useInsertSchema } from './hooks';
+import { ACLCollectionProvider, useACLActionParamsContext } from '../../../acl';
 import schema from './schema';
 
 export const InternalSubTable = observer(
@@ -14,6 +15,7 @@ export const InternalSubTable = observer(
     const fieldSchema = useFieldSchema();
     const insert = useInsertSchema('SubTable');
     const { options } = useAssociationFieldContext();
+    const { actionName } = useACLActionParamsContext();
     useEffect(() => {
       insert(schema.SubTable);
       field.required = fieldSchema['required'];
@@ -27,40 +29,42 @@ export const InternalSubTable = observer(
     };
     return (
       <CollectionProvider name={options.target}>
-        <FormLayout
-          className={css`
-            .ant-formily-item-bordered-none {
-              .ant-input-number-group-addon {
-                border: none !important;
-                background: none;
+        <ACLCollectionProvider actionPath={`${options.target}:${actionName}`}>
+          <FormLayout
+            className={css`
+              .ant-formily-item-bordered-none {
+                .ant-input-number-group-addon {
+                  border: none !important;
+                  background: none;
+                }
+                .ant-checkbox-wrapper {
+                  margin-left: 8px;
+                }
+                .ant-table {
+                  margin: 0px !important;
+                }
               }
-              .ant-checkbox-wrapper {
-                margin-left: 8px;
-              }
-              .ant-table {
-                margin: 0px !important;
-              }
-            }
-          `}
-          layout={'vertical'}
-          bordered={false}
-        >
-          <SchemaOptionsContext.Provider
-            value={{
-              scope: option.scope,
-              components,
-            }}
+            `}
+            layout={'vertical'}
+            bordered={false}
           >
-            <RecursionField
-              onlyRenderProperties
-              basePath={field.address}
-              schema={fieldSchema}
-              filterProperties={(s) => {
-                return s['x-component'] === 'AssociationField.SubTable';
+            <SchemaOptionsContext.Provider
+              value={{
+                scope: option.scope,
+                components,
               }}
-            />
-          </SchemaOptionsContext.Provider>
-        </FormLayout>
+            >
+              <RecursionField
+                onlyRenderProperties
+                basePath={field.address}
+                schema={fieldSchema}
+                filterProperties={(s) => {
+                  return s['x-component'] === 'AssociationField.SubTable';
+                }}
+              />
+            </SchemaOptionsContext.Provider>
+          </FormLayout>
+        </ACLCollectionProvider>
       </CollectionProvider>
     );
   },

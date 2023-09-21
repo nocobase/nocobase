@@ -49,6 +49,9 @@ export const useStyles = genStyleHook('nb-page', (token) => {
           '.ant-page-header-footer': { marginBlockStart: '0' },
         },
         '.ant-tabs-nav': { marginBottom: '0' },
+        '.ant-page-header-heading-title': {
+          color: token.colorText,
+        },
       },
 
       '.height0': {

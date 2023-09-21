@@ -25,3 +25,5 @@ packages/core/database/src/sql-parser/index.js
 **/.dumi/tmp-production
 packages/core/cli/templates/plugin/src/client/*.tpl
 packages/app/client/src/.plugins
+docker
+storage

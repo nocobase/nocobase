@@ -110,7 +110,7 @@ export const TableColumnDesigner = (props) => {
           dn.refresh();
         }}
       />
-      {isSelectFieldMode && !field.readPretty && !uiSchema?.['x-read-pretty'] && (
+      {isSelectFieldMode && !field.readPretty && !uiSchema?.['x-read-pretty'] && isSubTableColumn && (
         <SchemaSettings.ModalItem
           title={t('Set the data scope')}
           schema={
@@ -264,8 +264,9 @@ export const TableColumnDesigner = (props) => {
             readOnlyMode === 'read-pretty'
               ? [
                   { label: t('Title'), value: 'Select' },
+                  isFileField && { label: t('File manager'), value: 'FileManager' },
                   { label: t('Tag'), value: 'Tag' },
-                ]
+                ].filter(Boolean)
               : fieldModeOptions
           }
           value={fieldMode}

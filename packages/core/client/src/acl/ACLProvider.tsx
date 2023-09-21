@@ -1,11 +1,11 @@
 import { Field } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
-import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAPIClient, useRequest } from '../api-client';
+import { useAppSpin } from '../application/hooks/useAppSpin';
 import { useBlockRequestContext } from '../block-provider/BlockProvider';
-import { useCollection } from '../collection-manager';
+import { useCollection, useCollectionManager } from '../collection-manager';
 import { useResourceActionContext } from '../collection-manager/ResourceActionProvider';
 import { useRecord } from '../record-provider';
 import { SchemaComponentOptions, useDesignable } from '../schema-component';
@@ -33,6 +33,7 @@ const getRouteUrl = (props) => {
 export const ACLRolesCheckProvider = (props) => {
   const route = getRouteUrl(props.children.props);
   const { setDesignable } = useDesignable();
+  const { render } = useAppSpin();
   const api = useAPIClient();
   const result = useRequest<{
     data: {
@@ -60,7 +61,7 @@ export const ACLRolesCheckProvider = (props) => {
     },
   );
   if (result.loading) {
-    return <Spin />;
+    return render();
   }
   if (result.error) {
     return <Navigate replace to={'/signin'} />;
@@ -147,6 +148,7 @@ const useResourceName = () => {
 export function useACLRoleContext() {
   const { data, getActionAlias, inResources, getResourceActionParams, getStrategyActionParams } = useACLRolesCheck();
   const allowedActions = useAllowedActions();
+  const { getCollectionJoinField } = useCollectionManager();
   const verifyScope = (actionName: string, recordPkValue: any) => {
     const actionAlias = getActionAlias(actionName);
     if (!Array.isArray(allowedActions?.[actionAlias])) {
@@ -158,6 +160,7 @@ export function useACLRoleContext() {
     ...data,
     parseAction: (actionPath: string, options: any = {}) => {
       const [resourceName, actionName] = actionPath.split(':');
+      const targetResource = resourceName?.includes('.') && getCollectionJoinField(resourceName)?.target;
       if (!getIgnoreScope(options)) {
         const r = verifyScope(actionName, options.recordPkValue);
         if (r !== null) {
@@ -166,6 +169,9 @@ export function useACLRoleContext() {
       }
       if (data?.allowAll) {
         return {};
+      }
+      if (inResources(targetResource)) {
+        return getResourceActionParams(`${targetResource}:${actionName}`);
       }
       if (inResources(resourceName)) {
         return getResourceActionParams(actionPath);
@@ -181,7 +187,7 @@ export const ACLCollectionProvider = (props) => {
   if (allowAll) {
     return props.children;
   }
-  const actionPath = schema?.['x-acl-action'];
+  const actionPath = schema?.['x-acl-action'] || props.actionPath;
   if (!actionPath) {
     return props.children;
   }
@@ -189,6 +195,8 @@ export const ACLCollectionProvider = (props) => {
   if (!params) {
     return null;
   }
+  const [_, actionName] = actionPath.split(':');
+  params.actionName = actionName;
   return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;
 };
 
@@ -257,8 +265,8 @@ export const ACLCollectionFieldProvider = (props) => {
   const field = useField<Field>();
   const { allowAll } = useACLRoleContext();
   const { whitelist } = useACLFieldWhitelist();
-  const allowed = whitelist.length > 0 ? whitelist.includes(fieldSchema.name) : true;
-
+  const [name] = (fieldSchema.name as string).split('.');
+  const allowed = !fieldSchema['x-acl-ignore'] && whitelist.length > 0 ? whitelist.includes(name) : true;
   useEffect(() => {
     if (!allowed) {
       field.required = false;

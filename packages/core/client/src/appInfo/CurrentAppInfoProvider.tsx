@@ -1,6 +1,6 @@
-import { Spin } from 'antd';
 import React, { createContext, useContext } from 'react';
 import { useRequest } from '../api-client';
+import { useAppSpin } from '../application/hooks/useAppSpin';
 
 export const CurrentAppInfoContext = createContext(null);
 
@@ -16,11 +16,12 @@ export const useCurrentAppInfo = () => {
   }>(CurrentAppInfoContext);
 };
 export const CurrentAppInfoProvider = (props) => {
+  const { render } = useAppSpin();
   const result = useRequest({
     url: 'app:getInfo',
   });
   if (result.loading) {
-    return <Spin />;
+    return render();
   }
   return <CurrentAppInfoContext.Provider value={result.data}>{props.children}</CurrentAppInfoContext.Provider>;
 };

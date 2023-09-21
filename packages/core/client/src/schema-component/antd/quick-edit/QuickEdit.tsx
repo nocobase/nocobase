@@ -2,27 +2,28 @@ import { css } from '@emotion/css';
 import { FormItem } from '@formily/antd-v5';
 import { Field, createForm } from '@formily/core';
 import { FormContext, RecursionField, observer, useField, useFieldSchema } from '@formily/react';
-import { Popover } from 'antd';
 import React, { useMemo, useRef } from 'react';
 import { useCollectionManager } from '../../../collection-manager';
+import { PopoverWithStopPropagation } from '../popover';
 
 export const Editable = observer((props) => {
   const field: any = useField();
   const containerRef = useRef(null);
   const fieldSchema = useFieldSchema();
+  const value = field.value;
   const schema: any = {
     name: fieldSchema.name,
     'x-collection-field': fieldSchema['x-collection-field'],
     'x-component': 'CollectionField',
     'x-read-pretty': true,
-    default: field.value,
+    default: value,
     'x-component-props': fieldSchema['x-component-props'],
   };
   const form = useMemo(
     () =>
       createForm({
         values: {
-          [fieldSchema.name]: field.value,
+          [fieldSchema.name]: value,
         },
       }),
     [field.value, fieldSchema['x-component-props']],
@@ -41,7 +42,7 @@ export const Editable = observer((props) => {
 
   return (
     <FormItem {...props} labelStyle={{ display: 'none' }}>
-      <Popover
+      <PopoverWithStopPropagation
         content={
           <div style={{ width: '100%', height: '100%', minWidth: 500 }}>
             <div ref={containerRef}>{modifiedChildren}</div>
@@ -61,7 +62,7 @@ export const Editable = observer((props) => {
             <RecursionField schema={schema} name={fieldSchema.name} />
           </FormContext.Provider>
         </div>
-      </Popover>
+      </PopoverWithStopPropagation>
     </FormItem>
   );
 });

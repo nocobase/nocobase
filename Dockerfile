@@ -12,7 +12,7 @@ RUN cd /tmp && \
     NEWVERSION="$(cat lerna.json | jq '.version' | tr -d '"').$(date +'%Y%m%d%H%M%S')" \
         && tmp=$(mktemp) \
         && jq ".version = \"${NEWVERSION}\"" lerna.json > "$tmp" && mv "$tmp" lerna.json
-RUN  yarn install && yarn build
+RUN  yarn install && yarn build --no-dts
 
 RUN git checkout -b release \
     && yarn version:alpha -y  \
@@ -40,7 +40,6 @@ RUN cd /app \
 
 FROM node:16.20-bullseye-slim
 RUN apt-get update && apt-get install -y nginx
-
 RUN rm -rf /etc/nginx/sites-enabled/default
 COPY ./docker/nocobase/nocobase.conf /etc/nginx/sites-enabled/nocobase.conf
 COPY --from=builder /app/nocobase.tar.gz /app/nocobase.tar.gz

@@ -18,11 +18,13 @@ module.exports = (cli) => {
     .allowUnknownOption()
     .action(async (opts) => {
       promptForTs();
+      const { SERVER_TSCONFIG_PATH } = process.env;
+      process.env.IS_DEV_CMD = true;
 
       if (process.argv.includes('-h') || process.argv.includes('--help')) {
         run('ts-node', [
           '-P',
-          './tsconfig.server.json',
+          SERVER_TSCONFIG_PATH,
           '-r',
           'tsconfig-paths/register',
           `${APP_PACKAGE_ROOT}/src/index.ts`,
@@ -54,15 +56,14 @@ module.exports = (cli) => {
         });
       }
 
-      await runAppCommand('install', ['--silent']);
-
       if (server || !client) {
         console.log('starting server', serverPort);
 
         const argv = [
           'watch',
+          '--ignore=./storage/plugins/**',
           '--tsconfig',
-          './tsconfig.server.json',
+          SERVER_TSCONFIG_PATH,
           '-r',
           'tsconfig-paths/register',
           `${APP_PACKAGE_ROOT}/src/index.ts`,
@@ -99,6 +100,7 @@ module.exports = (cli) => {
           env: {
             PORT: clientPort,
             APP_ROOT: `${APP_PACKAGE_ROOT}/client`,
+            WEBSOCKET_URL: process.env.WEBSOCKET_URL || (serverPort ? `ws://localhost:${serverPort}/ws` : undefined),
             PROXY_TARGET_URL:
               process.env.PROXY_TARGET_URL || (serverPort ? `http://127.0.0.1:${serverPort}` : undefined),
           },

@@ -17,6 +17,34 @@ describe('string field', () => {
     await db.close();
   });
 
+  it('should init with camelCase scope key', async () => {
+    const Test = db.collection({
+      name: 'tests',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+        {
+          type: 'string',
+          name: 'scopeKey',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await Test.repository.create({
+      values: {
+        name: 't1',
+        scopeKey: 'a',
+      },
+    });
+
+    Test.setField('scopeKeySort', { type: 'sort', scopeKey: 'scopeKey' });
+    await db.sync();
+  });
+
   it('should init sorted value with thousand records', async () => {
     const Test = db.collection({
       name: 'tests',

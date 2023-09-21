@@ -1,8 +1,12 @@
 import cors from '@koa/cors';
 import Database from '@nocobase/database';
-import Resourcer from '@nocobase/resourcer';
+import { Resourcer } from '@nocobase/resourcer';
+import { uid } from '@nocobase/utils';
+import { Command } from 'commander';
+import fs from 'fs';
 import i18next from 'i18next';
 import bodyParser from 'koa-bodyparser';
+import { resolve } from 'path';
 import Application, { ApplicationOptions } from './application';
 import { parseVariables } from './middlewares';
 import { dateTemplate } from './middlewares/data-template';
@@ -47,8 +51,12 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
   );
 
   if (options.bodyParser !== false) {
+    const bodyLimit = '10mb';
     app.use(
       bodyParser({
+        jsonLimit: bodyLimit,
+        formLimit: bodyLimit,
+        textLimit: bodyLimit,
         ...options.bodyParser,
       }),
       {
@@ -78,3 +86,36 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
   app.use(db2resource, { tag: 'db2resource', after: 'dataWrapping' });
   app.use(app.resourcer.restApiMiddleware(), { tag: 'restApi', after: 'db2resource' });
 }
+
+export const createAppProxy = (app: Application) => {
+  return new Proxy(app, {
+    get(target, prop, ...args) {
+      if (typeof prop === 'string' && ['on', 'once', 'addListener'].includes(prop)) {
+        return (eventName: string, listener: any) => {
+          listener['_reinitializable'] = true;
+          return target[prop](eventName, listener);
+        };
+      }
+      return Reflect.get(target, prop, ...args);
+    },
+  });
+};
+
+export const getCommandFullName = (command: Command) => {
+  const names = [];
+  names.push(command.name());
+  let parent = command?.parent;
+  while (parent) {
+    if (!parent?.parent) {
+      break;
+    }
+    names.unshift(parent.name());
+    parent = parent.parent;
+  }
+  return names.join('.');
+};
+
+export const tsxRerunning = async () => {
+  const file = resolve(process.cwd(), 'storage/app.watch.ts');
+  await fs.promises.writeFile(file, `export const watchId = '${uid()}';`, 'utf-8');
+};
