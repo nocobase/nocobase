@@ -21,11 +21,10 @@ import { getDepPkgPath, getDepsConfig } from './utils/getDepsConfig';
 import { EsbuildSupportExts, globExcludeFiles } from './constant';
 import { PkgLog, UserConfig, getPackageJson } from './utils';
 
+const validExts = ['.ts', '.tsx', '.js', '.jsx', '.mjs'];
 const serverGlobalFiles: string[] = ['src/**', '!src/client/**', ...globExcludeFiles];
 const clientGlobalFiles: string[] = ['src/**', '!src/server/**', ...globExcludeFiles];
-const dynamicImportRegexp = /import\((["'])(.*?)\1\)/g;
-
-const sourceGlobalFiles: string[] = ['src/**/*.{ts,js,tsx,jsx}', '!src/**/__tests__'];
+const sourceGlobalFiles: string[] = ['src/**/*.{ts,js,tsx,jsx,mjs}', '!src/**/__tests__'];
 
 const external = [
   // nocobase
@@ -157,7 +156,7 @@ export function writeExternalPackageVersion(cwd: string, log: PkgLog) {
 export async function buildServerDeps(cwd: string, serverFiles: string[], log: PkgLog) {
   log('build plugin server dependencies');
   const outDir = path.join(cwd, target_dir, 'node_modules');
-  const serverFileSource = serverFiles.map((item) => fs.readFileSync(item, 'utf-8'));
+  const serverFileSource = serverFiles.filter(item => validExts.includes(path.extname(item))).map((item) => fs.readFileSync(item, 'utf-8'));
   const sourcePackages = getSourcePackages(serverFileSource);
   const includePackages = getIncludePackages(sourcePackages, external, pluginPrefix);
   const excludePackages = getExcludePackages(sourcePackages, external, pluginPrefix);
