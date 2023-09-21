@@ -27,7 +27,6 @@ export const requestLogger = (appName: string) => {
     requestLogger.info({
       reqId,
       message: 'request',
-      userId: '',
       ...requestInfo,
       req: pick(ctx.request.toJSON(), defaultRequestWhitelist),
       action: ctx.action?.toJSON?.(),
