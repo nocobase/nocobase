@@ -82,11 +82,9 @@ export const SortableItem: React.FC<SortableItemProps> = observer(
           removeParentsIfNoChildren: removeParentsIfNoChildren ?? true,
         }}
       >
-        <div onMouseEnter={props.onMouseEnter} onMouseLeave={props.onMouseLeave}>
-          <Sortable id={eid} {...others}>
-            {props.children}
-          </Sortable>
-        </div>
+        <Sortable id={eid} {...others}>
+          {props.children}
+        </Sortable>
       </SortableProvider>
     );
   },

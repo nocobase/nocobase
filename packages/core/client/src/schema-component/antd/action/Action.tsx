@@ -2,14 +2,14 @@ import { observer, RecursionField, useField, useFieldSchema, useForm } from '@fo
 import { App, Button, Popover } from 'antd';
 import classnames from 'classnames';
 import lodash from 'lodash';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useActionContext } from '../..';
 import { useDesignable } from '../../';
 import { Icon } from '../../../icon';
 import { useRecord } from '../../../record-provider';
 import { SortableItem } from '../../common';
-import { useCompile, useComponent, useDesigner, useDesignerControl } from '../../hooks';
+import { useCompile, useComponent, useDesigner } from '../../hooks';
 import { useProps } from '../../hooks/useProps';
 import ActionContainer from './Action.Container';
 import { ActionDesigner } from './Action.Designer';
@@ -43,7 +43,6 @@ export const Action: ComposedAction = observer(
     const [visible, setVisible] = useState(false);
     const [formValueChanged, setFormValueChanged] = useState(false);
     const Designer = useDesigner();
-    const { designerVisible, showDesigner, hideDesigner } = useDesignerControl();
     const field = useField<any>();
     const { run, element } = useAction();
     const fieldSchema = useFieldSchema();
@@ -58,7 +57,6 @@ export const Action: ComposedAction = observer(
     const { designable } = useDesignable();
     const tarComponent = useComponent(component) || component;
     const { modal } = App.useApp();
-
     let actionTitle = title || compile(fieldSchema.title);
     actionTitle = lodash.isString(actionTitle) ? t(actionTitle) : actionTitle;
 
@@ -72,29 +70,6 @@ export const Action: ComposedAction = observer(
           });
         });
     }, [linkageRules, values, designable]);
-
-    const handleButtonClick = useCallback(
-      (e: React.MouseEvent) => {
-        if (!disabled) {
-          e.preventDefault();
-          e.stopPropagation();
-          const onOk = () => {
-            onClick?.(e);
-            setVisible(true);
-            run();
-          };
-          if (confirm) {
-            modal.confirm({
-              ...confirm,
-              onOk,
-            });
-          } else {
-            onOk();
-          }
-        }
-      },
-      [confirm, disabled, modal, onClick, run],
-    );
 
     const renderButton = () => {
       if (!designable && field?.data?.hidden) {
@@ -111,15 +86,31 @@ export const Action: ComposedAction = observer(
             ...others.style,
             opacity: designable && field?.data?.hidden && 0.1,
           }}
-          onClick={handleButtonClick}
-          onMouseEnter={showDesigner}
-          onMouseLeave={hideDesigner}
+          onClick={(e: React.MouseEvent) => {
+            if (!disabled) {
+              e.preventDefault();
+              e.stopPropagation();
+              const onOk = () => {
+                onClick?.(e);
+                setVisible(true);
+                run();
+              };
+              if (confirm) {
+                modal.confirm({
+                  ...confirm,
+                  onOk,
+                });
+              } else {
+                onOk();
+              }
+            }
+          }}
           component={tarComponent || Button}
           className={classnames(componentCls, hashId, className)}
           type={props.type === 'danger' ? undefined : props.type}
         >
           {actionTitle}
-          {designerVisible ? <Designer {...designerProps} /> : null}
+          <Designer {...designerProps} />
         </SortableItem>
       );
     };
