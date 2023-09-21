@@ -1,9 +1,10 @@
 import { Model } from './model';
 import { Collection } from './collection';
 import Database from './database';
-import { SyncRunner } from './sync-runner';
+import { InheritedSyncRunner } from './inherited-sync-runner';
 import { InheritedCollection } from './inherited-collection';
 import { Model as SequelizeModel } from 'sequelize';
+import { ZeroColumnTableError } from './errors/zero-column-table-error';
 
 export class ModelSyncHelper {
   private readonly collection: Collection;
@@ -26,7 +27,15 @@ export class ModelSyncHelper {
 
     await this.handleSchema(options);
 
-    await this.handleZeroColumnModel(options);
+    try {
+      await this.handleZeroColumnModel(options);
+    } catch (e) {
+      if (e instanceof ZeroColumnTableError) {
+        return;
+      }
+
+      throw e;
+    }
 
     const syncResult = await this.performSync(options);
 
@@ -176,14 +185,16 @@ export class ModelSyncHelper {
 
   async performSync(options) {
     return this.collection.isInherited()
-      ? await SyncRunner.syncInheritModel(this.model, options)
+      ? await InheritedSyncRunner.syncInheritModel(this.model, options)
       : await SequelizeModel.sync.call(this.model, options);
   }
 
   async handleZeroColumnModel(options) {
     if (Object.keys(this.model.tableAttributes).length === 0) {
       if (this.database.inDialect('sqlite', 'mysql')) {
-        throw new Error(`Zero-column tables aren't supported in ${this.database.sequelize.getDialect()}`);
+        throw new ZeroColumnTableError(
+          `Zero-column tables aren't supported in ${this.database.sequelize.getDialect()}`,
+        );
       }
 
       const queryInterface = this.queryInterface;

@@ -1,7 +1,7 @@
 import { InheritedCollection } from './inherited-collection';
 import lodash from 'lodash';
 
-export class SyncRunner {
+export class InheritedSyncRunner {
   static async syncInheritModel(model: any, options: any) {
     const { transaction } = options;
 
@@ -20,9 +20,7 @@ export class SyncRunner {
 
     if (!parents) {
       throw new Error(
-        `Inherit model ${
-          inheritedCollection.name
-        } can't be created without parents, parents option is ${lodash
+        `Inherit model ${inheritedCollection.name} can't be created without parents, parents option is ${lodash
           .castArray(inheritedCollection.options.inherits)
           .join(', ')}`,
       );
