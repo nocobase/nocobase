@@ -4,7 +4,7 @@ import { Col, Collapse, Input, Row, Tree } from 'antd';
 import cls from 'classnames';
 import React, { ChangeEvent, MouseEvent, useMemo, useState } from 'react';
 import { SortableItem } from '../../common';
-import { useCompile, useDesigner, useProps } from '../../hooks';
+import { useCompile, useDesigner, useDesignerControl, useProps } from '../../hooks';
 import { useToken } from '../__builtins__';
 import { EllipsisWithTooltip } from '../input';
 import { getLabelFormatValue, useLabelUiSchema } from '../record-picker';
@@ -21,6 +21,7 @@ export const AssociationFilterItem = (props) => {
   // 把一些可定制的状态通过 hook 提取出去了，为了兼容之前添加的 Table 区块，这里加了个默认值
   const fieldSchema = useFieldSchema();
   const Designer = useDesigner();
+  const { designerVisible, showDesigner, hideDesigner } = useDesignerControl();
   const compile = useCompile();
   const {
     list,
@@ -90,8 +91,12 @@ export const AssociationFilterItem = (props) => {
   const title = fieldSchema.title ?? collectionField?.uiSchema?.title;
 
   return wrapSSR(
-    <SortableItem className={cls(componentCls, hashId, 'nb-block-item', props.className, 'SortableItem')}>
-      <Designer />
+    <SortableItem
+      className={cls(componentCls, hashId, 'nb-block-item', props.className, 'SortableItem')}
+      onMouseEnter={showDesigner}
+      onMouseLeave={hideDesigner}
+    >
+      {designerVisible ? <Designer /> : null}
       <Collapse defaultActiveKey={defaultActiveKeyCollapse} ghost expandIcon={searchVisible ? () => null : undefined}>
         <Panel
           className="Panel"
