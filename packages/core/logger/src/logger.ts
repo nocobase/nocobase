@@ -1,6 +1,7 @@
-import winston, { LoggerOptions } from 'winston';
+import winston, { Logger, LoggerOptions, createLogger } from 'winston';
 import path from 'path';
 import chalk from 'chalk';
+import 'winston-daily-rotate-file';
 
 const getLoggerLevel = () => process.env.LOGGER_LEVEL || (process.env.APP_ENV === 'development' ? 'debug' : 'info');
 
@@ -117,3 +118,5 @@ export const simpleLogger = () => {
     transports: [new winston.transports.Console()],
   });
 };
+
+export { Logger, LoggerOptions, createLogger };

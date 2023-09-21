@@ -749,8 +749,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       migrator: {
         context: { app: this },
       },
+      logger: this._logger.child({ module: 'database' }),
     });
-    db.setLogger(this._logger.child({ module: 'database' }));
     return db;
   }
 }

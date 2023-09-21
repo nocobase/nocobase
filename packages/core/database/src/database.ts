@@ -1,4 +1,4 @@
-import { Logger } from '@nocobase/logger';
+import { Logger, LoggerOptions, createLogger, simpleLogger } from '@nocobase/logger';
 import { applyMixins, AsyncEmitter, requireModule } from '@nocobase/utils';
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
@@ -87,6 +87,7 @@ export interface IDatabaseOptions extends Options {
   migrator?: any;
   usingBigIntForId?: boolean;
   underscored?: boolean;
+  logger?: LoggerOptions | Logger;
 }
 
 export type DatabaseOptions = IDatabaseOptions;
@@ -205,6 +206,16 @@ export class Database extends EventEmitter implements AsyncEmitter {
       ...lodash.clone(options),
     };
 
+    if (options.logger) {
+      if (typeof options.logger['log'] === 'function') {
+        this.logger = options.logger as Logger;
+      } else {
+        this.logger = createLogger(options.logger);
+      }
+    } else {
+      this.logger = simpleLogger();
+    }
+
     if (options.storage && options.storage !== ':memory:') {
       if (!isAbsolute(options.storage)) {
         opts.storage = resolve(process.cwd(), options.storage);
@@ -294,10 +305,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
     this.initListener();
     patchSequelizeQueryInterface(this);
-  }
-
-  setLogger(logger: Logger) {
-    this.logger = logger;
   }
 
   sequelizeOptions(options) {
