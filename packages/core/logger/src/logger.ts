@@ -70,6 +70,7 @@ const getTransport = (name: string) => {
       new winston.transports.File({
         dirname,
         filename: `${name}.log`,
+        maxsize: Number(process.env.LOGGER_MAX_SIZE) || 1024 * 1024 * 20,
         maxFiles: Number(process.env.LOGGER_MAX_FILES) || 10,
         format: format(),
       }),
@@ -77,6 +78,7 @@ const getTransport = (name: string) => {
       new winston.transports.DailyRotateFile({
         dirname,
         filename: `${name}_%DATE%.log`,
+        maxSize: Number(process.env.LOGGER_MAX_SIZE),
         maxFiles: Number(process.env.LOGGER_MAX_FILES) || '14d',
         format: format(),
       }),
