@@ -105,7 +105,7 @@ export class ModelSyncHelper {
       if (!currentAttribute || (!currentAttribute.unique && !currentAttribute.primaryKey)) {
         if (this.database.inDialect('postgres')) {
           // @ts-ignore
-          const constraints = await queryInterface.showConstraint(tableName, existUniqueIndex.name, options);
+          const constraints = await this.queryInterface.showConstraint(this.tableName, existUniqueIndex.name, options);
           if (constraints.some((c) => c.constraintName === existUniqueIndex.name)) {
             await this.queryInterface.removeConstraint(this.tableName, existUniqueIndex.name, options);
           }
