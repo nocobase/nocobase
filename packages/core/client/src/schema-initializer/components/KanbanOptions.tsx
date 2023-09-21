@@ -7,7 +7,6 @@ import { uniqBy } from 'lodash';
 import { SchemaComponent } from '../../';
 
 function mergeArrays(A, B) {
-  console.log(A);
   if (!A) {
     return B;
   }

@@ -3,7 +3,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../..';
 import { useAPIClient } from '../../../api-client';
-import { useKanbanV2BlockContext } from '../../../block-provider';
+// import { useKanbanV2BlockContext } from '../../../block-provider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { useCollectionFilterOptions } from '../../../collection-manager/action-hooks';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
@@ -14,7 +14,7 @@ export const KanabanDesigner = () => {
   const fieldSchema = useFieldSchema();
   const { name, title } = useCollection();
   const dataSource = useCollectionFilterOptions(name);
-  const { service } = useKanbanV2BlockContext();
+  // const { service } = useKanbanV2BlockContext();
   const api = useAPIClient();
   const { getCollectionFields, getCollectionFieldsOptions } = useCollectionManager();
   const { dn } = useDesignable();
@@ -22,10 +22,10 @@ export const KanabanDesigner = () => {
   const template = useSchemaTemplate();
   const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
-  const displayLable = fieldSchema['x-label-disabled'] === undefined ? true : fieldSchema['x-label-disabled'];
+  // const displayLable = fieldSchema['x-label-disabled'] === undefined ? true : fieldSchema['x-label-disabled'];
   const collectionFields = getCollectionFields(name);
   const groupFieldsOptions = getCollectionFieldsOptions(name, 'string', {
-    association: ['linkTo', 'm2m', 'm2o', 'o2m', 'o2o', 'oho'],
+    association: ['linkTo', 'm2m', 'm2o', 'o2m', 'o2o', 'oho', 'obo'],
   }).filter((v) => v.children || ['select', 'radioGroup'].includes(v.interface));
   const groupField = fieldSchema['x-decorator-props']?.groupField || [];
   const columns = fieldSchema['x-decorator-props']?.columns;
@@ -49,7 +49,7 @@ export const KanabanDesigner = () => {
                 required: true,
                 default: groupField,
                 'x-disabled': true,
-                description: '{{t("Single select and radio fields can be used as the grouping field")}}',
+                // description: '{{t("Single select and radio fields can be used as the grouping field")}}',
                 'x-component': 'Cascader',
                 'x-component-props': {
                   objectValue: true,

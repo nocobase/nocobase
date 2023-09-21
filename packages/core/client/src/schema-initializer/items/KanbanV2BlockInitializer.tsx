@@ -43,7 +43,6 @@ export const KanbanV2BlockInitializer = (props) => {
                         title: t('Grouping field'),
                         enum: groupFieldsOptions,
                         required: true,
-                        description: '{{t("Single select and radio fields can be used as the grouping field")}}',
                         'x-component': 'Cascader',
                         'x-component-props': {
                           objectValue: true,
