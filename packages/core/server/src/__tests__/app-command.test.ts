@@ -40,4 +40,21 @@ describe('app command', () => {
     expect(app.cli.parseHandleByIPCServer(['node', 'cli', 'nocobase', 'subparent', 'testaa'])).toBeTruthy();
     expect(app.cli.parseHandleByIPCServer(['node', 'cli', 'nocobase', 'subparent', 'testbb'])).toBeFalsy();
   });
+
+  it('should correctly parse the command multiple times with varying parameters', async () => {
+    const fn = jest.fn();
+
+    app
+      .command('test1')
+      .option('-a, --aaa <aaa>', 'aaa option')
+      .action((options) => {
+        fn(options);
+      });
+
+    await app.runCommand('test1', '-a', 'aaa');
+    expect(fn).toBeCalledWith({ aaa: 'aaa' });
+
+    await app.runCommand('test1');
+    expect(fn).toBeCalledWith({});
+  });
 });
