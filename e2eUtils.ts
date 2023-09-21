@@ -62,10 +62,10 @@ interface CollectionSetting {
     name: string;
     unique?: boolean;
     uiSchema: {
-      type: string;
-      title: string;
+      type?: string;
+      title?: string;
       required?: boolean;
-      'x-component': string;
+      'x-component'?: string;
       'x-read-pretty'?: boolean;
       'x-validator'?: string;
       'x-component-props'?: Record<string, any>;
@@ -351,7 +351,7 @@ const createCollections = async (page: Page, collectionSettings: CollectionSetti
  * @param all
  * @returns
  */
-const generateFakerData = (collectionSetting: CollectionSetting, all: CollectionSetting[]) => {
+const generateFakerData = (collectionSetting: CollectionSetting) => {
   const excludeField = ['id', 'createdAt', 'updatedAt', 'createdBy', 'updatedBy'];
   const basicInterfaceToData = {
     input: () => faker.lorem.words(),
@@ -380,16 +380,6 @@ const generateFakerData = (collectionSetting: CollectionSetting, all: Collection
       result[field.name] = basicInterfaceToData[field.interface]();
       return;
     }
-
-    if (field.target) {
-      const targetCollection = all.find((item) => item.name === field.target);
-
-      if (!targetCollection) {
-        throw new Error(`target collection ${field.target} not found`);
-      }
-
-      result[field.name] = generateFakerData(targetCollection, all);
-    }
   });
 
   return result;
@@ -407,7 +397,7 @@ const createFakerData = async (collectionSettings: CollectionSetting[]) => {
   const token = getStorageItem('NOCOBASE_TOKEN', state);
 
   for (const item of collectionSettings) {
-    const data = generateFakerData(item, collectionSettings);
+    const data = generateFakerData(item);
     const result = await api.post(`/api/${item.name}:create`, {
       headers: {
         Authorization: `Bearer ${token}`,
