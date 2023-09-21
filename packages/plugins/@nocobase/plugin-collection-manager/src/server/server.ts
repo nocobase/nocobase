@@ -222,6 +222,7 @@ export class CollectionManagerPlugin extends Plugin {
       });
     };
 
+    this.app.on('loadCollections', loadCollections);
     this.app.on('beforeStart', loadCollections);
     this.app.on('beforeUpgrade', async () => {
       const syncOptions = {
