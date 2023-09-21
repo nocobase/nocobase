@@ -42,10 +42,10 @@ export const requestLogger = (appName: string) => {
       const info = {
         reqId,
         message: 'response',
-        userId: ctx.auth?.user?.id,
         ...requestInfo,
         action: ctx.action?.toJSON?.(),
         res: pick(ctx.response.toJSON(), defaultResponseWhitelist),
+        userId: ctx.auth?.user?.id,
         status: ctx.status,
         cost,
       };
