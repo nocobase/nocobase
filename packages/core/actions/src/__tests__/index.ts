@@ -1,44 +1,15 @@
 import Database, { CollectionOptions, DatabaseOptions } from '@nocobase/database';
 import { Handlers, ResourceOptions, Resourcer } from '@nocobase/resourcer';
-import merge from 'deepmerge';
 import Koa from 'koa';
 import bodyParser from 'koa-bodyparser';
 import qs from 'qs';
 import supertest, { SuperAgentTest } from 'supertest';
 import db2resource from '../../../server/src/middlewares/db2resource';
 import { uid } from '@nocobase/utils';
+import { mockDatabase } from '@nocobase/database';
 
 export function generatePrefixByPath() {
   return `mock_${uid(6)}`;
-}
-
-export function getConfig(config = {}, options?: any): DatabaseOptions {
-  return merge(
-    {
-      username: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_DATABASE,
-      host: process.env.DB_HOST,
-      port: process.env.DB_PORT,
-      dialect: process.env.DB_DIALECT,
-      storage: process.env.DB_STORAGE,
-      logging: process.env.DB_LOGGING === 'on',
-      sync: {
-        force: true,
-      },
-      hooks: {
-        beforeDefine(model, options) {
-          options.tableName = `${generatePrefixByPath()}_${options.tableName || options.name.plural}`;
-        },
-      },
-    },
-    config || {},
-    options,
-  ) as any;
-}
-
-export function mockDatabase(options?: DatabaseOptions): Database {
-  return new Database(getConfig(options));
 }
 
 interface ActionParams {
@@ -149,7 +120,8 @@ export class MockServer extends Koa {
               {
                 get(target, method: string, receiver) {
                   return (params: ActionParams = {}) => {
-                    let { filterByTk, values = {}, file, ...restParams } = params;
+                    const { values = {}, file, ...restParams } = params;
+                    let { filterByTk } = params;
                     if (params.associatedIndex) {
                       resourceOf = params.associatedIndex;
                     }

@@ -46,9 +46,7 @@ export class ModelSyncHelper {
   }
 
   async handleSnapshot() {
-    if (this.snapshotManager.enabled()) {
-      await this.snapshotManager.saveSnapshot(this.collection);
-    }
+    this.snapshotManager.enabled() && (await this.snapshotManager.saveSnapshot(this.collection));
   }
 
   async handleDefaultValues(columns, options) {
@@ -221,8 +219,7 @@ export class ModelSyncHelper {
   }
 
   async hasChangesSinceLastSnapshot() {
-    const snapshotEnabled = this.snapshotManager.enabled();
-    return snapshotEnabled && (await this.snapshotManager.hasChanged(this.collection));
+    return this.snapshotManager.enabled() && (await this.snapshotManager.hasChanged(this.collection));
   }
 
   get sequelize() {

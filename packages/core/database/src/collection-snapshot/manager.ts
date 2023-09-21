@@ -14,8 +14,9 @@ export class CollectionSnapshotManager {
     return this.db.options.collectionSnapshotDir;
   }
 
-  async hasChanged(collection: Collection) {
+  async hasChanged(collection: Collection): Promise<boolean> {
     const snapshot = await this.getSnapshot(collection);
+
     if (!snapshot) {
       return true;
     }

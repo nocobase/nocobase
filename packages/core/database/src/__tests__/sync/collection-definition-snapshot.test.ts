@@ -30,4 +30,24 @@ describe('collection definition snapshot', () => {
 
     expect(firstSnapShot.hash).not.toBe(secondSnapShot.hash);
   });
+
+  it('should detect snapshot changes', async () => {
+    const User = db.collection({
+      name: 'users',
+      fields: [
+        { name: 'name', type: 'string' },
+        { name: 'age', type: 'integer' },
+      ],
+    });
+
+    expect(await db.collectionSnapshotManager.hasChanged(User)).toBeTruthy();
+
+    await db.sync();
+
+    expect(await db.collectionSnapshotManager.hasChanged(User)).toBeFalsy();
+
+    User.addField('email', { name: 'email', type: 'string' });
+
+    expect(await db.collectionSnapshotManager.hasChanged(User)).toBeTruthy();
+  });
 });
