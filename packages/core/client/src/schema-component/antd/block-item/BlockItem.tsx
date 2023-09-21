@@ -3,7 +3,7 @@ import { useFieldSchema } from '@formily/react';
 import cls from 'classnames';
 import React from 'react';
 import { SortableItem } from '../../common';
-import { useDesigner, useProps } from '../../hooks';
+import { useDesigner, useDesignerControl, useProps } from '../../hooks';
 
 const getTestId = (schema) => {
   const resource = schema?.['x-decorator-props']?.['resource'];
@@ -20,6 +20,7 @@ const getTestId = (schema) => {
 export const BlockItem: React.FC<any> = (props) => {
   const { className, children } = useProps(props);
   const Designer = useDesigner();
+  const { designerVisible, showDesigner, hideDesigner } = useDesignerControl();
   const schema = useFieldSchema();
   return (
     <SortableItem
@@ -72,8 +73,10 @@ export const BlockItem: React.FC<any> = (props) => {
           }
         `,
       )}
+      onMouseEnter={showDesigner}
+      onMouseLeave={hideDesigner}
     >
-      <Designer />
+      {designerVisible ? <Designer /> : null}
       {children}
     </SortableItem>
   );
