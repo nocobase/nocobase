@@ -6,28 +6,9 @@ import React, { useContext, useEffect, useState } from 'react';
 import { Draggable, Droppable } from 'react-beautiful-dnd';
 import { useTranslation } from 'react-i18next';
 import { useInfiniteScroll } from 'ahooks';
+import { useToken } from '../../__builtins__';
 import { BlockItem, KanbanCardBlockProvider, KanbanCardContext, useKanbanV2BlockContext } from '../../../../';
 import { useProps } from '../../../hooks/useProps';
-
-const grid = 8;
-const getItemStyle = (isDragging, draggableStyle) => ({
-  userSelect: 'none',
-  padding: grid * 2,
-  margin: `0 0 ${grid}px 0`,
-  background: 'white',
-  ...draggableStyle,
-});
-const getListStyle = () => ({
-  background: '#f9f9f9',
-  padding: grid,
-  margin: 5,
-  width: 330,
-  marginTop: 0,
-  paddingTop: 0,
-  height: '100%',
-  maxHeight: 600,
-  overflowY: 'auto',
-});
 
 const FormComponent: React.FC<any> = (props) => {
   const { children, setDisableCardDrag, ...others } = props;
@@ -77,11 +58,31 @@ const List = (props) => {
 
 export const Column = observer(
   (props: any) => {
+    const { token } = useToken();
     const { ind, data, getColumnDatas } = props;
     const { groupField, form, targetColumn, params, setTargetColumn } = useKanbanV2BlockContext();
     const fieldSchema = useFieldSchema();
     const { t } = useTranslation();
     const [disabledCardDrag, setDisableCardDrag] = useState(false);
+    const grid = 8;
+    const getItemStyle = (isDragging, draggableStyle) => ({
+      userSelect: 'none',
+      padding: grid * 2,
+      margin: `0 0 ${grid}px 0`,
+      background: token.colorBgContainer,
+      ...draggableStyle,
+    });
+    const getListStyle = () => ({
+      background: token.colorBgLayout,
+      padding: grid,
+      margin: 5,
+      width: 330,
+      marginTop: 0,
+      paddingTop: 0,
+      height: '100%',
+      maxHeight: 600,
+      overflowY: 'auto',
+    });
     const {
       data: result,
       loading,
@@ -162,7 +163,7 @@ export const Column = observer(
                   </Draggable>
                 ))}
               </Spin>
-              <div style={{ marginTop: 8 }}>
+              <div style={{ marginTop: 8, color: token.colorTextQuaternary }}>
                 {result?.nextId && result?.list?.length > 0 ? <span onClick={loadMore}>{t('Loading')} ...</span> : ''}
                 {!result?.nextId && !loading && result?.list?.length > 0 && (
                   <span>{t('All loaded, nothing more')}.</span>
