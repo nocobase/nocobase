@@ -6,7 +6,7 @@ import { EventEmitter } from 'events';
 import fs from 'fs';
 import http, { IncomingMessage, ServerResponse } from 'http';
 import { promisify } from 'node:util';
-import { resolve, basename } from 'path';
+import { basename, dirname, resolve } from 'path';
 import qs from 'qs';
 import handler from 'serve-handler';
 import { parse } from 'url';
@@ -130,6 +130,29 @@ export class Gateway extends EventEmitter {
       await compress(req, res);
       return handler(req, res, {
         public: resolve(process.cwd()),
+      });
+    }
+
+    const m1 = /\/static\/plugins\/@(.+)\/(.+)\/docs/.exec(pathname);
+    const m2 = /\/static\/plugins\/(.+)\/docs/.exec(pathname);
+    if (m1 || m2) {
+      let pkg;
+      if (m1) {
+        pkg = `@${m1[1]}/${m1[2]}`;
+      } else {
+        pkg = `${m1[1]}`;
+      }
+      const basePath = dirname(require.resolve(`${pkg}/package.json`));
+      const dest = pathname.split('/docs/').pop();
+      await compress(req, res);
+      return handler(req, res, {
+        public: resolve(basePath, 'docs'),
+        rewrites: [
+          {
+            source: pathname,
+            destination: dest,
+          },
+        ],
       });
     }
 

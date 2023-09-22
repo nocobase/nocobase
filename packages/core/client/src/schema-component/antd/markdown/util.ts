@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 export async function parseMarkdown(text: string) {
   if (!text) {
@@ -12,13 +12,23 @@ export function useParseMarkdown(text: string) {
   const [html, setHtml] = useState<any>('');
   const [loading, setLoading] = useState(false);
   useEffect(() => {
+    if (!text) {
+      return;
+    }
     setLoading(true);
     parseMarkdown(text).then((r) => {
       setHtml(r);
       setLoading(false);
     });
   }, [text]);
-  return { html, loading };
+  const setText = useCallback((text) => {
+    setLoading(true);
+    parseMarkdown(text).then((r) => {
+      setHtml(r);
+      setLoading(false);
+    });
+  }, []);
+  return { html, loading, setText };
 }
 
 export function convertToText(markdownText: string) {

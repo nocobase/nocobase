@@ -1,5 +1,4 @@
 ---
-sort: 1
 tags: 
   - key: data-block
     title: 数据区块

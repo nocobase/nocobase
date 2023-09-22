@@ -21,6 +21,7 @@ import { SchemaInitializerPlugin } from '../schema-initializer';
 import { BlockTemplateDetails, BlockTemplatePage } from '../schema-templates';
 import { SystemSettingsPlugin } from '../system-settings';
 import { CurrentUserProvider, CurrentUserSettingsMenuProvider } from '../user';
+import { DocPlugin } from './plugins/Doc';
 import { LocalePlugin } from './plugins/LocalePlugin';
 
 const AppSpin = () => {
@@ -250,6 +251,7 @@ export class NocoBaseBuildInPlugin extends Plugin {
     });
   }
   async addPlugins() {
+    await this.app.pm.add(DocPlugin, { name: 'DocPlugin' });
     await this.app.pm.add(LocalePlugin, { name: 'locale' });
     await this.app.pm.add(AdminLayoutPlugin, { name: 'admin-layout' });
     await this.app.pm.add(SystemSettingsPlugin, { name: 'system-setting' });

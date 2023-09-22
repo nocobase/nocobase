@@ -8,6 +8,17 @@ import { resolve, sep } from 'path';
 import Application from '../application';
 import { createAppProxy, tsxRerunning } from '../helper';
 import { Plugin } from '../plugin';
+import {
+  DOCS_README,
+  DOCS_SIDE_BAR,
+  DOCS_SPECIAL_FILES,
+  DOCS_TAGS,
+  PLUGIN_INDEX,
+  getDocSidebar,
+  getOverview,
+  getPluginIndexContent,
+  getTagContent,
+} from './docsUtils';
 import { uploadMiddleware } from './middleware';
 import collectionOptions from './options/collection';
 import resourceOptions from './options/resource';
@@ -23,17 +34,6 @@ import {
   requireNoCache,
   updatePluginByCompressedFileUrl,
 } from './utils';
-import {
-  DOCS_README,
-  DOCS_SIDE_BAR,
-  DOCS_SPECIAL_FILES,
-  DOCS_TAGS,
-  getOverview,
-  getDocSidebar,
-  getTagContent,
-  PLUGIN_INDEX,
-  getPluginIndexContent,
-} from './docsUtils';
 
 export interface PluginManagerOptions {
   app: Application;
@@ -68,6 +68,8 @@ export class PluginManager {
     this._repository.setPluginManager(this);
     this.app.resourcer.define(resourceOptions);
     this.app.acl.allow('pm', 'listEnabled', 'public');
+    this.app.acl.allow('pm', 'getDoc', 'public');
+    this.app.acl.allow('pm', 'getDocMenu', 'public');
     this.app.acl.registerSnippet({
       name: 'pm',
       actions: ['pm:*'],
