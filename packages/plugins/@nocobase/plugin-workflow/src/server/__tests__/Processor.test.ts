@@ -470,5 +470,68 @@ describe('workflow > Processor', () => {
       const jobs = await e2.getJobs({ order: [['id', 'ASC']] });
       expect(jobs.length).toEqual(5);
     });
+
+    it('loop branch contains parallel branches', async () => {
+      const n1 = await workflow.createNode({
+        type: 'loop',
+        config: {
+          target: 2,
+        },
+      });
+
+      const n2 = await workflow.createNode({
+        type: 'parallel',
+        branchIndex: 0,
+        upstreamId: n1.id,
+        config: {
+          mode: 'any',
+        },
+      });
+
+      const n3 = await workflow.createNode({
+        type: 'condition',
+        config: {
+          rejectOnFalse: true,
+          calculation: {
+            calculator: '<',
+            operands: [`{{$scopes.${n1.id}.item}}`, 1],
+          },
+        },
+        branchIndex: 0,
+        upstreamId: n2.id,
+      });
+      const n4 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n3.id,
+      });
+      await n3.setDownstream(n4);
+
+      const n5 = await workflow.createNode({
+        type: 'condition',
+        config: {
+          rejectOnFalse: true,
+          calculation: {
+            calculator: '<',
+            operands: [`{{$scopes.${n1.id}.item}}`, 1],
+          },
+        },
+        branchIndex: 1,
+        upstreamId: n2.id,
+      });
+      const n6 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n5.id,
+      });
+      await n5.setDownstream(n6);
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(1000);
+
+      const [e1] = await workflow.getExecutions();
+      expect(e1.status).toEqual(EXECUTION_STATUS.FAILED);
+      const e1jobs = await e1.getJobs();
+      expect(e1jobs.length).toBe(7);
+    });
   });
 });
