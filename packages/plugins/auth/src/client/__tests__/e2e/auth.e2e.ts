@@ -1,6 +1,6 @@
-import { expect, test } from '@playwright/test';
+import { describe, expect, test } from 'e2eUtils';
 
-test.describe('auth', () => {
+describe('auth', () => {
   // 重置登录状态
   test.use({
     storageState: {

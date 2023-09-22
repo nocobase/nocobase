@@ -1,4 +1,4 @@
-import { expect, gotoPage, test } from 'e2eUtils';
+import { describe, expect, gotoPage, test } from 'e2eUtils';
 
 const pageConfig = {
   pageSchema: {
@@ -450,10 +450,12 @@ const pageConfig = {
   },
 };
 
-test('page schema', async ({ page }) => {
-  await gotoPage(page, pageConfig);
-  await expect(page.getByText('Table block')).toBeVisible();
-  await expect(page.getByText('Form block')).toBeVisible();
-  await expect(page.getByText('Details block')).toBeVisible();
-  await expect(page.getByText('List block')).toBeVisible();
+describe('pageSchema', () => {
+  test('quickly create page schema', async ({ page }) => {
+    await gotoPage(page, pageConfig);
+    await expect(page.getByText('Table block')).toBeVisible();
+    await expect(page.getByText('Form block')).toBeVisible();
+    await expect(page.getByText('Details block')).toBeVisible();
+    await expect(page.getByText('List block')).toBeVisible();
+  });
 });

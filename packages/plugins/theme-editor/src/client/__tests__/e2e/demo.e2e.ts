@@ -1,5 +1,7 @@
-import { test } from 'e2eUtils';
+import { describe, test } from 'e2eUtils';
 
-test('test', async ({ page }) => {
-  await page.goto('/');
+describe('demo', () => {
+  test('test', async ({ page }) => {
+    await page.goto('/');
+  });
 });

@@ -1,4 +1,4 @@
-import { expect, gotoPage, test } from 'e2eUtils';
+import { describe, expect, gotoPage, test } from 'e2eUtils';
 
 const pageConfig = {
   collections: [
@@ -243,11 +243,13 @@ const pageConfig = {
   ],
 };
 
-test('createCollections', async ({ page }) => {
-  await gotoPage(page, pageConfig);
-  await page.getByRole('button', { name: 'plus Add block' }).hover();
-  await page.getByRole('menuitem', { name: 'table Table right' }).hover();
+describe('createCollections', () => {
+  test('quickly create collections', async ({ page }) => {
+    await gotoPage(page, pageConfig);
+    await page.getByRole('button', { name: 'plus Add block' }).hover();
+    await page.getByRole('menuitem', { name: 'table Table right' }).hover();
 
-  await expect(page.getByRole('menuitem', { name: 'collection1' })).toBeVisible();
-  await expect(page.getByRole('menuitem', { name: 'collection2' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'collection1' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'collection2' })).toBeVisible();
+  });
 });
