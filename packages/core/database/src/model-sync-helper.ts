@@ -101,8 +101,10 @@ export class ModelSyncHelper {
     for (const existUniqueIndex of existsUniqueIndexes) {
       const isSingleField = existUniqueIndex.fields.length == 1;
       if (!isSingleField) continue;
-      const fieldName = existUniqueIndex.fields[0].attribute;
-      const currentAttribute = this.rawAttributes[fieldName];
+      const columnName = existUniqueIndex.fields[0].attribute;
+
+      const currentAttribute = this.findAttributeByColumnName(columnName);
+
       if (!currentAttribute || (!currentAttribute.unique && !currentAttribute.primaryKey)) {
         if (this.database.inDialect('postgres')) {
           // @ts-ignore
