@@ -75,15 +75,33 @@ export class ModelSyncHelper {
       if (columnDefaultValue === null && attributeDefaultValue === undefined) continue;
 
       if (columnDefaultValue !== attributeDefaultValue) {
-        await this.queryInterface.changeColumn(
-          this.tableName,
-          columnName,
-          {
-            ...currentAttribute,
-            defaultValue: attributeDefaultValue,
-          },
-          options,
-        );
+        const changeAttribute = {
+          ...currentAttribute,
+          defaultValue: attributeDefaultValue,
+        };
+
+        if (this.database.inDialect('postgres')) {
+          // @ts-ignore
+          const query = this.queryInterface.queryGenerator.attributesToSQL(
+            {
+              // @ts-ignore
+              [columnName]: this.queryInterface.normalizeAttribute(changeAttribute),
+            },
+            {
+              context: 'changeColumn',
+              table: this.tableName,
+            },
+          );
+
+          // @ts-ignore
+          const sql = this.queryInterface.queryGenerator.changeColumnQuery(this.tableName, query);
+          // remove alter type sql
+          const regex = /;ALTER TABLE "[^"]+" ALTER COLUMN "[^"]+" TYPE [^;]+;?$/;
+
+          await this.sequelize.query(sql.replace(regex, ''), options);
+        } else {
+          await this.queryInterface.changeColumn(this.tableName, columnName, changeAttribute, options);
+        }
       }
     }
   }
