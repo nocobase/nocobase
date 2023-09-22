@@ -1,4 +1,5 @@
 import path from 'path';
+import { existsSync } from 'fs';
 import { readdir } from 'fs/promises';
 import { cloneDeep, isPlainObject } from 'lodash';
 import { requireModule } from '@nocobase/utils';
@@ -20,6 +21,9 @@ export class ImporterReader {
   }
 
   async read() {
+    if (!existsSync(this.directory)) {
+      return [];
+    }
     const files = await readdir(this.directory, {
       encoding: 'utf-8',
     });

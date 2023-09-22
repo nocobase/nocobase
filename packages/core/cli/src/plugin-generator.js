@@ -2,7 +2,10 @@ const chalk = require('chalk');
 const { existsSync } = require('fs');
 const { join, resolve } = require('path');
 const { Generator } = require('@umijs/utils');
-const { readFile } = require('fs').promises;
+const { readFile, writeFile } = require('fs').promises;
+const { genTsConfigPaths } = require('./util');
+
+const execa = require('execa');
 
 function camelize(str) {
   return str.trim().replace(/[-_\s]+(.)?/g, (match, c) => c.toUpperCase());
@@ -33,15 +36,14 @@ class PluginGenerator extends Generator {
 
   async getContext() {
     const { name } = this.context;
-    const packageName = await getProjectName();
     const nocobaseVersion = require('@nocobase/server/package.json').version;
     const packageVersion = await getProjectVersion();
     return {
       ...this.context,
-      packageName: `@${packageName}/plugin-${name}`,
+      packageName: name,
       packageVersion,
       nocobaseVersion,
-      pascalCaseName: capitalize(camelize(name)),
+      pascalCaseName: capitalize(camelize(name.split('/').pop())),
     };
   }
 
@@ -59,6 +61,9 @@ class PluginGenerator extends Generator {
       path: join(__dirname, '../templates/plugin'),
     });
     console.log('');
+    genTsConfigPaths();
+    execa.sync('yarn', ['install'], { shell: true, stdio: 'inherit' });
+    // execa.sync('yarn', ['build', `plugins/${name}`], { shell: true, stdio: 'inherit' });
     console.log(`The plugin folder is in ${chalk.green(`packages/plugins/${name}`)}`);
   }
 }

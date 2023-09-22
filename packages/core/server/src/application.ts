@@ -4,7 +4,7 @@ import { actions as authActions, AuthManager } from '@nocobase/auth';
 import { Cache, createCache, ICacheConfig } from '@nocobase/cache';
 import Database, { CollectionOptions, IDatabaseOptions } from '@nocobase/database';
 import { AppLoggerOptions, createAppLogger, Logger } from '@nocobase/logger';
-import { Resourcer, ResourceOptions } from '@nocobase/resourcer';
+import { ResourceOptions, Resourcer } from '@nocobase/resourcer';
 import { applyMixins, AsyncEmitter, Toposort, ToposortOptions } from '@nocobase/utils';
 import chalk from 'chalk';
 import { Command, CommandOptions, ParseOptions } from 'commander';
@@ -22,6 +22,7 @@ import { ApplicationVersion } from './helpers/application-version';
 import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
+import { AppCommand } from './app-command';
 
 const packageJson = require('../package.json');
 
@@ -117,6 +118,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   private _maintaining = false;
   private _maintainingCommandStatus: MaintainingCommandStatus;
   private _maintainingStatusBeforeCommand: MaintainingCommandStatus | null;
+  private _actionCommand: Command;
 
   constructor(public options: ApplicationOptions) {
     super();
@@ -162,7 +164,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._cache;
   }
 
-  protected _cli: Command;
+  protected _cli: AppCommand;
 
   get cli() {
     return this._cli;
@@ -285,7 +287,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this.resourcer.registerActions(handlers);
   }
 
-  command(name: string, desc?: string, opts?: CommandOptions): Command {
+  command(name: string, desc?: string, opts?: CommandOptions): AppCommand {
     return this.cli.command(name, desc, opts).allowUnknownOption();
   }
 
@@ -303,7 +305,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       this.log.info(`app.reload()`);
       const oldDb = this._db;
       this.init();
-      await oldDb.close();
+      if (!oldDb.closed()) {
+        await oldDb.close();
+      }
     }
 
     this.setMaintainingMessage('init plugins');
@@ -350,7 +354,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       return;
     }
     this._authenticated = true;
-    await this.db.auth({ retry: 30 });
+    await this.db.auth();
     await this.dbVersionCheck({ exit: true });
     await this.db.prepare();
   }
@@ -360,9 +364,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   createCli() {
-    const command = new Command('nocobase')
+    const command = new AppCommand('nocobase')
       .usage('[command] [options]')
       .hook('preAction', async (_, actionCommand) => {
+        this._actionCommand = actionCommand;
         this.activatedCommand = {
           name: getCommandFullName(actionCommand),
         };
@@ -410,6 +415,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
       return command;
     } catch (error) {
+      console.log({ error });
       if (!this.activatedCommand) {
         this.activatedCommand = {
           name: 'unknown',
@@ -426,6 +432,17 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
         throw error;
       }
     } finally {
+      const _actionCommand = this._actionCommand;
+      if (_actionCommand) {
+        const options = _actionCommand['options'];
+        _actionCommand['_optionValues'] = {};
+        _actionCommand['_optionValueSources'] = {};
+        _actionCommand['options'] = [];
+        for (const option of options) {
+          _actionCommand.addOption(option);
+        }
+      }
+      this._actionCommand = null;
       this.activatedCommand = null;
     }
   }
@@ -454,11 +471,15 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this.setMaintainingMessage('emit afterStart');
     await this.emitAsync('afterStart', this, options);
+    await this.emitStartedEvent();
+
+    this.stopped = false;
+  }
+
+  async emitStartedEvent() {
     await this.emitAsync('__started', this, {
       maintainingStatus: lodash.cloneDeep(this._maintainingCommandStatus),
     });
-
-    this.stopped = false;
   }
 
   async isStarted() {
@@ -477,7 +498,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     if (!this._started) {
       return;
     }
+
     this._started = false;
+    await this.emitAsync('beforeStop');
     await this.reload(options);
     await this.start(options);
     this.emit('__restarted', this, options);
@@ -505,6 +528,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
 
     await this.emitAsync('afterStop', this, options);
+
     this.stopped = true;
     this.log.info(`${this.name} is stopped`);
     this._started = false;

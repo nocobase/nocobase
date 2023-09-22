@@ -2,9 +2,13 @@ import { createStyles } from 'antd-style';
 
 export const useStyles = createStyles(({ token }) => {
   return {
+    cardActionDisabled: {
+      color: token.colorTextDisabled,
+      cursor: 'not-allowed',
+    },
     pageHeader: {
-      backgroundColor: token.colorBgContainer,
       paddingBottom: 0,
+      backgroundColor: token.colorBgContainer,
       paddingTop: token.paddingSM,
       paddingInline: token.paddingLG,
       '.ant-page-header-footer': { marginBlockStart: '0' },
@@ -15,22 +19,20 @@ export const useStyles = createStyles(({ token }) => {
         color: token.colorText,
       },
     },
-
     pageContent: {
       margin: token.marginLG,
     },
+    // pageContent: {
+    //   marginTop: token.margin,
+    //   marginBottom: token.marginLG,
+    //   background: 'transparent',
+    //   minHeight: '80vh',
+    // },
 
-    PluginDetail: {
-      '.ant-modal-header': { paddingBottom: token.paddingXS },
-      '.ant-modal-body': { paddingTop: 0 },
-      '.ant-modal-content': {
-        '.plugin-desc': { paddingBottom: token.paddingXS },
-      },
-      '.version-tag': {
-        verticalAlign: 'middle',
-        marginTop: -token.marginXXS,
-        marginLeft: token.marginXS,
-      },
+    PluginDetailBaseInfo: {
+      display: 'flex',
+      flexDirection: 'column',
+      marginBottom: token.margin,
     },
 
     PluginDocument: {
@@ -38,13 +40,6 @@ export const useStyles = createStyles(({ token }) => {
       padding: token.paddingLG,
       height: '60vh',
       overflowY: 'auto',
-    },
-
-    CommonCard: {
-      width: `calc(20% - ${token.marginLG}px)`,
-      marginRight: token.marginLG,
-      marginBottom: token.marginLG,
-      transition: 'all 0.35s ease-in-out',
     },
 
     avatar: {

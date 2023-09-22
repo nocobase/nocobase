@@ -1,15 +1,28 @@
 import { CleanOptions, Collection, SyncOptions } from '@nocobase/database';
-import { requireModule } from '@nocobase/utils';
+import { isURL } from '@nocobase/utils';
+import { fsExists } from '@nocobase/utils/plugin-symlink';
 import execa from 'execa';
 import _ from 'lodash';
 import net from 'net';
-import { resolve } from 'path';
+import { resolve, sep } from 'path';
 import Application from '../application';
-import { createAppProxy } from '../helper';
+import { createAppProxy, tsxRerunning } from '../helper';
 import { Plugin } from '../plugin';
+import { uploadMiddleware } from './middleware';
 import collectionOptions from './options/collection';
 import resourceOptions from './options/resource';
 import { PluginManagerRepository } from './plugin-manager-repository';
+import { PluginData } from './types';
+import {
+  copyTempPackageToStorageAndLinkToNodeModules,
+  downloadAndUnzipToTempDir,
+  getNpmInfo,
+  getPluginInfoByNpm,
+  removeTmpDir,
+  requireModule,
+  requireNoCache,
+  updatePluginByCompressedFileUrl,
+} from './utils';
 
 export interface PluginManagerOptions {
   app: Application;
@@ -43,31 +56,16 @@ export class PluginManager {
     this._repository = this.collection.repository as PluginManagerRepository;
     this._repository.setPluginManager(this);
     this.app.resourcer.define(resourceOptions);
-
-    this.app.resourcer.use(async (ctx, next) => {
-      await next();
-      const { resourceName, actionName } = ctx.action;
-      if (resourceName === 'applicationPlugins' && actionName === 'list') {
-        const lng = ctx.getCurrentLocale();
-        if (Array.isArray(ctx.body)) {
-          ctx.body = ctx.body.map((plugin) => {
-            const json = plugin.toJSON();
-            const packageName = PluginManager.getPackageName(json.name);
-            const packageJson = PluginManager.getPackageJson(packageName);
-            return {
-              displayName: packageJson[`displayName.${lng}`] || packageJson.displayName,
-              description: packageJson[`description.${lng}`] || packageJson.description,
-              ...json,
-            };
-          });
-        }
-      }
-    });
-
+    this.app.acl.allow('pm', 'listEnabled', 'public');
     this.app.acl.registerSnippet({
       name: 'pm',
-      actions: ['pm:*', 'applicationPlugins:list'],
+      actions: ['pm:*'],
     });
+    this.app.db.addMigrations({
+      namespace: 'core/pm',
+      directory: resolve(__dirname, '../migrations'),
+    });
+    this.app.resourcer.use(uploadMiddleware);
   }
 
   get repository() {
@@ -75,7 +73,7 @@ export class PluginManager {
   }
 
   static getPackageJson(packageName: string) {
-    return require(`${packageName}/package.json`);
+    return requireNoCache(`${packageName}/package.json`);
   }
 
   static getPackageName(name: string) {
@@ -121,9 +119,19 @@ export class PluginManager {
     throw new Error(`No available packages found, ${name} plugin does not exist`);
   }
 
-  static resolvePlugin(pluginName: string | typeof Plugin) {
+  static clearCache(packageName: string) {
+    const packageNamePath = packageName.replace('/', sep);
+    Object.keys(require.cache).forEach((key) => {
+      if (key.includes(packageNamePath)) {
+        delete require.cache[key];
+      }
+    });
+  }
+
+  static resolvePlugin(pluginName: string | typeof Plugin, isUpgrade = false, isPkg = false) {
     if (typeof pluginName === 'string') {
-      const packageName = this.getPackageName(pluginName);
+      const packageName = isPkg ? pluginName : this.getPackageName(pluginName);
+      this.clearCache(packageName);
       return requireModule(packageName);
     } else {
       return pluginName;
@@ -170,10 +178,8 @@ export class PluginManager {
     }
   }
 
-  async create(name: string | string[]) {
+  async create(pluginName: string) {
     console.log('creating...');
-    const pluginNames = Array.isArray(name) ? name : [name];
-    const { run } = require('@nocobase/cli/src/util');
     const createPlugin = async (name) => {
       const { PluginGenerator } = require('@nocobase/cli/src/plugin-generator');
       const generator = new PluginGenerator({
@@ -185,12 +191,21 @@ export class PluginManager {
       });
       await generator.run();
     };
-    await Promise.all(pluginNames.map((pluginName) => createPlugin(pluginName)));
-    await run('yarn', ['install']);
+    await createPlugin(pluginName);
+    await this.repository.create({
+      values: {
+        name: pluginName,
+        packageName: pluginName,
+        version: '0.1.0',
+      },
+    });
+    await tsxRerunning();
+    // await createDevPluginSymLink(pluginName);
+    // await this.add(pluginName, { packageName: pluginName }, true);
   }
 
-  async add(plugin?: any, options: any = {}, insert = false) {
-    if (this.has(plugin)) {
+  async add(plugin?: any, options: any = {}, insert = false, isUpgrade = false) {
+    if (!isUpgrade && this.has(plugin)) {
       const name = typeof plugin === 'string' ? plugin : plugin.name;
       this.app.log.warn(`plugin [${name}] added`);
       return;
@@ -198,10 +213,24 @@ export class PluginManager {
     if (!options.name && typeof plugin === 'string') {
       options.name = plugin;
     }
+    try {
+      if (typeof plugin === 'string' && options.name && !options.packageName) {
+        const packageName = PluginManager.getPackageName(options.name);
+        options['packageName'] = packageName;
+      }
+      if (options.packageName) {
+        const packageJson = PluginManager.getPackageJson(options.packageName);
+        options['packageJson'] = packageJson;
+        options['version'] = packageJson.version;
+      }
+    } catch (error) {
+      console.error(error);
+      // empty
+    }
     this.app.log.debug(`adding plugin [${options.name}]...`);
     let P: any;
     try {
-      P = PluginManager.resolvePlugin(plugin);
+      P = PluginManager.resolvePlugin(options.packageName || plugin, isUpgrade, !!options.packageName);
     } catch (error) {
       this.app.log.warn('plugin not found', error);
       return;
@@ -212,12 +241,9 @@ export class PluginManager {
       this.pluginAliases.set(options.name, instance);
     }
     if (insert && options.name) {
-      const packageName = PluginManager.getPackageName(options.name);
-      const packageJson = PluginManager.getPackageJson(packageName);
       await this.repository.updateOrCreate({
         values: {
           ...options,
-          version: packageJson.version,
         },
         filterKeys: ['name'],
       });
@@ -451,7 +477,7 @@ export class PluginManager {
     for (const pluginName of pluginNames) {
       const plugin = this.get(pluginName);
       if (!plugin) {
-        throw new Error(`${pluginName} plugin does not exist`);
+        continue;
       }
       if (plugin.enabled) {
         throw new Error(`${pluginName} plugin is enabled`);
@@ -466,13 +492,20 @@ export class PluginManager {
     const plugins: Plugin[] = [];
     for (const pluginName of pluginNames) {
       const plugin = this.get(pluginName);
+      if (!plugin) {
+        continue;
+      }
       plugins.push(plugin);
       this.del(pluginName);
+      // if (plugin.options.type && plugin.options.packageName) {
+      //   await removePluginPackage(plugin.options.packageName);
+      // }
     }
     await this.app.reload();
     for (const plugin of plugins) {
       await plugin.afterRemove();
     }
+    await this.app.emitStartedEvent();
   }
 
   protected async initPresetPlugins() {
@@ -480,6 +513,200 @@ export class PluginManager {
       const [p, opts = {}] = Array.isArray(plugin) ? plugin : [plugin];
       await this.add(p, { enabled: true, isPreset: true, ...opts });
     }
+  }
+
+  async loadOne(plugin: Plugin) {
+    this.app.setMaintainingMessage(`loading plugin ${plugin.name}...`);
+    if (plugin.state.loaded || !plugin.enabled) {
+      return;
+    }
+    const name = plugin.getName();
+    await plugin.beforeLoad();
+
+    await this.app.emitAsync('beforeLoadPlugin', plugin, {});
+    this.app.logger.debug(`loading plugin [${name}]...`);
+    await plugin.load();
+    plugin.state.loaded = true;
+    await this.app.emitAsync('afterLoadPlugin', plugin, {});
+    this.app.logger.debug(`after load plugin [${name}]...`);
+
+    this.app.setMaintainingMessage(`loaded plugin ${plugin.name}`);
+  }
+
+  async addViaCLI(urlOrName: string, options?: PluginData) {
+    if (isURL(urlOrName)) {
+      await this.addByCompressedFileUrl({
+        ...options,
+        compressedFileUrl: urlOrName,
+      });
+    } else if (await fsExists(urlOrName)) {
+      await this.addByCompressedFileUrl({
+        ...(options as any),
+        compressedFileUrl: urlOrName,
+      });
+    } else if (options?.registry) {
+      if (!options.name) {
+        const model = await this.repository.findOne({ filter: { packageName: urlOrName } });
+        if (model) {
+          options['name'] = model?.name;
+        }
+        if (!options.name) {
+          options['name'] = urlOrName.replace('@nocobase/plugin-', '');
+        }
+      }
+      await this.addByNpm({
+        ...(options as any),
+        packageName: urlOrName,
+      });
+    } else {
+      const opts = {
+        ...options,
+      };
+      const model = await this.repository.findOne({ filter: { packageName: urlOrName } });
+      if (model) {
+        opts['name'] = model.name;
+      }
+      if (!opts['name']) {
+        opts['packageName'] = urlOrName;
+      }
+      await this.add(opts['name'] || urlOrName, opts, true);
+    }
+    await this.app.emitStartedEvent();
+  }
+
+  async addByNpm(options: { packageName: string; name?: string; registry: string; authToken?: string }) {
+    let { name = '', registry, packageName, authToken } = options;
+    name = name.trim();
+    registry = registry.trim();
+    packageName = packageName.trim();
+    authToken = authToken?.trim();
+    const { compressedFileUrl } = await getPluginInfoByNpm({
+      packageName,
+      registry,
+      authToken,
+    });
+    return this.addByCompressedFileUrl({ name, compressedFileUrl, registry, authToken, type: 'npm' });
+  }
+
+  async addByFile(options: { file: string; registry?: string; authToken?: string; type?: string; name?: string }) {
+    const { file, authToken } = options;
+
+    const { packageName, tempFile, tempPackageContentDir } = await downloadAndUnzipToTempDir(file, authToken);
+
+    const name = options.name || packageName;
+
+    if (this.has(name)) {
+      await removeTmpDir(tempFile, tempPackageContentDir);
+      throw new Error(`plugin name [${name}] already exists`);
+    }
+    await copyTempPackageToStorageAndLinkToNodeModules(tempFile, tempPackageContentDir, packageName);
+    return this.add(name, { packageName }, true);
+  }
+
+  async addByCompressedFileUrl(options: {
+    compressedFileUrl: string;
+    registry?: string;
+    authToken?: string;
+    type?: string;
+    name?: string;
+  }) {
+    const { compressedFileUrl, authToken } = options;
+
+    const { packageName, tempFile, tempPackageContentDir } = await downloadAndUnzipToTempDir(
+      compressedFileUrl,
+      authToken,
+    );
+
+    const name = options.name || packageName;
+
+    if (this.has(name)) {
+      await removeTmpDir(tempFile, tempPackageContentDir);
+      throw new Error(`plugin name [${name}] already exists`);
+    }
+    await copyTempPackageToStorageAndLinkToNodeModules(tempFile, tempPackageContentDir, packageName);
+    return this.add(name, { packageName }, true);
+  }
+
+  async update(options: PluginData) {
+    if (options['url']) {
+      options.compressedFileUrl = options['url'];
+    }
+    if (!options.name) {
+      const model = await this.repository.findOne({ filter: { packageName: options.packageName } });
+      options['name'] = model.name;
+    }
+    if (options.compressedFileUrl) {
+      await this.upgradeByCompressedFileUrl(options);
+    } else {
+      await this.upgradeByNpm(options as any);
+    }
+    await this.app.upgrade();
+  }
+
+  async upgradeByNpm(values: PluginData) {
+    const name = values.name;
+    const plugin = this.get(name);
+    if (!this.has(name)) {
+      throw new Error(`plugin name [${name}] not exists`);
+    }
+    if (!plugin.options.packageName || !values.registry) {
+      throw new Error(`plugin name [${name}] not installed by npm`);
+    }
+    const version = values.version?.trim();
+    const registry = values.registry?.trim() || plugin.options.registry;
+    const authToken = values.authToken?.trim() || plugin.options.authToken;
+    const { compressedFileUrl } = await getPluginInfoByNpm({
+      packageName: plugin.options.packageName,
+      registry: registry,
+      authToken: authToken,
+      version,
+    });
+    return this.upgradeByCompressedFileUrl({ compressedFileUrl, name, version, registry, authToken });
+  }
+
+  async upgradeByCompressedFileUrl(options: PluginData) {
+    const { name, compressedFileUrl, authToken } = options;
+    const data = await this.repository.findOne({ filter: { name } });
+    const { version } = await updatePluginByCompressedFileUrl({
+      compressedFileUrl,
+      packageName: data.packageName,
+      authToken: authToken,
+    });
+    await this.add(name, { version, packageName: data.packageName }, true, true);
+  }
+
+  getNameByPackageName(packageName: string) {
+    const prefixes = PluginManager.getPluginPkgPrefix();
+    const prefix = prefixes.find((prefix) => packageName.startsWith(prefix));
+    if (!prefix) {
+      throw new Error(
+        `package name [${packageName}] invalid, just support ${prefixes.join(
+          ', ',
+        )}. You can modify process.env.PLUGIN_PACKAGE_PREFIX add more prefix.`,
+      );
+    }
+    return packageName.replace(prefix, '');
+  }
+
+  async list(options: any = {}) {
+    const { locale = 'en-US', isPreset = false } = options;
+    return Promise.all(
+      [...this.getAliases()]
+        .map((name) => {
+          const plugin = this.get(name);
+          if (!isPreset && plugin.options.isPreset) {
+            return;
+          }
+          return plugin.toJSON({ locale });
+        })
+        .filter(Boolean),
+    );
+  }
+
+  async getNpmVersionList(name: string) {
+    const plugin = this.get(name);
+    const npmInfo = await getNpmInfo(plugin.options.packageName, plugin.options.registry, plugin.options.authToken);
+    return Object.keys(npmInfo.versions);
   }
 }
 

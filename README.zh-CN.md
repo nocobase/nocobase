@@ -8,6 +8,7 @@ NocoBase 正处在早期开发阶段，可能变动频繁，请谨慎用于生�
 
 ## 最近重要更新
 
+- [v0.14：全新的插件管理器，支持通过界面添加插件 - 2023/09/11](https://docs-cn.nocobase.com/welcome/release/v14-changelog)
 - [v0.13: 全新的应用状态流转 - 2023/08/24](https://docs-cn.nocobase.com/welcome/release/v13-changelog)
 - [v0.12: 全新的插件构建工具 - 2023/08/01](https://docs-cn.nocobase.com/welcome/release/v12-changelog)
 - [v0.11: 全新的客户端 Application、Plugin 和 Router - 2023/07/08](https://docs-cn.nocobase.com/welcome/release/v11-changelog)
@@ -50,12 +51,12 @@ https://docs-cn.nocobase.com/
 
 NocoBase 采用数据结构与使用界面分离的设计思路，可以为数据表创建任意数量、任意形态的区块（数据视图），每个区块里可以定义不同的样式、文案、操作。这样既兼顾了无代码的简单操作，又具备了原生开发的灵活性。
 
-![2.collection-block.png](https://docs-cn.nocobase.com/static/2.collection-block.7dcc928f.png)
+![2.collection-block.png](https://nocobase.oss-cn-beijing.aliyuncs.com/25506f38365436d11847b32fc8533bc9.png)
 
 ### 2. 所见即所得
 NocoBase 可以开发复杂和有特色的业务系统，但这并不意味着需要复杂和专业的操作。只需一次点击，就可以在使用界面上显示出配置选项，这意味着具备系统配置权限的管理员可以用所见即所得的操作方式，直接配置用户的使用界面。
 
-![2.user-root.gif](https://docs-cn.nocobase.com/static/2.user-root.824f5ef2.gif)
+![2.user-root.gif](https://nocobase.oss-cn-beijing.aliyuncs.com/7991441ff35f05c49e0d72c2a23fa33b.gif)
 
 ### 3. 功能即插件
 

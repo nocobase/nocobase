@@ -282,7 +282,6 @@ export const AddFieldAction = (props) => {
       items,
     };
   }, [getInterface, items, record]);
-
   return (
     record.template !== 'view' &&
     record.template !== 'sql' && (

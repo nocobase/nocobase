@@ -1,9 +1,10 @@
 const net = require('net');
 const chalk = require('chalk');
 const execa = require('execa');
-const { dirname, resolve } = require('path');
+const fg = require('fast-glob');
+const { dirname, join, resolve } = require('path');
 const { readFile, writeFile } = require('fs').promises;
-const { existsSync, mkdirSync, cpSync } = require('fs');
+const { existsSync, mkdirSync, cpSync, writeFileSync } = require('fs');
 
 exports.isPackageValid = (package) => {
   try {
@@ -102,12 +103,12 @@ exports.postCheck = async (opts) => {
 };
 
 exports.runInstall = async () => {
-  const { APP_PACKAGE_ROOT } = process.env;
+  const { APP_PACKAGE_ROOT, SERVER_TSCONFIG_PATH } = process.env;
 
   if (exports.isDev()) {
     const argv = [
       '--tsconfig',
-      './tsconfig.server.json',
+      SERVER_TSCONFIG_PATH,
       '-r',
       'tsconfig-paths/register',
       `${APP_PACKAGE_ROOT}/src/index.ts`,
@@ -123,12 +124,12 @@ exports.runInstall = async () => {
 };
 
 exports.runAppCommand = async (command, args = []) => {
-  const { APP_PACKAGE_ROOT } = process.env;
+  const { APP_PACKAGE_ROOT, SERVER_TSCONFIG_PATH } = process.env;
 
   if (exports.isDev()) {
     const argv = [
       '--tsconfig',
-      './tsconfig.server.json',
+      SERVER_TSCONFIG_PATH,
       '-r',
       'tsconfig-paths/register',
       `${APP_PACKAGE_ROOT}/src/index.ts`,
@@ -173,4 +174,33 @@ exports.generateAppDir = function generateAppDir() {
   } else {
     process.env.APP_PACKAGE_ROOT = appPkgPath;
   }
+};
+
+exports.genTsConfigPaths = function genTsConfigPaths() {
+  const cwd = process.cwd();
+  const cwdLength = cwd.length;
+  const paths = {
+    '@@/*': ['.dumi/tmp/*'],
+  };
+  const packages = fg.sync(['packages/*/*/package.json', 'packages/*/*/*/package.json'], {
+    absolute: true,
+    onlyFiles: true,
+  });
+  packages.forEach((packageFile) => {
+    const packageJsonName = require(packageFile).name;
+    const packageDir = dirname(packageFile);
+    const relativePath = packageDir.slice(cwdLength + 1).replace(/\\/, '/');
+    const hasClient = fg.sync(['client', 'client.ts', 'client.tsx', 'client.js', 'client.jsx'], {
+      cwd: join(packageDir, 'src'),
+    }).length;
+    if (hasClient) {
+      paths[`${packageJsonName}/client`] = [`${relativePath}/src/client`];
+    }
+    paths[packageJsonName] = [`${relativePath}/src`];
+  });
+
+  const tsConfigJsonPath = join(cwd, './tsconfig.paths.json');
+  const content = { compilerOptions: { paths } };
+  writeFileSync(tsConfigJsonPath, JSON.stringify(content, null, 2), 'utf-8');
+  return content;
 };

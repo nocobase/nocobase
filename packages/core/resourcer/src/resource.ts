@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import Action, { ActionName, ActionType } from './action';
 import Middleware, { MiddlewareType } from './middleware';
-import { Resourcer } from './resourcer';
+import { HandlerType, Resourcer } from './resourcer';
 
 export type ResourceType = 'single' | 'hasOne' | 'hasMany' | 'belongsTo' | 'belongsToMany';
 
@@ -86,6 +86,20 @@ export class Resource {
 
   getExcept() {
     return this.except;
+  }
+
+  addAction(name: ActionName, handler: HandlerType) {
+    if (this.except.includes(name)) {
+      throw new Error(`${name} action is not allowed`);
+    }
+    if (this.actions.has(name)) {
+      throw new Error(`${name} action already exists`);
+    }
+    const action = new Action(handler);
+    action.setName(name);
+    action.setResource(this);
+    action.middlewares.unshift(...this.middlewares);
+    this.actions.set(name, action);
   }
 
   getAction(action: ActionName) {

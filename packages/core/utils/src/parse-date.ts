@@ -26,10 +26,11 @@ function parseYear(value) {
 }
 
 function parseQuarter(value) {
-  if (/^\d\d\d\d\Q\d$/.test(value)) {
+  if (/^\d\d\d\dQ\d$/.test(value)) {
+    const [year, q] = value.split('Q');
     return {
       unit: 'quarter',
-      start: dayjs(value, 'YYYY[Q]Q').format('YYYY-MM-DD HH:mm:ss'),
+      start: dayjs(year, 'YYYY').quarter(q).format('YYYY-MM-DD HH:mm:ss'),
     };
   }
 }

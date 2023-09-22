@@ -1,6 +1,12 @@
 import { Gateway } from '@nocobase/server';
-import config from './config';
+import { getConfig } from './config';
 
-Gateway.getInstance().run({
-  mainAppOptions: config,
-});
+getConfig()
+  .then((config) => {
+    return Gateway.getInstance().run({
+      mainAppOptions: config,
+    });
+  })
+  .catch((e) => {
+    console.error(e);
+  });

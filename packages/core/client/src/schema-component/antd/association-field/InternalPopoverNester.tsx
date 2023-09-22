@@ -4,7 +4,7 @@ import { observer } from '@formily/react';
 import React, { useContext, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActionContext, ActionContextProvider } from '../action/context';
-import { Popover } from '../popover';
+import { PopoverWithStopPropagation } from '../popover';
 import { InternalNester } from './InternalNester';
 import { ReadPrettyInternalViewer } from './InternalViewer';
 import { useAssociationFieldContext } from './hooks';
@@ -46,7 +46,7 @@ export const InternaPopoverNester = observer(
     };
     return (
       <ActionContextProvider value={{ ...ctx, modalProps }}>
-        <Popover
+        <PopoverWithStopPropagation
           overlayStyle={{ padding: '0px' }}
           content={content}
           trigger="click"
@@ -65,7 +65,7 @@ export const InternaPopoverNester = observer(
             </div>
             <EditOutlined style={{ display: 'inline-flex', marginLeft: '5px' }} />
           </span>
-        </Popover>
+        </PopoverWithStopPropagation>
         {visible && (
           <div
             onClick={() => setVisible(false)}

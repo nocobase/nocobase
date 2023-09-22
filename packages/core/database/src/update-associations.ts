@@ -373,11 +373,6 @@ export async function updateMultipleAssociation(
     return false;
   }
 
-  // @ts-ignore skip update association if through model is a view
-  if (association.through && association.through.model.options.view) {
-    return false;
-  }
-
   if (!['undefined', 'string', 'number', 'object'].includes(typeof value)) {
     return false;
   }

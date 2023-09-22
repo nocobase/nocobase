@@ -1,6 +1,7 @@
 import { Repository } from '@nocobase/database';
 import lodash from 'lodash';
 import { PluginManager } from './plugin-manager';
+import { PluginData } from './types';
 
 export class PluginManagerRepository extends Repository {
   pm: PluginManager;
@@ -47,6 +48,15 @@ export class PluginManagerRepository extends Repository {
     return pluginNames;
   }
 
+  async upgrade(name: string, data: PluginData) {
+    return this.update({
+      filter: {
+        name,
+      },
+      values: data,
+    });
+  }
+
   async disable(name: string | string[]) {
     name = lodash.cloneDeep(name);
 
@@ -74,6 +84,7 @@ export class PluginManagerRepository extends Repository {
         sort: 'id',
       });
     } catch (error) {
+      await this.database.migrator.up();
       await this.collection.sync({
         alter: {
           drop: false,

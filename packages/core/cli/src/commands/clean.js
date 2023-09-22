@@ -16,5 +16,6 @@ module.exports = (cli) => {
       }
       run('rimraf', ['-rf', './storage/app-dev']);
       run('rimraf', ['-rf', 'packages/*/*/{lib,esm,es,dist,node_modules}']);
+      run('rimraf', ['-rf', 'packages/*/@*/*/{lib,esm,es,dist,node_modules}']);
     });
 };
