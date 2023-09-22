@@ -52,7 +52,7 @@ export const useValues = () => {
       const targetField = getCollectionJoinField(`${name}.${fieldNames.join('.')}`);
       ctx.field.collectionName = targetField.target;
     } else {
-      ctx.field.collectionNam = null;
+      ctx.field.collectionName = null;
     }
     field.data.operators = operators;
     field.data.operator = operator;
@@ -79,7 +79,7 @@ export const useValues = () => {
         const targetField = getCollectionJoinField(`${name}.${fieldNames.join('.')}`);
         ctx.field.collectionName = targetField.target;
       } else {
-        ctx.field.collectionNam = null;
+        ctx.field.collectionName = null;
       }
       field.data.value = operator?.noValue ? operator.default || true : undefined;
       data2value();
