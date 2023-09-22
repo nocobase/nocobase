@@ -2,6 +2,7 @@ import lodash from 'lodash';
 import { ModelStatic } from 'sequelize';
 import { Model } from './model';
 import { AssociationKeysToBeUpdate, BlackList, WhiteList } from './repository';
+import { isPlainObject } from '@nocobase/utils/src';
 
 type UpdateValueItem = string | number | UpdateValues;
 
@@ -58,6 +59,42 @@ export class UpdateGuard {
     this.blackList = blackList;
   }
 
+  checkValues(values) {
+    const dfs = (values, model) => {
+      const associations = model.associations;
+      const belongsToManyThroughNames = [];
+
+      const associationValueKeys = Object.keys(associations).filter((key) => {
+        return Object.keys(values).includes(key);
+      });
+
+      const belongsToManyValueKeys = associationValueKeys.filter((key) => {
+        return associations[key].associationType === 'BelongsToMany';
+      });
+
+      const hasManyValueKeys = associationValueKeys.filter((key) => {
+        return associations[key].associationType === 'HasMany';
+      });
+
+      for (const belongsToManyKey of belongsToManyValueKeys) {
+        const association = associations[belongsToManyKey];
+        const through = association.through.model;
+        belongsToManyThroughNames.push(through.name);
+      }
+
+      for (const hasManyKey of hasManyValueKeys) {
+        const association = associations[hasManyKey];
+        if (belongsToManyThroughNames.includes(association.target.name)) {
+          throw new Error(
+            `HasMany association ${hasManyKey} cannot be used with BelongsToMany association ${association.target.name} with same through model`,
+          );
+        }
+      }
+    };
+
+    dfs(values, this.model);
+  }
+
   /**
    * Sanitize values by whitelist blacklist
    * @param values
@@ -68,6 +105,8 @@ export class UpdateGuard {
     if (!this.model) {
       throw new Error('please set model first');
     }
+
+    this.checkValues(values);
 
     const associations = this.model.associations;
     const associationsValues = lodash.pick(values, Object.keys(associations));
