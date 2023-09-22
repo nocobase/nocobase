@@ -370,7 +370,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       .usage('[command] [options]')
       .hook('preAction', async (_, actionCommand) => {
         this._actionCommand = actionCommand;
-
         this.activatedCommand = {
           name: getCommandFullName(actionCommand),
         };
@@ -421,6 +420,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
       return command;
     } catch (error) {
+      console.log({ error });
       if (!this.activatedCommand) {
         this.activatedCommand = {
           name: 'unknown',
@@ -447,8 +447,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
           _actionCommand.addOption(option);
         }
       }
-      this.activatedCommand = null;
       this._actionCommand = null;
+      this.activatedCommand = null;
     }
   }
 
