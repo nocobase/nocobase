@@ -12,6 +12,14 @@ export const getResource = (packageName: string, lang: string, isPlugin = true) 
   const resources = [];
   const prefixes = [isPlugin ? 'dist' : 'lib'];
   if (process.env.APP_ENV !== 'production') {
+    try {
+      require.resolve('@nocobase/client/src');
+      if (packageName === '@nocobase/plugin-client') {
+        packageName = '@nocobase/client';
+      }
+    } catch (error) {
+      // empty
+    }
     prefixes.unshift('src');
   }
   for (const prefix of prefixes) {

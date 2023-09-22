@@ -69,6 +69,7 @@ import {
 import { patchSequelizeQueryInterface, snakeCase } from './utils';
 import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
 import { ViewCollection } from './view-collection';
+import { backOff } from 'exponential-backoff';
 
 export type MergeOptions = merge.Options;
 
@@ -284,7 +285,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
       migrations: this.migrations.callback(),
       context,
       storage: new SequelizeStorage({
-        modelName: `${this.options.tablePrefix || ''}migrations`,
         ...migratorOptions.storage,
         sequelize: this.sequelize,
       }),
@@ -611,7 +611,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     this.operators = operators;
 
     this.registerOperators({
-      ...extendOperators,
+      ...(extendOperators as unknown as MapOf<OperatorFunc>),
     });
   }
 
@@ -700,24 +700,33 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   async auth(options: Omit<QueryOptions, 'retry'> & { retry?: number | Pick<QueryOptions, 'retry'> } = {}) {
     const { retry = 10, ...others } = options;
-    const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
-    let count = 1;
+    const startingDelay = 50;
+    const timeMultiple = 2;
+
+    let attemptNumber = 1; // To track the current attempt number
+
     const authenticate = async () => {
       try {
         await this.sequelize.authenticate(others);
         console.log('Connection has been established successfully.');
-        return true;
       } catch (error) {
-        if (count >= (retry as number)) {
-          throw new Error('Connection failed, please check your database connection credentials and try again.');
-        }
-        console.log('reconnecting...', count);
-        ++count;
-        await delay(500);
-        return await authenticate();
+        console.log(`Attempt ${attemptNumber}/${retry}: Unable to connect to the database: ${error.message}`);
+        const nextDelay = startingDelay * Math.pow(timeMultiple, attemptNumber - 1);
+        console.log(`Will retry in ${nextDelay}ms...`);
+        attemptNumber++;
+        throw error; // Re-throw the error so that backoff can catch and handle it
       }
     };
-    return await authenticate();
+
+    try {
+      await backOff(authenticate, {
+        numOfAttempts: retry as number,
+        startingDelay: startingDelay,
+        timeMultiple: timeMultiple,
+      });
+    } catch (error) {
+      throw new Error('Connection failed, please check your database connection credentials and try again.');
+    }
   }
 
   async prepare() {

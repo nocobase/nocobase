@@ -1,6 +1,7 @@
 import type { Plugin } from '../Plugin';
 import type { PluginData } from '../PluginManager';
 import type { RequireJS } from './requirejs';
+import type { DevDynamicImport } from '../Application';
 
 export function defineDevPlugins(plugins: Record<string, typeof Plugin>) {
   Object.entries(plugins).forEach(([name, plugin]) => {
@@ -21,9 +22,10 @@ export function getRemotePlugins(
   }
 
   requirejs.requirejs.config({
+    waitSeconds: 120,
     paths: pluginData.reduce<Record<string, string>>((memo, item) => {
-      memo[item.packageName] = `${baseURL}${item.url}`;
-      memo[`${item.packageName}/client`] = `${baseURL}${item.url}.js?client`;
+      memo[item.packageName] = `${baseURL}${item.url}?noExt`;
+      memo[`${item.packageName}/client`] = `${baseURL}${item.url}?noExtAndIsClient`;
       return memo;
     }, {}),
   });
@@ -32,7 +34,19 @@ export function getRemotePlugins(
     requirejs.requirejs(
       pluginData.map((item) => item.packageName),
       (...plugins: (typeof Plugin & { default?: typeof Plugin })[]) => {
-        resolve(plugins.map((item) => item.default || item));
+        const res = plugins.filter((item) => item).map((item) => item.default || item);
+        resolve(res);
+        const emptyPlugins = plugins
+          .map((item, index) => (!item ? index : null))
+          .filter((i) => i !== null)
+          .map((i) => pluginData[i].packageName);
+
+        if (emptyPlugins.length > 0) {
+          console.error(
+            '[nocobase load plugin error]: These plugins do not have an `export.default` exported content or there is an error in the plugins. error plugins: \r\n%s',
+            emptyPlugins.join(', \r\n'),
+          );
+        }
       },
       reject,
     );
@@ -43,11 +57,11 @@ interface GetPluginsOption {
   requirejs: RequireJS;
   pluginData: PluginData[];
   baseURL?: string;
-  devPlugins?: Record<string, Promise<{ default: typeof Plugin }>>;
+  devDynamicImport?: DevDynamicImport;
 }
 
 export async function getPlugins(options: GetPluginsOption): Promise<Array<typeof Plugin>> {
-  const { requirejs, pluginData, baseURL, devPlugins = {} } = options;
+  const { requirejs, pluginData, baseURL, devDynamicImport } = options;
 
   if (pluginData.length === 0) return [];
 
@@ -56,16 +70,18 @@ export async function getPlugins(options: GetPluginsOption): Promise<Array<typeo
 
     const resolveDevPlugins: Record<string, typeof Plugin> = {};
     const pluginPackageNames = pluginData.map((item) => item.packageName);
-    for await (const packageName of pluginPackageNames) {
-      if (devPlugins[packageName]) {
-        const plugin = await devPlugins[packageName];
-        plugins.push(plugin.default);
-        resolveDevPlugins[packageName] = plugin.default;
+    if (devDynamicImport) {
+      for await (const packageName of pluginPackageNames) {
+        const plugin = await devDynamicImport(packageName);
+        if (plugin) {
+          plugins.push(plugin.default);
+          resolveDevPlugins[packageName] = plugin.default;
+        }
       }
+      defineDevPlugins(resolveDevPlugins);
     }
-    defineDevPlugins(resolveDevPlugins);
 
-    const remotePlugins = pluginData.filter((item) => !devPlugins[item.packageName]);
+    const remotePlugins = pluginData.filter((item) => !resolveDevPlugins[item.packageName]);
 
     if (remotePlugins.length === 0) {
       return plugins;

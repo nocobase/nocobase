@@ -72,5 +72,12 @@ export const tree: ICollectionTemplate = {
       }
     },
   },
-  configurableProperties: getConfigurableProperties('title', 'name', 'inherits', 'category', 'moreOptions'),
+  configurableProperties: getConfigurableProperties(
+    'title',
+    'name',
+    'inherits',
+    'category',
+    'description',
+    'moreOptions',
+  ),
 };

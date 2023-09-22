@@ -99,7 +99,6 @@ export const CollectionFieldsTableArray: React.FC<any> = observer(
     const [categorizeData, setCategorizeData] = useState<Array<CategorizeDataItem>>([]);
     const [expandedKeys, setExpendedKeys] = useState(selectedRowKeys);
     const inherits = getInheritCollections(name);
-    const currentFields = getCurrentCollectionFields(name);
     useDataSource({
       onSuccess(data) {
         field.value = data?.data || [];

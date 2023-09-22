@@ -23,4 +23,40 @@ describe('APIClient', () => {
       expect(apiClient.axios).toBe(instance);
     });
   });
+
+  test('should reset role when role is not found', async () => {
+    const instance = axios.create();
+    instance.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        error = {
+          response: {
+            data: {
+              errors: [
+                {
+                  code: 'ROLE_NOT_FOUND_ERR',
+                },
+              ],
+            },
+          },
+        };
+        throw error;
+      },
+    );
+    const apiClient = new APIClient(instance);
+    apiClient.app = {} as any;
+    apiClient.auth.setRole('not-found');
+    expect(apiClient.auth.role).toBe('not-found');
+    try {
+      await apiClient.request({
+        method: 'GET',
+        url: '/api/test',
+      });
+    } catch (err) {
+      console.log(err);
+      expect(err).toBeDefined();
+      expect(err.response.data.errors[0].code).toBe('ROLE_NOT_FOUND_ERR');
+    }
+    expect(apiClient.auth.role).toBeFalsy();
+  });
 });

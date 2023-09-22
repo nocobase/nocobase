@@ -1,0 +1,117 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "NocoBase API - Verification plugin"
+  },
+  "tags": [],
+  "paths": {
+    "/verifications:list": {
+      "get": {
+        "tags": ["verifications"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/verifications:get": {
+      "get": {
+        "tags": ["verifications"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/verifications:create": {
+      "post": {
+        "tags": ["verifications"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/verifications:update": {
+      "post": {
+        "tags": ["verifications"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/verifications:destroy": {
+      "post": {
+        "tags": ["verifications"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/verifications_providers:list": {
+      "get": {
+        "tags": ["verifications_providers"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/verifications_providers:create": {
+      "post": {
+        "tags": ["verifications_providers"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/verifications_providers:update": {
+      "post": {
+        "tags": ["verifications_providers"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/verifications_providers:destroy": {
+      "post": {
+        "tags": ["verifications_providers"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  }
+}

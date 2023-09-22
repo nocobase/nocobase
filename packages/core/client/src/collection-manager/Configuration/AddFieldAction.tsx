@@ -89,6 +89,12 @@ const getSchema = (schema: IField, record: any, compile) => {
           },
           // @ts-ignore
           ...properties,
+          description: {
+            type: 'string',
+            title: '{{t("Description")}}',
+            'x-decorator': 'FormItem',
+            'x-component': 'Input.TextArea',
+          },
           footer: {
             type: 'void',
             'x-component': 'Action.Drawer.Footer',
@@ -295,7 +301,6 @@ export const AddFieldAction = (props) => {
       items,
     };
   }, [getInterface, items, record]);
-
   return (
     <RecordProvider record={record}>
       <ActionContextProvider value={{ visible, setVisible }}>
