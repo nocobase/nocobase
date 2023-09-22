@@ -8,20 +8,19 @@ export default class extends Migration {
     if (!collection) {
       return;
     }
+    const field = collection.getField('packageName');
+    if (await field.existsInDb()) {
+      return;
+    }
 
     const repository = this.db.getRepository<any>('applicationPlugins');
-
     const plugins = await repository.find();
-
     for (const plugin of plugins) {
       const { name } = plugin;
-
       if (plugin.packageName) {
         continue;
       }
-
       const packageName = PluginManager.getPackageName(name);
-
       await repository.update({
         filter: {
           name,
@@ -30,7 +29,6 @@ export default class extends Migration {
           packageName,
         },
       });
-
       console.log(name, packageName);
     }
   }
