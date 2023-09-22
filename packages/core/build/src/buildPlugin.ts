@@ -308,7 +308,7 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
     output: {
       path: outDir,
       filename: outputFileName,
-      // publicPath: 'auto',
+      publicPath: `/static/plugins/${packageJson.name}/dist/client/`,
       clean: true,
       library: {
         name: packageJson.name,
