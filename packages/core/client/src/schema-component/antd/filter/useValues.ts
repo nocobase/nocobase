@@ -46,7 +46,7 @@ export const useValues = () => {
     const operators = option?.operators;
     const operator = operators?.find?.((item) => item.value === `$${operatorValue}`);
     field.data.dataIndex = dataIndex;
-    if (dataIndex.length > 1) {
+    if (dataIndex?.length > 1) {
       const fieldNames = dataIndex.concat();
       fieldNames.pop();
       const targetField = getCollectionJoinField(`${name}.${fieldNames.join('.')}`);
@@ -73,7 +73,7 @@ export const useValues = () => {
       const s2 = cloneDeep(operator?.schema);
       field.data.schema = merge(s1, s2);
       field.data.dataIndex = dataIndex;
-      if (dataIndex.length > 1) {
+      if (dataIndex?.length > 1) {
         const fieldNames = dataIndex.concat();
         fieldNames.pop();
         const targetField = getCollectionJoinField(`${name}.${fieldNames.join('.')}`);
