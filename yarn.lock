@@ -2883,7 +2883,7 @@
   version "8.44.0"
   resolved "https://registry.npmmirror.com/@eslint/js/-/js-8.44.0.tgz#961a5903c74139390478bdc808bcde3fc45ab7af"
 
-"@faker-js/faker@^8.1.0":
+"@faker-js/faker@8.1.0":
   version "8.1.0"
   resolved "https://registry.npmmirror.com/@faker-js/faker/-/faker-8.1.0.tgz#e14896f1c57af2495e341dc4c7bf04125c8aeafd"
   integrity sha512-38DT60rumHfBYynif3lmtxMqMqmsOQIxQgEuPZxCk2yUYN0eqWpTACgxi0VpidvsJB8CRxCpvP7B3anK85FjtQ==

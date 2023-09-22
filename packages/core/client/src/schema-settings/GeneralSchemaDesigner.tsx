@@ -56,7 +56,17 @@ const DesignerControl = ({ onShow, children }) => {
   );
 
   useEffect(() => {
+    // 兼容旧浏览器
+    if (!IntersectionObserver) {
+      return onShow(true);
+    }
+
     const observer = new IntersectionObserver((entries) => {
+      // 兼容旧浏览器
+      if (entries[0].isIntersecting === undefined) {
+        return onShow(true);
+      }
+
       if (entries[0].isIntersecting) {
         isVisible.current = true;
         onShow(true);
