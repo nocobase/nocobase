@@ -100,13 +100,13 @@ export const Column = observer(
     } = useInfiniteScroll((d) => getLoadMoreList(d?.nextId, 10), {
       target: document.getElementById(`scrollableDiv${ind}`),
       isNoMore: (d) => d?.nextId === undefined,
-      reloadDeps: [params, appends],
+      reloadDeps: [params, appends.length],
     });
     useEffect(() => {
       if ((Array.isArray(targetColumn) && targetColumn?.includes(data.value)) || targetColumn === data.value) {
         reload();
       }
-    }, [targetColumn, appends]);
+    }, [targetColumn]);
     const getLoadMoreList = async (nextId: string | undefined, limit: number): Promise<any> => {
       const res = await getColumnDatas(data, ind, params, appends, nextId, () => {
         setTargetColumn(null);
