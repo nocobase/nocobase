@@ -97,6 +97,7 @@ export class ModelSyncHelper {
       return this.rawAttributes[key].unique == true;
     });
 
+    // remove unique index that not in model
     for (const existUniqueIndex of existsUniqueIndexes) {
       const isSingleField = existUniqueIndex.fields.length == 1;
       if (!isSingleField) continue;
@@ -115,10 +116,11 @@ export class ModelSyncHelper {
       }
     }
 
+    // add unique index that not in database
     for (const uniqueAttribute of uniqueAttributes) {
       // check index exists or not
       const indexExists = existsUniqueIndexes.find((index) => {
-        return index.fields.length == 1 && index.fields[0].attribute == uniqueAttribute;
+        return index.fields.length == 1 && index.fields[0].attribute == this.rawAttributes[uniqueAttribute].field;
       });
 
       if (!indexExists) {
