@@ -54,7 +54,7 @@ export const KanbanOptions = observer((props: any) => {
         });
       }
     }
-  }, [groupField]);
+  }, [optionField.form.getValuesIn('groupField')]);
   return (
     groupField &&
     optionField.form.values?.options?.length > 0 && (
