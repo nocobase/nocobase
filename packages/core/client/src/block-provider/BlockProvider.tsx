@@ -274,7 +274,6 @@ export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
 };
 
 export const BlockProvider = (props) => {
-  console.log(props);
   const { collection, association } = props;
   const resource = useResource(props);
   const params = { ...props.params };
