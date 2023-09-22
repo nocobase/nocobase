@@ -96,7 +96,7 @@ export class ModelSyncHelper {
           // @ts-ignore
           const sql = this.queryInterface.queryGenerator.changeColumnQuery(this.tableName, query);
           // remove alter type sql
-          const regex = /;ALTER TABLE "[^"]+" ALTER COLUMN "[^"]+" TYPE [^;]+;?$/;
+          const regex = /;ALTER TABLE "[^"]+"(\."[^"]+")? ALTER COLUMN "[^"]+" TYPE [^;]+;?$/;
 
           await this.sequelize.query(sql.replace(regex, ''), options);
         } else {
