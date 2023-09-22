@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { uniqBy } from 'lodash';
 import { SchemaComponent } from '../../';
 
-function mergeArrays(A, B) {
+export function mergeArrays(A, B) {
   if (!A) {
     return B;
   }
@@ -46,7 +46,6 @@ export const KanbanOptions = observer((props: any) => {
             };
           });
           const result = mergeArrays(columns, optionsData);
-
           if (columns) {
             optionField.form.setInitialValuesIn('options', result);
           } else {

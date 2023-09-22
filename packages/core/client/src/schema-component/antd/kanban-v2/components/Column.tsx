@@ -67,7 +67,9 @@ export const Column = observer(
     const { token } = useToken();
     const { ind, data, getColumnDatas } = props;
     const { groupField, form, targetColumn, params, setTargetColumn } = useKanbanV2BlockContext();
-    const { params: blockParams } = useBlockRequestContext();
+    const {
+      params: { appends },
+    } = useBlockRequestContext();
     const fieldSchema = useFieldSchema();
     const { t } = useTranslation();
     const [disabledCardDrag, setDisableCardDrag] = useState(false);
@@ -98,18 +100,15 @@ export const Column = observer(
     } = useInfiniteScroll((d) => getLoadMoreList(d?.nextId, 10), {
       target: document.getElementById(`scrollableDiv${ind}`),
       isNoMore: (d) => d?.nextId === undefined,
-      reloadDeps: [params],
+      reloadDeps: [params, appends],
     });
     useEffect(() => {
       if ((Array.isArray(targetColumn) && targetColumn?.includes(data.value)) || targetColumn === data.value) {
         reload();
       }
-    }, [targetColumn]);
-
-    console.log(params, blockParams);
-
+    }, [targetColumn, appends]);
     const getLoadMoreList = async (nextId: string | undefined, limit: number): Promise<any> => {
-      const res = await getColumnDatas(data, ind, params, nextId, () => {
+      const res = await getColumnDatas(data, ind, params, appends, nextId, () => {
         setTargetColumn(null);
       });
       return {

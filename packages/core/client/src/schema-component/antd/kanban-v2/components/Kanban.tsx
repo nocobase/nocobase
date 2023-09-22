@@ -54,10 +54,7 @@ export const KanbanV2: any = observer(
     const [visible, setVisible] = useState(false);
     const [record, setRecord] = useState<any>({});
     const isAssociationField = isAssocField(groupField);
-    const {
-      resource,
-      params: { appends },
-    } = useBlockRequestContext();
+    const { resource } = useBlockRequestContext();
     const { t } = useTranslation();
     const fieldSchema = useFieldSchema();
     useEffect(() => {
@@ -74,7 +71,7 @@ export const KanbanV2: any = observer(
       setColumnData(cloneDeep(newColumns) || []);
     }, [columns]);
 
-    const getColumnDatas = useCallback(async (el, index, params, currentPage?, fun?) => {
+    const getColumnDatas = useCallback(async (el, index, params, appends, currentPage?, fun?) => {
       const parseFilter = (value) => {
         if (value === '__unknown__') {
           const defaultFilter = isAssociationField
