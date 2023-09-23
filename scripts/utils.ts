@@ -60,7 +60,7 @@ export const runNocoBase = async (options?: CommonOptions<any>) => {
     console.log('yarn nocobase install');
     await runCommand('yarn', ['nocobase', 'install'], options);
     console.log(`yarn start -d -p ${PORT}`);
-    runCommand('yarn', ['start', '-d', `-p ${PORT}`], options);
+    await runCommand('yarn', ['start', '-d', `-p ${PORT}`], options);
     return {};
   }
 
@@ -76,7 +76,7 @@ export const runNocoBase = async (options?: CommonOptions<any>) => {
   await runCommand('yarn', ['nocobase', 'install', '-f'], options);
 
   console.log('starting server...');
-  const { cancel, kill } = runCommand('yarn', ['dev', `-p ${PORT}`], options);
+  const { cancel, kill } = runCommand('yarn', ['dev', `-p ${PORT}`, ...process.argv.slice(2)], options);
 
   return { cancel, kill };
 };
