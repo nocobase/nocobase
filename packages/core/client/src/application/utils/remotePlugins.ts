@@ -9,30 +9,40 @@ export function defineDevPlugins(plugins: Record<string, typeof Plugin>) {
   });
 }
 
-export function getRemotePlugins(
-  requirejs: any,
-  pluginData: PluginData[] = [],
-  baseURL = '',
-): Promise<Array<typeof Plugin>> {
-  if (baseURL.endsWith('/')) {
-    baseURL = baseURL.slice(0, -1);
-  }
-  if (baseURL.endsWith('/api')) {
-    baseURL = baseURL.slice(0, -4);
-  }
+export function definePluginClient(packageName: string) {
+  window.define(`${packageName}/client`, ['exports', packageName], function (_exports: any, _plugin: any) {
+    Object.defineProperty(_exports, '__esModule', {
+      value: true,
+    });
+    Object.keys(_plugin).forEach(function (key) {
+      if (key === 'default' || key === '__esModule') return;
+      if (key in _exports && _exports[key] === _plugin[key]) return;
+      Object.defineProperty(_exports, key, {
+        enumerable: true,
+        get: function () {
+          return _plugin[key];
+        },
+      });
+    });
+  });
+}
 
+export function getRemotePlugins(requirejs: any, pluginData: PluginData[] = []): Promise<Array<typeof Plugin>> {
   requirejs.requirejs.config({
     waitSeconds: 120,
-    paths: pluginData.reduce<Record<string, string>>((memo, item) => {
-      memo[item.packageName] = `${baseURL}${item.url}?noExt`;
-      memo[`${item.packageName}/client`] = `${baseURL}${item.url}?noExtAndIsClient`;
-      return memo;
+    paths: pluginData.reduce<Record<string, string>>((acc, cur) => {
+      acc[cur.packageName] = `${cur.url}?noExt`;
+      return acc;
     }, {}),
   });
 
+  const packageNames = pluginData.map((item) => item.packageName);
+  packageNames.forEach((packageName) => {
+    definePluginClient(packageName);
+  });
   return new Promise((resolve, reject) => {
     requirejs.requirejs(
-      pluginData.map((item) => item.packageName),
+      packageNames,
       (...plugins: (typeof Plugin & { default?: typeof Plugin })[]) => {
         const res = plugins.filter((item) => item).map((item) => item.default || item);
         resolve(res);
@@ -56,12 +66,11 @@ export function getRemotePlugins(
 interface GetPluginsOption {
   requirejs: RequireJS;
   pluginData: PluginData[];
-  baseURL?: string;
   devDynamicImport?: DevDynamicImport;
 }
 
 export async function getPlugins(options: GetPluginsOption): Promise<Array<typeof Plugin>> {
-  const { requirejs, pluginData, baseURL, devDynamicImport } = options;
+  const { requirejs, pluginData, devDynamicImport } = options;
 
   if (pluginData.length === 0) return [];
 
@@ -87,10 +96,10 @@ export async function getPlugins(options: GetPluginsOption): Promise<Array<typeo
       return plugins;
     }
 
-    const remotePluginList = await getRemotePlugins(requirejs, remotePlugins, baseURL);
+    const remotePluginList = await getRemotePlugins(requirejs, remotePlugins);
     plugins.push(...remotePluginList);
     return plugins;
   }
 
-  return getRemotePlugins(requirejs, pluginData, baseURL);
+  return getRemotePlugins(requirejs, pluginData);
 }
