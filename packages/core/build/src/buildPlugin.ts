@@ -300,13 +300,13 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
   const outputFileName = 'index.js';
 
   await viteBuild(userConfig.modifyViteConfig({
-    mode: 'development',
+    mode: 'production',
     define: {
-      'process.env.NODE_ENV': JSON.stringify('development'),
+      'process.env.NODE_ENV': JSON.stringify('production'),
     },
     logLevel: 'warn',
     build: {
-      minify: false,
+      minify: true,
       outDir,
       cssCodeSplit: false,
       emptyOutDir: true,
