@@ -1,15 +1,16 @@
+import { DownOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { Anchor, Col, Layout, Menu, Row } from 'antd';
+import { Anchor, Col, Layout, Menu, Row, Table, Tag, Tree } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useRequest } from '../../api-client';
 import { Plugin } from '../../application/Plugin';
 import { useGlobalTheme } from '../../global-theme';
 import { useStyles } from '../../schema-component/antd/markdown/style';
 import { useParseMarkdown } from '../../schema-component/antd/markdown/util';
 
-const { Header, Content, Footer, Sider } = Layout;
+const { Header, Sider, Content } = Layout;
 
 const arrDiff = (arr1: any[], arr2: any[]) => {
   const difference = arr1.filter((x) => !arr2.includes(x)).concat(arr2.filter((x) => !arr1.includes(x)));
@@ -280,10 +281,46 @@ const isPkg = (path) => {
 };
 
 const PackagePage = ({ packageName }) => {
+  const { loading, data } = useRequest(
+    {
+      url: 'pm:getByPkg',
+      params: {
+        packageName,
+      },
+    },
+    {
+      refreshDeps: [packageName],
+    },
+  );
+  if (loading) {
+    return null;
+  }
+  if (!data) {
+    return null;
+  }
+  const plugin = data['data'];
   return (
     <div>
-      <h1>{packageName}</h1>
-      <h2>Table of contents</h2>
+      <h1>
+        <div className={'display-name'}>{plugin.displayName} </div>
+        <div className={'package-name'}>{plugin.packageName}</div>
+      </h1>
+      <div>0.14.0-alpha.3 • 最后更新 8 天前</div>
+      <h2>介绍</h2>
+      <div>{plugin.description}</div>
+      {/* <Descriptions bordered size={'small'} layout="vertical" items={items} /> */}
+      <h2>安装</h2>
+      <pre>
+        <code className={'hljs language-bash'}>yarn pm add {plugin.packageName}</code>
+      </pre>
+      <h2>目录</h2>
+      <Tree
+        showLine
+        defaultExpandAll
+        switcherIcon={<DownOutlined />}
+        treeData={plugin.toc}
+        fieldNames={{ title: 'label', key: 'key', children: 'children' }}
+      />
     </div>
   );
 };
@@ -310,11 +347,84 @@ const PluginTag = () => {
 };
 
 const OverviewPage = () => {
+  const { data, loading } = useRequest<any>({
+    url: 'pm:getDocData',
+  });
+  const navigate = useNavigate();
+  if (loading) {
+    return null;
+  }
+  const tags = data?.data?.['tags'] || [];
+  const plugins = data?.data?.['plugins'] || [];
   return (
-    <div>
+    <div
+      className={css`
+        h2 {
+          margin: 24px 0;
+        }
+        .plugin-link {
+          color: inherit;
+        }
+        .package-name {
+          font-size: 0.7rem;
+        }
+        .ant-table-cell {
+          cursor: pointer;
+        }
+        .ant-table-row:hover td {
+          background: #e6f4ff !important;
+        }
+      `}
+    >
       <h1>总览</h1>
       <h2>标签</h2>
+      {tags.map((tag, index) => {
+        return (
+          <Link key={index} to={`/doc/tags/${tag.key}`}>
+            <Tag>{tag.title}</Tag>
+          </Link>
+        );
+      })}
       <h2>插件</h2>
+      <Table
+        size={'middle'}
+        pagination={false}
+        onRow={(data) => {
+          return {
+            onClick() {
+              navigate(`/doc/plugins/${data.packageName}`);
+            },
+          };
+        }}
+        columns={[
+          {
+            title: 'Plugin',
+            width: 300,
+            dataIndex: 'displayName',
+            ellipsis: true,
+            render: (displayName, record) => {
+              return (
+                <Link className={'plugin-link'} to={`/doc/plugins/${record.packageName}`}>
+                  <div className={'display-name'}>{displayName}</div>
+                  <div className={'package-name'}>{record.packageName}</div>
+                </Link>
+              );
+            },
+          },
+          {
+            title: 'Version',
+            dataIndex: 'version',
+            ellipsis: true,
+            width: 200,
+          },
+          {
+            title: 'Description',
+            dataIndex: 'description',
+            ellipsis: true,
+          },
+        ]}
+        dataSource={plugins}
+      />
     </div>
   );
 };

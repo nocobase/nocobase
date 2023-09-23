@@ -110,6 +110,47 @@ async function getContents(ctx: any) {
   return contents;
 }
 
+const getPluginDocMenu = async (packageName, { contents, locale }) => {
+  const items = Object.keys(contents.paths)
+    .filter((key) => {
+      return key.startsWith(packageName);
+    })
+    .map((key) => {
+      const data = contents.paths[key][locale] || contents.paths[key]['en-US'] || contents.paths[key]['zh-CN'] || {};
+      return {
+        locale,
+        key: `plugins/${data.path}`,
+        name: data.filename || 'index',
+        label: data.title,
+        file: data.file,
+        sort: data.sort || 9999,
+      };
+    });
+
+  const obj = {};
+
+  for (const item of _.sortBy(items, 'name')) {
+    _.set(obj, item.name.split('/').join('.children.').split('.'), item);
+  }
+
+  const toArr = (o) => {
+    return _.sortBy(
+      Object.values(o).map((item: any) => {
+        if (item.children) {
+          item.children = toArr(item.children);
+        }
+        if (!item.children?.length) {
+          delete item.children;
+        }
+        return item;
+      }),
+      'sort',
+    );
+  };
+
+  return toArr(obj);
+};
+
 export default {
   name: 'pm',
   actions: {
@@ -185,6 +226,24 @@ export default {
       ctx.body = await pm.getNpmVersionList(filterByTk);
       await next();
     },
+    async getDocData(ctx, next) {
+      const locale = ctx.getCurrentLocale();
+      const pm = ctx.app.pm as PluginManager;
+      const contents = await getContents(ctx);
+      ctx.body = {
+        tags: _.sortBy(
+          Object.values(contents.tags).map((tag) => {
+            const data = tag[locale] || tag['en-US'] || tag['zh-CN'];
+            return {
+              ...data,
+              title: data.title || data.key,
+            };
+          }),
+          'key',
+        ),
+        plugins: _.sortBy(await pm.list({ locale, isPreset: false }), 'packageName'),
+      };
+    },
     async getDocMenu(ctx, next) {
       ctx.withoutDataWrapping = true;
       const app = ctx.app;
@@ -195,47 +254,7 @@ export default {
       const plugins = [];
       const locale = ctx.getCurrentLocale();
       const contents = await getContents(ctx);
-      const getPluginDocMenu = async (packageName) => {
-        const items = Object.keys(contents.paths)
-          .filter((key) => {
-            return key.startsWith(packageName);
-          })
-          .map((key) => {
-            const data =
-              contents.paths[key][locale] || contents.paths[key]['en-US'] || contents.paths[key]['zh-CN'] || {};
-            return {
-              locale,
-              key: `plugins/${data.path}`,
-              name: data.filename || 'index',
-              label: data.title,
-              file: data.file,
-              sort: data.sort || 9999,
-            };
-          });
 
-        const obj = {};
-
-        for (const item of _.sortBy(items, 'name')) {
-          _.set(obj, item.name.split('/').join('.children.').split('.'), item);
-        }
-
-        const toArr = (o) => {
-          return _.sortBy(
-            Object.values(o).map((item: any) => {
-              if (item.children) {
-                item.children = toArr(item.children);
-              }
-              if (!item.children?.length) {
-                delete item.children;
-              }
-              return item;
-            }),
-            'sort',
-          );
-        };
-
-        return toArr(obj);
-      };
       const getInfo = (name) => {
         const instance = app.pm.get(name);
         const packageJson = instance.options.packageJson;
@@ -251,7 +270,7 @@ export default {
           displayName: info.displayName || record.name,
           label: info.displayName || record.name,
           packageName: record.packageName,
-          children: await getPluginDocMenu(record.packageName),
+          children: await getPluginDocMenu(record.packageName, { contents, locale }),
         };
         if (!data.children.length) {
           delete data.children;
@@ -380,6 +399,27 @@ export default {
           }
         })
         .filter(Boolean);
+      await next();
+    },
+    async getByPkg(ctx, next) {
+      const contents = await getContents(ctx);
+      const locale = ctx.getCurrentLocale();
+      const pm = ctx.app.pm as PluginManager;
+      const { packageName } = ctx.action.params;
+      if (!packageName) {
+        ctx.throw(400, 'plugin name invalid');
+      }
+      const record = await pm.repository.findOne({
+        filter: {
+          packageName,
+        },
+      });
+      if (!record) {
+        ctx.throw(400, 'plugin name invalid');
+      }
+      const data = await pm.get(record.name).toJSON({ locale });
+      const toc = await getPluginDocMenu(packageName, { contents, locale });
+      ctx.body = { ...data, toc };
       await next();
     },
     async get(ctx, next) {
