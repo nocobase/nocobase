@@ -1,6 +1,6 @@
 import { DownOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { Anchor, Col, Layout, Menu, Row, Table, Tag, Tree } from 'antd';
+import { Anchor, Col, Descriptions, Layout, Menu, Row, Table, Tag, Tree } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
@@ -280,6 +280,11 @@ const isPkg = (path) => {
   return false;
 };
 
+const MD = ({ content = '' }) => {
+  const { html, loading } = useParseMarkdown(content);
+  return loading ? null : <Markdown html={html} />;
+};
+
 const PackagePage = ({ packageName }) => {
   const { loading, data } = useRequest(
     {
@@ -299,28 +304,64 @@ const PackagePage = ({ packageName }) => {
     return null;
   }
   const plugin = data['data'];
+
   return (
-    <div>
+    <div
+      className={css`
+        h2 {
+          margin: 24px 0;
+        }
+      `}
+    >
       <h1>
         <div className={'display-name'}>{plugin.displayName} </div>
-        <div className={'package-name'}>{plugin.packageName}</div>
       </h1>
-      <div>0.14.0-alpha.3 • 最后更新 8 天前</div>
+      <Descriptions
+        bordered
+        column={1}
+        size={'small'}
+        labelStyle={{
+          width: 300,
+        }}
+        items={[
+          {
+            key: '1',
+            label: 'Package name',
+            children: plugin.packageName,
+          },
+          {
+            key: '2',
+            label: 'Version',
+            children: plugin.version,
+          },
+          {
+            key: '3',
+            label: 'License',
+            children: 'AGPL',
+          },
+        ]}
+      />
       <h2>介绍</h2>
       <div>{plugin.description}</div>
       {/* <Descriptions bordered size={'small'} layout="vertical" items={items} /> */}
       <h2>安装</h2>
-      <pre>
-        <code className={'hljs language-bash'}>yarn pm add {plugin.packageName}</code>
-      </pre>
-      <h2>目录</h2>
-      <Tree
-        showLine
-        defaultExpandAll
-        switcherIcon={<DownOutlined />}
-        treeData={plugin.toc}
-        fieldNames={{ title: 'label', key: 'key', children: 'children' }}
-      />
+      <MD content={`\`\`\`bash\nyarn pm add ${plugin.packageName}\n\`\`\`\n`} />
+      {plugin.toc.length > 0 && (
+        <>
+          <h2>目录</h2>
+          <Tree
+            style={{
+              background: '#f8f8f8',
+              padding: '.8rem 0 .5rem .5rem',
+            }}
+            showLine
+            defaultExpandAll
+            switcherIcon={<DownOutlined />}
+            treeData={plugin.toc}
+            fieldNames={{ title: 'label', key: 'key', children: 'children' }}
+          />
+        </>
+      )}
     </div>
   );
 };
@@ -338,10 +379,61 @@ const PluginTags = () => {
 
 const PluginTag = () => {
   const params = useParams();
+  const navigate = useNavigate();
+  const { loading, data } = useRequest(
+    {
+      url: 'pm:getTag',
+      params: {
+        tag: params.tag,
+      },
+    },
+    {
+      refreshDeps: [params.tag],
+    },
+  );
+  if (loading || !data) {
+    return null;
+  }
+  const tagData = data?.['data'];
   return (
-    <div>
-      <h1>{params.tag}</h1>
-      <h2>相关文档</h2>
+    <div
+      className={css`
+        .ant-table-cell {
+          cursor: pointer;
+        }
+        .ant-table-row:hover td {
+          background: #e6f4ff !important;
+        }
+      `}
+    >
+      <h1>{tagData.title}</h1>
+      <Table
+        size={'middle'}
+        pagination={false}
+        dataSource={data?.['data']?.['docs'] || []}
+        onRow={(data) => {
+          return {
+            onClick() {
+              navigate(`/doc/${data.path}`);
+            },
+          };
+        }}
+        columns={[
+          {
+            title: '标题',
+            dataIndex: 'title',
+          },
+          {
+            title: '来源',
+            dataIndex: ['plugin', 'displayName'],
+            render: (displayName, record) => (
+              <Link onClick={(e) => e.stopPropagation()} to={`/doc/plugins/${record.plugin.packageName}`}>
+                <Tag>{displayName}</Tag>
+              </Link>
+            ),
+          },
+        ]}
+      />
     </div>
   );
 };

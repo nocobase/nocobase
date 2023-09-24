@@ -71,6 +71,8 @@ export class PluginManager {
     this.app.acl.allow('pm', 'getDoc', 'public');
     this.app.acl.allow('pm', 'getDocData', 'public');
     this.app.acl.allow('pm', 'getByPkg', 'public');
+    this.app.acl.allow('pm', 'getTag', 'public');
+    this.app.acl.allow('pm', 'getDocMenu', 'public');
     this.app.acl.registerSnippet({
       name: 'pm',
       actions: ['pm:*'],

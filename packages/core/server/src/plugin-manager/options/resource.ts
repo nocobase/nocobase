@@ -93,7 +93,7 @@ async function getContents(ctx: any) {
         contents.tags[tag.key] = contents.tags[tag.key] || {};
         const current = contents.tags[tag.key][firstKey];
         if (current) {
-          if (!current.label && tag.label) {
+          if (!current.title && tag.title) {
             contents.tags[tag.key][firstKey] = { ...tag, file, locale: firstKey };
           }
         } else {
@@ -399,6 +399,37 @@ export default {
           }
         })
         .filter(Boolean);
+      await next();
+    },
+    async getTag(ctx, next) {
+      const contents = await getContents(ctx);
+      const locale = ctx.getCurrentLocale();
+      const pm = ctx.app.pm as PluginManager;
+      const { tag } = ctx.action.params;
+      const data = contents.tags[tag][locale] || contents.tags[tag]['en-US'] || contents.tags[tag]['zh-CN'];
+      const docs = [];
+      for (const key of contents.tags[tag]['paths']) {
+        const article =
+          contents.paths[key][locale] || contents.paths[key]['en-US'] || contents.paths[key]['zh-CN'] || {};
+        const record = await pm.repository.findOne({
+          filter: {
+            packageName: article.packageName,
+          },
+        });
+        const plugin = await pm.get(record.name).toJSON({ locale });
+        docs.push({
+          path: `tags/${data.key}/${article.path}`,
+          title: article.title,
+          plugin,
+        });
+      }
+      if (docs.length) {
+        data['docs'] = docs;
+      }
+      ctx.body = {
+        ...data,
+        title: data.title || data.key,
+      };
       await next();
     },
     async getByPkg(ctx, next) {
