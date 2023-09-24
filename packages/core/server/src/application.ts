@@ -14,6 +14,7 @@ import Koa, { DefaultContext as KoaDefaultContext, DefaultState as KoaDefaultSta
 import compose from 'koa-compose';
 import lodash from 'lodash';
 import { createACL } from './acl';
+import { AppCommand } from './app-command';
 import { AppSupervisor } from './app-supervisor';
 import { registerCli } from './commands';
 import { ApplicationNotInstall } from './errors/application-not-install';
@@ -23,7 +24,6 @@ import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
 import { randomUUID } from 'crypto';
-import { AppCommand } from './app-command';
 
 const packageJson = require('../package.json');
 

@@ -1,3 +1,4 @@
+import { Repository } from '@nocobase/database';
 import { Plugin, PluginManager } from '@nocobase/server';
 import _ from 'lodash';
 import path from 'path';
@@ -72,7 +73,7 @@ export class PresetNocoBase extends Plugin {
       },
     });
     this.app.on('beforeUpgrade', async () => {
-      await this.createIfNotExists();
+      await this.updateOrCreatePlugins();
     });
   }
 
@@ -92,8 +93,24 @@ export class PresetNocoBase extends Plugin {
       );
   }
 
-  async createIfNotExists() {
+  async updateOrCreatePlugins() {
     const repository = this.app.db.getRepository<any>('applicationPlugins');
+    await this.db.sequelize.transaction((transaction) => {
+      return Promise.all(
+        this.allPlugins.map((values) =>
+          repository.updateOrCreate({
+            transaction,
+            values,
+            filterKeys: ['name'],
+          }),
+        ),
+      );
+    });
+    await this.app.reload();
+  }
+
+  async createIfNotExists() {
+    const repository = this.app.db.getRepository<Repository>('applicationPlugins');
     const existPlugins = await repository.find();
     const existPluginNames = existPlugins.map((item) => item.name);
     const plugins = this.allPlugins.filter((item) => !existPluginNames.includes(item.name));
