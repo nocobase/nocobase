@@ -2,6 +2,7 @@ import { Logger } from '@nocobase/logger';
 import { applyMixins, AsyncEmitter, requireModule } from '@nocobase/utils';
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
+import { backOff } from 'exponential-backoff';
 import glob from 'glob';
 import lodash from 'lodash';
 import { basename, isAbsolute, resolve } from 'path';
@@ -69,7 +70,6 @@ import {
 import { patchSequelizeQueryInterface, snakeCase } from './utils';
 import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
 import { ViewCollection } from './view-collection';
-import { backOff } from 'exponential-backoff';
 
 export type MergeOptions = merge.Options;
 
@@ -285,6 +285,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
       migrations: this.migrations.callback(),
       context,
       storage: new SequelizeStorage({
+        tableName: `${this.options.tablePrefix || ''}migrations`,
+        modelName: 'migrations',
         ...migratorOptions.storage,
         sequelize: this.sequelize,
       }),

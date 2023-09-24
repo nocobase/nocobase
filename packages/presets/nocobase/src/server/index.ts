@@ -93,15 +93,19 @@ export class PresetNocoBase extends Plugin {
   }
 
   async updateOrCreatePlugins() {
-    const repository = this.app.db.getRepository<Repository>('applicationPlugins');
-    return Promise.all(
-      this.allPlugins.map((values) =>
-        repository.updateOrCreate({
-          values,
-          filterKeys: ['name'],
-        }),
-      ),
-    );
+    const repository = this.app.db.getRepository<any>('applicationPlugins');
+    await this.db.sequelize.transaction((transaction) => {
+      return Promise.all(
+        this.allPlugins.map((values) =>
+          repository.updateOrCreate({
+            transaction,
+            values,
+            filterKeys: ['name'],
+          }),
+        ),
+      );
+    });
+    await this.app.reload();
   }
 
   async createIfNotExists() {
