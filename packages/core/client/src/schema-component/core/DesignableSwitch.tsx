@@ -19,6 +19,7 @@ export const DesignableSwitch = () => {
   return (
     <Tooltip title={t('UI Editor')}>
       <Button
+        data-testid={'ui-editor-button'}
         // selected={designable}
         icon={<HighlightOutlined />}
         title={t('UI Editor')}

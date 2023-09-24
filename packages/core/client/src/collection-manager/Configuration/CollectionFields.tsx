@@ -323,9 +323,9 @@ export const CollectionFields = () => {
       groups.pf.push(field);
     } else if (field.interface) {
       const conf = getInterface(field.interface);
-      if (conf.group === 'systemInfo') {
+      if (conf?.group === 'systemInfo') {
         groups.system.push(field);
-      } else if (conf.group === 'relation') {
+      } else if (conf?.group === 'relation') {
         groups.association.push(field);
       } else {
         groups.general.push(field);
@@ -405,7 +405,6 @@ export const CollectionFields = () => {
   );
   const addProps = { type: 'primary', database };
   const syncProps = { type: 'primary' };
-  console.log(dataSource);
   return (
     <ResourceActionProvider {...resourceActionProps}>
       <FormContext.Provider value={form}>

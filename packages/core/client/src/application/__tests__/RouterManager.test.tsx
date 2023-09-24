@@ -11,7 +11,7 @@ describe('Router', () => {
   let app: Application;
   beforeAll(() => {
     const mock = new MockAdapter(axios);
-    mock.onGet('app:getPlugins').reply(200, {
+    mock.onGet('pm:listEnabled').reply(200, {
       data: [],
     });
     app = new Application();

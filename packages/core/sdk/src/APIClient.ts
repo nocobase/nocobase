@@ -14,14 +14,11 @@ type ResourceActionOptions<P = any> = {
   params?: P;
 };
 
-export interface IResource {
-  list?: (params?: ActionParams) => Promise<any>;
-  get?: (params?: ActionParams) => Promise<any>;
-  create?: (params?: ActionParams) => Promise<any>;
-  update?: (params?: ActionParams) => Promise<any>;
-  destroy?: (params?: ActionParams) => Promise<any>;
-  [key: string]: (params?: ActionParams) => Promise<any>;
-}
+type ResourceAction = (params?: ActionParams) => Promise<any>;
+
+export type IResource = {
+  [key: string]: ResourceAction;
+};
 
 export class Auth {
   protected api: APIClient;

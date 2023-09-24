@@ -79,7 +79,7 @@ const useAssociationNames2 = (collection) => {
   return names;
 };
 
-const recursiveParent = (schema: Schema, component) => {
+export const recursiveParent = (schema: Schema, component) => {
   return schema['x-component'] === component
     ? schema
     : schema.parent
@@ -149,7 +149,7 @@ export const TableSelectorProvider = (props: TableSelectorProviderProps) => {
   if (props.dragSort) {
     params['sort'] = ['sort'];
   }
-  if (collection?.tree && treeTable !== false) {
+  if (collectionField?.target === collectionField?.collectionName && collection?.tree && treeTable !== false) {
     params['tree'] = true;
     if (collectionFieldSchema.name === 'parent') {
       params.filter = {

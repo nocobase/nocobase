@@ -1,4 +1,5 @@
 {
+  "extends": "./tsconfig.paths.json",
   "compilerOptions": {
     "esModuleInterop": true,
     "moduleResolution": "node",
@@ -16,48 +17,14 @@
     "declaration": true,
     "experimentalDecorators": true,
     "downlevelIteration": true,
-    "baseUrl": ".",
-    "paths": {
-      "@nocobase/app-*": [
-        "packages/app/*/src"
-      ],
-      "@nocobase/plugin-sample-*": [
-        "packages/samples/*/src"
-      ],
-      "@nocobase/plugin-pro-*": [
-        "packages/pro-plugins/*/src"
-      ],
-      "@nocobase/plugin-*": [
-        "packages/plugins/*/src"
-      ],
-      "@nocobase/preset-*": [
-        "packages/presets/*/src"
-      ],
-      "@nocobase/evaluators/client": [
-        "packages/core/evaluators/src/client"
-      ],
-      "@nocobase/utils/client": [
-        "packages/core/utils/src/client"
-      ],
-      "@nocobase/*": [
-        "packages/core/*/src"
-      ],
-      "@@/*": [
-        ".dumi/tmp/*"
-      ]
-    }
+    "baseUrl": "."
   },
   "ts-node": {
     "compilerOptions": {
       "module": "commonjs"
     }
   },
-  "include": [
-    "packages/**/*",
-    ".dumi/**/*",
-    ".dumirc.ts",
-    "scripts/setupVitest.ts"
-  ],
+  "include": ["packages/**/*", ".dumi/**/*", ".dumirc.ts", "scripts/setupVitest.ts"],
   "exclude": [
     "packages/**/node_modules",
     "packages/**/dist",

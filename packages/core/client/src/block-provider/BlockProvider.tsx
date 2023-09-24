@@ -34,6 +34,7 @@ interface UseResourceProps {
   resource: any;
   association?: any;
   useSourceId?: any;
+  collection?: any;
   block?: any;
 }
 
@@ -48,7 +49,7 @@ export const useAssociation = (props) => {
 };
 
 const useResource = (props: UseResourceProps) => {
-  const { block, resource, useSourceId } = props;
+  const { block, collection, resource, useSourceId } = props;
   const record = useRecord();
   const api = useAPIClient();
   const { fieldSchema } = useActionContext();
@@ -83,8 +84,10 @@ const useResource = (props: UseResourceProps) => {
   if (sourceId) {
     return api.resource(resource, sourceId);
   }
-
-  return api.resource(resource, record[association?.sourceKey || 'id']);
+  if (record[association?.sourceKey || 'id']) {
+    return api.resource(resource, record[association?.sourceKey || 'id']);
+  }
+  return api.resource(collection);
 };
 
 const useActionParams = (props) => {
@@ -345,6 +348,9 @@ export const useParamsFromRecord = () => {
   const filterByTk = useFilterByTk();
   const record = useRecord();
   const { fields } = useCollection();
+  const fieldSchema = useFieldSchema();
+  const { getCollectionJoinField } = useCollectionManager();
+  const collectionField = getCollectionJoinField(fieldSchema?.['x-decorator-props']?.resource);
   const filterFields = fields
     .filter((v) => {
       return ['boolean', 'date', 'integer', 'radio', 'sort', 'string', 'time', 'uid', 'uuid'].includes(v.type);
@@ -360,7 +366,7 @@ export const useParamsFromRecord = () => {
   const obj = {
     filterByTk: filterByTk,
   };
-  if (record.__collection) {
+  if (record.__collection && !['oho', 'm2o', 'obo'].includes(collectionField?.interface)) {
     obj['targetCollection'] = record.__collection;
   }
   if (!filterByTk) {

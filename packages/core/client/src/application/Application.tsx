@@ -51,6 +51,7 @@ export class Application {
   public pm: PluginManager;
   public devDynamicImport: DevDynamicImport;
   public requirejs: RequireJS;
+  public notification;
   loading = true;
   maintained = false;
   maintaining = false;
@@ -125,18 +126,27 @@ export class Application {
   }
 
   async load() {
+    let loadFailed = false;
     this.ws.on('message', (event) => {
       const data = JSON.parse(event.data);
       console.log(data.payload);
+      if (data?.payload?.refresh) {
+        window.location.reload();
+        return;
+      }
+      if (data.type === 'notification') {
+        this.notification[data.payload?.type || 'info']({ message: data.payload?.message });
+        return;
+      }
       const maintaining = data.type === 'maintaining' && data.payload.code !== 'APP_RUNNING';
       if (maintaining) {
         this.maintaining = true;
         this.error = data.payload;
-      } else if (this.maintaining) {
-        //  && !this.maintained
-        window.location.reload();
-        return;
       } else {
+        console.log('loadFailed', loadFailed);
+        if (loadFailed) {
+          window.location.reload();
+        }
         this.maintaining = false;
         this.maintained = true;
         this.error = null;
@@ -150,6 +160,7 @@ export class Application {
       this.loading = true;
       await this.pm.load();
     } catch (error) {
+      loadFailed = true;
       this.error = {
         code: 'LOAD_ERROR',
         message: error.message,
