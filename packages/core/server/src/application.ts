@@ -24,8 +24,6 @@ import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
 import path from 'path';
-import { AppCommand } from './app-command';
-
 
 const packageJson = require('../package.json');
 

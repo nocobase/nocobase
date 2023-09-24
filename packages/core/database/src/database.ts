@@ -71,7 +71,6 @@ import { patchSequelizeQueryInterface, snakeCase } from './utils';
 import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
 import { ViewCollection } from './view-collection';
 import { CollectionSnapshotManager } from './collection-snapshot/manager';
-import { backOff } from 'exponential-backoff';
 
 export type MergeOptions = merge.Options;
 
