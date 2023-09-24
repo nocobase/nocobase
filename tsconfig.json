@@ -24,7 +24,7 @@
       "module": "commonjs"
     }
   },
-  "include": ["packages/**/*", ".dumi/**/*", ".dumirc.ts", "scripts/vitest.setup.ts"],
+  "include": ["packages/**/*", ".dumi/**/*", ".dumirc.ts", "scripts/*"],
   "exclude": [
     "packages/**/node_modules",
     "packages/**/dist",

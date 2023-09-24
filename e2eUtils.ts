@@ -139,8 +139,6 @@ const getStorageItem = (key: string, storageState: any) => {
 };
 
 /**
- * 注意：该方法暂时用不到，因为现在每个测试用例都是运行在一个空的 NocoBase 环境中
- *
  * 更新直接从浏览器中复制过来的 Schema 中的 uid
  */
 const updateUidOfPageSchema = (uiSchema: any) => {
@@ -202,7 +200,7 @@ const createPage = async (page: Page, options?: CreatePageOptions) => {
             { type: 'onSelfSave', method: 'extractTextToLocale' },
           ],
           properties: {
-            page: pageSchema || {
+            page: updateUidOfPageSchema(pageSchema) || {
               _isJSONSchemaObject: true,
               version: '2.0',
               type: 'void',

@@ -11,7 +11,7 @@ setup('admin', async ({ page }) => {
   await page.getByPlaceholder('Password').fill('admin123');
   await page.getByRole('button', { name: 'Sign in' }).click();
 
-  await expect(page.getByText('Super Admin')).toBeVisible();
+  await expect(page.getByTestId('user-center-button').getByText('Super Admin')).toBeVisible();
 
   // 保存登录状态
   await page.context().storageState({ path: adminFile });
