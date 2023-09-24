@@ -18,7 +18,8 @@ const InternalField: React.FC = (props: Props) => {
   const { component } = props;
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
-  const { uiSchema, defaultValue } = useCollectionField();
+  const collectionField = useCollectionField();
+  const { uiSchema, defaultValue } = collectionField;
   const Component = useComponent(component || uiSchema?.['x-component'] || 'Input');
   const compile = useCompile();
   const setFieldProps = (key, value) => {

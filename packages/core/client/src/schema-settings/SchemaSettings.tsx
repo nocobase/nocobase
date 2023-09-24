@@ -1518,6 +1518,7 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props) {
                   s['x-disabled'] = false;
                   const schema = {
                     ...(s || {}),
+                    type: 'void',
                     'x-decorator': 'FormItem',
                     'x-component-props': {
                       ...s['x-component-props'],
