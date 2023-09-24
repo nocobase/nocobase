@@ -2,6 +2,7 @@ import winston, { Logger, LoggerOptions, createLogger } from 'winston';
 import path from 'path';
 import chalk from 'chalk';
 import 'winston-daily-rotate-file';
+const DEFAULT_DELIMITER = '|';
 
 export const getLoggerLevel = () =>
   process.env.LOGGER_LEVEL || (process.env.APP_ENV === 'development' ? 'debug' : 'info');
@@ -13,7 +14,46 @@ export const getLoggerFilePath = (...paths: string[]): string => {
 export const getLoggerTransport = () =>
   process.env.LOGGER_TRANSPORT || (process.env.APP_ENV === 'development' ? 'console' : 'console,dailyRotateFile');
 
-export const getLoggerFormat = () => process.env.LOGGER_FORMAT || 'splitter';
+export const getLoggerFormat = () => process.env.LOGGER_FORMAT || 'delimiter';
+
+const delimiterFormat = winston.format.combine(
+  winston.format.colorize(),
+  winston.format.printf((info) =>
+    Object.entries(info)
+      .map(([k, v]) => {
+        if (k === 'message' && info['level'].includes('error')) {
+          return chalk.red(v);
+        }
+        if (typeof v === 'object') {
+          try {
+            return JSON.stringify(v);
+          } catch (error) {
+            return String(v);
+          }
+        }
+        if (k === 'reqId' && v) {
+          return chalk.gray(v);
+        }
+        if ((k === 'module' || k === 'submodule') && v) {
+          return chalk.cyan(v);
+        }
+        if (v === 'request' || v === 'response') {
+          return chalk.green(v);
+        }
+        return v;
+      })
+      .join(DEFAULT_DELIMITER),
+  ),
+);
+
+const escapeFormat: winston.Logform.Format = winston.format((info) => {
+  let { message } = info;
+  if (typeof message === 'string' && message.includes(DEFAULT_DELIMITER)) {
+    message = message.replace(/"/g, '\\"');
+    message = `"${message}"`;
+  }
+  return { ...info, message };
+})();
 
 const getTransport = (name: string) => {
   const configTransports = getLoggerTransport();
@@ -23,36 +63,8 @@ const getTransport = (name: string) => {
   }
   const configFormat = getLoggerFormat();
   let logFormat: winston.Logform.Format;
-  if (configFormat === 'splitter') {
-    logFormat = winston.format.combine(
-      winston.format.colorize(),
-      winston.format.printf((info) =>
-        Object.entries(info)
-          .map(([k, v]) => {
-            if (k === 'message' && info['level'].includes('error')) {
-              return chalk.red(v);
-            }
-            if (typeof v === 'object') {
-              try {
-                return JSON.stringify(v);
-              } catch (error) {
-                return String(v);
-              }
-            }
-            if (k === 'reqId' && v) {
-              return chalk.gray(v);
-            }
-            if ((k === 'module' || k === 'submodule') && v) {
-              return chalk.cyan(v);
-            }
-            if (v === 'request' || v === 'response') {
-              return chalk.green(v);
-            }
-            return v;
-          })
-          .join('|'),
-      ),
-    );
+  if (configFormat === 'delimiter') {
+    logFormat = winston.format.combine(escapeFormat, delimiterFormat);
   } else {
     logFormat = winston.format.json({ deterministic: false });
   }
