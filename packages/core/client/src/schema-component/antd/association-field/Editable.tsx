@@ -12,6 +12,7 @@ import { InternalSubTable } from './InternalSubTable';
 import { InternaPopoverNester } from './InternalPopoverNester';
 import { CreateRecordAction } from './components/CreateRecordAction';
 import { useAssociationFieldContext } from './hooks';
+import { useCollection } from '../../../collection-manager';
 
 const EditableAssociationField = observer(
   (props: any) => {
@@ -23,6 +24,8 @@ const EditableAssociationField = observer(
     const useCreateActionProps = () => {
       const { onClick } = useCAP();
       const actionField: any = useField();
+      const { getPrimaryKey } = useCollection();
+      const primaryKey = getPrimaryKey();
       return {
         async onClick() {
           await onClick();
@@ -30,9 +33,11 @@ const EditableAssociationField = observer(
           if (data) {
             if (['m2m', 'o2m'].includes(collectionField?.interface) && multiple !== false) {
               const values = form.getValuesIn(field.path) || [];
-              values.push(data);
-              form.setValuesIn(field.path, values);
-              field.onInput(values);
+              if (!values.find((v) => v[primaryKey] === data[primaryKey])) {
+                values.push(data);
+                form.setValuesIn(field.path, values);
+                field.onInput(values);
+              }
             } else {
               form.setValuesIn(field.path, data);
               field.onInput(data);
