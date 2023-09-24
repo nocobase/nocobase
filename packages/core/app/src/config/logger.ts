@@ -1,6 +1,6 @@
-import { AppLoggerOptions } from '@nocobase/logger';
+import { AppLoggerOptions, getLoggerLevel, getLoggerTransport } from '@nocobase/logger';
 
 export default {
-  transports: process.env.LOGGER_TRANSPORT || ['console', 'dailyRotateFile'],
-  level: process.env.LOGGER_LEVEL || (process.env.APP_ENV === 'development' ? 'debug' : 'info'),
+  transports: getLoggerTransport(),
+  level: getLoggerLevel(),
 } as AppLoggerOptions;

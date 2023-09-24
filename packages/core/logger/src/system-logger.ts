@@ -1,10 +1,9 @@
-import winston, { LoggerOptions, format } from 'winston';
-import { customLogger } from './logger';
+import winston, { format } from 'winston';
+import { LoggerOptions, createLogger } from './logger';
 import Transport from 'winston-transport';
 import { SPLAT } from 'triple-beam';
 
 interface SystemLoggerOptions extends LoggerOptions {
-  name: string; // log file name
   seperateError?: boolean; // print error seperately, default true
 }
 
@@ -12,18 +11,20 @@ class SystemLoggerTransport extends Transport {
   private logger: winston.Logger;
   private errorLogger: winston.Logger;
 
-  constructor({ name, seperateError, ...options }: SystemLoggerOptions) {
+  constructor({ seperateError, filename, ...options }: SystemLoggerOptions) {
     super(options);
-    this.logger = customLogger(name, {
+    this.logger = createLogger({
       ...options,
+      filename,
       format: winston.format.combine(
         format((info) => (seperateError && info.level === 'error' ? false : info))(),
         options.format || winston.format((info) => info)(),
       ),
     });
     if (seperateError) {
-      this.errorLogger = customLogger(`${name}_error`, {
+      this.errorLogger = createLogger({
         ...options,
+        filename: `${filename}_error`,
         level: 'error',
       });
     }
@@ -63,15 +64,9 @@ class SystemLoggerTransport extends Transport {
   }
 }
 
-export const logger = (key: string, options?: Omit<SystemLoggerOptions, 'name'> & { name?: string }) =>
-  customLogger(key, {
-    transports: [
-      new SystemLoggerTransport({
-        name: key,
-        ...(options || {}),
-      }),
-    ],
+export const logger = (options: SystemLoggerOptions) =>
+  createLogger({
+    transports: [new SystemLoggerTransport(options)],
   });
 
-export const systemLogger = (app: string, key: string) =>
-  logger(`${app}_${key}`, { name: `${app}_system`, seperateError: true });
+export const systemLogger = (app: string) => logger({ filename: `${app}_system`, seperateError: true });

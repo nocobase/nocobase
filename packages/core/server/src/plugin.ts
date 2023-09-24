@@ -39,7 +39,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
   }
 
   get log() {
-    return systemLogger(this.app.name, this.name).child({
+    return systemLogger(this.app.name).child({
       reqId: this.app.context.reqId,
       module: this.name,
     });

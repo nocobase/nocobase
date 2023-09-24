@@ -1,4 +1,4 @@
-import { customLogger } from './logger';
+import { createLogger } from './logger';
 import { systemLogger } from './system-logger';
 import { pick } from 'lodash';
 const defaultRequestWhitelist = [
@@ -14,9 +14,9 @@ const defaultResponseWhitelist = ['status'];
 export const requestLogger = (appName: string) => {
   return async (ctx, next) => {
     const reqId = ctx.reqId;
-    const requestLogger = customLogger(`${appName}_request`);
+    const requestLogger = createLogger({ filename: `${appName}_request` });
     const path = /^\/api\/(.+):(.+)/.exec(ctx.path);
-    const contextLogger = systemLogger(appName, 'context').child({ reqId, module: path?.[1], submodule: path?.[2] });
+    const contextLogger = systemLogger(appName).child({ reqId, module: path?.[1], submodule: path?.[2] });
     // ctx.reqId = reqId;
     ctx.logger = ctx.log = contextLogger;
     const startTime = Date.now();

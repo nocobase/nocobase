@@ -1,8 +1,14 @@
-import winston, { Logger, LoggerOptions, createLogger } from 'winston';
+import winston, { Logger } from 'winston';
 import path from 'path';
 import chalk from 'chalk';
 import 'winston-daily-rotate-file';
 const DEFAULT_DELIMITER = '|';
+
+interface LoggerOptions extends Omit<winston.LoggerOptions, 'transports'> {
+  path?: string;
+  filename?: string;
+  transports?: (string | winston.transport)[];
+}
 
 export const getLoggerLevel = () =>
   process.env.LOGGER_LEVEL || (process.env.APP_ENV === 'development' ? 'debug' : 'info');
@@ -12,7 +18,9 @@ export const getLoggerFilePath = (...paths: string[]): string => {
 };
 
 export const getLoggerTransport = () =>
-  process.env.LOGGER_TRANSPORT || (process.env.APP_ENV === 'development' ? 'console' : 'console,dailyRotateFile');
+  (
+    process.env.LOGGER_TRANSPORT || (process.env.APP_ENV === 'development' ? 'console' : 'console,dailyRotateFile')
+  ).split(',');
 
 export const getLoggerFormat = () => process.env.LOGGER_FORMAT || 'delimiter';
 
@@ -55,9 +63,11 @@ const escapeFormat: winston.Logform.Format = winston.format((info) => {
   return { ...info, message };
 })();
 
-const getTransport = (name: string) => {
-  const configTransports = getLoggerTransport();
-  let dirname = getLoggerFilePath();
+const getTransports = (options: LoggerOptions) => {
+  const { filename } = options;
+  let { transports: configTransports, path: dirname } = options;
+  configTransports = configTransports || getLoggerTransport();
+  dirname = dirname || getLoggerFilePath();
   if (!path.isAbsolute(dirname)) {
     dirname = path.resolve(process.cwd(), dirname);
   }
@@ -77,13 +87,13 @@ const getTransport = (name: string) => {
     console: () =>
       new winston.transports.Console({
         format: format(
-          winston.format((info) => ({ logfile: name, level: info.level, timestamp: info.timestamp, ...info }))(),
+          winston.format((info) => ({ logfile: filename, level: info.level, timestamp: info.timestamp, ...info }))(),
         ),
       }),
     file: () =>
       new winston.transports.File({
         dirname,
-        filename: `${name}.log`,
+        filename: `${filename}.log`,
         maxsize: Number(process.env.LOGGER_MAX_SIZE) || 1024 * 1024 * 20,
         maxFiles: Number(process.env.LOGGER_MAX_FILES) || 10,
         format: format(),
@@ -91,49 +101,49 @@ const getTransport = (name: string) => {
     dailyRotateFile: () =>
       new winston.transports.DailyRotateFile({
         dirname,
-        filename: `${name}_%DATE%.log`,
+        filename: `${filename}_%DATE%.log`,
         maxSize: Number(process.env.LOGGER_MAX_SIZE),
         maxFiles: Number(process.env.LOGGER_MAX_FILES) || '14d',
         format: format(),
       }),
   };
-  return configTransports.split(',').map((t) => transports[t]()) || transports['console']();
+  return configTransports?.map((t) => (typeof t === 'string' ? transports[t]() : t)) || transports['console']();
 };
 
-export const customLogger = (name: string, options: LoggerOptions & { name?: string } = {}) => {
-  if (winston.loggers.has(name)) {
-    return winston.loggers.get(name);
+export const createLogger = (options: LoggerOptions) => {
+  if (process.env.GITHUB_ACTIONS) {
+    return simpleLogger({ level: 'debug', format: winston.format.simple() });
   }
-  const { transports, name: filename, ...others } = options;
-  options = {
+  const winstonOptions = {
     level: getLoggerLevel(),
-    transports: transports || getTransport(filename || name),
-    ...others,
+    transports: getTransports(options),
+    ...options,
     format: winston.format.combine(
       winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
       options.format || winston.format.simple(),
-      winston.format.json({ deterministic: false }),
     ),
   };
-  return winston.loggers.add(name, options);
+  return winston.createLogger(winstonOptions);
 };
 
-export const simpleLogger = () => {
-  return winston.createLogger({
+export const simpleLogger = (options?: winston.LoggerOptions) =>
+  winston.createLogger({
     level: 'debug',
     format: winston.format.combine(
       winston.format.colorize(),
       winston.format.timestamp({
         format: 'YYYY-MM-DD HH:mm:ss',
       }),
-      winston.format.printf((info) => `${info.level}|${info.timestamp}|${info.message}`),
+      winston.format.printf(
+        ({ timestamp, level, message, reqId }) => `${level}|${timestamp}|${reqId + '|' || ''}${message}`,
+      ),
     ),
+    ...options,
     transports: [new winston.transports.Console()],
   });
-};
 
 export { Logger, LoggerOptions };
-export interface AppLoggerOptions extends Omit<LoggerOptions, 'transports'> {
+export interface AppLoggerOptions extends LoggerOptions {
   skip?: (ctx?: any) => Promise<boolean>;
   requestWhitelist?: string[];
   responseWhitelist?: string[];

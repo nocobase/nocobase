@@ -47,13 +47,13 @@ export class IPCSocketClient extends events.EventEmitter {
   async handleServerMessage({ reqId, type, payload }) {
     switch (type) {
       case 'error':
-        this.logger.error(`${reqId}|${payload.message}|${payload.stack}`);
+        this.logger.error({ reqId, message: `${payload.message}|${payload.stack}` });
         break;
       case 'success':
-        this.logger.info(`${reqId}|success`);
+        this.logger.info({ reqId, message: 'success' });
         break;
       default:
-        this.logger.info(`${reqId}|${JSON.stringify({ type, payload })}`);
+        this.logger.info({ reqId, message: JSON.stringify({ type, payload }) });
         break;
     }
 

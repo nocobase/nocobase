@@ -3,7 +3,7 @@ import { registerActions } from '@nocobase/actions';
 import { actions as authActions, AuthManager } from '@nocobase/auth';
 import { Cache, createCache, ICacheConfig } from '@nocobase/cache';
 import Database, { CollectionOptions, IDatabaseOptions } from '@nocobase/database';
-import { AppLoggerOptions, logger, Logger, systemLogger } from '@nocobase/logger';
+import { AppLoggerOptions, createLogger, logger, Logger, systemLogger } from '@nocobase/logger';
 import { Resourcer, ResourceOptions } from '@nocobase/resourcer';
 import { applyMixins, AsyncEmitter, Toposort, ToposortOptions } from '@nocobase/utils';
 import chalk from 'chalk';
@@ -660,7 +660,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   protected init() {
     const options = this.options;
 
-    this._logger = systemLogger(this.name, 'app').child({
+    this._logger = systemLogger(this.name).child({
       reqId: this.context.reqId,
       module: 'application',
     });
@@ -730,7 +730,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   private createDatabase(options: ApplicationOptions) {
-    const sqlLogger = logger(`${this.name}_sql`, {
+    const sqlLogger = createLogger({
+      filename: `${this.name}_sql`,
       level: 'debug',
     });
     const logging = (msg: any) => {
