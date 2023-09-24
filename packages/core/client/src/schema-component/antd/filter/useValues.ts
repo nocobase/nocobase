@@ -50,7 +50,7 @@ export const useValues = () => {
       const fieldNames = dataIndex.concat();
       fieldNames.pop();
       const targetField = getCollectionJoinField(`${name}.${fieldNames.join('.')}`);
-      ctx.field.collectionName = targetField.target;
+      ctx.field.collectionName = targetField?.target;
     } else {
       ctx.field.collectionName = null;
     }
@@ -77,7 +77,7 @@ export const useValues = () => {
         const fieldNames = dataIndex.concat();
         fieldNames.pop();
         const targetField = getCollectionJoinField(`${name}.${fieldNames.join('.')}`);
-        ctx.field.collectionName = targetField.target;
+        ctx.field.collectionName = targetField?.target;
       } else {
         ctx.field.collectionName = null;
       }
