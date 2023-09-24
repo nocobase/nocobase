@@ -243,8 +243,8 @@ const convertToMilestone = (
 };
 
 const taskXCoordinate = (xDate: Date, dates: Date[], columnWidth: number) => {
-  const index = dates.findIndex((d) => d?.getTime() >= xDate?.getTime()) - 1;
-  const remainderMillis = xDate?.getTime() - dates[index]?.getTime();
+  const index = dates.findIndex((d) => d.getTime() >= xDate.getTime()) - 1;
+  const remainderMillis = xDate.getTime() - dates[index].getTime();
   const percentOfInterval = remainderMillis / (dates[index + 1]?.getTime() - dates[index]?.getTime());
   const x = index * columnWidth + percentOfInterval * columnWidth;
   return isNaN(x) ? 0 : x;

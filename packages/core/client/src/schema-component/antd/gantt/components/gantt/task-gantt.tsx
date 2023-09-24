@@ -17,7 +17,6 @@ export const TaskGantt: React.FC<TaskGanttProps> = forwardRef(
     const ganttSVGRef = useRef<SVGSVGElement>(null);
     const horizontalContainerRef = useRef<HTMLDivElement>(null);
     const newBarProps = { ...barProps, svg: ganttSVGRef };
-
     useEffect(() => {
       if (horizontalContainerRef.current) {
         horizontalContainerRef.current.scrollTop = scrollY;
@@ -55,7 +54,7 @@ export const TaskGantt: React.FC<TaskGanttProps> = forwardRef(
             className="ganttBody"
           >
             <Grid {...gridProps} />
-            <TaskGanttContent {...newBarProps} />
+            <TaskGanttContent {...newBarProps} defaultStart={calendarProps.dateSetup.dates[0]} />
           </svg>
         </div>
       </div>
