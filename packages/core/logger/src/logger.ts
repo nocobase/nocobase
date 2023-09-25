@@ -129,21 +129,24 @@ export const createLogger = (options: LoggerOptions) => {
   return winston.createLogger(winstonOptions);
 };
 
-export const simpleLogger = (options?: winston.LoggerOptions) =>
-  winston.createLogger({
+export const simpleLogger = (options?: winston.LoggerOptions) => {
+  const { format, ...rest } = options || {};
+  return winston.createLogger({
     level: 'debug',
     format: winston.format.combine(
       winston.format.colorize(),
       winston.format.timestamp({
         format: 'YYYY-MM-DD HH:mm:ss',
       }),
-      winston.format.printf(
-        ({ timestamp, level, message, reqId }) => `${level}|${timestamp}|${reqId + '|' || ''}${message}`,
-      ),
+      format ||
+        winston.format.printf(
+          ({ timestamp, level, message, reqId }) => `${level}|${timestamp}|${reqId + '|' || ''}${message}`,
+        ),
     ),
-    ...options,
+    ...(rest || {}),
     transports: [new winston.transports.Console()],
   });
+};
 
 export { Logger, LoggerOptions };
 interface ReqeustLoggerOptions extends LoggerOptions {
