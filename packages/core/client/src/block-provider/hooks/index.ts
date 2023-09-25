@@ -1125,7 +1125,7 @@ export const useAssociationNames = () => {
       const isAssociationSubfield = s.name.includes('.');
       const isAssociationField =
         collectionfield && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionfield.type);
-      const isTreeCollection = isAssociationField && getCollection(collectionfield.target).template === 'tree';
+      const isTreeCollection = isAssociationField && getCollection(collectionfield.target)?.template === 'tree';
       if (collectionfield && (isAssociationField || isAssociationSubfield) && s['x-component'] !== 'TableField') {
         const fieldPath = !isAssociationField && isAssociationSubfield ? getAssociationPath(s.name) : s.name;
         const path = prefix === '' || !prefix ? fieldPath : prefix + '.' + fieldPath;
