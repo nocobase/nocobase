@@ -4,7 +4,7 @@
   "displayName.zh-CN": "可视化的数据表管理",
   "description": "An ER diagram-like tool",
   "description.zh-CN": "类似 ER 图的工具",
-  "version": "0.14.0-alpha.3",
+  "version": "0.14.0-alpha.6",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "devDependencies": {

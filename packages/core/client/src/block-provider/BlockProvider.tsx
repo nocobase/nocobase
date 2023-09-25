@@ -43,6 +43,7 @@ interface UseResourceProps {
   resource: any;
   association?: any;
   useSourceId?: any;
+  collection?: any;
   block?: any;
 }
 
@@ -57,7 +58,7 @@ export const useAssociation = (props) => {
 };
 
 const useResource = (props: UseResourceProps) => {
-  const { block, resource, useSourceId } = props;
+  const { block, collection, resource, useSourceId } = props;
   const record = useRecord();
   const api = useAPIClient();
   const { fieldSchema } = useActionContext();
@@ -92,8 +93,10 @@ const useResource = (props: UseResourceProps) => {
   if (sourceId) {
     return api.resource(resource, sourceId);
   }
-
-  return api.resource(resource, record[association?.sourceKey || 'id']);
+  if (record[association?.sourceKey || 'id']) {
+    return api.resource(resource, record[association?.sourceKey || 'id']);
+  }
+  return api.resource(collection);
 };
 
 const useActionParams = (props) => {

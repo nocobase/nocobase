@@ -14,6 +14,7 @@ import Koa, { DefaultContext as KoaDefaultContext, DefaultState as KoaDefaultSta
 import compose from 'koa-compose';
 import lodash from 'lodash';
 import { createACL } from './acl';
+import { AppCommand } from './app-command';
 import { AppSupervisor } from './app-supervisor';
 import { registerCli } from './commands';
 import { ApplicationNotInstall } from './errors/application-not-install';
@@ -22,7 +23,6 @@ import { ApplicationVersion } from './helpers/application-version';
 import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
-import { AppCommand } from './app-command';
 
 const packageJson = require('../package.json');
 
@@ -88,6 +88,7 @@ interface StartOptions {
   cliArgs?: any[];
   dbSync?: boolean;
   checkInstall?: boolean;
+  recover?: boolean;
 }
 
 type MaintainingStatus = 'command_begin' | 'command_end' | 'command_running' | 'command_error';
@@ -471,14 +472,15 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this.setMaintainingMessage('emit afterStart');
     await this.emitAsync('afterStart', this, options);
-    await this.emitStartedEvent();
+    await this.emitStartedEvent(options);
 
     this.stopped = false;
   }
 
-  async emitStartedEvent() {
+  async emitStartedEvent(options: StartOptions = {}) {
     await this.emitAsync('__started', this, {
       maintainingStatus: lodash.cloneDeep(this._maintainingCommandStatus),
+      options,
     });
   }
 
@@ -486,11 +488,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._started;
   }
 
-  async tryReloadOrRestart() {
+  async tryReloadOrRestart(options: StartOptions = {}) {
     if (this._started) {
-      await this.restart();
+      await this.restart(options);
     } else {
-      await this.reload();
+      await this.reload(options);
     }
   }
 

@@ -156,8 +156,12 @@ describe('gateway', () => {
       return JSON.parse(messages[messages.length - 1]);
     };
 
-    beforeEach(async () => {
+    const clearMessages = () => {
       messages = [];
+    };
+
+    beforeEach(async () => {
+      clearMessages();
       port = await startServerWithRandomPort(gateway.startHttpServer.bind(gateway));
     });
 
@@ -171,6 +175,55 @@ describe('gateway', () => {
       });
 
       await waitSecond();
+    });
+
+    describe('plugin manager api', () => {
+      let app;
+
+      beforeEach(async () => {
+        await connectClient(port);
+
+        app = new Application({
+          database: {
+            dialect: 'sqlite',
+            storage: ':memory:',
+          },
+          plugins: ['nocobase'],
+        });
+
+        await waitSecond();
+
+        await app.runAsCLI(['install'], { from: 'user' });
+        await app.runAsCLI(['start'], { from: 'user' });
+        await waitSecond();
+
+        clearMessages();
+      });
+
+      it('should silently handle the exception when the plugin does not exist', async () => {
+        await app.runAsCLI(['pm', 'add', 'not-exists-plugin'], { from: 'user' });
+        await waitSecond();
+      });
+
+      it('should display a notification-type error message when plugin installation fails', async () => {
+        const pluginClass = app.pm.get('mobile-client');
+        pluginClass.install = async () => {
+          throw new Error('install error');
+        };
+
+        await app.runAsCLI(['pm', 'enable', 'mobile-client'], { from: 'user' });
+        await waitSecond();
+
+        const runningMessage = messages
+          .map((m) => {
+            return JSON.parse(m);
+          })
+          .find((m) => {
+            return m.payload.code == 'APP_RUNNING';
+          });
+
+        expect(runningMessage.payload.refresh).not.toBeTruthy();
+      });
     });
 
     it('should receive app error message', async () => {

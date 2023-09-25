@@ -70,12 +70,11 @@ const sidebar = {
       ],
     },
     {
-      title: 'Roadmap & Releases',
-      'title.zh-CN': '路线图 & 发布',
+      title: 'Releases',
+      'title.zh-CN': '产品发布',
       'title.TR-TR': 'Sürüm',
       type: 'group',
       children: [
-        '/welcome/release/roadmap',
         {
           type: 'item',
           title: 'Changelog',

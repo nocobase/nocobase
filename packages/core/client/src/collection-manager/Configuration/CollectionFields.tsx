@@ -25,6 +25,7 @@ import { OverridingCollectionField } from './OverridingCollectionField';
 import { collection } from './schemas/collectionFields';
 import { SyncFieldsAction } from './SyncFieldsAction';
 import { ViewCollectionField } from './ViewInheritedField';
+import { SyncSQLFieldsAction } from './SyncSQLFieldsAction';
 import { Input } from '../../schema-component/antd/input';
 
 const indentStyle = css`
@@ -419,6 +420,7 @@ export const CollectionFields = () => {
           >
             <Action {...deleteProps} />
             <SyncFieldsAction {...syncProps} />
+            <SyncSQLFieldsAction refreshCMList={refreshAsync} />
             <AddCollectionField {...addProps} />
           </Space>
           <Table

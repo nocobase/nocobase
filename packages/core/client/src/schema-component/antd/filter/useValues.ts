@@ -65,6 +65,14 @@ export const useValues = (): UseValuesReturn => {
     const operators = option?.operators;
     const operator = operators?.find?.((item) => item.value === `$${operatorValue}`);
     field.data.dataIndex = dataIndex;
+    if (dataIndex?.length > 1) {
+      const fieldNames = dataIndex.concat();
+      fieldNames.pop();
+      const targetField = getCollectionJoinField(`${name}.${fieldNames.join('.')}`);
+      ctx.field.collectionName = targetField?.target;
+    } else {
+      ctx.field.collectionName = null;
+    }
     field.data.operators = operators;
     field.data.operator = operator;
     field.data.schema = merge(option?.schema, operator?.schema);
@@ -84,6 +92,14 @@ export const useValues = (): UseValuesReturn => {
       const s2 = cloneDeep(operator?.schema);
       field.data.schema = merge(s1, s2);
       field.data.dataIndex = dataIndex;
+      if (dataIndex?.length > 1) {
+        const fieldNames = dataIndex.concat();
+        fieldNames.pop();
+        const targetField = getCollectionJoinField(`${name}.${fieldNames.join('.')}`);
+        ctx.field.collectionName = targetField?.target;
+      } else {
+        ctx.field.collectionName = null;
+      }
       field.data.value = operator?.noValue ? operator.default || true : undefined;
       data2value();
     },
