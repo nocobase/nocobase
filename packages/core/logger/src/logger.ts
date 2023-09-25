@@ -25,7 +25,7 @@ export const getLoggerTransport = () =>
 
 export const getLoggerFormat = () => process.env.LOGGER_FORMAT || 'delimiter';
 
-const delimiterFormat = winston.format.combine(
+export const delimiterFormat = winston.format.combine(
   winston.format.colorize(),
   winston.format.printf((info) =>
     Object.entries(info)
@@ -121,7 +121,6 @@ export const createLogger = (options: LoggerOptions) => {
     ...rest,
     transports: getTransports(options),
     format: winston.format.combine(
-      winston.format.colorize(),
       winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
       options.format || winston.format.simple(),
       winston.format.json({ deterministic: false }),
