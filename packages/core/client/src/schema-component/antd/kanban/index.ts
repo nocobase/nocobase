@@ -13,6 +13,6 @@ Kanban.Card.Designer = KanbanCardDesigner;
 Kanban.Card.Designer.TitleSwitch = KanbanCardDesignerTitleSwitch;
 Kanban.Designer = KanbanDesigner;
 
-const KanbanV2 = Kanban;
+// const KanbanV2 = Kanban;
 
-export { Kanban, KanbanV2 };
+export { Kanban };

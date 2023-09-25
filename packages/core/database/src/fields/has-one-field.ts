@@ -11,6 +11,7 @@ import { Collection } from '../collection';
 import { Reference } from '../features/ReferencesMap';
 import { checkIdentifier } from '../utils';
 import { BaseRelationFieldOptions, RelationField } from './relation-field';
+import { BelongsToField } from './belongs-to-field';
 
 export interface HasOneFieldOptions extends HasOneOptions {
   /**
@@ -171,7 +172,7 @@ export class HasOneField extends RelationField {
           return true;
         }
 
-        return field.type === 'belongsTo' && field.foreignKey === foreignKey;
+        return field.type === 'belongsTo' && (field as BelongsToField).foreignKey === foreignKey;
       });
 
       if (!field) {
