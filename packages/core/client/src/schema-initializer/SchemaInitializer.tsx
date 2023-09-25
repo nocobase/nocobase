@@ -19,7 +19,7 @@ import { useCollectMenuItem, useMenuItem } from '../hooks/useMenuItem';
 import { Icon } from '../icon';
 import { SchemaComponent, useActionContext } from '../schema-component';
 import { useCompile, useDesignable } from '../schema-component/hooks';
-import { SelectCollection } from './SelectCollection';
+import { SearchCollections } from './SearchCollections';
 import { useStyles } from './style';
 import {
   SchemaInitializerButtonProps,
@@ -60,7 +60,7 @@ const CollectionSearch = ({
     };
   }
 
-  return <SelectCollection value={searchValue} onChange={onChange} />;
+  return <SearchCollections value={searchValue} onChange={onChange} />;
 };
 
 const LoadingItem = ({ loadMore }) => {
