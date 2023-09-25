@@ -45,7 +45,6 @@ export class PluginManager {
       const plugins = await getPlugins({
         requirejs: this.app.requirejs,
         pluginData: pluginList,
-        baseURL: this.app.apiClient.axios?.defaults?.baseURL,
         devDynamicImport: this.app.devDynamicImport,
       });
       for await (const plugin of plugins) {
