@@ -48,20 +48,21 @@ export const LogsDownloader = React.memo((props) => {
       .then((res) => res.data?.data),
   );
   const data2tree = useCallback(
-    (data: Log[], parent: number): DataNode[] =>
+    (data: Log[], parent: string): DataNode[] =>
       data.map((log: Log, index: number) => {
+        const key = `${parent}-${index}`;
         if (typeof log === 'string') {
           return {
             title: log,
-            key: `${parent}-${index}`,
+            key,
             icon: <FileOutlined />,
           };
         }
         return {
           title: log.name,
-          key: `${parent}-${index}`,
+          key,
           icon: <FolderOutlined />,
-          children: data2tree(log.files, index),
+          children: data2tree(log.files, key),
         };
       }),
     [],
@@ -73,7 +74,7 @@ export const LogsDownloader = React.memo((props) => {
       {
         title: t('All'),
         key: '0',
-        children: data2tree(files as Log[], 0),
+        children: data2tree(files as Log[], '0'),
       },
     ];
   }, [data, data2tree, t]);
