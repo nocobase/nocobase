@@ -17,6 +17,7 @@ import { beforeCreateForViewCollection } from './hooks/beforeCreateForViewCollec
 import { CollectionModel, FieldModel } from './models';
 import collectionActions from './resourcers/collections';
 import viewResourcer from './resourcers/views';
+import sqlResourcer from './resourcers/sql';
 
 export class CollectionManagerPlugin extends Plugin {
   public schema: string;
@@ -51,7 +52,7 @@ export class CollectionManagerPlugin extends Plugin {
 
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.collections`,
-      actions: ['collections:*', 'collections.fields:*', 'dbViews:*', 'collectionCategories:*'],
+      actions: ['collections:*', 'collections.fields:*', 'dbViews:*', 'collectionCategories:*', 'sqlCollection:*'],
     });
 
     this.app.db.on('collections.beforeCreate', async (model) => {
@@ -277,6 +278,7 @@ export class CollectionManagerPlugin extends Plugin {
     });
 
     this.app.resource(viewResourcer);
+    this.app.resource(sqlResourcer);
     this.app.actions(collectionActions);
 
     const handleFieldSource = (fields) => {

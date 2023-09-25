@@ -6,6 +6,7 @@ interface LoadOptions extends Transactionable {
   // TODO
   skipField?: boolean | Array<string>;
   skipExist?: boolean;
+  resetFields?: boolean;
 }
 
 export class CollectionModel extends MagicAttributeModel {
@@ -14,7 +15,7 @@ export class CollectionModel extends MagicAttributeModel {
   }
 
   async load(loadOptions: LoadOptions = {}) {
-    const { skipExist, skipField, transaction } = loadOptions;
+    const { skipExist, skipField, resetFields, transaction } = loadOptions;
     const name = this.get('name');
 
     let collection: Collection;
@@ -23,12 +24,15 @@ export class CollectionModel extends MagicAttributeModel {
       ...this.get(),
       fields: [],
     };
-
     if (this.db.hasCollection(name)) {
       collection = this.db.getCollection(name);
 
       if (skipExist) {
         return collection;
+      }
+
+      if (resetFields) {
+        collection.resetFields();
       }
 
       collection.updateOptions(collectionOptions);

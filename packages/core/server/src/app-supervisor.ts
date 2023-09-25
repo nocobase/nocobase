@@ -260,12 +260,14 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     });
 
     app.on('__started', async (_app, options) => {
-      const { maintainingStatus } = options;
+      const { maintainingStatus, options: startOptions } = options;
+
       if (
         maintainingStatus &&
         ['install', 'upgrade', 'pm.add', 'pm.update', 'pm.enable', 'pm.disable', 'pm.remove'].includes(
           maintainingStatus.command.name,
-        )
+        ) &&
+        !startOptions.recover
       ) {
         this.setAppStatus(app.name, 'running', {
           refresh: true,
