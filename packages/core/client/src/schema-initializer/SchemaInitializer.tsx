@@ -4,6 +4,7 @@ import { Button, Dropdown, MenuProps, Switch } from 'antd';
 import classNames from 'classnames';
 // @ts-ignore
 import React, { createContext, useCallback, useContext, useMemo, useRef, useState, useTransition } from 'react';
+import { useCollection } from '../collection-manager';
 import { useCollectMenuItem, useMenuItem } from '../hooks/useMenuItem';
 import { Icon } from '../icon';
 import { SchemaComponent, useActionContext } from '../schema-component';
@@ -51,6 +52,7 @@ SchemaInitializer.Button = observer(
     const [isPending, startTransition] = useTransition();
     const menuItems = useRef([]);
     const { styles } = useStyles();
+    const { name } = useCollection();
 
     const changeMenu = (v: boolean) => {
       // 这里是为了防止当鼠标快速滑过时，终止菜单的渲染，防止卡顿
@@ -63,9 +65,11 @@ SchemaInitializer.Button = observer(
       return null;
     }
 
-    const buttonDom = component ? (
-      component
-    ) : (
+    if (others['data-testid'] && name) {
+      others['data-testid'] = `${others['data-testid']}-${name}`;
+    }
+
+    const buttonDom = component || (
       <Button
         type={'dashed'}
         style={{
@@ -300,7 +304,7 @@ SchemaInitializer.ActionModal = function ActionModal(props: SchemaInitializerAct
       async run() {
         await onCancel?.();
         ctx.setVisible(false);
-        form.reset();
+        void form.reset();
       },
     };
   }, [onCancel]);
@@ -315,7 +319,7 @@ SchemaInitializer.ActionModal = function ActionModal(props: SchemaInitializerAct
         await form.validate();
         await onSubmit?.(form.values);
         ctx.setVisible(false);
-        form.reset();
+        void form.reset();
       },
     };
   }, [onSubmit]);

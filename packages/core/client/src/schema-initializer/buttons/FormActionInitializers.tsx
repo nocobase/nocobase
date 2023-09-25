@@ -26,7 +26,7 @@ const FormTriggerWorkflowActionInitializer = {
 
 // 表单的操作配置
 export const FormActionInitializers = {
-  'data-testid': 'configure-actions-button-of-form',
+  'data-testid': 'configure-actions-button-of-form-block',
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
   items: [

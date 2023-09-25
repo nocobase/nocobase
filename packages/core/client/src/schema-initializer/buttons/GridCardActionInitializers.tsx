@@ -2,7 +2,7 @@ import { useCollection } from '../../collection-manager';
 
 // 表单的操作配置
 export const GridCardActionInitializers = {
-  'data-testid': 'configure-actions-button-of-grid-card',
+  'data-testid': 'configure-actions-button-of-grid-card-block',
   title: "{{t('Configure actions')}}",
   icon: 'SettingOutlined',
   style: {

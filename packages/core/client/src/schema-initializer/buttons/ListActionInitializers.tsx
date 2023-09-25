@@ -2,7 +2,7 @@ import { useCollection } from '../../collection-manager';
 
 // 表单的操作配置
 export const ListActionInitializers = {
-  'data-testid': 'configure-actions-button-of-list',
+  'data-testid': 'configure-actions-button-of-list-block',
   title: "{{t('Configure actions')}}",
   icon: 'SettingOutlined',
   style: {
