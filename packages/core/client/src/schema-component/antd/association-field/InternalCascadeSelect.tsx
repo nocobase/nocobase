@@ -176,6 +176,7 @@ const CascadeSelect = connect((props) => {
         return (
           value.children && (
             <AntdSelect
+              disabled={props.disabled}
               key={`${value.value?.id}+ ${value.key} + ${fieldNames.label}`}
               allowClear
               showSearch
@@ -261,6 +262,9 @@ export const InternalCascadeSelect = observer(
                 type: 'string',
                 'x-decorator': 'FormItem',
                 'x-component': AssociationCascadeSelect,
+                'x-component-props': {
+                  ...props,
+                },
               },
               remove: {
                 type: 'void',
