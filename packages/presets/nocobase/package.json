@@ -44,7 +44,7 @@
     "@nocobase/plugin-users": "0.14.0-alpha.6",
     "@nocobase/plugin-verification": "0.14.0-alpha.6",
     "@nocobase/plugin-workflow": "0.14.0-alpha.6",
-    "@nocobase/plugin-custom-request": "0.13.0-alpha.4",
+    "@nocobase/plugin-custom-request": "0.14.0-alpha.6",
     "@nocobase/server": "0.14.0-alpha.6",
     "cronstrue": "^2.11.0"
   },
