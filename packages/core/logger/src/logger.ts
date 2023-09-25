@@ -2,6 +2,7 @@ import winston, { Logger } from 'winston';
 import path from 'path';
 import chalk from 'chalk';
 import 'winston-daily-rotate-file';
+import { SystemLoggerOptions } from './system-logger';
 const DEFAULT_DELIMITER = '|';
 
 interface LoggerOptions extends Omit<winston.LoggerOptions, 'transports'> {
@@ -114,13 +115,16 @@ export const createLogger = (options: LoggerOptions) => {
   if (process.env.GITHUB_ACTIONS) {
     return simpleLogger({ level: 'debug', format: winston.format.simple() });
   }
+  const { transports, ...rest } = options;
   const winstonOptions = {
     level: getLoggerLevel(),
+    ...rest,
     transports: getTransports(options),
-    ...options,
     format: winston.format.combine(
+      winston.format.colorize(),
       winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
       options.format || winston.format.simple(),
+      winston.format.json({ deterministic: false }),
     ),
   };
   return winston.createLogger(winstonOptions);
@@ -143,8 +147,13 @@ export const simpleLogger = (options?: winston.LoggerOptions) =>
   });
 
 export { Logger, LoggerOptions };
-export interface AppLoggerOptions extends LoggerOptions {
+interface ReqeustLoggerOptions extends LoggerOptions {
   skip?: (ctx?: any) => Promise<boolean>;
   requestWhitelist?: string[];
   responseWhitelist?: string[];
+}
+
+export interface AppLoggerOptions {
+  request: ReqeustLoggerOptions;
+  system: SystemLoggerOptions;
 }

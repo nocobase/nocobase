@@ -1,6 +1,12 @@
 import { AppLoggerOptions, getLoggerLevel, getLoggerTransport } from '@nocobase/logger';
 
 export default {
-  transports: getLoggerTransport(),
-  level: getLoggerLevel(),
+  request: {
+    transports: getLoggerTransport(),
+    level: getLoggerLevel(),
+  },
+  system: {
+    transports: getLoggerTransport(),
+    level: getLoggerLevel(),
+  },
 } as AppLoggerOptions;

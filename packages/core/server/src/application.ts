@@ -660,7 +660,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   protected init() {
     const options = this.options;
 
-    this._logger = systemLogger(this.name).child({
+    this._logger = systemLogger({ app: this.name, ...options.logger.system }).child({
       reqId: this.context.reqId,
       module: 'application',
     });

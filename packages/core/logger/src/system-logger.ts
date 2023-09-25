@@ -3,7 +3,7 @@ import { LoggerOptions, createLogger } from './logger';
 import Transport from 'winston-transport';
 import { SPLAT } from 'triple-beam';
 
-interface SystemLoggerOptions extends LoggerOptions {
+export interface SystemLoggerOptions extends LoggerOptions {
   seperateError?: boolean; // print error seperately, default true
 }
 
@@ -65,8 +65,9 @@ class SystemLoggerTransport extends Transport {
 }
 
 export const logger = (options: SystemLoggerOptions) =>
-  createLogger({
+  winston.createLogger({
     transports: [new SystemLoggerTransport(options)],
   });
 
-export const systemLogger = (app: string) => logger({ filename: `${app}_system`, seperateError: true });
+export const systemLogger = ({ app, ...options }: SystemLoggerOptions & { app?: string }) =>
+  logger({ filename: `${app}_system`, seperateError: true, ...options });
