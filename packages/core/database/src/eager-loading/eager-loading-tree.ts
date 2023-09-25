@@ -3,6 +3,7 @@ import { Association, HasOne, Includeable, Model, ModelStatic, Op, Transaction }
 import Database from '../database';
 import { appendChildCollectionNameAfterRepositoryFind } from '../listeners/append-child-collection-name-after-repository-find';
 import { OptionsParser } from '../options-parser';
+import { AdjacencyListRepository } from '../repositories/tree-repository/adjacency-list-repository';
 
 interface EagerLoadingNode {
   model: ModelStatic<any>;
@@ -15,6 +16,7 @@ interface EagerLoadingNode {
   order?: any;
   where?: any;
   inspectInheritAttribute?: boolean;
+  includeOptions?: any;
 }
 
 const pushAttribute = (node, attribute) => {
@@ -106,6 +108,7 @@ export class EagerLoadingTree {
           parent: eagerLoadingTreeParent,
           where: include.where,
           children: [],
+          includeOption: include.options || {},
         });
 
         if (associationType == 'HasOne' || associationType == 'HasMany') {
@@ -258,8 +261,9 @@ export class EagerLoadingTree {
 
         if (associationType == 'BelongsTo') {
           const foreignKey = association.foreignKey;
-
           const parentInstancesForeignKeyValues = node.parent.instances.map((instance) => instance.get(foreignKey));
+
+          const collection = this.db.modelCollection.get(node.model);
 
           instances = await node.model.findAll({
             transaction,
@@ -268,6 +272,47 @@ export class EagerLoadingTree {
             },
             attributes: node.attributes,
           });
+
+          // load parent instances recursively
+          if (node.includeOption.recursively && instances.length > 0) {
+            const targetKey = association.targetKey;
+            const sql = AdjacencyListRepository.queryParentSQL({
+              db: this.db,
+              collection,
+              foreignKey,
+              targetKey,
+              nodeIds: instances.map((instance) => instance.get(targetKey)),
+            });
+
+            const results = await this.db.sequelize.query(sql, {
+              type: 'SELECT',
+              transaction,
+            });
+
+            const parentInstances = await node.model.findAll({
+              transaction,
+              where: {
+                [association.targetKey]: results.map((result) => result[targetKey]),
+              },
+              attributes: node.attributes,
+            });
+
+            const setInstanceParent = (instance) => {
+              const parentInstance = parentInstances.find(
+                (parentInstance) => parentInstance.get(targetKey) == instance.get(foreignKey),
+              );
+              if (!parentInstance) {
+                return;
+              }
+
+              setInstanceParent(parentInstance);
+              instance[association.as] = instance.dataValues[association.as] = parentInstance;
+            };
+
+            for (const instance of instances) {
+              setInstanceParent(instance);
+            }
+          }
         }
 
         if (associationType == 'BelongsToMany') {
