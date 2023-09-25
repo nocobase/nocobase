@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/build",
-  "version": "0.14.0-alpha.3",
+  "version": "0.14.0-alpha.6",
   "description": "Library build tool based on rollup.",
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",
@@ -20,6 +20,7 @@
     "@types/tar": "^6.1.5",
     "@vercel/ncc": "0.36.1",
     "chalk": "2.4.2",
+    "esbuild-register": "^3.4.2",
     "fast-glob": "^3.3.1",
     "gulp": "4.0.2",
     "gulp-typescript": "6.0.0-alpha.1",
@@ -29,8 +30,7 @@
     "update-notifier": "3.0.0",
     "vite-plugin-css-injected-by-js": "^3.2.1",
     "vite-plugin-lib-inject-css": "1.2.0",
-    "yargs-parser": "13.1.2",
-    "esbuild-register": "^3.4.2"
+    "yargs-parser": "13.1.2"
   },
   "license": "Apache-2.0",
   "scripts": {

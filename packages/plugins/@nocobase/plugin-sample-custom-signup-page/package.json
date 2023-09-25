@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-sample-custom-signup-page",
-  "version": "0.14.0-alpha.3",
+  "version": "0.14.0-alpha.6",
   "main": "./dist/server/index.js",
   "devDependencies": {
     "@formily/react": "2.x",

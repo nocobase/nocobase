@@ -4,7 +4,7 @@
   "displayName.zh-CN": "短信认证",
   "description": "SMS authentication for NocoBase",
   "description.zh-CN": "SMS authentication for NocoBase",
-  "version": "0.14.0-alpha.3",
+  "version": "0.14.0-alpha.6",
   "main": "./dist/server/index.js",
   "devDependencies": {
     "@formily/react": "2.x",
