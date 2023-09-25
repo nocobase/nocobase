@@ -112,9 +112,9 @@ const getTransports = (options: LoggerOptions) => {
 };
 
 export const createLogger = (options: LoggerOptions) => {
-  if (process.env.GITHUB_ACTIONS) {
-    return simpleLogger({ level: 'debug', format: winston.format.simple() });
-  }
+  // if (process.env.GITHUB_ACTIONS) {
+  //   return simpleLogger({ level: 'debug', format: winston.format.simple() });
+  // }
   const { transports, ...rest } = options;
   const winstonOptions = {
     level: getLoggerLevel(),
