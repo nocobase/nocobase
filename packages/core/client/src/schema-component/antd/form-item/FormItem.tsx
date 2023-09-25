@@ -158,6 +158,8 @@ FormItem.Designer = function Designer() {
   const showFieldMode = isAssociationField && fieldModeOptions && !isTableField;
   const showModeSelect = showFieldMode && isPickerMode;
   const isDateField = ['datetime', 'createdAt', 'updatedAt'].includes(collectionField?.interface);
+  const isAttachmentField =
+    ['attachment'].includes(collectionField?.interface) || targetCollection?.template === 'file';
 
   return (
     <GeneralSchemaDesigner>
@@ -659,6 +661,33 @@ FormItem.Designer = function Designer() {
         />
       )}
       {isDateField && <SchemaSettings.DataFormat fieldSchema={fieldSchema} />}
+
+      {isAttachmentField && field.readPretty && (
+        <SchemaSettings.SelectItem
+          key="size"
+          title={t('Size')}
+          options={[
+            { label: t('Large'), value: 'large' },
+            { label: t('Default'), value: 'default' },
+            { label: t('Small'), value: 'small' },
+          ]}
+          value={field?.componentProps?.size || 'default'}
+          onChange={(size) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props']['size'] = size;
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            field.componentProps = field.componentProps || {};
+            field.componentProps.size = size;
+            dn.emit('patch', {
+              schema,
+            });
+            dn.refresh();
+          }}
+        />
+      )}
 
       {isAssociationField && ['Tag'].includes(fieldMode) && (
         <SchemaSettings.SelectItem
