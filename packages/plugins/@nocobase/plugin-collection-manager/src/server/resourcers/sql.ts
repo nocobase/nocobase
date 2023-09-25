@@ -27,7 +27,7 @@ const updateCollection = async (ctx: Context, transaction: any) => {
 };
 
 export default {
-  name: 'sql-collection',
+  name: 'sqlCollection',
   actions: {
     execute: async (ctx: Context, next: Next) => {
       let {

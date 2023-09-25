@@ -102,7 +102,7 @@ export const useUpdateCollectionActionAndRefreshCM = (options) => {
   const { resource, targetKey } = useResourceContext();
   const { [targetKey]: filterByTk, template } = useRecord();
   const api = useAPIClient();
-  const collectionResource = template === 'sql' ? api.resource('sql-collection') : resource;
+  const collectionResource = template === 'sql' ? api.resource('sqlCollection') : resource;
   return {
     async run() {
       await form.submit();

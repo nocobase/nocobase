@@ -102,7 +102,7 @@ const useSyncFromDB = (refreshCMList?: any) => {
       field.data = field.data || {};
       field.data.loading = true;
       try {
-        await api.resource('sql-collection').setFields({
+        await api.resource('sqlCollection').setFields({
           filterByTk,
           values: {
             fields: form.values.fields,

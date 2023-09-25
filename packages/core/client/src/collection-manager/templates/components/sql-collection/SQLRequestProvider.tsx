@@ -16,7 +16,7 @@ export const SQLRequestProvider: React.FC<{
   const result = useRequest(
     (sql: string) =>
       api
-        .resource('sql-collection')
+        .resource('sqlCollection')
         .execute({
           values: {
             sql,
