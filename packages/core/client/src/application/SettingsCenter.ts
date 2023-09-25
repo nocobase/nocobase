@@ -49,7 +49,7 @@ export class SettingsCenter {
   }
 
   remove(name: string) {
-    // 删除自身和子页面
+    // delete self and children
     Object.keys(this.settings).forEach((key) => {
       if (key.startsWith(name)) {
         delete this.settings[key];

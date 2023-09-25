@@ -44,7 +44,7 @@ export const SettingsCenterConfigure = () => {
   const { styles } = useStyles();
   const record = useRecord();
   const api = useAPIClient();
-  const settingsCenterList = useSettingsCenterList();
+  const settings = useSettingsCenterList();
   const allKeys = Object.keys(app.settingsCenter.settings).map((v) => getPmKey(v));
   const [snippets, setSnippets] = useState<string[]>([]);
   const allChecked = useMemo(
@@ -105,13 +105,14 @@ export const SettingsCenterConfigure = () => {
               <Checkbox
                 checked={allChecked}
                 onChange={async () => {
+                  const values = allKeys.map((v) => '!' + v);
                   if (!allChecked) {
                     await resource.remove({
-                      values: allKeys.map((v) => '!' + v),
+                      values,
                     });
                   } else {
                     await resource.add({
-                      values: allKeys.map((v) => '!' + v),
+                      values,
                     });
                   }
                   refresh();
@@ -127,7 +128,7 @@ export const SettingsCenterConfigure = () => {
           },
         },
       ]}
-      dataSource={settingsCenterList}
+      dataSource={settings}
     />
   );
 };
