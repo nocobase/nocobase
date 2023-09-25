@@ -41,3 +41,5 @@ export { snakeCase } from './utils';
 export * from './value-parsers';
 export * from './view-collection';
 export * from './view/view-inference';
+export * from './sql-collection';
+export * from './helpers';

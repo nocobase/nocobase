@@ -89,6 +89,12 @@ const getSchema = (schema: IField, record: any, compile) => {
           },
           // @ts-ignore
           ...properties,
+          description: {
+            type: 'string',
+            title: '{{t("Description")}}',
+            'x-decorator': 'FormItem',
+            'x-component': 'Input.TextArea',
+          },
           footer: {
             type: 'void',
             'x-component': 'Action.Drawer.Footer',
@@ -234,28 +240,47 @@ export const AddFieldAction = (props) => {
     return optionArr;
   }, [getTemplate, record]);
   const items = useMemo<MenuProps['items']>(() => {
-    return getFieldOptions().map((option) => {
-      if (option.children.length === 0) {
-        return null;
-      }
-
-      return {
-        type: 'group',
-        label: compile(option.label),
-        title: compile(option.label),
-        key: option.label,
-        children: option.children
-          .filter((child) => !['o2o', 'subTable', 'linkTo'].includes(child.name))
-          .map((child) => {
-            return {
-              label: compile(child.title),
-              title: compile(child.title),
-              key: child.name,
-              dataTargetScope: child.targetScope,
-            };
-          }),
-      };
-    });
+    return getFieldOptions()
+      .map((option) => {
+        if (option.children.length === 0) {
+          return null;
+        }
+        if (record.template === 'view') {
+          return {
+            type: 'group',
+            label: compile(option.label),
+            title: compile(option.label),
+            key: option.label,
+            children: option.children
+              .filter((child) => ['m2o'].includes(child.name))
+              .map((child) => {
+                return {
+                  label: compile(child.title),
+                  title: compile(child.title),
+                  key: child.name,
+                  dataTargetScope: child.targetScope,
+                };
+              }),
+          };
+        }
+        return {
+          type: 'group',
+          label: compile(option.label),
+          title: compile(option.label),
+          key: option.label,
+          children: option.children
+            .filter((child) => !['o2o', 'subTable', 'linkTo'].includes(child.name))
+            .map((child) => {
+              return {
+                label: compile(child.title),
+                title: compile(child.title),
+                key: child.name,
+                dataTargetScope: child.targetScope,
+              };
+            }),
+        };
+      })
+      .filter((v) => v.children.length);
   }, [getFieldOptions]);
   const menu = useMemo<MenuProps>(() => {
     return {
@@ -276,9 +301,8 @@ export const AddFieldAction = (props) => {
       items,
     };
   }, [getInterface, items, record]);
-
   return (
-    record.template !== 'view' && (
+    record.template !== 'sql' && (
       <RecordProvider record={record}>
         <ActionContextProvider value={{ visible, setVisible }}>
           <Dropdown getPopupContainer={getContainer} trigger={trigger} align={align} menu={menu}>

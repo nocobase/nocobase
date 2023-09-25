@@ -8,6 +8,7 @@ NocoBase is in early stage of development and is subject to frequent changes, pl
 
 ## Recent major updates
 
+- [v0.14: New plugin manager, supports adding plugins through UI - 2023/09/11](https://docs.nocobase.com/welcome/release/v14-changelog)
 - [v0.13: New application status flow - 2023/08/24](https://docs.nocobase.com/welcome/release/v13-changelog)
 - [v0.12: New plugin build tool - 2023/08/01](https://docs.nocobase.com/welcome/release/v12-changelog)
 - [v0.11: New client application, plugin and router - 2023/07/08](http://docs.nocobase.com/welcome/release/v11-changelog)
@@ -53,14 +54,13 @@ Most form-, table-, or process-driven codeless products create data structures d
 
 NocoBase adopts the design idea of separating the data structure from the user interface, allowing you to create any number of blocks (data views) for the data collections, with different type, styles, content, and actions in each block. This takes into account the simplicity of codeless operation, but also the flexibility like native development.
 
-
-![2.collection-block.png](https://docs.nocobase.com/static/2.collection-block.7dcc928f.png)
+![2.collection-block.png](https://nocobase.oss-cn-beijing.aliyuncs.com/25506f38365436d11847b32fc8533bc9.png)
 
 ### 2. What you see is what you get
 
 NocoBase enables the development of complex and distinctive business systems, but this does not mean that complex and specialized operations are required. With a single click, configuration options can be displayed on the usage interface, which means that administrators with system configuration rights can configure the user interface directly with WYSIWYG operations.
 
-![2.user-root.gif](https://docs.nocobase.com/static/2.user-root.824f5ef2.gif)
+![2.user-root.gif](https://nocobase.oss-cn-beijing.aliyuncs.com/7991441ff35f05c49e0d72c2a23fa33b.gif)
 
 ### 3. Everything is a plugin
 

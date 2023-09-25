@@ -54,6 +54,16 @@ export const collection: CollectionOptions = {
         'x-component': 'Input',
       },
     },
+    {
+      type: 'string',
+      name: 'description',
+      interface: 'input',
+      uiSchema: {
+        title: '{{ t("Description") }}',
+        type: 'string',
+        'x-component': 'Input.TextArea',
+      },
+    },
   ],
 };
 
@@ -110,6 +120,14 @@ export const collectionFieldSchema: ISchema = {
           type: 'void',
           title: '{{ t("Sync from database") }}',
           'x-component': 'SyncFieldsAction',
+          'x-component-props': {
+            type: 'primary',
+          },
+        },
+        syncSQL: {
+          type: 'void',
+          title: '{{ t("Sync from database") }}',
+          'x-component': 'SyncSQLFieldsAction',
           'x-component-props': {
             type: 'primary',
           },
@@ -172,6 +190,18 @@ export const collectionFieldSchema: ISchema = {
           },
         },
         column4: {
+          type: 'void',
+          'x-decorator': 'Table.Column.Decorator',
+          'x-component': 'Table.Column',
+          title: '{{ t("Description") }}',
+          properties: {
+            interface: {
+              'x-component': 'CollectionField',
+              'x-read-pretty': true,
+            },
+          },
+        },
+        column5: {
           type: 'void',
           title: '{{ t("Actions") }}',
           'x-component': 'Table.Column',

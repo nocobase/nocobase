@@ -14,6 +14,65 @@ describe('find with associations', () => {
     await db.close();
   });
 
+  it('should filter has many with limit', async () => {
+    const User = db.collection({
+      name: 'users',
+      fields: [
+        { type: 'string', name: 'name' },
+        {
+          type: 'hasMany',
+          name: 'posts',
+        },
+      ],
+    });
+
+    const Post = db.collection({
+      name: 'posts',
+      fields: [
+        { type: 'string', name: 'title' },
+        { type: 'belongsTo', name: 'user' },
+      ],
+    });
+
+    await db.sync();
+
+    await User.repository.create({
+      values: [
+        {
+          name: 'u1',
+          posts: [
+            {
+              title: 'u1p1',
+            },
+            {
+              title: 'u1p2',
+            },
+          ],
+        },
+        {
+          name: 'u2',
+          posts: [
+            {
+              title: 'u2p1',
+            },
+            {
+              title: 'u2p2',
+            },
+          ],
+        },
+      ],
+    });
+
+    const users = await User.repository.find({
+      filter: {
+        'posts.title.$includes': 'p',
+      },
+      limit: 2,
+    });
+
+    expect(users.length).toEqual(2);
+  });
+
   it('should filter by association array field', async () => {
     const User = db.collection({
       name: 'users',

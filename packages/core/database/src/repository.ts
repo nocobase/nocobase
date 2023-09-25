@@ -37,8 +37,6 @@ import { UpdateGuard } from './update-guard';
 
 const debug = require('debug')('noco-database');
 
-export interface IRepository {}
-
 interface CreateManyOptions extends BulkCreateOptions {
   records: Values[];
 }
@@ -145,7 +143,7 @@ export interface UpdateOptions extends Omit<SequelizeUpdateOptions, 'where'> {
   context?: any;
 }
 
-interface UpdateManyOptions extends UpdateOptions {
+interface UpdateManyOptions extends Omit<UpdateOptions, 'values'> {
   records: Values[];
 }
 
@@ -221,9 +219,7 @@ interface FirstOrCreateOptions extends Transactionable {
   values?: Values;
 }
 
-export class Repository<TModelAttributes extends {} = any, TCreationAttributes extends {} = TModelAttributes>
-  implements IRepository
-{
+export class Repository<TModelAttributes extends {} = any, TCreationAttributes extends {} = TModelAttributes> {
   database: Database;
   collection: Collection;
   model: ModelStatic<Model>;
@@ -242,7 +238,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       const chunks = key.split('.');
       return chunks
         .filter((chunk) => {
-          return !Boolean(chunk.match(/\d+/));
+          return !chunk.match(/\d+/);
         })
         .join('.');
     };
@@ -395,44 +391,16 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     let rows;
 
     if (opts.include && opts.include.length > 0) {
-      // @ts-ignore
-      const primaryKeyField = model.primaryKeyField || model.primaryKeyAttribute;
-
-      // find all ids
-      const ids = (
-        await model.findAll({
-          ...opts,
-          includeIgnoreAttributes: false,
-          attributes: [primaryKeyField],
-          group: `${model.name}.${primaryKeyField}`,
-          transaction,
-          include: opts.include.filter((include) => {
-            return (
-              Object.keys(include.where || {}).length > 0 || JSON.stringify(opts?.filter)?.includes(include.association)
-            );
-          }),
-        } as any)
-      ).map((row) => {
-        return { row, pk: row.get(primaryKeyField) };
-      });
-
-      if (ids.length == 0) {
-        return [];
-      }
-
-      // find all rows
       const eagerLoadingTree = EagerLoadingTree.buildFromSequelizeOptions({
         model,
         rootAttributes: opts.attributes,
         includeOption: opts.include,
         rootOrder: opts.order,
+        rootQueryOptions: opts,
         db: this.database,
       });
 
-      await eagerLoadingTree.load(
-        ids.map((i) => i.pk),
-        transaction,
-      );
+      await eagerLoadingTree.load(transaction);
 
       rows = eagerLoadingTree.root.instances;
     } else {

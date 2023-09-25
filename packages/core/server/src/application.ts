@@ -4,7 +4,7 @@ import { actions as authActions, AuthManager } from '@nocobase/auth';
 import { Cache, createCache, ICacheConfig } from '@nocobase/cache';
 import Database, { CollectionOptions, IDatabaseOptions } from '@nocobase/database';
 import { AppLoggerOptions, createAppLogger, Logger } from '@nocobase/logger';
-import Resourcer, { ResourceOptions } from '@nocobase/resourcer';
+import { ResourceOptions, Resourcer } from '@nocobase/resourcer';
 import { applyMixins, AsyncEmitter, Toposort, ToposortOptions } from '@nocobase/utils';
 import chalk from 'chalk';
 import { Command, CommandOptions, ParseOptions } from 'commander';
@@ -14,6 +14,7 @@ import Koa, { DefaultContext as KoaDefaultContext, DefaultState as KoaDefaultSta
 import compose from 'koa-compose';
 import lodash from 'lodash';
 import { createACL } from './acl';
+import { AppCommand } from './app-command';
 import { AppSupervisor } from './app-supervisor';
 import { registerCli } from './commands';
 import { ApplicationNotInstall } from './errors/application-not-install';
@@ -87,6 +88,7 @@ interface StartOptions {
   cliArgs?: any[];
   dbSync?: boolean;
   checkInstall?: boolean;
+  recover?: boolean;
 }
 
 type MaintainingStatus = 'command_begin' | 'command_end' | 'command_running' | 'command_error';
@@ -117,6 +119,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   private _maintaining = false;
   private _maintainingCommandStatus: MaintainingCommandStatus;
   private _maintainingStatusBeforeCommand: MaintainingCommandStatus | null;
+  private _actionCommand: Command;
 
   constructor(public options: ApplicationOptions) {
     super();
@@ -162,7 +165,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._cache;
   }
 
-  protected _cli: Command;
+  protected _cli: AppCommand;
 
   get cli() {
     return this._cli;
@@ -285,7 +288,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this.resourcer.registerActions(handlers);
   }
 
-  command(name: string, desc?: string, opts?: CommandOptions): Command {
+  command(name: string, desc?: string, opts?: CommandOptions): AppCommand {
     return this.cli.command(name, desc, opts).allowUnknownOption();
   }
 
@@ -303,7 +306,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       this.log.info(`app.reload()`);
       const oldDb = this._db;
       this.init();
-      await oldDb.close();
+      if (!oldDb.closed()) {
+        await oldDb.close();
+      }
     }
 
     this.setMaintainingMessage('init plugins');
@@ -350,7 +355,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       return;
     }
     this._authenticated = true;
-    await this.db.auth({ retry: 30 });
+    await this.db.auth();
     await this.dbVersionCheck({ exit: true });
     await this.db.prepare();
   }
@@ -360,9 +365,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   createCli() {
-    return new Command('nocobase')
+    const command = new AppCommand('nocobase')
       .usage('[command] [options]')
       .hook('preAction', async (_, actionCommand) => {
+        this._actionCommand = actionCommand;
         this.activatedCommand = {
           name: getCommandFullName(actionCommand),
         };
@@ -385,9 +391,15 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
           await this.restart();
         }
       });
+
+    command.exitOverride((err) => {
+      throw err;
+    });
+
+    return command;
   }
 
-  async runAsCLI(argv = process.argv, options?: ParseOptions) {
+  async runAsCLI(argv = process.argv, options?: ParseOptions & { throwError?: boolean }) {
     if (this.activatedCommand) {
       return;
     }
@@ -404,13 +416,34 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
       return command;
     } catch (error) {
-      console.log(`run command ${this.activatedCommand.name} error:`, error);
+      console.log({ error });
+      if (!this.activatedCommand) {
+        this.activatedCommand = {
+          name: 'unknown',
+        };
+      }
+
       this.setMaintaining({
         status: 'command_error',
         command: this.activatedCommand,
         error,
       });
+
+      if (options?.throwError) {
+        throw error;
+      }
     } finally {
+      const _actionCommand = this._actionCommand;
+      if (_actionCommand) {
+        const options = _actionCommand['options'];
+        _actionCommand['_optionValues'] = {};
+        _actionCommand['_optionValueSources'] = {};
+        _actionCommand['options'] = [];
+        for (const option of options) {
+          _actionCommand.addOption(option);
+        }
+      }
+      this._actionCommand = null;
       this.activatedCommand = null;
     }
   }
@@ -439,19 +472,27 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this.setMaintainingMessage('emit afterStart');
     await this.emitAsync('afterStart', this, options);
-    await this.emitAsync('__started', this, options);
+    await this.emitStartedEvent(options);
+
     this.stopped = false;
+  }
+
+  async emitStartedEvent(options: StartOptions = {}) {
+    await this.emitAsync('__started', this, {
+      maintainingStatus: lodash.cloneDeep(this._maintainingCommandStatus),
+      options,
+    });
   }
 
   async isStarted() {
     return this._started;
   }
 
-  async tryReloadOrRestart() {
+  async tryReloadOrRestart(options: StartOptions = {}) {
     if (this._started) {
-      await this.restart();
+      await this.restart(options);
     } else {
-      await this.reload();
+      await this.reload(options);
     }
   }
 
@@ -459,7 +500,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     if (!this._started) {
       return;
     }
+
     this._started = false;
+    await this.emitAsync('beforeStop');
     await this.reload(options);
     await this.start(options);
     this.emit('__restarted', this, options);
@@ -487,6 +530,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
 
     await this.emitAsync('afterStop', this, options);
+
     this.stopped = true;
     this.log.info(`${this.name} is stopped`);
     this._started = false;

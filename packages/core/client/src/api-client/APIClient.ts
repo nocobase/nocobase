@@ -39,6 +39,20 @@ export class APIClient extends APIClientSDK {
     });
     super.interceptors();
     this.useNotificationMiddleware();
+    this.axios.interceptors.response.use(
+      (response) => {
+        return response;
+      },
+      (error) => {
+        const errs = error?.response?.data?.errors || [{ message: 'Server error' }];
+        // Hard code here temporarily
+        // TODO(yangqia): improve error code and message
+        if (errs.find((error: { code?: string }) => error.code === 'ROLE_NOT_FOUND_ERR')) {
+          this.auth.setRole(null);
+        }
+        throw error;
+      },
+    );
   }
 
   useNotificationMiddleware() {
@@ -64,6 +78,7 @@ export class APIClient extends APIClientSDK {
           }
           if (this.app.maintaining) {
             this.app.error = error?.response?.data?.error;
+            throw error;
             return;
           } else if (this.app.error) {
             this.app.error = null;

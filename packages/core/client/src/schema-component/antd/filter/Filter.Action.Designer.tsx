@@ -14,7 +14,7 @@ export const useFilterableFields = (collectionName: string) => {
       return false;
     }
     const fieldInterface = getInterface(field.interface);
-    if (!fieldInterface.filterable) {
+    if (!fieldInterface?.filterable) {
       return false;
     }
     return true;
