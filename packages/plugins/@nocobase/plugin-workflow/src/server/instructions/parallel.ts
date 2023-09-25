@@ -81,7 +81,7 @@ export default {
           await processor.run(branch, job);
 
           // find last job of the branch
-          return processor.findBranchLastJob(branch);
+          return processor.findBranchLastJob(branch, job);
         }),
       Promise.resolve(),
     );
