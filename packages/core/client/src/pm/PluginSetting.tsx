@@ -59,7 +59,7 @@ export function useSettingsCenterListWithAuth() {
 }
 
 export const SettingsCenterComponent = () => {
-  const { styles } = useStyles();
+  const { styles, theme } = useStyles();
   const navigate = useNavigate();
   const location = useLocation();
   const settings = useSettingsCenterListWithAuth();
@@ -140,7 +140,12 @@ export const SettingsCenterComponent = () => {
         </Layout.Sider>
         <Layout.Content>
           {currentMenu?.isAllow && (
-            <PageHeader className={styles.pageHeader} ghost={false} title={currentMenu?.title} />
+            <PageHeader
+              className={styles.pageHeader}
+              style={{ paddingBottom: theme.paddingSM }}
+              ghost={false}
+              title={currentMenu?.title}
+            />
           )}
           <div className={styles.pageContent}>
             {currentMenu?.isAllow ? (

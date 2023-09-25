@@ -9,7 +9,7 @@ export const useStyles = createStyles(({ token }) => {
     pageHeader: {
       backgroundColor: token.colorBgContainer,
       paddingTop: token.paddingSM,
-      paddingBottom: token.paddingSM,
+      paddingBottom: 0,
       paddingInline: token.paddingLG,
       '.ant-page-header-footer': { marginBlockStart: '0' },
       '& .ant-tabs-nav': {
