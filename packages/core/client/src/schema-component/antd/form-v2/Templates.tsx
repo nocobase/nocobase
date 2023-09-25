@@ -176,7 +176,7 @@ export const Templates = ({ style = {}, form }) => {
                 filter: template?.dataScope,
               },
             }}
-            onChange={(value) => handleTemplateDataChange(value.id, { ...value, ...template })}
+            onChange={(value) => handleTemplateDataChange(value?.id, { ...value, ...template })}
             targetField={getCollectionJoinField(`${template?.collection}.${template.titleField}`)}
           />
         )}

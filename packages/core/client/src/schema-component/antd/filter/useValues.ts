@@ -5,6 +5,7 @@ import cloneDeep from 'lodash/cloneDeep';
 import get from 'lodash/get';
 import { useContext, useEffect } from 'react';
 import { FilterContext } from './context';
+import { useCollection, useCollectionManager } from '../../../collection-manager';
 
 // import { useValues } from './useValues';
 const findOption = (dataIndex = [], options) => {
@@ -22,7 +23,10 @@ const findOption = (dataIndex = [], options) => {
 
 export const useValues = () => {
   const field = useField<any>();
-  const { options } = useContext(FilterContext) || {};
+  const { name } = useCollection();
+  const { getCollectionJoinField } = useCollectionManager();
+  const ctx: any = useContext(FilterContext) || {};
+  const { options } = ctx;
   const data2value = () => {
     field.value = flat.unflatten({
       [`${field.data.dataIndex?.join('.')}.${field.data?.operator?.value}`]: field.data?.value,
@@ -42,6 +46,14 @@ export const useValues = () => {
     const operators = option?.operators;
     const operator = operators?.find?.((item) => item.value === `$${operatorValue}`);
     field.data.dataIndex = dataIndex;
+    if (dataIndex?.length > 1) {
+      const fieldNames = dataIndex.concat();
+      fieldNames.pop();
+      const targetField = getCollectionJoinField(`${name}.${fieldNames.join('.')}`);
+      ctx.field.collectionName = targetField?.target;
+    } else {
+      ctx.field.collectionName = null;
+    }
     field.data.operators = operators;
     field.data.operator = operator;
     field.data.schema = merge(option?.schema, operator?.schema);
@@ -61,6 +73,14 @@ export const useValues = () => {
       const s2 = cloneDeep(operator?.schema);
       field.data.schema = merge(s1, s2);
       field.data.dataIndex = dataIndex;
+      if (dataIndex?.length > 1) {
+        const fieldNames = dataIndex.concat();
+        fieldNames.pop();
+        const targetField = getCollectionJoinField(`${name}.${fieldNames.join('.')}`);
+        ctx.field.collectionName = targetField?.target;
+      } else {
+        ctx.field.collectionName = null;
+      }
       field.data.value = operator?.noValue ? operator.default || true : undefined;
       data2value();
     },
