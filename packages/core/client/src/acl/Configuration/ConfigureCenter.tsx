@@ -1,11 +1,11 @@
 import { Checkbox, message, Table } from 'antd';
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
-import { SettingsCenterContext } from '../../pm';
+import { SettingsCenterContext, useSettingsCenterList } from '../../pm';
 import { useRecord } from '../../record-provider';
-import { useCompile } from '../../schema-component';
 import { useStyles } from '../style';
+import { useApp } from '../../application';
 
 const getParentKeys = (tree, func, path = []) => {
   if (!tree) return [];
@@ -35,58 +35,38 @@ export const SettingCenterProvider = (props) => {
   return <SettingMenuContext.Provider value={configureItems}>{props.children}</SettingMenuContext.Provider>;
 };
 
-const formatPluginTabs = (data) => {
-  const tabs = [];
-  for (const key in data) {
-    const plugin = data?.[key];
-    for (const tabKey in plugin?.tabs || {}) {
-      const tab = plugin?.tabs[tabKey];
-      tabs.push({
-        pluginTitle: plugin.title,
-        ...tab,
-        key: `pm.${key}.${tabKey}`,
-      });
-    }
-  }
-  return tabs;
-  const arr: any[] = Object.entries(data);
-  const pluginsTabs = [];
-  console.log(tabs);
-  arr.forEach((v) => {
-    const children = Object.entries(v[1].tabs).map((k: any) => {
-      return {
-        key: 'pm.' + v[0] + '.' + k[0],
-        title: k[1].title,
-      };
-    });
-
-    pluginsTabs.push({
-      title: v[1].title,
-      key: 'pm.' + v[0],
-      children,
-    });
-  });
-  return pluginsTabs;
+export const getPmKey = (name: string) => {
+  return `pm.${name}`;
 };
 
 export const SettingsCenterConfigure = () => {
+  const app = useApp();
   const { styles } = useStyles();
   const record = useRecord();
   const api = useAPIClient();
-  const pluginTags = useContext(SettingMenuContext);
-  const items: any[] = (pluginTags && formatPluginTabs(pluginTags)) || [];
+  const settingsCenterList = useSettingsCenterList();
+  const allKeys = Object.keys(app.settingsCenter.settings).map((v) => getPmKey(v));
+  const [snippets, setSnippets] = useState<string[]>([]);
+  const allChecked = useMemo(
+    () => snippets.includes('pm.*') && snippets.every((item) => !item.startsWith('!pm.')),
+    [snippets],
+  );
   const { t } = useTranslation();
-  const compile = useCompile();
-  const { loading, refresh, data } = useRequest<{
-    data: any;
-  }>({
-    resource: 'roles.snippets',
-    resourceOf: record.name,
-    action: 'list',
-    params: {
-      paginate: false,
+  const { loading, refresh } = useRequest(
+    {
+      resource: 'roles.snippets',
+      resourceOf: record.name,
+      action: 'list',
+      params: {
+        paginate: false,
+      },
     },
-  });
+    {
+      onSuccess(data) {
+        setSnippets(data?.data || []);
+      },
+    },
+  );
   const resource = api.resource('roles.snippets', record.name);
   const handleChange = async (checked, record) => {
     const childrenKeys = getChildrenKeys(record?.children, []);
@@ -104,40 +84,50 @@ export const SettingsCenterConfigure = () => {
     }
     message.success(t('Saved successfully'));
   };
-
   return (
-    items?.length && (
-      <Table
-        className={styles}
-        loading={loading}
-        rowKey={'key'}
-        pagination={false}
-        columns={[
-          {
-            dataIndex: 'title',
-            title: t('Plugin tab name'),
-            render: (value) => {
-              return compile(value);
-            },
+    <Table
+      className={styles}
+      loading={loading}
+      rowKey={'key'}
+      pagination={false}
+      expandable={{
+        defaultExpandAllRows: true,
+      }}
+      columns={[
+        {
+          dataIndex: 'title',
+          title: t('Plugin name'),
+        },
+        {
+          dataIndex: 'accessible',
+          title: (
+            <>
+              <Checkbox
+                checked={allChecked}
+                onChange={async () => {
+                  if (!allChecked) {
+                    await resource.remove({
+                      values: allKeys.map((v) => '!' + v),
+                    });
+                  } else {
+                    await resource.add({
+                      values: allKeys.map((v) => '!' + v),
+                    });
+                  }
+                  refresh();
+                  message.success(t('Saved successfully'));
+                }}
+              />{' '}
+              {t('Accessible')}
+            </>
+          ),
+          render: (_, record) => {
+            const checked = !snippets.includes('!' + record.key);
+            return <Checkbox checked={checked} onChange={() => handleChange(checked, record)} />;
           },
-          {
-            dataIndex: 'pluginTitle',
-            title: t('Plugin name'),
-            render: (value) => {
-              return compile(value);
-            },
-          },
-          {
-            dataIndex: 'accessible',
-            title: t('Accessible'),
-            render: (_, record) => {
-              const checked = !data?.data?.includes('!' + record.key);
-              return !record.children && <Checkbox checked={checked} onChange={() => handleChange(checked, record)} />;
-            },
-          },
-        ]}
-        dataSource={items}
-      />
-    )
+        },
+      ]}
+      dataSource={settingsCenterList}
+    />
   );
 };

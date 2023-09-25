@@ -1,8 +1,12 @@
 import React from 'react';
 import { Plugin } from '../application/Plugin';
 import { PluginManagerLink, SettingsCenterDropdown } from './PluginManagerLink';
-import { PMProvider, SettingsCenter } from './PluginSetting';
+import { ADMIN_SETTINGS_PATH, SettingsCenterComponent } from './PluginSetting';
 import { PluginManager } from './PluginManager';
+import { ACLPane } from '../acl/ACLShortcut';
+import { CollectionManagerPane } from '../collection-manager';
+import { BlockTemplatesPane } from '../schema-templates';
+import { SystemSettingsPane } from '../system-settings';
 
 export * from './PluginManagerLink';
 export * from './PluginSetting';
@@ -12,7 +16,34 @@ export class PMPlugin extends Plugin {
   async load() {
     this.addComponents();
     this.addRoutes();
-    this.app.use(PMProvider);
+    this.addSettings();
+  }
+
+  addSettings() {
+    this.app.settingsCenter.add('acl', {
+      title: '{{t("ACL")}}',
+      icon: 'LockOutlined',
+      Component: ACLPane,
+      isBookmark: true,
+    });
+    this.app.settingsCenter.add('ui-schema-storage', {
+      title: '{{t("Block templates")}}',
+      icon: 'LayoutOutlined',
+      Component: BlockTemplatesPane,
+      isBookmark: true,
+    });
+    this.app.settingsCenter.add('collection-manager', {
+      icon: 'DatabaseOutlined',
+      title: '{{t("Collection manager")}}',
+      Component: CollectionManagerPane,
+      isBookmark: true,
+    });
+    this.app.settingsCenter.add('system-settings', {
+      icon: 'SettingOutlined',
+      title: '{{t("System settings")}}',
+      Component: SystemSettingsPane,
+      isBookmark: true,
+    });
   }
 
   addComponents() {
@@ -36,17 +67,9 @@ export class PMPlugin extends Plugin {
       element: <PluginManager />,
     });
 
-    this.app.router.add('admin.settings.list', {
-      path: '/admin/settings',
-      element: <SettingsCenter />,
-    });
-    this.app.router.add('admin.settings.pluginName', {
-      path: '/admin/settings/:pluginName',
-      element: <SettingsCenter />,
-    });
-    this.app.router.add('admin.settings.pluginName-tabName', {
-      path: '/admin/settings/:pluginName/:tabName',
-      element: <SettingsCenter />,
+    this.app.router.add('admin.settings', {
+      path: ADMIN_SETTINGS_PATH,
+      element: <SettingsCenterComponent />,
     });
   }
 }

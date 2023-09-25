@@ -1,11 +1,5 @@
 import { TableOutlined } from '@ant-design/icons';
-import {
-  Plugin,
-  SchemaComponentOptions,
-  SchemaInitializer,
-  SchemaInitializerContext,
-  SettingsCenterProvider,
-} from '@nocobase/client';
+import { Plugin, SchemaComponentOptions, SchemaInitializer, SchemaInitializerContext } from '@nocobase/client';
 import { Card } from 'antd';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -47,24 +41,9 @@ const HelloProvider = React.memo((props) => {
     component: 'HelloBlockInitializer',
   });
   return (
-    <SettingsCenterProvider
-      settings={{
-        'sample-hello': {
-          title: 'Hello',
-          icon: 'ApiOutlined',
-          tabs: {
-            tab1: {
-              title: 'Hello tab',
-              component: () => <Card bordered={false}>Hello Settings</Card>,
-            },
-          },
-        },
-      }}
-    >
-      <SchemaComponentOptions components={{ HelloDesigner, HelloBlockInitializer }}>
-        <SchemaInitializerContext.Provider value={items}>{props.children}</SchemaInitializerContext.Provider>
-      </SchemaComponentOptions>
-    </SettingsCenterProvider>
+    <SchemaComponentOptions components={{ HelloDesigner, HelloBlockInitializer }}>
+      <SchemaInitializerContext.Provider value={items}>{props.children}</SchemaInitializerContext.Provider>
+    </SchemaComponentOptions>
   );
 });
 HelloProvider.displayName = 'HelloProvider';
@@ -72,6 +51,12 @@ HelloProvider.displayName = 'HelloProvider';
 class HelloPlugin extends Plugin {
   async load() {
     this.app.addProvider(HelloProvider);
+    this.app.settingsCenter.add('sample-hello', {
+      title: 'Hello',
+      icon: 'ApiOutlined',
+      isBookmark: true,
+      Component: () => <Card bordered={false}>Hello Settings</Card>,
+    });
   }
 }
 

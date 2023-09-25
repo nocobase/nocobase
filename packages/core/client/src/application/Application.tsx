@@ -8,17 +8,21 @@ import React, { ComponentType, FC, ReactElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
 import { Link, NavLink, Navigate } from 'react-router-dom';
-import { APIClient, APIClientProvider } from '../api-client';
-import { i18n } from '../i18n';
-import type { Plugin } from './Plugin';
+
 import { PluginManager, PluginType } from './PluginManager';
 import { ComponentTypeAndString, RouterManager, RouterOptions } from './RouterManager';
 import { WebSocketClient, WebSocketClientOptions } from './WebSocketClient';
+import { SettingsCenter } from './SettingsCenter';
+
+import { APIClient, APIClientProvider } from '../api-client';
+import { i18n } from '../i18n';
 import { AppComponent, BlankComponent, defaultAppComponents } from './components';
 import { compose, normalizeContainer } from './utils';
 import { defineGlobalDeps } from './utils/globalDeps';
-import type { RequireJS } from './utils/requirejs';
 import { getRequireJs } from './utils/requirejs';
+
+import type { RequireJS } from './utils/requirejs';
+import type { Plugin } from './Plugin';
 
 declare global {
   interface Window {
@@ -49,6 +53,7 @@ export class Application {
   public apiClient: APIClient;
   public components: Record<string, ComponentType> = { ...defaultAppComponents };
   public pm: PluginManager;
+  public settingsCenter: SettingsCenter;
   public devDynamicImport: DevDynamicImport;
   public requirejs: RequireJS;
   public notification;
@@ -80,6 +85,7 @@ export class Application {
     this.addReactRouterComponents();
     this.addProviders(options.providers || []);
     this.ws = new WebSocketClient(options.ws);
+    this.settingsCenter = new SettingsCenter(this);
   }
 
   private initRequireJs() {
@@ -99,6 +105,10 @@ export class Application {
       Navigate: Navigate as ComponentType,
       NavLink,
     });
+  }
+
+  get pluginManager() {
+    return this.pm;
   }
 
   getComposeProviders() {
