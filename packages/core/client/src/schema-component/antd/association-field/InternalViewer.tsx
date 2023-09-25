@@ -51,7 +51,6 @@ export const ReadPrettyInternalViewer: React.FC = observer(
               .join(' / ')
           : record?.[fieldNames?.label || 'label'];
         const val = toValue(compile(label), 'N/A');
-        console.log(val);
         const labelUiSchema = useLabelUiSchema(
           record?.__collection || collectionField?.target,
           fieldNames?.label || 'label',

@@ -252,6 +252,13 @@ export const InternalCascadeSelect = observer(
         selectForm.removeEffects(id);
       };
     }, []);
+    const toValue = () => {
+      if (Array.isArray(field.value) && field.value.length > 0) {
+        return field.value;
+      }
+      return [{}];
+    };
+    const defaultValue = toValue();
     const schema = {
       type: 'object',
       properties: {
@@ -259,7 +266,7 @@ export const InternalCascadeSelect = observer(
           type: 'array',
           'x-component': 'ArrayItems',
           'x-decorator': 'FormItem',
-          default: field.value,
+          default: defaultValue,
           items: {
             type: 'void',
             'x-component': 'Space',
