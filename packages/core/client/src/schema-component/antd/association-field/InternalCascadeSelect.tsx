@@ -145,12 +145,21 @@ const CascadeSelect = connect((props) => {
     onChange?.(options);
   };
 
-  const onDropdownVisibleChange = async (visible, selectedValue) => {
+  const onDropdownVisibleChange = async (visible, selectedValue, index) => {
     if (visible) {
       setLoading(true);
       const result = await handleGetOptions({ parentId: selectedValue?.key });
       setLoading(false);
       setOptions(result);
+      if (index === selectedOptions?.length - 1 && selectedValue?.value?.id) {
+        const data = await handleGetOptions({ parentId: selectedValue?.value?.id });
+        const options = [...selectedOptions];
+        options.splice(index + 1);
+        options[index] = { ...options[index], value: selectedValue?.value };
+        options[index + 1] = { key: selectedValue?.value?.id, children: data?.length > 0 ? data : null };
+        setSelectedOptions(options);
+        onChange?.(options);
+      }
     }
   };
 
@@ -193,7 +202,7 @@ const CascadeSelect = connect((props) => {
               style={{ minWidth: 150 }}
               onChange={((value, option) => handleSelect(value, option, index)) as any}
               options={!loading ? mapOptionsToTags(options) : []}
-              onDropdownVisibleChange={(open) => onDropdownVisibleChange(open, value)}
+              onDropdownVisibleChange={(open) => onDropdownVisibleChange(open, value, index)}
               notFoundContent={loading ? <Spin size="small" /> : null}
             />
           )
@@ -232,8 +241,10 @@ export const InternalCascadeSelect = observer(
             const value = extractLastNonNullValueObjects(form.values?.select_array).filter(
               (v) => v && Object.keys(v).length > 0,
             );
-            field.value = value;
-            props.onChange(value);
+            setTimeout(() => {
+              field.value = value;
+              props.onChange(value);
+            });
           }
         });
       });
