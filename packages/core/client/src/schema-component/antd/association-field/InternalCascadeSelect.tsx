@@ -1,4 +1,4 @@
-import { observer, useField, connect, createSchemaField, FormProvider, useFieldSchema } from '@formily/react';
+import { observer, useField, connect, createSchemaField, FormProvider, useFieldSchema, Field } from '@formily/react';
 import { createForm, onFormValuesChange } from '@formily/core';
 import { uid } from '@formily/shared';
 import { Space, Tag, Spin, Select as AntdSelect, Input } from 'antd';
@@ -185,7 +185,7 @@ const CascadeSelect = connect((props) => {
         return (
           value.children && (
             <AntdSelect
-              disabled={props.disabled}
+              disabled={associationField.disabled}
               key={`${value.value?.id}+ ${value.key} + ${fieldNames.label}`}
               allowClear
               showSearch
