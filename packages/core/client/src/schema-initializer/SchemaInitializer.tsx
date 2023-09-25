@@ -1,6 +1,6 @@
 import { ISchema, observer, useForm } from '@formily/react';
 import { error, isString } from '@nocobase/utils/client';
-import { Button, Dropdown, Menu, MenuProps, Spin, Switch } from 'antd';
+import { Button, Dropdown, Empty, Menu, MenuProps, Spin, Switch } from 'antd';
 import classNames from 'classnames';
 // @ts-ignore
 import { isEmpty } from 'lodash';
@@ -67,11 +67,27 @@ const LoadingItem = ({ loadMore }) => {
   const spinRef = React.useRef(null);
 
   useEffect(() => {
-    const observer = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting) {
-        loadMore();
+    let root = spinRef.current;
+
+    while (root) {
+      if (root.classList?.contains('ant-dropdown-menu')) {
+        break;
       }
-    });
+      root = root.parentNode;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const item of entries) {
+          if (item.isIntersecting) {
+            return loadMore();
+          }
+        }
+      },
+      {
+        root,
+      },
+    );
 
     observer.observe(spinRef.current);
     return () => {
@@ -86,90 +102,151 @@ const LoadingItem = ({ loadMore }) => {
   );
 };
 
+// 清除所有的 searchValue
+const clearSearchValue = (items: any[]) => {
+  items.forEach((item) => {
+    if (item._clearSearchValueRef?.current) {
+      item._clearSearchValueRef.current();
+    }
+    if (item.children?.length) {
+      clearSearchValue(item.children);
+    }
+  });
+};
+
+const useLazyLoadChildren = () => {
+  const [isPending, startTransition] = useTransition();
+
+  /**
+   * 当存在 loadChildren 方法时，且 children 为空时，会触发懒加载
+   *
+   * 1. 如果存在 loadChildren 方法，则需要懒加载 children
+   * 2. 一开始先注入一个 loading 组件，当 loading 显示的时候，触发 loadChildren 方法
+   * 3. 每次在 loading 后显示的数目增加 minStep，直到显示完所有 children
+   * 4. 重置 item.label 为一个搜索框，用于筛选列表
+   * 5. 每次组件刷新的时候，会重复上面的步骤
+   * @param param0
+   * @returns
+   */
+  const lazyLoadChildren = ({ items, minStep = 30, onLoaded }) => {
+    if (isEmpty(items)) {
+      return;
+    }
+
+    const addLoading = (item: any, searchValue: string) => {
+      if (isEmpty(item.children)) {
+        item.children = [];
+      }
+
+      item.children.push({
+        key: `${item.key}-loading`,
+        label: (
+          <LoadingItem
+            loadMore={() => {
+              startTransition(() => {
+                item._allChildren = item.loadChildren({ searchValue });
+                item._count += minStep;
+                item.children = item._allChildren?.slice(0, item._count);
+                if (item.children?.length < item._allChildren?.length) {
+                  addLoading(item, searchValue);
+                }
+                onLoaded?.();
+              });
+            }}
+          />
+        ),
+      });
+    };
+
+    for (const item of items) {
+      if (!item) {
+        continue;
+      }
+
+      if (item.loadChildren && isEmpty(item.children)) {
+        item._count = 0;
+        item._clearSearchValueRef = {};
+        item.label = (
+          <CollectionSearch
+            clearValueRef={item._clearSearchValueRef}
+            onChange={(value) => {
+              item._count = minStep;
+              startTransition(() => {
+                item._allChildren = item.loadChildren({ searchValue: value });
+
+                if (isEmpty(item._allChildren)) {
+                  item.children = [
+                    {
+                      key: 'empty',
+                      label: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />,
+                    },
+                  ];
+                } else {
+                  item.children = item._allChildren?.slice(0, item._count);
+                }
+
+                if (item.children?.length < item._allChildren?.length) {
+                  addLoading(item, value);
+                }
+                onLoaded?.();
+              });
+            }}
+          />
+        );
+
+        // 通过 loading 加载新数据
+        addLoading(item, '');
+      }
+
+      lazyLoadChildren({
+        items: item.children,
+        minStep,
+        onLoaded,
+      });
+    }
+  };
+
+  return { lazyLoadChildren };
+};
+
+/**
+ * 去除私有属性，防止控制台报错
+ * @param items
+ * @returns
+ */
+const omitPrivateProps = (items: any[]) => {
+  return items.map((item) => {
+    const result = {} as any;
+    Object.keys(item).forEach((key) => {
+      if (!key.startsWith('_') && key !== 'loadChildren') {
+        result[key] = item[key];
+      }
+    });
+
+    if (item.children?.length) {
+      result.children = omitPrivateProps(item.children);
+    }
+
+    return result;
+  });
+};
+
 const MenuWithLazyLoadChildren = ({ items: _items, style }: { items: any[]; style?: React.CSSProperties }) => {
   const [items, setItems] = useState(_items);
-  const [isPending, startTransition] = useTransition();
-  const clearSearchValueRef = useRef(null);
-  const minStep = 20;
+  const { lazyLoadChildren } = useLazyLoadChildren();
 
   useEffect(() => {
     setItems(_items);
   }, [_items]);
 
-  const addLoadingItem = (group, allChildren) => {
-    if (group.children?.length < allChildren?.length) {
-      group.children.push({
-        label: (
-          <LoadingItem
-            loadMore={() => {
-              group.children = allChildren?.slice(0, (group.count += minStep)) || [];
-              addLoadingItem(group, allChildren);
-              setItems([...items]);
-            }}
-          />
-        ),
-      });
-    }
-  };
-
-  items.forEach((group1) => {
-    if (!group1) {
-      return;
-    }
-
-    group1.children?.forEach((group2) => {
-      if (!group2) {
-        return;
-      }
-
-      group2.className = 'group2';
-      group2.onMouseEnter = ({ domEvent }) => {
-        if (!isGroup2(domEvent)) {
-          return;
-        }
-
-        group2.children?.forEach((group3) => {
-          if (!group3) {
-            return;
-          }
-
-          if (group3.loadChildren) {
-            group3.label = (
-              <CollectionSearch
-                clearValueRef={clearSearchValueRef}
-                onChange={(value) => {
-                  if (group3.loadChildren) {
-                    startTransition(() => {
-                      const result = group3.loadChildren({ searchValue: value });
-                      group3.count = minStep;
-                      group3.children = result?.slice(0, group3.count) || [];
-                      addLoadingItem(group3, result);
-                      setItems([...items]);
-                    });
-                  }
-                }}
-              />
-            );
-            startTransition(() => {
-              const allChildren = group3.loadChildren();
-              group3.count = minStep;
-              group3.children = allChildren?.slice(0, group3.count) || [];
-              addLoadingItem(group3, allChildren);
-              setItems([...items]);
-            });
-          }
-        });
-      };
-    });
+  lazyLoadChildren({
+    items,
+    onLoaded: () => {
+      setItems([...items]);
+    },
   });
 
-  const clearSearchValue = useCallback((value: string[]) => {
-    if (isEmpty(value) && clearSearchValueRef.current) {
-      clearSearchValueRef.current();
-    }
-  }, []);
-
-  return <Menu style={style} items={items} onOpenChange={clearSearchValue} />;
+  return <Menu style={style} items={omitPrivateProps(items)} />;
 };
 
 SchemaInitializer.Button = observer(
@@ -206,9 +283,7 @@ SchemaInitializer.Button = observer(
       return null;
     }
 
-    const buttonDom = component ? (
-      component
-    ) : (
+    const buttonDom = component || (
       <Button
         type={'dashed'}
         style={{
@@ -322,6 +397,9 @@ SchemaInitializer.Button = observer(
           openClassName={`nb-schema-initializer-button-open`}
           open={visible}
           onOpenChange={(open) => {
+            if (open === false) {
+              clearSearchValue(menuItems.current);
+            }
             changeMenu(open);
           }}
           dropdownRender={dropdownRender}
