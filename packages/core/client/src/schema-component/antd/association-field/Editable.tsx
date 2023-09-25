@@ -10,6 +10,7 @@ import { InternalNester } from './InternalNester';
 import { InternalPicker } from './InternalPicker';
 import { InternalSubTable } from './InternalSubTable';
 import { InternaPopoverNester } from './InternalPopoverNester';
+import { InternalCascadeSelect } from './InternalCascadeSelect';
 import { CreateRecordAction } from './components/CreateRecordAction';
 import { useAssociationFieldContext } from './hooks';
 import { useCollection } from '../../../collection-manager';
@@ -55,6 +56,7 @@ const EditableAssociationField = observer(
         {currentMode === 'Select' && <AssociationSelect {...props} />}
         {currentMode === 'SubTable' && <InternalSubTable {...props} />}
         {currentMode === 'FileManager' && <InternalFileManager {...props} />}
+        {currentMode === 'CascadeSelect' && <InternalCascadeSelect {...props} />}
       </SchemaComponentOptions>
     );
   },

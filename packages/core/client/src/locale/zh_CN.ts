@@ -872,6 +872,7 @@ export default {
   'Sync from form fields': '同步表单字段',
   'Select all': '全选',
   'Determine whether a record exists by the following fields': '通过以下字段判断记录是否存在',
+  'Cascade Select': '级联选择',
   Execute: '执行',
   'Please use a valid SELECT or WITH AS statement': '请使用有效的 SELECT 或 WITH AS 语句',
   'Please confirm the SQL statement first': '请先确认 SQL 语句',
