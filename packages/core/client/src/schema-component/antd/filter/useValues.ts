@@ -38,7 +38,7 @@ export const useValues = (): UseValuesReturn => {
   const { name } = useCollection();
   const { getCollectionJoinField } = useCollectionManager();
   const field = useField<any>();
-  const { options, collectionName } = useContext(FilterContext) || {};
+  const { options, collectionName, field: ctxField } = useContext(FilterContext) || {};
   const values: object = flat(field.value || {});
   const path = Object.keys(values).shift() || '';
 
@@ -69,9 +69,9 @@ export const useValues = (): UseValuesReturn => {
       const fieldNames = dataIndex.concat();
       fieldNames.pop();
       const targetField = getCollectionJoinField(`${name}.${fieldNames.join('.')}`);
-      ctx.field.collectionName = targetField?.target;
+      ctxField.collectionName = targetField?.target;
     } else {
-      ctx.field.collectionName = null;
+      ctxField.collectionName = null;
     }
     field.data.operators = operators;
     field.data.operator = operator;
@@ -96,9 +96,9 @@ export const useValues = (): UseValuesReturn => {
         const fieldNames = dataIndex.concat();
         fieldNames.pop();
         const targetField = getCollectionJoinField(`${name}.${fieldNames.join('.')}`);
-        ctx.field.collectionName = targetField?.target;
+        ctxField.collectionName = targetField?.target;
       } else {
-        ctx.field.collectionName = null;
+        ctxField.collectionName = null;
       }
       field.data.value = operator?.noValue ? operator.default || true : undefined;
       data2value();
