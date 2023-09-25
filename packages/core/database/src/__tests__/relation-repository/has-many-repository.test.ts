@@ -286,14 +286,12 @@ describe('has many repository', () => {
     const PostTagRepository = new BelongsToManyRepository(Post, 'tags', p1.id);
     await PostTagRepository.set([t1.id, t2.id, t3.id]);
 
-    const posts = await UserPostRepository.find({
+    const post = await UserPostRepository.findOne({
       filter: {
         'tags.name': 't1',
       },
       appends: ['tags'],
     });
-
-    const post = posts[0];
 
     expect(post.tags.length).toEqual(3);
 

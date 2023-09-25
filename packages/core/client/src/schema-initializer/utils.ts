@@ -1804,7 +1804,10 @@ const getChildren = _.memoize(
         const fields = getCollectionFields(item.name);
         if (item.autoGenId === false && !fields.find((v) => v.primaryKey)) {
           return false;
-        } else if (['Kanban', 'FormItem'].includes(componentName) && item.template === 'view' && !item.writableView) {
+        } else if (
+          ['Kanban', 'FormItem'].includes(componentName) &&
+          ((item.template === 'view' && !item.writableView) || item.template === 'sql')
+        ) {
           return false;
         } else if (item.template === 'file' && ['Kanban', 'FormItem', 'Calendar'].includes(componentName)) {
           return false;

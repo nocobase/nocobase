@@ -3,7 +3,7 @@ import { toArr } from '@formily/shared';
 import React, { Fragment, useRef, useState } from 'react';
 import { useDesignable } from '../../';
 import { BlockAssociationContext, WithoutTableFieldResource } from '../../../block-provider';
-import { CollectionProvider } from '../../../collection-manager';
+import { CollectionProvider, useCollectionManager } from '../../../collection-manager';
 import { RecordProvider, useRecord } from '../../../record-provider';
 import { FormProvider } from '../../core';
 import { useCompile } from '../../hooks';
@@ -12,6 +12,7 @@ import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
 import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './hooks';
 import schema from './schema';
 import { getLabelFormatValue, useLabelUiSchema } from './util';
+import { transformNestedData } from './InternalCascadeSelect';
 
 interface IEllipsisWithTooltipRef {
   setPopoverVisible: (boolean) => void;
@@ -27,6 +28,7 @@ export const ReadPrettyInternalViewer: React.FC = observer(
   (props: any) => {
     const fieldSchema = useFieldSchema();
     const recordCtx = useRecord();
+    const { getCollection } = useCollectionManager();
     const { enableLink } = fieldSchema['x-component-props'] || {};
     // value 做了转换，但 props.value 和原来 useField().value 的值不一致
     const field = useField();
@@ -38,10 +40,17 @@ export const ReadPrettyInternalViewer: React.FC = observer(
     const compile = useCompile();
     const { designable } = useDesignable();
     const { snapshot } = useActionContext();
+    const targetCollection = getCollection(collectionField?.target);
+    const isTreeCollection = targetCollection.template === 'tree';
     const ellipsisWithTooltipRef = useRef<IEllipsisWithTooltipRef>();
     const renderRecords = () =>
       toArr(props.value).map((record, index, arr) => {
-        const val = toValue(compile(record?.[fieldNames?.label || 'label']), 'N/A');
+        const label = isTreeCollection
+          ? transformNestedData(record)
+              .map((o) => o?.[fieldNames?.label || 'label'])
+              .join(' / ')
+          : record?.[fieldNames?.label || 'label'];
+        const val = toValue(compile(label), 'N/A');
         const labelUiSchema = useLabelUiSchema(
           record?.__collection || collectionField?.target,
           fieldNames?.label || 'label',

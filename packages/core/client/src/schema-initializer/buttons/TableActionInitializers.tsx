@@ -34,7 +34,7 @@ export const TableActionInitializers = {
           },
           visible: function useVisible() {
             const collection = useCollection();
-            return (collection.template !== 'view' && collection.template !== 'file') || collection?.writableView;
+            return !['view', 'file', 'sql'].includes(collection.template) || collection?.writableView;
           },
         },
         {
@@ -47,7 +47,7 @@ export const TableActionInitializers = {
           },
           visible: function useVisible() {
             const collection = useCollection();
-            return collection.template !== 'view' || collection?.writableView;
+            return !['view', 'sql'].includes(collection.template) || collection?.writableView;
           },
         },
         {
@@ -78,7 +78,7 @@ export const TableActionInitializers = {
       type: 'divider',
       visible: function useVisible() {
         const collection = useCollection();
-        return collection.template !== 'view' || collection?.writableView;
+        return !['view', 'sql'].includes(collection.template) || collection?.writableView;
       },
     },
     // {
@@ -172,7 +172,7 @@ export const TableActionInitializers = {
       ],
       visible: function useVisible() {
         const collection = useCollection();
-        return collection.template !== 'view' || collection?.writableView;
+        return !['view', 'sql'].includes(collection.template) || collection?.writableView;
       },
     },
   ],
