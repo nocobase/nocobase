@@ -778,6 +778,7 @@ export default {
   "Select all":"Select all",
   "Restart": "Restart",
   "Restart application": "Restart application",
+  "Cascade Select":"Cascade Select",
   Execute: 'Execute',
   'Please use a valid SELECT or WITH AS statement': 'Please use a valid SELECT or WITH AS statement',
   'Please confirm the SQL statement first': 'Please confirm the SQL statement first',

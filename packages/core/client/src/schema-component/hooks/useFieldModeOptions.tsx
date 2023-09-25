@@ -34,6 +34,21 @@ export const useFieldModeOptions = (props?) => {
             !isSubTableField && { label: t('File manager'), value: 'FileManager' },
           ];
     }
+    if (collection?.template === 'tree' && ['m2m', 'o2m', 'm2o'].includes(collectionField.interface)) {
+      return isReadPretty
+        ? [
+            { label: t('Title'), value: 'Select' },
+            { label: t('Tag'), value: 'Tag' },
+          ]
+        : [
+            { label: t('Select'), value: 'Select' },
+            { label: t('Record picker'), value: 'Picker' },
+            { label: t('Sub-table'), value: 'SubTable' },
+            { label: t('Cascade Select'), value: 'CascadeSelect' },
+            !isSubTableField && { label: t('Sub-form'), value: 'Nester' },
+            { label: t('Sub-form(Popover)'), value: 'PopoverNester' },
+          ];
+    }
     switch (collectionField.interface) {
       case 'o2m':
         return isReadPretty
