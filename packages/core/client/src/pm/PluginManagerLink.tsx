@@ -4,8 +4,8 @@ import _ from 'lodash';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { ActionContextProvider } from '../schema-component';
-import { useSettingsCenterListWithAuth } from './PluginSetting';
+import { ActionContextProvider, useCompile } from '../schema-component';
+import { useApp } from '../application';
 
 export const PluginManagerLink = () => {
   const { t } = useTranslation();
@@ -26,16 +26,18 @@ export const PluginManagerLink = () => {
 
 export const SettingsCenterDropdown = () => {
   const [visible, setVisible] = useState(false);
+  const compile = useCompile();
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const menuList = useSettingsCenterListWithAuth();
-  const bookmarkMenus = menuList.filter((item) => item.isAllow && item.isBookmark);
+  const app = useApp();
+  const settings = app.settingsCenter.getList();
+  const bookmarkMenus = settings.filter((item) => item.isBookmark);
   const menu = useMemo<MenuProps>(() => {
     return {
       items: [
         ...bookmarkMenus.map((menu) => ({
           key: menu.path,
-          label: menu.label,
+          label: compile(menu.label),
         })),
         { type: 'divider' },
         {

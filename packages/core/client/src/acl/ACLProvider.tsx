@@ -9,6 +9,7 @@ import { useCollection, useCollectionManager } from '../collection-manager';
 import { useResourceActionContext } from '../collection-manager/ResourceActionProvider';
 import { useRecord } from '../record-provider';
 import { SchemaComponentOptions, useDesignable } from '../schema-component';
+import { useApp } from '../application';
 
 export const ACLContext = createContext<any>({});
 
@@ -146,6 +147,7 @@ const useResourceName = () => {
 };
 
 export function useACLRoleContext() {
+  const app = useApp();
   const { data, getActionAlias, inResources, getResourceActionParams, getStrategyActionParams } = useACLRolesCheck();
   const allowedActions = useAllowedActions();
   const { getCollectionJoinField } = useCollectionManager();
@@ -156,6 +158,7 @@ export function useACLRoleContext() {
     }
     return allowedActions[actionAlias].includes(recordPkValue);
   };
+  app.settingsCenter.setRoleSnippets(data?.snippets || []);
   return {
     ...data,
     parseAction: (actionPath: string, options: any = {}) => {

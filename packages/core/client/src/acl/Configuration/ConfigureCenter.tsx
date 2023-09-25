@@ -2,10 +2,11 @@ import { Checkbox, message, Table } from 'antd';
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
-import { SettingsCenterContext, useSettingsCenterList } from '../../pm';
+import { SettingsCenterContext } from '../../pm';
 import { useRecord } from '../../record-provider';
 import { useStyles } from '../style';
 import { useApp } from '../../application';
+import { useCompile } from '../../schema-component';
 
 const getParentKeys = (tree, func, path = []) => {
   if (!tree) return [];
@@ -35,17 +36,14 @@ export const SettingCenterProvider = (props) => {
   return <SettingMenuContext.Provider value={configureItems}>{props.children}</SettingMenuContext.Provider>;
 };
 
-export const getPmKey = (name: string) => {
-  return `pm.${name}`;
-};
-
 export const SettingsCenterConfigure = () => {
   const app = useApp();
   const { styles } = useStyles();
   const record = useRecord();
   const api = useAPIClient();
-  const settings = useSettingsCenterList();
-  const allKeys = Object.keys(app.settingsCenter.settings).map((v) => getPmKey(v));
+  const compile = useCompile();
+  const settings = app.settingsCenter.getList(false);
+  const allKeys = app.settingsCenter.getSnippetKeys();
   const [snippets, setSnippets] = useState<string[]>([]);
   const allChecked = useMemo(
     () => snippets.includes('pm.*') && snippets.every((item) => !item.startsWith('!pm.')),
@@ -97,6 +95,9 @@ export const SettingsCenterConfigure = () => {
         {
           dataIndex: 'title',
           title: t('Plugin name'),
+          render: (value) => {
+            return compile(value);
+          },
         },
         {
           dataIndex: 'accessible',

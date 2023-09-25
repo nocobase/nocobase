@@ -3,90 +3,43 @@ import { css } from '@emotion/css';
 import { Layout, Menu, Result } from 'antd';
 import _ from 'lodash';
 import React, { createContext, useCallback, useContext, useMemo } from 'react';
-import { Navigate, Outlet, useLocation, useMatch, useNavigate } from 'react-router-dom';
-import { useACLRoleContext } from '../acl/ACLProvider';
-import { Icon } from '../icon';
-import { useCompile } from '../schema-component';
+import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useStyles } from './style';
-import { useApp } from '../application';
-import { SettingPageType } from '../application';
-import { getPmKey } from '../acl/Configuration/ConfigureCenter';
+import { SettingPageType, useApp } from '../application';
+import { useCompile } from '../schema-component';
 
 export const ADMIN_SETTINGS_PATH = '/admin/settings';
 export const SettingsCenterContext = createContext<any>({});
 
-interface SettingPageTypeWithAuth extends SettingPageType {
-  isAllow?: boolean;
-  children?: SettingPageTypeWithAuth[];
-}
-export const getsettingsWithAuth = (settings: SettingPageType[], snippets: string[]): SettingPageTypeWithAuth[] => {
-  return settings.map((menu) => {
-    return {
-      ...menu,
-      isAllow: snippets.includes('pm.*') && !snippets?.includes(`!pm.${menu.key}`), // TODO: 优化
-      children: menu.children ? getsettingsWithAuth(menu.children, snippets) : undefined,
-    };
-  });
-};
-
-export function useSettingsCenterList(callback?: (settingPage: SettingPageTypeWithAuth) => SettingPageTypeWithAuth) {
-  const app = useApp();
-  const compile = useCompile();
-  return useMemo(() => {
-    return app.settingsCenter.getList<SettingPageType>((settingPage) => {
-      const title = compile(settingPage.title);
-      const res = {
-        ...settingPage,
-        title,
-        label: title,
-        pluginTitle: compile(settingPage.pluginTitle),
-        key: getPmKey(settingPage.key),
-        icon: typeof settingPage.icon === 'string' ? <Icon type={settingPage.icon} /> : settingPage.icon,
-      };
-      return callback ? callback(res) : res;
-    });
-  }, [app.settingsCenter, callback, compile]);
-}
-
-export function useSettingsCenterListWithAuth() {
-  const snippets = useACLRoleContext()?.snippets;
-  return useSettingsCenterList((settingPage) => {
-    return {
-      ...settingPage,
-      isAllow: snippets.includes('pm.*') && !snippets?.includes(`!${settingPage.key}`),
-    };
-  });
-}
-
 export const SettingsCenterComponent = () => {
   const { styles, theme } = useStyles();
+  const app = useApp();
   const navigate = useNavigate();
   const location = useLocation();
-  const settings = useSettingsCenterListWithAuth();
+  const settings = app.settingsCenter.getList();
+  const compile = useCompile();
   const menus = useMemo(() => {
-    return settings
-      .filter((item) => item.isAllow)
-      .map((item) => ({
-        label: item.label,
-        title: item.title,
-        icon: item.icon,
-        key: item.key,
-      }));
-  }, [settings]);
-  const getFirstDeepChildPath = useCallback((settings: SettingPageTypeWithAuth[]) => {
-    const firstChild = settings.find((v) => v.isAllow);
-    if (!firstChild) {
+    return settings.map((item) => ({
+      label: compile(item.label),
+      title: compile(item.title),
+      icon: item.icon,
+      key: item.key,
+    }));
+  }, [compile, settings]);
+  const getFirstDeepChildPath = useCallback((settings: SettingPageType[]) => {
+    if (!settings || !settings.length) {
       return '';
     }
-    if (firstChild.children?.length) {
-      return getFirstDeepChildPath(firstChild.children);
+    const first = settings[0];
+    if (first.children?.length) {
+      return getFirstDeepChildPath(first.children);
     }
-    return firstChild.path;
+    return first.path;
   }, []);
 
-  const settingsMapByPath = useMemo<Record<string, SettingPageTypeWithAuth>>(() => {
+  const settingsMapByPath = useMemo<Record<string, SettingPageType>>(() => {
     const map = {};
-    const traverse = (settings: SettingPageTypeWithAuth[]) => {
+    const traverse = (settings: SettingPageType[]) => {
       settings.forEach((item) => {
         map[item.path] = item;
         if (item.children?.length) {
@@ -98,9 +51,16 @@ export const SettingsCenterComponent = () => {
     return map;
   }, [settings]);
 
-  const currentMenu = useMemo<SettingPageTypeWithAuth>(() => {
+  const currentMenu = useMemo(() => {
     return settingsMapByPath[location.pathname];
   }, [location.pathname, settingsMapByPath]);
+
+  const selectedKey = useMemo(() => {
+    if (currentMenu) {
+      return currentMenu.key.split('.').slice(0, 2).join('.');
+    }
+    return '';
+  }, [currentMenu]);
 
   if (location.pathname === ADMIN_SETTINGS_PATH || location.pathname === ADMIN_SETTINGS_PATH + '/') {
     return <Navigate replace to={getFirstDeepChildPath(settings)} />;
@@ -125,7 +85,7 @@ export const SettingsCenterComponent = () => {
           theme={'light'}
         >
           <Menu
-            selectedKeys={[currentMenu.key]}
+            selectedKeys={[selectedKey]}
             style={{ height: 'calc(100vh - 46px)', overflowY: 'auto', overflowX: 'hidden' }}
             onClick={({ key }) => {
               const plugin = settings.find((item) => item.key === key);
@@ -139,16 +99,16 @@ export const SettingsCenterComponent = () => {
           />
         </Layout.Sider>
         <Layout.Content>
-          {currentMenu?.isAllow && (
+          {currentMenu && (
             <PageHeader
               className={styles.pageHeader}
               style={{ paddingBottom: theme.paddingSM }}
               ghost={false}
-              title={currentMenu?.title}
+              title={compile(currentMenu.title)}
             />
           )}
           <div className={styles.pageContent}>
-            {currentMenu?.isAllow ? (
+            {currentMenu ? (
               <Outlet />
             ) : (
               <Result status="404" title="404" subTitle="Sorry, the page you visited does not exist." />

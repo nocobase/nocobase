@@ -11,6 +11,7 @@ import { PluginDetail } from './PluginDetail';
 import { PluginUpgradeModal } from './PluginForm/modal/PluginUpgradeModal';
 import { useStyles } from './style';
 import type { IPluginData } from './types';
+import { useApp } from '../application';
 
 interface IPluginInfo extends IPluginCard {
   onClick: () => void;
@@ -18,6 +19,7 @@ interface IPluginInfo extends IPluginCard {
 
 function PluginInfo(props: IPluginInfo) {
   const { data, onClick } = props;
+  const app = useApp();
   const { name, displayName, isCompatible, packageName, updatable, builtIn, enabled, description, type, error } = data;
   const { styles, theme } = useStyles();
   const navigate = useNavigate();
@@ -88,11 +90,11 @@ function PluginInfo(props: IPluginInfo) {
                 <ReloadOutlined /> {t('Update')}
               </a>
             )}
-            {enabled ? (
+            {enabled && app.settingsCenter.hasAuth(name) ? (
               <a
                 onClick={(e) => {
                   e.stopPropagation();
-                  navigate(`/admin/settings/${name}`);
+                  app.settingsCenter.getRoutePath(name);
                 }}
               >
                 <SettingOutlined /> {t('Setting')}
@@ -169,7 +171,7 @@ function PluginInfo(props: IPluginInfo) {
             <Typography.Text type="danger">{t('Dependencies check failed')}</Typography.Text>
           </Button>
         )} */}
-        {/* 
+        {/*
           <Col span={8}>
             <Space direction="vertical" align="end" style={{ display: 'flex', marginTop: -10 }}>
               {type && (
@@ -184,7 +186,7 @@ function PluginInfo(props: IPluginInfo) {
                   {t('Update plugin')}
                 </Button>
               )}
-              
+
               {!error && (
                 <Button style={{ padding: 0 }} type="link">
                   {t('More details')}
