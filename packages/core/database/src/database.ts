@@ -71,6 +71,7 @@ import { patchSequelizeQueryInterface, snakeCase } from './utils';
 import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
 import { ViewCollection } from './view-collection';
 import { CollectionSnapshotManager } from './collection-snapshot/manager';
+import { SqlCollection } from './sql-collection/sql-collection';
 
 export type MergeOptions = merge.Options;
 
@@ -363,6 +364,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
       if (collection.options.schema) {
         collection.model._schema = collection.options.schema;
       }
+      if (collection.options.sql) {
+        collection.modelInit();
+      }
     });
 
     this.on('beforeDefineCollection', (options) => {
@@ -454,6 +458,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
       if (hasViewOptions) {
         return ViewCollection;
+      }
+
+      if (options.sql) {
+        return SqlCollection;
       }
 
       return Collection;

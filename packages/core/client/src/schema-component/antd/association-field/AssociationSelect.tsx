@@ -109,27 +109,4 @@ interface AssociationSelectInterface {
   FilterDesigner: React.FC;
 }
 
-export const AssociationSelect = (InternalAssociationSelect as unknown) as AssociationSelectInterface;
-
-export const AssociationSelectReadPretty = connect(
-  (props: any) => {
-    const service = useServiceOptions(props);
-    if (props.fieldNames) {
-      return <RemoteSelect.ReadPretty {...props} service={service}></RemoteSelect.ReadPretty>;
-    }
-    return null;
-  },
-  mapProps(
-    {
-      dataSource: 'options',
-      loading: true,
-    },
-    (props, field) => {
-      return {
-        ...props,
-        fieldNames: props.fieldNames && { ...props.fieldNames, ...field.componentProps.fieldNames },
-        suffixIcon: field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffixIcon,
-      };
-    },
-  ),
-);
+export const AssociationSelect = InternalAssociationSelect as unknown as AssociationSelectInterface;
