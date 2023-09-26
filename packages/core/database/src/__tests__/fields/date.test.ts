@@ -29,6 +29,30 @@ describe('date-field', () => {
     return expect(instance.get(key).toISOString()).toEqual(expected);
   };
 
+  it('should set field default value to date.now', async () => {
+    const Test = db.collection({
+      name: 'test',
+      fields: [
+        {
+          name: 'date1',
+          type: 'date',
+          defaultValue: '{{$date.now}}',
+        },
+        {
+          name: 'date2',
+          type: 'date',
+          defaultValue: '{{ $date.now }}',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    const t1 = await Test.repository.create({});
+    expect(t1.get('date1')).toBeDefined();
+    expect(t1.get('date2')).toBeDefined();
+  });
+
   test('create', async () => {
     // sqlite 时区不能自定义，只有 +00:00，postgres 和 mysql 可以自定义 DB_TIMEZONE
     await createExpectToBe('date1', '2023-03-24', '2023-03-24T00:00:00.000Z');
