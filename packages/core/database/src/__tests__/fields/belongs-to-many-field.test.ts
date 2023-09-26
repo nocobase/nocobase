@@ -1,4 +1,3 @@
-import dbSync from '@nocobase/server/src/commands/db-sync';
 import { mockDatabase } from '../';
 import { Database } from '../../database';
 import { IdentifierError } from '../../errors/identifier-error';
