@@ -3,7 +3,7 @@ import { Repository } from '@nocobase/database';
 
 export default class RenameChartTypeMigration extends Migration {
   async up() {
-    const result = await this.app.version.satisfies('<=0.13.0-alpha.8');
+    const result = await this.app.version.satisfies('<=0.14.0-alpha.7');
 
     if (!result) {
       return;
