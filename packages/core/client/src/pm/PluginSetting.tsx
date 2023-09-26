@@ -23,7 +23,7 @@ export const SettingsCenterComponent = () => {
       label: compile(item.label),
       title: compile(item.title),
       icon: item.icon,
-      key: item.key,
+      key: item.name,
     }));
   }, [compile, settings]);
   const getFirstDeepChildPath = useCallback((settings: SettingPageType[]) => {
@@ -55,13 +55,6 @@ export const SettingsCenterComponent = () => {
     return settingsMapByPath[location.pathname];
   }, [location.pathname, settingsMapByPath]);
 
-  const selectedKey = useMemo(() => {
-    if (currentMenu) {
-      return currentMenu.key.split('.').slice(0, 2).join('.');
-    }
-    return '';
-  }, [currentMenu]);
-
   if (location.pathname === ADMIN_SETTINGS_PATH || location.pathname === ADMIN_SETTINGS_PATH + '/') {
     return <Navigate replace to={getFirstDeepChildPath(settings)} />;
   }
@@ -85,10 +78,10 @@ export const SettingsCenterComponent = () => {
           theme={'light'}
         >
           <Menu
-            selectedKeys={[selectedKey]}
+            selectedKeys={[currentMenu?.pluginName]}
             style={{ height: 'calc(100vh - 46px)', overflowY: 'auto', overflowX: 'hidden' }}
             onClick={({ key }) => {
-              const plugin = settings.find((item) => item.key === key);
+              const plugin = settings.find((item) => item.name === key);
               if (plugin.children?.length) {
                 return navigate(getFirstDeepChildPath(plugin.children));
               } else {

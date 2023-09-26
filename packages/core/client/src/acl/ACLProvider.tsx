@@ -36,6 +36,7 @@ export const ACLRolesCheckProvider = (props) => {
   const { setDesignable } = useDesignable();
   const { render } = useAppSpin();
   const api = useAPIClient();
+  const app = useApp();
   const result = useRequest<{
     data: {
       snippets: string[];
@@ -58,6 +59,7 @@ export const ACLRolesCheckProvider = (props) => {
         if (data?.data?.role !== api.auth.role) {
           api.auth.setRole(data?.data?.role);
         }
+        app.settingsCenter.setAclSnippets(data?.data?.snippets || []);
       },
     },
   );
@@ -147,7 +149,6 @@ const useResourceName = () => {
 };
 
 export function useACLRoleContext() {
-  const app = useApp();
   const { data, getActionAlias, inResources, getResourceActionParams, getStrategyActionParams } = useACLRolesCheck();
   const allowedActions = useAllowedActions();
   const { getCollectionJoinField } = useCollectionManager();
@@ -158,7 +159,6 @@ export function useACLRoleContext() {
     }
     return allowedActions[actionAlias].includes(recordPkValue);
   };
-  app.settingsCenter.setRoleSnippets(data?.snippets || []);
   return {
     ...data,
     parseAction: (actionPath: string, options: any = {}) => {

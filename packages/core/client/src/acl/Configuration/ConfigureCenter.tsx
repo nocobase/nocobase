@@ -43,7 +43,7 @@ export const SettingsCenterConfigure = () => {
   const api = useAPIClient();
   const compile = useCompile();
   const settings = app.settingsCenter.getList(false);
-  const allKeys = app.settingsCenter.getSnippetKeys();
+  const allAclSnippets = app.settingsCenter.getAclSnippets();
   const [snippets, setSnippets] = useState<string[]>([]);
   const allChecked = useMemo(
     () => snippets.includes('pm.*') && snippets.every((item) => !item.startsWith('!pm.')),
@@ -106,7 +106,7 @@ export const SettingsCenterConfigure = () => {
               <Checkbox
                 checked={allChecked}
                 onChange={async () => {
-                  const values = allKeys.map((v) => '!' + v);
+                  const values = allAclSnippets.map((v) => '!' + v);
                   if (!allChecked) {
                     await resource.remove({
                       values,

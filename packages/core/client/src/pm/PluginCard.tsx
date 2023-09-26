@@ -90,15 +90,17 @@ function PluginInfo(props: IPluginInfo) {
                 <ReloadOutlined /> {t('Update')}
               </a>
             )}
-            {enabled && app.settingsCenter.hasAuth(name) ? (
-              <a
-                onClick={(e) => {
-                  e.stopPropagation();
-                  app.settingsCenter.getRoutePath(name);
-                }}
-              >
-                <SettingOutlined /> {t('Setting')}
-              </a>
+            {enabled ? (
+              app.settingsCenter.hasAuth(name) && (
+                <a
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(app.settingsCenter.getRoutePath(name));
+                  }}
+                >
+                  <SettingOutlined /> {t('Setting')}
+                </a>
+              )
             ) : (
               <Popconfirm
                 key={'delete'}

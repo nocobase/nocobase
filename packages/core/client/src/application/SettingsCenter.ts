@@ -19,6 +19,7 @@ export interface SettingOptionsType {
    */
   sort?: number;
   isBookmark?: boolean;
+  aclSnippet?: string;
   [index: string]: any;
 }
 
@@ -29,6 +30,7 @@ export interface SettingPageType {
   icon: any;
   path: string;
   sort?: number;
+  pluginName?: string;
   isBookmark?: boolean;
   children?: SettingPageType[];
   [index: string]: any;
@@ -36,18 +38,19 @@ export interface SettingPageType {
 
 export class SettingsCenter {
   protected settings: Record<string, SettingOptionsType> = {};
-  protected snippets: string[] = [];
+  protected aclSnippets: string[] = [];
 
   constructor(protected app: Application) {
     this.app = app;
   }
 
-  setRoleSnippets(snippets: string[]) {
-    this.snippets = snippets;
+  setAclSnippets(aclSnippets: string[]) {
+    this.aclSnippets = aclSnippets;
   }
 
-  getSnippetKey(name: string) {
-    return `${SNIPPET_PREFIX}${name}`;
+  getAclSnippet(name: string) {
+    const setting = this.settings[name];
+    return setting?.aclSnippet ? setting.aclSnippet : `${SNIPPET_PREFIX}${name}`;
   }
 
   getRouteName(name: string) {
@@ -59,10 +62,14 @@ export class SettingsCenter {
   }
 
   add(name: string, options: SettingOptionsType) {
-    this.settings[name] = { ...options, name };
+    const nameArr = name.split('.');
+    const pluginName = nameArr[0];
+    this.settings[name] = { ...options, name, pluginName };
 
     // add children
-    set(this.settings, name.replaceAll('.', '.children.'), this.settings[name]);
+    if (nameArr.length > 1) {
+      set(this.settings, nameArr.join('.children.'), this.settings[name]);
+    }
 
     // add route
     this.app.router.add(this.getRouteName(name), {
@@ -82,7 +89,7 @@ export class SettingsCenter {
   }
 
   hasAuth(name: string) {
-    return this.snippets.includes(`!${this.getSnippetKey(name)}`) === false;
+    return this.aclSnippets.includes(`!${this.getAclSnippet(name)}`) === false;
   }
 
   getSetting(name: string): SettingOptionsType & { children?: Record<string, SettingOptionsType> } {
@@ -109,7 +116,7 @@ export class SettingsCenter {
       isAllow,
       label: title,
       icon: typeof icon === 'string' ? createElement(Icon, { type: icon }) : icon,
-      key: this.getSnippetKey(name),
+      key: this.getAclSnippet(name),
       path: this.getRoutePath(name),
       children: children.length ? children : undefined,
     };
@@ -123,7 +130,7 @@ export class SettingsCenter {
       .sort((a, b) => (a.sort || 0) - (b.sort || 0));
   }
 
-  getSnippetKeys() {
-    return Object.keys(this.settings).map((name) => this.getSnippetKey(name));
+  getAclSnippets() {
+    return Object.keys(this.settings).map((name) => this.getAclSnippet(name));
   }
 }
