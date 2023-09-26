@@ -19231,7 +19231,7 @@ qrcode.react@^3.1.0:
   version "3.1.0"
   resolved "https://registry.npmmirror.com/qrcode.react/-/qrcode.react-3.1.0.tgz#5c91ddc0340f768316fbdb8fff2765134c2aecd8"
 
-qs@^6.10.1, qs@^6.11.0, qs@^6.4.0, qs@^6.5.2, qs@^6.9.4:
+qs@^6.10.1, qs@^6.11.0, qs@^6.11.2, qs@^6.4.0, qs@^6.5.2, qs@^6.9.4:
   version "6.11.2"
   resolved "https://registry.npmmirror.com/qs/-/qs-6.11.2.tgz#64bea51f12c1f5da1bc01496f48ffcff7c69d7d9"
   dependencies:
