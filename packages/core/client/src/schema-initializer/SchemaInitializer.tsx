@@ -600,17 +600,3 @@ SchemaInitializer.SwitchItem = (props) => {
     </SchemaInitializer.Item>
   );
 };
-
-function isGroup2(domEvent: any) {
-  let el = domEvent.target;
-  let result = false;
-  while (el) {
-    if (el.classList?.contains('group2')) {
-      result = true;
-      break;
-    }
-    el = el.parentNode;
-  }
-
-  return result;
-}
