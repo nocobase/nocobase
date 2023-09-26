@@ -53,6 +53,8 @@ export default {
     const name = `${id}`;
     const [result] = getCollectionFieldOptions({
       // collection: config.collection,
+      // depth: options?.depth ?? depth,
+      appends: [name, ...(config.params?.appends?.map((item) => `${name}.${item}`) || [])],
       ...options,
       fields: [
         {
@@ -65,8 +67,6 @@ export default {
           },
         },
       ],
-      // depth: options?.depth ?? depth,
-      appends: [name, ...(config.params?.appends?.map((item) => `${name}.${item}`) || [])],
       compile,
       getCollectionFields,
     });

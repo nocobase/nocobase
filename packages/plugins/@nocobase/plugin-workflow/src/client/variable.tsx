@@ -29,6 +29,7 @@ export type OptionsOfUseVariableOptions = {
     value?: string;
     children?: string;
   };
+  appends?: string[] | null;
 };
 
 export const defaultFieldNames = { label: 'label', value: 'value', children: 'children' } as const;
@@ -126,7 +127,7 @@ export const BaseTypeSets = {
 // { type: 'reference', options: { collection: 'attachments', multiple: false } }
 // { type: 'reference', options: { collection: 'myExpressions', entity: false } }
 
-function matchFieldType(field, type, appends?: string[]): boolean {
+function matchFieldType(field, type): boolean {
   const inputType = typeof type;
   if (inputType === 'string') {
     return BaseTypeSets[type]?.has(field.interface);
@@ -148,7 +149,7 @@ function matchFieldType(field, type, appends?: string[]): boolean {
   }
 
   if (inputType === 'function') {
-    return type(field, appends);
+    return type(field);
   }
 
   return false;
@@ -158,32 +159,51 @@ function isAssociationField(field): boolean {
   return ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type);
 }
 
-function getNextAppends(field, appends: string[]) {
+function getNextAppends(field, appends: string[] | null): string[] | null {
+  if (appends == null) {
+    return null;
+  }
   const fieldPrefix = `${field.name}.`;
   return appends.filter((item) => item.startsWith(fieldPrefix)).map((item) => item.replace(fieldPrefix, ''));
 }
 
 function filterTypedFields({ fields, types, appends, compile, getCollectionFields }) {
   return fields.filter((field) => {
-    if (types?.length) {
-      return types.some((type) => matchFieldType(field, type, appends));
-    }
+    const match = types?.length ? types.some((type) => matchFieldType(field, type)) : true;
     if (isAssociationField(field)) {
+      if (appends === null) {
+        return (
+          match ||
+          filterTypedFields({
+            fields: getNormalizedFields(field.target, { compile, getCollectionFields }),
+            types,
+            // depth: depth - 1,
+            appends,
+            compile,
+            getCollectionFields,
+          })
+        );
+      }
       const nextAppends = getNextAppends(field, appends);
       const included = appends.includes(field.name);
-      return (
-        (nextAppends.length || included) &&
-        filterTypedFields({
-          fields: getNormalizedFields(field.target, { compile, getCollectionFields }),
-          types,
-          // depth: depth - 1,
-          appends: nextAppends,
-          compile,
-          getCollectionFields,
-        }).length
-      );
+      if (match) {
+        return included;
+      } else {
+        return (
+          (nextAppends?.length || included) &&
+          filterTypedFields({
+            fields: getNormalizedFields(field.target, { compile, getCollectionFields }),
+            types,
+            // depth: depth - 1,
+            appends: nextAppends,
+            compile,
+            getCollectionFields,
+          }).length
+        );
+      }
+    } else {
+      return match;
     }
-    return true;
   });
 }
 
@@ -273,7 +293,7 @@ function loadChildren(option) {
     option.children = result;
   } else {
     option.isLeaf = true;
-    const matchingType = option.types ? option.types.some((type) => matchFieldType(option.field, type, appends)) : true;
+    const matchingType = option.types ? option.types.some((type) => matchFieldType(option.field, type)) : true;
     if (!matchingType) {
       option.disabled = true;
     }
@@ -303,10 +323,11 @@ export function getCollectionFieldOptions(options): VariableOption[] {
     getCollectionFields,
   }).map((field) => {
     const label = compile(field.uiSchema?.title || field.name);
-    // console.log('===', label, field);
     const nextAppends = getNextAppends(field, appends);
     // TODO: no matching fields in next appends should consider isLeaf as true
-    const isLeaf = !isAssociationField(field) || (!nextAppends.length && !appends.includes(field.name));
+    const isLeaf =
+      !isAssociationField(field) || (nextAppends && !nextAppends.length && !appends.includes(field.name)) || false;
+
     return {
       [fieldNames.label]: label,
       key: field.name,

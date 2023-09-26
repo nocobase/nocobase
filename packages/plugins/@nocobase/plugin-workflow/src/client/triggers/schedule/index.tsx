@@ -43,6 +43,7 @@ export default {
     if (config.mode === SCHEDULE_MODE.COLLECTION_FIELD) {
       const [fieldOption] = getCollectionFieldOptions({
         // depth,
+        appends: ['data', ...(config.appends?.map((item) => `data.${item}`) || [])],
         ...opts,
         fields: [
           {
@@ -55,7 +56,6 @@ export default {
             },
           },
         ],
-        appends: ['data', ...(config.appends?.map((item) => `data.${item}`) || [])],
         compile,
         getCollectionFields,
       });
