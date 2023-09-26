@@ -17,19 +17,20 @@ import { NAMESPACE, lang } from '../locale';
 import { collection, filter } from '../schemas/collection';
 import { BaseTypeSets, defaultFieldNames, nodesOptions, triggerOptions } from '../variable';
 
-function matchToManyField(field, appends): boolean {
-  const fieldPrefix = `${field.name}.`;
-  return (
-    (['hasOne', 'belongsTo'].includes(field.type) &&
-      (appends ? appends.includes(field.name) || appends.some((item) => item.startsWith(fieldPrefix)) : true)) ||
-    ['hasMany', 'belongsToMany'].includes(field.type)
-  );
+function matchToManyField(field): boolean {
+  // const fieldPrefix = `${field.name}.`;
+  return ['hasMany', 'belongsToMany'].includes(field.type);
 }
 
 function useAssociatedFields() {
   const compile = useCompile();
   return [nodesOptions, triggerOptions].map((item) => {
-    const children = item.useOptions({ types: [matchToManyField] })?.filter(Boolean);
+    const children = item
+      .useOptions({
+        types: [matchToManyField],
+        appends: null,
+      })
+      ?.filter(Boolean);
     return {
       label: compile(item.label),
       value: item.value,
@@ -100,6 +101,9 @@ function AssociatedConfig({ value, onChange, ...props }): JSX.Element {
 
       // const associationFieldName = path.pop();
       const { field } = option.pop();
+      if (!field || !['hasMany', 'belongsToMany'].includes(field.type)) {
+        return;
+      }
       // need to get:
       // * source collection (from node.config)
       // * target collection (from field name)
@@ -242,6 +246,9 @@ export default {
                   title: `{{t("Data of associated collection", { ns: "${NAMESPACE}" })}}`,
                   'x-decorator': 'FormItem',
                   'x-component': 'AssociatedConfig',
+                  'x-component-props': {
+                    changeOnSelect: true,
+                  },
                   'x-reactions': [
                     {
                       dependencies: ['associated'],
