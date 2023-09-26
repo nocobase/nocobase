@@ -273,12 +273,12 @@ export const useFormItemInitializerFields = (options?: any) => {
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
   const { snapshot, fieldSchema } = useActionContext();
   const action = fieldSchema?.['x-action'];
-
   return currentFields
     ?.filter((field) => field?.interface && !field?.isForeignKey && !field?.treeChildren)
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
       const targetCollection = getCollection(field.target);
+      const isFileCollection = field?.target && getCollection(field?.target)?.template === 'file';
       // const component =
       //   field.interface === 'o2m' && targetCollection?.template !== 'file' && !snapshot
       //     ? 'TableField'
@@ -290,7 +290,14 @@ export const useFormItemInitializerFields = (options?: any) => {
         'x-component': 'CollectionField',
         'x-decorator': 'FormItem',
         'x-collection-field': `${name}.${field.name}`,
-        'x-component-props': {},
+        'x-component-props': isFileCollection
+          ? {
+              fieldNames: {
+                label: 'preview',
+                value: 'id',
+              },
+            }
+          : {},
         'x-read-pretty': field?.uiSchema?.['x-read-pretty'],
       };
       // interfaceConfig?.schemaInitialize?.(schema, { field, block: 'Form', readPretty: form.readPretty });
@@ -400,14 +407,20 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
         )
         ?.map((subField) => {
           const interfaceConfig = getInterface(subField.interface);
+          const isFileCollection = field?.target && getCollection(field?.target)?.template === 'file';
           const schema = {
             type: 'string',
             name: `${field.name}.${subField.name}`,
             'x-designer': 'FormItem.Designer',
             'x-component': 'CollectionField',
+
             'x-read-pretty': readPretty,
             'x-component-props': {
               'pattern-disable': block === 'Form' && readPretty,
+              fieldNames: {
+                label: isFileCollection ? 'preview' : 'id',
+                value: 'id',
+              },
             },
             'x-decorator': 'FormItem',
             'x-collection-field': `${name}.${field.name}.${subField.name}`,
