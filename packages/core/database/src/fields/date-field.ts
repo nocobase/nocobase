@@ -1,17 +1,26 @@
 import Sequelize, { DataTypes } from 'sequelize';
 import { BaseColumnFieldOptions, Field } from './field';
 
-export function transformTimeFieldDefaultValue(options) {
+export function transformTimeFieldDefaultValue(options, context) {
   const defaultValues = ['{{$date.now}}', '{{ $date.now }}'];
 
   if (defaultValues.includes(options.defaultValue)) {
-    options.defaultValue = Sequelize.literal('CURRENT_TIMESTAMP');
+    if (context.database.inDialect('mysql')) {
+      if (options.type === 'time') {
+        // mysql not support default now value for time field
+        options.defaultValue = null;
+      } else {
+        options.defaultValue = Sequelize.literal('CURRENT_TIMESTAMP(3)');
+      }
+    } else {
+      options.defaultValue = Sequelize.literal('CURRENT_TIMESTAMP');
+    }
   }
 }
 
 export class DateField extends Field {
   constructor(options: DateFieldOptions, context: any) {
-    transformTimeFieldDefaultValue(options);
+    transformTimeFieldDefaultValue(options, context);
     super(options, context);
   }
 

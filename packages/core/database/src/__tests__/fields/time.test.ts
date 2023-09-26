@@ -39,7 +39,12 @@ describe('time field', () => {
     await db.sync();
 
     const t1 = await Test.repository.create({});
-    expect(t1.get('date1')).toBeDefined();
-    expect(t1.get('date2')).toBeDefined();
+    if (db.inDialect('mysql')) {
+      // mysql not support default now value for time field
+    } else {
+      const t1 = await Test.repository.create({});
+      expect(t1.get('date1')).toBeDefined();
+      expect(t1.get('date2')).toBeDefined();
+    }
   });
 });
