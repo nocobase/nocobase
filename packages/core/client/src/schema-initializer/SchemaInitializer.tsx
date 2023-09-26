@@ -371,6 +371,12 @@ SchemaInitializer.Button = observer(
       />
     );
 
+    useEffect(() => {
+      if (visible === false) {
+        clearSearchValue(menuItems.current);
+      }
+    }, [visible]);
+
     return (
       <SchemaInitializerButtonContext.Provider value={{ visible, setVisible }}>
         {visible ? <CollectComponent /> : null}
@@ -379,9 +385,6 @@ SchemaInitializer.Button = observer(
           openClassName={`nb-schema-initializer-button-open`}
           open={visible}
           onOpenChange={(open) => {
-            if (open === false) {
-              clearSearchValue(menuItems.current);
-            }
             changeMenu(open);
           }}
           dropdownRender={dropdownRender}
