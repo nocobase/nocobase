@@ -22,11 +22,13 @@ interface ItemCommonOptions {
 interface ItemGroupOptions extends ItemCommonOptions {
   type: 'itemGroup';
   children?: SchemaInitializerItemOptions[];
+  loadChildren?: ({ searchValue }?: { searchValue: string }) => SchemaInitializerItemOptions[];
 }
 
 interface SubMenuOptions extends ItemCommonOptions {
   type: 'subMenu';
   children?: SchemaInitializerItemOptions[];
+  loadChildren?: ({ searchValue }?: { searchValue: string }) => SchemaInitializerItemOptions[];
 }
 
 type BreakFn = (s: ISchema) => boolean;
