@@ -85,7 +85,7 @@ export default {
             },
             loadChildren: ({ searchValue }) => {
               return collections
-                .filter((item) => !item.hidden && item.title.includes(searchValue))
+                .filter((item) => !item.hidden && item.title.toLowerCase().includes(searchValue.toLowerCase()))
                 .map((item) => ({
                   key: `updateRecordForm-child-${item.name}`,
                   type: 'item',
