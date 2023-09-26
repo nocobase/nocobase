@@ -814,7 +814,7 @@ export const useDestroyActionProps = () => {
         service?.refresh?.();
       }
 
-      if (block !== 'TableField') {
+      if (block && block !== 'TableField') {
         __parent?.service?.refresh?.();
         setVisible?.(false);
       }
