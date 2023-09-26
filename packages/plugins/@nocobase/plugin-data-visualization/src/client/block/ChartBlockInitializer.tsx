@@ -2,7 +2,6 @@ import { LineChartOutlined } from '@ant-design/icons';
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { SchemaInitializer, useACLRoleContext, useCollectionDataSourceItems } from '@nocobase/client';
-import { isEmpty } from 'lodash';
 import React, { useContext } from 'react';
 import { ChartConfigContext } from '../configure/ChartConfigure';
 import { useChartsTranslation } from '../locale';
@@ -26,27 +25,27 @@ export const ChartInitializers = () => {
   const collections = useCollectionDataSourceItems('Chart');
   const { allowAll, parseAction } = useACLRoleContext();
 
-  if (collections[0].loadChildren && isEmpty(collections[0].children)) {
-    collections[0].children = collections[0].loadChildren();
+  if (collections[0].loadChildren) {
+    const originalLoadChildren = collections[0].loadChildren;
+    collections[0].loadChildren = ({ searchValue }) => {
+      const children = originalLoadChildren({ searchValue });
+      const result = children
+        .filter((item) => {
+          if (allowAll) {
+            return true;
+          }
+          const params = parseAction(`${item.name}:list`);
+          return params;
+        })
+        .map((item) => ({
+          ...item,
+          component: ConfigureButton,
+        }));
+
+      return result;
+    };
   }
 
-  const children = collections[0].children
-    .filter((item) => {
-      if (allowAll) {
-        return true;
-      }
-      const params = parseAction(`${item.name}:list`);
-      return params;
-    })
-    .map((item) => ({
-      ...item,
-      component: ConfigureButton,
-    }));
-  if (!children.length) {
-    // Leave a blank item to show the filter component
-    children.push({} as any);
-  }
-  collections[0].children = children;
   return (
     <SchemaInitializer.Button
       icon={'PlusOutlined'}
