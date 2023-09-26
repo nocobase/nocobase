@@ -54,9 +54,12 @@ describe('belongsToMany', () => {
     await Collection.repository.create({
       values: {
         name: 't1',
+        fields: [{ type: 'bigInt', name: 'id', primaryKey: true, autoIncrement: true }],
       },
       context: {},
     });
+
+    const Through = db.getCollection('t1');
 
     let error;
     try {
@@ -99,6 +102,7 @@ describe('belongsToMany', () => {
     } catch (e) {
       error2 = e;
     }
+
     expect(error2).not.toBeDefined();
   });
 
