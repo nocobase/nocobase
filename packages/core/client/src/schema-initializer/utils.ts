@@ -1,6 +1,5 @@
 import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import _ from 'lodash';
 import { useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BlockRequestContext, SchemaInitializerItemOptions } from '..';
@@ -1780,112 +1779,107 @@ export const createKanbanBlockSchema = (options) => {
   return schema;
 };
 
-const getChildren = _.memoize(
-  ({
-    collections,
-    getCollectionFields,
-    componentName,
-    searchValue,
-    getTemplatesByCollection,
-    t,
-  }: {
-    collections: any[];
-    getCollectionFields: (name: any) => CollectionFieldOptions[];
-    componentName: any;
-    searchValue: string;
-    getTemplatesByCollection: (collectionName: string, resourceName?: string) => any;
-    t;
-  }) => {
-    return collections
-      ?.filter((item) => {
-        if (item.inherit) {
+const getChildren = ({
+  collections,
+  getCollectionFields,
+  componentName,
+  searchValue,
+  getTemplatesByCollection,
+  t,
+}: {
+  collections: any[];
+  getCollectionFields: (name: any) => CollectionFieldOptions[];
+  componentName: any;
+  searchValue: string;
+  getTemplatesByCollection: (collectionName: string, resourceName?: string) => any;
+  t;
+}) => {
+  return collections
+    ?.filter((item) => {
+      if (item.inherit) {
+        return false;
+      }
+      const fields = getCollectionFields(item.name);
+      if (item.autoGenId === false && !fields.find((v) => v.primaryKey)) {
+        return false;
+      } else if (
+        ['Kanban', 'FormItem'].includes(componentName) &&
+        ((item.template === 'view' && !item.writableView) || item.template === 'sql')
+      ) {
+        return false;
+      } else if (item.template === 'file' && ['Kanban', 'FormItem', 'Calendar'].includes(componentName)) {
+        return false;
+      } else {
+        if (!item.title) {
           return false;
         }
-        const fields = getCollectionFields(item.name);
-        if (item.autoGenId === false && !fields.find((v) => v.primaryKey)) {
-          return false;
-        } else if (
-          ['Kanban', 'FormItem'].includes(componentName) &&
-          ((item.template === 'view' && !item.writableView) || item.template === 'sql')
-        ) {
-          return false;
-        } else if (item.template === 'file' && ['Kanban', 'FormItem', 'Calendar'].includes(componentName)) {
-          return false;
-        } else {
-          if (!item.title) {
-            return false;
-          }
-          return item.title.toUpperCase().includes(searchValue.toUpperCase()) && !(item?.isThrough && item?.autoCreate);
-        }
-      })
-      ?.map((item, index) => {
-        const templates = getTemplatesByCollection(item.name).filter((template) => {
-          return (
-            componentName &&
-            template.componentName === componentName &&
-            (!template.resourceName || template.resourceName === item.name)
-          );
-        });
-        if (!templates.length) {
-          return {
+        return item.title.toUpperCase().includes(searchValue.toUpperCase()) && !(item?.isThrough && item?.autoCreate);
+      }
+    })
+    ?.map((item, index) => {
+      const templates = getTemplatesByCollection(item.name).filter((template) => {
+        return (
+          componentName &&
+          template.componentName === componentName &&
+          (!template.resourceName || template.resourceName === item.name)
+        );
+      });
+      if (!templates.length) {
+        return {
+          type: 'item',
+          name: item.name,
+          title: item.title,
+        };
+      }
+      return {
+        key: `${componentName}_table_subMenu_${index}`,
+        type: 'subMenu',
+        name: `${item.name}_${index}`,
+        title: item.title,
+        children: [
+          {
             type: 'item',
             name: item.name,
-            title: item.title,
-          };
-        }
-        return {
-          key: `${componentName}_table_subMenu_${index}`,
-          type: 'subMenu',
-          name: `${item.name}_${index}`,
-          title: item.title,
-          children: [
-            {
-              type: 'item',
-              name: item.name,
-              title: t('Blank block'),
-            },
-            {
-              type: 'divider',
-            },
-            {
-              key: `${componentName}_table_subMenu_${index}_copy`,
-              type: 'subMenu',
-              name: 'copy',
-              title: t('Duplicate template'),
-              children: templates.map((template) => {
-                const templateName =
-                  template?.componentName === 'FormItem' ? `${template?.name} ${t('(Fields only)')}` : template?.name;
-                return {
-                  type: 'item',
-                  mode: 'copy',
-                  name: item.name,
-                  template,
-                  title: templateName || t('Untitled'),
-                };
-              }),
-            },
-            {
-              key: `${componentName}_table_subMenu_${index}_ref`,
-              type: 'subMenu',
-              name: 'ref',
-              title: t('Reference template'),
-              children: templates.map((template) => {
-                const templateName =
-                  template?.componentName === 'FormItem' ? `${template?.name} ${t('(Fields only)')}` : template?.name;
-                return {
-                  type: 'item',
-                  mode: 'reference',
-                  name: item.name,
-                  template,
-                  title: templateName || t('Untitled'),
-                };
-              }),
-            },
-          ],
-        };
-      });
-  },
-  (params) => {
-    return params.componentName + params.searchValue;
-  },
-);
+            title: t('Blank block'),
+          },
+          {
+            type: 'divider',
+          },
+          {
+            key: `${componentName}_table_subMenu_${index}_copy`,
+            type: 'subMenu',
+            name: 'copy',
+            title: t('Duplicate template'),
+            children: templates.map((template) => {
+              const templateName =
+                template?.componentName === 'FormItem' ? `${template?.name} ${t('(Fields only)')}` : template?.name;
+              return {
+                type: 'item',
+                mode: 'copy',
+                name: item.name,
+                template,
+                title: templateName || t('Untitled'),
+              };
+            }),
+          },
+          {
+            key: `${componentName}_table_subMenu_${index}_ref`,
+            type: 'subMenu',
+            name: 'ref',
+            title: t('Reference template'),
+            children: templates.map((template) => {
+              const templateName =
+                template?.componentName === 'FormItem' ? `${template?.name} ${t('(Fields only)')}` : template?.name;
+              return {
+                type: 'item',
+                mode: 'reference',
+                name: item.name,
+                template,
+                title: templateName || t('Untitled'),
+              };
+            }),
+          },
+        ],
+      };
+    });
+};
