@@ -256,6 +256,12 @@ SchemaInitializer.Button = observer(
       setVisible(v);
     };
 
+    useEffect(() => {
+      if (visible === false) {
+        clearSearchValue(menuItems.current);
+      }
+    }, [visible]);
+
     if (!designable && props.designable !== true) {
       return null;
     }
@@ -371,12 +377,6 @@ SchemaInitializer.Button = observer(
         component={CollectComponent}
       />
     );
-
-    useEffect(() => {
-      if (visible === false) {
-        clearSearchValue(menuItems.current);
-      }
-    }, [visible]);
 
     return (
       <SchemaInitializerButtonContext.Provider value={{ visible, setVisible }}>
