@@ -142,10 +142,10 @@ const lazyLoadChildren = ({
         <LoadingItem
           loadMore={() => {
             beforeLoading?.();
-            item._allChildren = item.loadChildren({ searchValue });
+            item._allChildren = item.loadChildren({ searchValue }) || [];
             item._count += minStep;
-            item.children = item._allChildren?.slice(0, item._count);
-            if (item.children?.length < item._allChildren?.length) {
+            item.children = item._allChildren.slice(0, item._count);
+            if (item.children.length < item._allChildren.length) {
               addLoading(item, searchValue);
             }
             afterLoading?.({ currentCount: item._count });
@@ -169,7 +169,7 @@ const lazyLoadChildren = ({
           onChange={(value) => {
             item._count = minStep;
             beforeLoading?.();
-            item._allChildren = item.loadChildren({ searchValue: value });
+            item._allChildren = item.loadChildren({ searchValue: value }) || [];
 
             if (isEmpty(item._allChildren)) {
               item.children = [
@@ -179,10 +179,10 @@ const lazyLoadChildren = ({
                 },
               ];
             } else {
-              item.children = item._allChildren?.slice(0, item._count);
+              item.children = item._allChildren.slice(0, item._count);
             }
 
-            if (item.children?.length < item._allChildren?.length) {
+            if (item.children.length < item._allChildren.length) {
               addLoading(item, value);
             }
             afterLoading?.({ currentCount: item._count });
@@ -357,7 +357,8 @@ SchemaInitializer.Button = observer(
               children: isEmpty(item.children) ? [] : renderItems(item.children),
             };
           }
-        });
+        })
+        .filter(Boolean);
     };
 
     if (visible) {
