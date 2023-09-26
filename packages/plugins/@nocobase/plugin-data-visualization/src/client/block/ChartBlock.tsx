@@ -1,18 +1,15 @@
 import { SchemaInitializerButtonContext, useDesignable } from '@nocobase/client';
 import React, { useState } from 'react';
-import { ChartRendererProvider } from '../renderer';
 import { ChartConfigContext, ChartConfigCurrent, ChartConfigure } from '../configure/ChartConfigure';
+import { ChartRendererProvider } from '../renderer';
 
 export const ChartV2Block: React.FC = (props) => {
   const { insertAdjacent } = useDesignable();
   const [visible, setVisible] = useState(false);
   const [current, setCurrent] = useState<ChartConfigCurrent>({} as any);
   const [initialVisible, setInitialVisible] = useState(false);
-  const [searchValue, setSearchValue] = useState('');
   return (
-    <SchemaInitializerButtonContext.Provider
-      value={{ visible: initialVisible, setVisible: setInitialVisible, searchValue, setSearchValue }}
-    >
+    <SchemaInitializerButtonContext.Provider value={{ visible: initialVisible, setVisible: setInitialVisible }}>
       <ChartConfigContext.Provider value={{ visible, setVisible, current, setCurrent }}>
         {props.children}
         <ChartRendererProvider {...current.field?.decoratorProps}>
