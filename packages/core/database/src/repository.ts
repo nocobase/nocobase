@@ -391,44 +391,16 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     let rows;
 
     if (opts.include && opts.include.length > 0) {
-      // @ts-ignore
-      const primaryKeyField = model.primaryKeyField || model.primaryKeyAttribute;
-
-      // find all ids
-      const ids = (
-        await model.findAll({
-          ...opts,
-          includeIgnoreAttributes: false,
-          attributes: [primaryKeyField],
-          group: `${model.name}.${primaryKeyField}`,
-          transaction,
-          include: opts.include.filter((include) => {
-            return (
-              Object.keys(include.where || {}).length > 0 || JSON.stringify(opts?.filter)?.includes(include.association)
-            );
-          }),
-        } as any)
-      ).map((row) => {
-        return { row, pk: row.get(primaryKeyField) };
-      });
-
-      if (ids.length == 0) {
-        return [];
-      }
-
-      // find all rows
       const eagerLoadingTree = EagerLoadingTree.buildFromSequelizeOptions({
         model,
         rootAttributes: opts.attributes,
         includeOption: opts.include,
         rootOrder: opts.order,
+        rootQueryOptions: opts,
         db: this.database,
       });
 
-      await eagerLoadingTree.load(
-        ids.map((i) => i.pk),
-        transaction,
-      );
+      await eagerLoadingTree.load(transaction);
 
       rows = eagerLoadingTree.root.instances;
     } else {

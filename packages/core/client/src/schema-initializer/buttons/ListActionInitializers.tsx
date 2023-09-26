@@ -34,7 +34,11 @@ export const ListActionInitializers = {
           },
           visible: function useVisible() {
             const collection = useCollection();
-            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'file';
+            return (
+              (collection.template !== 'view' || collection?.writableView) &&
+              collection.template !== 'file' &&
+              collection.template !== 'sql'
+            );
           },
         },
         {
@@ -55,6 +59,10 @@ export const ListActionInitializers = {
             'x-acl-action-props': {
               skipScopeCheck: true,
             },
+          },
+          visible: function useVisible() {
+            const collection = useCollection();
+            return collection.template !== 'sql';
           },
         },
         {
@@ -167,7 +175,7 @@ export const ListItemActionInitializers = {
           },
           visible: function useVisible() {
             const collection = useCollection();
-            return (collection as any).template !== 'view' || collection?.writableView;
+            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
         {
@@ -179,6 +187,10 @@ export const ListItemActionInitializers = {
             'x-action': 'destroy',
             'x-decorator': 'ACLActionProvider',
             'x-align': 'left',
+          },
+          visible: function useVisible() {
+            const collection = useCollection();
+            return collection.template !== 'sql';
           },
         },
       ],
@@ -265,7 +277,7 @@ export const ListItemActionInitializers = {
           },
           visible: function useVisible() {
             const collection = useCollection();
-            return (collection as any).template !== 'view' || collection?.writableView;
+            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
         {
@@ -291,7 +303,7 @@ export const ListItemActionInitializers = {
           },
           visible: function useVisible() {
             const collection = useCollection();
-            return (collection as any).template !== 'view' || collection?.writableView;
+            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
       ],

@@ -33,7 +33,7 @@ export const useMenuItem = () => {
   const renderItems = useRef<() => JSX.Element>(null);
   const shouldRerender = useRef(false);
 
-  const Component = useCallback(() => {
+  const Component = useCallback(({ limitCount }) => {
     if (!shouldRerender.current) {
       return null;
     }
@@ -41,6 +41,16 @@ export const useMenuItem = () => {
 
     if (renderItems.current) {
       return renderItems.current();
+    }
+
+    if (limitCount && list.current.length > limitCount) {
+      return (
+        <>
+          {list.current.slice(0, limitCount).map((Com, index) => (
+            <Com key={index} />
+          ))}
+        </>
+      );
     }
 
     return (

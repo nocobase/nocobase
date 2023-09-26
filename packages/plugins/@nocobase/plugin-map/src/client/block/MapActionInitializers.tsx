@@ -1,3 +1,5 @@
+import { useCollection } from '@nocobase/client';
+
 // 表格操作配置
 export const MapActionInitializers = {
   'data-testid': 'configure-actions-button-of-map-block',
@@ -30,6 +32,10 @@ export const MapActionInitializers = {
               skipScopeCheck: true,
             },
           },
+          visible: function useVisible() {
+            const collection = useCollection();
+            return collection.template !== 'sql';
+          },
         },
         {
           type: 'item',
@@ -43,6 +49,10 @@ export const MapActionInitializers = {
     },
     {
       type: 'divider',
+      visible: function useVisible() {
+        const collection = useCollection();
+        return collection.template !== 'sql';
+      },
     },
     {
       type: 'subMenu',
@@ -93,6 +103,10 @@ export const MapActionInitializers = {
           },
         },
       ],
+      visible: function useVisible() {
+        const collection = useCollection();
+        return collection.template !== 'sql';
+      },
     },
   ],
 };

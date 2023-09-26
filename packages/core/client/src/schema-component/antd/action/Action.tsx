@@ -59,14 +59,13 @@ export const Action: ComposedAction = observer(
     const { modal } = App.useApp();
     let actionTitle = title || compile(fieldSchema.title);
     actionTitle = lodash.isString(actionTitle) ? t(actionTitle) : actionTitle;
-
     useEffect(() => {
       field.linkageProperty = {};
       linkageRules
         .filter((k) => !k.disabled)
         .forEach((v) => {
           return v.actions?.map((h) => {
-            linkageAction(h.operator, field, v.condition, values);
+            linkageAction(h.operator, field, v.condition, form.initialValues);
           });
         });
     }, [linkageRules, values, designable]);

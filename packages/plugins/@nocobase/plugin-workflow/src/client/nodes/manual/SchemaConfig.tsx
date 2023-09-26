@@ -18,6 +18,7 @@ import {
   SchemaSettings,
   VariableScopeProvider,
   gridRowColWrap,
+  useCollectionManager,
   useCompile,
   useFormBlockContext,
   useSchemaOptionsContext,
@@ -53,7 +54,7 @@ export type FormType = {
 export type ManualFormType = {
   title: string;
   config: {
-    useInitializer: () => SchemaInitializerItemOptions;
+    useInitializer: ({ collections }?: { collections: any[] }) => SchemaInitializerItemOptions;
     initializers?: {
       [key: string]: React.FC;
     };
@@ -108,6 +109,7 @@ function SimpleDesigner() {
 }
 
 function AddBlockButton(props: any) {
+  const { collections } = useCollectionManager();
   const current = useNodeContext();
   const nodes = useAvailableUpstreams(current);
   const triggerInitializers = [useTriggerInitializers()].filter(Boolean);
@@ -146,7 +148,7 @@ function AddBlockButton(props: any) {
       title: '{{t("Form")}}',
       children: Array.from(manualFormTypes.getValues()).map((item: ManualFormType) => {
         const { useInitializer: getInitializer } = item.config;
-        return getInitializer();
+        return getInitializer({ collections });
       }),
     },
     {

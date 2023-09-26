@@ -26,7 +26,7 @@ export const CalendarFormActionInitializers = {
           },
           visible: function useVisible() {
             const collection = useCollection();
-            return collection.template !== 'view' || collection?.writableView;
+            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
         {
@@ -39,7 +39,7 @@ export const CalendarFormActionInitializers = {
           },
           visible: function useVisible() {
             const collection = useCollection();
-            return collection.template !== 'view' || collection?.writableView;
+            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
         {
@@ -52,7 +52,7 @@ export const CalendarFormActionInitializers = {
           },
           visible: function useVisible() {
             const collection = useCollection();
-            return collection.template !== 'view' || collection?.writableView;
+            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
         {
@@ -147,7 +147,7 @@ export const CalendarFormActionInitializers = {
           },
           visible: function useVisible() {
             const collection = useCollection();
-            return collection.template !== 'view' || collection?.writableView;
+            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
         {
@@ -172,9 +172,9 @@ export const CalendarFormActionInitializers = {
               useProps: '{{ useCustomizeRequestActionProps }}',
             },
           },
-          visible: () => {
+          visible: function useVisible() {
             const collection = useCollection();
-            return collection.template !== 'view' || collection?.writableView;
+            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
       ],

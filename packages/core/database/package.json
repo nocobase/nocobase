@@ -20,7 +20,8 @@
     "mathjs": "^10.6.1",
     "semver": "^7.3.7",
     "sequelize": "^6.26.0",
-    "umzug": "^3.1.1"
+    "umzug": "^3.1.1",
+    "qs": "^6.11.2"
   },
   "devDependencies": {
     "@types/glob": "^7.2.0"
