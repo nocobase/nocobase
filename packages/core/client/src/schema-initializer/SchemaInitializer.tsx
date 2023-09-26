@@ -331,6 +331,7 @@ SchemaInitializer.Button = observer(
               key: item.key || `item-group-${indexA}`,
               label,
               title: label,
+              style: item.style,
               loadChildren: isEmpty(item.children)
                 ? ({ searchValue } = { searchValue: '' }) => renderItems(item.loadChildren?.({ searchValue }) || [])
                 : null,
