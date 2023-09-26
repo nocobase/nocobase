@@ -20,7 +20,7 @@ export default class RenameChartTypeMigration extends Migration {
       for (const item of items) {
         const schema = item.schema;
         const chartType = schema['x-decorator-props']?.config?.chartType;
-        if (!chartType) {
+        if (!chartType || chartType.startsWith('Built-in.')) {
           continue;
         }
         schema['x-decorator-props'].config.chartType = `Built-in.${chartType}`;
