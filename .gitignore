@@ -31,5 +31,7 @@ storage/plugins
 storage/tar
 storage/tmp
 storage/app.watch.ts
+storage/logs-e2e
+storage/uploads-e2e
 tsconfig.paths.json
 playwright
