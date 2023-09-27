@@ -34,6 +34,78 @@ describe('belongsToMany', () => {
     await app.destroy();
   });
 
+  it('should define belongs to many when change alias name', async () => {
+    await Collection.repository.create({
+      values: {
+        name: 'a',
+        fields: [{ type: 'bigInt', name: 'id', primaryKey: true, autoIncrement: true }],
+      },
+      context: {},
+    });
+
+    await Collection.repository.create({
+      values: {
+        name: 'b',
+        fields: [{ type: 'bigInt', name: 'id', primaryKey: true, autoIncrement: true }],
+      },
+      context: {},
+    });
+
+    await Collection.repository.create({
+      values: {
+        name: 't1',
+        fields: [{ type: 'bigInt', name: 'id', primaryKey: true, autoIncrement: true }],
+      },
+      context: {},
+    });
+
+    const Through = db.getCollection('t1');
+
+    let error;
+    try {
+      await Field.repository.create({
+        values: {
+          name: 't1',
+          type: 'belongsToMany',
+          target: 'b',
+          through: 't1',
+          collectionName: 'a',
+          sourceKey: 'id',
+          targetKey: 'id',
+          foreignKey: 'a_id',
+          otherKey: 'b_id',
+        },
+        context: {},
+      });
+    } catch (e) {
+      error = e;
+    }
+
+    expect(error).toBeDefined();
+
+    let error2;
+    try {
+      await Field.repository.create({
+        values: {
+          name: 'xxx',
+          type: 'belongsToMany',
+          target: 'b',
+          through: 't1',
+          collectionName: 'a',
+          sourceKey: 'id',
+          targetKey: 'id',
+          foreignKey: 'a_id',
+          otherKey: 'b_id',
+        },
+        context: {},
+      });
+    } catch (e) {
+      error2 = e;
+    }
+
+    expect(error2).not.toBeDefined();
+  });
+
   it('should create belongsToMany field', async () => {
     await Field.repository.create({
       values: {
