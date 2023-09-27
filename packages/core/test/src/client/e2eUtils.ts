@@ -466,7 +466,7 @@ const createFakerData = async (collectionSettings: CollectionSetting[]) => {
 /**
  * 使页面成为可配置态
  */
-async function enableToConfig(page: Page) {
+export async function enableToConfig(page: Page) {
   if (!(await page.getByRole('button', { name: 'plus Add menu item' }).isVisible())) {
     await page.getByRole('button', { name: 'highlight' }).click();
   }
