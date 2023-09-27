@@ -164,7 +164,7 @@ const updateUidOfPageSchema = (uiSchema: any) => {
 const createPage = async (page: Page, options?: CreatePageOptions) => {
   const { name, pageSchema } = options || {};
   const api = await request.newContext({
-    storageState: require.resolve('./playwright/.auth/admin.json'),
+    storageState: require.resolve('../../../../../playwright/.auth/admin.json'),
   });
 
   const state = await api.storageState();
@@ -245,7 +245,7 @@ const createPage = async (page: Page, options?: CreatePageOptions) => {
  */
 const deletePage = async (pageUid: string) => {
   const api = await request.newContext({
-    storageState: require.resolve('./playwright/.auth/admin.json'),
+    storageState: require.resolve('../../../../../playwright/.auth/admin.json'),
   });
 
   const state = await api.storageState();
@@ -264,7 +264,7 @@ const deletePage = async (pageUid: string) => {
 
 const createCollection = async (collectionSetting: CollectionSetting) => {
   const api = await request.newContext({
-    storageState: require.resolve('./playwright/.auth/admin.json'),
+    storageState: require.resolve('../../../../../playwright/.auth/admin.json'),
   });
 
   const state = await api.storageState();
@@ -295,7 +295,7 @@ const createCollection = async (collectionSetting: CollectionSetting) => {
 
 const deleteCollections = async (collectionNames: string[]) => {
   const api = await request.newContext({
-    storageState: require.resolve('./playwright/.auth/admin.json'),
+    storageState: require.resolve('../../../../../playwright/.auth/admin.json'),
   });
 
   const state = await api.storageState();
@@ -387,7 +387,7 @@ const generateFakerData = (collectionSetting: CollectionSetting) => {
  */
 const createFakerData = async (collectionSettings: CollectionSetting[]) => {
   const api = await request.newContext({
-    storageState: require.resolve('./playwright/.auth/admin.json'),
+    storageState: require.resolve('../../../../../playwright/.auth/admin.json'),
   });
 
   const state = await api.storageState();

@@ -1,4 +1,4 @@
-import { describe, expect, gotoPage, test } from '@nocobase/test';
+import { describe, expect, gotoPage, test } from '@nocobase/test/client';
 
 describe('create data block', () => {
   test('table', async ({ page }) => {

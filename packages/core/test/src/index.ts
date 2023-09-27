@@ -61,5 +61,3 @@ export const createWsClient = async ({ serverPort, options = {} }) => {
     },
   };
 };
-
-export * from './e2eUtils';

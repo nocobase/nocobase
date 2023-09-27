@@ -1,4 +1,4 @@
-import { describe, expect, test } from '@nocobase/test';
+import { describe, expect, test } from '@nocobase/test/client';
 
 describe('auth', () => {
   // 重置登录状态

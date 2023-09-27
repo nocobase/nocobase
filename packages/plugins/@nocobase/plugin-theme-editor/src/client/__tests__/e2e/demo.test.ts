@@ -1,4 +1,4 @@
-import { describe, expect, gotoPage, test } from '@nocobase/test';
+import { describe, expect, gotoPage, test } from '@nocobase/test/client';
 
 describe('demo', () => {
   test('test1', async ({ page }) => {

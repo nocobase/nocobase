@@ -1,4 +1,4 @@
-import { describe, expect, gotoPage, test } from '@nocobase/test';
+import { describe, expect, gotoPage, test } from '@nocobase/test/client';
 
 const pageConfig = {
   pageSchema: {
