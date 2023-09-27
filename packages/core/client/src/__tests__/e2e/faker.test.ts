@@ -1,4 +1,4 @@
-import { describe, expect, gotoPage, test } from 'e2eUtils';
+import { describe, expect, gotoPage, test } from '@nocobase/test';
 
 const phonePageConfig = {
   collections: [

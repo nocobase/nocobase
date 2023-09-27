@@ -2,9 +2,10 @@ import { faker } from '@faker-js/faker';
 import { uid } from '@formily/shared';
 import { Page, expect, request, test } from '@playwright/test';
 import _ from 'lodash';
-import { PORT } from './scripts/utils';
 
 export { expect, test };
+
+const PORT = 20000;
 
 interface CollectionSetting {
   title: string;
@@ -119,8 +120,6 @@ const registerHooks = () => {
     }
   });
 };
-
-registerHooks();
 
 // @ts-ignore
 export const describe: typeof test.describe = (title, callback) => {
