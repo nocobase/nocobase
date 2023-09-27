@@ -5,7 +5,6 @@ import net from 'net';
 import fs from 'node:fs';
 import path from 'path';
 
-export const PORT = 20000;
 export const commonConfig: any = {
   stdio: 'inherit',
 };
@@ -47,8 +46,8 @@ export const runNocoBase = async (options?: CommonOptions<any>) => {
     fs.mkdirSync('playwright');
   }
 
-  if (!fs.existsSync('.env.e2e') && fs.existsSync('.env.example')) {
-    const env = fs.readFileSync('.env.example');
+  if (!fs.existsSync('.env.e2e') && fs.existsSync('.env.e2e.example')) {
+    const env = fs.readFileSync('.env.e2e.example');
     fs.writeFileSync('.env.e2e', env);
   }
 
@@ -56,27 +55,27 @@ export const runNocoBase = async (options?: CommonOptions<any>) => {
     throw new Error('Please create .env.e2e file first!');
   }
 
+  dotenv.config({ path: path.resolve(process.cwd(), '.env.e2e') });
+
   if (process.env.CI) {
     console.log('yarn nocobase install');
     await runCommand('yarn', ['nocobase', 'install'], options);
-    console.log(`yarn start -d -p ${PORT}`);
-    await runCommand('yarn', ['start', '-d', `-p ${PORT}`], options);
+    console.log(`yarn start -d -p ${process.env.APP_PORT}`);
+    await runCommand('yarn', ['start', '-d', `-p ${process.env.APP_PORT}`], options);
     return {};
   }
 
-  if (await checkPort(PORT)) {
-    console.error(`Port ${PORT} is already in use!`);
+  if (await checkPort(process.env.APP_PORT)) {
+    console.error(`Port ${process.env.APP_PORT} is already in use!`);
     return {};
   }
-
-  dotenv.config({ path: path.resolve(process.cwd(), '.env.e2e') });
 
   // 加上 -f 会清空数据库
   console.log('yarn nocobase install -f');
   await runCommand('yarn', ['nocobase', 'install', '-f'], options);
 
   console.log('starting server...');
-  const { cancel, kill } = runCommand('yarn', ['dev', `-p ${PORT}`, ...process.argv.slice(2)], options);
+  const { cancel, kill } = runCommand('yarn', ['dev', `-p ${process.env.APP_PORT}`, ...process.argv.slice(2)], options);
 
   return { cancel, kill };
 };

@@ -1,3 +1,3 @@
 import { runNocoBase } from './utils';
 
-runNocoBase();
+void runNocoBase();

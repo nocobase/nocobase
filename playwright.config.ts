@@ -1,5 +1,4 @@
 import { defineConfig, devices } from '@playwright/test';
-import { PORT } from './scripts/utils';
 
 export default defineConfig({
   timeout: 60 * 1000,
@@ -29,7 +28,7 @@ export default defineConfig({
 
   use: {
     // Base URL to use in actions like `await page.goto('/')`.
-    baseURL: `http://localhost:${PORT}`,
+    baseURL: `http://localhost:${process.env.APP_PORT}`,
 
     // Collect trace when retrying the failed test.
     trace: 'on-first-retry',

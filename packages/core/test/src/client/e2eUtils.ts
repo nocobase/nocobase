@@ -5,8 +5,6 @@ import _ from 'lodash';
 
 export { expect, test };
 
-const PORT = 20000;
-
 interface CollectionSetting {
   title: string;
   name: string;
@@ -133,7 +131,7 @@ Object.assign(describe, test.describe);
 
 const getStorageItem = (key: string, storageState: any) => {
   return storageState.origins
-    .find((item) => item.origin === `http://localhost:${PORT}`)
+    .find((item) => item.origin === `http://localhost:${process.env.APP_PORT}`)
     ?.localStorage.find((item) => item.name === key)?.value;
 };
 
