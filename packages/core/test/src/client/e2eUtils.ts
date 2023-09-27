@@ -1,9 +1,9 @@
 import { faker } from '@faker-js/faker';
 import { uid } from '@formily/shared';
-import { Page, expect, request, test } from '@playwright/test';
+import { Page, test as base, request } from '@playwright/test';
 import _ from 'lodash';
 
-export { expect, test };
+export * from '@playwright/test';
 
 interface CollectionSetting {
   title: string;
@@ -86,8 +86,26 @@ interface CollectionSetting {
   }>;
 }
 
-interface PageOptions {
+interface PageConfig {
+  /**
+   * 用户可见的页面名称
+   * @default uid()
+   */
+  name?: string;
+  /**
+   * 页面的基础路径
+   * @default '/admin/'
+   */
+  basePath?: string;
+  /**
+   * 页面数据表的配置
+   * @default undefined
+   */
   collections?: CollectionSetting[];
+  /**
+   * 页面整体的 Schema
+   * @default undefined
+   */
   pageSchema?: any;
 }
 
@@ -96,38 +114,77 @@ interface CreatePageOptions {
   pageSchema?: any;
 }
 
-const registerHooks = () => {
-  test.beforeEach(() => {
+class NocoPage {
+  private url: string;
+  private uid: string;
+  private collectionsName: string[];
+  private waitForInit: Promise<void>;
+
+  constructor(
+    private page: Page,
+    private options?: PageConfig,
+  ) {
+    this.waitForInit = this.init();
+  }
+
+  async init() {
+    if (this.options?.collections?.length) {
+      const collections: any = deleteKeyOfCollection(this.options.collections);
+      this.collectionsName = collections.map((item) => item.name);
+
+      await createCollections(this.page, collections);
+
+      // 默认为每个 collection 生成 3 条数据
+      await createFakerData(collections);
+      await createFakerData(collections);
+      await createFakerData(collections);
+    }
+
+    this.uid = await createPage(this.page, {
+      name: this.options?.name,
+      pageSchema: this.options?.pageSchema,
+    });
+    this.url = `${this.options?.basePath || '/admin/'}${this.uid}`;
+  }
+
+  async goto() {
+    await this.waitForInit;
+    await this.page.goto(this.url);
+    await enableToConfig(this.page);
+  }
+
+  async destroy() {
+    if (this.uid) {
+      await deletePage(this.uid);
+      this.uid = undefined;
+    }
+    if (this.collectionsName?.length) {
+      await deleteCollections(this.collectionsName);
+      this.collectionsName = undefined;
+    }
+  }
+}
+
+export const test = base.extend<{ mockPage: (config?: PageConfig) => NocoPage }>({
+  mockPage: async ({ page }, use) => {
     // 保证每个测试运行时 faker 的随机值都是一样的
     faker.seed(1);
-  });
 
-  test.afterEach(async ({ page }) => {
-    // 每个测试运行结束后，删除当前页面
-    // @ts-ignore
-    if (page._currentPageUidList) {
-      // @ts-ignore
-      await Promise.all(page._currentPageUidList.map((pageUid) => deletePage(pageUid)));
+    const nocoPages: NocoPage[] = [];
+    const mockPage = (config?: PageConfig) => {
+      const nocoPage = new NocoPage(page, config);
+      nocoPages.push(nocoPage);
+      return nocoPage;
+    };
+
+    await use(mockPage);
+
+    // 测试运行完自动销毁页面
+    for (const nocoPage of nocoPages) {
+      await nocoPage.destroy();
     }
-
-    // 删除创建的 collections
-    // @ts-ignore
-    if (page._collectionNames) {
-      // @ts-ignore
-      await deleteCollections(page._collectionNames);
-    }
-  });
-};
-
-// @ts-ignore
-export const describe: typeof test.describe = (title, callback) => {
-  return test.describe(title, () => {
-    registerHooks();
-    callback();
-  });
-};
-
-Object.assign(describe, test.describe);
+  },
+});
 
 const getStorageItem = (key: string, storageState: any) => {
   return storageState.origins
@@ -404,37 +461,6 @@ const createFakerData = async (collectionSettings: CollectionSetting[]) => {
       throw new Error(await result.text());
     }
   }
-};
-
-/**
- * 根据提供的 UISchema 创建一个页面并跳转过去
- * @param page
- * @param options
- */
-export const gotoPage = async (page: Page, options?: PageOptions) => {
-  if (!options) {
-    await page.goto(`/admin/${await createPage(page)}`);
-    return await enableToConfig(page);
-  }
-
-  if (options.collections) {
-    // @ts-ignore
-    options.collections = deleteKeyOfCollection(options.collections);
-    await createCollections(page, options.collections);
-
-    // 默认为每个 collection 生成 3 条数据
-    await createFakerData(options.collections);
-    await createFakerData(options.collections);
-    await createFakerData(options.collections);
-  }
-
-  if (options.pageSchema) {
-    await page.goto(`/admin/${await createPage(page, { pageSchema: options.pageSchema })}`);
-  } else {
-    await page.goto(`/admin/${await createPage(page)}`);
-  }
-
-  await enableToConfig(page);
 };
 
 /**

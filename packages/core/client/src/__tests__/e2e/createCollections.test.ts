@@ -1,4 +1,4 @@
-import { describe, expect, gotoPage, test } from '@nocobase/test/client';
+import { expect, test } from '@nocobase/test/client';
 
 const pageConfig = {
   collections: [
@@ -243,9 +243,10 @@ const pageConfig = {
   ],
 };
 
-describe('createCollections', () => {
-  test('quickly create collections', async ({ page }) => {
-    await gotoPage(page, pageConfig);
+test.describe('createCollections', () => {
+  test('quickly create collections', async ({ page, mockPage }) => {
+    await mockPage(pageConfig).goto();
+
     await page.getByRole('button', { name: 'plus Add block' }).hover();
     await page.getByRole('menuitem', { name: 'table Table right' }).hover();
 

@@ -1,4 +1,4 @@
-import { describe, expect, gotoPage, test } from '@nocobase/test/client';
+import { expect, test } from '@nocobase/test/client';
 
 const phonePageConfig = {
   collections: [
@@ -313,9 +313,9 @@ const phonePageConfig = {
   },
 };
 
-describe('faker', () => {
-  test('phone', async ({ page }) => {
-    await gotoPage(page, phonePageConfig);
+test.describe('faker', () => {
+  test('phone', async ({ page, mockPage }) => {
+    await mockPage(phonePageConfig).goto();
 
     await expect(page.getByRole('cell', { name: '14979013912' })).toBeVisible();
     await expect(page.getByRole('cell', { name: '10313363958' })).toBeVisible();

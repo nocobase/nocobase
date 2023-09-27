@@ -1,4 +1,4 @@
-import { describe, expect, gotoPage, test } from '@nocobase/test/client';
+import { expect, test } from '@nocobase/test/client';
 
 const pageConfig = {
   pageSchema: {
@@ -450,9 +450,10 @@ const pageConfig = {
   },
 };
 
-describe('pageSchema', () => {
-  test('quickly create page schema', async ({ page }) => {
-    await gotoPage(page, pageConfig);
+test.describe('pageSchema', () => {
+  test('quickly create page schema', async ({ page, mockPage }) => {
+    await mockPage(pageConfig).goto();
+
     await expect(page.getByText('Table block')).toBeVisible();
     await expect(page.getByText('Form block')).toBeVisible();
     await expect(page.getByText('Details block')).toBeVisible();

@@ -1,6 +1,6 @@
-import { describe, expect, test } from '@nocobase/test/client';
+import { expect, test } from '@nocobase/test/client';
 
-describe('auth', () => {
+test.describe('auth', () => {
   // 重置登录状态
   test.use({
     storageState: {
