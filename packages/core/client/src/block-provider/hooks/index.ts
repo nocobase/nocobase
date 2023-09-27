@@ -814,7 +814,7 @@ export const useDestroyActionProps = () => {
         service?.refresh?.();
       }
 
-      if (block !== 'TableField') {
+      if (block && block !== 'TableField') {
         __parent?.service?.refresh?.();
         setVisible?.(false);
       }
@@ -1114,7 +1114,7 @@ export function getAssociationPath(str) {
 }
 
 export const useAssociationNames = () => {
-  const { getCollectionJoinField } = useCollectionManager();
+  const { getCollectionJoinField, getCollection } = useCollectionManager();
   const fieldSchema = useFieldSchema();
   const updateAssociationValues = new Set([]);
   const appends = new Set([]);
@@ -1125,10 +1125,16 @@ export const useAssociationNames = () => {
       const isAssociationSubfield = s.name.includes('.');
       const isAssociationField =
         collectionfield && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionfield.type);
+      const isTreeCollection = isAssociationField && getCollection(collectionfield.target)?.template === 'tree';
       if (collectionfield && (isAssociationField || isAssociationSubfield) && s['x-component'] !== 'TableField') {
         const fieldPath = !isAssociationField && isAssociationSubfield ? getAssociationPath(s.name) : s.name;
         const path = prefix === '' || !prefix ? fieldPath : prefix + '.' + fieldPath;
-        appends.add(path);
+        if (isTreeCollection) {
+          appends.add(path);
+          appends.add(`${path}.parent` + '(recursively=true)');
+        } else {
+          appends.add(path);
+        }
         if (['Nester', 'SubTable', 'PopoverNester'].includes(s['x-component-props']?.mode)) {
           updateAssociationValues.add(path);
           const bufPrefix = prefix && prefix !== '' ? prefix + '.' + s.name : s.name;
