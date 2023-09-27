@@ -20,7 +20,7 @@ export class CustomRequestPlugin extends Plugin {
     });
 
     this.app.acl.registerSnippet({
-      name: `pm.${this.name}.acl`,
+      name: `ui.${this.name}`,
       actions: ['customRequests:*'],
     });
 
