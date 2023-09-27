@@ -145,7 +145,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   protected _cronJobManager: CronJobManager;
 
-  cronJobManager() {
+  get cronJobManager() {
     return this._cronJobManager;
   }
 

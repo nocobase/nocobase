@@ -12,24 +12,24 @@ describe('cron service', () => {
   });
 
   it('should get cron job manager', async () => {
-    const cron = app.cronJobManager();
+    const cron = app.cronJobManager;
     expect(cron).toBeInstanceOf(CronJobManager);
   });
 
   it('should get new cron instance when app reload', async () => {
-    const cron1 = app.cronJobManager();
+    const cron1 = app.cronJobManager;
     expect(cron1).toBeDefined();
     cron1.start();
     expect(cron1.started).toBeTruthy();
     await app.reload();
     expect(cron1.started).toBeFalsy();
-    const cron2 = app.cronJobManager();
+    const cron2 = app.cronJobManager;
     expect(cron2).toBeDefined();
     expect(cron1).not.toBe(cron2);
   });
 
   it('should add cron job', async () => {
-    const cronManager = app.cronJobManager();
+    const cronManager = app.cronJobManager;
     const jestFn = jest.fn();
     cronManager.addJob({
       time: '* * * * * *',
