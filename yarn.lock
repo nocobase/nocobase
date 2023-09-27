@@ -5906,6 +5906,11 @@
   version "3.3.0"
   resolved "https://registry.yarnpkg.com/@types/luxon/-/luxon-3.3.0.tgz#a61043a62c0a72696c73a0a305c544c96501e006"
 
+"@types/luxon@~3.3.0":
+  version "3.3.2"
+  resolved "https://registry.npmjs.org/@types/luxon/-/luxon-3.3.2.tgz#f6e3524c2486b949a4db445e85d93c8e9886dfe2"
+  integrity sha512-l5cpE57br4BIjK+9BSkFBOsWtwv6J9bJpC7gdXIzZyI0vuKvNTk0wZZrkQxMGsUAuGW9+WMNWF2IJMD7br2yeQ==
+
 "@types/markdown-it-highlightjs@3.3.1":
   version "3.3.1"
   resolved "https://registry.npmmirror.com/@types/markdown-it-highlightjs/-/markdown-it-highlightjs-3.3.1.tgz#1e051211e7754ba478449fea7faeab3d177ca892"
@@ -9432,6 +9437,14 @@ cron@^2.3.1:
   resolved "https://registry.yarnpkg.com/cron/-/cron-2.3.1.tgz#71caa566ffef60ada9183b8677df4afa9a214ad7"
   dependencies:
     luxon "^3.2.1"
+
+cron@^2.4.4:
+  version "2.4.4"
+  resolved "https://registry.npmjs.org/cron/-/cron-2.4.4.tgz#988c1757b3f288d1dfcc360ee6d80087448916dc"
+  integrity sha512-MHlPImXJj3K7x7lyUHjtKEOl69CSlTOWxS89jiFgNkzXfvhVjhMz/nc7/EIfN9vgooZp8XTtXJ1FREdmbyXOiQ==
+  dependencies:
+    "@types/luxon" "~3.3.0"
+    luxon "~3.3.0"
 
 croner@~4.1.92:
   version "4.1.97"
@@ -15884,7 +15897,7 @@ luxon@^1.28.0:
   version "1.28.1"
   resolved "https://registry.npmmirror.com/luxon/-/luxon-1.28.1.tgz#528cdf3624a54506d710290a2341aa8e6e6c61b0"
 
-luxon@^3.2.1:
+luxon@^3.2.1, luxon@~3.3.0:
   version "3.3.0"
   resolved "https://registry.npmmirror.com/luxon/-/luxon-3.3.0.tgz#d73ab5b5d2b49a461c47cedbc7e73309b4805b48"
 
@@ -19211,7 +19224,7 @@ qrcode.react@^3.1.0:
   version "3.1.0"
   resolved "https://registry.npmmirror.com/qrcode.react/-/qrcode.react-3.1.0.tgz#5c91ddc0340f768316fbdb8fff2765134c2aecd8"
 
-qs@^6.10.1, qs@^6.11.0, qs@^6.4.0, qs@^6.5.2, qs@^6.9.4:
+qs@^6.10.1, qs@^6.11.0, qs@^6.11.2, qs@^6.4.0, qs@^6.5.2, qs@^6.9.4:
   version "6.11.2"
   resolved "https://registry.npmmirror.com/qs/-/qs-6.11.2.tgz#64bea51f12c1f5da1bc01496f48ffcff7c69d7d9"
   dependencies:
