@@ -92,19 +92,20 @@ export class SettingsCenter {
     return this.aclSnippets.includes(`!${this.getAclSnippet(name)}`) === false;
   }
 
-  getSetting(name: string): SettingOptionsType & { children?: Record<string, SettingOptionsType> } {
-    const hasAuth = this.hasAuth(name);
-    if (hasAuth) return this.settings[name];
+  getSetting(name: string) {
+    return this.settings[name];
   }
 
   has(name: string) {
+    const hasAuth = this.hasAuth(name);
+    if (!hasAuth) return false;
     return !!this.getSetting(name);
   }
 
   get(name: string, filterAuth = true): SettingPageType {
     const isAllow = this.hasAuth(name);
-    if (filterAuth && !isAllow) return null;
     const pluginSetting = this.getSetting(name);
+    if ((filterAuth && !isAllow) || !pluginSetting) return null;
     const children = Object.keys(pluginSetting.children || {})
       .sort((a, b) => a.localeCompare(b)) // sort by name
       .map((key) => this.get(pluginSetting.children[key].name, filterAuth))
