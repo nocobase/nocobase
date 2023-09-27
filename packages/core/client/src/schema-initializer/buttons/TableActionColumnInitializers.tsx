@@ -101,7 +101,7 @@ export const TableActionColumnInitializers = (props: any) => {
                 'x-decorator': 'ACLActionProvider',
               },
               visible: () => {
-                return collection.template !== 'view' || collection?.writableView;
+                return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
               },
             },
 
@@ -115,7 +115,7 @@ export const TableActionColumnInitializers = (props: any) => {
                 'x-decorator': 'ACLActionProvider',
               },
               visible: () => {
-                return collection.template !== 'view' || collection?.writableView;
+                return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
               },
             },
             collection.tree &&
@@ -139,7 +139,7 @@ export const TableActionColumnInitializers = (props: any) => {
                 'x-decorator': 'ACLActionProvider',
               },
               visible: () => {
-                return collection.template !== 'view' || collection?.writableView;
+                return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
               },
             },
           ],
@@ -225,7 +225,7 @@ export const TableActionColumnInitializers = (props: any) => {
                 },
               },
               visible: () => {
-                return collection.template !== 'view' || collection?.writableView;
+                return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
               },
             },
             {
@@ -236,7 +236,7 @@ export const TableActionColumnInitializers = (props: any) => {
                 'x-action': 'customize:table:request',
               },
               visible: () => {
-                return collection.template !== 'view' || collection?.writableView;
+                return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
               },
             },
           ],

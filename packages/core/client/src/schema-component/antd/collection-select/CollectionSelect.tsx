@@ -17,7 +17,7 @@ function useOptions({ filter, isTableOid }: CollectionSelectProps) {
   const field: any = useField();
   const ctx: any = useContext(FilterContext);
   const collection = useCollection();
-  const targetCollection = isTableOid && (ctx?.collectionName || ctx.field?.collectionName || collection.name);
+  const targetCollection = isTableOid && (ctx?.collectionName || ctx?.field?.collectionName || collection.name);
   const inheritCollections = useSelfAndChildrenCollections(targetCollection);
   const { collections = [] } = useCollectionManager();
   const currentCollections = field?.dataSource
@@ -45,6 +45,7 @@ export const CollectionSelect = connect(
     const { t } = useTranslation();
     return (
       <Select
+        data-testid="antd-select"
         placeholder={t('Select collection')}
         popupMatchSelectWidth={false}
         {...others}

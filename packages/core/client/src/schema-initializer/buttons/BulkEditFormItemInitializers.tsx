@@ -14,6 +14,7 @@ export const BulkEditFormItemInitializers = (props: any) => {
   const associationFields = useAssociatedFormItemInitializerFields({ readPretty: true, block: 'Form' });
   return (
     <SchemaInitializer.Button
+      data-testid="configure-fields-button-of-bulk-edit-form-item"
       wrap={gridRowColWrap}
       icon={'SettingOutlined'}
       items={union<any>(

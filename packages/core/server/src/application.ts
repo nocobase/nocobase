@@ -23,6 +23,8 @@ import { ApplicationVersion } from './helpers/application-version';
 import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
+import { CronJob } from 'cron';
+import { CronJobManager } from './cron/cron-job-manager';
 
 const packageJson = require('../package.json');
 
@@ -88,6 +90,7 @@ interface StartOptions {
   cliArgs?: any[];
   dbSync?: boolean;
   checkInstall?: boolean;
+  recover?: boolean;
 }
 
 type MaintainingStatus = 'command_begin' | 'command_end' | 'command_running' | 'command_error';
@@ -138,6 +141,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   get maintainingMessage() {
     return this._maintainingMessage;
+  }
+
+  protected _cronJobManager: CronJobManager;
+
+  get cronJobManager() {
+    return this._cronJobManager;
   }
 
   protected _db: Database;
@@ -330,6 +339,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this._loaded = false;
 
+    await this.emitAsync('beforeReload', this, options);
+
     await this.load({
       ...options,
       reload: true,
@@ -471,14 +482,15 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this.setMaintainingMessage('emit afterStart');
     await this.emitAsync('afterStart', this, options);
-    await this.emitStartedEvent();
+    await this.emitStartedEvent(options);
 
     this.stopped = false;
   }
 
-  async emitStartedEvent() {
+  async emitStartedEvent(options: StartOptions = {}) {
     await this.emitAsync('__started', this, {
       maintainingStatus: lodash.cloneDeep(this._maintainingCommandStatus),
+      options,
     });
   }
 
@@ -486,11 +498,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._started;
   }
 
-  async tryReloadOrRestart() {
+  async tryReloadOrRestart(options: StartOptions = {}) {
     if (this._started) {
-      await this.restart();
+      await this.restart(options);
     } else {
-      await this.reload();
+      await this.reload(options);
     }
   }
 
@@ -669,6 +681,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.middleware = new Toposort<any>();
     this.plugins = new Map<string, Plugin>();
     this._acl = createACL();
+
+    this._cronJobManager = new CronJobManager(this);
 
     this.use(logger.middleware, { tag: 'logger' });
 

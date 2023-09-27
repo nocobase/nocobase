@@ -78,14 +78,14 @@ export class PresetNocoBase extends Plugin {
   }
 
   get allPlugins() {
-    return this.builtInPlugins
+    return this.getBuiltInPlugins()
       .map((name) => {
         const packageName = PluginManager.getPackageName(name);
         const packageJson = PluginManager.getPackageJson(packageName);
         return { name, packageName, enabled: true, builtIn: true, version: packageJson.version } as any;
       })
       .concat(
-        this.localPlugins.map((name) => {
+        this.getLocalPlugins().map((name) => {
           const packageName = PluginManager.getPackageName(name);
           const packageJson = PluginManager.getPackageJson(packageName);
           return { name, packageName, version: packageJson.version };

@@ -171,6 +171,7 @@ function SelectItem(props) {
       <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
         {title}
         <Select
+          data-testid="antd-select"
           popupMatchSelectWidth={false}
           bordered={false}
           value={value}

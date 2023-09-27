@@ -306,6 +306,7 @@ export const Table: any = observer(
                   const toIndex = e.over?.data.current?.sortable?.index;
                   const from = field.value[fromIndex] || e.active;
                   const to = field.value[toIndex] || e.over;
+                  field.move(fromIndex, toIndex);
                   onRowDragEnd({ from, to });
                 }}
               >

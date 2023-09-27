@@ -1,6 +1,6 @@
 import { css } from '@nocobase/client';
-import dayjs from 'dayjs';
 import { DatePicker, Select } from 'antd';
+import dayjs from 'dayjs';
 import React from 'react';
 import { useWorkflowTranslation } from '../../locale';
 import { OnField } from './OnField';
@@ -16,6 +16,7 @@ export function EndsByField({ value, onChange }) {
       `}
     >
       <Select
+        data-testid="antd-select"
         value={type}
         onChange={(t) => {
           onChange(t ? (t === 'field' ? {} : new Date()) : null);

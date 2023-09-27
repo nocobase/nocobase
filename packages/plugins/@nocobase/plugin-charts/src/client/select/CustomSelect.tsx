@@ -1,6 +1,5 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
-import { isValid } from '@formily/shared';
 import { Icon, PopoverWithStopPropagation, css } from '@nocobase/client';
 import type { SelectProps } from 'antd';
 import { Select as AntdSelect } from 'antd';
@@ -9,8 +8,6 @@ import { lang } from '../locale';
 import { ReadPretty } from './ReadPretty';
 
 type Props = SelectProps<any, any> & { objectValue?: boolean; onChange?: (v: any) => void; multiple: boolean };
-
-const isEmptyObject = (val: any) => !isValid(val) || (typeof val === 'object' && Object.keys(val).length === 0);
 
 const { Option, OptGroup } = AntdSelect;
 const filterOption = (input, option) => (option?.label ?? '').toLowerCase().includes((input || '').toLowerCase());
@@ -24,6 +21,7 @@ const InternalSelect = connect(
     const group2 = options.filter((option) => option.group === 1);
     return (
       <AntdSelect
+        data-testid="antd-select"
         showSearch
         filterOption={filterOption}
         allowClear

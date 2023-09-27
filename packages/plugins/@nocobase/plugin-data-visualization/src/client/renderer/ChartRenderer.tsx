@@ -14,8 +14,8 @@ import { ChartConfigContext } from '../configure/ChartConfigure';
 import { useData, useFieldTransformer, useFieldsWithAssociation } from '../hooks';
 import { useChartsTranslation } from '../locale';
 import { createRendererSchema, getField } from '../utils';
-import { useCharts } from '../chart/library';
 import { ChartRendererContext } from './ChartRendererProvider';
+import { useChart } from '../chart/group';
 const { Paragraph, Text } = Typography;
 
 export const ChartRenderer: React.FC & {
@@ -30,8 +30,7 @@ export const ChartRenderer: React.FC & {
   const advanced = config?.advanced || {};
   const api = useAPIClient();
 
-  const charts = useCharts();
-  const chart = charts[config?.chartType];
+  const chart = useChart(config?.chartType);
   const locale = api.auth.getLocale();
   const transformers = useFieldTransformer(transform, locale);
   const Component = chart?.render({

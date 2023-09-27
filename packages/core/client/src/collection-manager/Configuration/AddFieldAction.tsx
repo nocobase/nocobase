@@ -302,35 +302,37 @@ export const AddFieldAction = (props) => {
     };
   }, [getInterface, items, record]);
   return (
-    <RecordProvider record={record}>
-      <ActionContextProvider value={{ visible, setVisible }}>
-        <Dropdown getPopupContainer={getContainer} trigger={trigger} align={align} menu={menu}>
-          {children || (
-            <Button icon={<PlusOutlined />} type={'primary'}>
-              {t('Add field')}
-            </Button>
-          )}
-        </Dropdown>
-        <SchemaComponent
-          schema={schema}
-          components={{ ...components, ArrayTable }}
-          scope={{
-            getContainer,
-            useCancelAction,
-            createOnly: true,
-            isOverride: false,
-            override: false,
-            useCreateCollectionField,
-            record,
-            showReverseFieldConfig: true,
-            targetScope,
-            collections: currentCollections,
-            isDialect,
-            disabledJSONB: false,
-            ...scope,
-          }}
-        />
-      </ActionContextProvider>
-    </RecordProvider>
+    record.template !== 'sql' && (
+      <RecordProvider record={record}>
+        <ActionContextProvider value={{ visible, setVisible }}>
+          <Dropdown getPopupContainer={getContainer} trigger={trigger} align={align} menu={menu}>
+            {children || (
+              <Button icon={<PlusOutlined />} type={'primary'}>
+                {t('Add field')}
+              </Button>
+            )}
+          </Dropdown>
+          <SchemaComponent
+            schema={schema}
+            components={{ ...components, ArrayTable }}
+            scope={{
+              getContainer,
+              useCancelAction,
+              createOnly: true,
+              isOverride: false,
+              override: false,
+              useCreateCollectionField,
+              record,
+              showReverseFieldConfig: true,
+              targetScope,
+              collections: currentCollections,
+              isDialect,
+              disabledJSONB: false,
+              ...scope,
+            }}
+          />
+        </ActionContextProvider>
+      </RecordProvider>
+    )
   );
 };

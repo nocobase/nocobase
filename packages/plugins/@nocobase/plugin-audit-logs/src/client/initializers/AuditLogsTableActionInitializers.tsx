@@ -1,5 +1,6 @@
 // 操作记录表格操作配置
 export const AuditLogsTableActionInitializers = {
+  'data-testid': 'configure-actions-button-of-audit-logs-table',
   title: "{{t('Configure actions')}}",
   icon: 'SettingOutlined',
   style: {

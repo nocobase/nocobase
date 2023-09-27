@@ -77,6 +77,7 @@ const ConstantTypes = {
       const { t } = useTranslation();
       return (
         <Select
+          data-testid="antd-select"
           value={value}
           onChange={onChange}
           placeholder={t('Select')}

@@ -152,7 +152,7 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
   const [isPending, startTransition] = useReactTransition();
 
   const changeMenu = (v: boolean) => {
-    // 这里是为了防止当鼠标快速滑过时，终止菜单的渲染，防止卡顿
+    // 当鼠标快速滑过时，终止菜单的渲染，防止卡顿
     startTransition(() => {
       setVisible(v);
     });
@@ -176,7 +176,7 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
         `}
         menu={{ items }}
       >
-        {typeof title === 'string' ? <span>{title}</span> : title}
+        <div data-testid={props['data-testid']}>{typeof title === 'string' ? <span>{title}</span> : title}</div>
       </Dropdown>
     </>
   );
@@ -710,6 +710,7 @@ SchemaSettings.SelectItem = function SelectItem(props) {
       <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
         {title}
         <Select
+          data-testid="antd-select"
           popupMatchSelectWidth={false}
           bordered={false}
           defaultValue={value}
