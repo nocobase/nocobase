@@ -15,7 +15,7 @@ export const OIDCButton = ({ authenticator }: { authenticator: Authenticator }) 
   const api = useAPIClient();
   const redirect = useRedirect();
   const location = useLocation();
-  const { refreshAsync } = useCurrentUserContext();
+  const { refreshAsync: refresh } = useCurrentUserContext();
 
   const login = async () => {
     const response = await api.request({
@@ -32,21 +32,16 @@ export const OIDCButton = ({ authenticator }: { authenticator: Authenticator }) 
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const state = params.get('state');
-    if (!state) {
+    const token = params.get('token');
+    const name = params.get('authenticator');
+    if (token && name === authenticator.name) {
+      api.auth.setToken(token);
+      api.auth.setAuthenticator(name);
+      refresh()
+        .then(() => redirect())
+        .catch((err) => console.log(err));
       return;
     }
-    const name = new URLSearchParams(state).get('name');
-    if (name !== authenticator.name) {
-      return;
-    }
-    api.auth
-      .signIn(params, authenticator.name)
-      .then(async () => {
-        await refreshAsync();
-        redirect();
-      })
-      .catch((err) => console.log(err));
   });
 
   return (

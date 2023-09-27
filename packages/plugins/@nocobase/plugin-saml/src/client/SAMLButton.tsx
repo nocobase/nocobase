@@ -10,7 +10,7 @@ export const SAMLButton = ({ authenticator }: { authenticator: Authenticator }) 
   const api = useAPIClient();
   const redirect = useRedirect();
   const location = useLocation();
-  const { refreshAsync } = useCurrentUserContext();
+  const { refreshAsync: refresh } = useCurrentUserContext();
 
   const login = async () => {
     const response = await api.request({
@@ -27,16 +27,16 @@ export const SAMLButton = ({ authenticator }: { authenticator: Authenticator }) 
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    if (params.get('authenticator') !== authenticator.name) {
+    const token = params.get('token');
+    const name = params.get('authenticator');
+    if (token && name === authenticator.name) {
+      api.auth.setToken(token);
+      api.auth.setAuthenticator(name);
+      refresh()
+        .then(() => redirect())
+        .catch((err) => console.log(err));
       return;
     }
-    api.auth
-      .signIn(params.values, authenticator.name)
-      .then(async () => {
-        await refreshAsync();
-        redirect();
-      })
-      .catch((err) => console.log(err));
   });
 
   return (

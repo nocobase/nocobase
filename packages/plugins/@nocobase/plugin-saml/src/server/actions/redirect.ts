@@ -1,9 +1,10 @@
 import { Context, Next } from '@nocobase/actions';
+import { SAMLAuth } from '../saml-auth';
 
 export const redirect = async (ctx: Context, next: Next) => {
-  const { params } = ctx.action;
-  const url = `/signin?${new URLSearchParams(params).toString()}`;
-  ctx.redirect(url);
-
+  const { authenticator } = ctx.action.params || {};
+  const auth = (await ctx.app.authManager.get(authenticator, ctx)) as SAMLAuth;
+  const { token } = await auth.signIn();
+  ctx.redirect(`/signin?authenticator=${authenticator}&token=${token}`);
   await next();
 };
