@@ -44,7 +44,8 @@
     "semver": "^7.3.7",
     "serve-handler": "^6.1.5",
     "ws": "^8.13.0",
-    "xpipe": "^1.0.5"
+    "xpipe": "^1.0.5",
+    "cron": "^2.4.4"
   },
   "devDependencies": {
     "@types/semver": "^7.3.9",
