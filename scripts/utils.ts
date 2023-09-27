@@ -66,7 +66,7 @@ export const runNocoBase = async (options?: CommonOptions<any>) => {
   }
 
   if (await checkPort(process.env.APP_PORT)) {
-    console.error(`Port ${process.env.APP_PORT} is already in use!`);
+    console.log('Server is running, skip starting server.');
     return {};
   }
 

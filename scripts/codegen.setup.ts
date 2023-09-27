@@ -25,10 +25,12 @@ const run = async () => {
   if (kill) {
     // 等待服务成功启动
     setTimeout(() => {
+      console.log('Starting codegen...');
       runCodegenSync();
       kill?.('SIGKILL');
     }, 5000);
   } else {
+    console.log('Starting codegen...');
     runCodegenSync();
   }
 };

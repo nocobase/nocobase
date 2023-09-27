@@ -8,10 +8,12 @@ const run = async () => {
   if (kill) {
     // 等待服务成功启动
     setTimeout(() => {
+      console.log('Start running tests...');
       void runCommand('npx', ['playwright', 'test', ...process.argv.slice(2)]);
       kill?.('SIGKILL');
     }, 5000);
   } else {
+    console.log('Start running tests...');
     void runCommand('npx', ['playwright', 'test', ...process.argv.slice(2)]);
   }
 };
