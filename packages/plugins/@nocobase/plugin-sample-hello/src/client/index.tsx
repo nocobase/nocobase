@@ -63,6 +63,7 @@ class HelloPlugin extends Plugin {
       title: 'Hello',
       icon: 'ApiOutlined',
       Component: HelloPluginSettingPage,
+      sort: 100,
     });
   }
 }
