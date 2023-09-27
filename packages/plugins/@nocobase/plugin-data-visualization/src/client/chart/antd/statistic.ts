@@ -1,4 +1,3 @@
-import { ISchema } from '@formily/react';
 import { AntdChart } from './antd';
 import { Statistic as AntdStatistic } from 'antd';
 import { lang } from '../../locale';
