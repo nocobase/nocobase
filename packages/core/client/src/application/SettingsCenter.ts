@@ -110,15 +110,16 @@ export class SettingsCenter {
       .map((key) => this.get(pluginSetting.children[key].name, filterAuth))
       .filter(Boolean)
       .sort((a, b) => (a.sort || 0) - (b.sort || 0));
-    const { title, icon, ...others } = pluginSetting;
+    const { title, icon, aclSnippet, ...others } = pluginSetting;
     return {
       ...others,
+      aclSnippet: this.getAclSnippet(name),
       title,
       isAllow,
       label: title,
       icon: typeof icon === 'string' ? createElement(Icon, { type: icon }) : icon,
-      key: this.getAclSnippet(name),
       path: this.getRoutePath(name),
+      key: name,
       children: children.length ? children : undefined,
     };
   }

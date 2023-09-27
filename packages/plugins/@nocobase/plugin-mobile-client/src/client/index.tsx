@@ -25,7 +25,7 @@ export class MobileClientPlugin extends Plugin {
     this.app.settingsCenter.add(NAMESPACE, {
       title: `{{t("Mobile Client-side", { ns: "${NAMESPACE}" })}}`,
       icon: 'MobileOutlined',
-      Component: () => <SettingMultiPageLayout name={NAMESPACE} />,
+      Component: () => <SettingMultiPageLayout />,
     });
     this.app.settingsCenter.add(`${NAMESPACE}.interface`, {
       title: `{{t("Interface Configuration", { ns: "${NAMESPACE}" })}}`,

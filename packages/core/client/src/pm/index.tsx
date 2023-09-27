@@ -48,7 +48,7 @@ export class PMPlugin extends Plugin {
     this.app.settingsCenter.add('collection-manager', {
       icon: 'DatabaseOutlined',
       title: '{{t("Collection manager")}}',
-      Component: () => <SettingMultiPageLayout name="collection-manager" />,
+      Component: () => <SettingMultiPageLayout />,
       isBookmark: true,
     });
 

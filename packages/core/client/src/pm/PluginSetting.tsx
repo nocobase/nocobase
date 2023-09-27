@@ -15,16 +15,22 @@ export const SettingsCenterComponent = () => {
   const app = useApp();
   const navigate = useNavigate();
   const location = useLocation();
-  const settings = app.settingsCenter.getList();
   const compile = useCompile();
-  const menus = useMemo(() => {
-    return settings.map((item) => ({
-      label: compile(item.label),
-      title: compile(item.title),
-      icon: item.icon,
-      key: item.name,
-    }));
-  }, [compile, settings]);
+  const settings = useMemo(() => {
+    const list = app.settingsCenter.getList();
+    // compile title
+    function traverse(settings: SettingPageType[]) {
+      settings.forEach((item) => {
+        item.title = compile(item.title);
+        item.label = compile(item.title);
+        if (item.children?.length) {
+          traverse(item.children);
+        }
+      });
+    }
+    traverse(list);
+    return list;
+  }, [app.settingsCenter, compile]);
   const getFirstDeepChildPath = useCallback((settings: SettingPageType[]) => {
     if (!settings || !settings.length) {
       return '';
@@ -50,17 +56,13 @@ export const SettingsCenterComponent = () => {
     return map;
   }, [settings]);
 
-  const currentMenu = useMemo(() => settingsMapByPath[location.pathname], [location.pathname, settingsMapByPath]);
-  const pluginTitle = useMemo(() => {
-    if (!currentMenu) {
-      return '';
+  const currentSetting = useMemo(() => settingsMapByPath[location.pathname], [location.pathname, settingsMapByPath]);
+  const currentPlugin = useMemo(() => {
+    if (!currentSetting) {
+      return null;
     }
-    const plugin = settings.find((item) => item.name === currentMenu.pluginName);
-    if (!plugin) {
-      return '';
-    }
-    return compile(plugin.title);
-  }, [compile, currentMenu, settings]);
+    return settings.find((item) => item.name === currentSetting.pluginName);
+  }, [currentSetting, settings]);
 
   if (location.pathname === ADMIN_SETTINGS_PATH || location.pathname === ADMIN_SETTINGS_PATH + '/') {
     return <Navigate replace to={getFirstDeepChildPath(settings)} />;
@@ -85,7 +87,7 @@ export const SettingsCenterComponent = () => {
           theme={'light'}
         >
           <Menu
-            selectedKeys={[currentMenu?.pluginName]}
+            selectedKeys={[currentSetting?.pluginName]}
             style={{ height: 'calc(100vh - 46px)', overflowY: 'auto', overflowX: 'hidden' }}
             onClick={({ key }) => {
               const plugin = settings.find((item) => item.name === key);
@@ -95,20 +97,35 @@ export const SettingsCenterComponent = () => {
                 return navigate(plugin.path);
               }
             }}
-            items={menus}
+            items={settings.map((item) => ({ ...item, children: undefined }))}
           />
         </Layout.Sider>
         <Layout.Content>
-          {currentMenu && (
+          {currentSetting && (
             <PageHeader
               className={styles.pageHeader}
-              style={{ paddingBottom: theme.paddingSM }}
+              style={{
+                paddingBottom: currentPlugin.children?.length > 0 ? 0 : theme.paddingSM,
+              }}
               ghost={false}
-              title={pluginTitle}
+              title={currentPlugin.title}
+              footer={
+                currentPlugin.children?.length > 0 && (
+                  <Menu
+                    style={{ marginLeft: -theme.margin }}
+                    onClick={({ key }) => {
+                      navigate(app.settingsCenter.getRoutePath(key));
+                    }}
+                    selectedKeys={[currentSetting?.name]}
+                    mode="horizontal"
+                    items={currentPlugin.children}
+                  ></Menu>
+                )
+              }
             />
           )}
           <div className={styles.pageContent}>
-            {currentMenu ? (
+            {currentSetting ? (
               <Outlet />
             ) : (
               <Result status="404" title="404" subTitle="Sorry, the page you visited does not exist." />
