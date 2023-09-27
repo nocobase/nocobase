@@ -4,7 +4,6 @@ import {
   Plugin,
   SchemaComponentOptions,
   SchemaInitializerContext,
-  SettingsCenterProvider,
   useAPIClient,
 } from '@nocobase/client';
 import JSON5 from 'json5';
@@ -13,7 +12,7 @@ import { ChartBlockEngine } from './ChartBlockEngine';
 import { ChartBlockInitializer } from './ChartBlockInitializer';
 import { ChartQueryMetadataProvider } from './ChartQueryMetadataProvider';
 import './Icons';
-import { lang } from './locale';
+import { lang, NAMESPACE } from './locale';
 import { CustomSelect } from './select';
 import { QueriesTable } from './settings/QueriesTable';
 
@@ -52,7 +51,7 @@ const ChartsProvider = React.memo((props) => {
         key: 'chart',
         type: 'item',
         icon: 'PieChartOutlined',
-        title: '{{t("Chart (Old)",{ns:"charts"})}}',
+        title: `{{t("Chart (Old)", { ns: "${NAMESPACE}" })}}`,
         component: 'ChartBlockInitializer',
       });
     }
@@ -77,27 +76,12 @@ const ChartsProvider = React.memo((props) => {
   };
   return (
     <ChartQueryMetadataProvider>
-      <SettingsCenterProvider
-        settings={{
-          charts: {
-            title: '{{t("Charts", {ns:"charts"})}}',
-            icon: 'PieChartOutlined',
-            tabs: {
-              queries: {
-                title: '{{t("Queries", {ns:"charts"})}}',
-                component: QueriesTable,
-              },
-            },
-          },
-        }}
+      <SchemaComponentOptions
+        scope={{ validateSQL }}
+        components={{ CustomSelect, ChartBlockInitializer, ChartBlockEngine }}
       >
-        <SchemaComponentOptions
-          scope={{ validateSQL }}
-          components={{ CustomSelect, ChartBlockInitializer, ChartBlockEngine }}
-        >
-          <SchemaInitializerContext.Provider value={items}>{props.children}</SchemaInitializerContext.Provider>
-        </SchemaComponentOptions>
-      </SettingsCenterProvider>
+        <SchemaInitializerContext.Provider value={items}>{props.children}</SchemaInitializerContext.Provider>
+      </SchemaComponentOptions>
     </ChartQueryMetadataProvider>
   );
 });
@@ -109,6 +93,12 @@ export class ChartsPlugin extends Plugin {
   }
   async load() {
     this.app.use(ChartsProvider);
+    this.app.settingsCenter.add(NAMESPACE, {
+      title: `{{t("Charts", { ns: "${NAMESPACE}" })}}`,
+      icon: 'PieChartOutlined',
+      Component: QueriesTable,
+      aclSnippet: 'pm.charts.queries',
+    });
   }
 }
 

@@ -1,16 +1,19 @@
 import React from 'react';
 import { Plugin } from '../application/Plugin';
 import { PluginManagerLink, SettingsCenterDropdown } from './PluginManagerLink';
-import { ADMIN_SETTINGS_PATH, SettingsCenterComponent } from './PluginSetting';
+import { SettingsCenterComponent } from './PluginSetting';
 import { PluginManager } from './PluginManager';
 import { ACLPane } from '../acl/ACLShortcut';
 import { CollectionManagerPane } from '../collection-manager';
 import { BlockTemplatesPane } from '../schema-templates';
 import { SystemSettingsPane } from '../system-settings';
+import { SettingMultiPageLayout } from './SettingMultiPageLayout';
+import { ADMIN_SETTINGS_PATH } from '../application';
 
 export * from './PluginManagerLink';
 export * from './PluginSetting';
 export * from './PluginManager';
+export * from './SettingMultiPageLayout';
 
 export class PMPlugin extends Plugin {
   async load() {
@@ -34,19 +37,24 @@ export class PMPlugin extends Plugin {
       isBookmark: true,
       aclSnippet: 'pm.ui-schema-storage.block-templates',
     });
-    this.app.settingsCenter.add('collection-manager', {
-      icon: 'DatabaseOutlined',
-      title: '{{t("Collection manager")}}',
-      Component: CollectionManagerPane,
-      isBookmark: true,
-      aclSnippet: 'pm.collection-manager.collections',
-    });
     this.app.settingsCenter.add('system-settings', {
       icon: 'SettingOutlined',
       title: '{{t("System settings")}}',
       Component: SystemSettingsPane,
       isBookmark: true,
       aclSnippet: 'pm.system-settings.system-settings',
+    });
+
+    this.app.settingsCenter.add('collection-manager', {
+      icon: 'DatabaseOutlined',
+      title: '{{t("Collection manager")}}',
+      Component: () => <SettingMultiPageLayout name="collection-manager" />,
+      isBookmark: true,
+    });
+
+    this.app.settingsCenter.add('collection-manager.collections', {
+      title: '{{t("Collections & Fields")}}',
+      Component: CollectionManagerPane,
     });
   }
 

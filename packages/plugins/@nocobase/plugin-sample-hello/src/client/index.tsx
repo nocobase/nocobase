@@ -4,8 +4,6 @@ import { Card } from 'antd';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { HelloDesigner } from './HelloDesigner';
-import { Outlet, useNavigate } from 'react-router-dom';
-import { Tabs } from 'antd';
 
 export const HelloBlockInitializer = (props) => {
   const { insert } = props;
@@ -50,18 +48,10 @@ const HelloProvider = React.memo((props) => {
 });
 HelloProvider.displayName = 'HelloProvider';
 
-const HelloPage = () => {
-  const app = useApp();
-  const nav = useNavigate();
-  const setting = app.settingsCenter.get('sample-hello');
+const HelloPluginSettingPage = () => {
   return (
     <Card bordered={false}>
-      <div>公共部分。在下面的仅是 Tabs 的场景，完全没必要用路由的方式，仅是为了演示</div>
-      <Tabs
-        onChange={(path) => nav(path)}
-        items={setting.children.map((item) => ({ label: item.label, key: item.path }))}
-      ></Tabs>
-      <Outlet />
+      <div>Hello plugin setting page</div>
     </Card>
   );
 };
@@ -72,16 +62,7 @@ class HelloPlugin extends Plugin {
     this.app.settingsCenter.add('sample-hello', {
       title: 'Hello',
       icon: 'ApiOutlined',
-      isBookmark: true,
-      Component: HelloPage,
-    });
-    this.app.settingsCenter.add('sample-hello.aaa', {
-      title: '测试A',
-      Component: () => <div>测试A 内容</div>,
-    });
-    this.app.settingsCenter.add('sample-hello.bbb', {
-      title: '测试B',
-      Component: () => <div>测试B 内容</div>,
+      Component: HelloPluginSettingPage,
     });
   }
 }

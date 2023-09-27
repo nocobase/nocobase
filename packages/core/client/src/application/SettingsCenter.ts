@@ -5,12 +5,12 @@ import type { Application } from './Application';
 import type { RouteType } from './RouterManager';
 import { Icon } from '../icon';
 
-const ADMIN_SETTINGS_KEY = 'admin.settings.';
-const ADMIN_SETTINGS_PATH = '/admin/settings/';
-const SNIPPET_PREFIX = 'pm.';
+export const ADMIN_SETTINGS_KEY = 'admin.settings.';
+export const ADMIN_SETTINGS_PATH = '/admin/settings/';
+export const SNIPPET_PREFIX = 'pm.';
 
 export interface SettingOptionsType {
-  title: string;
+  title?: string;
   Component: RouteType['Component'];
   icon?: string;
   /**

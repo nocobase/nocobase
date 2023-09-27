@@ -113,8 +113,6 @@ yarn pm remove hello
   - UI Router
     - RouteSwitchProvider
     - RouteSwitch
-  - Settings Center
-    - SettingsCenterProvider
   - I18n
     - app.i18n
     - useTranslation

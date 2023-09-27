@@ -6,6 +6,7 @@ import { ExecutionStatusOptions } from '../constants';
 import { NAMESPACE } from '../locale';
 import { useTranslation } from 'react-i18next';
 import { message } from 'antd';
+import { getWorkflowDetailPath } from '../constant';
 
 export const executionCollection = {
   name: 'executions',
@@ -32,12 +33,7 @@ export const executionCollection = {
         title: `{{t("Version", { ns: "${NAMESPACE}" })}}`,
         ['x-component']({ value }) {
           const { setVisible } = useActionContext();
-          return (
-            <Link
-              to={`/admin/settings/workflow/workflows/${value}`}
-              onClick={() => setVisible(false)}
-            >{`#${value}`}</Link>
-          );
+          return <Link to={getWorkflowDetailPath(value)} onClick={() => setVisible(false)}>{`#${value}`}</Link>;
         },
       } as ISchema,
     },

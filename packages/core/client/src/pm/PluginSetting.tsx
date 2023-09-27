@@ -2,13 +2,12 @@ import { PageHeader } from '@ant-design/pro-layout';
 import { css } from '@emotion/css';
 import { Layout, Menu, Result } from 'antd';
 import _ from 'lodash';
-import React, { createContext, useCallback, useContext, useMemo } from 'react';
+import React, { createContext, useCallback, useMemo } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useStyles } from './style';
-import { SettingPageType, useApp } from '../application';
+import { ADMIN_SETTINGS_PATH, SettingPageType, useApp } from '../application';
 import { useCompile } from '../schema-component';
 
-export const ADMIN_SETTINGS_PATH = '/admin/settings';
 export const SettingsCenterContext = createContext<any>({});
 
 export const SettingsCenterComponent = () => {
@@ -51,9 +50,17 @@ export const SettingsCenterComponent = () => {
     return map;
   }, [settings]);
 
-  const currentMenu = useMemo(() => {
-    return settingsMapByPath[location.pathname];
-  }, [location.pathname, settingsMapByPath]);
+  const currentMenu = useMemo(() => settingsMapByPath[location.pathname], [location.pathname, settingsMapByPath]);
+  const pluginTitle = useMemo(() => {
+    if (!currentMenu) {
+      return '';
+    }
+    const plugin = settings.find((item) => item.name === currentMenu.pluginName);
+    if (!plugin) {
+      return '';
+    }
+    return compile(plugin.title);
+  }, [compile, currentMenu, settings]);
 
   if (location.pathname === ADMIN_SETTINGS_PATH || location.pathname === ADMIN_SETTINGS_PATH + '/') {
     return <Navigate replace to={getFirstDeepChildPath(settings)} />;
@@ -97,7 +104,7 @@ export const SettingsCenterComponent = () => {
               className={styles.pageHeader}
               style={{ paddingBottom: theme.paddingSM }}
               ghost={false}
-              title={compile(currentMenu.title)}
+              title={pluginTitle}
             />
           )}
           <div className={styles.pageContent}>
@@ -110,13 +117,5 @@ export const SettingsCenterComponent = () => {
         </Layout.Content>
       </Layout>
     </div>
-  );
-};
-
-export const SettingsCenterProvider = (props) => {
-  const { settings = {} } = props;
-  const items = useContext(SettingsCenterContext);
-  return (
-    <SettingsCenterContext.Provider value={{ ...items, ...settings }}>{props.children}</SettingsCenterContext.Provider>
   );
 };

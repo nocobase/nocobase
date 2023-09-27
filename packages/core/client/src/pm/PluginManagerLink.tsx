@@ -5,7 +5,7 @@ import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { ActionContextProvider, useCompile } from '../schema-component';
-import { useApp } from '../application';
+import { ADMIN_SETTINGS_PATH, useApp } from '../application';
 
 export const PluginManagerLink = () => {
   const { t } = useTranslation();
@@ -41,7 +41,7 @@ export const SettingsCenterDropdown = () => {
         })),
         { type: 'divider' },
         {
-          key: '/admin/settings',
+          key: ADMIN_SETTINGS_PATH,
           label: t('All plugin settings'),
         },
       ],
@@ -49,7 +49,7 @@ export const SettingsCenterDropdown = () => {
         navigate(key);
       },
     };
-  }, [bookmarkMenus, navigate, t]);
+  }, [bookmarkMenus, compile, navigate, t]);
 
   return (
     <ActionContextProvider value={{ visible, setVisible }}>

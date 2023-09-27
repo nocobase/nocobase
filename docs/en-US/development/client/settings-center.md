@@ -5,29 +5,20 @@
 ## Example
 
 ```tsx | pure
-import { SettingsCenterProvider } from '@nocobase/client';
-import React, { useContext } from 'react';
+import { Plugin } from '@nocobase/client';
+import React from 'react';
 
-const HelloTab => () => <div>Hello Tab</div>;
+const HelloSettingPage = () => <div>Hello Setting page</div>;
 
-export default React.memo((props) => {
-  return (
-    <SettingsCenterProvider
-      settings={{
-        'sample-hello': {
-          title: 'Hello',
-          icon: 'ApiOutlined',
-          tabs: {
-            tab1: {
-              title: 'Hello Tab',
-              component: HelloTab,
-            },
-          },
-        },
-      }}
-    >{props.children}</SettingsCenterProvider>
-  );
-});
+export class HelloPlugin extends Plugin {
+  async load() {
+    this.app.settingsCenter.add('hello', {
+      title: 'Hello',
+      icon: 'ApiOutlined',
+      component: HelloSettingPage,
+    })
+  }
+}
 ```
 
-See [samples/hello](https://github.com/nocobase/nocobase/tree/develop/packages/samples/hello) for full examples.
+See [samples/hello](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-sample-hello/src/client/index.tsx) for full examples.
