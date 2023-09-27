@@ -289,7 +289,7 @@ export const BlockProvider = (props) => {
           <BlockRequestProvider {...props} updateAssociationValues={updateAssociationValues} params={params}>
             <SharedFilterProvider {...props} params={params}>
               <FilterBlockRecord {...props} params={params}>
-                {props.children}
+                <div data-testid={props['data-testid']}>{props.children}</div>
               </FilterBlockRecord>
             </SharedFilterProvider>
           </BlockRequestProvider>

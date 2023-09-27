@@ -22,6 +22,7 @@ export const useSwitchRole = () => {
         >
           {t('Switch role')}{' '}
           <Select
+            data-testid="antd-select"
             style={{ minWidth: 100 }}
             bordered={false}
             popupMatchSelectWidth={false}

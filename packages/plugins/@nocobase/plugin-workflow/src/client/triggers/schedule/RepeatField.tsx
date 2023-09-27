@@ -104,7 +104,7 @@ export function RepeatField({ value = null, onChange }) {
         }
       `}
     >
-      <Select value={typeValue} onChange={onTypeChange} className="auto-width">
+      <Select data-testid="antd-select" value={typeValue} onChange={onTypeChange} className="auto-width">
         {RepeatOptions.map((item) => (
           <Select.Option key={item.value} value={item.value}>
             {t(item.text)}

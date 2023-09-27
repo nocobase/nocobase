@@ -164,7 +164,15 @@ function AddBlockButton(props: any) {
     },
   ] as SchemaInitializerItemOptions[];
 
-  return <SchemaInitializer.Button {...props} wrap={gridRowColWrap} items={items} title="{{t('Add block')}}" />;
+  return (
+    <SchemaInitializer.Button
+      data-testid="add-block-button-in-workflow"
+      {...props}
+      wrap={gridRowColWrap}
+      items={items}
+      title="{{t('Add block')}}"
+    />
+  );
 }
 
 function AssignedFieldValues() {
@@ -333,6 +341,7 @@ function ActionInitializer({ action, actionProps, ...props }) {
 function AddActionButton(props) {
   return (
     <SchemaInitializer.Button
+      data-testid="configure-actions-add-action-button"
       {...props}
       items={[
         {

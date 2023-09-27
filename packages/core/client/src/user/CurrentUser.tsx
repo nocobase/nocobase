@@ -172,6 +172,7 @@ export const CurrentUser = () => {
           }}
         >
           <span
+            data-testid="user-center-button"
             className={css`
               max-width: 160px;
               overflow: hidden;

@@ -40,7 +40,7 @@ export const MapBlockProvider = (props) => {
     appends.push(field[0]);
   }
   return (
-    <BlockProvider {...props} params={{ ...params, appends, paginate: false }}>
+    <BlockProvider data-testid="map-block" {...props} params={{ ...params, appends, paginate: false }}>
       <InternalMapBlockProvider {...props} />
     </BlockProvider>
   );

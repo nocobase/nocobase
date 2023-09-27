@@ -17,6 +17,7 @@ export const SourceForeignKey = observer(
     return (
       <div>
         <Select
+          data-testid="antd-select"
           allowClear
           placeholder={'留空时，自动生成 FK 字段'}
           disabled={field.disabled}
@@ -44,6 +45,7 @@ export const ThroughForeignKey = observer(
     return (
       <div>
         <Select
+          data-testid="antd-select"
           allowClear
           popupMatchSelectWidth={false}
           placeholder={'留空时，自动生成 FK 字段'}
@@ -72,6 +74,7 @@ export const TargetForeignKey = observer(
     return (
       <div>
         <Select
+          data-testid="antd-select"
           allowClear
           popupMatchSelectWidth={false}
           placeholder={'留空时，自动生成 FK 字段'}
@@ -101,6 +104,7 @@ export const SourceCollection = observer(
     return (
       <div>
         <Select
+          data-testid="antd-select"
           disabled
           popupMatchSelectWidth={false}
           value={collection.name}
@@ -116,7 +120,7 @@ export const SourceKey = observer(
   () => {
     return (
       <div>
-        <Select disabled value={'id'} options={[{ value: 'id', label: 'ID' }]} />
+        <Select data-testid="antd-select" disabled value={'id'} options={[{ value: 'id', label: 'ID' }]} />
       </div>
     );
   },
@@ -127,7 +131,7 @@ export const TargetKey = observer(
   () => {
     return (
       <div>
-        <Select disabled value={'id'} options={[{ value: 'id', label: 'ID' }]} />
+        <Select data-testid="antd-select" disabled value={'id'} options={[{ value: 'id', label: 'ID' }]} />
       </div>
     );
   },

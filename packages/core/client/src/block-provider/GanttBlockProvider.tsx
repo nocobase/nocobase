@@ -73,7 +73,7 @@ const InternalGanttBlockProvider = (props) => {
 export const GanttBlockProvider = (props) => {
   const params = { filter: props.params.filter, tree: true, paginate: false, sort: props.fieldNames.start };
   return (
-    <BlockProvider {...props} params={params}>
+    <BlockProvider data-testid="gantt-block" {...props} params={params}>
       <TableBlockProvider {...props} params={params}>
         <InternalGanttBlockProvider {...props} />
       </TableBlockProvider>

@@ -24,7 +24,7 @@
       "module": "commonjs"
     }
   },
-  "include": ["packages/**/*", ".dumi/**/*", ".dumirc.ts", "scripts/setupVitest.ts"],
+  "include": ["packages/**/*", ".dumi/**/*", ".dumirc.ts", "scripts/*", "playwright.config.ts"],
   "exclude": [
     "packages/**/node_modules",
     "packages/**/dist",

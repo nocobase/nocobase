@@ -238,7 +238,7 @@ export const TableSelectorProvider = (props: TableSelectorProviderProps) => {
 
   return (
     <SchemaComponentOptions scope={{ treeTable }}>
-      <BlockProvider {...props} params={params}>
+      <BlockProvider data-testid="table-selector-block" {...props} params={params}>
         <InternalTableSelectorProvider {...props} params={params} extraFilter={extraFilter} />
       </BlockProvider>
     </SchemaComponentOptions>
