@@ -6,7 +6,7 @@ interface Job {
   onTick: () => void;
 }
 
-export class CronJobsManager {
+export class CronJobManager {
   private jobs: CronJob[] = [];
 
   private _started = false;

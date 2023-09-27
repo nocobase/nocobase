@@ -1,5 +1,5 @@
 import { mockServer, MockServer, waitSecond } from '@nocobase/test';
-import { CronJobsManager } from '../cron/cron-jobs-manager';
+import { CronJobManager } from '../cron/cron-job-manager';
 
 describe('cron service', () => {
   let app: MockServer;
@@ -12,24 +12,24 @@ describe('cron service', () => {
   });
 
   it('should get cron job manager', async () => {
-    const cron = app.getCron();
-    expect(cron).toBeInstanceOf(CronJobsManager);
+    const cron = app.cronJobManager();
+    expect(cron).toBeInstanceOf(CronJobManager);
   });
 
   it('should get new cron instance when app reload', async () => {
-    const cron1 = app.getCron();
+    const cron1 = app.cronJobManager();
     expect(cron1).toBeDefined();
     cron1.start();
     expect(cron1.started).toBeTruthy();
     await app.reload();
     expect(cron1.started).toBeFalsy();
-    const cron2 = app.getCron();
+    const cron2 = app.cronJobManager();
     expect(cron2).toBeDefined();
     expect(cron1).not.toBe(cron2);
   });
 
   it('should add cron job', async () => {
-    const cronManager = app.getCron();
+    const cronManager = app.cronJobManager();
     const jestFn = jest.fn();
     cronManager.addJob({
       time: '* * * * * *',
