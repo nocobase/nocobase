@@ -12,7 +12,7 @@ import {
 } from '@nocobase/client';
 import React from 'react';
 
-import { mockAPIClient } from '../../../../test';
+import { mockAPIClient } from '../../../../testUtils';
 
 const { apiClient, mockRequest } = mockAPIClient();
 mockRequest.onGet('/auth:check').reply(() => {

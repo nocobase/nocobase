@@ -33,16 +33,14 @@ const InternalListBlockProvider = (props) => {
       <FormContext.Provider value={form}>
         <FormLayout layout={'vertical'}>
           <div
-            className={cx(
-              css`
-                .ant-description-input {
-                  line-height: 34px;
-                }
-                .ant-formily-item-feedback-layout-loose {
-                  display: inline;
-                }
-              `,
-            )}
+            className={cx(css`
+              .ant-description-input {
+                line-height: 34px;
+              }
+              .ant-formily-item-feedback-layout-loose {
+                display: inline;
+              }
+            `)}
           >
             {props.children}
           </div>
@@ -54,7 +52,7 @@ const InternalListBlockProvider = (props) => {
 
 export const ListBlockProvider = (props) => {
   return (
-    <BlockProvider {...props}>
+    <BlockProvider data-testid="list-block" {...props}>
       <InternalListBlockProvider {...props} />
     </BlockProvider>
   );

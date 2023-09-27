@@ -1,8 +1,8 @@
 import ws from 'ws';
 
 export { mockDatabase } from '@nocobase/database';
-export * from './mockServer';
 export { default as supertest } from 'supertest';
+export * from './mockServer';
 
 export const pgOnly: () => jest.Describe = () => (process.env.DB_DIALECT == 'postgres' ? describe : describe.skip);
 

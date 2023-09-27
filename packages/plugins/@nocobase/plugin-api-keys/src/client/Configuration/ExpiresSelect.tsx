@@ -1,8 +1,8 @@
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { css, useRecord } from '@nocobase/client';
-import dayjs from 'dayjs';
 import { useBoolean } from 'ahooks';
 import { DatePicker, Select, Space, Typography } from 'antd';
+import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
 import { useTranslation } from '../locale';
 
@@ -38,7 +38,12 @@ const InternalExpiresSelect = (props) => {
 
   return (
     <Space className={spaceCSS}>
-      <Select {...props} value={isCustom ? 'custom' : props.value} onChange={onSelectChange}></Select>
+      <Select
+        data-testid="antd-select"
+        {...props}
+        value={isCustom ? 'custom' : props.value}
+        onChange={onSelectChange}
+      ></Select>
       {isCustom ? (
         <DatePicker
           disabledDate={(date) => {

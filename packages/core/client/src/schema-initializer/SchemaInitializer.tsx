@@ -5,6 +5,7 @@ import classNames from 'classnames';
 // @ts-ignore
 import { isEmpty } from 'lodash';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useCollection } from '../collection-manager';
 import { useCollectMenuItem, useMenuItem } from '../hooks/useMenuItem';
 import { Icon } from '../icon';
 import { SchemaComponent, useActionContext } from '../schema-component';
@@ -251,6 +252,7 @@ SchemaInitializer.Button = observer(
     const { Component: CollectComponent, getMenuItem, clean } = useMenuItem();
     const menuItems = useRef([]);
     const { styles } = useStyles();
+    const { name } = useCollection();
 
     const changeMenu = (v: boolean) => {
       setVisible(v);
@@ -264,6 +266,10 @@ SchemaInitializer.Button = observer(
 
     if (!designable && props.designable !== true) {
       return null;
+    }
+
+    if (others['data-testid'] && name) {
+      others['data-testid'] = `${others['data-testid']}-${name}`;
     }
 
     const buttonDom = component || (
@@ -514,7 +520,7 @@ SchemaInitializer.ActionModal = function ActionModal(props: SchemaInitializerAct
       async run() {
         await onCancel?.();
         ctx.setVisible(false);
-        form.reset();
+        void form.reset();
       },
     };
   }, [onCancel]);
@@ -529,7 +535,7 @@ SchemaInitializer.ActionModal = function ActionModal(props: SchemaInitializerAct
         await form.validate();
         await onSubmit?.(form.values);
         ctx.setVisible(false);
-        form.reset();
+        void form.reset();
       },
     };
   }, [onSubmit]);

@@ -23,9 +23,13 @@ import { flatData, getLabelFormatValue, useLabelUiSchema } from './util';
 
 const useTableSelectorProps = () => {
   const field: any = useField();
-  const { multiple, options = [], setSelectedRows, selectedRows: rcSelectRows = [], onChange } = useContext(
-    RecordPickerContext,
-  );
+  const {
+    multiple,
+    options = [],
+    setSelectedRows,
+    selectedRows: rcSelectRows = [],
+    onChange,
+  } = useContext(RecordPickerContext);
   const { onRowSelectionChange, rowKey = 'id', ...others } = useTsp();
   const { setVisible } = useActionContext();
   return {
@@ -128,6 +132,7 @@ export const InternalPicker = observer(
         <Input.Group compact style={{ display: 'flex', lineHeight: '32px' }}>
           <div style={{ width: '100%' }}>
             <Select
+              data-testid="antd-select"
               style={{ width: '100%' }}
               popupMatchSelectWidth={false}
               {...others}

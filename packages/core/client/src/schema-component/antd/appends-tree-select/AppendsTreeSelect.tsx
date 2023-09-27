@@ -202,7 +202,7 @@ export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
       }
       const { fullTitle } = optionsMap[value] ?? {};
       return (
-        <Tag closable={closable && !disabled} onClose={onClose}>
+        <Tag data-testid="antd-tag" closable={closable && !disabled} onClose={onClose}>
           {fullTitle?.join(' / ')}
         </Tag>
       );
@@ -219,6 +219,7 @@ export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
 
   return (
     <TreeSelect
+      data-testid="antd-tree-select"
       value={filteredValue}
       placeholder={t('Select field')}
       showCheckedStrategy={TreeSelect.SHOW_ALL}

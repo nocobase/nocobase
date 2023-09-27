@@ -2883,6 +2883,11 @@
   version "8.44.0"
   resolved "https://registry.npmmirror.com/@eslint/js/-/js-8.44.0.tgz#961a5903c74139390478bdc808bcde3fc45ab7af"
 
+"@faker-js/faker@8.1.0":
+  version "8.1.0"
+  resolved "https://registry.npmmirror.com/@faker-js/faker/-/faker-8.1.0.tgz#e14896f1c57af2495e341dc4c7bf04125c8aeafd"
+  integrity sha512-38DT60rumHfBYynif3lmtxMqMqmsOQIxQgEuPZxCk2yUYN0eqWpTACgxi0VpidvsJB8CRxCpvP7B3anK85FjtQ==
+
 "@floating-ui/core@^0.6.2":
   version "0.6.2"
   resolved "https://registry.npmmirror.com/@floating-ui/core/-/core-0.6.2.tgz#f2813f0e5f3d5ed7af5029e1a082203dadf02b7d"
@@ -4507,6 +4512,16 @@
     open "^9.1.0"
     picocolors "^1.0.0"
     tslib "^2.5.0"
+
+"@playwright/test@^1.37.1":
+  version "1.37.1"
+  resolved "https://registry.npmmirror.com/@playwright/test/-/test-1.37.1.tgz#e7f44ae0faf1be52d6360c6bbf689fd0057d9b6f"
+  integrity sha512-bq9zTli3vWJo8S3LwB91U0qDNQDpEXnw7knhxLM0nwDvexQAwx9tO8iKDZSqqneVq+URd/WIoz+BALMqUTgdSg==
+  dependencies:
+    "@types/node" "*"
+    playwright-core "1.37.1"
+  optionalDependencies:
+    fsevents "2.3.2"
 
 "@pm2/agent@~2.0.0":
   version "2.0.1"
@@ -12220,16 +12235,16 @@ fs.realpath@^1.0.0:
   version "1.0.0"
   resolved "https://registry.npmmirror.com/fs.realpath/-/fs.realpath-1.0.0.tgz#1504ad2523158caa40db4a2787cb01411994ea4f"
 
+fsevents@2.3.2, fsevents@^2.3.2, fsevents@~2.3.1, fsevents@~2.3.2:
+  version "2.3.2"
+  resolved "https://registry.npmmirror.com/fsevents/-/fsevents-2.3.2.tgz#8a526f78b8fdf4623b709e0b975c52c24c02fd1a"
+
 fsevents@^1.2.7:
   version "1.2.13"
   resolved "https://registry.npmmirror.com/fsevents/-/fsevents-1.2.13.tgz#f325cb0455592428bcf11b383370ef70e3bfcc38"
   dependencies:
     bindings "^1.5.0"
     nan "^2.12.1"
-
-fsevents@^2.3.2, fsevents@~2.3.1, fsevents@~2.3.2:
-  version "2.3.2"
-  resolved "https://registry.npmmirror.com/fsevents/-/fsevents-2.3.2.tgz#8a526f78b8fdf4623b709e0b975c52c24c02fd1a"
 
 ftp@^0.3.10:
   version "0.3.10"
@@ -18534,6 +18549,11 @@ pkg-up@^3.1.0:
 platform@^1.3.1:
   version "1.3.6"
   resolved "https://registry.npmmirror.com/platform/-/platform-1.3.6.tgz#48b4ce983164b209c2d45a107adb31f473a6e7a7"
+
+playwright-core@1.37.1:
+  version "1.37.1"
+  resolved "https://registry.npmmirror.com/playwright-core/-/playwright-core-1.37.1.tgz#cb517d52e2e8cb4fa71957639f1cd105d1683126"
+  integrity sha512-17EuQxlSIYCmEMwzMqusJ2ztDgJePjrbttaefgdsiqeLWidjYz9BxXaTaZWxH1J95SHGk6tjE+dwgWILJoUZfA==
 
 plugin-error@^1.0.1:
   version "1.0.1"

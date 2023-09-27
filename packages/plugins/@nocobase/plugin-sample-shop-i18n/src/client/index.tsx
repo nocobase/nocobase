@@ -1,6 +1,6 @@
 import { i18n, Plugin, PluginManagerContext, SettingsCenterProvider } from '@nocobase/client';
 import { Select } from 'antd';
-import React, { ReactNode, useContext } from 'react';
+import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const ns = '@nocobase/plugin-sample-shop-i18n';
@@ -26,7 +26,7 @@ function OrderStatusSelect() {
   const { t } = useTranslation(ns);
 
   return (
-    <Select style={{ minWidth: '8em' }}>
+    <Select data-testid="antd-select" style={{ minWidth: '8em' }}>
       {ORDER_STATUS_LIST.map((item) => (
         <Select.Option key={item.value} value={item.value}>
           {t(item.label)}
