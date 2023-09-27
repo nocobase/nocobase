@@ -32,7 +32,7 @@ describe('cron service', () => {
     const cronManager = app.cronJobManager;
     const jestFn = jest.fn();
     cronManager.addJob({
-      time: '* * * * * *',
+      cronTime: '* * * * * *',
       onTick: jestFn,
     });
 
@@ -41,5 +41,18 @@ describe('cron service', () => {
     cronManager.start();
     await waitSecond(2000);
     expect(jestFn).toBeCalledTimes(2);
+  });
+
+  it('should remove cron job', async () => {
+    const cronManager = app.cronJobManager;
+    const jestFn = jest.fn();
+    const job = cronManager.addJob({
+      cronTime: '* * * * * *',
+      onTick: jestFn,
+    });
+
+    expect(cronManager.jobs.size).toBe(1);
+    cronManager.removeJob(job);
+    expect(cronManager.jobs.size).toBe(0);
   });
 });

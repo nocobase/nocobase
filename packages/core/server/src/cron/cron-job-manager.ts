@@ -1,13 +1,8 @@
-import { CronJob } from 'cron';
+import { CronJob, CronJobParameters } from 'cron';
 import Application from '../application';
 
-interface Job {
-  time: string;
-  onTick: () => void;
-}
-
 export class CronJobManager {
-  private jobs: CronJob[] = [];
+  private _jobs: Set<CronJob> = new Set();
 
   private _started = false;
 
@@ -29,19 +24,31 @@ export class CronJobManager {
     return this._started;
   }
 
-  public addJob(job: Job) {
-    this.jobs.push(new CronJob(job.time, job.onTick));
+  public get jobs() {
+    return this._jobs;
+  }
+
+  public addJob(options: CronJobParameters) {
+    const cronJob = new CronJob(options);
+    this._jobs.add(cronJob);
+
+    return cronJob;
+  }
+
+  public removeJob(job: CronJob) {
+    job.stop();
+    this._jobs.delete(job);
   }
 
   public start() {
-    this.jobs.forEach((job) => {
+    this._jobs.forEach((job) => {
       job.start();
     });
     this._started = true;
   }
 
   public stop() {
-    this.jobs.forEach((job) => {
+    this._jobs.forEach((job) => {
       job.stop();
     });
     this._started = false;
