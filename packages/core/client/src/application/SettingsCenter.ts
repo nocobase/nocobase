@@ -106,6 +106,7 @@ export class SettingsCenter {
     if (filterAuth && !isAllow) return null;
     const pluginSetting = this.getSetting(name);
     const children = Object.keys(pluginSetting.children || {})
+      .sort((a, b) => a.localeCompare(b)) // sort by name
       .map((key) => this.get(pluginSetting.children[key].name, filterAuth))
       .filter(Boolean)
       .sort((a, b) => (a.sort || 0) - (b.sort || 0));
@@ -125,6 +126,7 @@ export class SettingsCenter {
   getList(filterAuth = true): SettingPageType[] {
     return Object.keys(this.settings)
       .filter((item) => !item.includes('.')) // top level
+      .sort((a, b) => a.localeCompare(b)) // sort by name
       .map((name) => this.get(name, filterAuth))
       .filter(Boolean)
       .sort((a, b) => (a.sort || 0) - (b.sort || 0));
