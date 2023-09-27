@@ -7,13 +7,12 @@ import { ACLPane } from '../acl/ACLShortcut';
 import { CollectionManagerPane } from '../collection-manager';
 import { BlockTemplatesPane } from '../schema-templates';
 import { SystemSettingsPane } from '../system-settings';
-import { SettingMultiPageLayout } from './SettingMultiPageLayout';
 import { ADMIN_SETTINGS_PATH } from '../application';
+import { Outlet } from 'react-router-dom';
 
 export * from './PluginManagerLink';
 export * from './PluginSetting';
 export * from './PluginManager';
-export * from './SettingMultiPageLayout';
 
 export class PMPlugin extends Plugin {
   async load() {
@@ -48,7 +47,7 @@ export class PMPlugin extends Plugin {
     this.app.settingsCenter.add('collection-manager', {
       icon: 'DatabaseOutlined',
       title: '{{t("Collection manager")}}',
-      Component: () => <SettingMultiPageLayout />,
+      Component: () => <Outlet />,
       isBookmark: true,
     });
 

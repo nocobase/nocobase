@@ -67,6 +67,9 @@ export const SettingsCenterComponent = () => {
   if (location.pathname === ADMIN_SETTINGS_PATH || location.pathname === ADMIN_SETTINGS_PATH + '/') {
     return <Navigate replace to={getFirstDeepChildPath(settings)} />;
   }
+  if (location.pathname === currentPlugin.path && currentPlugin.children?.length > 0) {
+    return <Navigate replace to={getFirstDeepChildPath(currentPlugin.children)} />;
+  }
   return (
     <div>
       <Layout>

@@ -1,12 +1,6 @@
-import {
-  createRouterManager,
-  Plugin,
-  RouterManager,
-  RouteSchemaComponent,
-  SettingMultiPageLayout,
-} from '@nocobase/client';
+import { createRouterManager, Plugin, RouterManager, RouteSchemaComponent } from '@nocobase/client';
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
 import { MobileClientProvider } from './MobileClientProvider';
 import MApplication from './router/Application';
 import { AppConfiguration, InterfaceConfiguration } from './configuration';
@@ -25,15 +19,17 @@ export class MobileClientPlugin extends Plugin {
     this.app.settingsCenter.add(NAMESPACE, {
       title: `{{t("Mobile Client-side", { ns: "${NAMESPACE}" })}}`,
       icon: 'MobileOutlined',
-      Component: () => <SettingMultiPageLayout />,
+      Component: () => <Outlet />,
     });
     this.app.settingsCenter.add(`${NAMESPACE}.interface`, {
       title: `{{t("Interface Configuration", { ns: "${NAMESPACE}" })}}`,
       Component: InterfaceConfiguration,
+      sort: 1,
     });
     this.app.settingsCenter.add(`${NAMESPACE}.app`, {
       title: `{{t("App Configuration", { ns: "${NAMESPACE}" })}}`,
       Component: AppConfiguration,
+      sort: 2,
     });
   }
 
