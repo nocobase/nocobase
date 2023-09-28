@@ -18,7 +18,9 @@ export const DetailsBlockInitializer = (props) => {
           collection: item.name,
           rowKey: collection.filterTargetKey || 'id',
           actionInitializers:
-            (collection.template !== 'view' || collection?.writableView) && 'DetailsActionInitializers',
+            (collection.template !== 'view' || collection?.writableView) &&
+            collection.template !== 'sql' &&
+            'DetailsActionInitializers',
         });
         insert(schema);
       }}

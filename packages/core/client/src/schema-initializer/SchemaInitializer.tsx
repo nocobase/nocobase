@@ -1,13 +1,16 @@
 import { ISchema, observer, useForm } from '@formily/react';
 import { error, isString } from '@nocobase/utils/client';
-import { Button, Dropdown, MenuProps, Switch } from 'antd';
+import { Button, Dropdown, Empty, Menu, MenuProps, Spin, Switch } from 'antd';
 import classNames from 'classnames';
 // @ts-ignore
-import React, { createContext, useCallback, useContext, useMemo, useRef, useState, useTransition } from 'react';
+import { isEmpty } from 'lodash';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useCollection } from '../collection-manager';
 import { useCollectMenuItem, useMenuItem } from '../hooks/useMenuItem';
 import { Icon } from '../icon';
 import { SchemaComponent, useActionContext } from '../schema-component';
 import { useCompile, useDesignable } from '../schema-component/hooks';
+import { SearchCollections } from './SearchCollections';
 import { useStyles } from './style';
 import {
   SchemaInitializerButtonProps,
@@ -22,11 +25,211 @@ export const SchemaInitializerItemContext = createContext(null);
 export const SchemaInitializerButtonContext = createContext<{
   visible?: boolean;
   setVisible?: (v: boolean) => void;
-  searchValue?: string;
-  setSearchValue?: (v: string) => void;
 }>({});
 
 export const SchemaInitializer = () => null;
+
+const CollectionSearch = ({
+  onChange: _onChange,
+  clearValueRef,
+}: {
+  onChange: (value: string) => void;
+  clearValueRef?: React.MutableRefObject<() => void>;
+}) => {
+  const [searchValue, setSearchValue] = useState('');
+  const onChange = useCallback(
+    (value) => {
+      setSearchValue(value);
+      _onChange(value);
+    },
+    [_onChange],
+  );
+
+  if (clearValueRef) {
+    clearValueRef.current = () => {
+      setSearchValue('');
+    };
+  }
+
+  return <SearchCollections value={searchValue} onChange={onChange} />;
+};
+
+const LoadingItem = ({ loadMore }) => {
+  const spinRef = React.useRef(null);
+
+  useEffect(() => {
+    let root = spinRef.current;
+
+    while (root) {
+      if (root.classList?.contains('ant-dropdown-menu')) {
+        break;
+      }
+      root = root.parentNode;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const item of entries) {
+          if (item.isIntersecting) {
+            return loadMore();
+          }
+        }
+      },
+      {
+        root,
+      },
+    );
+
+    observer.observe(spinRef.current);
+    return () => {
+      observer.disconnect();
+    };
+  }, [loadMore]);
+
+  return (
+    <div ref={spinRef}>
+      <Spin size="small" style={{ width: '100%' }} />
+    </div>
+  );
+};
+
+// 清除所有的 searchValue
+const clearSearchValue = (items: any[]) => {
+  items.forEach((item) => {
+    if (item._clearSearchValueRef?.current) {
+      item._clearSearchValueRef.current();
+    }
+    if (item.children?.length) {
+      clearSearchValue(item.children);
+    }
+  });
+};
+
+/**
+ * 当存在 loadChildren 方法时，且 children 为空时，会触发懒加载
+ *
+ * 1. 如果存在 loadChildren 方法，则需要懒加载 children
+ * 2. 一开始先注入一个 loading 组件，当 loading 显示的时候，触发 loadChildren 方法
+ * 3. 每次在 loading 后显示的数目增加 minStep，直到显示完所有 children
+ * 4. 重置 item.label 为一个搜索框，用于筛选列表
+ * 5. 每次组件刷新的时候，会重复上面的步骤
+ * @param param0
+ * @returns
+ */
+const lazyLoadChildren = ({
+  items,
+  minStep = 30,
+  beforeLoading,
+  afterLoading,
+}: {
+  items: any[];
+  minStep?: number;
+  beforeLoading?: () => void;
+  afterLoading?: ({ currentCount }) => void;
+}) => {
+  if (isEmpty(items)) {
+    return;
+  }
+
+  const addLoading = (item: any, searchValue: string) => {
+    if (isEmpty(item.children)) {
+      item.children = [];
+    }
+
+    item.children.push({
+      key: `${item.key}-loading`,
+      label: (
+        <LoadingItem
+          loadMore={() => {
+            beforeLoading?.();
+            item._allChildren = item.loadChildren({ searchValue }) || [];
+            item._count += minStep;
+            item.children = item._allChildren.slice(0, item._count);
+            if (item.children.length < item._allChildren.length) {
+              addLoading(item, searchValue);
+            }
+            afterLoading?.({ currentCount: item._count });
+          }}
+        />
+      ),
+    });
+  };
+
+  for (const item of items) {
+    if (!item) {
+      continue;
+    }
+
+    if (item.loadChildren && isEmpty(item.children)) {
+      item._count = 0;
+      item._clearSearchValueRef = {};
+      item.label = (
+        <CollectionSearch
+          clearValueRef={item._clearSearchValueRef}
+          onChange={(value) => {
+            item._count = minStep;
+            beforeLoading?.();
+            item._allChildren = item.loadChildren({ searchValue: value }) || [];
+
+            if (isEmpty(item._allChildren)) {
+              item.children = [
+                {
+                  key: 'empty',
+                  label: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />,
+                },
+              ];
+            } else {
+              item.children = item._allChildren.slice(0, item._count);
+            }
+
+            if (item.children.length < item._allChildren.length) {
+              addLoading(item, value);
+            }
+            afterLoading?.({ currentCount: item._count });
+          }}
+        />
+      );
+
+      // 通过 loading 加载新数据
+      addLoading(item, '');
+    }
+
+    lazyLoadChildren({
+      items: item.children,
+      minStep,
+      beforeLoading,
+      afterLoading,
+    });
+  }
+};
+
+const MenuWithLazyLoadChildren = ({ items: _items, style, clean, component: Component }) => {
+  const [items, setItems] = useState(_items);
+  const currentCountRef = useRef(0);
+
+  useEffect(() => {
+    setItems(_items);
+  }, [_items]);
+
+  lazyLoadChildren({
+    items,
+    beforeLoading: () => {
+      clean();
+    },
+    afterLoading: ({ currentCount }) => {
+      currentCountRef.current = currentCount;
+      setItems([...items]);
+    },
+  });
+
+  return (
+    <>
+      {/* 用于收集 menu item */}
+      <Component limitCount={currentCountRef.current} />
+      <Menu style={style} items={items} />
+    </>
+  );
+};
 
 SchemaInitializer.Button = observer(
   (props: SchemaInitializerButtonProps) => {
@@ -46,26 +249,30 @@ SchemaInitializer.Button = observer(
     const compile = useCompile();
     const { insertAdjacent, findComponent, designable } = useDesignable();
     const [visible, setVisible] = useState(false);
-    const { Component: CollectionComponent, getMenuItem, clean } = useMenuItem();
-    const [searchValue, setSearchValue] = useState('');
-    const [isPending, startTransition] = useTransition();
+    const { Component: CollectComponent, getMenuItem, clean } = useMenuItem();
     const menuItems = useRef([]);
     const { styles } = useStyles();
+    const { name } = useCollection();
 
     const changeMenu = (v: boolean) => {
-      // 这里是为了防止当鼠标快速滑过时，终止菜单的渲染，防止卡顿
-      startTransition(() => {
-        setVisible(v);
-      });
+      setVisible(v);
     };
+
+    useEffect(() => {
+      if (visible === false) {
+        clearSearchValue(menuItems.current);
+      }
+    }, [visible]);
 
     if (!designable && props.designable !== true) {
       return null;
     }
 
-    const buttonDom = component ? (
-      component
-    ) : (
+    if (others['data-testid'] && name) {
+      others['data-testid'] = `${others['data-testid']}-${name}`;
+    }
+
+    const buttonDom = component || (
       <Button
         type={'dashed'}
         style={{
@@ -131,29 +338,33 @@ SchemaInitializer.Button = observer(
           }
           if (item.type === 'itemGroup') {
             const label = isString(item.title) ? compile(item.title) : item.title;
-            return (
-              !!item.children?.length && {
-                type: 'group',
-                key: item.key || `item-group-${indexA}`,
-                label,
-                title: label,
-                children: renderItems(item.children),
-              }
-            );
+            return {
+              type: 'group',
+              key: item.key || `item-group-${indexA}`,
+              label,
+              title: label,
+              style: item.style,
+              loadChildren: isEmpty(item.children)
+                ? ({ searchValue } = { searchValue: '' }) => renderItems(item.loadChildren?.({ searchValue }) || [])
+                : null,
+              children: isEmpty(item.children) ? [] : renderItems(item.children),
+            };
           }
           if (item.type === 'subMenu') {
             const label = compile(item.title);
-            return (
-              !!item.children?.length && {
-                key: item.key || `item-group-${indexA}`,
-                label,
-                title: label,
-                popupClassName: styles.nbMenuItemSubMenu,
-                children: renderItems(item.children),
-              }
-            );
+            return {
+              key: item.key || `item-group-${indexA}`,
+              label,
+              title: label,
+              popupClassName: styles.nbMenuItemSubMenu,
+              loadChildren: isEmpty(item.children)
+                ? ({ searchValue } = { searchValue: '' }) => renderItems(item.loadChildren?.({ searchValue }) || [])
+                : null,
+              children: isEmpty(item.children) ? [] : renderItems(item.children),
+            };
           }
-        });
+        })
+        .filter(Boolean);
     };
 
     if (visible) {
@@ -161,28 +372,32 @@ SchemaInitializer.Button = observer(
       menuItems.current = renderItems(items);
     }
 
+    const dropdownRender = () => (
+      <MenuWithLazyLoadChildren
+        style={{
+          maxHeight: '50vh',
+          overflowY: 'auto',
+        }}
+        items={menuItems.current}
+        clean={clean}
+        component={CollectComponent}
+      />
+    );
+
     return (
-      <SchemaInitializerButtonContext.Provider value={{ visible, setVisible, searchValue, setSearchValue }}>
-        {visible ? <CollectionComponent /> : null}
+      <SchemaInitializerButtonContext.Provider value={{ visible, setVisible }}>
+        {visible ? <CollectComponent /> : null}
         <Dropdown
           className={classNames('nb-schema-initializer-button')}
           openClassName={`nb-schema-initializer-button-open`}
           open={visible}
           onOpenChange={(open) => {
-            // 如果不清空输入框的值，那么下次打开的时候会出现上次输入的值
-            setSearchValue('');
             changeMenu(open);
           }}
-          menu={{
-            style: {
-              maxHeight: '50vh',
-              overflowY: 'auto',
-            },
-            items: menuItems.current,
-          }}
+          dropdownRender={dropdownRender}
           {...dropdown}
         >
-          {component ? component : buttonDom}
+          {component || buttonDom}
         </Dropdown>
       </SchemaInitializerButtonContext.Provider>
     );
@@ -197,15 +412,14 @@ SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
   const { items = [], children = info?.title, icon, onClick } = props;
   const { collectMenuItem } = useCollectMenuItem();
 
-  if (!collectMenuItem) {
-    error('SchemaInitializer.Item: collectMenuItem is undefined, please check the context');
-    return null;
+  if (process.env.NODE_ENV !== 'production' && !collectMenuItem) {
+    throw new Error('SchemaInitializer.Item: collectMenuItem is undefined, please check the context');
   }
 
   if (items?.length > 0) {
     const renderMenuItem = (items: SchemaInitializerItemOptions[], parentKey: string) => {
       if (!items?.length) {
-        return null;
+        return [];
       }
       return items.map((item, indexA) => {
         if (item.type === 'divider') {
@@ -220,8 +434,12 @@ SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
             label,
             title: label,
             className: styles.nbMenuItemGroup,
-            children: renderMenuItem(item.children, key),
-          } as MenuProps['items'][0];
+            loadChildren: isEmpty(item.children)
+              ? ({ searchValue } = { searchValue: '' }) =>
+                  renderMenuItem(item.loadChildren?.({ searchValue }) || [], key)
+              : null,
+            children: isEmpty(item.children) ? [] : renderMenuItem(item.children, key),
+          } as MenuProps['items'][0] & { loadChildren?: ({ searchValue }?: { searchValue: string }) => any[] };
         }
         if (item.type === 'subMenu') {
           const label = compile(item.title);
@@ -230,8 +448,12 @@ SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
             key,
             label,
             title: label,
-            children: renderMenuItem(item.children, key),
-          };
+            loadChildren: isEmpty(item.children)
+              ? ({ searchValue } = { searchValue: '' }) =>
+                  renderMenuItem(item.loadChildren?.({ searchValue }) || [], key)
+              : null,
+            children: isEmpty(item.children) ? [] : renderMenuItem(item.children, key),
+          } as MenuProps['items'][0] & { loadChildren?: ({ searchValue }?: { searchValue: string }) => any[] };
         }
         const label = compile(item.title);
         return {
@@ -239,7 +461,6 @@ SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
           label,
           title: label,
           onClick: (info) => {
-            item?.clearKeywords?.();
             if (item.onClick) {
               item.onClick({ ...info, item });
             } else {
@@ -268,7 +489,6 @@ SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
     title: label,
     icon: typeof icon === 'string' ? <Icon type={icon as string} /> : icon,
     onClick: (opts) => {
-      info?.clearKeywords?.();
       onClick({ ...opts, item: info });
     },
   };
@@ -300,7 +520,7 @@ SchemaInitializer.ActionModal = function ActionModal(props: SchemaInitializerAct
       async run() {
         await onCancel?.();
         ctx.setVisible(false);
-        form.reset();
+        void form.reset();
       },
     };
   }, [onCancel]);
@@ -315,7 +535,7 @@ SchemaInitializer.ActionModal = function ActionModal(props: SchemaInitializerAct
         await form.validate();
         await onSubmit?.(form.values);
         ctx.setVisible(false);
-        form.reset();
+        void form.reset();
       },
     };
   }, [onSubmit]);

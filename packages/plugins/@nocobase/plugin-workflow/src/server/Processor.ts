@@ -306,13 +306,18 @@ export default class Processor {
     return null;
   }
 
-  findBranchLastJob(node: FlowNodeModel): JobModel | null {
+  findBranchLastJob(node: FlowNodeModel, job: JobModel): JobModel | null {
+    const allJobs = Array.from(this.jobsMap.values());
+    const branchJobs = [];
     for (let n = this.findBranchEndNode(node); n && n !== node.upstream; n = n.upstream) {
-      const jobs = Array.from(this.jobsMap.values())
-        .filter((item) => item.nodeId === n.id)
-        .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-      if (jobs.length) {
-        return jobs[jobs.length - 1];
+      branchJobs.push(...allJobs.filter((item) => item.nodeId === n.id));
+    }
+    branchJobs.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+    for (let i = branchJobs.length - 1; i >= 0; i -= 1) {
+      for (let j = branchJobs[i]; j && j.id !== job.id; j = this.jobsMap.get(j.upstreamId)) {
+        if (j.upstreamId === job.id) {
+          return branchJobs[i];
+        }
       }
     }
     return null;

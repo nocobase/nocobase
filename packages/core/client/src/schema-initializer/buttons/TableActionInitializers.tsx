@@ -3,6 +3,7 @@ import { useCollection } from '../../';
 
 // 表格操作配置
 export const TableActionInitializers = {
+  'data-testid': 'configure-actions-button-of-table-block',
   title: "{{t('Configure actions')}}",
   icon: 'SettingOutlined',
   style: {
@@ -34,7 +35,7 @@ export const TableActionInitializers = {
           },
           visible: function useVisible() {
             const collection = useCollection();
-            return (collection.template !== 'view' && collection.template !== 'file') || collection?.writableView;
+            return !['view', 'file', 'sql'].includes(collection.template) || collection?.writableView;
           },
         },
         {
@@ -47,7 +48,7 @@ export const TableActionInitializers = {
           },
           visible: function useVisible() {
             const collection = useCollection();
-            return collection.template !== 'view' || collection?.writableView;
+            return !['view', 'sql'].includes(collection.template) || collection?.writableView;
           },
         },
         {
@@ -78,7 +79,7 @@ export const TableActionInitializers = {
       type: 'divider',
       visible: function useVisible() {
         const collection = useCollection();
-        return collection.template !== 'view' || collection?.writableView;
+        return !['view', 'sql'].includes(collection.template) || collection?.writableView;
       },
     },
     // {
@@ -172,7 +173,7 @@ export const TableActionInitializers = {
       ],
       visible: function useVisible() {
         const collection = useCollection();
-        return collection.template !== 'view' || collection?.writableView;
+        return !['view', 'sql'].includes(collection.template) || collection?.writableView;
       },
     },
   ],

@@ -1,6 +1,6 @@
-import { union } from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { useCompile } from '../../schema-component';
 import { SchemaInitializer } from '../SchemaInitializer';
 import {
   gridRowColWrap,
@@ -8,7 +8,6 @@ import {
   useFormItemInitializerFields,
   useInheritsFormItemInitializerFields,
 } from '../utils';
-import { useCompile } from '../../schema-component';
 
 export const ReadPrettyFormItemInitializers = (props: any) => {
   const { t } = useTranslation();
@@ -72,6 +71,7 @@ export const ReadPrettyFormItemInitializers = (props: any) => {
   );
   return (
     <SchemaInitializer.Button
+      data-testid="configure-fields-button-of-read-pretty-form-item"
       wrap={gridRowColWrap}
       icon={'SettingOutlined'}
       items={fieldItems}

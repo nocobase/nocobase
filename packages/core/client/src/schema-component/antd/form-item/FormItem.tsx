@@ -223,6 +223,8 @@ FormItem.Designer = function Designer() {
   const showFieldMode = isAssociationField && fieldModeOptions && !isTableField;
   const showModeSelect = showFieldMode && isPickerMode;
   const isDateField = ['datetime', 'createdAt', 'updatedAt'].includes(collectionField?.interface);
+  const isAttachmentField =
+    ['attachment'].includes(collectionField?.interface) || targetCollection?.template === 'file';
 
   return (
     <GeneralSchemaDesigner>
@@ -460,6 +462,7 @@ FormItem.Designer = function Designer() {
           <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
             {t('Popup size')}
             <Select
+              data-testid="antd-select"
               bordered={false}
               options={[
                 { label: t('Small'), value: 'small' },
@@ -727,6 +730,33 @@ FormItem.Designer = function Designer() {
       )}
       {isDateField && <SchemaSettings.DataFormat fieldSchema={fieldSchema} />}
 
+      {isAttachmentField && field.readPretty && (
+        <SchemaSettings.SelectItem
+          key="size"
+          title={t('Size')}
+          options={[
+            { label: t('Large'), value: 'large' },
+            { label: t('Default'), value: 'default' },
+            { label: t('Small'), value: 'small' },
+          ]}
+          value={field?.componentProps?.size || 'default'}
+          onChange={(size) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props']['size'] = size;
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            field.componentProps = field.componentProps || {};
+            field.componentProps.size = size;
+            dn.emit('patch', {
+              schema,
+            });
+            dn.refresh();
+          }}
+        />
+      )}
+
       {isAssociationField && ['Tag'].includes(fieldMode) && (
         <SchemaSettings.SelectItem
           key="title-field"
@@ -766,11 +796,6 @@ FormItem.Designer = function Designer() {
 
 export function isFileCollection(collection: Collection) {
   return collection?.template === 'file';
-}
-
-function extractFirstPart(path) {
-  const firstDotIndex = path.indexOf('.');
-  return firstDotIndex !== -1 ? path.slice(0, firstDotIndex) : path;
 }
 
 FormItem.FilterFormDesigner = FilterFormDesigner;

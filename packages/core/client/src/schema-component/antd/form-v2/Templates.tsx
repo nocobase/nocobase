@@ -157,6 +157,7 @@ export const Templates = ({ style = {}, form }) => {
       <Space wrap>
         <label style={labelStyle}>{t('Data template')}: </label>
         <Select
+          data-testid="antd-select"
           popupMatchSelectWidth={false}
           options={templateOptions}
           fieldNames={{ label: 'title', value: 'key' }}
@@ -176,7 +177,7 @@ export const Templates = ({ style = {}, form }) => {
                 filter: template?.dataScope,
               },
             }}
-            onChange={(value) => handleTemplateDataChange(value.id, { ...value, ...template })}
+            onChange={(value) => handleTemplateDataChange(value?.id, { ...value, ...template })}
             targetField={getCollectionJoinField(`${template?.collection}.${template.titleField}`)}
           />
         )}

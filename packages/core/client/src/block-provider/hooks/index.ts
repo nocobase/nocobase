@@ -215,6 +215,8 @@ export const useAssociationCreateActionProps = () => {
   const currentRecord = useRecord();
   const currentUserContext = useCurrentUserContext();
   const currentUser = currentUserContext?.data?.data;
+  const action = actionField.componentProps.saveMode || 'create';
+  const filterKeys = actionField.componentProps.filterKeys?.checked || [];
   return {
     async onClick() {
       const fieldNames = fields.map((field) => field.name);
@@ -223,6 +225,7 @@ export const useAssociationCreateActionProps = () => {
         onSuccess,
         overwriteValues,
         skipValidator,
+        triggerWorkflows,
       } = actionSchema?.['x-action-settings'] ?? {};
       const addChild = fieldSchema?.['x-component-props']?.addChild;
       const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentRecord, currentUser });
@@ -238,12 +241,17 @@ export const useAssociationCreateActionProps = () => {
       actionField.data = field.data || {};
       actionField.data.loading = true;
       try {
-        const data = await resource.create({
+        const data = await resource[action]({
           values: {
             ...values,
             ...overwriteValues,
             ...assignedValues,
           },
+          filterKeys: filterKeys,
+          // TODO(refactor): should change to inject by plugin
+          triggerWorkflows: triggerWorkflows?.length
+            ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
+            : undefined,
         });
         actionField.data.loading = false;
         actionField.data.data = data;
@@ -806,7 +814,7 @@ export const useDestroyActionProps = () => {
         service?.refresh?.();
       }
 
-      if (block !== 'TableField') {
+      if (block && block !== 'TableField') {
         __parent?.service?.refresh?.();
         setVisible?.(false);
       }
@@ -1106,7 +1114,7 @@ export function getAssociationPath(str) {
 }
 
 export const useAssociationNames = () => {
-  const { getCollectionJoinField } = useCollectionManager();
+  const { getCollectionJoinField, getCollection } = useCollectionManager();
   const fieldSchema = useFieldSchema();
   const updateAssociationValues = new Set([]);
   const appends = new Set([]);
@@ -1117,10 +1125,16 @@ export const useAssociationNames = () => {
       const isAssociationSubfield = s.name.includes('.');
       const isAssociationField =
         collectionfield && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionfield.type);
+      const isTreeCollection = isAssociationField && getCollection(collectionfield.target)?.template === 'tree';
       if (collectionfield && (isAssociationField || isAssociationSubfield) && s['x-component'] !== 'TableField') {
         const fieldPath = !isAssociationField && isAssociationSubfield ? getAssociationPath(s.name) : s.name;
         const path = prefix === '' || !prefix ? fieldPath : prefix + '.' + fieldPath;
-        appends.add(path);
+        if (isTreeCollection) {
+          appends.add(path);
+          appends.add(`${path}.parent` + '(recursively=true)');
+        } else {
+          appends.add(path);
+        }
         if (['Nester', 'SubTable', 'PopoverNester'].includes(s['x-component-props']?.mode)) {
           updateAssociationValues.add(path);
           const bufPrefix = prefix && prefix !== '' ? prefix + '.' + s.name : s.name;

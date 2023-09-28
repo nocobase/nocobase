@@ -221,6 +221,7 @@ function AddCustomFormField(props) {
       }}
     >
       <SchemaInitializer.Button
+        data-testid="configure-fields-button-of-add-custom-form-field"
         wrap={gridRowColWrap}
         insertPosition={insertPosition}
         items={items}

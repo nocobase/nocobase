@@ -42,6 +42,7 @@ export const MapBlockProvider = (props) => {
   }
   return (
     <BlockProvider
+      data-testid="map-block"
       {...props}
       runWhenParamsChanged
       params={{ ...params, appends, paginate: false, sort: uField.componentProps.lineSort }}

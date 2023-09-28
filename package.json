@@ -25,6 +25,9 @@
     "tar": "nocobase tar",
     "test": "nocobase test",
     "test:client": "vitest",
+    "test:e2e": "tsx ./scripts/runE2e.setup.ts",
+    "test:e2e:codegen": "tsx ./scripts/codegen.setup.ts",
+    "test:e2e:server": "tsx ./scripts/nocobase.setup.ts",
     "tc": "yarn test:client",
     "doc": "nocobase doc",
     "postinstall": "nocobase postinstall",
@@ -34,7 +37,7 @@
     "version:alpha": "lerna version prerelease --preid alpha --force-publish=* --no-git-tag-version -m \"chore(versions): publish packages %s\"",
     "release:force": "lerna publish from-package --yes",
     "release": "lerna publish",
-    "run:example": "ts-node-dev -r dotenv/config -r tsconfig-paths/register ./examples/index.ts"
+    "run:example": "tsx -r dotenv/config -r tsconfig-paths/register ./examples/index.ts"
   },
   "resolutions": {
     "@types/react": "^17.0.0",
@@ -64,6 +67,8 @@
     "@commitlint/cli": "^16.1.0",
     "@commitlint/config-conventional": "^16.0.0",
     "@commitlint/prompt-cli": "^16.1.0",
+    "@faker-js/faker": "8.1.0",
+    "@playwright/test": "^1.37.1",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^14.0.0",
     "@testing-library/user-event": "^14.4.3",
@@ -76,6 +81,7 @@
     "dumi-theme-nocobase": "^0.2.14",
     "eslint-plugin-jest-dom": "^5.0.1",
     "eslint-plugin-testing-library": "^5.11.0",
+    "execa": "^5.1.1",
     "ghooks": "^2.0.4",
     "jest": "^29.6.2",
     "jest-cli": "^29.6.2",

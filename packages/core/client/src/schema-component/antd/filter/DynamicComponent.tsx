@@ -50,13 +50,15 @@ export const DynamicComponent = (props) => {
   };
   return (
     <FormContext.Provider value={form}>
-      {component
-        ? React.createElement(component, {
-            value: props.value,
-            onChange: props?.onChange,
-            renderSchemaComponent,
-          })
-        : renderSchemaComponent()}
+      <div data-testid="dynamic-component-filter-item">
+        {component
+          ? React.createElement(component, {
+              value: props.value,
+              onChange: props?.onChange,
+              renderSchemaComponent,
+            })
+          : renderSchemaComponent()}
+      </div>
     </FormContext.Provider>
   );
 };

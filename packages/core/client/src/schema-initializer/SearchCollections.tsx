@@ -2,7 +2,7 @@ import { Divider, Input } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-export const SelectCollection = ({ value: outValue, onChange }) => {
+export const SearchCollections = ({ value: outValue, onChange }) => {
   const { t } = useTranslation();
   const [value, setValue] = useState<string>(outValue);
   const inputRef = React.useRef(null);

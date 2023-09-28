@@ -2,6 +2,7 @@ import { useCollection } from '../..';
 
 // 表单的操作配置
 export const CalendarFormActionInitializers = {
+  'data-testid': 'configure-actions-button-of-calendar-form',
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
   style: {
@@ -25,7 +26,7 @@ export const CalendarFormActionInitializers = {
           },
           visible: function useVisible() {
             const collection = useCollection();
-            return collection.template !== 'view' || collection?.writableView;
+            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
         {
@@ -38,7 +39,7 @@ export const CalendarFormActionInitializers = {
           },
           visible: function useVisible() {
             const collection = useCollection();
-            return collection.template !== 'view' || collection?.writableView;
+            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
         {
@@ -51,7 +52,7 @@ export const CalendarFormActionInitializers = {
           },
           visible: function useVisible() {
             const collection = useCollection();
-            return collection.template !== 'view' || collection?.writableView;
+            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
         {
@@ -146,7 +147,7 @@ export const CalendarFormActionInitializers = {
           },
           visible: function useVisible() {
             const collection = useCollection();
-            return collection.template !== 'view' || collection?.writableView;
+            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
         {
@@ -171,9 +172,9 @@ export const CalendarFormActionInitializers = {
               useProps: '{{ useCustomizeRequestActionProps }}',
             },
           },
-          visible: () => {
+          visible: function useVisible() {
             const collection = useCollection();
-            return collection.template !== 'view' || collection?.writableView;
+            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
       ],

@@ -1,12 +1,11 @@
 import React from 'react';
-import { useFieldSchema } from '@formily/react';
 
-import { GeneralSchemaDesigner, SchemaSettings, useCollection, useCollectionManager } from '@nocobase/client';
+import { GeneralSchemaDesigner, SchemaSettings, useCollection } from '@nocobase/client';
 
 import { NAMESPACE } from '../../../locale';
-import { findSchema } from '../utils';
-import { ManualFormType } from '../SchemaConfig';
 import { FormBlockInitializer } from '../FormBlockInitializer';
+import { ManualFormType } from '../SchemaConfig';
+import { findSchema } from '../utils';
 
 function CreateFormDesigner() {
   const { name, title } = useCollection();
@@ -30,26 +29,37 @@ function CreateFormDesigner() {
 export default {
   title: `{{t("Create record form", { ns: "${NAMESPACE}" })}}`,
   config: {
-    useInitializer() {
-      const { collections } = useCollectionManager();
+    useInitializer({ collections }) {
       return {
         key: 'createRecordForm',
         type: 'subMenu',
         title: `{{t("Create record form", { ns: "${NAMESPACE}" })}}`,
-        children: collections
-          .filter((item) => !item.hidden)
-          .map((item) => ({
-            key: `createForm-${item.name}`,
-            type: 'item',
-            title: item.title,
-            schema: {
-              collection: item.name,
-              title: `{{t("Create record", { ns: "${NAMESPACE}" })}}`,
-              formType: 'create',
-              'x-designer': 'CreateFormDesigner',
+        children: [
+          {
+            key: 'createRecordForm-child',
+            type: 'itemGroup',
+            style: {
+              maxHeight: '48vh',
+              overflowY: 'auto',
             },
-            component: FormBlockInitializer,
-          })),
+            loadChildren: ({ searchValue }) => {
+              return collections
+                .filter((item) => !item.hidden && item.title.toLowerCase().includes(searchValue.toLowerCase()))
+                .map((item) => ({
+                  key: `createRecordForm-child-${item.name}`,
+                  type: 'item',
+                  title: item.title,
+                  schema: {
+                    collection: item.name,
+                    title: `{{t("Create record", { ns: "${NAMESPACE}" })}}`,
+                    formType: 'create',
+                    'x-designer': 'CreateFormDesigner',
+                  },
+                  component: FormBlockInitializer,
+                }));
+            },
+          },
+        ],
       };
     },
     initializers: {

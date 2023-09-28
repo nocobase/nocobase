@@ -1,7 +1,7 @@
 import { css, useAPIClient, useRequest } from '@nocobase/client';
 import { Select, Space, Spin, Typography } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
-import { SwaggerUIBundle } from 'swagger-ui-dist';
+import SwaggerUIBundle from 'swagger-ui-dist/swagger-ui-bundle';
 import 'swagger-ui-dist/swagger-ui.css';
 import { useTranslation } from '../locale';
 
@@ -81,6 +81,7 @@ const Documentation = () => {
             {t('Select a definition')}
           </Typography.Text>
           <Select
+            data-testid="antd-select"
             showSearch
             value={destination}
             options={urls?.data}

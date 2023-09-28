@@ -2,6 +2,7 @@ import { Logger } from '@nocobase/logger';
 import { applyMixins, AsyncEmitter, requireModule } from '@nocobase/utils';
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
+import { backOff } from 'exponential-backoff';
 import glob from 'glob';
 import lodash from 'lodash';
 import { basename, isAbsolute, resolve } from 'path';
@@ -69,7 +70,7 @@ import {
 import { patchSequelizeQueryInterface, snakeCase } from './utils';
 import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
 import { ViewCollection } from './view-collection';
-import { backOff } from 'exponential-backoff';
+import { SqlCollection } from './sql-collection/sql-collection';
 
 export type MergeOptions = merge.Options;
 
@@ -285,7 +286,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
       migrations: this.migrations.callback(),
       context,
       storage: new SequelizeStorage({
-        modelName: `${this.options.tablePrefix || ''}migrations`,
+        tableName: `${this.options.tablePrefix || ''}migrations`,
+        modelName: 'migrations',
         ...migratorOptions.storage,
         sequelize: this.sequelize,
       }),
@@ -356,6 +358,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
     this.on('afterUpdateCollection', (collection, options) => {
       if (collection.options.schema) {
         collection.model._schema = collection.options.schema;
+      }
+      if (collection.options.sql) {
+        collection.modelInit();
       }
     });
 
@@ -448,6 +453,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
       if (hasViewOptions) {
         return ViewCollection;
+      }
+
+      if (options.sql) {
+        return SqlCollection;
       }
 
       return Collection;

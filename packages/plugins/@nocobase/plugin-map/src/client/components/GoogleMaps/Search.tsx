@@ -88,6 +88,7 @@ export const Search = (props: SearchProps) => {
       `}
     >
       <Select
+        data-testid="antd-select"
         id="google-map-search"
         showSearch
         allowClear

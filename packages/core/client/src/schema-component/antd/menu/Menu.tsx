@@ -196,7 +196,7 @@ const HeaderMenu = ({
       key: 'x-designer-button',
       disabled: true,
       style: { padding: '0 8px', order: 9999 },
-      label: render({ style: { background: 'none' } }),
+      label: render({ 'data-testid': 'add-menu-item-button-in-header', style: { background: 'none' } }),
       notdelete: true,
     };
     const result = getMenuItems(() => {
@@ -281,6 +281,7 @@ const SideMenu = ({
         key: 'x-designer-button',
         disabled: true,
         label: render({
+          'data-testid': 'add-menu-item-button-in-side',
           insert: (s) => {
             const dn = createDesignable({
               t,
