@@ -100,7 +100,6 @@ export async function send(ctx: Context, next: Next) {
         ...requestConfigFirst?.data,
       })(variables),
     }).then((res) => {
-      console.log('🚀 ~ file: send.ts:119 ~ send ~ res:', res);
       return res.data;
     });
   } catch (err: any) {
