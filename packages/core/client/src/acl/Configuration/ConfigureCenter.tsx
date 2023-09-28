@@ -23,7 +23,7 @@ const getParentKeys = (tree, func, path = []) => {
 };
 const getChildrenKeys = (data = [], arr = []) => {
   for (const item of data) {
-    arr.push(item.key);
+    arr.push(item.aclSnippet);
     if (item.children && item.children.length) getChildrenKeys(item.children, arr);
   }
   return arr;
@@ -49,6 +49,7 @@ export const SettingsCenterConfigure = () => {
     () => snippets.includes('pm.*') && snippets.every((item) => !item.startsWith('!pm.')),
     [snippets],
   );
+
   const { t } = useTranslation();
   const { loading, refresh } = useRequest(
     {
@@ -68,7 +69,7 @@ export const SettingsCenterConfigure = () => {
   const resource = api.resource('roles.snippets', record.name);
   const handleChange = async (checked, record) => {
     const childrenKeys = getChildrenKeys(record?.children, []);
-    const totalKeys = childrenKeys.concat(record.key);
+    const totalKeys = childrenKeys.concat(record.aclSnippet);
     if (!checked) {
       await resource.remove({
         values: totalKeys.map((v) => '!' + v),
@@ -124,7 +125,7 @@ export const SettingsCenterConfigure = () => {
             </>
           ),
           render: (_, record) => {
-            const checked = !snippets.includes('!' + record.key);
+            const checked = !snippets.includes('!' + record.aclSnippet);
             return <Checkbox checked={checked} onChange={() => handleChange(checked, record)} />;
           },
         },

@@ -7,6 +7,7 @@ import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useStyles } from './style';
 import { ADMIN_SETTINGS_PATH, SettingPageType, useApp } from '../application';
 import { useCompile } from '../schema-component';
+import { useACLRoleContext } from '../acl';
 
 export const SettingsCenterContext = createContext<any>({});
 
@@ -16,7 +17,9 @@ export const SettingsCenterComponent = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const compile = useCompile();
+  const { snippets = [] } = useACLRoleContext();
   const settings = useMemo(() => {
+    app.settingsCenter.setAclSnippets(snippets);
     const list = app.settingsCenter.getList();
     // compile title
     function traverse(settings: SettingPageType[]) {
@@ -30,7 +33,7 @@ export const SettingsCenterComponent = () => {
     }
     traverse(list);
     return list;
-  }, [app.settingsCenter, compile]);
+  }, [app.settingsCenter, compile, snippets]);
   const getFirstDeepChildPath = useCallback((settings: SettingPageType[]) => {
     if (!settings || !settings.length) {
       return '';
