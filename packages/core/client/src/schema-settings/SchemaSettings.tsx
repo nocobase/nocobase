@@ -525,7 +525,7 @@ SchemaSettings.Remove = function Remove(props: any) {
           title: t('Delete block'),
           content: t('Are you sure you want to delete it?'),
           ...confirm,
-          onOk() {
+          async onOk() {
             const options = {
               removeParentsIfNoChildren,
               breakRemoveOn,
@@ -535,11 +535,11 @@ SchemaSettings.Remove = function Remove(props: any) {
               fieldSchema['required'] = false;
             }
             if (template && ctx?.dn) {
-              ctx?.dn.remove(null, options);
+              await ctx?.dn.remove(null, options);
             } else {
-              dn.remove(null, options);
+              await dn.remove(null, options);
             }
-            confirm?.onOk?.();
+            await confirm?.onOk?.();
             delete form.values[fieldSchema.name];
           },
         });
