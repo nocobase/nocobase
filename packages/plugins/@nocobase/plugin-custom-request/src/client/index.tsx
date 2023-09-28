@@ -1,6 +1,5 @@
 import { CollectionManagerProvider, Plugin, SchemaComponentOptions } from '@nocobase/client';
 import React from 'react';
-import { useCustomizeRequestActionProps } from './hooks';
 import { CustomRequestConfigurationFieldsSchema } from './schemas';
 import { CustomRequestAction } from './components';
 import { CustomRequestInitializer } from './initializer';
@@ -9,7 +8,6 @@ const CustomRequestProvider: React.FC = (props) => {
   return (
     <SchemaComponentOptions
       scope={{
-        useCustomizeRequestActionProps,
         CustomRequestConfigurationFieldsSchema,
       }}
       components={{ CustomRequestAction, CustomRequestInitializer }}
