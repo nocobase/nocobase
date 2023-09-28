@@ -7,11 +7,7 @@ import { useCustomRequestVariableOptions, useGetCustomRequest } from '../hooks';
 import { message } from 'antd';
 import { useTranslation } from '../locale';
 import { listByCurrentRoleUrl } from '../constants';
-
-const useCustomRequestsResource = () => {
-  const apiClient = useAPIClient();
-  return apiClient.resource('customRequests');
-};
+import { useCustomRequestsResource } from '../hooks/useCustomRequestsResource';
 
 function CustomRequestSettingsItem() {
   const { t } = useTranslation();

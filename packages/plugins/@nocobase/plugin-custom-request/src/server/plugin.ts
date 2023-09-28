@@ -26,7 +26,7 @@ export class CustomRequestPlugin extends Plugin {
       actions: ['customRequests:*'],
     });
 
-    this.app.acl.allow('customRequests', 'send', 'loggedIn');
+    this.app.acl.allow('customRequests', ['send', 'listByCurrentRole'], 'loggedIn');
   }
 
   async install(options?: InstallOptions) {}

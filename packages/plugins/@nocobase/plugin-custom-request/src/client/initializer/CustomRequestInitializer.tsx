@@ -1,13 +1,18 @@
+import { uid } from '@formily/shared';
 import { BlockInitializer } from '@nocobase/client';
 import React from 'react';
+import { useCustomRequestsResource } from '../hooks/useCustomRequestsResource';
 
-export const CustomRequestInitializer: React.FC = (props) => {
+export const CustomRequestInitializer: React.FC<any> = (props) => {
+  const customRequestsResource = useCustomRequestsResource();
+
   const schema = {
     title: '{{ t("Custom request") }}',
     'x-component': 'CustomRequestAction',
     'x-action': 'customize:form:request',
     'x-designer': 'CustomRequestAction.Designer',
     'x-decorator': 'CustomRequestAction.Decorator',
+    'x-uid': uid(),
     'x-action-settings': {
       onSuccess: {
         manualClose: false,
@@ -17,5 +22,19 @@ export const CustomRequestInitializer: React.FC = (props) => {
     },
   };
 
-  return <BlockInitializer {...props} schema={schema} />;
+  return (
+    <BlockInitializer
+      {...props}
+      insert={async (s) => {
+        await props?.insert(s);
+        await customRequestsResource.updateOrCreate({
+          values: {
+            key: s['x-uid'],
+          },
+          filterKeys: ['key'],
+        });
+      }}
+      schema={schema}
+    />
+  );
 };
