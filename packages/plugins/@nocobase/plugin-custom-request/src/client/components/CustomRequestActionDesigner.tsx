@@ -32,15 +32,13 @@ function CustomRequestSettingsItem() {
         scope={{ useCustomRequestVariableOptions }}
         schema={CustomRequestConfigurationFieldsSchema}
         initialValues={{
-          title: data?.data?.title,
           ...data?.data?.options,
         }}
         onSubmit={async (config) => {
-          const { title, ...requestSettings } = config;
+          const { ...requestSettings } = config;
           await customRequestsResource.updateOrCreate({
             values: {
               key: fieldSchema['x-uid'],
-              title,
               options: {
                 ...requestSettings,
                 collectionName: name,

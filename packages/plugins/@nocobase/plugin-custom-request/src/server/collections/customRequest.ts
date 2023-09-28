@@ -12,11 +12,6 @@ export default {
       primaryKey: true,
     },
     {
-      type: 'string',
-      name: 'title',
-      title: '{{t("Title")}}',
-    },
-    {
       type: 'belongsToMany',
       name: 'roles',
       onDelete: 'CASCADE',
