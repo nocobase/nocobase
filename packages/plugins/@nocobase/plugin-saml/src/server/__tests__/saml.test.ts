@@ -61,15 +61,9 @@ describe('saml', () => {
       loggedOut: false,
     });
 
-    const res = await agent
-      .set('X-Authenticator', 'saml-auth')
-      .resource('auth')
-      .signIn()
-      .send({
-        samlResponse: {
-          SAMLResponse: '',
-        },
-      });
+    const res = await agent.set('X-Authenticator', 'saml-auth').resource('auth').signIn().send({
+      samlResponse: {},
+    });
 
     expect(res.body.data.user).toBeDefined();
     expect(res.body.data.user.nickname).toBe('Test Nocobase');

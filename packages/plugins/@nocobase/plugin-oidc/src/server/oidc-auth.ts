@@ -49,9 +49,7 @@ export class OIDCAuth extends BaseAuth {
 
   async validate() {
     const ctx = this.ctx;
-    const {
-      params: { values },
-    } = ctx.action;
+    const { params: values } = ctx.action;
     const token = ctx.cookies.get(cookieName);
     const search = new URLSearchParams(values.state);
     if (search.get('token') !== token) {
