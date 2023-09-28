@@ -66,8 +66,7 @@ export const SettingsCenterComponent = () => {
     }
     return settings.find((item) => item.name === currentSetting.pluginName);
   }, [currentSetting, settings]);
-
-  if (location.pathname === ADMIN_SETTINGS_PATH || location.pathname === ADMIN_SETTINGS_PATH + '/') {
+  if (!currentSetting || location.pathname === ADMIN_SETTINGS_PATH || location.pathname === ADMIN_SETTINGS_PATH + '/') {
     return <Navigate replace to={getFirstDeepChildPath(settings)} />;
   }
   if (location.pathname === currentPlugin.path && currentPlugin.children?.length > 0) {
