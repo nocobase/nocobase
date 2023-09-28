@@ -1,11 +1,12 @@
 import { useFieldSchema } from '@formily/react';
 import { ArrayItems } from '@formily/antd-v5';
-import { Action, SchemaSettings, useAPIClient, useCollection, useCurrentRoles } from '@nocobase/client';
+import { Action, SchemaSettings, useAPIClient, useCollection, useCurrentRoles, useRequest } from '@nocobase/client';
 import React from 'react';
 import { CustomRequestACLSchema, CustomRequestConfigurationFieldsSchema } from '../schemas';
 import { useCustomRequestVariableOptions, useGetCustomRequest } from '../hooks';
 import { message } from 'antd';
 import { useTranslation } from '../locale';
+import { listByCurrentRoleUrl } from '../constants';
 
 const useCustomRequestsResource = () => {
   const apiClient = useAPIClient();
@@ -27,6 +28,7 @@ function CustomRequestSettingsItem() {
         components={{
           ArrayItems,
         }}
+        beforeOpen={() => !data && refresh()}
         scope={{ useCustomRequestVariableOptions }}
         schema={CustomRequestConfigurationFieldsSchema}
         initialValues={{
@@ -47,7 +49,7 @@ function CustomRequestSettingsItem() {
             filterKeys: ['key'],
           });
           refresh();
-          messageInstance.success(t('Saved successfully'));
+          return messageInstance.success(t('Saved successfully'));
         }}
       />
     </>
@@ -60,10 +62,19 @@ function CustomRequestACL() {
   const customRequestsResource = useCustomRequestsResource();
   const [messageInstance, messageDom] = message.useMessage();
   const { data, refresh } = useGetCustomRequest();
+  const { refresh: refreshRoleCustomKeys } = useRequest<{ data: string[] }>(
+    {
+      url: listByCurrentRoleUrl,
+    },
+    {
+      manual: true,
+      cacheKey: listByCurrentRoleUrl,
+    },
+  );
 
   const currentRoles = useCurrentRoles();
 
-  return data ? (
+  return (
     <>
       {messageDom}
       <SchemaSettings.ActionModalItem
@@ -73,6 +84,7 @@ function CustomRequestACL() {
         initialValues={{
           roles: data?.data?.roles,
         }}
+        beforeOpen={() => !data && refresh()}
         onSubmit={async ({ roles }) => {
           await customRequestsResource.updateOrCreate({
             values: {
@@ -82,11 +94,12 @@ function CustomRequestACL() {
             filterKeys: ['key'],
           });
           refresh();
-          messageInstance.success(t('Saved successfully'));
+          refreshRoleCustomKeys();
+          return messageInstance.success(t('Saved successfully'));
         }}
       />
     </>
-  ) : null;
+  );
 }
 
 export const CustomRequestActionDesigner: React.FC = () => {
@@ -103,7 +116,7 @@ export const CustomRequestActionDesigner: React.FC = () => {
       }}
       removeButtonProps={{
         onConfirmOk() {
-          customRequestsResource.destroy({
+          return customRequestsResource.destroy({
             filterByTk: fieldSchema['x-uid'],
           });
         },

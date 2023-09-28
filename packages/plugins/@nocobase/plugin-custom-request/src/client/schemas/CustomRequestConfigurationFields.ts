@@ -3,15 +3,6 @@ import { generateNTemplate } from '../locale';
 export const CustomRequestConfigurationFieldsSchema = {
   type: 'object',
   properties: {
-    title: {
-      type: 'string',
-      title: generateNTemplate('Title'),
-      'x-decorator': 'FormItem',
-      'x-component': 'Input',
-      'x-component-props': {
-        placeholder: generateNTemplate('Enter description info'),
-      },
-    },
     method: {
       type: 'string',
       required: true,

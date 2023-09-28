@@ -7,6 +7,7 @@ export const CustomRequestInitializer: React.FC = (props) => {
     'x-component': 'CustomRequestAction',
     'x-action': 'customize:form:request',
     'x-designer': 'CustomRequestAction.Designer',
+    'x-decorator': 'CustomRequestAction.Decorator',
     'x-action-settings': {
       onSuccess: {
         manualClose: false,

@@ -26,7 +26,7 @@ export const useCustomizeRequestActionProps = () => {
   const { field, resource, __parent, service } = useBlockRequestContext();
   const record = useRecord();
   const fieldSchema = useFieldSchema();
-  const { data } = useGetCustomRequest();
+  const { data, runAsync } = useGetCustomRequest();
   const actionField = useField();
   const { setVisible } = useActionContext();
   const { modal, message } = App.useApp();
@@ -34,7 +34,7 @@ export const useCustomizeRequestActionProps = () => {
   return {
     async onClick() {
       const { skipValidator, onSuccess } = actionSchema?.['x-action-settings'] ?? {};
-      const options = data?.data?.options;
+      const options = data ? data?.data?.options : (await runAsync())?.data?.options;
       if (!options?.['url']) return;
       const xAction = actionSchema?.['x-action'];
       if (skipValidator !== true && xAction === 'customize:form:request') {
@@ -88,7 +88,7 @@ export const useCustomizeRequestActionProps = () => {
             },
           });
         } else {
-          message.success(compile(onSuccess?.successMessage));
+          return message.success(compile(onSuccess?.successMessage));
         }
       } finally {
         actionField.data.loading = false;

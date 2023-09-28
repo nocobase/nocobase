@@ -1,27 +1,28 @@
-import { Action, useAPIClient } from '@nocobase/client';
+import { Action, useAPIClient, useRequest } from '@nocobase/client';
 import React from 'react';
 import { CustomRequestActionDesigner } from './CustomRequestActionDesigner';
-import { useGetCustomRequest } from '../hooks';
 import { useFieldSchema } from '@formily/react';
-import { Tooltip } from 'antd';
+import { listByCurrentRoleUrl } from '../constants';
 
-export const CustomRequestActionACL = (props) => {
-  const { data } = useGetCustomRequest();
+export const CustomRequestActionACLDecorator = (props) => {
   const apiClient = useAPIClient();
-  if (!data) {
-    return null;
-  }
-  if (
-    apiClient.auth.role !== 'root' &&
-    data.data?.roles?.length &&
-    !data.data.roles.find((role) => {
-      return role.name === apiClient.auth.role;
-    })
-  ) {
+  const isRoot = apiClient.auth.role === 'root';
+  const fieldSchema = useFieldSchema();
+  const { data } = useRequest<{ data: string[] }>(
+    {
+      url: listByCurrentRoleUrl,
+    },
+    {
+      manual: isRoot,
+      cacheKey: listByCurrentRoleUrl,
+    },
+  );
+
+  if (!isRoot && !data?.data?.includes(fieldSchema?.['x-uid'])) {
     return null;
   }
 
-  return <Tooltip title={data?.data?.title}>{props.children}</Tooltip>;
+  return props.children;
 };
 
 const components = {
@@ -32,11 +33,8 @@ export const CustomRequestAction = (props) => {
   const fieldSchema = useFieldSchema();
   const xAction = fieldSchema['x-action'];
   const Component = components[xAction] || Action;
-  return (
-    <CustomRequestActionACL>
-      <Component {...props}></Component>
-    </CustomRequestActionACL>
-  );
+  return <Component {...props}></Component>;
 };
 
 CustomRequestAction.Designer = CustomRequestActionDesigner;
+CustomRequestAction.Decorator = CustomRequestActionACLDecorator;

@@ -35,11 +35,7 @@ export async function send(ctx: Context, next: Next) {
     const crRepo = ctx.db.getRepository('customRequestsRoles');
     const hasRoles = await crRepo.find({
       filter: {
-        $or: [
-          {
-            customRequestKey: filterByTk,
-          },
-        ],
+        customRequestKey: filterByTk,
       },
     });
 

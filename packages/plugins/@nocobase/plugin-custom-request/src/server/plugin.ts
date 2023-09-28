@@ -1,6 +1,7 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { send } from './actions/send';
+import { listByCurrentRole } from './actions/listByCurrentRole';
 
 export class CustomRequestPlugin extends Plugin {
   afterAdd() {}
@@ -16,6 +17,7 @@ export class CustomRequestPlugin extends Plugin {
       name: 'customRequests',
       actions: {
         send,
+        listByCurrentRole,
       },
     });
 
