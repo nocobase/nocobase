@@ -209,7 +209,7 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
         `}
         menu={{ items }}
       >
-        {typeof title === 'string' ? <span>{title}</span> : title}
+        <div data-testid={props['data-testid']}>{typeof title === 'string' ? <span>{title}</span> : title}</div>
       </Dropdown>
     </>
   );
@@ -748,6 +748,7 @@ SchemaSettings.SelectItem = function SelectItem(props) {
       <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
         {title}
         <Select
+          data-testid="antd-select"
           popupMatchSelectWidth={false}
           bordered={false}
           defaultValue={value}

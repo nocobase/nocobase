@@ -55,6 +55,7 @@ export const FilterItem = observer(
       <div style={style} className="nc-filter-item">
         <Space>
           <Cascader
+            data-testid="antd-cascader"
             className={css`
               width: 160px;
             `}
@@ -66,6 +67,7 @@ export const FilterItem = observer(
             placeholder={t('Select field')}
           />
           <Select
+            data-testid="antd-select"
             className={css`
               min-width: 110px;
             `}
@@ -79,7 +81,7 @@ export const FilterItem = observer(
             <DynamicComponent value={value} schema={schema} collectionField={collectionField} onChange={setValue} />
           ) : null}
           {!props.disabled && (
-            <a>
+            <a data-testid="close-icon-button">
               <CloseCircleOutlined onClick={remove} style={removeStyle} />
             </a>
           )}

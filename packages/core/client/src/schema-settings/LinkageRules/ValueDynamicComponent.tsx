@@ -105,6 +105,7 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
   return (
     <Input.Group compact>
       <Select
+        data-testid="antd-select"
         value={mode}
         style={{ width: 150 }}
         onChange={(value) => {

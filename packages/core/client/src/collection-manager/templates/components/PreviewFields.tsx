@@ -148,6 +148,7 @@ const PreviewCom = (props) => {
           <Tag>{text}</Tag>
         ) : (
           <Select
+            data-testid="antd-select"
             defaultValue={text}
             popupMatchSelectWidth={false}
             style={{ width: '100%' }}
@@ -173,6 +174,7 @@ const PreviewCom = (props) => {
           text
         ) : (
           <Select
+            data-testid="antd-select"
             defaultValue={text}
             style={{ width: '100%' }}
             popupMatchSelectWidth={false}

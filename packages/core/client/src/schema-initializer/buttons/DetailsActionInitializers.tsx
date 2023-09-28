@@ -1,5 +1,6 @@
 // 表单的操作配置
 export const DetailsActionInitializers = {
+  'data-testid': 'configure-actions-button-of-details-block',
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
   style: {

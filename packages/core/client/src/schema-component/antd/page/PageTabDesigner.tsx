@@ -20,7 +20,10 @@ export const PageDesigner = ({ title }) => {
     <div className={'general-schema-designer'}>
       <div className={'general-schema-designer-icons'}>
         <Space size={2} align={'center'}>
-          <SchemaSettings title={<MenuOutlined style={{ cursor: 'pointer', fontSize: 12 }} />}>
+          <SchemaSettings
+            data-testid="page-designer-button"
+            title={<MenuOutlined style={{ cursor: 'pointer', fontSize: 12 }} />}
+          >
             <SchemaSettings.SwitchItem
               title={t('Enable page header')}
               checked={!fieldSchema['x-component-props']?.disablePageHeader}

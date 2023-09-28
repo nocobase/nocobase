@@ -1,5 +1,6 @@
 // 表单的操作配置
 export const FilterFormActionInitializers = {
+  'data-testid': 'configure-actions-button-of-filter-form',
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
   items: [

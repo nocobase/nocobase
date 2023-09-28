@@ -54,6 +54,9 @@ export class Gateway extends EventEmitter {
   private constructor() {
     super();
     this.reset();
+    if (process.env.SOCKET_PATH) {
+      this.socketPath = xpipe.eq(resolve(process.cwd(), process.env.SOCKET_PATH));
+    }
   }
 
   public static getInstance(options: any = {}): Gateway {
@@ -160,7 +163,7 @@ export class Gateway extends EventEmitter {
     const hasApp = AppSupervisor.getInstance().hasApp(handleApp);
 
     if (!hasApp) {
-      AppSupervisor.getInstance().bootStrapApp(handleApp);
+      void AppSupervisor.getInstance().bootStrapApp(handleApp);
     }
 
     const appStatus = AppSupervisor.getInstance().getAppStatus(handleApp, 'initializing');

@@ -5,6 +5,7 @@ import classNames from 'classnames';
 // @ts-ignore
 import { isEmpty } from 'lodash';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useCollection } from '../collection-manager';
 import { useCollectMenuItem, useMenuItem } from '../hooks/useMenuItem';
 import { Icon } from '../icon';
 import { SchemaComponent, useActionContext } from '../schema-component';
@@ -141,10 +142,10 @@ const lazyLoadChildren = ({
         <LoadingItem
           loadMore={() => {
             beforeLoading?.();
-            item._allChildren = item.loadChildren({ searchValue });
+            item._allChildren = item.loadChildren({ searchValue }) || [];
             item._count += minStep;
-            item.children = item._allChildren?.slice(0, item._count);
-            if (item.children?.length < item._allChildren?.length) {
+            item.children = item._allChildren.slice(0, item._count);
+            if (item.children.length < item._allChildren.length) {
               addLoading(item, searchValue);
             }
             afterLoading?.({ currentCount: item._count });
@@ -168,7 +169,7 @@ const lazyLoadChildren = ({
           onChange={(value) => {
             item._count = minStep;
             beforeLoading?.();
-            item._allChildren = item.loadChildren({ searchValue: value });
+            item._allChildren = item.loadChildren({ searchValue: value }) || [];
 
             if (isEmpty(item._allChildren)) {
               item.children = [
@@ -178,10 +179,10 @@ const lazyLoadChildren = ({
                 },
               ];
             } else {
-              item.children = item._allChildren?.slice(0, item._count);
+              item.children = item._allChildren.slice(0, item._count);
             }
 
-            if (item.children?.length < item._allChildren?.length) {
+            if (item.children.length < item._allChildren.length) {
               addLoading(item, value);
             }
             afterLoading?.({ currentCount: item._count });
@@ -251,13 +252,24 @@ SchemaInitializer.Button = observer(
     const { Component: CollectComponent, getMenuItem, clean } = useMenuItem();
     const menuItems = useRef([]);
     const { styles } = useStyles();
+    const { name } = useCollection();
 
     const changeMenu = (v: boolean) => {
       setVisible(v);
     };
 
+    useEffect(() => {
+      if (visible === false) {
+        clearSearchValue(menuItems.current);
+      }
+    }, [visible]);
+
     if (!designable && props.designable !== true) {
       return null;
+    }
+
+    if (others['data-testid'] && name) {
+      others['data-testid'] = `${others['data-testid']}-${name}`;
     }
 
     const buttonDom = component || (
@@ -351,7 +363,8 @@ SchemaInitializer.Button = observer(
               children: isEmpty(item.children) ? [] : renderItems(item.children),
             };
           }
-        });
+        })
+        .filter(Boolean);
     };
 
     if (visible) {
@@ -370,12 +383,6 @@ SchemaInitializer.Button = observer(
         component={CollectComponent}
       />
     );
-
-    useEffect(() => {
-      if (visible === false) {
-        clearSearchValue(menuItems.current);
-      }
-    }, [visible]);
 
     return (
       <SchemaInitializerButtonContext.Provider value={{ visible, setVisible }}>
@@ -513,7 +520,7 @@ SchemaInitializer.ActionModal = function ActionModal(props: SchemaInitializerAct
       async run() {
         await onCancel?.();
         ctx.setVisible(false);
-        form.reset();
+        void form.reset();
       },
     };
   }, [onCancel]);
@@ -528,7 +535,7 @@ SchemaInitializer.ActionModal = function ActionModal(props: SchemaInitializerAct
         await form.validate();
         await onSubmit?.(form.values);
         ctx.setVisible(false);
-        form.reset();
+        void form.reset();
       },
     };
   }, [onSubmit]);
