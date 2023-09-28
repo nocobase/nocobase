@@ -2,6 +2,7 @@ import { useCollection } from '../../collection-manager';
 
 // 表单的操作配置
 export const GridCardActionInitializers = {
+  'data-testid': 'configure-actions-button-of-grid-card-block',
   title: "{{t('Configure actions')}}",
   icon: 'SettingOutlined',
   style: {
@@ -139,6 +140,7 @@ export const GridCardActionInitializers = {
 };
 
 export const GridCardItemActionInitializers = {
+  'data-testid': 'configure-actions-button-of-grid-card-item',
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
   items: [

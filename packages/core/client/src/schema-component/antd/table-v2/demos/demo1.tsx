@@ -12,7 +12,7 @@ import {
 import { notification } from 'antd';
 import { range } from 'lodash';
 import React from 'react';
-import { mockAPIClient } from '../../../../test';
+import { mockAPIClient } from '../../../../testUtils';
 import collections from './collections';
 
 const { apiClient, mockRequest } = mockAPIClient();

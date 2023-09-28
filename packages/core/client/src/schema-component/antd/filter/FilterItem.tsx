@@ -5,8 +5,8 @@ import { Cascader, Select, Space } from 'antd';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../..';
-import { RemoveConditionContext } from './context';
 import { DynamicComponent } from './DynamicComponent';
+import { RemoveConditionContext } from './context';
 import { useValues } from './useValues';
 
 export const FilterItem = observer(
@@ -20,6 +20,7 @@ export const FilterItem = observer(
       <div style={{ marginBottom: 8 }} className="nc-filter-item">
         <Space>
           <Cascader
+            data-testid="antd-cascader"
             className={css`
               width: 160px;
             `}
@@ -37,6 +38,7 @@ export const FilterItem = observer(
             placeholder={t('Select field')}
           />
           <Select
+            data-testid="antd-select"
             className={css`
               min-width: 110px;
             `}
@@ -50,7 +52,7 @@ export const FilterItem = observer(
           />
           {!operator?.noValue ? <DynamicComponent value={value} schema={schema} onChange={setValue} /> : null}
           {!props.disabled && (
-            <a>
+            <a data-testid="close-icon-button">
               <CloseCircleOutlined onClick={() => remove()} style={{ color: '#bfbfbf' }} />
             </a>
           )}

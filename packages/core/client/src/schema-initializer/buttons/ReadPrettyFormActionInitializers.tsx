@@ -6,6 +6,7 @@ const useVisibleCollection = () => {
 };
 // 表单的操作配置
 export const ReadPrettyFormActionInitializers = {
+  'data-testid': 'configure-actions-button-of-read-pretty-form',
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
   style: {
