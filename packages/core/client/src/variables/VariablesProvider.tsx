@@ -71,7 +71,7 @@ const VariablesProvider = ({ children }) => {
         );
         if (Array.isArray(current)) {
           const result = current.map((item) => {
-            if (item[key] == null && item.id != null) {
+            if (shouldToRequest(item[key]) && item.id != null) {
               if (associationField?.target) {
                 const url = `/${collectionName}/${item.id}/${key}:${getAction(associationField.type)}`;
                 if (hasRequested(url)) {
@@ -93,7 +93,7 @@ const VariablesProvider = ({ children }) => {
             return item[key];
           });
           current = _.flatten(await Promise.all(result));
-        } else if (current[key] == null && current.id != null && associationField?.target) {
+        } else if (shouldToRequest(current[key]) && current.id != null && associationField?.target) {
           const url = `/${collectionName}/${current.id}/${key}:${getAction(associationField.type)}`;
           let data = null;
           if (hasRequested(url)) {
@@ -278,3 +278,14 @@ const VariablesProvider = ({ children }) => {
 VariablesProvider.displayName = 'VariablesProvider';
 
 export default VariablesProvider;
+
+/**
+ * 判断是否应该请求关系字段的数据。如果是 null 则可以确定后端的数据为空，此时不需要请求；如果是 undefined 则需要请求。
+ *
+ * 注意：如果后端接口的这一 “规则” 发生了变更，那么可能会出现问题。
+ * @param value
+ * @returns
+ */
+function shouldToRequest(value) {
+  return value === undefined;
+}
