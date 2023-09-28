@@ -838,7 +838,9 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
       setSchemaUid(initialSchema['x-uid']);
     }
 
-    others?.beforeOpen();
+    if (typeof others?.beforeOpen === 'function') {
+      others?.beforeOpen?.();
+    }
     ctx.setVisible(false);
     setVisible(true);
   };

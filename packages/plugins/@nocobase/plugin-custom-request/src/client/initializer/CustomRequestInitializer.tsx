@@ -15,9 +15,6 @@ export const CustomRequestInitializer: React.FC = (props) => {
         successMessage: '{{t("Request success")}}',
       },
     },
-    'x-component-props': {
-      useProps: '{{ useCustomizeRequestActionProps }}',
-    },
   };
 
   return <BlockInitializer {...props} schema={schema} />;

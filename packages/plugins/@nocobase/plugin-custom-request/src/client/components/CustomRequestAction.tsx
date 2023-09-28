@@ -3,6 +3,7 @@ import React from 'react';
 import { CustomRequestActionDesigner } from './CustomRequestActionDesigner';
 import { useFieldSchema } from '@formily/react';
 import { listByCurrentRoleUrl } from '../constants';
+import { useCustomizeRequestActionProps } from '../hooks';
 
 export const CustomRequestActionACLDecorator = (props) => {
   const apiClient = useAPIClient();
@@ -33,7 +34,7 @@ export const CustomRequestAction = (props) => {
   const fieldSchema = useFieldSchema();
   const xAction = fieldSchema['x-action'];
   const Component = components[xAction] || Action;
-  return <Component {...props}></Component>;
+  return <Component {...props} useProps={useCustomizeRequestActionProps}></Component>;
 };
 
 CustomRequestAction.Designer = CustomRequestActionDesigner;
