@@ -2,10 +2,10 @@ import { DeleteOutlined, MenuOutlined } from '@ant-design/icons';
 import { TinyColor } from '@ctrl/tinycolor';
 import { SortableContext, SortableContextProps, useSortable } from '@dnd-kit/sortable';
 import { css } from '@emotion/css';
-import { ArrayField, Field } from '@formily/core';
+import { ArrayField } from '@formily/core';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
 import { RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
-import { action, reaction } from '@formily/reactive';
+import { action } from '@formily/reactive';
 import { isPortalInBody } from '@nocobase/utils/client';
 import { useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, TableColumnProps } from 'antd';
@@ -101,7 +101,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
           <DeleteOutlined
             style={{ cursor: 'pointer' }}
             onClick={() => {
-              action(() => {
+              void action(() => {
                 spliceArrayState(field as any, {
                   startIndex: index,
                   deleteCount: 1,
@@ -165,7 +165,11 @@ const SortHandle = (props) => {
 const TableIndex = (props) => {
   const { index } = props;
   return (
-    <div className={classNames('nb-table-index')} style={{ padding: '0 8px 0 16px' }}>
+    <div
+      data-testid={`table-index-${index}`}
+      className={classNames('nb-table-index')}
+      style={{ padding: '0 8px 0 16px' }}
+    >
       {index}
     </div>
   );
@@ -186,26 +190,6 @@ const usePaginationProps = (pagination1, pagination2) => {
     ...pagination2,
   };
   return result.total <= result.pageSize ? false : result;
-};
-
-const useValidator = (validator: (value: any) => string) => {
-  const field = useField<Field>();
-  useEffect(() => {
-    const dispose = reaction(
-      () => field.value,
-      (value) => {
-        const message = validator(value);
-        field.setFeedback({
-          type: 'error',
-          code: 'ValidateError',
-          messages: message ? [message] : [],
-        });
-      },
-    );
-    return () => {
-      dispose();
-    };
-  }, []);
 };
 
 export const Table: any = observer(
@@ -324,7 +308,7 @@ export const Table: any = observer(
                   const toIndex = e.over?.data.current?.sortable?.index;
                   const from = field.value[fromIndex] || e.active;
                   const to = field.value[toIndex] || e.over;
-                  field.move(fromIndex, toIndex);
+                  void field.move(fromIndex, toIndex);
                   onRowDragEnd({ from, to });
                 }}
               >
