@@ -2,7 +2,7 @@ import { SchemaExpressionScopeContext, SchemaOptionsContext } from '@formily/rea
 import React from 'react';
 import { act, renderHook, waitFor } from 'testUtils';
 import { APIClientProvider } from '../../api-client';
-import { mockAPIClient } from '../../test';
+import { mockAPIClient } from '../../testUtils';
 import { CurrentUserProvider } from '../../user';
 import VariablesProvider from '../VariablesProvider';
 import useVariables from '../hooks/useVariables';
