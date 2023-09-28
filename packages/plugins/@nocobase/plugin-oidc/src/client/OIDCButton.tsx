@@ -1,6 +1,6 @@
 import { LoginOutlined } from '@ant-design/icons';
 import { Authenticator, css, useAPIClient, useCurrentUserContext, useRedirect } from '@nocobase/client';
-import { Button, Space } from 'antd';
+import { Button, Space, message } from 'antd';
 import React, { useEffect } from 'react';
 import { useOidcTranslation } from './locale';
 import { useLocation } from 'react-router-dom';
@@ -34,7 +34,15 @@ export const OIDCButton = ({ authenticator }: { authenticator: Authenticator }) 
     const params = new URLSearchParams(location.search);
     const token = params.get('token');
     const name = params.get('authenticator');
-    if (token && name === authenticator.name) {
+    const error = params.get('error');
+    if (name !== authenticator.name) {
+      return;
+    }
+    if (error) {
+      message.error(t(error));
+      return;
+    }
+    if (token) {
       api.auth.setToken(token);
       api.auth.setAuthenticator(name);
       refresh()
