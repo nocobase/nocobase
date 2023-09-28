@@ -86,7 +86,7 @@ export async function send(ctx: Context, next: Next) {
 
   try {
     ctx.body = await axios({
-      baseURL: ctx.host,
+      baseURL: ctx.origin,
       ...options,
       url: parse(url)(variables),
       headers: {
@@ -100,6 +100,7 @@ export async function send(ctx: Context, next: Next) {
         ...requestConfigFirst?.data,
       })(variables),
     }).then((res) => {
+      console.log('🚀 ~ file: send.ts:119 ~ send ~ res:', res);
       return res.data;
     });
   } catch (err: any) {
