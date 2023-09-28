@@ -4,6 +4,15 @@ import { parse } from '@nocobase/utils';
 
 import axios from 'axios';
 
+const getHeaders = (headers: Record<string, any>) => {
+  return Object.keys(headers).reduce((hds, key) => {
+    if (key.toLocaleLowerCase().startsWith('x-')) {
+      hds[key] = headers[key];
+    }
+    return hds;
+  }, {});
+};
+
 const arrayToObject = (arr: { name: string; value: string }[]) => {
   return arr.reduce((acc, cur) => {
     acc[cur.name] = cur.value;
@@ -77,10 +86,12 @@ export async function send(ctx: Context, next: Next) {
 
   try {
     ctx.body = await axios({
+      baseURL: ctx.host,
       ...options,
       url: parse(url)(variables),
       headers: {
         Authorization: 'Bearer ' + ctx.getBearerToken(),
+        ...getHeaders(ctx.headers),
         ...omitNullAndUndefined(parse(arrayToObject(headers))(variables)),
       },
       params: parse(arrayToObject(params))(variables),
