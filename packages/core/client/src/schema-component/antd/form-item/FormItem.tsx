@@ -348,7 +348,7 @@ FormItem.Designer = function Designer() {
             filter = removeNullCondition(filter);
             _.set(field.componentProps, 'service.params.filter', filter);
             fieldSchema['x-component-props'] = field.componentProps;
-            dn.emit('patch', {
+            void dn.emit('patch', {
               schema: {
                 ['x-uid']: fieldSchema['x-uid'],
                 'x-component-props': field.componentProps,
@@ -383,7 +383,7 @@ FormItem.Designer = function Designer() {
               field.setValue(null);
             }
 
-            dn.emit('patch', {
+            void dn.emit('patch', {
               schema,
             });
             dn.refresh();

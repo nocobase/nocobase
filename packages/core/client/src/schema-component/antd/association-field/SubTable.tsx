@@ -8,12 +8,14 @@ import { isArr } from '@formily/shared';
 import { Button } from 'antd';
 import React from 'react';
 import { FormActiveFieldsProvider } from '../../../block-provider';
+import { useSubTableSpecialCase } from '../form-item/hooks/useSpecialCase';
 import { Table } from '../table-v2/Table';
 import { useAssociationFieldContext } from './hooks';
 
 export const SubTable: any = observer(
   (props: any) => {
     const { field } = useAssociationFieldContext<ArrayField>();
+    useSubTableSpecialCase({ field });
     const move = (fromIndex: number, toIndex: number) => {
       if (toIndex === undefined) return;
       if (!isArr(field.value)) return;
@@ -89,7 +91,7 @@ export const SubTable: any = observer(
                   onClick={() => {
                     field.value = field.value || [];
                     field.value.push({});
-                    field.onInput(field.value);
+                    void field.onInput(field.value);
                   }}
                   icon={<PlusOutlined />}
                 >

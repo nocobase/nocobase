@@ -125,7 +125,7 @@ const ToManyNester = observer(
                     <PlusOutlined
                       style={{ zIndex: 1000, marginRight: '10px', color: '#a8a3a3' }}
                       onClick={() => {
-                        action(() => {
+                        void action(() => {
                           if (!Array.isArray(field.value)) {
                             field.value = [];
                           }
@@ -150,7 +150,7 @@ const ToManyNester = observer(
                     <CloseOutlined
                       style={{ zIndex: 1000, color: '#a8a3a3' }}
                       onClick={() => {
-                        action(() => {
+                        void action(() => {
                           spliceArrayState(field as any, {
                             startIndex: index,
                             deleteCount: 1,

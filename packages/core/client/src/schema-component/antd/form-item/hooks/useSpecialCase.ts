@@ -1,7 +1,7 @@
 import { Field } from '@formily/core';
 import { Schema, useFieldSchema, useForm } from '@formily/react';
 import _ from 'lodash';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { CollectionFieldOptions, useCollection, useCollectionManager } from '../../../../collection-manager';
 import { isSubMode } from '../../association-field/util';
 
@@ -147,3 +147,28 @@ export function isFromDatabase(value: Record<string, any>) {
 
   return !value.__notFromDatabase;
 }
+
+/**
+ * 解决 `子表格` 中的 “一对多/多对一” 字段的默认值问题。
+ *
+ * 问题：如果子表格是空的，会导致默认值不会被设置，这是因为子表格中没有 FormItem 渲染，而设置默认值的逻辑就在 FormItem 中。
+ *
+ * 解决方法：
+ * 1. 如果子表格是空的，就设置一个值，这样会渲染出 FormItem。
+ * 2. 在 FormItem 中会设置默认值。
+ * 3. 如果子表格中没有设置默认值，就会再把子表格重置为空。
+ * @param param0
+ */
+export const useSubTableSpecialCase = ({ field }) => {
+  useEffect(() => {
+    if (_.isEmpty(field.value)) {
+      field.value = [{}];
+      // 因为默认值的解析是异步的，所以下面的代码会优先于默认值的设置，这样就防止了设置完默认值后又被清空的问题
+      Promise.resolve()
+        .then(() => {
+          field.value = [];
+        })
+        .catch(console.error);
+    }
+  }, []);
+};
