@@ -72,7 +72,12 @@ describe('oidc', () => {
     const res = await agent
       .set('X-Authenticator', 'oidc-auth')
       .set('Cookie', ['nocobase_oidc=token'])
-      .get('/auth:signIn?state=token%3Dtoken&name=oidc-auth');
+      .resource('auth')
+      .signIn()
+      .send({
+        code: '',
+        state: 'token=token&name=oidc-auth',
+      });
 
     expect(res.body.data.user).toBeDefined();
     expect(res.body.data.user.nickname).toBe('user1');
