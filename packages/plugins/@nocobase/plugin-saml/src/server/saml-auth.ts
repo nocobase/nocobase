@@ -35,7 +35,9 @@ export class SAMLAuth extends BaseAuth {
   async validate() {
     const ctx = this.ctx;
     const {
-      params: { values: samlResponse },
+      params: {
+        values: { samlResponse },
+      },
     } = ctx.action;
     const saml = new SAML(this.getOptions());
 
