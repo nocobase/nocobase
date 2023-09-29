@@ -5,6 +5,7 @@ import { CopyOutlined } from '@ant-design/icons';
 import { observer, useForm } from '@formily/react';
 import { useRecord, FormItem, Input } from '@nocobase/client';
 import { useSamlTranslation } from './locale';
+import { getSubAppName } from '@nocobase/sdk';
 
 const schema = {
   type: 'object',
@@ -48,9 +49,10 @@ const Usage = observer(() => {
   const record = useRecord();
   const { t } = useSamlTranslation();
 
+  const app = getSubAppName() || 'main';
   const name = form.values.name ?? record.name;
   const { protocol, host } = window.location;
-  const url = `${protocol}//${host}/api/saml:redirect?authenticator=${name}`;
+  const url = `${protocol}//${host}/api/saml:redirect?authenticator=${name}&app=${app}`;
 
   const copy = (text: string) => {
     navigator.clipboard.writeText(text);
