@@ -1,0 +1,47 @@
+edition: 1.0.0
+name: nocobase-app
+access: "{{ access }}"
+
+vars: # 全局变量
+  region: "{{ region }}"
+  service:
+    name: "{{ serviceName }}"
+    nasConfig: auto
+
+services:
+  nocobaseService:
+    component: fc
+    actions:
+      pre-deploy:
+        - component: fc build --use-docker --dockerfile ./src/Dockerfile
+    props:
+      region: ${vars.region}
+      service: ${vars.service}
+      function:
+        name: "{{ functionName }}"
+        codeUri: './src'
+        runtime: custom-container
+        timeout: 60
+        memorySize: 512
+        instanceConcurrency: 100
+        caPort: 13000
+        customContainerConfig:
+          image: "{{ acrRegistry }}"
+      triggers:
+        - name: httpTrigger
+          type: http
+          config:
+            authType: anonymous
+            methods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - HEAD
+              - OPTIONS
+      customDomains:
+        - domainName: Auto
+          protocol: HTTP
+          routeConfigs:
+            - path: /*
+              
