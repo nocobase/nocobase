@@ -1,0 +1,66 @@
+Type: Application
+Name: start-nocobase
+Provider:
+  - 阿里云
+Version: 0.1.16
+Description: 快速部署一个 nocobase 函数到阿里云函数计算
+HomePage: https://github.com/183461750/nocobase
+Tags:
+  - 函数计算
+  - 全栈应用
+Category: 全栈应用
+Service:
+  函数计算:
+    Authorities:
+      - AliyunFCFullAccess
+      - AliyunContainerRegistryFullAccess
+    Runtime: custom container
+Parameters:
+  type: object
+  additionalProperties: false # 不允许增加其他属性
+  required: # 必填项
+    - region
+    - serviceName
+    - functionName
+    - imageNamespace
+  properties:
+    region:
+      title: 地域
+      type: string
+      default: cn-hangzhou
+      description: 创建应用所在的地区
+      enum:
+        - cn-beijing
+        - cn-hangzhou
+        - cn-shanghai
+        - cn-qingdao
+        - cn-zhangjiakou
+        - cn-huhehaote
+        - cn-shenzhen
+        - cn-chengdu
+        - cn-hongkong
+        - ap-southeast-1
+        - ap-southeast-2
+        - ap-southeast-3
+        - ap-southeast-5
+        - ap-northeast-1
+        - eu-central-1
+        - eu-west-1
+        - us-west-1
+        - us-east-1
+        - ap-south-1
+    serviceName:
+      title: 服务名
+      type: string
+      default: nocobase-service
+      description: 服务名称，只能包含字母、数字、下划线和中划线。不能以数字、中划线开头。长度在 1-128 之间
+    functionName:
+      title: 函数名
+      type: string
+      default: nocobase-function
+      description: 函数名称，只能包含字母、数字、下划线和中划线。不能以数字、中划线开头。长度在 1-64 之间
+    imageNamespace:
+      title: 镜像仓库的命名空间
+      type: string
+      default: nocobase-namespace
+      description: 镜像仓库的命名空间，需要在 https://cr.console.aliyun.com/ 中开通服务、创建镜像仓库的命名空间以及设置访问凭证
