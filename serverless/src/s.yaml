@@ -1,0 +1,48 @@
+edition: 1.0.0
+name: nocobase-app
+access: "{{ access }}"
+
+vars: # 全局变量
+  region: "{{ region }}"
+  image_namespace: "{{ imageNamespace }}"
+  image_name: "{{ functionName }}"
+  service:
+    name: "{{ serviceName }}"
+    nasConfig: auto
+
+services:
+  nocobaseService:
+    component: fc
+    actions:
+      pre-deploy:
+        - component: fc build --use-docker --dockerfile ./Dockerfile
+    props:
+      region: ${vars.region}
+      service: ${vars.service}
+      function:
+        name: "{{ functionName }}"
+        runtime: custom-container
+        timeout: 60
+        memorySize: 512
+        instanceConcurrency: 100
+        caPort: 13000
+        customContainerConfig:
+          image: "registry.${vars.region}.aliyuncs.com/${vars.image_namespace}/${vars.image_name}:v1.0"
+      triggers:
+        - name: httpTrigger
+          type: http
+          config:
+            authType: anonymous
+            methods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - HEAD
+              - OPTIONS
+      customDomains:
+        - domainName: Auto
+          protocol: HTTP
+          routeConfigs:
+            - path: /*
+              
