@@ -20,19 +20,13 @@ const runCodegenSync = () => {
 };
 
 const run = async () => {
-  const { kill } = await runNocoBase();
+  const { kill, awaitForNocoBase } = await runNocoBase();
 
-  if (kill) {
-    // 等待服务成功启动
-    setTimeout(() => {
-      console.log('Starting codegen...');
-      runCodegenSync();
-      kill?.('SIGKILL');
-    }, 5000);
-  } else {
-    console.log('Starting codegen...');
-    runCodegenSync();
-  }
+  await awaitForNocoBase();
+
+  console.log('Starting codegen...');
+  runCodegenSync();
+  kill?.('SIGKILL');
 };
 
-void run();
+run();
