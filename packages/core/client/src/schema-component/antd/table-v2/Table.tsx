@@ -165,11 +165,7 @@ const SortHandle = (props) => {
 const TableIndex = (props) => {
   const { index } = props;
   return (
-    <div
-      data-testid={`table-index-${index}`}
-      className={classNames('nb-table-index')}
-      style={{ padding: '0 8px 0 16px' }}
-    >
+    <div className={classNames('nb-table-index')} style={{ padding: '0 8px 0 16px' }}>
       {index}
     </div>
   );
@@ -382,6 +378,7 @@ export const Table: any = observer(
               }
               return (
                 <div
+                  data-testid={`table-index-${index}`}
                   className={classNames(
                     checked ? 'checked' : null,
                     css`
