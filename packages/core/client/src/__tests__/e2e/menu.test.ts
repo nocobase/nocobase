@@ -20,4 +20,26 @@ test.describe('menu', () => {
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'OK' }).click();
   });
+
+  test('insert befort page', async ({ page, mockPage }) => {
+    await mockPage({ name: 'page' }).goto();
+    await page.getByRole('menuitem', { name: 'Page', exact: true }).locator('span').click();
+    await page.getByRole('textbox').click();
+    await page.getByRole('textbox').fill('page1');
+    await page.getByRole('button', { name: 'OK' }).click();
+    // 获取需要比较的两个元素
+    const element1 = await page.getByText('page1'); // 假设这是第一个元素
+    const element2 = await page.getByText('page'); // 假设这是第二个元素
+
+    // 获取两个元素的位置信息
+    const element1BoundingBox = await element1.boundingBox();
+    const element2BoundingBox = await element2.boundingBox();
+    expect(element1BoundingBox.x).toBeLessThan(element2BoundingBox.x);
+
+    // 删除页面，避免影响其他测试
+    await page.getByRole('menu').getByText('page1').hover();
+    await page.getByTestId('designer-schema-settings').hover();
+    await page.getByRole('menuitem', { name: 'Delete' }).click();
+    await page.getByRole('button', { name: 'OK' }).click();
+  });
 });
