@@ -44,9 +44,15 @@ function checkPort(port) {
 /**
  * 检查服务是否启动成功
  */
-const checkServer = async (duration = 1000) => {
+const checkServer = async (duration = 1000, max = 30) => {
   return new Promise((resolve, reject) => {
+    let count = 0;
     const timer = setInterval(async () => {
+      if (count++ > max) {
+        clearInterval(timer);
+        return reject(new Error('Server start timeout.'));
+      }
+
       if (!(await checkPort(process.env.APP_PORT))) {
         return;
       }
@@ -60,9 +66,7 @@ const checkServer = async (duration = 1000) => {
           }
         })
         .catch((error) => {
-          clearInterval(timer);
-          console.error('Request error:', error);
-          reject(error);
+          console.error('Request error:', error.message);
         });
     }, duration);
   });
@@ -72,9 +76,15 @@ const checkServer = async (duration = 1000) => {
  * 检查 UI 是否启动成功
  * @param duration
  */
-const checkUI = async (duration = 1000) => {
+const checkUI = async (duration = 1000, max = 30) => {
   return new Promise((resolve, reject) => {
+    let count = 0;
     const timer = setInterval(async () => {
+      if (count++ > max) {
+        clearInterval(timer);
+        return reject(new Error('UI start timeout.'));
+      }
+
       axios
         .get(`http://localhost:${process.env.APP_PORT}/__umi/api/bundle-status`)
         .then((response) => {
@@ -84,9 +94,7 @@ const checkUI = async (duration = 1000) => {
           }
         })
         .catch((error) => {
-          clearInterval(timer);
-          console.error('Request error:', error);
-          reject(error);
+          console.error('Request error:', error.message);
         });
     }, duration);
   });
@@ -110,11 +118,16 @@ export const runNocoBase = async (options?: CommonOptions<any>) => {
   dotenv.config({ path: path.resolve(process.cwd(), '.env.e2e') });
 
   const awaitForNocoBase = async () => {
-    console.log('check server...');
-    await checkServer();
-    console.log('server is ready, check UI...');
-    await checkUI();
-    console.log('UI is ready.');
+    if (process.env.CI) {
+      console.log('check server...');
+      await checkServer();
+    } else {
+      console.log('check server...');
+      await checkServer();
+      console.log('server is ready, check UI...');
+      await checkUI();
+      console.log('UI is ready.');
+    }
   };
 
   if (process.env.CI) {
