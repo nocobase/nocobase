@@ -97,6 +97,10 @@ describe('transformVariableValue', () => {
 
     const result = transformVariableValue(value, deps as any);
 
-    expect(result).toMatchInlineSnapshot('"{\\"a\\":1}"');
+    expect(result).toMatchInlineSnapshot(`
+      {
+        "a": 1,
+      }
+    `);
   });
 });
