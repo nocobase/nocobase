@@ -417,7 +417,10 @@ export class PluginACL extends Plugin {
         isThrough: true,
         sortable: false,
       };
-      await this.db.getRepository('collections').create({ values: data });
+      const r = this.db.getRepository('collections');
+      if (r) {
+        await r.create({ values: data });
+      }
     });
 
     this.app.on('beforeInstallPlugin', async (plugin) => {
