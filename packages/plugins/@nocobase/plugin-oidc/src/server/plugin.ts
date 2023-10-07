@@ -3,6 +3,7 @@ import { getAuthUrl } from './actions/getAuthUrl';
 import { redirect } from './actions/redirect';
 import { authType } from '../constants';
 import { OIDCAuth } from './oidc-auth';
+import { resolve } from 'path';
 
 export class OidcPlugin extends Plugin {
   afterAdd() {}
@@ -10,6 +11,14 @@ export class OidcPlugin extends Plugin {
   beforeLoad() {}
 
   async load() {
+    this.db.addMigrations({
+      namespace: 'auth',
+      directory: resolve(__dirname, 'migrations'),
+      context: {
+        plugin: this,
+      },
+    });
+
     this.app.authManager.registerTypes(authType, {
       auth: OIDCAuth,
     });
