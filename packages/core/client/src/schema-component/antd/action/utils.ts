@@ -1,7 +1,7 @@
 import type { ISchema } from '@formily/react';
-import { last } from 'lodash';
-import { conditionAnalyse } from '../../common/utils/uitls';
 import { ActionType } from '../../../schema-settings/LinkageRules/type';
+import { VariableOption, VariablesContextType } from '../../../variables/types';
+import { conditionAnalyses } from '../../common/utils/uitls';
 const validateJSON = {
   validator: `{{(value, rule)=> {
     if (!value) {
@@ -69,52 +69,69 @@ export const requestSettingsSchema: ISchema = {
   },
 };
 
-export const linkageAction = (operator, field, condition, values) => {
-  const disableResult = field?.linkageProperty?.disabled || [false];
-  const displayResult = field?.linkageProperty?.display || ['visible'];
+export const linkageAction = async ({
+  operator,
+  field,
+  condition,
+  values,
+  variables,
+  localVariables,
+}: {
+  operator;
+  field;
+  condition;
+  values;
+  variables: VariablesContextType;
+  localVariables: VariableOption[];
+}) => {
+  field.data = field.data || {};
+
   switch (operator) {
     case ActionType.Visible:
-      if (conditionAnalyse(condition, values)) {
-        displayResult.push(operator);
-        field.data = field.data || {};
-        field.data.hidden = false;
+      reset(field);
+      if (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables })) {
+        field._display = '_display' in field ? field._display : field.display;
+        field.display = operator;
+      } else {
+        field.display = field._display;
       }
-      field.linkageProperty = {
-        ...field.linkageProperty,
-        display: displayResult,
-      };
-      field.display = last(displayResult);
       break;
     case ActionType.Hidden:
-      if (conditionAnalyse(condition, values)) {
-        field.data = field.data || {};
+      reset(field);
+      if (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables })) {
         field.data.hidden = true;
       } else {
-        field.data = field.data || {};
         field.data.hidden = false;
       }
       break;
     case ActionType.Disabled:
-      if (conditionAnalyse(condition, values)) {
-        disableResult.push(true);
+      reset(field);
+      if (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables })) {
+        field.data.disabled = true;
+        field.disabled = true;
+      } else {
+        field.data.disabled = false;
+        field.disabled = false;
       }
-      field.linkageProperty = {
-        ...field.linkageProperty,
-        disabled: disableResult,
-      };
-      field.disabled = last(disableResult);
       break;
     case ActionType.Active:
-      if (conditionAnalyse(condition, values)) {
-        disableResult.push(false);
+      reset(field);
+      if (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables })) {
+        field.data.disabled = false;
+        field.disabled = false;
+      } else {
+        field.data.disabled = true;
+        field.disabled = true;
       }
-      field.linkageProperty = {
-        ...field.linkageProperty,
-        disabled: disableResult,
-      };
-      field.disabled = last(disableResult);
       break;
     default:
       return null;
   }
 };
+
+function reset(field: any) {
+  field.display = field._display;
+  field.data.hidden = false;
+  field.data.disabled = false;
+  field.disabled = false;
+}

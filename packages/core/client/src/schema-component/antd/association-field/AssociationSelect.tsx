@@ -5,7 +5,7 @@ import { isFunction } from 'mathjs';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RecordProvider, useAPIClient } from '../../../';
-import { isVariable } from '../../common/utils/uitls';
+import { isVariable } from '../../../variables/utils/isVariable';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
 import useServiceOptions, { useAssociationFieldContext } from './hooks';
 
@@ -110,3 +110,26 @@ interface AssociationSelectInterface {
 }
 
 export const AssociationSelect = InternalAssociationSelect as unknown as AssociationSelectInterface;
+
+export const AssociationSelectReadPretty = connect(
+  (props: any) => {
+    const service = useServiceOptions(props);
+    if (props.fieldNames) {
+      return <RemoteSelect.ReadPretty {...props} service={service}></RemoteSelect.ReadPretty>;
+    }
+    return null;
+  },
+  mapProps(
+    {
+      dataSource: 'options',
+      loading: true,
+    },
+    (props, field) => {
+      return {
+        ...props,
+        fieldNames: props.fieldNames && { ...props.fieldNames, ...field.componentProps.fieldNames },
+        suffixIcon: field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffixIcon,
+      };
+    },
+  ),
+);

@@ -20,6 +20,9 @@ export default defineConfig({
   resolve: {
     mainFields: ['module'],
   },
+  define: {
+    'process.env.__TEST__': true,
+  },
   test: {
     globals: true,
     setupFiles: 'scripts/vitest.setup.ts',
