@@ -381,6 +381,43 @@ export class PluginACL extends Plugin {
           default: true,
         },
       });
+      const data = {
+        name: 'rolesUsers',
+        title: 'rolesUsers',
+        hidden: true,
+        fields: [
+          {
+            name: 'roleName',
+            type: 'string',
+            interface: 'input',
+            isForeignKey: true,
+            uiSchema: {
+              type: 'string',
+              title: 'roleName',
+              'x-component': 'Input',
+              'x-read-pretty': true,
+            },
+          },
+          {
+            name: 'userId',
+            type: 'bigInt',
+            interface: 'integer',
+            isForeignKey: true,
+            uiSchema: {
+              type: 'number',
+              title: 'userId',
+              'x-component': 'InputNumber',
+              'x-read-pretty': true,
+            },
+          },
+        ],
+        timestamps: true,
+        autoGenId: false,
+        autoCreate: true,
+        isThrough: true,
+        sortable: false,
+      };
+      await this.db.getRepository('collections').create({ values: data });
     });
 
     this.app.on('beforeInstallPlugin', async (plugin) => {

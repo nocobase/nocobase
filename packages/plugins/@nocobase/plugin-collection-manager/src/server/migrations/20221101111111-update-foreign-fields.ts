@@ -3,7 +3,7 @@ import { afterCreateForForeignKeyField } from '../hooks/afterCreateForForeignKey
 
 export default class DropForeignKeysMigration extends Migration {
   async up() {
-    const result = await this.app.version.satisfies('<0.8.0');
+    const result = await this.app.version.satisfies('<0.14.0-alpha.8');
 
     if (!result) {
       return;
