@@ -131,6 +131,12 @@ describe('SettingsCenter', () => {
   it('router', () => {
     app.settingsCenter.add('test1', test1);
     app.settingsCenter.add('test1.test2', test2);
-    expect(app.router.getRoutes()[0]).toMatchInlineSnapshot();
+    expect(app.router.getRoutes()[0]).toMatchInlineSnapshot(`
+      {
+        "children": undefined,
+        "element": <AppNotFound />,
+        "path": "*",
+      }
+    `);
   });
 });
