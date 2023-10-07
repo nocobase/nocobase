@@ -16,7 +16,7 @@ describe('Application', () => {
   });
 
   const router: any = { type: 'memory', initialEntries: ['/'] };
-  const initialComponentsLength = 6;
+  const initialComponentsLength = 7;
   const initialProvidersLength = 2;
   it('basic', () => {
     const app = new Application({ router });

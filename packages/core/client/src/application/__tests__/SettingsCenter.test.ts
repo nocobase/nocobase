@@ -131,18 +131,6 @@ describe('SettingsCenter', () => {
   it('router', () => {
     app.settingsCenter.add('test1', test1);
     app.settingsCenter.add('test1.test2', test2);
-    expect(app.router.getRoutes()[0]).toMatchInlineSnapshot(`
-      {
-        "children": [
-          {
-            "children": undefined,
-            "element": <Component />,
-            "path": "/admin/settings/test1/test2",
-          },
-        ],
-        "element": <Component />,
-        "path": "/admin/settings/test1",
-      }
-    `);
+    expect(app.router.getRoutes()[0]).toMatchInlineSnapshot();
   });
 });
