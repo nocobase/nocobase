@@ -24,11 +24,54 @@ describe('collections repository', () => {
     await Collection.repository.create({
       values: [
         {
+          name: 'users',
+          fields: [
+            {
+              type: 'string',
+              name: 'username',
+            },
+            {
+              type: 'hasMany',
+              target: 'posts',
+              name: 'posts',
+            },
+            {
+              type: 'hasOne',
+              target: 'profiles',
+              name: 'profile',
+            },
+          ],
+        },
+        {
+          name: 'profiles',
+          fields: [
+            {
+              type: 'string',
+              name: 'nickname',
+            },
+            {
+              type: 'belongsTo',
+              target: 'users',
+              name: 'user',
+            },
+          ],
+        },
+        {
           name: 'posts',
           fields: [
             {
               type: 'string',
               name: 'title',
+            },
+            {
+              type: 'belongsToMany',
+              target: 'tags',
+              name: 'tags',
+              through: 'posts_tags',
+              foreignKey: 'post_id',
+              otherKey: 'tag_id',
+              sourceKey: 'id',
+              targetKey: 'id',
             },
           ],
         },
@@ -38,6 +81,16 @@ describe('collections repository', () => {
             {
               type: 'string',
               name: 'name',
+            },
+            {
+              type: 'belongsToMany',
+              target: 'posts',
+              name: 'posts',
+              through: 'posts_tags',
+              foreignKey: 'tag_id',
+              otherKey: 'post_id',
+              sourceKey: 'id',
+              targetKey: 'id',
             },
           ],
         },
@@ -50,6 +103,31 @@ describe('collections repository', () => {
 
     const tagsCollection = db.getCollection('tags');
     expect(tagsCollection).toBeTruthy();
+
+    const usersCollection = db.getCollection('users');
+    expect(usersCollection).toBeTruthy();
+
+    const profilesCollection = db.getCollection('profiles');
+    expect(profilesCollection).toBeTruthy();
+
+    await usersCollection.repository.create({
+      values: {
+        username: 'admin',
+        profile: {
+          nickname: '管理员',
+        },
+        posts: [
+          {
+            title: 'test',
+            tags: [
+              {
+                name: 'test',
+              },
+            ],
+          },
+        ],
+      },
+    });
   });
 
   it('should create collection with description', async () => {
