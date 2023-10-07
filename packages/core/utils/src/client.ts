@@ -14,6 +14,7 @@ export * from './number';
 export * from './parse-filter';
 export * from './registry';
 // export * from './toposort';
+export * from './isPortalInBody';
 export * from './uid';
-export { dayjs, lodash };
 export * from './url';
+export { dayjs, lodash };

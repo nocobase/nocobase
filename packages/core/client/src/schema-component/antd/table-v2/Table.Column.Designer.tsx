@@ -2,13 +2,13 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { set } from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrayItems } from '@formily/antd-v5';
-import { useCollectionFilterOptions, useCollectionManager } from '../../../collection-manager';
-import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isShowDefaultValue } from '../../../schema-settings';
+import { useFormBlockContext } from '../../../block-provider';
+import { useCollectionManager } from '../../../collection-manager';
+import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled } from '../../../schema-settings';
+import useIsAllowToSetDefaultValue from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
 import { useAssociationFieldContext } from '../association-field/hooks';
 import { removeNullCondition } from '../filter';
-import { FilterDynamicComponent } from './FilterDynamicComponent';
 
 const useLabelFields = (collectionName?: any) => {
   // 需要在组件顶层调用
@@ -46,6 +46,7 @@ export const useColorFields = (collectionName?: any) => {
 };
 export const TableColumnDesigner = (props) => {
   const { uiSchema, fieldSchema, collectionField } = props;
+  const { form } = useFormBlockContext();
   const { getInterface, getCollection } = useCollectionManager();
   const field: any = useField();
   const { t } = useTranslation();
@@ -55,13 +56,13 @@ export const TableColumnDesigner = (props) => {
     fieldSchema?.['x-component-props']?.['fieldNames'] || uiSchema?.['x-component-props']?.['fieldNames'];
   const options = useLabelFields(collectionField?.target ?? collectionField?.targetCollection);
   const colorFieldOptions = useColorFields(collectionField?.target ?? collectionField?.targetCollection);
-  const intefaceCfg = getInterface(collectionField?.interface);
+  const interfaceCfg = getInterface(collectionField?.interface);
   const targetCollection = getCollection(collectionField?.target);
   const isFileField = isFileCollection(targetCollection);
   const isSubTableColumn = ['QuickEdit', 'FormItem'].includes(fieldSchema['x-decorator']);
   const { currentMode } = useAssociationFieldContext();
-  const defaultFilter = fieldSchema?.['x-component-props']?.service?.params?.filter || {};
-  const dataSource = useCollectionFilterOptions(collectionField?.target);
+  const { isAllowToSetDefaultValue } = useIsAllowToSetDefaultValue({ collectionField, fieldSchema });
+
   const isDateField = ['datetime', 'createdAt', 'updatedAt'].includes(collectionField?.interface);
   const isAssociationField = ['obo', 'oho', 'o2o', 'o2m', 'm2m', 'm2o', 'snapshot'].includes(
     collectionField?.interface,
@@ -76,6 +77,7 @@ export const TableColumnDesigner = (props) => {
     readOnlyMode = 'read-pretty';
   }
   const isSelectFieldMode = isAssociationField && fieldMode === 'Select';
+
   return (
     <GeneralSchemaDesigner disableInitializer>
       <SchemaSettings.ModalItem
@@ -111,24 +113,10 @@ export const TableColumnDesigner = (props) => {
         }}
       />
       {isSelectFieldMode && !field.readPretty && !uiSchema?.['x-read-pretty'] && isSubTableColumn && (
-        <SchemaSettings.ModalItem
-          title={t('Set the data scope')}
-          schema={
-            {
-              type: 'object',
-              title: t('Set the data scope'),
-              properties: {
-                filter: {
-                  default: defaultFilter,
-                  enum: dataSource,
-                  'x-component': 'Filter',
-                  'x-component-props': {
-                    dynamicComponent: (props) => FilterDynamicComponent({ ...props }),
-                  },
-                },
-              },
-            } as ISchema
-          }
+        <SchemaSettings.DataScope
+          collectionName={collectionField?.target}
+          defaultFilter={fieldSchema?.['x-component-props']?.service?.params?.filter || {}}
+          form={form}
           onSubmit={({ filter }) => {
             filter = removeNullCondition(filter);
             set(field.componentProps, 'service.params.filter', filter);
@@ -178,7 +166,7 @@ export const TableColumnDesigner = (props) => {
           dn.refresh();
         }}
       />
-      {intefaceCfg && intefaceCfg.sortable === true && !currentMode && (
+      {interfaceCfg && interfaceCfg.sortable === true && !currentMode && (
         <SchemaSettings.SwitchItem
           title={t('Sortable')}
           checked={field.componentProps.sorter}
@@ -407,9 +395,7 @@ export const TableColumnDesigner = (props) => {
             }}
           />
         )}
-      {isSubTableColumn && !field?.readPretty && isShowDefaultValue(collectionField, getInterface) && (
-        <SchemaSettings.DefaultValue fieldSchema={fieldSchema} />
-      )}
+      {isAllowToSetDefaultValue(isSubTableColumn) && <SchemaSettings.DefaultValue fieldSchema={fieldSchema} />}
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren={!isSubTableColumn}
