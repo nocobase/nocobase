@@ -613,7 +613,7 @@ export const GraphDrawPage = React.memo(() => {
     });
   };
   const handleConnectionAssociation = ({ target, through }) => {
-    const data = targetGraph.selectedCollections.split(',') || [];
+    const data = targetGraph.selectedCollections?.split(',') || [];
     data.push(target);
     through && data.push(through);
     const queryString = uniq(data).toString();
@@ -728,6 +728,7 @@ export const GraphDrawPage = React.memo(() => {
   const renderInitGraphCollection = (rawData) => {
     targetGraph.clearCells();
     const { nodesData, edgesData, inheritEdges } = formatData(rawData);
+    console.log(edgesData);
     targetGraph.data = { nodes: nodesData, edges: edgesData };
     targetGraph.fromJSON({ nodes: nodesData });
     targetGraph.addEdges(edgesData);
