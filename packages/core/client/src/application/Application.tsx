@@ -61,6 +61,9 @@ export class Application {
   maintained = false;
   maintaining = false;
   error = null;
+  get pluginManager() {
+    return this.pm;
+  }
 
   constructor(protected options: ApplicationOptions = {}) {
     this.initRequireJs();
@@ -86,6 +89,7 @@ export class Application {
     this.addProviders(options.providers || []);
     this.ws = new WebSocketClient(options.ws);
     this.settingsCenter = new SettingsCenter(this);
+    this.addRoutes();
   }
 
   private initRequireJs() {
@@ -107,8 +111,11 @@ export class Application {
     });
   }
 
-  get pluginManager() {
-    return this.pm;
+  private addRoutes() {
+    this.router.add('not-found', {
+      path: '*',
+      Component: this.components['AppNotFound'] || BlankComponent,
+    });
   }
 
   getComposeProviders() {

@@ -15,7 +15,7 @@ export class HelloPlugin extends Plugin {
     this.app.settingsCenter.add('hello', {
       title: 'Hello',
       icon: 'ApiOutlined',
-      component: HelloSettingPage,
+      Component: HelloSettingPage,
     })
   }
 }

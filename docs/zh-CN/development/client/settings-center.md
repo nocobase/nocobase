@@ -17,7 +17,7 @@ export class HelloPlugin extends Plugin {
     this.app.settingsCenter.add('hello', {
       title: 'Hello',  // 设置页面的标题和菜单名称
       icon: 'ApiOutlined', // 设置页面菜单图标
-      component: HelloSettingPage,
+      Component: HelloSettingPage,
     })
   }
 }

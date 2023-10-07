@@ -1,15 +1,26 @@
 import { PageHeader } from '@ant-design/pro-layout';
 import { css } from '@emotion/css';
 import { Layout, Menu, Result } from 'antd';
-import _ from 'lodash';
+import _, { get } from 'lodash';
 import React, { createContext, useCallback, useMemo } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useStyles } from './style';
 import { ADMIN_SETTINGS_PATH, SettingPageType, useApp } from '../application';
 import { useCompile } from '../schema-component';
-import { useACLRoleContext } from '../acl';
 
 export const SettingsCenterContext = createContext<any>({});
+
+function getMenuItems(list: SettingPageType[]) {
+  return list.map((item) => {
+    return {
+      key: item.name,
+      label: item.label,
+      title: item.title,
+      icon: item.icon,
+      children: item.children?.length ? getMenuItems(item.children) : undefined,
+    };
+  });
+}
 
 export const SettingsCenterComponent = () => {
   const { styles, theme } = useStyles();
@@ -17,9 +28,7 @@ export const SettingsCenterComponent = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const compile = useCompile();
-  const { snippets = [] } = useACLRoleContext();
   const settings = useMemo(() => {
-    app.settingsCenter.setAclSnippets(snippets);
     const list = app.settingsCenter.getList();
     // compile title
     function traverse(settings: SettingPageType[]) {
@@ -33,10 +42,10 @@ export const SettingsCenterComponent = () => {
     }
     traverse(list);
     return list;
-  }, [app.settingsCenter, compile, snippets]);
+  }, [app.settingsCenter, compile]);
   const getFirstDeepChildPath = useCallback((settings: SettingPageType[]) => {
     if (!settings || !settings.length) {
-      return '';
+      return '/admin';
     }
     const first = settings[0];
     if (first.children?.length) {
@@ -66,6 +75,11 @@ export const SettingsCenterComponent = () => {
     }
     return settings.find((item) => item.name === currentSetting.pluginName);
   }, [currentSetting, settings]);
+
+  const sidebarMenus = useMemo(() => {
+    return getMenuItems(settings.map((item) => ({ ...item, children: null })));
+  }, [settings]);
+
   if (!currentSetting || location.pathname === ADMIN_SETTINGS_PATH || location.pathname === ADMIN_SETTINGS_PATH + '/') {
     return <Navigate replace to={getFirstDeepChildPath(settings)} />;
   }
@@ -102,7 +116,7 @@ export const SettingsCenterComponent = () => {
                 return navigate(plugin.path);
               }
             }}
-            items={settings.map((item) => ({ ...item, children: undefined }))}
+            items={sidebarMenus}
           />
         </Layout.Sider>
         <Layout.Content>
@@ -123,7 +137,7 @@ export const SettingsCenterComponent = () => {
                     }}
                     selectedKeys={[currentSetting?.name]}
                     mode="horizontal"
-                    items={currentPlugin.children}
+                    items={getMenuItems(currentPlugin.children)}
                   ></Menu>
                 )
               }

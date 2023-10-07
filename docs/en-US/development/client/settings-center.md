@@ -17,7 +17,7 @@ export class HelloPlugin extends Plugin {
     this.app.settingsCenter.add('hello', {
       title: 'Hello',  // menu title and page title
       icon: 'ApiOutlined', // menu icon
-      component: HelloSettingPage,
+      Component: HelloSettingPage,
     })
   }
 }
