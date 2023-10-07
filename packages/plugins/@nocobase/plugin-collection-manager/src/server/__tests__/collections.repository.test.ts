@@ -20,6 +20,38 @@ describe('collections repository', () => {
     await app.destroy();
   });
 
+  it('should create collections with array', async () => {
+    await Collection.repository.create({
+      values: [
+        {
+          name: 'posts',
+          fields: [
+            {
+              type: 'string',
+              name: 'title',
+            },
+          ],
+        },
+        {
+          name: 'tags',
+          fields: [
+            {
+              type: 'string',
+              name: 'name',
+            },
+          ],
+        },
+      ],
+      context: {},
+    });
+
+    const postsCollection = db.getCollection('posts');
+    expect(postsCollection).toBeTruthy();
+
+    const tagsCollection = db.getCollection('tags');
+    expect(tagsCollection).toBeTruthy();
+  });
+
   it('should create collection with description', async () => {
     const description = 'this collection is for tests';
     await Collection.repository.create({

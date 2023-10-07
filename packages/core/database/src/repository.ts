@@ -555,7 +555,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     const instances = [];
 
     for (const values of records) {
-      const instance = await this.create({ values, transaction });
+      const instance = await this.create({ ...options, values, transaction });
       instances.push(instance);
     }
 
