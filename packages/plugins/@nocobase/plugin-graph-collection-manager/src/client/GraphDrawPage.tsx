@@ -728,7 +728,6 @@ export const GraphDrawPage = React.memo(() => {
   const renderInitGraphCollection = (rawData) => {
     targetGraph.clearCells();
     const { nodesData, edgesData, inheritEdges } = formatData(rawData);
-    console.log(edgesData);
     targetGraph.data = { nodes: nodesData, edges: edgesData };
     targetGraph.fromJSON({ nodes: nodesData });
     targetGraph.addEdges(edgesData);
