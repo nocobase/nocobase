@@ -560,18 +560,26 @@ export class Database extends EventEmitter implements AsyncEmitter {
   }
 
   addPendingField(field: RelationField) {
-    const associating = this.pendingFields;
-    const items = this.pendingFields.get(field.target) || [];
+    let items;
+    if (this.pendingFields.has(field.target)) {
+      items = this.pendingFields.get(field.target);
+    } else {
+      items = [];
+      this.pendingFields.set(field.target, items);
+    }
     items.push(field);
-    associating.set(field.target, items);
   }
 
   removePendingField(field: RelationField) {
     const items = this.pendingFields.get(field.target) || [];
     const index = items.indexOf(field);
     if (index !== -1) {
-      delete items[index];
-      this.pendingFields.set(field.target, items);
+      items.splice(index, 1);
+      if (items.length === 0) {
+        this.pendingFields.delete(field.target);
+      } else {
+        this.pendingFields.set(field.target, items);
+      }
     }
   }
 

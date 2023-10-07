@@ -20,6 +20,55 @@ describe('collections repository', () => {
     await app.destroy();
   });
 
+  it('should create through table when pending fields', async () => {
+    await Collection.repository.create({
+      values: {
+        name: 'posts',
+        fields: [
+          {
+            type: 'string',
+            name: 'title',
+          },
+          {
+            type: 'belongsToMany',
+            target: 'tags',
+            name: 'tags',
+            through: 'posts_tags',
+            foreignKey: 'post_id',
+            otherKey: 'tag_id',
+            sourceKey: 'id',
+            targetKey: 'id',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    const postsCollection = db.getCollection('posts');
+    expect(postsCollection).toBeTruthy();
+
+    await Collection.repository.create({
+      values: {
+        name: 'tags',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    const throughCollection = db.getCollection('posts_tags');
+    expect(throughCollection).toBeTruthy();
+
+    expect(await throughCollection.existsInDb()).toBeTruthy();
+    const rawAttribute = throughCollection.model.rawAttributes['tag_id'].field;
+    const columns = await db.sequelize.getQueryInterface().describeTable(throughCollection.getTableNameWithSchema());
+    expect(columns[rawAttribute]).toBeDefined();
+  });
+
   it('should create collections with array', async () => {
     await Collection.repository.create({
       values: [
