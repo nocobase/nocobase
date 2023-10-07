@@ -9,7 +9,7 @@ import {
   SchemaComponentProvider,
 } from '@nocobase/client';
 import React from 'react';
-import { mockAPIClient } from '../../../../test';
+import { mockAPIClient } from '../../../../testUtils';
 import collections from './collections';
 import data from './data';
 

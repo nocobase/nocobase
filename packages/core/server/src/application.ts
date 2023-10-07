@@ -23,6 +23,8 @@ import { ApplicationVersion } from './helpers/application-version';
 import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
+import { CronJob } from 'cron';
+import { CronJobManager } from './cron/cron-job-manager';
 
 const packageJson = require('../package.json');
 
@@ -139,6 +141,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   get maintainingMessage() {
     return this._maintainingMessage;
+  }
+
+  protected _cronJobManager: CronJobManager;
+
+  get cronJobManager() {
+    return this._cronJobManager;
   }
 
   protected _db: Database;
@@ -330,6 +338,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.log.debug(`start reload`);
 
     this._loaded = false;
+
+    await this.emitAsync('beforeReload', this, options);
 
     await this.load({
       ...options,
@@ -671,6 +681,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.middleware = new Toposort<any>();
     this.plugins = new Map<string, Plugin>();
     this._acl = createACL();
+
+    this._cronJobManager = new CronJobManager(this);
 
     this.use(logger.middleware, { tag: 'logger' });
 

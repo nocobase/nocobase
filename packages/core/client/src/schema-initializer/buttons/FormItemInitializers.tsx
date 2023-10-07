@@ -78,6 +78,7 @@ export const FormItemInitializers = (props: any) => {
   );
   return (
     <SchemaInitializer.Button
+      data-testid="configure-fields-button-of-form-item"
       wrap={gridRowColWrap}
       icon={'SettingOutlined'}
       items={fieldItems}
@@ -151,6 +152,7 @@ export const FilterFormItemInitializers = (props: any) => {
   );
   return (
     <SchemaInitializer.Button
+      data-testid="configure-fields-button-of-filter-form-item"
       wrap={gridRowColWrap}
       icon={'SettingOutlined'}
       items={fieldItems}

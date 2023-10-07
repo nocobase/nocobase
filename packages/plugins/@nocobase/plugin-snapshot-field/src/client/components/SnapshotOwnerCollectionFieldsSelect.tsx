@@ -18,5 +18,5 @@ export const useSnapshotOwnerCollectionFields = () => {
 
 export const SnapshotOwnerCollectionFieldsSelect: React.FC<SnapshotOwnerCollectionFieldsSelectProps> = (props) => {
   const options = useSnapshotOwnerCollectionFields();
-  return <Select popupMatchSelectWidth={false} options={options} {...props} />;
+  return <Select data-testid="antd-select" popupMatchSelectWidth={false} options={options} {...props} />;
 };

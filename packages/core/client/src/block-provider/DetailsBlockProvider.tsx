@@ -39,7 +39,7 @@ const InternalDetailsBlockProvider = (props) => {
 
 export const DetailsBlockProvider = (props) => {
   return (
-    <BlockProvider {...props}>
+    <BlockProvider data-testid="details-block" {...props}>
       <InternalDetailsBlockProvider {...props} />
     </BlockProvider>
   );
