@@ -163,6 +163,9 @@ const useStyles = createStyles(({ token, css }) => {
             overflow: hidden;
             margin-left: 8px;
             min-width: 50%;
+            .ant-badge {
+              padding-right: 5px;
+            }
           }
 
           .type {
