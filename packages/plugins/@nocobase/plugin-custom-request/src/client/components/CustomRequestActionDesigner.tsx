@@ -1,10 +1,10 @@
 import { useFieldSchema } from '@formily/react';
 import { ArrayItems } from '@formily/antd-v5';
-import { Action, SchemaSettings, useAPIClient, useCollection, useCurrentRoles, useRequest } from '@nocobase/client';
-import React from 'react';
+import { Action, SchemaSettings, useCollection, useCurrentRoles, useRequest } from '@nocobase/client';
+import React, { useEffect } from 'react';
 import { CustomRequestACLSchema, CustomRequestConfigurationFieldsSchema } from '../schemas';
 import { useCustomRequestVariableOptions, useGetCustomRequest } from '../hooks';
-import { message } from 'antd';
+import { App } from 'antd';
 import { useTranslation } from '../locale';
 import { listByCurrentRoleUrl } from '../constants';
 import { useCustomRequestsResource } from '../hooks/useCustomRequestsResource';
@@ -14,11 +14,11 @@ function CustomRequestSettingsItem() {
   const { name } = useCollection();
   const fieldSchema = useFieldSchema();
   const customRequestsResource = useCustomRequestsResource();
-  const [messageInstance, messageDom] = message.useMessage();
+  const { message } = App.useApp();
   const { data, refresh } = useGetCustomRequest();
+
   return (
     <>
-      {messageDom}
       <SchemaSettings.ActionModalItem
         title={t('Request settings')}
         components={{
@@ -43,7 +43,7 @@ function CustomRequestSettingsItem() {
             filterKeys: ['key'],
           });
           refresh();
-          return messageInstance.success(t('Saved successfully'));
+          return message.success(t('Saved successfully'));
         }}
       />
     </>
@@ -54,7 +54,7 @@ function CustomRequestACL() {
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   const customRequestsResource = useCustomRequestsResource();
-  const [messageInstance, messageDom] = message.useMessage();
+  const { message } = App.useApp();
   const { data, refresh } = useGetCustomRequest();
   const { refresh: refreshRoleCustomKeys } = useRequest<{ data: string[] }>(
     {
@@ -70,7 +70,6 @@ function CustomRequestACL() {
 
   return (
     <>
-      {messageDom}
       <SchemaSettings.ActionModalItem
         title={t('Access Control')}
         schema={CustomRequestACLSchema}
@@ -89,7 +88,7 @@ function CustomRequestACL() {
           });
           refresh();
           refreshRoleCustomKeys();
-          return messageInstance.success(t('Saved successfully'));
+          return message.success(t('Saved successfully'));
         }}
       />
     </>
