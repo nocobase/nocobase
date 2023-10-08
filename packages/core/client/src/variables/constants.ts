@@ -1,1 +1,1 @@
-export const DEBOUNCE_WAIT = 500;
+export const DEBOUNCE_WAIT = 300;

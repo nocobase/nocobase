@@ -72,7 +72,6 @@ const useParseDefaultValue = () => {
             setDefaultValue(value);
           }
         } else {
-          // TODO: 可能会因为异步时序问题导致设置默认值无效
           // eslint-disable-next-line promise/catch-or-return
           Promise.resolve().then(() => {
             field.setInitialValue(value);

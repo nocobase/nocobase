@@ -102,12 +102,13 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
           <DeleteOutlined
             style={{ cursor: 'pointer' }}
             onClick={() => {
-              void action(() => {
+              action(() => {
                 spliceArrayState(field as any, {
                   startIndex: index,
                   deleteCount: 1,
                 });
                 field.value.splice(index, 1);
+                field.initialValue?.splice(index, 1);
                 return field.onInput(field.value);
               });
             }}
