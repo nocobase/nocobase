@@ -141,7 +141,7 @@ export function useTriggerWorkflowsActionProps() {
   const currentRecord = useRecord();
   const currentUserContext = useCurrentUserContext();
   const { modal } = App.useApp();
-  const { getActiveFieldsName } = useFormActiveFields();
+  const { getActiveFieldsName } = useFormActiveFields() || {};
 
   const currentUser = currentUserContext?.data?.data;
   const filterKeys = actionField.componentProps.filterKeys || [];
@@ -174,7 +174,7 @@ export function useTriggerWorkflowsActionProps() {
       if (!skipValidator) {
         await form.submit();
       }
-      const values = getFormValues({ filterByTk, form, getField, actionFields: getActiveFieldsName('form') });
+      const values = getFormValues({ filterByTk, form, getField, actionFields: getActiveFieldsName?.('form') || [] });
       // const values = omitBy(formValues, (value) => isEqual(JSON.stringify(value), '[{}]'));
       if (addChild) {
         const treeParentField = getTreeParentField();

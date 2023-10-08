@@ -19,7 +19,7 @@ interface Props {
  * @returns
  */
 export const useFormVariable = ({ collectionName, collectionField, schema, noDisabled, targetFieldSchema }: Props) => {
-  const { getActiveFieldsName } = useFormActiveFields();
+  const { getActiveFieldsName } = useFormActiveFields() || {};
   const { t } = useTranslation();
   const result = useBaseVariable({
     collectionField,
@@ -31,7 +31,7 @@ export const useFormVariable = ({ collectionName, collectionField, schema, noDis
     collectionName: collectionName,
     noDisabled,
     returnFields: (fields, option) => {
-      const activeFieldsName = getActiveFieldsName('form');
+      const activeFieldsName = getActiveFieldsName?.('form') || [];
 
       return option.depth === 0
         ? fields.filter((field) => {
