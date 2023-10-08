@@ -91,7 +91,7 @@ export const SubTable: any = observer(
                   onClick={() => {
                     field.value = field.value || [];
                     field.value.push({});
-                    void field.onInput(field.value);
+                    field.onInput(field.value);
                   }}
                   icon={<PlusOutlined />}
                 >
