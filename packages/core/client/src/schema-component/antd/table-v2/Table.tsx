@@ -6,11 +6,12 @@ import { ArrayField } from '@formily/core';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
 import { RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
 import { action } from '@formily/reactive';
+import { uid } from '@formily/shared';
 import { isPortalInBody } from '@nocobase/utils/client';
 import { useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DndContext, useDesignable, useTableSize } from '../..';
 import {
@@ -231,6 +232,7 @@ export const Table: any = observer(
     const [selectedRow, setSelectedRow] = useState([]);
     const dataSource = field?.value?.slice?.()?.filter?.(Boolean) || [];
     const isRowSelect = rowSelection?.type !== 'none';
+    const defaultRowKeyMap = useRef(new Map());
     let onRow = null,
       highlightRow = '';
 
@@ -339,8 +341,29 @@ export const Table: any = observer(
       };
     }, [field, onRowDragEnd, dragSort]);
 
+    /**
+     * 为没有设置 key 属性的 record 生成一个唯一的 key
+     * 1. rowKey 的默认值是 “key”，所以先判断有没有 record.key；
+     * 2. 如果没有就生成一个唯一的 key，并以 record 的值作为索引；
+     * 3. 这样下次就能取到对应的 key 的值；
+     *
+     * 这里有效的前提是：数组中对应的 record 的引用不会发生改变。
+     *
+     * @param record
+     * @returns
+     */
     const defaultRowKey = (record: any) => {
-      return field.value?.indexOf?.(record);
+      if (record.key) {
+        return record.key;
+      }
+
+      if (defaultRowKeyMap.current.has(record)) {
+        return defaultRowKeyMap.current.get(record);
+      }
+
+      const key = uid();
+      defaultRowKeyMap.current.set(record, key);
+      return key;
     };
 
     const getRowKey = (record: any) => {

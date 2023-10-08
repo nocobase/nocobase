@@ -74,7 +74,7 @@ const useParseDefaultValue = () => {
         } else {
           // TODO: 可能会因为异步时序问题导致设置默认值无效
           // eslint-disable-next-line promise/catch-or-return
-          void Promise.resolve().then(() => {
+          Promise.resolve().then(() => {
             field.setInitialValue(value);
           });
         }
@@ -91,7 +91,7 @@ const useParseDefaultValue = () => {
     // 使用防抖，提高性能和用户体验
     const run = _.debounce(_run, DEBOUNCE_WAIT);
 
-    void _run();
+    _run();
 
     if (isVariable(fieldSchema.default)) {
       const variableName = getVariableName(fieldSchema.default);
