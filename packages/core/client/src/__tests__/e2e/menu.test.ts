@@ -16,7 +16,7 @@ test.describe('menu', () => {
 
     // 删除页面，避免影响其他测试
     await page.getByRole('menu').getByText('new page').hover();
-    await page.getByTestId('designer-schema-settings').hover();
+    await page.getByLabel('designer-schema-settings').hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'OK' }).click();
   });
