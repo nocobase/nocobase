@@ -4,13 +4,13 @@ import { commonConfig, runNocoBase } from './utils';
 const runCodegenSync = () => {
   try {
     execSync(
-      `npx playwright codegen --load-storage=playwright/.auth/codegen.auth.json http://localhost:${process.env.APP_PORT} --save-storage=playwright/.auth/codegen.auth.json`,
+      `npx playwright codegen --load-storage=playwright/.auth/codegen.auth.json ${process.env.APP_BASE_URL} --save-storage=playwright/.auth/codegen.auth.json`,
       commonConfig,
     );
   } catch (err) {
     if (err.message.includes('auth.json')) {
       execSync(
-        `npx playwright codegen http://localhost:${process.env.APP_PORT} --save-storage=playwright/.auth/codegen.auth.json`,
+        `npx playwright codegen ${process.env.APP_BASE_URL} --save-storage=playwright/.auth/codegen.auth.json`,
         commonConfig,
       );
     } else {

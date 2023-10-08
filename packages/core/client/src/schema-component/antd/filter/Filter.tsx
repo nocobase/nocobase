@@ -3,12 +3,11 @@ import { observer, useField, useFieldSchema } from '@formily/react';
 import React, { useEffect } from 'react';
 import { useRequest } from '../../../api-client';
 import { useProps } from '../../hooks/useProps';
-import { DatePickerProvider } from '../date-picker';
-import { FilterContext } from './context';
 import { FilterActionDesigner } from './Filter.Action.Designer';
 import { FilterAction } from './FilterAction';
 import { FilterGroup } from './FilterGroup';
 import { SaveDefaultValue } from './SaveDefaultValue';
+import { FilterContext } from './context';
 
 const useDef = (options) => {
   const field = useField<ObjectFieldModel>();
@@ -26,26 +25,24 @@ export const Filter: any = observer(
         field.dataSource = data?.data || [];
       },
     });
+
     useEffect(() => {
       field.initialValue = fieldSchema.defaultValue;
     }, []);
     return (
       <div className={className}>
-        <DatePickerProvider value={{ utc: false }}>
-          <FilterContext.Provider
-            value={{
-              field,
-              fieldSchema,
-              dynamicComponent,
-              options: options || field.dataSource || [],
-              disabled: props.disabled,
-              collectionName,
-            }}
-          >
-            <FilterGroup {...props} bordered={false} />
-            {/* <pre>{JSON.stringify(field.value, null, 2)}</pre> */}
-          </FilterContext.Provider>
-        </DatePickerProvider>
+        <FilterContext.Provider
+          value={{
+            field,
+            fieldSchema,
+            dynamicComponent,
+            options: options || field.dataSource || [],
+            disabled: props.disabled,
+            collectionName,
+          }}
+        >
+          <FilterGroup {...props} bordered={false} />
+        </FilterContext.Provider>
       </div>
     );
   },

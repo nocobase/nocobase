@@ -10,6 +10,7 @@ import {
   useCompile,
   useCurrentUserContext,
   useFilterByTk,
+  useFormActiveFields,
   useRecord,
 } from '@nocobase/client';
 import { isURL, parse } from '@nocobase/utils/client';
@@ -102,13 +103,22 @@ export default {
   initializers: {},
 };
 
-function getFormValues(filterByTk, field, form, fieldNames, getField, resource) {
+function getFormValues({
+  filterByTk,
+  form,
+  getField,
+  actionFields,
+}: {
+  filterByTk;
+  form;
+  getField;
+  actionFields: any[];
+}) {
   if (filterByTk) {
-    const actionFields = field?.data?.activeFields as Set<string>;
     if (actionFields) {
       const keys = Object.keys(form.values).filter((key) => {
         const f = getField(key);
-        return !actionFields.has(key) && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(f?.type);
+        return !actionFields.includes(key) && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(f?.type);
       });
       return omit({ ...form.values }, keys);
     }
@@ -131,6 +141,7 @@ export function useTriggerWorkflowsActionProps() {
   const currentRecord = useRecord();
   const currentUserContext = useCurrentUserContext();
   const { modal } = App.useApp();
+  const { getActiveFieldsName } = useFormActiveFields() || {};
 
   const currentUser = currentUserContext?.data?.data;
   const filterKeys = actionField.componentProps.filterKeys || [];
@@ -146,11 +157,24 @@ export function useTriggerWorkflowsActionProps() {
         triggerWorkflows,
       } = actionSchema?.['x-action-settings'] ?? {};
       const addChild = fieldSchema?.['x-component-props']?.addChild;
-      const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentRecord, currentUser });
+      const assignedValues = parse(originalAssignedValues)({
+        // @deprecated
+        currentTime: new Date(),
+        // @deprecated
+        currentRecord,
+        // @deprecated
+        currentUser,
+        $user: currentUser,
+        $nRecord: currentRecord,
+        $nForm: form.values,
+        $nDate: {
+          now: new Date(),
+        },
+      });
       if (!skipValidator) {
         await form.submit();
       }
-      const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
+      const values = getFormValues({ filterByTk, form, getField, actionFields: getActiveFieldsName?.('form') || [] });
       // const values = omitBy(formValues, (value) => isEqual(JSON.stringify(value), '[{}]'));
       if (addChild) {
         const treeParentField = getTreeParentField();

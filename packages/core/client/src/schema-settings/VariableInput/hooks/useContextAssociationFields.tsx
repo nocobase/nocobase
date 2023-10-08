@@ -1,7 +1,7 @@
 import { error } from '@nocobase/utils/client';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCollectionManager, CollectionFieldOptions } from '../../../collection-manager';
+import { CollectionFieldOptions, useCollectionManager } from '../../../collection-manager';
 import { useCompile, useGetFilterOptions } from '../../../schema-component';
 import { FieldOption, Option } from '../type';
 
@@ -11,8 +11,8 @@ export const useIsSameOrChildCollection = () => {
     if (contextCollection === targetCollection) {
       return true;
     }
-    const childrens = getChildrenCollections(targetCollection);
-    return childrens?.some((v) => v.name === contextCollection);
+    const children = getChildrenCollections(targetCollection);
+    return children?.some((v) => v.name === contextCollection);
   };
 };
 
