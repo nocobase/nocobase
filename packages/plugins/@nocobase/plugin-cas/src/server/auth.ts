@@ -38,9 +38,15 @@ export class CASAuth extends BaseAuth {
     const ctx = this.ctx;
     const { autoSignup } = this.getOptions();
     const { ticket } = ctx.action.params;
-    const res = ticket ? await this.serviceValidate(ticket) : null;
+    if (!ticket) {
+      throw new Error('Missing ticket');
+    }
+    const res = await this.serviceValidate(ticket);
     const pattern = /<(?:cas|sso):user>(.*?)<\/(?:cas|sso):user>/;
     const username = res?.data.match(pattern)?.[1];
+    if (!username) {
+      throw new Error('Invalid ticket');
+    }
     const authenticator = this.authenticator as AuthModel;
     let user = await authenticator.findUser(username);
     if (user) {
