@@ -14,6 +14,7 @@ import { App } from 'antd';
 import { isURL } from '@nocobase/utils/client';
 import { useNavigate } from 'react-router-dom';
 import { useGetCustomRequest } from './useGetCustomRequest';
+import { useTranslation } from '../locale';
 
 export const useCustomizeRequestActionProps = () => {
   const apiClient = useAPIClient();
@@ -30,12 +31,15 @@ export const useCustomizeRequestActionProps = () => {
   const actionField = useField();
   const { setVisible } = useActionContext();
   const { modal, message } = App.useApp();
+  const { t } = useTranslation();
 
   return {
     async onClick() {
       const { skipValidator, onSuccess } = actionSchema?.['x-action-settings'] ?? {};
       const options = data ? data?.data?.options : (await runAsync())?.data?.options;
-      if (!options?.['url']) return;
+      if (!options?.['url']) {
+        return message.error(t('Please configure the request settings first'));
+      }
       const xAction = actionSchema?.['x-action'];
       if (skipValidator !== true && xAction === 'customize:form:request') {
         await form.submit();

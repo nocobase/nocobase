@@ -22,4 +22,5 @@ export default {
   'Only support standard JSON data': '仅支持标准 JSON 数据',
   '"Content-Type" only support "application/json", and no need to specify': '"Content-Type" 请求头仅支持 "application/json"，无需填写',
   'When the HTTP method is Post, Put or Patch, and this custom request inside the form, the request body will be automatically filled in with the form data': '当请求方法为 Post、Put 或 Patch 时，且此自定义请求在表单内，请求体将自动填充表单数据',
+  'Please configure the request settings first': '请先配置请求设置',
 }
