@@ -54,8 +54,8 @@ describe('saml', () => {
 
   it('should not sign in without auto signup', async () => {
     await authenticator.update({
-      ...authenticator.options,
       options: {
+        ...authenticator.options,
         public: {
           autoSignup: false,
         },
@@ -82,8 +82,8 @@ describe('saml', () => {
 
   it('should sign in with auto signup', async () => {
     await authenticator.update({
-      ...authenticator.options,
       options: {
+        ...authenticator.options,
         public: {
           autoSignup: true,
         },
