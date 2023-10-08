@@ -54,11 +54,11 @@ describe('saml', () => {
 
   it('should not sign in without auto signup', async () => {
     await authenticator.update({
+      ...authenticator.options,
       options: {
         public: {
           autoSignup: false,
         },
-        ...authenticator.options,
       },
     });
     jest.spyOn(SAML.prototype, 'validatePostResponseAsync').mockResolvedValue({
@@ -82,11 +82,11 @@ describe('saml', () => {
 
   it('should sign in with auto signup', async () => {
     await authenticator.update({
+      ...authenticator.options,
       options: {
         public: {
           autoSignup: true,
         },
-        ...authenticator.options,
       },
     });
     jest.spyOn(SAML.prototype, 'validatePostResponseAsync').mockResolvedValue({
@@ -114,8 +114,8 @@ describe('saml', () => {
     await authenticator.update({
       options: {
         saml: {
-          userBindField: 'email',
           ...authenticator.options.saml,
+          userBindField: 'email',
         },
         public: {
           autoSignup: false,
@@ -162,8 +162,8 @@ describe('saml', () => {
     await authenticator.update({
       options: {
         saml: {
-          userBindField: 'username',
           ...authenticator.options.saml,
+          userBindField: 'username',
         },
         public: {
           autoSignup: false,
