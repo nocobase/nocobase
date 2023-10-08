@@ -25,10 +25,13 @@
     "tar": "nocobase tar",
     "test": "nocobase test",
     "test:client": "vitest",
-    "test:e2e": "ts-node-dev ./scripts/runE2e.setup.ts",
-    "test:codegen": "ts-node-dev ./scripts/codegen.setup.ts",
-    "test:server": "ts-node-dev ./scripts/nocobase.setup.ts",
+    "test:e2e": "tsx ./scripts/runE2e.setup.ts",
+    "test:e2e:codegen": "tsx ./scripts/codegen.setup.ts",
+    "test:e2e:server": "tsx ./scripts/nocobase.setup.ts",
     "tc": "yarn test:client",
+    "te": "yarn test:e2e",
+    "tec": "yarn test:e2e:codegen",
+    "tes": "yarn test:e2e:server",
     "doc": "nocobase doc",
     "postinstall": "nocobase postinstall",
     "lint": "eslint .",
@@ -37,7 +40,7 @@
     "version:alpha": "lerna version prerelease --preid alpha --force-publish=* --no-git-tag-version -m \"chore(versions): publish packages %s\"",
     "release:force": "lerna publish from-package --yes",
     "release": "lerna publish",
-    "run:example": "ts-node-dev -r dotenv/config -r tsconfig-paths/register ./examples/index.ts"
+    "run:example": "tsx -r dotenv/config -r tsconfig-paths/register ./examples/index.ts"
   },
   "resolutions": {
     "@types/react": "^17.0.0",
@@ -94,7 +97,8 @@
     "ts-jest": "^29.1.1",
     "typescript": "5.1.3",
     "vite": "^4.4.9",
-    "vitest": "^0.34.3"
+    "vitest": "^0.34.3",
+    "axios": "^0.26.1"
   },
   "volta": {
     "node": "18.14.2",

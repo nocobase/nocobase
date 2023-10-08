@@ -8,6 +8,7 @@ import { RecordProvider, useRecord } from '../record-provider';
 import { useActionContext, useDesignable } from '../schema-component';
 import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v2/Templates';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
+import { FormActiveFieldsProvider } from './hooks';
 
 export const FormBlockContext = createContext<any>({});
 
@@ -19,7 +20,7 @@ const InternalFormBlockProvider = (props) => {
       createForm({
         readPretty,
       }),
-    [],
+    [readPretty],
   );
   const { resource, service, updateAssociationValues } = useBlockRequestContext();
   const formBlockRef = useRef();
@@ -27,6 +28,7 @@ const InternalFormBlockProvider = (props) => {
   if (service.loading && Object.keys(form?.initialValues)?.length === 0 && action) {
     return <Spin />;
   }
+
   return (
     <FormBlockContext.Provider
       value={{
@@ -83,7 +85,9 @@ export const FormBlockProvider = (props) => {
   return (
     (detailFlag || createFlag || isCusomeizeCreate) && (
       <BlockProvider data-testid={props['data-testid'] || 'form-block'} {...props} block={'form'}>
-        <InternalFormBlockProvider {...props} />
+        <FormActiveFieldsProvider name="form">
+          <InternalFormBlockProvider {...props} />
+        </FormActiveFieldsProvider>
       </BlockProvider>
     )
   );

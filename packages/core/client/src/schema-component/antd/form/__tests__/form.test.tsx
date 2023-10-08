@@ -13,18 +13,24 @@ describe('Form', () => {
   it('basic', async () => {
     render(<App2 />);
 
+    await sleep();
+
     const submit = screen.getByText('Submit');
     const input = document.querySelector('.ant-input') as HTMLInputElement;
 
-    expect(submit).toBeInTheDocument();
-    expect(input).toBeInTheDocument();
-    expect(screen.getByText(/form title/i)).toBeInTheDocument();
-    expect(screen.getByText('T1')).toBeInTheDocument();
-    expect(screen.getByText(/\{\}/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(submit).toBeInTheDocument();
+      expect(input).toBeInTheDocument();
+      expect(screen.queryByText(/form title/i)).toBeInTheDocument();
+      expect(screen.queryByText('T1')).toBeInTheDocument();
+      expect(screen.queryByText(/\{\}/i)).toBeInTheDocument();
+    });
 
     // 使用 waitFor 防止报错，参见：https://github.com/testing-library/user-event/issues/662#issuecomment-904365493
     await waitFor(() => userEvent.type(input, '123'));
-    expect(screen.getByText(/\{ "field1": "123" \}/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByText(/\{ "field1": "123" \}/i)).toBeInTheDocument();
+    });
   });
 
   it('decorator', async () => {
@@ -46,7 +52,9 @@ describe('Form', () => {
     });
 
     await userEvent.type(input, '123');
-    expect(screen.getByText(/\{ "field1": "aaa123" \}/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByText(/\{ "field1": "aaa123" \}/i)).toBeInTheDocument();
+    });
   });
 
   it('Form & Drawer', async () => {

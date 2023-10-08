@@ -7,12 +7,14 @@ import { cloneDeep } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RemoteSelect, useCompile, useDesignable } from '../..';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { CollectionOptions, useCollection, useCollectionManager } from '../../../collection-manager';
+import { FlagProvider } from '../../../flag-provider';
 import { useRecord } from '../../../record-provider';
 import { OpenModeSchemaItems } from '../../../schema-items';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useCollectionState } from '../../../schema-settings/DataTemplates/hooks/useCollectionState';
 import { useSyncFromForm } from '../../../schema-settings/DataTemplates/utils';
+import { DefaultValueProvider } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useLinkageAction } from './hooks';
 import { requestSettingsSchema } from './utils';
 
@@ -481,25 +483,32 @@ function AssignedFieldValues() {
     ),
   };
   const actionType = fieldSchema['x-action'] ?? '';
+  const onSubmit = useCallback(
+    (assignedValues) => {
+      fieldSchema['x-action-settings']['assignedValues'] = assignedValues;
+      dn.emit('patch', {
+        schema: {
+          ['x-uid']: fieldSchema['x-uid'],
+          'x-action-settings': fieldSchema['x-action-settings'],
+        },
+      });
+    },
+    [dn, fieldSchema],
+  );
 
   return (
-    <SchemaSettings.ActionModalItem
-      title={t('Assign field values')}
-      initialSchema={initialSchema}
-      initialValues={fieldSchema?.['x-action-settings']?.assignedValues}
-      modalTip={tips[actionType]}
-      uid={fieldSchema?.['x-action-settings']?.schemaUid}
-      onSubmit={(assignedValues) => {
-        fieldSchema['x-action-settings']['assignedValues'] = assignedValues;
-        dn.emit('patch', {
-          schema: {
-            ['x-uid']: fieldSchema['x-uid'],
-            'x-action-settings': fieldSchema['x-action-settings'],
-          },
-        });
-        dn.refresh();
-      }}
-    />
+    <FlagProvider isInAssignFieldValues={true}>
+      <DefaultValueProvider isAllowToSetDefaultValue={() => false}>
+        <SchemaSettings.ActionModalItem
+          title={t('Assign field values')}
+          initialSchema={initialSchema}
+          initialValues={fieldSchema?.['x-action-settings']?.assignedValues}
+          modalTip={tips[actionType]}
+          uid={fieldSchema?.['x-action-settings']?.schemaUid}
+          onSubmit={onSubmit}
+        />
+      </DefaultValueProvider>
+    </FlagProvider>
   );
 }
 
@@ -658,7 +667,7 @@ function FormWorkflowSelect(props) {
   const [workflowCollection, setWorkflowCollection] = useState(baseCollection.name);
   useFormEffects(() => {
     onFieldValueChange(`group[${index}].context`, (field) => {
-      let collection = baseCollection;
+      let collection: CollectionOptions = baseCollection;
       if (field.value) {
         const paths = field.value.split('.');
         for (let i = 0; i < paths.length && collection; i++) {

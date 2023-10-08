@@ -1,8 +1,8 @@
 import { Context, utils } from '@nocobase/actions';
 
+import ManualInstruction from '.';
 import Plugin from '../..';
 import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
-import ManualInstruction from '.';
 
 export async function submit(context: Context, next) {
   const repository = utils.getRepositoryFromParams(context);
@@ -56,9 +56,17 @@ export async function submit(context: Context, next) {
     return context.throw(403);
   }
   const presetValues = processor.getParsedValue(actionItem.values ?? {}, userJob.nodeId, {
+    // @deprecated
     currentUser: currentUser.toJSON(),
+    // @deprecated
     currentRecord: values.result[formKey],
+    // @deprecated
     currentTime: new Date(),
+    $user: currentUser.toJSON(),
+    $nForm: values.result[formKey],
+    $nDate: {
+      now: new Date(),
+    },
   });
 
   userJob.set({

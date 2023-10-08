@@ -88,7 +88,7 @@ export default class FormTrigger extends Trigger {
               appends,
             });
           }
-          this.plugin.trigger(workflow, { data: payload, user: currentUser });
+          this.plugin.trigger(workflow, { data: toJSON(payload), user: toJSON(currentUser) });
         });
       } else {
         const data = trigger[1] ? get(values, trigger[1]) : values;

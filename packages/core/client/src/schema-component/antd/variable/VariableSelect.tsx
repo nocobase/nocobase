@@ -19,7 +19,7 @@ export function VariableSelect({
 
   async function loadData(selectedOptions) {
     const option = selectedOptions[selectedOptions.length - 1];
-    if (!option.children && !option.isLeaf && option.loadChildren) {
+    if (!option.children?.length && !option.isLeaf && option.loadChildren) {
       await option.loadChildren(option);
       setOptions((prev) => [...prev]);
     }
