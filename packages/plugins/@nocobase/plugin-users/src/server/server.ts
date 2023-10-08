@@ -9,6 +9,7 @@ import * as actions from './actions/users';
 import initAuthenticators from './authenticators';
 import { JwtOptions, JwtService } from './jwt-service';
 import { enUS, zhCN } from './locale';
+import { parseToken } from './middlewares';
 
 export interface UserPluginConfig {
   name?: string;
