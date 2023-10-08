@@ -151,7 +151,7 @@ export const useCreateActionProps = () => {
   const { modal } = App.useApp();
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: form });
-  const { getActiveFieldsName } = useFormActiveFields();
+  const { getActiveFieldsName } = useFormActiveFields() || {};
 
   const action = actionField.componentProps.saveMode || 'create';
   const filterKeys = actionField.componentProps.filterKeys?.checked || [];
@@ -199,7 +199,7 @@ export const useCreateActionProps = () => {
         fieldNames,
         getField,
         resource,
-        actionFields: getActiveFieldsName('form'),
+        actionFields: getActiveFieldsName?.('form') || [],
       });
       // const values = omitBy(formValues, (value) => isEqual(JSON.stringify(value), '[{}]'));
       if (addChild) {
@@ -265,7 +265,7 @@ export const useAssociationCreateActionProps = () => {
   const currentRecord = useRecord();
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: form });
-  const { getActiveFieldsName } = useFormActiveFields();
+  const { getActiveFieldsName } = useFormActiveFields() || {};
 
   const action = actionField.componentProps.saveMode || 'create';
   const filterKeys = actionField.componentProps.filterKeys?.checked || [];
@@ -313,7 +313,7 @@ export const useAssociationCreateActionProps = () => {
         fieldNames,
         getField,
         resource,
-        actionFields: getActiveFieldsName('form'),
+        actionFields: getActiveFieldsName?.('form') || [],
       });
       if (addChild) {
         const treeParentField = getTreeParentField();
@@ -771,7 +771,7 @@ export const useCustomizeRequestActionProps = () => {
   const actionField = useField();
   const { setVisible } = useActionContext();
   const { modal } = App.useApp();
-  const { getActiveFieldsName } = useFormActiveFields();
+  const { getActiveFieldsName } = useFormActiveFields() || {};
 
   return {
     async onClick() {
@@ -797,7 +797,7 @@ export const useCustomizeRequestActionProps = () => {
           fieldNames,
           getField,
           resource,
-          actionFields: getActiveFieldsName('form'),
+          actionFields: getActiveFieldsName?.('form') || [],
         });
         Object.assign(data, values);
       }
@@ -863,7 +863,7 @@ export const useUpdateActionProps = () => {
   const data = useParamsFromRecord();
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: form });
-  const { getActiveFieldsName } = useFormActiveFields();
+  const { getActiveFieldsName } = useFormActiveFields() || {};
 
   return {
     async onClick() {
@@ -908,7 +908,7 @@ export const useUpdateActionProps = () => {
         fieldNames,
         getField,
         resource,
-        actionFields: getActiveFieldsName('form'),
+        actionFields: getActiveFieldsName?.('form') || [],
       });
       actionField.data = field.data || {};
       actionField.data.loading = true;

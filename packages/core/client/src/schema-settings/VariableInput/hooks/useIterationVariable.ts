@@ -23,7 +23,7 @@ export const useIterationVariable = ({
   /** 消费变量值的字段 */
   targetFieldSchema?: Schema;
 }) => {
-  const { getActiveFieldsName } = useFormActiveFields();
+  const { getActiveFieldsName } = useFormActiveFields() || {};
   const { t } = useTranslation();
   const result = useBaseVariable({
     collectionField,
@@ -35,7 +35,7 @@ export const useIterationVariable = ({
     collectionName: currentCollection,
     noDisabled,
     returnFields: (fields, option) => {
-      const activeFieldsName = getActiveFieldsName('nester');
+      const activeFieldsName = getActiveFieldsName?.('nester') || [];
 
       return option.depth === 0
         ? fields.filter((field) => {
