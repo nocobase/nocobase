@@ -21,8 +21,13 @@ export const PageDesigner = ({ title }) => {
       <div className={'general-schema-designer-icons'}>
         <Space size={2} align={'center'}>
           <SchemaSettings
-            data-testid="page-designer-button"
-            title={<MenuOutlined style={{ cursor: 'pointer', fontSize: 12 }} />}
+            title={
+              <MenuOutlined
+                role="button"
+                aria-label="designer-page-button"
+                style={{ cursor: 'pointer', fontSize: 12 }}
+              />
+            }
           >
             <SchemaSettings.SwitchItem
               title={t('Enable page header')}
