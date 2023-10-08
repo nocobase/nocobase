@@ -82,7 +82,7 @@ export class OIDCAuth extends BaseAuth {
       });
     }
     if (user) {
-      await authenticator.addUser(user, {
+      await authenticator.addUser(user.id, {
         through: {
           uuid: sub,
         },

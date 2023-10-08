@@ -15,13 +15,12 @@ export default class UpdateAutoSignupMigration extends Migration {
         authType,
       },
     });
-
     await this.db.sequelize.transaction(async (transaction) => {
       for (const item of items) {
         let options = item.options;
         options = {
           public: { autoSignup: true, ...options.public },
-          oidc: { userBindField: 'email', ...options.oidc },
+          saml: { userBindField: 'email', ...options.saml },
         };
         item.set('options', options);
         await item.save({ transaction });

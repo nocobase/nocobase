@@ -154,6 +154,7 @@ const schema = {
           type: 'boolean',
           title: '{{t("Sign up automatically when the user does not exist")}}',
           'x-component': 'Checkbox',
+          default: true,
         },
       },
     },

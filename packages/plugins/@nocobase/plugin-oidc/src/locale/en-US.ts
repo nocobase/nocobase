@@ -23,4 +23,5 @@ export default {
   'Sign up automatically when the user does not exist': 'Sign up automatically when the user does not exist',
   'Username must be 2-16 characters in length (excluding @.<>"\'/)':
     'Username must be 2-16 characters in length (excluding @.<>"\'/)',
+  'User not found': 'User not found',
 };
