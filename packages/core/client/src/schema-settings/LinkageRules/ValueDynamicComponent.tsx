@@ -28,6 +28,7 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
     form,
     record,
     uiSchema: schema,
+    noDisabled: true,
   });
   const { compatOldVariables } = useCompatOldVariables({
     collectionField: { uiSchema: schema, collectionName },
