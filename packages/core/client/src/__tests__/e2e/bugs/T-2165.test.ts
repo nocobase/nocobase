@@ -279,7 +279,7 @@ const config = {
   },
 };
 
-test('BUG: T-2165', async ({ page, mockPage }) => {
+test('BUG: https://nocobase.height.app/T-2165', async ({ page, mockPage }) => {
   await mockPage(config).goto();
 
   await page.getByTestId('users-resource').hover();
