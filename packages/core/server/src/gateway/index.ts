@@ -116,6 +116,10 @@ export class Gateway extends EventEmitter {
   }
 
   addAppSelectorMiddleware(middleware: AppSelectorMiddleware, options?: ToposortOptions) {
+    if (this.selectorMiddlewares.nodes.some((existingFunc) => existingFunc.toString() === middleware.toString())) {
+      return;
+    }
+
     this.selectorMiddlewares.add(middleware, options);
     this.emit('appSelectorChanged');
   }
@@ -210,6 +214,10 @@ export class Gateway extends EventEmitter {
     }
 
     app.callback()(req, res);
+  }
+
+  getAppSelectorMiddlewares() {
+    return this.selectorMiddlewares;
   }
 
   async getRequestHandleAppName(req: IncomingRequest) {

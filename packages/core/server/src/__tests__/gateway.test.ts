@@ -40,6 +40,18 @@ describe('gateway', () => {
         }),
       ).toEqual('test');
     });
+
+    it('should add same middleware into app selector once', async () => {
+      const fn = async (ctx, next) => {
+        ctx.resolvedAppName = 'test';
+        await next();
+      };
+
+      gateway.addAppSelectorMiddleware(fn);
+      gateway.addAppSelectorMiddleware(fn);
+
+      expect(gateway.getAppSelectorMiddlewares().nodes.length).toBe(2);
+    });
   });
 
   describe('http api', () => {
