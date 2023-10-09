@@ -317,37 +317,6 @@ const deletePage = async (pageUid: string) => {
   }
 };
 
-const createCollection = async (collectionSetting: CollectionSetting) => {
-  const api = await request.newContext({
-    storageState: require.resolve('../../../../../playwright/.auth/admin.json'),
-  });
-
-  const state = await api.storageState();
-  const token = getStorageItem('NOCOBASE_TOKEN', state);
-  const defaultCollectionSetting: Partial<CollectionSetting> = {
-    template: 'general',
-    logging: true,
-    autoGenId: true,
-    createdBy: true,
-    updatedBy: true,
-    createdAt: true,
-    updatedAt: true,
-    sortable: true,
-    view: false,
-  };
-
-  const result = await api.post(`/api/collections:create`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    data: Object.assign(defaultCollectionSetting, collectionSetting),
-  });
-
-  if (!result.ok()) {
-    throw new Error(await result.text());
-  }
-};
-
 const deleteCollections = async (collectionNames: string[]) => {
   const api = await request.newContext({
     storageState: require.resolve('../../../../../playwright/.auth/admin.json'),
@@ -388,7 +357,7 @@ const deleteKeyOfCollection = (collectionSettings: CollectionSetting[]) => {
  * @param collectionSettings
  * @returns
  */
-const createCollections = async (collectionSettings: CollectionSetting[]) => {
+export const createCollections = async (collectionSettings: CollectionSetting | CollectionSetting[]) => {
   const api = await request.newContext({
     storageState: require.resolve('../../../../../playwright/.auth/admin.json'),
   });
@@ -407,12 +376,14 @@ const createCollections = async (collectionSettings: CollectionSetting[]) => {
   //   view: false,
   // };
 
+  collectionSettings = Array.isArray(collectionSettings) ? collectionSettings : [collectionSettings];
+
   const result = await api.post(`/api/collections:create`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
     // data: collectionSettings.map((item) => Object.assign(defaultCollectionSetting, item)),
-    data: collectionSettings,
+    data: collectionSettings.filter((item) => !['users', 'roles'].includes(item.name)),
   });
 
   if (!result.ok()) {
