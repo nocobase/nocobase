@@ -132,7 +132,7 @@ class NocoPage {
       const collections: any = deleteKeyOfCollection(this.options.collections);
       this.collectionsName = collections.map((item) => item.name);
 
-      await createCollections(this.page, collections);
+      await createCollections(collections);
 
       // 默认为每个 collection 生成 3 条数据
       await createFakerData(collections);
@@ -388,13 +388,36 @@ const deleteKeyOfCollection = (collectionSettings: CollectionSetting[]) => {
  * @param collectionSettings
  * @returns
  */
-const createCollections = async (page: Page, collectionSettings: CollectionSetting[]) => {
-  // TODO: 这里如果改成并发创建的话性能会更好，但是会出现只创建一个 collection 的情况，暂时不知道原因
-  for (const item of collectionSettings) {
-    await createCollection(item);
+const createCollections = async (collectionSettings: CollectionSetting[]) => {
+  const api = await request.newContext({
+    storageState: require.resolve('../../../../../playwright/.auth/admin.json'),
+  });
+
+  const state = await api.storageState();
+  const token = getStorageItem('NOCOBASE_TOKEN', state);
+  // const defaultCollectionSetting: Partial<CollectionSetting> = {
+  //   template: 'general',
+  //   logging: true,
+  //   autoGenId: true,
+  //   createdBy: true,
+  //   updatedBy: true,
+  //   createdAt: true,
+  //   updatedAt: true,
+  //   sortable: true,
+  //   view: false,
+  // };
+
+  const result = await api.post(`/api/collections:create`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    // data: collectionSettings.map((item) => Object.assign(defaultCollectionSetting, item)),
+    data: collectionSettings,
+  });
+
+  if (!result.ok()) {
+    throw new Error(await result.text());
   }
-  // @ts-ignore
-  page._collectionNames = collectionSettings.map((item) => item.name);
 };
 
 /**
@@ -409,12 +432,12 @@ const generateFakerData = (collectionSetting: CollectionSetting) => {
     input: () => faker.lorem.words(),
     textarea: () => faker.lorem.paragraph(),
     richText: () => faker.lorem.paragraph(),
-    phone: () => faker.phone.number('1##########'),
+    phone: () => faker.phone.number(),
     email: () => faker.internet.email(),
     url: () => faker.internet.url(),
-    integer: () => faker.datatype.number(),
-    number: () => faker.datatype.number(),
-    percent: () => faker.datatype.float(),
+    integer: () => faker.number.int(),
+    number: () => faker.number.int(),
+    percent: () => faker.number.float(),
     password: () => faker.internet.password(),
     color: () => faker.internet.color(),
     icon: () => 'checkcircleoutlined',
