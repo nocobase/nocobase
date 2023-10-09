@@ -84,20 +84,19 @@ export class Gateway extends EventEmitter {
     this.selectorMiddlewares = new Toposort<AppSelectorMiddleware>();
 
     this.addAppSelectorMiddleware(
-      async (ctx, next) => {
+      async (ctx: AppSelectorMiddlewareContext, next) => {
         const { req } = ctx;
-        const appName = qs.parse(parse(req.url).query)?.__appName;
+        const appName = qs.parse(parse(req.url).query)?.__appName as string | null;
+
         if (appName) {
-          return appName;
+          ctx.resolvedAppName = appName;
         }
 
         if (req.headers['x-app']) {
-          return req.headers['x-app'];
+          ctx.resolvedAppName = req.headers['x-app'];
         }
 
         await next();
-
-        return null;
       },
       {
         tag: 'core',
