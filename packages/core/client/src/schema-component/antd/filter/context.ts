@@ -3,7 +3,7 @@ import { Schema } from '@formily/react';
 import { createContext } from 'react';
 
 export interface FilterContextProps {
-  field?: ObjectField;
+  field?: ObjectField & { collectionName?: string };
   fieldSchema?: Schema;
   dynamicComponent?: any;
   options?: any[];

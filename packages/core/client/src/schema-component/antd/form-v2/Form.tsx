@@ -1,12 +1,14 @@
 import { css } from '@emotion/css';
 import { FormLayout } from '@formily/antd-v5';
-import { createForm, Field, onFieldChange, onFieldInit, onFieldReact, onFormInputChange } from '@formily/core';
+import { createForm, Field, Form as FormilyForm, onFieldInit, onFormInputChange } from '@formily/core';
 import { FieldContext, FormContext, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
+import { autorun } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { ConfigProvider, Spin } from 'antd';
 import React, { useEffect, useMemo } from 'react';
 import { useActionContext } from '..';
 import { useAttach, useComponent } from '../..';
+import { useLocalVariables, useVariables } from '../../../variables';
 import { useProps } from '../../hooks/useProps';
 import { linkageMergeAction } from './utils';
 
@@ -66,81 +68,91 @@ const getLinkageRules = (fieldSchema) => {
   return linkageRules;
 };
 
-const WithForm = (props) => {
+interface WithFormProps {
+  form: FormilyForm;
+  disabled?: boolean;
+}
+
+const WithForm = (props: WithFormProps) => {
   const { form } = props;
   const fieldSchema = useFieldSchema();
   const { setFormValueChanged } = useActionContext();
-  const linkageRules =
+  const variables = useVariables();
+  const localVariables = useLocalVariables({ currentForm: form });
+  const linkageRules: any[] =
     (getLinkageRules(fieldSchema) || fieldSchema.parent?.['x-linkage-rules'])?.filter((k) => !k.disabled) || [];
+
   useEffect(() => {
     const id = uid();
+
     form.addEffects(id, () => {
-      onFormInputChange((form) => {
+      onFormInputChange(() => {
         setFormValueChanged?.(true);
       });
     });
+
     if (props.disabled) {
       form.disabled = props.disabled;
     }
+
     return () => {
       form.removeEffects(id);
     };
-  }, []);
+  }, [props.disabled]);
+
   useEffect(() => {
     const id = uid();
+    const disposes = [];
+
     form.addEffects(id, () => {
-      return linkageRules.map((v) => {
-        return v.actions?.map((h) => {
-          if (h.targetFields) {
+      linkageRules.forEach((v) => {
+        v.actions?.forEach((h) => {
+          if (h.targetFields?.length) {
             const fields = h.targetFields.join(',');
+
+            // 当 `linkageRules` 变更时，需要把 `field` 上之前已设置的值还原成初始值，以防止下面所述的情况：
+            //
+            // 1. 更改 `linkageRules`，使 a 字段满足条件时被隐藏
+            // 2. 设置表单，使其满足条件，进而隐藏 a 字段
+            // 3. 再次更改 `linkageRules`，使 a 字段满足条件时被禁用
+            // 4. 设置表单，使其满足条件，会发现 a 字段还是隐藏状态，这里期望的是只显示禁用状态
+            onFieldInit(`*(${fields})`, (field: any) => {
+              Object.keys(field).forEach((key) => {
+                if (key.startsWith('_') && field[key] !== undefined) {
+                  field[key.slice(1)] = field[key];
+                }
+              });
+            });
+
+            // `onFieldReact` 有问题，没有办法被取消监听，所以这里用 `onFieldInit` 代替
             onFieldInit(`*(${fields})`, (field: any, form) => {
-              field['initProperty'] = {
-                display: field.display,
-                required: field.required,
-                pattern: field.pattern,
-                value: field.value || field.initialValue,
-              };
-            });
-            onFieldChange(`*(${fields})`, ['value', 'required', 'pattern', 'display'], (field: any) => {
-              field.linkageProperty = {
-                display: field.linkageProperty?.display,
-              };
-            });
-          }
-        });
-      });
-    });
-    return () => {
-      form.removeEffects(id);
-    };
-  }, []);
-  useEffect(() => {
-    const id = uid();
-    const linkagefields = [];
-    form.addEffects(id, () => {
-      return linkageRules.map((v, index) => {
-        return v.actions?.map((h) => {
-          if (h.targetFields) {
-            const fields = h.targetFields.join(',');
-            return onFieldReact(`*(${fields})`, (field: any, form) => {
-              linkagefields.push(field);
-              linkageMergeAction(h, field, v.condition, form?.values);
-              if (index === linkageRules.length - 1) {
-                setTimeout(() =>
-                  linkagefields.map((v) => {
-                    v.linkageProperty = {};
-                  }),
-                );
-              }
+              disposes.push(
+                autorun(() => {
+                  linkageMergeAction({
+                    operator: h.operator,
+                    value: h.value,
+                    field,
+                    condition: v.condition,
+                    values: form?.values,
+                    variables,
+                    localVariables,
+                  });
+                }),
+              );
             });
           }
         });
       });
     });
+
     return () => {
       form.removeEffects(id);
+      disposes.forEach((dispose) => {
+        dispose();
+      });
     };
-  }, [linkageRules]);
+  }, [JSON.stringify(linkageRules)]);
+
   return fieldSchema['x-decorator'] === 'FormV2' ? <FormDecorator {...props} /> : <FormComponent {...props} />;
 };
 

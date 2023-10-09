@@ -58,6 +58,7 @@ function EnsureAtomicity(target: any, propertyKey: string, descriptor: PropertyD
 
 export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> {
   name: string;
+  title?: string;
   namespace?: string;
   /**
    * Used for @nocobase/plugin-duplicator
@@ -95,6 +96,8 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> 
   magicAttribute?: string;
 
   tree?: string;
+
+  template?: string;
 
   [key: string]: any;
 }

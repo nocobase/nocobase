@@ -8,6 +8,7 @@ import {
   useField,
   useFieldSchema,
 } from '@formily/react';
+import { uid } from '@formily/shared';
 import { error } from '@nocobase/utils/client';
 import { Menu as AntdMenu, MenuProps } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
@@ -273,7 +274,7 @@ const SideMenu = ({
 
   const items = useMemo(() => {
     const result = getMenuItems(() => {
-      return <RecursionField schema={sideMenuSchema} onlyRenderProperties />;
+      return <RecursionField key={uid()} schema={sideMenuSchema} onlyRenderProperties />;
     });
 
     if (designable) {

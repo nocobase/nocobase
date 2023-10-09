@@ -1,18 +1,22 @@
 import { GeneralField } from '@formily/core';
-import { useField, useFieldSchema, useForm } from '@formily/react';
-import flat from 'flat';
-import { isString } from 'lodash';
+import { useField, useFieldSchema } from '@formily/react';
+import { reaction } from '@formily/reactive';
+import { flatten } from '@nocobase/utils/client';
+import _, { isString } from 'lodash';
 import cloneDeep from 'lodash/cloneDeep';
-import { useCallback, useContext, useMemo } from 'react';
-import { useBlockRequestContext } from '../../../block-provider/BlockProvider';
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useFormBlockContext } from '../../../block-provider';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { isInFilterFormBlock } from '../../../filter-provider';
 import { useRecord } from '../../../record-provider';
-import { getInnermostKeyAndValue } from '../../common/utils/uitls';
+import { useParseDataScopeFilter } from '../../../schema-settings';
+import { DEBOUNCE_WAIT } from '../../../variables';
+import { getPath } from '../../../variables/utils/getPath';
+import { isVariable } from '../../../variables/utils/isVariable';
 import { useDesignable } from '../../hooks';
+import { removeNullCondition } from '../filter';
 import { AssociationFieldContext } from './context';
-import { extractFilterfield, extractValuesByPattern, generatePattern, parseVariables } from './util';
 
 export const useInsertSchema = (component) => {
   const fieldSchema = useFieldSchema();
@@ -49,74 +53,47 @@ export default function useServiceOptions(props) {
   const params = service?.params || {};
   const fieldSchema = useFieldSchema();
   const field = useField();
-  const form = useForm();
-  const ctx = useBlockRequestContext();
   const { getField } = useCollection();
-  const { getCollectionFields, getCollectionJoinField } = useCollectionManager();
+  const { getCollectionJoinField } = useCollectionManager();
   const record = useRecord();
-  const parseFilter = useCallback(
-    (rules) => {
-      if (!rules) {
-        return undefined;
-      }
-      if (typeof rules === 'string') {
-        return rules;
-      }
-      const type = Object.keys(rules)[0] || '$and';
-      const conditions = rules[type];
-      const results = [];
-      conditions?.forEach((c) => {
-        const jsonlogic = getInnermostKeyAndValue(c);
-        const regex = /{{(.*?)}}/;
-        const matches = jsonlogic.value?.match?.(regex);
-        if (!matches || (!matches[1].includes('$form') && !matches[1].includes('$iteration'))) {
-          results.push(c);
-          return;
-        }
-        const associationfield = extractFilterfield(matches[1]);
-        const filterCollectionField = getCollectionJoinField(`${ctx.props.collection}.${associationfield}`);
-        if (['o2m', 'm2m'].includes(filterCollectionField?.interface)) {
-          // 对多子表单
-          const pattern = generatePattern(matches?.[1], associationfield);
-          const parseValue: any = extractValuesByPattern(flat(form.values), pattern);
-          const filters = parseValue.map((v) => {
-            return JSON.parse(JSON.stringify(c).replace(jsonlogic.value, v));
-          });
-          results.push({ $or: filters });
-        } else {
-          const variablesCtx = { $form: form.values, $iteration: form.values };
-          let str = matches?.[1];
-          if (str.includes('$iteration')) {
-            const path = field.path.segments.concat([]);
-            path.pop();
-            str = str.replace('$iteration.', `$iteration.${path.join('.')}.`);
-          }
-          const parseValue = parseVariables(str, variablesCtx);
-          if (Array.isArray(parseValue)) {
-            const filters = parseValue.map((v) => {
-              return JSON.parse(JSON.stringify(c).replace(jsonlogic.value, v));
-            });
-            results.push({ $or: filters });
-          } else {
-            const filterObj = JSON.parse(
-              JSON.stringify(c).replace(jsonlogic.value, str.endsWith('id') ? parseValue ?? 0 : parseValue),
-            );
-            results.push(filterObj);
-          }
-        }
-      });
-      return { [type]: results };
-    },
-    [ctx.props?.collection, field.path.segments, form.values, getCollectionJoinField],
-  );
+  const { parseFilter } = useParseDataScopeFilter();
+  const [fieldServiceFilter, setFieldServiceFilter] = useState(null);
+  const { form } = useFormBlockContext();
 
-  const fieldServiceFilter = useMemo(() => {
+  useEffect(() => {
     const filterFromSchema = isString(fieldSchema?.['x-component-props']?.service?.params?.filter)
       ? field.componentProps?.service?.params?.filter
       : fieldSchema?.['x-component-props']?.service?.params?.filter;
 
-    return mergeFilter([parseFilter(filterFromSchema) || service?.params?.filter]);
-  }, [field.componentProps?.service?.params?.filter, fieldSchema, parseFilter, service?.params?.filter]);
+    const _run = async () => {
+      const result = await parseFilter(mergeFilter([filterFromSchema || service?.params?.filter]));
+      setFieldServiceFilter(removeNullCondition(result));
+    };
+    const run = _.debounce(_run, DEBOUNCE_WAIT);
+
+    _run();
+
+    reaction(() => {
+      // 这一步主要是为了使 reaction 能够收集到依赖
+      const flat = flatten(filterFromSchema, {
+        breakOn({ key }) {
+          return key.startsWith('$') && key !== '$and' && key !== '$or';
+        },
+        transformValue(value) {
+          if (!isVariable(value)) {
+            return value;
+          }
+          const result = _.get({ $nForm: form?.values }, getPath(value));
+          return result;
+        },
+      });
+      return flat;
+    }, run);
+  }, [
+    field.componentProps?.service?.params?.filter,
+    fieldSchema?.['x-component-props']?.service?.params?.filter,
+    service?.params?.filter,
+  ]);
 
   const normalizeValues = useCallback(
     (obj) => {
@@ -132,16 +109,21 @@ export default function useServiceOptions(props) {
     if (props.value === undefined || props.value === null) {
       return;
     }
+
+    let result: any[] = null;
+
     if (Array.isArray(props.value)) {
-      return props.value.map(normalizeValues);
+      result = props.value.map(normalizeValues);
     } else {
-      return [normalizeValues(props.value)];
+      result = [normalizeValues(props.value)];
     }
+
+    return result.filter(Boolean);
   }, [props.value, normalizeValues]);
 
   const collectionField = useMemo(() => {
     return getField(fieldSchema.name) || getCollectionJoinField(fieldSchema?.['x-collection-field']);
-  }, [fieldSchema.name]);
+  }, [fieldSchema]);
 
   const sourceValue = record?.[collectionField?.sourceKey];
   const filter = useMemo(() => {
@@ -169,7 +151,7 @@ export default function useServiceOptions(props) {
               },
             }
           : null,
-        params?.filter && value
+        params?.filter && value?.length
           ? {
               [fieldNames?.value]: {
                 ['$in']: value,
@@ -179,7 +161,16 @@ export default function useServiceOptions(props) {
       ],
       '$or',
     );
-  }, [params?.filter, getCollectionFields, collectionField, sourceValue, value, fieldNames?.value]);
+  }, [
+    collectionField?.interface,
+    collectionField.foreignKey,
+    fieldSchema,
+    fieldServiceFilter,
+    sourceValue,
+    params?.filter,
+    value,
+    fieldNames?.value,
+  ]);
 
   return useMemo(() => {
     return {

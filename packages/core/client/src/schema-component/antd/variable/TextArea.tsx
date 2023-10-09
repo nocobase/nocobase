@@ -213,7 +213,7 @@ export function TextArea(props) {
     if (!changed) {
       setRange([-1, 0, -1, 0]);
     }
-  }, [value, keyLabelMap]);
+  }, [value]);
 
   useEffect(() => {
     const { current } = inputRef;
@@ -399,6 +399,10 @@ export function TextArea(props) {
 
 async function preloadOptions(scope, value) {
   const options = cloneDeep(scope ?? []);
+
+  // 重置正则的匹配位置
+  VARIABLE_RE.lastIndex = 0;
+
   for (let matcher; (matcher = VARIABLE_RE.exec(value ?? '')); ) {
     const keys = matcher[1].split('.');
 

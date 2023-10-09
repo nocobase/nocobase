@@ -2,7 +2,7 @@
   "name": "@nocobase/plugin-map",
   "displayName": "Map",
   "displayName.zh-CN": "地图",
-  "version": "0.14.0-alpha.6",
+  "version": "0.14.0-alpha.7",
   "description": "Provides map fields and blocks",
   "description.zh-CN": "提供地图字段和区块",
   "license": "AGPL-3.0",
