@@ -29,7 +29,7 @@ export const getValuesByPath = (obj: object, path: string, defaultValue?: any) =
     }
   }
 
-  result = result.filter(Boolean);
+  result = result.filter((item) => item != null);
 
   if (result.length === 0) {
     return defaultValue;
