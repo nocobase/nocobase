@@ -49,9 +49,11 @@ const InternalFormBlockProvider = (props) => {
           </div>
         </RecordProvider>
       ) : (
-        <div ref={formBlockRef}>
-          <RenderChildrenWithDataTemplates form={form} />
-        </div>
+        <RecordProvider parent={isEmpty(record?.__parent) ? record : record?.__parent} record={{}}>
+          <div ref={formBlockRef}>
+            <RenderChildrenWithDataTemplates form={form} />
+          </div>
+        </RecordProvider>
       )}
     </FormBlockContext.Provider>
   );
