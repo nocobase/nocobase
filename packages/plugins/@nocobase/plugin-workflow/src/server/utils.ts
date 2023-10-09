@@ -1,7 +1,7 @@
 import { Model } from '@nocobase/database';
 
 export function toJSON(data: Model | Model[]): object {
-  if (typeof data !== 'object' || !data) {
+  if (!(data instanceof Model) || !data) {
     return data;
   }
   if (Array.isArray(data)) {
@@ -9,7 +9,7 @@ export function toJSON(data: Model | Model[]): object {
   }
   const result = data.get();
   Object.keys((<typeof Model>data.constructor).associations).forEach((key) => {
-    if (result[key] != null) {
+    if (result[key] != null && typeof result[key] === 'object') {
       result[key] = toJSON(result[key]);
     }
   });
