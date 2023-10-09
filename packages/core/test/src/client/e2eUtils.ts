@@ -45,7 +45,7 @@ interface CollectionSetting {
    * Records can be sorted
    * @default true
    */
-  sortable?: boolean;
+  sortable?: boolean | string;
   /**
    * @default false
    */
@@ -60,13 +60,13 @@ interface CollectionSetting {
     interface: string;
     name: string;
     unique?: boolean;
-    uiSchema: {
+    uiSchema?: {
       type?: string;
       title?: string;
       required?: boolean;
       'x-component'?: string;
       'x-read-pretty'?: boolean;
-      'x-validator'?: string;
+      'x-validator'?: any;
       'x-component-props'?: Record<string, any>;
       [key: string]: any;
     };
