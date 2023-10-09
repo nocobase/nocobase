@@ -35,7 +35,7 @@ const Tree = connect(
       ...props,
       checkedKeys,
       onCheck,
-      treeData: props.treeData.map((v: any) => {
+      treeData: props?.treeData.map((v: any) => {
         if (form.values.duplicateMode === 'quickDulicate') {
           const children = v?.children?.map((k) => {
             return {
@@ -471,7 +471,7 @@ function DuplicationMode() {
         fieldSchema['x-component-props'].duplicateMode = duplicateMode;
         fieldSchema['x-component-props'].duplicateFields = fields;
         fieldSchema['x-component-props'].duplicateCollection = collection;
-        fieldSchema['x-component-props'].treeData = treeData;
+        fieldSchema['x-component-props'].treeData = treeData || field.componentProps?.treeData;
         dn.emit('patch', {
           schema: {
             ['x-uid']: fieldSchema['x-uid'],
