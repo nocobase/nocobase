@@ -129,7 +129,7 @@ class NocoPage {
 
   async init() {
     if (this.options?.collections?.length) {
-      const collections: any = deleteKeyOfCollection(this.options.collections);
+      const collections: any = omitSomeFields(this.options.collections);
       this.collectionsName = collections.map((item) => item.name);
 
       await createCollections(collections);
@@ -191,7 +191,9 @@ export const test = base.extend<{
     let collectionsName = [];
 
     const _createCollections = async (collectionSettings: CollectionSetting | CollectionSetting[]) => {
-      collectionSettings = Array.isArray(collectionSettings) ? collectionSettings : [collectionSettings];
+      collectionSettings = omitSomeFields(
+        Array.isArray(collectionSettings) ? collectionSettings : [collectionSettings],
+      );
       collectionsName = collectionSettings.map((item) => item.name);
       await createCollections(collectionSettings);
     };
@@ -356,15 +358,15 @@ const deleteCollections = async (collectionNames: string[]) => {
 };
 
 /**
- * 如果不删除 key 会报错
+ * 删除一些不需要的字段，如 key
  * @param collectionSettings
  * @returns
  */
-const deleteKeyOfCollection = (collectionSettings: CollectionSetting[]) => {
+export const omitSomeFields = (collectionSettings: CollectionSetting[]): any[] => {
   return collectionSettings.map((collection) => {
     return {
       ..._.omit(collection, ['key']),
-      fields: collection.fields.map((field) => _.omit(field, ['key'])),
+      fields: collection.fields.map((field) => _.omit(field, ['key', 'collectionName'])),
     };
   });
 };
