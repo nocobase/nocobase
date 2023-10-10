@@ -18,6 +18,7 @@ import { CollectionModel, FieldModel } from './models';
 import collectionActions from './resourcers/collections';
 import viewResourcer from './resourcers/views';
 import sqlResourcer from './resourcers/sql';
+import { beforeCreateForValidateField } from './hooks/beforeCreateForValidateField';
 
 export class CollectionManagerPlugin extends Plugin {
   public schema: string;
@@ -78,6 +79,7 @@ export class CollectionManagerPlugin extends Plugin {
       await model.remove(options);
     });
 
+    this.app.db.on('fields.beforeCreate', beforeCreateForValidateField());
     // 要在 beforeInitOptions 之前处理
     this.app.db.on('fields.beforeCreate', beforeCreateForReverseField(this.app.db));
 
