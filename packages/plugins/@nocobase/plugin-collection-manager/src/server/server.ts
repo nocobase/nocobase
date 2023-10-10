@@ -79,7 +79,6 @@ export class CollectionManagerPlugin extends Plugin {
       await model.remove(options);
     });
 
-    this.app.db.on('fields.beforeCreate', beforeCreateForValidateField());
     // 要在 beforeInitOptions 之前处理
     this.app.db.on('fields.beforeCreate', beforeCreateForReverseField(this.app.db));
 
@@ -111,6 +110,8 @@ export class CollectionManagerPlugin extends Plugin {
         await fn(model, { database: this.app.db });
       }
     });
+
+    this.app.db.on('fields.beforeCreate', beforeCreateForValidateField());
 
     this.app.db.on('fields.afterCreate', afterCreateForReverseField(this.app.db));
 
