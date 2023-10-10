@@ -362,7 +362,7 @@ const deleteCollections = async (collectionNames: string[]) => {
  * @param collectionSettings
  * @returns
  */
-const omitSomeFields = (collectionSettings: CollectionSetting[]): any[] => {
+export const omitSomeFields = (collectionSettings: CollectionSetting[]): any[] => {
   return collectionSettings.map((collection) => {
     return {
       ..._.omit(collection, ['key']),
