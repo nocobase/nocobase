@@ -8,6 +8,7 @@ import {
   useCollection,
   useCompile,
   useFilterByTk,
+  useFormActiveFields,
   useRecord,
 } from '@nocobase/client';
 import { App } from 'antd';
@@ -25,6 +26,7 @@ export const useCustomizeRequestActionProps = () => {
   const form = useForm();
   const { fields, getField, getPrimaryKey } = useCollection();
   const { field, resource, __parent, service } = useBlockRequestContext();
+  const { getActiveFieldsName } = useFormActiveFields() || {};
   const record = useRecord();
   const fieldSchema = useFieldSchema();
   const { data, runAsync } = useGetCustomRequest();
@@ -49,7 +51,15 @@ export const useCustomizeRequestActionProps = () => {
       const methods = ['POST', 'PUT', 'PATCH'];
       if (xAction === 'customize:form:request' && methods.includes(options['method'])) {
         const fieldNames = fields.map((field) => field.name);
-        const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
+        const values = getFormValues({
+          filterByTk,
+          field,
+          form,
+          fieldNames,
+          getField,
+          resource,
+          actionFields: getActiveFieldsName?.('form') || [],
+        });
         requestConfig['data'] = values;
       }
 
