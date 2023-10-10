@@ -36,17 +36,15 @@ const useParseDataScopeFilter = ({ exclude }: Props = { exclude: defaultExclude 
           return result;
         },
       });
-
       await Promise.all(
         Object.keys(flat).map(async (key) => {
           flat[key] = await flat[key];
           if (flat[key] === undefined) {
-            delete flat[key];
+            flat[key] = null;
           }
           return flat[key];
         }),
       );
-
       const result = unflatten(flat);
       return result;
     },
