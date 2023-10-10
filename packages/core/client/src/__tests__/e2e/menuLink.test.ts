@@ -5,6 +5,8 @@ test.describe('menu group', () => {
     await page.goto('/');
     await enableToConfig(page);
 
+    await page.getByTestId('add-menu-item-button-in-header').hover();
+    await page.getByRole('menuitem', { name: 'Link' }).click();
     await page.getByTestId('title-item').getByRole('textbox').fill('link');
     await page.getByTestId('href-item').getByRole('textbox').click();
     await page.getByTestId('href-item').getByRole('textbox').fill('https://www.baidu.com/');
