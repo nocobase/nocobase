@@ -2,12 +2,14 @@ import Database from '@nocobase/database';
 
 export function beforeDestroyForeignKey(db: Database) {
   return async (model, opts) => {
-    const { transaction } = opts;
+    const { transaction, context } = opts;
     const { isForeignKey, collectionName: fkCollectionName, name: fkName } = model.get();
 
     if (!isForeignKey) {
       return;
     }
+
+    const { from } = context || {};
 
     const fieldKeys = [];
 
@@ -32,11 +34,23 @@ export function beforeDestroyForeignKey(db: Database) {
         // fk in through collection
         else if (field.type === 'belongsToMany' && field.through === fkCollectionName) {
           console.log(field.foreignKey, field.otherKey);
-          if (field.foreignKey === fkName || field.otherKey === fkName) {
+          if ((field.foreignKey === fkName || field.otherKey === fkName) && fieldKey !== context?.destroyedFieldKey) {
             fieldKeys.push(fieldKey);
           }
         }
       }
+    }
+
+    if (from === 'destroyAssociationField') {
+      const destroyedFieldKey = context?.destroyedFieldKey;
+      const index = fieldKeys.indexOf(destroyedFieldKey);
+      if (index > -1) {
+        fieldKeys.splice(index, 1);
+      }
+    }
+
+    if (!fieldKeys.length) {
+      return;
     }
 
     const r = db.getRepository('fields');
@@ -44,6 +58,12 @@ export function beforeDestroyForeignKey(db: Database) {
     await r.destroy({
       filter: {
         'key.$in': fieldKeys,
+      },
+      context: {
+        from: 'destroyForeignKey',
+        destroyedFieldKey: model.get('key'),
+        destroyedFieldName: model.get('name'),
+        destroyedCollectionName: model.get('collectionName'),
       },
       transaction,
     });

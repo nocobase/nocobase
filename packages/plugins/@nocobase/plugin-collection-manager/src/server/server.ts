@@ -18,6 +18,7 @@ import { CollectionModel, FieldModel } from './models';
 import collectionActions from './resourcers/collections';
 import viewResourcer from './resourcers/views';
 import sqlResourcer from './resourcers/sql';
+import { beforeDestroyAssociationField } from './hooks/beforeDestoryAssociationField';
 
 export class CollectionManagerPlugin extends Plugin {
   public schema: string;
@@ -176,6 +177,7 @@ export class CollectionManagerPlugin extends Plugin {
 
     // before field remove
     this.app.db.on('fields.beforeDestroy', beforeDestroyForeignKey(this.app.db));
+    this.app.db.on('fields.beforeDestroy', beforeDestroyAssociationField(this.app.db));
 
     const mutex = new Mutex();
     this.app.db.on('fields.beforeDestroy', async (model: FieldModel, options) => {

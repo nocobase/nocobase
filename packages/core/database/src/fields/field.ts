@@ -85,6 +85,7 @@ export abstract class Field {
     return this.options[name];
   }
 
+  // remove field from collection
   remove() {
     this.collection.removeIndex([this.name]);
     return this.collection.removeField(this.name);
@@ -107,7 +108,6 @@ export abstract class Field {
 
     if (!attribute) {
       this.remove();
-      // console.log('field is not attribute');
       return;
     }
 
@@ -117,13 +117,13 @@ export abstract class Field {
 
     if ((this.collection.model as any)._virtualAttributes.has(this.name)) {
       this.remove();
-      // console.log('field is virtual attribute');
       return;
     }
     if (this.collection.model.primaryKeyAttributes.includes(this.name)) {
       // 主键不能删除
       return;
     }
+
     if (this.collection.model.options.timestamps !== false) {
       // timestamps 相关字段不删除
       let timestampsFields = ['createdAt', 'updatedAt', 'deletedAt'];
@@ -135,6 +135,7 @@ export abstract class Field {
         return;
       }
     }
+
     // 排序字段通过 sortable 控制
     const sortable = this.collection.options.sortable;
     if (sortable) {
@@ -150,12 +151,6 @@ export abstract class Field {
         return;
       }
     }
-
-    // if (this.options.field && this.name !== this.options.field) {
-    //   // field 指向的是真实的字段名，如果与 name 不一样，说明字段只是引用
-    //   this.remove();
-    //   return;
-    // }
 
     if (this.collection.isView()) {
       this.remove();
