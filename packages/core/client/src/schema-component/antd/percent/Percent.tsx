@@ -13,10 +13,11 @@ export const Percent = connect(
         {...props}
         addonAfter="%"
         defaultValue={value ? math.round(value * 100, 9) : null}
-        min={0}
+        formatter={(v: any) => (v ? math.round(v * 100, 9) : null)}
         onChange={(v: any) => {
           if (onChange) {
-            onChange(v);
+            const val = v ? math.round(v / 100, 9) : 0;
+            onChange(val);
           }
         }}
       />
