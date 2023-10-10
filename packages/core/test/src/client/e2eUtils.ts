@@ -165,7 +165,10 @@ class NocoPage {
   }
 }
 
-export const test = base.extend<{ mockPage: (config?: PageConfig) => NocoPage }>({
+export const test = base.extend<{
+  mockPage: (config?: PageConfig) => NocoPage;
+  createCollections: (collectionSettings: CollectionSetting | CollectionSetting[]) => Promise<void>;
+}>({
   mockPage: async ({ page }, use) => {
     // 保证每个测试运行时 faker 的随机值都是一样的
     faker.seed(1);
@@ -182,6 +185,21 @@ export const test = base.extend<{ mockPage: (config?: PageConfig) => NocoPage }>
     // 测试运行完自动销毁页面
     for (const nocoPage of nocoPages) {
       await nocoPage.destroy();
+    }
+  },
+  createCollections: async ({ page }, use) => {
+    let collectionsName = [];
+
+    const _createCollections = async (collectionSettings: CollectionSetting | CollectionSetting[]) => {
+      collectionSettings = Array.isArray(collectionSettings) ? collectionSettings : [collectionSettings];
+      collectionsName = collectionSettings.map((item) => item.name);
+      await createCollections(collectionSettings);
+    };
+
+    await use(_createCollections);
+
+    if (collectionsName.length) {
+      await deleteCollections(collectionsName);
     }
   },
 });
@@ -357,7 +375,7 @@ const deleteKeyOfCollection = (collectionSettings: CollectionSetting[]) => {
  * @param collectionSettings
  * @returns
  */
-export const createCollections = async (collectionSettings: CollectionSetting | CollectionSetting[]) => {
+const createCollections = async (collectionSettings: CollectionSetting | CollectionSetting[]) => {
   const api = await request.newContext({
     storageState: require.resolve('../../../../../playwright/.auth/admin.json'),
   });
