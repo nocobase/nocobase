@@ -30,6 +30,7 @@ export const Percent = connect(
     );
   },
   mapReadPretty((props) => {
-    return <ReadPretty {...props} value={toValue(props.value, (v) => v * 100)} />;
+    const value = useMemo(() => toValue(props.value, (v) => v * 100), [props.value]);
+    return <ReadPretty {...props} value={value} />;
   }),
 );
