@@ -350,7 +350,7 @@ test('BUG: should be possible to change the value of the association field norma
   await page.getByTestId('antd-select').getByText('AdminMemberRoot').click();
   await page.getByRole('option', { name: 'Member' }).click();
 
-  // 点击空白处，关闭下拉框
+  // 点击空白处，关闭下拉框。如不关闭，会挡住按钮，导致鼠标 hover 无效
   await page
     .getByTestId('action-drawer')
     .locator('div')
