@@ -9,16 +9,14 @@ export const redirect = async (ctx: Context, next: Next) => {
   const search = new URLSearchParams(state);
   const authenticator = search.get('name');
   const appName = search.get('app');
-  let app = ctx.app;
   let prefix = '';
   if (appName && appName !== 'main') {
     const appSupervisor = AppSupervisor.getInstance();
-    app = await appSupervisor.getApp(appName);
     if (appSupervisor?.runningMode !== 'single') {
       prefix = `/apps/${appName}`;
     }
   }
-  const auth = (await app.authManager.get(authenticator, ctx)) as OIDCAuth;
+  const auth = (await ctx.app.authManager.get(authenticator, ctx)) as OIDCAuth;
   try {
     const { token } = await auth.signIn();
     ctx.redirect(`${prefix}/signin?authenticator=${authenticator}&token=${token}`);
