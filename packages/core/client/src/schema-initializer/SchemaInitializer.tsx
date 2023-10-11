@@ -344,9 +344,10 @@ SchemaInitializer.Button = observer(
               label,
               title: label,
               style: item.style,
-              loadChildren: isEmpty(item.children)
-                ? ({ searchValue } = { searchValue: '' }) => renderItems(item.loadChildren?.({ searchValue }) || [])
-                : null,
+              loadChildren:
+                isEmpty(item.children) && item.loadChildren
+                  ? ({ searchValue } = { searchValue: '' }) => renderItems(item.loadChildren({ searchValue }) || [])
+                  : null,
               children: isEmpty(item.children) ? [] : renderItems(item.children),
             };
           }
@@ -357,9 +358,10 @@ SchemaInitializer.Button = observer(
               label,
               title: label,
               popupClassName: styles.nbMenuItemSubMenu,
-              loadChildren: isEmpty(item.children)
-                ? ({ searchValue } = { searchValue: '' }) => renderItems(item.loadChildren?.({ searchValue }) || [])
-                : null,
+              loadChildren:
+                isEmpty(item.children) && item.loadChildren
+                  ? ({ searchValue } = { searchValue: '' }) => renderItems(item.loadChildren({ searchValue }) || [])
+                  : null,
               children: isEmpty(item.children) ? [] : renderItems(item.children),
             };
           }
@@ -434,10 +436,11 @@ SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
             label,
             title: label,
             className: styles.nbMenuItemGroup,
-            loadChildren: isEmpty(item.children)
-              ? ({ searchValue } = { searchValue: '' }) =>
-                  renderMenuItem(item.loadChildren?.({ searchValue }) || [], key)
-              : null,
+            loadChildren:
+              isEmpty(item.children) && item.loadChildren
+                ? ({ searchValue } = { searchValue: '' }) =>
+                    renderMenuItem(item.loadChildren({ searchValue }) || [], key)
+                : null,
             children: isEmpty(item.children) ? [] : renderMenuItem(item.children, key),
           } as MenuProps['items'][0] & { loadChildren?: ({ searchValue }?: { searchValue: string }) => any[] };
         }
@@ -448,10 +451,11 @@ SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
             key,
             label,
             title: label,
-            loadChildren: isEmpty(item.children)
-              ? ({ searchValue } = { searchValue: '' }) =>
-                  renderMenuItem(item.loadChildren?.({ searchValue }) || [], key)
-              : null,
+            loadChildren:
+              isEmpty(item.children) && item.loadChildren
+                ? ({ searchValue } = { searchValue: '' }) =>
+                    renderMenuItem(item.loadChildren({ searchValue }) || [], key)
+                : null,
             children: isEmpty(item.children) ? [] : renderMenuItem(item.children, key),
           } as MenuProps['items'][0] & { loadChildren?: ({ searchValue }?: { searchValue: string }) => any[] };
         }
