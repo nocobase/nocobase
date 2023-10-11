@@ -51,7 +51,7 @@ const useLazyLoadAssociationFieldOfSubForm = () => {
     variables
       .parseVariable(variableString, recordVariable)
       .then((value) => {
-        field.value = transformVariableValue(value, { targetCollectionField: collectionField });
+        field.initialValue = transformVariableValue(value, { targetCollectionField: collectionField });
       })
       .catch((err) => {
         console.error(err);
