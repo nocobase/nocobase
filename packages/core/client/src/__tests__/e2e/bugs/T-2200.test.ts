@@ -349,5 +349,19 @@ test('BUG: should be possible to change the value of the association field norma
 
   await page.getByTestId('antd-select').getByText('AdminMemberRoot').click();
   await page.getByRole('option', { name: 'Member' }).click();
+
+  // 点击空白处，关闭下拉框
+  await page
+    .getByTestId('action-drawer')
+    .locator('div')
+    .filter({ hasText: 'EditAdd tabRoles:AdminRoot Configure fieldsConfigure actionsAdd block' })
+    .nth(2)
+    .click();
+
+  await expect(page.getByTestId('antd-select').getByText('AdminRoot')).toBeVisible();
+
+  await page.getByTestId('configure-fields-button-of-form-item-users').hover();
+  await page.getByRole('menuitem', { name: 'Nickname' }).click();
+  await page.waitForTimeout(200);
   await expect(page.getByTestId('antd-select').getByText('AdminRoot')).toBeVisible();
 });
