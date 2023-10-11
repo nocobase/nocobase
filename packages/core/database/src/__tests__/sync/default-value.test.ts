@@ -14,10 +14,6 @@ describe('default value', () => {
   });
 
   it('should sync field default value', async () => {
-    if (db.sequelize.getDialect() === 'sqlite') {
-      return;
-    }
-
     const User = db.collection({
       name: 'users',
       fields: [

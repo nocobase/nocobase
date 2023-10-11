@@ -42,10 +42,9 @@ export class ModelSyncHelper {
     const columns = await this.queryInterface.describeTable(this.tableName, options);
 
     await this.removeUnusedColumns(columns, options);
+    await this.handleDefaultValues(columns, options);
 
     if (!this.database.inDialect('sqlite')) {
-      await this.handleDefaultValues(columns, options);
-
       await this.handleUniqueIndex(options);
     }
 
@@ -59,8 +58,6 @@ export class ModelSyncHelper {
   }
 
   async handleDefaultValues(columns, options) {
-    if (this.database.inDialect('sqlite')) return;
-
     for (const columnName in columns) {
       const column = columns[columnName];
       if (column.primaryKey) continue;
