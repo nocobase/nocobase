@@ -160,7 +160,8 @@ const config = {
   },
 };
 
-test('BUG(Filter): 应该显示与字段类型对应的输入框', async ({ page, mockPage }) => {
+// fix https://nocobase.height.app/T-2186
+test('BUG(Filter): the input box displayed should correspond to the field type', async ({ page, mockPage }) => {
   await mockPage(config).goto();
 
   await page.getByTestId('filter-action').click();
