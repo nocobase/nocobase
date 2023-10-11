@@ -35,14 +35,12 @@ echarts.registerTransform({
       map[row[xField]][row[seriesField]] = row[yField];
       return map;
     }, {});
-    console.log(dataMap);
     const result = Object.entries(dataMap).map(([key, value]: any) => {
       return {
         [xField]: key,
         ...value,
       };
     });
-    console.log(result);
     return {
       data: result,
     };
