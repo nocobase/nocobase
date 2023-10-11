@@ -35,6 +35,8 @@ const InternalFormBlockProvider = (props) => {
         params,
         action,
         form,
+        // update 表示是表单编辑区块，create 表示是表单新增区块
+        type: action === 'get' ? 'update' : 'create',
         field,
         service,
         resource,
@@ -82,6 +84,15 @@ const InternalFormBlockProvider = (props) => {
       </RecordProvider>
     );
   }
+};
+
+/**
+ * 获取表单区块的类型：update 表示是表单编辑区块，create 表示是表单新增区块
+ * @returns
+ */
+export const useFormBlockType = () => {
+  const ctx = useFormBlockContext() || {};
+  return { type: ctx.type } as { type: 'update' | 'create' };
 };
 
 export const useIsEmptyRecord = () => {

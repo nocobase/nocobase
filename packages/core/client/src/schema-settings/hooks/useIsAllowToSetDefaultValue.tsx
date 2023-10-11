@@ -1,8 +1,13 @@
 import { Form } from '@formily/core';
 import { Schema, useFieldSchema } from '@formily/react';
-import _ from 'lodash';
 import React, { useContext, useMemo } from 'react';
-import { CollectionFieldOptions, useCollection, useCollectionManager, useFormBlockContext, useRecord } from '../..';
+import {
+  CollectionFieldOptions,
+  useCollection,
+  useCollectionManager,
+  useFormBlockContext,
+  useFormBlockType,
+} from '../..';
 import { isPatternDisabled, isSystemField } from '../SchemaSettings';
 
 interface DefaultValueProviderProps {
@@ -10,15 +15,12 @@ interface DefaultValueProviderProps {
   children: React.ReactNode;
 }
 
-interface IsAllowToSetDefaultValueParams {
+export interface IsAllowToSetDefaultValueParams {
   collectionField: CollectionFieldOptions;
   getInterface: (name: string) => any;
+  formBlockType?: 'update' | 'create';
   form: Form;
   fieldSchema: Schema<any, any, any, any, any, any, any, any, any>;
-  /**
-   * `useRecord` 返回的值
-   */
-  record: Record<string, any>;
   isSubTableColumn?: boolean;
 }
 
@@ -26,7 +28,6 @@ interface Props {
   form?: Form;
   fieldSchema?: Schema<any, any, any, any, any, any, any, any, any>;
   collectionField?: CollectionFieldOptions;
-  record?: Record<string, any>;
 }
 
 const DefaultValueContext = React.createContext<Omit<DefaultValueProviderProps, 'children'>>(null);
@@ -41,12 +42,12 @@ export const DefaultValueProvider = (props: DefaultValueProviderProps) => {
   return <DefaultValueContext.Provider value={value}>{props.children}</DefaultValueContext.Provider>;
 };
 
-const useIsAllowToSetDefaultValue = ({ form, fieldSchema, collectionField, record }: Props = {}) => {
+const useIsAllowToSetDefaultValue = ({ form, fieldSchema, collectionField }: Props = {}) => {
   const { getInterface, getCollectionJoinField } = useCollectionManager();
   const { getField } = useCollection();
   const { form: innerForm } = useFormBlockContext();
   const innerFieldSchema = useFieldSchema();
-  const innerRecord = useRecord();
+  const { type } = useFormBlockType();
   const { isAllowToSetDefaultValue = _isAllowToSetDefaultValue } = useContext(DefaultValueContext) || {};
 
   const innerCollectionField =
@@ -58,8 +59,8 @@ const useIsAllowToSetDefaultValue = ({ form, fieldSchema, collectionField, recor
         collectionField: collectionField || innerCollectionField,
         getInterface,
         form: form || innerForm,
+        formBlockType: type,
         fieldSchema: fieldSchema || innerFieldSchema,
-        record: record || innerRecord,
         isSubTableColumn,
       });
     },
@@ -86,9 +87,9 @@ export const interfacesOfUnsupportedDefaultValue = [
 function _isAllowToSetDefaultValue({
   collectionField,
   getInterface,
+  formBlockType,
   form,
   fieldSchema,
-  record,
   isSubTableColumn,
 }: IsAllowToSetDefaultValueParams) {
   if (isSubTableColumn) {
@@ -114,10 +115,8 @@ function _isAllowToSetDefaultValue({
     return false;
   }
 
-  record = _.omit(record, '__parent');
-
   // 表单编辑状态下，不允许设置默认值
-  if (!_.isEmpty(record)) {
+  if (formBlockType === 'update') {
     return false;
   }
 
