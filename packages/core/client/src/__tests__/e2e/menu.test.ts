@@ -35,4 +35,21 @@ test.describe('menu', () => {
     await page.getByText('page title1').click();
     await expect(page.getByTitle('page title1')).toBeVisible();
   });
+  test('move menu ', async ({ page, mockPage }) => {
+    await mockPage({
+      name: 'page1',
+    }).goto();
+    await mockPage({ name: 'page2' }).goto();
+
+    await page.getByRole('menu').getByText('page1').hover();
+    await page.getByTestId('designer-schema-settings').hover();
+    await page.getByRole('menuitem', { name: 'Move' }).click();
+    // await page.getByRole('textbox').click();
+    // await page.getByRole('textbox').fill('page title1');
+    // await page.getByRole('button', { name: 'OK' }).click();
+    // await page.getByRole('menu').getByText('page title1').click();
+
+    // await page.getByText('page title1').click();
+    // await expect(page.getByTitle('page title1')).toBeVisible();
+  });
 });
