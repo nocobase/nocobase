@@ -5,6 +5,7 @@ import { InheritedSyncRunner } from './inherited-sync-runner';
 import { InheritedCollection } from './inherited-collection';
 import { Model as SequelizeModel } from 'sequelize';
 import { ZeroColumnTableError } from './errors/zero-column-table-error';
+import { isPlainObject } from '@nocobase/utils';
 
 export class ModelSyncHelper {
   private readonly collection: Collection;
@@ -58,6 +59,10 @@ export class ModelSyncHelper {
   }
 
   async handleDefaultValues(columns, options) {
+    const isJSONColumn = (column) => {
+      return ['JSON', 'JSONB'].includes(column.type);
+    };
+
     for (const columnName in columns) {
       const column = columns[columnName];
       if (column.primaryKey) continue;
@@ -66,7 +71,10 @@ export class ModelSyncHelper {
       const currentAttribute = this.findAttributeByColumnName(columnName);
       if (!currentAttribute) continue;
 
-      const attributeDefaultValue = currentAttribute.defaultValue;
+      const attributeDefaultValue =
+        isPlainObject(currentAttribute.defaultValue) && isJSONColumn(column)
+          ? JSON.stringify(currentAttribute.defaultValue)
+          : currentAttribute.defaultValue;
       const columnDefaultValue = columns[columnName].defaultValue;
 
       if (columnDefaultValue === null && attributeDefaultValue === undefined) continue;
@@ -104,7 +112,6 @@ export class ModelSyncHelper {
   }
 
   async handleUniqueIndex(options) {
-    if (this.database.inDialect('sqlite')) return;
     const existsIndexes: any = await this.queryInterface.showIndex(this.tableName, options);
     const existsUniqueIndexes = existsIndexes.filter((index) => index.unique);
 
@@ -116,6 +123,7 @@ export class ModelSyncHelper {
     for (const existUniqueIndex of existsUniqueIndexes) {
       const isSingleField = existUniqueIndex.fields.length == 1;
       if (!isSingleField) continue;
+
       const columnName = existUniqueIndex.fields[0].attribute;
 
       const currentAttribute = this.findAttributeByColumnName(columnName);
