@@ -18,9 +18,12 @@ export {
 
 import { Plugin } from '../application/Plugin';
 import { SchemaInitializerProvider } from './SchemaInitializerProvider';
+import { blockInitializerV2 } from './buttons';
 
 export class SchemaInitializerPlugin<SchemaInitializerProviderProps> extends Plugin {
   async load() {
     this.app.use<SchemaInitializerProviderProps>(SchemaInitializerProvider, this.options?.config);
+
+    this.app.schemaInitializerManager.add('BlockInitializers', blockInitializerV2);
   }
 }

@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { FormDialog, SchemaComponent, SchemaComponentOptions } from '../../..';
 import { useGlobalTheme } from '../../../../global-theme';
 import { SchemaInitializer } from '../../../../schema-initializer';
+import { SchemaInitializerV2, useSchemaInitializerV2 } from '../../../../application';
 
 export const MenuItemInitializers = (props: any) => {
   const { t } = useTranslation();
@@ -104,6 +105,68 @@ export const GroupItem = itemWrap((props) => {
   return <SchemaInitializer.Item {...props} onClick={handleClick} />;
 });
 
+export const GroupItemV2 = () => {
+  const { insert } = useSchemaInitializerV2();
+  const { t } = useTranslation();
+  const options = useContext(SchemaOptionsContext);
+  const { theme } = useGlobalTheme();
+
+  const handleClick = useCallback(async () => {
+    const values = await FormDialog(
+      t('Add group'),
+      () => {
+        return (
+          <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
+            <FormLayout layout={'vertical'}>
+              <SchemaComponent
+                schema={{
+                  properties: {
+                    title: {
+                      title: t('Menu item title'),
+                      'x-component': 'Input',
+                      'x-decorator': 'FormItem',
+                      required: true,
+                    },
+                    icon: {
+                      title: t('Icon'),
+                      'x-component': 'IconPicker',
+                      'x-decorator': 'FormItem',
+                    },
+                  },
+                }}
+              />
+            </FormLayout>
+          </SchemaComponentOptions>
+        );
+      },
+      theme,
+    ).open({
+      initialValues: {},
+    });
+    const { title, icon } = values;
+    insert({
+      type: 'void',
+      title,
+      'x-component': 'Menu.SubMenu',
+      'x-decorator': 'ACLMenuItemProvider',
+      'x-component-props': {
+        icon,
+      },
+      'x-server-hooks': [
+        {
+          type: 'onSelfCreate',
+          method: 'bindMenuToRole',
+        },
+        {
+          type: 'onSelfSave',
+          method: 'extractTextToLocale',
+        },
+      ],
+    });
+  }, [insert, options.components, options.scope, t, theme]);
+  return <div onClick={handleClick}>{t('Group')}</div>;
+};
+
 export const PageMenuItem = itemWrap((props) => {
   const { insert } = props;
   const { t } = useTranslation();
@@ -182,6 +245,83 @@ export const PageMenuItem = itemWrap((props) => {
   return <SchemaInitializer.Item {...props} onClick={handleClick} />;
 });
 
+export const PageMenuItemV2 = () => {
+  const { insert } = useSchemaInitializerV2();
+  const { t } = useTranslation();
+  const options = useContext(SchemaOptionsContext);
+  const { theme } = useGlobalTheme();
+
+  const handleClick = useCallback(async () => {
+    const values = await FormDialog(
+      t('Add page'),
+      () => {
+        return (
+          <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
+            <FormLayout layout={'vertical'}>
+              <SchemaComponent
+                schema={{
+                  properties: {
+                    title: {
+                      title: t('Menu item title'),
+                      required: true,
+                      'x-component': 'Input',
+                      'x-decorator': 'FormItem',
+                    },
+                    icon: {
+                      title: t('Icon'),
+                      'x-component': 'IconPicker',
+                      'x-decorator': 'FormItem',
+                    },
+                  },
+                }}
+              />
+            </FormLayout>
+          </SchemaComponentOptions>
+        );
+      },
+      theme,
+    ).open({
+      initialValues: {},
+    });
+    const { title, icon } = values;
+    insert({
+      type: 'void',
+      title,
+      'x-component': 'Menu.Item',
+      'x-decorator': 'ACLMenuItemProvider',
+      'x-component-props': {
+        icon,
+      },
+      'x-server-hooks': [
+        {
+          type: 'onSelfCreate',
+          method: 'bindMenuToRole',
+        },
+        {
+          type: 'onSelfSave',
+          method: 'extractTextToLocale',
+        },
+      ],
+      properties: {
+        page: {
+          type: 'void',
+          'x-component': 'Page',
+          'x-async': true,
+          properties: {
+            [uid()]: {
+              type: 'void',
+              'x-component': 'Grid',
+              'x-initializer': 'BlockInitializers',
+              properties: {},
+            },
+          },
+        },
+      },
+    });
+  }, [insert, options.components, options.scope, t, theme]);
+  return <div onClick={handleClick}>{t('Page')}</div>;
+};
+
 export const LinkMenuItem = itemWrap((props) => {
   const { insert } = props;
   const { t } = useTranslation();
@@ -249,4 +389,93 @@ export const LinkMenuItem = itemWrap((props) => {
   }, [theme]);
 
   return <SchemaInitializer.Item {...props} onClick={handleClick} />;
+});
+
+export const LinkMenuItemV2 = () => {
+  const { insert } = useSchemaInitializerV2();
+  const { t } = useTranslation();
+  const options = useContext(SchemaOptionsContext);
+  const { theme } = useGlobalTheme();
+
+  const handleClick = useCallback(async () => {
+    const values = await FormDialog(
+      t('Add link'),
+      () => {
+        return (
+          <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
+            <FormLayout layout={'vertical'}>
+              <SchemaComponent
+                schema={{
+                  properties: {
+                    title: {
+                      title: t('Menu item title'),
+                      required: true,
+                      'x-component': 'Input',
+                      'x-decorator': 'FormItem',
+                    },
+                    icon: {
+                      title: t('Icon'),
+                      'x-component': 'IconPicker',
+                      'x-decorator': 'FormItem',
+                    },
+                    href: {
+                      title: t('Link'),
+                      'x-component': 'Input',
+                      'x-decorator': 'FormItem',
+                    },
+                  },
+                }}
+              />
+            </FormLayout>
+          </SchemaComponentOptions>
+        );
+      },
+      theme,
+    ).open({
+      initialValues: {},
+    });
+    const { title, href, icon } = values;
+    insert({
+      type: 'void',
+      title,
+      'x-component': 'Menu.URL',
+      'x-decorator': 'ACLMenuItemProvider',
+      'x-component-props': {
+        icon,
+        href,
+      },
+      'x-server-hooks': [
+        {
+          type: 'onSelfCreate',
+          method: 'bindMenuToRole',
+        },
+        {
+          type: 'onSelfSave',
+          method: 'extractTextToLocale',
+        },
+      ],
+    });
+  }, [insert, options.components, options.scope, t, theme]);
+
+  return <div onClick={handleClick}>{t('Link')}</div>;
+};
+
+export const menuItemInitializerV2 = new SchemaInitializerV2({
+  insertPosition: 'beforeEnd',
+  icon: 'PlusOutlined',
+  title: '{{t("Add menu item")}}',
+  list: [
+    {
+      name: 'group',
+      Component: GroupItemV2,
+    },
+    {
+      name: 'page',
+      Component: PageMenuItemV2,
+    },
+    {
+      name: 'link',
+      Component: LinkMenuItemV2,
+    },
+  ],
 });

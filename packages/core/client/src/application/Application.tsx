@@ -19,6 +19,8 @@ import { compose, normalizeContainer } from './utils';
 import { defineGlobalDeps } from './utils/globalDeps';
 import type { RequireJS } from './utils/requirejs';
 import { getRequireJs } from './utils/requirejs';
+import { SchemaInitializerV2 } from './SchemaInitializer';
+import { SchemaInitializerManager } from './SchemaInitializerManager';
 
 declare global {
   interface Window {
@@ -38,6 +40,7 @@ export interface ApplicationOptions {
   scopes?: Record<string, any>;
   router?: RouterOptions;
   devDynamicImport?: DevDynamicImport;
+  initializers?: Record<string, SchemaInitializerV2>;
 }
 
 export class Application {
@@ -52,6 +55,7 @@ export class Application {
   public devDynamicImport: DevDynamicImport;
   public requirejs: RequireJS;
   public notification;
+  public schemaInitializerManager: SchemaInitializerManager;
   loading = true;
   maintained = false;
   maintaining = false;
@@ -76,6 +80,7 @@ export class Application {
       renderComponent: this.renderComponent.bind(this),
     });
     this.pm = new PluginManager(options.plugins, this);
+    this.schemaInitializerManager = new SchemaInitializerManager(options.initializers, this);
     this.addDefaultProviders();
     this.addReactRouterComponents();
     this.addProviders(options.providers || []);

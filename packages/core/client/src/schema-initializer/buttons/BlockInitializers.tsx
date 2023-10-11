@@ -1,4 +1,6 @@
 import { gridRowColWrap } from '../utils';
+import { InitializerGroup, SchemaInitializerV2 } from '../../application';
+import { TableBlockInitializer } from '../items';
 
 // 页面里添加区块
 export const BlockInitializers = {
@@ -102,3 +104,29 @@ export const BlockInitializers = {
     },
   ],
 };
+
+export const blockInitializerV2 = new SchemaInitializerV2({
+  'data-testid': 'add-block-button-in-page',
+  title: '{{t("Add block")}}',
+  icon: 'PlusOutlined',
+  wrap: gridRowColWrap,
+  list: [
+    {
+      name: 'aa',
+      Component: InitializerGroup,
+      componentProps: {
+        title: '{{t("Data blocks")}}',
+      },
+      children: [
+        {
+          name: 'table',
+          // Component: TableBlockInitializer,
+          Component: () => '123',
+          componentProps: {
+            title: '{{t("table")}}',
+          },
+        },
+      ],
+    },
+  ],
+});

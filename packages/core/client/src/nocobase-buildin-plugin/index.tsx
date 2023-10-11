@@ -15,7 +15,12 @@ import { AntdAppProvider, GlobalThemeProvider } from '../global-theme';
 import { PinnedListPlugin } from '../plugin-manager';
 import { PMPlugin } from '../pm';
 import { AdminLayoutPlugin, AuthLayout, RouteSchemaComponent } from '../route-switch';
-import { AntdSchemaComponentPlugin, MenuItemInitializers, SchemaComponentPlugin } from '../schema-component';
+import {
+  AntdSchemaComponentPlugin,
+  MenuItemInitializers,
+  SchemaComponentPlugin,
+  menuItemInitializerV2,
+} from '../schema-component';
 import { ErrorFallback } from '../schema-component/antd/error-fallback';
 import { SchemaInitializerPlugin } from '../schema-initializer';
 import { BlockTemplateDetails, BlockTemplatePage } from '../schema-templates';
@@ -208,6 +213,8 @@ export class NocoBaseBuildInPlugin extends Plugin {
     this.app.use(AntdAppProvider);
     this.app.use(CSSVariableProvider);
     this.app.use(CurrentUserSettingsMenuProvider);
+
+    this.app.schemaInitializerManager.add('MenuItemInitializers', menuItemInitializerV2);
   }
 
   addRoutes() {

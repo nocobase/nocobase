@@ -4,7 +4,7 @@ import { RecursionField, Schema, observer, useField, useFieldSchema } from '@for
 import { uid } from '@formily/shared';
 import cls from 'classnames';
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { useDesignable, useFormBlockContext, useSchemaInitializer } from '../../../';
+import { useApp, useDesignable, useFormBlockContext, useSchemaInitializer } from '../../../';
 import { DndContext } from '../../common/dnd-context';
 import { useToken } from '../__builtins__';
 import useStyles from './Grid.style';
@@ -302,8 +302,13 @@ export const Grid: any = observer(
     const { showDivider = true } = props;
     const gridRef = useRef(null);
     const field = useField();
+    const app = useApp();
     const fieldSchema = useFieldSchema();
-    const { render, InitializerComponent } = useSchemaInitializer(fieldSchema['x-initializer']);
+    const { InitializerComponent } = useSchemaInitializer(fieldSchema['x-initializer']);
+    const render = app.schemaInitializerManager.getRender(
+      fieldSchema['x-initializer'],
+      fieldSchema['x-initializer-props'],
+    );
     const addr = field.address.toString();
     const rows = useRowProperties();
     const { setPrintContent } = useFormBlockContext();
@@ -353,7 +358,7 @@ export const Grid: any = observer(
               );
             })}
           </DndWrapper>
-          <InitializerComponent />
+          {render()}
         </div>
       </GridContext.Provider>,
     );
