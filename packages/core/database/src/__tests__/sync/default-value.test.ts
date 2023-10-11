@@ -1,3 +1,4 @@
+import { tr } from '@faker-js/faker';
 import { Database, mockDatabase } from '../../index';
 
 describe('default value', () => {

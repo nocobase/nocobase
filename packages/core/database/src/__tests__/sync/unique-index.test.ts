@@ -14,11 +14,6 @@ describe('unique index', () => {
   });
 
   it('should sync unique index', async () => {
-    if (db.inDialect('sqlite')) {
-      // sqlite not support
-      return;
-    }
-
     const User = db.collection({
       name: 'users',
       fields: [
@@ -49,7 +44,6 @@ describe('unique index', () => {
     const userTableInfo: any = await db.sequelize.getQueryInterface().showIndex(User.getTableNameWithSchema());
 
     const nameUniqueIndex = findFieldIndex(userTableInfo, 'userName');
-
     expect(nameUniqueIndex).toBeDefined();
     const emailUniqueIndex = findFieldIndex(userTableInfo, 'userEmail');
     expect(emailUniqueIndex).toBeUndefined();

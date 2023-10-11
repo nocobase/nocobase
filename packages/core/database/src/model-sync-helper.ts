@@ -44,10 +44,7 @@ export class ModelSyncHelper {
 
     await this.removeUnusedColumns(columns, options);
     await this.handleDefaultValues(columns, options);
-
-    if (!this.database.inDialect('sqlite')) {
-      await this.handleUniqueIndex(options);
-    }
+    await this.handleUniqueIndex(options);
 
     await this.handleSnapshot();
 
@@ -137,7 +134,16 @@ export class ModelSyncHelper {
           }
         }
 
-        await this.queryInterface.removeIndex(this.tableName, existUniqueIndex.name, options);
+        if (this.database.inDialect('sqlite')) {
+          const changeAttribute = {
+            ...currentAttribute,
+            unique: false,
+          };
+
+          await this.queryInterface.changeColumn(this.tableName, columnName, changeAttribute, options);
+        } else {
+          await this.queryInterface.removeIndex(this.tableName, existUniqueIndex.name, options);
+        }
       }
     }
 
