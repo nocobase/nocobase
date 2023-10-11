@@ -5,7 +5,6 @@ import g2plot from './chart/g2plot';
 import antd from './chart/antd';
 import { ChartV2Block, ChartV2BlockDesigner, ChartV2BlockInitializer } from './block';
 import { ChartRenderer, ChartRendererProvider } from './renderer';
-
 class DataVisualizationPlugin extends Plugin {
   public charts: ChartGroup = new ChartGroup();
 
@@ -25,4 +24,7 @@ class DataVisualizationPlugin extends Plugin {
 
 export default DataVisualizationPlugin;
 export { Chart } from './chart/chart';
-export type { ChartType } from './chart/chart';
+export type { ChartType, RenderProps, ChartProps } from './chart/chart';
+export type { FieldOption } from './hooks';
+export type { QueryProps } from './renderer';
+export { ChartConfigContext } from './configure/ChartConfigure';
