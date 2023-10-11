@@ -2,7 +2,7 @@ import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import { useEffect } from 'react';
-import { useRecord, useActionContext } from '../../../..';
+import { useRecord } from '../../../..';
 import { useCollection, useCollectionManager } from '../../../../collection-manager';
 import { useFlag } from '../../../../flag-provider';
 import { useVariables } from '../../../../variables';
@@ -14,7 +14,6 @@ import { transformVariableValue } from '../../../../variables/utils/transformVar
 const useLazyLoadAssociationFieldOfSubForm = () => {
   const { name } = useCollection();
   const { getCollectionJoinField } = useCollectionManager();
-  const { fieldSchema: actionSchema } = useActionContext();
   const record = useRecord();
   const fieldSchema = useFieldSchema();
   const variables = useVariables();
@@ -36,12 +35,8 @@ const useLazyLoadAssociationFieldOfSubForm = () => {
 
     const cloneRecord = { ...record };
     delete cloneRecord['__parent'];
-    if (
-      _.isEmpty(cloneRecord) ||
-      !variables ||
-      record[schemaName] != null ||
-      actionSchema?.['x-acl-action'] === 'create'
-    ) {
+
+    if (_.isEmpty(cloneRecord) || !variables || record[schemaName] != null) {
       return;
     }
 
