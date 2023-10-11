@@ -4,8 +4,6 @@ import { redirect } from './actions/redirect';
 import { authType } from '../constants';
 import { OIDCAuth } from './oidc-auth';
 import { resolve } from 'path';
-import qs from 'qs';
-import { parse } from 'url';
 
 export class OidcPlugin extends Plugin {
   afterAdd() {}
