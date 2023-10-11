@@ -6,14 +6,14 @@ import { RecursionField, observer, useFieldSchema } from '@formily/react';
 import { action } from '@formily/reactive';
 import { each } from '@formily/shared';
 import { Button, Card, Divider, Tooltip } from 'antd';
-import _ from 'lodash';
 import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FormActiveFieldsProvider } from '../../../block-provider';
-import { RecordIndexProvider, RecordProvider, useRecord } from '../../../record-provider';
+import { RecordIndexProvider, RecordProvider } from '../../../record-provider';
 import { isPatternDisabled, isSystemField } from '../../../schema-settings';
 import {
   DefaultValueProvider,
+  IsAllowToSetDefaultValueParams,
   interfacesOfUnsupportedDefaultValue,
 } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { LocalVariablesProvider } from '../../../variables/hooks/useLocalVariables';
@@ -33,40 +33,39 @@ export const Nester = (props) => {
 
 const ToOneNester = (props) => {
   const { field } = useAssociationFieldContext<ArrayField>();
-  const record = useRecord();
 
-  // 保存原始数据，用于判断是否允许设置默认值
-  const recordRef = React.useRef(_.omit(record, '__parent'));
-
-  const isAllowToSetDefaultValue = useCallback(({ form, fieldSchema, collectionField, getInterface }) => {
-    if (!collectionField) {
-      if (process.env.NODE_ENV !== 'production') {
-        console.error(`collectionField should not be ${collectionField}`);
+  const isAllowToSetDefaultValue = useCallback(
+    ({ form, fieldSchema, collectionField, getInterface, formBlockType }: IsAllowToSetDefaultValueParams) => {
+      if (!collectionField) {
+        if (process.env.NODE_ENV !== 'production') {
+          console.error(`collectionField should not be ${collectionField}`);
+        }
+        return false;
       }
-      return false;
-    }
 
-    // 当 Field component 不是下列组件时，不允许设置默认值
-    if (
-      collectionField.target &&
-      fieldSchema['x-component-props']?.mode &&
-      !['Picker', 'Select'].includes(fieldSchema['x-component-props'].mode)
-    ) {
-      return false;
-    }
+      // 当 Field component 不是下列组件时，不允许设置默认值
+      if (
+        collectionField.target &&
+        fieldSchema['x-component-props']?.mode &&
+        !['Picker', 'Select'].includes(fieldSchema['x-component-props'].mode)
+      ) {
+        return false;
+      }
 
-    // hasOne 和 belongsTo 类型的字段只能有一个值，不会新增值，所以在编辑状态下不允许设置默认值
-    if (!_.isEmpty(recordRef.current)) {
-      return false;
-    }
+      // hasOne 和 belongsTo 类型的字段只能有一个值，不会新增值，所以在编辑状态下不允许设置默认值
+      if (formBlockType === 'update') {
+        return false;
+      }
 
-    return (
-      !form?.readPretty &&
-      !isPatternDisabled(fieldSchema) &&
-      !interfacesOfUnsupportedDefaultValue.includes(collectionField?.interface) &&
-      !isSystemField(collectionField, getInterface)
-    );
-  }, []);
+      return (
+        !form?.readPretty &&
+        !isPatternDisabled(fieldSchema) &&
+        !interfacesOfUnsupportedDefaultValue.includes(collectionField?.interface) &&
+        !isSystemField(collectionField, getInterface)
+      );
+    },
+    [],
+  );
 
   return (
     <FormActiveFieldsProvider name="nester">
