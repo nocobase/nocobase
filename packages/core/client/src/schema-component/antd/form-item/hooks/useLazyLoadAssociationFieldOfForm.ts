@@ -55,12 +55,12 @@ const useLazyLoadAssociationFieldOfForm = () => {
     variables
       .parseVariable(variableString, recordVariable)
       .then((value) => {
-        field.initialValue = transformVariableValue(value, { targetCollectionField: collectionField });
+        field.value = transformVariableValue(value, { targetCollectionField: collectionField });
       })
       .catch((err) => {
         console.error(err);
       });
-  }, [field, name, record, schemaName, isInAssignFieldValues]);
+  }, []);
 };
 
 export default useLazyLoadAssociationFieldOfForm;
