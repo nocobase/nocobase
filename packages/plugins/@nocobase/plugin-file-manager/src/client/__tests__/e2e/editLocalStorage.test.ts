@@ -20,14 +20,13 @@ test.describe('File manager', () => {
     await createLocalStorage.storageName.fill(storageName);
     await createLocalStorage.storagebaseURL.fill('/storage/uploadsFM02AA');
     await createLocalStorage.storageType.click();
-    await page.getByText('Local storage').click();
+    await page.getByText('Local storage').nth(1).click();
     await createLocalStorage.destination.fill('storage/uploadsFM02AA');
     // await createLocalStorage.path.fill('');
     // await createLocalStorage.defaultStorage.check();
     // await createLocalStorage.deleteRecordRetentionFile.check();
     await page.getByTestId('submit-action').click();
     await expect(page.getByText(storageName)).toBeAttached();
-    await page.waitForTimeout(5000);
 
     // 2、测试步骤：点击“文件管理器”-“编辑”按钮，编辑标题，点击“确定”按钮
     await page

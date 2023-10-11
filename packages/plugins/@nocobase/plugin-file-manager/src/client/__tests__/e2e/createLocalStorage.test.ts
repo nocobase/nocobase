@@ -21,7 +21,7 @@ test.describe('file manager', () => {
     await createLocalStorage.storageName.fill(storageName);
     await createLocalStorage.storagebaseURL.fill('/storage/uploadsFM01AA');
     await createLocalStorage.storageType.click();
-    await page.getByText('Local storage').click();
+    await page.getByText('Local storage').nth(1).click();
     await createLocalStorage.destination.fill('storage/uploadsFM01AA');
     // await createLocalStorage.path.fill('');
     // await createLocalStorage.defaultStorage.check();
