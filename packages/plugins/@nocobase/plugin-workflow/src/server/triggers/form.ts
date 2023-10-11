@@ -33,7 +33,14 @@ export default class FormTrigger extends Trigger {
   middleware = async (context, next) => {
     await next();
 
-    const { resourceName, actionName } = context.action;
+    const {
+      resourceName,
+      actionName,
+      params: { triggerWorkflows },
+    } = context.action;
+    if (!triggerWorkflows) {
+      return;
+    }
 
     if ((resourceName === 'workflows' && actionName === 'trigger') || !['create', 'update'].includes(actionName)) {
       return;
@@ -42,11 +49,8 @@ export default class FormTrigger extends Trigger {
     this.trigger(context);
   };
 
-  async trigger(context) {
-    const { triggerWorkflows, values } = context.action.params;
-    if (!triggerWorkflows) {
-      return;
-    }
+  private async trigger(context) {
+    const { triggerWorkflows = '', values } = context.action.params;
 
     const { currentUser } = context.state;
 
@@ -88,7 +92,7 @@ export default class FormTrigger extends Trigger {
               appends,
             });
           }
-          this.plugin.trigger(workflow, { data: payload, user: currentUser });
+          this.plugin.trigger(workflow, { data: toJSON(payload), user: toJSON(currentUser) });
         });
       } else {
         const data = trigger[1] ? get(values, trigger[1]) : values;

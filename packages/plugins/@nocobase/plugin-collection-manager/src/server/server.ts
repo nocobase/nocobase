@@ -18,6 +18,7 @@ import { CollectionModel, FieldModel } from './models';
 import collectionActions from './resourcers/collections';
 import viewResourcer from './resourcers/views';
 import sqlResourcer from './resourcers/sql';
+import { beforeCreateForValidateField } from './hooks/beforeCreateForValidateField';
 
 export class CollectionManagerPlugin extends Plugin {
   public schema: string;
@@ -109,6 +110,8 @@ export class CollectionManagerPlugin extends Plugin {
         await fn(model, { database: this.app.db });
       }
     });
+
+    this.app.db.on('fields.beforeCreate', beforeCreateForValidateField());
 
     this.app.db.on('fields.afterCreate', afterCreateForReverseField(this.app.db));
 

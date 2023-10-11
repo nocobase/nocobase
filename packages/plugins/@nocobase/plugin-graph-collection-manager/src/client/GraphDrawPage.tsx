@@ -613,7 +613,7 @@ export const GraphDrawPage = React.memo(() => {
     });
   };
   const handleConnectionAssociation = ({ target, through }) => {
-    const data = targetGraph.selectedCollections.split(',') || [];
+    const data = targetGraph.selectedCollections?.split(',') || [];
     data.push(target);
     through && data.push(through);
     const queryString = uniq(data).toString();

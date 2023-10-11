@@ -224,21 +224,16 @@ export class PluginMultiAppManager extends Plugin {
 
     AppSupervisor.getInstance().setAppBootstrapper(LazyLoadApplication);
 
-    Gateway.getInstance().setAppSelector(async (req) => {
-      const appName = qs.parse(parse(req.url).query)?.__appName;
-      if (appName) {
-        return appName;
-      }
+    Gateway.getInstance().addAppSelectorMiddleware(async (ctx, next) => {
+      const { req } = ctx;
 
-      if (req.headers['x-app']) {
-        return req.headers['x-app'];
-      }
-
-      if (req.headers['x-hostname']) {
+      if (!ctx.resolvedAppName && req.headers['x-hostname']) {
         const repository = this.db.getRepository('applications');
         if (!repository) {
-          return null;
+          await next();
+          return;
         }
+
         const appInstance = await repository.findOne({
           filter: {
             cname: req.headers['x-hostname'],
@@ -246,11 +241,11 @@ export class PluginMultiAppManager extends Plugin {
         });
 
         if (appInstance) {
-          return appInstance.name;
+          ctx.resolvedAppName = appInstance.name;
         }
       }
 
-      return null;
+      await next();
     });
 
     this.app.on('afterStart', async (app) => {
@@ -258,8 +253,9 @@ export class PluginMultiAppManager extends Plugin {
       const appSupervisor = AppSupervisor.getInstance();
 
       this.app.setMaintainingMessage('starting sub applications...');
+
       if (appSupervisor.runningMode == 'single') {
-        Gateway.getInstance().setAppSelector(() => appSupervisor.singleAppName);
+        Gateway.getInstance().addAppSelectorMiddleware((ctx) => (ctx.resolvedAppName = appSupervisor.singleAppName));
 
         // If the sub application is running in single mode, register the application automatically
         try {
