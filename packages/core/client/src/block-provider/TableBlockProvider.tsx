@@ -28,6 +28,10 @@ interface Props {
   rowKey?: string;
   childrenColumnName: any;
   fieldNames?: any;
+  /**
+   * Table 区块的 collection name
+   */
+  collection?: string;
 }
 
 const InternalTableBlockProvider = (props: Props) => {
@@ -43,6 +47,7 @@ const InternalTableBlockProvider = (props: Props) => {
       return keys || [];
     }
   }, [service?.loading]);
+
   return (
     <FixedBlockWrapper>
       <TableBlockContext.Provider
@@ -94,10 +99,11 @@ export const TableBlockProvider = (props) => {
     }
   }
   const form = useMemo(() => createForm(), [treeTable]);
+
   return (
     <SchemaComponentOptions scope={{ treeTable }}>
       <FormContext.Provider value={form}>
-        <BlockProvider {...props} params={params} runWhenParamsChanged>
+        <BlockProvider data-testid="table-block" {...props} params={params} runWhenParamsChanged>
           <InternalTableBlockProvider {...props} childrenColumnName={childrenColumnName} params={params} />
         </BlockProvider>
       </FormContext.Provider>
@@ -142,7 +148,6 @@ export const useTableBlockProps = () => {
           }
         : false,
     onRowSelectionChange(selectedRowKeys) {
-      console.log(selectedRowKeys);
       ctx.field.data = ctx?.field?.data || {};
       ctx.field.data.selectedRowKeys = selectedRowKeys;
       ctx?.field?.onRowSelect?.(selectedRowKeys);

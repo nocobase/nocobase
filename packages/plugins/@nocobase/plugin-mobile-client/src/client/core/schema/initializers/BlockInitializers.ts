@@ -3,6 +3,7 @@ import { generateNTemplate } from '../../../locale';
 
 // 页面里添加区块
 export const MBlockInitializers = {
+  'data-testid': 'add-block-button-in-mobile-page',
   title: '{{t("Add block")}}',
   icon: 'PlusOutlined',
   wrap: gridRowColWrap,

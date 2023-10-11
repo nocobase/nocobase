@@ -8,9 +8,8 @@ import {
   useCompile,
   useRequest,
 } from '@nocobase/client';
-import { error } from '@nocobase/utils/client';
+import { error, lodash } from '@nocobase/utils/client';
 import { Select, message } from 'antd';
-import { lodash } from '@nocobase/utils/client';
 import React, { useContext, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { GraphCollectionContext } from './components/CollectionNodeProvder';
@@ -36,6 +35,7 @@ export const SourceCollection = observer(
     return (
       <div>
         <Select
+          data-testid="antd-select"
           popupMatchSelectWidth={false}
           disabled
           value={record.name}

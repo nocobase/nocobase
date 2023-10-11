@@ -75,6 +75,7 @@ export const Search = (props: SearchProps) => {
       `}
     >
       <Select
+        data-testid="antd-select"
         showSearch
         allowClear
         style={{

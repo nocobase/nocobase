@@ -871,6 +871,7 @@ export default {
   'Sync successfully': '同步成功',
   'Sync from form fields': '同步表单字段',
   'Select all': '全选',
+  'UnSelect all':'取消全选',
   'Determine whether a record exists by the following fields': '通过以下字段判断记录是否存在',
   'Cascade Select': '级联选择',
   Execute: '执行',

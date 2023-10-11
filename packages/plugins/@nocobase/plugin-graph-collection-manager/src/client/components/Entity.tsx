@@ -442,7 +442,7 @@ const Entity: React.FC<{
                   }}
                   schema={{
                     type: 'object',
-                    name: uid(),
+                    name: node.id,
                     properties: {
                       connectParent: {
                         type: 'void',

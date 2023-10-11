@@ -43,6 +43,7 @@ const ObjectSelect = (props: Props) => {
 
   return (
     <AntdSelect
+      data-testid="antd-select"
       value={toValue(value)}
       defaultValue={toValue(defaultValue)}
       allowClear
@@ -108,6 +109,7 @@ const InternalSelect = connect(
     };
     return (
       <AntdSelect
+        data-testid="antd-select"
         showSearch
         filterOption={filterOption}
         allowClear

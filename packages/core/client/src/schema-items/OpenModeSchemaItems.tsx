@@ -1,9 +1,9 @@
-import React from 'react';
 import { useField, useFieldSchema } from '@formily/react';
-import { SchemaSettings } from '../schema-settings';
-import { useTranslation } from 'react-i18next';
 import { Select } from 'antd';
+import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../schema-component';
+import { SchemaSettings } from '../schema-settings';
 
 interface Options {
   openMode?: boolean;
@@ -49,6 +49,7 @@ export const OpenModeSchemaItems: React.FC<Options> = (options) => {
           <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
             {t('Popup size')}
             <Select
+              data-testid="antd-select"
               bordered={false}
               options={[
                 { label: t('Small'), value: 'small' },

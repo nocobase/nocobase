@@ -1,9 +1,5 @@
 import { ISchema } from '@formily/react';
-import {
-  constraintsProps,
-  relationshipType,
-  reverseFieldProperties
-} from './properties';
+import { constraintsProps, relationshipType, reverseFieldProperties } from './properties';
 import { IField } from './types';
 
 export const m2o: IField = {
@@ -178,5 +174,4 @@ export const m2o: IField = {
       // },
     ],
   },
-  invariable: true,
 };

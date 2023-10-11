@@ -27,7 +27,7 @@ function useOptions({ filter, isTableOid }: CollectionSelectProps) {
     : collections;
   const filtered =
     typeof filter === 'function'
-      ? (inheritCollections || currentCollections).filter(filter)
+      ? ((inheritCollections || currentCollections) as any[]).filter(filter)
       : inheritCollections || currentCollections;
   return filtered
     .filter((item) => !item.hidden)
@@ -45,6 +45,7 @@ export const CollectionSelect = connect(
     const { t } = useTranslation();
     return (
       <Select
+        data-testid="antd-select"
         placeholder={t('Select collection')}
         popupMatchSelectWidth={false}
         {...others}

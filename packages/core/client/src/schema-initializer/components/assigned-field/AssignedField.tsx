@@ -1,18 +1,29 @@
-import { css } from '@emotion/css';
 import { Field } from '@formily/core';
-import { connect, useField, useFieldSchema } from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
-import React, { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import _ from 'lodash';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { useFormBlockContext } from '../../../block-provider';
 import {
   CollectionFieldProvider,
   useCollection,
   useCollectionField,
   useCollectionFilterOptions,
+  useCollectionManager,
 } from '../../../collection-manager';
-import { Variable, useCompile, useComponent, useVariableScope } from '../../../schema-component';
+import { useRecord } from '../../../record-provider';
+import { useCompile, useComponent } from '../../../schema-component';
+import { VariableInput, getShouldChange } from '../../../schema-settings/VariableInput/VariableInput';
+import { Option } from '../../../schema-settings/VariableInput/type';
+import { formatVariableScop } from '../../../schema-settings/VariableInput/utils/formatVariableScop';
+import { useLocalVariables, useVariables } from '../../../variables';
 import { DeletedField } from '../DeletedField';
+
+interface AssignedFieldProps {
+  value: any;
+  onChange: (value: any) => void;
+  [key: string]: any;
+}
 
 const InternalField: React.FC = (props) => {
   const field = useField<Field>();
@@ -68,72 +79,73 @@ const InternalField: React.FC = (props) => {
   return React.createElement(component, props, props.children);
 };
 
-const CollectionField = connect((props) => {
+const CollectionField = (props) => {
   const fieldSchema = useFieldSchema();
   return (
     <CollectionFieldProvider name={fieldSchema.name} fallback={<DeletedField />}>
       <InternalField {...props} />
     </CollectionFieldProvider>
   );
-});
+};
 
 export enum AssignedFieldValueType {
   ConstantValue = 'constantValue',
   DynamicValue = 'dynamicValue',
 }
 
-export const AssignedField = (props: any) => {
+export const AssignedField = (props: AssignedFieldProps) => {
   const { value, onChange } = props;
-  const { t } = useTranslation();
-  const compile = useCompile();
-  const fieldSchema = useFieldSchema();
-  const { getField } = useCollection();
-  const collectionField = getField(fieldSchema.name);
-  const [options, setOptions] = useState<any[]>([]);
+  const { getCollectionFields, getAllCollectionsInheritChain } = useCollectionManager();
   const collection = useCollection();
-  const fields = compile(useCollectionFilterOptions(collection));
-  const userFields = compile(useCollectionFilterOptions('users'));
-  const scope = useVariableScope();
-  useEffect(() => {
-    const opt = [
-      {
-        name: 'currentRecord',
-        title: t('Current record'),
-        children: fields,
-      },
-      {
-        name: 'currentUser',
-        title: t('Current user'),
-        children: userFields,
-      },
-    ];
-    if (['createdAt', 'datetime', 'time', 'updatedAt'].includes(collectionField?.interface)) {
-      opt.unshift({
-        name: 'currentTime',
-        title: t('Current time'),
-        children: null,
-      });
-    }
-    const next = opt.concat(scope);
-    setOptions(next);
-  }, [fields, userFields, scope]);
+  const { form } = useFormBlockContext();
+  const fieldSchema = useFieldSchema();
+  const record = useRecord();
+  const variables = useVariables();
+  const localVariables = useLocalVariables();
+  const currentFormFields = useCollectionFilterOptions(collection);
+
+  const { name, getField } = collection;
+  const collectionField = getField(fieldSchema.name);
+
+  const shouldChange = useMemo(
+    () => getShouldChange({ collectionField, variables, localVariables, getAllCollectionsInheritChain }),
+    [collectionField, getAllCollectionsInheritChain, localVariables, variables],
+  );
+
+  const returnScope = useCallback(
+    (scope: Option[]) => {
+      const currentForm = scope.find((item) => item.value === '$nForm');
+      const fields = getCollectionFields(name);
+
+      // fix https://nocobase.height.app/T-1355
+      // 工作流人工节点的 `自定义表单` 区块，与其它表单区块不同，根据它的数据表名称，获取到的字段列表为空，所以需要在这里特殊处理一下
+      if (!fields?.length && currentForm) {
+        currentForm.children = formatVariableScop(currentFormFields);
+      }
+
+      return scope;
+    },
+    [currentFormFields, name],
+  );
+
+  const renderSchemaComponent = useCallback(
+    ({ value, onChange }): React.JSX.Element => {
+      return <CollectionField {...props} value={value} onChange={onChange} />;
+    },
+    [JSON.stringify(_.omit(props, 'value'))],
+  );
 
   return (
-    <Variable.Input
+    <VariableInput
+      form={form}
+      record={record}
       value={value}
       onChange={onChange}
-      scope={options}
-      className={css`
-        .variable {
-          width: 100%;
-        }
-      `}
-      fieldNames={{
-        label: 'title',
-        value: 'name',
-      }}
-    >
-      <CollectionField value={value} onChange={onChange} />
-    </Variable.Input>
+      renderSchemaComponent={renderSchemaComponent}
+      collectionField={collectionField}
+      shouldChange={shouldChange}
+      returnScope={returnScope}
+      targetFieldSchema={fieldSchema}
+    />
   );
 };

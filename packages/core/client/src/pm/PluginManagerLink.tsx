@@ -67,6 +67,7 @@ export const SettingsCenterDropdown = () => {
     <ActionContextProvider value={{ visible, setVisible }}>
       <Dropdown placement="bottom" menu={menu}>
         <Button
+          data-testid="settings-center-button"
           icon={<SettingOutlined />}
           // title={t('All plugin settings')}
         />

@@ -157,11 +157,11 @@ function Calculation({ calculator, operands = [], onChange }) {
         useTypedConstant
       />
       <Select
+        data-testid="antd-select"
         value={calculator}
         onChange={(v) => onChange({ operands, calculator: v })}
         placeholder={lang('Calculator')}
         popupMatchSelectWidth={false}
-        className="auto-width"
       >
         {calculatorGroups
           .filter((group) => Boolean(getGroupCalculators(group.value).length))
@@ -205,7 +205,7 @@ function CalculationItem({ value, onChange, onRemove }) {
       ) : (
         <Calculation operands={operands} calculator={calculator} onChange={onChange} />
       )}
-      <Button onClick={onRemove} type="link" icon={<CloseCircleOutlined />} />
+      <Button data-testid="close-icon-button" onClick={onRemove} type="link" icon={<CloseCircleOutlined />} />
     </div>
   );
 }

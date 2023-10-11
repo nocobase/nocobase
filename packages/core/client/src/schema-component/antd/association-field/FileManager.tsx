@@ -73,7 +73,7 @@ const InternalFileManager = (props) => {
   const collectionField = getField(field.props.name);
   const labelUiSchema = useLabelUiSchema(collectionField?.target, fieldNames?.label || 'label');
   const compile = useCompile();
-  const { setVisible, modalProps } = useActionContext();
+  const { modalProps } = useActionContext();
   const getFilter = () => {
     const targetKey = collectionField?.targetKey || 'id';
     const list = options.map((option) => option[targetKey]).filter(Boolean);
@@ -121,6 +121,7 @@ const InternalFileManager = (props) => {
     collectionField,
   };
   const usePickActionProps = () => {
+    const { setVisible } = useActionContext();
     const { multiple, selectedRows, onChange, options, collectionField } = useContext(RecordPickerContext);
     return {
       onClick() {
@@ -166,7 +167,7 @@ const InternalFileManager = (props) => {
         }}
       >
         <RecordPickerProvider {...pickerProps}>
-          <CollectionProvider name={collectionField.target}>
+          <CollectionProvider name={collectionField?.target}>
             <FormProvider>
               <TableSelectorParamsProvider params={{ filter: getFilter() }}>
                 <SchemaComponentOptions scope={{ usePickActionProps, useTableSelectorProps }}>

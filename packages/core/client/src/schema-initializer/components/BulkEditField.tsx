@@ -127,7 +127,7 @@ export const BulkEditField = (props: any) => {
         }
       `}
     >
-      <Select defaultValue={type} value={type} onChange={typeChangeHandler}>
+      <Select data-testid="antd-select" defaultValue={type} value={type} onChange={typeChangeHandler}>
         <Select.Option value={BulkEditFormItemValueType.RemainsTheSame}>{t('Remains the same')}</Select.Option>
         <Select.Option value={BulkEditFormItemValueType.ChangedTo}>{t('Changed to')}</Select.Option>
         <Select.Option value={BulkEditFormItemValueType.Clear}>{t('Clear')}</Select.Option>

@@ -9,6 +9,52 @@ import { ApplicationModel } from '../server';
 
 export type AppDbCreator = (app: Application, transaction?: Transactionable) => Promise<void>;
 export type AppOptionsFactory = (appName: string, mainApp: Application) => any;
+export type SubAppUpgradeHandler = (mainApp: Application) => Promise<void>;
+
+const defaultSubAppUpgradeHandle: SubAppUpgradeHandler = async (mainApp: Application) => {
+  const repository = mainApp.db.getRepository('applications');
+  const findOptions = {};
+
+  const appSupervisor = AppSupervisor.getInstance();
+
+  if (appSupervisor.runningMode == 'single') {
+    findOptions['filter'] = {
+      name: appSupervisor.singleAppName,
+    };
+  }
+
+  const instances = await repository.find(findOptions);
+
+  for (const instance of instances) {
+    const instanceOptions = instance.get('options');
+
+    // skip standalone deployment application
+    if (instanceOptions?.standaloneDeployment && appSupervisor.runningMode !== 'single') {
+      continue;
+    }
+
+    const beforeSubAppStatus = AppSupervisor.getInstance().getAppStatus(instance.name);
+
+    const subApp = await appSupervisor.getApp(instance.name, {
+      upgrading: true,
+    });
+
+    console.log({ beforeSubAppStatus });
+    try {
+      mainApp.setMaintainingMessage(`upgrading sub app ${instance.name}...`);
+      console.log(`${instance.name}: upgrading...`);
+
+      await subApp.runAsCLI(['upgrade'], { from: 'user' });
+      if (!beforeSubAppStatus && AppSupervisor.getInstance().getAppStatus(instance.name) === 'initialized') {
+        await AppSupervisor.getInstance().removeApp(instance.name);
+      }
+    } catch (error) {
+      console.log(`${instance.name}: upgrade failed`);
+      mainApp.logger.error(error);
+      console.error(error);
+    }
+  }
+};
 
 const defaultDbCreator = async (app: Application) => {
   const databaseOptions = app.options.database as any;
@@ -72,6 +118,7 @@ const defaultAppOptionsFactory = (appName: string, mainApp: Application) => {
 export class PluginMultiAppManager extends Plugin {
   appDbCreator: AppDbCreator = defaultDbCreator;
   appOptionsFactory: AppOptionsFactory = defaultAppOptionsFactory;
+  subAppUpgradeHandler: SubAppUpgradeHandler = defaultSubAppUpgradeHandle;
 
   private beforeGetApplicationMutex = new Mutex();
 
@@ -82,6 +129,10 @@ export class PluginMultiAppManager extends Plugin {
         : (app.options.database as IDatabaseOptions);
 
     return lodash.cloneDeep(lodash.omit(oldConfig, ['migrator']));
+  }
+
+  setSubAppUpgradeHandler(handler: SubAppUpgradeHandler) {
+    this.subAppUpgradeHandler = handler;
   }
 
   setAppOptionsFactory(factory: AppOptionsFactory) {
@@ -173,21 +224,16 @@ export class PluginMultiAppManager extends Plugin {
 
     AppSupervisor.getInstance().setAppBootstrapper(LazyLoadApplication);
 
-    Gateway.getInstance().setAppSelector(async (req) => {
-      const appName = qs.parse(parse(req.url).query)?.__appName;
-      if (appName) {
-        return appName;
-      }
+    Gateway.getInstance().addAppSelectorMiddleware(async (ctx, next) => {
+      const { req } = ctx;
 
-      if (req.headers['x-app']) {
-        return req.headers['x-app'];
-      }
-
-      if (req.headers['x-hostname']) {
+      if (!ctx.resolvedAppName && req.headers['x-hostname']) {
         const repository = this.db.getRepository('applications');
         if (!repository) {
-          return null;
+          await next();
+          return;
         }
+
         const appInstance = await repository.findOne({
           filter: {
             cname: req.headers['x-hostname'],
@@ -195,11 +241,11 @@ export class PluginMultiAppManager extends Plugin {
         });
 
         if (appInstance) {
-          return appInstance.name;
+          ctx.resolvedAppName = appInstance.name;
         }
       }
 
-      return null;
+      await next();
     });
 
     this.app.on('afterStart', async (app) => {
@@ -207,8 +253,9 @@ export class PluginMultiAppManager extends Plugin {
       const appSupervisor = AppSupervisor.getInstance();
 
       this.app.setMaintainingMessage('starting sub applications...');
+
       if (appSupervisor.runningMode == 'single') {
-        Gateway.getInstance().setAppSelector(() => appSupervisor.singleAppName);
+        Gateway.getInstance().addAppSelectorMiddleware((ctx) => (ctx.resolvedAppName = appSupervisor.singleAppName));
 
         // If the sub application is running in single mode, register the application automatically
         try {
@@ -243,50 +290,7 @@ export class PluginMultiAppManager extends Plugin {
     });
 
     this.app.on('afterUpgrade', async (app, options) => {
-      const cliArgs = options?.cliArgs;
-
-      const repository = this.db.getRepository('applications');
-      const findOptions = {};
-
-      const appSupervisor = AppSupervisor.getInstance();
-
-      if (appSupervisor.runningMode == 'single') {
-        findOptions['filter'] = {
-          name: appSupervisor.singleAppName,
-        };
-      }
-
-      const instances = await repository.find(findOptions);
-
-      for (const instance of instances) {
-        const instanceOptions = instance.get('options');
-
-        // skip standalone deployment application
-        if (instanceOptions?.standaloneDeployment && appSupervisor.runningMode !== 'single') {
-          continue;
-        }
-
-        const beforeSubAppStatus = AppSupervisor.getInstance().getAppStatus(instance.name);
-
-        const subApp = await appSupervisor.getApp(instance.name, {
-          upgrading: true,
-        });
-
-        console.log({ beforeSubAppStatus });
-        try {
-          this.app.setMaintainingMessage(`upgrading sub app ${instance.name}...`);
-          console.log(`${instance.name}: upgrading...`);
-
-          await subApp.runAsCLI(['upgrade'], { from: 'user' });
-          if (!beforeSubAppStatus && AppSupervisor.getInstance().getAppStatus(instance.name) === 'initialized') {
-            await AppSupervisor.getInstance().removeApp(instance.name);
-          }
-        } catch (error) {
-          console.log(`${instance.name}: upgrade failed`);
-          this.app.logger.error(error);
-          console.error(error);
-        }
-      }
+      await this.subAppUpgradeHandler(app);
     });
 
     this.app.resourcer.registerActionHandlers({

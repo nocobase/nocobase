@@ -126,7 +126,7 @@ export const WithoutTableFieldResource = createContext(null);
 export const TableFieldProvider = (props) => {
   return (
     <WithoutTableFieldResource.Provider value={false}>
-      <BlockProvider block={'TableField'} {...props}>
+      <BlockProvider data-testid="table-field-block" block={'TableField'} {...props}>
         <InternalTableFieldProvider {...props} />
       </BlockProvider>
     </WithoutTableFieldResource.Provider>

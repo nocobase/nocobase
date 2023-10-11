@@ -29,6 +29,7 @@ export function OnField({ value, onChange }) {
       />
       {value.field ? (
         <Select
+          data-testid="antd-select"
           value={dir}
           onChange={(v) => {
             setDir(v);
@@ -48,6 +49,7 @@ export function OnField({ value, onChange }) {
             onChange={(v) => onChange({ ...value, offset: (v ?? 0) * dir })}
           />
           <Select
+            data-testid="antd-select"
             value={value.unit || 86400000}
             onChange={(unit) => onChange({ ...value, unit })}
             options={[

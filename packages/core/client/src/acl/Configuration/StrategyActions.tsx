@@ -84,6 +84,7 @@ export const StrategyActions = connect((props) => {
             render: (scope, action) =>
               !action.onNewRecord && (
                 <Select
+                  data-testid="antd-select"
                   popupMatchSelectWidth={false}
                   size={'small'}
                   value={scope}

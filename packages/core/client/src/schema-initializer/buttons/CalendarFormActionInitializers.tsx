@@ -2,6 +2,7 @@ import { useCollection } from '../..';
 
 // 表单的操作配置
 export const CalendarFormActionInitializers = {
+  'data-testid': 'configure-actions-button-of-calendar-form',
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
   style: {

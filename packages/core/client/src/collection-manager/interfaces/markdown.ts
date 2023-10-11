@@ -1,6 +1,6 @@
 import { ISchema } from '@formily/react';
 import { i18n } from '../../i18n';
-import { defaultProps } from './properties';
+import { defaultProps, operators } from './properties';
 import { IField } from './types';
 
 export const markdown: IField = {
@@ -68,5 +68,8 @@ export const markdown: IField = {
         },
       },
     };
+  },
+  filterable: {
+    operators: operators.string,
   },
 };
