@@ -7,8 +7,11 @@ import { transformVariableValue } from '../../../../variables/utils/transformVar
 
 /**
  * 用于懒加载 Form 区块中只用于展示的关联字段的值
+ *
+ * - 在表单区块中，有一个 Display association fields 的选项，这里面的字段，只是为了显示出相应的值，不可更改
+ * - 这里就是用于加载这些字段的值
  */
-const useLazyLoadAssociationFieldOfForm = () => {
+const useLazyLoadDisplayAssociationFieldsOfForm = () => {
   const { name } = useCollection();
   const { getCollectionJoinField } = useCollectionManager();
   const form = useForm();
@@ -47,4 +50,4 @@ const useLazyLoadAssociationFieldOfForm = () => {
   }, [schemaName.includes('.') ? form.values[schemaName.split('.')[0]] : null]);
 };
 
-export default useLazyLoadAssociationFieldOfForm;
+export default useLazyLoadDisplayAssociationFieldsOfForm;

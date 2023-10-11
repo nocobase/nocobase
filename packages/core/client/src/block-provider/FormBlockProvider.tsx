@@ -13,7 +13,7 @@ import { FormActiveFieldsProvider } from './hooks';
 export const FormBlockContext = createContext<any>({});
 
 const InternalFormBlockProvider = (props) => {
-  const { action, readPretty, params, association } = props;
+  const { action, readPretty, params } = props;
   const field = useField();
   const form = useMemo(
     () =>
@@ -35,6 +35,8 @@ const InternalFormBlockProvider = (props) => {
         params,
         action,
         form,
+        // update 表示是表单编辑区块，create 表示是表单新增区块
+        type: action === 'get' ? 'update' : 'create',
         field,
         service,
         resource,
@@ -42,46 +44,28 @@ const InternalFormBlockProvider = (props) => {
         formBlockRef,
       }}
     >
-      {association ? associationBlock() : normalBlock()}
+      {readPretty ? (
+        <RecordProvider parent={isEmpty(record?.__parent) ? record : record?.__parent} record={service?.data?.data}>
+          <div ref={formBlockRef}>
+            <RenderChildrenWithDataTemplates form={form} />
+          </div>
+        </RecordProvider>
+      ) : (
+        <div ref={formBlockRef}>
+          <RenderChildrenWithDataTemplates form={form} />
+        </div>
+      )}
     </FormBlockContext.Provider>
   );
+};
 
-  function normalBlock(): React.ReactNode {
-    return readPretty ? (
-      <RecordProvider parent={isEmpty(record?.__parent) ? record : record?.__parent} record={service?.data?.data}>
-        <div ref={formBlockRef}>
-          <RenderChildrenWithDataTemplates form={form} />
-        </div>
-      </RecordProvider>
-    ) : (
-      <div ref={formBlockRef}>
-        <RenderChildrenWithDataTemplates form={form} />
-      </div>
-    );
-  }
-
-  // 这里的 Form 区块是新增区块，所以其字段是可以设置默认值的。又因为是否可以设置默认值是由 record 是否为空来决定的，
-  // 所以在这里需要将 record 设置为空，这样就可以设置默认值了。相关代码：https://github.com/nocobase/nocobase/blob/fa3127e467bcb3a2425eedfb06fc110cc6eb7f1e/packages/core/client/src/schema-settings/hooks/useIsAllowToSetDefaultValue.tsx#L117-L122
-  //
-  // 如何添加关系区块的 Form 区块：
-  // 1. 点击 Table 行的查看按钮；
-  // 2. 弹出的 Drawer 中可以添加关系区块；
-  // 3. 选择对多字段，点击 Form 区块；
-  function associationBlock(): React.ReactNode {
-    return readPretty ? (
-      <RecordProvider parent={isEmpty(record?.__parent) ? record : record?.__parent} record={service?.data?.data}>
-        <div ref={formBlockRef}>
-          <RenderChildrenWithDataTemplates form={form} />
-        </div>
-      </RecordProvider>
-    ) : (
-      <RecordProvider parent={isEmpty(record?.__parent) ? record : record?.__parent} record={{}}>
-        <div ref={formBlockRef}>
-          <RenderChildrenWithDataTemplates form={form} />
-        </div>
-      </RecordProvider>
-    );
-  }
+/**
+ * 获取表单区块的类型：update 表示是表单编辑区块，create 表示是表单新增区块
+ * @returns
+ */
+export const useFormBlockType = () => {
+  const ctx = useFormBlockContext() || {};
+  return { type: ctx.type } as { type: 'update' | 'create' };
 };
 
 export const useIsEmptyRecord = () => {
