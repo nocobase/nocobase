@@ -1,5 +1,5 @@
-import { FormOutlined } from '@ant-design/icons';
 import React from 'react';
+import { FormOutlined } from '@ant-design/icons';
 
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { SchemaInitializer } from '../SchemaInitializer';

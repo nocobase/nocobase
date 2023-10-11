@@ -84,9 +84,7 @@ export const linkageMergeAction = async ({
             // 2. TODO: 需要把里面解析变量的逻辑删除，因为在上一步已经解析过了
             result = evaluate(exp, { ...scope, now: () => new Date().toString(), ...expScope });
           } catch (error) {
-            if (process.env.NODE_ENV !== 'production') {
-              throw error;
-            }
+            console.error(error);
           }
         } else if (value?.mode === 'constant') {
           result = value?.value || value;

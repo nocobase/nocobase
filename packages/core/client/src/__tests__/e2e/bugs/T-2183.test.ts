@@ -160,6 +160,7 @@ const config = {
   },
 };
 
+// fix https://nocobase.height.app/T-2183
 test('BUG: should save conditions', async ({ page, mockPage }) => {
   await mockPage(config).goto();
   await page.getByTestId('filter-action').click();

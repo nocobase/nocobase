@@ -27,8 +27,8 @@ import { HTMLEncode } from '../input/shared';
 import { useColorFields } from '../table-v2/Table.Column.Designer';
 import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
 import { useEnsureOperatorsValid } from './SchemaSettingOptions';
-import useLazyLoadAssociationFieldOfForm from './hooks/useLazyLoadAssociationFieldOfForm';
-import useLazyLoadAssociationFieldOfSubForm from './hooks/useLazyLoadAssociationFieldOfSubForm';
+import useLazyLoadDisplayAssociationFieldsOfForm from './hooks/useLazyLoadAssociationFieldOfForm';
+import useLazyLoadAssociationFieldOfForm from './hooks/useLazyLoadAssociationFieldOfSubForm';
 import useParseDefaultValue from './hooks/useParseDefaultValue';
 
 export const FormItem: any = observer(
@@ -46,8 +46,8 @@ export const FormItem: any = observer(
 
     // 需要放在注冊完变量之后
     useParseDefaultValue();
+    useLazyLoadDisplayAssociationFieldsOfForm();
     useLazyLoadAssociationFieldOfForm();
-    useLazyLoadAssociationFieldOfSubForm();
 
     useEffect(() => {
       addActiveFieldName?.(schema.name as string);
