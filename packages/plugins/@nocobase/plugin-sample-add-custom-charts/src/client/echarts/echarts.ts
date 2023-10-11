@@ -1,4 +1,4 @@
-import { Chart, ChartProps, ChartType, QueryProps, RenderProps } from '@nocobase/plugin-data-visualization/client';
+import { Chart, ChartProps, ChartType, RenderProps } from '@nocobase/plugin-data-visualization/client';
 import { ReactECharts } from './react-echarts';
 import { EChartsReactProps } from 'echarts-for-react';
 import deepmerge from 'deepmerge';
