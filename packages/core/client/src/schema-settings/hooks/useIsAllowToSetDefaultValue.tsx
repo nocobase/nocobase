@@ -98,6 +98,13 @@ function _isAllowToSetDefaultValue({
     );
   }
 
+  if (!collectionField) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.error(`collectionField should not be ${collectionField}`);
+    }
+    return false;
+  }
+
   // 当 Field component 不是下列组件时，不允许设置默认值
   if (
     collectionField.target &&
