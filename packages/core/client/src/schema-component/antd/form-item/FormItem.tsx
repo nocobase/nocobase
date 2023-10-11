@@ -27,8 +27,8 @@ import { HTMLEncode } from '../input/shared';
 import { useColorFields } from '../table-v2/Table.Column.Designer';
 import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
 import { useEnsureOperatorsValid } from './SchemaSettingOptions';
-import useLazyLoadDisplayAssociationFieldsOfForm from './hooks/useLazyLoadAssociationFieldOfForm';
-import useLazyLoadAssociationFieldOfForm from './hooks/useLazyLoadAssociationFieldOfSubForm';
+import useLazyLoadAssociationFieldOfForm from './hooks/useLazyLoadAssociationFieldOfForm';
+import useLazyLoadDisplayAssociationFieldsOfForm from './hooks/useLazyLoadDisplayAssociationFieldsOfForm';
 import useParseDefaultValue from './hooks/useParseDefaultValue';
 
 export const FormItem: any = observer(
