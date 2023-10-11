@@ -43,7 +43,11 @@ test.describe('menu', () => {
 
     await page.getByRole('menu').getByText('page1').hover();
     await page.getByTestId('designer-schema-settings').hover();
-    await page.getByRole('menuitem', { name: 'Move' }).click();
+    await page.getByRole('menuitem', { name: 'Move to' }).click();
+    await page.getByLabel('Search').click();
+    await page.getByTitle('page2').getByText('page2').click();
+    await page.getByRole('button', { name: 'OK' }).click();
+
     // await page.getByRole('textbox').click();
     // await page.getByRole('textbox').fill('page title1');
     // await page.getByRole('button', { name: 'OK' }).click();
