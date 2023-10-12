@@ -557,6 +557,7 @@ function AssignedFieldValues() {
       <DefaultValueProvider isAllowToSetDefaultValue={() => false}>
         <SchemaSettings.ActionModalItem
           title={t('Assign field values')}
+          maskClosable={false}
           initialSchema={initialSchema}
           initialValues={fieldSchema?.['x-action-settings']?.assignedValues}
           modalTip={tips[actionType]}
