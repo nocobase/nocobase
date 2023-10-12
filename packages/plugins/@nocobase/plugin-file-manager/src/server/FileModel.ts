@@ -8,7 +8,6 @@ export class FileModel extends Model {
       const storage = fileStorages.get(json.storageId);
       json['thumbnailRule'] = storage?.options?.thumbnailRule;
     }
-    console.log(json, fileStorages);
     return json;
   }
 }

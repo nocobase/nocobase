@@ -7,8 +7,6 @@ import { getStorageConfig } from './storages';
 export { default as storageTypes } from './storages';
 
 export default class PluginFileManager extends Plugin {
-  storages = new Map();
-
   storageType() {
     return process.env.DEFAULT_STORAGE_TYPE ?? 'local';
   }
@@ -66,7 +64,6 @@ export default class PluginFileManager extends Plugin {
 
     const Storage = this.db.getModel('storages');
     Storage.afterSave(async (m, { transaction }) => {
-      console.log('Storage.afterSave');
       await this.loadStorages({ transaction });
     });
     Storage.afterDestroy(async (m, { transaction }) => {
