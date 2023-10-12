@@ -98,7 +98,16 @@ const useParseDefaultValue = () => {
       if (variableValue) {
         // 实现联动的效果，当依赖的变量变化时（如 `$nForm` 变量），重新解析默认值
         const dispose = reaction(() => {
-          return _.get({ [variableName]: variableValue?.ctx }, getPath(fieldSchema.default));
+          const obj = { [variableName]: variableValue?.ctx };
+          const path = getPath(fieldSchema.default);
+
+          // fix https://nocobase.height.app/T-2212
+          if (_.get(obj, path) === undefined) {
+            // 返回一个随机值，确保能触发 run 函数
+            return Math.random();
+          }
+
+          return _.get(obj, path);
         }, run);
 
         return dispose;
