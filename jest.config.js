@@ -1,8 +1,7 @@
 const { pathsToModuleNameMapper } = require('ts-jest');
 const { compilerOptions } = require('./tsconfig.paths.json');
-const { defaults } = require('jest-config');
 
-module.exports = {
+const config = {
   rootDir: process.cwd(),
   collectCoverage: false,
   verbose: true,
@@ -37,3 +36,5 @@ module.exports = {
     '/storage/',
   ],
 };
+
+export default config;

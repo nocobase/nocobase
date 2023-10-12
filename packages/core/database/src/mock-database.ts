@@ -1,6 +1,7 @@
 import { merge, uid } from '@nocobase/utils';
 import { resolve } from 'path';
 import { Database, IDatabaseOptions } from './database';
+import fetch from 'node-fetch';
 
 export class MockDatabase extends Database {
   constructor(options: IDatabaseOptions) {
@@ -52,5 +53,37 @@ function customLogger(queryString, queryObject) {
 
 export function mockDatabase(options: IDatabaseOptions = {}): MockDatabase {
   const dbOptions = merge(getConfigByEnv(), options) as any;
-  return new MockDatabase(dbOptions);
+
+  if (process.env['DB_TEST_DISTRIBUTOR_PORT']) {
+    dbOptions.hooks = dbOptions.hooks || {};
+    dbOptions.customHooks = dbOptions.customHooks || {};
+
+    dbOptions.hooks.beforeConnect = async (config) => {
+      if (config.database.startsWith('auto_named_')) {
+        return;
+      }
+
+      const url = `http://127.0.0.1:${process.env['DB_TEST_DISTRIBUTOR_PORT']}/aquire`;
+      const response = await fetch(url);
+
+      const databaseResponse = await response.json();
+      if (!response.ok) {
+        throw new Error(`Failed to aquire database: ${databaseResponse.error}`);
+      }
+
+      db.options.database = config.database = databaseResponse.name;
+    };
+
+    dbOptions.customHooks.beforeClose = async (database) => {
+      if (!database.options.database.startsWith('auto_named_')) {
+        return;
+      }
+      const url = `http://127.0.0.1:${process.env['DB_TEST_DISTRIBUTOR_PORT']}/release?name=${database.options.database}`;
+      await fetch(url);
+    };
+  }
+
+  const db = new MockDatabase(dbOptions);
+
+  return db;
 }

@@ -88,6 +88,7 @@ export interface IDatabaseOptions extends Options {
   migrator?: any;
   usingBigIntForId?: boolean;
   underscored?: boolean;
+  customHooks?: any;
 }
 
 export type DatabaseOptions = IDatabaseOptions;
@@ -303,10 +304,12 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   sequelizeOptions(options) {
     if (options.dialect === 'postgres') {
-      options.hooks = {
-        afterConnect: async (connection) => {
-          await connection.query('SET search_path TO public;');
-        },
+      if (!options.hooks) {
+        options.hooks = {};
+      }
+
+      options.hooks['afterConnect'] = async (connection) => {
+        await connection.query('SET search_path TO public;');
       };
     }
     return options;
@@ -767,6 +770,12 @@ export class Database extends EventEmitter implements AsyncEmitter {
   async close() {
     if (this.isSqliteMemory()) {
       return;
+    }
+
+    await this.emitAsync('beforeClose', this);
+
+    if (this.options.customHooks['beforeClose']) {
+      await this.options.customHooks['beforeClose'](this);
     }
 
     return this.sequelize.close();

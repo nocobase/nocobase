@@ -21,9 +21,6 @@ describe('workflow > actions > workflows', () => {
 
   afterEach(() => app.destroy());
 
-  // describe('create', () => {
-  // });
-
   describe('update', () => {
     it('update unexecuted workflow should be ok', async () => {
       const workflow = await WorkflowModel.create({
