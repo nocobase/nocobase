@@ -1,7 +1,6 @@
 import { SchemaComponentOptions } from '@nocobase/client';
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { FormLayout } from '@formily/antd-v5';
 import { ImportActionInitializer, ImportDesigner, ImportInitializerProvider } from '.';
 import { ImportContext } from './context';
 import { ImportModal, ImportStatus } from './ImportModal';
@@ -12,7 +11,7 @@ export const ImportPluginProvider = (props: any) => {
   const { uploadValidator, beforeUploadHandler, validateUpload } = useShared();
   return (
     <SchemaComponentOptions
-      components={{ ImportActionInitializer, ImportDesigner, FormLayout }}
+      components={{ ImportActionInitializer, ImportDesigner }}
       scope={{
         uploadValidator,
         validateUpload,
