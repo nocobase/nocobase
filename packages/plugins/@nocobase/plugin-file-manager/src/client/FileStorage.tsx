@@ -144,6 +144,7 @@ export const EditStorage = () => {
 };
 
 export const FileStoragePane = () => {
+  const { t } = useTranslation();
   const compile = useCompile();
   const plugin = usePlugin(FileManagerPlugin);
   const storageTypes = [...plugin.storageTypes.values()].map((storageType) => {
@@ -152,11 +153,19 @@ export const FileStoragePane = () => {
       label: compile(storageType.title),
     };
   });
+  const xStyleProcessDesc = (
+    <div>
+      {t('See more')}{' '}
+      <a target="_blank" href="https://help.aliyun.com/zh/oss/user-guide/resize-images-4" rel="noreferrer">
+        x-oss-process
+      </a>
+    </div>
+  );
   return (
     <Card bordered={false}>
       <SchemaComponent
         components={{ StorageOptions, CreateStorage, EditStorage }}
-        scope={{ storageTypes }}
+        scope={{ storageTypes, xStyleProcessDesc }}
         schema={storageSchema}
       />
     </Card>
