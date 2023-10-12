@@ -213,7 +213,7 @@ export function TextArea(props) {
     if (!changed) {
       setRange([-1, 0, -1, 0]);
     }
-  }, [value]);
+  }, [value, keyLabelMap]);
 
   useEffect(() => {
     const { current } = inputRef;
@@ -222,7 +222,7 @@ export function TextArea(props) {
     }
     const nextRange = new Range();
     if (changed) {
-      setChanged(false);
+      // setChanged(false);
       if (range.join() === '-1,0,-1,0') {
         return;
       }

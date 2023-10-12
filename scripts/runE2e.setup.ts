@@ -8,7 +8,7 @@ const run = async () => {
   await awaitForNocoBase();
 
   console.log('Start running tests...');
-  runCommand('npx', ['playwright', 'test', ...process.argv.slice(2)]);
+  await runCommand('npx', ['playwright', 'test', ...process.argv.slice(2)]);
   kill?.('SIGKILL');
 };
 
