@@ -41,11 +41,12 @@ test.describe('menu', () => {
     }).goto();
     await mockPage({ name: 'page2' }).goto();
 
-    await page.getByRole('menu').getByText('page1').hover();
+    await page.getByRole('menu').getByText('page2').hover();
     await page.getByTestId('designer-schema-settings').hover();
     await page.getByRole('menuitem', { name: 'Move to' }).click();
     await page.getByLabel('Search').click();
-    await page.getByTitle('page2').getByText('page2').click();
+    await page.getByTitle('page2').getByText('page1').click();
+    await page.getByLabel('Before').check();
     await page.getByRole('button', { name: 'OK' }).click();
 
     // await page.getByRole('textbox').click();
