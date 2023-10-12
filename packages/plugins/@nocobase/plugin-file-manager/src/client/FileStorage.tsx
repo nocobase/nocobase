@@ -1,3 +1,4 @@
+import { PlusOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
 import { ActionContext, SchemaComponent, useCompile, usePlugin, useRecord } from '@nocobase/client';
 import { Button, Card, Dropdown } from 'antd';
@@ -71,7 +72,9 @@ export const CreateStorage = () => {
             }),
           }}
         >
-          <Button type={'primary'}>{t('Add new')}</Button>
+          <Button type={'primary'} icon={<PlusOutlined />}>
+            {t('Add new')}
+          </Button>
         </Dropdown>
         <SchemaComponent schema={schema} />
       </ActionContext.Provider>

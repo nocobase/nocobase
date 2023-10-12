@@ -121,6 +121,7 @@ export const storageSchema: ISchema = {
               title: '{{ t("Delete") }}',
               'x-component': 'Action',
               'x-component-props': {
+                icon: 'DeleteOutlined',
                 useAction: '{{ cm.useBulkDestroyAction }}',
                 confirm: {
                   title: "{{t('Delete')}}",
