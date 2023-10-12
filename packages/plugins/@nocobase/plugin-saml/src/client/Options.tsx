@@ -40,10 +40,10 @@ const schema = {
           title: '{{t("Use this field to bind the user")}}',
           'x-component': 'Select',
           'x-decorator': 'FormItem',
-          default: 'username',
+          default: 'email',
           enum: [
-            { label: lang('Username'), value: 'username' },
             { label: lang('Email'), value: 'email' },
+            { label: lang('Username'), value: 'username' },
           ],
           required: true,
         },

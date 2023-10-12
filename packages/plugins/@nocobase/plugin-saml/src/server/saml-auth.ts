@@ -57,7 +57,7 @@ export class SAMLAuth extends BaseAuth {
       return user;
     }
     // Bind existed user
-    const { userBindField = 'username' } = this.options?.saml || {};
+    const { userBindField = 'email' } = this.options?.saml || {};
     if (userBindField === 'email' && email) {
       user = await this.userRepository.findOne({
         filter: { email },

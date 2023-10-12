@@ -71,7 +71,7 @@ export class OIDCAuth extends BaseAuth {
       return user;
     }
     // Bind existed user
-    const { userBindField = 'username' } = this.getOptions();
+    const { userBindField = 'email' } = this.getOptions();
     if (userBindField === 'email' && email) {
       user = await this.userRepository.findOne({
         filter: { email },
