@@ -11,12 +11,16 @@ export interface InitializerItemProps {
 }
 
 export const InitializerItem: FC<InitializerItemProps> = (props) => {
-  const { style, className, icon, title, onClick } = props;
+  const { style, className, icon, title, onClick, children } = props;
   const compile = useCompile();
   return (
     <div onClick={onClick} style={style} className={className}>
-      {typeof icon === 'string' ? <Icon type={icon as string} /> : icon}
-      {compile(title)}
+      {children || (
+        <>
+          {typeof icon === 'string' ? <Icon type={icon as string} /> : icon}
+          {compile(title)}
+        </>
+      )}
     </div>
   );
 };

@@ -1,11 +1,12 @@
 import { Button, ButtonProps, DropDownProps, Dropdown, ListProps, Menu, MenuProps, Space } from 'antd';
 import { ComponentType, FC, ReactNode, createContext, useCallback } from 'react';
 import { ISchema, observer } from '@formily/react';
-import { useCompile, useDesignable, useFindComponent } from '../schema-component';
+import { useCompile, useDesignable } from '../schema-component';
 import React from 'react';
 import classNames from 'classnames';
 import { Icon } from '../icon';
 import { ListItemProps } from 'antd/lib/list';
+import { InitializerChildren } from './components/schema-initializer/InitializerChildren';
 
 export type InsertType = (s: ISchema) => void;
 
@@ -115,23 +116,6 @@ export const InitializerButton: FC<SchemaInitializerOptions> = (props) => {
   );
 };
 
-export const RenderChildren: FC<{ children: SchemaInitializerOptions['list'] }> = (props) => {
-  const { children } = props;
-  const { insert } = useSchemaInitializerV2();
-  const findComponent = useFindComponent();
-  return (
-    <>
-      {children
-        .sort((a, b) => (a.sort || 0) - (b.sort || 0))
-        .map((item) => {
-          const { children, type, sort: _unUse, name, Component, ...others } = item;
-          const C = type === 'itemGroup' ? InitializerGroup : findComponent(Component);
-          return React.createElement(C, { key: name, name, insert, ...others }, children);
-        })}
-    </>
-  );
-};
-
 export const InitializerList: FC<SchemaInitializerOptions> = (props) => {
   const { listProps, listStyle, children } = props;
   return (
@@ -158,7 +142,7 @@ export const InitializerGroup: FC<{ title: string; children: SchemaInitializerOp
   return (
     <div>
       <div className="ant-dropdown-menu-item-group-title">{compile(title)}</div>
-      <RenderChildren>{children}</RenderChildren>
+      <InitializerChildren>{children}</InitializerChildren>
     </div>
   );
 };
@@ -248,7 +232,7 @@ export class SchemaInitializerV2<P1 = ButtonProps, P2 = ListProps<any>, P3 = Lis
     const listStyle = options.listStyle || this.options.listStyle || {};
     return (
       <C {...listProps} style={listStyle}>
-        <RenderChildren>{this.list}</RenderChildren>
+        <InitializerChildren>{this.list}</InitializerChildren>
       </C>
     );
   }

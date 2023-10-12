@@ -1,29 +1,22 @@
-import { merge } from '@formily/shared';
 import React from 'react';
 
-import { SchemaInitializer } from '..';
 import { useCurrentSchema } from '../utils';
+import { InitializerSwitch } from '../../application';
 
 export const InitializerWithSwitch = (props) => {
-  const { type, schema, item, insert, remove: passInRemove } = props;
-  const { exists, remove } = useCurrentSchema(
-    schema?.[type] || item?.schema?.[type],
-    type,
-    item.find,
-    passInRemove ?? item.remove,
-  );
+  const { type, schema, title, schemaInitialize, find, insert, remove: passInRemove } = props;
+  const { exists, remove } = useCurrentSchema(schema?.[type], type, find, passInRemove);
 
   return (
-    <SchemaInitializer.SwitchItem
+    <InitializerSwitch
       checked={exists}
-      title={item.title}
+      title={title}
       onClick={() => {
         if (exists) {
           return remove();
         }
-        const s = merge(schema || {}, item.schema || {});
-        item?.schemaInitialize?.(s);
-        insert(s);
+        schemaInitialize?.(schema);
+        insert(schema);
       }}
     />
   );

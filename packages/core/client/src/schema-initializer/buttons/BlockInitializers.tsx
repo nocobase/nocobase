@@ -158,39 +158,39 @@ export const blockInitializerV2 = new SchemaInitializerV2({
         },
       ],
     },
-    // {
-    //   name: 'filterBlocks',
-    //   Component: InitializerGroup,
-    //   title: '{{t("Filter blocks")}}',
-    //   children: [
-    //     {
-    //       name: 'filterForm',
-    //       title: '{{t("Form")}}',
-    //       Component: 'FilterFormBlockInitializer',
-    //     },
-    //     {
-    //       name: 'filterCollapse',
-    //       title: '{{t("Collapse")}}',
-    //       Component: 'FilterCollapseBlockInitializer',
-    //     },
-    //   ],
-    // },
-    // {
-    //   name: 'media',
-    //   Component: InitializerGroup,
-    //   title: '{{t("Other blocks")}}',
-    //   children: [
-    //     {
-    //       name: 'markdown',
-    //       title: '{{t("Markdown")}}',
-    //       Component: 'MarkdownBlockInitializer',
-    //     },
-    //     {
-    //       name: 'auditLogs',
-    //       title: '{{t("Audit logs")}}',
-    //       Component: 'AuditLogsBlockInitializer',
-    //     },
-    //   ],
-    // },
+    {
+      name: 'filterBlocks',
+      Component: InitializerGroup,
+      title: '{{t("Filter blocks")}}',
+      children: [
+        {
+          name: 'filterForm',
+          title: '{{t("Form")}}',
+          Component: 'FilterFormBlockInitializer',
+        },
+        {
+          name: 'filterCollapse',
+          title: '{{t("Collapse")}}',
+          Component: 'FilterCollapseBlockInitializer',
+        },
+      ],
+    },
+    {
+      name: 'media',
+      Component: InitializerGroup,
+      title: '{{t("Other blocks")}}',
+      children: [
+        {
+          name: 'markdown',
+          title: '{{t("Markdown")}}',
+          Component: 'MarkdownBlockInitializer',
+        },
+        {
+          name: 'auditLogs',
+          title: '{{t("Audit logs")}}',
+          Component: 'AuditLogsBlockInitializer',
+        },
+      ],
+    },
   ],
 });

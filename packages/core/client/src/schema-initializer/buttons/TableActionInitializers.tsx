@@ -1,5 +1,6 @@
 import { useFieldSchema } from '@formily/react';
 import { useCollection } from '../../';
+import { InitializerGroup, SchemaInitializerV2 } from '../../application';
 
 // 表格操作配置
 export const TableActionInitializers = {
@@ -178,3 +179,84 @@ export const TableActionInitializers = {
     },
   ],
 };
+
+export const tableActionInitializersV2 = new SchemaInitializerV2({
+  'data-testid': 'configure-actions-button-of-table-block',
+  title: "{{t('Configure actions')}}",
+  icon: 'SettingOutlined',
+  style: {
+    marginLeft: 8,
+  },
+  list: [
+    {
+      type: 'itemGroup',
+      name: 'actions',
+      title: "{{t('Enable actions')}}",
+      children: [
+        {
+          type: 'item',
+          name: 'filter',
+          title: "{{t('Filter')}}",
+          Component: 'FilterActionInitializer',
+          schema: {
+            'x-align': 'left',
+          },
+        },
+        {
+          type: 'item',
+          title: "{{t('Add new')}}",
+          name: 'add-new',
+          Component: 'CreateActionInitializer',
+          schema: {
+            'x-align': 'right',
+            'x-decorator': 'ACLActionProvider',
+            'x-acl-action-props': {
+              skipScopeCheck: true,
+            },
+          },
+          visible: function useVisible() {
+            const collection = useCollection();
+            return !['view', 'file', 'sql'].includes(collection.template) || collection?.writableView;
+          },
+        },
+        {
+          type: 'item',
+          title: "{{t('Delete')}}",
+          name: 'delete',
+          Component: 'BulkDestroyActionInitializer',
+          schema: {
+            'x-align': 'right',
+            'x-decorator': 'ACLActionProvider',
+          },
+          visible: function useVisible() {
+            const collection = useCollection();
+            return !['view', 'sql'].includes(collection.template) || collection?.writableView;
+          },
+        },
+        {
+          type: 'item',
+          title: "{{t('Refresh')}}",
+          name: 'refresh',
+          Component: 'RefreshActionInitializer',
+          schema: {
+            'x-align': 'right',
+          },
+        },
+        {
+          name: 'toggle',
+          title: "{{t('Expand/Collapse')}}",
+          Component: 'ExpandActionInitializer',
+          schema: {
+            'x-align': 'right',
+          },
+          visible: function useVisible() {
+            const schema = useFieldSchema();
+            const collection = useCollection();
+            const { treeTable } = schema?.parent?.['x-decorator-props'] || {};
+            return collection.tree && treeTable !== false;
+          },
+        },
+      ],
+    },
+  ],
+});
