@@ -1,6 +1,6 @@
 import { gridRowColWrap } from '../utils';
 import { InitializerGroup, SchemaInitializerV2 } from '../../application';
-import { TableBlockInitializer } from '../items';
+import { DetailsBlockInitializerV2, FormBlockInitializerV2, TableBlockInitializerV2 } from '../items';
 
 // 页面里添加区块
 export const BlockInitializers = {
@@ -112,7 +112,7 @@ export const blockInitializerV2 = new SchemaInitializerV2({
   wrap: gridRowColWrap,
   list: [
     {
-      name: 'aa',
+      name: 'dataBlocks',
       Component: InitializerGroup,
       componentProps: {
         title: '{{t("Data blocks")}}',
@@ -120,11 +120,24 @@ export const blockInitializerV2 = new SchemaInitializerV2({
       children: [
         {
           name: 'table',
-          // Component: TableBlockInitializer,
-          Component: () => '123',
+          Component: TableBlockInitializerV2,
           componentProps: {
             title: '{{t("table")}}',
           },
+        },
+        {
+          name: 'form',
+          componentProps: {
+            title: '{{t("Form")}}',
+          },
+          Component: FormBlockInitializerV2,
+        },
+        {
+          name: 'details',
+          componentProps: {
+            title: '{{t("details")}}',
+          },
+          Component: DetailsBlockInitializerV2,
         },
       ],
     },

@@ -17,7 +17,7 @@ export type SchemaInitializerListItemType<P = {}> = {
    */
   sort?: number;
   type?: 'component';
-  Component: ComponentType<P>;
+  Component: ComponentType<P & { name?: string }>;
   componentProps?: P;
   children?: SchemaInitializerListItemType[];
 };
@@ -119,6 +119,23 @@ export const InitializerButton: FC<SchemaInitializerOptions> = (props) => {
   );
 };
 
+export const RenderChildren: FC<{ children: SchemaInitializerOptions['list'] }> = (props) => {
+  const { children } = props;
+  return (
+    <>
+      {children
+        .sort((a, b) => (a.sort || 0) - (b.sort || 0))
+        .map((item) =>
+          React.createElement(
+            item.Component,
+            { key: item.name, name: item.name, ...item.componentProps },
+            item.children,
+          ),
+        )}
+    </>
+  );
+};
+
 export const InitializerList: FC<SchemaInitializerOptions> = (props) => {
   const { listProps, listStyle, children } = props;
   return (
@@ -137,40 +154,18 @@ export const InitializerListItem: FC<SchemaInitializerOptions> = (props) => {
   );
 };
 
-export const InitializerGroup: FC<{ title: string }> = (props) => {
+export const InitializerGroup: FC<{ title: string; children: SchemaInitializerOptions['list']; name: string }> = (
+  props,
+) => {
   const { children, title } = props;
   const compile = useCompile();
   return (
     <div>
       <div className="ant-dropdown-menu-item-group-title">{compile(title)}</div>
-      {children}
+      <RenderChildren>{children}</RenderChildren>
     </div>
   );
 };
-
-// export const InitializerSubMenu: FC<{ title: string; onClick: (args: any) => void; icon: string | ReactNode }> = (
-//   props,
-// ) => {
-//   const { children, title, onClick, icon } = props;
-//   return (
-//     <Menu
-//       items={[
-//         {
-//           key: title,
-//           label: title,
-//           icon: typeof icon === 'string' ? <Icon type={icon as string} /> : icon,
-//           onClick: (opts) => {
-//             onClick({ ...opts, item: props });
-//           },
-//           children: [
-//             { key: 'item1', label: 'item1' },
-//             { key: 'item2', label: 'item2' },
-//           ],
-//         },
-//       ]}
-//     ></Menu>
-//   );
-// };
 
 export class SchemaInitializerV2<P1 = ButtonProps, P2 = ListProps<any>, P3 = ListItemProps> {
   options: SchemaInitializerOptions<P1, P2, P3> = {};
@@ -257,28 +252,22 @@ export class SchemaInitializerV2<P1 = ButtonProps, P2 = ListProps<any>, P3 = Lis
     const listStyle = options.listStyle || this.options.listStyle || {};
     return (
       <C {...listProps} style={listStyle}>
-        {this.renderListItems(this.list, options)}
+        {this.renderListItems(this.list)}
       </C>
     );
   }
 
-  private renderListItems(
-    items: SchemaInitializerListItemType[] = [],
-    options: SchemaInitializerOptions<P1, P2, P3> = {},
-  ) {
+  private renderListItems(items: SchemaInitializerListItemType[] = []) {
     if (items.length === 0) return null;
-    return <>{items.sort((a, b) => (a.sort || 0) - (b.sort || 0)).map((item) => this.renderListItem(item, options))}</>;
+    return <>{items.sort((a, b) => (a.sort || 0) - (b.sort || 0)).map((item) => this.renderListItem(item))}</>;
   }
 
-  private renderListItem(item: SchemaInitializerListItemType, options: SchemaInitializerOptions<P1, P2, P3> = {}) {
+  private renderListItem(item: SchemaInitializerListItemType) {
     const { name, Component, componentProps, children } = item;
-    const C = options.ListItemComponent || this.options.ListItemComponent || InitializerListItem;
-    const listItemProps = options.listItemProps || this.options.listItemProps || {};
-    const listItemStyle = options.listItemStyle || this.options.listItemStyle || {};
     return (
-      <C key={name} {...listItemProps} style={listItemStyle}>
-        {<Component {...componentProps}>{this.renderListItems(children, options)}</Component>}
-      </C>
+      <Component key={name} {...componentProps}>
+        {children}
+      </Component>
     );
   }
 }

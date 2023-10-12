@@ -868,6 +868,28 @@ export const useCollectionDataSourceItems = (componentName) => {
   ];
 };
 
+export const useCollectionDataSourceItemsV2 = (componentName) => {
+  const { t } = useTranslation();
+  const { collections, getCollectionFields } = useCollectionManager();
+  const { getTemplatesByCollection } = useSchemaTemplateManager();
+
+  return [
+    {
+      key: 'tableBlock',
+      type: 'itemGroup',
+      title: null,
+      children: getChildren({
+        collections,
+        getCollectionFields,
+        componentName,
+        searchValue: '',
+        getTemplatesByCollection,
+        t,
+      }),
+    },
+  ];
+};
+
 export const createDetailsBlockSchema = (options) => {
   const {
     formItemInitializers = 'ReadPrettyFormItemInitializers',
