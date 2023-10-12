@@ -39,7 +39,7 @@ export const DynamicComponent = (props: Props) => {
         });
       },
     });
-  }, [JSON.stringify(props.value)]);
+  }, [JSON.stringify(props.value), props.schema]);
   const renderSchemaComponent = useCallback(() => {
     return (
       <FieldContext.Provider value={null}>
