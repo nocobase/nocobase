@@ -1,6 +1,5 @@
 import { gridRowColWrap } from '../utils';
 import { InitializerGroup, SchemaInitializerV2 } from '../../application';
-import { DetailsBlockInitializerV2, FormBlockInitializerV2, TableBlockInitializerV2 } from '../items';
 
 // 页面里添加区块
 export const BlockInitializers = {
@@ -113,33 +112,85 @@ export const blockInitializerV2 = new SchemaInitializerV2({
   list: [
     {
       name: 'dataBlocks',
-      Component: InitializerGroup,
-      componentProps: {
-        title: '{{t("Data blocks")}}',
-      },
+      title: '{{t("Data blocks")}}',
+      // Component: InitializerGroup,
+      type: 'itemGroup',
       children: [
         {
           name: 'table',
-          Component: TableBlockInitializerV2,
-          componentProps: {
-            title: '{{t("table")}}',
-          },
+          title: '{{t("Table")}}',
+          Component: 'TableBlockInitializer',
         },
         {
           name: 'form',
-          componentProps: {
-            title: '{{t("Form")}}',
-          },
-          Component: FormBlockInitializerV2,
+          title: '{{t("Form")}}',
+          Component: 'FormBlockInitializer',
         },
         {
           name: 'details',
-          componentProps: {
-            title: '{{t("details")}}',
-          },
-          Component: DetailsBlockInitializerV2,
+          title: '{{t("Details")}}',
+          Component: 'DetailsBlockInitializer',
+        },
+        {
+          name: 'List',
+          title: '{{t("List")}}',
+          Component: 'ListBlockInitializer',
+        },
+        {
+          name: 'GridCard',
+          title: '{{t("Grid Card")}}',
+          Component: 'GridCardBlockInitializer',
+        },
+        {
+          name: 'calendar',
+          title: '{{t("Calendar")}}',
+          Component: 'CalendarBlockInitializer',
+        },
+        {
+          name: 'kanban',
+          title: '{{t("Kanban")}}',
+          Component: 'KanbanBlockInitializer',
+        },
+        {
+          name: 'Gantt',
+          title: '{{t("Gantt")}}',
+          Component: 'GanttBlockInitializer',
         },
       ],
     },
+    // {
+    //   name: 'filterBlocks',
+    //   Component: InitializerGroup,
+    //   title: '{{t("Filter blocks")}}',
+    //   children: [
+    //     {
+    //       name: 'filterForm',
+    //       title: '{{t("Form")}}',
+    //       Component: 'FilterFormBlockInitializer',
+    //     },
+    //     {
+    //       name: 'filterCollapse',
+    //       title: '{{t("Collapse")}}',
+    //       Component: 'FilterCollapseBlockInitializer',
+    //     },
+    //   ],
+    // },
+    // {
+    //   name: 'media',
+    //   Component: InitializerGroup,
+    //   title: '{{t("Other blocks")}}',
+    //   children: [
+    //     {
+    //       name: 'markdown',
+    //       title: '{{t("Markdown")}}',
+    //       Component: 'MarkdownBlockInitializer',
+    //     },
+    //     {
+    //       name: 'auditLogs',
+    //       title: '{{t("Audit logs")}}',
+    //       Component: 'AuditLogsBlockInitializer',
+    //     },
+    //   ],
+    // },
   ],
 });

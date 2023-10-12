@@ -1,4 +1,4 @@
-import { TableOutlined } from '@ant-design/icons';
+import Icon, { TableOutlined } from '@ant-design/icons';
 import { Menu } from 'antd';
 import React, { useCallback, useMemo } from 'react';
 import { useStyles } from './style';
@@ -7,7 +7,6 @@ import { SchemaInitializerItemOptions } from '../../../schema-initializer';
 import { useSchemaTemplateManager } from '../../../schema-templates';
 import { useCollectionDataSourceItemsV2 } from '../../../schema-initializer/utils';
 import { useSchemaInitializerV2 } from '../../SchemaInitializer';
-import { Icon } from '../../../icon';
 
 export const DataBlockInitializerV2 = (props) => {
   const {

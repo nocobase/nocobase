@@ -1,6 +1,6 @@
 import { TableOutlined } from '@ant-design/icons';
 import { ISchema } from '@formily/react';
-import { createTableBlockSchema, SchemaInitializer } from '@nocobase/client';
+import { createTableBlockSchema, InitializerItem } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -19,7 +19,7 @@ export const AuditLogsBlockInitializer = (props) => {
   });
 
   return (
-    <SchemaInitializer.Item
+    <InitializerItem
       {...props}
       icon={<TableOutlined />}
       onClick={() => {

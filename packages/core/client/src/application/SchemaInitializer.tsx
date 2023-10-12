@@ -1,7 +1,7 @@
 import { Button, ButtonProps, DropDownProps, Dropdown, ListProps, Menu, MenuProps, Space } from 'antd';
 import { ComponentType, FC, ReactNode, createContext, useCallback } from 'react';
 import { ISchema, observer } from '@formily/react';
-import { useCompile, useDesignable } from '../schema-component';
+import { useCompile, useDesignable, useFindComponent } from '../schema-component';
 import React from 'react';
 import classNames from 'classnames';
 import { Icon } from '../icon';
@@ -9,17 +9,17 @@ import { ListItemProps } from 'antd/lib/list';
 
 export type InsertType = (s: ISchema) => void;
 
-export type SchemaInitializerListItemType<P = {}> = {
+export type SchemaInitializerListItemType<P = {}> = P & {
   name: string;
   /**
    * default: 0
    * 值越小，排序越靠前
    */
   sort?: number;
-  type?: 'component';
-  Component: ComponentType<P & { name?: string }>;
-  componentProps?: P;
+  type?: 'itemGroup' | 'itemMenu' | 'item';
+  Component?: string | ComponentType<P & { name?: string; insert?: InsertType }>;
   children?: SchemaInitializerListItemType[];
+  [index: string]: any;
 };
 
 export interface SchemaInitializerOptions<P1 = ButtonProps, P2 = ListProps<any>, P3 = ListItemProps> {
@@ -34,10 +34,6 @@ export interface SchemaInitializerOptions<P1 = ButtonProps, P2 = ListProps<any>,
   ListComponent?: ComponentType<SchemaInitializerOptions<P1, P2, P3>>;
   listProps?: P2;
   listStyle?: React.CSSProperties;
-
-  ListItemComponent?: ComponentType<SchemaInitializerOptions<P1, P2, P3>>;
-  listItemProps?: P3;
-  listItemStyle?: React.CSSProperties;
 
   dropdownProps?: DropDownProps;
   designable?: boolean;
@@ -121,17 +117,17 @@ export const InitializerButton: FC<SchemaInitializerOptions> = (props) => {
 
 export const RenderChildren: FC<{ children: SchemaInitializerOptions['list'] }> = (props) => {
   const { children } = props;
+  const { insert } = useSchemaInitializerV2();
+  const findComponent = useFindComponent();
   return (
     <>
       {children
         .sort((a, b) => (a.sort || 0) - (b.sort || 0))
-        .map((item) =>
-          React.createElement(
-            item.Component,
-            { key: item.name, name: item.name, ...item.componentProps },
-            item.children,
-          ),
-        )}
+        .map((item) => {
+          const { children, type, sort: _unUse, name, Component, ...others } = item;
+          const C = type === 'itemGroup' ? InitializerGroup : findComponent(Component);
+          return React.createElement(C, { key: name, name, insert, ...others }, children);
+        })}
     </>
   );
 };
@@ -252,22 +248,8 @@ export class SchemaInitializerV2<P1 = ButtonProps, P2 = ListProps<any>, P3 = Lis
     const listStyle = options.listStyle || this.options.listStyle || {};
     return (
       <C {...listProps} style={listStyle}>
-        {this.renderListItems(this.list)}
+        <RenderChildren>{this.list}</RenderChildren>
       </C>
-    );
-  }
-
-  private renderListItems(items: SchemaInitializerListItemType[] = []) {
-    if (items.length === 0) return null;
-    return <>{items.sort((a, b) => (a.sort || 0) - (b.sort || 0)).map((item) => this.renderListItem(item))}</>;
-  }
-
-  private renderListItem(item: SchemaInitializerListItemType) {
-    const { name, Component, componentProps, children } = item;
-    return (
-      <Component key={name} {...componentProps}>
-        {children}
-      </Component>
     );
   }
 }

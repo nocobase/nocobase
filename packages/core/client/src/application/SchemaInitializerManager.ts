@@ -32,13 +32,15 @@ export class SchemaInitializerManager {
 
   render(name: string, options?: SchemaInitializerButtonProps) {
     const initializer = this.get(name);
-    if (!initializer) throw new Error(`[nocobase]: Schema initializer "${name}" not found`);
+    if (!initializer) return null;
     return initializer.render(options);
   }
 
   getRender(name: string, options?: SchemaInitializerButtonProps) {
     const initializer = this.get(name);
-    if (!initializer) throw new Error(`[nocobase]: Schema initializer "${name}" not found`);
+    if (!initializer) {
+      return () => null;
+    }
     return initializer.getRender(options);
   }
 }

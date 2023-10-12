@@ -4,7 +4,7 @@ import { message } from 'antd';
 import cloneDeep from 'lodash/cloneDeep';
 import get from 'lodash/get';
 import set from 'lodash/set';
-import React, { useContext } from 'react';
+import React, { ComponentType, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { APIClient, useAPIClient } from '../../api-client';
 import { SchemaComponentContext } from '../context';
@@ -571,6 +571,22 @@ export class Designable {
       ...opts,
     });
   }
+}
+
+export function useFindComponent() {
+  const { components } = useContext(SchemaOptionsContext);
+
+  const find = (component: string | ComponentType) => {
+    if (!component) {
+      return null;
+    }
+    if (typeof component !== 'string') {
+      return component;
+    }
+    return get(components, component);
+  };
+
+  return find;
 }
 
 // TODO
