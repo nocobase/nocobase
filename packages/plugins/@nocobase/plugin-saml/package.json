@@ -21,6 +21,7 @@
     "@nocobase/client": "0.x",
     "@nocobase/database": "0.x",
     "@nocobase/server": "0.x",
-    "@nocobase/test": "0.x"
+    "@nocobase/test": "0.x",
+    "@nocobase/sdk": "0.x"
   }
 }
