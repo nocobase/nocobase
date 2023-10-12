@@ -4,7 +4,7 @@ import { observer } from '@formily/react';
 import { FormItem, Input, SchemaComponent } from '@nocobase/client';
 import { Card, Space, message } from 'antd';
 import React from 'react';
-import { useOidcTranslation } from './locale';
+import { lang, useOidcTranslation } from './locale';
 
 const schema = {
   type: 'object',
@@ -13,24 +13,28 @@ const schema = {
       type: 'object',
       properties: {
         issuer: {
+          type: 'string',
           title: '{{t("Issuer")}}',
           'x-component': 'Input',
           'x-decorator': 'FormItem',
           required: true,
         },
         clientId: {
+          type: 'string',
           title: '{{t("Client ID")}}',
           'x-component': 'Input',
           'x-decorator': 'FormItem',
           required: true,
         },
         clientSecret: {
+          type: 'string',
           title: '{{t("Client Secret")}}',
           'x-component': 'Input',
           'x-decorator': 'FormItem',
           required: true,
         },
         scope: {
+          type: 'string',
           title: '{{t("scope")}}',
           'x-component': 'Input',
           'x-decorator': 'FormItem',
@@ -39,6 +43,7 @@ const schema = {
           },
         },
         idTokenSignedResponseAlg: {
+          type: 'string',
           title: '{{t("id_token signed response algorithm")}}',
           'x-component': 'Select',
           'x-decorator': 'FormItem',
@@ -58,11 +63,13 @@ const schema = {
           ],
         },
         http: {
+          type: 'boolean',
           title: '{{t("HTTP")}}',
           'x-component': 'Checkbox',
           'x-decorator': 'FormItem',
         },
         port: {
+          type: 'number',
           title: '{{t("Port")}}',
           'x-component': 'InputNumber',
           'x-decorator': 'FormItem',
@@ -102,9 +109,10 @@ const schema = {
                       placeholder: '{{t("target")}}',
                     },
                     enum: [
-                      { label: 'Nickname', value: 'nickname' },
-                      { label: 'Email', value: 'email' },
-                      { label: 'Phone', value: 'phone' },
+                      { label: lang('Nickname'), value: 'nickname' },
+                      { label: lang('Email'), value: 'email' },
+                      { label: lang('Phone'), value: 'phone' },
+                      { label: lang('Username'), value: 'username' },
                     ],
                   },
                   remove: {
@@ -124,11 +132,35 @@ const schema = {
             },
           },
         },
-        usage: {
-          type: 'void',
-          'x-component': 'Usage',
+        userBindField: {
+          type: 'string',
+          title: '{{t("Use this field to bind the user")}}',
+          'x-component': 'Select',
+          'x-decorator': 'FormItem',
+          default: 'email',
+          enum: [
+            { label: lang('Email'), value: 'email' },
+            { label: lang('Username'), value: 'username' },
+          ],
+          required: true,
         },
       },
+    },
+    public: {
+      type: 'object',
+      properties: {
+        autoSignup: {
+          'x-decorator': 'FormItem',
+          type: 'boolean',
+          title: '{{t("Sign up automatically when the user does not exist")}}',
+          'x-component': 'Checkbox',
+          default: true,
+        },
+      },
+    },
+    usage: {
+      type: 'void',
+      'x-component': 'Usage',
     },
   },
 };
