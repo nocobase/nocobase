@@ -1,7 +1,7 @@
 import { enableToConfig, expect, test } from '@nocobase/test/client';
 
 test.describe('menu', () => {
-  test.skip('create new page, then delete', async ({ page }) => {
+  test('create new page, then delete', async ({ page }) => {
     await page.goto('/');
     await enableToConfig(page);
 
@@ -20,7 +20,7 @@ test.describe('menu', () => {
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'OK' }).click();
   });
-  test.skip('edit menu title', async ({ page, mockPage }) => {
+  test('edit menu title', async ({ page, mockPage }) => {
     await mockPage({
       name: 'page title',
     }).goto();
@@ -35,7 +35,7 @@ test.describe('menu', () => {
     await page.getByText('page title1').click();
     await expect(page.getByTitle('page title1')).toBeVisible();
   });
-  test.skip('move menu ', async ({ page, mockPage }) => {
+  test('move menu ', async ({ page, mockPage }) => {
     await mockPage({
       name: 'page1',
     }).goto();
