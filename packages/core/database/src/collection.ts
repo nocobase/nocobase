@@ -108,7 +108,7 @@ export interface CollectionContext {
 
 export class Collection<
   TModelAttributes extends {} = any,
-  TCreationAttributes extends {} = TModelAttributes
+  TCreationAttributes extends {} = TModelAttributes,
 > extends EventEmitter {
   options: CollectionOptions;
   context: CollectionContext;
