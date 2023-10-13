@@ -36,7 +36,7 @@ test.describe('workflow manage', () => {
     await page.getByTestId('filter-action').click();
     await page.getByRole('textbox').fill(workFlowName);
     await page.getByRole('button', { name: 'Submit' }).click();
-    await page.getByRole('cell', { name: 'View Edit Duplicate Delete' }).getByTestId('delete-action').click();
+    await page.getByRole('cell', { name: 'Configure Edit Duplicate Delete' }).getByTestId('delete-action').click();
     await page.getByRole('button', { name: 'OK' }).click();
     await expect(page.getByText(workFlowName)).toBeHidden();
   });

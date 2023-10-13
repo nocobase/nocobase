@@ -248,8 +248,7 @@ export default {
   Distinct: '去重',
   'Query result': '查询结果',
 
-  'Trigger in executed workflow cannot be modified': '已经执行过工作流的触发器不能被修改',
-  'Node in executed workflow cannot be modified': '已经执行过工作流中的节点不能被修改',
+  'Executed workflow cannot be modified': '已经执行过的工作流不能被修改',
   'Can not delete': '无法删除',
   'The result of this node has been referenced by other nodes ({{nodes}}), please remove the usage before deleting.':
     '该节点的执行结果已被其他节点（{{nodes}}）引用，删除前请先移除引用。',

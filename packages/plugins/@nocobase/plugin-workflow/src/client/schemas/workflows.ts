@@ -311,7 +311,7 @@ export const workflowSchema: ISchema = {
                     split: '|',
                   },
                   properties: {
-                    view: {
+                    configure: {
                       type: 'void',
                       'x-component': 'WorkflowLink',
                     },
