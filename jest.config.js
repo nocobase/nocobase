@@ -15,12 +15,17 @@ const config = {
     }),
   },
   transform: {
-    '^.+\\.{ts|tsx}?$': [
-      'ts-jest',
+    '^.+\\.(t|j)sx?$': [
+      '@swc/jest',
       {
-        babelConfig: false,
-        tsconfig: './tsconfig.jest.json',
-        diagnostics: false,
+        jsc: {
+          parser: {
+            syntax: 'typescript',
+            tsx: false,
+            decorators: true,
+            dynamicImport: false,
+          },
+        },
       },
     ],
   },
