@@ -65,6 +65,7 @@ export const Action: ComposedAction = observer(
     let actionTitle = title || compile(fieldSchema.title);
     actionTitle = lodash.isString(actionTitle) ? t(actionTitle) : actionTitle;
     useEffect(() => {
+      field.linkageProperty = {};
       linkageRules
         .filter((k) => !k.disabled)
         .forEach((v) => {
