@@ -1,4 +1,4 @@
-import { Authenticator, useRedirect } from '@nocobase/client';
+import { Authenticator } from '@nocobase/client';
 import React, { useEffect } from 'react';
 import { LoginOutlined } from '@ant-design/icons';
 import { Button, Space, message } from 'antd';
@@ -6,7 +6,6 @@ import { useLocation } from 'react-router-dom';
 import { getSubAppName } from '@nocobase/sdk';
 
 export const SigninPage = (props: { authenticator: Authenticator }) => {
-  const redirect = useRedirect();
   const location = useLocation();
 
   const authenticator = props.authenticator;
@@ -14,7 +13,6 @@ export const SigninPage = (props: { authenticator: Authenticator }) => {
   const app = getSubAppName() || 'main';
   const login = async () => {
     window.location.replace(`/api/cas:login?authenticator=${authenticator.name}&__appName=${app}`);
-    redirect();
   };
 
   useEffect(() => {
