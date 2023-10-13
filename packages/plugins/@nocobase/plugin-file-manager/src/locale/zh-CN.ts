@@ -28,4 +28,5 @@ export default {
   'Will be used for API': '将用于 API',
   'Default storage will be used when not selected': '留空将使用默认存储空间',
   'Keep file in storage when destroy record': '删除记录时保留文件',
+  'See more': '更多请查阅',
 };
