@@ -17,7 +17,7 @@ test.describe('menu', () => {
     });
     await page.waitForTimeout(1000); // 等待1秒钟
     await menuItem.click();
-    // 获取悬停后的背景颜色
+    // 获取激活后的背景高亮颜色
     const activedBackgroundColor = await menuItem.evaluate((element) => {
       const computedStyle = window.getComputedStyle(element);
       return computedStyle.backgroundColor;
