@@ -88,4 +88,25 @@ test.describe('menu', () => {
     const page4 = await page.getByRole('menu').getByText('page4').boundingBox();
     expect(page4.x).toBeLessThan(page3.x);
   });
+
+  test('insert page after', async ({ page, mockPage }) => {
+    await mockPage({
+      name: 'page5',
+    }).goto();
+
+    await page.getByRole('menu').getByText('page5').click();
+    await page.getByRole('menu').getByText('page5').hover();
+    await page.getByTestId('designer-schema-settings').hover();
+
+    await page.getByRole('menuitem', { name: 'Insert after right' }).hover();
+    await page.waitForTimeout(1000); // 等待1秒钟
+
+    await page.getByRole('menuitem', { name: 'Page', exact: true }).click();
+    await page.getByRole('textbox').fill('page6');
+    await page.getByRole('button', { name: 'OK' }).click();
+
+    const page6 = await page.getByRole('menu').getByText('page6').boundingBox();
+    const page5 = await page.getByRole('menu').getByText('page5').boundingBox();
+    expect(page5.x).toBeLessThan(page6.x);
+  });
 });
