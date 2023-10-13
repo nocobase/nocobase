@@ -22,9 +22,16 @@ test.describe('menu', () => {
       const computedStyle = window.getComputedStyle(element);
       return computedStyle.backgroundColor;
     });
-
+    // 菜单高亮/进入空页面只有一个add block 按钮
     await expect(activedBackgroundColor).not.toBe(defaultBackgroundColor);
     await expect(page.getByTestId('add-block-button-in-page')).toBeVisible();
+    await expect(page.getByTitle('new page')).toBeVisible();
+    const divElement = await page.locator('.nb-page-content');
+    const buttons = await divElement.locator('button').count();
+    const divText = await divElement.textContent();
+
+    await expect(buttons).toEqual(1);
+    await expect(divText).toBe('Add block');
 
     // 删除页面，避免影响其他测试
     await page.getByRole('menu').getByText('new page').hover();
