@@ -10,8 +10,20 @@ test.describe('menu', () => {
     await page.getByRole('textbox').click();
     await page.getByRole('textbox').fill('new page');
     await page.getByRole('button', { name: 'OK' }).click();
-    await page.getByText('new page').click();
+    const menuItem = await page.getByRole('menu').locator('li').filter({ hasText: 'new page' });
+    const defaultBackgroundColor = await menuItem.evaluate((element) => {
+      const computedStyle = window.getComputedStyle(element);
+      return computedStyle.backgroundColor;
+    });
+    await page.waitForTimeout(1000); // 等待1秒钟
+    await menuItem.click();
+    // 获取悬停后的背景颜色
+    const activedBackgroundColor = await menuItem.evaluate((element) => {
+      const computedStyle = window.getComputedStyle(element);
+      return computedStyle.backgroundColor;
+    });
 
+    await expect(activedBackgroundColor).not.toBe(defaultBackgroundColor);
     await expect(page.getByTestId('add-block-button-in-page')).toBeVisible();
 
     // 删除页面，避免影响其他测试
