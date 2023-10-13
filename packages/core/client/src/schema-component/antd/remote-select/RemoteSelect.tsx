@@ -184,7 +184,7 @@ const InternalRemoteSelect = connect(
       }
       const valueOptions =
         (v != null && (Array.isArray(v) ? v : [{ ...v, [fieldNames.value]: v[fieldNames.value] || v }])) || [];
-      return uniqBy(data?.data?.concat(valueOptions) || [], fieldNames.value);
+      return uniqBy(data?.data?.concat(valueOptions ?? []), fieldNames.value);
     }, [value, defaultValue, data?.data, fieldNames.value]);
     const onDropdownVisibleChange = (visible) => {
       setOpen(visible);

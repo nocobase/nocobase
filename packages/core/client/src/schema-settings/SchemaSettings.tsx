@@ -878,7 +878,6 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
       await api.resource('uiSchemas').insert({ values: initialSchema });
       setSchemaUid(initialSchema['x-uid']);
     }
-
     if (typeof others?.beforeOpen === 'function') {
       others?.beforeOpen?.();
     }
@@ -887,7 +886,6 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
   }, [api, ctx, dn, fieldSchema, initialSchema, schemaUid]);
 
   const onKeyDown = useCallback((e: React.KeyboardEvent<HTMLLIElement>): void => e.stopPropagation(), []);
-
   return (
     <>
       <SchemaSettings.Item {...others} onClick={openAssignedFieldValueHandler} onKeyDown={onKeyDown}>
