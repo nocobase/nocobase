@@ -922,7 +922,7 @@ export const ActionDesigner = (props) => {
 
         {isChildCollectionAction && <SchemaSettings.EnableChildCollections collectionName={name} />}
 
-        {<RemoveButton />}
+        {!fieldSchema?.['x-action-settings']?.undeletable && <RemoveButton />}
       </MenuGroup>
     </GeneralSchemaDesigner>
   );
