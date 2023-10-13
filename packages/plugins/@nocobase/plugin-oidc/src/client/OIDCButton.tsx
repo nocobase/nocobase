@@ -1,5 +1,5 @@
 import { LoginOutlined } from '@ant-design/icons';
-import { Authenticator, css, useAPIClient, useCurrentUserContext, useRedirect } from '@nocobase/client';
+import { Authenticator, css, useAPIClient } from '@nocobase/client';
 import { Button, Space, message } from 'antd';
 import React, { useEffect } from 'react';
 import { useOidcTranslation } from './locale';
@@ -13,9 +13,7 @@ export interface OIDCProvider {
 export const OIDCButton = ({ authenticator }: { authenticator: Authenticator }) => {
   const { t } = useOidcTranslation();
   const api = useAPIClient();
-  const redirect = useRedirect();
   const location = useLocation();
-  const { refreshAsync: refresh } = useCurrentUserContext();
 
   const login = async () => {
     const response = await api.request({
@@ -32,7 +30,6 @@ export const OIDCButton = ({ authenticator }: { authenticator: Authenticator }) 
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const token = params.get('token');
     const name = params.get('authenticator');
     const error = params.get('error');
     if (name !== authenticator.name) {
@@ -40,14 +37,6 @@ export const OIDCButton = ({ authenticator }: { authenticator: Authenticator }) 
     }
     if (error) {
       message.error(t(error));
-      return;
-    }
-    if (token) {
-      api.auth.setToken(token);
-      api.auth.setAuthenticator(name);
-      refresh()
-        .then(() => redirect())
-        .catch((err) => console.log(err));
       return;
     }
   });

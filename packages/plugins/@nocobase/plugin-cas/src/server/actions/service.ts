@@ -16,7 +16,7 @@ export const service = async (ctx: Context, next: Next) => {
   const auth = (await ctx.app.authManager.get(authenticator, ctx)) as CASAuth;
   try {
     const { token } = await auth.signIn();
-    ctx.redirect(`${prefix}/signin?authenticator=${authenticator}&token=${token}`);
+    ctx.redirect(`${prefix}/admin?authenticator=${authenticator}&token=${token}`);
   } catch (error) {
     ctx.redirect(`${prefix}/signin?authenticator=${authenticator}&error=${error.message}`);
   }
