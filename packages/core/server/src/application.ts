@@ -749,7 +749,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._version = new ApplicationVersion(this);
   }
 
-  private createDatabase(options: ApplicationOptions) {
+  protected createDatabase(options: ApplicationOptions) {
     const db = new Database({
       ...(options.database instanceof Database ? options.database.options : options.database),
       migrator: {

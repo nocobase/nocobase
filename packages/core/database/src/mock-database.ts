@@ -55,6 +55,11 @@ export function mockDatabase(options: IDatabaseOptions = {}): MockDatabase {
   const dbOptions = merge(getConfigByEnv(), options) as any;
 
   if (process.env['DB_TEST_DISTRIBUTOR_PORT']) {
+    const dialect = options.dialect;
+    if (dialect === 'sqlite' && options.storage == ':memory:') {
+      return;
+    }
+
     dbOptions.hooks = dbOptions.hooks || {};
     dbOptions.customHooks = dbOptions.customHooks || {};
 

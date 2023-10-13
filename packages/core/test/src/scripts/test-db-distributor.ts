@@ -15,8 +15,8 @@ class DBManager {
   }
 
   relase(name: string) {
-    console.log('release', name);
     this.aquiredDBs.delete(name);
+    console.log(`release ${name}, current used ${this.aquiredDBs.size()}`);
   }
 
   isAquired(name: string) {

@@ -81,6 +81,19 @@ export class MockServer extends Application {
     await this.db.clean({ drop: true });
   }
 
+  protected createDatabase(options: ApplicationOptions) {
+    let database;
+    if (options?.database instanceof Database) {
+      database = options.database;
+    } else {
+      database = mockDatabase(<any>options?.database || {});
+    }
+
+    database.setLogger(this._logger);
+
+    return database;
+  }
+
   async destroy(options: any = {}): Promise<void> {
     await super.destroy(options);
 
@@ -195,17 +208,9 @@ export function mockServer(options: ApplicationOptions = {}) {
     PluginManager.findPackagePatched = true;
   }
 
-  let database;
-  if (options?.database instanceof Database) {
-    database = options.database;
-  } else {
-    database = mockDatabase(<any>options?.database || {});
-  }
-
   const app = new MockServer({
     acl: false,
     ...options,
-    database,
   });
 
   return app;
