@@ -16,6 +16,7 @@ import { DndContext, useDesignable, useTableSize } from '../..';
 import {
   RecordIndexProvider,
   RecordProvider,
+  useApp,
   useSchemaInitializer,
   useTableBlockContext,
   useTableSelectorContext,
@@ -34,9 +35,13 @@ const useArrayField = (props) => {
 const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => {
   const field = useArrayField(props);
   const schema = useFieldSchema();
+  const app = useApp();
   const { schemaInWhitelist } = useACLFieldWhitelist();
   const { designable } = useDesignable();
-  const { exists, render } = useSchemaInitializer(schema['x-initializer']);
+  const { exists, render } = app.schemaInitializerManager.getRender(
+    schema['x-initializer'],
+    schema['x-initializer-props'],
+  );
   const columns = schema
     .reduceProperties((buf, s) => {
       if (isColumnComponent(s) && schemaInWhitelist(Object.values(s.properties || {}).pop())) {

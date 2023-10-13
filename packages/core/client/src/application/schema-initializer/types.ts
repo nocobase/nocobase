@@ -15,7 +15,8 @@ export type SchemaInitializerListItemType<P = {}> = P & {
   sort?: number;
   type?: 'itemGroup' | 'itemMenu' | 'item' | 'divider' | 'subMenu';
   Component?: string | ComponentType<P & { name?: string; insert?: InsertType }>;
-  children?: SchemaInitializerListItemType[];
+  children?: SchemaInitializerListItemType[] | ComponentType;
+  useChildren: () => SchemaInitializerListItemType[];
   [index: string]: any;
 };
 

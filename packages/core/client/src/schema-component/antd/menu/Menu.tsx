@@ -366,7 +366,7 @@ export const Menu: ComposedMenu = observer(
     const { refresh } = useDesignable();
     const api = useAPIClient();
     // const { render } = useSchemaInitializer(schema['x-initializer']);
-    const render = app.schemaInitializerManager.getRender(schema['x-initializer'], schema['x-initializer-props']);
+    const { render } = app.schemaInitializerManager.getRender(schema['x-initializer'], schema['x-initializer-props']);
     const sideMenuRef = useSideMenuRef();
     const [selectedKeys, setSelectedKeys] = useState<string[]>();
     const [defaultSelectedKeys, setDefaultSelectedKeys] = useState(() => {

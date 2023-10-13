@@ -3,7 +3,6 @@ import { RecursionField, observer, useFieldSchema } from '@formily/react';
 import { Space } from 'antd';
 import React, { CSSProperties, useContext } from 'react';
 import { createPortal } from 'react-dom';
-import { useSchemaInitializer } from '../../../schema-initializer';
 import { DndContext } from '../../common';
 import { useDesignable, useProps } from '../../hooks';
 import { useApp } from '../../../application';
@@ -53,7 +52,7 @@ export const ActionBar = observer(
     const { layout = 'tow-columns', style, spaceProps, ...others } = { ...useProps(props), ...forceProps } as any;
     const fieldSchema = useFieldSchema();
     const app = useApp();
-    const render = app.schemaInitializerManager.getRender(
+    const { render } = app.schemaInitializerManager.getRender(
       fieldSchema['x-initializer'],
       fieldSchema['x-initializer-props'],
     );

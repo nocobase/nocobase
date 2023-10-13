@@ -38,8 +38,15 @@ export const useInitializerComponent = () => {
 
 export type UseInitializerChildrenResult = Omit<SchemaInitializerListItemType, 'sort' | 'type' | 'visible'>;
 
-export const useInitializerChildren = (children: SchemaInitializerOptions['list']): UseInitializerChildrenResult[] => {
+export const isComponentChildren = (val: unknown): val is ComponentType => {
+  return !Array.isArray(val);
+};
+
+export const useInitializerChildren = (
+  children: SchemaInitializerOptions['list'],
+): UseInitializerChildrenResult[] | ComponentType => {
   const findInitializerComponent = useInitializerComponent();
+  if (isComponentChildren(children)) return children;
   return children
     .sort((a, b) => (a.sort || 0) - (b.sort || 0))
     .map((item) => {

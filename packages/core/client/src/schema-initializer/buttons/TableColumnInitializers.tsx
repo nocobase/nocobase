@@ -10,6 +10,7 @@ import {
   useInheritsTableColumnInitializerFields,
   useTableColumnInitializerFields,
 } from '../utils';
+import { SchemaInitializerV2 } from '../../application';
 
 // 表格列配置
 export const TableColumnInitializers = (props: any) => {
@@ -96,3 +97,35 @@ export const TableColumnInitializers = (props: any) => {
     </SchemaInitializer.Button>
   );
 };
+
+export const tableColumnInitializer = new SchemaInitializerV2({
+  'data-testid': 'configure-columns-button-of-table-block',
+  insertPosition: 'beforeEnd',
+  icon: 'SettingOutlined',
+  title: '{{t("Configure columns")}}',
+  wrap: (s) => {
+    if (s['x-action-column']) {
+      return s;
+    }
+    return {
+      type: 'void',
+      'x-decorator': 'TableV2.Column.Decorator',
+      'x-designer': 'TableV2.Column.Designer',
+      'x-component': 'TableV2.Column',
+      properties: {
+        [s.name]: {
+          ...s,
+        },
+      },
+    };
+  },
+  list: [
+    {
+      name: 'displayFields',
+      type: 'itemGroup',
+      title: '{{t("Display fields")}}',
+      // children: DisplayFields,
+      useChildren: useTableColumnInitializerFields,
+    },
+  ],
+});

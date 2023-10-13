@@ -1,10 +1,16 @@
 import React, { FC } from 'react';
-import { UseInitializerChildrenResult, useInitializerChildren, useSchemaInitializerV2 } from '../hooks';
-import { SchemaInitializerOptions } from '../types';
+import {
+  UseInitializerChildrenResult,
+  isComponentChildren,
+  useInitializerChildren,
+  useSchemaInitializerV2,
+} from '../hooks';
+import { SchemaInitializerListItemType } from '../types';
 
-export const InitializerChildren: FC<{ children: SchemaInitializerOptions['list'] }> = (props) => {
+export const InitializerChildren: FC<{ children: SchemaInitializerListItemType[] }> = (props) => {
   const { children } = props;
   const validChildren = useInitializerChildren(children);
+  if (isComponentChildren(validChildren)) return React.createElement(validChildren);
   return (
     <>
       {validChildren.map((item) => (
@@ -14,9 +20,11 @@ export const InitializerChildren: FC<{ children: SchemaInitializerOptions['list'
   );
 };
 
+const useChildrenDefault = () => undefined;
 const InitializerChild: FC<UseInitializerChildrenResult> = (props) => {
   const { insert } = useSchemaInitializerV2();
-  const { children, name, Component, ...others } = props;
+  const { children, useChildren = useChildrenDefault, name, Component, ...others } = props;
+  const useChildrenRes = useChildren();
   // TODO：insert 要移除改为 hooks
-  return React.createElement(Component, { key: name, name, insert, ...others }, children);
+  return React.createElement(Component, { key: name, name, insert, ...others }, useChildrenRes || children);
 };

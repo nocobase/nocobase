@@ -49,8 +49,14 @@ export class SchemaInitializerManager {
   ) {
     const initializer = this.get<P1, P2, P3>(name);
     if (!initializer) {
-      return () => null;
+      return {
+        exists: false,
+        render: () => null,
+      };
     }
-    return initializer.getRender(options);
+    return {
+      exists: true,
+      render: initializer.getRender(options),
+    };
   }
 }

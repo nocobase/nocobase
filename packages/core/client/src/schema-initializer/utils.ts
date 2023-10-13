@@ -126,8 +126,9 @@ export const useTableColumnInitializerFields = () => {
       // interfaceConfig?.schemaInitialize?.(schema, { field, readPretty: true, block: 'Table' });
       return {
         type: 'item',
+        name: field.name,
         title: field?.uiSchema?.title || field.name,
-        component: 'TableCollectionFieldInitializer',
+        Component: 'TableCollectionFieldInitializer',
         find: findTableColumn,
         remove: removeTableColumn,
         schemaInitialize: (s) => {

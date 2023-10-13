@@ -306,7 +306,7 @@ export const Grid: any = observer(
     const fieldSchema = useFieldSchema();
     // const { render, InitializerComponent } = useSchemaInitializer(fieldSchema['x-initializer']);
     const { InitializerComponent } = useSchemaInitializer(fieldSchema['x-initializer']);
-    const render = app.schemaInitializerManager.getRender(
+    const { render } = app.schemaInitializerManager.getRender(
       fieldSchema['x-initializer'],
       fieldSchema['x-initializer-props'],
     );
