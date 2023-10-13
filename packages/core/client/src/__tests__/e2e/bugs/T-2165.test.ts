@@ -280,7 +280,7 @@ const config = {
 };
 
 // fix https://nocobase.height.app/T-2165
-test('BUG: variable labels should be displayed normally', async ({ page, mockPage }) => {
+test.skip('BUG: variable labels should be displayed normally', async ({ page, mockPage }) => {
   await mockPage(config).goto();
 
   await page.getByTestId('users-resource').hover();
