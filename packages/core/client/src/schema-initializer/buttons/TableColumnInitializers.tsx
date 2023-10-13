@@ -10,7 +10,8 @@ import {
   useInheritsTableColumnInitializerFields,
   useTableColumnInitializerFields,
 } from '../utils';
-import { SchemaInitializerV2 } from '../../application';
+import { InitializerChildren, SchemaInitializerV2 } from '../../application';
+import { SchemaInitializerItemOptions } from '../types';
 
 // 表格列配置
 export const TableColumnInitializers = (props: any) => {
@@ -98,6 +99,41 @@ export const TableColumnInitializers = (props: any) => {
   );
 };
 
+const ParentCollectionFields = () => {
+  const inheritFields = useInheritsTableColumnInitializerFields();
+  const { t } = useTranslation();
+  const compile = useCompile();
+  if (!inheritFields?.length) return null;
+  const res = [];
+  inheritFields.forEach((inherit) => {
+    Object.values(inherit)[0].length &&
+      res.push({
+        type: 'itemGroup',
+        divider: true,
+        title: t(`Parent collection fields`) + '(' + compile(`${Object.keys(inherit)[0]}`) + ')',
+        children: Object.values(inherit)[0].filter((v: any) => !v?.field?.isForeignKey),
+      });
+  });
+  return <InitializerChildren>{res}</InitializerChildren>;
+};
+
+const AssociatedFields = () => {
+  const associatedFields = useAssociatedTableColumnInitializerFields();
+  const fieldSchema = useFieldSchema();
+  const { t } = useTranslation();
+
+  if (!associatedFields?.length || fieldSchema['x-component'] === 'AssociationField.SubTable') return null;
+  // TODO: 修改类型
+  const schema: any = [
+    {
+      type: 'itemGroup',
+      title: t('Display association fields'),
+      children: associatedFields,
+    },
+  ];
+  return <InitializerChildren>{schema}</InitializerChildren>;
+};
+
 export const tableColumnInitializer = new SchemaInitializerV2({
   'data-testid': 'configure-columns-button-of-table-block',
   insertPosition: 'beforeEnd',
@@ -121,11 +157,29 @@ export const tableColumnInitializer = new SchemaInitializerV2({
   },
   list: [
     {
-      name: 'displayFields',
+      name: 'display-fields',
       type: 'itemGroup',
       title: '{{t("Display fields")}}',
       // children: DisplayFields,
       useChildren: useTableColumnInitializerFields,
+    },
+    {
+      name: 'parent-collection-fields',
+      Component: ParentCollectionFields,
+    },
+    {
+      name: 'association-fields',
+      Component: AssociatedFields,
+    },
+    {
+      type: 'divider',
+      name: 'dev',
+    },
+    {
+      type: 'item',
+      name: 'add',
+      title: '{{t("Action column")}}',
+      Component: 'TableActionColumnInitializer',
     },
   ],
 });

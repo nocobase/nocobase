@@ -174,8 +174,9 @@ export const useAssociatedTableColumnInitializerFields = () => {
 
           return {
             type: 'item',
+            name: subField.name,
             title: subField?.uiSchema?.title || subField.name,
-            component: 'TableCollectionFieldInitializer',
+            Component: 'TableCollectionFieldInitializer',
             find: findTableColumn,
             remove: removeTableColumn,
             schemaInitialize: (s) => {

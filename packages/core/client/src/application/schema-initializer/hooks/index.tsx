@@ -1,9 +1,8 @@
 import React, { ComponentType } from 'react';
 import { createContext } from 'react';
 import { InsertType, SchemaInitializerListItemType, SchemaInitializerOptions } from '../types';
-import { Divider } from 'antd';
 import { useFindComponent } from '../../../schema-component';
-import { InitializerGroup, InitializerMenu, InitializerItem } from '../components';
+import { InitializerGroup, InitializerMenu, InitializerItem, InitializerDivider } from '../components';
 
 export const SchemaInitializerV2Context = createContext<{ insert: InsertType }>({} as any);
 SchemaInitializerV2Context.displayName = 'SchemaInitializerV2Context';
@@ -13,7 +12,7 @@ export const useSchemaInitializerV2 = () => {
 
 const typeComponentMap: Record<SchemaInitializerListItemType['type'], ComponentType> = {
   itemGroup: InitializerGroup,
-  divider: () => <Divider />,
+  divider: InitializerDivider,
   subMenu: InitializerMenu,
   itemMenu: undefined,
   item: InitializerItem,
