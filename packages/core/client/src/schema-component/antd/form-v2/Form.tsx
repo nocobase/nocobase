@@ -159,7 +159,7 @@ const WithForm = (props: WithFormProps) => {
         dispose();
       });
     };
-  }, [JSON.stringify(linkageRules)]);
+  }, [linkageRules]);
 
   return fieldSchema['x-decorator'] === 'FormV2' ? <FormDecorator {...props} /> : <FormComponent {...props} />;
 };
