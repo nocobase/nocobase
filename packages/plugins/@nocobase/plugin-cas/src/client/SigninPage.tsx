@@ -1,4 +1,4 @@
-import { Authenticator, useAPIClient, useRedirect, useCurrentUserContext } from '@nocobase/client';
+import { Authenticator, useRedirect } from '@nocobase/client';
 import React, { useEffect } from 'react';
 import { LoginOutlined } from '@ant-design/icons';
 import { Button, Space, message } from 'antd';
@@ -6,10 +6,8 @@ import { useLocation } from 'react-router-dom';
 import { getSubAppName } from '@nocobase/sdk';
 
 export const SigninPage = (props: { authenticator: Authenticator }) => {
-  const api = useAPIClient();
   const redirect = useRedirect();
   const location = useLocation();
-  const { refreshAsync: refresh } = useCurrentUserContext();
 
   const authenticator = props.authenticator;
 
@@ -21,7 +19,6 @@ export const SigninPage = (props: { authenticator: Authenticator }) => {
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const token = params.get('token');
     const name = params.get('authenticator');
     const error = params.get('error');
     if (name !== authenticator.name) {
@@ -29,14 +26,6 @@ export const SigninPage = (props: { authenticator: Authenticator }) => {
     }
     if (error) {
       message.error(error);
-      return;
-    }
-    if (token) {
-      api.auth.setToken(token);
-      api.auth.setAuthenticator(name);
-      refresh()
-        .then(() => redirect())
-        .catch((err) => console.log(err));
       return;
     }
   });
