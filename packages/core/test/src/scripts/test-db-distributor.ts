@@ -16,7 +16,7 @@ class DBManager {
 
   relase(name: string) {
     this.aquiredDBs.delete(name);
-    console.log(`release ${name}, current used ${this.aquiredDBs.size()}`);
+    console.log(`release ${name}, current used ${this.aquiredDBs.size}`);
   }
 
   isAquired(name: string) {
@@ -41,10 +41,17 @@ abstract class BasePool {
   abstract getDatabaseConfiguration(): any;
 
   async init() {
+    const promises = [];
     for (const name of getDBNames(this.size, this.getConfiguredDatabaseName())) {
-      console.log('create database', name);
-      await this.createDatabase(name);
+      promises.push(
+        (async () => {
+          console.log('create database', name);
+          await this.createDatabase(name);
+        })(),
+      );
     }
+
+    await Promise.all(promises);
   }
 
   async aquire() {
