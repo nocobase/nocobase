@@ -1435,7 +1435,7 @@ export const createTableSelectorSchema = (options) => {
       ...others,
     },
     'x-designer': 'TableSelectorDesigner',
-    'x-component': 'BlockItem',
+    'x-component': 'CardItem',
     properties: {
       actions: {
         type: 'void',

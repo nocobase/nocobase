@@ -17,6 +17,7 @@ export const TableSelectorInitializers = (props: any) => {
       component={component}
       items={[
         {
+          key: 'dataBlocks',
           type: 'itemGroup',
           title: t('Selector'),
           children: [
@@ -29,6 +30,26 @@ export const TableSelectorInitializers = (props: any) => {
           ],
         },
         {
+          key: 'filterBlocks',
+          type: 'itemGroup',
+          title: '{{t("Filter blocks")}}',
+          children: [
+            {
+              key: 'filterForm',
+              type: 'item',
+              title: '{{t("Form")}}',
+              component: 'FilterFormBlockInitializer',
+            },
+            {
+              key: 'filterCollapse',
+              type: 'item',
+              title: '{{t("Collapse")}}',
+              component: 'FilterCollapseBlockInitializer',
+            },
+          ],
+        },
+        {
+          key: 'otherBlocks',
           type: 'itemGroup',
           title: t('Other blocks'),
           children: [
