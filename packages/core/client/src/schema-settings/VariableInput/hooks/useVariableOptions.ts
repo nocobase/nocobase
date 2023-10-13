@@ -2,7 +2,7 @@ import { Form } from '@formily/core';
 import { ISchema, Schema } from '@formily/react';
 import _ from 'lodash';
 import { useMemo } from 'react';
-import { CollectionFieldOptions } from '../../../collection-manager';
+import { CollectionFieldOptions, useCollection } from '../../../collection-manager';
 import { useFlag } from '../../../flag-provider';
 import { useBlockCollection } from './useBlockCollection';
 import { useDateVariable } from './useDateVariable';
@@ -47,9 +47,8 @@ export const useVariableOptions = ({
   targetFieldSchema,
 }: Props) => {
   const { name: blockCollectionName } = useBlockCollection();
-  const { isInSetDefaultValueDialog } = useFlag() || {};
-
-  const fieldCollectionName = collectionField?.collectionName;
+  const { isInSubForm, isInSubTable } = useFlag() || {};
+  const { name } = useCollection();
   const userVariable = useUserVariable({
     maxDepth: 3,
     uiSchema: uiSchema,
@@ -66,7 +65,7 @@ export const useVariableOptions = ({
     targetFieldSchema,
   });
   const iterationVariable = useIterationVariable({
-    currentCollection: fieldCollectionName,
+    currentCollection: name,
     collectionField,
     schema: uiSchema,
     noDisabled,
@@ -89,12 +88,7 @@ export const useVariableOptions = ({
       userVariable,
       dateVariable,
       form && !form.readPretty && formVariable,
-      form &&
-        fieldCollectionName &&
-        blockCollectionName &&
-        fieldCollectionName !== blockCollectionName &&
-        isInSetDefaultValueDialog &&
-        iterationVariable,
+      (isInSubForm || isInSubTable) && iterationVariable,
       !_.isEmpty(record) && currentRecordVariable,
     ].filter(Boolean);
   }, [
@@ -102,9 +96,8 @@ export const useVariableOptions = ({
     dateVariable,
     form,
     formVariable,
-    fieldCollectionName,
-    blockCollectionName,
-    isInSetDefaultValueDialog,
+    isInSubForm,
+    isInSubTable,
     iterationVariable,
     record,
     currentRecordVariable,
