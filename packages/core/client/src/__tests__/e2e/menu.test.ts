@@ -1,10 +1,9 @@
 import { enableToConfig, expect, test } from '@nocobase/test/client';
 
-test.describe('menu', () => {
+test.describe('menu page', () => {
   test('create new page, then delete', async ({ page, mockPage }) => {
-    await page.goto('/');
+    await mockPage().goto();
     await enableToConfig(page);
-
     await page.getByTestId('add-menu-item-button-in-header').hover();
     await page.getByRole('menuitem', { name: 'Page', exact: true }).click();
     await page.getByRole('textbox').click();
@@ -120,5 +119,83 @@ test.describe('menu', () => {
 
     await page.getByRole('menu').getByText('page6').click();
     await expect(page.getByTestId('add-block-button-in-page')).toBeVisible();
+  });
+});
+
+test.describe('menu group', () => {
+  test('create new menu group, then delete', async ({ page, mockPage }) => {
+    await mockPage().goto();
+    await enableToConfig(page);
+    await page.getByTestId('add-menu-item-button-in-header').hover();
+    await page.getByRole('menuitem', { name: 'Group' }).click();
+    await page.getByRole('textbox').click();
+    await page.getByRole('textbox').fill('menu Group');
+    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByText('menu Group').click();
+
+    await expect(page.getByTestId('add-menu-item-button-in-side')).toBeVisible();
+    const sideBar = await page.locator('ul').filter({ hasText: /^Add menu item$/ });
+    await expect(sideBar).toBeVisible();
+
+    //添加子页面
+    await page
+      .locator('ul')
+      .filter({ hasText: /^Add menu item$/ })
+      .click();
+    await page.getByTestId('add-menu-item-button-in-side').hover();
+    await page.getByRole('menuitem', { name: 'Page', exact: true }).locator('span').click();
+    await page.getByRole('textbox').click();
+    await page.getByRole('textbox').fill('group page');
+    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByText('group page').click();
+    //进入子页面
+    await expect(page.getByTitle('group page')).toBeVisible();
+    //对应分组/子菜单项高亮
+    const menuItem = await page.getByRole('menu').locator('li').filter({ hasText: 'menu Group' });
+    const menuItemBackgroundColor = await menuItem.evaluate((element) => {
+      const computedStyle = window.getComputedStyle(element);
+      return computedStyle.backgroundColor;
+    });
+    await page.waitForTimeout(1000); // 等待1秒钟
+    await expect(menuItemBackgroundColor).toBe('rgba(255, 255, 255, 0.1)');
+    const pageItem = await page.getByRole('menu').locator('li').filter({ hasText: 'group page' });
+
+    const pageItemBackgroundColor = await pageItem.evaluate((element) => {
+      const computedStyle = window.getComputedStyle(element);
+      return computedStyle.backgroundColor;
+    });
+    await expect(pageItemBackgroundColor).toBe('rgb(230, 244, 255)');
+
+    // 删除页面，避免影响其他测试
+    await page.getByText('menu Group', { exact: true }).click();
+    await page.getByRole('menu').getByText('menu Group').hover();
+    await page.getByTestId('designer-schema-settings').first().hover();
+    await page.getByRole('menuitem', { name: 'Delete' }).click();
+    await page.getByRole('button', { name: 'OK' }).click();
+    await mockPage().goto();
+    await expect(page.getByTitle('menu Group')).not.toBeVisible();
+  });
+});
+
+test.describe('menu link', () => {
+  test('create new menu link, then delete', async ({ page, mockPage }) => {
+    await mockPage().goto();
+    await page.getByTestId('add-menu-item-button-in-header').hover();
+    await page.getByRole('menuitem', { name: 'Link' }).click();
+    await page.getByTestId('title-item').getByRole('textbox').fill('link');
+    await page.getByTestId('href-item').getByRole('textbox').click();
+    await page.getByTestId('href-item').getByRole('textbox').fill('https://www.baidu.com/');
+    await page.getByRole('button', { name: 'OK' }).click();
+    const page2Promise = page.waitForEvent('popup');
+    await page.getByText('link', { exact: true }).click();
+    const page2 = await page2Promise;
+
+    await expect(page2.getByRole('button', { name: '百度一下' })).toBeVisible();
+
+    // 删除页面，避免影响其他测试
+    await page.getByRole('menu').getByText('link').hover();
+    await page.getByTestId('designer-schema-settings').hover();
+    await page.getByRole('menuitem', { name: 'Delete' }).click();
+    await page.getByRole('button', { name: 'OK' }).click();
   });
 });
