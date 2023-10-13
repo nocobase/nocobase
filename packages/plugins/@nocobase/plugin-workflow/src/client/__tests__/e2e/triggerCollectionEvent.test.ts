@@ -37,7 +37,7 @@ test.describe('trigger collection events', () => {
 
     //配置工作流触发器
     await page
-      .getByRole('row', { name: '1 ' + workFlowName + ' Collection event Off 0 View Edit Duplicate Delete' })
+      .getByRole('row', { name: '1 ' + workFlowName + ' Collection event Off 0 Configure Edit Duplicate Delete' })
       .getByRole('link')
       .click();
     await page.getByRole('button', { name: 'Configure' }).click();
@@ -48,7 +48,7 @@ test.describe('trigger collection events', () => {
     await page.getByTestId('submit-action').click();
     await page.getByRole('link', { name: 'Workflow' }).click();
     await page
-      .getByRole('row', { name: '1 ' + workFlowName + ' Collection event Off 0 View Edit Duplicate Delete' })
+      .getByRole('row', { name: '1 ' + workFlowName + ' Collection event Off 0 Configure Edit Duplicate Delete' })
       .getByTestId('update-action')
       .click();
     await page.getByTestId('enabled-item').getByLabel('On').check();
@@ -99,7 +99,7 @@ test.describe('trigger collection events', () => {
     await page.getByTestId('filter-action').click();
     await page.getByRole('textbox').fill(workFlowName);
     await page.getByRole('button', { name: 'Submit' }).click();
-    await page.getByRole('cell', { name: 'View Edit Duplicate Delete' }).getByTestId('delete-action').click();
+    await page.getByRole('cell', { name: 'Configure Edit Duplicate Delete' }).getByTestId('delete-action').click();
     await page.getByRole('button', { name: 'OK' }).click();
     await expect(page.getByText(workFlowName)).toBeHidden();
   });
