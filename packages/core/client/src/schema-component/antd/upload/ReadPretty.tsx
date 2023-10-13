@@ -95,7 +95,7 @@ ReadPretty.File = function File(props: UploadProps) {
                       >
                         {file.imageUrl && (
                           <img
-                            src={`${file.imageUrl}${file.thumbnailRule}`}
+                            src={`${file.imageUrl}${file.thumbnailRule || ''}`}
                             alt={file.title}
                             className={`${prefixCls}-list-item-image`}
                           />
