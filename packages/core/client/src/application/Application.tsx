@@ -19,8 +19,7 @@ import { compose, normalizeContainer } from './utils';
 import { defineGlobalDeps } from './utils/globalDeps';
 import type { RequireJS } from './utils/requirejs';
 import { getRequireJs } from './utils/requirejs';
-import { SchemaInitializerV2 } from './SchemaInitializer';
-import { SchemaInitializerManager } from './SchemaInitializerManager';
+import { SchemaInitializerV2, SchemaInitializerManager } from './schema-initializer';
 
 declare global {
   interface Window {

@@ -6,8 +6,8 @@ import { useCompile } from '../../../schema-component';
 import { SchemaInitializerItemOptions } from '../../../schema-initializer';
 import { useSchemaTemplateManager } from '../../../schema-templates';
 import { useCollectionDataSourceItemsV2 } from '../../../schema-initializer/utils';
-import { useSchemaInitializerV2 } from '../../SchemaInitializer';
 import { Icon } from '../../../icon';
+import { useSchemaInitializerV2 } from '../hooks';
 
 export const DataBlockInitializerV2 = (props) => {
   const {
