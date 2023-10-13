@@ -56,8 +56,9 @@ export default {
           'x-decorator': 'FormItem',
           'x-component': 'Input',
           'x-component-props': {
-            placeholder: '?x-oss-process=image/auto-orient,1/resize,m_fill,w_40,h_40/quality,q_90',
+            placeholder: '?x-oss-process=image/auto-orient,1/resize,m_fill,w_94,h_94/quality,q_90',
           },
+          default: '?x-oss-process=image/auto-orient,1/resize,m_fill,w_94,h_94/quality,q_90',
           description: '{{ xStyleProcessDesc }}',
         },
       },
