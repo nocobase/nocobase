@@ -1,7 +1,7 @@
 import { enableToConfig, expect, test } from '@nocobase/test/client';
 
 test.describe('menu', () => {
-  test('create new page, then delete', async ({ page }) => {
+  test('create new page, then delete', async ({ page, mockPage }) => {
     await page.goto('/');
     await enableToConfig(page);
 
@@ -31,6 +31,8 @@ test.describe('menu', () => {
     await page.getByTestId('designer-schema-settings').hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'OK' }).click();
+    await mockPage().goto();
+    await expect(page.getByTitle('new page')).not.toBeVisible();
   });
   test('edit menu title', async ({ page, mockPage }) => {
     await mockPage({
