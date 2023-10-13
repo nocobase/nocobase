@@ -87,6 +87,8 @@ test.describe('menu', () => {
     const page3 = await page.getByRole('menu').getByText('page3').boundingBox();
     const page4 = await page.getByRole('menu').getByText('page4').boundingBox();
     expect(page4.x).toBeLessThan(page3.x);
+    await page.getByRole('menu').getByText('page4').click();
+    await expect(page.getByTestId('add-block-button-in-page')).toBeVisible();
   });
 
   test('insert page after', async ({ page, mockPage }) => {
@@ -108,5 +110,8 @@ test.describe('menu', () => {
     const page6 = await page.getByRole('menu').getByText('page6').boundingBox();
     const page5 = await page.getByRole('menu').getByText('page5').boundingBox();
     expect(page5.x).toBeLessThan(page6.x);
+
+    await page.getByRole('menu').getByText('page6').click();
+    await expect(page.getByTestId('add-block-button-in-page')).toBeVisible();
   });
 });
