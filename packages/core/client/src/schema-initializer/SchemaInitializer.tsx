@@ -609,7 +609,8 @@ SchemaInitializer.SwitchItem = (props) => {
   return (
     <SchemaInitializer.Item onClick={props.onClick}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        {props.title} <Switch style={{ marginLeft: 20 }} size={'small'} checked={props.checked} />
+        <label>{props.title}</label>
+        <Switch disabled={props.disabled} style={{ marginLeft: 20 }} size={'small'} checked={props.checked} />
       </div>
     </SchemaInitializer.Item>
   );
