@@ -1805,7 +1805,7 @@ const getChildren = ({
 }: {
   collections: any[];
   getCollectionFields: (name: any) => CollectionFieldOptions[];
-  componentName: any;
+  componentName: string;
   searchValue: string;
   getTemplatesByCollection: (collectionName: string, resourceName?: string) => any;
   t;

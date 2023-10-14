@@ -1,10 +1,11 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializer } from '../..';
+import { SchemaInitializer, useCollection } from '../..';
 import { gridRowColWrap } from '../utils';
 
 export const TableSelectorInitializers = (props: any) => {
   const { t } = useTranslation();
+  const { name } = useCollection();
   const { insertPosition, component } = props;
 
   return (
@@ -17,12 +18,12 @@ export const TableSelectorInitializers = (props: any) => {
       component={component}
       items={[
         {
-          key: 'dataBlocks',
+          key: 'dataBlocksInTableSelector',
           type: 'itemGroup',
           title: t('Selector'),
           children: [
             {
-              key: 'details',
+              key: 'detailsBlockInTableSelector',
               type: 'item',
               title: 'Table',
               component: 'TableSelectorInitializer',
@@ -30,30 +31,33 @@ export const TableSelectorInitializers = (props: any) => {
           ],
         },
         {
-          key: 'filterBlocks',
+          key: 'filterBlocksInTableSelector',
           type: 'itemGroup',
           title: '{{t("Filter blocks")}}',
           children: [
             {
-              key: 'filterForm',
+              key: 'filterFormBlockInTableSelector',
               type: 'item',
               title: '{{t("Form")}}',
               component: 'FilterFormBlockInitializer',
+              name,
             },
             {
-              key: 'filterCollapse',
+              key: 'filterCollapseBlockInTableSelector',
               type: 'item',
               title: '{{t("Collapse")}}',
               component: 'FilterCollapseBlockInitializer',
+              name,
             },
           ],
         },
         {
-          key: 'otherBlocks',
+          key: 'otherBlocksInTableSelector',
           type: 'itemGroup',
           title: t('Other blocks'),
           children: [
             {
+              key: 'markdownBlockInTableSelector',
               type: 'item',
               title: t('Add text'),
               component: 'BlockInitializer',
