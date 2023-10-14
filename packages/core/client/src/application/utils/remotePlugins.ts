@@ -31,7 +31,7 @@ export function getRemotePlugins(requirejs: any, pluginData: PluginData[] = []):
   requirejs.requirejs.config({
     waitSeconds: 120,
     paths: pluginData.reduce<Record<string, string>>((acc, cur) => {
-      acc[cur.packageName] = `${cur.url}?noExt`;
+      acc[cur.packageName] = cur.url;
       return acc;
     }, {}),
   });
