@@ -6,9 +6,10 @@ import { useSchemaTemplateManager } from '../../schema-templates';
 import { useCollectionDataSourceItems } from '../utils';
 
 export const FilterBlockInitializer = (props) => {
-  const { templateWrap, onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
+  const { templateWrap, onCreateBlockSchema, componentType, createBlockSchema, insert, items, ...others } = props;
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const { setVisible } = useContext(SchemaInitializerButtonContext);
+  const defaultItems = useCollectionDataSourceItems(componentType);
 
   return (
     <SchemaInitializer.Item
@@ -27,7 +28,7 @@ export const FilterBlockInitializer = (props) => {
         }
         setVisible(false);
       }}
-      items={useCollectionDataSourceItems(componentType)}
+      items={items || defaultItems}
     />
   );
 };
