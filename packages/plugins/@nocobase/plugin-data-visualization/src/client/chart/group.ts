@@ -44,6 +44,12 @@ export class ChartGroup {
         children,
       });
     });
+    // Put group named "Built-in" at the first
+    const index = result.findIndex((item) => item.label === lang('Built-in'));
+    if (index > -1) {
+      const [item] = result.splice(index, 1);
+      result.unshift(item);
+    }
     return result;
   }
 

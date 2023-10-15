@@ -763,8 +763,8 @@ export const useCurrentSchema = (action: string, key: string, find = findSchema,
     remove() {
       removeActiveFieldName?.(schema.name);
       form?.query(schema.name).forEach((field: Field) => {
-        field.setInitialValue(null);
-        field.reset();
+        field.setInitialValue?.(null);
+        field.reset?.();
       });
       schema && rm(schema, remove);
     },

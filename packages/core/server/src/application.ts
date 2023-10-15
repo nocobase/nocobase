@@ -5,7 +5,7 @@ import { Cache, createCache, ICacheConfig } from '@nocobase/cache';
 import Database, { CollectionOptions, IDatabaseOptions } from '@nocobase/database';
 import { AppLoggerOptions, createAppLogger, Logger } from '@nocobase/logger';
 import { ResourceOptions, Resourcer } from '@nocobase/resourcer';
-import { applyMixins, AsyncEmitter, Toposort, ToposortOptions } from '@nocobase/utils';
+import { applyMixins, AsyncEmitter, Toposort, ToposortOptions, measureExecutionTime } from '@nocobase/utils';
 import chalk from 'chalk';
 import { Command, CommandOptions, ParseOptions } from 'commander';
 import { IncomingMessage, Server, ServerResponse } from 'http';
@@ -632,18 +632,29 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   async upgrade(options: any = {}) {
     await this.emitAsync('beforeUpgrade', this, options);
     const force = false;
-    await this.db.migrator.up();
-    await this.db.sync({
-      force,
-      alter: {
-        drop: force,
-      },
-    });
+
+    await measureExecutionTime(async () => {
+      await this.db.migrator.up();
+    }, 'Migrator');
+
+    await measureExecutionTime(async () => {
+      await this.db.sync({
+        force,
+        alter: {
+          drop: force,
+        },
+      });
+    }, 'Sync');
+
     await this.version.update();
     await this.emitAsync('afterUpgrade', this, options);
+
     this.log.debug(chalk.green(`✨  NocoBase has been upgraded to v${this.getVersion()}`));
+
     if (this._started) {
-      await this.restart();
+      await measureExecutionTime(async () => {
+        await this.restart();
+      }, 'Restart');
     }
   }
 

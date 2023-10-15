@@ -17,6 +17,43 @@ describe('gateway', () => {
     await AppSupervisor.getInstance().destroy();
   });
 
+  describe('app selector', () => {
+    it('should get app as default main app', async () => {
+      expect(
+        await gateway.getRequestHandleAppName({
+          url: '/test',
+          headers: {},
+        }),
+      ).toBe('main');
+    });
+
+    it('should add middleware into app selector', async () => {
+      gateway.addAppSelectorMiddleware(async (ctx, next) => {
+        ctx.resolvedAppName = 'test';
+        await next();
+      });
+
+      expect(
+        await gateway.getRequestHandleAppName({
+          url: '/test',
+          headers: {},
+        }),
+      ).toEqual('test');
+    });
+
+    it('should add same middleware into app selector once', async () => {
+      const fn = async (ctx, next) => {
+        ctx.resolvedAppName = 'test';
+        await next();
+      };
+
+      gateway.addAppSelectorMiddleware(fn);
+      gateway.addAppSelectorMiddleware(fn);
+
+      expect(gateway.getAppSelectorMiddlewares().nodes.length).toBe(2);
+    });
+  });
+
   describe('http api', () => {
     it('should return error when app not found', async () => {
       const res = await supertest.agent(gateway.getCallback()).get('/api/app:getInfo');

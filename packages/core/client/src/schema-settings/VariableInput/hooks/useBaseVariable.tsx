@@ -131,7 +131,8 @@ export const useBaseVariable = ({
   name,
   title,
   collectionName,
-  noDisabled,
+  // TODO: 等整理完完整测试用例后，再开启该功能
+  noDisabled = true,
   returnFields = (fields) => fields,
 }: BaseProps) => {
   const compile = useCompile();
