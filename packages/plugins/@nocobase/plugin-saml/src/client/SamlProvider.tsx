@@ -1,5 +1,5 @@
-import { AuthenticatorsContext, OptionsComponentProvider, SigninPageExtensionProvider } from '@nocobase/client';
-import React, { FC, useContext } from 'react';
+import { OptionsComponentProvider, SigninPageExtensionProvider } from '@nocobase/client';
+import React, { FC } from 'react';
 import { SAMLButton } from './SAMLButton';
 import { Options } from './Options';
 import { authType } from '../constants';

@@ -317,8 +317,8 @@ test.describe('faker', () => {
   test('phone', async ({ page, mockPage }) => {
     await mockPage(phonePageConfig).goto();
 
-    await expect(page.getByRole('cell', { name: '14979013912' })).toBeVisible();
-    await expect(page.getByRole('cell', { name: '10313363958' })).toBeVisible();
-    await expect(page.getByRole('cell', { name: '14365248205' })).toBeVisible();
+    await expect(page.getByRole('cell', { name: '1-979-213-9120 x313' })).toBeVisible();
+    await expect(page.getByRole('cell', { name: '(739) 684-3652 x482' })).toBeVisible();
+    await expect(page.getByRole('cell', { name: '669-545-4191' })).toBeVisible();
   });
 });

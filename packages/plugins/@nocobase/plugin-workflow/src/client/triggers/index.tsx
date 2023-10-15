@@ -242,23 +242,7 @@ export const TriggerConfig = () => {
                   form,
                 },
                 properties: {
-                  ...(executed
-                    ? {
-                        alert: {
-                          'x-component': Alert,
-                          'x-component-props': {
-                            type: 'warning',
-                            showIcon: true,
-                            message: `{{t("Trigger in executed workflow cannot be modified", { ns: "${NAMESPACE}" })}}`,
-                            className: css`
-                              width: 100%;
-                              font-size: 85%;
-                              margin-bottom: 2em;
-                            `,
-                          },
-                        },
-                      }
-                    : trigger.description
+                  ...(trigger.description
                     ? {
                         description: {
                           type: 'void',

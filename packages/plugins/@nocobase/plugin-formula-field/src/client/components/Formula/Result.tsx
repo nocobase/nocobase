@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
 import { onFormInputChange } from '@formily/core';
+import { useField, useFieldSchema, useFormEffects } from '@formily/react';
 import { toJS } from '@formily/reactive';
-import { useFieldSchema, useFormEffects, useField } from '@formily/react';
+import type { CollectionOptions } from '@nocobase/client';
 import {
   Checkbox,
   DatePicker,
@@ -13,6 +13,7 @@ import {
 } from '@nocobase/client';
 import { Evaluator, evaluators } from '@nocobase/evaluators/client';
 import { Registry, toFixedByStep } from '@nocobase/utils/client';
+import React, { useEffect, useState } from 'react';
 
 import { toDbType } from '../../../utils';
 
@@ -31,7 +32,7 @@ function useTargetCollectionField() {
   const providedCollection = useCollection();
   const { getCollection, getCollectionField } = useCollectionManager();
   const paths = (fieldSchema.name as string).split('.');
-  let collection = providedCollection;
+  let collection: CollectionOptions = providedCollection;
   for (let i = 0; i < paths.length - 1; i++) {
     const field = collection.getField(paths[i]);
     collection = getCollection(field.target);

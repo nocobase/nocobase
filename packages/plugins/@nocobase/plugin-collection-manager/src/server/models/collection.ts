@@ -1,6 +1,7 @@
 import Database, { Collection, MagicAttributeModel, SyncOptions, Transactionable } from '@nocobase/database';
 import lodash from 'lodash';
 import { FieldModel } from './field';
+import { async } from 'fast-glob';
 
 interface LoadOptions extends Transactionable {
   // TODO
@@ -114,9 +115,25 @@ export class CollectionModel extends MagicAttributeModel {
   }
 
   async migrate(options?: SyncOptions & Transactionable) {
+    const pendingFieldsTargetToThis = this.db.pendingFields.get(this.get('name')) || [];
+    const getPendingField = () =>
+      pendingFieldsTargetToThis.map((field) => {
+        return {
+          name: field.get('name'),
+          collectionName: field.get('collectionName'),
+        };
+      });
+
+    const beforePendingFields = getPendingField();
+
     const collection = await this.load({
       transaction: options?.transaction,
     });
+
+    const afterPendingFields = getPendingField();
+
+    const resolvedPendingFields = lodash.differenceWith(beforePendingFields, afterPendingFields, lodash.isEqual);
+    const resolvedPendingFieldsCollections = lodash.uniq(resolvedPendingFields.map((field) => field.collectionName));
 
     // postgres support zero column table, other database should not sync it to database
     // @ts-ignore
@@ -125,13 +142,19 @@ export class CollectionModel extends MagicAttributeModel {
     }
 
     try {
-      await collection.sync({
+      const syncOptions = {
         force: false,
         alter: {
           drop: false,
         },
         ...options,
-      });
+      };
+
+      await collection.sync(syncOptions);
+
+      for (const collectionName of resolvedPendingFieldsCollections) {
+        await this.db.getCollection(collectionName).sync(syncOptions);
+      }
     } catch (error) {
       console.error(error);
       const name = this.get('name');

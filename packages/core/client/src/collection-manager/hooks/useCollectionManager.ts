@@ -4,7 +4,7 @@ import _, { reduce, unionBy, uniq, uniqBy } from 'lodash';
 import { useContext } from 'react';
 import { useCompile } from '../../schema-component';
 import { CollectionManagerContext } from '../context';
-import { CollectionFieldOptions } from '../types';
+import { CollectionFieldOptions, CollectionOptions } from '../types';
 
 export const useCollectionManager = () => {
   const { refreshCM, updateCollection, service, interfaces, collections, templates } =
@@ -192,7 +192,7 @@ export const useCollectionManager = () => {
     return options;
   };
 
-  const getCollection = (name: any) => {
+  const getCollection = (name: any): CollectionOptions => {
     if (typeof name !== 'string') {
       return name;
     }
@@ -290,7 +290,7 @@ export const useCollectionManager = () => {
     getCollectionFieldsOptions,
     getCurrentCollectionFields,
     getCollection,
-    getCollectionJoinField(name: string) {
+    getCollectionJoinField(name: string): CollectionFieldOptions {
       if (!name) {
         return;
       }

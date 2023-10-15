@@ -45,7 +45,7 @@ interface CollectionSetting {
    * Records can be sorted
    * @default true
    */
-  sortable?: boolean;
+  sortable?: boolean | string;
   /**
    * @default false
    */
@@ -60,13 +60,13 @@ interface CollectionSetting {
     interface: string;
     name: string;
     unique?: boolean;
-    uiSchema: {
+    uiSchema?: {
       type?: string;
       title?: string;
       required?: boolean;
       'x-component'?: string;
       'x-read-pretty'?: boolean;
-      'x-validator'?: string;
+      'x-validator'?: any;
       'x-component-props'?: Record<string, any>;
       [key: string]: any;
     };
@@ -129,10 +129,10 @@ class NocoPage {
 
   async init() {
     if (this.options?.collections?.length) {
-      const collections: any = deleteKeyOfCollection(this.options.collections);
+      const collections: any = omitSomeFields(this.options.collections);
       this.collectionsName = collections.map((item) => item.name);
 
-      await createCollections(this.page, collections);
+      await createCollections(collections);
 
       // 默认为每个 collection 生成 3 条数据
       await createFakerData(collections);
@@ -165,7 +165,10 @@ class NocoPage {
   }
 }
 
-export const test = base.extend<{ mockPage: (config?: PageConfig) => NocoPage }>({
+export const test = base.extend<{
+  mockPage: (config?: PageConfig) => NocoPage;
+  createCollections: (collectionSettings: CollectionSetting | CollectionSetting[]) => Promise<void>;
+}>({
   mockPage: async ({ page }, use) => {
     // 保证每个测试运行时 faker 的随机值都是一样的
     faker.seed(1);
@@ -182,6 +185,23 @@ export const test = base.extend<{ mockPage: (config?: PageConfig) => NocoPage }>
     // 测试运行完自动销毁页面
     for (const nocoPage of nocoPages) {
       await nocoPage.destroy();
+    }
+  },
+  createCollections: async ({ page }, use) => {
+    let collectionsName = [];
+
+    const _createCollections = async (collectionSettings: CollectionSetting | CollectionSetting[]) => {
+      collectionSettings = omitSomeFields(
+        Array.isArray(collectionSettings) ? collectionSettings : [collectionSettings],
+      );
+      collectionsName = collectionSettings.map((item) => item.name);
+      await createCollections(collectionSettings);
+    };
+
+    await use(_createCollections);
+
+    if (collectionsName.length) {
+      await deleteCollections(collectionsName);
     }
   },
 });
@@ -317,37 +337,6 @@ const deletePage = async (pageUid: string) => {
   }
 };
 
-const createCollection = async (collectionSetting: CollectionSetting) => {
-  const api = await request.newContext({
-    storageState: require.resolve('../../../../../playwright/.auth/admin.json'),
-  });
-
-  const state = await api.storageState();
-  const token = getStorageItem('NOCOBASE_TOKEN', state);
-  const defaultCollectionSetting: Partial<CollectionSetting> = {
-    template: 'general',
-    logging: true,
-    autoGenId: true,
-    createdBy: true,
-    updatedBy: true,
-    createdAt: true,
-    updatedAt: true,
-    sortable: true,
-    view: false,
-  };
-
-  const result = await api.post(`/api/collections:create`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    data: Object.assign(defaultCollectionSetting, collectionSetting),
-  });
-
-  if (!result.ok()) {
-    throw new Error(await result.text());
-  }
-};
-
 const deleteCollections = async (collectionNames: string[]) => {
   const api = await request.newContext({
     storageState: require.resolve('../../../../../playwright/.auth/admin.json'),
@@ -369,15 +358,15 @@ const deleteCollections = async (collectionNames: string[]) => {
 };
 
 /**
- * 如果不删除 key 会报错
+ * 删除一些不需要的字段，如 key
  * @param collectionSettings
  * @returns
  */
-const deleteKeyOfCollection = (collectionSettings: CollectionSetting[]) => {
+export const omitSomeFields = (collectionSettings: CollectionSetting[]): any[] => {
   return collectionSettings.map((collection) => {
     return {
       ..._.omit(collection, ['key']),
-      fields: collection.fields.map((field) => _.omit(field, ['key'])),
+      fields: collection.fields.map((field) => _.omit(field, ['key', 'collectionName'])),
     };
   });
 };
@@ -388,13 +377,38 @@ const deleteKeyOfCollection = (collectionSettings: CollectionSetting[]) => {
  * @param collectionSettings
  * @returns
  */
-const createCollections = async (page: Page, collectionSettings: CollectionSetting[]) => {
-  // TODO: 这里如果改成并发创建的话性能会更好，但是会出现只创建一个 collection 的情况，暂时不知道原因
-  for (const item of collectionSettings) {
-    await createCollection(item);
+const createCollections = async (collectionSettings: CollectionSetting | CollectionSetting[]) => {
+  const api = await request.newContext({
+    storageState: require.resolve('../../../../../playwright/.auth/admin.json'),
+  });
+
+  const state = await api.storageState();
+  const token = getStorageItem('NOCOBASE_TOKEN', state);
+  // const defaultCollectionSetting: Partial<CollectionSetting> = {
+  //   template: 'general',
+  //   logging: true,
+  //   autoGenId: true,
+  //   createdBy: true,
+  //   updatedBy: true,
+  //   createdAt: true,
+  //   updatedAt: true,
+  //   sortable: true,
+  //   view: false,
+  // };
+
+  collectionSettings = Array.isArray(collectionSettings) ? collectionSettings : [collectionSettings];
+
+  const result = await api.post(`/api/collections:create`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    // data: collectionSettings.map((item) => Object.assign(defaultCollectionSetting, item)),
+    data: collectionSettings.filter((item) => !['users', 'roles'].includes(item.name)),
+  });
+
+  if (!result.ok()) {
+    throw new Error(await result.text());
   }
-  // @ts-ignore
-  page._collectionNames = collectionSettings.map((item) => item.name);
 };
 
 /**
@@ -409,12 +423,12 @@ const generateFakerData = (collectionSetting: CollectionSetting) => {
     input: () => faker.lorem.words(),
     textarea: () => faker.lorem.paragraph(),
     richText: () => faker.lorem.paragraph(),
-    phone: () => faker.phone.number('1##########'),
+    phone: () => faker.phone.number(),
     email: () => faker.internet.email(),
     url: () => faker.internet.url(),
-    integer: () => faker.datatype.number(),
-    number: () => faker.datatype.number(),
-    percent: () => faker.datatype.float(),
+    integer: () => faker.number.int(),
+    number: () => faker.number.int(),
+    percent: () => faker.number.float(),
     password: () => faker.internet.password(),
     color: () => faker.internet.color(),
     icon: () => 'checkcircleoutlined',

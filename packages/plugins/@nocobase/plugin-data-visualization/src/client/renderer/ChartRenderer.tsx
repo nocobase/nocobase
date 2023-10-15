@@ -41,7 +41,7 @@ export const ChartRenderer: React.FC & {
       if (!props[name]) {
         const field = getField(fields, name.split('.'));
         const transformer = transformers[name];
-        props[name] = { ...field, transformer };
+        props[name] = { label: field?.label || name, transformer };
       }
       return props;
     }, {}),

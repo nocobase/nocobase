@@ -1,14 +1,14 @@
-import { observer, useField, connect, createSchemaField, FormProvider, useFieldSchema, Field } from '@formily/react';
-import { createForm, onFormValuesChange } from '@formily/core';
-import { uid } from '@formily/shared';
-import { Space, Tag, Spin, Select as AntdSelect, Input } from 'antd';
 import { ArrayItems, FormItem } from '@formily/antd-v5';
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import { createForm, onFormValuesChange } from '@formily/core';
+import { FormProvider, connect, createSchemaField, observer, useField, useFieldSchema } from '@formily/react';
+import { uid } from '@formily/shared';
+import { Select as AntdSelect, Input, Space, Spin, Tag } from 'antd';
 import dayjs from 'dayjs';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCompile, SchemaComponent } from '../../../schema-component';
 import { useAPIClient, useCollectionManager } from '../../../';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
+import { SchemaComponent, useCompile } from '../../../schema-component';
 import useServiceOptions, { useAssociationFieldContext } from './hooks';
 
 const EMPTY = 'N/A';
@@ -73,7 +73,7 @@ const CascadeSelect = connect((props) => {
               if (Array.isArray(label)) {
                 label = label
                   .map((item, index) => {
-                    const option = targetField.uiSchema.enum.find((i) => i.value === item);
+                    const option = (targetField.uiSchema.enum as any).find?.((i) => i.value === item);
                     if (option) {
                       return (
                         <Tag key={index} color={option.color} style={{ marginRight: 3 }}>
@@ -86,7 +86,7 @@ const CascadeSelect = connect((props) => {
                   })
                   .reverse();
               } else {
-                const item = targetField.uiSchema.enum.find((i) => i.value === label);
+                const item = (targetField.uiSchema.enum as any).find?.((i) => i.value === label);
                 if (item) {
                   label = <Tag color={item.color}>{item.label}</Tag>;
                 }

@@ -1,6 +1,5 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { useActionContext, useRequest } from '@nocobase/client';
 import { NAMESPACE } from '../locale';
 
 const collection = {
@@ -37,12 +36,7 @@ const collection = {
         type: 'string',
         'x-component': 'Select',
         required: true,
-        enum: [
-          { label: `{{t("Local storage", { ns: "${NAMESPACE}" })}}`, value: 'local' },
-          { label: `{{t("Aliyun OSS", { ns: "${NAMESPACE}" })}}`, value: 'ali-oss' },
-          { label: `{{t("Amazon S3", { ns: "${NAMESPACE}" })}}`, value: 's3' },
-          { label: `{{t("Tencent COS", { ns: "${NAMESPACE}" })}}`, value: 'tx-cos' },
-        ],
+        enum: '{{ storageTypes }}',
       } as ISchema,
     },
     {
@@ -71,7 +65,7 @@ const collection = {
       name: 'default',
       interface: 'boolean',
       uiSchema: {
-        title: `{{t("Default storage", { ns: "${NAMESPACE}" })}}`,
+        // title: `{{t("Default storage", { ns: "${NAMESPACE}" })}}`,
         type: 'boolean',
         'x-component': 'Checkbox',
       } as ISchema,
@@ -81,7 +75,7 @@ const collection = {
       name: 'paranoid',
       interface: 'boolean',
       uiSchema: {
-        title: `{{t("Keep file in storage when destroy record", { ns: "${NAMESPACE}" })}}`,
+        // title: `{{t("Keep file in storage when destroy record", { ns: "${NAMESPACE}" })}}`,
         type: 'boolean',
         'x-component': 'Checkbox',
       } as ISchema,
@@ -127,6 +121,7 @@ export const storageSchema: ISchema = {
               title: '{{ t("Delete") }}',
               'x-component': 'Action',
               'x-component-props': {
+                icon: 'DeleteOutlined',
                 useAction: '{{ cm.useBulkDestroyAction }}',
                 confirm: {
                   title: "{{t('Delete')}}",
@@ -137,92 +132,9 @@ export const storageSchema: ISchema = {
             create: {
               type: 'void',
               title: '{{t("Add new")}}',
-              'x-component': 'Action',
+              'x-component': 'CreateStorage',
               'x-component-props': {
                 type: 'primary',
-              },
-              properties: {
-                drawer: {
-                  type: 'void',
-                  'x-component': 'Action.Drawer',
-                  'x-decorator': 'Form',
-                  'x-decorator-props': {
-                    useValues(options) {
-                      const ctx = useActionContext();
-                      return useRequest(
-                        () =>
-                          Promise.resolve({
-                            data: {
-                              name: `s_${uid()}`,
-                            },
-                          }),
-                        { ...options, refreshDeps: [ctx.visible] },
-                      );
-                    },
-                  },
-                  title: '{{t("Add new")}}',
-                  properties: {
-                    title: {
-                      'x-component': 'CollectionField',
-                      'x-decorator': 'FormItem',
-                    },
-                    name: {
-                      'x-component': 'CollectionField',
-                      'x-decorator': 'FormItem',
-                      description:
-                        '{{t("Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.")}}',
-                    },
-                    baseUrl: {
-                      'x-component': 'CollectionField',
-                      'x-decorator': 'FormItem',
-                    },
-                    type: {
-                      'x-component': 'CollectionField',
-                      'x-decorator': 'FormItem',
-                    },
-                    options: {
-                      type: 'object',
-                      'x-component': 'StorageOptions',
-                    },
-                    path: {
-                      'x-component': 'CollectionField',
-                      'x-decorator': 'FormItem',
-                    },
-                    default: {
-                      'x-component': 'CollectionField',
-                      'x-decorator': 'FormItem',
-                      title: '',
-                      'x-content': `{{t("Default storage", { ns: "${NAMESPACE}" })}}`,
-                    },
-                    paranoid: {
-                      title: '',
-                      'x-component': 'CollectionField',
-                      'x-decorator': 'FormItem',
-                      'x-content': `{{t("Keep file in storage when destroy record", { ns: "${NAMESPACE}" })}}`,
-                    },
-                    footer: {
-                      type: 'void',
-                      'x-component': 'Action.Drawer.Footer',
-                      properties: {
-                        cancel: {
-                          title: '{{t("Cancel")}}',
-                          'x-component': 'Action',
-                          'x-component-props': {
-                            useAction: '{{ cm.useCancelAction }}',
-                          },
-                        },
-                        submit: {
-                          title: '{{t("Submit")}}',
-                          'x-component': 'Action',
-                          'x-component-props': {
-                            type: 'primary',
-                            useAction: '{{ cm.useCreateAction }}',
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
               },
             },
           },
@@ -270,6 +182,7 @@ export const storageSchema: ISchema = {
               properties: {
                 default: {
                   type: 'string',
+                  title: `{{t("Default storage", { ns: "${NAMESPACE}" })}}`,
                   'x-component': 'CollectionField',
                   'x-read-pretty': true,
                 },
@@ -290,81 +203,9 @@ export const storageSchema: ISchema = {
                     update: {
                       type: 'void',
                       title: '{{t("Edit")}}',
-                      'x-component': 'Action.Link',
+                      'x-component': 'EditStorage',
                       'x-component-props': {
                         type: 'primary',
-                      },
-                      properties: {
-                        drawer: {
-                          type: 'void',
-                          'x-component': 'Action.Drawer',
-                          'x-decorator': 'Form',
-                          'x-decorator-props': {
-                            useValues: '{{ cm.useValuesFromRecord }}',
-                          },
-                          title: '{{t("Edit")}}',
-                          properties: {
-                            title: {
-                              'x-component': 'CollectionField',
-                              'x-decorator': 'FormItem',
-                            },
-                            name: {
-                              'x-component': 'CollectionField',
-                              'x-decorator': 'FormItem',
-                              'x-disabled': true,
-                            },
-                            baseUrl: {
-                              'x-component': 'CollectionField',
-                              'x-decorator': 'FormItem',
-                            },
-                            type: {
-                              'x-component': 'CollectionField',
-                              'x-decorator': 'FormItem',
-                              'x-disabled': true,
-                            },
-                            options: {
-                              type: 'object',
-                              'x-component': 'StorageOptions',
-                            },
-                            path: {
-                              'x-component': 'CollectionField',
-                              'x-decorator': 'FormItem',
-                            },
-                            default: {
-                              title: '',
-                              'x-component': 'CollectionField',
-                              'x-decorator': 'FormItem',
-                              'x-content': `{{t("Default storage", { ns: "${NAMESPACE}" })}}`,
-                            },
-                            paranoid: {
-                              title: '',
-                              'x-component': 'CollectionField',
-                              'x-decorator': 'FormItem',
-                              'x-content': `{{t("Keep file in storage when destroy record", { ns: "${NAMESPACE}" })}}`,
-                            },
-                            footer: {
-                              type: 'void',
-                              'x-component': 'Action.Drawer.Footer',
-                              properties: {
-                                cancel: {
-                                  title: '{{t("Cancel")}}',
-                                  'x-component': 'Action',
-                                  'x-component-props': {
-                                    useAction: '{{ cm.useCancelAction }}',
-                                  },
-                                },
-                                submit: {
-                                  title: '{{t("Submit")}}',
-                                  'x-component': 'Action',
-                                  'x-component-props': {
-                                    type: 'primary',
-                                    useAction: '{{ cm.useUpdateAction }}',
-                                  },
-                                },
-                              },
-                            },
-                          },
-                        },
                       },
                     },
                     delete: {

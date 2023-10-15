@@ -1,7 +1,7 @@
 import { ISchema } from '@formily/react';
-import { defaultProps } from './properties';
-import { IField } from './types';
 import { i18n } from '../../i18n';
+import { defaultProps, operators } from './properties';
+import { IField } from './types';
 
 export const textarea: IField = {
   name: 'textarea',
@@ -69,5 +69,8 @@ export const textarea: IField = {
         },
       },
     };
+  },
+  filterable: {
+    operators: operators.string,
   },
 };
