@@ -170,6 +170,18 @@ export const workflowSchema: ISchema = {
               },
               'x-align': 'left',
             },
+            delete: {
+              type: 'void',
+              title: '{{t("Delete")}}',
+              'x-component': 'Action',
+              'x-component-props': {
+                useAction: '{{ cm.useBulkDestroyAction }}',
+                confirm: {
+                  title: "{{t('Delete record')}}",
+                  content: "{{t('Are you sure you want to delete it?')}}",
+                },
+              },
+            },
             create: {
               type: 'void',
               title: '{{t("Add new")}}',
@@ -215,18 +227,6 @@ export const workflowSchema: ISchema = {
                       },
                     },
                   },
-                },
-              },
-            },
-            delete: {
-              type: 'void',
-              title: '{{t("Delete")}}',
-              'x-component': 'Action',
-              'x-component-props': {
-                useAction: '{{ cm.useBulkDestroyAction }}',
-                confirm: {
-                  title: "{{t('Delete record')}}",
-                  content: "{{t('Are you sure you want to delete it?')}}",
                 },
               },
             },
