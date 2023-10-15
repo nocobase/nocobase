@@ -96,6 +96,7 @@ import { BaseVariableProvider, IsDisabledParams } from './VariableInput/hooks/us
 import { Option } from './VariableInput/type';
 import { formatVariableScop } from './VariableInput/utils/formatVariableScop';
 import { DataScopeProps } from './types';
+import { InitializerItem } from '../application';
 
 interface SchemaSettingsProps {
   title?: any;
@@ -474,8 +475,8 @@ SchemaSettings.FormItemTemplate = function FormItemTemplate(props) {
 };
 
 SchemaSettings.Item = function Item(props) {
-  const { pushMenuItem } = useCollectMenuItems();
-  const { collectMenuItem } = useCollectMenuItem();
+  // const { pushMenuItem } = useCollectMenuItems();
+  // const { collectMenuItem } = useCollectMenuItem();
   const { eventKey } = props;
   const key = useMemo(() => uid(), []);
   const item = {
@@ -491,10 +492,11 @@ SchemaSettings.Item = function Item(props) {
     label: props.children || props.title,
     title: props.title,
   } as MenuProps['items'][0];
-
-  pushMenuItem?.(item);
-  collectMenuItem?.(item);
-  return null;
+  console.log(item);
+  // pushMenuItem?.(item);
+  // collectMenuItem?.(item);
+  // return <InitializerItem  />
+  return <div>123</div>;
 };
 
 SchemaSettings.ItemGroup = function ItemGroup(props) {

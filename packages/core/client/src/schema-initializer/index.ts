@@ -18,7 +18,12 @@ export {
 
 import { Plugin } from '../application/Plugin';
 import { SchemaInitializerProvider } from './SchemaInitializerProvider';
-import { blockInitializerV2, tableActionInitializersV2, tableColumnInitializer } from './buttons';
+import {
+  blockInitializerV2,
+  tableActionColumnInitializers,
+  tableActionInitializersV2,
+  tableColumnInitializer,
+} from './buttons';
 
 export class SchemaInitializerPlugin<SchemaInitializerProviderProps> extends Plugin {
   async load() {
@@ -27,5 +32,6 @@ export class SchemaInitializerPlugin<SchemaInitializerProviderProps> extends Plu
     this.app.schemaInitializerManager.add('BlockInitializers', blockInitializerV2);
     this.app.schemaInitializerManager.add('TableActionInitializers', tableActionInitializersV2);
     this.app.schemaInitializerManager.add('TableColumnInitializers', tableColumnInitializer);
+    this.app.schemaInitializerManager.add('TableActionColumnInitializers', tableActionColumnInitializers);
   }
 }

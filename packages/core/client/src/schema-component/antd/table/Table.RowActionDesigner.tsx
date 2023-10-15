@@ -15,7 +15,8 @@ export const TableRowActionDesigner = (props: any) => {
           <DragHandler>
             <DragOutlined />
           </DragHandler>
-          {render()}
+          {/* {render()} */}
+          1111
         </Space>
       </div>
     </div>

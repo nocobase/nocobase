@@ -13,14 +13,7 @@ import { default as classNames, default as cls } from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DndContext, useDesignable, useTableSize } from '../..';
-import {
-  RecordIndexProvider,
-  RecordProvider,
-  useApp,
-  useSchemaInitializer,
-  useTableBlockContext,
-  useTableSelectorContext,
-} from '../../../';
+import { RecordIndexProvider, RecordProvider, useApp, useTableBlockContext, useTableSelectorContext } from '../../../';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
 import { LocalVariablesProvider } from '../../../variables/hooks/useLocalVariables';
 import { useToken } from '../__builtins__';
