@@ -76,7 +76,7 @@ export const CreateStorage = () => {
             {t('Add new')}
           </Button>
         </Dropdown>
-        <SchemaComponent schema={schema} />
+        <SchemaComponent scope={{ createOnly: true }} schema={schema} />
       </ActionContext.Provider>
     </div>
   );
@@ -99,7 +99,7 @@ export const EditStorage = () => {
             setSchema({
               type: 'object',
               properties: {
-                drawer: {
+                [uid()]: {
                   type: 'void',
                   'x-component': 'Action.Drawer',
                   'x-decorator': 'Form',
@@ -140,7 +140,7 @@ export const EditStorage = () => {
         >
           {t('Edit')}
         </a>
-        <SchemaComponent schema={schema} />
+        <SchemaComponent scope={{ createOnly: false }} schema={schema} />
       </ActionContext.Provider>
     </div>
   );

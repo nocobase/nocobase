@@ -4,6 +4,8 @@ import path from 'path';
 import Application from '../../application';
 import { getExposeUrl } from '../clientStaticUtils';
 import PluginManager from '../plugin-manager';
+//@ts-ignore
+import { version } from '../../../package.json';
 
 export default {
   name: 'pm',
