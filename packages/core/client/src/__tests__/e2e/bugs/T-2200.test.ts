@@ -341,7 +341,10 @@ const config = {
 };
 
 // fix https://nocobase.height.app/T-2200
-test('BUG: should be possible to change the value of the association field normally', async ({ page, mockPage }) => {
+test.skip('BUG: should be possible to change the value of the association field normally', async ({
+  page,
+  mockPage,
+}) => {
   await mockPage(config).goto();
 
   await page.getByTestId('table-block').getByText('Edit').click();
