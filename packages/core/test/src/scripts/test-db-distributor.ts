@@ -5,28 +5,58 @@ import dotenv from 'dotenv';
 import path from 'path';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env.test') });
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 class DBManager {
-  aquiredDBs: Set<string> = new Set();
+  private acquiredDBs: Map<string, Set<string>> = new Map();
 
-  aquire(name: string) {
-    console.log('aquire', name);
-    this.aquiredDBs.add(name);
+  acquire(name: string, via: string) {
+    console.log('acquire', name, 'via', via);
+    if (this.acquiredDBs.has(name)) {
+      // If DB is already acquired, add the via to the set
+      this.acquiredDBs.get(name)!.add(via);
+    } else {
+      // If DB is not acquired yet, set the set with the via
+      this.acquiredDBs.set(name, new Set([via]));
+    }
   }
 
-  relase(name: string) {
-    this.aquiredDBs.delete(name);
-    console.log(`release ${name}, current used ${this.aquiredDBs.size}`);
+  async release(name: string, via: string, relaseDb?: () => Promise<void>) {
+    console.log('release', name, 'via', via);
+    const vias = this.acquiredDBs.get(name);
+    if (!vias || !vias.has(via)) {
+      console.log(`Cannot release ${name}, it is not acquired via ${via}`);
+      return;
+    }
+
+    // Remove the via from the set
+    vias.delete(via);
+
+    // If no more vias, remove the DB from the map
+    if (vias.size === 0) {
+      console.log('DB', name, 'is not used anymore, release it');
+      // delay 1000ms to make sure the DB is not used anymore
+      await delay(1000);
+
+      console.log('start to release DB', name);
+      if (this.acquiredDBs.get(name)?.size === 0) {
+        await relaseDb?.();
+        this.acquiredDBs.delete(name);
+        console.log('DB', name, 'is released, current usesd db count:', this.acquiredDBs.size);
+      }
+    }
+
+    return null;
   }
 
-  isAquired(name: string) {
-    return this.aquiredDBs.has(name);
+  isAcquired(name: string): boolean {
+    return this.acquiredDBs.has(name);
   }
 }
 
 const getDBNames = (size: number, name: string) => {
   const names = [];
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < size; i++) {
     names.push(`auto_named_${name}_${i}`);
   }
   return names;
@@ -36,7 +66,9 @@ abstract class BasePool {
   dbManager: DBManager = new DBManager();
   constructor(protected size: number) {}
 
-  abstract createDatabase(name: string): Promise<void>;
+  abstract createDatabase(name: string, options?: any): Promise<void>;
+  abstract cleanDatabase(name: string): Promise<void>;
+
   abstract getConfiguredDatabaseName(): string;
   abstract getDatabaseConfiguration(): any;
 
@@ -54,38 +86,70 @@ abstract class BasePool {
     await Promise.all(promises);
   }
 
-  async aquire() {
-    const name = getDBNames(this.size, this.getConfiguredDatabaseName()).find(
-      (name) => !this.dbManager.isAquired(name),
-    );
+  async acquire(name: string | undefined, via: string) {
+    if (!name) {
+      name = getDBNames(this.size, this.getConfiguredDatabaseName()).find((name) => !this.dbManager.isAcquired(name));
+    }
+
     if (!name) {
       throw new Error('No available database');
     }
-    this.dbManager.aquire(name);
+
+    this.dbManager.acquire(name, via);
     return name;
   }
 
-  async release(name: string) {
-    this.dbManager.relase(name);
+  async release(name: string, via: string) {
+    await this.dbManager.release(name, via, async () => {
+      await this.cleanDatabase(name);
+    });
   }
 }
 
 class PostgresPool extends BasePool {
-  async createDatabase(name: string): Promise<void> {
+  private async _createConnection(options, callback) {
     const config = this.getDatabaseConfiguration();
     const databaseName = this.getConfiguredDatabaseName();
+
     const client = new pg.Client({
       host: config['host'],
       port: config['port'],
       user: config['username'],
       password: config['password'],
       database: databaseName,
+      ...options,
     });
 
     await client.connect();
-    await client.query(`DROP DATABASE IF EXISTS ${name}`);
-    await client.query(`CREATE DATABASE ${name}`);
+
+    await callback(client);
+
     await client.end();
+  }
+
+  async cleanDatabase(name: string): Promise<void> {
+    await this._createConnection({ database: name }, async (client) => {
+      await client.query(`DROP SCHEMA public CASCADE;CREATE SCHEMA public;`);
+    });
+  }
+
+  async createDatabase(name: string, options?: any): Promise<void> {
+    const { log } = options || {};
+
+    await this._createConnection({}, async (client) => {
+      if (log) {
+        console.log(`DROP DATABASE IF EXISTS ${name}`);
+      }
+      await client.query(`DROP DATABASE IF EXISTS ${name}`);
+      if (log) {
+        console.log(`CREATE DATABASE ${name}`);
+      }
+      await client.query(`CREATE DATABASE ${name}`);
+
+      if (log) {
+        console.log(`end`);
+      }
+    });
   }
 
   getDatabaseConfiguration() {
@@ -107,7 +171,7 @@ const pools = {
 };
 
 (async () => {
-  const poolSize = process.env.TEST_DB_POOL_SIZE || 10;
+  const poolSize = process.env.TEST_DB_POOL_SIZE || 100;
   const poolClass = pools[process.env.DB_DIALECT];
 
   if (!poolClass) {
@@ -119,15 +183,17 @@ const pools = {
 
   return pool;
 })()
-  .then((pool) => {
+  .then((pool: BasePool) => {
     const server = http.createServer((req, res) => {
       const parsedUrl = url.parse(req.url, true);
       const path = parsedUrl.pathname;
       const trimmedPath = path.replace(/^\/+|\/+$/g, '');
 
-      if (trimmedPath === 'aquire') {
+      if (trimmedPath === 'acquire') {
+        const via = parsedUrl.query.via as string;
+        const name = parsedUrl.query.name as string | undefined;
         pool
-          .aquire()
+          .acquire(name, via)
           .then((name) => {
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ name }));
@@ -137,16 +203,13 @@ const pools = {
             res.end(JSON.stringify({ error: err.message }));
           });
       } else if (trimmedPath === 'release') {
-        pool
-          .release(parsedUrl.query.name as string)
-          .then(() => {
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end();
-          })
-          .catch((err) => {
-            res.writeHead(500, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: err.message }));
-          });
+        const via = parsedUrl.query.via as string;
+        const name = parsedUrl.query.name as string;
+
+        pool.release(name, via);
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end();
       } else {
         res.writeHead(404, { 'Content-Type': 'text/plain' });
         res.end('Not Found\n');

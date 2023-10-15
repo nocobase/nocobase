@@ -82,14 +82,11 @@ export class MockServer extends Application {
   }
 
   protected createDatabase(options: ApplicationOptions) {
-    let database;
-    if (options?.database instanceof Database) {
-      database = options.database;
-    } else {
-      database = mockDatabase(<any>options?.database || {});
-    }
+    const oldDatabase = this._db;
 
+    const database = mockDatabase(oldDatabase ? oldDatabase.options : <any>options?.database || {});
     database.setLogger(this._logger);
+    database.setContext({ app: this });
 
     return database;
   }

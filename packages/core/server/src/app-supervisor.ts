@@ -178,8 +178,6 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
       throw new Error(`app ${app.name} already exists`);
     }
 
-    console.log(`add app ${app.name} into supervisor`);
-
     this.bindAppEvents(app);
 
     this.apps[app.name] = app;
