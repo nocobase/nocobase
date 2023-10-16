@@ -22,30 +22,41 @@ export class SchemaInitializerV2<P1 = ButtonProps, P2 = ListProps<any>, P3 = Lis
     Object.assign(this.options, options);
   }
 
-  add<P = {}>(item: SchemaInitializerItemType): void;
-  add<P = {}>(parentName: string, item: SchemaInitializerItemType): void;
-  add(...args: any[]) {
-    if (args.length === 1 && typeof args[0] === 'object') {
-      this.items.push(args[0]);
-    } else {
-      const [parentName, item] = args;
-      const parentItem = this.get(parentName);
-      if (parentItem) {
-        if (!parentItem.children) {
-          parentItem.children = [];
-        }
-        parentItem.children.push(item);
+  add(name: string, item: SchemaInitializerItemType) {
+    const arr = name.split('.');
+    const data = { ...item, name };
+    if (arr.length === 1) {
+      const index = this.items.findIndex((item: any) => item.name === name);
+      if (index === -1) {
+        this.items.push(data);
+      } else {
+        this.items[index] = data;
+      }
+      return;
+    }
+
+    const parentName = arr.slice(0, -1).join('.');
+    const parentItem = this.get(parentName);
+    if (parentItem) {
+      if (!parentItem.children) {
+        parentItem.children = [];
+      }
+      const index = parentItem.children.findIndex((item: any) => item.name === name);
+      if (index === -1) {
+        parentItem.children.push(data);
+      } else {
+        parentItem.children[index] = data;
       }
     }
   }
 
-  get(nestedName: string) {
+  get(nestedName: string): SchemaInitializerItemType | undefined {
     const arr = nestedName.split('.');
     let current: any = this.items;
 
     for (let i = 0; i < arr.length; i++) {
       const name = arr[i];
-      current = current.find((item: any) => item.name === name);
+      current = current.find((item) => item.name === name);
       if (!current || i === arr.length - 1) {
         return current;
       }
@@ -56,16 +67,25 @@ export class SchemaInitializerV2<P1 = ButtonProps, P2 = ListProps<any>, P3 = Lis
         return undefined;
       }
     }
+
+    return current;
   }
 
   remove(nestedName: string) {
     const arr = nestedName.split('.');
-    const parent = arr.length === 1 ? this.items : this.get(arr.slice(0, -1).join('.'));
-    if (parent) {
-      const name = arr[arr.length - 1];
-      const index = parent.findIndex((item: any) => item.name === name);
+    if (arr.length === 1) {
+      const index = this.items.findIndex((item) => item.name === arr[0]);
       if (index !== -1) {
-        parent.splice(index, 1);
+        this.items.splice(index, 1);
+      }
+      return;
+    }
+    const parent = this.get(arr.slice(0, -1).join('.'));
+    if (parent && parent.children) {
+      const name = arr[arr.length - 1];
+      const index = parent.children.findIndex((item) => item.name === name);
+      if (index !== -1) {
+        parent.children.splice(index, 1);
       }
     }
   }

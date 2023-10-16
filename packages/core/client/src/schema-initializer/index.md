@@ -106,3 +106,7 @@ const CustomSchemaInitializerButton = () => {
 ### Basic
 
 <code src="./demos/demo1.tsx"></code>
+
+### Nested items
+
+<code src="./demos/demo2.tsx"></code>

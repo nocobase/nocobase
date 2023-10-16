@@ -1,6 +1,6 @@
 import React from 'react';
 import { ComponentType, useCallback } from 'react';
-import { Dropdown } from 'antd';
+import { Card, Dropdown } from 'antd';
 import classNames from 'classnames';
 
 import { useDesignable } from '../../../schema-component';
@@ -50,7 +50,7 @@ export function withInitializer(C: ComponentType<SchemaInitializerOptions>) {
             className={classNames('nb-schema-initializer-button')}
             openClassName={`nb-schema-initializer-button-open`}
             {...dropdownProps}
-            dropdownRender={() => <>{children}</>}
+            dropdownRender={() => <Card>{children}</Card>}
           >
             <span>{React.createElement(C, props)}</span>
           </Dropdown>

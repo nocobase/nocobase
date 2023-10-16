@@ -8,7 +8,7 @@ export type InsertType = (s: ISchema) => void;
 interface SchemaInitializerItemBaseType {
   name: string;
   sort?: number;
-  Component?: string | ComponentType<{ name?: string; insert?: InsertType; item: SchemaInitializerItemType }>;
+  Component?: string | ComponentType<any>;
   useVisible?: () => boolean;
   [index: string]: any;
 }

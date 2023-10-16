@@ -1,77 +1,121 @@
+import React, { FC } from 'react';
 import {
-  Action,
-  ActionBar,
-  SchemaComponent,
-  SchemaComponentProvider,
-  SchemaInitializerProvider,
+  Application,
+  Plugin,
+  SchemaInitializerV2,
+  SchemaInitializerItemType,
+  InitializerChildren,
+  useApp,
 } from '@nocobase/client';
-import React from 'react';
+import { Divider, Menu } from 'antd';
 
-const initializers = {
-  AddAction: {
-    title: 'Configure actions',
-    insertPosition: 'beforeEnd',
-    style: { marginLeft: 8 },
-    items: [
-      {
-        type: 'itemGroup',
-        title: 'Enable actions',
-        children: [
-          {
-            type: 'item',
-            title: 'Create',
-            component: 'ActionInitializer',
-            schema: {
-              title: 'Create',
-              'x-action': 'posts:create',
-              'x-component': 'Action',
-              'x-designer': 'Action.Designer',
-              'x-align': 'left',
-            },
-          },
-          {
-            type: 'item',
-            title: 'Update',
-            component: 'ActionInitializer',
-            schema: {
-              title: 'Update',
-              'x-action': 'posts:update',
-              'x-component': 'Action',
-              'x-designer': 'Action.Designer',
-              'x-align': 'right',
-            },
-          },
-        ],
-      },
-    ],
-  },
+const ParentA: FC<{ children: SchemaInitializerItemType[] }> = ({ children }) => {
+  return (
+    <div>
+      <div>parent</div>
+      <Divider dashed />
+
+      {/* 可以自行决定需要渲染效果 */}
+
+      {/* 示例1：直接渲染 */}
+      <div>直接渲染</div>
+      {children.map((item) => React.createElement(item.Component, { key: item.name, ...item }))}
+
+      <Divider dashed />
+
+      {/* 等同于 */}
+      <div>使用内置的 InitializerChildren</div>
+      <InitializerChildren>{children}</InitializerChildren>
+
+      <Divider dashed />
+
+      {/* 示例2：渲染成列表 */}
+      <div>渲染成列表</div>
+      <ul>
+        {children.map((item) => {
+          return (
+            <li key={item.name}>
+              <div>name: {item.name}</div>
+              {React.createElement(item.Component, { key: item.name, ...item })}
+            </li>
+          );
+        })}
+      </ul>
+      <Divider dashed />
+
+      {/* 示例3：渲染成 Menu 形式 */}
+      <div>渲染成 Menu 形式 </div>
+      <Menu items={children.map((item) => ({ key: item.name, label: React.createElement(item.Component, item) }))} />
+    </div>
+  );
 };
 
-export default function App() {
-  return (
-    <SchemaComponentProvider designable components={{ ActionBar, Action }}>
-      <SchemaInitializerProvider initializers={initializers}>
-        <SchemaComponent
-          schema={{
-            type: 'void',
-            name: 'page',
-            'x-component': 'ActionBar',
-            // 指定初始化的按钮组件，
-            // Table、Form、Details、Calendar、Kanban 等等不同区块
-            // 可以根据情况组装自己的 initializer
-            'x-initializer': 'AddAction',
-            properties: {
-              action1: {
-                type: 'void',
-                title: 'Update',
-                // 使用 x-action 来标记 action schema
-                'x-action': 'posts:update',
-                'x-component': 'Action',
-              },
-            },
-          }}
-        />
-      </SchemaInitializerProvider>
-    </SchemaComponentProvider>
-  );
+const myInitializer = new SchemaInitializerV2({
+  designable: true,
+  title: 'Button Text',
+  items: [
+    {
+      name: 'a',
+      Component: ParentA,
+      children: [
+        {
+          name: 'a1',
+          title: 'a1 title',
+          onClick: () => {
+            alert('test');
+          },
+          // 配置项的内容会被当做 props 传入到 Component 中
+          Component: ({ title, onClick }) => <div onClick={onClick}>{title}</div>,
+        },
+        {
+          name: 'a2',
+          Component: () => <div>a2</div>,
+        },
+        {
+          name: 'a3',
+          Component: () => <div>a3</div>,
+        },
+      ],
+    },
+  ],
+});
+
+const Root = () => {
+  const app = useApp();
+  const initializer = app.schemaInitializerManager.get('MyInitializer');
+  return <div>{initializer.render()}</div>;
+};
+
+class MyPlugin extends Plugin {
+  async load() {
+    this.app.schemaInitializerManager.add('MyInitializer', myInitializer);
+    this.app.router.add('root', {
+      path: '/',
+      Component: Root,
+    });
+  }
 }
+
+class MyPlugin2 extends Plugin {
+  async load() {
+    const myInitializer = this.app.schemaInitializerManager.get('MyInitializer');
+
+    // 嵌套添加
+    myInitializer.add('a.a4', {
+      Component: () => <div>a4</div>,
+    });
+
+    // 嵌套移除
+    myInitializer.remove('a.a3');
+  }
+}
+
+const app = new Application({
+  router: {
+    type: 'memory',
+    initialEntries: ['/'],
+  },
+  plugins: [MyPlugin, MyPlugin2],
+});
+
+export default app.getRootComponent();

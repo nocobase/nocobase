@@ -44,8 +44,7 @@ class MyPlugin2 extends Plugin {
     const myInitializer = this.app.schemaInitializerManager.get('MyInitializer');
 
     // 添加或者修改 schema initializer 的 items
-    myInitializer.add({
-      name: 'demo3',
+    myInitializer.add('demo3', {
       Component: () => <div>myInitializer content3</div>,
     });
 
