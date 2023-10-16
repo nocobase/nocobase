@@ -109,7 +109,7 @@ export const blockInitializerV2 = new SchemaInitializerV2({
   title: '{{t("Add block")}}',
   icon: 'PlusOutlined',
   wrap: gridRowColWrap,
-  list: [
+  items: [
     {
       name: 'dataBlocks',
       title: '{{t("Data blocks")}}',

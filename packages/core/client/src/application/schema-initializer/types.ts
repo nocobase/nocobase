@@ -5,20 +5,32 @@ import { ComponentType, ReactNode } from 'react';
 
 export type InsertType = (s: ISchema) => void;
 
-// TODO: 类型需要优化
-export type SchemaInitializerListItemType<P = {}> = P & {
+interface SchemaInitializerItemBaseType {
   name: string;
-  /**
-   * default: 0
-   * 值越小，排序越靠前
-   */
   sort?: number;
-  type?: 'itemGroup' | 'itemMenu' | 'item' | 'divider' | 'subMenu';
-  Component?: string | ComponentType<P & { name?: string; insert?: InsertType }>;
-  children?: SchemaInitializerListItemType[] | ComponentType;
-  useChildren?: () => SchemaInitializerListItemType[];
+  Component?: string | ComponentType<{ name?: string; insert?: InsertType; item: SchemaInitializerItemType }>;
+  useVisible?: () => boolean;
   [index: string]: any;
-};
+}
+
+interface SchemaInitializerItemDividerType extends Partial<SchemaInitializerItemBaseType> {
+  type: 'divider';
+}
+
+interface SchemaInitializerItemOnlyType extends Partial<SchemaInitializerItemBaseType> {
+  type: 'item';
+}
+
+interface SchemaInitializerItemWithChildren extends Partial<SchemaInitializerItemBaseType> {
+  type?: 'itemGroup' | 'itemMenu' | 'subMenu';
+  children?: SchemaInitializerItemType[] | ComponentType;
+  useChildren?: () => SchemaInitializerItemType[];
+}
+
+export type SchemaInitializerItemType =
+  | SchemaInitializerItemDividerType
+  | SchemaInitializerItemOnlyType
+  | SchemaInitializerItemWithChildren;
 
 // TODO: 类型需要优化
 export interface SchemaInitializerOptions<P1 = ButtonProps, P2 = ListProps<any>, P3 = ListItemProps> {
@@ -41,7 +53,7 @@ export interface SchemaInitializerOptions<P1 = ButtonProps, P2 = ListProps<any>,
   insert?: InsertType;
   useInsert?: () => InsertType;
   onSuccess?: (data: any) => void;
-  list?: SchemaInitializerListItemType[];
+  items?: SchemaInitializerItemType[];
   icon?: ReactNode;
   'data-testid'?: string;
   [index: string]: any;

@@ -155,7 +155,7 @@ export const tableColumnInitializer = new SchemaInitializerV2({
       },
     };
   },
-  list: [
+  items: [
     {
       name: 'display-fields',
       type: 'itemGroup',
@@ -173,7 +173,6 @@ export const tableColumnInitializer = new SchemaInitializerV2({
     },
     {
       type: 'divider',
-      name: 'dev',
     },
     {
       type: 'item',

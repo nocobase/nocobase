@@ -187,7 +187,7 @@ export const tableActionInitializersV2 = new SchemaInitializerV2({
   style: {
     marginLeft: 8,
   },
-  list: [
+  items: [
     {
       type: 'itemGroup',
       name: 'actions',
@@ -214,7 +214,7 @@ export const tableActionInitializersV2 = new SchemaInitializerV2({
               skipScopeCheck: true,
             },
           },
-          visible: function useVisible() {
+          useVisible: function useVisible() {
             const collection = useCollection();
             return !['view', 'file', 'sql'].includes(collection.template) || collection?.writableView;
           },
@@ -228,7 +228,7 @@ export const tableActionInitializersV2 = new SchemaInitializerV2({
             'x-align': 'right',
             'x-decorator': 'ACLActionProvider',
           },
-          visible: function useVisible() {
+          useVisible: function useVisible() {
             const collection = useCollection();
             return !['view', 'sql'].includes(collection.template) || collection?.writableView;
           },
@@ -249,7 +249,7 @@ export const tableActionInitializersV2 = new SchemaInitializerV2({
           schema: {
             'x-align': 'right',
           },
-          visible: function useVisible() {
+          useVisible: function useVisible() {
             const schema = useFieldSchema();
             const collection = useCollection();
             const { treeTable } = schema?.parent?.['x-decorator-props'] || {};
@@ -260,8 +260,7 @@ export const tableActionInitializersV2 = new SchemaInitializerV2({
     },
     {
       type: 'divider',
-      name: 'dev', // todo: remove
-      visible: function useVisible() {
+      useVisible: function useVisible() {
         const collection = useCollection();
         return !['view', 'sql'].includes(collection.template) || collection?.writableView;
       },
@@ -332,7 +331,7 @@ export const tableActionInitializersV2 = new SchemaInitializerV2({
           },
         },
       ],
-      visible: function useVisible() {
+      useVisible: function useVisible() {
         const collection = useCollection();
         return !['view', 'sql'].includes(collection.template) || collection?.writableView;
       },

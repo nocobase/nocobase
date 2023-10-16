@@ -5,9 +5,9 @@ import {
   useInitializerChildren,
   useSchemaInitializerV2,
 } from '../hooks';
-import { SchemaInitializerListItemType } from '../types';
+import { SchemaInitializerItemType } from '../types';
 
-export const InitializerChildren: FC<{ children: SchemaInitializerListItemType[] }> = (props) => {
+export const InitializerChildren: FC<{ children: SchemaInitializerItemType[] }> = (props) => {
   const { children } = props;
   const validChildren = useInitializerChildren(children);
   if (isComponentChildren(validChildren)) return React.createElement(validChildren);

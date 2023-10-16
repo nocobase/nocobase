@@ -1,6 +1,6 @@
 import React, { ComponentType } from 'react';
 import { createContext } from 'react';
-import { InsertType, SchemaInitializerListItemType, SchemaInitializerOptions } from '../types';
+import { InsertType, SchemaInitializerItemType, SchemaInitializerOptions } from '../types';
 import { useFindComponent } from '../../../schema-component';
 import { InitializerGroup, InitializerMenu, InitializerItem, InitializerDivider } from '../components';
 
@@ -10,7 +10,7 @@ export const useSchemaInitializerV2 = () => {
   return React.useContext(SchemaInitializerV2Context);
 };
 
-const typeComponentMap: Record<SchemaInitializerListItemType['type'], ComponentType> = {
+const typeComponentMap: Record<SchemaInitializerItemType['type'], ComponentType> = {
   itemGroup: InitializerGroup,
   divider: InitializerDivider,
   subMenu: InitializerMenu,
@@ -20,22 +20,23 @@ const typeComponentMap: Record<SchemaInitializerListItemType['type'], ComponentT
 export const useInitializerComponent = () => {
   const findComponent = useFindComponent();
   function findInitializerComponent(
-    type: SchemaInitializerListItemType['type'],
-    Component: SchemaInitializerListItemType['Component'],
-    visible: SchemaInitializerListItemType['visible'],
+    type: SchemaInitializerItemType['type'],
+    Component: SchemaInitializerItemType['Component'],
+    useVisible: SchemaInitializerItemType['useVisible'],
   ) {
     if (!type && !Component) return null;
     const C = !Component && type && typeComponentMap[type] ? typeComponentMap[type] : findComponent(Component);
     if (!C) return null;
-    const visibleResult = visible?.();
-    if (visible && !visibleResult) return null;
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const visibleResult = useVisible?.(); // 运行时 hook 执行顺序可以保证，因为 load 阶段已经完成全部 items 的加载，所以这里可以直接使用
+    if (useVisible && !visibleResult) return null;
     return C;
   }
 
   return findInitializerComponent;
 };
 
-export type UseInitializerChildrenResult = Omit<SchemaInitializerListItemType, 'sort' | 'type' | 'visible'>;
+export type UseInitializerChildrenResult = Omit<SchemaInitializerItemType, 'sort' | 'type' | 'visible'>;
 
 export const isComponentChildren = (val: unknown): val is ComponentType => {
   return !Array.isArray(val);
@@ -49,9 +50,9 @@ export const useInitializerChildren = (
   return children
     .sort((a, b) => (a.sort || 0) - (b.sort || 0))
     .map((item) => {
-      const { sort: _unUse, type, Component, visible, ...others } = item;
+      const { sort: _unUse, type, Component, useVisible, ...others } = item;
       return {
-        Component: findInitializerComponent(type, Component, visible),
+        Component: findInitializerComponent(type, Component, useVisible),
         item,
         ...others,
       };

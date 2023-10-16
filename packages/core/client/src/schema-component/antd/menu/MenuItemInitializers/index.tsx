@@ -464,7 +464,7 @@ export const menuItemInitializerV2 = new SchemaInitializerV2({
   insertPosition: 'beforeEnd',
   icon: 'PlusOutlined',
   title: '{{t("Add menu item")}}',
-  list: [
+  items: [
     {
       name: 'group',
       Component: GroupItemV2,

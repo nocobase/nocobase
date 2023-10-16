@@ -1,6 +1,6 @@
 import React from 'react';
 import { ComponentType, useCallback } from 'react';
-import { Button, Dropdown } from 'antd';
+import { Dropdown } from 'antd';
 import classNames from 'classnames';
 
 import { useDesignable } from '../../../schema-component';

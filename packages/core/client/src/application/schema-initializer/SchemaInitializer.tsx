@@ -1,32 +1,32 @@
 import { ButtonProps, ListProps } from 'antd';
 import { ComponentType } from 'react';
 import React from 'react';
-import { ListItemProps } from 'antd/lib/list';
 import { InitializerChildren } from './components/InitializerChildren';
-import { SchemaInitializerOptions, SchemaInitializerListItemType } from './types';
+import { SchemaInitializerOptions, SchemaInitializerItemType } from './types';
 import { InitializerButton } from './components/InitializerButton';
 import { InitializerList } from './components/InitializerList';
 import { withInitializer } from './hoc';
+import { ListItemProps } from 'antd/es/list';
 
 export class SchemaInitializerV2<P1 = ButtonProps, P2 = ListProps<any>, P3 = ListItemProps> {
   options: SchemaInitializerOptions<P1, P2, P3> = {};
-  get list() {
-    return this.options.list;
+  get items() {
+    return this.options.items;
   }
 
   constructor(options: SchemaInitializerOptions<P1, P2, P3>) {
-    this.options = Object.assign({ list: [] as any }, options);
+    this.options = Object.assign({ items: [] as any }, options);
   }
 
   update(options: SchemaInitializerOptions<P1, P2, P3>) {
     Object.assign(this.options, options);
   }
 
-  add<P = {}>(item: SchemaInitializerListItemType<P>): void;
-  add<P = {}>(parentName: string, item: SchemaInitializerListItemType<P>): void;
+  add<P = {}>(item: SchemaInitializerItemType): void;
+  add<P = {}>(parentName: string, item: SchemaInitializerItemType): void;
   add(...args: any[]) {
     if (args.length === 1 && typeof args[0] === 'object') {
-      this.list.push(args[0]);
+      this.items.push(args[0]);
     } else {
       const [parentName, item] = args;
       const parentItem = this.get(parentName);
@@ -41,7 +41,7 @@ export class SchemaInitializerV2<P1 = ButtonProps, P2 = ListProps<any>, P3 = Lis
 
   get(nestedName: string) {
     const arr = nestedName.split('.');
-    let current: any = this.list;
+    let current: any = this.items;
 
     for (let i = 0; i < arr.length; i++) {
       const name = arr[i];
@@ -60,7 +60,7 @@ export class SchemaInitializerV2<P1 = ButtonProps, P2 = ListProps<any>, P3 = Lis
 
   remove(nestedName: string) {
     const arr = nestedName.split('.');
-    const parent = arr.length === 1 ? this.list : this.get(arr.slice(0, -1).join('.'));
+    const parent = arr.length === 1 ? this.items : this.get(arr.slice(0, -1).join('.'));
     if (parent) {
       const key = arr[arr.length - 1];
       const index = parent.findIndex((item: any) => item.key === key);
@@ -87,13 +87,13 @@ export class SchemaInitializerV2<P1 = ButtonProps, P2 = ListProps<any>, P3 = Lis
   }
 
   private renderList(options: SchemaInitializerOptions<P1, P2, P3> = {}) {
-    if (this.list.length === 0) return null;
+    if (this.items.length === 0) return null;
     const C = options.ListComponent || this.options.ListComponent || InitializerList;
     const listProps = options.listProps || this.options.listProps || {};
     const listStyle = options.listStyle || this.options.listStyle || {};
     return (
       <C {...listProps} style={listStyle}>
-        <InitializerChildren>{this.list}</InitializerChildren>
+        <InitializerChildren>{this.items}</InitializerChildren>
       </C>
     );
   }
