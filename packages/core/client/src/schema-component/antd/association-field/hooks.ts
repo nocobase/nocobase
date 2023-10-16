@@ -50,6 +50,7 @@ export function useAssociationFieldContext<F extends GeneralField>() {
 
 export default function useServiceOptions(props) {
   const { action = 'list', service, fieldNames } = props;
+  console.log(fieldNames);
   const params = service?.params || {};
   const fieldSchema = useFieldSchema();
   const field = useField();
