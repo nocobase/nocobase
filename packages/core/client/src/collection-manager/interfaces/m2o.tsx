@@ -46,7 +46,8 @@ export const m2o: IField = {
   availableTypes: ['belongsTo'],
   schemaInitialize(schema: ISchema, { block, readPretty, targetCollection }) {
     // schema['type'] = 'object';
-    if (targetCollection?.titleField && schema['x-component-props']) {
+    if (targetCollection?.titleField) {
+      schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || { value: 'id' };
       schema['x-component-props'].fieldNames.label = targetCollection.titleField;
     }
