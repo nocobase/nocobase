@@ -1,6 +1,6 @@
 import { css } from '@emotion/css';
 import { FormLayout } from '@formily/antd-v5';
-import { createForm, Field, Form as FormilyForm, onFieldInit, onFormInputChange } from '@formily/core';
+import { createForm, Field, Form as FormilyForm, onFieldChange, onFieldInit, onFormInputChange } from '@formily/core';
 import { FieldContext, FormContext, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { autorun } from '@formily/reactive';
 import { uid } from '@formily/shared';
@@ -103,31 +103,32 @@ const WithForm = (props: WithFormProps) => {
   useEffect(() => {
     const id = uid();
     const disposes = [];
+    const linkagefields = [];
 
     form.addEffects(id, () => {
-      linkageRules.forEach((v) => {
+      linkageRules.forEach((v, index) => {
         v.actions?.forEach((h) => {
           if (h.targetFields?.length) {
             const fields = h.targetFields.join(',');
-
-            // 当 `linkageRules` 变更时，需要把 `field` 上之前已设置的值还原成初始值，以防止下面所述的情况：
-            //
-            // 1. 更改 `linkageRules`，使 a 字段满足条件时被隐藏
-            // 2. 设置表单，使其满足条件，进而隐藏 a 字段
-            // 3. 再次更改 `linkageRules`，使 a 字段满足条件时被禁用
-            // 4. 设置表单，使其满足条件，会发现 a 字段还是隐藏状态，这里期望的是只显示禁用状态
-            onFieldInit(`*(${fields})`, (field: any) => {
-              Object.keys(field).forEach((key) => {
-                if (key.startsWith('_') && field[key] !== undefined) {
-                  field[key.slice(1)] = field[key];
-                }
-              });
+            onFieldInit(`*(${fields})`, (field: any, form) => {
+              field['initProperty'] = {
+                display: field.display,
+                required: field.required,
+                pattern: field.pattern,
+                value: field.value || field.initialValue,
+              };
+            });
+            onFieldChange(`*(${fields})`, ['value', 'required', 'pattern', 'display'], (field: any) => {
+              field.linkageProperty = {
+                display: field.linkageProperty?.display,
+              };
             });
 
             // `onFieldReact` 有问题，没有办法被取消监听，所以这里用 `onFieldInit` 代替
             onFieldInit(`*(${fields})`, (field: any, form) => {
               disposes.push(
                 autorun(() => {
+                  linkagefields.push(field);
                   linkageMergeAction({
                     operator: h.operator,
                     value: h.value,
@@ -137,6 +138,13 @@ const WithForm = (props: WithFormProps) => {
                     variables,
                     localVariables,
                   });
+                  if (index === linkageRules.length - 1) {
+                    setTimeout(() =>
+                      linkagefields.map((v) => {
+                        v.linkageProperty = {};
+                      }),
+                    );
+                  }
                 }),
               );
             });
@@ -151,7 +159,7 @@ const WithForm = (props: WithFormProps) => {
         dispose();
       });
     };
-  }, [JSON.stringify(linkageRules)]);
+  }, [linkageRules]);
 
   return fieldSchema['x-decorator'] === 'FormV2' ? <FormDecorator {...props} /> : <FormComponent {...props} />;
 };
