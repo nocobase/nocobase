@@ -64,7 +64,7 @@ import {
   useRecord,
   useSortFields,
 } from '..';
-import { BlockRequestContext, useFormBlockContext, useTableBlockContext } from '../block-provider';
+import { BlockRequestContext, useFormBlockContext, useFormBlockType, useTableBlockContext } from '../block-provider';
 import {
   FormActiveFieldsProvider,
   findFilterTargets,
@@ -1154,6 +1154,7 @@ SchemaSettings.LinkageRules = function LinkageRules(props) {
   const variables = useVariables();
   const localVariables = useLocalVariables();
   const record = useRecord();
+  const { type: formBlockType } = useFormBlockType();
   const type = props?.type || ['Action', 'Action.Link'].includes(fieldSchema['x-component']) ? 'button' : 'field';
   const gridSchema = findGridSchema(fieldSchema) || fieldSchema;
   const schema = useMemo<ISchema>(
@@ -1176,6 +1177,7 @@ SchemaSettings.LinkageRules = function LinkageRules(props) {
                 variables,
                 localVariables,
                 record,
+                formBlockType,
               };
             },
           },
