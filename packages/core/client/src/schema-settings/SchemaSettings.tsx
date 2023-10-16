@@ -78,7 +78,7 @@ import {
   isSameCollection,
   useSupportedBlocks,
 } from '../filter-provider/utils';
-import { FlagProvider } from '../flag-provider';
+import { FlagProvider, useFlag } from '../flag-provider';
 import { useCollectMenuItem, useCollectMenuItems, useMenuItem } from '../hooks/useMenuItem';
 import { getTargetKey } from '../schema-component/antd/association-filter/utilts';
 import { DynamicComponentProps } from '../schema-component/antd/filter/DynamicComponent';
@@ -1555,6 +1555,7 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props: { fieldSchem
   const record = useRecord();
   const { form } = useFormBlockContext();
   const currentFormFields = useCollectionFilterOptions(collection);
+  const { isInSubForm, isInSubTable } = useFlag() || {};
 
   const { name } = collection;
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
@@ -1596,7 +1597,7 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props: { fieldSchem
         FormLayout,
         VariableInput: (props) => {
           return (
-            <FlagProvider isInSetDefaultValueDialog={true}>
+            <FlagProvider isInSubForm={isInSubForm} isInSubTable={isInSubTable} isInSetDefaultValueDialog>
               <VariableInput {...props} />
             </FlagProvider>
           );
@@ -1825,6 +1826,7 @@ SchemaSettings.DataScope = function DataScopeConfigure(props: DataScopeProps) {
   const variables = useVariables();
   const localVariables = useLocalVariables();
   const { getAllCollectionsInheritChain } = useCollectionManager();
+  const { isInSubForm, isInSubTable } = useFlag() || {};
 
   const dynamicComponent = (props: DynamicComponentProps) => {
     return (
@@ -1855,7 +1857,13 @@ SchemaSettings.DataScope = function DataScopeConfigure(props: DataScopeProps) {
           properties: {
             filter: {
               enum: props.collectionFilterOption || options,
-              'x-decorator': BaseVariableProvider,
+              'x-decorator': (props) => (
+                <BaseVariableProvider {...props}>
+                  <FlagProvider isInSubForm={isInSubForm} isInSubTable={isInSubTable}>
+                    {props.children}
+                  </FlagProvider>
+                </BaseVariableProvider>
+              ),
               'x-decorator-props': {
                 isDisabled,
               },
