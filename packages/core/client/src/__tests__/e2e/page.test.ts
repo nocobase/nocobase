@@ -1,4 +1,4 @@
-import { expect, test } from '@nocobase/test/client';
+import { enableToConfig, expect, test } from '@nocobase/test/client';
 
 test.describe('page header', () => {
   test('disabled & enabled page header', async ({ page, mockPage }) => {
@@ -94,6 +94,7 @@ test.describe('page title', () => {
 test.describe('page tabs', () => {
   test('enable & disabled page tab', async ({ page, mockPage }) => {
     await mockPage({ name: 'page tab' }).goto();
+    await enableToConfig(page);
     await page
       .locator('div')
       .filter({ hasText: /^page tab$/ })
@@ -106,13 +107,22 @@ test.describe('page tabs', () => {
     await page.getByText('Enable page tabs').click();
     await expect(page.getByRole('tab').locator('div').filter({ hasText: 'Unnamed' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'plus Add tab' })).toBeVisible();
-    await mockPage().goto();
-    await page.getByRole('menu').locator('li').filter({ hasText: 'page tab' }).click();
+    // await mockPage().goto();
+    // await page.getByRole('menu').locator('li').filter({ hasText: 'page tab' }).click();
+    // enableToConfig(page)
 
-    //修改tab名称
+    //添加新的tab
     await page.getByRole('tab').locator('div').filter({ hasText: 'Unnamed' }).click();
-    await page.getByRole('button', { name: 'drag' }).hover();
-    await page.getByRole('tab').getByLabel('menu').locator('svg').hover();
+    await page.getByRole('tab').locator('div').filter({ hasText: 'Unnamed' }).hover();
+
+    await page.getByRole('tablist').locator('.ant-tabs-tab-active').hover();
+
+    // await page.getByRole('button', { name: 'drag' }).hover();
+    // console.log(page.getByRole('tab').locator('div').filter({ hasText: 'Unnamed' }).locator('svg').nth(1))
+
+    await page.getByRole('button', { name: 'plus Add tab' }).click();
+
+    // await page.getByRole('tab').locator('div').filter({ hasText: 'Unnamed' }).locator('svg').nth(0).hover();
     // await page.getByText('Edit', { exact: true }).click();
     // await page.locator('.ant-input-affix-wrapper').click();
     // await page.getByRole('textbox').fill('page tab 1');
