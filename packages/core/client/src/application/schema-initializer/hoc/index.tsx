@@ -15,12 +15,14 @@ export function withInitializer(C: ComponentType<SchemaInitializerOptions>) {
     const { designable, insertAdjacent } = useDesignable();
     const {
       insert,
+      useInsert,
       wrap = defaultWrap,
       insertPosition = 'beforeEnd',
       onSuccess,
       designable: propsDesignable,
       dropdownProps,
       children,
+      noDropdown,
     } = props;
     // designable 为 false 时，不渲染
     if (!designable && propsDesignable !== true) {
@@ -28,26 +30,31 @@ export function withInitializer(C: ComponentType<SchemaInitializerOptions>) {
     }
 
     // 插入 schema 的能力
+    const insertCallback = useInsert ? useInsert() : insert;
     const insertSchema = useCallback(
       (schema) => {
-        if (insert) {
-          insert(wrap(schema));
+        if (insertCallback) {
+          insertCallback(wrap(schema));
         } else {
           insertAdjacent(insertPosition, wrap(schema), { onSuccess });
         }
       },
-      [insert, wrap, insertAdjacent, insertPosition, onSuccess],
+      [insertCallback, wrap, insertAdjacent, insertPosition, onSuccess],
     );
     return (
       <SchemaInitializerV2Context.Provider value={{ insert: insertSchema }}>
-        <Dropdown
-          className={classNames('nb-schema-initializer-button')}
-          openClassName={`nb-schema-initializer-button-open`}
-          {...dropdownProps}
-          dropdownRender={() => <>{children}</>}
-        >
-          <span>{React.createElement(C, props)}</span>
-        </Dropdown>
+        {noDropdown ? (
+          React.createElement(C, props)
+        ) : (
+          <Dropdown
+            className={classNames('nb-schema-initializer-button')}
+            openClassName={`nb-schema-initializer-button-open`}
+            {...dropdownProps}
+            dropdownRender={() => <>{children}</>}
+          >
+            <span>{React.createElement(C, props)}</span>
+          </Dropdown>
+        )}
       </SchemaInitializerV2Context.Provider>
     );
   });

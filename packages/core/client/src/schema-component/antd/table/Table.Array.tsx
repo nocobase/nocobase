@@ -15,7 +15,7 @@ import { default as classNames, default as cls } from 'classnames';
 import React, { useContext, useState } from 'react';
 import ReactDragListView from 'react-drag-listview';
 import { DndContext } from '../..';
-import { RecordIndexProvider, RecordProvider, useApp, useRequest, useSchemaInitializer } from '../../../';
+import { RecordIndexProvider, RecordProvider, useApp, useRequest } from '../../../';
 import { useToken } from '../__builtins__';
 
 const isColumnComponent = (schema: Schema) => {

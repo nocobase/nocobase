@@ -34,10 +34,12 @@ export interface SchemaInitializerOptions<P1 = ButtonProps, P2 = ListProps<any>,
   listProps?: P2;
   listStyle?: React.CSSProperties;
 
+  noDropdown?: boolean;
   dropdownProps?: DropDownProps;
   designable?: boolean;
   wrap?: (s: ISchema) => ISchema;
   insert?: InsertType;
+  useInsert?: () => InsertType;
   onSuccess?: (data: any) => void;
   list?: SchemaInitializerListItemType[];
   icon?: ReactNode;

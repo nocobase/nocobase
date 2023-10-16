@@ -3,11 +3,15 @@ import { useFieldSchema } from '@formily/react';
 import { Space } from 'antd';
 import React from 'react';
 import { DragHandler } from '../../../schema-component';
-import { useSchemaInitializer } from '../../../schema-initializer';
+import { useApp } from '../../../application';
 
 export const TableRowActionDesigner = (props: any) => {
   const fieldSchema = useFieldSchema();
-  const { render } = useSchemaInitializer(fieldSchema['x-initializer']);
+  const app = useApp();
+  const { render } = app.schemaInitializerManager.getRender(
+    fieldSchema['x-initializer'],
+    fieldSchema['x-initializer-props'],
+  );
   return (
     <div className={'general-schema-designer'}>
       <div className={'general-schema-designer-icons'}>
@@ -15,8 +19,7 @@ export const TableRowActionDesigner = (props: any) => {
           <DragHandler>
             <DragOutlined />
           </DragHandler>
-          {/* {render()} */}
-          1111
+          {render()}
         </Space>
       </div>
     </div>

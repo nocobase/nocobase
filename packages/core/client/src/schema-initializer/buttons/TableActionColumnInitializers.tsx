@@ -3,7 +3,7 @@ import { ISchema, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializer, SchemaSettings } from '../..';
+import { SchemaInitializer } from '../..';
 import { SchemaInitializerV2 } from '../../application';
 import { useAPIClient } from '../../api-client';
 import { useCollection } from '../../collection-manager';
@@ -14,7 +14,7 @@ export const Resizable = (props) => {
   const { dn } = useDesignable();
   const fieldSchema = useFieldSchema();
   return (
-    <SchemaSettings.ModalItem
+    <SchemaInitializer.ActionModal
       title={t('Column width')}
       schema={
         {
@@ -272,30 +272,32 @@ export const TableActionColumnInitializers = (props: any) => {
 
 export const tableActionColumnInitializers = new SchemaInitializerV2({
   insertPosition: 'beforeEnd',
-  insert: function useInsert(schema) {
+  useInsert: function useInsert() {
     const { refresh } = useDesignable();
     const fieldSchema = useFieldSchema();
     const api = useAPIClient();
     const { t } = useTranslation();
 
-    const spaceSchema = fieldSchema.reduceProperties((buf, schema) => {
-      if (schema['x-component'] === 'Space') {
-        return schema;
+    return function insert(schema) {
+      const spaceSchema = fieldSchema.reduceProperties((buf, schema) => {
+        if (schema['x-component'] === 'Space') {
+          return schema;
+        }
+        return buf;
+      }, null);
+      if (!spaceSchema) {
+        return;
       }
-      return buf;
-    }, null);
-    if (!spaceSchema) {
-      return;
-    }
-    _.set(schema, 'x-designer-props.linkageAction', true);
-    const dn = createDesignable({
-      t,
-      api,
-      refresh,
-      current: spaceSchema,
-    });
-    dn.loadAPIClientEvents();
-    dn.insertBeforeEnd(schema);
+      _.set(schema, 'x-designer-props.linkageAction', true);
+      const dn = createDesignable({
+        t,
+        api,
+        refresh,
+        current: spaceSchema,
+      });
+      dn.loadAPIClientEvents();
+      dn.insertBeforeEnd(schema);
+    };
   },
   Component: () => <MenuOutlined style={{ cursor: 'pointer' }} />,
   list: [
