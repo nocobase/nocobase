@@ -107,27 +107,50 @@ test.describe('page tabs', () => {
     await page.getByText('Enable page tabs').click();
     await expect(page.getByRole('tab').locator('div').filter({ hasText: 'Unnamed' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'plus Add tab' })).toBeVisible();
-    // await mockPage().goto();
-    // await page.getByRole('menu').locator('li').filter({ hasText: 'page tab' }).click();
-    // enableToConfig(page)
+    await page.getByRole('tab').locator('div').filter({ hasText: 'Unnamed' }).click();
+    await expect(page.getByTestId('add-block-button-in-page')).toBeVisible();
 
     //添加新的tab
-    await page.getByRole('tab').locator('div').filter({ hasText: 'Unnamed' }).click();
-    await page.getByRole('tab').locator('div').filter({ hasText: 'Unnamed' }).hover();
-
-    await page.getByRole('tablist').locator('.ant-tabs-tab-active').hover();
-
-    // await page.getByRole('button', { name: 'drag' }).hover();
-    // console.log(page.getByRole('tab').locator('div').filter({ hasText: 'Unnamed' }).locator('svg').nth(1))
-
     await page.getByRole('button', { name: 'plus Add tab' }).click();
+    await page.getByRole('textbox').click();
+    await page.getByRole('textbox').fill('page tab 1');
+    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByText('page tab 1').click();
+    await page.waitForTimeout(1000); // 等待1秒钟
+    const tabMenuItem = await page.getByRole('tab').locator('div > span').filter({ hasText: 'page tab 1' });
+    const tabMenuItemActivedColor = await tabMenuItem.evaluate((element) => {
+      const computedStyle = window.getComputedStyle(element);
+      return computedStyle.color;
+    });
+    await expect(page.getByText('page tab 1')).toBeVisible();
+    await expect(page.getByTestId('add-block-button-in-page')).toBeVisible();
+    await expect(tabMenuItemActivedColor).toBe('rgb(22, 119, 255)');
 
-    // await page.getByRole('tab').locator('div').filter({ hasText: 'Unnamed' }).locator('svg').nth(0).hover();
-    // await page.getByText('Edit', { exact: true }).click();
-    // await page.locator('.ant-input-affix-wrapper').click();
-    // await page.getByRole('textbox').fill('page tab 1');
-    // await page.getByRole('button', { name: 'OK' }).click();
-    // await expect(page.getByRole('tab').locator('div').filter({ hasText: 'page tab 1' })).toBeVisible();
+    //修改tab名称
+    await page.getByText('Unnamed').click();
+    await page.getByText('Unnamed').hover();
+    await page.getByRole('button', { name: 'menu', exact: true }).hover();
+    await page.getByText('Edit', { exact: true }).click();
+    await page.getByRole('textbox').fill('page tab');
+    await page.getByRole('button', { name: 'OK' }).click();
+
+    const tabMenuItem1 = await page.getByRole('tab').getByText('page tab', { exact: true });
+    const tabMenuItemActivedColor1 = await tabMenuItem1.evaluate((element) => {
+      const computedStyle = window.getComputedStyle(element);
+      return computedStyle.color;
+    });
+    await expect(tabMenuItem1).toBeVisible();
+    await expect(page.getByTestId('add-block-button-in-page')).toBeVisible();
+    await expect(tabMenuItemActivedColor1).toBe('rgb(22, 119, 255)');
+
+    //删除 tab
+    await page.getByText('page tab 1').click();
+    await page.getByText('page tab 1').hover();
+    await page.getByRole('button', { name: 'menu', exact: true }).hover();
+    await page.getByRole('menuitem', { name: 'Delete' }).click();
+    await page.getByRole('button', { name: 'OK' }).click();
+    await expect(page.getByText('page tab 1')).not.toBeVisible();
+    await page.getByRole('tab').getByText('page tab').click();
   });
   test.skip('move page tab', async ({ page, mockPage }) => {
     await mockPage().goto();
