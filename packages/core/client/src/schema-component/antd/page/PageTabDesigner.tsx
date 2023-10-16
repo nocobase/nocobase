@@ -22,11 +22,7 @@ export const PageDesigner = ({ title }) => {
         <Space size={2} align={'center'}>
           <SchemaSettings
             title={
-              <MenuOutlined
-                role="button"
-                aria-label="designer-page-button"
-                style={{ cursor: 'pointer', fontSize: 12 }}
-              />
+              <MenuOutlined role="button" aria-label="designer-page" style={{ cursor: 'pointer', fontSize: 12 }} />
             }
           >
             <SchemaSettings.SwitchItem
