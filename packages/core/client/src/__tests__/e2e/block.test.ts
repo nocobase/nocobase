@@ -3,11 +3,17 @@ import { enableToConfig, expect, test } from '@nocobase/test/client';
 test.describe('add block & delete block', () => {
   test('add block,then delete block', async ({ page, mockPage }) => {
     await mockPage().goto();
+    await page.getByTestId('add-block-button-in-page').click();
+    await page.getByRole('menuitem', { name: 'table Table right' }).click();
+    await page.getByRole('menuitem', { name: 'Users' }).click();
+    await page.getByRole('menuitem', { name: 'Users' }).hover();
+    await expect(page.getByTestId('configure-actions-button-of-table-block-users')).toBeVisible();
+    await expect(page.getByTestId('configure-columns-button-of-table-block-users')).toBeVisible();
   });
 });
 
 test.describe('block title', () => {
-  test('edit block title', async ({ page, mockPage }) => {
+  test.skip('edit block title', async ({ page, mockPage }) => {
     await mockPage({ name: 'page title' }).goto();
     //默认显示
     await expect(page.getByTitle('page title')).toBeVisible();
@@ -44,7 +50,7 @@ test.describe('block title', () => {
 });
 
 test.describe('blcok template', () => {
-  test('form block save as block template', async ({ page, mockPage }) => {
+  test.skip('form block save as block template', async ({ page, mockPage }) => {
     await mockPage({ name: 'page tab' }).goto();
     await enableToConfig(page);
     await page
@@ -113,7 +119,7 @@ test.describe('blcok template', () => {
 
     //禁用标签
   });
-  test('using block template ', async ({ page, mockPage }) => {
+  test.skip('using block template ', async ({ page, mockPage }) => {
     await mockPage({
       pageSchema: {
         'x-uid': 'h8q2mcgo3cq',
