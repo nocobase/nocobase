@@ -9,6 +9,7 @@ import { Button, Card, Divider, Tooltip } from 'antd';
 import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FormActiveFieldsProvider } from '../../../block-provider';
+import { FlagProvider } from '../../../flag-provider';
 import { RecordIndexProvider, RecordProvider } from '../../../record-provider';
 import { isPatternDisabled, isSystemField } from '../../../schema-settings';
 import {
@@ -23,10 +24,18 @@ import { useAssociationFieldContext } from './hooks';
 export const Nester = (props) => {
   const { options } = useContext(AssociationFieldContext);
   if (['hasOne', 'belongsTo'].includes(options.type)) {
-    return <ToOneNester {...props} />;
+    return (
+      <FlagProvider isInSubForm>
+        <ToOneNester {...props} />
+      </FlagProvider>
+    );
   }
   if (['hasMany', 'belongsToMany'].includes(options.type)) {
-    return <ToManyNester {...props} />;
+    return (
+      <FlagProvider isInSubForm>
+        <ToManyNester {...props} />
+      </FlagProvider>
+    );
   }
   return null;
 };
