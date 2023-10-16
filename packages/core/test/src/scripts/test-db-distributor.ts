@@ -38,8 +38,8 @@ class DBManager {
       // delay 1000ms to make sure the DB is not used anymore
       await delay(1000);
 
-      console.log('start to release DB', name);
       if (this.acquiredDBs.get(name)?.size === 0) {
+        console.log('start to release DB', name);
         await relaseDb?.();
         this.acquiredDBs.delete(name);
         console.log('DB', name, 'is released, current usesd db count:', this.acquiredDBs.size);

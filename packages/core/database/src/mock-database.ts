@@ -83,6 +83,8 @@ export function mockDatabase(options: IDatabaseOptions = {}): MockDatabase {
         return;
       }
 
+      config.dialectOptions['application_name'] = expect.getState().currentTestName;
+
       db.options.database = config.database = databaseResponse.name;
 
       if (db.context.app?.options?.database) {
