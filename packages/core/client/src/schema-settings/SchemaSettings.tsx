@@ -895,10 +895,6 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
         <Modal
           width={'50%'}
           title={compile(title)}
-          bodyStyle={{
-            maxHeight: '70vh',
-            overflowY: 'scroll',
-          }}
           {...others}
           destroyOnClose
           open={visible}
