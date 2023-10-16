@@ -179,10 +179,10 @@ export const storageSchema: ISchema = {
               type: 'void',
               'x-decorator': 'Table.Column.Decorator',
               'x-component': 'Table.Column',
+              title: `{{t("Default storage", { ns: "${NAMESPACE}" })}}`,
               properties: {
                 default: {
                   type: 'string',
-                  title: `{{t("Default storage", { ns: "${NAMESPACE}" })}}`,
                   'x-component': 'CollectionField',
                   'x-read-pretty': true,
                 },
