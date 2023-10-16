@@ -1,7 +1,7 @@
 import { Form } from '@formily/core';
 import { ISchema, Schema } from '@formily/react';
-import _ from 'lodash';
 import { useMemo } from 'react';
+import { useFormBlockType } from '../../../block-provider/FormBlockProvider';
 import { CollectionFieldOptions, useCollection } from '../../../collection-manager';
 import { useFlag } from '../../../flag-provider';
 import { useBlockCollection } from './useBlockCollection';
@@ -20,7 +20,7 @@ interface Props {
   /**
    * `useRecord` 返回的值
    */
-  record: Record<string, any>;
+  record?: Record<string, any>;
   /**
    * `Filter` 组件中选中的字段的 `uiSchema`，比如设置 `数据范围` 的时候在左侧选择的字段
    */
@@ -40,7 +40,6 @@ interface Props {
 export const useVariableOptions = ({
   collectionField,
   form,
-  record,
   uiSchema,
   operator,
   noDisabled,
@@ -48,6 +47,7 @@ export const useVariableOptions = ({
 }: Props) => {
   const { name: blockCollectionName } = useBlockCollection();
   const { isInSubForm, isInSubTable } = useFlag() || {};
+  const { type: formBlockType } = useFormBlockType();
   const { name } = useCollection();
   const userVariable = useUserVariable({
     maxDepth: 3,
@@ -79,17 +79,13 @@ export const useVariableOptions = ({
     targetFieldSchema,
   });
 
-  // 保证下面的 `_.isEmpty(record)` 结果符合预期，如果存在 `__parent` 字段，需要删除
-  record = { ...record };
-  delete record.__parent;
-
   return useMemo(() => {
     return [
       userVariable,
       dateVariable,
       form && !form.readPretty && formVariable,
       (isInSubForm || isInSubTable) && iterationVariable,
-      !_.isEmpty(record) && currentRecordVariable,
+      formBlockType === 'update' && currentRecordVariable,
     ].filter(Boolean);
   }, [
     userVariable,
@@ -99,7 +95,6 @@ export const useVariableOptions = ({
     isInSubForm,
     isInSubTable,
     iterationVariable,
-    record,
     currentRecordVariable,
   ]);
 };

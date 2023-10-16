@@ -131,7 +131,6 @@ function getTypedConstantOption(type: string, types: true | string[], fieldNames
 export function Input(props) {
   const {
     value = '',
-    scope,
     onChange,
     children,
     button,
@@ -141,6 +140,7 @@ export function Input(props) {
     changeOnSelect,
     fieldNames,
   } = props;
+  const scope = typeof props.scope === 'function' ? props.scope() : props.scope;
   const { wrapSSR, hashId, componentCls, rootPrefixCls } = useStyles();
 
   // 添加 antd input 样式，防止样式缺失

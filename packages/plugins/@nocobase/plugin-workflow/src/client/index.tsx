@@ -2,7 +2,7 @@ export * from './constants';
 export * from './Branch';
 export * from './FlowContext';
 export * from './nodes';
-export { triggers, getTriggersOptions } from './triggers';
+export { triggers, useTrigger, getTriggersOptions } from './triggers';
 export { useWorkflowVariableOptions } from './variable';
 
 import { Plugin } from '@nocobase/client';

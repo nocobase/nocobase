@@ -25,6 +25,7 @@ import React, {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   // @ts-ignore
   useTransition as useReactTransition,
@@ -63,7 +64,7 @@ import {
   useRecord,
   useSortFields,
 } from '..';
-import { BlockRequestContext, useFormBlockContext, useTableBlockContext } from '../block-provider';
+import { BlockRequestContext, useFormBlockContext, useFormBlockType, useTableBlockContext } from '../block-provider';
 import {
   FormActiveFieldsProvider,
   findFilterTargets,
@@ -559,7 +560,7 @@ SchemaSettings.Remove = function Remove(props: any) {
           title: t('Delete block'),
           content: t('Are you sure you want to delete it?'),
           ...confirm,
-          onOk() {
+          async onOk() {
             const options = {
               removeParentsIfNoChildren,
               breakRemoveOn,
@@ -569,10 +570,11 @@ SchemaSettings.Remove = function Remove(props: any) {
               fieldSchema['required'] = false;
             }
             if (template && ctx?.dn) {
-              ctx?.dn.remove(null, options);
+              await ctx?.dn.remove(null, options);
             } else {
-              dn.remove(null, options);
+              await dn.remove(null, options);
             }
+            await confirm?.onOk?.();
             delete form.values[fieldSchema.name];
             removeActiveFieldName?.(fieldSchema.name as string);
             if (field?.setInitialValue && field?.reset) {
@@ -834,7 +836,7 @@ SchemaSettings.PopupItem = function PopupItem(props) {
 };
 
 SchemaSettings.ActionModalItem = React.memo((props: any) => {
-  const { title, onSubmit, initialValues, initialSchema, schema, modalTip, components, ...others } = props;
+  const { title, onSubmit, initialValues, initialSchema, schema, modalTip, components, scope, ...others } = props;
   const [visible, setVisible] = useState(false);
   const [schemaUid, setSchemaUid] = useState<string>(props.uid);
   const { t } = useTranslation();
@@ -854,9 +856,14 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
     [initialValues],
   );
 
+  useEffect(() => {
+    form.setInitialValues(cloneDeep(initialValues));
+  }, [JSON.stringify(initialValues || {})]);
+
   const cancelHandler = useCallback(() => {
     setVisible(false);
-  }, []);
+    form.reset();
+  }, [form]);
 
   const submitHandler = useCallback(async () => {
     await form.submit();
@@ -871,6 +878,10 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
       await api.resource('uiSchemas').insert({ values: initialSchema });
       setSchemaUid(initialSchema['x-uid']);
     }
+    if (typeof others?.beforeOpen === 'function') {
+      others?.beforeOpen?.();
+    }
+    ctx.setVisible(false);
     setVisible(true);
   }, [api, ctx, dn, fieldSchema, initialSchema, schemaUid]);
 
@@ -884,6 +895,10 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
         <Modal
           width={'50%'}
           title={compile(title)}
+          bodyStyle={{
+            maxHeight: '70vh',
+            overflowY: 'scroll',
+          }}
           {...others}
           destroyOnClose
           open={visible}
@@ -902,8 +917,10 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
               <FormLayout layout={'vertical'}>
                 {modalTip && <Alert message={modalTip} />}
                 {modalTip && <br />}
-                {visible && schemaUid && <RemoteSchemaComponent noForm components={components} uid={schemaUid} />}
-                {visible && schema && <SchemaComponent components={components} schema={schema} />}
+                {visible && schemaUid && (
+                  <RemoteSchemaComponent noForm components={components} scope={scope} uid={schemaUid} />
+                )}
+                {visible && schema && <SchemaComponent components={components} scope={scope} schema={schema} />}
               </FormLayout>
             </FormProvider>
           </FormActiveFieldsProvider>
@@ -1137,8 +1154,8 @@ SchemaSettings.LinkageRules = function LinkageRules(props) {
   const variables = useVariables();
   const localVariables = useLocalVariables();
   const record = useRecord();
-
-  const type = ['Action', 'Action.Link'].includes(fieldSchema['x-component']) ? 'button' : 'field';
+  const { type: formBlockType } = useFormBlockType();
+  const type = props?.type || ['Action', 'Action.Link'].includes(fieldSchema['x-component']) ? 'button' : 'field';
   const gridSchema = findGridSchema(fieldSchema) || fieldSchema;
   const schema = useMemo<ISchema>(
     () => ({
@@ -1160,6 +1177,7 @@ SchemaSettings.LinkageRules = function LinkageRules(props) {
                 variables,
                 localVariables,
                 record,
+                formBlockType,
               };
             },
           },

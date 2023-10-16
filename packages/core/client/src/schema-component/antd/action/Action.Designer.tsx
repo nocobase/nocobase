@@ -2,7 +2,7 @@ import { ArrayTable } from '@formily/antd-v5';
 import { onFieldValueChange, onFieldInputValueChange } from '@formily/core';
 import { connect, ISchema, mapProps, useField, useFieldSchema, useForm, useFormEffects } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
-import { Alert, Tree as AntdTree } from 'antd';
+import { Alert, Tree as AntdTree, ModalProps } from 'antd';
 import { cloneDeep } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -68,12 +68,12 @@ const MenuGroup = (props) => {
   );
 };
 
-function ButtonEditor() {
+function ButtonEditor(props) {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
   const { t } = useTranslation();
-  const isLink = fieldSchema['x-component'] === 'Action.Link';
+  const isLink = props?.isLink || fieldSchema['x-component'] === 'Action.Link';
 
   return (
     <SchemaSettings.ModalItem
@@ -689,7 +689,11 @@ function AfterSuccess() {
   );
 }
 
-function RemoveButton() {
+function RemoveButton(
+  props: {
+    onConfirmOk?: ModalProps['onOk'];
+  } = {},
+) {
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   const isDeletable = fieldSchema?.parent['x-component'] === 'CollectionField';
@@ -704,6 +708,7 @@ function RemoveButton() {
           }}
           confirm={{
             title: t('Delete action'),
+            onOk: props.onConfirmOk,
           }}
         />
       </>
@@ -890,7 +895,7 @@ function WorkflowConfig() {
 }
 
 export const ActionDesigner = (props) => {
-  const { modalTip, linkageAction, ...restProps } = props;
+  const { modalTip, linkageAction, removeButtonProps, buttonEditorProps, linkageRulesProps, ...restProps } = props;
   const fieldSchema = useFieldSchema();
   const { name } = useCollection();
   const { getChildrenCollections } = useCollectionManager();
@@ -907,10 +912,10 @@ export const ActionDesigner = (props) => {
   return (
     <GeneralSchemaDesigner {...restProps} disableInitializer draggable={isDraggable}>
       <MenuGroup>
-        <ButtonEditor />
+        <ButtonEditor {...buttonEditorProps} />
         {fieldSchema['x-action'] === 'submit' &&
           fieldSchema.parent?.['x-initializer'] === 'CreateFormActionInitializers' && <SaveMode />}
-        {isLinkageAction && <SchemaSettings.LinkageRules collectionName={name} />}
+        {isLinkageAction && <SchemaSettings.LinkageRules {...linkageRulesProps} collectionName={name} />}
         {isDuplicateAction && <DuplicationMode />}
         <OpenModeSchemaItems openMode={isPopupAction} openSize={isPopupAction} />
         {isUpdateModePopupAction && <UpdateMode />}
@@ -919,10 +924,10 @@ export const ActionDesigner = (props) => {
         {isValid(fieldSchema?.['x-action-settings']?.skipValidator) && <SkipValidation />}
         {isValid(fieldSchema?.['x-action-settings']?.['onSuccess']) && <AfterSuccess />}
         {isValid(fieldSchema?.['x-action-settings']?.triggerWorkflows) && <WorkflowConfig />}
-
+        {restProps.children}
         {isChildCollectionAction && <SchemaSettings.EnableChildCollections collectionName={name} />}
 
-        {<RemoveButton />}
+        {fieldSchema?.['x-action-settings']?.removable !== false && <RemoveButton {...removeButtonProps} />}
       </MenuGroup>
     </GeneralSchemaDesigner>
   );

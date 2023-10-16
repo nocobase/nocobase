@@ -51,8 +51,6 @@ export const linkageMergeAction = async ({
       if (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables })) {
         field._display = '_display' in field ? field._display : field.display;
         field.display = operator;
-      } else {
-        field.display = field._display;
       }
       break;
     case ActionType.Editable:
@@ -72,6 +70,10 @@ export const linkageMergeAction = async ({
       ) {
         let result = null;
         if (value?.mode === 'express') {
+          if ((value.value || value.result) == null) {
+            return;
+          }
+
           const scope = cloneDeep(values);
 
           // 1. 解析如 `{{$user.name}}` 之类的变量
@@ -114,6 +116,10 @@ async function replaceVariables(
 ) {
   const store = {};
   const scope = {};
+
+  if (value == null) {
+    return;
+  }
 
   const waitForParsing = value.match(REGEX_OF_VARIABLE)?.map(async (item) => {
     const result = await variables.parseVariable(item, localVariables);

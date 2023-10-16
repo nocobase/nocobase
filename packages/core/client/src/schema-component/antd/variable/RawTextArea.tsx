@@ -18,7 +18,8 @@ function setNativeInputValue(input, value) {
 
 export function RawTextArea(props): JSX.Element {
   const inputRef = useRef<any>(null);
-  const { scope, changeOnSelect, component: Component = Input.TextArea, ...others } = props;
+  const { changeOnSelect, component: Component = Input.TextArea, ...others } = props;
+  const scope = typeof props.scope === 'function' ? props.scope() : props.scope;
   const [options, setOptions] = useState(scope ? cloneDeep(scope) : []);
 
   function onInsert(selected) {
@@ -56,7 +57,13 @@ export function RawTextArea(props): JSX.Element {
           }
         `}
       >
-        <VariableSelect options={options} setOptions={setOptions} onInsert={onInsert} changeOnSelect={changeOnSelect} />
+        <VariableSelect
+          fieldNames={props.fieldNames}
+          options={options}
+          setOptions={setOptions}
+          onInsert={onInsert}
+          changeOnSelect={changeOnSelect}
+        />
       </Button.Group>
     </div>
   );

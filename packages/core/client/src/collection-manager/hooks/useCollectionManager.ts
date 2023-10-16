@@ -7,9 +7,8 @@ import { CollectionManagerContext } from '../context';
 import { CollectionFieldOptions, CollectionOptions } from '../types';
 
 export const useCollectionManager = () => {
-  const { refreshCM, updateCollection, service, interfaces, collections, templates } = useContext(
-    CollectionManagerContext,
-  );
+  const { refreshCM, updateCollection, service, interfaces, collections, templates } =
+    useContext(CollectionManagerContext);
   const compile = useCompile();
   const getInheritedFields = (name) => {
     const inheritKeys = getInheritCollections(name);

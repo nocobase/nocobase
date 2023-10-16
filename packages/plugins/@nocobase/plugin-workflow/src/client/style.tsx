@@ -44,6 +44,11 @@ const useStyles = createStyles(({ css, token }) => {
         align-items: center;
         padding: 2em;
 
+        > .ant-alert {
+          margin-bottom: 2em;
+          font-size: 85%;
+        }
+
         .end {
           cursor: default;
 

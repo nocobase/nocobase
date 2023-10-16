@@ -163,7 +163,7 @@ export default function useServiceOptions(props) {
     );
   }, [
     collectionField?.interface,
-    collectionField.foreignKey,
+    collectionField?.foreignKey,
     fieldSchema,
     fieldServiceFilter,
     sourceValue,

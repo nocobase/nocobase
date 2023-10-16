@@ -124,8 +124,9 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
           value={value || innerValue}
           service={service}
           onChange={(value) => {
-            setInnerValue(value);
-            props.onChange?.(value);
+            const val = value?.length !== 0 ? value : null;
+            setInnerValue(val);
+            props.onChange?.(val);
           }}
           CustomDropdownRender={addMode === 'quickAdd' && QuickAddContent}
         ></RemoteSelect>

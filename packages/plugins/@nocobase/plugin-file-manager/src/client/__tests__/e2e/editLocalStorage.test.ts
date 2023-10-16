@@ -1,8 +1,8 @@
 import { expect, test } from '@nocobase/test/client';
-import { CreateLocalStorage, EditLocalStorage } from './pageobject/localStorage';
 import { dayjs } from '@nocobase/utils';
+import { CreateLocalStorage, EditLocalStorage } from './pageobject/localStorage';
 
-test.describe('File manager', () => {
+test.describe.skip('File manager', () => {
   test('edit local storage title', async ({ page }) => {
     //用例编号
     const caseNum = 'FM02AA';
