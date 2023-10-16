@@ -92,7 +92,7 @@ test.describe('page title', () => {
 });
 
 test.describe('page tabs', () => {
-  test.skip('enable & disabled page tab', async ({ page, mockPage }) => {
+  test('enable & disabled page tab', async ({ page, mockPage }) => {
     await mockPage({ name: 'page tab' }).goto();
     await enableToConfig(page);
     await page
