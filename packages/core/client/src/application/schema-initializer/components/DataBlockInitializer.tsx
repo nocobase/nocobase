@@ -19,6 +19,7 @@ export const DataBlockInitializerV2 = (props) => {
     icon = TableOutlined,
     name,
     title,
+    items,
   } = props;
   const { insert } = useSchemaInitializerV2();
   const compile = useCompile();
@@ -39,7 +40,8 @@ export const DataBlockInitializerV2 = (props) => {
     [createBlockSchema, getTemplateSchemaByMode, insert, isCusomeizeCreate, onCreateBlockSchema, templateWrap],
   );
   const { styles } = useStyles();
-  const menuChildren = useCollectionDataSourceItemsV2(componentType);
+  const defaultItems = useCollectionDataSourceItemsV2(componentType);
+  const menuChildren = useMemo(() => items || defaultItems, [items, defaultItems]);
   const renderItems = useCallback(
     (items: SchemaInitializerItemOptions[], parentKey: string) => {
       if (!items?.length) {

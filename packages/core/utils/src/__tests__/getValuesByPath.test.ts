@@ -94,4 +94,10 @@ describe('getValuesByPath', () => {
     const result = getValuesByPath(arr, 'b', []);
     expect(result).toEqual([1, 2]);
   });
+
+  it('should return 0 when the initial value is 0', () => {
+    const obj = { a: 0 };
+    const result = getValuesByPath(obj, 'a');
+    expect(result).toBe(0);
+  });
 });

@@ -15,7 +15,7 @@ export function definePluginClient(packageName: string) {
       value: true,
     });
     Object.keys(_plugin).forEach(function (key) {
-      if (key === 'default' || key === '__esModule') return;
+      if (key === '__esModule') return;
       if (key in _exports && _exports[key] === _plugin[key]) return;
       Object.defineProperty(_exports, key, {
         enumerable: true,
@@ -31,7 +31,7 @@ export function getRemotePlugins(requirejs: any, pluginData: PluginData[] = []):
   requirejs.requirejs.config({
     waitSeconds: 120,
     paths: pluginData.reduce<Record<string, string>>((acc, cur) => {
-      acc[cur.packageName] = `${cur.url}?noExt`;
+      acc[cur.packageName] = cur.url;
       return acc;
     }, {}),
   });

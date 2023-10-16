@@ -34,7 +34,7 @@ export default defineConfig({
       { find: /^~antd\/(.*)/, replacement: 'antd/$1' },
       ...alias,
     ],
-    include: ['packages/**/{dumi-theme-nocobase,sdk,client}/**/__tests__/**/*.{test,spec}.{ts,tsx}'],
+    include: ['packages/**/{dumi-theme-nocobase,sdk,client,utils}/**/__tests__/**/*.{test,spec}.{ts,tsx}'],
     exclude: [
       '**/node_modules/**',
       '**/dist/**',

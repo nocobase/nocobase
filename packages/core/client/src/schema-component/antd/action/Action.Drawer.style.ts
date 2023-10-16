@@ -12,6 +12,9 @@ export const useStyles = genStyleHook('nb-action-drawer', (token) => {
           '.ant-drawer-body': { paddingTop: token.paddingContentVerticalLG, backgroundColor: 'var(--colorBgDrawer)' },
         },
         '&.nb-record-picker-selector': {
+          '.ant-drawer-wrapper-body': {
+            backgroundColor: 'var(--colorBgDrawer)',
+          },
           '.nb-block-item': {
             marginBottom: token.marginLG,
             '.general-schema-designer': {

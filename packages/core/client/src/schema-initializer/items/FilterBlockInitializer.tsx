@@ -1,9 +1,3 @@
-import { TableOutlined } from '@ant-design/icons';
-import React, { useContext } from 'react';
-
-import { SchemaInitializer, SchemaInitializerButtonContext } from '..';
-import { useSchemaTemplateManager } from '../../schema-templates';
-import { useCollectionDataSourceItems } from '../utils';
 import { DataBlockInitializerV2 } from '../../application';
 
 // export const FilterBlockInitializer = (props) => {

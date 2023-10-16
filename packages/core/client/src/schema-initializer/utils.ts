@@ -765,8 +765,8 @@ export const useCurrentSchema = (action: string, key: string, find = findSchema,
     remove() {
       removeActiveFieldName?.(schema.name);
       form?.query(schema.name).forEach((field: Field) => {
-        field.setInitialValue(null);
-        field.reset();
+        field.setInitialValue?.(null);
+        field.reset?.();
       });
       schema && rm(schema, remove);
     },
@@ -1459,7 +1459,7 @@ export const createTableSelectorSchema = (options) => {
       ...others,
     },
     'x-designer': 'TableSelectorDesigner',
-    'x-component': 'BlockItem',
+    'x-component': 'CardItem',
     properties: {
       actions: {
         type: 'void',
@@ -1829,7 +1829,7 @@ const getChildren = ({
 }: {
   collections: any[];
   getCollectionFields: (name: any) => CollectionFieldOptions[];
-  componentName: any;
+  componentName: string;
   searchValue: string;
   getTemplatesByCollection: (collectionName: string, resourceName?: string) => any;
   t;
