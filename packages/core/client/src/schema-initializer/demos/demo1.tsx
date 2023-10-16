@@ -1,129 +1,65 @@
-import { TableOutlined } from '@ant-design/icons';
-import { Field } from '@formily/core';
-import { observer, useField } from '@formily/react';
-import {
-  SchemaComponent,
-  SchemaComponentProvider,
-  SchemaInitializer,
-  SchemaInitializerProvider,
-  useSchemaInitializer,
-} from '@nocobase/client';
 import React from 'react';
+import { Application, Plugin, SchemaInitializerV2, useApp } from '@nocobase/client';
 
-const Hello = observer(
-  (props) => {
-    const field = useField<Field>();
-    return (
-      <div style={{ marginBottom: 20, padding: '0 20px', height: 50, lineHeight: '50px', background: '#f1f1f1' }}>
-        {field.title}
-      </div>
-    );
-  },
-  { displayName: 'Hello' },
-);
-
-const TableBlockInitializer = SchemaInitializer.itemWrap((props) => {
-  const { insert } = props;
-  const items: any = [
+const myInitializer = new SchemaInitializerV2({
+  // 正常情况下这个值为 false，通过点击页面左上角的设计按钮切换，这里为了显示设置为 true
+  designable: true,
+  //  按钮标题标题
+  title: 'Button Text',
+  // 调用 initializer.render() 时会渲染 items 列表
+  items: [
     {
-      type: 'itemGroup',
-      title: 'select a data source',
-      children: [
-        {
-          type: 'item',
-          title: 'Users',
-        },
-        {
-          type: 'item',
-          title: 'Posts',
-        },
-      ],
+      name: 'demo1', // 唯一标识
+      Component: () => <div>myInitializer content</div>, // 渲染组件
     },
-  ];
-  return (
-    <SchemaInitializer.Item
-      icon={<TableOutlined />}
-      items={items}
-      onClick={({ item }) => {
-        // 如果有 items 时，onClick 里会返回点击的 item
-        // TODO: 实际情况，这里还需要补充更完整的初始化逻辑
-        insert({
-          type: 'void',
-          title: item.title,
-          'x-component': 'Hello',
-        });
-      }}
-    />
-  );
+    {
+      name: 'demo2',
+      Component: () => <div>myInitializer content 2</div>,
+    },
+  ],
 });
 
-const initializers = {
-  AddBlock: {
-    title: 'Add block',
-    insertPosition: 'beforeBegin',
-    items: [
-      {
-        type: 'itemGroup',
-        title: 'Data blocks',
-        children: [
-          {
-            type: 'item',
-            title: 'Table',
-            component: 'TableBlockInitializer',
-          },
-          {
-            type: 'item',
-            title: 'Form',
-            component: 'GeneralInitializer',
-            schema: {
-              type: 'void',
-              title: 'Form',
-              'x-component': 'Hello',
-            },
-          },
-        ],
-      },
-    ],
-  },
+const Root = () => {
+  const app = useApp();
+  // 获取 schema initializer
+  const initializer = app.schemaInitializerManager.get('MyInitializer');
+  // 渲染 schema initializer
+  return <div>{initializer.render()}</div>;
 };
 
-const AddBlockButton = observer(
-  (props: any) => {
-    const { render } = useSchemaInitializer('AddBlock');
-    return <>{render()}</>;
-  },
-  { displayName: 'AddBlockButton' },
-);
-
-export default function App() {
-  return (
-    <SchemaComponentProvider designable>
-      <SchemaInitializerProvider initializers={initializers}>
-        <SchemaComponent
-          components={{ TableBlockInitializer, Hello, AddBlockButton }}
-          schema={{
-            type: 'void',
-            name: 'page',
-            'x-component': 'div',
-            properties: {
-              hello1: {
-                type: 'void',
-                title: 'Test1',
-                'x-component': 'Hello',
-              },
-              hello2: {
-                type: 'void',
-                title: 'Test2',
-                'x-component': 'Hello',
-              },
-              initializer: {
-                type: 'void',
-                'x-component': 'AddBlockButton',
-              },
-            },
-          }}
-        />
-      </SchemaInitializerProvider>
-    </SchemaComponentProvider>
-  );
+class MyPlugin extends Plugin {
+  async load() {
+    // 注册 schema initializer
+    this.app.schemaInitializerManager.add('MyInitializer', myInitializer);
+    // 注册路由
+    this.app.router.add('root', {
+      path: '/',
+      Component: Root,
+    });
+  }
 }
+
+class MyPlugin2 extends Plugin {
+  async load() {
+    const myInitializer = this.app.schemaInitializerManager.get('MyInitializer');
+
+    // 添加或者修改 schema initializer 的 items
+    myInitializer.add({
+      name: 'demo3',
+      Component: () => <div>myInitializer content3</div>,
+    });
+
+    // 移除 demo2
+    myInitializer.remove('demo2');
+  }
+}
+
+const app = new Application({
+  router: {
+    type: 'memory',
+    initialEntries: ['/'],
+  },
+  plugins: [MyPlugin, MyPlugin2],
+});
+
+export default app.getRootComponent();

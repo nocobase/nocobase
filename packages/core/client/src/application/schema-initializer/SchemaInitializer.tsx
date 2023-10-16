@@ -62,8 +62,8 @@ export class SchemaInitializerV2<P1 = ButtonProps, P2 = ListProps<any>, P3 = Lis
     const arr = nestedName.split('.');
     const parent = arr.length === 1 ? this.items : this.get(arr.slice(0, -1).join('.'));
     if (parent) {
-      const key = arr[arr.length - 1];
-      const index = parent.findIndex((item: any) => item.key === key);
+      const name = arr[arr.length - 1];
+      const index = parent.findIndex((item: any) => item.name === name);
       if (index !== -1) {
         parent.splice(index, 1);
       }

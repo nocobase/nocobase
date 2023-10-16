@@ -103,18 +103,6 @@ const CustomSchemaInitializerButton = () => {
 
 ## Examples
 
-### Block
+### Basic
 
 <code src="./demos/demo1.tsx"></code>
-
-### Action
-
-<code src="./demos/demo2.tsx"></code>
-
-### FormItem
-
-<code src="./demos/demo3.tsx"></code>
-
-### Table.Column
-
-<code src="./demos/demo4.tsx"></code>

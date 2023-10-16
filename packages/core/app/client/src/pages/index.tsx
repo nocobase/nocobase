@@ -8,6 +8,7 @@ export const app = new Application({
   },
   plugins: [NocoBaseClientPresetPlugin],
   ws: true,
+  loadRemotePlugins: true,
   devDynamicImport,
 });
 

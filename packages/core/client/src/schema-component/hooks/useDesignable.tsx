@@ -4,7 +4,7 @@ import { message } from 'antd';
 import cloneDeep from 'lodash/cloneDeep';
 import get from 'lodash/get';
 import set from 'lodash/set';
-import React, { ComponentType, useContext } from 'react';
+import React, { ComponentType, useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { APIClient, useAPIClient } from '../../api-client';
 import { SchemaComponentContext } from '../context';
@@ -574,7 +574,8 @@ export class Designable {
 }
 
 export function useFindComponent() {
-  const { components } = useContext(SchemaOptionsContext);
+  const schemaOptions = useContext(SchemaOptionsContext);
+  const components = useMemo(() => schemaOptions?.components || {}, [schemaOptions]);
 
   const find = (component: string | ComponentType) => {
     if (!component) {
@@ -592,7 +593,8 @@ export function useFindComponent() {
 // TODO
 export function useDesignable() {
   const { designable, setDesignable, refresh, reset } = useContext(SchemaComponentContext);
-  const { components } = useContext(SchemaOptionsContext);
+  const schemaOptions = useContext(SchemaOptionsContext);
+  const components = useMemo(() => schemaOptions?.components || {}, [schemaOptions]);
   const DesignableBar = () => {
     return <></>;
   };

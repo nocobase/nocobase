@@ -40,6 +40,7 @@ export interface ApplicationOptions {
   router?: RouterOptions;
   devDynamicImport?: DevDynamicImport;
   initializers?: Record<string, SchemaInitializerV2>;
+  loadRemotePlugins?: boolean;
 }
 
 export class Application {
@@ -78,7 +79,7 @@ export class Application {
       ...options.router,
       renderComponent: this.renderComponent.bind(this),
     });
-    this.pm = new PluginManager(options.plugins, this);
+    this.pm = new PluginManager(options.plugins, options.loadRemotePlugins, this);
     this.schemaInitializerManager = new SchemaInitializerManager(options.initializers, this);
     this.addDefaultProviders();
     this.addReactRouterComponents();
