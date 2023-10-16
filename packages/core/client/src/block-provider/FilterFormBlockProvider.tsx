@@ -7,7 +7,7 @@ export const FilterFormBlockProvider = (props) => {
 
   return (
     <DatePickerProvider value={{ utc: false }}>
-      <FormBlockProvider data-testid={`filter-form-block-${collection || resource}`} {...props}></FormBlockProvider>
+      <FormBlockProvider name="filter-form" {...props}></FormBlockProvider>
     </DatePickerProvider>
   );
 };

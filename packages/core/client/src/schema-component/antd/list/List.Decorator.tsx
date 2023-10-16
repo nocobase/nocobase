@@ -52,7 +52,7 @@ const InternalListBlockProvider = (props) => {
 
 export const ListBlockProvider = (props) => {
   return (
-    <BlockProvider data-testid="list-block" {...props}>
+    <BlockProvider name="list" {...props}>
       <InternalListBlockProvider {...props} />
     </BlockProvider>
   );

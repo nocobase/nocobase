@@ -1,7 +1,6 @@
 import { useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCollection } from '../../collection-manager';
 import { useCompile } from '../../schema-component';
 import { SchemaInitializer } from '../SchemaInitializer';
 import {
@@ -14,7 +13,6 @@ import {
 // 表格列配置
 export const TableColumnInitializers = (props: any) => {
   const { action = true } = props;
-  const { name } = useCollection();
   const { t } = useTranslation();
   const field = useField();
   const fieldSchema = useFieldSchema();

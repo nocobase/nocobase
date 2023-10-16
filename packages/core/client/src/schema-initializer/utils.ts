@@ -1400,6 +1400,7 @@ export const createCollapseBlockSchema = (options) => {
       associationFilterStyle: {
         width: '100%',
       },
+      name: 'filter-collapse',
     },
     'x-designer': 'AssociationFilter.BlockDesigner',
     'x-component': 'CardItem',

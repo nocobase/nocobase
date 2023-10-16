@@ -99,12 +99,11 @@ export const TableBlockProvider = (props) => {
     }
   }
   const form = useMemo(() => createForm(), [treeTable]);
-  const collectionName = props.collection || collection?.name || props.resource;
 
   return (
     <SchemaComponentOptions scope={{ treeTable }}>
       <FormContext.Provider value={form}>
-        <BlockProvider data-testid={`table-block-${collectionName}`} {...props} params={params} runWhenParamsChanged>
+        <BlockProvider name={props.name || 'table'} {...props} params={params} runWhenParamsChanged>
           <InternalTableBlockProvider {...props} childrenColumnName={childrenColumnName} params={params} />
         </BlockProvider>
       </FormContext.Provider>

@@ -19,7 +19,9 @@ export const AuditLogsBlockProvider: React.FC = ({ children, ...restProps }) => 
       }}
     >
       <CollectionManagerProvider collections={[auditLogsCollection, auditChangesCollection, collectionsCollection]}>
-        <TableBlockProvider {...restProps}>{children}</TableBlockProvider>
+        <TableBlockProvider name="audit-logs" {...restProps}>
+          {children}
+        </TableBlockProvider>
       </CollectionManagerProvider>
     </SchemaInitializerProvider>
   );

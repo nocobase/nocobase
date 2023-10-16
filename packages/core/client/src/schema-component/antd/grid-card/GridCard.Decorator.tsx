@@ -42,7 +42,7 @@ const InternalGridCardBlockProvider = (props) => {
 
 export const GridCardBlockProvider = (props) => {
   return (
-    <BlockProvider data-testid="grid-card-block" {...props}>
+    <BlockProvider name="grid-card" {...props}>
       <InternalGridCardBlockProvider {...props} />
     </BlockProvider>
   );
