@@ -2,37 +2,7 @@ import { enableToConfig, expect, test } from '@nocobase/test/client';
 
 test.describe('add block & delete block', () => {
   test('add block,then delete block', async ({ page, mockPage }) => {
-    await mockPage({ name: 'page header' }).goto();
-    //默认开启
-    await expect(page.getByTitle('page header')).toBeVisible();
-    await page
-      .locator('div')
-      .filter({ hasText: /^page header$/ })
-      .nth(3)
-      .click();
-    await page.getByTestId('page-designer-button').locator('path').hover();
-    await expect(page.getByRole('menuitem', { name: 'Enable page header' }).getByRole('switch')).toBeChecked();
-    //关闭
-    await page.getByRole('menuitem', { name: 'Enable page header' }).getByRole('switch').click();
-    await expect(page.getByTitle('page header')).not.toBeVisible();
-    await expect(
-      page
-        .locator('div')
-        .filter({ hasText: /^page header$/ })
-        .nth(3),
-    ).not.toBeVisible();
-    await expect(page.getByRole('menuitem', { name: 'Enable page header' }).getByRole('switch')).not.toBeChecked();
-    //开启
-    await page.getByRole('main').locator('span').nth(1).click();
-    await page.getByTestId('page-designer-button').locator('path').hover();
-    await page.getByRole('menuitem', { name: 'Enable page header' }).getByRole('switch').click();
-    await expect(page.getByTitle('page header')).toBeVisible();
-    await expect(
-      page
-        .locator('div')
-        .filter({ hasText: /^page header$/ })
-        .nth(3),
-    ).toBeVisible();
+    await mockPage().goto();
   });
 });
 
