@@ -10,7 +10,7 @@ import { SchemaInitializerV2Context } from '../hooks';
 
 const defaultWrap = (s: ISchema) => s;
 
-export function withInitializer(C: ComponentType<SchemaInitializerOptions>) {
+export function withInitializer<T>(C: ComponentType<T>, cProps: T) {
   const WithInitializer = observer((props: SchemaInitializerOptions) => {
     const { designable, insertAdjacent } = useDesignable();
     const {
@@ -44,7 +44,7 @@ export function withInitializer(C: ComponentType<SchemaInitializerOptions>) {
     return (
       <SchemaInitializerV2Context.Provider value={{ insert: insertSchema }}>
         {noDropdown ? (
-          React.createElement(C, props)
+          React.createElement(C, cProps)
         ) : (
           <Dropdown
             className={classNames('nb-schema-initializer-button')}
@@ -52,7 +52,7 @@ export function withInitializer(C: ComponentType<SchemaInitializerOptions>) {
             {...dropdownProps}
             dropdownRender={() => <Card>{children}</Card>}
           >
-            <span>{React.createElement(C, props)}</span>
+            <span>{React.createElement(C, cProps)}</span>
           </Dropdown>
         )}
       </SchemaInitializerV2Context.Provider>

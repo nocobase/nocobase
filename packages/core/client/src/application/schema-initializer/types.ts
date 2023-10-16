@@ -33,16 +33,16 @@ export type SchemaInitializerItemType =
   | SchemaInitializerItemWithChildren;
 
 // TODO: 类型需要优化
-export interface SchemaInitializerOptions<P1 = ButtonProps, P2 = ListProps<any>, P3 = ListItemProps> {
+export interface SchemaInitializerOptions<P1 = ButtonProps, P2 = ListProps<any>> {
   title?: string;
   insertPosition?: 'beforeBegin' | 'afterBegin' | 'beforeEnd' | 'afterEnd';
 
-  Component?: ComponentType<SchemaInitializerOptions<P1, P2, P3>>;
+  Component?: ComponentType<P1>;
   componentProps?: P1;
   componentStyle?: React.CSSProperties;
   style?: React.CSSProperties;
 
-  ListComponent?: ComponentType<SchemaInitializerOptions<P1, P2, P3>>;
+  ListComponent?: ComponentType<P2>;
   listProps?: P2;
   listStyle?: React.CSSProperties;
 

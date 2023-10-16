@@ -6,20 +6,15 @@ import { SchemaInitializerOptions, SchemaInitializerItemType } from './types';
 import { InitializerButton } from './components/InitializerButton';
 import { InitializerList } from './components/InitializerList';
 import { withInitializer } from './hoc';
-import { ListItemProps } from 'antd/es/list';
 
-export class SchemaInitializerV2<P1 = ButtonProps, P2 = ListProps<any>, P3 = ListItemProps> {
-  options: SchemaInitializerOptions<P1, P2, P3> = {};
+export class SchemaInitializerV2<P1 = ButtonProps, P2 = ListProps<any>> {
+  options: SchemaInitializerOptions<P1, P2> = {};
   get items() {
     return this.options.items;
   }
 
-  constructor(options: SchemaInitializerOptions<P1, P2, P3>) {
+  constructor(options: SchemaInitializerOptions<P1, P2>) {
     this.options = Object.assign({ items: [] as any }, options);
-  }
-
-  update(options: SchemaInitializerOptions<P1, P2, P3>) {
-    Object.assign(this.options, options);
   }
 
   add(name: string, item: SchemaInitializerItemType) {
@@ -90,10 +85,12 @@ export class SchemaInitializerV2<P1 = ButtonProps, P2 = ListProps<any>, P3 = Lis
     }
   }
 
-  render(options: SchemaInitializerOptions<P1, P2, P3> = {}) {
+  render(options: SchemaInitializerOptions<P1, P2> = {}) {
     const C: ComponentType = options.Component || this.options.Component || InitializerButton;
+    const componentProps = Object.assign({}, this.options.componentProps, options.componentProps);
+    const mergedOptions = Object.assign({}, this.options, options);
     return React.createElement(
-      withInitializer(C),
+      withInitializer(C, componentProps),
       {
         ...this.options,
         ...options,
@@ -102,13 +99,13 @@ export class SchemaInitializerV2<P1 = ButtonProps, P2 = ListProps<any>, P3 = Lis
     );
   }
 
-  getRender(options1: SchemaInitializerOptions<P1, P2, P3> = {}) {
-    return (options2: SchemaInitializerOptions<P1, P2, P3> = {}) => this.render({ ...options1, ...options2 });
+  getRender(options1: SchemaInitializerOptions<P1, P2> = {}) {
+    return (options2: SchemaInitializerOptions<P1, P2> = {}) => this.render({ ...options1, ...options2 });
   }
 
-  private renderList(options: SchemaInitializerOptions<P1, P2, P3> = {}) {
+  private renderList(options: SchemaInitializerOptions<P1, P2> = {}) {
     if (this.items.length === 0) return null;
-    const C = options.ListComponent || this.options.ListComponent || InitializerList;
+    const C: ComponentType<any> = options.ListComponent || this.options.ListComponent || InitializerList;
     const listProps = options.listProps || this.options.listProps || {};
     const listStyle = options.listStyle || this.options.listStyle || {};
     return (

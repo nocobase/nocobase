@@ -1,125 +1,67 @@
-import {
-  Form,
-  FormItem,
-  Markdown,
-  SchemaComponent,
-  SchemaComponentProvider,
-  SchemaInitializer,
-  SchemaInitializerItemOptions,
-  SchemaInitializerProvider,
-  useSchemaInitializer,
-} from '@nocobase/client';
-import { Input } from 'antd';
 import React from 'react';
+import { Application, Plugin, SchemaInitializerV2, useApp } from '@nocobase/client';
+import { PlusOutlined } from '@ant-design/icons';
+import { Divider, Avatar, AvatarProps } from 'antd';
 
-const useFormItemInitializerFields = () => {
-  return [
+const myInitializer = new SchemaInitializerV2<AvatarProps>({
+  designable: true,
+  // 使用自定义组件代替默认的 Button
+  Component: (props) => (
+    <Avatar style={{ cursor: 'pointer' }} {...props}>
+      C
+    </Avatar>
+  ),
+  // 传递给 Component 的 props
+  componentProps: {
+    size: 'large',
+  },
+  items: [
     {
-      type: 'item',
-      title: 'Name',
-      component: 'CollectionFieldInitializer',
-      schema: {
-        type: 'string',
-        title: 'Name',
-        name: 'name',
-        'x-component': 'Input',
-        'x-decorator': 'FormItem',
-        'x-collection-field': 'posts.name',
-      },
+      name: 'hello',
+      Component: () => <div>hello</div>,
     },
-    {
-      type: 'item',
-      title: 'Title',
-      component: 'CollectionFieldInitializer',
-      schema: {
-        type: 'string',
-        title: 'Title',
-        name: 'title',
-        'x-component': 'Input',
-        'x-decorator': 'FormItem',
-        'x-collection-field': 'posts.title',
-      },
-    },
-  ] as SchemaInitializerItemOptions[];
-};
-
-const TextInitializer = SchemaInitializer.itemWrap((props) => {
-  const { insert } = props;
-  return (
-    <SchemaInitializer.Item
-      onClick={() => {
-        insert({
-          type: 'void',
-          'x-component': 'Markdown.Void',
-          'x-decorator': 'FormItem',
-          // 'x-editable': false,
-        });
-      }}
-    />
-  );
+  ],
 });
 
-const Page = (props) => {
-  const { render } = useSchemaInitializer('AddFormItem');
+const Root = () => {
+  const app = useApp();
+  const initializer = app.schemaInitializerManager.get('MyInitializer');
   return (
     <div>
-      {props.children}
-      {render()}
+      <div>
+        <div>初始化时自定义 Component</div>
+        {initializer.render()}
+      </div>
+      <Divider />
+      <div>
+        <div>通过 render 更改</div>
+        {initializer.render({ Component: () => <PlusOutlined style={{ cursor: 'pointer' }} /> })}
+      </div>
+      <Divider />
+      <div>
+        <div>不使用 dropdown</div>
+        {initializer.render({ noDropdown: true, componentProps: { onClick: () => alert('test') } })}
+      </div>
     </div>
   );
 };
 
-export default function App() {
-  const initializers = {
-    AddFormItem: {
-      title: 'Configure fields',
-      insertPosition: 'beforeEnd',
-      items: [
-        {
-          type: 'itemGroup',
-          title: 'Display fields',
-          // 从 hook 动态加载字段
-          children: useFormItemInitializerFields(),
-        },
-        {
-          type: 'divider',
-        },
-        {
-          type: 'item',
-          title: 'Add text',
-          component: 'TextInitializer',
-        },
-      ],
-    },
-  };
-  return (
-    <SchemaComponentProvider designable components={{ TextInitializer, Page, Form, Input, FormItem, Markdown }}>
-      <SchemaInitializerProvider initializers={initializers}>
-        <SchemaComponent
-          schema={{
-            type: 'void',
-            name: 'page',
-            'x-decorator': 'Form',
-            'x-component': 'Page',
-            properties: {
-              title: {
-                type: 'string',
-                title: 'Title',
-                'x-component': 'Input',
-                'x-decorator': 'FormItem',
-                'x-collection-field': 'posts.title',
-              },
-              name: {
-                type: 'string',
-                title: 'Name',
-                'x-component': 'Input',
-                'x-decorator': 'FormItem',
-                'x-collection-field': 'posts.name',
-              },
-            },
-          }}
-        />
-      </SchemaInitializerProvider>
-    </SchemaComponentProvider>
-  );
+class MyPlugin extends Plugin {
+  async load() {
+    this.app.schemaInitializerManager.add('MyInitializer', myInitializer);
+    this.app.router.add('root', {
+      path: '/',
+      Component: Root,
+    });
+  }
 }
+
+const app = new Application({
+  router: {
+    type: 'memory',
+    initialEntries: ['/'],
+  },
+  plugins: [MyPlugin],
+});
+
+export default app.getRootComponent();

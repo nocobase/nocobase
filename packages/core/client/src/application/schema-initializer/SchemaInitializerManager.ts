@@ -6,19 +6,17 @@ import { SchemaInitializerOptions } from './types';
 
 export class SchemaInitializerManager {
   constructor(
-    protected initializers: Record<string, SchemaInitializerV2<any, any, any>> = {},
+    protected initializers: Record<string, SchemaInitializerV2<any, any>> = {},
     protected app: Application,
   ) {
     this.app = app;
   }
 
-  add(name: string, schemaInitializer: SchemaInitializerV2) {
+  add<P1 = any, P2 = any>(name: string, schemaInitializer: SchemaInitializerV2<P1, P2>) {
     this.initializers[name] = schemaInitializer;
   }
 
-  get<P1 = ButtonProps, P2 = ListProps<any>, P3 = ListItemProps>(
-    name: string,
-  ): SchemaInitializerV2<P1, P2, P3> | undefined {
+  get<P1 = ButtonProps, P2 = ListProps<any>>(name: string): SchemaInitializerV2<P1, P2> | undefined {
     return this.initializers[name];
   }
 
@@ -34,20 +32,14 @@ export class SchemaInitializerManager {
     delete this.initializers[name];
   }
 
-  render<P1 = ButtonProps, P2 = ListProps<any>, P3 = ListItemProps>(
-    name: string,
-    options?: SchemaInitializerOptions<P1, P2, P3>,
-  ) {
-    const initializer = this.get<P1, P2, P3>(name);
+  render<P1 = ButtonProps, P2 = ListProps<any>>(name: string, options?: SchemaInitializerOptions<P1, P2>) {
+    const initializer = this.get<P1, P2>(name);
     if (!initializer) return null;
     return initializer.render(options);
   }
 
-  getRender<P1 = ButtonProps, P2 = ListProps<any>, P3 = ListItemProps>(
-    name: string,
-    options?: SchemaInitializerOptions<P1, P2, P3>,
-  ) {
-    const initializer = this.get<P1, P2, P3>(name);
+  getRender<P1 = ButtonProps, P2 = ListProps<any>>(name: string, options?: SchemaInitializerOptions<P1, P2>) {
+    const initializer = this.get<P1, P2>(name);
     if (!initializer) {
       return {
         exists: false,

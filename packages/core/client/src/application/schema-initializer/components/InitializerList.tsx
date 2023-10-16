@@ -1,11 +1,10 @@
 import { Space } from 'antd';
 import React, { FC } from 'react';
-import { SchemaInitializerOptions } from '../types';
 
-export const InitializerList: FC<SchemaInitializerOptions> = (props) => {
-  const { listProps, listStyle, children } = props;
+export const InitializerList: FC<any> = (props) => {
+  const { style = {}, children, ...others } = props;
   return (
-    <Space direction="vertical" size={'middle' as any} {...listProps} style={{ display: 'flex', ...listStyle }}>
+    <Space direction="vertical" size={'middle' as any} {...others} style={{ display: 'flex', ...style }}>
       {children}
     </Space>
   );
