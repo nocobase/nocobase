@@ -6,6 +6,7 @@ export * from './types';
 export {
   createFilterFormBlockSchema,
   createFormBlockSchema,
+  createReadPrettyFormBlockSchema,
   createTableBlockSchema,
   gridRowColWrap,
   itemsMerge,
