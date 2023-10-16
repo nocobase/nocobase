@@ -1,9 +1,10 @@
 import { cx } from '@emotion/css';
-import { Button, Cascader } from 'antd';
+import { Cascader } from 'antd';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useToken } from '../__builtins__';
 import useStyles from './VariableSelect.style';
+import { XButton } from './XButton';
 
 export function VariableSelect({
   options,
@@ -11,6 +12,7 @@ export function VariableSelect({
   onInsert,
   changeOnSelect = false,
   fieldNames = {},
+  className,
 }): JSX.Element {
   const { t } = useTranslation();
   const [selectedVar, setSelectedVar] = useState<string[]>([]);
@@ -26,8 +28,7 @@ export function VariableSelect({
   }
 
   return wrapSSR(
-    <Button className={cx('x-button', componentCls, hashId)}>
-      <span className={'variable-btn'}>x</span>
+    <XButton className={cx('x-button', componentCls, hashId, className)}>
       <Cascader
         placeholder={t('Select a variable')}
         value={[]}
@@ -75,6 +76,6 @@ export function VariableSelect({
             : null
         }
       />
-    </Button>,
+    </XButton>,
   );
 }

@@ -333,7 +333,16 @@ export function Input(props) {
           changeOnSelect={changeOnSelect}
           fieldNames={fieldNames}
         >
-          {button ?? <XButton type={variable ? 'primary' : 'default'} />}
+          {button ?? (
+            <XButton
+              className={css(`
+                &:not(:hover) {
+                  border-left-color: transparent;
+                }
+              `)}
+              type={variable ? 'primary' : 'default'}
+            />
+          )}
         </Cascader>
       ) : null}
     </Space.Compact>,
