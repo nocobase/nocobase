@@ -7,7 +7,6 @@ test.describe('add block & delete block', () => {
     await page.getByRole('menuitem', { name: 'table Table right' }).click();
     await page.getByRole('menuitem', { name: 'Users' }).click();
     await page.getByRole('menuitem', { name: 'Users' }).hover();
-
     await expect(page.getByTestId('configure-actions-button-of-table-block-users')).toBeVisible();
     await expect(page.getByTestId('configure-columns-button-of-table-block-users')).toBeVisible();
   });
@@ -152,7 +151,8 @@ test.describe('block title', () => {
         'x-index': 1,
       },
     }).goto();
-    await page.getByTestId('users-resource').getByTestId('designer-schema-settings').locator('svg').click();
+    await page.getByTestId('table-block').click();
+    await page.getByTestId('table-block').getByTestId('designer-schema-settings').locator('svg').click();
     await page.getByText('Edit block title').click();
     await page.getByRole('textbox').click();
     await page.getByRole('textbox').fill('block title');
@@ -161,7 +161,8 @@ test.describe('block title', () => {
     //回显
     await page.getByTestId('users-resource').getByTestId('designer-schema-settings').locator('svg').click();
     await page.getByText('Edit block title').click();
-    await expect(page.getByRole('textbox').inputValue()).toBe('block title');
+    const inputValue = await page.getByRole('textbox').inputValue();
+    await expect(inputValue).toBe('block title');
   });
 });
 
