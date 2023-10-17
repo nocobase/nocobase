@@ -24,7 +24,6 @@ abstract class BaseClient<Client> {
       this._client = await this._createConnection();
     }
 
-    console.log(`Creating database: ${name}`);
     await this._createDB(name);
     this.createdDBs.add(name);
   }
