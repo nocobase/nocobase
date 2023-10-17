@@ -40,6 +40,8 @@ function PluginInfo(props: IPluginInfo) {
         />
       )}
       <Card
+        role="button"
+        aria-label={`${displayName || name || packageName}`}
         size={'small'}
         bordered={false}
         onClick={() => {
@@ -130,6 +132,7 @@ function PluginInfo(props: IPluginInfo) {
           <Switch
             key={'enable'}
             size={'small'}
+            aria-label="plugin-enabled"
             disabled={builtIn || error}
             onChange={async (checked, e) => {
               e.stopPropagation();

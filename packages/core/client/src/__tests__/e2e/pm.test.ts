@@ -4,12 +4,7 @@ test.describe('add config in front', () => {
   test('add plugin npm registry', async ({ page, mockPage }) => {
     await mockPage().goto();
     await page.getByTestId('pm-button').click();
-    await expect(
-      page
-        .locator('div')
-        .filter({ hasText: /^sample-custom-collection-template$/ })
-        .first(),
-    ).not.toBeVisible();
+    await expect(await page.getByLabel('sample-custom-collection-template')).not.toBeVisible();
     await page.getByRole('button', { name: 'Add new' }).click();
     await page
       .getByTestId('packageName-item')
@@ -19,46 +14,34 @@ test.describe('add config in front', () => {
     await page.waitForLoadState('load');
     await page.waitForTimeout(20000);
     await page.getByPlaceholder('Search plugin').fill('sample-custom-collection-template');
-    await expect(
-      page
-        .locator('div')
-        .filter({ hasText: /^sample-custom-collection-template$/ })
-        .first(),
-    ).toBeVisible();
+    await expect(await page.getByLabel('sample-custom-collection-template')).toBeVisible();
   });
   test.skip('add plugin local upload', async ({ page, mockPage }) => {});
   test.skip('add plugin  file url', async ({ page, mockPage }) => {});
 });
 
-test.describe('delete plugin', () => {
-  test('delete plugin', async ({ page, mockPage }) => {
+test.describe('remove plugin', () => {
+  test('remove plugin,then add plugin', async ({ page, mockPage }) => {
     await mockPage().goto();
     await page.getByTestId('pm-button').click();
     await page.getByPlaceholder('Search plugin').fill('hello');
-    await expect(
-      page
-        .locator('div')
-        .filter({ hasText: /^Hello$/ })
-        .first(),
-    ).toBeVisible();
+    await expect(await page.getByLabel('hello')).toBeVisible();
     //未启用的插件可以remove
-    const isActive = await page
-      .locator('div')
-      .filter({ hasText: /^Hello$/ })
-      .first()
-      .getByRole('switch')
-      .check();
+    const isActive = await page.getByLabel('hello').getByLabel('plugin-enabled').isChecked();
     await expect(isActive).toBe(false);
-    await page.getByRole('button', { name: 'delete Remove' }).click();
+    await await page.getByLabel('hello').getByRole('button', { name: 'delete Remove' }).click();
     await page.getByRole('button', { name: 'Yes' }).click();
     await page.waitForLoadState('load');
     await page.getByPlaceholder('Search plugin').fill('hello');
-    await expect(
-      page
-        .locator('div')
-        .filter({ hasText: /^Hello$/ })
-        .first(),
-    ).not.toBeVisible();
+    await expect(await page.getByLabel('hello')).not.toBeVisible();
+    //将删除的插件加回来
+    await page.getByRole('button', { name: 'Add new' }).click();
+    await page.getByTestId('packageName-item').getByRole('textbox').fill('@nocobase/plugin-sample-hello');
+    await page.getByTestId('submit-action').click();
+    await page.waitForLoadState('load');
+    await page.waitForTimeout(20000);
+    await page.getByPlaceholder('Search plugin').fill('hello');
+    await expect(await page.getByLabel('hello')).toBeVisible();
   });
 });
 
