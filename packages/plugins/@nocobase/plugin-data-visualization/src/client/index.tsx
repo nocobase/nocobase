@@ -5,6 +5,8 @@ import g2plot from './chart/g2plot';
 import antd from './chart/antd';
 import { ChartV2Block, ChartV2BlockDesigner, ChartV2BlockInitializer } from './block';
 import { ChartRenderer, ChartRendererProvider } from './renderer';
+import { ChartFilterBlockDesigner, ChartFilterBlockProvider } from './filter';
+
 class DataVisualizationPlugin extends Plugin {
   public charts: ChartGroup = new ChartGroup();
 
@@ -17,6 +19,8 @@ class DataVisualizationPlugin extends Plugin {
       ChartV2BlockDesigner,
       ChartV2Block,
       ChartRendererProvider,
+      ChartFilterBlockProvider,
+      ChartFilterBlockDesigner,
     });
     this.app.addProvider(DataVisualization);
   }

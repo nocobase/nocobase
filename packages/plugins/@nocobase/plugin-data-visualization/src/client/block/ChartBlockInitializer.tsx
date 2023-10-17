@@ -1,27 +1,19 @@
-import { LineChartOutlined } from '@ant-design/icons';
+import { LineChartOutlined, FilterOutlined } from '@ant-design/icons';
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { SchemaInitializer, useACLRoleContext, useCollectionDataSourceItems } from '@nocobase/client';
+import {
+  DataBlockInitializer,
+  SchemaInitializer,
+  useACLRoleContext,
+  useCollectionDataSourceItems,
+} from '@nocobase/client';
 import React, { useContext } from 'react';
 import { ChartConfigContext } from '../configure/ChartConfigure';
 import { useChartsTranslation } from '../locale';
+import { FilterBlockInitializer } from '../filter';
 
-const itemWrap = SchemaInitializer.itemWrap;
-const ConfigureButton = itemWrap((props) => {
+const ChartInitializer = (props: any) => {
   const { setVisible, setCurrent } = useContext(ChartConfigContext);
-  return (
-    <SchemaInitializer.Item
-      {...props}
-      onClick={() => {
-        setCurrent({ schema: {}, field: null, collection: props.item?.name, service: null, data: undefined });
-        setVisible(true);
-      }}
-    />
-  );
-});
-
-export const ChartInitializers = () => {
-  const { t } = useChartsTranslation();
   const collections = useCollectionDataSourceItems('Chart');
   const { allowAll, parseAction } = useACLRoleContext();
 
@@ -29,33 +21,58 @@ export const ChartInitializers = () => {
     const originalLoadChildren = collections[0].loadChildren;
     collections[0].loadChildren = ({ searchValue }) => {
       const children = originalLoadChildren({ searchValue });
-      const result = children
-        .filter((item) => {
-          if (allowAll) {
-            return true;
-          }
-          const params = parseAction(`${item.name}:list`);
-          return params;
-        })
-        .map((item) => ({
-          ...item,
-          component: ConfigureButton,
-        }));
-
-      return result;
+      return children.filter((item) => {
+        if (allowAll) {
+          return true;
+        }
+        const params = parseAction(`${item.name}:list`);
+        return params;
+      });
     };
   }
+  return (
+    <DataBlockInitializer
+      {...props}
+      items={collections}
+      icon={<LineChartOutlined />}
+      componentType={'Chart'}
+      onCreateBlockSchema={async ({ item }) => {
+        setCurrent({ schema: {}, field: null, collection: item.name, service: null, data: undefined });
+        setVisible(true);
+      }}
+    />
+  );
+};
+
+export const ChartInitializers = () => {
+  const { t } = useChartsTranslation();
 
   return (
     <SchemaInitializer.Button
+      data-testid="add-block-button-in-chart-block"
+      title={t('Add block')}
       icon={'PlusOutlined'}
-      items={collections as any}
-      dropdown={{
-        placement: 'bottomLeft',
-      }}
-    >
-      {t('Add chart')}
-    </SchemaInitializer.Button>
+      items={[
+        {
+          key: 'chart',
+          type: 'item',
+          title: t('Chart'),
+          component: ChartInitializer,
+        },
+        {
+          type: 'itemGroup',
+          title: t('Other blocks'),
+          children: [
+            {
+              key: 'filter',
+              type: 'item',
+              title: t('Filter'),
+              component: FilterBlockInitializer,
+            },
+          ],
+        },
+      ]}
+    />
   );
 };
 
