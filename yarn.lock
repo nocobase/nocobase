@@ -15109,6 +15109,11 @@ jest@^29.6.2:
     import-local "^3.0.2"
     jest-cli "^29.6.2"
 
+jest_workaround@^0.79.19:
+  version "0.79.19"
+  resolved "https://registry.yarnpkg.com/jest_workaround/-/jest_workaround-0.79.19.tgz#f5bc569163c33c4533e1c4053c533a8811152a91"
+  integrity sha512-g/MtKSwyb4Ohnd5GHeJaduTgznkyst81x+eUBGOSGK7f8doWuRMPpt6XM/13sM2jLB2QNzT/7Djj7o2PhsozIA==
+
 jose@^4.14.1:
   version "4.14.4"
   resolved "https://registry.npmmirror.com/jose/-/jose-4.14.4.tgz#59e09204e2670c3164ee24cbfe7115c6f8bff9ca"
