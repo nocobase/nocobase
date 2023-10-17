@@ -1,49 +1,57 @@
-import { enableToConfig, expect, test } from '@nocobase/test/client';
+import { expect, test } from '@nocobase/test/client';
 
 test.describe('add config in front', () => {
   test('add plugin npm registry', async ({ page, mockPage }) => {
     await mockPage().goto();
-    await page.getByTestId('add-block-button-in-page').click();
-    await page.getByRole('menuitem', { name: 'table Table right' }).click();
-    await page.getByRole('menuitem', { name: 'Users' }).click();
-    await page.getByRole('menuitem', { name: 'Users' }).hover();
-    await expect(page.getByTestId('configure-actions-button-of-table-block-users')).toBeVisible();
-    await expect(page.getByTestId('configure-columns-button-of-table-block-users')).toBeVisible();
+    await page.getByTestId('pm-button').click();
+    await expect(
+      page
+        .locator('div')
+        .filter({ hasText: /^sample-custom-collection-template$/ })
+        .first(),
+    ).not.toBeVisible();
+    await page.getByRole('button', { name: 'Add new' }).click();
+    await page
+      .getByTestId('packageName-item')
+      .getByRole('textbox')
+      .fill('@nocobase/plugin-sample-custom-collection-template');
+    await page.getByTestId('submit-action').click();
+    await page.waitForLoadState('load');
+    await page.getByPlaceholder('Search plugin').fill('sample-custom-collection-template');
+    await expect(
+      page
+        .locator('div')
+        .filter({ hasText: /^sample-custom-collection-template$/ })
+        .first(),
+    ).toBeVisible();
   });
-  test.skip('add plugin local upload', async ({ page, mockPage }) => {
-    await mockPage().goto();
-    await page.getByTestId('add-block-button-in-page').click();
-    await page.getByRole('menuitem', { name: 'table Table right' }).click();
-    await page.getByRole('menuitem', { name: 'Users' }).click();
-    await page.getByRole('menuitem', { name: 'Users' }).hover();
-    await expect(page.getByTestId('configure-actions-button-of-table-block-users')).toBeVisible();
-    await expect(page.getByTestId('configure-columns-button-of-table-block-users')).toBeVisible();
-  });
-  test('add plugin  file url', async ({ page, mockPage }) => {
-    await mockPage().goto();
-    await page.getByTestId('add-block-button-in-page').click();
-    await page.getByRole('menuitem', { name: 'table Table right' }).click();
-    await page.getByRole('menuitem', { name: 'Users' }).click();
-    await page.getByRole('menuitem', { name: 'Users' }).hover();
-    await expect(page.getByTestId('configure-actions-button-of-table-block-users')).toBeVisible();
-    await expect(page.getByTestId('configure-columns-button-of-table-block-users')).toBeVisible();
-  });
+  test.skip('add plugin local upload', async ({ page, mockPage }) => {});
+  test.skip('add plugin  file url', async ({ page, mockPage }) => {});
 });
 
 test.describe('delete plugin', () => {
   test('delete plugin', async ({ page, mockPage }) => {
-    await page.getByTestId('table-block').click();
-    await page.getByTestId('table-block').getByTestId('designer-schema-settings').locator('svg').click();
-    await page.getByText('Edit block title').click();
-    await page.getByRole('textbox').click();
-    await page.getByRole('textbox').fill('block title');
-    await page.getByRole('button', { name: 'OK' }).click();
-    await expect(page.getByTestId('users-resource').getByText('block title')).toBeVisible();
-    //回显
-    await page.getByTestId('users-resource').getByTestId('designer-schema-settings').locator('svg').click();
-    await page.getByText('Edit block title').click();
-    const inputValue = await page.getByRole('textbox').inputValue();
-    await expect(inputValue).toBe('block title');
+    await mockPage().goto();
+    await page.getByPlaceholder('Search plugin').fill('hello');
+    await expect(
+      page
+        .locator('div')
+        .filter({ hasText: /^Hello$/ })
+        .first(),
+    ).toBeVisible();
+    //未启用的插件可以remove
+    const isActive = await page.getByRole('switch').check();
+    await expect(isActive).toBe(false);
+    await page.getByRole('button', { name: 'delete Remove' }).click();
+    await page.getByRole('button', { name: 'Yes' }).click();
+    await page.waitForLoadState('load');
+    await page.getByPlaceholder('Search plugin').fill('hello');
+    await expect(
+      page
+        .locator('div')
+        .filter({ hasText: /^Hello$/ })
+        .first(),
+    ).not.toBeVisible();
   });
 });
 

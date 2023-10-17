@@ -116,6 +116,7 @@ function PluginInfo(props: IPluginInfo) {
                 cancelText={t('No')}
               >
                 <a
+                  role="button"
                   onClick={(e) => {
                     e.stopPropagation();
                   }}
