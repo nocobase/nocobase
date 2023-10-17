@@ -90,6 +90,8 @@ export const DuplicateAction = observer((props: any) => {
   };
   return (
     <div
+      role={props.role}
+      aria-label={props['aria-label']}
       className={cx(actionDesignerCss, {
         [css`
           .general-schema-designer {
@@ -123,7 +125,6 @@ export const DuplicateAction = observer((props: any) => {
             </a>
           ) : (
             <Button
-              data-testid={'duplicate-action'}
               disabled={disabled}
               style={{
                 opacity: designable && field?.data?.hidden && 0.1,
