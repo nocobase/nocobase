@@ -90,6 +90,7 @@ export interface IDatabaseOptions extends Options {
   usingBigIntForId?: boolean;
   underscored?: boolean;
   customHooks?: any;
+  instanceId?: string;
 }
 
 export type DatabaseOptions = IDatabaseOptions;
@@ -177,7 +178,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   context: any = {};
   queryInterface: QueryInterface;
 
-  _instanceId = nanoid();
+  _instanceId: string;
 
   utils = new DatabaseUtils(this);
   referenceMap = new ReferencesMap();
@@ -209,6 +210,12 @@ export class Database extends EventEmitter implements AsyncEmitter {
       },
       ...lodash.clone(options),
     };
+
+    if (!options.instanceId) {
+      this._instanceId = nanoid();
+    } else {
+      this._instanceId = options.instanceId;
+    }
 
     if (options.storage && options.storage !== ':memory:') {
       if (!isAbsolute(options.storage)) {

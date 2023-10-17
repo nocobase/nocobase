@@ -128,6 +128,7 @@ describe('query', () => {
 
     it('should parse dimensions', async () => {
       jest.spyOn(formatter, 'formatter').mockReturnValue('formatted-field');
+
       const dimensions = [
         {
           field: ['createdAt'],

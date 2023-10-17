@@ -3,6 +3,7 @@ import url from 'url';
 import pg from 'pg';
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env.test') });
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -166,8 +167,40 @@ class PostgresPool extends BasePool {
   }
 }
 
+class SqlitePool extends BasePool {
+  async createDatabase(name: string, options?: any): Promise<void> {
+    return fs.promises.writeFile(path.resolve(this.getStoragePath(), name), '');
+  }
+
+  async cleanDatabase(name: string): Promise<void> {
+    return fs.promises.unlink(path.resolve(this.getStoragePath(), name));
+  }
+
+  getDatabaseConfiguration(): any {
+    return {
+      storage: process.env.DB_STORAGE,
+    };
+  }
+
+  getConfiguredDatabaseName() {
+    const storagePath = process.env.DB_STORAGE;
+    if (storagePath && storagePath !== ':memory:') {
+      return path.basename(storagePath);
+    }
+  }
+
+  getStoragePath() {
+    const storagePath = process.env.DB_STORAGE;
+    if (storagePath && storagePath !== ':memory:') {
+      // return path without file name
+      return path.dirname(storagePath);
+    }
+  }
+}
+
 const pools = {
   postgres: PostgresPool,
+  sqlite: SqlitePool,
 };
 
 (async () => {

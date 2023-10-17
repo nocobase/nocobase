@@ -2,7 +2,8 @@ import { merge, uid } from '@nocobase/utils';
 import { resolve } from 'path';
 import { Database, IDatabaseOptions } from './database';
 import fetch from 'node-fetch';
-
+import path from 'path';
+import { nanoid } from 'nanoid';
 export class MockDatabase extends Database {
   constructor(options: IDatabaseOptions) {
     super({
@@ -53,53 +54,24 @@ function customLogger(queryString, queryObject) {
 export function mockDatabase(options: IDatabaseOptions = {}): MockDatabase {
   const dbOptions = merge(getConfigByEnv(), options) as any;
 
-  if (process.env['DB_TEST_DISTRIBUTOR_PORT']) {
-    const dialect = options.dialect;
-    if (dialect === 'sqlite' && options.storage == ':memory:') {
-      return;
+  if (process.env['DB_TEST_PREFIX']) {
+    let configKey = 'database';
+    if (dbOptions.dialect === 'sqlite') {
+      configKey = 'storage';
+    } else {
+      configKey = 'database';
     }
 
-    dbOptions.hooks = dbOptions.hooks || {};
-    dbOptions.customHooks = dbOptions.customHooks || {};
+    if (dbOptions[configKey] && !dbOptions[configKey].includes(process.env['DB_TEST_PREFIX'])) {
+      const instanceId = nanoid();
+      const databaseName = `${process.env['DB_TEST_PREFIX']}_${instanceId}`;
 
-    dbOptions.hooks.beforeConnect = async (config) => {
-      const hasAutoNamedDatabase = config.database.startsWith('auto_named_');
-
-      let url = `http://127.0.0.1:${process.env['DB_TEST_DISTRIBUTOR_PORT']}/acquire?via=${db.instanceId}`;
-
-      if (hasAutoNamedDatabase) {
-        url += `&name=${db.options.database}`;
+      if (dbOptions.dialect === 'sqlite') {
+        dbOptions.storage = path.resolve(path.dirname(dbOptions.storage), databaseName);
+      } else {
+        dbOptions.database = databaseName;
       }
-
-      const response = await fetch(url);
-
-      const databaseResponse = await response.json();
-
-      if (!response.ok) {
-        throw new Error(`Failed to aquire database: ${databaseResponse.error}`);
-      }
-
-      if (hasAutoNamedDatabase) {
-        return;
-      }
-
-      config.dialectOptions['application_name'] = expect.getState().currentTestName;
-
-      db.options.database = config.database = databaseResponse.name;
-
-      if (db.context.app?.options?.database) {
-        db.context.app.options.database.database = config.database;
-      }
-    };
-
-    dbOptions.customHooks.afterClose = async (database) => {
-      if (!database.options.database.startsWith('auto_named_')) {
-        return;
-      }
-
-      const url = `http://127.0.0.1:${process.env['DB_TEST_DISTRIBUTOR_PORT']}/release?name=${database.options.database}&via=${db.instanceId}`;
-      await fetch(url);
-    };
+    }
   }
 
   const db = new MockDatabase(dbOptions);
