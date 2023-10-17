@@ -3,7 +3,7 @@ import { resolve } from 'path';
 import { Database, IDatabaseOptions } from './database';
 import fetch from 'node-fetch';
 import path from 'path';
-import { nanoid } from 'nanoid';
+import { customAlphabet } from 'nanoid';
 export class MockDatabase extends Database {
   constructor(options: IDatabaseOptions) {
     super({
@@ -62,8 +62,18 @@ export function mockDatabase(options: IDatabaseOptions = {}): MockDatabase {
       configKey = 'database';
     }
 
-    if (dbOptions[configKey] && !dbOptions[configKey].includes(process.env['DB_TEST_PREFIX'])) {
-      const instanceId = nanoid();
+    const shouldChange = () => {
+      if (dbOptions.dialect === 'sqlite') {
+        return !dbOptions[configKey].includes(process.env['DB_TEST_PREFIX']);
+      }
+
+      return !dbOptions[configKey].startsWith(process.env['DB_TEST_PREFIX']);
+    };
+
+    if (dbOptions[configKey] && shouldChange()) {
+      const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 10);
+
+      const instanceId = `d_${nanoid()}`;
       const databaseName = `${process.env['DB_TEST_PREFIX']}_${instanceId}`;
 
       if (dbOptions.dialect === 'sqlite') {
@@ -71,6 +81,15 @@ export function mockDatabase(options: IDatabaseOptions = {}): MockDatabase {
       } else {
         dbOptions.database = databaseName;
       }
+    }
+
+    if (process.env['DB_TEST_DISTRIBUTOR_PORT']) {
+      dbOptions.hooks = dbOptions.hooks || {};
+
+      dbOptions.hooks.beforeConnect = async (config) => {
+        const url = `http://127.0.0.1:${process.env['DB_TEST_DISTRIBUTOR_PORT']}/acquire?via=${db.instanceId}&name=${config.database}`;
+        await fetch(url);
+      };
     }
   }
 
