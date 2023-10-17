@@ -262,41 +262,6 @@ test.describe('blcok template', () => {
                                     'x-async': false,
                                     'x-index': 1,
                                   },
-                                  hmx352mpg0n: {
-                                    _isJSONSchemaObject: true,
-                                    version: '2.0',
-                                    type: 'void',
-                                    'x-component': 'Grid.Row',
-                                    properties: {
-                                      '462mil002c4': {
-                                        _isJSONSchemaObject: true,
-                                        version: '2.0',
-                                        type: 'void',
-                                        'x-component': 'Grid.Col',
-                                        properties: {
-                                          phone: {
-                                            _isJSONSchemaObject: true,
-                                            version: '2.0',
-                                            type: 'string',
-                                            'x-designer': 'FormItem.Designer',
-                                            'x-component': 'CollectionField',
-                                            'x-decorator': 'FormItem',
-                                            'x-collection-field': 'users.phone',
-                                            'x-component-props': {},
-                                            'x-uid': '1lum3kv33xx',
-                                            'x-async': false,
-                                            'x-index': 1,
-                                          },
-                                        },
-                                        'x-uid': 'dci5ihd63ee',
-                                        'x-async': false,
-                                        'x-index': 1,
-                                      },
-                                    },
-                                    'x-uid': 'gof6ouj3fcu',
-                                    'x-async': false,
-                                    'x-index': 2,
-                                  },
                                 },
                                 'x-uid': '4wrgwkyyf81',
                                 'x-async': false,
@@ -349,7 +314,8 @@ test.describe('blcok template', () => {
         'x-index': 1,
       },
     }).goto();
-    await page.getByTestId('users-resource').getByRole('img', { name: 'menu' }).locator('path').click();
+    await page.getByTestId('form-block').click();
+    await page.getByTestId('form-block').getByTestId('designer-schema-settings').locator('svg').nth(0).click();
     await page.getByText('Save as block template').click();
     await page.getByLabel('Save as template').getByRole('textbox').dblclick();
     await page
@@ -359,9 +325,14 @@ test.describe('blcok template', () => {
       .click();
     await page.getByLabel('Save as template').getByRole('textbox').fill('Users_Form');
     await page.getByRole('button', { name: 'OK' }).click();
-    await expect(
-      page.getByTestId('form-block').locator('.general-schema-designer-title > .title-tag').innerText,
-    ).toContain('Reference template');
+    await page.getByTestId('form-block').click();
+    await page.waitForTimeout(2000);
+    console.log(await page.locator('.general-schema-designer-title > .ant-space-item > .title-tag').innerText());
+    const titleTag = await page
+      .getByTestId('form-block')
+      .locator('.general-schema-designer-title > .title-tag')
+      .innerHTML();
+    await expect(titleTag).toContain('Reference template');
   });
   test.skip('using block template ', async ({ page, mockPage }) => {
     await mockPage({
