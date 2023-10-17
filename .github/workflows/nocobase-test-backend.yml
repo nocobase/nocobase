@@ -36,7 +36,7 @@ jobs:
         with:
           node-version: ${{ matrix.node_version }}
           cache: 'yarn'
-      - run: yarn install
+      - run: yarn install --frozen-lockfile
       - name: Test with Sqlite
         run: node --max_old_space_size=4096 ./node_modules/.bin/jest --maxWorkers=100% --workerIdleMemoryLimit=3000MB
         env:
@@ -78,7 +78,7 @@ jobs:
         with:
           node-version: ${{ matrix.node_version }}
           cache: 'yarn'
-      - run: yarn install
+      - run: yarn install --frozen-lockfile
       # - run: yarn build
       - name: Test with postgres
         run: |
@@ -121,8 +121,7 @@ jobs:
         with:
           node-version: ${{ matrix.node_version }}
           cache: 'yarn'
-      - run: yarn install
-      # - run: yarn build
+      - run: yarn install --frozen-lockfile
       - name: Test with MySQL
         run: |
           ./node_modules/.bin/tsx packages/core/test/src/scripts/test-db-creator.ts &
