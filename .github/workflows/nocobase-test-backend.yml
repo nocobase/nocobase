@@ -38,7 +38,7 @@ jobs:
           cache: 'yarn'
       - run: yarn install
       - name: Test with Sqlite
-        run: yarn nocobase install -f && node --max_old_space_size=4096 ./node_modules/.bin/jest --workerIdleMemoryLimit=3000MB
+        run: yarn nocobase install -f && node --max_old_space_size=4096 ./node_modules/.bin/jest --maxWorkers=100% --workerIdleMemoryLimit=3000MB
         env:
           LOGGER_LEVEL: error
           DB_DIALECT: sqlite
@@ -85,7 +85,7 @@ jobs:
           yarn nocobase install -f
           ./node_modules/.bin/tsx packages/core/test/src/scripts/test-db-creator.ts &
           sleep 1
-          node --max_old_space_size=4096 ./node_modules/.bin/jest --workerIdleMemoryLimit=3000MB
+          node --max_old_space_size=4096 ./node_modules/.bin/jest --maxWorkers=100% --workerIdleMemoryLimit=3000MB
         env:
           LOGGER_LEVEL: error
           DB_DIALECT: postgres
@@ -129,7 +129,7 @@ jobs:
           yarn nocobase install -f
           ./node_modules/.bin/tsx packages/core/test/src/scripts/test-db-creator.ts &
           sleep 1
-          node --max_old_space_size=4096 ./node_modules/.bin/jest --workerIdleMemoryLimit=3000MB
+          node --max_old_space_size=4096 ./node_modules/.bin/jest --maxWorkers=100% --workerIdleMemoryLimit=3000MB
         env:
           LOGGER_LEVEL: error
           DB_DIALECT: mysql
