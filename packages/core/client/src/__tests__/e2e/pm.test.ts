@@ -17,6 +17,7 @@ test.describe('add config in front', () => {
       .fill('@nocobase/plugin-sample-custom-collection-template');
     await page.getByTestId('submit-action').click();
     await page.waitForLoadState('load');
+    await page.waitForTimeout(20000);
     await page.getByPlaceholder('Search plugin').fill('sample-custom-collection-template');
     await expect(
       page
@@ -32,6 +33,7 @@ test.describe('add config in front', () => {
 test.describe('delete plugin', () => {
   test('delete plugin', async ({ page, mockPage }) => {
     await mockPage().goto();
+    await page.getByTestId('pm-button').click();
     await page.getByPlaceholder('Search plugin').fill('hello');
     await expect(
       page
@@ -40,7 +42,12 @@ test.describe('delete plugin', () => {
         .first(),
     ).toBeVisible();
     //未启用的插件可以remove
-    const isActive = await page.getByRole('switch').check();
+    const isActive = await page
+      .locator('div')
+      .filter({ hasText: /^Hello$/ })
+      .first()
+      .getByRole('switch')
+      .check();
     await expect(isActive).toBe(false);
     await page.getByRole('button', { name: 'delete Remove' }).click();
     await page.getByRole('button', { name: 'Yes' }).click();
