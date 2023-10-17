@@ -71,6 +71,7 @@ import { patchSequelizeQueryInterface, snakeCase } from './utils';
 import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
 import { ViewCollection } from './view-collection';
 import { SqlCollection } from './sql-collection/sql-collection';
+import { nanoid } from 'nanoid';
 
 export type MergeOptions = merge.Options;
 
@@ -88,6 +89,8 @@ export interface IDatabaseOptions extends Options {
   migrator?: any;
   usingBigIntForId?: boolean;
   underscored?: boolean;
+  customHooks?: any;
+  instanceId?: string;
 }
 
 export type DatabaseOptions = IDatabaseOptions;
@@ -172,8 +175,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
   pendingFields = new Map<string, RelationField[]>();
   modelCollection = new Map<ModelStatic<any>, Collection>();
   tableNameCollectionMap = new Map<string, Collection>();
-
+  context: any = {};
   queryInterface: QueryInterface;
+
+  _instanceId: string;
 
   utils = new DatabaseUtils(this);
   referenceMap = new ReferencesMap();
@@ -206,6 +211,12 @@ export class Database extends EventEmitter implements AsyncEmitter {
       ...lodash.clone(options),
     };
 
+    if (!options.instanceId) {
+      this._instanceId = nanoid();
+    } else {
+      this._instanceId = options.instanceId;
+    }
+
     if (options.storage && options.storage !== ':memory:') {
       if (!isAbsolute(options.storage)) {
         opts.storage = resolve(process.cwd(), options.storage);
@@ -224,7 +235,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
     this.options = opts;
 
-    this.sequelize = new Sequelize(this.sequelizeOptions(this.options));
+    const sequelizeOptions = this.sequelizeOptions(this.options);
+    this.sequelize = new Sequelize(sequelizeOptions);
 
     this.queryInterface = buildQueryInterface(this);
 
@@ -297,17 +309,31 @@ export class Database extends EventEmitter implements AsyncEmitter {
     patchSequelizeQueryInterface(this);
   }
 
+  get instanceId() {
+    return this._instanceId;
+  }
+
+  setContext(context: any) {
+    this.context = context;
+  }
+
   setLogger(logger: Logger) {
     this.logger = logger;
   }
 
   sequelizeOptions(options) {
     if (options.dialect === 'postgres') {
-      options.hooks = {
-        afterConnect: async (connection) => {
-          await connection.query('SET search_path TO public;');
-        },
-      };
+      if (!options.hooks) {
+        options.hooks = {};
+      }
+
+      if (!options.hooks['afterConnect']) {
+        options.hooks['afterConnect'] = [];
+      }
+
+      options.hooks['afterConnect'].push(async (connection) => {
+        await connection.query('SET search_path TO public;');
+      });
     }
     return options;
   }
@@ -769,7 +795,15 @@ export class Database extends EventEmitter implements AsyncEmitter {
       return;
     }
 
-    return this.sequelize.close();
+    await this.emitAsync('beforeClose', this);
+
+    const closeResult = this.sequelize.close();
+
+    if (this.options?.customHooks?.['afterClose']) {
+      await this.options.customHooks['afterClose'](this);
+    }
+
+    return closeResult;
   }
 
   on(event: EventType, listener: any): this;

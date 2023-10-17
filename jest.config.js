@@ -1,8 +1,20 @@
 const { pathsToModuleNameMapper } = require('ts-jest');
 const { compilerOptions } = require('./tsconfig.paths.json');
-const { defaults } = require('jest-config');
 
-module.exports = {
+const swcrc = {
+  jsc: {
+    parser: {
+      syntax: 'typescript',
+      tsx: false,
+      decorators: true,
+      dynamicImport: false,
+    },
+  },
+};
+
+((swcrc.jsc ??= {}).experimental ??= {}).plugins = [['jest_workaround', {}]];
+
+const config = {
   rootDir: process.cwd(),
   collectCoverage: false,
   verbose: true,
@@ -16,14 +28,7 @@ module.exports = {
     }),
   },
   transform: {
-    '^.+\\.{ts|tsx}?$': [
-      'ts-jest',
-      {
-        babelConfig: false,
-        tsconfig: './tsconfig.jest.json',
-        diagnostics: false,
-      },
-    ],
+    '^.+\\.(t|j)sx?$': ['@swc/jest', swcrc],
   },
   modulePathIgnorePatterns: ['/esm/', '/es/', '/dist/', '/lib/', '/client/', '/sdk/', '\\.test\\.tsx$'],
   coveragePathIgnorePatterns: [
@@ -37,3 +42,5 @@ module.exports = {
     '/storage/',
   ],
 };
+
+module.exports = config;
