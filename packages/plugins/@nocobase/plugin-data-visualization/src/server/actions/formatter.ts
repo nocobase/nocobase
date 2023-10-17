@@ -1,4 +1,4 @@
-export const dateFormatFn = (sequelize: any, dialect: string, field: string, format: string) => {
+const dateFormatFn = (sequelize, dialect, field, format) => {
   switch (dialect) {
     case 'sqlite':
       format = format
@@ -26,7 +26,7 @@ export const dateFormatFn = (sequelize: any, dialect: string, field: string, for
   }
 };
 
-export const formatFn = (sequelize: any, dialect: string, field: string, format: string) => {
+const formatFn = (sequelize, dialect, field, format) => {
   switch (dialect) {
     case 'sqlite':
     case 'postgres':
@@ -36,7 +36,7 @@ export const formatFn = (sequelize: any, dialect: string, field: string, format:
   }
 };
 
-export const formatter = (sequelize: any, type: string, field: string, format: string) => {
+const formatter = (sequelize, type, field, format) => {
   const dialect = sequelize.getDialect();
   switch (type) {
     case 'date':
@@ -46,4 +46,10 @@ export const formatter = (sequelize: any, type: string, field: string, format: s
     default:
       return formatFn(sequelize, dialect, field, format);
   }
+};
+
+module.exports = {
+  dateFormatFn,
+  formatFn,
+  formatter,
 };
