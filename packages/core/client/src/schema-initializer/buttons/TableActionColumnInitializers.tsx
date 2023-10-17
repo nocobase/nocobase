@@ -480,7 +480,6 @@ export const tableActionColumnInitializers = new SchemaInitializerV2({
     },
     {
       type: 'divider',
-      name: 'dev2',
     },
     {
       type: 'item',

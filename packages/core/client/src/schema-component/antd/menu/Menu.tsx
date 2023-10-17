@@ -15,7 +15,7 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from '
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { createDesignable, DndContext, SortableItem, useDesignable, useDesigner } from '../..';
-import { Icon, useAPIClient, useApp, useSchemaInitializer } from '../../../';
+import { Icon, useAPIClient, useApp } from '../../../';
 import { useCollectMenuItems, useMenuItem } from '../../../hooks/useMenuItem';
 import { useProps } from '../../hooks/useProps';
 import { MenuDesigner } from './Menu.Designer';
@@ -365,7 +365,6 @@ export const Menu: ComposedMenu = observer(
     const schema = useFieldSchema();
     const { refresh } = useDesignable();
     const api = useAPIClient();
-    // const { render } = useSchemaInitializer(schema['x-initializer']);
     const { render } = app.schemaInitializerManager.getRender(schema['x-initializer'], schema['x-initializer-props']);
     const sideMenuRef = useSideMenuRef();
     const [selectedKeys, setSelectedKeys] = useState<string[]>();

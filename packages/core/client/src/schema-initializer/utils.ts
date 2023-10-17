@@ -303,8 +303,9 @@ export const useFormItemInitializerFields = (options?: any) => {
       // interfaceConfig?.schemaInitialize?.(schema, { field, block: 'Form', readPretty: form.readPretty });
       const resultItem = {
         type: 'item',
+        name: field.name,
         title: field?.uiSchema?.title || field.name,
-        component: 'CollectionFieldInitializer',
+        Component: 'CollectionFieldInitializer',
         remove: removeGridFormItem,
         schemaInitialize: (s) => {
           interfaceConfig?.schemaInitialize?.(s, {

@@ -3,7 +3,6 @@ import { useFieldSchema } from '@formily/react';
 import cls from 'classnames';
 import React from 'react';
 import { useCollection } from '../../../collection-manager';
-import { useSchemaInitializer } from '../../../schema-initializer';
 import { DndContext, SortableItem } from '../../common';
 import { useDesigner } from '../../hooks';
 import { useToken } from '../__builtins__';
@@ -13,13 +12,18 @@ import { AssociationFilterInitializer } from './AssociationFilter.Initializer';
 import { AssociationFilterItem } from './AssociationFilter.Item';
 import { AssociationFilterItemDesigner } from './AssociationFilter.Item.Designer';
 import { AssociationFilterProvider } from './AssociationFilterProvider';
+import { useApp } from '../../../application';
 
 export const AssociationFilter = (props) => {
   const { token } = useToken();
+  const app = useApp();
   const Designer = useDesigner();
   const filedSchema = useFieldSchema();
 
-  const { render } = useSchemaInitializer(filedSchema['x-initializer']);
+  const { render } = app.schemaInitializerManager.getRender(
+    filedSchema['x-initializer'],
+    filedSchema['x-initializer-props'],
+  );
 
   return (
     <DndContext>

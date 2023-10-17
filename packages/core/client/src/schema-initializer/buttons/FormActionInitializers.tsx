@@ -1,3 +1,5 @@
+import { SchemaInitializerItemType, SchemaInitializerV2 } from '../../application';
+
 // TODO(refactor): should be moved to workflow plugin
 const FormTriggerWorkflowActionInitializer = {
   type: 'item',
@@ -484,3 +486,96 @@ export const BulkEditFormActionInitializers = {
     },
   ],
 };
+
+// TODO(refactor): should be moved to workflow plugin
+const FormTriggerWorkflowActionInitializerV2: SchemaInitializerItemType = {
+  type: 'item',
+  title: '{{t("Submit to workflow", { ns: "workflow" })}}',
+  component: 'CustomizeActionInitializer',
+  schema: {
+    title: '{{t("Submit to workflow", { ns: "workflow" })}}',
+    'x-component': 'Action',
+    'x-component-props': {
+      useProps: '{{ useTriggerWorkflowsActionProps }}',
+    },
+    'x-designer': 'Action.Designer',
+    'x-action-settings': {
+      assignedValues: {},
+      skipValidator: false,
+      onSuccess: {
+        manualClose: true,
+        redirecting: false,
+        successMessage: '{{t("Submitted successfully")}}',
+      },
+      triggerWorkflows: [],
+    },
+    'x-action': 'customize:triggerWorkflows',
+  },
+};
+
+export const formActionInitializers = new SchemaInitializerV2({
+  'data-testid': 'configure-actions-button-of-form-block',
+  title: '{{t("Configure actions")}}',
+  icon: 'SettingOutlined',
+  items: [
+    {
+      type: 'itemGroup',
+      name: 'enable-actions',
+      title: '{{t("Enable actions")}}',
+      children: [
+        {
+          name: 'submit',
+          title: '{{t("Submit")}}',
+          Component: 'CreateSubmitActionInitializer',
+          schema: {
+            'x-action-settings': {},
+          },
+        },
+      ],
+    },
+    {
+      type: 'divider',
+    },
+    {
+      name: 'custom',
+      type: 'subMenu',
+      title: '{{t("Customize")}}',
+      children: [
+        {
+          name: 'save-record',
+          title: '{{t("Save record")}}',
+          Component: 'CustomizeActionInitializer',
+          schema: {
+            title: '{{ t("Save record") }}',
+            'x-action': 'customize:save',
+            'x-component': 'Action',
+            'x-designer': 'Action.Designer',
+            'x-designer-props': {
+              modalTip:
+                '{{ t("When the button is clicked, the following fields will be assigned and saved together with the fields in the form. If there are overlapping fields, the value here will overwrite the value in the form.") }}',
+            },
+            'x-action-settings': {
+              assignedValues: {},
+              skipValidator: false,
+              onSuccess: {
+                manualClose: true,
+                redirecting: false,
+                successMessage: '{{t("Submitted successfully")}}',
+              },
+              triggerWorkflows: [],
+            },
+            'x-component-props': {
+              useProps: '{{ useCreateActionProps }}',
+            },
+          },
+        },
+        FormTriggerWorkflowActionInitializerV2,
+        {
+          name: 'custom-request',
+          title: '{{t("Custom request")}}',
+          Component: 'CustomRequestInitializer',
+        },
+      ],
+    },
+  ],
+});

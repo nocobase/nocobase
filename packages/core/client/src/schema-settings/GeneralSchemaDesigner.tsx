@@ -129,7 +129,7 @@ export const GeneralSchemaDesigner = (props: any) => {
     return {
       insertPosition: 'afterEnd',
       wrap: rowCtx?.cols?.length > 1 ? undefined : gridRowColWrap,
-      component: <PlusOutlined data-testid="designer-add-block" style={{ cursor: 'pointer', fontSize: 14 }} />,
+      Component: () => <PlusOutlined data-testid="designer-add-block" style={{ cursor: 'pointer', fontSize: 14 }} />,
     };
   }, [rowCtx?.cols?.length]);
 

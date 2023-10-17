@@ -23,6 +23,10 @@ import {
   tableActionColumnInitializers,
   tableActionInitializersV2,
   tableColumnInitializer,
+  formItemInitializers,
+  formActionInitializers,
+  detailsActionInitializers,
+  readPrettyFormItemInitializer,
 } from './buttons';
 
 export class SchemaInitializerPlugin<SchemaInitializerProviderProps> extends Plugin {
@@ -33,5 +37,9 @@ export class SchemaInitializerPlugin<SchemaInitializerProviderProps> extends Plu
     this.app.schemaInitializerManager.add('TableActionInitializers', tableActionInitializersV2);
     this.app.schemaInitializerManager.add('TableColumnInitializers', tableColumnInitializer);
     this.app.schemaInitializerManager.add('TableActionColumnInitializers', tableActionColumnInitializers);
+    this.app.schemaInitializerManager.add('FormItemInitializers', formItemInitializers);
+    this.app.schemaInitializerManager.add('FormActionInitializers', formActionInitializers);
+    this.app.schemaInitializerManager.add('DetailsActionInitializers', detailsActionInitializers);
+    this.app.schemaInitializerManager.add('ReadPrettyFormItemInitializer', readPrettyFormItemInitializer);
   }
 }
