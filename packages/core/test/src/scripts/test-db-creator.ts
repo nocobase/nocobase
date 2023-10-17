@@ -72,8 +72,9 @@ class MySQLClient extends BaseClient<any> {
   async _removeDB(name: string): Promise<void> {
     await this._client.query(`DROP DATABASE IF EXISTS ${name}`);
   }
+
   async _createDB(name: string): Promise<void> {
-    await this._client.query(`CREATE DATABASE ${name} IF NOT EXISTS`);
+    await this._client.query(`CREATE DATABASE IF NOT EXISTS ${name}`);
   }
 
   async _createConnection(): Promise<mysql.Connection> {
