@@ -125,7 +125,11 @@ jobs:
       - run: yarn install
       # - run: yarn build
       - name: Test with MySQL
-        run: yarn nocobase install -f && node --max_old_space_size=4096 ./node_modules/.bin/jest --maxWorkers=1 --workerIdleMemoryLimit=3000MB
+        run: |
+          yarn nocobase install -f
+          ./node_modules/.bin/tsx packages/core/test/src/scripts/test-db-creator.ts &
+          sleep 1
+          node --max_old_space_size=4096 ./node_modules/.bin/jest --workerIdleMemoryLimit=3000MB
         env:
           LOGGER_LEVEL: error
           DB_DIALECT: mysql
@@ -135,4 +139,6 @@ jobs:
           DB_PASSWORD: password
           DB_DATABASE: nocobase
           DB_UNDERSCORED: ${{ matrix.underscored }}
+          DB_TEST_DISTRIBUTOR_PORT: 23450
+          DB_TEST_PREFIX: test_
     timeout-minutes: 40
