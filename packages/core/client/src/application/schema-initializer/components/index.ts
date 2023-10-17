@@ -5,3 +5,4 @@ export * from './InitializerSwitch';
 export * from './InitializerGroup';
 export * from './InitializerChildren';
 export * from './InitializerDivider';
+export * from './InitializerItems';

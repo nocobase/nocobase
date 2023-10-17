@@ -25,22 +25,23 @@ const myInitializer = new SchemaInitializerV2<AvatarProps>({
 
 const Root = () => {
   const app = useApp();
-  const initializer = app.schemaInitializerManager.get('MyInitializer');
+  const { exists, render } = app.schemaInitializerManager.getRender('MyInitializer');
+  if (!exists) return null;
   return (
     <div>
       <div>
         <div>初始化时自定义 Component</div>
-        {initializer.render()}
+        {render()}
       </div>
       <Divider />
       <div>
         <div>通过 render 更改</div>
-        {initializer.render({ Component: () => <PlusOutlined style={{ cursor: 'pointer' }} /> })}
+        {render({ Component: () => <PlusOutlined style={{ cursor: 'pointer' }} /> })}
       </div>
       <Divider />
       <div>
         <div>不使用 dropdown</div>
-        {initializer.render({ noDropdown: true, componentProps: { onClick: () => alert('test') } })}
+        {render({ noDropdown: true, componentProps: { onClick: () => alert('test') } })}
       </div>
     </div>
   );

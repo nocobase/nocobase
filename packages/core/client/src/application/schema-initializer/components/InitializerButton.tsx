@@ -5,7 +5,7 @@ import { SchemaInitializerOptions } from '../types';
 import { Icon } from '../../../icon';
 
 export const InitializerButton: FC<SchemaInitializerOptions> = (props) => {
-  const { title, icon, componentProps, componentStyle, style } = props;
+  const { style, options, ...others } = props;
   const compile = useCompile();
 
   return (
@@ -15,13 +15,12 @@ export const InitializerButton: FC<SchemaInitializerOptions> = (props) => {
       style={{
         borderColor: 'var(--colorSettings)',
         color: 'var(--colorSettings)',
-        ...componentStyle,
         ...style,
       }}
-      {...componentProps}
-      icon={typeof icon === 'string' ? <Icon type={icon as string} /> : icon}
+      icon={typeof options.icon === 'string' ? <Icon type={options.icon as string} /> : options.icon}
+      {...others}
     >
-      {compile(title)}
+      {compile(options.title)}
     </Button>
   );
 };

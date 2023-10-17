@@ -1,5 +1,4 @@
 import { ButtonProps, ListProps } from 'antd';
-import { ListItemProps } from 'antd/es/list';
 import { Application } from '../Application';
 import { SchemaInitializerV2 } from './SchemaInitializer';
 import { SchemaInitializerOptions } from './types';

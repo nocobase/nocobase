@@ -1,10 +1,9 @@
 import { ButtonProps, ListProps } from 'antd';
 import { ComponentType } from 'react';
 import React from 'react';
-import { InitializerChildren } from './components/InitializerChildren';
 import { SchemaInitializerOptions, SchemaInitializerItemType } from './types';
 import { InitializerButton } from './components/InitializerButton';
-import { InitializerList } from './components/InitializerList';
+import { InitializerItems } from './components/InitializerItems';
 import { withInitializer } from './hoc';
 
 export class SchemaInitializerV2<P1 = ButtonProps, P2 = ListProps<any>> {
@@ -14,7 +13,7 @@ export class SchemaInitializerV2<P1 = ButtonProps, P2 = ListProps<any>> {
   }
 
   constructor(options: SchemaInitializerOptions<P1, P2>) {
-    this.options = Object.assign({ items: [] as any }, options);
+    this.options = Object.assign({ items: [] }, options);
   }
 
   add(name: string, item: SchemaInitializerItemType) {
@@ -87,15 +86,23 @@ export class SchemaInitializerV2<P1 = ButtonProps, P2 = ListProps<any>> {
 
   render(options: SchemaInitializerOptions<P1, P2> = {}) {
     const C: ComponentType = options.Component || this.options.Component || InitializerButton;
-    const componentProps = Object.assign({}, this.options.componentProps, options.componentProps);
-    const mergedOptions = Object.assign({}, this.options, options);
+    const componentProps = Object.assign({}, this.options.componentProps, options.componentProps, {
+      options: {
+        ...this.options,
+        ...options,
+      },
+      style: {
+        ...this.options.style,
+        ...options.style,
+      },
+    });
     return React.createElement(
       withInitializer(C, componentProps),
       {
         ...this.options,
         ...options,
       },
-      this.renderList(options),
+      this.renderItems(options),
     );
   }
 
@@ -103,15 +110,15 @@ export class SchemaInitializerV2<P1 = ButtonProps, P2 = ListProps<any>> {
     return (options2: SchemaInitializerOptions<P1, P2> = {}) => this.render({ ...options1, ...options2 });
   }
 
-  private renderList(options: SchemaInitializerOptions<P1, P2> = {}) {
+  private renderItems(options: SchemaInitializerOptions<P1, P2> = {}) {
     if (this.items.length === 0) return null;
-    const C: ComponentType<any> = options.ListComponent || this.options.ListComponent || InitializerList;
-    const listProps = options.listProps || this.options.listProps || {};
-    const listStyle = options.listStyle || this.options.listStyle || {};
-    return (
-      <C {...listProps} style={listStyle}>
-        <InitializerChildren>{this.items}</InitializerChildren>
-      </C>
-    );
+    const C: ComponentType<any> = options.ItemsComponent || this.options.ItemsComponent || InitializerItems;
+    const mergedOptions = Object.assign({}, this.options, options);
+    const itemsComponentProps = Object.assign({}, options.itemsComponentProps || this.options.itemsComponentProps, {
+      options: mergedOptions,
+      items: this.items,
+      style: options.itemsComponentStyle || this.options.itemsComponentStyle || {},
+    });
+    return <C {...itemsComponentProps}></C>;
   }
 }

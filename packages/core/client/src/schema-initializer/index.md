@@ -51,66 +51,52 @@ SchemaInitializer.Button 用于将各种 Initializer 分组，以下拉菜单的
 - `TableColumnInitializers` 表格「列配置」
 - `TableRecordActionInitializers` 表格当前行记录的「操作配置」
 
-## 配置
-
-```tsx | pure
-const initializers = {
-  // 可以是 SchemaInitializer.Button 的 props
-  BlockInitializers: {
-    title: 'Add new',
-    items: [
-      {
-        type: 'itemGroup',
-        title: 'Data blocks',
-        children: [
-          {
-            type: 'item',
-            title: 'Table',
-            component: 'TableBlockInitializer',
-          },
-          {
-            type: 'item',
-            title: 'Form',
-            component: 'FormBlockInitializer',
-          },
-        ],
-      },
-      {
-        type: 'itemGroup',
-        title: 'Media',
-        children: [
-          {
-            type: 'item',
-            title: 'Markdown',
-            component: 'MarkdownBlockInitializer',
-          },
-        ],
-      },
-    ],
-  },
-  // 也可以是自定义的 SchemaInitializer.Button 组件
-  CustomSchemaInitializerButton,
-};
-
-const CustomSchemaInitializerButton = () => {
-  return <SchemaInitializer.Button title={'Add new'} items={[]}/>
-}
-
-<SchemaInitializerProvider initializers={initializers}>
-  {/* children */}
-</SchemaInitializerProvider>
-```
-
 ## Examples
 
 ### Basic
 
-<code src="./demos/demo1.tsx"></code>
+<code src="./demos/basic.tsx"></code>
 
 ### Nested items
 
-<code src="./demos/demo2.tsx"></code>
+<code src="./demos/nested-items.tsx"></code>
+
+### Custom Items Component
+
+列表默认使用 `List` 组件，可以通过 `ItemsComponent` 属性自定义列表组件。
+
+<code src="./demos/custom-items-component.tsx"></code>
 
 ### Custom Button
 
-<code src="./demos/demo3.tsx"></code>
+<code src="./demos/custom-button.tsx"></code>
+
+### Built Type
+
+NocoBase 提供了几个内置的组件，可以直接使用。
+
+<code src="./demos/build-type.tsx"></code>
+
+### Dynamic visible & children
+
+动态显示和隐藏 Item 项，以及动态加载 children。
+
+<code src="./demos/dynamic-visible-children.tsx"></code>
+
+### Insert schema
+
+#### Basic
+
+<code src="./demos/insert-schema-basic.tsx"></code>
+
+#### Action
+
+<code src="./demos/insert-schema-action.tsx"></code>
+
+#### FormItem
+
+<code src="./demos/insert-schema-form-item.tsx"></code>
+
+<!-- #### Table.Column
+
+<code src="./demos/insert-schema-table-column.tsx"></code> -->

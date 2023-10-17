@@ -1,6 +1,5 @@
 import { ISchema } from '@formily/json-schema';
 import { ButtonProps, ListProps, DropDownProps } from 'antd';
-import { ListItemProps } from 'antd/es/list';
 import { ComponentType, ReactNode } from 'react';
 
 export type InsertType = (s: ISchema) => void;
@@ -22,7 +21,7 @@ interface SchemaInitializerItemOnlyType extends Partial<SchemaInitializerItemBas
 }
 
 interface SchemaInitializerItemWithChildren extends Partial<SchemaInitializerItemBaseType> {
-  type?: 'itemGroup' | 'itemMenu' | 'subMenu';
+  type?: 'itemGroup' | 'subMenu';
   children?: SchemaInitializerItemType[] | ComponentType;
   useChildren?: () => SchemaInitializerItemType[];
 }
@@ -42,9 +41,9 @@ export interface SchemaInitializerOptions<P1 = ButtonProps, P2 = ListProps<any>>
   componentStyle?: React.CSSProperties;
   style?: React.CSSProperties;
 
-  ListComponent?: ComponentType<P2>;
-  listProps?: P2;
-  listStyle?: React.CSSProperties;
+  ItemsComponent?: ComponentType<P2>;
+  itemsComponentProps?: P2;
+  itemsComponentStyle?: React.CSSProperties;
 
   noDropdown?: boolean;
   dropdownProps?: DropDownProps;

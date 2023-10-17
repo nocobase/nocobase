@@ -25,7 +25,7 @@ const GlobalThemeContext = createContext<{
 }>(null);
 
 export const useGlobalTheme = () => {
-  return React.useContext(GlobalThemeContext);
+  return React.useContext(GlobalThemeContext) || { theme: {} };
 };
 
 export const GlobalThemeProvider = ({ children, theme: themeFromProps }) => {
@@ -87,4 +87,3 @@ export { default as AntdAppProvider } from './AntdAppProvider';
 export { default as compatOldTheme } from './compatOldTheme';
 export * from './type';
 export { defaultTheme };
-

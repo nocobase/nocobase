@@ -5,6 +5,7 @@ import { useCompile } from '../../../schema-component';
 
 export interface InitializerSwitchItemProps extends InitializerItemProps {
   checked?: boolean;
+  disabled?: boolean;
 }
 
 export const InitializerSwitch: FC<InitializerSwitchItemProps> = (props) => {

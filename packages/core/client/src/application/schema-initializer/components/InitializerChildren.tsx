@@ -13,8 +13,8 @@ export const InitializerChildren: FC<{ children: SchemaInitializerItemType[] }> 
   if (isComponentChildren(validChildren)) return React.createElement(validChildren);
   return (
     <>
-      {validChildren.map((item) => (
-        <InitializerChild key={item.name} {...item} />
+      {validChildren.map((item, index) => (
+        <InitializerChild key={item.name || index} {...item} />
       ))}
     </>
   );

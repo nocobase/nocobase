@@ -21,10 +21,9 @@ const myInitializer = new SchemaInitializerV2({
 
 const Root = () => {
   const app = useApp();
-  // 获取 schema initializer
-  const initializer = app.schemaInitializerManager.get('MyInitializer');
   // 渲染 schema initializer
-  return <div>{initializer.render()}</div>;
+  const element = app.schemaInitializerManager.render('MyInitializer');
+  return <div>{element}</div>;
 };
 
 class MyPlugin extends Plugin {

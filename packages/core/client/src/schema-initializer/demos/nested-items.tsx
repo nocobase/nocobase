@@ -82,8 +82,10 @@ const myInitializer = new SchemaInitializerV2({
 
 const Root = () => {
   const app = useApp();
-  const initializer = app.schemaInitializerManager.get('MyInitializer');
-  return <div>{initializer.render()}</div>;
+
+  // 渲染 schema initializer
+  const element = app.schemaInitializerManager.render('MyInitializer');
+  return <div>{element}</div>;
 };
 
 class MyPlugin extends Plugin {

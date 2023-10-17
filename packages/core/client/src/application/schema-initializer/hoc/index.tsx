@@ -41,6 +41,7 @@ export function withInitializer<T>(C: ComponentType<T>, cProps: T) {
       },
       [insertCallback, wrap, insertAdjacent, insertPosition, onSuccess],
     );
+
     return (
       <SchemaInitializerV2Context.Provider value={{ insert: insertSchema }}>
         {noDropdown ? (
