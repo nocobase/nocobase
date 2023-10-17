@@ -84,7 +84,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-       - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
       - name: Use Node.js ${{ matrix.node_version }}
         uses: actions/setup-node@v3
         with:
@@ -154,7 +154,6 @@ jobs:
           key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
             ${{ runner.os }}-yarn-
-
       - name: Install project dependencies
         run: yarn --prefer-offline
       - name: Test with MySQL
