@@ -1,5 +1,6 @@
 import { Form } from '@formily/core';
 import { ISchema, Schema } from '@formily/react';
+import _ from 'lodash';
 import { useMemo } from 'react';
 import { useFormBlockType } from '../../../block-provider/FormBlockProvider';
 import { CollectionFieldOptions, useCollection } from '../../../collection-manager';
@@ -8,6 +9,7 @@ import { useBlockCollection } from './useBlockCollection';
 import { useDateVariable } from './useDateVariable';
 import { useFormVariable } from './useFormVariable';
 import { useIterationVariable } from './useIterationVariable';
+import { useParentRecordVariable } from './useParentRecordVariable';
 import { useRecordVariable } from './useRecordVariable';
 import { useUserVariable } from './useUserVariable';
 
@@ -44,8 +46,9 @@ export const useVariableOptions = ({
   operator,
   noDisabled,
   targetFieldSchema,
+  record,
 }: Props) => {
-  const { name: blockCollectionName } = useBlockCollection();
+  const { name: blockCollectionName, parentName: parentBlockCollectionName } = useBlockCollection();
   const { isInSubForm, isInSubTable } = useFlag() || {};
   const { type: formBlockType } = useFormBlockType();
   const { name } = useCollection();
@@ -78,6 +81,13 @@ export const useVariableOptions = ({
     noDisabled,
     targetFieldSchema,
   });
+  const currentParentRecordVariable = useParentRecordVariable({
+    schema: uiSchema,
+    collectionName: parentBlockCollectionName,
+    collectionField,
+    noDisabled,
+    targetFieldSchema,
+  });
 
   return useMemo(() => {
     return [
@@ -85,7 +95,8 @@ export const useVariableOptions = ({
       dateVariable,
       form && !form.readPretty && formVariable,
       (isInSubForm || isInSubTable) && iterationVariable,
-      formBlockType === 'update' && currentRecordVariable,
+      !_.isEmpty(_.omit(record, '__parent')) && currentRecordVariable,
+      !_.isEmpty(_.omit(record?.__parent, '__parent')) && currentParentRecordVariable,
     ].filter(Boolean);
   }, [
     userVariable,
@@ -95,6 +106,8 @@ export const useVariableOptions = ({
     isInSubForm,
     isInSubTable,
     iterationVariable,
+    record,
     currentRecordVariable,
+    currentParentRecordVariable,
   ]);
 };
