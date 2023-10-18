@@ -95,6 +95,11 @@ test.describe('menu page', () => {
     expect(page4.x).toBeLessThan(page3.x);
     await page.getByRole('menu').getByText('page4').click();
     await expect(page.getByTestId('add-block-button-in-page')).toBeVisible();
+    //删除页面
+    await page.getByLabel('page4').click();
+    await page.getByLabel('page4').getByLabel('designer-schema-settings').hover();
+    await page.getByRole('menuitem', { name: 'Delete' }).click();
+    await page.getByRole('button', { name: 'OK' }).click();
   });
 
   test('insert page after', async ({ page, mockPage }) => {
@@ -113,12 +118,16 @@ test.describe('menu page', () => {
     await page.getByRole('textbox').fill('page6');
     await page.getByRole('button', { name: 'OK' }).click();
 
-    const page6 = await page.getByRole('menu').getByText('page6').boundingBox();
-    const page5 = await page.getByRole('menu').getByText('page5').boundingBox();
+    const page6 = await page.getByLabel('page6').boundingBox();
+    const page5 = await page.getByLabel('page5').boundingBox();
     expect(page5.x).toBeLessThan(page6.x);
 
-    await page.getByRole('menu').getByText('page6').click();
+    await page.getByLabel('page6').click();
     await expect(page.getByTestId('add-block-button-in-page')).toBeVisible();
+    //删除页面
+    await page.getByLabel('page6').getByLabel('designer-schema-settings').hover();
+    await page.getByRole('menuitem', { name: 'Delete' }).click();
+    await page.getByRole('button', { name: 'OK' }).click();
   });
 });
 
@@ -181,20 +190,18 @@ test.describe('menu link', () => {
   test('create new menu link, then delete', async ({ page, mockPage }) => {
     await mockPage().goto();
     await page.getByTestId('add-menu-item-button-in-header').hover();
-    await page.getByLabel('link').click();
-    await page.getByTestId('title-item').getByRole('textbox').fill('link');
-    await page.getByTestId('href-item').getByRole('textbox').click();
-    await page.getByTestId('href-item').getByRole('textbox').fill('https://www.baidu.com/');
+    await page.getByRole('menuitem', { name: 'Link' }).click();
+    await page.getByRole('button', { name: 'Menu item title' }).getByRole('textbox').fill('link menu');
+    await page.getByRole('button', { name: 'Link :' }).getByRole('textbox').fill('https://www.baidu.com/');
     await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByLabel('link menu').click();
     const page2Promise = page.waitForEvent('popup');
-    await page.getByText('link', { exact: true }).click();
     const page2 = await page2Promise;
 
     await expect(page2.getByRole('button', { name: '百度一下' })).toBeVisible();
-
     // 删除页面，避免影响其他测试
-    await page.getByLabel('link').click();
-    await page.getByLabel('link').getByLabel('designer-schema-settings').hover();
+    await page.getByLabel('link menu').click();
+    await page.getByLabel('link menu').getByLabel('designer-schema-settings').hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'OK' }).click();
   });
