@@ -94,6 +94,10 @@ NocoBase supports three installation methods:
 
   If you want to experience the latest unreleased version, or want to participate in the contribution, you need to make changes and debug on the source code, it is recommended to choose this installation method, which requires a high level of development skills, and if the code has been updated, you can git pull the latest code.
 
+- <a target="_blank" href="https://elest.io/open-source/nocobase">Install & Deploy on Elestio</a>
+
+  You can easily run an instance of Nocobase and select your preferred cloud service providers. Elestio takes care of installation, configuration, encryption, security and backs for you and provides you with fully managed Nocobase instance ready to use.
+
 ## License
 
 - [Core packages](https://github.com/nocobase/nocobase/tree/main/packages/core) are [Apache 2.0 licensed](./LICENSE-APACHE-2.0).
