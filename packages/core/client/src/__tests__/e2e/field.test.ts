@@ -1,3 +1,4 @@
+import { ConsoleSqlOutlined } from '@ant-design/icons';
 import { enableToConfig, expect, test } from '@nocobase/test/client';
 const formPageSchema = {
   _isJSONSchemaObject: true,
@@ -147,158 +148,95 @@ test.describe('drag field in block', () => {
   });
 });
 
-test.describe('field schema setting', () => {
-  test.skip('edit field label in block', async ({ page, mockPage }) => {
-    await mockPage({ name: 'page tab' }).goto();
-    await enableToConfig(page);
-    await page
-      .locator('div')
-      .filter({ hasText: /^page tab$/ })
-      .nth(3)
-      .click();
-    await page.getByTestId('page-designer-button').locator('path').hover();
-    //默认不启用
-    await expect(page.getByRole('menuitem', { name: 'Enable page tabs' }).getByRole('switch')).not.toBeChecked();
-    //启用标签
-    await page.getByText('Enable page tabs').click();
-    await expect(page.getByRole('tab').locator('div').filter({ hasText: 'Unnamed' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'plus Add tab' })).toBeVisible();
-    await page.getByRole('tab').locator('div').filter({ hasText: 'Unnamed' }).click();
-    await expect(page.getByTestId('add-block-button-in-page')).toBeVisible();
-
-    //添加新的tab
-    await page.getByRole('button', { name: 'plus Add tab' }).click();
-    await page.getByRole('textbox').click();
-    await page.getByRole('textbox').fill('page tab 1');
+test.describe('field setting config ', () => {
+  test('edit field label in block', async ({ page, mockPage }) => {
+    await mockPage({ pageSchema: formPageSchema }).goto();
+    await page.getByTestId('configure-fields-button-of-form-item-users').click();
+    await page.getByRole('menuitem', { name: 'Username' }).click();
+    await page.getByTestId('form-block-field-users.username').click();
+    await page.getByTestId('form-block-field-users.username').getByLabel('designer-schema-settings').hover();
+    await page.getByRole('menuitem', { name: 'Edit field title' }).click();
+    await page.getByTestId('block-item').getByRole('textbox').fill('Username1');
     await page.getByRole('button', { name: 'OK' }).click();
-    await page.getByText('page tab 1').click();
-    await page.getByRole('button', { name: 'plus Add tab' }).click();
-    await page.getByRole('textbox').click();
-    await page.getByRole('textbox').fill('page tab 2');
-    await page.getByRole('button', { name: 'OK' }).click();
-    await page.getByText('page tab 2').click();
-
+    await expect(page.getByTestId('form-block-field-users.username').getByText('Username1')).toBeVisible();
+    //回显
+    await page.getByTestId('form-block-field-users.username').click();
+    await page.getByTestId('form-block-field-users.username').getByLabel('designer-schema-settings').hover();
+    await page.getByRole('menuitem', { name: 'Edit field title' }).click();
     await page.waitForTimeout(1000); // 等待1秒钟
-    const tabMenuItem = await page.getByRole('tab').locator('div > span').filter({ hasText: 'page tab 2' });
-    const tabMenuItemActivedColor = await tabMenuItem.evaluate((element) => {
+    await expect(await page.getByTestId('block-item').getByRole('textbox').inputValue()).toBe('Username1');
+  });
+  test('display & not display field label in block ', async ({ page, mockPage }) => {
+    await mockPage({ pageSchema: formPageSchema }).goto();
+    await page.getByTestId('configure-fields-button-of-form-item-users').click();
+    await page.getByRole('menuitem', { name: 'Username' }).click();
+    await page.getByTestId('form-block-field-users.username').click();
+    await page.getByTestId('form-block-field-users.username').getByLabel('designer-schema-settings').hover();
+    await page.getByRole('menuitem', { name: 'Display title' }).hover();
+    //默认显示
+    await expect(await page.getByRole('menuitem', { name: 'Display title' }).getByRole('switch').isChecked()).toBe(
+      true,
+    );
+    //设置不显示标题
+    await page.getByRole('menuitem', { name: 'Display title' }).click();
+    const labelItem = page.getByTestId('form-block-field-users.username').locator('.ant-formily-item-label');
+    const labelDisplay = await labelItem.evaluate((element) => {
+      const computedStyle = window.getComputedStyle(element);
+      return computedStyle.display;
+    });
+    expect(labelDisplay).toBe('none');
+    //设置显示标题
+    await page.getByTestId('form-block-field-users.username').click();
+    await page.getByTestId('form-block-field-users.username').getByLabel('designer-schema-settings').hover();
+    await page.getByRole('menuitem', { name: 'Display title' }).click();
+    const labelDisplay1 = await labelItem.evaluate((element) => {
+      const computedStyle = window.getComputedStyle(element);
+      return computedStyle.display;
+    });
+    expect(labelDisplay1).toBe('flex');
+  });
+  test('edit field description ', async ({ page, mockPage }) => {
+    await mockPage({ pageSchema: formPageSchema }).goto();
+    const description = 'field description';
+    await page.getByTestId('configure-fields-button-of-form-item-users').click();
+    await page.getByRole('menuitem', { name: 'Username' }).click();
+    await page.getByTestId('form-block-field-users.username').click();
+    await page.getByTestId('form-block-field-users.username').getByLabel('designer-schema-settings').hover();
+    await page.getByText('Edit description').click();
+    await page.getByTestId('block-item').locator('textarea').fill(description);
+    await page.getByRole('button', { name: 'OK' }).click();
+    const descriptionItem = await page
+      .getByTestId('form-block-field-users.username')
+      .locator('.ant-formily-item-extra');
+    const descriptionItemColor = await descriptionItem.evaluate((element) => {
       const computedStyle = window.getComputedStyle(element);
       return computedStyle.color;
     });
-    await expect(page.getByText('page tab 1')).toBeVisible();
-    await expect(page.getByText('page tab 2')).toBeVisible();
-    await expect(page.getByTestId('add-block-button-in-page')).toBeVisible();
-    await expect(tabMenuItemActivedColor).toBe('rgb(22, 119, 255)');
+    expect(await descriptionItem.innerText()).toBe(description);
+    expect(descriptionItemColor).toBe('rgba(0, 0, 0, 0.65)');
+  });
+  test('field required ', async ({ page, mockPage }) => {
+    await mockPage({ pageSchema: formPageSchema }).goto();
+    await page.getByTestId('configure-fields-button-of-form-item-users').click();
+    await page.getByRole('menuitem', { name: 'Nickname' }).click();
+    await page.getByTestId('form-block-field-users.nickname').click();
+    await page.getByTestId('form-block-field-users.nickname').getByLabel('designer-schema-settings').click();
+    await page.getByRole('menuitem', { name: 'Required' }).click();
+    await page.getByTestId('configure-actions-button-of-form-block-users').click();
+    await page.getByRole('menuitem', { name: 'Submit' }).click();
+    await page.getByLabel('Submit').click();
 
-    //修改tab名称
-    await page.getByText('Unnamed').click();
-    await page.getByText('Unnamed').hover();
-    await page.getByRole('button', { name: 'menu', exact: true }).hover();
-    await page.getByText('Edit', { exact: true }).click();
-    await page.getByRole('textbox').fill('page tab');
-    await page.getByRole('button', { name: 'OK' }).click();
-
-    const tabMenuItem1 = await page.getByRole('tab').getByText('page tab', { exact: true });
-    const tabMenuItemActivedColor1 = await tabMenuItem1.evaluate((element) => {
+    await expect(
+      await page.getByTestId('form-block-field-users.nickname').locator('.ant-formily-item-error-help'),
+    ).toBeVisible();
+    const inputItem = page.getByTestId('form-block-field-users.nickname').locator('input');
+    const inputErrorBorderColor = await inputItem.evaluate((element) => {
       const computedStyle = window.getComputedStyle(element);
-      return computedStyle.color;
+      return computedStyle.borderColor;
     });
-    await expect(tabMenuItem1).toBeVisible();
-    await expect(page.getByTestId('add-block-button-in-page')).toBeVisible();
-    await expect(tabMenuItemActivedColor1).toBe('rgb(22, 119, 255)');
-
-    //删除 tab
-    await page.getByRole('tab').getByText('page tab', { exact: true }).click();
-    await page.getByRole('tab').getByText('page tab', { exact: true }).hover();
-    await page.getByRole('button', { name: 'menu', exact: true }).hover();
-    await page.getByRole('menuitem', { name: 'Delete' }).click();
-    await page.getByRole('button', { name: 'OK' }).click();
-    await expect(page.getByRole('tab').getByText('page tab', { exact: true })).not.toBeVisible();
-    await page.getByRole('tab').getByText('page tab 1').click();
-
-    //禁用标签
+    expect(inputErrorBorderColor).toBe('rgb(255, 77, 79)');
   });
-  test.skip('display & not display field label in block ', async ({ page, mockPage }) => {
-    await mockPage({
-      pageSchema: {
-        'x-uid': 'h8q2mcgo3cq',
-        _isJSONSchemaObject: true,
-        version: '2.0',
-        type: 'void',
-        'x-component': 'Page',
-        'x-component-props': {
-          enablePageTabs: true,
-        },
-        properties: {
-          bi8ep3svjee: {
-            'x-uid': '9kr7xm9x4ln',
-            _isJSONSchemaObject: true,
-            version: '2.0',
-            type: 'void',
-            'x-component': 'Grid',
-            'x-initializer': 'BlockInitializers',
-            title: 'tab 1',
-            'x-async': false,
-            'x-index': 1,
-          },
-          rw91udnzpr3: {
-            _isJSONSchemaObject: true,
-            version: '2.0',
-            type: 'void',
-            title: 'tab 2',
-            'x-component': 'Grid',
-            'x-initializer': 'BlockInitializers',
-            'x-uid': 'o5vp90rqsjx',
-            'x-async': false,
-            'x-index': 2,
-          },
-        },
-        'x-async': true,
-        'x-index': 1,
-      },
-    }).goto();
-  });
-  test.skip('edit field description ', async ({ page, mockPage }) => {});
-  test.skip('setting field required ', async ({ page, mockPage }) => {
-    await mockPage({
-      pageSchema: {
-        'x-uid': 'h8q2mcgo3cq',
-        _isJSONSchemaObject: true,
-        version: '2.0',
-        type: 'void',
-        'x-component': 'Page',
-        'x-component-props': {
-          enablePageTabs: true,
-        },
-        properties: {
-          bi8ep3svjee: {
-            'x-uid': '9kr7xm9x4ln',
-            _isJSONSchemaObject: true,
-            version: '2.0',
-            type: 'void',
-            'x-component': 'Grid',
-            'x-initializer': 'BlockInitializers',
-            title: 'tab 1',
-            'x-async': false,
-            'x-index': 1,
-          },
-          rw91udnzpr3: {
-            _isJSONSchemaObject: true,
-            version: '2.0',
-            type: 'void',
-            title: 'tab 2',
-            'x-component': 'Grid',
-            'x-initializer': 'BlockInitializers',
-            'x-uid': 'o5vp90rqsjx',
-            'x-async': false,
-            'x-index': 2,
-          },
-        },
-        'x-async': true,
-        'x-index': 1,
-      },
-    }).goto();
-  });
-  test.skip('setting field validation rule ', async ({ page, mockPage }) => {
+  test.skip('field validation rule ', async ({ page, mockPage }) => {
     await mockPage({
       pageSchema: {
         'x-uid': 'h8q2mcgo3cq',
