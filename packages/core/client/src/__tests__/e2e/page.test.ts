@@ -135,7 +135,7 @@ test.describe('page tabs', () => {
     await page.getByRole('menuitem', { name: 'Enable page tabs' }).getByRole('switch').setChecked(false);
     await expect(page.getByText('page tab 2')).not.toBeVisible();
   });
-  test('move page tab', async ({ page, mockPage }) => {
+  test('drag page tab sorting', async ({ page, mockPage }) => {
     await mockPage({
       pageSchema: {
         'x-uid': 'h8q2mcgo3cq',

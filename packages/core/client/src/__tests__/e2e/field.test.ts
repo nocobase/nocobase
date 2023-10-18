@@ -1,51 +1,149 @@
 import { enableToConfig, expect, test } from '@nocobase/test/client';
-
+const formPageSchema = {
+  _isJSONSchemaObject: true,
+  version: '2.0',
+  type: 'void',
+  'x-component': 'Page',
+  properties: {
+    lyie34rtcu4: {
+      _isJSONSchemaObject: true,
+      version: '2.0',
+      type: 'void',
+      'x-component': 'Grid',
+      'x-initializer': 'BlockInitializers',
+      properties: {
+        skmxkfr67em: {
+          _isJSONSchemaObject: true,
+          version: '2.0',
+          type: 'void',
+          'x-component': 'Grid.Row',
+          properties: {
+            '860xnb3egb8': {
+              _isJSONSchemaObject: true,
+              version: '2.0',
+              type: 'void',
+              'x-component': 'Grid.Col',
+              properties: {
+                aa9rqm7bkud: {
+                  _isJSONSchemaObject: true,
+                  version: '2.0',
+                  type: 'void',
+                  'x-acl-action-props': {
+                    skipScopeCheck: true,
+                  },
+                  'x-acl-action': 'users:create',
+                  'x-decorator': 'FormBlockProvider',
+                  'x-decorator-props': {
+                    resource: 'users',
+                    collection: 'users',
+                  },
+                  'x-designer': 'FormV2.Designer',
+                  'x-component': 'CardItem',
+                  'x-component-props': {},
+                  properties: {
+                    t4mi2jywqj7: {
+                      _isJSONSchemaObject: true,
+                      version: '2.0',
+                      type: 'void',
+                      'x-component': 'FormV2',
+                      'x-component-props': {
+                        useProps: '{{ useFormBlockProps }}',
+                      },
+                      properties: {
+                        grid: {
+                          _isJSONSchemaObject: true,
+                          version: '2.0',
+                          type: 'void',
+                          'x-component': 'Grid',
+                          'x-initializer': 'FormItemInitializers',
+                          'x-uid': '66dozhzo5ld',
+                          'x-async': false,
+                          'x-index': 1,
+                        },
+                        actions: {
+                          _isJSONSchemaObject: true,
+                          version: '2.0',
+                          type: 'void',
+                          'x-initializer': 'FormActionInitializers',
+                          'x-component': 'ActionBar',
+                          'x-component-props': {
+                            layout: 'one-column',
+                            style: {
+                              marginTop: 24,
+                            },
+                          },
+                          'x-uid': 'q8am9zt6m2x',
+                          'x-async': false,
+                          'x-index': 2,
+                        },
+                      },
+                      'x-uid': '4ojxya0re8h',
+                      'x-async': false,
+                      'x-index': 1,
+                    },
+                  },
+                  'x-uid': '183n4o77awp',
+                  'x-async': false,
+                  'x-index': 1,
+                },
+              },
+              'x-uid': 'zwxgkj66isi',
+              'x-async': false,
+              'x-index': 1,
+            },
+          },
+          'x-uid': '8tryd9kz9bd',
+          'x-async': false,
+          'x-index': 1,
+        },
+      },
+      'x-uid': 'piwq6rrjrsq',
+      'x-async': false,
+      'x-index': 1,
+    },
+  },
+  'x-uid': '5cszm46yqxb',
+  'x-async': true,
+  'x-index': 1,
+};
 test.describe('add field & remove field in block', () => {
   test('add field,then remove field in block', async ({ page, mockPage }) => {
-    await mockPage().goto();
-    await page.getByTestId('add-block-button-in-page').click();
-    await page.getByRole('menuitem', { name: 'table Table right' }).click();
-    await page.getByRole('menuitem', { name: 'Users' }).click();
-    await page.getByRole('menuitem', { name: 'Users' }).hover();
-    await expect(page.getByTestId('configure-actions-button-of-table-block-users')).toBeVisible();
-    await expect(page.getByTestId('configure-columns-button-of-table-block-users')).toBeVisible();
+    await mockPage({ pageSchema: formPageSchema }).goto();
+    await page.getByTestId('configure-fields-button-of-form-item-users').click();
+    await page.getByRole('menuitem', { name: 'Nickname' }).click();
+    await page.getByRole('menuitem', { name: 'Username' }).click();
+    await page.getByRole('menuitem', { name: 'Email' }).click();
+
+    await expect(page.getByTestId('form-block-field-users.username')).toBeVisible();
+    await expect(page.getByTestId('form-block-field-users.email')).toBeVisible();
+    await expect(page.getByTestId('form-block-field-users.nickname')).toBeVisible();
   });
 });
 
-test.describe('field drag in block', () => {
-  test.skip('field drag in block', async ({ page, mockPage }) => {
-    await mockPage({ name: 'page title' }).goto();
-    //默认显示
-    await expect(page.getByTitle('page title')).toBeVisible();
-    await page
-      .locator('div')
-      .filter({ hasText: /^page title$/ })
-      .nth(3)
-      .click();
-    await page.getByTestId('page-designer-button').locator('path').hover();
-    await expect(page.getByRole('menuitem', { name: 'Display page title' }).getByRole('switch')).toBeChecked();
-    //不显示
-    await page.getByRole('menuitem', { name: 'Display page title' }).getByRole('switch').click();
-    await expect(page.locator('.ant-page-header')).toBeVisible();
-    await expect(page.getByTitle('page title')).not.toBeVisible();
-    await expect(
-      page
-        .locator('div')
-        .filter({ hasText: /^page title$/ })
-        .nth(3),
-    ).not.toBeVisible();
-    await expect(page.getByRole('menuitem', { name: 'Display page title' }).getByRole('switch')).not.toBeChecked();
-    //开启
-    await page.locator('.ant-page-header').click();
-    await page.getByTestId('page-designer-button').locator('path').hover();
-    await page.getByRole('menuitem', { name: 'Display page title' }).getByRole('switch').click();
-    await expect(page.getByTitle('page title')).toBeVisible();
-    await expect(
-      page
-        .locator('div')
-        .filter({ hasText: /^page title$/ })
-        .nth(3),
-    ).toBeVisible();
+test.describe('drag field in block', () => {
+  test('drag field for layout', async ({ page, mockPage }) => {
+    await mockPage({ pageSchema: formPageSchema }).goto();
+    await page.getByTestId('configure-fields-button-of-form-item-users').click();
+    await page.getByRole('menuitem', { name: 'Nickname' }).click();
+    await page.getByRole('menuitem', { name: 'Username' }).click();
+    await page.getByRole('menuitem', { name: 'Email' }).click();
+
+    const sourceElement = await page.getByTestId('form-block-field-users.nickname');
+    await sourceElement.hover();
+    const source = await page.getByTestId('form-block-field-users.nickname').getByLabel('designer-drag');
+    await source.hover();
+
+    const targetElement = await page.getByTestId('form-block-field-users.username');
+    await source.dragTo(targetElement);
+    const targetElement2 = await page.getByTestId('form-block-field-users.email');
+    await page.getByTestId('form-block-field-users.nickname').getByLabel('designer-drag').hover();
+    await page.getByTestId('form-block-field-users.nickname').getByLabel('designer-drag').dragTo(targetElement2);
+
+    const nickname = await source.boundingBox();
+    const username = await targetElement.boundingBox();
+    const email = await targetElement2.boundingBox();
+    const max = Math.max(username.y, nickname.y, email.y);
+    await expect(nickname.y).toBe(max);
   });
 });
 
@@ -158,81 +256,8 @@ test.describe('field schema setting', () => {
         'x-index': 1,
       },
     }).goto();
-
-    const sourceElement = await page.locator('span:has-text("tab 2")');
-    await sourceElement.hover();
-    const source = await page.getByRole('button', { name: 'drag' });
-    await source.hover();
-    const targetElement = await page.locator('span:has-text("tab 1")');
-    const sourceBoundingBox = await sourceElement.boundingBox();
-    const targetBoundingBox = await targetElement.boundingBox();
-    //拖拽前 1-2
-    expect(targetBoundingBox.x).toBeLessThan(sourceBoundingBox.x);
-    await source.dragTo(targetElement);
-    await sourceElement.dragTo(targetElement);
-    await page.waitForTimeout(1000); // 等待1秒钟
-    const tab2 = await page.locator('span:has-text("tab 2")').boundingBox();
-    const tab1 = await page.locator('span:has-text("tab 1")').boundingBox();
-    //拖拽后 2-1
-    await expect(tab2.x).toBeLessThan(tab1.x);
   });
-  test.skip('edit field description ', async ({ page, mockPage }) => {
-    await mockPage({
-      pageSchema: {
-        'x-uid': 'h8q2mcgo3cq',
-        _isJSONSchemaObject: true,
-        version: '2.0',
-        type: 'void',
-        'x-component': 'Page',
-        'x-component-props': {
-          enablePageTabs: true,
-        },
-        properties: {
-          bi8ep3svjee: {
-            'x-uid': '9kr7xm9x4ln',
-            _isJSONSchemaObject: true,
-            version: '2.0',
-            type: 'void',
-            'x-component': 'Grid',
-            'x-initializer': 'BlockInitializers',
-            title: 'tab 1',
-            'x-async': false,
-            'x-index': 1,
-          },
-          rw91udnzpr3: {
-            _isJSONSchemaObject: true,
-            version: '2.0',
-            type: 'void',
-            title: 'tab 2',
-            'x-component': 'Grid',
-            'x-initializer': 'BlockInitializers',
-            'x-uid': 'o5vp90rqsjx',
-            'x-async': false,
-            'x-index': 2,
-          },
-        },
-        'x-async': true,
-        'x-index': 1,
-      },
-    }).goto();
-
-    const sourceElement = await page.locator('span:has-text("tab 2")');
-    await sourceElement.hover();
-    const source = await page.getByRole('button', { name: 'drag' });
-    await source.hover();
-    const targetElement = await page.locator('span:has-text("tab 1")');
-    const sourceBoundingBox = await sourceElement.boundingBox();
-    const targetBoundingBox = await targetElement.boundingBox();
-    //拖拽前 1-2
-    expect(targetBoundingBox.x).toBeLessThan(sourceBoundingBox.x);
-    await source.dragTo(targetElement);
-    await sourceElement.dragTo(targetElement);
-    await page.waitForTimeout(1000); // 等待1秒钟
-    const tab2 = await page.locator('span:has-text("tab 2")').boundingBox();
-    const tab1 = await page.locator('span:has-text("tab 1")').boundingBox();
-    //拖拽后 2-1
-    await expect(tab2.x).toBeLessThan(tab1.x);
-  });
+  test.skip('edit field description ', async ({ page, mockPage }) => {});
   test.skip('setting field required ', async ({ page, mockPage }) => {
     await mockPage({
       pageSchema: {
