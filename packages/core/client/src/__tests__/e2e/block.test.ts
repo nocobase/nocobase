@@ -1,4 +1,4 @@
-import { enableToConfig, expect, test } from '@nocobase/test/client';
+import { expect, test } from '@nocobase/test/client';
 
 const tablePageSchema = {
   _isJSONSchemaObject: true,
