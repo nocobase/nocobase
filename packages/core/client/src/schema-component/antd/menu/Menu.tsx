@@ -602,7 +602,11 @@ Menu.SubMenu = observer(
         label: (
           <SchemaContext.Provider value={schema}>
             <FieldContext.Provider value={field}>
-              <SortableItem className={subMenuDesignerCss} removeParentsIfNoChildren={false}>
+              <SortableItem
+                className={subMenuDesignerCss}
+                removeParentsIfNoChildren={false}
+                aria-label={t(field.title)}
+              >
                 <Icon type={icon} />
                 {t(field.title)}
                 <Designer />
