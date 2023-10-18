@@ -19,6 +19,7 @@ interface MockAppOptions extends ApplicationOptions {
 export async function getApp({ manual, ...options }: MockAppOptions = {}): Promise<MockServer> {
   const app = mockServer(options);
 
+  await app.cleanDb();
   app.plugin(Plugin, {
     name: 'workflow',
     instructions: {
