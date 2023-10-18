@@ -83,7 +83,7 @@ test.describe('menu page', () => {
     await page.getByLabel('page3').hover();
     await page.getByLabel('page3').getByLabel('designer-schema-settings').hover();
 
-    await page.getByRole('menuitem', { name: 'Insert before right' }).hover();
+    await page.getByText('Insert before').hover();
     await page.waitForTimeout(1000); // 等待1秒钟
 
     await page.getByRole('menuitem', { name: 'Page', exact: true }).click();
@@ -106,7 +106,7 @@ test.describe('menu page', () => {
     await page.getByLabel('page5').hover();
     await page.getByLabel('page5').getByLabel('designer-schema-settings').hover();
 
-    await page.getByRole('menuitem', { name: 'Insert after right' }).hover();
+    await page.getByText('Insert after').hover();
     await page.waitForTimeout(1000); // 等待1秒钟
 
     await page.getByRole('menuitem', { name: 'Page', exact: true }).click();
