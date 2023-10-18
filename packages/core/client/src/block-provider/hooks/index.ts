@@ -574,8 +574,9 @@ export const useCustomizeBulkUpdateActionProps = () => {
   const actionField = useField();
   const { modal } = App.useApp();
   const variables = useVariables();
-  const localVariables = useLocalVariables();
+  const record = useRecord();
   const { name, getField } = useCollection();
+  const localVariables = useLocalVariables({ currentRecord: { __parent: record, __collectionName: name } });
 
   return {
     async onClick() {
