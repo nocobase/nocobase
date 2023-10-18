@@ -400,7 +400,8 @@ export const obo: IField = {
       schema['x-component-props']['size'] = 'small';
     }
 
-    if (targetCollection?.titleField && schema['x-component-props']) {
+    if (targetCollection?.titleField) {
+      schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || { value: 'id' };
       schema['x-component-props'].fieldNames.label = targetCollection.titleField;
     }

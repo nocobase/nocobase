@@ -1,30 +1,22 @@
-import { Context } from '@nocobase/actions';
+import { Context, Next } from '@nocobase/actions';
+import { SAMLAuth } from '../saml-auth';
+import { AppSupervisor } from '@nocobase/server';
 
-export const redirect = async (ctx: Context, next) => {
-  const { params } = ctx.action;
-
-  const template = `
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8">
-      <meta http-equiv="X-UA-Compatible" content="IE=edge">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title></title>
-    </head>
-    <body>
-      <script>
-        window.opener.postMessage(${JSON.stringify({
-          authenticator: params.authenticator,
-          samlResponse: params.values,
-        })}, '*');
-      </script>
-    </body>
-    </html>
-  `;
-
-  ctx.body = template;
-  ctx.withoutDataWrapping = true;
-
+export const redirect = async (ctx: Context, next: Next) => {
+  const { authenticator, __appName: appName } = ctx.action.params || {};
+  let prefix = '';
+  if (appName && appName !== 'main') {
+    const appSupervisor = AppSupervisor.getInstance();
+    if (appSupervisor?.runningMode !== 'single') {
+      prefix = `/apps/${appName}`;
+    }
+  }
+  const auth = (await ctx.app.authManager.get(authenticator, ctx)) as SAMLAuth;
+  try {
+    const { token } = await auth.signIn();
+    ctx.redirect(`${prefix}/admin?authenticator=${authenticator}&token=${token}`);
+  } catch (error) {
+    ctx.redirect(`${prefix}/signin?authenticator=${authenticator}&error=${error.message}`);
+  }
   await next();
 };

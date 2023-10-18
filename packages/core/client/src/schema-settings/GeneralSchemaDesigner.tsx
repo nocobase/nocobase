@@ -3,8 +3,7 @@ import { css } from '@emotion/css';
 import { useField, useFieldSchema } from '@formily/react';
 import { Space } from 'antd';
 import classNames from 'classnames';
-import _ from 'lodash';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DragHandler, useCompile, useDesignable, useGridContext, useGridRowContext } from '../schema-component';
 import { gridRowColWrap } from '../schema-initializer/utils';
@@ -43,59 +42,59 @@ const overrideAntdCSS = css`
 `;
 
 const DesignerControl = ({ onShow, children }) => {
-  const divRef = React.useRef(null);
-  const shouldUnmount = React.useRef(true);
-  const isVisible = React.useRef(false);
-  const unmount = useCallback(
-    _.debounce(() => {
-      if (shouldUnmount.current && !isVisible.current) {
-        onShow(false);
-      }
-    }, 300) as () => void,
-    [onShow],
-  );
+  // const divRef = React.useRef(null);
+  // const shouldUnmount = React.useRef(true);
+  // const isVisible = React.useRef(false);
+  // const unmount = useCallback(
+  //   _.debounce(() => {
+  //     if (shouldUnmount.current && !isVisible.current) {
+  //       onShow(false);
+  //     }
+  //   }, 300) as () => void,
+  //   [onShow],
+  // );
 
-  useEffect(() => {
-    // 兼容旧浏览器
-    if (!IntersectionObserver) {
-      return onShow(true);
-    }
+  // useEffect(() => {
+  //   // 兼容旧浏览器
+  //   if (!IntersectionObserver) {
+  //     return onShow(true);
+  //   }
 
-    const observer = new IntersectionObserver((entries) => {
-      // 兼容旧浏览器
-      if (entries[0].isIntersecting === undefined) {
-        return onShow(true);
-      }
+  //   const observer = new IntersectionObserver((entries) => {
+  //     // 兼容旧浏览器
+  //     if (entries[0].isIntersecting === undefined) {
+  //       return onShow(true);
+  //     }
 
-      if (entries[0].isIntersecting) {
-        isVisible.current = true;
-        onShow(true);
-      } else {
-        isVisible.current = false;
-        unmount();
-      }
-    });
+  //     if (entries[0].isIntersecting) {
+  //       isVisible.current = true;
+  //       onShow(true);
+  //     } else {
+  //       isVisible.current = false;
+  //       unmount();
+  //     }
+  //   });
 
-    observer.observe(divRef.current);
-    return () => {
-      observer.disconnect();
-    };
-  }, [unmount, onShow]);
+  //   observer.observe(divRef.current);
+  //   return () => {
+  //     observer.disconnect();
+  //   };
+  // }, [unmount, onShow]);
 
-  const onMouseEnter = useCallback(() => {
-    shouldUnmount.current = false;
-  }, []);
-  const onMouseLeave = useCallback(() => {
-    shouldUnmount.current = true;
-    unmount();
-  }, [unmount]);
+  // const onMouseEnter = useCallback(() => {
+  //   shouldUnmount.current = false;
+  // }, []);
+  // const onMouseLeave = useCallback(() => {
+  //   shouldUnmount.current = true;
+  //   unmount();
+  // }, [unmount]);
 
   return (
     <div
-      ref={divRef}
+      // ref={divRef}
       className={classNames('general-schema-designer', overrideAntdCSS)}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
+      // onMouseEnter={onMouseEnter}
+      // onMouseLeave={onMouseLeave}
     >
       {children}
     </div>
@@ -109,7 +108,10 @@ export const GeneralSchemaDesigner = (props: any) => {
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   const compile = useCompile();
-  const [visible, setVisible] = useState(false);
+
+  // TODO: 需要解决弹窗自动关闭的问题：https://nocobase.height.app/T-2100
+  const [visible, setVisible] = useState(true);
+
   const schemaSettingsProps = {
     dn,
     field,

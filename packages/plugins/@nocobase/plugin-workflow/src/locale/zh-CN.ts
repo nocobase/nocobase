@@ -107,6 +107,7 @@ export default {
   Aborted: '已终止',
   Canceled: '已取消',
   Rejected: '已拒绝',
+  'Retry needed': '需重试',
 
   'Triggered but still waiting in queue to execute.': '已触发但仍在队列中等待执行。',
   'Started and executing, maybe waiting for an async callback (manual, delay etc.).':
@@ -117,6 +118,7 @@ export default {
   'Running of some node was aborted by program flow.': '某个节点被程序流程终止。',
   'Manually canceled whole execution when waiting.': '等待时被手动取消整个执行。',
   'Rejected from a manual node.': '被人工节点拒绝继续。',
+  'General failed but should do another try.': '执行失败，需重试。',
 
   'Continue the process': '继续流程',
   'Terminate the process': '终止流程',
@@ -248,8 +250,7 @@ export default {
   Distinct: '去重',
   'Query result': '查询结果',
 
-  'Trigger in executed workflow cannot be modified': '已经执行过工作流的触发器不能被修改',
-  'Node in executed workflow cannot be modified': '已经执行过工作流中的节点不能被修改',
+  'Executed workflow cannot be modified': '已经执行过的工作流不能被修改',
   'Can not delete': '无法删除',
   'The result of this node has been referenced by other nodes ({{nodes}}), please remove the usage before deleting.':
     '该节点的执行结果已被其他节点（{{nodes}}）引用，删除前请先移除引用。',

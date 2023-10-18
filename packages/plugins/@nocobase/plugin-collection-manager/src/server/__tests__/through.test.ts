@@ -139,6 +139,8 @@ describe('collections repository', () => {
     app2 = mockServer({
       database: {
         tablePrefix: 'through_',
+        database: app1.db.options.database,
+        storage: app1.db.options.storage,
       },
       name: 'app2',
     });

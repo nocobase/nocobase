@@ -391,7 +391,20 @@ export function TextArea(props) {
         dangerouslySetInnerHTML={{ __html: html }}
       />
       {!disabled ? (
-        <VariableSelect options={options} setOptions={setOptions} onInsert={onInsert} changeOnSelect={changeOnSelect} />
+        <VariableSelect
+          className={css`
+            &:not(:hover) {
+              border-right-color: transparent;
+              border-top-color: transparent;
+              // border-bottom-color: transparent;
+            }
+            background-color: transparent;
+          `}
+          options={options}
+          setOptions={setOptions}
+          onInsert={onInsert}
+          changeOnSelect={changeOnSelect}
+        />
       ) : null}
     </Input.Group>,
   );
@@ -428,7 +441,9 @@ async function preloadOptions(scope, value) {
 }
 
 TextArea.ReadPretty = function ReadPretty(props): JSX.Element {
-  const { value, scope } = props;
+  const { value } = props;
+  const scope = typeof props.scope === 'function' ? props.scope() : props.scope;
+
   const [options, setOptions] = useState([]);
   const keyLabelMap = useMemo(() => createOptionsValueLabelMap(options), [options]);
 

@@ -35,3 +35,4 @@ storage/logs-e2e
 storage/uploads-e2e
 tsconfig.paths.json
 playwright
+.swc

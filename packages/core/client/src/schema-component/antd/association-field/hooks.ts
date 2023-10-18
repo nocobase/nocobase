@@ -151,19 +151,19 @@ export default function useServiceOptions(props) {
               },
             }
           : null,
-        params?.filter && value?.length
-          ? {
-              [fieldNames?.value]: {
-                ['$in']: value,
-              },
-            }
-          : null,
+        // params?.filter && value?.length
+        //   ? {
+        //       [fieldNames?.value]: {
+        //         ['$in']: value,
+        //       },
+        //     }
+        //   : null,
       ],
       '$or',
     );
   }, [
     collectionField?.interface,
-    collectionField.foreignKey,
+    collectionField?.foreignKey,
     fieldSchema,
     fieldServiceFilter,
     sourceValue,

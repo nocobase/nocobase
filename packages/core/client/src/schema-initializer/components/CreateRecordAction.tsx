@@ -97,6 +97,7 @@ export const CreateRecordAction = observer(
     const localVariables = useLocalVariables({ currentForm: { values } as any });
 
     useEffect(() => {
+      field.linkageProperty = {};
       linkageRules
         .filter((k) => !k.disabled)
         .forEach((v) => {
@@ -201,6 +202,7 @@ export const CreateAction = observer(
     }, [menuItems]);
 
     useEffect(() => {
+      field.linkageProperty = {};
       linkageRules
         .filter((k) => !k.disabled)
         .forEach((v) => {

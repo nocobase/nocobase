@@ -1,4 +1,4 @@
-import Database, { CollectionOptions, DatabaseOptions } from '@nocobase/database';
+import Database, { CollectionOptions, DatabaseOptions, mockDatabase } from '@nocobase/database';
 import { Handlers, ResourceOptions, Resourcer } from '@nocobase/resourcer';
 import Koa from 'koa';
 import bodyParser from 'koa-bodyparser';
@@ -6,11 +6,6 @@ import qs from 'qs';
 import supertest, { SuperAgentTest } from 'supertest';
 import db2resource from '../../../server/src/middlewares/db2resource';
 import { uid } from '@nocobase/utils';
-import { mockDatabase } from '@nocobase/database';
-
-export function generatePrefixByPath() {
-  return `mock_${uid(6)}`;
-}
 
 interface ActionParams {
   fields?: string[];

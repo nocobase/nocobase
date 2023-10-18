@@ -66,7 +66,7 @@ const filterValue = (value) => {
   return obj;
 };
 
-function getFormValues({
+export function getFormValues({
   filterByTk,
   field,
   form,
