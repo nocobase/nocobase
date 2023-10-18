@@ -26,6 +26,7 @@ import { mergeFilter } from '../SharedFilterProvider';
 import { TableFieldResource } from '../TableFieldProvider';
 
 export * from './useFormActiveFields';
+export * from './useParsedFilter';
 
 export const usePickActionProps = () => {
   const form = useForm();
