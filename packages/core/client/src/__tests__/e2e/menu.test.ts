@@ -33,8 +33,8 @@ test.describe('menu page', () => {
     await expect(divText).toBe('Add block');
 
     // 删除页面，避免影响其他测试
-    await page.getByRole('menu').getByText('new page').hover();
-    await page.getByLabel('designer-schema-settings').hover();
+    await page.getByLabel('new page').click();
+    await page.getByLabel('new page').getByLabel('designer-schema-settings').hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'OK' }).click();
     await mockPage().goto();
@@ -44,8 +44,8 @@ test.describe('menu page', () => {
     await mockPage({
       name: 'page title',
     }).goto();
-    await page.getByRole('menu').getByText('page title').hover();
-    await page.getByTestId('designer-schema-settings').hover();
+    await page.getByLabel('page title').hover();
+    await page.getByLabel('page title').getByLabel('designer-schema-settings').hover();
     await page.getByRole('menuitem', { name: 'Edit' }).click();
     await page.getByRole('textbox').click();
     await page.getByRole('textbox').fill('page title1');
@@ -64,7 +64,7 @@ test.describe('menu page', () => {
 
     await page.getByRole('menu').getByText('page1').click();
     await page.getByRole('menu').getByText('page1').hover();
-    await page.getByTestId('designer-schema-settings').hover();
+    await page.getByLabel('page1').getByLabel('designer-schema-settings').hover();
     await page.getByRole('menuitem', { name: 'Move to' }).click();
     await page.getByLabel('Search').click();
     await page.getByTitle('page2').getByText('page2').click();
@@ -79,9 +79,9 @@ test.describe('menu page', () => {
       name: 'page3',
     }).goto();
 
-    await page.getByRole('menu').getByText('page3').click();
-    await page.getByRole('menu').getByText('page3').hover();
-    await page.getByTestId('designer-schema-settings').hover();
+    await page.getByLabel('page3').click();
+    await page.getByLabel('page3').hover();
+    await page.getByLabel('page3').getByLabel('designer-schema-settings').hover();
 
     await page.getByRole('menuitem', { name: 'Insert before right' }).hover();
     await page.waitForTimeout(1000); // 等待1秒钟
@@ -90,8 +90,8 @@ test.describe('menu page', () => {
     await page.getByRole('textbox').fill('page4');
     await page.getByRole('button', { name: 'OK' }).click();
 
-    const page3 = await page.getByRole('menu').getByText('page3').boundingBox();
-    const page4 = await page.getByRole('menu').getByText('page4').boundingBox();
+    const page3 = await page.getByLabel('page3').boundingBox();
+    const page4 = await page.getByLabel('page4').boundingBox();
     expect(page4.x).toBeLessThan(page3.x);
     await page.getByRole('menu').getByText('page4').click();
     await expect(page.getByTestId('add-block-button-in-page')).toBeVisible();
@@ -102,9 +102,9 @@ test.describe('menu page', () => {
       name: 'page5',
     }).goto();
 
-    await page.getByRole('menu').getByText('page5').click();
-    await page.getByRole('menu').getByText('page5').hover();
-    await page.getByTestId('designer-schema-settings').hover();
+    await page.getByLabel('page5').click();
+    await page.getByLabel('page5').hover();
+    await page.getByLabel('page5').getByLabel('designer-schema-settings').hover();
 
     await page.getByRole('menuitem', { name: 'Insert after right' }).hover();
     await page.waitForTimeout(1000); // 等待1秒钟
@@ -167,9 +167,9 @@ test.describe('menu group', () => {
     await expect(pageItemBackgroundColor).toBe('rgb(230, 244, 255)');
 
     // 删除页面，避免影响其他测试
-    await page.getByText('menu Group', { exact: true }).click();
-    await page.getByRole('menu').getByText('menu Group').hover();
-    await page.getByTestId('designer-schema-settings').first().hover();
+    await page.getByLabel('menu Group').click();
+    await page.getByLabel('menu Group').hover();
+    await page.getByLabel('menu Group').getByLabel('designer-schema-settings').first().hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'OK' }).click();
     await mockPage().goto();
@@ -181,7 +181,7 @@ test.describe('menu link', () => {
   test('create new menu link, then delete', async ({ page, mockPage }) => {
     await mockPage().goto();
     await page.getByTestId('add-menu-item-button-in-header').hover();
-    await page.getByRole('menuitem', { name: 'Link' }).click();
+    await page.getByLabel('link').click();
     await page.getByTestId('title-item').getByRole('textbox').fill('link');
     await page.getByTestId('href-item').getByRole('textbox').click();
     await page.getByTestId('href-item').getByRole('textbox').fill('https://www.baidu.com/');
@@ -193,8 +193,8 @@ test.describe('menu link', () => {
     await expect(page2.getByRole('button', { name: '百度一下' })).toBeVisible();
 
     // 删除页面，避免影响其他测试
-    await page.getByRole('menu').getByText('link').hover();
-    await page.getByTestId('designer-schema-settings').hover();
+    await page.getByLabel('link').click();
+    await page.getByLabel('link').getByLabel('designer-schema-settings').hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'OK' }).click();
   });

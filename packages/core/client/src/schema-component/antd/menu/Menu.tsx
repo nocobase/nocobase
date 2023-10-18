@@ -223,7 +223,7 @@ const HeaderMenu = ({
         {...others}
         className={headerMenuClass}
         onSelect={(info: any) => {
-          const s = schema.properties[info.key];
+          const s = schema.properties?.[info.key];
 
           if (!s) {
             return;
