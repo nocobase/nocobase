@@ -195,9 +195,15 @@ const HeaderMenu = ({
   const items = useMemo(() => {
     const designerBtn = {
       key: 'x-designer-button',
-      disabled: true,
       style: { padding: '0 8px', order: 9999 },
-      label: render({ 'data-testid': 'add-menu-item-button-in-header', style: { background: 'none' } }),
+      label: render({
+        'data-testid': 'add-menu-item-button-in-header',
+        style: { background: 'none' },
+        onClick(e) {
+          // 阻止冒泡
+          e.stopPropagation();
+        },
+      }),
       notdelete: true,
     };
     const result = getMenuItems(() => {
@@ -218,6 +224,11 @@ const HeaderMenu = ({
         className={headerMenuClass}
         onSelect={(info: any) => {
           const s = schema.properties[info.key];
+
+          if (!s) {
+            return;
+          }
+
           if (mode === 'mix') {
             if (s['x-component'] !== 'Menu.SubMenu') {
               onSelect?.(info);
@@ -481,7 +492,12 @@ Menu.Item = observer(
         label: (
           <SchemaContext.Provider value={schema}>
             <FieldContext.Provider value={field}>
-              <SortableItem className={designerCss} removeParentsIfNoChildren={false}>
+              <SortableItem
+                role="button"
+                aria-label={t(field.title)}
+                className={designerCss}
+                removeParentsIfNoChildren={false}
+              >
                 <Icon type={icon} />
                 <span
                   style={{

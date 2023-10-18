@@ -11,6 +11,7 @@ export const MenuItemInitializers = (props: any) => {
   const { t } = useTranslation();
   return (
     <SchemaInitializer.Button
+      role="button"
       insertPosition={'beforeEnd'}
       icon={'PlusOutlined'}
       insert={props.insert}

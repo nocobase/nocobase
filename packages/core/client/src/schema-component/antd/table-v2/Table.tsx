@@ -280,6 +280,7 @@ export const Table: any = observer(
             return (
               <th
                 {...props}
+                role="button"
                 className={cls(
                   props.className,
                   css`

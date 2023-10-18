@@ -2,28 +2,35 @@ import { css } from '@emotion/css';
 import { useFieldSchema } from '@formily/react';
 import cls from 'classnames';
 import React from 'react';
+import { useBlockContext } from '../../../block-provider';
 import { SortableItem } from '../../common';
 import { useDesigner, useProps } from '../../hooks';
 
-const getTestId = (schema) => {
+const getTestId = ({ schema, blockName }) => {
   const resource = schema?.['x-decorator-props']?.['resource'];
-  if (resource) {
-    return `${resource}-resource`;
+  if (resource && blockName) {
+    return `${blockName}-block-${resource}`;
   }
   const field = schema['x-collection-field'];
-  if (field) {
-    return `${field}-field`;
+  if (field && blockName) {
+    return `${blockName}-block-field-${field}`;
   }
-  return `${schema.name}-item`;
+  if (blockName) {
+    return `${blockName}-block`;
+  }
+  return `block-item`;
 };
 
 export const BlockItem: React.FC<any> = (props) => {
   const { className, children } = useProps(props);
   const Designer = useDesigner();
   const schema = useFieldSchema();
+  const { name } = useBlockContext() || {};
+
   return (
     <SortableItem
-      data-testid={getTestId(schema)}
+      data-testid={getTestId({ schema, blockName: props.name || name })}
+      role="button"
       className={cls(
         'nb-block-item',
         className,

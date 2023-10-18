@@ -19,6 +19,7 @@ export const useLanguageSettings = () => {
       },
       label: (
         <div
+          aria-label="language-settings"
           style={{
             display: 'flex',
             alignItems: 'center',

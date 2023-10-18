@@ -2,7 +2,7 @@ import { observer, RecursionField, useField, useFieldSchema, useForm } from '@fo
 import { isPortalInBody } from '@nocobase/utils/client';
 import { App, Button, Popover } from 'antd';
 import classnames from 'classnames';
-import lodash from 'lodash';
+import { default as _, default as lodash } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useActionContext } from '../..';
@@ -123,9 +123,12 @@ export const Action: ComposedAction = observer(
         return null;
       }
 
+      const label = _.isString(actionTitle) ? actionTitle : fieldSchema['x-action'] || fieldSchema.name;
+
       return (
         <SortableItem
-          data-testid={`${fieldSchema['x-action'] || fieldSchema.name}-action`}
+          role="button"
+          aria-label={label}
           {...others}
           loading={field?.data?.loading}
           icon={icon ? <Icon type={icon} /> : null}

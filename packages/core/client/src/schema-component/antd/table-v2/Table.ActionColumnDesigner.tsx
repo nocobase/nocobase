@@ -13,7 +13,7 @@ export const TableActionColumnDesigner = (props: any) => {
       <div className={'general-schema-designer-icons'}>
         <Space size={2} align={'center'}>
           <DragHandler>
-            <DragOutlined />
+            <DragOutlined role="button" aria-label="designer-drag" />
           </DragHandler>
           {render()}
         </Space>

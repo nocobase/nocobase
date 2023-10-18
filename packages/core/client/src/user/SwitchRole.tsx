@@ -14,6 +14,7 @@ export const useSwitchRole = () => {
       eventKey: 'SwitchRole',
       label: (
         <div
+          aria-label="switch-role"
           style={{
             display: 'flex',
             alignItems: 'center',

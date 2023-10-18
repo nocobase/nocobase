@@ -250,7 +250,7 @@ export const TableActionColumnInitializers = (props: any) => {
           component: Resizable,
         },
       ]}
-      component={<MenuOutlined style={{ cursor: 'pointer' }} />}
+      component={<MenuOutlined role="button" aria-label="designer-schema-settings" style={{ cursor: 'pointer' }} />}
     />
   );
 };

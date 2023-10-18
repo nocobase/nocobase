@@ -21,6 +21,7 @@ const TableSelectorParamsContext = createContext<Params>({}); // 用于传递参
 
 type TableSelectorProviderProps = {
   params: Record<string, any>;
+  resource: any;
   collection?: string;
   dragSort?: boolean;
   children?: any;
@@ -238,7 +239,7 @@ export const TableSelectorProvider = (props: TableSelectorProviderProps) => {
 
   return (
     <SchemaComponentOptions scope={{ treeTable }}>
-      <BlockProvider data-testid="table-selector-block" {...props} params={params}>
+      <BlockProvider name="table-selector" {...props} params={params}>
         <InternalTableSelectorProvider {...props} params={params} extraFilter={extraFilter} />
       </BlockProvider>
     </SchemaComponentOptions>
