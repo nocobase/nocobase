@@ -38,6 +38,7 @@ export const Sortable = (props: any) => {
   return React.createElement(
     component || 'div',
     {
+      role: 'none',
       ...others,
       className: cx('nb-sortable-designer', props.className),
       ref: setNodeRef,

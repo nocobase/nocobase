@@ -492,7 +492,12 @@ Menu.Item = observer(
         label: (
           <SchemaContext.Provider value={schema}>
             <FieldContext.Provider value={field}>
-              <SortableItem className={designerCss} removeParentsIfNoChildren={false}>
+              <SortableItem
+                role="button"
+                aria-label={t(field.title)}
+                className={designerCss}
+                removeParentsIfNoChildren={false}
+              >
                 <Icon type={icon} />
                 <span
                   style={{

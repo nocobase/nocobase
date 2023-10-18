@@ -30,6 +30,7 @@ export const BlockItem: React.FC<any> = (props) => {
   return (
     <SortableItem
       data-testid={getTestId({ schema, blockName: props.name || name })}
+      role="button"
       className={cls(
         'nb-block-item',
         className,
