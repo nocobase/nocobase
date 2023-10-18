@@ -25,25 +25,27 @@ const InternalFormBlockProvider = (props) => {
   const { resource, service, updateAssociationValues } = useBlockRequestContext();
   const formBlockRef = useRef();
   const record = useRecord();
+  const formBlockValue = useMemo(() => {
+    return {
+      params,
+      action,
+      form,
+      // update 表示是表单编辑区块，create 表示是表单新增区块
+      type: action === 'get' ? 'update' : 'create',
+      field,
+      service,
+      resource,
+      updateAssociationValues,
+      formBlockRef,
+    };
+  }, [action, field, form, params, resource, service, updateAssociationValues]);
+
   if (service.loading && Object.keys(form?.initialValues)?.length === 0 && action) {
     return <Spin />;
   }
 
   return (
-    <FormBlockContext.Provider
-      value={{
-        params,
-        action,
-        form,
-        // update 表示是表单编辑区块，create 表示是表单新增区块
-        type: action === 'get' ? 'update' : 'create',
-        field,
-        service,
-        resource,
-        updateAssociationValues,
-        formBlockRef,
-      }}
-    >
+    <FormBlockContext.Provider value={formBlockValue}>
       {readPretty ? (
         <RecordProvider parent={isEmpty(record?.__parent) ? record : record?.__parent} record={service?.data?.data}>
           <div ref={formBlockRef}>
