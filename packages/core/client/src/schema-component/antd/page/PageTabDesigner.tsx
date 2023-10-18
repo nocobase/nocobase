@@ -128,7 +128,7 @@ export const PageTabDesigner = ({ schema }) => {
       <div className={'general-schema-designer-icons'}>
         <Space size={3} align={'center'}>
           <DragHandler>
-            <DragOutlined />
+            <DragOutlined role="button" />
           </DragHandler>
           <SchemaSettings
             title={<MenuOutlined role="button" style={{ cursor: 'pointer', fontSize: 12, marginLeft: '2px' }} />}

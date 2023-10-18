@@ -27,27 +27,18 @@ test.describe('page title', () => {
     await mockPage({ name: 'page title' }).goto();
     //默认显示
     await expect(page.getByTitle('page title')).toBeVisible();
-    await page
-      .locator('div')
-      .filter({ hasText: /^page title$/ })
-      .nth(3)
-      .click();
-    await page.getByTestId('page-designer-button').locator('path').hover();
+    await page.getByTitle('page title').click();
+    await page.getByLabel('designer-page').hover();
     await expect(page.getByRole('menuitem', { name: 'Display page title' }).getByRole('switch')).toBeChecked();
     //不显示
     await page.getByRole('menuitem', { name: 'Display page title' }).getByRole('switch').click();
     await expect(page.locator('.ant-page-header')).toBeVisible();
     await expect(page.getByTitle('page title')).not.toBeVisible();
-    await expect(
-      page
-        .locator('div')
-        .filter({ hasText: /^page title$/ })
-        .nth(3),
-    ).not.toBeVisible();
+    await expect(page.getByTitle('page title')).not.toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'Display page title' }).getByRole('switch')).not.toBeChecked();
     //开启
     await page.locator('.ant-page-header').click();
-    await page.getByTestId('page-designer-button').locator('path').hover();
+    await page.getByLabel('designer-page').hover();
     await page.getByRole('menuitem', { name: 'Display page title' }).getByRole('switch').click();
     await expect(page.getByTitle('page title')).toBeVisible();
     await expect(
@@ -61,19 +52,16 @@ test.describe('page title', () => {
     await mockPage({ name: 'page title1' }).goto();
 
     await expect(page.getByTitle('page title1')).toBeVisible();
-    await page
-      .locator('div')
-      .filter({ hasText: /^page title1$/ })
-      .nth(3)
-      .click();
-    await page.getByTestId('page-designer-button').locator('path').hover();
+    await page.getByTitle('page title1').click();
+    await page.getByLabel('designer-page').hover();
     await page.getByText('Edit page title').click();
     await page.getByRole('textbox').click();
     await page.getByRole('textbox').fill('page title2');
     await page.getByRole('button', { name: 'OK' }).click();
     await page.getByText('page title2').click();
     await expect(page.getByText('page title2')).toBeVisible();
-    await expect(page.locator('div').filter({ hasText: /^page title1$/ })).toBeVisible();
+    //菜单栏不调整
+    await expect(page.getByLabel('page title1')).toBeVisible();
   });
 });
 
@@ -81,12 +69,8 @@ test.describe('page tabs', () => {
   test('enable & disabled page tab', async ({ page, mockPage }) => {
     await mockPage({ name: 'page tab' }).goto();
     await enableToConfig(page);
-    await page
-      .locator('div')
-      .filter({ hasText: /^page tab$/ })
-      .nth(3)
-      .click();
-    await page.getByTestId('page-designer-button').locator('path').hover();
+    await page.getByTitle('page tab').click();
+    await page.getByLabel('designer-page').hover();
     //默认不启用
     await expect(page.getByRole('menuitem', { name: 'Enable page tabs' }).getByRole('switch')).not.toBeChecked();
     //启用标签
@@ -146,6 +130,10 @@ test.describe('page tabs', () => {
     await page.getByRole('tab').getByText('page tab 1').click();
 
     //禁用标签
+    await page.getByTitle('page tab').click();
+    await page.getByLabel('designer-page').hover();
+    await page.getByRole('menuitem', { name: 'Enable page tabs' }).getByRole('switch').setChecked(false);
+    await expect(page.getByText('page tab 2')).not.toBeVisible();
   });
   test('move page tab', async ({ page, mockPage }) => {
     await mockPage({
