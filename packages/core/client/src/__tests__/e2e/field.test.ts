@@ -236,45 +236,32 @@ test.describe('field setting config ', () => {
     });
     expect(inputErrorBorderColor).toBe('rgb(255, 77, 79)');
   });
-  test.skip('field validation rule ', async ({ page, mockPage }) => {
-    await mockPage({
-      pageSchema: {
-        'x-uid': 'h8q2mcgo3cq',
-        _isJSONSchemaObject: true,
-        version: '2.0',
-        type: 'void',
-        'x-component': 'Page',
-        'x-component-props': {
-          enablePageTabs: true,
-        },
-        properties: {
-          bi8ep3svjee: {
-            'x-uid': '9kr7xm9x4ln',
-            _isJSONSchemaObject: true,
-            version: '2.0',
-            type: 'void',
-            'x-component': 'Grid',
-            'x-initializer': 'BlockInitializers',
-            title: 'tab 1',
-            'x-async': false,
-            'x-index': 1,
-          },
-          rw91udnzpr3: {
-            _isJSONSchemaObject: true,
-            version: '2.0',
-            type: 'void',
-            title: 'tab 2',
-            'x-component': 'Grid',
-            'x-initializer': 'BlockInitializers',
-            'x-uid': 'o5vp90rqsjx',
-            'x-async': false,
-            'x-index': 2,
-          },
-        },
-        'x-async': true,
-        'x-index': 1,
-      },
-    }).goto();
+  test('field validation rule ', async ({ page, mockPage }) => {
+    await mockPage({ pageSchema: formPageSchema }).goto();
+    const errorMessage = 'this is error message';
+    await page.getByTestId('configure-fields-button-of-form-item-users').click();
+    await page.getByRole('menuitem', { name: 'Nickname' }).click();
+    await page.getByTestId('form-block-field-users.nickname').click();
+    await page.getByTestId('form-block-field-users.nickname').getByLabel('designer-schema-settings').click();
+    await page.getByText('Set validation rules').click();
+    await page.getByTestId('block-item').getByRole('button', { name: 'plus Add validation rule' }).click();
+    await page
+      .getByRole('button', { name: 'Max length : Increase Value Decrease Value' })
+      .getByRole('spinbutton')
+      .fill('8');
+    await page.getByRole('button', { name: 'Error message' }).locator('textarea').fill(errorMessage);
+    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByTestId('form-block-field-users.nickname').getByRole('textbox').fill('111111111');
+    const errorInfo = await page.getByTestId('form-block-field-users.nickname').locator('.ant-formily-item-error-help');
+    await expect(errorInfo).toBeVisible();
+
+    const inputItem = await page.getByTestId('form-block-field-users.nickname').locator('input');
+    const inputErrorBorderColor = await inputItem.evaluate((element) => {
+      const computedStyle = window.getComputedStyle(element);
+      return computedStyle.borderColor;
+    });
+    expect(inputErrorBorderColor).toBe('rgba(155, 47, 48, 0.95)');
+    expect(await errorInfo.innerText()).toBe(errorMessage);
   });
   test.skip('setting field pattern ', async ({ page, mockPage }) => {
     await mockPage({
