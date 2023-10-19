@@ -7,13 +7,15 @@ import { InitializerItems } from './components/InitializerItems';
 import { withInitializer } from './hoc';
 
 export class SchemaInitializerV2<P1 = ButtonProps, P2 = ListProps<any>> {
-  options: SchemaInitializerOptions<P1, P2> = {};
+  options: SchemaInitializerOptions<P1, P2>;
+  name: string;
   get items() {
     return this.options.items;
   }
 
-  constructor(options: SchemaInitializerOptions<P1, P2>) {
+  constructor(options: SchemaInitializerOptions<P1, P2> & { name: string }) {
     this.options = Object.assign({ items: [] }, options);
+    this.name = options.name;
   }
 
   add(name: string, item: SchemaInitializerItemType) {

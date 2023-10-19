@@ -4,16 +4,17 @@ import { FormOutlined } from '@ant-design/icons';
 import { useBlockAssociationContext } from '../../block-provider';
 import { useCollection } from '../../collection-manager';
 import { useSchemaTemplateManager } from '../../schema-templates';
-import { SchemaInitializer } from '../SchemaInitializer';
 import { createFormBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
+import { InitializerItem } from '../../application';
 
+// TODO: `InitializerItem` items
 export const CreateFormBlockInitializer = (props) => {
   const { onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const association = useBlockAssociationContext();
   const collection = useCollection();
   return (
-    <SchemaInitializer.Item
+    <InitializerItem
       icon={<FormOutlined />}
       {...others}
       onClick={async ({ item }) => {

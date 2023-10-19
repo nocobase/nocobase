@@ -43,7 +43,7 @@ export function withInitializer<T>(C: ComponentType<T>, cProps: T) {
     );
 
     return (
-      <SchemaInitializerV2Context.Provider value={{ insert: insertSchema }}>
+      <SchemaInitializerV2Context.Provider value={{ insert: insertSchema, options: props }}>
         {noDropdown ? (
           React.createElement(C, cProps)
         ) : (

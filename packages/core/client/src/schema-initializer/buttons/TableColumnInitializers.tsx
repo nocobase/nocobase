@@ -11,7 +11,6 @@ import {
   useTableColumnInitializerFields,
 } from '../utils';
 import { InitializerChildren, SchemaInitializerV2 } from '../../application';
-import { SchemaInitializerItemOptions } from '../types';
 
 // 表格列配置
 export const TableColumnInitializers = (props: any) => {
@@ -134,7 +133,8 @@ const AssociatedFields = () => {
   return <InitializerChildren>{schema}</InitializerChildren>;
 };
 
-export const tableColumnInitializer = new SchemaInitializerV2({
+export const tableColumnInitializers = new SchemaInitializerV2({
+  name: 'TableColumnInitializers',
   'data-testid': 'configure-columns-button-of-table-block',
   insertPosition: 'beforeEnd',
   icon: 'SettingOutlined',

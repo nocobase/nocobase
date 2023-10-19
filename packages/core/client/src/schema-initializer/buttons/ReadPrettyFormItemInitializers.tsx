@@ -112,13 +112,14 @@ const AssociatedFields = () => {
     {
       type: 'itemGroup',
       title: t('Display association fields'),
-      children: associatedFields,
+      children: associationFields,
     },
   ];
   return <InitializerChildren>{schema}</InitializerChildren>;
 };
 
-export const readPrettyFormItemInitializer = new SchemaInitializerV2({
+export const readPrettyFormItemInitializers = new SchemaInitializerV2({
+  name: 'ReadPrettyFormItemInitializers',
   'data-testid': 'configure-fields-button-of-read-pretty-form-item',
   wrap: gridRowColWrap,
   icon: 'SettingOutlined',

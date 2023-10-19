@@ -3,8 +3,8 @@ import { FormOutlined } from '@ant-design/icons';
 import { useBlockAssociationContext, useBlockRequestContext } from '../../block-provider';
 import { useCollection } from '../../collection-manager';
 import { useSchemaTemplateManager } from '../../schema-templates';
-import { SchemaInitializer } from '../SchemaInitializer';
 import { createReadPrettyFormBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
+import { InitializerItem } from '../../application';
 
 export const RecordReadPrettyFormBlockInitializer = (props) => {
   const {
@@ -25,7 +25,7 @@ export const RecordReadPrettyFormBlockInitializer = (props) => {
     block !== 'TableField' ? props.actionInitializers || 'ReadPrettyFormActionInitializers' : null;
 
   return (
-    <SchemaInitializer.Item
+    <InitializerItem
       icon={icon && <FormOutlined />}
       {...others}
       key={'123'}

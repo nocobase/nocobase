@@ -461,6 +461,7 @@ export const LinkMenuItemV2 = () => {
 };
 
 export const menuItemInitializerV2 = new SchemaInitializerV2({
+  name: 'MenuItemInitializers',
   insertPosition: 'beforeEnd',
   icon: 'PlusOutlined',
   title: '{{t("Add menu item")}}',

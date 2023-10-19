@@ -257,6 +257,7 @@ export const TableActionColumnInitializers = (props: any) => {
 };
 
 export const tableActionColumnInitializers = new SchemaInitializerV2({
+  name: 'TableActionColumnInitializers',
   insertPosition: 'beforeEnd',
   useInsert: function useInsert() {
     const { refresh } = useDesignable();
@@ -313,7 +314,7 @@ export const tableActionColumnInitializers = new SchemaInitializerV2({
             'x-action': 'update',
             'x-decorator': 'ACLActionProvider',
           },
-          useVisible: function useVisible() {
+          useVisible() {
             const collection = useCollection();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
@@ -328,7 +329,7 @@ export const tableActionColumnInitializers = new SchemaInitializerV2({
             'x-action': 'destroy',
             'x-decorator': 'ACLActionProvider',
           },
-          useVisible: function useVisible() {
+          useVisible() {
             const collection = useCollection();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
@@ -354,7 +355,7 @@ export const tableActionColumnInitializers = new SchemaInitializerV2({
             'x-action': 'duplicate',
             'x-decorator': 'ACLActionProvider',
           },
-          useVisible: function useVisible() {
+          useVisible() {
             const collection = useCollection();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
@@ -444,7 +445,7 @@ export const tableActionColumnInitializers = new SchemaInitializerV2({
               useProps: '{{ useCustomizeUpdateActionProps }}',
             },
           },
-          useVisible: function useVisible() {
+          useVisible() {
             const collection = useCollection();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
@@ -471,7 +472,7 @@ export const tableActionColumnInitializers = new SchemaInitializerV2({
               useProps: '{{ useCustomizeRequestActionProps }}',
             },
           },
-          useVisible: function useVisible() {
+          useVisible() {
             const collection = useCollection();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },

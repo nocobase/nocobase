@@ -3,8 +3,8 @@ import { TableOutlined } from '@ant-design/icons';
 
 import { useCollectionManager } from '../../collection-manager';
 import { useSchemaTemplateManager } from '../../schema-templates';
-import { SchemaInitializer } from '../SchemaInitializer';
 import { createTableBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
+import { InitializerItem } from '../../application';
 
 export const RecordAssociationBlockInitializer = (props) => {
   const { item, onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
@@ -14,7 +14,7 @@ export const RecordAssociationBlockInitializer = (props) => {
   const collection = getCollection(field.target);
   const resource = `${field.collectionName}.${field.name}`;
   return (
-    <SchemaInitializer.Item
+    <InitializerItem
       icon={<TableOutlined />}
       {...others}
       onClick={async ({ item }) => {

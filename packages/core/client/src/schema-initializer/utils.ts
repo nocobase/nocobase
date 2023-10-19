@@ -247,7 +247,7 @@ export const useInheritsTableColumnInitializerFields = () => {
           return {
             type: 'item',
             title: k?.uiSchema?.title || k.name,
-            component: 'TableCollectionFieldInitializer',
+            Component: 'TableCollectionFieldInitializer',
             find: findTableColumn,
             remove: removeTableColumn,
             schemaInitialize: (s) => {
@@ -372,7 +372,7 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
       const resultItem = {
         type: 'item',
         title: field?.uiSchema?.title || field.name,
-        component: 'CollectionFieldInitializer',
+        Component: 'CollectionFieldInitializer',
         remove: removeGridFormItem,
         schemaInitialize: (s) => {
           interfaceConfig?.schemaInitialize?.(s, {
@@ -429,7 +429,7 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
           return {
             type: 'item',
             title: subField?.uiSchema?.title || subField.name,
-            component: 'CollectionFieldInitializer',
+            Component: 'CollectionFieldInitializer',
             remove: removeGridFormItem,
             schemaInitialize: (s) => {
               interfaceConfig?.schemaInitialize?.(s, {
@@ -500,7 +500,7 @@ const getItem = (
   return {
     type: 'item',
     title: field.uiSchema?.title || field.name,
-    component: 'CollectionFieldInitializer',
+    Component: 'CollectionFieldInitializer',
     remove: removeGridFormItem,
     schema,
   } as SchemaInitializerItemOptions;
@@ -554,7 +554,7 @@ export const useInheritsFormItemInitializerFields = (options?) => {
           return {
             type: 'item',
             title: field?.uiSchema?.title || field.name,
-            component: 'CollectionFieldInitializer',
+            Component: 'CollectionFieldInitializer',
             remove: removeGridFormItem,
             schemaInitialize: (s) => {
               interfaceConfig?.schemaInitialize?.(s, {
@@ -608,7 +608,7 @@ export const useFilterInheritsFormItemInitializerFields = (options?) => {
           return {
             type: 'item',
             title: field?.uiSchema?.title || field.name,
-            component: 'CollectionFieldInitializer',
+            Component: 'CollectionFieldInitializer',
             remove: removeGridFormItem,
             schemaInitialize: (s) => {
               interfaceConfig?.schemaInitialize?.(s, {
@@ -653,7 +653,7 @@ export const useCustomFormItemInitializerFields = (options?: any) => {
       return {
         type: 'item',
         title: field?.uiSchema?.title || field.name,
-        component: 'CollectionFieldInitializer',
+        Component: 'CollectionFieldInitializer',
         remove: remove,
         schemaInitialize: (s) => {
           interfaceConfig?.schemaInitialize?.(s, {
@@ -699,7 +699,7 @@ export const useCustomBulkEditFormItemInitializerFields = (options?: any) => {
           return {
             type: 'item',
             title: field?.uiSchema?.title || field.name,
-            component: 'CollectionFieldInitializer',
+            Component: 'CollectionFieldInitializer',
             remove: remove,
             schemaInitialize: (s) => {
               interfaceConfig?.schemaInitialize?.(s, {

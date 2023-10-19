@@ -11,8 +11,8 @@ export class SchemaInitializerManager {
     this.app = app;
   }
 
-  add<P1 = any, P2 = any>(name: string, schemaInitializer: SchemaInitializerV2<P1, P2>) {
-    this.initializers[name] = schemaInitializer;
+  add<P1 = any, P2 = any>(schemaInitializer: SchemaInitializerV2<P1, P2>) {
+    this.initializers[schemaInitializer.name] = schemaInitializer;
   }
 
   get<P1 = ButtonProps, P2 = ListProps<any>>(name: string): SchemaInitializerV2<P1, P2> | undefined {

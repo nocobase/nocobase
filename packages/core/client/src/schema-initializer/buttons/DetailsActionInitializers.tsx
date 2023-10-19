@@ -53,6 +53,7 @@ export const DetailsActionInitializers = {
 };
 
 export const detailsActionInitializers = new SchemaInitializerV2({
+  name: 'DetailsActionInitializers',
   'data-testid': 'configure-actions-button-of-details-block',
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',

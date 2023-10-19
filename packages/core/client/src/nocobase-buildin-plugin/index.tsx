@@ -214,7 +214,7 @@ export class NocoBaseBuildInPlugin extends Plugin {
     this.app.use(CSSVariableProvider);
     this.app.use(CurrentUserSettingsMenuProvider);
 
-    this.app.schemaInitializerManager.add('MenuItemInitializers', menuItemInitializerV2);
+    this.app.schemaInitializerManager.add(menuItemInitializerV2);
   }
 
   addRoutes() {

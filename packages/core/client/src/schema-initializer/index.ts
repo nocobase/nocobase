@@ -19,27 +19,29 @@ export {
 import { Plugin } from '../application/Plugin';
 import { SchemaInitializerProvider } from './SchemaInitializerProvider';
 import {
-  blockInitializerV2,
+  blockInitializers,
   tableActionColumnInitializers,
-  tableActionInitializersV2,
-  tableColumnInitializer,
+  tableActionInitializers,
+  tableColumnInitializers,
   formItemInitializers,
   formActionInitializers,
   detailsActionInitializers,
-  readPrettyFormItemInitializer,
+  readPrettyFormItemInitializers,
+  readPrettyFormActionInitializers,
 } from './buttons';
 
 export class SchemaInitializerPlugin<SchemaInitializerProviderProps> extends Plugin {
   async load() {
     this.app.use<SchemaInitializerProviderProps>(SchemaInitializerProvider, this.options?.config);
 
-    this.app.schemaInitializerManager.add('BlockInitializers', blockInitializerV2);
-    this.app.schemaInitializerManager.add('TableActionInitializers', tableActionInitializersV2);
-    this.app.schemaInitializerManager.add('TableColumnInitializers', tableColumnInitializer);
-    this.app.schemaInitializerManager.add('TableActionColumnInitializers', tableActionColumnInitializers);
-    this.app.schemaInitializerManager.add('FormItemInitializers', formItemInitializers);
-    this.app.schemaInitializerManager.add('FormActionInitializers', formActionInitializers);
-    this.app.schemaInitializerManager.add('DetailsActionInitializers', detailsActionInitializers);
-    this.app.schemaInitializerManager.add('ReadPrettyFormItemInitializer', readPrettyFormItemInitializer);
+    this.app.schemaInitializerManager.add(blockInitializers);
+    this.app.schemaInitializerManager.add(tableActionInitializers);
+    this.app.schemaInitializerManager.add(tableColumnInitializers);
+    this.app.schemaInitializerManager.add(tableActionColumnInitializers);
+    this.app.schemaInitializerManager.add(formItemInitializers);
+    this.app.schemaInitializerManager.add(formActionInitializers);
+    this.app.schemaInitializerManager.add(detailsActionInitializers);
+    this.app.schemaInitializerManager.add(readPrettyFormItemInitializers);
+    this.app.schemaInitializerManager.add(readPrettyFormActionInitializers);
   }
 }

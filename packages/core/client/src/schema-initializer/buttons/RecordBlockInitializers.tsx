@@ -3,6 +3,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializer, SchemaInitializerItemOptions, useCollection, useCollectionManager } from '../..';
 import { gridRowColWrap } from '../utils';
+import { SchemaInitializerV2, useSchemaInitializerV2 } from '../../application';
 
 const recursiveParent = (schema: Schema) => {
   if (!schema) return null;
@@ -43,7 +44,7 @@ const useRelationFields = () => {
               type: 'item',
               title: '{{t("Details")}}',
               field,
-              component: 'RecordReadPrettyAssociationFormBlockInitializer',
+              Component: 'RecordReadPrettyAssociationFormBlockInitializer',
             },
             // {
             //   key: `${field.name}_form`,
@@ -67,42 +68,42 @@ const useRelationFields = () => {
               type: 'item',
               title: '{{t("Table")}}',
               field,
-              component: 'RecordAssociationBlockInitializer',
+              Component: 'RecordAssociationBlockInitializer',
             },
             {
               key: `${field.name}_details`,
               type: 'item',
               title: '{{t("Details")}}',
               field,
-              component: 'RecordAssociationDetailsBlockInitializer',
+              Component: 'RecordAssociationDetailsBlockInitializer',
             },
             {
               key: `${field.name}_list`,
               type: 'item',
               title: '{{t("List")}}',
               field,
-              component: 'RecordAssociationListBlockInitializer',
+              Component: 'RecordAssociationListBlockInitializer',
             },
             {
               key: `${field.name}_grid_card`,
               type: 'item',
               title: '{{t("Grid Card")}}',
               field,
-              component: 'RecordAssociationGridCardBlockInitializer',
+              Component: 'RecordAssociationGridCardBlockInitializer',
             },
             {
               key: `${field.name}_form`,
               type: 'item',
               title: '{{t("Form")}}',
               field,
-              component: 'RecordAssociationFormBlockInitializer',
+              Component: 'RecordAssociationFormBlockInitializer',
             },
             {
               key: `${field.name}_calendar`,
               type: 'item',
               title: '{{t("Calendar")}}',
               field,
-              component: 'RecordAssociationCalendarBlockInitializer',
+              Component: 'RecordAssociationCalendarBlockInitializer',
             },
           ],
         };
@@ -113,7 +114,7 @@ const useRelationFields = () => {
         type: 'item',
         field,
         title: field?.uiSchema?.title || field.name,
-        component: 'RecordAssociationBlockInitializer',
+        Component: 'RecordAssociationBlockInitializer',
       };
     }) as any;
   return relationFields;
@@ -126,7 +127,7 @@ const useDetailCollections = (props) => {
       key: collection.name,
       type: 'item',
       title: collection?.title || collection.name,
-      component: 'RecordReadPrettyFormBlockInitializer',
+      Component: 'RecordReadPrettyFormBlockInitializer',
       icon: false,
       targetCollection: collection,
       actionInitializers,
@@ -137,7 +138,7 @@ const useDetailCollections = (props) => {
         key: c.name,
         type: 'item',
         title: c?.title || c.name,
-        component: 'RecordReadPrettyFormBlockInitializer',
+        Component: 'RecordReadPrettyFormBlockInitializer',
         icon: false,
         targetCollection: c,
         actionInitializers,
@@ -154,7 +155,7 @@ const useFormCollections = (props) => {
       key: collection.name,
       type: 'item',
       title: collection?.title || collection.name,
-      component: 'RecordFormBlockInitializer',
+      Component: 'RecordFormBlockInitializer',
       icon: false,
       targetCollection: collection,
       actionInitializers,
@@ -165,7 +166,7 @@ const useFormCollections = (props) => {
         key: c.name,
         type: 'item',
         title: c?.title || c.name,
-        component: 'RecordFormBlockInitializer',
+        Component: 'RecordFormBlockInitializer',
         icon: false,
         targetCollection: c,
         actionInitializers,
@@ -265,3 +266,98 @@ export const RecordBlockInitializers = (props: any) => {
     />
   );
 };
+
+function useRecordBlocks() {
+  const { options } = useSchemaInitializerV2();
+  const { actionInitializers } = options;
+  const collection = useCollection();
+  const { getChildrenCollections } = useCollectionManager();
+  const formChildrenCollections = getChildrenCollections(collection.name);
+  const hasFormChildCollection = formChildrenCollections?.length > 0;
+  const detailChildrenCollections = getChildrenCollections(collection.name, true);
+  const hasDetailChildCollection = detailChildrenCollections?.length > 0;
+  const modifyFlag = (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
+  const detailChildren = useDetailCollections({
+    ...options,
+    childrenCollections: detailChildrenCollections,
+    collection,
+  });
+  const formChildren = useFormCollections({
+    ...options,
+    childrenCollections: formChildrenCollections,
+    collection,
+  });
+
+  const res = [];
+  if (hasDetailChildCollection) {
+    res.push({
+      name: 'details',
+      type: 'subMenu',
+      title: '{{t("Details")}}',
+      children: detailChildren,
+    });
+  } else {
+    res.push({
+      name: 'details',
+      title: '{{t("Details")}}',
+      Component: 'RecordReadPrettyFormBlockInitializer',
+      actionInitializers,
+    });
+  }
+
+  if (hasFormChildCollection) {
+    res.push({
+      name: 'form',
+      type: 'subMenu',
+      title: '{{t("Form")}}',
+      children: formChildren,
+    });
+  } else {
+    modifyFlag &&
+      res.push({
+        name: 'form',
+        title: '{{t("Form")}}',
+        Component: 'RecordFormBlockInitializer',
+      });
+  }
+
+  return res;
+}
+
+export const recordBlockInitializers = new SchemaInitializerV2({
+  name: 'RecordBlockInitializers',
+  wrap: gridRowColWrap,
+  title: '{{t("Add block")}}',
+  icon: 'PlusOutlined',
+  items: [
+    {
+      type: 'itemGroup',
+      name: 'current-record-blocks',
+      title: '{{t("Current record blocks")}}',
+      useChildren: useRecordBlocks,
+    },
+    {
+      type: 'itemGroup',
+      name: 'relationship-blocks',
+      title: '{{t("Relationship blocks")}}',
+      useChildren: useRelationFields,
+    },
+    {
+      type: 'itemGroup',
+      name: 'other-blocks',
+      title: '{{t("Other blocks")}}',
+      children: [
+        {
+          name: 'markdown',
+          title: '{{t("Markdown")}}',
+          Component: 'MarkdownBlockInitializer',
+        },
+        {
+          name: 'audit-logs',
+          title: '{{t("Audit logs")}}',
+          Component: 'AuditLogsBlockInitializer',
+        },
+      ],
+    },
+  ],
+});

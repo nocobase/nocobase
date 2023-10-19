@@ -22,7 +22,7 @@ interface SchemaInitializerItemOnlyType extends Partial<SchemaInitializerItemBas
 
 interface SchemaInitializerItemWithChildren extends Partial<SchemaInitializerItemBaseType> {
   type?: 'itemGroup' | 'subMenu';
-  children?: SchemaInitializerItemType[] | ComponentType;
+  children?: SchemaInitializerItemType[];
   useChildren?: () => SchemaInitializerItemType[];
 }
 

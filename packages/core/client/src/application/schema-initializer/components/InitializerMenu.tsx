@@ -1,7 +1,7 @@
 import Icon from '@ant-design/icons';
 import { Menu } from 'antd';
 import React, { FC, ReactNode } from 'react';
-import { isComponentChildren, useInitializerChildren, useSchemaInitializerV2 } from '../hooks';
+import { useInitializerChildren, useSchemaInitializerV2 } from '../hooks';
 import { SchemaInitializerOptions } from '../types';
 import { useCompile } from '../../../schema-component';
 
@@ -26,16 +26,14 @@ export const InitializerMenu: FC<InitializerMenuProps> = (props) => {
           key: name,
           label: compile(title),
           icon: typeof icon === 'string' ? <Icon type={icon as string} /> : icon,
-          children: !isComponentChildren(validChildren)
-            ? validChildren.map((item) => {
-                const { name, Component, icon, ...props } = item;
-                return {
-                  label: React.createElement(Component, { name, insert, ...props }),
-                  key: name,
-                  icon: typeof icon === 'string' ? <Icon type={icon as string} /> : icon,
-                };
-              })
-            : [],
+          children: validChildren.map((item) => {
+            const { name, Component, icon, ...props } = item;
+            return {
+              label: React.createElement(Component, { name, insert, ...props }),
+              key: name,
+              icon: typeof icon === 'string' ? <Icon type={icon as string} /> : icon,
+            };
+          }),
         },
       ]}
     ></Menu>

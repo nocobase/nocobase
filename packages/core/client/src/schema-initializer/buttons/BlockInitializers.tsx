@@ -104,7 +104,8 @@ export const BlockInitializers = {
   ],
 };
 
-export const blockInitializerV2 = new SchemaInitializerV2({
+export const blockInitializers = new SchemaInitializerV2({
+  name: 'BlockInitializers',
   'data-testid': 'add-block-button-in-page',
   title: '{{t("Add block")}}',
   icon: 'PlusOutlined',

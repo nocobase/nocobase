@@ -1,11 +1,11 @@
 import React from 'react';
 
-import { SchemaInitializer } from '..';
+import { InitializerItem } from '../../application';
 
 export const G2PlotInitializer = (props) => {
   const { item, insert, ...others } = props;
   return (
-    <SchemaInitializer.Item
+    <InitializerItem
       {...others}
       onClick={() => {
         insert({

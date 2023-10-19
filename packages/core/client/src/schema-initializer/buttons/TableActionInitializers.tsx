@@ -1,6 +1,6 @@
 import { useFieldSchema } from '@formily/react';
 import { useCollection } from '../../';
-import { InitializerGroup, SchemaInitializerV2 } from '../../application';
+import { SchemaInitializerV2 } from '../../application';
 
 // 表格操作配置
 export const TableActionInitializers = {
@@ -180,7 +180,8 @@ export const TableActionInitializers = {
   ],
 };
 
-export const tableActionInitializersV2 = new SchemaInitializerV2({
+export const tableActionInitializers = new SchemaInitializerV2({
+  name: 'TableActionInitializers',
   'data-testid': 'configure-actions-button-of-table-block',
   title: "{{t('Configure actions')}}",
   icon: 'SettingOutlined',
@@ -214,7 +215,7 @@ export const tableActionInitializersV2 = new SchemaInitializerV2({
               skipScopeCheck: true,
             },
           },
-          useVisible: function useVisible() {
+          useVisible() {
             const collection = useCollection();
             return !['view', 'file', 'sql'].includes(collection.template) || collection?.writableView;
           },
@@ -228,7 +229,7 @@ export const tableActionInitializersV2 = new SchemaInitializerV2({
             'x-align': 'right',
             'x-decorator': 'ACLActionProvider',
           },
-          useVisible: function useVisible() {
+          useVisible() {
             const collection = useCollection();
             return !['view', 'sql'].includes(collection.template) || collection?.writableView;
           },
@@ -249,7 +250,7 @@ export const tableActionInitializersV2 = new SchemaInitializerV2({
           schema: {
             'x-align': 'right',
           },
-          useVisible: function useVisible() {
+          useVisible() {
             const schema = useFieldSchema();
             const collection = useCollection();
             const { treeTable } = schema?.parent?.['x-decorator-props'] || {};
@@ -260,7 +261,7 @@ export const tableActionInitializersV2 = new SchemaInitializerV2({
     },
     {
       type: 'divider',
-      useVisible: function useVisible() {
+      useVisible() {
         const collection = useCollection();
         return !['view', 'sql'].includes(collection.template) || collection?.writableView;
       },
@@ -331,7 +332,7 @@ export const tableActionInitializersV2 = new SchemaInitializerV2({
           },
         },
       ],
-      useVisible: function useVisible() {
+      useVisible() {
         const collection = useCollection();
         return !['view', 'sql'].includes(collection.template) || collection?.writableView;
       },

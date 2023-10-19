@@ -1,16 +1,10 @@
 import React, { FC } from 'react';
-import {
-  UseInitializerChildrenResult,
-  isComponentChildren,
-  useInitializerChildren,
-  useSchemaInitializerV2,
-} from '../hooks';
+import { UseInitializerChildrenResult, useInitializerChildren, useSchemaInitializerV2 } from '../hooks';
 import { SchemaInitializerItemType } from '../types';
 
 export const InitializerChildren: FC<{ children: SchemaInitializerItemType[] }> = (props) => {
   const { children } = props;
   const validChildren = useInitializerChildren(children);
-  if (isComponentChildren(validChildren)) return React.createElement(validChildren);
   return (
     <>
       {validChildren.map((item, index) => (

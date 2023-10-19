@@ -4,7 +4,9 @@ import { InsertType, SchemaInitializerItemType, SchemaInitializerOptions } from 
 import { useFindComponent } from '../../../schema-component';
 import { InitializerGroup, InitializerMenu, InitializerItem, InitializerDivider } from '../components';
 
-export const SchemaInitializerV2Context = createContext<{ insert: InsertType }>({} as any);
+export const SchemaInitializerV2Context = createContext<{ insert: InsertType; options: SchemaInitializerOptions }>(
+  {} as any,
+);
 SchemaInitializerV2Context.displayName = 'SchemaInitializerV2Context';
 export const useSchemaInitializerV2 = () => {
   return React.useContext(SchemaInitializerV2Context);
@@ -14,7 +16,6 @@ const typeComponentMap: Record<SchemaInitializerItemType['type'], ComponentType>
   itemGroup: InitializerGroup,
   divider: InitializerDivider,
   subMenu: InitializerMenu,
-  itemMenu: undefined,
   item: InitializerItem,
 };
 export const useInitializerComponent = () => {
@@ -38,15 +39,8 @@ export const useInitializerComponent = () => {
 
 export type UseInitializerChildrenResult = Omit<SchemaInitializerItemType, 'sort' | 'type' | 'visible'>;
 
-export const isComponentChildren = (val: unknown): val is ComponentType => {
-  return !Array.isArray(val);
-};
-
-export const useInitializerChildren = (
-  children: SchemaInitializerOptions['list'],
-): UseInitializerChildrenResult[] | ComponentType => {
+export const useInitializerChildren = (children: SchemaInitializerOptions['list']): UseInitializerChildrenResult[] => {
   const findInitializerComponent = useInitializerComponent();
-  if (isComponentChildren(children)) return children;
   return children
     .sort((a, b) => (a.sort || 0) - (b.sort || 0))
     .map((item) => {

@@ -36,7 +36,7 @@ function Demo({ title }) {
 const myInitializer = new SchemaInitializerV2({
   title: 'Add Block',
   // 插入位置
-  insertPosition: 'beforeEnd',
+  insertPosition: 'beforeBegin',
   items: [
     {
       name: 'a',

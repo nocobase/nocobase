@@ -5,7 +5,7 @@ export const DuplicateActionInitializer = (props) => {
   const schema = {
     type: 'void',
     'x-action': 'duplicate',
-    'x-acl-action':'create',
+    'x-acl-action': 'create',
     title: '{{ t("Duplicate") }}',
     'x-designer': 'Action.Designer',
     'x-component': 'Action.Link',

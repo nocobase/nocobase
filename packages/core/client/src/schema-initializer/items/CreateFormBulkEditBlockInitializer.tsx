@@ -3,8 +3,8 @@ import React from 'react';
 import { useBlockAssociationContext } from '../../block-provider';
 import { useCollection } from '../../collection-manager';
 import { useSchemaTemplateManager } from '../../schema-templates';
-import { SchemaInitializer } from '../SchemaInitializer';
 import { createFormBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
+import { InitializerItem } from '../../application';
 
 export const CreateFormBulkEditBlockInitializer = (props) => {
   const { onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
@@ -12,7 +12,7 @@ export const CreateFormBulkEditBlockInitializer = (props) => {
   const association = useBlockAssociationContext();
   const collection = useCollection();
   return (
-    <SchemaInitializer.Item
+    <InitializerItem
       icon={<FormOutlined />}
       {...others}
       onClick={async ({ item }) => {
