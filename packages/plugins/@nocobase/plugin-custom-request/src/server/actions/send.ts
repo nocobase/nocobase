@@ -1,5 +1,4 @@
 import { Context, Next } from '@nocobase/actions';
-import actions from '@nocobase/actions';
 import { parse } from '@nocobase/utils';
 
 import axios from 'axios';
@@ -32,11 +31,11 @@ const omitNullAndUndefined = (obj: any) => {
 export async function send(ctx: Context, next: Next) {
   const { filterByTk, resourceName, values = {} } = ctx.action.params;
   const {
-    currentRecord: { id: currentRecordId, appends: currentRecordAppends } = {
+    currentRecord = {
       id: 0,
       appends: [],
+      data: {},
     },
-    requestConfig: requestConfigFirst = {},
   } = values;
 
   // root role has all permissions
@@ -69,17 +68,20 @@ export async function send(ctx: Context, next: Next) {
   ctx.withoutDataWrapping = true;
 
   const { collectionName, url, headers = {}, params = {}, data = {}, ...options } = requestConfig.options;
-  let currentRecord = {};
-  if (collectionName && typeof currentRecordId !== 'undefined') {
+  let currentRecordVariables = {};
+  if (collectionName && typeof currentRecord.id !== 'undefined') {
     const recordRepo = ctx.db.getRepository(collectionName);
-    currentRecord = await recordRepo.findOne({
-      filterByTk: currentRecordId,
-      appends: currentRecordAppends,
+    currentRecordVariables = await recordRepo.findOne({
+      filterByTk: currentRecord.id,
+      appends: currentRecord.appends,
     });
   }
 
   const variables = {
-    currentRecord,
+    currentRecord: {
+      ...currentRecordVariables,
+      ...currentRecord.data,
+    },
     currentUser: ctx.auth.user,
     currentTime: new Date().toISOString(),
   };
@@ -95,10 +97,7 @@ export async function send(ctx: Context, next: Next) {
         ...omitNullAndUndefined(parse(arrayToObject(headers))(variables)),
       },
       params: parse(arrayToObject(params))(variables),
-      data: parse({
-        ...data,
-        ...requestConfigFirst?.data,
-      })(variables),
+      data: parse(data)(variables),
     }).then((res) => {
       return res.data;
     });
