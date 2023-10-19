@@ -245,6 +245,13 @@ export const useCreateActionProps = () => {
           });
         } else {
           message.success(compile(onSuccess?.successMessage));
+          if (onSuccess?.redirecting && onSuccess?.redirectTo) {
+            if (isURL(onSuccess.redirectTo)) {
+              window.location.href = onSuccess.redirectTo;
+            } else {
+              navigate(onSuccess.redirectTo);
+            }
+          }
         }
       } catch (error) {
         actionField.data.loading = false;
@@ -554,6 +561,13 @@ export const useCustomizeUpdateActionProps = () => {
         });
       } else {
         message.success(compile(onSuccess?.successMessage));
+        if (onSuccess?.redirecting && onSuccess?.redirectTo) {
+          if (isURL(onSuccess.redirectTo)) {
+            window.location.href = onSuccess.redirectTo;
+          } else {
+            navigate(onSuccess.redirectTo);
+          }
+        }
       }
     },
   };
@@ -658,6 +672,13 @@ export const useCustomizeBulkUpdateActionProps = () => {
             });
           } else {
             message.success(compile(onSuccess?.successMessage));
+            if (onSuccess?.redirecting && onSuccess?.redirectTo) {
+              if (isURL(onSuccess.redirectTo)) {
+                window.location.href = onSuccess.redirectTo;
+              } else {
+                navigate(onSuccess.redirectTo);
+              }
+            }
           }
         },
         async onCancel() {
@@ -949,6 +970,13 @@ export const useUpdateActionProps = () => {
           });
         } else {
           message.success(compile(onSuccess?.successMessage));
+          if (onSuccess?.redirecting && onSuccess?.redirectTo) {
+            if (isURL(onSuccess.redirectTo)) {
+              window.location.href = onSuccess.redirectTo;
+            } else {
+              navigate(onSuccess.redirectTo);
+            }
+          }
         }
       } catch (error) {
         actionField.data.loading = false;
