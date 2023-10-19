@@ -1,0 +1,19 @@
+{
+  "name": "@nocobase/india-region",
+  "version": "0.14.0-alpha.6",
+  "main": "dist/server/index.js",
+  "dependencies": {},
+  "devDependencies": {
+    "@formily/core": "2.x",
+    "@formily/react": "2.x",
+    "@types/cross-spawn": "^6.0.2",
+    "china-division": "^2.4.0",
+    "cross-spawn": "^7.0.3"
+  },
+  "peerDependencies": {
+    "@nocobase/client": "0.x",
+    "@nocobase/database": "0.x",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x"
+  }
+}
