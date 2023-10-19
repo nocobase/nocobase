@@ -21,9 +21,9 @@ function getTransport(data, force = false) {
 }
 
 export class SmtpRequestServer extends Plugin {
-  afterAdd() {}
+  afterAdd() { }
 
-  beforeLoad() {}
+  beforeLoad() { }
 
   async load() {
     // Visit: http://localhost:13000/api/email:sendMyEmail
@@ -42,17 +42,7 @@ export class SmtpRequestServer extends Plugin {
       ],
     });
 
-    // await this.db.getRepository('smtpRequest').create({
-    //   values: {
-    //     localhost: 'localhost',
-    //     host: 1025,
-    //     username: '',
-    //     password: '',
-    //     admin:false,
-    //     root:false,
-    //     member:false
-    //   },
-    // });
+
 
     await this.db.sync();
 
@@ -136,6 +126,7 @@ export class SmtpRequestServer extends Plugin {
       });
 
       const currentUser = ctx.state.currentRole;
+
       if (data[currentUser] === true) {
         const allowedUserArray = true;
         global.allowed_users = allowedUserArray;
@@ -152,13 +143,25 @@ export class SmtpRequestServer extends Plugin {
     this.app.acl.allow('smtpRequest', '*');
   }
 
-  async install(options?: InstallOptions) {}
+  async install(options?: InstallOptions) { }
 
-  async afterEnable() {}
+  async afterEnable() {
+    await this.db.getRepository('smtpRequest').create({
+      values: {
+        localhost: 'localhost',
+        host: 1025,
+        username: '',
+        password: '',
+        admin: false,
+        root: false,
+        member: false
+      },
+    });
+  }
 
-  async afterDisable() {}
+  async afterDisable() { }
 
-  async remove() {}
+  async remove() { }
 }
 
 export default SmtpRequestServer;
