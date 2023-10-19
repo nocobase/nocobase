@@ -169,7 +169,7 @@ function AddBlockButton(props: any) {
 
   return (
     <SchemaInitializer.Button
-      data-testid="add-block-button-in-workflow"
+      data-testid="grid-schema-initializer-AddBlockButton"
       {...props}
       wrap={gridRowColWrap}
       items={items}

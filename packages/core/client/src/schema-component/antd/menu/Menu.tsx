@@ -197,14 +197,12 @@ const HeaderMenu = ({
       key: 'x-designer-button',
       style: { padding: '0 8px', order: 9999 },
       label: render({
-        'data-testid': 'add-menu-item-button-in-header',
+        'data-testid': 'menu-schema-initializer-header',
+        'aria-disabled': false,
         style: { background: 'none' },
-        onClick(e) {
-          // 阻止冒泡
-          e.stopPropagation();
-        },
       }),
       notdelete: true,
+      disabled: true,
     };
     const result = getMenuItems(() => {
       return children;
@@ -223,7 +221,7 @@ const HeaderMenu = ({
         {...others}
         className={headerMenuClass}
         onSelect={(info: any) => {
-          const s = schema.properties[info.key];
+          const s = schema.properties?.[info.key];
 
           if (!s) {
             return;
@@ -293,7 +291,8 @@ const SideMenu = ({
         key: 'x-designer-button',
         disabled: true,
         label: render({
-          'data-testid': 'add-menu-item-button-in-side',
+          'data-testid': 'menu-schema-initializer-side',
+          'aria-disabled': false,
           insert: (s) => {
             const dn = createDesignable({
               t,

@@ -199,6 +199,7 @@ export const RecordBlockInitializers = (props: any) => {
 
   return (
     <SchemaInitializer.Button
+      data-testid="grid-schema-initializer-RecordBlockInitializers"
       wrap={gridRowColWrap}
       insertPosition={insertPosition}
       component={component}

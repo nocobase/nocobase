@@ -7,7 +7,7 @@ export const RecordFormBlockInitializers = (props: any) => {
   const { t } = useTranslation();
   return (
     <SchemaInitializer.Button
-      data-testid="add-block-button-in-record-form-block"
+      data-testid="grid-schema-initializer-RecordFormBlockInitializers"
       wrap={gridRowColWrap}
       title={t('Add block')}
       icon={'PlusOutlined'}

@@ -9,6 +9,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { FormDialog } from '..';
+import { useStyles as useAClStyles } from '../../../acl/style';
 import { useAppSpin } from '../../../application/hooks/useAppSpin';
 import { useDocumentTitle } from '../../../document-title';
 import { FilterBlockProvider } from '../../../filter-provider/FilterProvider';
@@ -23,7 +24,6 @@ import { ErrorFallback } from '../error-fallback';
 import FixedBlock from './FixedBlock';
 import { PageDesigner, PageTabDesigner } from './PageTabDesigner';
 import { useStyles } from './style';
-import { useStyles as useAClStyles } from '../../../acl/style';
 
 export const Page = (props) => {
   const { children, ...others } = props;
@@ -99,6 +99,7 @@ export const Page = (props) => {
                       tabBarExtraContent={
                         dn.designable && (
                           <Button
+                            data-testid={'tabs-schema-initializer'}
                             icon={<PlusOutlined />}
                             className={'addTabBtn'}
                             type={'dashed'}

@@ -14,7 +14,7 @@ export const PluginManagerLink = () => {
   return (
     <Tooltip title={t('Plugin manager')}>
       <Button
-        data-testid={'pm-button'}
+        data-testid={'plugin-manager-button'}
         icon={<ApiOutlined />}
         title={t('Plugin manager')}
         onClick={() => {

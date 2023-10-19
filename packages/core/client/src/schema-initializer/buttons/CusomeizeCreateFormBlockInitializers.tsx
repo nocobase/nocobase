@@ -8,6 +8,7 @@ export const CusomeizeCreateFormBlockInitializers = (props: any) => {
   const { insertPosition, component } = props;
   return (
     <SchemaInitializer.Button
+      data-testid="grid-schema-initializer-CusomeizeCreateFormBlockInitializers"
       wrap={gridRowColWrap}
       title={component ? null : t('Add block')}
       icon={'PlusOutlined'}
