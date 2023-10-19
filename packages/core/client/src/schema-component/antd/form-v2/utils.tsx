@@ -1,7 +1,7 @@
 import { Field } from '@formily/core';
 import { evaluators } from '@nocobase/evaluators/client';
 import { uid } from '@nocobase/utils';
-import _, { cloneDeep } from 'lodash';
+import _, { cloneDeep, last } from 'lodash';
 import { ActionType } from '../../../schema-settings/LinkageRules/type';
 import { VariableOption, VariablesContextType } from '../../../variables/types';
 import { REGEX_OF_VARIABLE } from '../../../variables/utils/isVariable';
@@ -28,48 +28,67 @@ export const linkageMergeAction = async ({
   variables,
   localVariables,
 }: Props) => {
+  const requiredResult = field?.linkageProperty?.required || [field?.initProperty?.required || false];
+  const displayResult = field?.linkageProperty?.display || [field?.initProperty?.display];
+  const patternResult = field?.linkageProperty?.pattern || [field?.initProperty?.pattern];
+  const valueResult = field?.linkageProperty?.value || [field.value || field?.initProperty?.value];
   const { evaluate } = evaluators.get('formula.js');
 
   switch (operator) {
     case ActionType.Required:
       if (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables })) {
-        field.required = true;
-      } else {
-        field.required = false;
+        requiredResult.push(true);
       }
+      field.linkageProperty = {
+        ...field.linkageProperty,
+        required: requiredResult,
+      };
+      field.required = last(field.linkageProperty?.required);
       break;
     case ActionType.InRequired:
       if (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables })) {
-        field.required = false;
-      } else {
-        field.required = true;
+        requiredResult.push(false);
       }
+      field.linkageProperty = {
+        ...field.linkageProperty,
+        required: requiredResult,
+      };
+      field.required = last(field.linkageProperty?.required);
       break;
     case ActionType.Visible:
     case ActionType.None:
     case ActionType.Hidden:
       if (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables })) {
-        field._display = '_display' in field ? field._display : field.display;
-        field.display = operator;
+        displayResult.push(operator);
       }
+      field.linkageProperty = {
+        ...field.linkageProperty,
+        display: displayResult,
+      };
+      field.display = last(field.linkageProperty?.display);
       break;
     case ActionType.Editable:
     case ActionType.ReadOnly:
     case ActionType.ReadPretty:
       if (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables })) {
-        field._pattern = '_pattern' in field ? field._pattern : field.pattern;
-        field.pattern = operator;
-      } else {
-        field.pattern = field._pattern;
+        patternResult.push(operator);
       }
+      field.linkageProperty = {
+        ...field.linkageProperty,
+        pattern: patternResult,
+      };
+      field.pattern = last(field.linkageProperty.pattern);
       break;
     case ActionType.Value:
       if (
         isConditionEmpty(condition) ||
         (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables }))
       ) {
-        let result = null;
         if (value?.mode === 'express') {
+          if ((value.value || value.result) == null) {
+            return;
+          }
+
           const scope = cloneDeep(values);
 
           // 1. 解析如 `{{$user.name}}` 之类的变量
@@ -80,19 +99,22 @@ export const linkageMergeAction = async ({
 
           try {
             // 2. TODO: 需要把里面解析变量的逻辑删除，因为在上一步已经解析过了
-            result = evaluate(exp, { ...scope, now: () => new Date().toString(), ...expScope });
+            const result = evaluate(exp, { ...scope, now: () => new Date().toString(), ...expScope });
+            valueResult.push(result);
           } catch (error) {
             console.error(error);
           }
         } else if (value?.mode === 'constant') {
-          result = value?.value || value;
+          valueResult.push(value?.value || value);
         } else {
-          result = null;
+          valueResult.push(null);
         }
-        field._value = '_value' in field ? field._value : field.value;
-        field.value = result === undefined ? field.value : result;
-      } else {
-        field.value = field._value;
+
+        field.linkageProperty = {
+          ...field.linkageProperty,
+          value: valueResult,
+        };
+        field.value = last(valueResult) === undefined ? field.value : last(valueResult);
       }
       break;
     default:
@@ -112,6 +134,10 @@ async function replaceVariables(
 ) {
   const store = {};
   const scope = {};
+
+  if (value == null) {
+    return;
+  }
 
   const waitForParsing = value.match(REGEX_OF_VARIABLE)?.map(async (item) => {
     const result = await variables.parseVariable(item, localVariables);

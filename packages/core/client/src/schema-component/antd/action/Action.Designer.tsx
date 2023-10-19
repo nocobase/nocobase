@@ -621,7 +621,6 @@ function AfterSuccess() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
-
   return (
     <SchemaSettings.ModalItem
       title={t('After successful submission')}
@@ -639,7 +638,6 @@ function AfterSuccess() {
             },
             manualClose: {
               title: t('Popup close method'),
-              default: false,
               enum: [
                 { label: t('Automatic close'), value: false },
                 { label: t('Manually close'), value: true },
@@ -650,7 +648,6 @@ function AfterSuccess() {
             },
             redirecting: {
               title: t('Then'),
-              default: false,
               enum: [
                 { label: t('Stay on current page'), value: false },
                 { label: t('Redirect to'), value: true },

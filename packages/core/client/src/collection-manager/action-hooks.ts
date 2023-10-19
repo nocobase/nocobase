@@ -23,7 +23,7 @@ export const useCancelAction = () => {
 
 export const useValuesFromRecord = (options) => {
   const record = useRecord();
-  const result = useRequest(() => Promise.resolve({ data: omit(record, ['__parent']) }), {
+  const result = useRequest(() => Promise.resolve({ data: omit(record, ['__parent', '__collectionName']) }), {
     ...options,
     manual: true,
   });

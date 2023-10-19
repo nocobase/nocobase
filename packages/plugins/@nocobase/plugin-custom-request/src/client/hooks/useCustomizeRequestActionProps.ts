@@ -47,7 +47,7 @@ export const useCustomizeRequestActionProps = () => {
         await form.submit();
       }
 
-      const requestConfig = {};
+      let formValues = {};
       const methods = ['POST', 'PUT', 'PATCH'];
       if (xAction === 'customize:form:request' && methods.includes(options['method'])) {
         const fieldNames = fields.map((field) => field.name);
@@ -60,7 +60,7 @@ export const useCustomizeRequestActionProps = () => {
           resource,
           actionFields: getActiveFieldsName?.('form') || [],
         });
-        requestConfig['data'] = values;
+        formValues = values;
       }
 
       actionField.data ??= {};
@@ -70,10 +70,10 @@ export const useCustomizeRequestActionProps = () => {
           url: `/customRequests:send/${fieldSchema['x-uid']}`,
           method: 'POST',
           data: {
-            requestConfig,
             currentRecord: {
               id: record[getPrimaryKey()],
               appends: service.params[0].appends,
+              data: formValues,
             },
           },
         });

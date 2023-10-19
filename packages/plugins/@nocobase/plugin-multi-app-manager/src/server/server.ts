@@ -123,11 +123,14 @@ export class PluginMultiAppManager extends Plugin {
   private beforeGetApplicationMutex = new Mutex();
 
   static getDatabaseConfig(app: Application): IDatabaseOptions {
-    const oldConfig =
+    let oldConfig =
       app.options.database instanceof Database
         ? (app.options.database as Database).options
         : (app.options.database as IDatabaseOptions);
 
+    if (!oldConfig && app.db) {
+      oldConfig = app.db.options;
+    }
     return lodash.cloneDeep(lodash.omit(oldConfig, ['migrator']));
   }
 
