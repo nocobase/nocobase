@@ -2,26 +2,21 @@ import { InstallOptions, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { send } from './actions/send';
 import { listByCurrentRole } from './actions/listByCurrentRole';
-import { Logger, LoggerOptions, createLogger, getLoggerFilePath, getLoggerLevel } from '@nocobase/logger';
+import { Logger, LoggerOptions, Transports, createLogger, getLoggerFilePath, getLoggerLevel } from '@nocobase/logger';
 import winston from 'winston';
+import { DailyRotateFile } from 'winston/lib/winston/transports';
 
 export class CustomRequestPlugin extends Plugin {
   afterAdd() {}
 
   beforeLoad() {}
 
+  logger = this.getLogger();
+
   getLogger(): Logger {
     const now = new Date();
-    const filename = `${now.getFullYear()}-${`0${now.getMonth() + 1}`.slice(-2)}-${`0${now.getDate()}`.slice(-2)}.log`;
-
     const logger = createLogger({
-      transports: [
-        'console',
-        new winston.transports.File({
-          filename: getLoggerFilePath('custom-request', filename),
-          level: getLoggerLevel(),
-        }),
-      ],
+      transports: ['console', Transports.dailyRotateFile()],
     } as LoggerOptions);
 
     return logger;

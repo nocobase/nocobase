@@ -101,8 +101,8 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
   };
 
   const requestUrl = axios.getUri(axiosRequestConfig);
-  this.getLogger().info(`custom-request:send:${filterByTk} request url ${requestUrl}`);
-  this.getLogger().info(
+  this.logger.info(`custom-request:send:${filterByTk} request url ${requestUrl}`);
+  this.logger.info(
     `custom-request:send:${filterByTk} request config ${JSON.stringify({
       ...axiosRequestConfig,
       headers: {
@@ -114,20 +114,20 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
 
   try {
     ctx.body = await axios(axiosRequestConfig).then((res) => {
-      this.getLogger().info(`custom-request:send:${filterByTk} success`);
+      this.logger.info(`custom-request:send:${filterByTk} success`);
       return res.data;
     });
   } catch (err) {
     if (axios.isAxiosError(err)) {
       ctx.status = err.response?.status || 500;
       ctx.body = err.response?.data || { message: err.message };
-      this.getLogger().error(
+      this.logger.error(
         `custom-request:send:${filterByTk} error. status: ${ctx.status}, body: ${
           typeof ctx.body === 'string' ? ctx.body : JSON.stringify(ctx.body)
         }`,
       );
     } else {
-      this.getLogger().error(`custom-request:send:${filterByTk} error. status: ${ctx.status}, message: ${err.message}`);
+      this.logger.error(`custom-request:send:${filterByTk} error. status: ${ctx.status}, message: ${err.message}`);
       ctx.throw(500, err?.message);
     }
   }

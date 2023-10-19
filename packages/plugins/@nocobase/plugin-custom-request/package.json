@@ -12,8 +12,7 @@
     "react-i18next": "^11.15.1",
     "react-router-dom": "6.x",
     "antd": "5.x",
-    "lodash": "4.x",
-    "winston": "^3.8.2"
+    "lodash": "4.x"
   },
   "peerDependencies": {
     "@nocobase/client": "0.x",
