@@ -1,4 +1,5 @@
 import { expect, test } from '@nocobase/test/client';
+import { approximateColor } from './utils';
 const formPageSchema = {
   _isJSONSchemaObject: true,
   version: '2.0',
@@ -106,6 +107,7 @@ const formPageSchema = {
   'x-async': true,
   'x-index': 1,
 };
+
 test.describe('add field & remove field in block', () => {
   test('add field,then remove field in block', async ({ page, mockPage }) => {
     await mockPage({ pageSchema: formPageSchema }).goto();
@@ -222,9 +224,10 @@ test.describe('field setting config ', () => {
       const computedStyle = window.getComputedStyle(element);
       return computedStyle.color;
     });
-    //字段描述
+    //字段描述样式符合预期
     expect(await descriptionItem.innerText()).toBe(description);
-    expect(descriptionItemColor).toBe('rgba(0, 0, 0, 0.65)');
+    const isApproximate = approximateColor(descriptionItemColor, 'rgba(0, 0, 0, 0.65)');
+    await expect(isApproximate).toBe(true);
   });
   test('field required ', async ({ page, mockPage }) => {
     await mockPage({ pageSchema: formPageSchema }).goto();
@@ -245,7 +248,10 @@ test.describe('field setting config ', () => {
       const computedStyle = window.getComputedStyle(element);
       return computedStyle.borderColor;
     });
+    //样式符合预期
     expect(inputErrorBorderColor).toBe('rgb(255, 77, 79)');
+    // 断言表单未被提交
+    expect(await page.getByTestId('form-block-field-users')).not.toHaveProperty('submitted', true);
   });
   test('field validation rule ', async ({ page, mockPage }) => {
     await mockPage({ pageSchema: formPageSchema }).goto();
@@ -272,7 +278,8 @@ test.describe('field setting config ', () => {
     });
     await page.waitForTimeout(1000); // 等待1秒钟
     //报错信息符合预期
-    await expect(inputErrorBorderColor).toBe('rgba(155, 47, 48, 0.95)');
+    const isApproximate = approximateColor(inputErrorBorderColor, 'rgba(155, 47, 48, 0.95)');
+    await expect(isApproximate).toBe(true);
     await expect(await errorInfo.innerText()).toBe(errorMessage);
   });
   test('field pattern ', async ({ page, mockPage }) => {

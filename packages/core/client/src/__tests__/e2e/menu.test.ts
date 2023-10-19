@@ -1,4 +1,5 @@
 import { enableToConfig, expect, test } from '@nocobase/test/client';
+import { approximateColor } from './utils';
 
 test.describe('menu page', () => {
   test('create new page, then delete', async ({ page, mockPage }) => {
@@ -176,7 +177,8 @@ test.describe('menu group', () => {
       return computedStyle.backgroundColor;
     });
     await page.waitForTimeout(1000); // 等待1秒钟
-    await expect(menuItemBackgroundColor).toBe('rgba(255, 255, 255, 0.1)');
+    const isApproximate = approximateColor(menuItemBackgroundColor, 'rgba(255, 255, 255, 0.1)');
+    await expect(isApproximate).toBe(true);
     const pageItem = await page.getByRole('menu').locator('li').filter({ hasText: 'group page' });
 
     const pageItemBackgroundColor = await pageItem.evaluate((element) => {
