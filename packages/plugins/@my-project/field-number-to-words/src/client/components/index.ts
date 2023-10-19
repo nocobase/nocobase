@@ -1,0 +1,1 @@
+export { NumberToWords } from './NumberToWords';

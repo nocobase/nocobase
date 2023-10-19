@@ -1,0 +1,20 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "NocoBase API - Indian Region plugin"
+  },
+  "paths": {
+    "/indiaRegions:list": {
+      "get": {
+        "tags": ["indiaRegions"],
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  }
+}
