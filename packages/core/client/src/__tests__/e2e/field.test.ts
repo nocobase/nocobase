@@ -1,5 +1,4 @@
-import { ConsoleSqlOutlined } from '@ant-design/icons';
-import { enableToConfig, expect, test } from '@nocobase/test/client';
+import { expect, test } from '@nocobase/test/client';
 const formPageSchema = {
   _isJSONSchemaObject: true,
   version: '2.0',
@@ -114,10 +113,20 @@ test.describe('add field & remove field in block', () => {
     await page.getByRole('menuitem', { name: 'Nickname' }).click();
     await page.getByRole('menuitem', { name: 'Username' }).click();
     await page.getByRole('menuitem', { name: 'Email' }).click();
-
+    //添加字段
     await expect(page.getByTestId('form-block-field-users.username')).toBeVisible();
     await expect(page.getByTestId('form-block-field-users.email')).toBeVisible();
     await expect(page.getByTestId('form-block-field-users.nickname')).toBeVisible();
+    await expect(await page.getByRole('menuitem', { name: 'Nickname' }).getByRole('switch').isChecked()).toBe(true);
+    await expect(await page.getByRole('menuitem', { name: 'Username' }).getByRole('switch').isChecked()).toBe(true);
+    await expect(await page.getByRole('menuitem', { name: 'Email' }).getByRole('switch').isChecked()).toBe(true);
+    //移除字段
+    await page.getByRole('menuitem', { name: 'Nickname' }).click();
+    await page.getByRole('menuitem', { name: 'Username' }).click();
+    await page.getByRole('menuitem', { name: 'Email' }).click();
+    await expect(page.getByTestId('form-block-field-users.username')).not.toBeVisible();
+    await expect(page.getByTestId('form-block-field-users.email')).not.toBeVisible();
+    await expect(page.getByTestId('form-block-field-users.nickname')).not.toBeVisible();
   });
 });
 
@@ -144,6 +153,7 @@ test.describe('drag field in block', () => {
     const username = await targetElement.boundingBox();
     const email = await targetElement2.boundingBox();
     const max = Math.max(username.y, nickname.y, email.y);
+    //拖拽调整排序符合预期
     await expect(nickname.y).toBe(max);
   });
 });
@@ -212,6 +222,7 @@ test.describe('field setting config ', () => {
       const computedStyle = window.getComputedStyle(element);
       return computedStyle.color;
     });
+    //字段描述
     expect(await descriptionItem.innerText()).toBe(description);
     expect(descriptionItemColor).toBe('rgba(0, 0, 0, 0.65)');
   });
@@ -225,7 +236,7 @@ test.describe('field setting config ', () => {
     await page.getByTestId('configure-actions-button-of-form-block-users').click();
     await page.getByRole('menuitem', { name: 'Submit' }).click();
     await page.getByLabel('Submit').click();
-
+    //必填校验符合预期
     await expect(
       await page.getByTestId('form-block-field-users.nickname').locator('.ant-formily-item-error-help'),
     ).toBeVisible();
@@ -254,12 +265,13 @@ test.describe('field setting config ', () => {
     await page.getByTestId('form-block-field-users.nickname').getByRole('textbox').fill('111111111');
     const errorInfo = await page.getByTestId('form-block-field-users.nickname').locator('.ant-formily-item-error-help');
     await expect(errorInfo).toBeVisible();
-
     const inputItem = await page.getByTestId('form-block-field-users.nickname').locator('input');
     const inputErrorBorderColor = await inputItem.evaluate(async (element) => {
       const computedStyle = await window.getComputedStyle(element);
       return computedStyle.borderColor;
     });
+    await page.waitForTimeout(1000); // 等待1秒钟
+    //报错信息符合预期
     await expect(inputErrorBorderColor).toBe('rgba(155, 47, 48, 0.95)');
     await expect(await errorInfo.innerText()).toBe(errorMessage);
   });
@@ -271,10 +283,11 @@ test.describe('field setting config ', () => {
     const inputElement = await page.getByTestId('form-block-field-users.nickname').locator('input');
     await page.getByTestId('form-block-field-users.nickname').getByLabel('designer-schema-settings').click();
     await page.getByRole('menuitem', { name: 'Pattern' }).click();
+    //禁用
     await page.getByRole('option', { name: 'Readonly' }).click();
     await expect(await inputElement.isDisabled()).toBe(true);
-
     await page.getByRole('menuitem', { name: 'Pattern' }).click();
+    //只读
     await page.getByText('Easy-reading').click();
     await expect(
       await page.getByTestId('form-block-field-users.nickname').locator('.ant-description-input'),
