@@ -406,6 +406,7 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
         ?.map((subField) => {
           const interfaceConfig = getInterface(subField.interface);
           const isFileCollection = field?.target && getCollection(field?.target)?.template === 'file';
+          const isAssociationField = ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(subField.type);
           const schema = {
             type: 'string',
             name: `${field.name}.${subField.name}`,
@@ -415,10 +416,12 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
             'x-read-pretty': readPretty,
             'x-component-props': {
               'pattern-disable': block === 'Form' && readPretty,
-              fieldNames: {
-                label: isFileCollection ? 'preview' : 'id',
-                value: 'id',
-              },
+              fieldNames: isAssociationField
+                ? {
+                    label: isFileCollection ? 'preview' : 'id',
+                    value: 'id',
+                  }
+                : undefined,
             },
             'x-decorator': 'FormItem',
             'x-collection-field': `${name}.${field.name}.${subField.name}`,
