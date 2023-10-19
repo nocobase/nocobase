@@ -1,6 +1,5 @@
 // 表格操作配置
 export const SubTableActionInitializers = {
-  'data-testid': 'configure-actions-button-of-sub-table',
   title: "{{t('Configure actions')}}",
   icon: 'SettingOutlined',
   style: {

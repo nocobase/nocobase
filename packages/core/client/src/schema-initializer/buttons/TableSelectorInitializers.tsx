@@ -10,7 +10,6 @@ export const TableSelectorInitializers = (props: any) => {
 
   return (
     <SchemaInitializer.Button
-      data-testid="grid-schema-initializer-TableSelectorInitializers"
       wrap={gridRowColWrap}
       title={component ? null : t('Add block')}
       icon={'PlusOutlined'}

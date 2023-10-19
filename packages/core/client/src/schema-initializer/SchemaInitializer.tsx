@@ -5,7 +5,6 @@ import classNames from 'classnames';
 // @ts-ignore
 import { isEmpty } from 'lodash';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { useCollection } from '../collection-manager';
 import { useCollectMenuItem, useMenuItem } from '../hooks/useMenuItem';
 import { Icon } from '../icon';
 import { SchemaComponent, useActionContext } from '../schema-component';
@@ -18,6 +17,7 @@ import {
   SchemaInitializerItemOptions,
   SchemaInitializerItemProps,
 } from './types';
+import { useGetTestIdOfSchemaInitializer } from './utils';
 
 const defaultWrap = (s: ISchema) => s;
 
@@ -252,7 +252,7 @@ SchemaInitializer.Button = observer(
     const { Component: CollectComponent, getMenuItem, clean } = useMenuItem();
     const menuItems = useRef([]);
     const { styles } = useStyles();
-    const { name } = useCollection();
+    const { getTestId } = useGetTestIdOfSchemaInitializer();
 
     const changeMenu = (v: boolean) => {
       setVisible(v);
@@ -268,10 +268,6 @@ SchemaInitializer.Button = observer(
       return null;
     }
 
-    if (others['data-testid'] && name) {
-      others['data-testid'] = `${others['data-testid']}-${name}`;
-    }
-
     const buttonDom = component || (
       <Button
         type={'dashed'}
@@ -281,6 +277,7 @@ SchemaInitializer.Button = observer(
           ...style,
         }}
         {...others}
+        data-testid={others['data-testid'] || getTestId()}
         icon={typeof icon === 'string' ? <Icon type={icon as string} /> : icon}
       >
         {compile(props.children || props.title)}

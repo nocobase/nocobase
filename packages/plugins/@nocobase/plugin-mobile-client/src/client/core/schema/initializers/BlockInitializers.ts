@@ -3,7 +3,6 @@ import { generateNTemplate } from '../../../locale';
 
 // 页面里添加区块
 export const MBlockInitializers = {
-  'data-testid': 'grid-schema-initializer-MBlockInitializers',
   title: '{{t("Add block")}}',
   icon: 'PlusOutlined',
   wrap: gridRowColWrap,

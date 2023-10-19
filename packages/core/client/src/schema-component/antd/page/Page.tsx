@@ -15,6 +15,7 @@ import { useDocumentTitle } from '../../../document-title';
 import { FilterBlockProvider } from '../../../filter-provider/FilterProvider';
 import { useGlobalTheme } from '../../../global-theme';
 import { Icon } from '../../../icon';
+import { useGetTestIdOfSchemaInitializer } from '../../../schema-initializer/utils';
 import { DndContext } from '../../common';
 import { SortableItem } from '../../common/sortable-item';
 import { SchemaComponent, SchemaComponentOptions } from '../../core';
@@ -33,6 +34,7 @@ export const Page = (props) => {
   const fieldSchema = useFieldSchema();
   const dn = useDesignable();
   const { theme } = useGlobalTheme();
+  const { getTestId } = useGetTestIdOfSchemaInitializer();
 
   // react18  tab 动画会卡顿，所以第一个 tab 时，动画禁用，后面的 tab 才启用
   const [hasMounted, setHasMounted] = useState(false);
@@ -99,7 +101,7 @@ export const Page = (props) => {
                       tabBarExtraContent={
                         dn.designable && (
                           <Button
-                            data-testid={'tabs-schema-initializer'}
+                            data-testid={getTestId('tabs')}
                             icon={<PlusOutlined />}
                             className={'addTabBtn'}
                             type={'dashed'}

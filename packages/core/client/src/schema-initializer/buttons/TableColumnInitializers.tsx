@@ -69,7 +69,6 @@ export const TableColumnInitializers = (props: any) => {
 
   return (
     <SchemaInitializer.Button
-      data-testid={`configure-columns-button-of-table-block`}
       insertPosition={'beforeEnd'}
       icon={'SettingOutlined'}
       wrap={(s) => {
