@@ -735,7 +735,7 @@ FormItem.FilterFormDesigner = FilterFormDesigner;
 
 function useIsAddNewForm() {
   const record = useRecord();
-  const isAddNewForm = _.isEmpty(_.omit(record, '__parent'));
+  const isAddNewForm = _.isEmpty(_.omit(record, ['__parent', '__collectionName']));
 
   return isAddNewForm;
 }

@@ -79,7 +79,10 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
 export const useValuesFromRecord = (options) => {
   const record = useRecord();
   const result = useRequest(
-    () => Promise.resolve({ data: { ...omit(record, ['__parent']), category: record?.category.map((v) => v.id) } }),
+    () =>
+      Promise.resolve({
+        data: { ...omit(record, ['__parent', '__collectionName']), category: record?.category.map((v) => v.id) },
+      }),
     {
       ...options,
       manual: true,

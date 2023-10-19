@@ -9,14 +9,15 @@ interface Props {
    * 需要排除的变量名称，例如：['$user', '$date']
    * 被排除的变量不会被解析，会按原值返回
    */
-  exclude: string[];
+  exclude?: string[];
+  currentRecord?: any;
 }
 
 // TODO: 建议变量名统一命名为 `$n` 开头，以防止与 formily 内置变量冲突
 const defaultExclude = ['$user', '$date', '$nDate'];
 
-const useParseDataScopeFilter = ({ exclude }: Props = { exclude: defaultExclude }) => {
-  const localVariables = useLocalVariables();
+const useParseDataScopeFilter = ({ exclude = defaultExclude, currentRecord }: Props = {}) => {
+  const localVariables = useLocalVariables({ currentRecord });
   const variables = useVariables();
 
   const parseFilter = useCallback(
