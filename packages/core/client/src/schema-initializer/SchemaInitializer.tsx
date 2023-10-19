@@ -17,7 +17,7 @@ import {
   SchemaInitializerItemOptions,
   SchemaInitializerItemProps,
 } from './types';
-import { useGetTestIdOfSchemaInitializer } from './utils';
+import { useGetAriaLabelOfSchemaInitializer } from './utils';
 
 const defaultWrap = (s: ISchema) => s;
 
@@ -252,7 +252,7 @@ SchemaInitializer.Button = observer(
     const { Component: CollectComponent, getMenuItem, clean } = useMenuItem();
     const menuItems = useRef([]);
     const { styles } = useStyles();
-    const { getTestId } = useGetTestIdOfSchemaInitializer();
+    const { getAriaLabel } = useGetAriaLabelOfSchemaInitializer();
 
     const changeMenu = (v: boolean) => {
       setVisible(v);
@@ -277,7 +277,7 @@ SchemaInitializer.Button = observer(
           ...style,
         }}
         {...others}
-        data-testid={others['data-testid'] || getTestId()}
+        aria-label={others['aria-label'] || getAriaLabel()}
         icon={typeof icon === 'string' ? <Icon type={icon as string} /> : icon}
       >
         {compile(props.children || props.title)}

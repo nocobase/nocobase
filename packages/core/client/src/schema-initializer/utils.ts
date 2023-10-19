@@ -1902,13 +1902,13 @@ const getChildren = ({
 };
 
 /**
- * testid = x-component + 'schema-initializer' + [x-initializer] + [collectionName] + [postfix]
+ * label = x-component + 'schema-initializer' + [x-initializer] + [collectionName] + [postfix]
  * @returns
  */
-export const useGetTestIdOfSchemaInitializer = () => {
+export const useGetAriaLabelOfSchemaInitializer = () => {
   const fieldSchema = useFieldSchema();
   const { name } = useCollection();
-  const getTestId = useCallback(
+  const getAriaLabel = useCallback(
     (postfix?: string) => {
       const initializer = fieldSchema['x-initializer'] ? `-${fieldSchema['x-initializer']}` : '';
       const collectionName = name ? `-${name}` : '';
@@ -1919,5 +1919,5 @@ export const useGetTestIdOfSchemaInitializer = () => {
     [fieldSchema, name],
   );
 
-  return { getTestId };
+  return { getAriaLabel };
 };

@@ -6,7 +6,7 @@ import { useBlockContext } from '../../../block-provider';
 import { SortableItem } from '../../common';
 import { useDesigner, useProps } from '../../hooks';
 
-const getTestId = ({ schema, blockName }) => {
+const getAriaLabel = ({ schema, blockName }) => {
   const resource = schema?.['x-decorator-props']?.['resource'];
   if (resource && blockName) {
     return `${blockName}-block-${resource}`;
@@ -29,7 +29,7 @@ export const BlockItem: React.FC<any> = (props) => {
 
   return (
     <SortableItem
-      data-testid={getTestId({ schema, blockName: props.name || name })}
+      aria-label={getAriaLabel({ schema, blockName: props.name || name })}
       role="button"
       className={cls(
         'nb-block-item',
