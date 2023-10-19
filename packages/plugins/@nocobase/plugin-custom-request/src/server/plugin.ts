@@ -14,9 +14,14 @@ export class CustomRequestPlugin extends Plugin {
   logger = this.getLogger();
 
   getLogger(): Logger {
-    const now = new Date();
     const logger = createLogger({
-      transports: ['console', Transports.dailyRotateFile()],
+      transports: [
+        'console',
+        Transports.dailyRotateFile({
+          dirname: getLoggerFilePath('custom-request'),
+          filename: '%DATE%.log',
+        }),
+      ],
     } as LoggerOptions);
 
     return logger;
