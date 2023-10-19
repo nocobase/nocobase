@@ -2,6 +2,7 @@ import { Context, Next } from '@nocobase/actions';
 import { parse } from '@nocobase/utils';
 
 import axios from 'axios';
+import CustomRequestPlugin from '../plugin';
 
 const getHeaders = (headers: Record<string, any>) => {
   return Object.keys(headers).reduce((hds, key) => {
@@ -28,7 +29,7 @@ const omitNullAndUndefined = (obj: any) => {
   }, {});
 };
 
-export async function send(ctx: Context, next: Next) {
+export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) {
   const { filterByTk, resourceName, values = {} } = ctx.action.params;
   const {
     currentRecord = {
@@ -86,26 +87,43 @@ export async function send(ctx: Context, next: Next) {
     currentTime: new Date().toISOString(),
   };
 
-  try {
-    ctx.body = await axios({
-      baseURL: ctx.origin,
-      ...options,
-      url: parse(url)(variables),
+  const axiosRequestConfig = {
+    baseURL: ctx.origin,
+    ...options,
+    url: parse(url)(variables),
+    headers: {
+      Authorization: 'Bearer ' + ctx.getBearerToken(),
+      ...getHeaders(ctx.headers),
+      ...omitNullAndUndefined(parse(arrayToObject(headers))(variables)),
+    },
+    params: parse(arrayToObject(params))(variables),
+    data: parse(data)(variables),
+  };
+
+  const requestUrl = axios.getUri(axiosRequestConfig);
+  this.getLogger().info(`custom-request:send:${filterByTk} request url ${requestUrl}`);
+  this.getLogger().info(
+    `custom-request:send:${filterByTk} request config ${JSON.stringify({
+      ...axiosRequestConfig,
       headers: {
-        Authorization: 'Bearer ' + ctx.getBearerToken(),
-        ...getHeaders(ctx.headers),
-        ...omitNullAndUndefined(parse(arrayToObject(headers))(variables)),
+        ...axiosRequestConfig.headers,
+        Authorization: null,
       },
-      params: parse(arrayToObject(params))(variables),
-      data: parse(data)(variables),
-    }).then((res) => {
+    })}`,
+  );
+
+  try {
+    ctx.body = await axios(axiosRequestConfig).then((res) => {
+      this.getLogger().info(`custom-request:send:${filterByTk} success`);
       return res.data;
     });
-  } catch (err: any) {
+  } catch (err) {
     if (axios.isAxiosError(err)) {
       ctx.status = err.response?.status || 500;
       ctx.body = err.response?.data || { message: err.message };
+      this.getLogger().error(`custom-request:send:${filterByTk} error. status: ${ctx.status}, body: ${ctx.body}`);
     } else {
+      this.getLogger().error(`custom-request:send:${filterByTk} error. status: ${ctx.status}, message: ${err.message}`);
       ctx.throw(500, err?.message);
     }
   }
