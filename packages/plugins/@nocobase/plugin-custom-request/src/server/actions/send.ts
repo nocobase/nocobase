@@ -68,7 +68,7 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
 
   ctx.withoutDataWrapping = true;
 
-  const { collectionName, url, headers = {}, params = {}, data = {}, ...options } = requestConfig.options;
+  const { collectionName, url, headers = [], params = [], data = {}, ...options } = requestConfig.options;
   let currentRecordVariables = {};
   if (collectionName && typeof currentRecord.id !== 'undefined') {
     const recordRepo = ctx.db.getRepository(collectionName);
@@ -121,7 +121,11 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
     if (axios.isAxiosError(err)) {
       ctx.status = err.response?.status || 500;
       ctx.body = err.response?.data || { message: err.message };
-      this.getLogger().error(`custom-request:send:${filterByTk} error. status: ${ctx.status}, body: ${ctx.body}`);
+      this.getLogger().error(
+        `custom-request:send:${filterByTk} error. status: ${ctx.status}, body: ${
+          typeof ctx.body === 'string' ? ctx.body : JSON.stringify(ctx.body)
+        }`,
+      );
     } else {
       this.getLogger().error(`custom-request:send:${filterByTk} error. status: ${ctx.status}, message: ${err.message}`);
       ctx.throw(500, err?.message);

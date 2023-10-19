@@ -9,10 +9,10 @@ describe('actions', () => {
   let agent: ReturnType<MockServer['agent']>;
   let resource: ReturnType<ReturnType<MockServer['agent']>['resource']>;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     app = mockServer({
       registerActions: true,
-      acl: true,
+      acl: false,
       plugins: ['users', 'auth', 'acl', 'custom-request'],
     });
 
@@ -24,35 +24,47 @@ describe('actions', () => {
   });
 
   describe('send', () => {
-    let params;
-    beforeEach(async () => {
-      app.resource({
-        name: 'custom-request-test',
-        actions: {
-          test(ctx: Context) {
-            params = ctx.action.params;
-            console.log('🚀 ~ file: actions.test.ts:34 ~ test ~ params:', params);
-            return 'test ok';
-          },
-        },
+    let params = null;
+    beforeAll(async () => {
+      app.resourcer.getResource('customRequests').addAction('test', (ctx: Context) => {
+        params = ctx.action.params.values;
+        return ctx.action.params.values;
       });
-    });
-    beforeEach(async () => {
       await repo.create({
         values: {
           key: 'test',
           options: {
-            url: 'http://localhost:13000/api/custom-request-test:test',
+            url: '/customRequests:test',
             method: 'GET',
+            data: {
+              username: '{{ currentRecord.username }}',
+            },
           },
         },
       });
     });
+
     test('basic', async () => {
       const res = await resource.send({
         filterByTk: 'test',
       });
-      console.log(res.status);
+      expect(res.status).toBe(200);
+      expect(params).toMatchSnapshot();
+    });
+
+    test('currentRecord.data', async () => {
+      const res = await resource.send({
+        filterByTk: 'test',
+        values: {
+          currentRecord: {
+            data: {
+              username: 'testname',
+            },
+          },
+        },
+      });
+      expect(res.status).toBe(200);
+      expect(params).toMatchSnapshot();
     });
   });
 });
