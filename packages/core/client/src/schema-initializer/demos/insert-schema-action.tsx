@@ -11,6 +11,7 @@ import {
 } from '@nocobase/client';
 
 const addActionInitializer = new SchemaInitializerV2({
+  name: 'AddAction',
   title: 'Configure actions',
   // 插入位置
   insertPosition: 'beforeEnd',
@@ -79,7 +80,7 @@ const Root = () => {
 
 class MyPlugin extends Plugin {
   async load() {
-    this.app.schemaInitializerManager.add('AddAction', addActionInitializer);
+    this.app.schemaInitializerManager.add(addActionInitializer);
     this.app.router.add('root', {
       path: '/',
       Component: Root,

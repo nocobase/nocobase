@@ -34,6 +34,7 @@ function Demo({ title }) {
 }
 
 const myInitializer = new SchemaInitializerV2({
+  name: 'MyInitializer',
   title: 'Add Block',
   // 插入位置
   insertPosition: 'beforeBegin',
@@ -92,7 +93,7 @@ const Root = () => {
 
 class MyPlugin extends Plugin {
   async load() {
-    this.app.schemaInitializerManager.add('MyInitializer', myInitializer);
+    this.app.schemaInitializerManager.add(myInitializer);
     this.app.router.add('root', {
       path: '/',
       Component: Root,

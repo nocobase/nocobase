@@ -64,6 +64,7 @@ const TextInitializer: FC = (props) => {
 };
 
 const addFormItemInitializer = new SchemaInitializerV2({
+  name: 'AddFormItem',
   title: 'Configure actions',
   insertPosition: 'beforeEnd',
   items: [
@@ -131,7 +132,7 @@ const Root = () => {
 
 class MyPlugin extends Plugin {
   async load() {
-    this.app.schemaInitializerManager.add('AddFormItem', addFormItemInitializer);
+    this.app.schemaInitializerManager.add(addFormItemInitializer);
     this.app.router.add('root', {
       path: '/',
       Component: Root,

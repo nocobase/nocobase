@@ -2,10 +2,10 @@ import React from 'react';
 import { ComponentType, useCallback } from 'react';
 import { Card, Dropdown } from 'antd';
 import classNames from 'classnames';
+import { ISchema, observer } from '@formily/react';
 
 import { useDesignable } from '../../../schema-component';
 import { SchemaInitializerOptions } from '../types';
-import { ISchema, observer } from '@formily/react';
 import { SchemaInitializerV2Context } from '../hooks';
 
 const defaultWrap = (s: ISchema) => s;
@@ -19,6 +19,7 @@ export function withInitializer<T>(C: ComponentType<T>, cProps: T) {
       wrap = defaultWrap,
       insertPosition = 'beforeEnd',
       onSuccess,
+      items,
       designable: propsDesignable,
       dropdownProps,
       children,
@@ -44,7 +45,7 @@ export function withInitializer<T>(C: ComponentType<T>, cProps: T) {
 
     return (
       <SchemaInitializerV2Context.Provider value={{ insert: insertSchema, options: props }}>
-        {noDropdown ? (
+        {noDropdown || !items ? (
           React.createElement(C, cProps)
         ) : (
           <Dropdown

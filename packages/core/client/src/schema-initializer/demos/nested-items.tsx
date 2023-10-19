@@ -51,6 +51,7 @@ const ParentA: FC<{ children: SchemaInitializerItemType[] }> = ({ children }) =>
 };
 
 const myInitializer = new SchemaInitializerV2({
+  name: 'MyInitializer',
   designable: true,
   title: 'Button Text',
   items: [
@@ -90,7 +91,7 @@ const Root = () => {
 
 class MyPlugin extends Plugin {
   async load() {
-    this.app.schemaInitializerManager.add('MyInitializer', myInitializer);
+    this.app.schemaInitializerManager.add(myInitializer);
     this.app.router.add('root', {
       path: '/',
       Component: Root,

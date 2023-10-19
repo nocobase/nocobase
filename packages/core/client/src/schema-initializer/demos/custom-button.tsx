@@ -4,6 +4,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import { Divider, Avatar, AvatarProps } from 'antd';
 
 const myInitializer = new SchemaInitializerV2<AvatarProps>({
+  name: 'MyInitializer',
   designable: true,
   // 使用自定义组件代替默认的 Button
   Component: (props) => (
@@ -49,7 +50,7 @@ const Root = () => {
 
 class MyPlugin extends Plugin {
   async load() {
-    this.app.schemaInitializerManager.add('MyInitializer', myInitializer);
+    this.app.schemaInitializerManager.add(myInitializer);
     this.app.router.add('root', {
       path: '/',
       Component: Root,

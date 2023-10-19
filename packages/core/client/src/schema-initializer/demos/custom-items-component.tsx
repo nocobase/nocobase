@@ -32,6 +32,7 @@ const CustomListGridMenu: FC<InitializerItemsProps<ButtonProps, ListProps<any>>>
 };
 
 const myInitializer = new SchemaInitializerV2({
+  name: 'MyInitializer',
   designable: true,
   title: 'Button Text',
   ItemsComponent: CustomItemsMenu,
@@ -67,7 +68,7 @@ const Root = () => {
 
 class MyPlugin extends Plugin {
   async load() {
-    this.app.schemaInitializerManager.add('MyInitializer', myInitializer);
+    this.app.schemaInitializerManager.add(myInitializer);
     this.app.router.add('root', {
       path: '/',
       Component: Root,

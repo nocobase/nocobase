@@ -2,6 +2,7 @@ import React from 'react';
 import { Application, Plugin, SchemaInitializerV2, useApp } from '@nocobase/client';
 
 const myInitializer = new SchemaInitializerV2({
+  name: 'MyInitializer',
   // 正常情况下这个值为 false，通过点击页面左上角的设计按钮切换，这里为了显示设置为 true
   designable: true,
   //  按钮标题标题
@@ -29,7 +30,7 @@ const Root = () => {
 class MyPlugin extends Plugin {
   async load() {
     // 注册 schema initializer
-    this.app.schemaInitializerManager.add('MyInitializer', myInitializer);
+    this.app.schemaInitializerManager.add(myInitializer);
     // 注册路由
     this.app.router.add('root', {
       path: '/',

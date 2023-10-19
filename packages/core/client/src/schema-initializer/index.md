@@ -96,7 +96,3 @@ NocoBase 提供了几个内置的组件，可以直接使用。
 #### FormItem
 
 <code src="./demos/insert-schema-form-item.tsx"></code>
-
-<!-- #### Table.Column
-
-<code src="./demos/insert-schema-table-column.tsx"></code> -->

@@ -1,7 +1,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializer, SchemaInitializerV2 } from '../..';
+import { SchemaInitializer } from '../..';
 import { gridRowColWrap } from '../utils';
+import { SchemaInitializerV2 } from '../../application';
 
 export const RecordFormBlockInitializers = (props: any) => {
   const { t } = useTranslation();

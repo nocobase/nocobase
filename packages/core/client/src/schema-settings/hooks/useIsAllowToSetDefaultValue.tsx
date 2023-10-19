@@ -48,7 +48,6 @@ const useIsAllowToSetDefaultValue = ({ form, fieldSchema, collectionField }: Pro
   const { form: innerForm } = useFormBlockContext();
   const innerFieldSchema = useFieldSchema();
   const { type } = useFormBlockType();
-  console.log(type);
   const { isAllowToSetDefaultValue = _isAllowToSetDefaultValue } = useContext(DefaultValueContext) || {};
 
   const innerCollectionField =
