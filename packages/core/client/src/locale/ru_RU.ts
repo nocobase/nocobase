@@ -439,6 +439,7 @@ export default {
   "Dynamic value": "Динамическое значение",
   "Current user": "Текущий пользователь",
   "Current record": "Текущая запись",
+  "Current parent record": "Текущая родительская запись",
   "Popup close method": "Метод закрытия всплывающего окна",
   "Automatic close": "Автоматическое закрытие",
   "Manually close": "Ручное закрытие",

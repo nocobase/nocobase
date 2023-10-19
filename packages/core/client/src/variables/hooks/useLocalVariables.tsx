@@ -1,5 +1,4 @@
 import { Form } from '@formily/core';
-import _ from 'lodash';
 import React, { useContext, useMemo } from 'react';
 import { useFormBlockContext } from '../../block-provider';
 import { useCollection } from '../../collection-manager';
@@ -42,12 +41,6 @@ const useLocalVariables = (props?: Props) => {
     name = props.collectionName;
   }
 
-  let blockRecord = currentRecord;
-  // 获取到最顶层的 record，即当前区块所在的 record
-  while (!_.isEmpty(blockRecord.__parent)) {
-    blockRecord = blockRecord.__parent;
-  }
-
   return useMemo(() => {
     return (
       [
@@ -57,7 +50,7 @@ const useLocalVariables = (props?: Props) => {
          */
         {
           name: 'currentRecord',
-          ctx: blockRecord,
+          ctx: currentRecord,
           collectionName: name,
         },
         /**
@@ -66,7 +59,7 @@ const useLocalVariables = (props?: Props) => {
          */
         {
           name,
-          ctx: form?.values || blockRecord,
+          ctx: form?.values || currentRecord,
           collectionName: name,
         },
         /**
@@ -80,8 +73,13 @@ const useLocalVariables = (props?: Props) => {
         },
         {
           name: '$nRecord',
-          ctx: blockRecord,
-          collectionName: name,
+          ctx: currentRecord,
+          collectionName: currentRecord?.__collectionName,
+        },
+        {
+          name: '$nParentRecord',
+          ctx: currentRecord?.__parent,
+          collectionName: currentRecord?.__parent?.__collectionName,
         },
         {
           name: '$nForm',
@@ -91,7 +89,7 @@ const useLocalVariables = (props?: Props) => {
         iterationCtx && { name: '$iteration', ctx: iterationCtx, collectionName: currentCollectionName },
       ] as VariableOption[]
     ).filter(Boolean);
-  }, [blockRecord, name, form?.values, iterationCtx, currentCollectionName]); // 尽量保持返回的值不变，这样可以减少接口的请求次数，因为关系字段会缓存到变量的 ctx 中
+  }, [currentRecord, name, form?.values, iterationCtx, currentCollectionName]); // 尽量保持返回的值不变，这样可以减少接口的请求次数，因为关系字段会缓存到变量的 ctx 中
 };
 
 export default useLocalVariables;

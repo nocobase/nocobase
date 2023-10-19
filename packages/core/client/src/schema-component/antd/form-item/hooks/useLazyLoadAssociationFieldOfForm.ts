@@ -39,6 +39,7 @@ const useLazyLoadAssociationFieldOfForm = () => {
 
     const cloneRecord = { ...record };
     delete cloneRecord['__parent'];
+    delete cloneRecord['__collectionName'];
 
     if (_.isEmpty(cloneRecord) || !variables || record[schemaName] != null) {
       return;

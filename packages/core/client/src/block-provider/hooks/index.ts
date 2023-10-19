@@ -26,6 +26,7 @@ import { mergeFilter } from '../SharedFilterProvider';
 import { TableFieldResource } from '../TableFieldProvider';
 
 export * from './useFormActiveFields';
+export * from './useParsedFilter';
 
 export const usePickActionProps = () => {
   const form = useForm();
@@ -587,8 +588,9 @@ export const useCustomizeBulkUpdateActionProps = () => {
   const actionField = useField();
   const { modal } = App.useApp();
   const variables = useVariables();
-  const localVariables = useLocalVariables();
+  const record = useRecord();
   const { name, getField } = useCollection();
+  const localVariables = useLocalVariables({ currentRecord: { __parent: record, __collectionName: name } });
 
   return {
     async onClick() {
