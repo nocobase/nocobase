@@ -250,57 +250,34 @@ test.describe('field setting config ', () => {
       .getByRole('spinbutton')
       .fill('8');
     await page.getByRole('button', { name: 'Error message' }).locator('textarea').fill(errorMessage);
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page.getByTestId('form-block-field-users.nickname').getByRole('textbox').fill('111111111');
     const errorInfo = await page.getByTestId('form-block-field-users.nickname').locator('.ant-formily-item-error-help');
     await expect(errorInfo).toBeVisible();
 
     const inputItem = await page.getByTestId('form-block-field-users.nickname').locator('input');
-    const inputErrorBorderColor = await inputItem.evaluate((element) => {
-      const computedStyle = window.getComputedStyle(element);
+    const inputErrorBorderColor = await inputItem.evaluate(async (element) => {
+      const computedStyle = await window.getComputedStyle(element);
       return computedStyle.borderColor;
     });
-    expect(inputErrorBorderColor).toBe('rgba(155, 47, 48, 0.95)');
-    expect(await errorInfo.innerText()).toBe(errorMessage);
+    await expect(inputErrorBorderColor).toBe('rgba(155, 47, 48, 0.95)');
+    await expect(await errorInfo.innerText()).toBe(errorMessage);
   });
-  test.skip('setting field pattern ', async ({ page, mockPage }) => {
-    await mockPage({
-      pageSchema: {
-        'x-uid': 'h8q2mcgo3cq',
-        _isJSONSchemaObject: true,
-        version: '2.0',
-        type: 'void',
-        'x-component': 'Page',
-        'x-component-props': {
-          enablePageTabs: true,
-        },
-        properties: {
-          bi8ep3svjee: {
-            'x-uid': '9kr7xm9x4ln',
-            _isJSONSchemaObject: true,
-            version: '2.0',
-            type: 'void',
-            'x-component': 'Grid',
-            'x-initializer': 'BlockInitializers',
-            title: 'tab 1',
-            'x-async': false,
-            'x-index': 1,
-          },
-          rw91udnzpr3: {
-            _isJSONSchemaObject: true,
-            version: '2.0',
-            type: 'void',
-            title: 'tab 2',
-            'x-component': 'Grid',
-            'x-initializer': 'BlockInitializers',
-            'x-uid': 'o5vp90rqsjx',
-            'x-async': false,
-            'x-index': 2,
-          },
-        },
-        'x-async': true,
-        'x-index': 1,
-      },
-    }).goto();
+  test('field pattern ', async ({ page, mockPage }) => {
+    await mockPage({ pageSchema: formPageSchema }).goto();
+    await page.getByTestId('configure-fields-button-of-form-item-users').click();
+    await page.getByRole('menuitem', { name: 'Nickname' }).click();
+    await page.getByTestId('form-block-field-users.nickname').click();
+    const inputElement = await page.getByTestId('form-block-field-users.nickname').locator('input');
+    await page.getByTestId('form-block-field-users.nickname').getByLabel('designer-schema-settings').click();
+    await page.getByRole('menuitem', { name: 'Pattern' }).click();
+    await page.getByRole('option', { name: 'Readonly' }).click();
+    await expect(await inputElement.isDisabled()).toBe(true);
+
+    await page.getByRole('menuitem', { name: 'Pattern' }).click();
+    await page.getByText('Easy-reading').click();
+    await expect(
+      await page.getByTestId('form-block-field-users.nickname').locator('.ant-description-input'),
+    ).toBeInViewport();
   });
 });
