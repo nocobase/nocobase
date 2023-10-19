@@ -245,7 +245,8 @@ test.describe('action display config', () => {
     await expect(await page.getByTestId('action-drawer')).toBeVisible();
 
     //更新按钮打开方式
-    await page.getByRole('menuitem', { name: 'Open mode Search Drawer' }).click();
+    await page.getByTestId('table-block-users').getByRole('button', { name: 'plus Add new' }).hover();
+    await page.getByRole('menuitem', { name: 'Open mode' }).click();
     await page.getByRole('option', { name: 'Dialog' }).click();
     await page.getByTestId('table-block-users').getByRole('button', { name: 'plus Add new' }).click();
     // 验证打开的组件的角色为 "dialog"
