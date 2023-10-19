@@ -21,10 +21,12 @@
     "qs": "^6.11.2",
     "semver": "^7.3.7",
     "sequelize": "^6.26.0",
-    "umzug": "^3.1.1"
+    "umzug": "^3.1.1",
+    "nanoid": "^3.3.6"
   },
   "devDependencies": {
-    "@types/glob": "^7.2.0"
+    "@types/glob": "^7.2.0",
+    "node-fetch": "^2.6.7"
   },
   "repository": {
     "type": "git",

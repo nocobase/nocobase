@@ -48,6 +48,7 @@ const useIsAllowToSetDefaultValue = ({ form, fieldSchema, collectionField }: Pro
   const { form: innerForm } = useFormBlockContext();
   const innerFieldSchema = useFieldSchema();
   const { type } = useFormBlockType();
+  console.log(type);
   const { isAllowToSetDefaultValue = _isAllowToSetDefaultValue } = useContext(DefaultValueContext) || {};
 
   const innerCollectionField =
@@ -114,12 +115,10 @@ function _isAllowToSetDefaultValue({
   ) {
     return false;
   }
-
-  // 表单编辑状态下，不允许设置默认值
-  if (formBlockType === 'update') {
+  // 表单非新建状态下，不允许设置默认值
+  if (formBlockType !== 'create') {
     return false;
   }
-
   return (
     !form?.readPretty &&
     !isPatternDisabled(fieldSchema) &&

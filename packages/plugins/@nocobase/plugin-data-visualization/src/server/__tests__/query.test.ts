@@ -1,5 +1,5 @@
 import { MockServer, mockServer } from '@nocobase/test';
-import * as formatter from '../actions/formatter';
+const formatter = require('../actions/formatter');
 import { cacheMiddleware, parseBuilder, parseFieldAndAssociations } from '../actions/query';
 import compose from 'koa-compose';
 
@@ -128,6 +128,7 @@ describe('query', () => {
 
     it('should parse dimensions', async () => {
       jest.spyOn(formatter, 'formatter').mockReturnValue('formatted-field');
+
       const dimensions = [
         {
           field: ['createdAt'],
