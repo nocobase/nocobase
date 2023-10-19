@@ -8,7 +8,7 @@ import {
   useCollectionDataSourceItems,
 } from '@nocobase/client';
 import React, { useContext } from 'react';
-import { ChartConfigContext } from '../configure/ChartConfigure';
+import { ChartConfigContext } from '../configure';
 import { useChartsTranslation } from '../locale';
 import { FilterBlockInitializer } from '../filter';
 

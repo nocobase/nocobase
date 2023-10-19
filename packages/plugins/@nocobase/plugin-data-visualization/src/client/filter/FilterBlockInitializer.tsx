@@ -21,17 +21,17 @@ const createFilterSchema = () => {
           grid: {
             type: 'void',
             'x-component': 'Grid',
-            'x-initializer': 'FilterFormItemInitializers',
+            'x-initializer': 'ChartFilterItemInitializers',
             properties: {},
           },
           actions: {
             type: 'void',
-            'x-initializer': 'FilterFormActionInitializers',
+            'x-initializer': 'ChartFilterActionInitializers',
             'x-component': 'ActionBar',
             'x-component-props': {
               layout: 'one-column',
               style: {
-                float: 'right',
+                marginTop: 24,
               },
             },
             properties: {},

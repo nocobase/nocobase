@@ -10,12 +10,13 @@ import {
 import { Empty, Result, Spin, Typography } from 'antd';
 import React, { useContext } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { ChartConfigContext } from '../configure/ChartConfigure';
+import { ChartConfigContext } from '../configure';
 import { useData, useFieldTransformer, useFieldsWithAssociation } from '../hooks';
 import { useChartsTranslation } from '../locale';
 import { createRendererSchema, getField } from '../utils';
 import { ChartRendererContext } from './ChartRendererProvider';
 import { useChart } from '../chart/group';
+import { ChartDataContext } from '../block/ChartDataProvider';
 const { Paragraph, Text } = Typography;
 
 export const ChartRenderer: React.FC & {
@@ -75,6 +76,7 @@ export const ChartRenderer: React.FC & {
 ChartRenderer.Designer = function Designer() {
   const { t } = useChartsTranslation();
   const { setVisible, setCurrent } = useContext(ChartConfigContext);
+  const { removeChart } = useContext(ChartDataContext);
   const { service } = useContext(ChartRendererContext);
   const field = useField();
   const schema = useFieldSchema();
@@ -103,6 +105,11 @@ ChartRenderer.Designer = function Designer() {
         // removeParentsIfNoChildren
         breakRemoveOn={{
           'x-component': 'ChartV2Block',
+        }}
+        confirm={{
+          onOk: () => {
+            removeChart(schema['x-uid']);
+          },
         }}
       />
     </GeneralSchemaDesigner>

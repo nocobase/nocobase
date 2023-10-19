@@ -2,6 +2,7 @@ import { SchemaInitializerContext, SchemaInitializerProvider } from '@nocobase/c
 import React, { useContext } from 'react';
 import { ChartInitializers } from './block';
 import { useChartsTranslation } from './locale';
+import { ChartFilterItemInitializers, ChartFilterActionInitializers } from './filter';
 
 export const DataVisualization: React.FC = (props) => {
   const { t } = useChartsTranslation();
@@ -17,7 +18,9 @@ export const DataVisualization: React.FC = (props) => {
     });
   }
   return (
-    <SchemaInitializerProvider initializers={{ ...initializers, ChartInitializers }}>
+    <SchemaInitializerProvider
+      initializers={{ ...initializers, ChartInitializers, ChartFilterItemInitializers, ChartFilterActionInitializers }}
+    >
       {props.children}
     </SchemaInitializerProvider>
   );

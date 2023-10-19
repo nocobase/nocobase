@@ -1,8 +1,9 @@
 import { css } from '@emotion/css';
 import { useFieldSchema } from '@formily/react';
 import { MaybeCollectionProvider, useAPIClient, useRequest } from '@nocobase/client';
-import React, { createContext } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
 import { parseField } from '../utils';
+import { ChartDataContext } from '../block/ChartDataProvider';
 
 export type MeasureProps = {
   field: string | string[];
@@ -47,6 +48,7 @@ export type ChartRendererProps = {
   };
   transform?: TransformProps[];
   mode?: 'builder' | 'sql';
+  configuring?: boolean;
 };
 
 export const ChartRendererContext = createContext<
@@ -57,7 +59,8 @@ export const ChartRendererContext = createContext<
 >({} as any);
 
 export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
-  const { query, config, collection, transform } = props;
+  const { query, config, collection, transform, configuring } = props;
+  const { addChart } = useContext(ChartDataContext);
   const schema = useFieldSchema();
   const api = useAPIClient();
   const service = useRequest(
@@ -99,6 +102,13 @@ export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
       defaultParams: [collection, query],
     },
   );
+
+  useEffect(() => {
+    if (!configuring && schema?.['x-uid']) {
+      addChart(schema?.['x-uid'], { collection, service, query });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [collection]);
 
   return (
     <MaybeCollectionProvider collection={collection}>

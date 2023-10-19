@@ -5,7 +5,13 @@ import g2plot from './chart/g2plot';
 import antd from './chart/antd';
 import { ChartV2Block, ChartV2BlockDesigner, ChartV2BlockInitializer } from './block';
 import { ChartRenderer, ChartRendererProvider } from './renderer';
-import { ChartFilterBlockDesigner, ChartFilterBlockProvider } from './filter';
+import {
+  ChartFilterBlockDesigner,
+  ChartFilterBlockProvider,
+  ChartFilterItemDesigner,
+  useChartFilterActionProps,
+  useChartFilterResetProps,
+} from './filter';
 
 class DataVisualizationPlugin extends Plugin {
   public charts: ChartGroup = new ChartGroup();
@@ -21,6 +27,11 @@ class DataVisualizationPlugin extends Plugin {
       ChartRendererProvider,
       ChartFilterBlockProvider,
       ChartFilterBlockDesigner,
+      ChartFilterItemDesigner,
+    });
+    this.app.addScopes({
+      useChartFilterActionProps,
+      useChartFilterResetProps,
     });
     this.app.addProvider(DataVisualization);
   }
@@ -31,4 +42,4 @@ export { Chart } from './chart/chart';
 export type { ChartType, RenderProps, ChartProps } from './chart/chart';
 export type { FieldOption } from './hooks';
 export type { QueryProps } from './renderer';
-export { ChartConfigContext } from './configure/ChartConfigure';
+export { ChartConfigContext } from './configure';

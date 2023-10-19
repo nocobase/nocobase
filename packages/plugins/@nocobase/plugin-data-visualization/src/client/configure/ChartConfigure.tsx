@@ -31,31 +31,13 @@ import { createRendererSchema, getField, getSelectedFields } from '../utils';
 import { getConfigSchema, querySchema, transformSchema } from './schemas/configure';
 import { useChartTypes, useCharts, useDefaultChartType } from '../chart/group';
 import { FilterDynamicComponent } from './FilterDynamicComponent';
-import { css } from '@emotion/css';
+import { ChartConfigContext } from './ChartConfigProvider';
 const { Paragraph, Text } = Typography;
-
-export type ChartConfigCurrent = {
-  schema: ISchema;
-  field: any;
-  collection: string;
-  service: any;
-  initialValues?: any;
-  data: any[];
-};
 
 export type SelectedField = {
   field: string | string[];
   alias?: string;
 };
-
-export const ChartConfigContext = createContext<{
-  visible: boolean;
-  setVisible?: (visible: boolean) => void;
-  current?: ChartConfigCurrent;
-  setCurrent?: (current: ChartConfigCurrent) => void;
-}>({
-  visible: true,
-});
 
 export const ChartConfigure: React.FC<{
   insert: (
