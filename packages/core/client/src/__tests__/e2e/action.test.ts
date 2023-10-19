@@ -234,18 +234,17 @@ test.describe('action display config', () => {
     await page.getByTestId('configure-actions-button-of-table-block-users').hover();
     //添加按钮
     await page.getByRole('menuitem', { name: 'Add new' }).click();
+    await page.getByTestId('table-block-users').getByRole('button', { name: 'plus Add new' }).click();
+    await expect(await page.getByTestId('action-drawer')).toBeVisible();
+
+    //更新按钮打开方式
+    await page.locator('.ant-drawer-mask').click();
     await page.getByTestId('table-block-users').getByRole('button', { name: 'plus Add new' }).hover();
     await page
       .getByTestId('table-block-users')
       .getByRole('button', { name: 'plus Add new' })
       .getByLabel('designer-schema-settings')
       .click();
-
-    await page.getByTestId('table-block-users').getByRole('button', { name: 'plus Add new' }).click();
-    await expect(await page.getByTestId('action-drawer')).toBeVisible();
-
-    //更新按钮打开方式
-    await page.getByTestId('table-block-users').getByRole('button', { name: 'plus Add new' }).hover();
     await page.getByRole('menuitem', { name: 'Open mode' }).click();
     await page.getByRole('option', { name: 'Dialog' }).click();
     await page.getByTestId('table-block-users').getByRole('button', { name: 'plus Add new' }).click();
