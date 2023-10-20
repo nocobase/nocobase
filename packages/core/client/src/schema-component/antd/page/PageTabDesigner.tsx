@@ -5,14 +5,14 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { DragHandler, useDesignable } from '../..';
 import { SchemaSettings } from '../../../schema-settings';
-import { useGetLabelOfDesigner } from '../../../schema-settings/hooks/useGetLabelOfDesigner';
+import { useGetAriaLabelOfDesigner } from '../../../schema-settings/hooks/useGetAriaLabelOfDesigner';
 
 export const PageDesigner = ({ title }) => {
   const { dn, designable } = useDesignable();
   const { t } = useTranslation();
   const field = useField();
   const fieldSchema = useFieldSchema();
-  const { getLabel } = useGetLabelOfDesigner();
+  const { getAriaLabel } = useGetAriaLabelOfDesigner();
   const hidePageTitle = fieldSchema['x-component-props']?.hidePageTitle;
   const disablePageHeader = fieldSchema['x-component-props']?.disablePageHeader;
   if (!designable) {
@@ -26,7 +26,7 @@ export const PageDesigner = ({ title }) => {
             title={
               <MenuOutlined
                 role="button"
-                aria-label={getLabel('schema-settings')}
+                aria-label={getAriaLabel('schema-settings')}
                 style={{ cursor: 'pointer', fontSize: 12 }}
               />
             }
@@ -124,7 +124,7 @@ export const PageTabDesigner = ({ schema }) => {
   const { dn, designable } = useDesignable();
   const { t } = useTranslation();
   const { modal } = App.useApp();
-  const { getLabel } = useGetLabelOfDesigner();
+  const { getAriaLabel } = useGetAriaLabelOfDesigner();
 
   if (!designable) {
     return null;
@@ -135,9 +135,9 @@ export const PageTabDesigner = ({ schema }) => {
       <div className={'general-schema-designer-icons'}>
         <Space size={2} align={'center'}>
           <DragHandler>
-            <DragOutlined style={{ marginRight: 0 }} role="button" aria-label={getLabel('drag-handler', 'tab')} />
+            <DragOutlined style={{ marginRight: 0 }} role="button" aria-label={getAriaLabel('drag-handler', 'tab')} />
           </DragHandler>
-          <SchemaSettings title={<MenuOutlined role="button" aria-label={getLabel('schema-settings', 'tab')} />}>
+          <SchemaSettings title={<MenuOutlined role="button" aria-label={getAriaLabel('schema-settings', 'tab')} />}>
             <SchemaSettings.ModalItem
               title={t('Edit')}
               schema={

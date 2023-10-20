@@ -5,13 +5,13 @@ import { useCallback } from 'react';
  * label = 'designer' + name + x-component + [x-designer]  + [x-collection-field] + [postfix]
  * @returns
  */
-export const useGetLabelOfDesigner = () => {
+export const useGetAriaLabelOfDesigner = () => {
   const fieldSchema = useFieldSchema();
   const component = fieldSchema['x-component'];
   const designer = fieldSchema['x-designer'] ? `-${fieldSchema['x-designer']}` : '';
   const collectionField = fieldSchema['x-collection-field'] ? `-${fieldSchema['x-collection-field']}` : '';
 
-  const getLabel = useCallback(
+  const getAriaLabel = useCallback(
     (name: string, postfix?: string) => {
       postfix = postfix ? `-${postfix}` : '';
 
@@ -20,5 +20,5 @@ export const useGetLabelOfDesigner = () => {
     [collectionField, component, designer],
   );
 
-  return { getLabel };
+  return { getAriaLabel };
 };

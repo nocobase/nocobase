@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { DragHandler, useCompile, useDesignable, useGridContext, useGridRowContext } from '../schema-component';
 import { gridRowColWrap } from '../schema-initializer/utils';
 import { SchemaSettings } from './SchemaSettings';
-import { useGetLabelOfDesigner } from './hooks/useGetLabelOfDesigner';
+import { useGetAriaLabelOfDesigner } from './hooks/useGetAriaLabelOfDesigner';
 
 const titleCss = css`
   pointer-events: none;
@@ -49,7 +49,7 @@ export const GeneralSchemaDesigner = (props: any) => {
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   const compile = useCompile();
-  const { getLabel } = useGetLabelOfDesigner();
+  const { getAriaLabel } = useGetAriaLabelOfDesigner();
 
   const schemaSettingsProps = {
     dn,
@@ -69,7 +69,7 @@ export const GeneralSchemaDesigner = (props: any) => {
       component: (
         <PlusOutlined
           role="button"
-          aria-label={getLabel('schema-initializer')}
+          aria-label={getAriaLabel('schema-initializer')}
           style={{ cursor: 'pointer', fontSize: 14 }}
         />
       ),
@@ -103,7 +103,7 @@ export const GeneralSchemaDesigner = (props: any) => {
         <Space size={2} align={'center'}>
           {draggable && (
             <DragHandler>
-              <DragOutlined role="button" aria-label={getLabel('drag-handler')} />
+              <DragOutlined role="button" aria-label={getAriaLabel('drag-handler')} />
             </DragHandler>
           )}
           {!disableInitializer &&
@@ -116,7 +116,7 @@ export const GeneralSchemaDesigner = (props: any) => {
             title={
               <MenuOutlined
                 role="button"
-                aria-label={getLabel('schema-settings')}
+                aria-label={getAriaLabel('schema-settings')}
                 style={{ cursor: 'pointer', fontSize: 12 }}
               />
             }

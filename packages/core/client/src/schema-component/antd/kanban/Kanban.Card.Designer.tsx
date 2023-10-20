@@ -13,7 +13,7 @@ import {
   useFormItemInitializerFields,
 } from '../../../schema-initializer/utils';
 import { OpenModeSchemaItems } from '../../../schema-items';
-import { useGetLabelOfDesigner } from '../../../schema-settings/hooks/useGetLabelOfDesigner';
+import { useGetAriaLabelOfDesigner } from '../../../schema-settings/hooks/useGetAriaLabelOfDesigner';
 
 const titleCss = css`
   pointer-events: none;
@@ -67,7 +67,7 @@ export const KanbanCardDesigner = (props: any) => {
     block: 'Kanban',
   });
   const associationFields = useAssociatedFormItemInitializerFields({ readPretty: true, block: 'Kanban' });
-  const { getLabel } = useGetLabelOfDesigner();
+  const { getAriaLabel } = useGetAriaLabelOfDesigner();
 
   const items: any = [
     {
@@ -137,7 +137,7 @@ export const KanbanCardDesigner = (props: any) => {
             component={
               <MenuOutlined
                 role="button"
-                aria-label={getLabel('schema-initializer')}
+                aria-label={getAriaLabel('schema-initializer')}
                 style={{ cursor: 'pointer', fontSize: 12 }}
               />
             }
