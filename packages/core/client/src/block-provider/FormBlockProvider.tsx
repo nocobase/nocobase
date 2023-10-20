@@ -81,13 +81,9 @@ export const useFormBlockType = () => {
   return { type: ctx.type } as { type: 'update' | 'create' };
 };
 
-export const useIsEmptyRecord = () => {
-  const record = useRecord();
-  const keys = Object.keys(record);
-  if (keys.includes('__parent')) {
-    return keys.length > 1;
-  }
-  return keys.length > 0;
+export const useIsDetailBlock = () => {
+  const ctx = useActionContext();
+  return !(ctx?.fieldSchema?.['x-acl-action'] === 'create' || ctx?.fieldSchema?.['x-action'] === 'create');
 };
 
 export const FormBlockProvider = (props) => {
@@ -96,16 +92,17 @@ export const FormBlockProvider = (props) => {
   const { __collection } = record;
   const currentCollection = useCollection();
   const { designable } = useDesignable();
-  const isEmptyRecord = useIsEmptyRecord();
+  const isDetailBlock = useIsDetailBlock();
   let detailFlag = false;
-  if (isEmptyRecord) {
+  if (isDetailBlock) {
     detailFlag = true;
     if (!designable && __collection) {
+      console.log(__collection === collection);
       detailFlag = __collection === collection;
     }
   }
   const createFlag =
-    (currentCollection.name === (collection?.name || collection) && !isEmptyRecord) || !currentCollection.name;
+    (currentCollection.name === (collection?.name || collection) && !isDetailBlock) || !currentCollection.name;
   return (
     (detailFlag || createFlag || isCusomeizeCreate) && (
       <BlockProvider data-testid={props['data-testid'] || 'form-block'} {...props} block={'form'}>
