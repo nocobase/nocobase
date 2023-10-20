@@ -4,10 +4,11 @@ import { useBlockAssociationContext } from '../../block-provider';
 import { useCollection } from '../../collection-manager';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { createFormBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
-import { SchemaInitializerItem } from '../../application';
+import { SchemaInitializerItem, useSchemaInitializerV2 } from '../../application';
 
 export const CreateFormBulkEditBlockInitializer = (props) => {
-  const { onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
+  const { onCreateBlockSchema, componentType, createBlockSchema, ...others } = props;
+  const { insert } = useSchemaInitializerV2();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const association = useBlockAssociationContext();
   const collection = useCollection();

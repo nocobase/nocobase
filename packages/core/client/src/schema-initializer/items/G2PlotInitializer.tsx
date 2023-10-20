@@ -1,9 +1,10 @@
 import React from 'react';
 
-import { SchemaInitializerItem } from '../../application';
+import { SchemaInitializerItem, useSchemaInitializerV2 } from '../../application';
 
 export const G2PlotInitializer = (props) => {
-  const { item, insert, ...others } = props;
+  const { item, ...others } = props;
+  const { insert } = useSchemaInitializerV2();
   return (
     <SchemaInitializerItem
       {...others}

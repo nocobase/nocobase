@@ -8,6 +8,7 @@ import {
   useCollection,
   useDesignable,
   useToken,
+  useSchemaInitializerV2,
 } from '@nocobase/client';
 import React from 'react';
 import { NAMESPACE } from './constants';
@@ -47,7 +48,8 @@ const initImportSettings = (fields) => {
 };
 
 export const ImportActionInitializer = (props) => {
-  const { item, insert } = props;
+  const { item } = props;
+  const { insert } = useSchemaInitializerV2();
   const { exists, remove } = useCurrentSchema('importXlsx', 'x-action', item.find, item.remove);
   const { name } = useCollection();
   const fields = useFields(name);

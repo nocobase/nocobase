@@ -1,6 +1,12 @@
 import { Schema, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
-import { SchemaInitializerSwitch, useCollection, useCompile, useDesignable } from '@nocobase/client';
+import {
+  SchemaInitializerSwitch,
+  useCollection,
+  useCompile,
+  useDesignable,
+  useSchemaInitializerV2,
+} from '@nocobase/client';
 import React from 'react';
 import { useFields } from './useFields';
 
@@ -38,7 +44,8 @@ const initExportSettings = (fields) => {
 };
 
 export const ExportActionInitializer = (props) => {
-  const { item, insert } = props;
+  const { item } = props;
+  const { insert } = useSchemaInitializerV2();
   const { exists, remove } = useCurrentSchema('export', 'x-action', item.find, item.remove);
   const compile = useCompile();
   const { name } = useCollection();

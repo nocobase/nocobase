@@ -3,8 +3,8 @@ import {
   SchemaInitializerItem,
   Plugin,
   SchemaComponentOptions,
-  SchemaInitializer,
   SettingsCenterProvider,
+  useSchemaInitializerV2,
 } from '@nocobase/client';
 import { Card } from 'antd';
 import React from 'react';
@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { HelloDesigner } from './HelloDesigner';
 
 export const HelloBlockInitializer = (props) => {
-  const { insert } = props;
+  const { insert } = useSchemaInitializerV2();
   const { t } = useTranslation();
   return (
     <SchemaInitializerItem

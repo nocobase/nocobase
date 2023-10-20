@@ -16,6 +16,7 @@ import {
   gridRowColWrap,
   useCollectionManager,
   useRecord,
+  useSchemaInitializerV2,
 } from '@nocobase/client';
 import { merge, uid } from '@nocobase/utils/client';
 import lodash from 'lodash';
@@ -62,7 +63,8 @@ function CustomFormBlockProvider(props) {
   ) : null;
 }
 
-function CustomFormBlockInitializer({ insert, ...props }) {
+function CustomFormBlockInitializer({ ...props }) {
+  const { insert } = useSchemaInitializerV2();
   return (
     <SchemaInitializer.Item
       {...props}
@@ -321,7 +323,8 @@ function AddCustomFormField(props) {
 }
 
 function CustomFormFieldInitializer(props) {
-  const { item, insert } = props;
+  const { item } = props;
+  const { insert } = useSchemaInitializerV2();
   const { onAddField, setCallback } = useContext(AddCustomFormFieldButtonContext);
   const { getInterface } = useCollectionManager();
 

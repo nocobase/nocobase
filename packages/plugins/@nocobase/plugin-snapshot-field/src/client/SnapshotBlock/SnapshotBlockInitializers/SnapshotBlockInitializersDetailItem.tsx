@@ -7,6 +7,7 @@ import {
   useSchemaTemplateManager,
   useRecordCollectionDataSourceItems,
   useBlockRequestContext,
+  useSchemaInitializerV2,
 } from '@nocobase/client';
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
@@ -61,16 +62,10 @@ export const createSnapshotBlockSchema = (options) => {
 };
 
 export const SnapshotBlockInitializersDetailItem = (props) => {
-  const {
-    onCreateBlockSchema,
-    componentType,
-    createBlockSchema,
-    insert,
-    icon = true,
-    targetCollection,
-    ...others
-  } = props;
+  const { onCreateBlockSchema, componentType, createBlockSchema, icon = true, targetCollection, ...others } = props;
+  const { insert } = useSchemaInitializerV2();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const collection = targetCollection || useCollection();
   const association = useBlockAssociationContext();
   const { block } = useBlockRequestContext();

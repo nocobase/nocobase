@@ -6,11 +6,13 @@ import {
   SchemaInitializerItemOptions,
   useCollectionManager,
   useRecordCollectionDataSourceItems,
+  useSchemaInitializerV2,
   useSchemaTemplateManager,
 } from '@nocobase/client';
 import { traverseSchema } from '../nodes/manual/utils';
 
-function InnerCollectionBlockInitializer({ insert, collection, dataSource, ...props }) {
+function InnerCollectionBlockInitializer({ collection, dataSource, ...props }) {
+  const { insert } = useSchemaInitializerV2();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const { getCollection } = useCollectionManager();
   const items = useRecordCollectionDataSourceItems('FormItem') as SchemaInitializerItemOptions[];

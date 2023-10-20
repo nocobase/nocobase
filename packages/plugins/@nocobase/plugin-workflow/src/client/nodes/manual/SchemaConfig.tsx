@@ -25,6 +25,7 @@ import {
   useFormBlockContext,
   SchemaInitializerV2,
   useSchemaOptionsContext,
+  useSchemaInitializerV2,
 } from '@nocobase/client';
 import { Registry, lodash } from '@nocobase/utils/client';
 import { instructions, useAvailableUpstreams, useNodeContext } from '..';
@@ -361,7 +362,8 @@ function ManualActionDesigner(props) {
   );
 }
 
-function ContinueInitializer({ action, actionProps, insert, ...props }) {
+function ContinueInitializer({ action, actionProps, ...props }) {
+  const { insert } = useSchemaInitializerV2();
   return (
     <SchemaInitializer.Item
       {...props}

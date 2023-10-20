@@ -1,9 +1,9 @@
 import React from 'react';
 import { MenuOutlined } from '@ant-design/icons';
-import { SchemaInitializer } from '@nocobase/client';
+import { SchemaInitializer, useSchemaInitializerV2 } from '@nocobase/client';
 
-export const MMenuBlockInitializer = (props) => {
-  const { insert } = props;
+export const MMenuBlockInitializer = () => {
+  const { insert } = useSchemaInitializerV2();
   return (
     <SchemaInitializer.Item
       icon={<MenuOutlined />}

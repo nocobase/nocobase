@@ -1,11 +1,12 @@
 import React from 'react';
 import { OrderedListOutlined } from '@ant-design/icons';
-import { createGridCardBlockSchema, createListBlockSchema } from '../utils';
+import { createGridCardBlockSchema } from '../utils';
 import { DataBlockInitializer } from './DataBlockInitializer';
 import { useCollectionManager } from '../../collection-manager';
+import { useSchemaInitializerV2 } from '../../application';
 
 export const GridCardBlockInitializer = (props) => {
-  const { insert } = props;
+  const { insert } = useSchemaInitializerV2();
   const { getCollection } = useCollectionManager();
   return (
     <DataBlockInitializer

@@ -1,9 +1,10 @@
 import React, { FC } from 'react';
 import { TableOutlined } from '@ant-design/icons';
 
-import { SchemaInitializer, useCollectionManager } from '@nocobase/client';
+import { SchemaInitializer, useSchemaInitializerV2 } from '@nocobase/client';
 
-export const WorkflowTodoBlockInitializer: FC<any> = ({ insert, ...rest }) => {
+export const WorkflowTodoBlockInitializer: FC<any> = ({ ...rest }) => {
+  const { insert } = useSchemaInitializerV2();
   return (
     <SchemaInitializer.Item
       icon={<TableOutlined />}
@@ -25,4 +26,4 @@ export const WorkflowTodoBlockInitializer: FC<any> = ({ insert, ...rest }) => {
       }}
     />
   );
-}
+};

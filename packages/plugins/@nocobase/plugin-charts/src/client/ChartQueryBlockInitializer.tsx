@@ -24,7 +24,7 @@ export interface ChartQueryMetadata {
 }
 
 export const ChartQueryBlockInitializer = (props) => {
-  const { templateWrap, onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
+  const { templateWrap, onCreateBlockSchema, componentType, createBlockSchema, ...others } = props;
   const { setVisible } = useContext(SchemaInitializerButtonContext);
   const apiClient = useAPIClient();
   const ctx = useChartQueryMetadataContext();

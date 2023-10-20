@@ -6,6 +6,7 @@ import {
   SchemaInitializerItemOptions,
   createFormBlockSchema,
   useRecordCollectionDataSourceItems,
+  useSchemaInitializerV2,
   useSchemaTemplateManager,
 } from '@nocobase/client';
 
@@ -14,8 +15,9 @@ import { traverseSchema } from './utils';
 import { JOB_STATUS } from '../../constants';
 import { NAMESPACE } from '../../locale';
 
-function InternalFormBlockInitializer({ insert, schema, ...others }) {
+function InternalFormBlockInitializer({ schema, ...others }) {
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
+  const { insert } = useSchemaInitializerV2();
   const items = useRecordCollectionDataSourceItems('FormItem') as SchemaInitializerItemOptions[];
   async function onConfirm({ item }) {
     const template = item.template ? await getTemplateSchemaByMode(item) : null;

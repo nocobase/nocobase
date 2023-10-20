@@ -3,9 +3,10 @@ import { TableOutlined } from '@ant-design/icons';
 import { useCollectionManager } from '../../collection-manager';
 import { DataBlockInitializer } from './DataBlockInitializer';
 import { createTableBlockSchema } from '../utils';
+import { useSchemaInitializerV2 } from '../../application';
 
 export const TableBlockInitializer = (props) => {
-  const { insert } = props;
+  const { insert } = useSchemaInitializerV2();
   const { getCollection } = useCollectionManager();
   return (
     <DataBlockInitializer

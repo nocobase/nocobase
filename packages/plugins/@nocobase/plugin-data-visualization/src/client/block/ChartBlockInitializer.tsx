@@ -9,6 +9,7 @@ import {
   useCollectionDataSourceItems,
   useSchemaInitializerMenuItems,
   useCollectionDataSourceItemsV2,
+  useSchemaInitializerV2,
 } from '@nocobase/client';
 import React, { useContext } from 'react';
 import { ChartConfigContext } from '../configure/ChartConfigure';
@@ -98,10 +99,8 @@ export const chartInitializers = new SchemaInitializerV2({
   items: [{}],
 });
 
-export const ChartV2BlockInitializer: React.FC<{
-  insert: (s: ISchema) => void;
-}> = (props) => {
-  const { insert } = props;
+export const ChartV2BlockInitializer: React.FC = (props) => {
+  const { insert } = useSchemaInitializerV2();
   return (
     <SchemaInitializerItem
       {...props}

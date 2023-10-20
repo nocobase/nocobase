@@ -142,7 +142,7 @@ export function useSchemaInitializerMenuItems(
         };
       });
     },
-    [compile, onClick, styles.nbMenuItemGroup],
+    [compile, findComponent, onClick, styles.nbMenuItemGroup],
   );
 
   return getMenuItems(items, name);

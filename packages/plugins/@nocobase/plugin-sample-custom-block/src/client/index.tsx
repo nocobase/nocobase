@@ -1,11 +1,11 @@
 import { TableOutlined } from '@ant-design/icons';
-import { SchemaInitializerItem, Plugin } from '@nocobase/client';
+import { SchemaInitializerItem, Plugin, useSchemaInitializerV2 } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { HelloDesigner } from './HelloDesigner';
 
 export const HelloBlockInitializer = (props) => {
-  const { insert } = props;
+  const { insert } = useSchemaInitializerV2();
   const { t } = useTranslation();
   return (
     <SchemaInitializerItem
