@@ -3,12 +3,11 @@ import {
   BlockSchemaComponentPlugin,
   Plugin,
   SchemaComponentOptions,
-  SchemaInitializerContext,
   SettingsCenterProvider,
   useAPIClient,
 } from '@nocobase/client';
 import JSON5 from 'json5';
-import React, { useContext } from 'react';
+import React from 'react';
 import { ChartBlockEngine } from './ChartBlockEngine';
 import { ChartBlockInitializer } from './ChartBlockInitializer';
 import { ChartQueryMetadataProvider } from './ChartQueryMetadataProvider';
@@ -43,21 +42,6 @@ registerValidateRules({
 
 const ChartsProvider = React.memo((props) => {
   const api = useAPIClient();
-  const items = useContext<any>(SchemaInitializerContext);
-  const children = items.BlockInitializers.items[0].children;
-
-  if (children) {
-    const hasChartItem = children.some((child) => child?.component === 'ChartBlockInitializer');
-    if (!hasChartItem) {
-      children.push({
-        key: 'chart',
-        type: 'item',
-        icon: 'PieChartOutlined',
-        title: '{{t("Chart (Old)",{ns:"charts"})}}',
-        component: 'ChartBlockInitializer',
-      });
-    }
-  }
   const validateSQL = (sql) => {
     return new Promise((resolve) => {
       api
@@ -96,7 +80,7 @@ const ChartsProvider = React.memo((props) => {
           scope={{ validateSQL }}
           components={{ CustomSelect, ChartBlockInitializer, ChartBlockEngine }}
         >
-          <SchemaInitializerContext.Provider value={items}>{props.children}</SchemaInitializerContext.Provider>
+          {props.children}
         </SchemaComponentOptions>
       </SettingsCenterProvider>
     </ChartQueryMetadataProvider>
@@ -109,6 +93,12 @@ export class ChartsPlugin extends Plugin {
     this.app.pm.add(BlockSchemaComponentPlugin);
   }
   async load() {
+    const blockInitializers = this.app.schemaInitializerManager.get('BlockInitializers');
+    blockInitializers?.add('data-blocks.chart-old', {
+      icon: 'PieChartOutlined',
+      title: '{{t("Chart (Old)",{ns:"charts"})}}',
+      Component: 'ChartBlockInitializer',
+    });
     this.app.use(ChartsProvider);
   }
 }

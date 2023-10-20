@@ -1,9 +1,8 @@
 import { Plugin } from '@nocobase/client';
-import { DataVisualization } from './DataVisualization';
 import { ChartGroup } from './chart/group';
 import g2plot from './chart/g2plot';
 import antd from './chart/antd';
-import { ChartV2Block, ChartV2BlockDesigner, ChartV2BlockInitializer } from './block';
+import { ChartV2Block, ChartV2BlockDesigner, ChartV2BlockInitializer, chartInitializers } from './block';
 import { ChartRenderer, ChartRendererProvider } from './renderer';
 class DataVisualizationPlugin extends Plugin {
   public charts: ChartGroup = new ChartGroup();
@@ -18,7 +17,14 @@ class DataVisualizationPlugin extends Plugin {
       ChartV2Block,
       ChartRendererProvider,
     });
-    this.app.addProvider(DataVisualization);
+
+    this.app.schemaInitializerManager.add(chartInitializers);
+
+    const blockInitializers = this.app.schemaInitializerManager.get('BlockInitializers');
+    blockInitializers?.add('data-blocks.chart-v2', {
+      title: '{{t("Charts")}}',
+      Component: 'ChartV2BlockInitializer',
+    });
   }
 }
 

@@ -191,7 +191,7 @@ export const tableActionInitializers = new SchemaInitializerV2({
   items: [
     {
       type: 'itemGroup',
-      name: 'actions',
+      name: 'enable-actions',
       title: "{{t('Enable actions')}}",
       children: [
         {

@@ -1,16 +1,24 @@
 import { LineChartOutlined } from '@ant-design/icons';
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { SchemaInitializer, useACLRoleContext, useCollectionDataSourceItems } from '@nocobase/client';
+import {
+  InitializerItem,
+  SchemaInitializer,
+  SchemaInitializerV2,
+  useACLRoleContext,
+  useCollectionDataSourceItems,
+  useSchemaInitializerMenuItems,
+  useCollectionDataSourceItemsV2,
+} from '@nocobase/client';
 import React, { useContext } from 'react';
 import { ChartConfigContext } from '../configure/ChartConfigure';
 import { useChartsTranslation } from '../locale';
+import { Menu } from 'antd';
 
-const itemWrap = SchemaInitializer.itemWrap;
-const ConfigureButton = itemWrap((props) => {
+const ConfigureButton = (props) => {
   const { setVisible, setCurrent } = useContext(ChartConfigContext);
   return (
-    <SchemaInitializer.Item
+    <InitializerItem
       {...props}
       onClick={() => {
         setCurrent({ schema: {}, field: null, collection: props.item?.name, service: null, data: undefined });
@@ -18,7 +26,7 @@ const ConfigureButton = itemWrap((props) => {
       }}
     />
   );
-});
+};
 
 export const ChartInitializers = () => {
   const { t } = useChartsTranslation();
@@ -59,12 +67,43 @@ export const ChartInitializers = () => {
   );
 };
 
+const ItemsComponent = () => {
+  const collections = useCollectionDataSourceItemsV2('Chart');
+  const { allowAll, parseAction } = useACLRoleContext();
+  const items: any = collections[0].children
+    .filter((item) => {
+      if (allowAll) {
+        return true;
+      }
+      const params = parseAction(`${item.name}:list`);
+      return params;
+    })
+    .map((item) => ({
+      ...item,
+      component: ConfigureButton,
+    }));
+
+  const menuItems = useSchemaInitializerMenuItems(items);
+  return <Menu items={menuItems} />;
+};
+
+export const chartInitializers = new SchemaInitializerV2({
+  name: 'ChartInitializers',
+  icon: 'PlusOutlined',
+  dropdownProps: {
+    placement: 'bottomLeft',
+  },
+  title: '{{t("Add chart")}}',
+  ItemsComponent: ItemsComponent,
+  items: [{}],
+});
+
 export const ChartV2BlockInitializer: React.FC<{
   insert: (s: ISchema) => void;
 }> = (props) => {
   const { insert } = props;
   return (
-    <SchemaInitializer.Item
+    <InitializerItem
       {...props}
       icon={<LineChartOutlined />}
       onClick={() => {

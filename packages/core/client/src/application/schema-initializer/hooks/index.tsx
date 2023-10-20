@@ -57,9 +57,14 @@ export const useInitializerChildren = (children: SchemaInitializerOptions['list'
     .filter((item) => item.Component);
 };
 
-export function useMenuItems(name: string, onClick: (args: any) => void, items: SchemaInitializerItemOptions[]) {
+export function useSchemaInitializerMenuItems(
+  items: SchemaInitializerItemOptions[],
+  name?: string,
+  onClick?: (args: any) => void,
+) {
   const compile = useCompile();
   const { styles } = useStyles();
+  const findComponent = useFindComponent();
 
   const getMenuItems = useCallback(
     (items: SchemaInitializerItemOptions[], parentKey: string) => {
@@ -69,6 +74,29 @@ export function useMenuItems(name: string, onClick: (args: any) => void, items: 
       return items.map((item, indexA) => {
         if (item.type === 'divider') {
           return { type: 'divider', key: `divider-${indexA}` };
+        }
+        if (item.type === 'item' && item.component) {
+          const Component = findComponent(item.component);
+          if (!Component) {
+            console.error(`SchemaInitializer: component "${item.component}" not found`);
+            return null;
+          }
+          if (!item.key) {
+            item.key = `${item.title}-${indexA}`;
+          }
+          return {
+            key: item.key,
+            title: item.title,
+            label: (
+              <Component
+                {...item}
+                item={{
+                  ...item,
+                  title: compile(item.title),
+                }}
+              />
+            ),
+          };
         }
         if (item.type === 'itemGroup') {
           const label = typeof item.title === 'string' ? compile(item.title) : item.title;

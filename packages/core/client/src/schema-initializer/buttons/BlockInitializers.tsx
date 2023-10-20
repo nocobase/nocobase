@@ -112,7 +112,7 @@ export const blockInitializers = new SchemaInitializerV2({
   wrap: gridRowColWrap,
   items: [
     {
-      name: 'dataBlocks',
+      name: 'data-blocks',
       title: '{{t("Data blocks")}}',
       // Component: InitializerGroup,
       type: 'itemGroup',
@@ -160,7 +160,7 @@ export const blockInitializers = new SchemaInitializerV2({
       ],
     },
     {
-      name: 'filterBlocks',
+      name: 'filter-blocks',
       Component: InitializerGroup,
       title: '{{t("Filter blocks")}}',
       children: [

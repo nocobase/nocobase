@@ -6,7 +6,7 @@ import { useSchemaTemplateManager } from '../../../schema-templates';
 import { useCollectionDataSourceItemsV2 } from '../../../schema-initializer/utils';
 import { Icon } from '../../../icon';
 import { useSchemaInitializerV2 } from '../hooks';
-import { useMenuItems } from '../hooks';
+import { useSchemaInitializerMenuItems } from '../hooks';
 
 export const DataBlockInitializerV2 = (props) => {
   const {
@@ -40,7 +40,7 @@ export const DataBlockInitializerV2 = (props) => {
   );
   const defaultItems = useCollectionDataSourceItemsV2(componentType);
   const menuChildren = useMemo(() => items || defaultItems, [items, defaultItems]);
-  const menuItems = useMenuItems(name, onClick, menuChildren);
+  const menuItems = useSchemaInitializerMenuItems(menuChildren, name, onClick);
   const compiledMenuItems = useMemo(
     () => [
       {

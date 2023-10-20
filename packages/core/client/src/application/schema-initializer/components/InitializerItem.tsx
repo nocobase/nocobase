@@ -2,7 +2,7 @@ import React, { FC } from 'react';
 import { useCompile } from '../../../schema-component';
 import { Icon } from '../../../icon';
 import { Menu } from 'antd';
-import { useMenuItems } from '../hooks';
+import { useSchemaInitializerMenuItems } from '../hooks';
 import { uid } from '@formily/shared';
 
 export interface InitializerItemProps {
@@ -18,7 +18,7 @@ export interface InitializerItemProps {
 export const InitializerItem: FC<InitializerItemProps> = (props) => {
   const { style, name, className, items, icon, title, onClick, children } = props;
   const compile = useCompile();
-  const menuItems = useMenuItems(name || `random-${uid()}`, onClick, items);
+  const menuItems = useSchemaInitializerMenuItems(items, name || `random-${uid()}`, onClick);
   if (items && items.length > 0) {
     return (
       <Menu
@@ -39,7 +39,7 @@ export const InitializerItem: FC<InitializerItemProps> = (props) => {
   }
 
   return (
-    <div onClick={onClick} style={style} className={className}>
+    <div onClick={() => onClick({ item: props })} style={style} className={className}>
       {children || (
         <>
           {typeof icon === 'string' ? <Icon type={icon as string} /> : icon}

@@ -5,7 +5,7 @@ import { ComponentType, ReactNode } from 'react';
 export type InsertType = (s: ISchema) => void;
 
 interface SchemaInitializerItemBaseType {
-  name: string;
+  name: string | number;
   sort?: number;
   Component?: string | ComponentType<any>;
   useVisible?: () => boolean;

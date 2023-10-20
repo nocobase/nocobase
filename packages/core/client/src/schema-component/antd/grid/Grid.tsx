@@ -4,7 +4,7 @@ import { RecursionField, Schema, observer, useField, useFieldSchema } from '@for
 import { uid } from '@formily/shared';
 import cls from 'classnames';
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { useApp, useDesignable, useFormBlockContext, useSchemaInitializer } from '../../../';
+import { useApp, useDesignable, useFormBlockContext } from '../../../';
 import { DndContext } from '../../common/dnd-context';
 import { useToken } from '../__builtins__';
 import useStyles from './Grid.style';

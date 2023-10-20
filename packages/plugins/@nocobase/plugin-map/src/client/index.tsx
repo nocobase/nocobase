@@ -10,7 +10,8 @@ import { MapBlockOptions } from './block';
 import { Configuration, Map } from './components';
 import { interfaces } from './fields';
 import { MapInitializer } from './initialize';
-import { useMapTranslation } from './locale';
+import { generateNTemplate, useMapTranslation } from './locale';
+import { mapActionInitializers } from './block/MapActionInitializers';
 
 const MapProvider = React.memo((props) => {
   const ctx = useContext(CollectionManagerContext);
@@ -49,6 +50,14 @@ MapProvider.displayName = 'MapProvider';
 export class MapPlugin extends Plugin {
   async load() {
     this.app.use(MapProvider);
+
+    this.app.schemaInitializerManager.add(mapActionInitializers);
+
+    const blockInitializers = this.app.schemaInitializerManager.get('BlockInitializers');
+    blockInitializers?.add('data-blocks.map', {
+      title: generateNTemplate('Map'),
+      Component: 'MapBlockInitializer',
+    });
   }
 }
 

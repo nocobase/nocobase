@@ -20,7 +20,7 @@ export class SchemaInitializerV2<P1 = ButtonProps, P2 = ListProps<any>> {
 
   add(name: string, item: SchemaInitializerItemType) {
     const arr = name.split('.');
-    const data = { ...item, name };
+    const data = { ...item, name: arr[arr.length - 1] };
     if (arr.length === 1) {
       const index = this.items.findIndex((item: any) => item.name === name);
       if (index === -1) {

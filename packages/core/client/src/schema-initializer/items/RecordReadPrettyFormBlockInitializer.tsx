@@ -28,7 +28,6 @@ export const RecordReadPrettyFormBlockInitializer = (props) => {
     <InitializerItem
       icon={icon && <FormOutlined />}
       {...others}
-      key={'123'}
       onClick={async ({ item }) => {
         if (item.template) {
           const s = await getTemplateSchemaByMode(item);

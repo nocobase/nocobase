@@ -16,7 +16,6 @@ import {
   SchemaComponentContext,
   SchemaInitializer,
   SchemaInitializerItemOptions,
-  SchemaInitializerProvider,
   SchemaSettings,
   VariableScopeProvider,
   gridRowColWrap,
@@ -24,6 +23,7 @@ import {
   useCompile,
   useFormActiveFields,
   useFormBlockContext,
+  SchemaInitializerV2,
   useSchemaOptionsContext,
 } from '@nocobase/client';
 import { Registry, lodash } from '@nocobase/utils/client';
@@ -177,6 +177,68 @@ function AddBlockButton(props: any) {
     />
   );
 }
+
+export const addBlockButton = new SchemaInitializerV2({
+  name: 'AddBlockButton',
+  'data-testid': 'add-block-button-in-workflow',
+  wrap: gridRowColWrap,
+  title: '{{t("Add block")}}',
+  items: [
+    {
+      type: 'itemGroup',
+      name: 'data-blocks',
+      title: '{{t("Data blocks")}}',
+      useChildren() {
+        const current = useNodeContext();
+        const nodes = useAvailableUpstreams(current);
+        const triggerInitializers = [useTriggerInitializers()].filter(Boolean);
+        const nodeBlockInitializers = nodes
+          .map((node) => {
+            const instruction = instructions.get(node.type);
+            return instruction?.useInitializers?.(node);
+          })
+          .filter(Boolean);
+        const dataBlockInitializers: any = [
+          ...triggerInitializers,
+          ...(nodeBlockInitializers.length
+            ? [
+                {
+                  name: 'nodes',
+                  type: 'subMenu',
+                  title: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
+                  children: nodeBlockInitializers,
+                },
+              ]
+            : []),
+        ].filter(Boolean);
+        return dataBlockInitializers;
+      },
+    },
+    {
+      type: 'itemGroup',
+      title: '{{t("Form")}}',
+      useChildren() {
+        const { collections } = useCollectionManager();
+        return Array.from(manualFormTypes.getValues()).map((item: ManualFormType) => {
+          const { useInitializer: getInitializer } = item.config;
+          return getInitializer({ collections });
+        });
+      },
+    },
+    {
+      type: 'itemGroup',
+      name: 'other-blocks',
+      title: '{{t("Other blocks")}}',
+      children: [
+        {
+          name: 'markdown',
+          title: '{{t("Markdown")}}',
+          Component: 'MarkdownBlockInitializer',
+        },
+      ],
+    },
+  ],
+});
 
 function AssignedFieldValues() {
   const ctx = useContext(SchemaComponentContext);
@@ -387,6 +449,39 @@ function AddActionButton(props) {
   );
 }
 
+export const addActionButton = new SchemaInitializerV2({
+  name: 'AddActionButton',
+  'data-testid': 'configure-actions-add-action-button',
+  title: '{{t("Configure actions")}}',
+  items: [
+    {
+      name: JOB_STATUS.RESOLVED,
+      title: `{{t("Continue the process", { ns: "${NAMESPACE}" })}}`,
+      Component: ContinueInitializer,
+      action: JOB_STATUS.RESOLVED,
+      actionProps: {
+        type: 'primary',
+      },
+    },
+    {
+      name: JOB_STATUS.REJECTED,
+      type: 'item',
+      title: `{{t("Terminate the process", { ns: "${NAMESPACE}" })}}`,
+      Component: ActionInitializer,
+      action: JOB_STATUS.REJECTED,
+      actionProps: {
+        danger: true,
+      },
+    },
+    {
+      name: JOB_STATUS.PENDING,
+      title: `{{t("Save temporarily", { ns: "${NAMESPACE}" })}}`,
+      Component: ActionInitializer,
+      action: JOB_STATUS.PENDING,
+    },
+  ],
+});
+
 // NOTE: fake useAction for ui configuration
 function useSubmit() {
   // const { values, submit, id: formId } = useForm();
@@ -475,7 +570,7 @@ export function SchemaConfig({ value, onChange }) {
         },
       }}
     >
-      <SchemaInitializerProvider
+      {/* <SchemaInitializerProvider
         initializers={{
           AddBlockButton,
           AddActionButton,
@@ -487,34 +582,34 @@ export function SchemaConfig({ value, onChange }) {
             {},
           ),
         }}
-      >
-        <SchemaComponent
-          schema={schema}
-          components={{
-            ...nodeComponents,
-            // @ts-ignore
-            ...Array.from(manualFormTypes.getValues()).reduce(
-              (result, item: ManualFormType) => Object.assign(result, item.config.components),
-              {},
-            ),
-            FormBlockProvider,
-            DetailsBlockProvider,
-            // NOTE: fake provider component
-            ManualActionStatusProvider(props) {
-              return props.children;
-            },
-            ActionBarProvider(props) {
-              return props.children;
-            },
-            SimpleDesigner,
-            ManualActionDesigner,
-          }}
-          scope={{
-            useSubmit,
-            useDetailsBlockProps: useFormBlockContext,
-          }}
-        />
-      </SchemaInitializerProvider>
+      > */}
+      <SchemaComponent
+        schema={schema}
+        components={{
+          ...nodeComponents,
+          // @ts-ignore
+          ...Array.from(manualFormTypes.getValues()).reduce(
+            (result, item: ManualFormType) => Object.assign(result, item.config.components),
+            {},
+          ),
+          FormBlockProvider,
+          DetailsBlockProvider,
+          // NOTE: fake provider component
+          ManualActionStatusProvider(props) {
+            return props.children;
+          },
+          ActionBarProvider(props) {
+            return props.children;
+          },
+          SimpleDesigner,
+          ManualActionDesigner,
+        }}
+        scope={{
+          useSubmit,
+          useDetailsBlockProps: useFormBlockContext,
+        }}
+      />
+      {/* </SchemaInitializerProvider> */}
     </SchemaComponentContext.Provider>
   );
 }

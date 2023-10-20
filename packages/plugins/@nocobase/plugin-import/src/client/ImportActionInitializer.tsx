@@ -1,7 +1,7 @@
 import type { ISchema } from '@formily/react';
 import { Schema, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
-import { SchemaInitializer, css, useCollection, useDesignable, useToken } from '@nocobase/client';
+import { InitializerSwitch, SchemaInitializer, css, useCollection, useDesignable, useToken } from '@nocobase/client';
 import React from 'react';
 import { NAMESPACE } from './constants';
 import { useFields } from './useFields';
@@ -168,7 +168,7 @@ export const ImportActionInitializer = (props) => {
     },
   };
   return (
-    <SchemaInitializer.SwitchItem
+    <InitializerSwitch
       checked={exists}
       title={item.title}
       onClick={() => {

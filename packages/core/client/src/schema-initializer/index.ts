@@ -1,7 +1,6 @@
 export * from './buttons';
 export * from './items';
 export * from './SchemaInitializer';
-export * from './SchemaInitializerProvider';
 export * from './types';
 export {
   createFilterFormBlockSchema,
@@ -10,6 +9,7 @@ export {
   createTableBlockSchema,
   gridRowColWrap,
   itemsMerge,
+  useCollectionDataSourceItemsV2,
   useAssociatedTableColumnInitializerFields,
   useCollectionDataSourceItems,
   useInheritsTableColumnInitializerFields,
@@ -18,7 +18,6 @@ export {
 } from './utils';
 
 import { Plugin } from '../application/Plugin';
-import { SchemaInitializerProvider } from './SchemaInitializerProvider';
 import {
   bulkEditFormItemInitializers,
   calendarActionInitializers,
@@ -56,10 +55,8 @@ import {
   readPrettyFormActionInitializers,
 } from './buttons';
 
-export class SchemaInitializerPlugin<SchemaInitializerProviderProps> extends Plugin {
+export class SchemaInitializerPlugin extends Plugin {
   async load() {
-    this.app.use<SchemaInitializerProviderProps>(SchemaInitializerProvider, this.options?.config);
-
     this.app.schemaInitializerManager.add(blockInitializers);
     this.app.schemaInitializerManager.add(tableActionInitializers);
     this.app.schemaInitializerManager.add(tableColumnInitializers);
