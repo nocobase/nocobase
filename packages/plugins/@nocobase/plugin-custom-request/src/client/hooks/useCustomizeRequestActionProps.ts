@@ -102,7 +102,14 @@ export const useCustomizeRequestActionProps = () => {
             },
           });
         } else {
-          return message.success(compile(onSuccess?.successMessage));
+          message.success(compile(onSuccess?.successMessage));
+          if (onSuccess?.redirecting && onSuccess?.redirectTo) {
+            if (isURL(onSuccess.redirectTo)) {
+              window.location.href = onSuccess.redirectTo;
+            } else {
+              navigate(onSuccess.redirectTo);
+            }
+          }
         }
       } finally {
         actionField.data.loading = false;
