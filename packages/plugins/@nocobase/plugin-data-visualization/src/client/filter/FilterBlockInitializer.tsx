@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { FilterOutlined } from '@ant-design/icons';
-import { InitializerWithSwitch, gridRowColWrap, useDesignable } from '@nocobase/client';
+import { Grid, InitializerWithSwitch, gridRowColWrap, useDesignable } from '@nocobase/client';
 import { uid } from '@formily/shared';
 import { Schema } from '@formily/react';
+import { ChartFilterContext } from './FilterProvider';
+import { css } from '@emotion/css';
 
 const createFilterSchema = () => {
   return {
@@ -25,7 +27,7 @@ const createFilterSchema = () => {
         properties: {
           grid: {
             type: 'void',
-            'x-component': 'Grid',
+            'x-component': 'ChartFilterGrid',
             'x-initializer': 'ChartFilterItemInitializers',
             properties: {},
           },
@@ -46,6 +48,23 @@ const createFilterSchema = () => {
       },
     },
   };
+};
+
+export const ChartFilterGrid: React.FC = (props) => {
+  const { collapse } = useContext(ChartFilterContext);
+  console.log(collapse);
+  return (
+    <div
+      className={css`
+        .ant-nb-grid {
+          overflow: hidden;
+          height: ${collapse ? '44px' : 'auto'};
+        }
+      `}
+    >
+      <Grid {...props}>{props.children}</Grid>
+    </div>
+  );
 };
 
 export const FilterBlockInitializer: React.FC = (props) => {

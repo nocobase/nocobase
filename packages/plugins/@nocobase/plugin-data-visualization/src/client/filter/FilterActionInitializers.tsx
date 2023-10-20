@@ -1,7 +1,9 @@
-import { useForm } from '@formily/react';
+import { useField, useForm } from '@formily/react';
 import { ActionInitializer } from '@nocobase/client';
-import React from 'react';
+import React, { useContext } from 'react';
 import { useChartFilter } from '../hooks/filter';
+import { ChartFilterContext } from './FilterProvider';
+import { useChartsTranslation } from '../locale';
 
 export const useChartFilterActionProps = () => {
   const { filter } = useChartFilter();
@@ -17,6 +19,18 @@ export const useChartFilterResetProps = () => {
     onClick: async () => {
       await refresh();
       form.reset();
+    },
+  };
+};
+
+export const useChartFilterCollapseProps = () => {
+  const { collapse, setCollapse } = useContext(ChartFilterContext);
+  const { t } = useChartsTranslation();
+  const field = useField();
+  return {
+    onClick: () => {
+      setCollapse(!collapse);
+      field.componentProps.title = collapse ? t('Collapse') : t('Expand');
     },
   };
 };
@@ -38,10 +52,24 @@ const ChartFilterActionInitializer = (props) => {
 const ChartFilterResetInitializer = (props) => {
   const schema = {
     title: '{{ t("Reset") }}',
+    'x-action': 'reset',
     'x-component': 'Action',
     'x-designer': 'Action.Designer',
     'x-component-props': {
       useProps: '{{ useChartFilterResetProps }}',
+    },
+  };
+  return <ActionInitializer {...props} schema={schema} />;
+};
+
+const ChartFilterCollapseInitializer = (props) => {
+  const schema = {
+    title: `{{ t("Collapse") }}`,
+    'x-action': 'collapse',
+    'x-component': 'Action',
+    'x-designer': 'Action.Designer',
+    'x-component-props': {
+      useProps: '{{ useChartFilterCollapseProps }}',
     },
   };
   return <ActionInitializer {...props} schema={schema} />;
@@ -68,6 +96,14 @@ export const ChartFilterActionInitializers = {
           type: 'item',
           title: '{{t("Reset")}}',
           component: ChartFilterResetInitializer,
+          schema: {
+            'x-action-settings': {},
+          },
+        },
+        {
+          type: 'item',
+          title: '{{t("Collapse")}}',
+          component: ChartFilterCollapseInitializer,
           schema: {
             'x-action-settings': {},
           },

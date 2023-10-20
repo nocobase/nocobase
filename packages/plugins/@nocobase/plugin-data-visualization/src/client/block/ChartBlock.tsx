@@ -4,6 +4,7 @@ import { ChartConfigProvider } from '../configure';
 import { ChartDataProvider } from './ChartDataProvider';
 import { ChartRenderer, ChartRendererProvider } from '../renderer';
 import { ChartFilterBlockProvider, ChartFilterBlockDesigner } from '../filter';
+import { ChartFilterProvider } from '../filter/FilterProvider';
 
 export const ChartV2Block: React.FC = (props) => {
   const [initialVisible, setInitialVisible] = useState(false);
@@ -13,7 +14,9 @@ export const ChartV2Block: React.FC = (props) => {
         components={{ ChartRenderer, ChartRendererProvider, ChartFilterBlockProvider, ChartFilterBlockDesigner }}
       >
         <ChartDataProvider>
-          <ChartConfigProvider>{props.children}</ChartConfigProvider>
+          <ChartFilterProvider>
+            <ChartConfigProvider>{props.children}</ChartConfigProvider>
+          </ChartFilterProvider>
         </ChartDataProvider>
       </SchemaComponentOptions>
     </SchemaInitializerButtonContext.Provider>

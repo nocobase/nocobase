@@ -20,4 +20,5 @@ export default {
   'Are you sure you want to delete it?': 'Are you sure you want to delete it?',
   'Sign in button name, which will be displayed on the sign in page':
     'Sign in button name, which will be displayed on the sign in page',
+  Expand: 'Expand',
 };

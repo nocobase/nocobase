@@ -160,10 +160,9 @@ export const useChartFilter = () => {
   };
 
   const refresh = async () => {
-    const filterValues = getFilter();
     const requests = Object.values(charts)
       .filter((chart) => {
-        return chart && Object.keys(filterValues).includes(chart.collection);
+        return chart;
       })
       .map((chart) => async () => {
         const { service, collection, query } = chart;
@@ -177,10 +176,4 @@ export const useChartFilter = () => {
     refresh,
     getChartFilterFields,
   };
-};
-
-export const useChartFilterAction = () => {
-  console.log('test');
-  // const { filter } = useChartFilter();
-  // return () => filter();
 };
