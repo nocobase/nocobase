@@ -394,14 +394,7 @@ export function TextArea(props) {
       />
       {!disabled ? (
         <VariableSelect
-          className={css`
-            &:not(:hover) {
-              border-right-color: transparent;
-              border-top-color: transparent;
-              // border-bottom-color: transparent;
-            }
-            background-color: transparent;
-          `}
+          className=""
           options={options}
           setOptions={setOptions}
           onInsert={onInsert}

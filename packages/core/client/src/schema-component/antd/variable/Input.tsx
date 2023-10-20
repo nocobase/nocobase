@@ -336,9 +336,7 @@ export function Input(props) {
           {button ?? (
             <XButton
               className={css(`
-                &:not(:hover) {
-                  border-left-color: transparent;
-                }
+                margin-left: -1px;
               `)}
               type={variable ? 'primary' : 'default'}
             />
