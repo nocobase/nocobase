@@ -32,7 +32,7 @@ export const filterAnalyses = (filters): any[] => {
       return true;
     }
     const regex = /\{\{\$(?:[a-zA-Z_]\w*)\.([a-zA-Z_]\w*)(?:\.id)?\}\}/;
-    const fieldName = jsonlogic?.value.match?.(regex)?.[1];
+    const fieldName = jsonlogic?.value?.match?.(regex)?.[1];
     if (fieldName) {
       results.push(fieldName);
     }
