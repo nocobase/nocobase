@@ -197,7 +197,7 @@ const HeaderMenu = ({
       key: 'x-designer-button',
       style: { padding: '0 8px', order: 9999 },
       label: render({
-        'aria-label': 'Menu-schema-initializer-header',
+        'aria-label': 'schema-initializer-Menu-header',
         'aria-disabled': false,
         style: { background: 'none' },
       }),
@@ -291,7 +291,7 @@ const SideMenu = ({
         key: 'x-designer-button',
         disabled: true,
         label: render({
-          'aria-label': 'Menu-schema-initializer-side',
+          'aria-label': 'schema-initializer-Menu-side',
           'aria-disabled': false,
           insert: (s) => {
             const dn = createDesignable({

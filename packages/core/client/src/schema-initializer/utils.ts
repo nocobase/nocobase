@@ -1,7 +1,7 @@
 import { Field, Form } from '@formily/core';
 import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import { useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializerItemOptions, useFormActiveFields, useFormBlockContext } from '../';
 import { CollectionFieldOptions, FieldOptions, useCollection, useCollectionManager } from '../collection-manager';
@@ -1902,25 +1902,4 @@ const getChildren = ({
         ],
       };
     });
-};
-
-/**
- * label = x-component + 'schema-initializer' + [x-initializer] + [collectionName] + [postfix]
- * @returns
- */
-export const useGetAriaLabelOfSchemaInitializer = () => {
-  const fieldSchema = useFieldSchema();
-  const { name } = useCollection();
-  const getAriaLabel = useCallback(
-    (postfix?: string) => {
-      const initializer = fieldSchema['x-initializer'] ? `-${fieldSchema['x-initializer']}` : '';
-      const collectionName = name ? `-${name}` : '';
-      postfix = postfix ? `-${postfix}` : '';
-
-      return `${fieldSchema['x-component']}-schema-initializer${initializer}${collectionName}${postfix}`;
-    },
-    [fieldSchema, name],
-  );
-
-  return { getAriaLabel };
 };

@@ -10,6 +10,7 @@ import { Icon } from '../icon';
 import { SchemaComponent, useActionContext } from '../schema-component';
 import { useCompile, useDesignable } from '../schema-component/hooks';
 import { SearchCollections } from './SearchCollections';
+import { useGetAriaLabelOfSchemaInitializer } from './hooks/useGetAriaLabelOfSchemaInitializer';
 import { useStyles } from './style';
 import {
   SchemaInitializerButtonProps,
@@ -17,7 +18,6 @@ import {
   SchemaInitializerItemOptions,
   SchemaInitializerItemProps,
 } from './types';
-import { useGetAriaLabelOfSchemaInitializer } from './utils';
 
 const defaultWrap = (s: ISchema) => s;
 
