@@ -1,5 +1,5 @@
 import { LoadingOutlined, PlusOutlined } from '@ant-design/icons';
-import { onFieldChange } from '@formily/core';
+import { onFieldChange, FormPath } from '@formily/core';
 import { RecursionField, connect, mapProps, observer, useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Space, message } from 'antd';
@@ -63,8 +63,9 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
     form.addEffects(id, () => {
       linkageFields?.forEach((v) => {
         if (v) {
-          onFieldChange(v, () => {
-            if (field.value) {
+          //支持深层次子表单
+          onFieldChange('*', (fieldPath: any) => {
+            if (fieldPath.props.name === v && field.value) {
               props.onChange(null);
               setInnerValue(null);
             }
