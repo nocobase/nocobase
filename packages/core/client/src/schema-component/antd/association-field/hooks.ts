@@ -15,7 +15,6 @@ import { DEBOUNCE_WAIT } from '../../../variables';
 import { getPath } from '../../../variables/utils/getPath';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { useDesignable } from '../../hooks';
-import { removeNullCondition } from '../filter';
 import { AssociationFieldContext } from './context';
 
 export const useInsertSchema = (component) => {

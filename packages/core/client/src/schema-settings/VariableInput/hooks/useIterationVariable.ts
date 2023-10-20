@@ -1,6 +1,5 @@
 import { Schema } from '@formily/json-schema';
 import { useTranslation } from 'react-i18next';
-import { useFormActiveFields } from '../../../block-provider';
 import { CollectionFieldOptions } from '../../../collection-manager';
 import { useBaseVariable } from './useBaseVariable';
 
@@ -23,7 +22,7 @@ export const useIterationVariable = ({
   /** 消费变量值的字段 */
   targetFieldSchema?: Schema;
 }) => {
-  const { getActiveFieldsName } = useFormActiveFields() || {};
+  // const { getActiveFieldsName } = useFormActiveFields() || {};
   const { t } = useTranslation();
   const result = useBaseVariable({
     collectionField,
@@ -35,13 +34,15 @@ export const useIterationVariable = ({
     collectionName: currentCollection,
     noDisabled,
     returnFields: (fields, option) => {
-      const activeFieldsName = getActiveFieldsName?.('nester') || [];
+      // fix https://nocobase.height.app/T-2277
+      return fields;
+      // const activeFieldsName = getActiveFieldsName?.('nester') || [];
 
-      return option.depth === 0
-        ? fields.filter((field) => {
-            return activeFieldsName?.includes(field.name);
-          })
-        : fields;
+      // return option.depth === 0
+      //   ? fields.filter((field) => {
+      //       return activeFieldsName?.includes(field.name);
+      //     })
+      //   : fields;
     },
   });
 

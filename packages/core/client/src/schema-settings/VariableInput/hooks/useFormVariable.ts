@@ -1,6 +1,5 @@
 import { Schema } from '@formily/json-schema';
 import { useTranslation } from 'react-i18next';
-import { useFormActiveFields } from '../../../block-provider';
 import { CollectionFieldOptions } from '../../../collection-manager';
 import { useBaseVariable } from './useBaseVariable';
 
@@ -19,7 +18,7 @@ interface Props {
  * @returns
  */
 export const useFormVariable = ({ collectionName, collectionField, schema, noDisabled, targetFieldSchema }: Props) => {
-  const { getActiveFieldsName } = useFormActiveFields() || {};
+  // const { getActiveFieldsName } = useFormActiveFields() || {};
   const { t } = useTranslation();
   const result = useBaseVariable({
     collectionField,
@@ -31,13 +30,15 @@ export const useFormVariable = ({ collectionName, collectionField, schema, noDis
     collectionName: collectionName,
     noDisabled,
     returnFields: (fields, option) => {
-      const activeFieldsName = getActiveFieldsName?.('form') || [];
+      // fix https://nocobase.height.app/T-2277
+      return fields;
+      // const activeFieldsName = getActiveFieldsName?.('form') || [];
 
-      return option.depth === 0
-        ? fields.filter((field) => {
-            return activeFieldsName.includes(field.name);
-          })
-        : fields;
+      // return option.depth === 0
+      //   ? fields.filter((field) => {
+      //       return activeFieldsName.includes(field.name);
+      //     })
+      //   : fields;
     },
   });
 

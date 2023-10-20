@@ -2,7 +2,8 @@ import { FormLayout } from '@formily/antd-v5';
 import { createForm } from '@formily/core';
 import { FormContext, useField } from '@formily/react';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
-import { BlockProvider, useBlockRequestContext } from '../../../block-provider';
+import { BlockProvider, useBlockRequestContext, useParsedFilter } from '../../../block-provider';
+import { useRecord } from '../../../record-provider';
 import useStyles from './GridCard.Decorator.style';
 export const GridCardBlockContext = createContext<any>({});
 
@@ -41,8 +42,22 @@ const InternalGridCardBlockProvider = (props) => {
 };
 
 export const GridCardBlockProvider = (props) => {
+  const { params } = props;
+  const record = useRecord();
+
+  const { filter: parsedFilter } = useParsedFilter({
+    filterOption: params?.filter,
+    currentRecord: { __parent: record, __collectionName: props.collection },
+  });
+  const paramsWithFilter = useMemo(() => {
+    return {
+      ...params,
+      filter: parsedFilter,
+    };
+  }, [parsedFilter, params]);
+
   return (
-    <BlockProvider data-testid="grid-card-block" {...props}>
+    <BlockProvider data-testid="grid-card-block" {...props} params={paramsWithFilter}>
       <InternalGridCardBlockProvider {...props} />
     </BlockProvider>
   );

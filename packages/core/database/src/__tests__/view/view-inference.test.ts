@@ -5,9 +5,7 @@ describe('view inference', function () {
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase({
-      tablePrefix: '',
-    });
+    db = mockDatabase();
     await db.clean({ drop: true });
   });
 

@@ -17,7 +17,6 @@ function setNativeInputValue(input, value) {
 }
 
 export function RawTextArea(props): JSX.Element {
-  console.log('🚀 ~ file: RawTextArea.tsx:20 ~ RawTextArea ~ props:', props);
   const inputRef = useRef<any>(null);
   const { changeOnSelect, component: Component = Input.TextArea, ...others } = props;
   const scope = typeof props.scope === 'function' ? props.scope() : props.scope;

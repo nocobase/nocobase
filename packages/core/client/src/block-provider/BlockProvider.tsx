@@ -5,7 +5,7 @@ import { useRequest } from 'ahooks';
 import { Col, Row } from 'antd';
 import merge from 'deepmerge';
 import template from 'lodash/template';
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   TableFieldResource,
@@ -285,7 +285,7 @@ export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
 export const BlockProvider = (props) => {
   const { collection, association } = props;
   const resource = useResource(props);
-  const params = { ...props.params };
+  const params = useMemo(() => ({ ...props.params }), [props.params]);
   const { appends, updateAssociationValues } = useAssociationNames();
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;

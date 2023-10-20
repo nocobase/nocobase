@@ -438,6 +438,7 @@ FormItem.Designer = function Designer() {
             if (!hasAddNew) {
               const addNewActionschema = {
                 'x-action': 'create',
+                'x-acl-action': 'create',
                 title: "{{t('Add new')}}",
                 'x-designer': 'Action.Designer',
                 'x-component': 'Action',
@@ -485,6 +486,7 @@ FormItem.Designer = function Designer() {
               if (!hasAddNew) {
                 const addNewActionschema = {
                   'x-action': 'create',
+                  'x-acl-action': 'create',
                   title: "{{t('Add new')}}",
                   'x-designer': 'Action.Designer',
                   'x-component': 'Action',
@@ -735,7 +737,7 @@ FormItem.FilterFormDesigner = FilterFormDesigner;
 
 function useIsAddNewForm() {
   const record = useRecord();
-  const isAddNewForm = _.isEmpty(_.omit(record, '__parent'));
+  const isAddNewForm = _.isEmpty(_.omit(record, ['__parent', '__collectionName']));
 
   return isAddNewForm;
 }
