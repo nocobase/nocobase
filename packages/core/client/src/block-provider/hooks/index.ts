@@ -263,7 +263,7 @@ export const useCreateActionProps = () => {
 
 export const useAssociationCreateActionProps = () => {
   const form = useForm();
-  const { field, resource } = useBlockRequestContext();
+  const { field, resource, __parent } = useBlockRequestContext();
   const { setVisible, fieldSchema } = useActionContext();
   const actionSchema = useFieldSchema();
   const actionField = useField();
@@ -345,6 +345,7 @@ export const useAssociationCreateActionProps = () => {
         });
         actionField.data.loading = false;
         actionField.data.data = data;
+        __parent?.service?.refresh?.();
         setVisible?.(false);
         if (!onSuccess?.successMessage) {
           return;
