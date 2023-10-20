@@ -120,16 +120,20 @@ export const linkageAction = async ({
         disabled: disableResult,
       };
       field.disabled = last(disableResult);
+      field.componentProps['disabled'] = last(disableResult);
       break;
     case ActionType.Active:
       if (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables })) {
         disableResult.push(false);
+      } else {
+        disableResult.push(true);
       }
       field.linkageProperty = {
         ...field.linkageProperty,
         disabled: disableResult,
       };
       field.disabled = last(disableResult);
+      field.componentProps['disabled'] = last(disableResult);
       break;
     default:
       return null;
