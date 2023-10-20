@@ -15,7 +15,7 @@ export const useGetAriaLabelOfAction = (title: string) => {
   const action = fieldSchema['x-action'];
   const compile = useCompile();
   let { name: collectionName } = useCollection();
-  let { name: blockName } = useBlockContext();
+  let { name: blockName } = useBlockContext() || {};
   const actionTitle = title || compile(fieldSchema.title);
   collectionName = collectionName ? `-${collectionName}` : '';
   blockName = blockName ? `-${blockName}` : '';
