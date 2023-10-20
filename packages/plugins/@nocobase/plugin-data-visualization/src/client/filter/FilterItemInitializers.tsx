@@ -21,7 +21,7 @@ export const ChartFilterCustomItemInitializer: React.FC<{
 }> = (props) => {
   const { t: lang } = useChartsTranslation();
   const t = useMemoizedFn(lang);
-  const options = useContext(SchemaOptionsContext);
+  const { scope, components } = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
   const { insert } = props;
   const { getSchemaByInterface } = useCustomFieldInterface();
@@ -29,7 +29,7 @@ export const ChartFilterCustomItemInitializer: React.FC<{
     const values = await FormDialog(
       t('Add custom field'),
       () => (
-        <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
+        <SchemaComponentOptions scope={scope} components={{ ...components }}>
           <FormLayout layout={'vertical'}>
             <SchemaComponent
               schema={{

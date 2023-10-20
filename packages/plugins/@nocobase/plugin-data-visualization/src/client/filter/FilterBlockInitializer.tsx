@@ -1,22 +1,27 @@
 import React from 'react';
 import { FilterOutlined } from '@ant-design/icons';
-import { SchemaInitializer, gridRowColWrap, useDesignable } from '@nocobase/client';
+import { InitializerWithSwitch, gridRowColWrap, useDesignable } from '@nocobase/client';
 import { uid } from '@formily/shared';
-import { css } from '@emotion/css';
+import { Schema } from '@formily/react';
 
 const createFilterSchema = () => {
   return {
     type: 'void',
+    'x-action': 'filter',
     'x-decorator': 'ChartFilterBlockProvider',
     'x-component': 'CardItem',
     'x-component-props': {
       size: 'small',
+      bordered: true,
     },
     'x-designer': 'ChartFilterBlockDesigner',
     properties: {
       [uid()]: {
         type: 'void',
         'x-component': 'FormV2',
+        'x-component-props': {
+          layout: 'inline',
+        },
         properties: {
           grid: {
             type: 'void',
@@ -31,7 +36,8 @@ const createFilterSchema = () => {
             'x-component-props': {
               layout: 'one-column',
               style: {
-                marginTop: 24,
+                float: 'right',
+                marginTop: 8,
               },
             },
             properties: {},
@@ -42,27 +48,15 @@ const createFilterSchema = () => {
   };
 };
 
-export const ChartFilterBlockProvider: React.FC = (props) => {
-  return (
-    <div
-      className={css`
-        .ant-card {
-          box-shadow: none;
-        }
-      `}
-    >
-      {props.children}
-    </div>
-  );
-};
-
 export const FilterBlockInitializer: React.FC = (props) => {
   const { insertAdjacent } = useDesignable();
   return (
-    <SchemaInitializer.Item
+    <InitializerWithSwitch
       {...props}
+      schema={createFilterSchema()}
       icon={<FilterOutlined />}
-      onClick={() => insertAdjacent('afterBegin', gridRowColWrap(createFilterSchema()))}
+      insert={(s: Schema) => insertAdjacent('afterBegin', gridRowColWrap(s))}
+      type="x-action"
     />
   );
 };

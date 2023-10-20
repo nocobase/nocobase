@@ -4,14 +4,6 @@ import { ChartGroup } from './chart/group';
 import g2plot from './chart/g2plot';
 import antd from './chart/antd';
 import { ChartV2Block, ChartV2BlockDesigner, ChartV2BlockInitializer } from './block';
-import { ChartRenderer, ChartRendererProvider } from './renderer';
-import {
-  ChartFilterBlockDesigner,
-  ChartFilterBlockProvider,
-  ChartFilterItemDesigner,
-  useChartFilterActionProps,
-  useChartFilterResetProps,
-} from './filter';
 
 class DataVisualizationPlugin extends Plugin {
   public charts: ChartGroup = new ChartGroup();
@@ -21,17 +13,8 @@ class DataVisualizationPlugin extends Plugin {
 
     this.app.addComponents({
       ChartV2BlockInitializer,
-      ChartRenderer,
       ChartV2BlockDesigner,
       ChartV2Block,
-      ChartRendererProvider,
-      ChartFilterBlockProvider,
-      ChartFilterBlockDesigner,
-      ChartFilterItemDesigner,
-    });
-    this.app.addScopes({
-      useChartFilterActionProps,
-      useChartFilterResetProps,
     });
     this.app.addProvider(DataVisualization);
   }

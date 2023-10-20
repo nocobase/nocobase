@@ -15,11 +15,18 @@ export const useCustomFieldInterface = () => {
           return {
             ...defaultSchema,
             'x-component-props': {
+              ...defaultSchema['x-component-props'],
+
               showTime: true,
             },
           };
         default:
-          return defaultSchema;
+          return {
+            ...defaultSchema,
+            'x-component-props': {
+              ...defaultSchema['x-component-props'],
+            },
+          };
       }
     },
   };
@@ -82,7 +89,9 @@ export const useChartFilter = () => {
             'x-component': 'CollectionField',
             'x-decorator': 'FormItem',
             'x-collection-field': `${name}.${field.name}`,
-            'x-component-props': field.uiSchema?.['x-component-props'],
+            'x-component-props': {
+              ...field.uiSchema?.['x-component-props'],
+            },
           };
         }
         const resultItem = {
@@ -168,4 +177,10 @@ export const useChartFilter = () => {
     refresh,
     getChartFilterFields,
   };
+};
+
+export const useChartFilterAction = () => {
+  console.log('test');
+  // const { filter } = useChartFilter();
+  // return () => filter();
 };

@@ -1,4 +1,4 @@
-import { LineChartOutlined, FilterOutlined } from '@ant-design/icons';
+import { LineChartOutlined, BarChartOutlined } from '@ant-design/icons';
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import {
@@ -34,7 +34,7 @@ const ChartInitializer = (props: any) => {
     <DataBlockInitializer
       {...props}
       items={collections}
-      icon={<LineChartOutlined />}
+      icon={<BarChartOutlined />}
       componentType={'Chart'}
       onCreateBlockSchema={async ({ item }) => {
         setCurrent({ schema: {}, field: null, collection: item.name, service: null, data: undefined });

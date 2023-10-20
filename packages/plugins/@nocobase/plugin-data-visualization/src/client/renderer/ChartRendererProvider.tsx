@@ -1,9 +1,9 @@
-import { css } from '@emotion/css';
 import { useFieldSchema } from '@formily/react';
 import { MaybeCollectionProvider, useAPIClient, useRequest } from '@nocobase/client';
 import React, { createContext, useContext, useEffect } from 'react';
 import { parseField } from '../utils';
 import { ChartDataContext } from '../block/ChartDataProvider';
+import { ConfigProvider } from 'antd';
 
 export type MeasureProps = {
   field: string | string[];
@@ -112,17 +112,11 @@ export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
 
   return (
     <MaybeCollectionProvider collection={collection}>
-      <div
-        className={css`
-          .ant-card {
-            box-shadow: none;
-          }
-        `}
-      >
+      <ConfigProvider card={{ style: { boxShadow: 'none' } }}>
         <ChartRendererContext.Provider value={{ collection, config, transform, service, query }}>
           {props.children}
         </ChartRendererContext.Provider>
-      </div>
+      </ConfigProvider>
     </MaybeCollectionProvider>
   );
 };

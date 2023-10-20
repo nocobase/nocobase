@@ -53,7 +53,7 @@ const EditTitle = () => {
   );
 };
 
-export const ChartFilterItemDesigner = () => {
+export const ChartFilterItemDesigner: React.FC = () => {
   const { getCollectionJoinField } = useCollectionManager();
   const { getField } = useCollection();
   const { t } = useChartsTranslation();
