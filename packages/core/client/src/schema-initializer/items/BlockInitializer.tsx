@@ -1,10 +1,11 @@
 import { merge } from '@formily/shared';
 import React from 'react';
-import { SchemaInitializerItem } from '../../application';
+import { SchemaInitializerItem, useSchemaInitializerV2 } from '../../application';
 
 // Block
 export const BlockInitializer = (props) => {
-  const { item, schema, insert, ...others } = props;
+  const { item, schema, ...others } = props;
+  const { insert } = useSchemaInitializerV2();
   return (
     <SchemaInitializerItem
       {...others}

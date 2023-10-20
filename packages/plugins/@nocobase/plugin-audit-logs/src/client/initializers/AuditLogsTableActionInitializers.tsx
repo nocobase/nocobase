@@ -1,3 +1,5 @@
+import { SchemaInitializerV2 } from '@nocobase/client';
+
 // 操作记录表格操作配置
 export const AuditLogsTableActionInitializers = {
   'data-testid': 'configure-actions-button-of-audit-logs-table',
@@ -48,3 +50,38 @@ export const AuditLogsTableActionInitializers = {
     // },
   ],
 };
+
+export const auditLogsTableActionInitializers = new SchemaInitializerV2({
+  name: 'AuditLogsTableActionInitializers',
+  'data-testid': 'configure-actions-button-of-audit-logs-table',
+  title: "{{t('Configure actions')}}",
+  icon: 'SettingOutlined',
+  style: {
+    marginLeft: 8,
+  },
+  items: [
+    {
+      type: 'itemGroup',
+      title: "{{t('Enable actions')}}",
+      name: 'enable-actions',
+      children: [
+        {
+          name: 'filter',
+          title: "{{t('Filter')}}",
+          Component: 'FilterActionInitializer',
+          schema: {
+            'x-align': 'left',
+          },
+        },
+        {
+          name: 'refresh',
+          title: "{{t('Refresh')}}",
+          Component: 'RefreshActionInitializer',
+          schema: {
+            'x-align': 'right',
+          },
+        },
+      ],
+    },
+  ],
+});

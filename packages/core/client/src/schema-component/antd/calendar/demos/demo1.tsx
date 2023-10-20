@@ -2,10 +2,11 @@
  * title: Calendar
  */
 import {
+  Application,
+  Plugin,
   AntdSchemaComponentProvider,
   SchemaComponent,
   SchemaComponentProvider,
-  SchemaInitializerProvider,
 } from '@nocobase/client';
 import React from 'react';
 import defaultValues from './defaultValues';
@@ -54,14 +55,32 @@ const schema = {
   },
 };
 
-export default () => {
+const Root = () => {
   return (
     <SchemaComponentProvider>
-      <SchemaInitializerProvider>
-        <AntdSchemaComponentProvider>
-          <SchemaComponent schema={schema} />
-        </AntdSchemaComponentProvider>
-      </SchemaInitializerProvider>
+      <AntdSchemaComponentProvider>
+        <SchemaComponent schema={schema} />
+      </AntdSchemaComponentProvider>
     </SchemaComponentProvider>
   );
 };
+
+class MyPlugin extends Plugin {
+  async load() {
+    // 注册路由
+    this.app.router.add('root', {
+      path: '/',
+      Component: Root,
+    });
+  }
+}
+
+const app = new Application({
+  router: {
+    type: 'memory',
+    initialEntries: ['/'],
+  },
+  plugins: [MyPlugin],
+});
+
+export default app.getRootComponent();

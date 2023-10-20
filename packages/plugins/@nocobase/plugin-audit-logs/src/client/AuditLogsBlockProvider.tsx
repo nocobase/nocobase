@@ -1,9 +1,6 @@
-import { CollectionManagerProvider, SchemaInitializerProvider, TableBlockProvider } from '@nocobase/client';
+import { CollectionManagerProvider, TableBlockProvider } from '@nocobase/client';
 import React from 'react';
 import { useAuditChangesCollection, useAuditLogsCollection, useCollectionsCollection } from './collections';
-import { AuditLogsTableActionColumnInitializers } from './initializers/AuditLogsTableActionColumnInitializers';
-import { AuditLogsTableActionInitializers } from './initializers/AuditLogsTableActionInitializers';
-import { AuditLogsTableColumnInitializers } from './initializers/AuditLogsTableColumnInitializers';
 
 export const AuditLogsBlockProvider: React.FC = ({ children, ...restProps }) => {
   const auditChangesCollection = useAuditChangesCollection();
@@ -11,16 +8,8 @@ export const AuditLogsBlockProvider: React.FC = ({ children, ...restProps }) => 
   const collectionsCollection = useCollectionsCollection();
 
   return (
-    <SchemaInitializerProvider
-      initializers={{
-        AuditLogsTableActionInitializers,
-        AuditLogsTableActionColumnInitializers,
-        AuditLogsTableColumnInitializers,
-      }}
-    >
-      <CollectionManagerProvider collections={[auditLogsCollection, auditChangesCollection, collectionsCollection]}>
-        <TableBlockProvider {...restProps}>{children}</TableBlockProvider>
-      </CollectionManagerProvider>
-    </SchemaInitializerProvider>
+    <CollectionManagerProvider collections={[auditLogsCollection, auditChangesCollection, collectionsCollection]}>
+      <TableBlockProvider {...restProps}>{children}</TableBlockProvider>
+    </CollectionManagerProvider>
   );
 };

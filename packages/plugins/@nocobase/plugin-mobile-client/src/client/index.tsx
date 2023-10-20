@@ -3,6 +3,7 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { MobileClientProvider } from './MobileClientProvider';
 import MApplication from './router/Application';
+import { mBlockInitializers } from './core/schema';
 
 export class MobileClientPlugin extends Plugin {
   public mobileRouter: RouterManager;
@@ -10,6 +11,7 @@ export class MobileClientPlugin extends Plugin {
     this.setMobileRouter();
     this.addRoutes();
     this.app.use(MobileClientProvider);
+    this.app.schemaInitializerManager.add(mBlockInitializers);
   }
 
   setMobileRouter() {

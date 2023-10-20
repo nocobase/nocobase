@@ -1,4 +1,4 @@
-import { SchemaInitializer, gridRowColWrap } from '@nocobase/client';
+import { SchemaInitializer, SchemaInitializerV2, gridRowColWrap } from '@nocobase/client';
 import React from 'react';
 import { useSnapshotTranslation } from '../../locale';
 
@@ -43,3 +43,38 @@ export const SnapshotBlockInitializers = (props: any) => {
     />
   );
 };
+
+export const snapshotBlockInitializers = new SchemaInitializerV2({
+  name: 'SnapshotBlockInitializers',
+  'data-testid': 'add-block-button-in-snapshot-block',
+  wrap: gridRowColWrap,
+  title: '{{t("Add block")}}',
+  icon: 'PlusOutlined',
+  items: [
+    {
+      type: 'itemGroup',
+      title: '{{t("Current record blocks")}}',
+      name: 'current-record-blocks',
+      children: [
+        {
+          name: 'details',
+          title: '{{t("Details")}}',
+          Component: 'SnapshotBlockInitializersDetailItem',
+          actionInitializers: 'CalendarFormActionInitializers',
+        },
+      ],
+    },
+    {
+      type: 'itemGroup',
+      title: '{{t("Other blocks")}}',
+      name: 'other-blocks',
+      children: [
+        {
+          name: 'markdown',
+          title: '{{t("Markdown")}}',
+          Component: 'MarkdownBlockInitializer',
+        },
+      ],
+    },
+  ],
+});

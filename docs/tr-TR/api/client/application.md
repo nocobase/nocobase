@@ -35,7 +35,6 @@ const app = new Application({
 - SystemSettingsProvider
 - PluginManagerProvider
 - SchemaComponentProvider
-- SchemaInitializerProvider
 - BlockSchemaComponentProvider
 - AntdSchemaComponentProvider
 - ACLProvider

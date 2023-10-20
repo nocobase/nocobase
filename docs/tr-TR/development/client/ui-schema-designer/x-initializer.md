@@ -23,7 +23,7 @@
 
 ## 替换
 
-```tsx |pure
+```tsx | pure
 import React, { useContext } from 'react';
 import { Plugin } from '@nocobase/client';
 

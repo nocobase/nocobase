@@ -1,7 +1,6 @@
-import { SchemaComponentOptions, SchemaInitializerProvider } from '@nocobase/client';
+import { SchemaComponentOptions } from '@nocobase/client';
 import React from 'react';
 import {
-  MBlockInitializers,
   MMenuBlockInitializer,
   MMenu,
   MContainer,
@@ -17,29 +16,23 @@ import './bridge';
 
 export const MobileCore: React.FC = (props) => {
   return (
-    <SchemaInitializerProvider
-      initializers={{
-        MBlockInitializers,
+    <SchemaComponentOptions
+      components={{
+        MMenuBlockInitializer,
+        MSettingsBlockInitializer,
+        MContainer,
+        MMenu,
+        MTabBar,
+        MPage,
+        MHeader,
+        MSettings,
+      }}
+      scope={{
+        useGridCardBlockItemProps,
+        useGridCardBlockProps,
       }}
     >
-      <SchemaComponentOptions
-        components={{
-          MMenuBlockInitializer,
-          MSettingsBlockInitializer,
-          MContainer,
-          MMenu,
-          MTabBar,
-          MPage,
-          MHeader,
-          MSettings,
-        }}
-        scope={{
-          useGridCardBlockItemProps,
-          useGridCardBlockProps,
-        }}
-      >
-        {props.children}
-      </SchemaComponentOptions>
-    </SchemaInitializerProvider>
+      {props.children}
+    </SchemaComponentOptions>
   );
 };

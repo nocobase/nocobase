@@ -1,5 +1,13 @@
 import { observer, useFieldSchema } from '@formily/react';
-import { BlockItem, DragHandler, Grid, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import {
+  Application,
+  BlockItem,
+  Plugin,
+  DragHandler,
+  Grid,
+  SchemaComponent,
+  SchemaComponentProvider,
+} from '@nocobase/client';
 import React from 'react';
 
 const Block = observer(
@@ -158,10 +166,29 @@ const schema = {
   },
 };
 
-export default function App() {
+const Root = () => {
   return (
     <SchemaComponentProvider components={{ Grid, Block, BlockItem }}>
       <SchemaComponent schema={schema} />
     </SchemaComponentProvider>
   );
+};
+
+class MyPlugin extends Plugin {
+  async load() {
+    this.app.router.add('root', {
+      path: '/',
+      Component: Root,
+    });
+  }
 }
+
+const app = new Application({
+  router: {
+    type: 'memory',
+    initialEntries: ['/'],
+  },
+  plugins: [MyPlugin],
+});
+
+export default app.getRootComponent();

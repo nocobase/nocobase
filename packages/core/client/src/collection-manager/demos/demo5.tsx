@@ -1,9 +1,7 @@
-import { FormDrawer, FormLayout } from '@formily/antd-v5';
-import { createForm } from '@formily/core';
-import { FormContext, ISchema, SchemaOptionsContext } from '@formily/react';
-import { uid } from '@formily/shared';
+import React, { useContext } from 'react';
 import {
   AntdSchemaComponentProvider,
+  Application,
   CardItem,
   CollectionManagerContext,
   CollectionManagerProvider,
@@ -13,15 +11,19 @@ import {
   Input,
   InputNumber,
   Markdown,
+  Plugin,
   SchemaComponent,
   SchemaComponentOptions,
-  SchemaComponentProvider,
-  SchemaInitializer,
-  SchemaInitializerProvider,
+  SchemaInitializerItem,
+  SchemaInitializerV2,
   useCollectionManager,
 } from '@nocobase/client';
-import cloneDeep from 'lodash/cloneDeep';
-import React, { useContext } from 'react';
+import { FormDrawer, FormLayout } from '@formily/antd-v5';
+import { createForm } from '@formily/core';
+import { ISchema } from '@formily/json-schema';
+import { FormContext, SchemaOptionsContext } from '@formily/react';
+import { uid } from '@formily/shared';
+import { cloneDeep } from 'lodash';
 
 const collection: any = {
   name: 'posts',
@@ -33,7 +35,7 @@ const schema: ISchema = {
   properties: {
     grid: {
       type: 'void',
-      'x-component': 'Grid',
+      'x-component': Grid,
       'x-read-pretty': true,
       'x-initializer': 'AddFieldButton',
       'x-uid': uid(),
@@ -45,11 +47,11 @@ const schema: ISchema = {
 const gridRowColWrap = (schema: ISchema) => {
   return {
     type: 'void',
-    'x-component': 'Grid.Row',
+    'x-component': Grid.Row,
     properties: {
       [uid()]: {
         type: 'void',
-        'x-component': 'Grid.Col',
+        'x-component': Grid.Col,
         properties: {
           [schema.name || uid()]: schema,
         },
@@ -69,7 +71,8 @@ const FormItemInitializer = (props) => {
   const schemaOptions = useContext(SchemaOptionsContext);
   const cm = useContext(CollectionManagerContext);
   return (
-    <SchemaInitializer.Item
+    <SchemaInitializerItem
+      title={'add'}
       onClick={async () => {
         const interfaceOptions = getInterface(item.fieldInterface);
         if (!interfaceOptions) {
@@ -116,48 +119,72 @@ const FormItemInitializer = (props) => {
   );
 };
 
-export const AddFieldButton = (props: any) => {
-  const { insertPosition = 'beforeEnd', component } = props;
-  return (
-    <SchemaInitializer.Button
-      wrap={gridRowColWrap}
-      insertPosition={insertPosition}
-      items={[
+const addFieldButton = new SchemaInitializerV2({
+  name: 'AddFieldButton',
+  // 正常情况下这个值为 false，通过点击页面左上角的设计按钮切换，这里为了显示设置为 true
+  designable: true,
+  //  按钮标题标题
+  title: 'Add Field',
+  // 调用 initializer.render() 时会渲染 items 列表
+  wrap: gridRowColWrap,
+  items: [
+    {
+      name: 'media',
+      type: 'itemGroup',
+      title: 'Field interfaces',
+      children: [
         {
-          key: 'media',
-          type: 'itemGroup',
-          title: 'Field interfaces',
-          children: [
-            {
-              key: 'singleText',
-              type: 'item',
-              title: 'Single text',
-              fieldInterface: 'input',
-              component: FormItemInitializer,
-            },
-          ],
+          name: 'single-text',
+          title: 'Single text',
+          fieldInterface: 'input',
+          Component: FormItemInitializer,
         },
-      ]}
-      component={component}
-      title={component ? undefined : 'Add Field'}
-    />
+      ],
+    },
+  ],
+});
+
+const Root = () => {
+  return (
+    <CollectionManagerProvider>
+      <CollectionProvider collection={collection}>
+        <FormContext.Provider value={form}>
+          <FormLayout layout={'vertical'}>
+            <SchemaComponent schema={schema} />
+          </FormLayout>
+        </FormContext.Provider>
+      </CollectionProvider>
+    </CollectionManagerProvider>
   );
 };
 
-export default function App() {
-  return (
-    <SchemaComponentProvider components={{ Grid, CardItem, Markdown, InputNumber, FormItem, Input }}>
-      <SchemaInitializerProvider initializers={{ AddFieldButton }}>
-        <CollectionManagerProvider>
-          <CollectionProvider collection={collection}>
-            <FormContext.Provider value={form}>
-              <FormLayout layout={'vertical'}>
-                <SchemaComponent schema={schema} />
-              </FormLayout>
-            </FormContext.Provider>
-          </CollectionProvider>
-        </CollectionManagerProvider>
-      </SchemaInitializerProvider>
-    </SchemaComponentProvider>
-  );
+class MyPlugin extends Plugin {
+  async load() {
+    // 注册组件
+    this.app.addComponents({
+      Grid,
+      CardItem,
+      Markdown,
+      InputNumber,
+      FormItem,
+      Input,
+    });
+    // 注册 schema initializer
+    this.app.schemaInitializerManager.add(addFieldButton);
+    // 注册路由
+    this.app.router.add('root', {
+      path: '/',
+      Component: Root,
+    });
+  }
 }
+
+const app = new Application({
+  router: {
+    type: 'memory',
+    initialEntries: ['/'],
+  },
+  plugins: [MyPlugin],
+});
+
+export default app.getRootComponent();

@@ -206,14 +206,14 @@ type ConditionFunc = (ctx: any) => Promise<boolean> | boolean;
 **Detailed Information**
 
 * resourceName - Name of the resource
-* actionNames - Name of the resource action  
+* actionNames - Name of the resource action
 * condition? - Configuration of the validity condition
   * Pass in a `string` to use a condition that is already defined; Use the  `acl.allowManager.registerCondition` method to register a condition.
     ```typescript
     acl.allowManager.registerAllowCondition('superUser', async () => {
       return ctx.state.user?.id === 1;
     });
-    
+
     // Open permissions of the users:list with validity condition superUser
     acl.allow('users', 'list', 'superUser');
     ```

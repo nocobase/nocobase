@@ -1,3 +1,9 @@
+---
+group:
+  title: Client
+  order: 1
+---
+
 # useVariables
 
 ## 使用方法
