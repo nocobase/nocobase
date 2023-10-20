@@ -1,6 +1,5 @@
 import React, { ComponentType, useCallback } from 'react';
-import { createContext } from 'react';
-import { InsertType, SchemaInitializerItemType, SchemaInitializerOptions } from '../types';
+import { SchemaInitializerItemType, SchemaInitializerOptions } from '../types';
 import { useFindComponent } from '../../../schema-component';
 import {
   SchemaInitializerGroup,
@@ -11,14 +10,6 @@ import {
 import { useStyles } from '../components/style';
 import { useCompile } from '../../../schema-component';
 import { SchemaInitializerItemOptions } from '../../../schema-initializer';
-
-export const SchemaInitializerV2Context = createContext<{ insert: InsertType; options: SchemaInitializerOptions }>(
-  {} as any,
-);
-SchemaInitializerV2Context.displayName = 'SchemaInitializerV2Context';
-export const useSchemaInitializerV2 = () => {
-  return React.useContext(SchemaInitializerV2Context);
-};
 
 const typeComponentMap: Record<SchemaInitializerItemType['type'], ComponentType> = {
   itemGroup: SchemaInitializerGroup,

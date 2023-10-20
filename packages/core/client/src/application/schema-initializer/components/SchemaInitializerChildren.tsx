@@ -1,5 +1,5 @@
 import React, { FC } from 'react';
-import { UseInitializerChildrenResult, useInitializerChildren, useSchemaInitializerV2 } from '../hooks';
+import { UseInitializerChildrenResult, useInitializerChildren } from '../hooks';
 import { SchemaInitializerItemType } from '../types';
 
 export const SchemaInitializerChildren: FC<{ children: SchemaInitializerItemType[] }> = (props) => {
@@ -16,9 +16,8 @@ export const SchemaInitializerChildren: FC<{ children: SchemaInitializerItemType
 
 const useChildrenDefault = () => undefined;
 const SchemaInitializerChild: FC<UseInitializerChildrenResult> = (props) => {
-  const { insert } = useSchemaInitializerV2();
+  // const { insert } = useSchemaInitializerV2();
   const { children, useChildren = useChildrenDefault, name, Component, ...others } = props;
   const useChildrenRes = useChildren();
-  // TODO：insert 要移除改为 hooks
-  return React.createElement(Component, { key: name, name, insert, ...others }, useChildrenRes || children);
+  return React.createElement(Component, { key: name, name, ...others }, useChildrenRes || children);
 };

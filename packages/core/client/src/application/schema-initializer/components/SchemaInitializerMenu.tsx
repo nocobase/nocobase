@@ -1,9 +1,10 @@
 import Icon from '@ant-design/icons';
 import { Menu } from 'antd';
 import React, { FC, ReactNode } from 'react';
-import { useInitializerChildren, useSchemaInitializerV2 } from '../hooks';
+import { useInitializerChildren } from '../hooks';
 import { SchemaInitializerOptions } from '../types';
 import { useCompile } from '../../../schema-component';
+import { useSchemaInitializerV2 } from '../context';
 
 export interface SchemaInitializerMenuProps {
   title: string;

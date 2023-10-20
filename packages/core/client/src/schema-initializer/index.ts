@@ -1,3 +1,6 @@
+import * as initializerComponents from './components';
+import * as items from './items';
+
 export * from './buttons';
 export * from './items';
 export * from './SchemaInitializer';
@@ -57,6 +60,11 @@ import {
 
 export class SchemaInitializerPlugin extends Plugin {
   async load() {
+    this.app.addComponents({
+      ...initializerComponents,
+      ...items,
+    } as any);
+
     this.app.schemaInitializerManager.add(blockInitializers);
     this.app.schemaInitializerManager.add(tableActionInitializers);
     this.app.schemaInitializerManager.add(tableColumnInitializers);

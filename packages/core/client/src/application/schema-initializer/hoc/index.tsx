@@ -6,7 +6,7 @@ import { ISchema, observer } from '@formily/react';
 
 import { useDesignable } from '../../../schema-component';
 import { SchemaInitializerOptions } from '../types';
-import { SchemaInitializerV2Context } from '../hooks';
+import { SchemaInitializerV2Context } from '../context';
 
 const defaultWrap = (s: ISchema) => s;
 
@@ -25,10 +25,6 @@ export function withInitializer<T>(C: ComponentType<T>, cProps: T) {
       children,
       noDropdown,
     } = props;
-    // designable 为 false 时，不渲染
-    if (!designable && propsDesignable !== true) {
-      return null;
-    }
 
     // 插入 schema 的能力
     const insertCallback = useInsert ? useInsert() : insert;
@@ -42,6 +38,11 @@ export function withInitializer<T>(C: ComponentType<T>, cProps: T) {
       },
       [insertCallback, wrap, insertAdjacent, insertPosition, onSuccess],
     );
+
+    // designable 为 false 时，不渲染
+    if (!designable && propsDesignable !== true) {
+      return null;
+    }
 
     return (
       <SchemaInitializerV2Context.Provider value={{ insert: insertSchema, options: props }}>
