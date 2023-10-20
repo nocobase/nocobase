@@ -301,7 +301,7 @@ export const BlockProvider = (props: {
 }) => {
   const { collection, association, name } = props;
   const resource = useResource(props);
-  const params = { ...props.params };
+  const params = useMemo(() => ({ ...props.params }), [props.params]);
   const { appends, updateAssociationValues } = useAssociationNames();
   const blockValue = useMemo(() => ({ name }), [name]);
 

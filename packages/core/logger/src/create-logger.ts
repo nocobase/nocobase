@@ -19,7 +19,7 @@ const Transports = {
       ...options,
     });
   },
-  dailyRotateFile(options: any) {
+  dailyRotateFile(options: any = {}) {
     let dirname = getLoggerFilePath();
     if (!path.isAbsolute(dirname)) {
       dirname = path.resolve(process.cwd(), dirname);

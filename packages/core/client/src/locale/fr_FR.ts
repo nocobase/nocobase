@@ -600,6 +600,7 @@ export default {
   "Dynamic value": "Valeur dynamique",
   "Current user": "Utilisateur actuel",
   "Current record": "Enregistrement actuel",
+  "Current parent record": "Enregistrement parent actuel",
   "Current time": "Heure actuelle",
   "System variables": "Variables système",
   "Date variables": "Variables de date",
