@@ -19,7 +19,7 @@ import {
 } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { LocalVariablesProvider } from '../../../variables/hooks/useLocalVariables';
 import { AssociationFieldContext } from './context';
-import { useAssociationFieldContext } from './hooks';
+import { SubFormProvider, useAssociationFieldContext } from './hooks';
 
 export const Nester = (props) => {
   const { options } = useContext(AssociationFieldContext);
@@ -78,13 +78,15 @@ const ToOneNester = (props) => {
 
   return (
     <FormActiveFieldsProvider name="nester">
-      <RecordProvider record={field.value}>
-        <LocalVariablesProvider iterationCtx={field.value}>
-          <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
-            <Card bordered={true}>{props.children}</Card>
-          </DefaultValueProvider>
-        </LocalVariablesProvider>
-      </RecordProvider>
+      <SubFormProvider value={field.value}>
+        <RecordProvider record={field.value}>
+          <LocalVariablesProvider iterationCtx={field.value}>
+            <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
+              <Card bordered={true}>{props.children}</Card>
+            </DefaultValueProvider>
+          </LocalVariablesProvider>
+        </RecordProvider>
+      </SubFormProvider>
     </FormActiveFieldsProvider>
   );
 };
@@ -186,19 +188,21 @@ const ToManyNester = observer(
                 )}
               </div>
               <FormActiveFieldsProvider name="nester">
-                <RecordProvider record={value}>
-                  <LocalVariablesProvider iterationCtx={value}>
-                    <RecordIndexProvider index={index}>
-                      <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
-                        <RecursionField
-                          onlyRenderProperties
-                          basePath={field.address.concat(index)}
-                          schema={fieldSchema}
-                        />
-                      </DefaultValueProvider>
-                    </RecordIndexProvider>
-                  </LocalVariablesProvider>
-                </RecordProvider>
+                <SubFormProvider value={value}>
+                  <RecordProvider record={value}>
+                    <LocalVariablesProvider iterationCtx={value}>
+                      <RecordIndexProvider index={index}>
+                        <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
+                          <RecursionField
+                            onlyRenderProperties
+                            basePath={field.address.concat(index)}
+                            schema={fieldSchema}
+                          />
+                        </DefaultValueProvider>
+                      </RecordIndexProvider>
+                    </LocalVariablesProvider>
+                  </RecordProvider>
+                </SubFormProvider>
               </FormActiveFieldsProvider>
               <Divider />
             </React.Fragment>
