@@ -86,8 +86,9 @@ ChartRenderer.Designer = function Designer() {
     <GeneralSchemaDesigner disableInitializer title={title || name}>
       <SchemaSettings.Item
         key="configure"
-        onClick={() => {
-          setCurrent({ schema, field, collection: name, service, data: service?.data });
+        onClick={async () => {
+          const data = await service.runAsync(name, field?.decoratorProps?.query, true);
+          setCurrent({ schema, field, collection: name, service, data });
           setVisible(true);
         }}
       >
