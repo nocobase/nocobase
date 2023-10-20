@@ -4,7 +4,7 @@ import { FormOutlined } from '@ant-design/icons';
 import { useBlockRequestContext } from '../../block-provider';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { createReadPrettyFormBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
-import { InitializerItem } from '../../application';
+import { SchemaInitializerItem } from '../../application';
 
 export const RecordReadPrettyAssociationFormBlockInitializer = (props) => {
   const { item, onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
@@ -17,7 +17,7 @@ export const RecordReadPrettyAssociationFormBlockInitializer = (props) => {
   const actionInitializers = block !== 'TableField' ? 'ReadPrettyFormActionInitializers' : null;
 
   return (
-    <InitializerItem
+    <SchemaInitializerItem
       icon={<FormOutlined />}
       {...others}
       onClick={async ({ item }) => {

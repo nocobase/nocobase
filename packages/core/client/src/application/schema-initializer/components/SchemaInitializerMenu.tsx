@@ -5,7 +5,7 @@ import { useInitializerChildren, useSchemaInitializerV2 } from '../hooks';
 import { SchemaInitializerOptions } from '../types';
 import { useCompile } from '../../../schema-component';
 
-export interface InitializerMenuProps {
+export interface SchemaInitializerMenuProps {
   title: string;
   name: string;
   onClick: (args: any) => void;
@@ -13,7 +13,7 @@ export interface InitializerMenuProps {
   children?: SchemaInitializerOptions['list'];
 }
 
-export const InitializerMenu: FC<InitializerMenuProps> = (props) => {
+export const SchemaInitializerMenu: FC<SchemaInitializerMenuProps> = (props) => {
   const { children, title, name, icon } = props;
   const validChildren = useInitializerChildren(children);
   const { insert } = useSchemaInitializerV2();

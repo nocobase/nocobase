@@ -11,7 +11,7 @@ import {
   useFormItemInitializerFields,
   useInheritsFormItemInitializerFields,
 } from '../utils';
-import { InitializerChildren, SchemaInitializerV2 } from '../../application';
+import { SchemaInitializerChildren, SchemaInitializerV2 } from '../../application';
 
 // 表单里配置字段
 export const FormItemInitializers = (props: any) => {
@@ -179,7 +179,7 @@ const ParentCollectionFields = () => {
         children: Object.values(inherit)[0],
       });
   });
-  return <InitializerChildren>{res}</InitializerChildren>;
+  return <SchemaInitializerChildren>{res}</SchemaInitializerChildren>;
 };
 
 const AssociatedFields = () => {
@@ -196,7 +196,7 @@ const AssociatedFields = () => {
       children: associationFields,
     },
   ];
-  return <InitializerChildren>{schema}</InitializerChildren>;
+  return <SchemaInitializerChildren>{schema}</SchemaInitializerChildren>;
 };
 
 export const formItemInitializers = new SchemaInitializerV2({
@@ -257,7 +257,7 @@ export const FilterParentCollectionFields = () => {
     });
   }
 
-  return <InitializerChildren>{res}</InitializerChildren>;
+  return <SchemaInitializerChildren>{res}</SchemaInitializerChildren>;
 };
 
 export const FilterAssociatedFields = () => {
@@ -270,7 +270,7 @@ export const FilterAssociatedFields = () => {
       children: associationFields,
     },
   ];
-  return <InitializerChildren>{res}</InitializerChildren>;
+  return <SchemaInitializerChildren>{res}</SchemaInitializerChildren>;
 };
 
 export const filterFormItemInitializers = new SchemaInitializerV2({

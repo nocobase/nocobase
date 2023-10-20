@@ -3,7 +3,7 @@ import { FormLayout } from '@formily/antd-v5';
 import { SchemaOptionsContext } from '@formily/react';
 import {
   FormDialog,
-  InitializerItem,
+  SchemaInitializerItem,
   SchemaComponent,
   SchemaComponentOptions,
   SchemaInitializerButtonContext,
@@ -143,7 +143,7 @@ export const ChartQueryBlockInitializer = (props) => {
   }, [ctx.data, onAddQuery]);
 
   return (
-    <InitializerItem
+    <SchemaInitializerItem
       icon={<TableOutlined />}
       {...others}
       onClick={async ({ item }) => {

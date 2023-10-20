@@ -4,7 +4,7 @@ import { useBlockAssociationContext } from '../../block-provider';
 import { useCollection } from '../../collection-manager';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { createFormBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
-import { InitializerItem } from '../../application';
+import { SchemaInitializerItem } from '../../application';
 
 export const RecordFormBlockInitializer = (props) => {
   const { onCreateBlockSchema, componentType, createBlockSchema, insert, targetCollection, ...others } = props;
@@ -13,7 +13,7 @@ export const RecordFormBlockInitializer = (props) => {
   const collection = targetCollection || currentCollection;
   const association = useBlockAssociationContext();
   return (
-    <InitializerItem
+    <SchemaInitializerItem
       icon={<FormOutlined />}
       {...others}
       onClick={async ({ item }) => {

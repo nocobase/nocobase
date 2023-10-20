@@ -1,21 +1,21 @@
 import { Switch } from 'antd';
 import React, { FC } from 'react';
-import { InitializerItemProps, InitializerItem } from './InitializerItem';
+import { SchemaInitializerItemProps, SchemaInitializerItem } from './SchemaInitializerItem';
 import { useCompile } from '../../../schema-component';
 
-export interface InitializerSwitchItemProps extends InitializerItemProps {
+export interface SchemaInitializerSwitchItemProps extends SchemaInitializerItemProps {
   checked?: boolean;
   disabled?: boolean;
 }
 
-export const InitializerSwitch: FC<InitializerSwitchItemProps> = (props) => {
+export const SchemaInitializerSwitch: FC<SchemaInitializerSwitchItemProps> = (props) => {
   const { title, checked, ...resets } = props;
   const compile = useCompile();
   return (
-    <InitializerItem {...resets}>
+    <SchemaInitializerItem {...resets}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         {compile(title)} <Switch style={{ marginLeft: 20 }} size={'small'} checked={checked} />
       </div>
-    </InitializerItem>
+    </SchemaInitializerItem>
   );
 };

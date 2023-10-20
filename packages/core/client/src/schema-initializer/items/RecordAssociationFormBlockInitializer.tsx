@@ -3,7 +3,7 @@ import { FormOutlined } from '@ant-design/icons';
 
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { createFormBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
-import { InitializerItem } from '../../application';
+import { SchemaInitializerItem } from '../../application';
 
 export const RecordAssociationFormBlockInitializer = (props) => {
   const { item, onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
@@ -12,7 +12,7 @@ export const RecordAssociationFormBlockInitializer = (props) => {
   const collection = field.target;
   const resource = `${field.collectionName}.${field.name}`;
   return (
-    <InitializerItem
+    <SchemaInitializerItem
       icon={<FormOutlined />}
       {...others}
       onClick={async ({ item }) => {

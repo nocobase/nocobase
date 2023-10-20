@@ -4,7 +4,7 @@ import {
   CollectionFieldInitializer,
   Form,
   FormItem,
-  InitializerItem,
+  SchemaInitializerItem,
   Input,
   Markdown,
   Plugin,
@@ -49,7 +49,7 @@ const useFormItemInitializerFields = () => {
 const TextInitializer: FC = (props) => {
   const { insert } = useSchemaInitializerV2();
   return (
-    <InitializerItem
+    <SchemaInitializerItem
       onClick={() => {
         insert({
           type: 'void',

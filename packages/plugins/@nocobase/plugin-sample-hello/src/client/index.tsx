@@ -1,6 +1,6 @@
 import { TableOutlined } from '@ant-design/icons';
 import {
-  InitializerItem,
+  SchemaInitializerItem,
   Plugin,
   SchemaComponentOptions,
   SchemaInitializer,
@@ -15,7 +15,7 @@ export const HelloBlockInitializer = (props) => {
   const { insert } = props;
   const { t } = useTranslation();
   return (
-    <InitializerItem
+    <SchemaInitializerItem
       {...props}
       icon={<TableOutlined />}
       onClick={() => {

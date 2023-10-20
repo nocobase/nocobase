@@ -1,24 +1,24 @@
 import React, { FC } from 'react';
 import { useCompile } from '../../../schema-component';
-import { InitializerChildren } from './InitializerChildren';
-import { InitializerDivider } from './InitializerDivider';
+import { SchemaInitializerChildren } from './SchemaInitializerChildren';
+import { SchemaInitializerDivider } from './SchemaInitializerDivider';
 import { SchemaInitializerOptions } from '../types';
 
-export interface InitializerGroupProps {
+export interface SchemaInitializerGroupProps {
   title: string;
   children: SchemaInitializerOptions['list'];
   name: string;
   divider?: boolean;
 }
 
-export const InitializerGroup: FC<InitializerGroupProps> = (props) => {
+export const SchemaInitializerGroup: FC<SchemaInitializerGroupProps> = (props) => {
   const { children, title, divider } = props;
   const compile = useCompile();
   return (
     <div>
-      {divider && <InitializerDivider />}
+      {divider && <SchemaInitializerDivider />}
       <div className="ant-dropdown-menu-item-group-title">{compile(title)}</div>
-      <InitializerChildren>{children}</InitializerChildren>
+      <SchemaInitializerChildren>{children}</SchemaInitializerChildren>
     </div>
   );
 };

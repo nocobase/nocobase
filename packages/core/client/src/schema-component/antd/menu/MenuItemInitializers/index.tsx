@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { FormDialog, SchemaComponent, SchemaComponentOptions } from '../../..';
 import { useGlobalTheme } from '../../../../global-theme';
 import { SchemaInitializer } from '../../../../schema-initializer';
-import { InitializerItem, SchemaInitializerV2, useSchemaInitializerV2 } from '../../../../application';
+import { SchemaInitializerItem, SchemaInitializerV2, useSchemaInitializerV2 } from '../../../../application';
 
 export const MenuItemInitializers = (props: any) => {
   const { t } = useTranslation();
@@ -164,7 +164,7 @@ export const GroupItemV2 = () => {
       ],
     });
   }, [insert, options.components, options.scope, t, theme]);
-  return <InitializerItem title={'Group'} onClick={handleClick} />;
+  return <SchemaInitializerItem title={'Group'} onClick={handleClick} />;
 };
 
 export const PageMenuItem = itemWrap((props) => {
@@ -319,7 +319,7 @@ export const PageMenuItemV2 = () => {
       },
     });
   }, [insert, options.components, options.scope, t, theme]);
-  return <InitializerItem title={'Page'} onClick={handleClick} />;
+  return <SchemaInitializerItem title={'Page'} onClick={handleClick} />;
 };
 
 export const LinkMenuItem = itemWrap((props) => {
@@ -457,7 +457,7 @@ export const LinkMenuItemV2 = () => {
     });
   }, [insert, options.components, options.scope, t, theme]);
 
-  return <InitializerItem title={'Link'} onClick={handleClick} />;
+  return <SchemaInitializerItem title={'Link'} onClick={handleClick} />;
 };
 
 export const menuItemInitializerV2 = new SchemaInitializerV2({

@@ -8,7 +8,7 @@ import {
   useFormItemInitializerFields,
   useInheritsFormItemInitializerFields,
 } from '../utils';
-import { InitializerChildren, SchemaInitializerV2 } from '../../application';
+import { SchemaInitializerChildren, SchemaInitializerV2 } from '../../application';
 
 export const ReadPrettyFormItemInitializers = (props: any) => {
   const { t } = useTranslation();
@@ -98,7 +98,7 @@ const ParentCollectionFields = () => {
         children: Object.values(inherit)[0],
       });
   });
-  return <InitializerChildren>{res}</InitializerChildren>;
+  return <SchemaInitializerChildren>{res}</SchemaInitializerChildren>;
 };
 
 const AssociatedFields = () => {
@@ -115,7 +115,7 @@ const AssociatedFields = () => {
       children: associationFields,
     },
   ];
-  return <InitializerChildren>{schema}</InitializerChildren>;
+  return <SchemaInitializerChildren>{schema}</SchemaInitializerChildren>;
 };
 
 export const readPrettyFormItemInitializers = new SchemaInitializerV2({

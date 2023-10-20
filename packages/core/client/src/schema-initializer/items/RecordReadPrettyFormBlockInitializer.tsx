@@ -4,7 +4,7 @@ import { useBlockAssociationContext, useBlockRequestContext } from '../../block-
 import { useCollection } from '../../collection-manager';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { createReadPrettyFormBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
-import { InitializerItem } from '../../application';
+import { SchemaInitializerItem } from '../../application';
 
 export const RecordReadPrettyFormBlockInitializer = (props) => {
   const {
@@ -25,7 +25,7 @@ export const RecordReadPrettyFormBlockInitializer = (props) => {
     block !== 'TableField' ? props.actionInitializers || 'ReadPrettyFormActionInitializers' : null;
 
   return (
-    <InitializerItem
+    <SchemaInitializerItem
       icon={icon && <FormOutlined />}
       {...others}
       onClick={async ({ item }) => {

@@ -4,7 +4,7 @@ import { TableOutlined } from '@ant-design/icons';
 import { useCollectionManager } from '../../collection-manager';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { createGridCardBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
-import { InitializerItem } from '../../application';
+import { SchemaInitializerItem } from '../../application';
 
 export const RecordAssociationGridCardBlockInitializer = (props) => {
   const { item, onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
@@ -15,7 +15,7 @@ export const RecordAssociationGridCardBlockInitializer = (props) => {
   const resource = `${field.collectionName}.${field.name}`;
 
   return (
-    <InitializerItem
+    <SchemaInitializerItem
       icon={<TableOutlined />}
       {...others}
       onClick={async ({ item }) => {

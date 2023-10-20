@@ -2,8 +2,8 @@ import { ButtonProps, ListProps } from 'antd';
 import { ComponentType } from 'react';
 import React from 'react';
 import { SchemaInitializerOptions, SchemaInitializerItemType } from './types';
-import { InitializerButton } from './components/InitializerButton';
-import { InitializerItems } from './components/InitializerItems';
+import { SchemaInitializerButton } from './components/SchemaInitializerButton';
+import { SchemaInitializerItems } from './components/SchemaInitializerItems';
 import { withInitializer } from './hoc';
 
 export class SchemaInitializerV2<P1 = ButtonProps, P2 = ListProps<any>> {
@@ -87,7 +87,7 @@ export class SchemaInitializerV2<P1 = ButtonProps, P2 = ListProps<any>> {
   }
 
   render(options: SchemaInitializerOptions<P1, P2> = {}) {
-    const C: ComponentType = options.Component || this.options.Component || InitializerButton;
+    const C: ComponentType = options.Component || this.options.Component || SchemaInitializerButton;
     const componentProps = Object.assign({}, this.options.componentProps, options.componentProps, {
       options: {
         ...this.options,
@@ -114,7 +114,7 @@ export class SchemaInitializerV2<P1 = ButtonProps, P2 = ListProps<any>> {
 
   private renderItems(options: SchemaInitializerOptions<P1, P2> = {}) {
     if (this.items.length === 0) return null;
-    const C: ComponentType<any> = options.ItemsComponent || this.options.ItemsComponent || InitializerItems;
+    const C: ComponentType<any> = options.ItemsComponent || this.options.ItemsComponent || SchemaInitializerItems;
     const mergedOptions = Object.assign({}, this.options, options);
     const itemsComponentProps = Object.assign({}, options.itemsComponentProps || this.options.itemsComponentProps, {
       options: mergedOptions,

@@ -3,13 +3,13 @@ import React from 'react';
 
 import { useCollection } from '../../collection-manager';
 import { createTableSelectorSchema } from '../utils';
-import { InitializerItem } from '../../application';
+import { SchemaInitializerItem } from '../../application';
 
 export const TableSelectorInitializer = (props) => {
   const { onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
   const collection = useCollection();
   return (
-    <InitializerItem
+    <SchemaInitializerItem
       icon={<FormOutlined />}
       {...others}
       onClick={async ({ item }) => {

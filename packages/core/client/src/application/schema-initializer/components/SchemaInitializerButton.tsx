@@ -4,7 +4,7 @@ import { useCompile } from '../../../schema-component';
 import { SchemaInitializerOptions } from '../types';
 import { Icon } from '../../../icon';
 
-export const InitializerButton: FC<SchemaInitializerOptions> = (props) => {
+export const SchemaInitializerButton: FC<SchemaInitializerOptions> = (props) => {
   const { style, options, ...others } = props;
   const compile = useCompile();
 

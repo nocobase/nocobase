@@ -2,7 +2,12 @@ import React, { ComponentType, useCallback } from 'react';
 import { createContext } from 'react';
 import { InsertType, SchemaInitializerItemType, SchemaInitializerOptions } from '../types';
 import { useFindComponent } from '../../../schema-component';
-import { InitializerGroup, InitializerMenu, InitializerItem, InitializerDivider } from '../components';
+import {
+  SchemaInitializerGroup,
+  SchemaInitializerMenu,
+  SchemaInitializerItem,
+  SchemaInitializerDivider,
+} from '../components';
 import { useStyles } from '../components/style';
 import { useCompile } from '../../../schema-component';
 import { SchemaInitializerItemOptions } from '../../../schema-initializer';
@@ -16,10 +21,10 @@ export const useSchemaInitializerV2 = () => {
 };
 
 const typeComponentMap: Record<SchemaInitializerItemType['type'], ComponentType> = {
-  itemGroup: InitializerGroup,
-  divider: InitializerDivider,
-  subMenu: InitializerMenu,
-  item: InitializerItem,
+  itemGroup: SchemaInitializerGroup,
+  divider: SchemaInitializerDivider,
+  subMenu: SchemaInitializerMenu,
+  item: SchemaInitializerItem,
 };
 export const useInitializerComponent = () => {
   const findComponent = useFindComponent();

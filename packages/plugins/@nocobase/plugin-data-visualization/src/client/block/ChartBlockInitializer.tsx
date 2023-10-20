@@ -2,7 +2,7 @@ import { LineChartOutlined } from '@ant-design/icons';
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import {
-  InitializerItem,
+  SchemaInitializerItem,
   SchemaInitializer,
   SchemaInitializerV2,
   useACLRoleContext,
@@ -18,7 +18,7 @@ import { Menu } from 'antd';
 const ConfigureButton = (props) => {
   const { setVisible, setCurrent } = useContext(ChartConfigContext);
   return (
-    <InitializerItem
+    <SchemaInitializerItem
       {...props}
       onClick={() => {
         setCurrent({ schema: {}, field: null, collection: props.item?.name, service: null, data: undefined });
@@ -103,7 +103,7 @@ export const ChartV2BlockInitializer: React.FC<{
 }> = (props) => {
   const { insert } = props;
   return (
-    <InitializerItem
+    <SchemaInitializerItem
       {...props}
       icon={<LineChartOutlined />}
       onClick={() => {

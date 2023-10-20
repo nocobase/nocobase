@@ -10,7 +10,7 @@ import {
   useInheritsTableColumnInitializerFields,
   useTableColumnInitializerFields,
 } from '../utils';
-import { InitializerChildren, SchemaInitializerV2 } from '../../application';
+import { SchemaInitializerChildren, SchemaInitializerV2 } from '../../application';
 
 // 表格列配置
 export const TableColumnInitializers = (props: any) => {
@@ -113,7 +113,7 @@ const ParentCollectionFields = () => {
         children: Object.values(inherit)[0].filter((v: any) => !v?.field?.isForeignKey),
       });
   });
-  return <InitializerChildren>{res}</InitializerChildren>;
+  return <SchemaInitializerChildren>{res}</SchemaInitializerChildren>;
 };
 
 const AssociatedFields = () => {
@@ -130,7 +130,7 @@ const AssociatedFields = () => {
       children: associatedFields,
     },
   ];
-  return <InitializerChildren>{schema}</InitializerChildren>;
+  return <SchemaInitializerChildren>{schema}</SchemaInitializerChildren>;
 };
 
 export const tableColumnInitializers = new SchemaInitializerV2({

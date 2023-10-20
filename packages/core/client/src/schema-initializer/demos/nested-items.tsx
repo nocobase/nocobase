@@ -4,7 +4,7 @@ import {
   Plugin,
   SchemaInitializerV2,
   SchemaInitializerItemType,
-  InitializerChildren,
+  SchemaInitializerChildren,
   useApp,
 } from '@nocobase/client';
 import { Divider, Menu } from 'antd';
@@ -24,8 +24,8 @@ const ParentA: FC<{ children: SchemaInitializerItemType[] }> = ({ children }) =>
       <Divider dashed />
 
       {/* 等同于 */}
-      <div>使用内置的 InitializerChildren</div>
-      <InitializerChildren>{children}</InitializerChildren>
+      <div>使用内置的 SchemaInitializerChildren</div>
+      <SchemaInitializerChildren>{children}</SchemaInitializerChildren>
 
       <Divider dashed />
 

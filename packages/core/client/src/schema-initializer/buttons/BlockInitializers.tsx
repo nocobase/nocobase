@@ -1,5 +1,5 @@
 import { gridRowColWrap } from '../utils';
-import { InitializerGroup, SchemaInitializerV2 } from '../../application';
+import { SchemaInitializerGroup, SchemaInitializerV2 } from '../../application';
 
 // 页面里添加区块
 export const BlockInitializers = {
@@ -114,7 +114,7 @@ export const blockInitializers = new SchemaInitializerV2({
     {
       name: 'data-blocks',
       title: '{{t("Data blocks")}}',
-      // Component: InitializerGroup,
+      // Component: SchemaInitializerGroup,
       type: 'itemGroup',
       children: [
         {
@@ -161,7 +161,7 @@ export const blockInitializers = new SchemaInitializerV2({
     },
     {
       name: 'filter-blocks',
-      Component: InitializerGroup,
+      Component: SchemaInitializerGroup,
       title: '{{t("Filter blocks")}}',
       children: [
         {
@@ -178,7 +178,7 @@ export const blockInitializers = new SchemaInitializerV2({
     },
     {
       name: 'media',
-      Component: InitializerGroup,
+      Component: SchemaInitializerGroup,
       title: '{{t("Other blocks")}}',
       children: [
         {

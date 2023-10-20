@@ -1,5 +1,5 @@
 import { TableOutlined } from '@ant-design/icons';
-import { InitializerItem, Plugin } from '@nocobase/client';
+import { SchemaInitializerItem, Plugin } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { HelloDesigner } from './HelloDesigner';
@@ -8,7 +8,7 @@ export const HelloBlockInitializer = (props) => {
   const { insert } = props;
   const { t } = useTranslation();
   return (
-    <InitializerItem
+    <SchemaInitializerItem
       {...props}
       icon={<TableOutlined />}
       onClick={() => {

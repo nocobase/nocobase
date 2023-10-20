@@ -5,7 +5,7 @@ import { Menu } from 'antd';
 import { useSchemaInitializerMenuItems } from '../hooks';
 import { uid } from '@formily/shared';
 
-export interface InitializerItemProps {
+export interface SchemaInitializerItemProps {
   style?: React.CSSProperties;
   className?: string;
   name?: string;
@@ -15,7 +15,7 @@ export interface InitializerItemProps {
   onClick: (args?: any) => any;
 }
 
-export const InitializerItem: FC<InitializerItemProps> = (props) => {
+export const SchemaInitializerItem: FC<SchemaInitializerItemProps> = (props) => {
   const { style, name, className, items, icon, title, onClick, children } = props;
   const compile = useCompile();
   const menuItems = useSchemaInitializerMenuItems(items, name || `random-${uid()}`, onClick);
