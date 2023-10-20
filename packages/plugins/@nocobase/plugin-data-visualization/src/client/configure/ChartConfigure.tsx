@@ -133,7 +133,7 @@ export const ChartConfigure: React.FC<{
         }
 
         try {
-          await service.runAsync(collection, form.values.query);
+          await service.runAsync(collection, form.values.query, true);
         } catch (e) {
           console.log(e);
         }

@@ -154,7 +154,7 @@ export const useChartFilter = () => {
             },
           };
         }
-        await service.runAsync(collection, newQuery);
+        await service.runAsync(collection, newQuery, true);
       });
     await Promise.all(requests.map((request) => request()));
   };
@@ -166,7 +166,7 @@ export const useChartFilter = () => {
       })
       .map((chart) => async () => {
         const { service, collection, query } = chart;
-        await service.runAsync(collection, query);
+        await service.runAsync(collection, query, true);
       });
     await Promise.all(requests.map((request) => request()));
   };

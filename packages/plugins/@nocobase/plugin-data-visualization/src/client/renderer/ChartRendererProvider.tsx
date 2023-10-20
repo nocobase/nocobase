@@ -48,7 +48,6 @@ export type ChartRendererProps = {
   };
   transform?: TransformProps[];
   mode?: 'builder' | 'sql';
-  configuring?: boolean;
 };
 
 export const ChartRendererContext = createContext<
@@ -59,12 +58,12 @@ export const ChartRendererContext = createContext<
 >({} as any);
 
 export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
-  const { query, config, collection, transform, configuring } = props;
+  const { query, config, collection, transform } = props;
   const { addChart } = useContext(ChartDataContext);
   const schema = useFieldSchema();
   const api = useAPIClient();
   const service = useRequest(
-    (collection, query) =>
+    (collection, query, manual) =>
       new Promise((resolve, reject) => {
         if (!(collection && query?.measures?.length)) return resolve(undefined);
         api
@@ -95,6 +94,9 @@ export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
           })
           .then((res) => {
             resolve(res?.data?.data);
+            if (!manual && schema?.['x-uid']) {
+              addChart(schema?.['x-uid'], { collection, service, query });
+            }
           })
           .catch(reject);
       }),
@@ -102,13 +104,6 @@ export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
       defaultParams: [collection, query],
     },
   );
-
-  useEffect(() => {
-    if (!configuring && schema?.['x-uid']) {
-      addChart(schema?.['x-uid'], { collection, service, query });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [collection]);
 
   return (
     <MaybeCollectionProvider collection={collection}>
