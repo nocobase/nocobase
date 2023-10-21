@@ -297,15 +297,15 @@ test.describe('add block & delete block', () => {
     await page.getByRole('menuitem', { name: 'table Table right' }).click();
     await page.getByRole('menuitem', { name: 'Users' }).click();
     await page.getByRole('menuitem', { name: 'Users' }).hover();
-    await expect(page.getByTestId('table-block-users')).toBeVisible();
+    await expect(page.getByTestId('block-item')).toBeVisible();
     await expect(page.getByTestId('configure-actions-button-of-table-block-users')).toBeVisible();
     await expect(page.getByTestId('configure-columns-button-of-table-block-users')).toBeVisible();
     //删除区块
-    await page.getByTestId('table-block-users').hover();
-    await page.getByTestId('table-block-users').getByRole('button', { name: 'designer-schema-settings' }).click();
+    await page.getByTestId('block-item').hover();
+    await page.getByTestId('block-item').getByRole('button', { name: 'designer-schema-settings' }).click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'OK' }).click();
-    await expect(page.getByTestId('table-block-users')).not.toBeVisible();
+    await expect(page.getByTestId('block-item')).not.toBeVisible();
     await expect(page.getByTestId('configure-actions-button-of-table-block-users')).not.toBeVisible();
     await expect(page.getByTestId('configure-columns-button-of-table-block-users')).not.toBeVisible();
   });
@@ -316,15 +316,17 @@ test.describe('block title', () => {
     await mockPage({
       pageSchema: tablePageSchema,
     }).goto();
-    await page.getByTestId('table-block-users').click();
-    await page.getByTestId('table-block-users').getByRole('button', { name: 'designer-schema-settings' }).click();
+    await page.getByTestId('block-item').click();
+    await page.getByTestId('block-item').getByRole('button', { name: 'designer-schema-settings' }).click();
     await page.getByText('Edit block title').click();
     await page.getByRole('textbox').click();
     await page.getByRole('textbox').fill('block title');
     await page.getByRole('button', { name: 'OK' }).click();
-    await expect(page.getByTestId('table-block-users').getByText('block title')).toBeVisible();
+    await expect(page.getByTestId('block-item').locator('.ant-card-head')).toBeVisible();
+    await expect(await page.getByTestId('block-item').locator('.ant-card-head').innerText()).toBe('block title');
+
     //回显
-    await page.getByTestId('table-block-users').getByRole('button', { name: 'designer-schema-settings' }).click();
+    await page.getByTestId('block-item').getByRole('button', { name: 'designer-schema-settings' }).click();
     await page.getByText('Edit block title').click();
     const inputValue = await page.getByRole('textbox').inputValue();
     await expect(inputValue).toBe('block title');
@@ -505,7 +507,7 @@ test.describe('blcok template', () => {
     await expect(page.getByTestId('form-block-users')).toBeVisible();
 
     //在新建操作中使用引用模板
-    await page.getByTestId('table-block-users').getByRole('button', { name: 'plus Add new' }).click();
+    await page.getByTestId('block-item').getByRole('button', { name: 'plus Add new' }).click();
     await page.getByTestId('action-drawer').getByRole('button', { name: 'plus Add block' }).click();
     await page.getByRole('menuitem', { name: 'form Form right' }).click();
     await page.getByRole('menuitem', { name: 'Reference template right' }).click();
@@ -515,7 +517,7 @@ test.describe('blcok template', () => {
     await page.locator('.ant-drawer-mask').click();
 
     //在编辑操作中使用引用模板
-    await page.getByTestId('table-block-users').getByLabel('Edit').click();
+    await page.getByTestId('block-item').getByLabel('Edit').click();
     await page.getByTestId('action-drawer').getByRole('button', { name: 'plus Add block' }).click();
     await page.getByRole('menuitem', { name: 'form Form right' }).click();
     await page.getByRole('menuitem', { name: 'Reference template right' }).click();
@@ -526,7 +528,7 @@ test.describe('blcok template', () => {
     await page.locator('.ant-drawer-mask').click();
     //复制模板不同步，引用模板同步
     await expect(page.getByTestId('form-block-users').getByTestId('form-block-field-users.phone')).not.toBeVisible();
-    await page.getByTestId('table-block-users').getByRole('button', { name: 'plus Add new' }).click();
+    await page.getByTestId('block-item').getByRole('button', { name: 'plus Add new' }).click();
     await expect(page.getByTestId('form-block-field-users.phone')).toBeVisible();
   });
 });

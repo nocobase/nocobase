@@ -138,8 +138,8 @@ const tablePageSchema = {
 test.describe('add action & remove action', () => {
   test('add action & remove action in block', async ({ page, mockPage }) => {
     await mockPage({ pageSchema: tablePageSchema }).goto();
-    await page.getByTestId('table-block-users').click();
-    await page.getByTestId('configure-actions-button-of-table-block-users').hover();
+    await page.getByTestId('block-item').click();
+    await page.getByTestId('configure-actions-button-of-table-block-users').click();
     //添加按钮
     await page.getByRole('menuitem', { name: 'Filter' }).click();
     await page.getByRole('menuitem', { name: 'Add new' }).click();
@@ -148,9 +148,9 @@ test.describe('add action & remove action', () => {
     await page.getByText('Enable actions').hover();
     await page.waitForTimeout(1000); // 等待1秒钟
 
-    await expect(page.getByTestId('table-block-users').getByLabel('Filter', { exact: true })).toBeVisible();
-    await expect(page.getByTestId('table-block-users').getByRole('button', { name: 'plus Add new' })).toBeVisible();
-    await expect(page.getByTestId('table-block-users').getByLabel('Delete', { exact: true })).toBeVisible();
+    await expect(page.getByTestId('block-item').getByLabel('Filter', { exact: true })).toBeVisible();
+    await expect(page.getByTestId('block-item').getByRole('button', { name: 'plus Add new' })).toBeVisible();
+    await expect(page.getByTestId('block-item').getByLabel('Delete', { exact: true })).toBeVisible();
     await expect(await page.getByRole('menuitem', { name: 'Filter' }).getByRole('switch').isChecked()).toBe(true);
     await expect(await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').isChecked()).toBe(true);
     await expect(await page.getByRole('menuitem', { name: 'Delete' }).getByRole('switch').isChecked()).toBe(true);
@@ -158,17 +158,17 @@ test.describe('add action & remove action', () => {
     await page.getByRole('menuitem', { name: 'Filter' }).click();
     await page.getByRole('menuitem', { name: 'Add new' }).click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
-    await expect(page.getByTestId('table-block-users').getByRole('button', { name: 'plus Add new' })).not.toBeVisible();
-    await expect(page.getByTestId('table-block-users').getByRole('button', { name: 'Delete' })).not.toBeVisible();
-    await expect(page.getByTestId('table-block-users').getByLabel('Filter', { exact: true })).not.toBeVisible();
+    await expect(page.getByTestId('block-item').getByRole('button', { name: 'plus Add new' })).not.toBeVisible();
+    await expect(page.getByTestId('block-item').getByRole('button', { name: 'Delete' })).not.toBeVisible();
+    await expect(page.getByTestId('block-item').getByLabel('Filter', { exact: true })).not.toBeVisible();
   });
 });
 
 test.describe('action drag in block', () => {
   test('drag th action orders', async ({ page, mockPage }) => {
     await mockPage({ pageSchema: tablePageSchema }).goto();
-    await page.getByTestId('table-block-users').click();
-    await page.getByTestId('configure-actions-button-of-table-block-users').hover();
+    await page.getByTestId('block-item').click();
+    await page.getByTestId('configure-actions-button-of-table-block-users').click();
     //添加按钮
     await page.getByRole('menuitem', { name: 'Add new' }).click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
@@ -177,10 +177,10 @@ test.describe('action drag in block', () => {
     await page.getByText('Enable actions').hover();
     await page.waitForTimeout(1000); // 等待1秒钟
 
-    const addNewBtn = page.getByTestId('table-block-users').getByRole('button', { name: 'plus Add new' });
+    const addNewBtn = page.getByTestId('block-item').getByRole('button', { name: 'plus Add new' });
     await addNewBtn.hover();
     const addNewDrag = await page
-      .getByTestId('table-block-users')
+      .getByTestId('block-item')
       .getByRole('button', { name: 'plus Add new' })
       .getByLabel('designer-drag');
     await addNewDrag.hover();
@@ -203,13 +203,13 @@ test.describe('action drag in block', () => {
 test.describe('action display config', () => {
   test('editing action name,icon and color', async ({ page, mockPage }) => {
     await mockPage({ pageSchema: tablePageSchema }).goto();
-    await page.getByTestId('table-block-users').click();
-    await page.getByTestId('configure-actions-button-of-table-block-users').hover();
+    await page.getByTestId('block-item').click();
+    await page.getByTestId('configure-actions-button-of-table-block-users').click();
     //添加按钮
     await page.getByRole('menuitem', { name: 'Add new' }).click();
-    await page.getByTestId('table-block-users').getByRole('button', { name: 'plus Add new' }).hover();
+    await page.getByTestId('block-item').getByRole('button', { name: 'plus Add new' }).hover();
     await page
-      .getByTestId('table-block-users')
+      .getByTestId('block-item')
       .getByRole('button', { name: 'plus Add new' })
       .getByLabel('designer-schema-settings')
       .click();
@@ -221,33 +221,29 @@ test.describe('action display config', () => {
     await page.getByLabel('user-add').click();
     await page.getByLabel('Danger red').check();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
-    await expect(
-      await page.getByTestId('table-block-users').locator('.nb-action-bar').getByLabel('user-add'),
-    ).toBeVisible();
-    await expect(
-      page.getByTestId('table-block-users').locator('.nb-action-bar').locator('.ant-btn-dangerous'),
-    ).toBeVisible();
+    await expect(await page.getByTestId('block-item').locator('.nb-action-bar').getByLabel('user-add')).toBeVisible();
+    await expect(page.getByTestId('block-item').locator('.nb-action-bar').locator('.ant-btn-dangerous')).toBeVisible();
   });
   test('action open mode ', async ({ page, mockPage }) => {
     await mockPage({ pageSchema: tablePageSchema }).goto();
-    await page.getByTestId('table-block-users').click();
+    await page.getByTestId('block-item').click();
     await page.getByTestId('configure-actions-button-of-table-block-users').hover();
     //添加按钮
     await page.getByRole('menuitem', { name: 'Add new' }).click();
-    await page.getByTestId('table-block-users').getByRole('button', { name: 'plus Add new' }).click();
+    await page.getByTestId('block-item').getByRole('button', { name: 'plus Add new' }).click();
     await expect(await page.getByTestId('action-drawer')).toBeVisible();
 
     //更新按钮打开方式
     await page.locator('.ant-drawer-mask').click();
-    await page.getByTestId('table-block-users').getByRole('button', { name: 'plus Add new' }).hover();
+    await page.getByTestId('block-item').getByRole('button', { name: 'plus Add new' }).hover();
     await page
-      .getByTestId('table-block-users')
+      .getByTestId('block-item')
       .getByRole('button', { name: 'plus Add new' })
       .getByLabel('designer-schema-settings')
       .click();
     await page.getByRole('menuitem', { name: 'Open mode' }).click();
     await page.getByRole('option', { name: 'Dialog' }).click();
-    await page.getByTestId('table-block-users').getByRole('button', { name: 'plus Add new' }).click();
+    await page.getByTestId('block-item').getByRole('button', { name: 'plus Add new' }).click();
     // 验证打开的组件的角色为 "dialog"
     const drawerComponent = page.getByRole('dialog');
     await expect(drawerComponent).toBeInViewport();
@@ -260,8 +256,63 @@ test.describe('action display config', () => {
 test.describe('action linkage rule', () => {
   test('action linkage to hide', async ({ page, mockPage }) => {
     await mockPage({ pageSchema: tablePageSchema }).goto();
+    await page.getByTestId('block-item').getByRole('button', { name: 'Actions', exact: true }).hover();
+    await page
+      .getByTestId('block-item')
+      .getByRole('button', { name: 'designer-drag designer-schema-settings Actions' })
+      .getByLabel('designer-schema-settings')
+      .click();
+    await page.getByRole('menuitem', { name: 'View' }).click();
+
+    await page.getByTestId('block-item').getByLabel('View').hover();
+    await page.getByLabel('View').getByLabel('designer-schema-settings').click();
+    await page.getByRole('menuitem', { name: 'Linkage rules' }).click();
+    await page.getByRole('button', { name: 'plus Add linkage rule', exact: true }).click();
+    await page.getByText('Add condition', { exact: true }).click();
+    await page.getByTestId('antd-cascader').getByLabel('Search').click();
+    await page.getByTitle('ID', { exact: true }).getByText('ID').click();
+    await page.getByRole('spinbutton').fill('1');
+    await page.getByText('Add property').click();
+    await page.getByTestId('linkage-properties-select').click();
+    await page.getByText('Hidden').click();
+    await page.getByRole('button', { name: 'OK' }).click();
+    //配置中，按钮显示半透明
+    const actionItem = page.getByTestId('block-item').getByLabel('View');
+    const inputErrorBorderColor = await actionItem.evaluate((element) => {
+      const computedStyle = window.getComputedStyle(element);
+      return computedStyle.opacity;
+    });
+    await expect(inputErrorBorderColor).toBe('0.1');
+    //使用中，按钮隐藏
+    await page.getByRole('button', { name: 'highlight' }).click();
+    await expect(page.getByTestId('block-item').getByLabel('View')).not.toBeVisible();
   });
   test('action linkage to disabled', async ({ page, mockPage }) => {
     await mockPage({ pageSchema: tablePageSchema }).goto();
+    await page.getByTestId('block-item').getByRole('button', { name: 'Actions', exact: true }).hover();
+    await page
+      .getByTestId('block-item')
+      .getByRole('button', { name: 'designer-drag designer-schema-settings Actions' })
+      .getByLabel('designer-schema-settings')
+      .click();
+    await page.getByRole('menuitem', { name: 'View' }).click();
+
+    await page.getByTestId('block-item').getByLabel('View').hover();
+    await page.getByLabel('View').getByLabel('designer-schema-settings').click();
+    await page.getByRole('menuitem', { name: 'Linkage rules' }).click();
+    await page.getByRole('button', { name: 'plus Add linkage rule', exact: true }).click();
+    await page.getByText('Add condition', { exact: true }).click();
+    await page.getByTestId('antd-cascader').getByLabel('Search').click();
+    await page.getByTitle('ID', { exact: true }).getByText('ID').click();
+    await page.getByRole('spinbutton').fill('1');
+    await page.getByText('Add property').click();
+    await page.getByTestId('linkage-properties-select').click();
+    await page.getByText('Disabled').click();
+    await page.getByRole('button', { name: 'OK' }).click();
+    await page.waitForTimeout(1000); // 等待1秒钟
+    //按钮禁用
+    await expect(
+      await page.getByTestId('block-item').getByRole('button', { name: 'View', exact: true }).isDisabled(),
+    ).toBe(true);
   });
 });
