@@ -1,5 +1,5 @@
 import { Form } from '@formily/core';
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { useFormBlockContext } from '../../block-provider';
 import { useCollection } from '../../collection-manager';
 import { useRecord } from '../../record-provider';
@@ -12,18 +12,6 @@ interface Props {
   currentRecord?: Record<string, any>;
   currentForm?: Form;
 }
-
-const LocalVariablesContext = React.createContext<{ iterationCtx: Record<string, any> }>(null);
-
-export const LocalVariablesProvider = ({
-  children,
-  iterationCtx,
-}: {
-  iterationCtx: Record<string, any>;
-  children: React.ReactNode;
-}) => {
-  return <LocalVariablesContext.Provider value={{ iterationCtx }}>{children}</LocalVariablesContext.Provider>;
-};
 
 const useLocalVariables = (props?: Props) => {
   const { name: currentCollectionName } = useCollection();
