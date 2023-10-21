@@ -24,6 +24,7 @@ import {
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
 import { LocalVariablesProvider } from '../../../variables/hooks/useLocalVariables';
 import { useToken } from '../__builtins__';
+import { SubFormProvider } from '../association-field/hooks';
 import { ColumnFieldProvider } from './components/ColumnFieldProvider';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
 
@@ -62,19 +63,21 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
         render: (v, record) => {
           const index = field.value?.indexOf(record);
           return (
-            <RecordIndexProvider index={record.__index || index}>
-              <LocalVariablesProvider iterationCtx={record}>
-                <RecordProvider record={record}>
-                  <ColumnFieldProvider schema={s} basePath={field.address.concat(record.__index || index)}>
-                    <RecursionField
-                      basePath={field.address.concat(record.__index || index)}
-                      schema={s}
-                      onlyRenderProperties
-                    />
-                  </ColumnFieldProvider>
-                </RecordProvider>
-              </LocalVariablesProvider>
-            </RecordIndexProvider>
+            <SubFormProvider value={record}>
+              <RecordIndexProvider index={record.__index || index}>
+                <LocalVariablesProvider iterationCtx={record}>
+                  <RecordProvider record={record}>
+                    <ColumnFieldProvider schema={s} basePath={field.address.concat(record.__index || index)}>
+                      <RecursionField
+                        basePath={field.address.concat(record.__index || index)}
+                        schema={s}
+                        onlyRenderProperties
+                      />
+                    </ColumnFieldProvider>
+                  </RecordProvider>
+                </LocalVariablesProvider>
+              </RecordIndexProvider>
+            </SubFormProvider>
           );
         },
       } as TableColumnProps<any>;
