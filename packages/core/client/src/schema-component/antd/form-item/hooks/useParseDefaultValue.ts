@@ -1,6 +1,7 @@
 import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import { reaction } from '@formily/reactive';
+import { getValuesByPath } from '@nocobase/utils/client';
 import _ from 'lodash';
 import { useEffect } from 'react';
 import { useRecord, useRecordIndex } from '../../../../../src/record-provider';
@@ -102,12 +103,12 @@ const useParseDefaultValue = () => {
           const path = getPath(fieldSchema.default);
 
           // fix https://nocobase.height.app/T-2212
-          if (_.get(obj, path) === undefined) {
+          if (getValuesByPath(obj, path) === undefined) {
             // 返回一个随机值，确保能触发 run 函数
             return Math.random();
           }
 
-          return _.get(obj, path);
+          return getValuesByPath(obj, path);
         }, run);
 
         return dispose;
