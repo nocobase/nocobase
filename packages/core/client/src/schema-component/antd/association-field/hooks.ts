@@ -58,7 +58,7 @@ export default function useServiceOptions(props) {
   const { parseFilter } = useParseDataScopeFilter();
   const [fieldServiceFilter, setFieldServiceFilter] = useState(null);
   const { form } = useFormBlockContext();
-  const { form: subForm } = useSubForm();
+  const { formValue: subFormValue } = useSubFormValue();
 
   useEffect(() => {
     const filterFromSchema = isString(fieldSchema?.['x-component-props']?.service?.params?.filter)
@@ -86,7 +86,7 @@ export default function useServiceOptions(props) {
           const result = getValuesByPath(
             {
               $nForm: form?.values,
-              $iteration: subForm,
+              $iteration: subFormValue,
             },
             getPath(value),
           );
@@ -104,7 +104,7 @@ export default function useServiceOptions(props) {
     parseFilter,
     record,
     service?.params?.filter,
-    subForm,
+    subFormValue,
   ]);
 
   const normalizeValues = useCallback(
@@ -206,9 +206,9 @@ export const SubFormProvider = SubFormContext.Provider;
  * 3. 可能更好的方式是在 useForm 返回的 form 对象添加一个 parent 属性，但可能会影响其它部分的代码，所以暂时不做修改；
  * @returns
  */
-export const useSubForm = () => {
+export const useSubFormValue = () => {
   const context = useContext(SubFormContext);
   return {
-    form: context,
+    formValue: context,
   };
 };
