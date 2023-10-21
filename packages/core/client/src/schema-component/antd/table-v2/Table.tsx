@@ -22,7 +22,6 @@ import {
   useTableSelectorContext,
 } from '../../../';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
-import { LocalVariablesProvider } from '../../../variables/hooks/useLocalVariables';
 import { useToken } from '../__builtins__';
 import { SubFormProvider } from '../association-field/hooks';
 import { ColumnFieldProvider } from './components/ColumnFieldProvider';
@@ -65,17 +64,15 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
           return (
             <SubFormProvider value={record}>
               <RecordIndexProvider index={record.__index || index}>
-                <LocalVariablesProvider iterationCtx={record}>
-                  <RecordProvider record={record}>
-                    <ColumnFieldProvider schema={s} basePath={field.address.concat(record.__index || index)}>
-                      <RecursionField
-                        basePath={field.address.concat(record.__index || index)}
-                        schema={s}
-                        onlyRenderProperties
-                      />
-                    </ColumnFieldProvider>
-                  </RecordProvider>
-                </LocalVariablesProvider>
+                <RecordProvider record={record}>
+                  <ColumnFieldProvider schema={s} basePath={field.address.concat(record.__index || index)}>
+                    <RecursionField
+                      basePath={field.address.concat(record.__index || index)}
+                      schema={s}
+                      onlyRenderProperties
+                    />
+                  </ColumnFieldProvider>
+                </RecordProvider>
               </RecordIndexProvider>
             </SubFormProvider>
           );

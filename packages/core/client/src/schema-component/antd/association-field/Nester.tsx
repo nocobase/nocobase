@@ -17,7 +17,6 @@ import {
   IsAllowToSetDefaultValueParams,
   interfacesOfUnsupportedDefaultValue,
 } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
-import { LocalVariablesProvider } from '../../../variables/hooks/useLocalVariables';
 import { AssociationFieldContext } from './context';
 import { SubFormProvider, useAssociationFieldContext } from './hooks';
 
@@ -80,11 +79,9 @@ const ToOneNester = (props) => {
     <FormActiveFieldsProvider name="nester">
       <SubFormProvider value={field.value}>
         <RecordProvider record={field.value}>
-          <LocalVariablesProvider iterationCtx={field.value}>
-            <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
-              <Card bordered={true}>{props.children}</Card>
-            </DefaultValueProvider>
-          </LocalVariablesProvider>
+          <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
+            <Card bordered={true}>{props.children}</Card>
+          </DefaultValueProvider>
         </RecordProvider>
       </SubFormProvider>
     </FormActiveFieldsProvider>
@@ -190,17 +187,15 @@ const ToManyNester = observer(
               <FormActiveFieldsProvider name="nester">
                 <SubFormProvider value={value}>
                   <RecordProvider record={value}>
-                    <LocalVariablesProvider iterationCtx={value}>
-                      <RecordIndexProvider index={index}>
-                        <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
-                          <RecursionField
-                            onlyRenderProperties
-                            basePath={field.address.concat(index)}
-                            schema={fieldSchema}
-                          />
-                        </DefaultValueProvider>
-                      </RecordIndexProvider>
-                    </LocalVariablesProvider>
+                    <RecordIndexProvider index={index}>
+                      <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
+                        <RecursionField
+                          onlyRenderProperties
+                          basePath={field.address.concat(index)}
+                          schema={fieldSchema}
+                        />
+                      </DefaultValueProvider>
+                    </RecordIndexProvider>
                   </RecordProvider>
                 </SubFormProvider>
               </FormActiveFieldsProvider>
