@@ -20,6 +20,20 @@ const useParseDataScopeFilter = ({ exclude = defaultExclude, currentRecord }: Pr
   const localVariables = useLocalVariables({ currentRecord });
   const variables = useVariables();
 
+  /**
+   * name: 如 $user
+   */
+  const findVariable = useCallback(
+    (name: string) => {
+      let result = variables?.getVariable(name);
+      if (!result) {
+        result = localVariables.find((item) => item.name === name);
+      }
+      return result;
+    },
+    [localVariables, variables],
+  );
+
   const parseFilter = useCallback(
     async (filterValue: any) => {
       const flat = flatten(filterValue, {
@@ -52,7 +66,7 @@ const useParseDataScopeFilter = ({ exclude = defaultExclude, currentRecord }: Pr
     [exclude, localVariables, variables?.parseVariable],
   );
 
-  return { parseFilter };
+  return { parseFilter, findVariable };
 };
 
 export default useParseDataScopeFilter;

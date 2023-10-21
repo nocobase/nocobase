@@ -17,9 +17,8 @@ import {
   IsAllowToSetDefaultValueParams,
   interfacesOfUnsupportedDefaultValue,
 } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
-import { LocalVariablesProvider } from '../../../variables/hooks/useLocalVariables';
 import { AssociationFieldContext } from './context';
-import { useAssociationFieldContext } from './hooks';
+import { SubFormProvider, useAssociationFieldContext } from './hooks';
 
 export const Nester = (props) => {
   const { options } = useContext(AssociationFieldContext);
@@ -78,13 +77,13 @@ const ToOneNester = (props) => {
 
   return (
     <FormActiveFieldsProvider name="nester">
-      <RecordProvider record={field.value}>
-        <LocalVariablesProvider iterationCtx={field.value}>
+      <SubFormProvider value={field.value}>
+        <RecordProvider record={field.value}>
           <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
             <Card bordered={true}>{props.children}</Card>
           </DefaultValueProvider>
-        </LocalVariablesProvider>
-      </RecordProvider>
+        </RecordProvider>
+      </SubFormProvider>
     </FormActiveFieldsProvider>
   );
 };
@@ -186,8 +185,8 @@ const ToManyNester = observer(
                 )}
               </div>
               <FormActiveFieldsProvider name="nester">
-                <RecordProvider record={value}>
-                  <LocalVariablesProvider iterationCtx={value}>
+                <SubFormProvider value={value}>
+                  <RecordProvider record={value}>
                     <RecordIndexProvider index={index}>
                       <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
                         <RecursionField
@@ -197,8 +196,8 @@ const ToManyNester = observer(
                         />
                       </DefaultValueProvider>
                     </RecordIndexProvider>
-                  </LocalVariablesProvider>
-                </RecordProvider>
+                  </RecordProvider>
+                </SubFormProvider>
               </FormActiveFieldsProvider>
               <Divider />
             </React.Fragment>

@@ -1,8 +1,9 @@
 import { Form } from '@formily/core';
-import React, { useContext, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useFormBlockContext } from '../../block-provider';
 import { useCollection } from '../../collection-manager';
 import { useRecord } from '../../record-provider';
+import { useSubFormValue } from '../../schema-component/antd/association-field/hooks';
 import { useBlockCollection } from '../../schema-settings/VariableInput/hooks/useBlockCollection';
 import { VariableOption } from '../types';
 
@@ -12,21 +13,9 @@ interface Props {
   currentForm?: Form;
 }
 
-const LocalVariablesContext = React.createContext<{ iterationCtx: Record<string, any> }>(null);
-
-export const LocalVariablesProvider = ({
-  children,
-  iterationCtx,
-}: {
-  iterationCtx: Record<string, any>;
-  children: React.ReactNode;
-}) => {
-  return <LocalVariablesContext.Provider value={{ iterationCtx }}>{children}</LocalVariablesContext.Provider>;
-};
-
 const useLocalVariables = (props?: Props) => {
   const { name: currentCollectionName } = useCollection();
-  const { iterationCtx } = useContext(LocalVariablesContext) || {};
+  const { formValue: subFormValue } = useSubFormValue();
   let { name } = useBlockCollection();
   let currentRecord = useRecord();
   let { form } = useFormBlockContext();
@@ -86,10 +75,10 @@ const useLocalVariables = (props?: Props) => {
           ctx: form?.values,
           collectionName: name,
         },
-        iterationCtx && { name: '$iteration', ctx: iterationCtx, collectionName: currentCollectionName },
+        subFormValue && { name: '$iteration', ctx: subFormValue, collectionName: currentCollectionName },
       ] as VariableOption[]
     ).filter(Boolean);
-  }, [currentRecord, name, form?.values, iterationCtx, currentCollectionName]); // 尽量保持返回的值不变，这样可以减少接口的请求次数，因为关系字段会缓存到变量的 ctx 中
+  }, [currentRecord, name, form?.values, subFormValue, currentCollectionName]); // 尽量保持返回的值不变，这样可以减少接口的请求次数，因为关系字段会缓存到变量的 ctx 中
 };
 
 export default useLocalVariables;
