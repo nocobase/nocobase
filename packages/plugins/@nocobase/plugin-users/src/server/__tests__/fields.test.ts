@@ -86,5 +86,77 @@ describe('createdBy/updatedBy', () => {
       expect(data.createdBy.id).toBe(user1.get('id'));
       expect(data.updatedBy.id).toBe(user2.get('id'));
     });
+
+    it('input with createdById', async () => {
+      const Post = db.collection({
+        name: 'posts',
+        createdBy: true,
+        updatedBy: true,
+      });
+      await db.sync();
+
+      const u1 = await db.getCollection('users').model.create();
+      const p1 = await Post.repository.create({
+        values: {
+          createdById: u1.id,
+        },
+      });
+
+      expect(p1.get('createdById')).toBe(u1.id);
+    });
+
+    it.skip('input with createdBy', async () => {
+      const Post = db.collection({
+        name: 'posts',
+        createdBy: true,
+        updatedBy: true,
+      });
+      await db.sync();
+
+      const u1 = await db.getCollection('users').model.create();
+      const p1 = await Post.repository.create({
+        values: {
+          createdBy: u1.id,
+        },
+      });
+
+      expect(p1.get('createdById')).toBe(u1.id);
+    });
+
+    it.skip('input with updatedById', async () => {
+      const Post = db.collection({
+        name: 'posts',
+        createdBy: true,
+        updatedBy: true,
+      });
+      await db.sync();
+
+      const u1 = await db.getCollection('users').model.create();
+      const p1 = await Post.repository.create({
+        values: {
+          updatedById: u1.id,
+        },
+      });
+
+      expect(p1.get('updatedById')).toBe(u1.id);
+    });
+
+    it.skip('input with updatedBy', async () => {
+      const Post = db.collection({
+        name: 'posts',
+        createdBy: true,
+        updatedBy: true,
+      });
+      await db.sync();
+
+      const u1 = await db.getCollection('users').model.create();
+      const p1 = await Post.repository.create({
+        values: {
+          updatedBy: u1.id,
+        },
+      });
+
+      expect(p1.get('updatedById')).toBe(u1.id);
+    });
   });
 });
