@@ -5,7 +5,6 @@ import { flatten, getValuesByPath } from '@nocobase/utils/client';
 import _, { isString } from 'lodash';
 import cloneDeep from 'lodash/cloneDeep';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { useFormBlockContext } from '../../../block-provider';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { isInFilterFormBlock } from '../../../filter-provider';
@@ -13,6 +12,7 @@ import { useRecord } from '../../../record-provider';
 import { useParseDataScopeFilter } from '../../../schema-settings';
 import { DEBOUNCE_WAIT } from '../../../variables';
 import { getPath } from '../../../variables/utils/getPath';
+import { getVariableName } from '../../../variables/utils/getVariableName';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { useDesignable } from '../../hooks';
 import { AssociationFieldContext } from './context';
@@ -48,17 +48,14 @@ export function useAssociationFieldContext<F extends GeneralField>() {
 }
 
 export default function useServiceOptions(props) {
-  const { action = 'list', service, fieldNames } = props;
-  const params = service?.params || {};
+  const { action = 'list', service } = props;
   const fieldSchema = useFieldSchema();
   const field = useField();
   const { getField } = useCollection();
   const { getCollectionJoinField } = useCollectionManager();
   const record = useRecord();
-  const { parseFilter } = useParseDataScopeFilter();
+  const { parseFilter, findVariable } = useParseDataScopeFilter();
   const [fieldServiceFilter, setFieldServiceFilter] = useState(null);
-  const { form } = useFormBlockContext();
-  const { formValue: subFormValue } = useSubFormValue();
 
   useEffect(() => {
     const filterFromSchema = isString(fieldSchema?.['x-component-props']?.service?.params?.filter)
@@ -83,10 +80,16 @@ export default function useServiceOptions(props) {
           if (!isVariable(value)) {
             return value;
           }
+          const variableName = getVariableName(value);
+          const variable = findVariable(variableName);
+
+          if (process.env.NODE_ENV !== 'production' && !variable) {
+            throw new Error(`useServiceOptions: can not find variable ${variableName}`);
+          }
+
           const result = getValuesByPath(
             {
-              $nForm: form?.values,
-              $iteration: subFormValue,
+              [variableName]: variable?.ctx || {},
             },
             getPath(value),
           );
@@ -100,38 +103,11 @@ export default function useServiceOptions(props) {
   }, [
     field.componentProps?.service?.params?.filter,
     fieldSchema,
-    form?.values,
+    findVariable,
     parseFilter,
     record,
     service?.params?.filter,
-    subFormValue,
   ]);
-
-  const normalizeValues = useCallback(
-    (obj) => {
-      if (obj && typeof obj === 'object') {
-        return obj[fieldNames?.value];
-      }
-      return obj;
-    },
-    [fieldNames?.value],
-  );
-
-  const value = useMemo(() => {
-    if (props.value === undefined || props.value === null) {
-      return;
-    }
-
-    let result: any[] = null;
-
-    if (Array.isArray(props.value)) {
-      result = props.value.map(normalizeValues);
-    } else {
-      result = [normalizeValues(props.value)];
-    }
-
-    return result.filter(Boolean);
-  }, [props.value, normalizeValues]);
 
   const collectionField = useMemo(() => {
     return getField(fieldSchema.name) || getCollectionJoinField(fieldSchema?.['x-collection-field']);
