@@ -1,17 +1,16 @@
 import { reaction } from '@formily/reactive';
-import { flatten } from '@nocobase/utils/client';
+import { flatten, getValuesByPath } from '@nocobase/utils/client';
 import _ from 'lodash';
 import { useEffect, useState } from 'react';
 import { useParseDataScopeFilter } from '../../schema-settings';
 import { DEBOUNCE_WAIT } from '../../variables';
 import { getPath } from '../../variables/utils/getPath';
+import { getVariableName } from '../../variables/utils/getVariableName';
 import { isVariable } from '../../variables/utils/isVariable';
-import { useFormBlockContext } from '../FormBlockProvider';
 
 export function useParsedFilter({ filterOption, currentRecord }: { filterOption: any; currentRecord?: any }) {
-  const { parseFilter } = useParseDataScopeFilter({ currentRecord });
+  const { parseFilter, findVariable } = useParseDataScopeFilter({ currentRecord });
   const [filter, setFilter] = useState({});
-  const { form } = useFormBlockContext();
 
   useEffect(() => {
     if (!filterOption) return;
@@ -33,7 +32,19 @@ export function useParsedFilter({ filterOption, currentRecord }: { filterOption:
           if (!isVariable(value)) {
             return value;
           }
-          const result = _.get({ $nForm: form?.values }, getPath(value));
+          const variableName = getVariableName(value);
+          const variable = findVariable(variableName);
+
+          if (process.env.NODE_ENV !== 'production' && !variable) {
+            throw new Error(`useParsedFilter: can not find variable ${variableName}`);
+          }
+
+          const result = getValuesByPath(
+            {
+              [variableName]: variable?.ctx || {},
+            },
+            getPath(value),
+          );
           return result;
         },
       });
