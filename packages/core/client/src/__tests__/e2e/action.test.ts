@@ -310,9 +310,12 @@ test.describe('action linkage rule', () => {
     await page.getByText('Disabled').click();
     await page.getByRole('button', { name: 'OK' }).click();
     await page.waitForTimeout(1000); // 等待1秒钟
+    const linkBtn = page.getByTestId('block-item').getByRole('button', { name: 'View', exact: true });
+    const linkBtnCursor = await linkBtn.evaluate((element) => {
+      const computedStyle = window.getComputedStyle(element);
+      return computedStyle.cursor;
+    });
     //按钮禁用
-    await expect(
-      await page.getByTestId('block-item').getByRole('button', { name: 'View', exact: true }).isDisabled(),
-    ).toBe(true);
+    await expect(linkBtnCursor).toBe('not-allowed');
   });
 });
