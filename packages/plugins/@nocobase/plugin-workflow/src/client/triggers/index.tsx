@@ -61,6 +61,7 @@ export interface Trigger {
   components?: { [key: string]: any };
   useInitializers?(config): SchemaInitializerItemOptions | null;
   initializers?: any;
+  actionTriggerable?: boolean;
 }
 
 export const triggers = new Registry<Trigger>();
@@ -311,9 +312,10 @@ export function useTrigger() {
 }
 
 export function getTriggersOptions() {
-  return Array.from(triggers.getEntities()).map(([value, { title }]) => ({
+  return Array.from(triggers.getEntities()).map(([value, { title, ...options }]) => ({
     value,
     label: title,
     color: 'gold',
+    options,
   }));
 }

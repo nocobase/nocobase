@@ -96,7 +96,7 @@ const ConstantTypes = {
     value: 'null',
     component: function NullComponent() {
       const { t } = useTranslation();
-      return <AntInput readOnly placeholder={t('Null')} className="null-value" />;
+      return <AntInput style={{ width: '100%' }} readOnly placeholder={t('Null')} className="null-value" />;
     },
     default: null,
   },
@@ -336,9 +336,7 @@ export function Input(props) {
           {button ?? (
             <XButton
               className={css(`
-                &:not(:hover) {
-                  border-left-color: transparent;
-                }
+                margin-left: -1px;
               `)}
               type={variable ? 'primary' : 'default'}
             />

@@ -3,11 +3,9 @@ import Application, { AppSupervisor, Gateway, Plugin } from '@nocobase/server';
 import { Mutex } from 'async-mutex';
 import lodash from 'lodash';
 import path, { resolve } from 'path';
-import qs from 'qs';
-import { parse } from 'url';
 import { ApplicationModel } from '../server';
 
-export type AppDbCreator = (app: Application, transaction?: Transactionable) => Promise<void>;
+export type AppDbCreator = (app: Application, options?: Transactionable & { context?: any }) => Promise<void>;
 export type AppOptionsFactory = (appName: string, mainApp: Application) => any;
 export type SubAppUpgradeHandler = (mainApp: Application) => Promise<void>;
 
@@ -158,22 +156,28 @@ export class PluginMultiAppManager extends Plugin {
     });
 
     // after application created
-    this.db.on('applications.afterCreateWithAssociations', async (model: ApplicationModel, options) => {
-      const { transaction } = options;
+    this.db.on(
+      'applications.afterCreateWithAssociations',
+      async (model: ApplicationModel, options: Transactionable & { context?: any }) => {
+        const { transaction } = options;
 
-      const subApp = model.registerToSupervisor(this.app, {
-        appOptionsFactory: this.appOptionsFactory,
-      });
+        const subApp = model.registerToSupervisor(this.app, {
+          appOptionsFactory: this.appOptionsFactory,
+        });
 
-      // create database
-      await this.appDbCreator(subApp, transaction);
+        // create database
+        await this.appDbCreator(subApp, {
+          transaction,
+          context: options.context,
+        });
 
-      const startPromise = subApp.runAsCLI(['start', '--quickstart'], { from: 'user' });
+        const startPromise = subApp.runAsCLI(['start', '--quickstart'], { from: 'user' });
 
-      if (options?.context?.waitSubAppInstall) {
-        await startPromise;
-      }
-    });
+        if (options?.context?.waitSubAppInstall) {
+          await startPromise;
+        }
+      },
+    );
 
     this.db.on('applications.afterDestroy', async (model: ApplicationModel) => {
       await AppSupervisor.getInstance().removeApp(model.get('name') as string);

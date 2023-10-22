@@ -6,19 +6,16 @@ import { css } from '@emotion/css';
 
 export function JSONInput(props) {
   return (
-    <div>
-      <RawTextArea
-        buttonClass={css`
-          &:not(:hover) {
-            border-right-color: transparent;
-            border-top-color: transparent;
-          }
-          background-color: transparent;
-        `}
-        {...props}
-        component={Input.JSON}
-      />
-      ;
-    </div>
+    <RawTextArea
+      buttonClass={css`
+        &:not(:hover) {
+          border-right-color: transparent;
+          border-top-color: transparent;
+        }
+        background-color: transparent;
+      `}
+      {...props}
+      component={Input.JSON}
+    />
   );
 }
