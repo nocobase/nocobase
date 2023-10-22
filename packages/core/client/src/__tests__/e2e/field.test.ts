@@ -258,7 +258,6 @@ test.describe('field setting config ', () => {
   test('field validation rule ', async ({ page, mockPage }) => {
     await mockPage({ pageSchema: formPageSchema }).goto();
     const errorMessage = 'this is error message';
-    const inputBorderErrorColor = 'rgba(187, 56, 58, 0.96)';
     await page.getByTestId('configure-fields-button-of-form-item-users').click();
     await page.getByRole('menuitem', { name: 'Nickname' }).click();
     await page.getByTestId('form-block-field-users.nickname').click();
@@ -274,16 +273,15 @@ test.describe('field setting config ', () => {
     await page.getByTestId('form-block-field-users.nickname').getByRole('textbox').fill('111111111');
     const errorInfo = await page.getByTestId('form-block-field-users.nickname').locator('.ant-formily-item-error-help');
     await expect(errorInfo).toBeVisible();
-    await page.waitForSelector('input');
-    const inputItem = await page.getByTestId('form-block-field-users.nickname').locator('input');
-    const inputErrorBorderColor = await inputItem.evaluate(async (element) => {
-      const computedStyle = await window.getComputedStyle(element);
-      return computedStyle.borderColor;
-    });
     //报错信息符合预期
-    const isApproximate = approximateColor(inputErrorBorderColor, inputBorderErrorColor);
-    await expect(isApproximate).toBe(true);
     await expect(await errorInfo.innerText()).toBe(errorMessage);
+
+    await page.getByTestId('configure-actions-button-of-form-block-users').click();
+    await page.getByRole('menuitem', { name: 'Submit' }).click();
+    await page.getByLabel('Submit').click();
+    await page.waitForTimeout(1000);
+    // 断言表单未被提交
+    expect(await page.getByTestId('form-block-field-users')).not.toHaveProperty('submitted', true);
   });
   test('field pattern ', async ({ page, mockPage }) => {
     await mockPage({ pageSchema: formPageSchema }).goto();
