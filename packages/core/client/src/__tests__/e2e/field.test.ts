@@ -210,6 +210,7 @@ test.describe('field setting config ', () => {
   test('edit field description ', async ({ page, mockPage }) => {
     await mockPage({ pageSchema: formPageSchema }).goto();
     const description = 'field description';
+    const descriptionColor = 'rgba(0, 0, 0, 0.65)';
     await page.getByTestId('configure-fields-button-of-form-item-users').click();
     await page.getByRole('menuitem', { name: 'Username' }).click();
     await page.getByTestId('form-block-field-users.username').click();
@@ -226,7 +227,7 @@ test.describe('field setting config ', () => {
     });
     //字段描述样式符合预期
     expect(await descriptionItem.innerText()).toBe(description);
-    const isApproximate = approximateColor(descriptionItemColor, 'rgba(0, 0, 0, 0.65)');
+    const isApproximate = approximateColor(descriptionItemColor, descriptionColor);
     await expect(isApproximate).toBe(true);
   });
   test('field required ', async ({ page, mockPage }) => {
@@ -257,6 +258,7 @@ test.describe('field setting config ', () => {
   test('field validation rule ', async ({ page, mockPage }) => {
     await mockPage({ pageSchema: formPageSchema }).goto();
     const errorMessage = 'this is error message';
+    const inputBorderErrorColor = 'rgba(187, 56, 58, 0.96)';
     await page.getByTestId('configure-fields-button-of-form-item-users').click();
     await page.getByRole('menuitem', { name: 'Nickname' }).click();
     await page.getByTestId('form-block-field-users.nickname').click();
@@ -279,7 +281,7 @@ test.describe('field setting config ', () => {
       return computedStyle.borderColor;
     });
     //报错信息符合预期
-    const isApproximate = approximateColor(inputErrorBorderColor, 'rgba(187, 56, 58, 0.96)');
+    const isApproximate = approximateColor(inputErrorBorderColor, inputBorderErrorColor);
     await expect(isApproximate).toBe(true);
     await expect(await errorInfo.innerText()).toBe(errorMessage);
   });
