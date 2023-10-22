@@ -26,11 +26,11 @@ const useShareCollectionAction = () => {
   };
 };
 
-const updateSchema = tableActionColumnSchema.properties.update;
-const deleteSchema = tableActionColumnSchema.properties.delete;
+const updateSchema = tableActionColumnSchema.properties['update'];
+const deleteSchema = tableActionColumnSchema.properties['delete'];
 
-delete tableActionColumnSchema.properties.update;
-delete tableActionColumnSchema.properties.delete;
+delete tableActionColumnSchema.properties['update'];
+delete tableActionColumnSchema.properties['delete'];
 
 tableActionColumnSchema.properties['collection'] = {
   type: 'void',
@@ -78,8 +78,8 @@ tableActionColumnSchema.properties['collection'] = {
   },
 };
 
-tableActionColumnSchema.properties.update = updateSchema;
-tableActionColumnSchema.properties.delete = deleteSchema;
+tableActionColumnSchema.properties['update'] = updateSchema;
+tableActionColumnSchema.properties['delete'] = deleteSchema;
 
 export const MultiAppShareCollectionProvider = (props) => {
   return <>{props.children}</>;
