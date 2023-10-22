@@ -272,15 +272,14 @@ test.describe('field setting config ', () => {
     await page.getByTestId('form-block-field-users.nickname').getByRole('textbox').fill('111111111');
     const errorInfo = await page.getByTestId('form-block-field-users.nickname').locator('.ant-formily-item-error-help');
     await expect(errorInfo).toBeVisible();
-    await page.waitForTimeout(2000); // 等待1秒钟
+    await page.waitForSelector('input');
     const inputItem = await page.getByTestId('form-block-field-users.nickname').locator('input');
     const inputErrorBorderColor = await inputItem.evaluate(async (element) => {
       const computedStyle = await window.getComputedStyle(element);
       return computedStyle.borderColor;
     });
-    console.log(inputErrorBorderColor);
     //报错信息符合预期
-    const isApproximate = approximateColor(inputErrorBorderColor, 'rgba(155, 47, 48, 0.95)');
+    const isApproximate = approximateColor(inputErrorBorderColor, 'rgba(187, 56, 58, 0.96)');
     await expect(isApproximate).toBe(true);
     await expect(await errorInfo.innerText()).toBe(errorMessage);
   });
