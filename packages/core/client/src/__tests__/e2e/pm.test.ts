@@ -7,7 +7,7 @@ test.describe('add config in front', () => {
     await expect(await page.getByLabel('sample-custom-collection-template')).not.toBeVisible();
     await page.getByRole('button', { name: 'Add new' }).click();
     await page
-      .getByTestId('packageName-item')
+      .getByRole('button', { name: '* Npm package name :' })
       .getByRole('textbox')
       .fill('@nocobase/plugin-sample-custom-collection-template');
     await page.getByTestId('submit-action').click();

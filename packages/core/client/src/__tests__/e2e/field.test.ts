@@ -239,6 +239,7 @@ test.describe('field setting config ', () => {
     await page.getByTestId('configure-actions-button-of-form-block-users').click();
     await page.getByRole('menuitem', { name: 'Submit' }).click();
     await page.getByLabel('Submit').click();
+    await page.waitForTimeout(1000);
     //必填校验符合预期
     await expect(
       await page.getByTestId('form-block-field-users.nickname').locator('.ant-formily-item-error-help'),
@@ -271,12 +272,13 @@ test.describe('field setting config ', () => {
     await page.getByTestId('form-block-field-users.nickname').getByRole('textbox').fill('111111111');
     const errorInfo = await page.getByTestId('form-block-field-users.nickname').locator('.ant-formily-item-error-help');
     await expect(errorInfo).toBeVisible();
+    await page.waitForTimeout(2000); // 等待1秒钟
     const inputItem = await page.getByTestId('form-block-field-users.nickname').locator('input');
     const inputErrorBorderColor = await inputItem.evaluate(async (element) => {
       const computedStyle = await window.getComputedStyle(element);
       return computedStyle.borderColor;
     });
-    await page.waitForTimeout(1000); // 等待1秒钟
+    console.log(inputErrorBorderColor);
     //报错信息符合预期
     const isApproximate = approximateColor(inputErrorBorderColor, 'rgba(155, 47, 48, 0.95)');
     await expect(isApproximate).toBe(true);
