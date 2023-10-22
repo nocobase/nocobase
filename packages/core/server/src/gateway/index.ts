@@ -13,7 +13,7 @@ import { parse } from 'url';
 import xpipe from 'xpipe';
 import { AppSupervisor } from '../app-supervisor';
 import { ApplicationOptions } from '../application';
-import { PLUGIN_STATICS_PATH, getPackageDirByExposeUrl, getPackageNameByExposeUrl } from '../plugin-manager';
+import { getPackageDirByExposeUrl, getPackageNameByExposeUrl, PLUGIN_STATICS_PATH } from '../plugin-manager';
 import { applyErrorWithArgs, getErrorWithCode } from './errors';
 import { IPCSocketClient } from './ipc-socket-client';
 import { IPCSocketServer } from './ipc-socket-server';
@@ -284,6 +284,8 @@ export class Gateway extends EventEmitter {
     }
 
     const mainApp = AppSupervisor.getInstance().bootMainApp(options.mainAppOptions);
+
+    await mainApp.load();
 
     mainApp
       .runAsCLI(process.argv, {
