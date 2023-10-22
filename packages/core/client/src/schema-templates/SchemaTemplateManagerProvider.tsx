@@ -2,6 +2,7 @@ import { ISchema, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { cloneDeep } from 'lodash';
 import React, { ReactNode, createContext, useContext, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAPIClient, useRequest } from '../api-client';
 import { Plugin } from '../application/Plugin';
 import { useAppSpin } from '../application/hooks/useAppSpin';
@@ -114,7 +115,7 @@ export const useSchemaTemplateManager = () => {
   };
 };
 
-export const RemoteSchemaTemplateManagerProvider: React.FC<{ children?: ReactNode }> = (props) => {
+const Internal = (props) => {
   const api = useAPIClient();
   const { render } = useAppSpin();
   const options = {
@@ -125,6 +126,7 @@ export const RemoteSchemaTemplateManagerProvider: React.FC<{ children?: ReactNod
       paginate: false,
     },
   };
+
   const service = useRequest<{
     data: any[];
   }>(options);
@@ -142,6 +144,14 @@ export const RemoteSchemaTemplateManagerProvider: React.FC<{ children?: ReactNod
       {props.children}
     </SchemaTemplateManagerProvider>
   );
+};
+
+export const RemoteSchemaTemplateManagerProvider: React.FC<{ children?: ReactNode }> = (props) => {
+  const location = useLocation();
+  if (location.pathname.startsWith('/admin')) {
+    return <Internal {...props} />;
+  }
+  return <>{props.children}</>;
 };
 
 export class RemoteSchemaTemplateManagerPlugin extends Plugin {
