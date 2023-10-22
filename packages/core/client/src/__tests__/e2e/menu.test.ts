@@ -78,6 +78,7 @@ test.describe('menu page', () => {
     await page.getByRole('button', { name: 'OK' }).click();
     const page1 = await page.getByRole('menu').getByText(pageTitle1).boundingBox();
     const page2 = await page.getByRole('menu').getByText(pageTitle2).boundingBox();
+    //拖拽菜单排序符合预期
     expect(page2.x).toBeLessThan(page1.x);
   });
 
@@ -101,6 +102,7 @@ test.describe('menu page', () => {
 
     const page3 = await page.getByLabel(pageTitle3).boundingBox();
     const page4 = await page.getByLabel(pageTitle4).boundingBox();
+    //插入的菜单位置符合预期，且进入空页面
     expect(page4.x).toBeLessThan(page3.x);
     await page.getByRole('menu').getByText(pageTitle4).click();
     await expect(page.getByTestId('add-block-button-in-page')).toBeVisible();
@@ -131,8 +133,8 @@ test.describe('menu page', () => {
 
     const page6 = await page.getByLabel(pageTitle6).boundingBox();
     const page5 = await page.getByLabel(pageTitle5).boundingBox();
+    //插入的菜单位置符合预期
     expect(page5.x).toBeLessThan(page6.x);
-
     await page.getByLabel(pageTitle6).click();
     await expect(page.getByTestId('add-block-button-in-page')).toBeVisible();
     //删除页面
@@ -170,7 +172,7 @@ test.describe('menu group', () => {
     await page.getByText('group page').click();
     //进入子页面
     await expect(page.getByTitle('group page')).toBeVisible();
-    //对应分组/子菜单项高亮
+    //对应分组/子菜单项均高亮
     const menuItem = await page.getByRole('menu').locator('li').filter({ hasText: 'menu Group' });
     const menuItemBackgroundColor = await menuItem.evaluate((element) => {
       const computedStyle = window.getComputedStyle(element);

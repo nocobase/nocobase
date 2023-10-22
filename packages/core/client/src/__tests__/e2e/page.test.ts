@@ -98,6 +98,7 @@ test.describe('page tabs', () => {
       const computedStyle = window.getComputedStyle(element);
       return computedStyle.color;
     });
+    //激活的tab样式符合预期
     await expect(page.getByText('page tab 1')).toBeVisible();
     await expect(page.getByText('page tab 2')).toBeVisible();
     await expect(page.getByTestId('add-block-button-in-page')).toBeVisible();
@@ -182,7 +183,7 @@ test.describe('page tabs', () => {
     const targetElement = await page.locator('span:has-text("tab 1")');
     const sourceBoundingBox = await sourceElement.boundingBox();
     const targetBoundingBox = await targetElement.boundingBox();
-    //拖拽前 1-2
+    //拖拽标签调整排序 拖拽前 1-2
     expect(targetBoundingBox.x).toBeLessThan(sourceBoundingBox.x);
     await source.dragTo(targetElement);
     await sourceElement.dragTo(targetElement);
