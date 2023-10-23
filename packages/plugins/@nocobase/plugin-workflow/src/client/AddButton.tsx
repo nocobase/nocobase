@@ -28,7 +28,11 @@ export function AddButton({ upstream, branchIndex = null }: AddButtonProps) {
     ]
       .filter((group) => instructionList.filter((item) => item.group === group.key).length)
       .map((group) => {
-        const groupInstructions = instructionList.filter((item) => item.group === group.key);
+        const groupInstructions = instructionList.filter(
+          (item) =>
+            item.group === group.key &&
+            (item.isAvailable ? item.isAvailable({ workflow, upstream, branchIndex }) : true),
+        );
 
         return {
           ...group,
