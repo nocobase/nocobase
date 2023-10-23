@@ -10,7 +10,8 @@ test.describe('add config in front', () => {
       .getByRole('button', { name: '* Npm package name :' })
       .getByRole('textbox')
       .fill('@nocobase/plugin-sample-custom-collection-template');
-    await page.getByTestId('submit-action').click();
+    await page.getByLabel('Submit').click();
+    //等待页面刷新结束
     await page.waitForLoadState('load');
     await page.waitForTimeout(20000);
     await page.getByPlaceholder('Search plugin').fill('sample-custom-collection-template');
@@ -21,6 +22,7 @@ test.describe('add config in front', () => {
       .getByRole('button', { name: 'delete Remove' })
       .click();
     await page.getByRole('button', { name: 'Yes' }).click();
+    //等待页面刷新结束
     await page.waitForLoadState('load');
     await page.getByPlaceholder('Search plugin').fill('sample-custom-collection-template');
     await expect(await page.getByLabel('sample-custom-collection-template')).not.toBeVisible();
@@ -33,23 +35,36 @@ test.describe('remove plugin', () => {
   test('remove plugin,then add plugin', async ({ page, mockPage }) => {
     await mockPage().goto();
     await page.getByTestId('pm-button').click();
+    //hello插件默认安装未启用
     await page.getByPlaceholder('Search plugin').fill('hello');
     await expect(await page.getByLabel('hello')).toBeVisible();
-    //未启用的插件可以remove
     const isActive = await page.getByLabel('hello').getByLabel('plugin-enabled').isChecked();
     await expect(isActive).toBe(false);
-    await await page.getByLabel('hello').getByRole('button', { name: 'delete Remove' }).click();
+    //将hello插件remove
+    await page.getByLabel('hello').getByRole('button', { name: 'delete Remove' }).click();
     await page.getByRole('button', { name: 'Yes' }).click();
+    //等待页面刷新结束
     await page.waitForLoadState('load');
     await page.getByPlaceholder('Search plugin').fill('hello');
     await expect(await page.getByLabel('hello')).not.toBeVisible();
     //将删除的插件加回来
     await page.getByRole('button', { name: 'Add new' }).click();
-    await page.getByTestId('packageName-item').getByRole('textbox').fill('@nocobase/plugin-sample-hello');
-    await page.getByTestId('submit-action').click();
+    await page
+      .getByRole('button', { name: '* Npm package name :' })
+      .getByRole('textbox')
+      .fill('@nocobase/plugin-sample-hello');
+    await page.getByLabel('Submit').click();
+    await page.waitForTimeout(1000);
+    await page.waitForSelector(`[data-testid="plugin-mantain-dialog"]`, { state: 'hidden' }); //消息弹窗已消失
     await page.waitForLoadState('load');
     await page.getByPlaceholder('Search plugin').fill('hello');
     await expect(await page.getByLabel('hello')).toBeVisible();
+    //已启用的插件不能remove，如ACL
+    await page.getByPlaceholder('Search plugin').fill('ACL');
+    await expect(await page.getByLabel('ACL')).toBeVisible();
+    const isAclActive = await page.getByLabel('ACL').getByLabel('plugin-enabled').isChecked();
+    await expect(isAclActive).toBe(true);
+    await expect(page.getByLabel('ACL').getByRole('button', { name: 'delete Remove' })).not.toBeVisible();
   });
 });
 
@@ -62,23 +77,26 @@ test.describe('enable plugin', () => {
     const isActive = await page.getByLabel('hello').getByLabel('plugin-enabled').isChecked();
     await expect(isActive).toBe(false);
     await page.waitForTimeout(1000); // 等待1秒钟
-    await page.getByLabel('hello').getByLabel('plugin-enabled').setChecked(true);
+    //激活插件
+    await page.getByLabel('hello').getByLabel('plugin-enabled').click();
+    await page.waitForTimeout(1000); // 等待1秒钟
+    //等待页面刷新结束
+    await page.waitForSelector(`[data-testid="plugin-mantain-dialog"]`, { state: 'hidden' }); //消息弹窗已消失
     await page.waitForLoadState('load');
     await expect(await page.getByLabel('hello').getByLabel('plugin-enabled').isChecked()).toBe(true);
     //将激活的插件禁用
     await page.getByLabel('hello').getByLabel('plugin-enabled').setChecked(false);
+    await page.waitForTimeout(1000); // 等待1秒钟
+    await page.waitForSelector(`[data-testid="plugin-mantain-dialog"]`, { state: 'hidden' }); //消息弹窗已消失
     await page.waitForLoadState('load');
     await expect(await page.getByLabel('hello').getByLabel('plugin-enabled').isChecked()).toBe(false);
   });
 });
 
-test.describe('activate plugin', () => {
-  test('activate plugin', async ({ page, mockPage }) => {});
+test.describe('disable plugin', () => {
+  test('disable plugin', async ({ page, mockPage }) => {});
 });
 
-test.describe('enabled plugin', () => {
-  test('enabled plugin', async ({ page, mockPage }) => {});
-});
 test.describe('update plugin', () => {
   test('update plugin', async ({ page, mockPage }) => {});
 });
