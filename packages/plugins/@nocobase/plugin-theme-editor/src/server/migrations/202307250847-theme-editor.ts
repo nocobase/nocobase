@@ -17,15 +17,16 @@ export default class ThemeEditorMigration extends Migration {
     themeRepo.collection.addField('uid', {
       type: 'string',
     });
-
     await this.db.sync();
 
+    // 为之前的数据添加上 uid
     await themeRepo.update({
       filter: {
         'config.name': 'Default theme of antd',
       },
       values: {
         config: {
+          // 更改名字
           name: 'Default',
         },
         uid: 'default',
@@ -56,6 +57,7 @@ export default class ThemeEditorMigration extends Migration {
       },
     });
 
+    // 补充默认主题
     if (
       !(await themeRepo.findOne({
         filter: {
@@ -67,7 +69,6 @@ export default class ThemeEditorMigration extends Migration {
         values: [antd],
       });
     }
-
     if (
       !(await themeRepo.findOne({
         filter: {
@@ -79,7 +80,6 @@ export default class ThemeEditorMigration extends Migration {
         values: [dark],
       });
     }
-
     if (
       !(await themeRepo.findOne({
         filter: {
@@ -91,7 +91,6 @@ export default class ThemeEditorMigration extends Migration {
         values: [compact],
       });
     }
-
     if (
       !(await themeRepo.findOne({
         filter: {
