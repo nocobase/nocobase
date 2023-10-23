@@ -8,6 +8,7 @@ import {
   useField,
   useFieldSchema,
 } from '@formily/react';
+import { uid } from '@formily/shared';
 import { error } from '@nocobase/utils/client';
 import { Menu as AntdMenu, MenuProps } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
@@ -196,7 +197,7 @@ const HeaderMenu = ({
       key: 'x-designer-button',
       disabled: true,
       style: { padding: '0 8px', order: 9999 },
-      label: render({ style: { background: 'none' } }),
+      label: render({ 'data-testid': 'add-menu-item-button-in-header', style: { background: 'none' } }),
       notdelete: true,
     };
     const result = getMenuItems(() => {
@@ -273,7 +274,7 @@ const SideMenu = ({
 
   const items = useMemo(() => {
     const result = getMenuItems(() => {
-      return <RecursionField schema={sideMenuSchema} onlyRenderProperties />;
+      return <RecursionField key={uid()} schema={sideMenuSchema} onlyRenderProperties />;
     });
 
     if (designable) {
@@ -281,6 +282,7 @@ const SideMenu = ({
         key: 'x-designer-button',
         disabled: true,
         label: render({
+          'data-testid': 'add-menu-item-button-in-side',
           insert: (s) => {
             const dn = createDesignable({
               t,

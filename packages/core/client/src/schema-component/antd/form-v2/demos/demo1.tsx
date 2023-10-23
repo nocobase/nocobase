@@ -16,7 +16,7 @@ import {
 import { notification } from 'antd';
 import React from 'react';
 import { useFilterByTk } from '../../../../block-provider/BlockProvider';
-import { mockAPIClient } from '../../../../test';
+import { mockAPIClient } from '../../../../testUtils';
 import collections from './collections';
 
 const { apiClient, mockRequest } = mockAPIClient();

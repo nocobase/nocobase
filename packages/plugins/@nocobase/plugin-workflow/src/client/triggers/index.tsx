@@ -61,6 +61,7 @@ export interface Trigger {
   components?: { [key: string]: any };
   useInitializers?(config): SchemaInitializerItemOptions | null;
   initializers?: any;
+  actionTriggerable?: boolean;
 }
 
 export const triggers = new Registry<Trigger>();
@@ -242,23 +243,7 @@ export const TriggerConfig = () => {
                   form,
                 },
                 properties: {
-                  ...(executed
-                    ? {
-                        alert: {
-                          'x-component': Alert,
-                          'x-component-props': {
-                            type: 'warning',
-                            showIcon: true,
-                            message: `{{t("Trigger in executed workflow cannot be modified", { ns: "${NAMESPACE}" })}}`,
-                            className: css`
-                              width: 100%;
-                              font-size: 85%;
-                              margin-bottom: 2em;
-                            `,
-                          },
-                        },
-                      }
-                    : trigger.description
+                  ...(trigger.description
                     ? {
                         description: {
                           type: 'void',
@@ -324,4 +309,13 @@ export const TriggerConfig = () => {
 export function useTrigger() {
   const { workflow } = useFlowContext();
   return triggers.get(workflow.type);
+}
+
+export function getTriggersOptions() {
+  return Array.from(triggers.getEntities()).map(([value, { title, ...options }]) => ({
+    value,
+    label: title,
+    color: 'gold',
+    options,
+  }));
 }

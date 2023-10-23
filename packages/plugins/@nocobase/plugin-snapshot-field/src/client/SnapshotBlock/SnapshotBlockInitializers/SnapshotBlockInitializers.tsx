@@ -1,5 +1,5 @@
-import React from 'react';
 import { SchemaInitializer, gridRowColWrap } from '@nocobase/client';
+import React from 'react';
 import { useSnapshotTranslation } from '../../locale';
 
 export const SnapshotBlockInitializers = (props: any) => {
@@ -7,6 +7,7 @@ export const SnapshotBlockInitializers = (props: any) => {
   const { insertPosition, component } = props;
   return (
     <SchemaInitializer.Button
+      data-testid="add-block-button-in-snapshot-block"
       wrap={gridRowColWrap}
       insertPosition={insertPosition}
       component={component}

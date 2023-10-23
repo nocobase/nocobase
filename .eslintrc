@@ -38,7 +38,8 @@
     "sourceType": "module",
     "ecmaFeatures": {
       "jsx": true
-    }
+    },
+    "project": "./tsconfig.json"
   },
   "rules": {
     "@typescript-eslint/no-this-alias": "off",
@@ -55,5 +56,15 @@
     "@typescript-eslint/ban-ts-comment": "off",
     "@typescript-eslint/no-var-requires": "off",
     "promise/always-return": "off"
-  }
+  },
+  "overrides": [
+    {
+      "files": [
+        "**/e2e/**/*.{ts,js,tsx,jsx}"
+      ],
+      "rules": {
+        "@typescript-eslint/no-floating-promises": "error"
+      }
+    }
+  ]
 }

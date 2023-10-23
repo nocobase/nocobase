@@ -17,10 +17,11 @@ const recursiveParent = (schema: Schema) => {
 const useRelationFields = () => {
   const fieldSchema = useFieldSchema();
   const { getCollectionFields } = useCollectionManager();
+  const collection = useCollection();
   let fields = [];
 
   if (fieldSchema['x-initializer']) {
-    fields = useCollection().fields;
+    fields = collection.fields;
   } else {
     const collection = recursiveParent(fieldSchema.parent);
     if (collection) {
@@ -184,7 +185,18 @@ export const RecordBlockInitializers = (props: any) => {
   const hasFormChildCollection = formChildrenCollections?.length > 0;
   const detailChildrenCollections = getChildrenCollections(collection.name, true);
   const hasDetailChildCollection = detailChildrenCollections?.length > 0;
-  const modifyFlag = (collection as any).template !== 'view' || collection?.writableView;
+  const modifyFlag = (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
+  const detailChildren = useDetailCollections({
+    ...props,
+    childrenCollections: detailChildrenCollections,
+    collection,
+  });
+  const formChildren = useFormCollections({
+    ...props,
+    childrenCollections: formChildrenCollections,
+    collection,
+  });
+
   return (
     <SchemaInitializer.Button
       wrap={gridRowColWrap}
@@ -202,11 +214,7 @@ export const RecordBlockInitializers = (props: any) => {
                   key: 'details',
                   type: 'subMenu',
                   title: '{{t("Details")}}',
-                  children: useDetailCollections({
-                    ...props,
-                    childrenCollections: detailChildrenCollections,
-                    collection,
-                  }),
+                  children: detailChildren,
                 }
               : {
                   key: 'details',
@@ -220,11 +228,7 @@ export const RecordBlockInitializers = (props: any) => {
                   key: 'form',
                   type: 'subMenu',
                   title: '{{t("Form")}}',
-                  children: useFormCollections({
-                    ...props,
-                    childrenCollections: formChildrenCollections,
-                    collection,
-                  }),
+                  children: formChildren,
                 }
               : modifyFlag && {
                   key: 'form',

@@ -35,6 +35,10 @@ export class BaseAuth extends Auth {
     return this.ctx.state.currentUser;
   }
 
+  validateUsername(username: string) {
+    return /^[^@.<>"'/]{2,16}$/.test(username);
+  }
+
   async check() {
     const token = this.ctx.getBearerToken();
     if (!token) {

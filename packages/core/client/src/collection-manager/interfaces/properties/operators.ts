@@ -45,6 +45,11 @@ export const array = [
   { label: '{{t("is not empty")}}', value: '$notEmpty', noValue: true },
 ];
 
+export const object = [
+  { label: '{{t("is")}}', value: '$eq', selected: true },
+  { label: '{{t("is not")}}', value: '$ne' },
+];
+
 export const datetime = [
   { label: "{{ t('is') }}", value: '$dateOn', selected: true },
   { label: "{{ t('is not') }}", value: '$dateNotOn' },

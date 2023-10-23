@@ -1,8 +1,8 @@
 import ws from 'ws';
 
 export { mockDatabase } from '@nocobase/database';
-export * from './mockServer';
 export { default as supertest } from 'supertest';
+export * from './mockServer';
 
 export const pgOnly: () => jest.Describe = () => (process.env.DB_DIALECT == 'postgres' ? describe : describe.skip);
 
@@ -11,8 +11,8 @@ export function randomStr() {
   return Math.random().toString(36).substring(2);
 }
 
-export const waitSecond = async () => {
-  await new Promise((resolve) => setTimeout(resolve, 1000));
+export const waitSecond = async (timeout = 1000) => {
+  await new Promise((resolve) => setTimeout(resolve, timeout));
 };
 
 export const startServerWithRandomPort = async (startServer) => {

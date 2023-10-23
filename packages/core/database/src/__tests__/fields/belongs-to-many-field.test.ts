@@ -13,6 +13,91 @@ describe('belongs to many field', () => {
     await db.close();
   });
 
+  it('should define belongs to many when change alias name', async () => {
+    const Through = db.collection({
+      name: 't1',
+      fields: [
+        {
+          type: 'bigInt',
+          name: 'id',
+          primaryKey: true,
+        },
+      ],
+    });
+
+    const A = db.collection({
+      name: 'a',
+    });
+
+    const B = db.collection({
+      name: 'b',
+    });
+
+    await db.sync();
+
+    let error;
+
+    expect(Object.keys(A.model.associations).length).toEqual(0);
+    try {
+      A.setField('t1', {
+        type: 'belongsToMany',
+        through: 't1',
+        target: 't1',
+      });
+    } catch (e) {
+      error = e;
+    }
+
+    expect(error).toBeDefined();
+
+    expect(Object.keys(A.model.associations).length).toEqual(0);
+    let error2;
+    try {
+      A.setField('xxx', {
+        type: 'belongsToMany',
+        through: 't1',
+        target: 't1',
+      });
+    } catch (e) {
+      error2 = e;
+    }
+
+    expect(error2).not.toBeDefined();
+  });
+
+  it('should define belongs to many relation through exists pivot collection', async () => {
+    const PostTag = db.collection({
+      name: 'postsTags',
+      fields: [
+        {
+          type: 'bigInt',
+          name: 'id',
+          primaryKey: true,
+        },
+      ],
+    });
+
+    expect(PostTag.model.rawAttributes['id']).toBeDefined();
+
+    const Tag = db.collection({
+      name: 'tags',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'belongsToMany', name: 'posts', through: 'postsTags' },
+      ],
+    });
+
+    const Post = db.collection({
+      name: 'posts',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'belongsToMany', name: 'tags', through: 'postsTags' },
+      ],
+    });
+
+    expect(PostTag.model.rawAttributes['id']).toBeDefined();
+  });
+
   test('association undefined', async () => {
     const Post = db.collection({
       name: 'posts',

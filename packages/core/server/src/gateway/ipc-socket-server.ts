@@ -66,6 +66,14 @@ export class IPCSocketServer {
       const argv = payload.argv;
 
       const mainApp = await AppSupervisor.getInstance().getApp('main');
+      const cli = mainApp.cli;
+      if (
+        !cli.parseHandleByIPCServer(argv, {
+          from: 'node',
+        })
+      ) {
+        throw new Error('Not handle by ipc server');
+      }
 
       return mainApp.runAsCLI(argv, {
         from: 'node',

@@ -1,6 +1,7 @@
 import { useCollection } from '../../';
 
 export const KanbanActionInitializers = {
+  'data-testid': 'configure-actions-button-of-kanban-block',
   title: "{{t('Configure actions')}}",
   icon: 'SettingOutlined',
   style: {

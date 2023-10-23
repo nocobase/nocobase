@@ -383,24 +383,7 @@ export function NodeDefaultView(props) {
                     },
                   },
                   properties: {
-                    ...(workflow.executed
-                      ? {
-                          alert: {
-                            type: 'void',
-                            'x-component': Alert,
-                            'x-component-props': {
-                              type: 'warning',
-                              showIcon: true,
-                              message: `{{t("Node in executed workflow cannot be modified", { ns: "${NAMESPACE}" })}}`,
-                              className: css`
-                                width: 100%;
-                                font-size: 85%;
-                                margin-bottom: 2em;
-                              `,
-                            },
-                          },
-                        }
-                      : instruction.description
+                    ...(instruction.description
                       ? {
                           description: {
                             type: 'void',

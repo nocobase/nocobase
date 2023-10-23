@@ -2,6 +2,7 @@ import { useCollection } from '../../collection-manager';
 
 // 表单的操作配置
 export const GridCardActionInitializers = {
+  'data-testid': 'configure-actions-button-of-grid-card-block',
   title: "{{t('Configure actions')}}",
   icon: 'SettingOutlined',
   style: {
@@ -31,9 +32,9 @@ export const GridCardActionInitializers = {
               skipScopeCheck: true,
             },
           },
-          visible: () => {
+          visible: function useVisible() {
             const collection = useCollection();
-            return (collection.template !== 'view' && collection.template !== 'file') || collection?.writableView;
+            return !['view', 'file', 'sql'].includes(collection.template) || collection?.writableView;
           },
         },
         {
@@ -54,6 +55,10 @@ export const GridCardActionInitializers = {
             'x-acl-action-props': {
               skipScopeCheck: true,
             },
+          },
+          visible: function useVisible() {
+            const collection = useCollection();
+            return collection.template !== 'sql';
           },
         },
         {
@@ -135,6 +140,7 @@ export const GridCardActionInitializers = {
 };
 
 export const GridCardItemActionInitializers = {
+  'data-testid': 'configure-actions-button-of-grid-card-item',
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
   items: [
@@ -163,9 +169,9 @@ export const GridCardItemActionInitializers = {
             'x-decorator': 'ACLActionProvider',
             'x-align': 'left',
           },
-          visible: () => {
+          visible: function useVisible() {
             const collection = useCollection();
-            return (collection as any).template !== 'view' || collection?.writableView;
+            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
         {
@@ -177,6 +183,10 @@ export const GridCardItemActionInitializers = {
             'x-action': 'destroy',
             'x-decorator': 'ACLActionProvider',
             'x-align': 'left',
+          },
+          visible: function useVisible() {
+            const collection = useCollection();
+            return collection.template !== 'sql';
           },
         },
       ],
@@ -261,35 +271,21 @@ export const GridCardItemActionInitializers = {
               useProps: '{{ useCustomizeUpdateActionProps }}',
             },
           },
-          visible: () => {
+          visible: function useVisible() {
             const collection = useCollection();
-            return (collection as any).template !== 'view' || collection?.writableView;
+            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
         {
           type: 'item',
           title: '{{t("Custom request")}}',
-          component: 'CustomizeActionInitializer',
+          component: 'CustomRequestInitializer',
           schema: {
-            title: '{{ t("Custom request") }}',
-            'x-component': 'Action.Link',
             'x-action': 'customize:table:request',
-            'x-designer': 'Action.Designer',
-            'x-action-settings': {
-              requestSettings: {},
-              onSuccess: {
-                manualClose: false,
-                redirecting: false,
-                successMessage: '{{t("Request success")}}',
-              },
-            },
-            'x-component-props': {
-              useProps: '{{ useCustomizeRequestActionProps }}',
-            },
           },
-          visible: () => {
+          visible: function useVisible() {
             const collection = useCollection();
-            return (collection as any).template !== 'view' || collection?.writableView;
+            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
       ],

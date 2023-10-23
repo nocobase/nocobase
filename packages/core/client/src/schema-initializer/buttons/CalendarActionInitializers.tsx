@@ -2,6 +2,7 @@ import { useCollection } from '../../';
 
 // 日历的操作配置
 export const CalendarActionInitializers = {
+  'data-testid': 'configure-actions-button-of-calendar-block',
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
   style: { marginLeft: 8 },
@@ -76,7 +77,7 @@ export const CalendarActionInitializers = {
           },
           visible: function useVisible() {
             const collection = useCollection();
-            return collection.template !== 'view' || collection?.writableView;
+            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
       ],

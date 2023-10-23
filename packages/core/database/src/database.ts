@@ -2,6 +2,7 @@ import { Logger } from '@nocobase/logger';
 import { applyMixins, AsyncEmitter, requireModule } from '@nocobase/utils';
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
+import { backOff } from 'exponential-backoff';
 import glob from 'glob';
 import lodash from 'lodash';
 import { basename, isAbsolute, resolve } from 'path';
@@ -69,6 +70,8 @@ import {
 import { patchSequelizeQueryInterface, snakeCase } from './utils';
 import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
 import { ViewCollection } from './view-collection';
+import { SqlCollection } from './sql-collection/sql-collection';
+import { nanoid } from 'nanoid';
 
 export type MergeOptions = merge.Options;
 
@@ -86,6 +89,8 @@ export interface IDatabaseOptions extends Options {
   migrator?: any;
   usingBigIntForId?: boolean;
   underscored?: boolean;
+  customHooks?: any;
+  instanceId?: string;
 }
 
 export type DatabaseOptions = IDatabaseOptions;
@@ -170,8 +175,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
   pendingFields = new Map<string, RelationField[]>();
   modelCollection = new Map<ModelStatic<any>, Collection>();
   tableNameCollectionMap = new Map<string, Collection>();
-
+  context: any = {};
   queryInterface: QueryInterface;
+
+  _instanceId: string;
 
   utils = new DatabaseUtils(this);
   referenceMap = new ReferencesMap();
@@ -204,6 +211,12 @@ export class Database extends EventEmitter implements AsyncEmitter {
       ...lodash.clone(options),
     };
 
+    if (!options.instanceId) {
+      this._instanceId = nanoid();
+    } else {
+      this._instanceId = options.instanceId;
+    }
+
     if (options.storage && options.storage !== ':memory:') {
       if (!isAbsolute(options.storage)) {
         opts.storage = resolve(process.cwd(), options.storage);
@@ -222,7 +235,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
     this.options = opts;
 
-    this.sequelize = new Sequelize(this.sequelizeOptions(this.options));
+    const sequelizeOptions = this.sequelizeOptions(this.options);
+    this.sequelize = new Sequelize(sequelizeOptions);
 
     this.queryInterface = buildQueryInterface(this);
 
@@ -284,7 +298,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
       migrations: this.migrations.callback(),
       context,
       storage: new SequelizeStorage({
-        modelName: `${this.options.tablePrefix || ''}migrations`,
+        tableName: `${this.options.tablePrefix || ''}migrations`,
+        modelName: 'migrations',
         ...migratorOptions.storage,
         sequelize: this.sequelize,
       }),
@@ -294,17 +309,31 @@ export class Database extends EventEmitter implements AsyncEmitter {
     patchSequelizeQueryInterface(this);
   }
 
+  get instanceId() {
+    return this._instanceId;
+  }
+
+  setContext(context: any) {
+    this.context = context;
+  }
+
   setLogger(logger: Logger) {
     this.logger = logger;
   }
 
   sequelizeOptions(options) {
     if (options.dialect === 'postgres') {
-      options.hooks = {
-        afterConnect: async (connection) => {
-          await connection.query('SET search_path TO public;');
-        },
-      };
+      if (!options.hooks) {
+        options.hooks = {};
+      }
+
+      if (!options.hooks['afterConnect']) {
+        options.hooks['afterConnect'] = [];
+      }
+
+      options.hooks['afterConnect'].push(async (connection) => {
+        await connection.query('SET search_path TO public;');
+      });
     }
     return options;
   }
@@ -355,6 +384,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
     this.on('afterUpdateCollection', (collection, options) => {
       if (collection.options.schema) {
         collection.model._schema = collection.options.schema;
+      }
+      if (collection.options.sql) {
+        collection.modelInit();
       }
     });
 
@@ -447,6 +479,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
       if (hasViewOptions) {
         return ViewCollection;
+      }
+
+      if (options.sql) {
+        return SqlCollection;
       }
 
       return Collection;
@@ -700,25 +736,33 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   async auth(options: Omit<QueryOptions, 'retry'> & { retry?: number | Pick<QueryOptions, 'retry'> } = {}) {
     const { retry = 10, ...others } = options;
-    const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
-    let count = 1;
+    const startingDelay = 50;
+    const timeMultiple = 2;
+
+    let attemptNumber = 1; // To track the current attempt number
+
     const authenticate = async () => {
       try {
         await this.sequelize.authenticate(others);
         console.log('Connection has been established successfully.');
-        return true;
       } catch (error) {
-        console.log(`Unable to connect to the database: ${error.message}`);
-        if (count >= (retry as number)) {
-          throw new Error('Connection failed, please check your database connection credentials and try again.');
-        }
-        console.log('reconnecting...', count);
-        ++count;
-        await delay(500);
-        return await authenticate();
+        console.log(`Attempt ${attemptNumber}/${retry}: Unable to connect to the database: ${error.message}`);
+        const nextDelay = startingDelay * Math.pow(timeMultiple, attemptNumber - 1);
+        console.log(`Will retry in ${nextDelay}ms...`);
+        attemptNumber++;
+        throw error; // Re-throw the error so that backoff can catch and handle it
       }
     };
-    return await authenticate();
+
+    try {
+      await backOff(authenticate, {
+        numOfAttempts: retry as number,
+        startingDelay: startingDelay,
+        timeMultiple: timeMultiple,
+      });
+    } catch (error) {
+      throw new Error('Connection failed, please check your database connection credentials and try again.');
+    }
   }
 
   async prepare() {
@@ -751,7 +795,15 @@ export class Database extends EventEmitter implements AsyncEmitter {
       return;
     }
 
-    return this.sequelize.close();
+    await this.emitAsync('beforeClose', this);
+
+    const closeResult = this.sequelize.close();
+
+    if (this.options?.customHooks?.['afterClose']) {
+      await this.options.customHooks['afterClose'](this);
+    }
+
+    return closeResult;
   }
 
   on(event: EventType, listener: any): this;

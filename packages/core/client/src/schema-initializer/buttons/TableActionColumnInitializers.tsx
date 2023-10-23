@@ -101,7 +101,7 @@ export const TableActionColumnInitializers = (props: any) => {
                 'x-decorator': 'ACLActionProvider',
               },
               visible: () => {
-                return collection.template !== 'view' || collection?.writableView;
+                return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
               },
             },
 
@@ -115,7 +115,7 @@ export const TableActionColumnInitializers = (props: any) => {
                 'x-decorator': 'ACLActionProvider',
               },
               visible: () => {
-                return collection.template !== 'view' || collection?.writableView;
+                return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
               },
             },
             collection.tree &&
@@ -139,7 +139,7 @@ export const TableActionColumnInitializers = (props: any) => {
                 'x-decorator': 'ACLActionProvider',
               },
               visible: () => {
-                return collection.template !== 'view' || collection?.writableView;
+                return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
               },
             },
           ],
@@ -225,32 +225,18 @@ export const TableActionColumnInitializers = (props: any) => {
                 },
               },
               visible: () => {
-                return collection.template !== 'view' || collection?.writableView;
+                return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
               },
             },
             {
               type: 'item',
               title: '{{t("Custom request")}}',
-              component: 'CustomizeActionInitializer',
+              component: 'CustomRequestInitializer',
               schema: {
-                title: '{{ t("Custom request") }}',
-                'x-component': 'Action.Link',
                 'x-action': 'customize:table:request',
-                'x-designer': 'Action.Designer',
-                'x-action-settings': {
-                  requestSettings: {},
-                  onSuccess: {
-                    manualClose: false,
-                    redirecting: false,
-                    successMessage: '{{t("Request success")}}',
-                  },
-                },
-                'x-component-props': {
-                  useProps: '{{ useCustomizeRequestActionProps }}',
-                },
               },
               visible: () => {
-                return collection.template !== 'view' || collection?.writableView;
+                return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
               },
             },
           ],

@@ -12,12 +12,9 @@ export default class FormTrigger extends Trigger {
     super(plugin);
 
     plugin.app.resourcer.use(this.middleware);
-    plugin.app.actions({
-      ['workflows:trigger']: this.triggerAction,
-    });
   }
 
-  triggerAction = async (context, next) => {
+  async triggerAction(context, next) {
     const { triggerWorkflows } = context.action.params;
 
     if (!triggerWorkflows) {
@@ -28,25 +25,34 @@ export default class FormTrigger extends Trigger {
     await next();
 
     this.trigger(context);
-  };
+  }
 
   middleware = async (context, next) => {
+    const {
+      resourceName,
+      actionName,
+      params: { triggerWorkflows },
+    } = context.action;
+
+    if (resourceName === 'workflows' && actionName === 'trigger') {
+      return this.triggerAction(context, next);
+    }
+
     await next();
 
-    const { resourceName, actionName } = context.action;
+    if (!triggerWorkflows) {
+      return;
+    }
 
-    if ((resourceName === 'workflows' && actionName === 'trigger') || !['create', 'update'].includes(actionName)) {
+    if (!['create', 'update'].includes(actionName)) {
       return;
     }
 
     this.trigger(context);
   };
 
-  async trigger(context) {
-    const { triggerWorkflows, values } = context.action.params;
-    if (!triggerWorkflows) {
-      return;
-    }
+  private async trigger(context) {
+    const { triggerWorkflows = '', values } = context.action.params;
 
     const { currentUser } = context.state;
 
@@ -88,7 +94,7 @@ export default class FormTrigger extends Trigger {
               appends,
             });
           }
-          this.plugin.trigger(workflow, { data: payload, user: currentUser });
+          this.plugin.trigger(workflow, { data: toJSON(payload), user: toJSON(currentUser) });
         });
       } else {
         const data = trigger[1] ? get(values, trigger[1]) : values;

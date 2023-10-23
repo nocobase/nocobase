@@ -1,67 +1,89 @@
 import { createForm } from '@formily/core';
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { Spin } from 'antd';
-import { isEmpty } from 'lodash';
+import _, { isEmpty } from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import { useCollection } from '../collection-manager';
 import { RecordProvider, useRecord } from '../record-provider';
 import { useActionContext, useDesignable } from '../schema-component';
 import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v2/Templates';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
+import { FormActiveFieldsProvider } from './hooks';
 
 export const FormBlockContext = createContext<any>({});
 
 const InternalFormBlockProvider = (props) => {
-  const { action, readPretty, params } = props;
+  const { action, readPretty, params, association } = props;
   const field = useField();
   const form = useMemo(
     () =>
       createForm({
         readPretty,
       }),
-    [],
+    [readPretty],
   );
   const { resource, service, updateAssociationValues } = useBlockRequestContext();
   const formBlockRef = useRef();
   const record = useRecord();
+  const formBlockValue = useMemo(() => {
+    return {
+      params,
+      action,
+      form,
+      // update 表示是表单编辑区块，create 表示是表单新增区块
+      type: action === 'get' ? 'update' : 'create',
+      field,
+      service,
+      resource,
+      updateAssociationValues,
+      formBlockRef,
+    };
+  }, [action, field, form, params, resource, service, updateAssociationValues]);
+
   if (service.loading && Object.keys(form?.initialValues)?.length === 0 && action) {
     return <Spin />;
   }
-  return (
-    <FormBlockContext.Provider
-      value={{
-        params,
-        action,
-        form,
-        field,
-        service,
-        resource,
-        updateAssociationValues,
-        formBlockRef,
-      }}
-    >
-      {readPretty ? (
-        <RecordProvider parent={isEmpty(record?.__parent) ? record : record?.__parent} record={service?.data?.data}>
-          <div ref={formBlockRef}>
-            <RenderChildrenWithDataTemplates form={form} />
-          </div>
-        </RecordProvider>
-      ) : (
-        <div ref={formBlockRef}>
-          <RenderChildrenWithDataTemplates form={form} />
-        </div>
-      )}
-    </FormBlockContext.Provider>
+
+  let content = (
+    <div ref={formBlockRef}>
+      <RenderChildrenWithDataTemplates form={form} />
+    </div>
   );
+  if (readPretty) {
+    content = (
+      <RecordProvider parent={isEmpty(record?.__parent) ? record : record?.__parent} record={service?.data?.data}>
+        {content}
+      </RecordProvider>
+    );
+  } else if (
+    formBlockValue.type === 'create' &&
+    // 点击关系表格区块的 Add new 按钮，在弹窗中新增的表单区块，是不需要重置 record 的。在这里用 record 是否为空来判断
+    !_.isEmpty(_.omit(record, ['__parent', '__collectionName'])) &&
+    // association 不为空，说明是关系区块
+    association
+  ) {
+    content = (
+      <RecordProvider parent={record} record={{}}>
+        {content}
+      </RecordProvider>
+    );
+  }
+
+  return <FormBlockContext.Provider value={formBlockValue}>{content}</FormBlockContext.Provider>;
 };
 
-export const useIsEmptyRecord = () => {
-  const record = useRecord();
-  const keys = Object.keys(record);
-  if (keys.includes('__parent')) {
-    return keys.length > 1;
-  }
-  return keys.length > 0;
+/**
+ * 获取表单区块的类型：update 表示是表单编辑区块，create 表示是表单新增区块
+ * @returns
+ */
+export const useFormBlockType = () => {
+  const ctx = useFormBlockContext() || {};
+  return { type: ctx.type } as { type: 'update' | 'create' };
+};
+
+export const useIsDetailBlock = () => {
+  const ctx = useActionContext();
+  return !(ctx?.fieldSchema?.['x-acl-action'] === 'create' || ctx?.fieldSchema?.['x-action'] === 'create');
 };
 
 export const FormBlockProvider = (props) => {
@@ -70,20 +92,23 @@ export const FormBlockProvider = (props) => {
   const { __collection } = record;
   const currentCollection = useCollection();
   const { designable } = useDesignable();
-  const isEmptyRecord = useIsEmptyRecord();
+  const isDetailBlock = useIsDetailBlock();
   let detailFlag = false;
-  if (isEmptyRecord) {
+  if (isDetailBlock) {
     detailFlag = true;
     if (!designable && __collection) {
+      console.log(__collection === collection);
       detailFlag = __collection === collection;
     }
   }
   const createFlag =
-    (currentCollection.name === (collection?.name || collection) && !isEmptyRecord) || !currentCollection.name;
+    (currentCollection.name === (collection?.name || collection) && !isDetailBlock) || !currentCollection.name;
   return (
     (detailFlag || createFlag || isCusomeizeCreate) && (
-      <BlockProvider {...props} block={'form'}>
-        <InternalFormBlockProvider {...props} />
+      <BlockProvider data-testid={props['data-testid'] || 'form-block'} {...props} block={'form'}>
+        <FormActiveFieldsProvider name="form">
+          <InternalFormBlockProvider {...props} />
+        </FormActiveFieldsProvider>
       </BlockProvider>
     )
   );

@@ -1,11 +1,11 @@
 import { css } from '@emotion/css';
-import { Field } from '@formily/core';
+import { Field, GeneralField } from '@formily/core';
 import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import { useRequest } from 'ahooks';
 import { Col, Row } from 'antd';
 import merge from 'deepmerge';
 import template from 'lodash/template';
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   TableFieldResource,
@@ -24,7 +24,16 @@ import { useAssociationNames } from './hooks';
 
 export const BlockResourceContext = createContext(null);
 export const BlockAssociationContext = createContext(null);
-export const BlockRequestContext = createContext<any>({});
+export const BlockRequestContext = createContext<{
+  block?: string;
+  props?: any;
+  field?: GeneralField;
+  service?: any;
+  resource?: any;
+  allowedActions?: any;
+  __parent?: any;
+  updateAssociationValues?: any[];
+}>({});
 
 export const useBlockResource = () => {
   return useContext(BlockResourceContext);
@@ -34,6 +43,7 @@ interface UseResourceProps {
   resource: any;
   association?: any;
   useSourceId?: any;
+  collection?: any;
   block?: any;
 }
 
@@ -48,14 +58,14 @@ export const useAssociation = (props) => {
 };
 
 const useResource = (props: UseResourceProps) => {
-  const { block, resource, useSourceId } = props;
+  const { block, collection, resource, useSourceId } = props;
   const record = useRecord();
   const api = useAPIClient();
   const { fieldSchema } = useActionContext();
   const isCreateAction = fieldSchema?.['x-action'] === 'create';
   const association = useAssociation(props);
   const sourceId = useSourceId?.();
-  const field = useField<Field>();
+  const field = useField();
   const withoutTableFieldResource = useContext(WithoutTableFieldResource);
   const __parent = useContext(BlockRequestContext);
   if (block === 'TableField') {
@@ -83,8 +93,10 @@ const useResource = (props: UseResourceProps) => {
   if (sourceId) {
     return api.resource(resource, sourceId);
   }
-
-  return api.resource(resource, record[association?.sourceKey || 'id']);
+  if (record[association?.sourceKey || 'id']) {
+    return api.resource(resource, record[association?.sourceKey || 'id']);
+  }
+  return api.resource(collection);
 };
 
 const useActionParams = (props) => {
@@ -93,7 +105,7 @@ const useActionParams = (props) => {
   return { ...props.params, ...params };
 };
 
-export const useResourceAction = (props, opts = {}) => {
+const useResourceAction = (props, opts = {}) => {
   /**
    * fieldName: 来自 TableFieldProvider
    */
@@ -165,7 +177,7 @@ export const MaybeCollectionProvider = (props) => {
 };
 
 export const BlockRequestProvider = (props) => {
-  const field = useField();
+  const field = useField<Field>();
   const resource = useBlockResource();
   const [allowedActions, setAllowedActions] = useState({});
 
@@ -273,7 +285,7 @@ export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
 export const BlockProvider = (props) => {
   const { collection, association } = props;
   const resource = useResource(props);
-  const params = { ...props.params };
+  const params = useMemo(() => ({ ...props.params }), [props.params]);
   const { appends, updateAssociationValues } = useAssociationNames();
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
@@ -286,7 +298,7 @@ export const BlockProvider = (props) => {
           <BlockRequestProvider {...props} updateAssociationValues={updateAssociationValues} params={params}>
             <SharedFilterProvider {...props} params={params}>
               <FilterBlockRecord {...props} params={params}>
-                {props.children}
+                <div data-testid={props['data-testid']}>{props.children}</div>
               </FilterBlockRecord>
             </SharedFilterProvider>
           </BlockRequestProvider>

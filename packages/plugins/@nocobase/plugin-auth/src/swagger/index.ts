@@ -318,6 +318,58 @@ export default {
         },
       },
     },
+    '/auth:changePassword': {
+      post: {
+        description: 'Change password',
+        tags: ['Basic auth'],
+        security: [],
+        requestBody: {
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  oldPassword: {
+                    type: 'string',
+                    description: '旧密码',
+                  },
+                  newPassword: {
+                    type: 'string',
+                    description: '新密码',
+                  },
+                  confirmPassword: {
+                    type: 'string',
+                    description: '确认密码',
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: 'ok',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/user',
+                },
+              },
+            },
+          },
+          401: {
+            description: 'Unauthorized',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/error',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
     'authenticators:listTypes': {
       get: {
         description: 'List authenticator types',

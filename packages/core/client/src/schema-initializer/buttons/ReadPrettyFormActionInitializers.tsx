@@ -2,10 +2,11 @@ import { useCollection } from '../..';
 
 const useVisibleCollection = () => {
   const collection = useCollection();
-  return collection.template !== 'view' || collection?.writableView;
+  return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
 };
 // 表单的操作配置
 export const ReadPrettyFormActionInitializers = {
+  'data-testid': 'configure-actions-button-of-read-pretty-form',
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
   style: {
@@ -149,25 +150,7 @@ export const ReadPrettyFormActionInitializers = {
         {
           type: 'item',
           title: '{{t("Custom request")}}',
-          component: 'CustomizeActionInitializer',
-          schema: {
-            title: '{{ t("Custom request") }}',
-            'x-component': 'Action',
-            'x-action': 'customize:form:request',
-            'x-designer': 'Action.Designer',
-            'x-action-settings': {
-              requestSettings: {},
-              skipValidator: false,
-              onSuccess: {
-                manualClose: false,
-                redirecting: false,
-                successMessage: '{{t("Request success")}}',
-              },
-            },
-            'x-component-props': {
-              useProps: '{{ useCustomizeRequestActionProps }}',
-            },
-          },
+          component: 'CustomRequestInitializer',
           visible: useVisibleCollection,
         },
       ],

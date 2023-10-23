@@ -104,6 +104,10 @@ function CustomFormBlockInitializer({ insert, ...props }) {
                   'x-component': 'ActionBar',
                   'x-component-props': {
                     layout: 'one-column',
+                    style: {
+                      marginTop: '1.5em',
+                      flexWrap: 'wrap',
+                    },
                   },
                   'x-initializer': 'AddActionButton',
                   properties: {
@@ -217,6 +221,7 @@ function AddCustomFormField(props) {
       }}
     >
       <SchemaInitializer.Button
+        data-testid="configure-fields-button-of-add-custom-form-field"
         wrap={gridRowColWrap}
         insertPosition={insertPosition}
         items={items}

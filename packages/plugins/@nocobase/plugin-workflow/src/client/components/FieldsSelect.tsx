@@ -18,6 +18,7 @@ export const FieldsSelect = observer(
 
     return (
       <Select
+        data-testid="antd-select"
         popupMatchSelectWidth={false}
         {...others}
         options={fields.filter(filter).map((field) => ({

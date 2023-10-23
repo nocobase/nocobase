@@ -25,6 +25,7 @@ import { OverridingCollectionField } from './OverridingCollectionField';
 import { collection } from './schemas/collectionFields';
 import { SyncFieldsAction } from './SyncFieldsAction';
 import { ViewCollectionField } from './ViewInheritedField';
+import { SyncSQLFieldsAction } from './SyncSQLFieldsAction';
 import { Input } from '../../schema-component/antd/input';
 
 const indentStyle = css`
@@ -323,9 +324,9 @@ export const CollectionFields = () => {
       groups.pf.push(field);
     } else if (field.interface) {
       const conf = getInterface(field.interface);
-      if (conf.group === 'systemInfo') {
+      if (conf?.group === 'systemInfo') {
         groups.system.push(field);
-      } else if (conf.group === 'relation') {
+      } else if (conf?.group === 'relation') {
         groups.association.push(field);
       } else {
         groups.general.push(field);
@@ -405,7 +406,6 @@ export const CollectionFields = () => {
   );
   const addProps = { type: 'primary', database };
   const syncProps = { type: 'primary' };
-  console.log(dataSource);
   return (
     <ResourceActionProvider {...resourceActionProps}>
       <FormContext.Provider value={form}>
@@ -420,6 +420,7 @@ export const CollectionFields = () => {
           >
             <Action {...deleteProps} />
             <SyncFieldsAction {...syncProps} />
+            <SyncSQLFieldsAction refreshCMList={refreshAsync} />
             <AddCollectionField {...addProps} />
           </Space>
           <Table

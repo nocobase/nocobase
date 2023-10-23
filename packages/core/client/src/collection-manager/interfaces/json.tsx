@@ -1,7 +1,7 @@
 import { FormItem, FormLayout } from '@formily/antd-v5';
 import { registerValidateRules } from '@formily/core';
 import React from 'react';
-import { defaultProps } from './properties';
+import { defaultProps, operators } from './properties';
 import { IField } from './types';
 
 registerValidateRules({
@@ -41,7 +41,7 @@ export const json: IField = {
       default: null,
     },
   },
-  availableTypes: ['json', 'array'],
+  availableTypes: ['json', 'array', 'jsonb'],
   hasDefaultValue: true,
   properties: {
     ...defaultProps,
@@ -59,5 +59,7 @@ export const json: IField = {
       'x-disabled': `{{ disabledJSONB }}`,
     },
   },
-  filterable: {},
+  filterable: {
+    operators: operators.string,
+  },
 };

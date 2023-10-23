@@ -124,9 +124,15 @@ export class BasicAuth extends BaseAuth {
     if (!currentUser) {
       ctx.throw(401);
     }
+    let key: string;
+    if (currentUser.username) {
+      key = 'username';
+    } else {
+      key = 'email';
+    }
     const user = await this.userRepository.findOne({
       where: {
-        email: currentUser.email,
+        [key]: currentUser[key],
       },
     });
     const pwd = this.userCollection.getField<PasswordField>('password');

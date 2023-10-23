@@ -29,8 +29,9 @@ import { useChartsTranslation } from '../locale';
 import { ChartRenderer, ChartRendererContext } from '../renderer';
 import { createRendererSchema, getField, getSelectedFields } from '../utils';
 import { getConfigSchema, querySchema, transformSchema } from './schemas/configure';
-import { useChartTypes, useCharts, useDefaultChartType } from '../chart/library';
+import { useChartTypes, useCharts, useDefaultChartType } from '../chart/group';
 import { FilterDynamicComponent } from './FilterDynamicComponent';
+import { css } from '@emotion/css';
 const { Paragraph, Text } = Typography;
 
 export type ChartConfigCurrent = {
