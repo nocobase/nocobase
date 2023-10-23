@@ -250,6 +250,39 @@ test.describe('action display config', () => {
   });
   test('setting action model size', async ({ page, mockPage }) => {
     await mockPage({ pageSchema: tablePageSchema }).goto();
+    await page.getByTestId('block-item').click();
+    await page.getByTestId('configure-actions-button-of-table-block-users').hover();
+    //添加按钮
+    await page.getByRole('menuitem', { name: 'Add new' }).click();
+    await page.getByTestId('block-item').getByRole('button', { name: 'plus Add new' }).click();
+    await expect(await page.getByTestId('action-drawer')).toBeVisible();
+    await page.locator('.ant-drawer-mask').click();
+    //修改尺寸
+    await page.getByTestId('block-item').getByRole('button', { name: 'plus Add new' }).hover();
+    await page
+      .getByTestId('block-item')
+      .getByRole('button', { name: 'plus Add new ' })
+      .getByLabel('designer-schema-settings')
+      .click();
+    await page.getByRole('menuitem', { name: 'Popup size' }).click();
+    //默认尺寸为Middle
+    await expect(
+      await page.getByRole('menuitem', { name: 'Popup size' }).locator('.ant-select-selection-item').innerText(),
+    ).toBe('Middle');
+    //设置为large
+    await page.getByRole('option', { name: 'Large' }).click();
+
+    await page.getByTestId('block-item').getByRole('button', { name: 'plus Add new' }).click();
+    const drawerItem = page.getByTestId('action-drawer');
+    const drawerWidth = await drawerItem.evaluate((element) => {
+      const computedStyle = window.getComputedStyle(element);
+      const parent = element.parentElement;
+      const parentWidth = window.getComputedStyle(parent).getPropertyValue('width');
+      const percentageWidth = (parseFloat(computedStyle.width) / parseFloat(parentWidth)) * 100;
+      return percentageWidth;
+    });
+    //宽度为屏幕宽度的70%
+    await expect(drawerWidth).toBe(70);
   });
 });
 
