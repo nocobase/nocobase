@@ -5,25 +5,26 @@ import { useCollection } from '../../../../collection-manager';
 import { useCompile } from '../../../hooks';
 
 /**
- * label = 'action' + x-component + x-action + actionTitle + [collectionName] + [blockName] + [postfix]
+ * label = 'action' + x-component + actionTitle + [x-action] + [collectionName] + [blockName] + [postfix]
  * @param title
  * @returns
  */
 export const useGetAriaLabelOfAction = (title: string) => {
   const fieldSchema = useFieldSchema();
   const component = fieldSchema['x-component'];
-  const action = fieldSchema['x-action'];
+  let action = fieldSchema['x-action'];
   const compile = useCompile();
   let { name: collectionName } = useCollection();
   let { name: blockName } = useBlockContext() || {};
   const actionTitle = title || compile(fieldSchema.title);
   collectionName = collectionName ? `-${collectionName}` : '';
   blockName = blockName ? `-${blockName}` : '';
+  action = action ? `-${action}` : '';
 
   const getAriaLabel = useCallback(
     (postfix?: string) => {
       postfix = postfix ? `-${postfix}` : '';
-      return `action-${component}-${action}-${actionTitle}${collectionName}${blockName}${postfix}`;
+      return `action-${component}-${actionTitle}${action}${collectionName}${blockName}${postfix}`;
     },
     [action, actionTitle, blockName, collectionName, component],
   );
