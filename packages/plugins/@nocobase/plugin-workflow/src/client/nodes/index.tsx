@@ -13,14 +13,15 @@ import {
   useResourceActionContext,
 } from '@nocobase/client';
 import { Registry, parse, str2moment } from '@nocobase/utils/client';
-import { Alert, App, Button, Dropdown, Input, Tag, message } from 'antd';
+import { App, Button, Dropdown, Input, Tag, message } from 'antd';
 import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AddButton } from '../AddButton';
 import { useFlowContext } from '../FlowContext';
 import { DrawerDescription } from '../components/DrawerDescription';
+import { StatusButton } from '../components/StatusButton';
 import { JobStatusOptionsMap } from '../constants';
-import { NAMESPACE, lang } from '../locale';
+import { lang } from '../locale';
 import useStyles from '../style';
 import { VariableOption, VariableOptions } from '../variable';
 import aggregate from './aggregate';
@@ -36,7 +37,6 @@ import query from './query';
 import request from './request';
 import sql from './sql';
 import update from './update';
-import { StatusButton } from '../components/StatusButton';
 
 export interface Instruction {
   title: string;
@@ -54,6 +54,7 @@ export interface Instruction {
   useScopeVariables?(node, options?): VariableOptions;
   useInitializers?(node): SchemaInitializerItemOptions | null;
   initializers?: { [key: string]: any };
+  isAvailable?(ctx: object): boolean;
 }
 
 export const instructions = new Registry<Instruction>();
