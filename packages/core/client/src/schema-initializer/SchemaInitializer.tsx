@@ -473,18 +473,21 @@ SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
     };
 
     const item = {
+      ...props,
       key: info.key,
       label: isString(children) ? compile(children) : children,
       icon: typeof icon === 'string' ? <Icon type={icon as string} /> : icon,
       children: renderMenuItem(items, info.key),
     };
 
-    collectMenuItem(item);
+    collectMenuItem(item as any);
     return null;
   }
 
   const label = isString(children) ? compile(children) : children;
   const item = {
+    role: props?.role,
+    'aria-label': props?.['aria-label'],
     key: info.key,
     label,
     title: label,

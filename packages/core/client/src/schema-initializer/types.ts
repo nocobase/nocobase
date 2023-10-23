@@ -63,6 +63,7 @@ interface SchemaInitializerItemComponentProps {
 export interface SchemaInitializerItemProps extends Omit<MenuItemProps, 'onClick'> {
   items?: SchemaInitializerItemOptions[];
   onClick?: MenuClickEventHandler;
+  [key: string]: any;
 }
 
 type MenuClickEventHandler = (info: MenuInfo) => void;

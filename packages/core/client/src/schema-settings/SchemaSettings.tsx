@@ -747,7 +747,7 @@ SchemaSettings.SelectItem = function SelectItem(props) {
 
   return (
     <SchemaSettings.Item {...others}>
-      <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
+      <label aria-label={title} style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
         {title}
         <Select
           data-testid="antd-select"
@@ -760,7 +760,7 @@ SchemaSettings.SelectItem = function SelectItem(props) {
           onClick={onClick}
           {...moreProps}
         />
-      </div>
+      </label>
     </SchemaSettings.Item>
   );
 };

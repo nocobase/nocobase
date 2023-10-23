@@ -50,6 +50,8 @@ const ChartsProvider = React.memo((props) => {
     const hasChartItem = children.some((child) => child?.component === 'ChartBlockInitializer');
     if (!hasChartItem) {
       children.push({
+        role: 'button',
+        'aria-label': 'data-block-chart',
         key: 'chart',
         type: 'item',
         icon: 'PieChartOutlined',

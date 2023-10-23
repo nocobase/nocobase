@@ -10,6 +10,8 @@ export const DataVisualization: React.FC = (props) => {
   const has = children.some((initializer) => initializer.component === 'ChartV2BlockInitializer');
   if (!has) {
     children.push({
+      role: 'button',
+      'aria-label': 'data-block-charts',
       key: 'chart-v2',
       type: 'item',
       title: t('Charts'),
