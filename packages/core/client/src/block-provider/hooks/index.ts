@@ -26,6 +26,7 @@ import { mergeFilter } from '../SharedFilterProvider';
 import { TableFieldResource } from '../TableFieldProvider';
 
 export * from './useFormActiveFields';
+export * from './useParsedFilter';
 
 export const usePickActionProps = () => {
   const form = useForm();
@@ -245,6 +246,13 @@ export const useCreateActionProps = () => {
           });
         } else {
           message.success(compile(onSuccess?.successMessage));
+          if (onSuccess?.redirecting && onSuccess?.redirectTo) {
+            if (isURL(onSuccess.redirectTo)) {
+              window.location.href = onSuccess.redirectTo;
+            } else {
+              navigate(onSuccess.redirectTo);
+            }
+          }
         }
       } catch (error) {
         actionField.data.loading = false;
@@ -255,7 +263,7 @@ export const useCreateActionProps = () => {
 
 export const useAssociationCreateActionProps = () => {
   const form = useForm();
-  const { field, resource } = useBlockRequestContext();
+  const { field, resource, __parent } = useBlockRequestContext();
   const { setVisible, fieldSchema } = useActionContext();
   const actionSchema = useFieldSchema();
   const actionField = useField();
@@ -337,6 +345,7 @@ export const useAssociationCreateActionProps = () => {
         });
         actionField.data.loading = false;
         actionField.data.data = data;
+        __parent?.service?.refresh?.();
         setVisible?.(false);
         if (!onSuccess?.successMessage) {
           return;
@@ -554,6 +563,13 @@ export const useCustomizeUpdateActionProps = () => {
         });
       } else {
         message.success(compile(onSuccess?.successMessage));
+        if (onSuccess?.redirecting && onSuccess?.redirectTo) {
+          if (isURL(onSuccess.redirectTo)) {
+            window.location.href = onSuccess.redirectTo;
+          } else {
+            navigate(onSuccess.redirectTo);
+          }
+        }
       }
     },
   };
@@ -573,8 +589,9 @@ export const useCustomizeBulkUpdateActionProps = () => {
   const actionField = useField();
   const { modal } = App.useApp();
   const variables = useVariables();
-  const localVariables = useLocalVariables();
+  const record = useRecord();
   const { name, getField } = useCollection();
+  const localVariables = useLocalVariables({ currentRecord: { __parent: record, __collectionName: name } });
 
   return {
     async onClick() {
@@ -658,6 +675,13 @@ export const useCustomizeBulkUpdateActionProps = () => {
             });
           } else {
             message.success(compile(onSuccess?.successMessage));
+            if (onSuccess?.redirecting && onSuccess?.redirectTo) {
+              if (isURL(onSuccess.redirectTo)) {
+                window.location.href = onSuccess.redirectTo;
+              } else {
+                navigate(onSuccess.redirectTo);
+              }
+            }
           }
         },
         async onCancel() {
@@ -949,6 +973,13 @@ export const useUpdateActionProps = () => {
           });
         } else {
           message.success(compile(onSuccess?.successMessage));
+          if (onSuccess?.redirecting && onSuccess?.redirectTo) {
+            if (isURL(onSuccess.redirectTo)) {
+              window.location.href = onSuccess.redirectTo;
+            } else {
+              navigate(onSuccess.redirectTo);
+            }
+          }
         }
       } catch (error) {
         actionField.data.loading = false;

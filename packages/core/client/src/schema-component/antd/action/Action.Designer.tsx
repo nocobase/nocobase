@@ -1,5 +1,5 @@
 import { ArrayTable } from '@formily/antd-v5';
-import { onFieldValueChange, onFieldInputValueChange } from '@formily/core';
+import { onFieldValueChange, onFieldInputValueChange, onFieldInit } from '@formily/core';
 import { connect, ISchema, mapProps, useField, useFieldSchema, useForm, useFormEffects } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
 import { Alert, Tree as AntdTree, ModalProps } from 'antd';
@@ -17,6 +17,7 @@ import { useSyncFromForm } from '../../../schema-settings/DataTemplates/utils';
 import { DefaultValueProvider } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useLinkageAction } from './hooks';
 import { requestSettingsSchema } from './utils';
+import { usePlugin } from '../../../application/hooks';
 
 const Tree = connect(
   AntdTree,
@@ -621,7 +622,6 @@ function AfterSuccess() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
-
   return (
     <SchemaSettings.ModalItem
       title={t('After successful submission')}
@@ -639,7 +639,6 @@ function AfterSuccess() {
             },
             manualClose: {
               title: t('Popup close method'),
-              default: false,
               enum: [
                 { label: t('Automatic close'), value: false },
                 { label: t('Manually close'), value: true },
@@ -650,7 +649,6 @@ function AfterSuccess() {
             },
             redirecting: {
               title: t('Then'),
-              default: false,
               enum: [
                 { label: t('Stay on current page'), value: false },
                 { label: t('Redirect to'), value: true },
@@ -716,7 +714,7 @@ function RemoveButton(
   );
 }
 
-function FormWorkflowSelect(props) {
+function WorkflowSelect({ types, ...props }) {
   const index = ArrayTable.useIndex();
   const { setValuesIn } = useForm();
   const baseCollection = useCollection();
@@ -748,7 +746,7 @@ function FormWorkflowSelect(props) {
         action: 'list',
         params: {
           filter: {
-            type: 'form',
+            type: types,
             enabled: true,
             'config.collection': workflowCollection,
           },
@@ -763,6 +761,8 @@ function WorkflowConfig() {
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   const { name: collection } = useCollection();
+  const workflowPlugin = usePlugin('workflow') as any;
+  const workflowTypes = workflowPlugin.getTriggersOptions().filter((item) => item.options.actionTriggerable);
   const description = {
     submit: t('Workflow will be triggered after submitting succeeded.', { ns: 'workflow' }),
     'customize:save': t('Workflow will be triggered after saving succeeded.', { ns: 'workflow' }),
@@ -780,7 +780,7 @@ function WorkflowConfig() {
       components={{
         Alert,
         ArrayTable,
-        FormWorkflowSelect,
+        WorkflowSelect,
       }}
       schema={
         {
@@ -841,13 +841,14 @@ function WorkflowConfig() {
                       workflowKey: {
                         type: 'number',
                         'x-decorator': 'FormItem',
-                        'x-component': 'FormWorkflowSelect',
+                        'x-component': 'WorkflowSelect',
                         'x-component-props': {
                           placeholder: t('Select workflow', { ns: 'workflow' }),
                           fieldNames: {
                             label: 'title',
                             value: 'key',
                           },
+                          types: workflowTypes.map((item) => item.value),
                         },
                         required: true,
                       },
@@ -862,7 +863,6 @@ function WorkflowConfig() {
                     properties: {
                       remove: {
                         type: 'void',
-                        'x-decorator': 'FormItem',
                         'x-component': 'ArrayTable.Remove',
                       },
                     },

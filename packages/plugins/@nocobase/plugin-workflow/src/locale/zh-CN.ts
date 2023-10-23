@@ -274,7 +274,7 @@ export default {
   'Only support standard JSON data': '仅支持标准 JSON 数据',
   '"Content-Type" only support "application/json", and no need to specify':
     '"Content-Type" 请求头仅支持 "application/json"，无需填写',
-  'Ignore fail request and continue workflow': '忽略失败的请求并继续工作流',
+  'Ignore failed request and continue workflow': '忽略失败的请求并继续工作流',
 
   'Workflow todos': '工作流待办',
   Task: '任务',

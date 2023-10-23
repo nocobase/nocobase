@@ -438,6 +438,7 @@ export default {
   "Dynamic value": "Dinamik değer",
   "Current user": "Seçili kullanıcı",
   "Current record": "Seçili kayıt",
+  "Current parent record": "Seçili üst kayıt",
   "Popup close method": "Açılır pencere kapatma metodu",
   "Automatic close": "Otomatik kapat",
   "Manually close": "Manuel kapat",
