@@ -7,7 +7,7 @@ export class ThemeEditorPlugin extends Plugin {
 
   afterAdd() {}
 
-  beforeLoad() {
+  async beforeLoad() {
     this.db.addMigrations({
       namespace: 'theme-editor',
       directory: resolve(__dirname, './migrations'),

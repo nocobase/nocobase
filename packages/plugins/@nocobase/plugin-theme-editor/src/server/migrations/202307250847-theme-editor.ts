@@ -9,55 +9,55 @@ export default class ThemeEditorMigration extends Migration {
       return;
     }
 
-    const theme = this.db.getCollection('themeConfig');
-    if (!theme) {
+    const themeRepo = this.db.getRepository('themeConfig');
+    if (!themeRepo) {
       return;
     }
 
     if (
-      !(await theme.repository.find({
+      !(await themeRepo.findOne({
         filter: {
           uid: 'default',
         },
       }))
     ) {
-      await theme.repository.create({
+      await themeRepo.create({
         values: [antd],
       });
     }
 
     if (
-      !(await theme.repository.find({
+      !(await themeRepo.findOne({
         filter: {
           uid: 'dark',
         },
       }))
     ) {
-      await theme.repository.create({
+      await themeRepo.create({
         values: [dark],
       });
     }
 
     if (
-      !(await theme.repository.find({
+      !(await themeRepo.findOne({
         filter: {
           uid: 'compact',
         },
       }))
     ) {
-      await theme.repository.create({
+      await themeRepo.create({
         values: [compact],
       });
     }
 
     if (
-      !(await theme.repository.find({
+      !(await themeRepo.findOne({
         filter: {
           uid: 'compactDark',
         },
       }))
     ) {
-      await theme.repository.create({
+      await themeRepo.create({
         values: [compactDark],
       });
     }
