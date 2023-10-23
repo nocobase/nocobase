@@ -29,6 +29,7 @@ function useAssociatedFields() {
       .useOptions({
         types: [matchToManyField],
         appends: null,
+        depth: 4,
       })
       ?.filter(Boolean);
     return {

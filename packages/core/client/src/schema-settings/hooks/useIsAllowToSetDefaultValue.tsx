@@ -49,7 +49,6 @@ const useIsAllowToSetDefaultValue = ({ form, fieldSchema, collectionField }: Pro
   const innerFieldSchema = useFieldSchema();
   const { type } = useFormBlockType();
   const { isAllowToSetDefaultValue = _isAllowToSetDefaultValue } = useContext(DefaultValueContext) || {};
-
   const innerCollectionField =
     getField(innerFieldSchema['name']) || getCollectionJoinField(innerFieldSchema['x-collection-field']);
 

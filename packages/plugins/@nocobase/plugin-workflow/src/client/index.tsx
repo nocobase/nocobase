@@ -11,12 +11,18 @@ import { ExecutionPage } from './ExecutionPage';
 import { WorkflowPage } from './WorkflowPage';
 import { WorkflowProvider } from './WorkflowProvider';
 import { DynamicExpression } from './components/DynamicExpression';
+import { triggers, useTrigger, getTriggersOptions } from './triggers';
+import { instructions } from './nodes';
 import { WorkflowTodo } from './nodes/manual/WorkflowTodo';
 import { WorkflowTodoBlockInitializer } from './nodes/manual/WorkflowTodoBlockInitializer';
 import { useTriggerWorkflowsActionProps } from './triggers/form';
 import { NAMESPACE } from './locale';
 
 export class WorkflowPlugin extends Plugin {
+  triggers = triggers;
+  getTriggersOptions = getTriggersOptions;
+  instructions = instructions;
+
   async load() {
     this.addRoutes();
     this.addScopes();

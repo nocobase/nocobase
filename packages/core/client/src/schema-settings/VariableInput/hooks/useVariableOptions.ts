@@ -1,13 +1,14 @@
 import { Form } from '@formily/core';
 import { ISchema, Schema } from '@formily/react';
+import _ from 'lodash';
 import { useMemo } from 'react';
-import { useFormBlockType } from '../../../block-provider/FormBlockProvider';
 import { CollectionFieldOptions, useCollection } from '../../../collection-manager';
 import { useFlag } from '../../../flag-provider';
 import { useBlockCollection } from './useBlockCollection';
 import { useDateVariable } from './useDateVariable';
 import { useFormVariable } from './useFormVariable';
 import { useIterationVariable } from './useIterationVariable';
+import { useParentRecordVariable } from './useParentRecordVariable';
 import { useRecordVariable } from './useRecordVariable';
 import { useUserVariable } from './useUserVariable';
 
@@ -44,11 +45,12 @@ export const useVariableOptions = ({
   operator,
   noDisabled,
   targetFieldSchema,
+  record,
 }: Props) => {
-  const { name: blockCollectionName } = useBlockCollection();
+  const { name: blockCollectionName = record?.__collectionName } = useBlockCollection();
   const { isInSubForm, isInSubTable } = useFlag() || {};
-  const { type: formBlockType } = useFormBlockType();
   const { name } = useCollection();
+  const blockParentCollectionName = record?.__parent?.__collectionName;
   const userVariable = useUserVariable({
     maxDepth: 3,
     uiSchema: uiSchema,
@@ -78,6 +80,13 @@ export const useVariableOptions = ({
     noDisabled,
     targetFieldSchema,
   });
+  const currentParentRecordVariable = useParentRecordVariable({
+    schema: uiSchema,
+    collectionName: blockParentCollectionName,
+    collectionField,
+    noDisabled,
+    targetFieldSchema,
+  });
 
   return useMemo(() => {
     return [
@@ -85,7 +94,10 @@ export const useVariableOptions = ({
       dateVariable,
       form && !form.readPretty && formVariable,
       (isInSubForm || isInSubTable) && iterationVariable,
-      formBlockType === 'update' && currentRecordVariable,
+      blockCollectionName && !_.isEmpty(_.omit(record, ['__parent', '__collectionName'])) && currentRecordVariable,
+      blockParentCollectionName &&
+        !_.isEmpty(_.omit(record?.__parent, ['__parent', '__collectionName'])) &&
+        currentParentRecordVariable,
     ].filter(Boolean);
   }, [
     userVariable,
@@ -95,6 +107,10 @@ export const useVariableOptions = ({
     isInSubForm,
     isInSubTable,
     iterationVariable,
+    blockCollectionName,
+    record,
     currentRecordVariable,
+    blockParentCollectionName,
+    currentParentRecordVariable,
   ]);
 };

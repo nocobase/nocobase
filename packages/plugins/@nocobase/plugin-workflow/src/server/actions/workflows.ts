@@ -196,3 +196,7 @@ export async function sync(context: Context, next) {
 
   await next();
 }
+
+export async function trigger(context: Context, next) {
+  return next();
+}
