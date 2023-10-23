@@ -1,6 +1,14 @@
 import { css } from '@emotion/css';
 import { FormLayout } from '@formily/antd-v5';
-import { createForm, Field, Form as FormilyForm, onFieldChange, onFieldInit, onFormInputChange } from '@formily/core';
+import {
+  createForm,
+  Field,
+  Form as FormilyForm,
+  onFieldChange,
+  onFieldInit,
+  onFieldReact,
+  onFormInputChange,
+} from '@formily/core';
 import { FieldContext, FormContext, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { autorun } from '@formily/reactive';
 import { uid } from '@formily/shared';
@@ -125,11 +133,11 @@ const WithForm = (props: WithFormProps) => {
             });
 
             // `onFieldReact` 有问题，没有办法被取消监听，所以这里用 `onFieldInit` 代替
-            onFieldInit(`*(${fields})`, (field: any, form) => {
+            onFieldReact(`*(${fields})`, (field: any, form) => {
               disposes.push(
-                autorun(() => {
+                autorun(async () => {
                   linkagefields.push(field);
-                  linkageMergeAction({
+                  await linkageMergeAction({
                     operator: h.operator,
                     value: h.value,
                     field,

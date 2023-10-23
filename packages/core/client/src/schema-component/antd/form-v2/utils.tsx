@@ -65,7 +65,12 @@ export const linkageMergeAction = async ({
         ...field.linkageProperty,
         display: displayResult,
       };
-      field.display = last(field.linkageProperty?.display);
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          field.display = last(displayResult);
+        });
+        resolve(void 0);
+      });
       break;
     case ActionType.Editable:
     case ActionType.ReadOnly:
