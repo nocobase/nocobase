@@ -14,6 +14,48 @@ export default class ThemeEditorMigration extends Migration {
       return;
     }
 
+    themeRepo.collection.addField('uid', {
+      type: 'string',
+    });
+
+    await this.db.sync();
+
+    await themeRepo.update({
+      filter: {
+        'config.name': 'Default theme of antd',
+      },
+      values: {
+        config: {
+          name: 'Default',
+        },
+        uid: 'default',
+      },
+    });
+    await themeRepo.update({
+      filter: {
+        'config.name': 'Dark',
+      },
+      values: {
+        uid: 'dark',
+      },
+    });
+    await themeRepo.update({
+      filter: {
+        'config.name': 'Compact',
+      },
+      values: {
+        uid: 'compact',
+      },
+    });
+    await themeRepo.update({
+      filter: {
+        'config.name': 'Compact dark',
+      },
+      values: {
+        uid: 'compact_dark',
+      },
+    });
+
     if (
       !(await themeRepo.findOne({
         filter: {
@@ -53,7 +95,7 @@ export default class ThemeEditorMigration extends Migration {
     if (
       !(await themeRepo.findOne({
         filter: {
-          uid: 'compactDark',
+          uid: 'compact_dark',
         },
       }))
     ) {

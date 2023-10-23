@@ -41,5 +41,5 @@ export const compactDark: Omit<ThemeItem, 'id'> = {
   },
   optional: true,
   isBuiltIn: true,
-  uid: 'compactDark',
+  uid: 'compact_dark',
 };
