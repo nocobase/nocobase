@@ -46,7 +46,7 @@ export function withInitializer<T>(C: ComponentType<T>, cProps: T) {
 
     return (
       <SchemaInitializerV2Context.Provider value={{ insert: insertSchema, options: props }}>
-        {noDropdown || !items || items.length === 0 ? (
+        {noDropdown ? (
           React.createElement(C, cProps)
         ) : (
           <Dropdown

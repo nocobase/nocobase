@@ -15,18 +15,6 @@ const MULTIPLE_ASSIGNED_MODE = {
   ANY_PERCENTAGE: Symbol('any percentage'),
 };
 
-// TODO(optimize): change to register way
-const initializerGroup = BlockInitializers.items.find((group) => group.key === 'media');
-if (!initializerGroup.children.find((item) => item.key === 'workflowTodos')) {
-  initializerGroup.children.push({
-    key: 'workflowTodos',
-    type: 'item',
-    title: `{{t("Workflow todos", { ns: "${NAMESPACE}" })}}`,
-    component: 'WorkflowTodoBlockInitializer',
-    icon: 'CheckSquareOutlined',
-  } as any);
-}
-
 export default {
   title: `{{t("Manual", { ns: "${NAMESPACE}" })}}`,
   type: 'manual',

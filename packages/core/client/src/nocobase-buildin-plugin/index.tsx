@@ -17,12 +17,12 @@ import { PMPlugin } from '../pm';
 import { AdminLayoutPlugin, AuthLayout, RouteSchemaComponent } from '../route-switch';
 import {
   AntdSchemaComponentPlugin,
-  MenuItemInitializers,
+  KanbanPlugin,
   SchemaComponentPlugin,
-  menuItemInitializerV2,
+  menuItemInitializer,
 } from '../schema-component';
 import { ErrorFallback } from '../schema-component/antd/error-fallback';
-import { SchemaInitializerPlugin } from '../schema-initializer';
+import { AssociationFilterPlugin, SchemaInitializerPlugin } from '../schema-initializer';
 import { BlockTemplateDetails, BlockTemplatePage } from '../schema-templates';
 import { SystemSettingsPlugin } from '../system-settings';
 import { CurrentUserProvider, CurrentUserSettingsMenuProvider } from '../user';
@@ -214,7 +214,7 @@ export class NocoBaseBuildInPlugin extends Plugin {
     this.app.use(CSSVariableProvider);
     this.app.use(CurrentUserSettingsMenuProvider);
 
-    this.app.schemaInitializerManager.add(menuItemInitializerV2);
+    this.app.schemaInitializerManager.add(menuItemInitializer);
   }
 
   addRoutes() {
@@ -257,6 +257,8 @@ export class NocoBaseBuildInPlugin extends Plugin {
     });
   }
   async addPlugins() {
+    await this.app.pm.add(AssociationFilterPlugin);
+    await this.app.pm.add(KanbanPlugin);
     await this.app.pm.add(LocalePlugin, { name: 'locale' });
     await this.app.pm.add(AdminLayoutPlugin, { name: 'admin-layout' });
     await this.app.pm.add(SystemSettingsPlugin, { name: 'system-setting' });
@@ -271,14 +273,7 @@ export class NocoBaseBuildInPlugin extends Plugin {
       },
     });
     await this.app.pm.add(SchemaComponentPlugin, { name: 'schema-component' });
-    await this.app.pm.add(SchemaInitializerPlugin, {
-      name: 'schema-initializer',
-      config: {
-        initializers: {
-          MenuItemInitializers,
-        },
-      },
-    });
+    await this.app.pm.add(SchemaInitializerPlugin, { name: 'schema-initializer' });
     await this.app.pm.add(BlockSchemaComponentPlugin, { name: 'block-schema-component' });
     await this.app.pm.add(AntdSchemaComponentPlugin, { name: 'antd-schema-component' });
     await this.app.pm.add(SigninPageExtensionPlugin, { name: 'signin-page-extension' });

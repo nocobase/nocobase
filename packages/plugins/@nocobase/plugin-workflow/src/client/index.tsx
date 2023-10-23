@@ -14,6 +14,7 @@ import { DynamicExpression } from './components/DynamicExpression';
 import { WorkflowTodo } from './nodes/manual/WorkflowTodo';
 import { WorkflowTodoBlockInitializer } from './nodes/manual/WorkflowTodoBlockInitializer';
 import { useTriggerWorkflowsActionProps } from './triggers/form';
+import { NAMESPACE } from './locale';
 
 export class WorkflowPlugin extends Plugin {
   async load() {
@@ -21,6 +22,13 @@ export class WorkflowPlugin extends Plugin {
     this.addScopes();
     this.addComponents();
     this.app.addProvider(WorkflowProvider);
+    const blockInitializers = this.app.schemaInitializerManager.get('BlockInitializers');
+    blockInitializers.add('media.workflowTodos', {
+      name: 'workflowTodos',
+      title: `{{t("Workflow todos", { ns: "${NAMESPACE}" })}}`,
+      Component: 'WorkflowTodoBlockInitializer',
+      icon: 'CheckSquareOutlined',
+    });
   }
 
   addScopes() {

@@ -138,14 +138,17 @@ export const TabPaneInitializersForBulkEditFormBlock = (props) => {
 export const tabPaneInitializers = new SchemaInitializerV2({
   name: 'TabPaneInitializers',
   Component: TabPaneInitializers,
+  noDropdown: true,
 });
 
 export const tabPaneInitializersForRecordBlock = new SchemaInitializerV2({
   name: 'TabPaneInitializersForCreateFormBlock',
   Component: TabPaneInitializersForCreateFormBlock,
+  noDropdown: true,
 });
 
 export const tabPaneInitializersForBulkEditFormBlock = new SchemaInitializerV2({
   name: 'TabPaneInitializersForBulkEditFormBlock',
   Component: TabPaneInitializersForBulkEditFormBlock,
+  noDropdown: true,
 });

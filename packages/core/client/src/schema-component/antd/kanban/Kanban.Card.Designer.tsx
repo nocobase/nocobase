@@ -1,33 +1,17 @@
 import { MenuOutlined } from '@ant-design/icons';
-import { css } from '@emotion/css';
-import { ISchema, useField, useFieldSchema } from '@formily/react';
+import { ISchema, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Space } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { createDesignable, useDesignable } from '../../../schema-component';
-import { SchemaInitializer, SchemaInitializerItemOptions } from '../../../schema-initializer';
 import {
   useAssociatedFormItemInitializerFields,
   useFormItemInitializerFields,
 } from '../../../schema-initializer/utils';
 import { OpenModeSchemaItems } from '../../../schema-items';
-
-const titleCss = css`
-  pointer-events: none;
-  position: absolute;
-  font-size: 12px;
-  background: var(--colorSettings);
-  color: #fff;
-  padding: 0 5px;
-  line-height: 16px;
-  height: 16px;
-  border-bottom-right-radius: 2px;
-  border-radius: 2px;
-  top: 2px;
-  left: 2px;
-`;
+import { SchemaInitializerV2, useApp } from '../../../application';
 
 const gridRowColWrap = (schema: ISchema) => {
   schema['x-read-pretty'] = true;
@@ -55,88 +39,95 @@ const gridRowColWrap = (schema: ISchema) => {
 //   });
 // };
 
-export const KanbanCardDesigner = (props: any) => {
-  const { dn, designable } = useDesignable();
-  const { t } = useTranslation();
-  const api = useAPIClient();
-  const { refresh } = useDesignable();
-  const field = useField();
-  const fieldSchema = useFieldSchema();
-  const fields = useFormItemInitializerFields({
-    readPretty: true,
-    block: 'Kanban',
-  });
-  const associationFields = useAssociatedFormItemInitializerFields({ readPretty: true, block: 'Kanban' });
-
-  const items: any = [
-    {
-      type: 'itemGroup',
-      title: t('Display fields'),
-      children: fields,
-    },
-  ];
-  if (associationFields.length > 0) {
-    items.push(
-      {
-        type: 'divider',
-      },
-      {
-        type: 'itemGroup',
-        title: t('Display association fields'),
-        children: associationFields,
-      },
-    );
-  }
-
-  items.push(
-    {
-      type: 'divider',
-    },
-    {
-      type: 'item',
-      title: t('Display field title'),
-      component: 'Kanban.Card.Designer.TitleSwitch',
-      enable: true,
-    } as SchemaInitializerItemOptions,
-    {
-      type: 'item',
-      component: OpenModeSchemaItems,
-    } as SchemaInitializerItemOptions,
-  );
-
+export const KanbanCardDesigner = () => {
+  const { designable } = useDesignable();
+  const app = useApp();
   if (!designable) {
     return null;
   }
+  const element = app.schemaInitializerManager.render('KanbanCardInitializers');
   return (
     <div className={'general-schema-designer'}>
       <div className={'general-schema-designer-icons'}>
         <Space size={2} align={'center'}>
-          <SchemaInitializer.Button
-            wrap={gridRowColWrap}
-            insert={(schema) => {
-              const gridSchema = fieldSchema.reduceProperties((buf, schema) => {
-                if (schema['x-component'] === 'Grid') {
-                  return schema;
-                }
-                return buf;
-              }, null);
-              if (!gridSchema) {
-                return;
-              }
-              const dn = createDesignable({
-                t,
-                api,
-                refresh,
-                current: gridSchema,
-              });
-              dn.loadAPIClientEvents();
-              dn.insertBeforeEnd(schema);
-            }}
-            items={items}
-            component={<MenuOutlined style={{ cursor: 'pointer', fontSize: 12 }} />}
-          />
+          {element}
         </Space>
       </div>
     </div>
   );
 };
+
+export const kanbanCardInitializers = new SchemaInitializerV2({
+  name: 'KanbanCardInitializers',
+  wrap: gridRowColWrap,
+  useInsert() {
+    const fieldSchema = useFieldSchema();
+    const { t } = useTranslation();
+    const api = useAPIClient();
+    const { refresh } = useDesignable();
+
+    return (schema) => {
+      const gridSchema = fieldSchema.reduceProperties((buf, schema) => {
+        if (schema['x-component'] === 'Grid') {
+          return schema;
+        }
+        return buf;
+      }, null);
+
+      if (!gridSchema) {
+        return;
+      }
+
+      const dn = createDesignable({
+        t,
+        api,
+        refresh,
+        current: gridSchema,
+      });
+      dn.loadAPIClientEvents();
+      dn.insertBeforeEnd(schema);
+    };
+  },
+  Component: () => <MenuOutlined style={{ cursor: 'pointer', fontSize: 12 }} />,
+  items: [
+    {
+      type: 'itemGroup',
+      title: '{{t("Display fields")}}',
+      name: 'display-fields',
+      useChildren() {
+        const fields = useFormItemInitializerFields({
+          readPretty: true,
+          block: 'Kanban',
+        });
+        return fields;
+      },
+    },
+    {
+      type: 'itemGroup',
+      divider: true,
+      title: '{{t("Display association fields")}}',
+      name: 'display-association-fields',
+      useVisible() {
+        const associationFields = useAssociatedFormItemInitializerFields({ readPretty: true, block: 'Kanban' });
+        return associationFields.length > 0;
+      },
+      useChildren() {
+        const associationFields = useAssociatedFormItemInitializerFields({ readPretty: true, block: 'Kanban' });
+        return associationFields;
+      },
+    },
+    {
+      type: 'divider',
+    },
+    {
+      title: '{{t("Display field title")}}',
+      name: 'display-field-title',
+      Component: 'Kanban.Card.Designer.TitleSwitch',
+      enable: true,
+    },
+    {
+      name: 'open-mode',
+      Component: OpenModeSchemaItems,
+    },
+  ],
+});

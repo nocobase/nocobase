@@ -1,9 +1,9 @@
 import React, { useContext } from 'react';
 import { useFieldSchema } from '@formily/react';
-import { SchemaInitializer } from '../../../schema-initializer/SchemaInitializer';
 import { createDesignable, SchemaComponentContext } from '../..';
 import { useAPIClient } from '../../../api-client';
 import { useTranslation } from 'react-i18next';
+import { SchemaInitializerItem } from '../../../application';
 
 export const AssociationFilterDesignerDelete = (props) => {
   const { refresh } = useContext(SchemaComponentContext);
@@ -18,8 +18,8 @@ export const AssociationFilterDesignerDelete = (props) => {
   };
 
   return (
-    <SchemaInitializer.Item onClick={handleClick}>
+    <SchemaInitializerItem onClick={handleClick}>
       <div>{props.title}</div>
-    </SchemaInitializer.Item>
+    </SchemaInitializerItem>
   );
 };

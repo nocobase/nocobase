@@ -1,19 +1,15 @@
 import { LineChartOutlined } from '@ant-design/icons';
-import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import {
   SchemaInitializerItem,
-  SchemaInitializer,
   SchemaInitializerV2,
   useACLRoleContext,
-  useCollectionDataSourceItems,
   useSchemaInitializerMenuItems,
   useCollectionDataSourceItemsV2,
   useSchemaInitializerV2,
 } from '@nocobase/client';
 import React, { useContext } from 'react';
 import { ChartConfigContext } from '../configure/ChartConfigure';
-import { useChartsTranslation } from '../locale';
 import { Menu } from 'antd';
 
 const ConfigureButton = (props) => {
@@ -26,45 +22,6 @@ const ConfigureButton = (props) => {
         setVisible(true);
       }}
     />
-  );
-};
-
-export const ChartInitializers = () => {
-  const { t } = useChartsTranslation();
-  const collections = useCollectionDataSourceItems('Chart');
-  const { allowAll, parseAction } = useACLRoleContext();
-
-  if (collections[0].loadChildren) {
-    const originalLoadChildren = collections[0].loadChildren;
-    collections[0].loadChildren = ({ searchValue }) => {
-      const children = originalLoadChildren({ searchValue });
-      const result = children
-        .filter((item) => {
-          if (allowAll) {
-            return true;
-          }
-          const params = parseAction(`${item.name}:list`);
-          return params;
-        })
-        .map((item) => ({
-          ...item,
-          component: ConfigureButton,
-        }));
-
-      return result;
-    };
-  }
-
-  return (
-    <SchemaInitializer.Button
-      icon={'PlusOutlined'}
-      items={collections as any}
-      dropdown={{
-        placement: 'bottomLeft',
-      }}
-    >
-      {t('Add chart')}
-    </SchemaInitializer.Button>
   );
 };
 
@@ -96,7 +53,7 @@ export const chartInitializers = new SchemaInitializerV2({
   },
   title: '{{t("Add chart")}}',
   ItemsComponent: ItemsComponent,
-  items: [{}],
+  noDropdown: true,
 });
 
 export const ChartV2BlockInitializer: React.FC = (props) => {

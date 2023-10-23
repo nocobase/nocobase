@@ -112,73 +112,6 @@ function SimpleDesigner() {
   );
 }
 
-function AddBlockButton(props: any) {
-  const { collections } = useCollectionManager();
-  const current = useNodeContext();
-  const nodes = useAvailableUpstreams(current);
-  const triggerInitializers = [useTriggerInitializers()].filter(Boolean);
-  const nodeBlockInitializers = nodes
-    .map((node) => {
-      const instruction = instructions.get(node.type);
-      return instruction?.useInitializers?.(node);
-    })
-    .filter(Boolean);
-  const dataBlockInitializers = [
-    ...triggerInitializers,
-    ...(nodeBlockInitializers.length
-      ? [
-          {
-            key: 'nodes',
-            type: 'subMenu',
-            title: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
-            children: nodeBlockInitializers,
-          },
-        ]
-      : []),
-  ].filter(Boolean);
-
-  const items = [
-    ...(dataBlockInitializers.length
-      ? [
-          {
-            type: 'itemGroup',
-            title: '{{t("Data blocks")}}',
-            children: dataBlockInitializers,
-          },
-        ]
-      : []),
-    {
-      type: 'itemGroup',
-      title: '{{t("Form")}}',
-      children: Array.from(manualFormTypes.getValues()).map((item: ManualFormType) => {
-        const { useInitializer: getInitializer } = item.config;
-        return getInitializer({ collections });
-      }),
-    },
-    {
-      type: 'itemGroup',
-      title: '{{t("Other blocks")}}',
-      children: [
-        {
-          type: 'item',
-          title: '{{t("Markdown")}}',
-          component: 'MarkdownBlockInitializer',
-        },
-      ],
-    },
-  ] as SchemaInitializerItemOptions[];
-
-  return (
-    <SchemaInitializer.Button
-      data-testid="add-block-button-in-workflow"
-      {...props}
-      wrap={gridRowColWrap}
-      items={items}
-      title="{{t('Add block')}}"
-    />
-  );
-}
-
 export const addBlockButton = new SchemaInitializerV2({
   name: 'AddBlockButton',
   'data-testid': 'add-block-button-in-workflow',
@@ -412,45 +345,6 @@ function ActionInitializer({ action, actionProps, ...props }) {
   );
 }
 
-function AddActionButton(props) {
-  return (
-    <SchemaInitializer.Button
-      data-testid="configure-actions-add-action-button"
-      {...props}
-      items={[
-        {
-          key: JOB_STATUS.RESOLVED,
-          type: 'item',
-          title: `{{t("Continue the process", { ns: "${NAMESPACE}" })}}`,
-          component: ContinueInitializer,
-          action: JOB_STATUS.RESOLVED,
-          actionProps: {
-            type: 'primary',
-          },
-        },
-        {
-          key: JOB_STATUS.REJECTED,
-          type: 'item',
-          title: `{{t("Terminate the process", { ns: "${NAMESPACE}" })}}`,
-          component: ActionInitializer,
-          action: JOB_STATUS.REJECTED,
-          actionProps: {
-            danger: true,
-          },
-        },
-        {
-          key: JOB_STATUS.PENDING,
-          type: 'item',
-          title: `{{t("Save temporarily", { ns: "${NAMESPACE}" })}}`,
-          component: ActionInitializer,
-          action: JOB_STATUS.PENDING,
-        },
-      ]}
-      title="{{t('Configure actions')}}"
-    />
-  );
-}
-
 export const addActionButton = new SchemaInitializerV2({
   name: 'AddActionButton',
   'data-testid': 'configure-actions-add-action-button',
@@ -553,7 +447,15 @@ export function SchemaConfig({ value, onChange }) {
       }),
     [],
   );
-
+  console.log('refactor: SchemaConfig', {
+    ...trigger.initializers,
+    ...nodeInitializers,
+    // @ts-ignore
+    ...Array.from(manualFormTypes.getValues()).reduce(
+      (result, item: ManualFormType) => Object.assign(result, item.config.initializers),
+      {},
+    ),
+  });
   return (
     <SchemaComponentContext.Provider
       value={{
