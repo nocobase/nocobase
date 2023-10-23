@@ -281,7 +281,7 @@ test.describe('action display config', () => {
       const percentageWidth = (parseFloat(computedStyle.width) / parseFloat(parentWidth)) * 100;
       return percentageWidth;
     });
-    //宽度为屏幕宽度的70%
+    //宽度为70%
     await expect(drawerWidth).toBe(70);
   });
 });
