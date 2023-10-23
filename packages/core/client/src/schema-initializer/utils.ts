@@ -853,7 +853,6 @@ export const useCollectionDataSourceItems = (componentName) => {
 
   return [
     {
-      key: 'tableBlock',
       type: 'itemGroup',
       title: null,
       children: [],
