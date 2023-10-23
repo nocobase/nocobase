@@ -18,4 +18,16 @@ function approximateColor(actualColor, expectedColor) {
 
   return false;
 }
-export { approximateColor };
+
+async function waitForModalToBeHidden(page) {
+  await page.waitForFunction(() => {
+    const modal = document.querySelector('.ant-modal');
+    if (modal) {
+      const computedStyle = window.getComputedStyle(modal);
+      return computedStyle.display === 'none' || computedStyle.visibility === 'hidden';
+    }
+    return true; // 如果找不到modal，也算作不可见
+  });
+}
+
+export { approximateColor, waitForModalToBeHidden };

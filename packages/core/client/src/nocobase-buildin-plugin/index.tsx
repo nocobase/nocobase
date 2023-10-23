@@ -182,7 +182,7 @@ const AppMaintaining: FC<{ app: Application; error: Error }> = observer(({ app }
 const AppMaintainingDialog: FC<{ app: Application; error: Error }> = observer(({ app }) => {
   const { icon, status, title, subTitle } = getProps(app);
   return (
-    <Modal open={true} footer={null} closable={false} data-testid="plugin-mantain-dialog">
+    <Modal open={true} footer={null} closable={false}>
       <Result icon={icon} status={status} title={app.i18n.t(title)} subTitle={app.i18n.t(subTitle)} />
     </Modal>
   );

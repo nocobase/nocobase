@@ -1,6 +1,17 @@
 import { expect, test } from '@nocobase/test/client';
 
-test.describe('add config in front', () => {
+async function waitForModalToBeHidden(page) {
+  await page.waitForFunction(() => {
+    const modal = document.querySelector('.ant-modal');
+    if (modal) {
+      const computedStyle = window.getComputedStyle(modal);
+      return computedStyle.display === 'none' || computedStyle.visibility === 'hidden';
+    }
+    return true; // 如果找不到modal，也算作不可见
+  });
+}
+
+test.describe('add plugin in front', () => {
   test('add plugin npm registry,then remove plugin', async ({ page, mockPage }) => {
     await mockPage().goto();
     await page.getByTestId('pm-button').click();
@@ -11,9 +22,17 @@ test.describe('add config in front', () => {
       .getByRole('textbox')
       .fill('@nocobase/plugin-sample-custom-collection-template');
     await page.getByLabel('Submit').click();
+    await page.waitForTimeout(1000); // 等待1秒钟
     //等待页面刷新结束
+    await page.waitForFunction(() => {
+      const modal = document.querySelector('.ant-modal');
+      if (modal) {
+        const computedStyle = window.getComputedStyle(modal);
+        return computedStyle.display === 'none' || computedStyle.visibility === 'hidden';
+      }
+      return true; // 如果找不到modal，也算作不可见
+    });
     await page.waitForLoadState('load');
-    await page.waitForTimeout(20000);
     await page.getByPlaceholder('Search plugin').fill('sample-custom-collection-template');
     await expect(await page.getByLabel('sample-custom-collection-template')).toBeVisible();
     //将添加的插件删除
@@ -22,7 +41,9 @@ test.describe('add config in front', () => {
       .getByRole('button', { name: 'delete Remove' })
       .click();
     await page.getByRole('button', { name: 'Yes' }).click();
+    await page.waitForTimeout(2000); // 等待1秒钟
     //等待页面刷新结束
+    await waitForModalToBeHidden(page);
     await page.waitForLoadState('load');
     await page.getByPlaceholder('Search plugin').fill('sample-custom-collection-template');
     await expect(await page.getByLabel('sample-custom-collection-template')).not.toBeVisible();
@@ -55,7 +76,15 @@ test.describe('remove plugin', () => {
       .fill('@nocobase/plugin-sample-hello');
     await page.getByLabel('Submit').click();
     await page.waitForTimeout(1000);
-    await page.waitForSelector(`[data-testid="plugin-mantain-dialog"]`, { state: 'hidden' }); //消息弹窗已消失
+    //等待弹窗消失和页面刷新结束
+    await page.waitForFunction(() => {
+      const modal = document.querySelector('.ant-modal');
+      if (modal) {
+        const computedStyle = window.getComputedStyle(modal);
+        return computedStyle.display === 'none' || computedStyle.visibility === 'hidden';
+      }
+      return true; // 如果找不到modal，也算作不可见
+    });
     await page.waitForLoadState('load');
     await page.getByPlaceholder('Search plugin').fill('hello');
     await expect(await page.getByLabel('hello')).toBeVisible();
@@ -76,18 +105,19 @@ test.describe('enable plugin', () => {
     await expect(await page.getByLabel('hello')).toBeVisible();
     const isActive = await page.getByLabel('hello').getByLabel('plugin-enabled').isChecked();
     await expect(isActive).toBe(false);
-    await page.waitForTimeout(1000); // 等待1秒钟
     //激活插件
     await page.getByLabel('hello').getByLabel('plugin-enabled').click();
     await page.waitForTimeout(1000); // 等待1秒钟
-    //等待页面刷新结束
-    await page.waitForSelector(`[data-testid="plugin-mantain-dialog"]`, { state: 'hidden' }); //消息弹窗已消失
+    //等待弹窗消失和页面刷新结束
+    await waitForModalToBeHidden(page);
     await page.waitForLoadState('load');
+    await page.getByPlaceholder('Search plugin').fill('hello');
     await expect(await page.getByLabel('hello').getByLabel('plugin-enabled').isChecked()).toBe(true);
     //将激活的插件禁用
-    await page.getByLabel('hello').getByLabel('plugin-enabled').setChecked(false);
+    await page.getByLabel('hello').getByLabel('plugin-enabled').click();
     await page.waitForTimeout(1000); // 等待1秒钟
-    await page.waitForSelector(`[data-testid="plugin-mantain-dialog"]`, { state: 'hidden' }); //消息弹窗已消失
+    //等待弹窗消失和页面刷新结束
+    await waitForModalToBeHidden(page);
     await page.waitForLoadState('load');
     await expect(await page.getByLabel('hello').getByLabel('plugin-enabled').isChecked()).toBe(false);
   });
