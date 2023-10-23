@@ -1,8 +1,9 @@
 import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import { reaction } from '@formily/reactive';
+import { getValuesByPath } from '@nocobase/utils/client';
 import _ from 'lodash';
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useRecord, useRecordIndex } from '../../../../../src/record-provider';
 import { useFormBlockType } from '../../../../block-provider/FormBlockProvider';
 import { useCollection } from '../../../../collection-manager';
@@ -29,6 +30,20 @@ const useParseDefaultValue = () => {
   const { isSpecialCase, setDefaultValue } = useSpecialCase();
   const index = useRecordIndex();
   const { type: formBlockType } = useFormBlockType();
+
+  /**
+   * name: 如 $user
+   */
+  const findVariable = useCallback(
+    (name: string) => {
+      let result = variables?.getVariable(name);
+      if (!result) {
+        result = localVariables.find((item) => item.name === name);
+      }
+      return result;
+    },
+    [localVariables, variables],
+  );
 
   useEffect(() => {
     if (
@@ -93,21 +108,25 @@ const useParseDefaultValue = () => {
 
     if (isVariable(fieldSchema.default)) {
       const variableName = getVariableName(fieldSchema.default);
-      const variableValue = localVariables.find((item) => item.name === variableName);
+      const variable = findVariable(variableName);
 
-      if (variableValue) {
+      if (process.env.NODE_ENV !== 'production' && !variable) {
+        throw new Error(`useParseDefaultValue: can not find variable ${variableName}`);
+      }
+
+      if (variable) {
         // 实现联动的效果，当依赖的变量变化时（如 `$nForm` 变量），重新解析默认值
         const dispose = reaction(() => {
-          const obj = { [variableName]: variableValue?.ctx };
+          const obj = { [variableName]: variable?.ctx || {} };
           const path = getPath(fieldSchema.default);
 
           // fix https://nocobase.height.app/T-2212
-          if (_.get(obj, path) === undefined) {
+          if (getValuesByPath(obj, path) === undefined) {
             // 返回一个随机值，确保能触发 run 函数
             return Math.random();
           }
 
-          return _.get(obj, path);
+          return getValuesByPath(obj, path);
         }, run);
 
         return dispose;
