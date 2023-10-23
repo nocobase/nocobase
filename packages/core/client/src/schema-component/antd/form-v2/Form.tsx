@@ -133,7 +133,7 @@ const WithForm = (props: WithFormProps) => {
             });
 
             // `onFieldReact` 有问题，没有办法被取消监听，所以这里用 `onFieldInit` 代替
-            onFieldReact(`*(${fields})`, (field: any, form) => {
+            onFieldInit(`*(${fields})`, (field: any, form) => {
               disposes.push(
                 autorun(async () => {
                   linkagefields.push(field);
