@@ -6,6 +6,7 @@ describe('ne operator', () => {
   let Test;
   beforeEach(async () => {
     db = mockDatabase({});
+    await db.clean({ drop: true });
 
     Test = db.collection({
       name: 'tests',

@@ -93,6 +93,7 @@ describe.only('china region', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
     db.collection({
       name: 'users',
       fields: [

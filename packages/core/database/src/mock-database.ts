@@ -1,9 +1,10 @@
-import { merge, uid } from '@nocobase/utils';
-import { resolve } from 'path';
+import { merge } from '@nocobase/utils';
+import path, { resolve } from 'path';
 import { Database, IDatabaseOptions } from './database';
 import fetch from 'node-fetch';
-import path from 'path';
 import { customAlphabet } from 'nanoid';
+import os from 'os';
+
 export class MockDatabase extends Database {
   constructor(options: IDatabaseOptions) {
     super({
@@ -35,8 +36,6 @@ export function getConfigByEnv() {
     underscored: process.env.DB_UNDERSCORED === 'true',
     schema: process.env.DB_SCHEMA !== 'public' ? process.env.DB_SCHEMA : undefined,
     dialectOptions: {},
-    collectionSnapshotDir:
-      process.env.DB_COLLECTION_SNAPSHOT_DIR || resolve(process.cwd(), 'storage', 'collection-snapshots'),
   };
 
   if (process.env.DB_DIALECT == 'postgres') {
@@ -56,6 +55,17 @@ function customLogger(queryString, queryObject) {
 export function mockDatabase(options: IDatabaseOptions = {}): MockDatabase {
   const dbOptions = merge(getConfigByEnv(), options) as any;
 
+  const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 10);
+
+  if (!options.instanceId) {
+    dbOptions.instanceId = `d_${nanoid()}`;
+  }
+
+  const instanceId = dbOptions.instanceId;
+
+  // set collection snapshot dir to tmpdir
+  dbOptions.collectionSnapshotDir = path.resolve(os.tmpdir(), instanceId);
+
   if (process.env['DB_TEST_PREFIX']) {
     let configKey = 'database';
     if (dbOptions.dialect === 'sqlite') {
@@ -64,18 +74,15 @@ export function mockDatabase(options: IDatabaseOptions = {}): MockDatabase {
       configKey = 'database';
     }
 
-    const shouldChange = () => {
+    const isUsingTestDatabase = () => {
       if (dbOptions.dialect === 'sqlite') {
-        return !dbOptions[configKey].includes(process.env['DB_TEST_PREFIX']);
+        return dbOptions[configKey].includes(process.env['DB_TEST_PREFIX']);
       }
 
-      return !dbOptions[configKey].startsWith(process.env['DB_TEST_PREFIX']);
+      return dbOptions[configKey].startsWith(process.env['DB_TEST_PREFIX']);
     };
 
-    if (dbOptions[configKey] && shouldChange()) {
-      const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 10);
-
-      const instanceId = `d_${nanoid()}`;
+    if (dbOptions[configKey] && !isUsingTestDatabase()) {
       const databaseName = `${process.env['DB_TEST_PREFIX']}_${instanceId}`;
 
       if (dbOptions.dialect === 'sqlite') {

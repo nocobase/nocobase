@@ -1,6 +1,5 @@
 import { Database } from '../../database';
 import { mockDatabase } from '../';
-import { makeWatchHost } from 'ts-loader/dist/servicesHost';
 import { IdentifierError } from '../../errors/identifier-error';
 
 describe('has many field', () => {
@@ -8,6 +7,7 @@ describe('has many field', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
   });
 
   afterEach(async () => {
