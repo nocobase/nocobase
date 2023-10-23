@@ -1,11 +1,8 @@
-import { useField, useFieldSchema } from '@formily/react';
+import { useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCollection } from '../../collection-manager';
 import { useCompile } from '../../schema-component';
-import { SchemaInitializer } from '../SchemaInitializer';
 import {
-  itemsMerge,
   useAssociatedTableColumnInitializerFields,
   useInheritsTableColumnInitializerFields,
   useTableColumnInitializerFields,

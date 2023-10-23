@@ -3,7 +3,7 @@ import {
   cx,
   DndContext,
   SchemaComponent,
-  SchemaInitializer,
+  SchemaInitializerActionModal,
   SortableItem,
   useDesignable,
   useDesigner,
@@ -53,7 +53,7 @@ const InternalMenu: React.FC = (props) => {
         </DndContext>
         {designable ? (
           <List.Item>
-            <SchemaInitializer.ActionModal
+            <SchemaInitializerActionModal
               buttonText={t('Add menu item')}
               title={t('Add menu item')}
               schema={menuItemSchema}

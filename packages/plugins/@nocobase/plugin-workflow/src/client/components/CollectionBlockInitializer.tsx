@@ -2,7 +2,7 @@ import React from 'react';
 
 import {
   CollectionProvider,
-  SchemaInitializer,
+  SchemaInitializerItem,
   SchemaInitializerItemOptions,
   useCollectionManager,
   useRecordCollectionDataSourceItems,
@@ -61,7 +61,7 @@ function InnerCollectionBlockInitializer({ collection, dataSource, ...props }) {
     insert(result);
   }
 
-  return <SchemaInitializer.Item {...props} onClick={onConfirm} items={items} />;
+  return <SchemaInitializerItem {...props} onClick={onConfirm} items={items} />;
 }
 
 export function CollectionBlockInitializer(props) {

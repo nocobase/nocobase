@@ -5,3 +5,4 @@ export * from './SchemaInitializerGroup';
 export * from './SchemaInitializerChildren';
 export * from './SchemaInitializerDivider';
 export * from './SchemaInitializerItems';
+export * from './SchemaInitializerActionModal';

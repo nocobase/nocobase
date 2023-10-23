@@ -42,7 +42,7 @@ export const auditLogsTableActionColumnInitializers = new SchemaInitializerV2({
         {
           type: 'item',
           title: '{{t("View")}}',
-          component: 'AuditLogsViewActionInitializer',
+          Component: 'AuditLogsViewActionInitializer',
           schema: {
             'x-component': 'Action.Link',
             'x-action': 'view',
@@ -57,7 +57,7 @@ export const auditLogsTableActionColumnInitializers = new SchemaInitializerV2({
     {
       type: 'item',
       title: '{{t("Column width")}}',
-      component: Resizable,
+      Component: Resizable,
     },
   ],
 });

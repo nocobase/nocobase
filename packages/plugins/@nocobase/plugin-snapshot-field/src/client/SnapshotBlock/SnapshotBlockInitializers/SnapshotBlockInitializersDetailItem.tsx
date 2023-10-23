@@ -1,13 +1,13 @@
 import React from 'react';
 import { FormOutlined } from '@ant-design/icons';
 import {
-  SchemaInitializer,
   useBlockAssociationContext,
   useCollection,
   useSchemaTemplateManager,
   useRecordCollectionDataSourceItems,
   useBlockRequestContext,
   useSchemaInitializerV2,
+  SchemaInitializerItem,
 } from '@nocobase/client';
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
@@ -57,7 +57,6 @@ export const createSnapshotBlockSchema = (options) => {
       },
     },
   };
-  console.log(JSON.stringify(schema, null, 2));
   return schema;
 };
 
@@ -73,7 +72,7 @@ export const SnapshotBlockInitializersDetailItem = (props) => {
     block !== 'TableField' ? props.actionInitializers || 'ReadPrettyFormActionInitializers' : null;
 
   return (
-    <SchemaInitializer.Item
+    <SchemaInitializerItem
       icon={icon && <FormOutlined />}
       {...others}
       key={'snapshotDetail'}

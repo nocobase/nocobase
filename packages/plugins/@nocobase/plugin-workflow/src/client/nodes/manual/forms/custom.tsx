@@ -12,6 +12,7 @@ import {
   RecordProvider,
   SchemaComponent,
   SchemaInitializer,
+  SchemaInitializerItem,
   SchemaInitializerItemOptions,
   gridRowColWrap,
   useCollectionManager,
@@ -66,7 +67,7 @@ function CustomFormBlockProvider(props) {
 function CustomFormBlockInitializer({ ...props }) {
   const { insert } = useSchemaInitializerV2();
   return (
-    <SchemaInitializer.Item
+    <SchemaInitializerItem
       {...props}
       onClick={() => {
         insert({
@@ -182,14 +183,14 @@ function useCommonInterfaceInitializers(): SchemaInitializerItemOptions[] {
   const options = getOptions(interfaces);
 
   return options.map((group) => ({
-    key: group.title,
+    name: group.title,
     type: 'itemGroup',
     title: group.title,
     children: group.children.map((item) => ({
-      key: item.name,
+      name: item.name,
       type: 'item',
       title: item.title,
-      component: CustomFormFieldInitializer,
+      Component: CustomFormFieldInitializer,
       fieldInterface: item.name,
     })),
   }));
@@ -331,7 +332,7 @@ function CustomFormFieldInitializer(props) {
   const interfaceOptions = getInterface(item.fieldInterface);
 
   return (
-    <SchemaInitializer.Item
+    <SchemaInitializerItem
       key={item.fieldInterface}
       onClick={() => {
         setCallback(() => insert);
@@ -346,10 +347,10 @@ export default {
   config: {
     useInitializer() {
       return {
-        key: 'customForm',
+        name: 'customForm',
         type: 'item',
         title: `{{t("Custom form", { ns: "${NAMESPACE}" })}}`,
-        component: CustomFormBlockInitializer,
+        Component: CustomFormBlockInitializer,
       };
     },
     initializers: {

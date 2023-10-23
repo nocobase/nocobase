@@ -73,7 +73,7 @@ export default {
     return {
       type: 'item',
       title: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
-      component: CollectionBlockInitializer,
+      Component: CollectionBlockInitializer,
       collection: config.collection,
       dataSource: '{{$context.data}}',
     };

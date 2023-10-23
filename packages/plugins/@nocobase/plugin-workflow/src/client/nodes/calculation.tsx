@@ -208,7 +208,7 @@ export default {
     return {
       type: 'item',
       title: node.title ?? `#${node.id}`,
-      component: ValueBlock.Initializer,
+      Component: ValueBlock.Initializer,
       node,
       resultTitle: lang('Calculation result'),
     };

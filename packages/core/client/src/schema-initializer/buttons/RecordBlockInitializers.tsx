@@ -1,7 +1,5 @@
 import { Schema, useFieldSchema } from '@formily/react';
-import React from 'react';
-import { useTranslation } from 'react-i18next';
-import { SchemaInitializer, SchemaInitializerItemOptions, useCollection, useCollectionManager } from '../..';
+import { SchemaInitializerItemOptions, useCollection, useCollectionManager } from '../..';
 import { gridRowColWrap } from '../utils';
 import { SchemaInitializerV2, useSchemaInitializerV2 } from '../../application';
 

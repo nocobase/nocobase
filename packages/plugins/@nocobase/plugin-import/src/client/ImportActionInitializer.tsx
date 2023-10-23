@@ -1,15 +1,7 @@
 import type { ISchema } from '@formily/react';
 import { Schema, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
-import {
-  SchemaInitializerSwitch,
-  SchemaInitializer,
-  css,
-  useCollection,
-  useDesignable,
-  useToken,
-  useSchemaInitializerV2,
-} from '@nocobase/client';
+import { SchemaInitializerSwitch, css, useCollection, useDesignable, useSchemaInitializerV2 } from '@nocobase/client';
 import React from 'react';
 import { NAMESPACE } from './constants';
 import { useFields } from './useFields';

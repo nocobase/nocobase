@@ -6,7 +6,7 @@ import {
   DndContext,
   Icon,
   SchemaComponent,
-  SchemaInitializer,
+  SchemaInitializerActionModal,
   SortableItem,
   useCompile,
   useDesignable,
@@ -95,7 +95,7 @@ export const InternalTabBar: React.FC = (props) => {
                   height: auto;
                 }
               `}
-              icon={<SchemaInitializer.ActionModal title={t('Add tab')} onSubmit={onAddTab} schema={tabItemSchema} />}
+              icon={<SchemaInitializerActionModal title={t('Add tab')} onSubmit={onAddTab} schema={tabItemSchema} />}
               key="add-tab"
             ></TabBar.Item>
           ) : null}

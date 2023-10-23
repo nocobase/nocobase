@@ -2,7 +2,7 @@ import React from 'react';
 
 import {
   CollectionProvider,
-  SchemaInitializer,
+  SchemaInitializerItem,
   SchemaInitializerItemOptions,
   createFormBlockSchema,
   useRecordCollectionDataSourceItems,
@@ -59,7 +59,7 @@ function InternalFormBlockInitializer({ schema, ...others }) {
     insert(result);
   }
 
-  return <SchemaInitializer.Item {...others} onClick={onConfirm} items={items} />;
+  return <SchemaInitializerItem {...others} onClick={onConfirm} items={items} />;
 }
 
 export function FormBlockInitializer(props) {

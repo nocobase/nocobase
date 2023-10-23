@@ -584,7 +584,10 @@ export function useFindComponent() {
     if (typeof component !== 'string') {
       return component;
     }
-    return get(components, component);
+    const res = get(components, component);
+    if (!res) {
+      console.error(`[nocobase]: ${component} not found`);
+    }
   };
 
   return find;

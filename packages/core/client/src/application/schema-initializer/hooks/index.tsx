@@ -43,9 +43,9 @@ export const useInitializerChildren = (children: SchemaInitializerOptions['list'
   return children
     .sort((a, b) => (a.sort || 0) - (b.sort || 0))
     .map((item) => {
-      const { sort: _unUse, type, Component, useVisible, ...others } = item;
+      const { sort: _unUse, type, Component, component, useVisible, ...others } = item;
       return {
-        Component: findInitializerComponent(type, Component, useVisible),
+        Component: findInitializerComponent(type, Component || component, useVisible),
         item,
         ...others,
       };
@@ -72,7 +72,7 @@ export function useSchemaInitializerMenuItems(
           return { type: 'divider', key: `divider-${indexA}` };
         }
         if (item.type === 'item' && item.component) {
-          const Component = findComponent(item.component);
+          const Component: any = findComponent(item.component);
           if (!Component) {
             console.error(`SchemaInitializer: component "${item.component}" not found`);
             return null;

@@ -3,8 +3,7 @@ import { ISchema, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializer } from '../..';
-import { SchemaInitializerV2 } from '../../application';
+import { SchemaInitializerActionModal, SchemaInitializerV2 } from '../../application';
 import { useAPIClient } from '../../api-client';
 import { useCollection } from '../../collection-manager';
 import { createDesignable, useDesignable } from '../../schema-component';
@@ -14,7 +13,7 @@ export const Resizable = (props) => {
   const { dn } = useDesignable();
   const fieldSchema = useFieldSchema();
   return (
-    <SchemaInitializer.ActionModal
+    <SchemaInitializerActionModal
       title={t('Column width')}
       schema={
         {

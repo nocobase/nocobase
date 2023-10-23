@@ -30,6 +30,7 @@ export default {
   title: `{{t("Create record form", { ns: "${NAMESPACE}" })}}`,
   config: {
     useInitializer({ collections }) {
+      const searchValue = '';
       return {
         key: 'createRecordForm',
         type: 'subMenu',
@@ -42,22 +43,20 @@ export default {
               maxHeight: '48vh',
               overflowY: 'auto',
             },
-            loadChildren: ({ searchValue }) => {
-              return collections
-                .filter((item) => !item.hidden && item.title.toLowerCase().includes(searchValue.toLowerCase()))
-                .map((item) => ({
-                  key: `createRecordForm-child-${item.name}`,
-                  type: 'item',
-                  title: item.title,
-                  schema: {
-                    collection: item.name,
-                    title: `{{t("Create record", { ns: "${NAMESPACE}" })}}`,
-                    formType: 'create',
-                    'x-designer': 'CreateFormDesigner',
-                  },
-                  component: FormBlockInitializer,
-                }));
-            },
+            children: collections
+              .filter((item) => !item.hidden && item.title.toLowerCase().includes(searchValue.toLowerCase()))
+              .map((item) => ({
+                key: `createRecordForm-child-${item.name}`,
+                type: 'item',
+                title: item.title,
+                schema: {
+                  collection: item.name,
+                  title: `{{t("Create record", { ns: "${NAMESPACE}" })}}`,
+                  formType: 'create',
+                  'x-designer': 'CreateFormDesigner',
+                },
+                Component: FormBlockInitializer,
+              })),
           },
         ],
       };

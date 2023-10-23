@@ -14,7 +14,6 @@ import {
   InitializerWithSwitch,
   SchemaComponent,
   SchemaComponentContext,
-  SchemaInitializer,
   SchemaInitializerItemOptions,
   SchemaSettings,
   VariableScopeProvider,
@@ -26,6 +25,7 @@ import {
   SchemaInitializerV2,
   useSchemaOptionsContext,
   useSchemaInitializerV2,
+  SchemaInitializerItem,
 } from '@nocobase/client';
 import { Registry, lodash } from '@nocobase/utils/client';
 import { instructions, useAvailableUpstreams, useNodeContext } from '..';
@@ -298,7 +298,7 @@ function ManualActionDesigner(props) {
 function ContinueInitializer({ action, actionProps, ...props }) {
   const { insert } = useSchemaInitializerV2();
   return (
-    <SchemaInitializer.Item
+    <SchemaInitializerItem
       {...props}
       onClick={() => {
         insert({
