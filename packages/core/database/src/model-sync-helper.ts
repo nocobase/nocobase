@@ -17,8 +17,32 @@ export class ModelSyncHelper {
     this.database = model.database;
   }
 
+  get tableName() {
+    return this.model.getTableName();
+  }
+
+  get sequelize() {
+    return this.model.sequelize;
+  }
+
+  get queryInterface() {
+    return this.sequelize.getQueryInterface();
+  }
+
+  get snapshotManager() {
+    return this.database.collectionSnapshotManager;
+  }
+
+  get rawAttributes() {
+    return this.model.rawAttributes;
+  }
+
   async runSync(options) {
     if (this.collection.isView()) {
+      return;
+    }
+
+    if (this.collection.options.sync === false) {
       return;
     }
 
@@ -163,10 +187,6 @@ export class ModelSyncHelper {
     }
   }
 
-  get tableName() {
-    return this.model.getTableName();
-  }
-
   async getColumns(options) {
     return await this.queryInterface.describeTable(this.tableName, options);
   }
@@ -264,21 +284,5 @@ export class ModelSyncHelper {
 
   async hasChangesSinceLastSnapshot() {
     return await this.snapshotManager.hasChanged(this.collection);
-  }
-
-  get sequelize() {
-    return this.model.sequelize;
-  }
-
-  get queryInterface() {
-    return this.sequelize.getQueryInterface();
-  }
-
-  get snapshotManager() {
-    return this.database.collectionSnapshotManager;
-  }
-
-  get rawAttributes() {
-    return this.model.rawAttributes;
   }
 }
