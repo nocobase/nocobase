@@ -87,7 +87,12 @@ ChartRenderer.Designer = function Designer() {
       <SchemaSettings.Item
         key="configure"
         onClick={async () => {
-          const data = await service.runAsync(name, field?.decoratorProps?.query, true);
+          let data: any;
+          try {
+            data = await service.runAsync(name, field?.decoratorProps?.query, true);
+          } catch (err) {
+            console.error(err);
+          }
           setCurrent({ schema, field, collection: name, service, data });
           setVisible(true);
         }}

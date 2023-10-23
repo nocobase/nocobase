@@ -3,6 +3,7 @@ export * from './items';
 export * from './SchemaInitializer';
 export * from './SchemaInitializerProvider';
 export * from './types';
+export * from './utils';
 export {
   createFilterFormBlockSchema,
   createFormBlockSchema,

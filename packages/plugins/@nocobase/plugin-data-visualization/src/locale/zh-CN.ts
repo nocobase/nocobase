@@ -75,4 +75,5 @@ export default {
   smooth: '平滑曲线',
   Collapse: '折叠',
   Expand: '展开',
+  'Current filter': '当前筛选',
 };

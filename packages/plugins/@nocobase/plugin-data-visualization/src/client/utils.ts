@@ -100,3 +100,24 @@ export const processData = (selectedFields: FieldOption[], data: any[], scope: a
     return processed;
   });
 };
+
+export const removeUnparsableFilter = (filter: any) => {
+  if (typeof filter === 'object' && filter !== null) {
+    if (Array.isArray(filter)) {
+      const newLogic = filter.filter((condition) => removeUnparsableFilter(condition));
+      return newLogic.length > 0 ? newLogic : null;
+    } else {
+      const newLogic = {};
+      for (const key in filter) {
+        const newCondition = removeUnparsableFilter(filter[key]);
+        if (newCondition !== null) {
+          newLogic[key] = newCondition;
+        }
+      }
+      return Object.keys(newLogic).length > 0 ? newLogic : null;
+    }
+  } else if (typeof filter === 'string' && filter.startsWith('{{$') && filter.endsWith('}}')) {
+    return null;
+  }
+  return filter;
+};

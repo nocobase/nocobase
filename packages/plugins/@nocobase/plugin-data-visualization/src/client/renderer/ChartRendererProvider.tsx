@@ -1,7 +1,7 @@
 import { useFieldSchema } from '@formily/react';
 import { MaybeCollectionProvider, useAPIClient, useRequest } from '@nocobase/client';
-import React, { createContext, useContext, useEffect } from 'react';
-import { parseField } from '../utils';
+import React, { createContext, useContext } from 'react';
+import { parseField, removeUnparsableFilter } from '../utils';
 import { ChartDataContext } from '../block/ChartDataProvider';
 import { ConfigProvider } from 'antd';
 
@@ -74,6 +74,7 @@ export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
               uid: schema?.['x-uid'],
               collection,
               ...query,
+              filter: removeUnparsableFilter(query?.filter),
               dimensions: (query?.dimensions || []).map((item: DimensionProps) => {
                 const dimension = { ...item };
                 if (item.format && !item.alias) {

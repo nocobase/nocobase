@@ -1,9 +1,12 @@
 import { SchemaInitializerItemOptions, isAssocField, useActionContext, useCollectionManager } from '@nocobase/client';
-import { useContext } from 'react';
+import { useContext, useMemo } from 'react';
 import { ChartDataContext } from '../block/ChartDataProvider';
 import { CollectionOptions } from '@nocobase/database';
 import { Schema, useForm } from '@formily/react';
 import { useChartsTranslation } from '../locale';
+import { ChartFilterContext } from '../filter/FilterProvider';
+import { useMemoizedFn } from 'ahooks';
+import { parse } from '@nocobase/utils';
 
 export const useCustomFieldInterface = () => {
   const { getInterface } = useCollectionManager();
@@ -130,8 +133,13 @@ export const useChartFilter = () => {
         if (!value) {
           return;
         }
-        filter[collection] = filter[collection] || { $and: [] };
-        filter[collection].$and.push({ [field]: { $eq: value } });
+        if (collection !== 'custom') {
+          filter[collection] = filter[collection] || { $and: [] };
+          filter[collection].$and.push({ [field]: { $eq: value } });
+        } else {
+          filter[collection] = filter[collection] || {};
+          filter[collection][`$nFilter.${field}`] = value;
+        }
       });
     });
     return filter;
@@ -141,16 +149,31 @@ export const useChartFilter = () => {
     const filterValues = getFilter();
     const requests = Object.values(charts)
       .filter((chart) => {
-        return chart && Object.keys(filterValues).includes(chart.collection);
+        const { query } = chart;
+        const { parameters } = parse(query.filter || '');
+        return (
+          chart &&
+          (filterValues[chart.collection] ||
+            (filterValues['custom'] && parameters?.find((param: { key: string }) => filterValues['custom'][param.key])))
+        );
       })
       .map((chart) => async () => {
         const { service, collection, query } = chart;
         let newQuery = { ...query };
         if (newQuery.filter) {
+          let filter = newQuery.filter;
+          const parsed = parse(filter);
+          const { parameters } = parsed;
+          if (
+            filterValues['custom'] &&
+            parameters?.find((param: { key: string }) => filterValues['custom'][param.key])
+          ) {
+            filter = parsed(filterValues['custom']);
+          }
           newQuery = {
             ...newQuery,
             filter: {
-              $and: [query.filter, filterValues[collection]],
+              $and: [filter, filterValues[collection]],
             },
           };
         }
@@ -176,4 +199,32 @@ export const useChartFilter = () => {
     refresh,
     getChartFilterFields,
   };
+};
+
+export const useFilterVariable = () => {
+  const { t: trans } = useChartsTranslation();
+  const t = useMemoizedFn(trans);
+  const { enabled, customFields } = useContext(ChartFilterContext);
+  const dateOptions = Object.entries(customFields)
+    .filter(([_, value]) => value)
+    .map(([name, { title }]) => {
+      return {
+        key: name,
+        value: name,
+        label: title,
+      };
+    });
+  const result = useMemo(
+    () => ({
+      label: t('Current filter'),
+      value: '$nFilter',
+      key: '$nFilter',
+      children: dateOptions,
+    }),
+    [dateOptions, t],
+  );
+
+  if (!enabled) return null;
+
+  return result;
 };

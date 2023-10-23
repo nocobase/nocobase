@@ -1,10 +1,10 @@
-import React, { useContext } from 'react';
+import React, { useContext, useMemo } from 'react';
 import { FilterOutlined } from '@ant-design/icons';
-import { Grid, InitializerWithSwitch, gridRowColWrap, useDesignable } from '@nocobase/client';
-import { uid } from '@formily/shared';
-import { Schema } from '@formily/react';
+import { Grid, gridRowColWrap, useDesignable, useCurrentSchema, SchemaInitializer, FormV2 } from '@nocobase/client';
+import { uid, merge } from '@formily/shared';
 import { ChartFilterContext } from './FilterProvider';
 import { css } from '@emotion/css';
+import { createForm, onFieldChange, onFieldMount, onFieldUnmount } from '@formily/core';
 
 const createFilterSchema = () => {
   return {
@@ -14,13 +14,12 @@ const createFilterSchema = () => {
     'x-component': 'CardItem',
     'x-component-props': {
       size: 'small',
-      bordered: true,
     },
     'x-designer': 'ChartFilterBlockDesigner',
     properties: {
       [uid()]: {
         type: 'void',
-        'x-component': 'FormV2',
+        'x-component': 'ChartFilterForm',
         'x-component-props': {
           layout: 'inline',
         },
@@ -50,9 +49,49 @@ const createFilterSchema = () => {
   };
 };
 
+export const ChartFilterForm: React.FC = (props) => {
+  const { addCustomField, removeCustomField } = useContext(ChartFilterContext);
+  const form = useMemo(
+    () =>
+      createForm({
+        effects() {
+          const getCustomField = (field: any) => {
+            const { name } = field.props || {};
+            if (name.startsWith('custom.')) {
+              return name.replace('custom.', '');
+            }
+            return null;
+          };
+          onFieldMount('*', (field: any) => {
+            const name = getCustomField(field);
+            if (!name) {
+              return;
+            }
+            addCustomField(name, { title: field.title });
+          });
+          onFieldUnmount('*', (field: any) => {
+            const name = getCustomField(field);
+            if (!name) {
+              return;
+            }
+            removeCustomField(name);
+          });
+          onFieldChange('*', ['title'], (field: any) => {
+            const name = getCustomField(field);
+            if (!name) {
+              return;
+            }
+            addCustomField(name, { title: field.title });
+          });
+        },
+      }),
+    [addCustomField, removeCustomField],
+  );
+  return <FormV2 {...props} form={form} />;
+};
+
 export const ChartFilterGrid: React.FC = (props) => {
   const { collapse } = useContext(ChartFilterContext);
-  console.log(collapse);
   return (
     <div
       className={css`
@@ -67,15 +106,38 @@ export const ChartFilterGrid: React.FC = (props) => {
   );
 };
 
-export const FilterBlockInitializer: React.FC = (props) => {
+export const FilterBlockInitializer: React.FC = (props: any) => {
   const { insertAdjacent } = useDesignable();
+  const { setEnabled } = useContext(ChartFilterContext);
+  const { item, remove: _remove, disabled } = props;
+  const type = 'x-action';
+  const schema = createFilterSchema();
+  const { exists, remove } = useCurrentSchema(
+    schema?.[type] || item?.schema?.[type],
+    type,
+    item.find,
+    _remove || item.remove,
+  );
+
   return (
-    <InitializerWithSwitch
-      {...props}
-      schema={createFilterSchema()}
+    <SchemaInitializer.SwitchItem
       icon={<FilterOutlined />}
-      insert={(s: Schema) => insertAdjacent('afterBegin', gridRowColWrap(s))}
-      type="x-action"
+      checked={exists}
+      disabled={disabled}
+      title={item.title}
+      onClick={() => {
+        if (disabled) {
+          return;
+        }
+        if (exists) {
+          setEnabled(false);
+          return remove();
+        }
+        const s = merge(schema || {}, item.schema || {});
+        item?.schemaInitialize?.(s);
+        insertAdjacent('afterBegin', gridRowColWrap(s));
+        setEnabled(true);
+      }}
     />
   );
 };

@@ -69,7 +69,6 @@ export const ChartFilterItemDesigner: React.FC = () => {
       {collectionField ? <SchemaSettings.Divider /> : null}
       <SchemaSettings.Remove
         key="remove"
-        removeParentsIfNoChildren
         confirm={{
           title: t('Delete field'),
         }}

@@ -607,7 +607,7 @@ SchemaInitializer.ActionModal = function ActionModal(props: SchemaInitializerAct
 
 SchemaInitializer.SwitchItem = (props) => {
   return (
-    <SchemaInitializer.Item onClick={props.onClick}>
+    <SchemaInitializer.Item onClick={props.onClick} icon={props.icon}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <label>{props.title}</label>
         <Switch disabled={props.disabled} style={{ marginLeft: 20 }} size={'small'} checked={props.checked} />
