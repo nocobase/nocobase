@@ -3,6 +3,12 @@ import { antd, compact, compactDark, dark } from '../builtinThemes';
 
 export default class ThemeEditorMigration extends Migration {
   async up() {
+    const result = await this.app.version.satisfies('<=0.14.0-alpha.7');
+
+    if (!result) {
+      return;
+    }
+
     const theme = this.db.getCollection('themeConfig');
     if (!theme) {
       return;
