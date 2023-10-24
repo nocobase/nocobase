@@ -59,11 +59,17 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
   const resource = api.resource(collectionField.target);
   const linkageFields = filterAnalyses(field.componentProps?.service?.params?.filter);
   useEffect(() => {
+    const initValue = isVariable(field.value) ? undefined : field.value;
+    const value = Array.isArray(initValue) ? initValue.filter(Boolean) : initValue;
+    setInnerValue(value);
+  }, [field.value]);
+  useEffect(() => {
     const id = uid();
     form.addEffects(id, () => {
       if (linkageFields?.length > 0) {
         //支持深层次子表单
         onFieldChange('*', (fieldPath: any) => {
+          console.log(fieldPath.props.name, field.props.name);
           if (linkageFields.includes(fieldPath.props.name) && field.value) {
             props.onChange(null);
             setInnerValue(null);
@@ -111,7 +117,7 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
       </div>
     );
   };
-
+  console.log(value || innerValue, field.value, innerValue);
   return (
     <div key={fieldSchema.name}>
       <Space.Compact style={{ display: 'flex', lineHeight: '32px' }}>
@@ -124,7 +130,6 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
           service={service}
           onChange={(value) => {
             const val = value?.length !== 0 ? value : null;
-            setInnerValue(val);
             props.onChange?.(val);
           }}
           CustomDropdownRender={addMode === 'quickAdd' && QuickAddContent}
