@@ -15,7 +15,7 @@ export default class ThemeEditorMigration extends Migration {
     }
 
     themeRepo.collection.addField('uid', {
-      type: 'string',
+      type: 'uid',
     });
     await this.db.sync();
 
