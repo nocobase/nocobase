@@ -76,30 +76,20 @@ export default {
         key: 'updateRecordForm',
         type: 'subMenu',
         title: `{{t("Update record form", { ns: "${NAMESPACE}" })}}`,
-        children: [
-          {
-            key: 'updateRecordForm-child',
-            type: 'itemGroup',
-            style: {
-              maxHeight: '48vh',
-              overflowY: 'auto',
+        children: collections
+          .filter((item) => !item.hidden && item.title.toLowerCase().includes(searchValue.toLowerCase()))
+          .map((item) => ({
+            name: `updateRecordForm-child-${item.name}`,
+            type: 'item',
+            title: item.title,
+            schema: {
+              collection: item.name,
+              title: `{{t("Update record", { ns: "${NAMESPACE}" })}}`,
+              formType: 'update',
+              'x-designer': 'UpdateFormDesigner',
             },
-            children: collections
-              .filter((item) => !item.hidden && item.title.toLowerCase().includes(searchValue.toLowerCase()))
-              .map((item) => ({
-                key: `updateRecordForm-child-${item.name}`,
-                type: 'item',
-                title: item.title,
-                schema: {
-                  collection: item.name,
-                  title: `{{t("Update record", { ns: "${NAMESPACE}" })}}`,
-                  formType: 'update',
-                  'x-designer': 'UpdateFormDesigner',
-                },
-                Component: FormBlockInitializer,
-              })),
-          },
-        ],
+            Component: FormBlockInitializer,
+          })),
       };
     },
     initializers: {

@@ -28,10 +28,10 @@ export const SchemaInitializerMenu: FC<SchemaInitializerMenuProps> = (props) => 
           label: compile(title),
           icon: typeof icon === 'string' ? <Icon type={icon as string} /> : icon,
           children: validChildren.map((item) => {
-            const { name, Component, icon, ...props } = item;
+            const { name, key, Component, icon, ...props } = item;
             return {
               label: React.createElement(Component, { name, insert, ...props }),
-              key: name,
+              key: name || key,
               icon: typeof icon === 'string' ? <Icon type={icon as string} /> : icon,
             };
           }),

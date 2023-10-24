@@ -32,14 +32,26 @@ export class SchemaInitializerManager {
   }
 
   render<P1 = ButtonProps, P2 = ListProps<any>>(name: string, options?: SchemaInitializerOptions<P1, P2>) {
+    if (!name) return null;
     const initializer = this.get<P1, P2>(name);
-    if (!initializer) return null;
+    if (!initializer) {
+      console.error(`[nocobase]: SchemaInitializer "${name}" not found`);
+      return null;
+    }
     return initializer.render(options);
   }
 
   getRender<P1 = ButtonProps, P2 = ListProps<any>>(name: string, options?: SchemaInitializerOptions<P1, P2>) {
+    if (!name) {
+      return {
+        exists: false,
+        render: () => null,
+      };
+    }
+
     const initializer = this.get<P1, P2>(name);
     if (!initializer) {
+      console.error(`[nocobase]: SchemaInitializer "${name}" not found`);
       return {
         exists: false,
         render: () => null,

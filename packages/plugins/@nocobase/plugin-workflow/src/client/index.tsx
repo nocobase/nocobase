@@ -17,6 +17,8 @@ import { WorkflowTodo } from './nodes/manual/WorkflowTodo';
 import { WorkflowTodoBlockInitializer } from './nodes/manual/WorkflowTodoBlockInitializer';
 import { useTriggerWorkflowsActionProps } from './triggers/form';
 import { NAMESPACE } from './locale';
+import { addActionButton, addBlockButton } from './nodes/manual/SchemaConfig';
+import { addCustomFormField } from './nodes/manual/forms/custom';
 
 export class WorkflowPlugin extends Plugin {
   triggers = triggers;
@@ -28,6 +30,14 @@ export class WorkflowPlugin extends Plugin {
     this.addScopes();
     this.addComponents();
     this.app.addProvider(WorkflowProvider);
+    this.addSchemaInitializers();
+  }
+
+  addSchemaInitializers() {
+    this.app.schemaInitializerManager.add(addBlockButton);
+    this.app.schemaInitializerManager.add(addActionButton);
+    this.app.schemaInitializerManager.add(addCustomFormField);
+
     const blockInitializers = this.app.schemaInitializerManager.get('BlockInitializers');
     blockInitializers.add('media.workflowTodos', {
       name: 'workflowTodos',

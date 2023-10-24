@@ -14,6 +14,8 @@ import {
   SchemaInitializer,
   SchemaInitializerItem,
   SchemaInitializerItemOptions,
+  SchemaInitializerItems,
+  SchemaInitializerV2,
   gridRowColWrap,
   useCollectionManager,
   useRecord,
@@ -198,12 +200,11 @@ function useCommonInterfaceInitializers(): SchemaInitializerItemOptions[] {
 
 const AddCustomFormFieldButtonContext = React.createContext<any>({});
 
-function AddCustomFormField(props) {
-  const { insertPosition = 'beforeEnd', component } = props;
-  const items = useCommonInterfaceInitializers();
-  const collection = useContext(CollectionContext);
+const CustomItemsComponent = (props) => {
   const [interfaceOptions, setInterface] = useState<any>(null);
   const [insert, setCallback] = useState<any>();
+  const items = useCommonInterfaceInitializers();
+  const collection = useContext(CollectionContext);
   const { setCollectionFields } = useContext(FormBlockContext);
 
   return (
@@ -223,14 +224,7 @@ function AddCustomFormField(props) {
         setCallback,
       }}
     >
-      <SchemaInitializer.Button
-        data-testid="configure-fields-button-of-add-custom-form-field"
-        wrap={gridRowColWrap}
-        insertPosition={insertPosition}
-        items={items}
-        component={component}
-        title="{{t('Configure fields')}}"
-      />
+      <SchemaInitializerItems {...props} items={items} />
       <ActionContextProvider value={{ visible: Boolean(interfaceOptions) }}>
         {interfaceOptions ? (
           <SchemaComponent
@@ -321,7 +315,16 @@ function AddCustomFormField(props) {
       </ActionContextProvider>
     </AddCustomFormFieldButtonContext.Provider>
   );
-}
+};
+
+export const addCustomFormField = new SchemaInitializerV2({
+  name: 'AddCustomFormField',
+  'data-testid': 'configure-fields-button-of-add-custom-form-field',
+  wrap: gridRowColWrap,
+  insertPosition: 'beforeEnd',
+  title: "{{t('Configure fields')}}",
+  ItemsComponent: CustomItemsComponent,
+});
 
 function CustomFormFieldInitializer(props) {
   const { item } = props;
@@ -338,6 +341,7 @@ function CustomFormFieldInitializer(props) {
         setCallback(() => insert);
         onAddField(interfaceOptions);
       }}
+      {...props}
     />
   );
 }
@@ -353,9 +357,7 @@ export default {
         Component: CustomFormBlockInitializer,
       };
     },
-    initializers: {
-      AddCustomFormField,
-    },
+    initializers: {},
     components: {
       CustomFormBlockProvider,
     },

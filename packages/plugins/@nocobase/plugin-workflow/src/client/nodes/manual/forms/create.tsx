@@ -35,30 +35,20 @@ export default {
         key: 'createRecordForm',
         type: 'subMenu',
         title: `{{t("Create record form", { ns: "${NAMESPACE}" })}}`,
-        children: [
-          {
-            key: 'createRecordForm-child',
-            type: 'itemGroup',
-            style: {
-              maxHeight: '48vh',
-              overflowY: 'auto',
+        children: collections
+          .filter((item) => !item.hidden && item.title.toLowerCase().includes(searchValue.toLowerCase()))
+          .map((item) => ({
+            name: `createRecordForm-child-${item.name}`,
+            type: 'item',
+            title: item.title,
+            schema: {
+              collection: item.name,
+              title: `{{t("Create record", { ns: "${NAMESPACE}" })}}`,
+              formType: 'create',
+              'x-designer': 'CreateFormDesigner',
             },
-            children: collections
-              .filter((item) => !item.hidden && item.title.toLowerCase().includes(searchValue.toLowerCase()))
-              .map((item) => ({
-                key: `createRecordForm-child-${item.name}`,
-                type: 'item',
-                title: item.title,
-                schema: {
-                  collection: item.name,
-                  title: `{{t("Create record", { ns: "${NAMESPACE}" })}}`,
-                  formType: 'create',
-                  'x-designer': 'CreateFormDesigner',
-                },
-                Component: FormBlockInitializer,
-              })),
-          },
-        ],
+            Component: FormBlockInitializer,
+          })),
       };
     },
     initializers: {

@@ -16,8 +16,11 @@ export const SchemaInitializerChildren: FC<{ children: SchemaInitializerItemType
 
 const useChildrenDefault = () => undefined;
 const SchemaInitializerChild: FC<UseInitializerChildrenResult> = (props) => {
-  // const { insert } = useSchemaInitializerV2();
-  const { children, useChildren = useChildrenDefault, name, Component, ...others } = props;
+  const { children, useChildren = useChildrenDefault, checkChildrenLength, name, Component, ...others } = props;
   const useChildrenRes = useChildren();
+  const componentChildren = useChildrenRes || children;
+  if (checkChildrenLength && (!Array.isArray(componentChildren) || componentChildren.length === 0)) {
+    return null;
+  }
   return React.createElement(Component, { key: name, name, ...others }, useChildrenRes || children);
 };

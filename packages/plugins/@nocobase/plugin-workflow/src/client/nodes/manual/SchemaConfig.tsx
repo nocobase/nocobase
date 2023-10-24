@@ -122,6 +122,7 @@ export const addBlockButton = new SchemaInitializerV2({
       type: 'itemGroup',
       name: 'data-blocks',
       title: '{{t("Data blocks")}}',
+      checkChildrenLength: true,
       useChildren() {
         const current = useNodeContext();
         const nodes = useAvailableUpstreams(current);
@@ -150,6 +151,7 @@ export const addBlockButton = new SchemaInitializerV2({
     },
     {
       type: 'itemGroup',
+      name: 'form',
       title: '{{t("Form")}}',
       useChildren() {
         const { collections } = useCollectionManager();
@@ -389,7 +391,6 @@ function useSubmit() {
 
 export function SchemaConfig({ value, onChange }) {
   const ctx = useContext(SchemaComponentContext);
-  const trigger = useTrigger();
   const node = useNodeContext();
   const nodes = useAvailableUpstreams(node);
   const form = useForm();
@@ -447,15 +448,6 @@ export function SchemaConfig({ value, onChange }) {
       }),
     [],
   );
-  console.log('refactor: SchemaConfig', {
-    ...trigger.initializers,
-    ...nodeInitializers,
-    // @ts-ignore
-    ...Array.from(manualFormTypes.getValues()).reduce(
-      (result, item: ManualFormType) => Object.assign(result, item.config.initializers),
-      {},
-    ),
-  });
   return (
     <SchemaComponentContext.Provider
       value={{
@@ -474,19 +466,6 @@ export function SchemaConfig({ value, onChange }) {
         },
       }}
     >
-      {/* <SchemaInitializerProvider
-        initializers={{
-          AddBlockButton,
-          AddActionButton,
-          ...trigger.initializers,
-          ...nodeInitializers,
-          // @ts-ignore
-          ...Array.from(manualFormTypes.getValues()).reduce(
-            (result, item: ManualFormType) => Object.assign(result, item.config.initializers),
-            {},
-          ),
-        }}
-      > */}
       <SchemaComponent
         schema={schema}
         components={{
@@ -513,7 +492,6 @@ export function SchemaConfig({ value, onChange }) {
           useDetailsBlockProps: useFormBlockContext,
         }}
       />
-      {/* </SchemaInitializerProvider> */}
     </SchemaComponentContext.Provider>
   );
 }
