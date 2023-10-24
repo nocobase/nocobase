@@ -19,7 +19,6 @@ export function withInitializer<T>(C: ComponentType<T>, cProps: T) {
       wrap = defaultWrap,
       insertPosition = 'beforeEnd',
       onSuccess,
-      items,
       designable: propsDesignable,
       dropdownProps,
       children,
@@ -52,6 +51,7 @@ export function withInitializer<T>(C: ComponentType<T>, cProps: T) {
           <Dropdown
             className={classNames('nb-schema-initializer-button')}
             openClassName={`nb-schema-initializer-button-open`}
+            arrow
             {...dropdownProps}
             dropdownRender={() => <Card>{children}</Card>}
           >

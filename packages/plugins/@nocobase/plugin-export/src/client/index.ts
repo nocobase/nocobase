@@ -9,8 +9,7 @@ export class ExportPlugin extends Plugin {
   async load() {
     this.app.use(ExportPluginProvider);
 
-    const tableActionInitializers = this.app.schemaInitializerManager.get('TableActionInitializers');
-    tableActionInitializers?.add('enable-actions.export', {
+    const initializerData = {
       title: "{{t('Export')}}",
       Component: 'ExportActionInitializer',
       schema: {
@@ -20,7 +19,13 @@ export class ExportPlugin extends Plugin {
           skipScopeCheck: true,
         },
       },
-    });
+    };
+
+    const tableActionInitializers = this.app.schemaInitializerManager.get('TableActionInitializers');
+    tableActionInitializers?.add('enable-actions.export', initializerData);
+
+    const ganttActionInitializers = this.app.schemaInitializerManager.get('GanttActionInitializers');
+    ganttActionInitializers?.add('enable-actions.export', initializerData);
   }
 }
 

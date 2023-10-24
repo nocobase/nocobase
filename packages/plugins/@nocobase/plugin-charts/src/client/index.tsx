@@ -93,12 +93,12 @@ export class ChartsPlugin extends Plugin {
     this.app.pm.add(BlockSchemaComponentPlugin);
   }
   async load() {
-    const blockInitializers = this.app.schemaInitializerManager.get('BlockInitializers');
-    blockInitializers?.add('data-blocks.chart-old', {
-      icon: 'PieChartOutlined',
-      title: '{{t("Chart (Old)",{ns:"charts"})}}',
-      Component: 'ChartBlockInitializer',
-    });
+    // const blockInitializers = this.app.schemaInitializerManager.get('BlockInitializers');
+    // blockInitializers?.add('data-blocks.chart-old', {
+    //   icon: 'PieChartOutlined',
+    //   title: '{{t("Chart (Old)",{ns:"charts"})}}',
+    //   Component: 'ChartBlockInitializer',
+    // });
     this.app.use(ChartsProvider);
   }
 }

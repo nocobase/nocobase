@@ -2,7 +2,7 @@ import React from 'react';
 import { MenuOutlined } from '@ant-design/icons';
 import { SchemaInitializerItem, useSchemaInitializerV2 } from '@nocobase/client';
 
-export const MMenuBlockInitializer = () => {
+export const MMenuBlockInitializer = (props) => {
   const { insert } = useSchemaInitializerV2();
   return (
     <SchemaInitializerItem
@@ -15,6 +15,7 @@ export const MMenuBlockInitializer = () => {
           'x-component-props': {},
         });
       }}
+      {...props}
     />
   );
 };

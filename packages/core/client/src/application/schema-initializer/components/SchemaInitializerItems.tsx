@@ -10,6 +10,7 @@ export type SchemaInitializerItemsProps<P1 = ButtonProps, P2 = ListProps<any>> =
 
 export const SchemaInitializerItems: FC<SchemaInitializerItemsProps> = (props) => {
   const { style = {}, options, items, ...others } = props;
+  if (items.length === 0) return null;
   return (
     <Space direction="vertical" size={'middle' as any} {...others} style={{ display: 'flex', ...style }}>
       <SchemaInitializerChildren>{items}</SchemaInitializerChildren>

@@ -20,10 +20,8 @@ export const MapBlockInitializer = (props) => {
   const { getCollectionFieldsOptions } = useCollectionManager();
   const { t } = useMapTranslation();
   const { theme } = useGlobalTheme();
-
   return (
     <DataBlockInitializer
-      {...props}
       componentType={'Map'}
       icon={<TableOutlined />}
       onCreateBlockSchema={async ({ item }) => {
@@ -90,6 +88,7 @@ export const MapBlockInitializer = (props) => {
         );
       }}
       title={t('Map block')}
+      {...props}
     />
   );
 };

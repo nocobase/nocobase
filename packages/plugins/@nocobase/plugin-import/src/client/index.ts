@@ -13,8 +13,7 @@ export class ImportPlugin extends Plugin {
   async load() {
     this.app.use(ImportPluginProvider);
 
-    const tableActionInitializers = this.app.schemaInitializerManager.get('TableActionInitializers');
-    tableActionInitializers?.add('enable-actions.import', {
+    const initializerData = {
       title: "{{t('Import')}}",
       Component: 'ImportActionInitializer',
       schema: {
@@ -32,7 +31,12 @@ export class ImportPlugin extends Plugin {
           collection.template !== 'sql'
         );
       },
-    });
+    };
+
+    const tableActionInitializers = this.app.schemaInitializerManager.get('TableActionInitializers');
+    tableActionInitializers?.add('enable-actions.import', initializerData);
+    const ganttActionInitializers = this.app.schemaInitializerManager.get('GanttActionInitializers');
+    ganttActionInitializers?.add('enable-actions.import', initializerData);
   }
 }
 

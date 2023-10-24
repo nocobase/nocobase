@@ -249,6 +249,10 @@ export const recordBlockInitializers = new SchemaInitializerV2({
       name: 'relationship-blocks',
       title: '{{t("Relationship blocks")}}',
       useChildren: useRelationFields,
+      useVisible() {
+        const res = useRelationFields();
+        return res.length > 0;
+      },
     },
     {
       type: 'itemGroup',

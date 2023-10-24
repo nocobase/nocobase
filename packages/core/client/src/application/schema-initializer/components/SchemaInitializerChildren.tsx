@@ -8,7 +8,7 @@ export const SchemaInitializerChildren: FC<{ children: SchemaInitializerItemType
   return (
     <>
       {validChildren.map((item, index) => (
-        <SchemaInitializerChild key={item.name || index} {...item} />
+        <SchemaInitializerChild key={item.name || item.key || index} {...item} />
       ))}
     </>
   );

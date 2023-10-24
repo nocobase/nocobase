@@ -53,7 +53,6 @@ export const chartInitializers = new SchemaInitializerV2({
   },
   title: '{{t("Add chart")}}',
   ItemsComponent: ItemsComponent,
-  noDropdown: true,
 });
 
 export const ChartV2BlockInitializer: React.FC = (props) => {

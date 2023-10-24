@@ -588,6 +588,7 @@ export function useFindComponent() {
     if (!res) {
       console.error(`[nocobase]: ${component} not found`);
     }
+    return res;
   };
 
   return find;

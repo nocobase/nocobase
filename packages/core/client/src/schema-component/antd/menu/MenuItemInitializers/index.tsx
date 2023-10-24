@@ -66,7 +66,7 @@ export const GroupItem = () => {
       ],
     });
   }, [insert, options.components, options.scope, t, theme]);
-  return <SchemaInitializerItem title={'Group'} onClick={handleClick} />;
+  return <SchemaInitializerItem title={t('Group')} onClick={handleClick} />;
 };
 
 export const PageMenuItem = () => {
@@ -143,7 +143,7 @@ export const PageMenuItem = () => {
       },
     });
   }, [insert, options.components, options.scope, t, theme]);
-  return <SchemaInitializerItem title={'Page'} onClick={handleClick} />;
+  return <SchemaInitializerItem title={t('Page')} onClick={handleClick} />;
 };
 
 export const LinkMenuItem = () => {
@@ -212,7 +212,7 @@ export const LinkMenuItem = () => {
     });
   }, [insert, options.components, options.scope, t, theme]);
 
-  return <SchemaInitializerItem title={'Link'} onClick={handleClick} />;
+  return <SchemaInitializerItem title={t('Link')} onClick={handleClick} />;
 };
 
 export const menuItemInitializer = new SchemaInitializerV2({
@@ -223,15 +223,15 @@ export const menuItemInitializer = new SchemaInitializerV2({
   items: [
     {
       name: 'group',
-      Component: GroupItemV2,
+      Component: GroupItem,
     },
     {
       name: 'page',
-      Component: PageMenuItemV2,
+      Component: PageMenuItem,
     },
     {
       name: 'link',
-      Component: LinkMenuItemV2,
+      Component: LinkMenuItem,
     },
   ],
 });

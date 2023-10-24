@@ -55,7 +55,6 @@ export const mBlockInitializers = new SchemaInitializerV2({
           name: 'menu',
           title: generateNTemplate('Menu'),
           Component: 'MMenuBlockInitializer',
-          sort: 100,
         },
         {
           name: 'markdown',
@@ -66,7 +65,6 @@ export const mBlockInitializers = new SchemaInitializerV2({
           name: 'settings',
           title: generateNTemplate('Settings'),
           Component: 'MSettingsBlockInitializer',
-          sort: 100,
         },
       ],
     },

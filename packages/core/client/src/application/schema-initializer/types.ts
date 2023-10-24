@@ -2,13 +2,7 @@ import { ISchema } from '@formily/json-schema';
 import { ButtonProps, ListProps, DropDownProps } from 'antd';
 import { ComponentType, ReactNode } from 'react';
 
-export type InsertType = (
-  s: ISchema,
-  options?: {
-    onSuccess: () => void;
-    wrap?: (schema: ISchema) => ISchema;
-  },
-) => void;
+export type InsertType = (s: ISchema) => void;
 
 interface SchemaInitializerItemBaseType {
   name: string | number;

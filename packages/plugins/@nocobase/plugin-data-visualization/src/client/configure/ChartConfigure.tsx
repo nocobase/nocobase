@@ -10,7 +10,6 @@ import {
   useCollectionFieldsOptions,
   useCollectionFilterOptions,
   useDesignable,
-  useSchemaInitializerV2,
 } from '@nocobase/client';
 import { Alert, App, Button, Card, Col, Modal, Row, Space, Table, Tabs, Typography } from 'antd';
 import { cloneDeep, isEqual } from 'lodash';
@@ -58,20 +57,28 @@ export const ChartConfigContext = createContext<{
   visible: true,
 });
 
-export const ChartConfigure: React.FC & {
+export const ChartConfigure: React.FC<{
+  insert: (
+    s: ISchema,
+    options: {
+      onSuccess: () => void;
+      wrap?: (schema: ISchema) => ISchema;
+    },
+  ) => void;
+}> & {
   Renderer: React.FC;
   Config: React.FC;
   Query: React.FC;
   Transform: React.FC;
   Data: React.FC;
-} = () => {
+} = (props) => {
   const { t } = useChartsTranslation();
   const { service } = useContext(ChartRendererContext);
   const { visible, setVisible, current } = useContext(ChartConfigContext);
   const { schema, field, collection, initialValues } = current || {};
   const { dn } = useDesignable();
   const { modal } = App.useApp();
-  const { insert } = useSchemaInitializerV2();
+  const { insert } = props;
 
   const charts = useCharts();
   const fields = useFieldsWithAssociation(collection);

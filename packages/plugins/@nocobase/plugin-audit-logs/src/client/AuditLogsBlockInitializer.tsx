@@ -20,12 +20,12 @@ export const AuditLogsBlockInitializer = (props) => {
 
   return (
     <SchemaInitializerItem
-      {...props}
       icon={<TableOutlined />}
       onClick={() => {
         insert(schema as ISchema);
       }}
       title={t('Audit Logs')}
+      {...props}
     />
   );
 };

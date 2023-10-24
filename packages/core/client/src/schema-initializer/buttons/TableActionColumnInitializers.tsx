@@ -134,6 +134,12 @@ export const tableActionColumnInitializers = new SchemaInitializerV2({
             'x-action': 'create',
             'x-decorator': 'ACLActionProvider',
           },
+          useVisible() {
+            const fieldSchema = useFieldSchema();
+            const collection = useCollection();
+            const { treeTable } = fieldSchema?.parent?.parent['x-decorator-props'] || {};
+            return collection.tree && treeTable !== false;
+          },
         },
         {
           type: 'item',
