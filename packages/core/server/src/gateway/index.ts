@@ -188,7 +188,7 @@ export class Gateway extends EventEmitter {
       void AppSupervisor.getInstance().bootStrapApp(handleApp);
     }
 
-    const appStatus = AppSupervisor.getInstance().getAppStatus(handleApp, 'initializing');
+    let appStatus = AppSupervisor.getInstance().getAppStatus(handleApp, 'initializing');
 
     if (appStatus === 'not_found') {
       this.responseErrorWithCode('APP_NOT_FOUND', res, { appName: handleApp });
@@ -202,7 +202,8 @@ export class Gateway extends EventEmitter {
 
     if (appStatus === 'initialized') {
       const appInstance = await AppSupervisor.getInstance().getApp(handleApp);
-      await appInstance.runAsCLI(['start'], { from: 'user' });
+      appInstance.runAsCLI(['start'], { from: 'user' });
+      appStatus = AppSupervisor.getInstance().getAppStatus(handleApp);
     }
 
     const app = await AppSupervisor.getInstance().getApp(handleApp);
