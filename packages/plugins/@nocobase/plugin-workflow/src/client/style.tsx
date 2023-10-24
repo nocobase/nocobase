@@ -213,7 +213,7 @@ const useStyles = createStyles(({ css, token }) => {
         box-shadow: ${token.boxShadow};
 
         .workflow-node-remove-button {
-          opacity: 1;
+          display: block;
         }
       }
 
@@ -222,12 +222,11 @@ const useStyles = createStyles(({ css, token }) => {
       }
 
       .workflow-node-remove-button {
+        display: none;
         position: absolute;
         right: 0.5em;
         top: 0.5em;
         color: ${token.colorText};
-        opacity: 0;
-        transition: opacity 0.3s ease;
 
         &[disabled] {
           display: none;
@@ -266,7 +265,7 @@ const useStyles = createStyles(({ css, token }) => {
         box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.25);
 
         .workflow-node-remove-button {
-          opacity: 1;
+          display: block;
         }
       }
     `,

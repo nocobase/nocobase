@@ -1,10 +1,10 @@
 import { Alert } from 'antd';
 import React from 'react';
 import { Branch } from './Branch';
+import { useFlowContext } from './FlowContext';
 import { lang } from './locale';
 import useStyles from './style';
 import { TriggerConfig } from './triggers';
-import { useFlowContext } from './FlowContext';
 
 export function CanvasContent({ entry }) {
   const { styles } = useStyles();

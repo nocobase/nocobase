@@ -16,6 +16,9 @@ export function Branch({
   controller?: any;
 }) {
   const { styles } = useStyles();
+  const ariaLabel = ['add-button', from?.type, from?.title, branchIndex != null ? String(branchIndex) : '']
+    .filter(Boolean)
+    .join('-');
 
   const list: any[] = [];
   for (let node = entry; node; node = node.downstream) {
@@ -26,7 +29,7 @@ export function Branch({
     <div className={cx(styles.branchClass)}>
       <div className="workflow-branch-lines" />
       {controller}
-      <AddButton upstream={from} branchIndex={branchIndex} />
+      <AddButton aria-label={ariaLabel} upstream={from} branchIndex={branchIndex} />
       <div className="workflow-node-list">
         {list.map((item) => (
           <Node data={item} key={item.id} />

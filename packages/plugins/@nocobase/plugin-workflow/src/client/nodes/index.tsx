@@ -137,6 +137,7 @@ export function useUpstreamScopes(node) {
 
 export function Node({ data }) {
   const { styles } = useStyles();
+  const ariaLabel = ['add-button', data?.type, data?.title].filter(Boolean).join('-');
   const { component: Component = NodeDefaultView, endding } = instructions.get(data.type);
 
   return (
@@ -144,7 +145,7 @@ export function Node({ data }) {
       <div className={cx(styles.nodeBlockClass)}>
         <Component data={data} />
         {!endding ? (
-          <AddButton upstream={data} />
+          <AddButton aria-label={ariaLabel} upstream={data} />
         ) : (
           <div
             className={css`
@@ -336,13 +337,20 @@ export function NodeDefaultView(props) {
 
   return (
     <div className={cx(styles.nodeClass, `workflow-node-type-${data.type}`)}>
-      <div className={cx(styles.nodeCardClass, { configuring: editingConfig })} onClick={onOpenDrawer}>
+      <div
+        role="button"
+        aria-label={`${typeTitle}-${editingTitle}`}
+        className={cx(styles.nodeCardClass, { configuring: editingConfig })}
+        onClick={onOpenDrawer}
+      >
         <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
           <Tag>{typeTitle}</Tag>
           <span className="workflow-node-id">{data.id}</span>
         </div>
         <div>
           <Input.TextArea
+            role="button"
+            aria-label="textarea"
             disabled={workflow.executed}
             value={editingTitle}
             onChange={(ev) => setEditingTitle(ev.target.value)}
