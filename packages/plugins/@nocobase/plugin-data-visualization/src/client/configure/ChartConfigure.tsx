@@ -13,7 +13,7 @@ import {
 } from '@nocobase/client';
 import { Alert, App, Button, Card, Col, Modal, Row, Space, Table, Tabs, Typography } from 'antd';
 import { cloneDeep, isEqual } from 'lodash';
-import React, { createContext, useContext, useMemo, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import {
   useChartFields,
   useCollectionOptions,
@@ -146,6 +146,15 @@ export const ChartConfigure: React.FC<{
 
   const queryRef = useRef(null);
   const configRef = useRef(null);
+
+  useEffect(() => {
+    if (!visible) {
+      return;
+    }
+    service.run(collection, field?.decoratorProps?.query);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
+
   return (
     <Modal
       title={t('Configure chart')}

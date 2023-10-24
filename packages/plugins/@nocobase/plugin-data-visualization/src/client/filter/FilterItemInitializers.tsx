@@ -86,6 +86,7 @@ export const ChartFilterCustomItemInitializer: React.FC<{
         'x-designer': 'ChartFilterItemDesigner',
         'x-component': 'CollectionField',
         'x-decorator': 'FormItem',
+        'x-field-interface': fieldInterface,
         ...uiSchema,
       }),
     );

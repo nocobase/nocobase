@@ -4,31 +4,46 @@ import { useMemoizedFn } from 'ahooks';
 export const ChartFilterContext = createContext<{
   enabled: boolean;
   setEnabled: (enabled: boolean) => void;
-  customFields: {
-    [name: string]: {
-      title: string;
+  fields: {
+    [collection: string]: {
+      [field: string]: {
+        title: string;
+        operator?: string;
+      };
     };
   };
-  addCustomField: (name: string, field: { title: string }) => void;
-  removeCustomField: (name: string) => void;
+  addField: (name: string, field: { title: string; operator?: string }) => void;
+  removeField: (name: string) => void;
   collapse: boolean;
   setCollapse: (collapsed: boolean) => void;
 }>({} as any);
 
 export const ChartFilterProvider: React.FC = (props) => {
   const [enabled, setEnabled] = useState(false);
-  const [customFields, setCustomFields] = useState({});
+  const [fields, setFields] = useState({});
   const [collapse, setCollapse] = useState(false);
-  const addCustomField = useMemoizedFn((name: string, field: { title: string }) => {
-    setCustomFields((customFields) => ({ ...customFields, [name]: field }));
+  const addField = useMemoizedFn((name: string, props: { title: string }) => {
+    const [collection, field] = name.split('.');
+    setFields((fields) => ({
+      ...fields,
+      [collection]: {
+        ...(fields[collection] || {}),
+        [field]: props,
+      },
+    }));
   });
-  const removeCustomField = useMemoizedFn((name: string) => {
-    setCustomFields((customFields) => ({ ...customFields, [name]: undefined }));
+  const removeField = useMemoizedFn((name: string) => {
+    const [collection, field] = name.split('.');
+    setFields((fields) => {
+      const newFields = {
+        ...fields,
+      };
+      newFields[collection][field] = undefined;
+      return newFields;
+    });
   });
   return (
-    <ChartFilterContext.Provider
-      value={{ enabled, setEnabled, customFields, addCustomField, removeCustomField, collapse, setCollapse }}
-    >
+    <ChartFilterContext.Provider value={{ enabled, setEnabled, fields, addField, removeField, collapse, setCollapse }}>
       {props.children}
     </ChartFilterContext.Provider>
   );

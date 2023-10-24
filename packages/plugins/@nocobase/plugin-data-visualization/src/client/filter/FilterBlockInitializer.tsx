@@ -50,42 +50,42 @@ const createFilterSchema = () => {
 };
 
 export const ChartFilterForm: React.FC = (props) => {
-  const { addCustomField, removeCustomField } = useContext(ChartFilterContext);
+  const { addField, removeField } = useContext(ChartFilterContext);
   const form = useMemo(
     () =>
       createForm({
         effects() {
-          const getCustomField = (field: any) => {
-            const { name } = field.props || {};
-            if (name.startsWith('custom.')) {
-              return name.replace('custom.', '');
+          const getField = (field: any) => {
+            if (field.displayName !== 'Field') {
+              return null;
             }
-            return null;
+            const { name } = field.props || {};
+            return name;
           };
           onFieldMount('*', (field: any) => {
-            const name = getCustomField(field);
+            const name = getField(field);
             if (!name) {
               return;
             }
-            addCustomField(name, { title: field.title });
+            addField(name, { title: field.title, operator: field.componentProps.filterOperator });
           });
           onFieldUnmount('*', (field: any) => {
-            const name = getCustomField(field);
+            const name = getField(field);
             if (!name) {
               return;
             }
-            removeCustomField(name);
+            removeField(name);
           });
           onFieldChange('*', ['title'], (field: any) => {
-            const name = getCustomField(field);
+            const name = getField(field);
             if (!name) {
               return;
             }
-            addCustomField(name, { title: field.title });
+            addField(name, { title: field.title, operator: field.componentProps.filterOperator });
           });
         },
       }),
-    [addCustomField, removeCustomField],
+    [addField, removeField],
   );
   return <FormV2 {...props} form={form} />;
 };

@@ -12,20 +12,23 @@ export const useCustomFieldInterface = () => {
   const { getInterface } = useCollectionManager();
   return {
     getSchemaByInterface: (fieldInterface: string) => {
-      const defaultSchema = getInterface(fieldInterface)?.default.uiSchema;
+      const interfaceConfig = getInterface(fieldInterface);
+      const defaultSchema = interfaceConfig?.default.uiSchema;
+      const schema = {
+        ...defaultSchema,
+      };
       switch (fieldInterface) {
         case 'datetime':
           return {
-            ...defaultSchema,
+            ...schema,
             'x-component-props': {
               ...defaultSchema['x-component-props'],
-
               showTime: true,
             },
           };
         default:
           return {
-            ...defaultSchema,
+            ...schema,
             'x-component-props': {
               ...defaultSchema['x-component-props'],
             },
@@ -59,6 +62,7 @@ export const useChartFilter = () => {
   const { fieldSchema } = useActionContext();
   const action = fieldSchema?.['x-action'];
   const { getCollection, getInterface } = useCollectionManager();
+  const { fields: fieldProps } = useContext(ChartFilterContext);
 
   const getChartFilterFields = (collection: CollectionOptions) => {
     const name = collection.name;
@@ -70,6 +74,7 @@ export const useChartFilter = () => {
       ?.map((field) => {
         const fieldTitle = Schema.compile(field.uiSchema?.title || field.name, { t });
         const interfaceConfig = getInterface(field.interface);
+        const defaultOperator = interfaceConfig?.filterable?.operators?.[0]?.value;
         const targetCollection = getCollection(field.target);
         let schema = {
           type: 'string',
@@ -80,7 +85,10 @@ export const useChartFilter = () => {
           'x-component': 'CollectionField',
           'x-decorator': 'FormItem',
           'x-collection-field': `${name}.${field.name}`,
-          'x-component-props': {},
+          'x-component-props': {
+            ...field.uiSchema?.['x-component-props'],
+            filterOperator: defaultOperator,
+          },
         };
         if (isAssocField(field)) {
           schema = {
@@ -94,6 +102,7 @@ export const useChartFilter = () => {
             'x-collection-field': `${name}.${field.name}`,
             'x-component-props': {
               ...field.uiSchema?.['x-component-props'],
+              filterOperator: defaultOperator,
             },
           };
         }
@@ -133,9 +142,10 @@ export const useChartFilter = () => {
         if (!value) {
           return;
         }
+        const op = fieldProps[collection]?.[field]?.operator || '$eq';
         if (collection !== 'custom') {
           filter[collection] = filter[collection] || { $and: [] };
-          filter[collection].$and.push({ [field]: { $eq: value } });
+          filter[collection].$and.push({ [field]: { [op]: value } });
         } else {
           filter[collection] = filter[collection] || {};
           filter[collection][`$nFilter.${field}`] = value;
@@ -204,8 +214,11 @@ export const useChartFilter = () => {
 export const useFilterVariable = () => {
   const { t: trans } = useChartsTranslation();
   const t = useMemoizedFn(trans);
-  const { enabled, customFields } = useContext(ChartFilterContext);
-  const dateOptions = Object.entries(customFields)
+  const {
+    enabled,
+    fields: { custom = [] },
+  } = useContext(ChartFilterContext);
+  const dateOptions = Object.entries(custom)
     .filter(([_, value]) => value)
     .map(([name, { title }]) => {
       return {
