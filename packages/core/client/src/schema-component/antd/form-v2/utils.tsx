@@ -43,8 +43,12 @@ export const linkageMergeAction = async ({
         ...field.linkageProperty,
         required: requiredResult,
       };
-      field.required = last(field.linkageProperty?.required);
-      break;
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          field.required = last(field.linkageProperty.required);
+        });
+        resolve(void 0);
+      });
     case ActionType.InRequired:
       if (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables })) {
         requiredResult.push(false);
@@ -53,8 +57,12 @@ export const linkageMergeAction = async ({
         ...field.linkageProperty,
         required: requiredResult,
       };
-      field.required = last(field.linkageProperty?.required);
-      break;
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          field.required = last(field.linkageProperty.required);
+        });
+        resolve(void 0);
+      });
     case ActionType.Visible:
     case ActionType.None:
     case ActionType.Hidden:
@@ -71,7 +79,6 @@ export const linkageMergeAction = async ({
         });
         resolve(void 0);
       });
-      break;
     case ActionType.Editable:
     case ActionType.ReadOnly:
     case ActionType.ReadPretty:
