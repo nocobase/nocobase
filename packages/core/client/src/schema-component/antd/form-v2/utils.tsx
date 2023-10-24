@@ -89,8 +89,12 @@ export const linkageMergeAction = async ({
         ...field.linkageProperty,
         pattern: patternResult,
       };
-      field.pattern = last(field.linkageProperty.pattern);
-      break;
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          field.pattern = last(patternResult);
+        });
+        resolve(void 0);
+      });
     case ActionType.Value:
       if (
         isConditionEmpty(condition) ||
