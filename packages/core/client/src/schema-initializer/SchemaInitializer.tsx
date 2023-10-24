@@ -361,7 +361,7 @@ SchemaInitializer.Button = observer(
             const key = getKey(item.key || label, parentKey);
             return {
               role: 'button',
-              'aria-label': `menu-submenu-${item.key || label}`,
+              'aria-label': item.key || label,
               key,
               label,
               title: label,
@@ -458,7 +458,7 @@ SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
           const key = getKey(item.key || label, parentKey);
           return {
             role: 'button',
-            'aria-label': `menu-submenu-${key}`,
+            'aria-label': key,
             key,
             label,
             title: label,
@@ -474,7 +474,7 @@ SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
         const key = getKey(item.key || label, parentKey);
         return {
           role: 'button',
-          'aria-label': `menu-item-${key}`,
+          'aria-label': key,
           key,
           label,
           title: label,
@@ -491,7 +491,7 @@ SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
 
     const item = {
       role: 'button',
-      'aria-label': `menu-submenu-${info.key}`,
+      'aria-label': info.key,
       key: info.key,
       label: isString(children) ? compile(children) : children,
       icon: typeof icon === 'string' ? <Icon type={icon as string} /> : icon,
@@ -505,7 +505,7 @@ SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
   const label = isString(children) ? compile(children) : children;
   const item = {
     role: 'button',
-    'aria-label': `menu-item-${info.key}`,
+    'aria-label': info.key,
     key: info.key,
     label,
     title: label,

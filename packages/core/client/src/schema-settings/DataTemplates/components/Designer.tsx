@@ -151,7 +151,7 @@ function SelectItem(props) {
   const { title, options, value, onChange, ...others } = props;
 
   return (
-    <SchemaSettings.Item {...others}>
+    <SchemaSettings.Item title={title} {...others}>
       <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
         {title}
         <Select

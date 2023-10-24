@@ -227,7 +227,9 @@ function AssignedFieldValues() {
 
   return (
     <>
-      <SchemaSettings.Item onClick={() => setOpen(true)}>{title}</SchemaSettings.Item>
+      <SchemaSettings.Item title={title} onClick={() => setOpen(true)}>
+        {title}
+      </SchemaSettings.Item>
       <Modal
         width={'50%'}
         title={title}

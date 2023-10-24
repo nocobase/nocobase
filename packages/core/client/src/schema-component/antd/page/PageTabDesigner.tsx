@@ -177,6 +177,7 @@ export const PageTabDesigner = ({ schema }) => {
             />
             <SchemaSettings.Divider />
             <SchemaSettings.Item
+              title="Delete"
               eventKey="remove"
               onClick={() => {
                 modal.confirm({

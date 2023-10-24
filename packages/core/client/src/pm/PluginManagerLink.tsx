@@ -48,11 +48,13 @@ export const SettingsCenterDropdown = () => {
     return {
       items: [
         ...bookmarkTabs.map((tab) => ({
+          role: 'button',
           key: `/admin/settings/${tab.path}`,
           label: compile(tab.title),
         })),
         { type: 'divider' },
         {
+          role: 'button',
           key: '/admin/settings',
           label: t('All plugin settings'),
         },

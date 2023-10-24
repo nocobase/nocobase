@@ -391,7 +391,7 @@ FormItem.Designer = function Designer() {
         />
       )}
       {showModeSelect && (
-        <SchemaSettings.Item>
+        <SchemaSettings.Item title="Popup size">
           <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
             {t('Popup size')}
             <Select
