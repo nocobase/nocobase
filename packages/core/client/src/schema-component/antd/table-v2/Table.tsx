@@ -66,11 +66,13 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
               <RecordIndexProvider index={record.__index || index}>
                 <RecordProvider record={record}>
                   <ColumnFieldProvider schema={s} basePath={field.address.concat(record.__index || index)}>
-                    <RecursionField
-                      basePath={field.address.concat(record.__index || index)}
-                      schema={s}
-                      onlyRenderProperties
-                    />
+                    <span role="button">
+                      <RecursionField
+                        basePath={field.address.concat(record.__index || index)}
+                        schema={s}
+                        onlyRenderProperties
+                      />
+                    </span>
                   </ColumnFieldProvider>
                 </RecordProvider>
               </RecordIndexProvider>
@@ -280,7 +282,6 @@ export const Table: any = observer(
             return (
               <th
                 {...props}
-                role="button"
                 className={cls(
                   props.className,
                   css`
