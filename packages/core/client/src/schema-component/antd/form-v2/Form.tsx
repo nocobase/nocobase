@@ -119,14 +119,12 @@ const WithForm = (props: WithFormProps) => {
           if (h.targetFields?.length) {
             const fields = h.targetFields.join(',');
             onFieldInit(`*(${fields})`, (field: any, form) => {
-              setTimeout(() => {
-                field['initProperty'] = field?.['initProperty'] ?? {
-                  display: field.display,
-                  required: field.required,
-                  pattern: field.pattern,
-                  value: field.value || field.initialValue,
-                };
-              });
+              field['initProperty'] = field?.['initProperty'] ?? {
+                display: field.display,
+                required: field.required,
+                pattern: field.pattern,
+                value: field.value || field.initialValue,
+              };
             });
             onFieldChange(`*(${fields})`, ['value', 'required', 'pattern', 'display'], (field: any) => {
               field.linkageProperty = {
