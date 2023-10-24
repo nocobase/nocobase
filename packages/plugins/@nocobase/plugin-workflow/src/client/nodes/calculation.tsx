@@ -173,10 +173,10 @@ export default {
         return lang('Calculation result');
       }
       const result = parse(dataSource)({
-        $jobsMapByNodeId: (execution.jobs ?? []).reduce(
-          (map, job) => Object.assign(map, { [job.nodeId]: job.result }),
-          {},
-        ),
+        $jobsMapByNodeKey: (execution.jobs ?? []).reduce((map, job) => {
+          Object.assign(map, { [job.node.key]: job.result });
+          return map;
+        }, {}),
       });
 
       return (

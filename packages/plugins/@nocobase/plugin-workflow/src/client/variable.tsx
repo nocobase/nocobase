@@ -37,7 +37,7 @@ export const defaultFieldNames = { label: 'label', value: 'value', children: 'ch
 
 export const nodesOptions = {
   label: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
-  value: '$jobsMapByNodeId',
+  value: '$jobsMapByNodeKey',
   useOptions(options: OptionsOfUseVariableOptions) {
     const current = useNodeContext();
     const upstreams = useAvailableUpstreams(current);

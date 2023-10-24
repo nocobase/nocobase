@@ -199,7 +199,7 @@ export function RemoveButton() {
 
       const template = parse(node.config);
       const refs = template.parameters.filter(
-        ({ key }) => key.startsWith(`$jobsMapByNodeId.${current.id}.`) || key === `$jobsMapByNodeId.${current.id}`,
+        ({ key }) => key.startsWith(`$jobsMapByNodeKey.${current.key}.`) || key === `$jobsMapByNodeKey.${current.key}`,
       );
       return refs.length;
     });

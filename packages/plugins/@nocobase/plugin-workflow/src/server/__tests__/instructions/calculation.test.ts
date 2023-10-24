@@ -88,7 +88,7 @@ describe('workflow > instructions > calculation', () => {
       expect(job.result).toBe(2);
     });
 
-    it('$jobsMapByNodeId', async () => {
+    it('$jobsMapByNodeKey', async () => {
       const n1 = await workflow.createNode({
         type: 'echo',
       });
@@ -97,7 +97,7 @@ describe('workflow > instructions > calculation', () => {
         type: 'calculation',
         config: {
           engine: 'math.js',
-          expression: `{{$jobsMapByNodeId.${n1.id}.data.read}} + 1`,
+          expression: `{{$jobsMapByNodeKey.${n1.key}.data.read}} + 1`,
         },
         upstreamId: n1.id,
       });
@@ -231,7 +231,7 @@ describe('workflow > instructions > calculation', () => {
       const n2 = await workflow.createNode({
         type: 'calculation',
         config: {
-          dynamic: `{{$jobsMapByNodeId.${n1.id}}}`,
+          dynamic: `{{$jobsMapByNodeKey.${n1.key}}}`,
           scope: '{{$context.data}}',
         },
         upstreamId: n1.id,

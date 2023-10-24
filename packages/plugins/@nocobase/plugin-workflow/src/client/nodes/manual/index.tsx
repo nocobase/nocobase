@@ -143,7 +143,7 @@ export default {
               title: form.title ?? formKey,
               component: CollectionBlockInitializer,
               collection: form.collection,
-              dataSource: `{{$jobsMapByNodeId.${node.id}.${formKey}}}`,
+              dataSource: `{{$jobsMapByNodeKey.${node.key}.${formKey}}}`,
             } as SchemaInitializerItemOptions)
           : null;
       })

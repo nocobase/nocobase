@@ -17,8 +17,8 @@ function useFlowContextData(dataSource) {
   const data = useMemo(
     () => ({
       $context: execution?.context,
-      $jobsMapByNodeId: (execution?.jobs ?? []).reduce(
-        (map, job) => Object.assign(map, { [job.nodeId]: job.result }),
+      $jobsMapByNodeKey: (execution?.jobs ?? []).reduce(
+        (map, job) => Object.assign(map, { [job.node.key]: job.result }),
         {},
       ),
     }),

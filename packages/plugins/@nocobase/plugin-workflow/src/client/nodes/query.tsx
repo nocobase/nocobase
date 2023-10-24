@@ -128,7 +128,7 @@ export default {
       title: node.title ?? `#${node.id}`,
       component: CollectionBlockInitializer,
       collection: node.config.collection,
-      dataSource: `{{$jobsMapByNodeId.${node.id}}}`,
+      dataSource: `{{$jobsMapByNodeKey.${node.key}}}`,
     };
   },
   initializers: {},
