@@ -2,7 +2,7 @@ import { useForm } from '@formily/react';
 import React, { FC, useCallback, useMemo } from 'react';
 import { useActionContext, SchemaComponent } from '../../../schema-component';
 
-interface SchemaInitializerActionModalProps {
+export interface SchemaInitializerActionModalProps {
   title: string;
   schema: any;
   onCancel?: () => void;

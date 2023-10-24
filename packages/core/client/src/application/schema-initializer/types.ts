@@ -38,6 +38,7 @@ export interface SchemaInitializerOptions<P1 = ButtonProps, P2 = ListProps<any>>
 
   Component?: ComponentType<P1>;
   componentProps?: P1;
+  // Like the `style` parameter, it is used to modify the style of the `Component` component.
   componentStyle?: React.CSSProperties;
   style?: React.CSSProperties;
 

@@ -20,6 +20,7 @@ import { defineGlobalDeps } from './utils/globalDeps';
 import type { RequireJS } from './utils/requirejs';
 import { getRequireJs } from './utils/requirejs';
 import { SchemaInitializerV2, SchemaInitializerManager } from './schema-initializer';
+import * as schemaInitializerComponents from './schema-initializer/components';
 
 declare global {
   interface Window {
@@ -50,7 +51,10 @@ export class Application {
   public i18n: i18next;
   public ws: WebSocketClient;
   public apiClient: APIClient;
-  public components: Record<string, ComponentType> = { ...defaultAppComponents };
+  public components: Record<string, ComponentType> = {
+    ...defaultAppComponents,
+    ...schemaInitializerComponents,
+  };
   public pm: PluginManager;
   public devDynamicImport: DevDynamicImport;
   public requirejs: RequireJS;
