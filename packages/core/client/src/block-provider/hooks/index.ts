@@ -153,7 +153,7 @@ export const useCreateActionProps = () => {
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: form });
   const { getActiveFieldsName } = useFormActiveFields() || {};
-
+  const { t } = useTranslation();
   const action = actionField.componentProps.saveMode || 'create';
   const filterKeys = actionField.componentProps.filterKeys?.checked || [];
   return {
@@ -228,6 +228,8 @@ export const useCreateActionProps = () => {
         __parent?.service?.refresh?.();
         setVisible?.(false);
         if (!onSuccess?.successMessage) {
+          message.success(t('Saved successfully'));
+          await form.reset();
           return;
         }
         if (onSuccess?.manualClose) {
@@ -246,6 +248,7 @@ export const useCreateActionProps = () => {
           });
         } else {
           message.success(compile(onSuccess?.successMessage));
+          await form.reset();
           if (onSuccess?.redirecting && onSuccess?.redirectTo) {
             if (isURL(onSuccess.redirectTo)) {
               window.location.href = onSuccess.redirectTo;
