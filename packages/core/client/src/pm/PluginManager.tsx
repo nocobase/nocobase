@@ -75,14 +75,17 @@ const LocalPlugins = () => {
 
   const pluginList = useMemo(() => {
     let list = filterList[filterIndex]?.list || [];
-    if (debouncedSearchValue) {
+    const searchLowerCaseValue = debouncedSearchValue.toLocaleLowerCase().trim();
+    if (searchLowerCaseValue) {
       list = _.filter(
         list,
         (item) =>
-          item.name?.includes(debouncedSearchValue) ||
-          item.description?.includes(debouncedSearchValue) ||
-          item.displayName?.includes(debouncedSearchValue) ||
-          item.packageName?.includes(debouncedSearchValue),
+          String(item.displayName || '')
+            .toLocaleLowerCase()
+            .includes(searchLowerCaseValue) ||
+          String(item.description || '')
+            .toLocaleLowerCase()
+            .includes(searchLowerCaseValue),
       );
     }
     return list;
