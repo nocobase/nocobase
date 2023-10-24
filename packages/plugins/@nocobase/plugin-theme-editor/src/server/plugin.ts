@@ -36,7 +36,7 @@ export class ThemeEditorPlugin extends Plugin {
           name: 'isBuiltIn',
         },
         {
-          type: 'string',
+          type: 'uid',
           name: 'uid',
         },
       ],
