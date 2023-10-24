@@ -1,11 +1,11 @@
 import { ACL } from '@nocobase/acl';
 import { registerActions } from '@nocobase/actions';
-import { actions as authActions, AuthManager } from '@nocobase/auth';
+import { actions as authActions, AuthManager, AuthManagerOptions } from '@nocobase/auth';
 import { Cache, createCache, ICacheConfig } from '@nocobase/cache';
 import Database, { CollectionOptions, IDatabaseOptions } from '@nocobase/database';
 import { AppLoggerOptions, createAppLogger, Logger } from '@nocobase/logger';
 import { ResourceOptions, Resourcer } from '@nocobase/resourcer';
-import { applyMixins, AsyncEmitter, Toposort, ToposortOptions, measureExecutionTime } from '@nocobase/utils';
+import { applyMixins, AsyncEmitter, measureExecutionTime, Toposort, ToposortOptions } from '@nocobase/utils';
 import chalk from 'chalk';
 import { Command, CommandOptions, ParseOptions } from 'commander';
 import { IncomingMessage, Server, ServerResponse } from 'http';
@@ -49,6 +49,7 @@ export interface ApplicationOptions {
   logger?: AppLoggerOptions;
   pmSock?: string;
   name?: string;
+  authManager?: AuthManagerOptions;
 }
 
 export interface DefaultState extends KoaDefaultState {
@@ -722,6 +723,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._authManager = new AuthManager({
       authKey: 'X-Authenticator',
       default: 'basic',
+      ...(this.options.authManager || {}),
     });
 
     this.resource({
