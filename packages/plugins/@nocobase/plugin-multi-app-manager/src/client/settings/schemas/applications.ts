@@ -110,7 +110,7 @@ export const formSchema: ISchema = {
     name: {
       'x-component': 'CollectionField',
       'x-decorator': 'FormItem',
-      'x-visible': '{{ !!createOnly }}',
+      'x-disabled': '{{ !createOnly }}',
     },
     pinned: {
       'x-component': 'CollectionField',
