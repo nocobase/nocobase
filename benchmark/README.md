@@ -1,33 +1,29 @@
 ## koa-database
 
-http://localhost:13010/
-
 ```bash
 yarn pm2 start benchmark/koa-database/index.js --name koa-database
+wrk -t20 -c20 -d20s http://localhost:13010/
 ```
 
 ## koa-sequelize
 
-http://localhost:13020/
-
 ```bash
 yarn pm2 start benchmark/koa-sequelize/index.js --name koa-sequelize
+wrk -t20 -c20 -d20s http://localhost:13020/
 ```
 
 ## nocobase-server
 
-http://localhost:13030/api/users
-
 ```bash
 yarn pm2 start benchmark/nocobase-server/index.js --name nocobase-server
+wrk -t20 -c20 -d20s http://localhost:13030/api/users
 ```
 
 ## koa-resourcer
 
-http://localhost:13040/api/users
-
 ```bash
 yarn pm2 start benchmark/koa-resourcer/index.js --name koa-resourcer
+wrk -t20 -c20 -d20s http://localhost:13040/api/users
 ```
 
 ## nocobase-app
