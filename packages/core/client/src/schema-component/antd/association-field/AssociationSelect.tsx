@@ -117,7 +117,6 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
       </div>
     );
   };
-  console.log(value || innerValue, field.value, innerValue);
   return (
     <div key={fieldSchema.name}>
       <Space.Compact style={{ display: 'flex', lineHeight: '32px' }}>
