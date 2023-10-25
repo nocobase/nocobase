@@ -2,15 +2,20 @@ import { useFieldSchema } from '@formily/react';
 import { useCallback } from 'react';
 import { useBlockContext } from '../../../../block-provider';
 import { useCollection } from '../../../../collection-manager';
+import { useCompile } from '../../../hooks';
 
 /**
- * label = 'block-item' + x-component + [collectionName] + [blockName] + [x-collection-field] + [postfix]
+ * label = 'block-item' + x-component + [collectionName] + [blockName] + [x-collection-field] + [title] + [postfix]
  * @returns
  */
 export const useGetAriaLabelOfBlockItem = (name?: string) => {
   const fieldSchema = useFieldSchema();
+  const compile = useCompile();
   const component = fieldSchema['x-component'];
-  const collectionField = fieldSchema['x-collection-field'] ? `-${fieldSchema['x-collection-field']}` : '';
+  const collectionField = compile(fieldSchema['x-collection-field'])
+    ? `-${compile(fieldSchema['x-collection-field'])}`
+    : '';
+  const title = compile(fieldSchema['title']) ? `-${compile(fieldSchema['title'])}` : '';
   let { name: blockName } = useBlockContext() || {};
   let { name: collectionName } = useCollection();
   collectionName = collectionName ? `-${collectionName}` : '';
@@ -20,9 +25,9 @@ export const useGetAriaLabelOfBlockItem = (name?: string) => {
   const getAriaLabel = useCallback(
     (postfix?: string) => {
       postfix = postfix ? `-${postfix}` : '';
-      return `block-item-${component}${collectionName}${blockName}${collectionField}${postfix}`;
+      return `block-item-${component}${collectionName}${blockName}${collectionField}${title}${postfix}`;
     },
-    [blockName, collectionField, collectionName, component],
+    [component, collectionName, blockName, collectionField, title],
   );
 
   return {
