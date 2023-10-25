@@ -85,7 +85,7 @@ export default {
     ModeConfig,
     AssigneesSelect,
   },
-  useVariables({ id, title, config }, { types, fieldNames = defaultFieldNames }) {
+  useVariables({ key, title, config }, { types, fieldNames = defaultFieldNames }) {
     const compile = useCompile();
     const { getCollectionFields } = useCollectionManager();
     const formKeys = Object.keys(config.forms ?? {});
@@ -119,7 +119,7 @@ export default {
 
     return options.length
       ? {
-          [fieldNames.value]: `${id}`,
+          [fieldNames.value]: key,
           [fieldNames.label]: title,
           [fieldNames.children]: options,
         }

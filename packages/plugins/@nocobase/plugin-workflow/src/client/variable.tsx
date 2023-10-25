@@ -76,8 +76,8 @@ export const scopeOptions = {
       const subOptions = instruction.useScopeVariables?.(node, options);
       if (subOptions) {
         result.push({
-          key: node.id.toString(),
-          [fieldNames.value]: node.id.toString(),
+          key: node.key,
+          [fieldNames.value]: node.key,
           [fieldNames.label]: node.title ?? `#${node.id}`,
           [fieldNames.children]: subOptions,
         });
