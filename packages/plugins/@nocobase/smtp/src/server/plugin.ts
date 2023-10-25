@@ -133,7 +133,10 @@ export class SmtpRequestServer extends Plugin {
           // const token = ctx.request.body.token
 
           const { email, resetToken } = ctx.request.body;
+          
           const { origin } = ctx.request;
+          const port = process.env.APP_PORT_1
+          const linkOrigin = origin.replace(/:\d+$/, `:${port}`);
           
           const data = await ctx.db.getRepository('users').findOne({
             filter: {
@@ -142,7 +145,7 @@ export class SmtpRequestServer extends Plugin {
             projectFields: ['resetToken'],
           });
 
-          const link = `http://localhost:13000/resetPassword/${email}/${resetToken}`;
+          const link = `${linkOrigin}/resetPassword/${email}/${resetToken}`;
 
           const emailOption = {
             to: email,
@@ -155,8 +158,6 @@ export class SmtpRequestServer extends Plugin {
           // Respond to the request with a success message.
           ctx.body = {
             message: 'reset password link has been sent to your email.',
-            origin,
-            data,
           };
 
           await next();

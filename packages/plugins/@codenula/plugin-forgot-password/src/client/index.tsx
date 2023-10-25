@@ -12,12 +12,11 @@ import CodenulaImg from './assets/logo-codenula.png';
 import RightImg from './assets/image-login-right.png';
 import { verifyOtp } from '../utils/schema';
 import cloneDeep from 'lodash/cloneDeep';
-import { observable } from '@formily/reactive';
-import { Observer } from '@formily/react';
 
-const passwordForm: ISchema = {
+
+const forgotPasswordForm: ISchema = {
   type: 'object',
-  name: 'passwordForm',
+  name: 'forgotPasswordForm',
   'x-component': 'FormV2',
   properties: {
     email: {
@@ -41,16 +40,7 @@ const passwordForm: ISchema = {
         style: { backgroundColor: '#e7f0fe', color: 'blue', height: '50px', padding: '10px 19px' },
       },
     },
-    // password: {
-    //   type: 'string',
-    //   'x-component': 'Password',
-    //   required: true,
-    //   'x-decorator': 'FormItem',
-    //   'x-component-props': {
-    //     placeholder: '{{"Password"}}',
-    //     style: { backgroundColor: '#e7f0fe', color: 'blue', height: '50px', padding: '10px 19px' },
-    //   },
-    // },
+
     actions: {
       type: 'void',
       'x-component': 'div',
@@ -63,7 +53,7 @@ const passwordForm: ISchema = {
             htmlType: 'submit',
             block: true,
             type: 'primary',
-            useAction: `{{ useEmailSubmit }}`,
+            useAction: `{{ useForgotPasswordEmailSubmit }}`,
             style: { width: '100%', height: '44px' },
           },
         },
@@ -72,40 +62,10 @@ const passwordForm: ISchema = {
   },
 };
 
-const obs = observable({
-  isEmailSent: false,
-  isOtpVerified: false,
-});
-//generating token
-const generateToken = async (api, values) => {
-  console.log(values.email);
-  const response = await api.request({
-    url: `users:lostpassword`,
-    method: 'post',
-    data: values,
-  });
-  const receiveToken = await api.request({
-    url: `users:lostpassword`,
-  })
-  console.log(response);
-};
-//sending email
-const sendOtp = async (api, values) => {
-  await api
-    .request({
-      url: 'email:forgotPassword',
-      method: 'post',
-      data: values,
-    })
-    .then((res) => {
-      window.alert('otp has been sent to your mail!');
-      obs.isEmailSent = true;
-      console.log(res);
-    })
-    .catch((err) => console.log(err));
-};
+
+
 //sending otp to email
-const useEmailSubmit = () => {
+const useForgotPasswordEmailSubmit = () => {
   const form = useForm();
 
   const api = useAPIClient();
@@ -146,9 +106,9 @@ export const CustomForgotPasswordPage = () => {
     return useSignIn(name);
   };
 
-  console.log(obs.isEmailSent);
+  
   return (
-    <Observer>
+    
       <div>
         <section className="login-box">
           <div className="login-wrapper">
@@ -167,8 +127,8 @@ export const CustomForgotPasswordPage = () => {
                     </div>
                    
                       <SchemaComponent
-                        schema={passwordForm}
-                        scope={{ useBasicSignIn, allowSignUp, signupLink, forgotPasswordLink, useEmailSubmit }}
+                        schema={forgotPasswordForm}
+                        scope={{ useBasicSignIn, allowSignUp, signupLink, forgotPasswordLink, useForgotPasswordEmailSubmit }}
                       />
                    
 
@@ -241,9 +201,9 @@ export const CustomForgotPasswordPage = () => {
             </div>
           </div>
         </section>
-        {/* <SchemaComponent schema={passwordForm} scope={{ useBasicSignIn, allowSignUp, signupLink }} /> */}
+        {/* <SchemaComponent schema={forgotPasswordForm} scope={{ useBasicSignIn, allowSignUp, signupLink }} /> */}
       </div>
-    </Observer>
+   
   );
 };
 export class TestSigninClient extends Plugin {
