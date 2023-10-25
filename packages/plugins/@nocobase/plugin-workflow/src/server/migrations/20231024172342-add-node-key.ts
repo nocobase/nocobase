@@ -26,6 +26,8 @@ export default class extends Migration {
       return;
     }
     const { db } = this.context;
+    await db.getCollection('flow_nodes').sync();
+
     const NodeRepo = db.getRepository('flow_nodes');
     await db.sequelize.transaction(async (transaction) => {
       const nodes = await NodeRepo.find({
@@ -34,7 +36,7 @@ export default class extends Migration {
 
       const nodesMap = nodes.reduce((map, node) => {
         map[node.id] = node;
-        if (!node.key) {
+        if (!node.get('key')) {
           node.set('key', uid());
         }
         return map;
