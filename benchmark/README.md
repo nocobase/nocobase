@@ -28,11 +28,10 @@ wrk -t20 -c20 -d20s http://localhost:13040/api/users
 
 ## nocobase-app
 
-http://localhost:13000/api/users?token=
-
 ```bash
 yarn install
 yarn build
 yarn nocobase install
 yarn start
+wrk -t20 -c20 -d20s http://localhost:13000/api/users?token=
 ```
