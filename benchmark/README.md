@@ -22,6 +22,14 @@ http://localhost:13030/api/users
 yarn pm2 start benchmark/nocobase-server/index.js --name nocobase-server
 ```
 
+## koa-resourcer
+
+http://localhost:13040/api/users
+
+```bash
+yarn pm2 start benchmark/koa-resourcer/index.js --name koa-resourcer
+```
+
 ## nocobase-app
 
 http://localhost:13000/api/users?token=
