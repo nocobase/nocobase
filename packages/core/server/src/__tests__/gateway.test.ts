@@ -97,8 +97,7 @@ describe('gateway', () => {
 
       expect(data).toMatchObject({
         error: {
-          code: 'APP_INITIALIZED',
-          message: errors.APP_INITIALIZED.message({ app: main }),
+          code: 'APP_COMMANDING',
           status: 503,
           maintaining: true,
         },
