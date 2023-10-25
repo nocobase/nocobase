@@ -13,7 +13,7 @@ import { parse } from 'url';
 import xpipe from 'xpipe';
 import { AppSupervisor } from '../app-supervisor';
 import { ApplicationOptions } from '../application';
-import { PLUGIN_STATICS_PATH, getPackageDirByExposeUrl, getPackageNameByExposeUrl } from '../plugin-manager';
+import { getPackageDirByExposeUrl, getPackageNameByExposeUrl, PLUGIN_STATICS_PATH } from '../plugin-manager';
 import { applyErrorWithArgs, getErrorWithCode } from './errors';
 import { IPCSocketClient } from './ipc-socket-client';
 import { IPCSocketServer } from './ipc-socket-server';
@@ -188,7 +188,7 @@ export class Gateway extends EventEmitter {
       void AppSupervisor.getInstance().bootStrapApp(handleApp);
     }
 
-    const appStatus = AppSupervisor.getInstance().getAppStatus(handleApp, 'initializing');
+    let appStatus = AppSupervisor.getInstance().getAppStatus(handleApp, 'initializing');
 
     if (appStatus === 'not_found') {
       this.responseErrorWithCode('APP_NOT_FOUND', res, { appName: handleApp });
@@ -198,6 +198,12 @@ export class Gateway extends EventEmitter {
     if (appStatus === 'initializing') {
       this.responseErrorWithCode('APP_INITIALIZING', res, { appName: handleApp });
       return;
+    }
+
+    if (appStatus === 'initialized') {
+      const appInstance = await AppSupervisor.getInstance().getApp(handleApp);
+      appInstance.runAsCLI(['start'], { from: 'user' });
+      appStatus = AppSupervisor.getInstance().getAppStatus(handleApp);
     }
 
     const app = await AppSupervisor.getInstance().getApp(handleApp);

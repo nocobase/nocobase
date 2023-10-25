@@ -194,6 +194,8 @@ export class PluginMultiAppManager extends Plugin {
       appName: string;
       options: any;
     }) {
+      const loadButNotStart = options?.upgrading;
+
       const name = appName;
       if (appSupervisor.hasApp(name)) {
         return;
@@ -224,7 +226,7 @@ export class PluginMultiAppManager extends Plugin {
       });
 
       // must skip load on upgrade
-      if (!options?.upgrading) {
+      if (!loadButNotStart) {
         await subApp.runCommand('start');
       }
     }
@@ -285,7 +287,11 @@ export class PluginMultiAppManager extends Plugin {
         for (const subAppInstance of subApps) {
           promises.push(
             (async () => {
-              await AppSupervisor.getInstance().getApp(subAppInstance.name);
+              if (!appSupervisor.hasApp(subAppInstance.name)) {
+                await AppSupervisor.getInstance().getApp(subAppInstance.name);
+              } else if (appSupervisor.getAppStatus(subAppInstance.name) === 'initialized') {
+                (await AppSupervisor.getInstance().getApp(subAppInstance.name)).runCommand('start');
+              }
             })(),
           );
         }

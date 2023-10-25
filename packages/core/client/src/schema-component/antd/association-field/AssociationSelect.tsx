@@ -61,17 +61,15 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
   useEffect(() => {
     const id = uid();
     form.addEffects(id, () => {
-      linkageFields?.forEach((v) => {
-        if (v) {
-          //支持深层次子表单
-          onFieldChange('*', (fieldPath: any) => {
-            if (fieldPath.props.name === v && field.value) {
-              props.onChange(null);
-              setInnerValue(null);
-            }
-          });
-        }
-      });
+      if (linkageFields?.length > 0) {
+        //支持深层次子表单
+        onFieldChange('*', (fieldPath: any) => {
+          if (linkageFields.includes(fieldPath.props.name) && field.value) {
+            props.onChange(null);
+            setInnerValue(null);
+          }
+        });
+      }
     });
 
     return () => {
