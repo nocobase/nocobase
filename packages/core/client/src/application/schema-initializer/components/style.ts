@@ -1,17 +1,41 @@
 import { createStyles } from 'antd-style';
+import { genStyleHook } from '../../../schema-component/antd/__builtins__';
 
 export const useStyles = createStyles(({ token }) => {
   return {
-    nbMenuItemGroup: {
-      maxHeight: '50vh',
-      overflowY: 'auto',
+    nbGroupTitle: {
+      color: token.colorTextDescription,
+      height: token.controlHeightLG,
+      lineHeight: `${token.controlHeightLG}px`,
     },
+    nbMenuItem: {
+      margin: token.marginXXS,
+      paddingLeft: token.padding,
+      paddingRight: token.paddingSM,
+      height: token.controlHeightLG,
+      lineHeight: `${token.controlHeightLG}px`,
+      color: token.colorText,
+      cursor: 'pointer',
 
-    nbMenuItemSubMenu: {
-      maxHeight: '50vh',
-      overflowY: 'auto',
-      boxShadow: token.boxShadowSecondary,
-      borderRadius: token.borderRadiusLG,
+      '&:hover': {
+        borderRadius: token.borderRadiusLG,
+        backgroundColor: token.colorBgTextHover,
+      },
+    },
+    nbMenuItemContent: {
+      marginLeft: token.marginXS,
+    },
+  };
+});
+
+export const useGlobalStyles = genStyleHook('nb-schema-initializer', (token) => {
+  const { componentCls } = token;
+  return {
+    [componentCls]: {
+      '.ant-menu': {
+        background: 'transparent',
+        borderInlineEnd: 'none !important',
+      },
     },
   };
 });

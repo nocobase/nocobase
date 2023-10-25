@@ -1,5 +1,5 @@
 import { ISchema } from '@formily/json-schema';
-import { ButtonProps, ListProps, DropDownProps } from 'antd';
+import { ButtonProps, ListProps, DropDownProps, PopoverProps } from 'antd';
 import { ComponentType, ReactNode } from 'react';
 
 export type InsertType = (s: ISchema) => void;
@@ -48,7 +48,7 @@ export interface SchemaInitializerOptions<P1 = ButtonProps, P2 = ListProps<any>>
   itemsComponentStyle?: React.CSSProperties;
 
   noDropdown?: boolean;
-  dropdownProps?: DropDownProps;
+  popoverProps?: PopoverProps;
   designable?: boolean;
   wrap?: (s: ISchema) => ISchema;
   insert?: InsertType;

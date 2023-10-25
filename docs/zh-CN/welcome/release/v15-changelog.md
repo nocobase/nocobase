@@ -57,7 +57,7 @@ const blockInitializers = new SchemaInitializer({
 - 新增 `itemsComponentProps`、`itemsComponentStyle` 用于配置 `ItemsComponent` 的属性和样式。
 - 新增 `noDropdown` 参数，用于配置是否显示下拉菜单。
 - 新增 `useInsert` 参数，用于当 `insert` 函数需要使用 hooks 时。
-- 更改 将 `dropdown` 参数改为了 `dropdownProps`，用于配置下拉菜单的属性。
+- 更改 将 `dropdown` 参数改为了 `popoverProps`，使用 `Popover` 代替了 `Dropdown`。
 - items 参数变更
   - 新增 `useChildren` 函数，用于动态控制子项。
   - 更改 `visible` 参数改为了 `useVisible` 函数，用于动态控制是否显示。

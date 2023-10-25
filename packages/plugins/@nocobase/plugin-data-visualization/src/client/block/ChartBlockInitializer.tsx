@@ -48,7 +48,7 @@ const ItemsComponent = () => {
 export const chartInitializers = new SchemaInitializerV2({
   name: 'ChartInitializers',
   icon: 'PlusOutlined',
-  dropdownProps: {
+  popoverProps: {
     placement: 'bottomLeft',
   },
   title: '{{t("Add chart")}}',
