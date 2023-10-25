@@ -1,49 +1,30 @@
-import { ISchema, useField, useFieldSchema } from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import React from 'react';
-import { useTranslation } from 'react-i18next';
-import { useKanbanBlockContext } from '../../../block-provider';
+import { useFormBlockContext, useKanbanBlockContext } from '../../../block-provider';
 import { useCollection } from '../../../collection-manager';
-import { useCollectionFilterOptions } from '../../../collection-manager/action-hooks';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
 import { FixedBlockDesignerItem } from '../page';
-import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
 
 export const KanbanDesigner = () => {
   const { name, title } = useCollection();
   const field = useField();
   const fieldSchema = useFieldSchema();
-  const dataSource = useCollectionFilterOptions(name);
+  const { form } = useFormBlockContext();
   const { service } = useKanbanBlockContext();
-  const { t } = useTranslation();
   const { dn } = useDesignable();
-  const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
   const template = useSchemaTemplate();
 
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettings.BlockTitleItem />
-      <SchemaSettings.ModalItem
-        title={t('Set the data scope')}
-        schema={
-          {
-            type: 'object',
-            title: t('Set the data scope'),
-            properties: {
-              filter: {
-                default: defaultFilter,
-                enum: dataSource,
-                'x-component': 'Filter',
-                'x-component-props': {
-                  dynamicComponent: (props) => FilterDynamicComponent({ ...props }),
-                },
-              },
-            },
-          } as ISchema
-        }
+      <SchemaSettings.DataScope
+        collectionName={name}
+        defaultFilter={fieldSchema?.['x-decorator-props']?.params?.filter || {}}
+        form={form}
         onSubmit={({ filter }) => {
           filter = removeNullCondition(filter);
           const params = field.decoratorProps.params || {};

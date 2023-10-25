@@ -29,6 +29,9 @@
     "test:e2e:codegen": "tsx ./scripts/codegen.setup.ts",
     "test:e2e:server": "tsx ./scripts/nocobase.setup.ts",
     "tc": "yarn test:client",
+    "te": "yarn test:e2e",
+    "tec": "yarn test:e2e:codegen",
+    "tes": "yarn test:e2e:server",
     "doc": "nocobase doc",
     "postinstall": "nocobase postinstall",
     "lint": "eslint .",
@@ -94,7 +97,8 @@
     "ts-jest": "^29.1.1",
     "typescript": "5.1.3",
     "vite": "^4.4.9",
-    "vitest": "^0.34.3"
+    "vitest": "^0.34.3",
+    "axios": "^0.26.1"
   },
   "volta": {
     "node": "18.14.2",

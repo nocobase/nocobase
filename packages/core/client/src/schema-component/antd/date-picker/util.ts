@@ -6,7 +6,9 @@ const toStringByPicker = (value, picker, timezone: 'gmt' | 'local') => {
   if (!dayjs.isDayjs(value)) return value;
   if (timezone === 'local') {
     const offset = new Date().getTimezoneOffset();
-    return dayjs(toStringByPicker(value, picker, 'gmt')).add(offset, 'minutes').toISOString();
+    return dayjs(toStringByPicker(value, picker, 'gmt'))
+      .add(offset, 'minutes')
+      .toISOString();
   }
 
   if (picker === 'year') {
@@ -136,18 +138,24 @@ const getEnd = (offset: any, unit: any) => {
 
 export const getDateRanges = () => {
   return {
+    now: () => dayjs(),
     today: () => [getStart(0, 'day'), getEnd(0, 'day')],
-    lastWeek: () => [getStart(-1, 'isoWeek'), getEnd(-1, 'isoWeek')],
+    yesterday: () => [getStart(-1, 'day'), getEnd(-1, 'day')],
+    tomorrow: () => [getStart(1, 'day'), getEnd(1, 'day')],
     thisWeek: () => [getStart(0, 'isoWeek'), getEnd(0, 'isoWeek')],
+    lastWeek: () => [getStart(-1, 'isoWeek'), getEnd(-1, 'isoWeek')],
     nextWeek: () => [getStart(1, 'isoWeek'), getEnd(1, 'isoWeek')],
-    lastMonth: () => [getStart(-1, 'month'), getEnd(-1, 'month')],
+    thisIsoWeek: () => [getStart(0, 'isoWeek'), getEnd(0, 'isoWeek')],
+    lastIsoWeek: () => [getStart(-1, 'isoWeek'), getEnd(-1, 'isoWeek')],
+    nextIsoWeek: () => [getStart(1, 'isoWeek'), getEnd(1, 'isoWeek')],
     thisMonth: () => [getStart(0, 'month'), getEnd(0, 'month')],
+    lastMonth: () => [getStart(-1, 'month'), getEnd(-1, 'month')],
     nextMonth: () => [getStart(1, 'month'), getEnd(1, 'month')],
-    lastQuarter: () => [getStart(-1, 'quarter'), getEnd(-1, 'quarter')],
     thisQuarter: () => [getStart(0, 'quarter'), getEnd(0, 'quarter')],
+    lastQuarter: () => [getStart(-1, 'quarter'), getEnd(-1, 'quarter')],
     nextQuarter: () => [getStart(1, 'quarter'), getEnd(1, 'quarter')],
-    lastYear: () => [getStart(-1, 'year'), getEnd(-1, 'year')],
     thisYear: () => [getStart(0, 'year'), getEnd(0, 'year')],
+    lastYear: () => [getStart(-1, 'year'), getEnd(-1, 'year')],
     nextYear: () => [getStart(1, 'year'), getEnd(1, 'year')],
     last7Days: () => [getStart(-6, 'days'), getEnd(0, 'days')],
     next7Days: () => [getStart(1, 'day'), getEnd(7, 'days')],

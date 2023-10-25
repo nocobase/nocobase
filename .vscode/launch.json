@@ -30,7 +30,7 @@
       "name": "Debug Client Tests",
       "runtimeExecutable": "yarn",
       "runtimeArgs": ["run", "test:client", "${file}"],
-      "skipFiles": ["<node_internals>/**"],
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**", "**/dist/**", "**/lib/**", "**/es/**"],
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
       "windows": {

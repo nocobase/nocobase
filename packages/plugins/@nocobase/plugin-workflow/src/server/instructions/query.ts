@@ -2,8 +2,8 @@ import { DEFAULT_PAGE, DEFAULT_PER_PAGE, utils } from '@nocobase/actions';
 
 import Processor from '../Processor';
 import { JOB_STATUS } from '../constants';
-import { toJSON } from '../utils';
 import type { FlowNodeModel } from '../types';
+import { toJSON } from '../utils';
 
 export default {
   async run(node: FlowNodeModel, input, processor: Processor) {

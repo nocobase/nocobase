@@ -1,13 +1,15 @@
 import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
+import { isPortalInBody } from '@nocobase/utils/client';
 import { App, Button, Popover } from 'antd';
 import classnames from 'classnames';
 import lodash from 'lodash';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useActionContext } from '../..';
 import { useDesignable } from '../../';
 import { Icon } from '../../../icon';
 import { useRecord } from '../../../record-provider';
+import { useLocalVariables, useVariables } from '../../../variables';
 import { SortableItem } from '../../common';
 import { useCompile, useComponent, useDesigner } from '../../hooks';
 import { useProps } from '../../hooks/useProps';
@@ -51,29 +53,74 @@ export const Action: ComposedAction = observer(
     const values = useRecord();
     const designerProps = fieldSchema['x-designer-props'];
     const openMode = fieldSchema?.['x-component-props']?.['openMode'];
-    const disabled = form.disabled || field.disabled || props.disabled;
+    const disabled = form.disabled || field.disabled || field.data?.disabled || props.disabled;
     const openSize = fieldSchema?.['x-component-props']?.['openSize'];
     const linkageRules = fieldSchema?.['x-linkage-rules'] || [];
     const { designable } = useDesignable();
     const tarComponent = useComponent(component) || component;
     const { modal } = App.useApp();
+    const variables = useVariables();
+    const localVariables = useLocalVariables({ currentForm: { values } as any });
+
     let actionTitle = title || compile(fieldSchema.title);
     actionTitle = lodash.isString(actionTitle) ? t(actionTitle) : actionTitle;
     useEffect(() => {
-      field.linkageProperty = {};
       linkageRules
         .filter((k) => !k.disabled)
         .forEach((v) => {
-          return v.actions?.map((h) => {
-            linkageAction(h.operator, field, v.condition, form.initialValues);
+          v.actions?.forEach((h) => {
+            linkageAction({
+              operator: h.operator,
+              field,
+              condition: v.condition,
+              values,
+              variables,
+              localVariables,
+            });
           });
         });
-    }, [linkageRules, values, designable]);
+    }, [JSON.stringify(linkageRules), values, designable, field]);
+
+    const handleButtonClick = useCallback(
+      (e: React.MouseEvent) => {
+        if (isPortalInBody(e.target as Element)) {
+          return;
+        }
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (!disabled) {
+          const onOk = () => {
+            onClick?.(e);
+            setVisible(true);
+            run();
+          };
+          if (confirm) {
+            modal.confirm({
+              ...confirm,
+              onOk,
+            });
+          } else {
+            onOk();
+          }
+        }
+      },
+      [confirm, disabled, modal, onClick, run],
+    );
+
+    const buttonStyle = useMemo(() => {
+      return {
+        ...others.style,
+        opacity: designable && field?.data?.hidden && 0.1,
+      };
+    }, [designable, field?.data?.hidden, others.style]);
 
     const renderButton = () => {
       if (!designable && field?.data?.hidden) {
         return null;
       }
+
       return (
         <SortableItem
           data-testid={`${fieldSchema['x-action'] || fieldSchema.name}-action`}
@@ -81,31 +128,10 @@ export const Action: ComposedAction = observer(
           loading={field?.data?.loading}
           icon={icon ? <Icon type={icon} /> : null}
           disabled={disabled}
-          style={{
-            ...others.style,
-            opacity: designable && field?.data?.hidden && 0.1,
-          }}
-          onClick={(e: React.MouseEvent) => {
-            if (!disabled) {
-              e.preventDefault();
-              e.stopPropagation();
-              const onOk = () => {
-                onClick?.(e);
-                setVisible(true);
-                run();
-              };
-              if (confirm) {
-                modal.confirm({
-                  ...confirm,
-                  onOk,
-                });
-              } else {
-                onOk();
-              }
-            }
-          }}
+          style={buttonStyle}
+          onClick={handleButtonClick}
           component={tarComponent || Button}
-          className={classnames(componentCls, hashId, className)}
+          className={classnames(componentCls, hashId, className, 'nb-action')}
           type={props.type === 'danger' ? undefined : props.type}
         >
           {actionTitle}

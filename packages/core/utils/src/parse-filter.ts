@@ -1,3 +1,4 @@
+import _ from 'lodash';
 import set from 'lodash/set';
 import { offsetFromString } from './date';
 import { dayjs } from './dayjs';
@@ -24,32 +25,34 @@ export function flatten(target, opts?: any) {
 
   function step(object, prev?: any, currentDepth?: any) {
     currentDepth = currentDepth || 1;
-    Object.keys(object).forEach(function (key) {
-      const value = object[key];
-      const isarray = opts.safe && Array.isArray(value);
-      const type = Object.prototype.toString.call(value);
-      const isbuffer = isBuffer(value);
-      const isobject = type === '[object Object]' || type === '[object Array]';
+    if (_.isObjectLike(object)) {
+      Object.keys(object).forEach(function (key) {
+        const value = object[key];
+        const isarray = opts.safe && Array.isArray(value);
+        const type = Object.prototype.toString.call(value);
+        const isbuffer = isBuffer(value);
+        const isobject = type === '[object Object]' || type === '[object Array]';
 
-      const newKey = prev ? prev + delimiter + transformKey(key) : transformKey(key);
+        const newKey = prev ? prev + delimiter + transformKey(key) : transformKey(key);
 
-      if (opts.breakOn?.({ key, value, path: newKey })) {
+        if (opts.breakOn?.({ key, value, path: newKey })) {
+          output[newKey] = transformValue(value, newKey);
+          return;
+        }
+
+        if (
+          !isarray &&
+          !isbuffer &&
+          isobject &&
+          Object.keys(value).length &&
+          (!opts.maxDepth || currentDepth < maxDepth)
+        ) {
+          return step(value, newKey, currentDepth + 1);
+        }
+
         output[newKey] = transformValue(value, newKey);
-        return;
-      }
-
-      if (
-        !isarray &&
-        !isbuffer &&
-        isobject &&
-        Object.keys(value).length &&
-        (!opts.maxDepth || currentDepth < maxDepth)
-      ) {
-        return step(value, newKey, currentDepth + 1);
-      }
-
-      output[newKey] = transformValue(value, newKey);
-    });
+      });
+    }
   }
 
   step(target);
@@ -57,7 +60,7 @@ export function flatten(target, opts?: any) {
   return output;
 }
 
-function unflatten(obj, opts: any = {}) {
+export function unflatten(obj, opts: any = {}) {
   const parsed = {};
   const transformValue = opts.transformValue || keyIdentity;
   for (const key of Object.keys(obj)) {
@@ -104,7 +107,7 @@ const dateValueWrapper = (value: any, timezone?: string) => {
   }
 
   if (typeof value === 'string') {
-    if (!timezone || /(\+|\-)\d\d\:\d\d$/.test(value)) {
+    if (!timezone || /(\+|-)\d\d:\d\d$/.test(value)) {
       return value;
     }
     return value + timezone;

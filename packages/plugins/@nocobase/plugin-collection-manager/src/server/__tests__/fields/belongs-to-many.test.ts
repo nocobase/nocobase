@@ -34,6 +34,44 @@ describe('belongsToMany', () => {
     await app.destroy();
   });
 
+  it('should throw error when through table foreign keys are same name', async () => {
+    await Collection.repository.create({
+      values: {
+        name: 'A',
+      },
+      context: {},
+    });
+
+    await Collection.repository.create({
+      values: {
+        name: 'B',
+      },
+      context: {},
+    });
+
+    let error;
+
+    try {
+      await Field.repository.create({
+        values: {
+          name: 'bs',
+          type: 'belongsToMany',
+          collectionName: 'A',
+          target: 'B',
+          sourceKey: 'id',
+          targetKey: 'id',
+          foreignKey: 'a_id',
+          otherKey: 'a_id',
+        },
+        context: {},
+      });
+    } catch (e) {
+      error = e;
+    }
+
+    expect(error).toBeDefined();
+  });
+
   it('should define belongs to many when change alias name', async () => {
     await Collection.repository.create({
       values: {

@@ -2,26 +2,21 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  useCollection,
-  useCollectionFilterOptions,
-  useCollectionManager,
-  useSortFields,
-} from '../../../collection-manager';
+import { useFormBlockContext } from '../../../block-provider';
+import { useCollection, useCollectionManager, useSortFields } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useCompile, useDesignable } from '../../hooks';
 
 export const AssociationFilterItemDesigner = (props) => {
   const fieldSchema = useFieldSchema();
+  const { form } = useFormBlockContext();
 
   const field = useField();
   const { t } = useTranslation();
   const { getCollectionJoinField } = useCollectionManager();
   const { getField } = useCollection();
 
-  const collectionField = getField(fieldSchema['name']!) || getCollectionJoinField(fieldSchema['x-collection-field']);
-  const filterEnum = collectionField?.target ? useCollectionFilterOptions(collectionField?.target) : [];
-  const defaultFilter = fieldSchema?.['x-component-props']?.params?.filter || {};
+  const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
 
   const { getCollectionFields } = useCollectionManager();
   const compile = useCompile();
@@ -30,9 +25,6 @@ export const AssociationFilterItemDesigner = (props) => {
   const targetFields = collectionField?.target ? getCollectionFields(collectionField?.target) : [];
 
   const options = targetFields
-    // .filter(
-    //   (field) => field?.interface && ['id', 'input', 'phone', 'email', 'integer', 'number'].includes(field?.interface),
-    // )
     .filter((field) => !field?.target && field.type !== 'boolean')
     .map((field) => ({
       value: field?.name,
@@ -117,22 +109,10 @@ export const AssociationFilterItemDesigner = (props) => {
           dn.refresh();
         }}
       />
-      <SchemaSettings.ModalItem
-        title={t('Set the data scope')}
-        schema={
-          {
-            type: 'object',
-            title: t('Set the data scope'),
-            properties: {
-              filter: {
-                default: defaultFilter,
-                enum: filterEnum,
-                'x-component': 'Filter',
-                'x-component-props': {},
-              },
-            },
-          } as ISchema
-        }
+      <SchemaSettings.DataScope
+        collectionName={collectionField?.target}
+        defaultFilter={fieldSchema?.['x-component-props']?.params?.filter || {}}
+        form={form}
         onSubmit={({ filter }) => {
           _.set(field.componentProps, 'params', {
             ...field.componentProps?.params,
