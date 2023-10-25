@@ -1,7 +1,6 @@
 import React from 'react';
 import { ComponentType, useCallback } from 'react';
-import { Card, Dropdown } from 'antd';
-import classNames from 'classnames';
+import { Popover } from 'antd';
 import { ISchema, observer } from '@formily/react';
 
 import { useDesignable } from '../../../schema-component';
@@ -48,15 +47,13 @@ export function withInitializer<T>(C: ComponentType<T>, cProps: T) {
         {noDropdown ? (
           React.createElement(C, cProps)
         ) : (
-          <Dropdown
-            className={classNames('nb-schema-initializer-button')}
-            openClassName={`nb-schema-initializer-button-open`}
-            arrow
-            {...dropdownProps}
-            dropdownRender={() => <Card>{children}</Card>}
+          <Popover
+            content={
+              <div style={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto', overflowX: 'hidden' }}>{children}</div>
+            }
           >
             <span>{React.createElement(C, cProps)}</span>
-          </Dropdown>
+          </Popover>
         )}
       </SchemaInitializerV2Context.Provider>
     );

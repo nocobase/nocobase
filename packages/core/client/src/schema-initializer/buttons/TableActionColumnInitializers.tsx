@@ -15,6 +15,11 @@ export const Resizable = (props) => {
   return (
     <SchemaInitializerActionModal
       title={t('Column width')}
+      component={React.forwardRef<HTMLDivElement>((props, ref) => (
+        <div {...props} ref={ref}>
+          {t('Column width')}
+        </div>
+      ))}
       schema={
         {
           type: 'object',

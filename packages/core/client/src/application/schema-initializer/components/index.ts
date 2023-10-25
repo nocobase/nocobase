@@ -6,3 +6,4 @@ export * from './SchemaInitializerChildren';
 export * from './SchemaInitializerDivider';
 export * from './SchemaInitializerItems';
 export * from './SchemaInitializerActionModal';
+export * from './SchemaInitializerSelect';

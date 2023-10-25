@@ -107,10 +107,7 @@ export const kanbanCardInitializers = new SchemaInitializerV2({
       divider: true,
       title: '{{t("Display association fields")}}',
       name: 'display-association-fields',
-      useVisible() {
-        const associationFields = useAssociatedFormItemInitializerFields({ readPretty: true, block: 'Kanban' });
-        return associationFields.length > 0;
-      },
+      checkChildrenLength: true,
       useChildren() {
         const associationFields = useAssociatedFormItemInitializerFields({ readPretty: true, block: 'Kanban' });
         return associationFields;

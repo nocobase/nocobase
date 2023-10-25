@@ -1,6 +1,6 @@
 import Icon, { TableOutlined } from '@ant-design/icons';
 import { Menu } from 'antd';
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useSchemaInitializerV2, useSchemaInitializerMenuItems } from '../../application';
 import { useCompile } from '../../schema-component';
 import { useSchemaTemplateManager } from '../../schema-templates';
@@ -38,7 +38,8 @@ export const DataBlockInitializer = (props) => {
   );
   const defaultItems = useCollectionDataSourceItemsV2(componentType);
   const menuChildren = useMemo(() => items || defaultItems, [items, defaultItems]);
-  const menuItems = useSchemaInitializerMenuItems(menuChildren, name, onClick);
+  const childItems = useSchemaInitializerMenuItems(menuChildren, name, onClick);
+  const [showChildren, setShowChildren] = useState(false);
   const compiledMenuItems = useMemo(
     () => [
       {
@@ -49,10 +50,16 @@ export const DataBlockInitializer = (props) => {
           if (info.key !== name) return;
           onClick({ ...info, item: props });
         },
-        children: menuItems,
+        onMouseEnter() {
+          setShowChildren(true);
+        },
+        onMouseLeave() {
+          setShowChildren(false);
+        },
+        children: showChildren ? childItems : [],
       },
     ],
-    [compile, icon, menuItems, name, onClick, props, title],
+    [compile, icon, childItems, showChildren, name, onClick, props, title],
   );
   return <Menu items={compiledMenuItems} />;
 };

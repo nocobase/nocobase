@@ -8,9 +8,10 @@ export interface SchemaInitializerActionModalProps {
   onCancel?: () => void;
   onSubmit?: (values: any) => void;
   buttonText?: any;
+  component?: any;
 }
 export const SchemaInitializerActionModal: FC<SchemaInitializerActionModalProps> = (props) => {
-  const { title, schema, buttonText, onCancel, onSubmit } = props;
+  const { title, schema, buttonText, component, onCancel, onSubmit } = props;
 
   const useCancelAction = useCallback(() => {
     // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -47,15 +48,19 @@ export const SchemaInitializerActionModal: FC<SchemaInitializerActionModalProps>
         action1: {
           type: 'void',
           'x-component': 'Action',
-          'x-component-props': {
-            icon: 'PlusOutlined',
-            style: {
-              borderColor: 'var(--colorSettings)',
-              color: 'var(--colorSettings)',
-            },
-            title: buttonText,
-            type: 'dashed',
-          },
+          'x-component-props': component
+            ? {
+                component,
+              }
+            : {
+                icon: 'PlusOutlined',
+                style: {
+                  borderColor: 'var(--colorSettings)',
+                  color: 'var(--colorSettings)',
+                },
+                title: buttonText,
+                type: 'dashed',
+              },
           properties: {
             drawer1: {
               'x-decorator': 'Form',

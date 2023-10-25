@@ -3,7 +3,7 @@ import { Select } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../schema-component';
-import { SchemaSettings } from '../schema-settings';
+import { SchemaInitializerItem, SchemaInitializerSelect } from '../application';
 
 interface Options {
   openMode?: boolean;
@@ -20,7 +20,7 @@ export const OpenModeSchemaItems: React.FC<Options> = (options) => {
   return (
     <>
       {openMode ? (
-        <SchemaSettings.SelectItem
+        <SchemaInitializerSelect
           title={t('Open mode')}
           options={[
             { label: t('Drawer'), value: 'drawer' },
@@ -45,7 +45,7 @@ export const OpenModeSchemaItems: React.FC<Options> = (options) => {
         />
       ) : null}
       {openSize && ['modal', 'drawer'].includes(openModeValue) ? (
-        <SchemaSettings.Item>
+        <SchemaInitializerItem>
           <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
             {t('Popup size')}
             <Select
@@ -76,7 +76,7 @@ export const OpenModeSchemaItems: React.FC<Options> = (options) => {
               style={{ textAlign: 'right', minWidth: 100 }}
             />
           </div>
-        </SchemaSettings.Item>
+        </SchemaInitializerItem>
       ) : null}
     </>
   );

@@ -19,7 +19,7 @@ const SchemaInitializerChild: FC<UseInitializerChildrenResult> = (props) => {
   const { children, useChildren = useChildrenDefault, checkChildrenLength, name, Component, ...others } = props;
   const useChildrenRes = useChildren();
   const componentChildren = useChildrenRes || children;
-  if (checkChildrenLength && (!Array.isArray(componentChildren) || componentChildren.length === 0)) {
+  if (checkChildrenLength && Array.isArray(componentChildren) && componentChildren.length === 0) {
     return null;
   }
   return React.createElement(Component, { key: name, name, ...others }, useChildrenRes || children);

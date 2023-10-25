@@ -12,7 +12,7 @@ export interface SchemaInitializerItemProps {
   icon?: React.ReactNode;
   title?: React.ReactNode;
   items?: any[];
-  onClick: (args?: any) => any;
+  onClick?: (args?: any) => any;
 }
 
 export const SchemaInitializerItem: FC<SchemaInitializerItemProps> = (props) => {
@@ -28,7 +28,7 @@ export const SchemaInitializerItem: FC<SchemaInitializerItemProps> = (props) => 
             label: compile(title),
             onClick: (info) => {
               if (info.key !== name) return;
-              onClick({ ...info, item: props });
+              onClick?.({ ...info, item: props });
             },
             icon: typeof icon === 'string' ? <Icon type={icon as string} /> : icon,
             children: menuItems,
@@ -39,7 +39,7 @@ export const SchemaInitializerItem: FC<SchemaInitializerItemProps> = (props) => 
   }
 
   return (
-    <div onClick={() => onClick({ item: props })} style={style} className={className}>
+    <div onClick={() => onClick?.({ item: props })} style={style} className={className}>
       {children || (
         <>
           {typeof icon === 'string' ? <Icon type={icon as string} /> : icon}
