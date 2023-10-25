@@ -43,7 +43,6 @@ const InternalFormBlockProvider = (props) => {
   if (service.loading && Object.keys(form?.initialValues)?.length === 0 && action) {
     return <Spin />;
   }
-
   let content = (
     <div ref={formBlockRef}>
       <RenderChildrenWithDataTemplates form={form} />
@@ -97,7 +96,6 @@ export const FormBlockProvider = (props) => {
   if (isDetailBlock) {
     detailFlag = true;
     if (!designable && __collection) {
-      console.log(__collection === collection);
       detailFlag = __collection === collection;
     }
   }
@@ -127,7 +125,7 @@ export const useFormBlockProps = () => {
     if (addChild) {
       ctx.form?.query('parent').take((field) => {
         field.disabled = true;
-        field.value = new Proxy({ ...record }, {});
+        field.value = new Proxy({ ...record?.__parent }, {});
       });
     }
   });
