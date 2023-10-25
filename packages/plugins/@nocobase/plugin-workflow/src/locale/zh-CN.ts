@@ -89,6 +89,7 @@ export default {
   Advanced: '高级模式',
   End: '结束',
   'Node result': '节点数据',
+  'Variable key of node': '节点变量标识',
   Calculator: '运算',
   'Calculate an expression based on a calculation engine and obtain a value as the result. Variables in the upstream nodes can be used in the expression. The expression can be static or dynamic one from an expression collections.':
     '基于计算引擎对一个表达式进行计算，并获得一个值作为结果。表达式中可以使用上游节点里的变量。表达式可以是静态的，也可以是表达式表中的动态表达式。',

@@ -32,7 +32,7 @@ function Initializer({ node, resultTitle, insert, ...props }) {
               'x-component': 'ValueBlock.Result',
               'x-component-props': {
                 // NOTE: as same format as other reference for migration of revision
-                dataSource: `{{$jobsMapByNodeId.${node.id}}}`,
+                dataSource: `{{$jobsMapByNodeKey.${node.key}}}`,
               },
             },
           },
@@ -49,7 +49,10 @@ function Result({ dataSource }) {
     return field.title;
   }
   const result = parse(dataSource)({
-    $jobsMapByNodeId: (execution.jobs ?? []).reduce((map, job) => Object.assign(map, { [job.nodeId]: job.result }), {}),
+    $jobsMapByNodeKey: (execution.jobs ?? []).reduce(
+      (map, job) => Object.assign(map, { [job.nodeId]: job.result }),
+      {},
+    ),
   });
 
   return (
