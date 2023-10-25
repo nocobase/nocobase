@@ -1,3 +1,4 @@
+import { DataTypes } from 'sequelize';
 import { Migration } from '@nocobase/server';
 import { uid } from '@nocobase/utils';
 
@@ -26,10 +27,15 @@ export default class extends Migration {
       return;
     }
     const { db } = this.context;
-    await db.getCollection('flow_nodes').sync();
 
     const NodeRepo = db.getRepository('flow_nodes');
+    const { key } = await this.queryInterface.describeTable('flow_nodes');
     await db.sequelize.transaction(async (transaction) => {
+      if (!key) {
+        await this.queryInterface.addColumn('flow_nodes', 'key', DataTypes.STRING, {
+          transaction,
+        });
+      }
       const nodes = await NodeRepo.find({
         transaction,
       });

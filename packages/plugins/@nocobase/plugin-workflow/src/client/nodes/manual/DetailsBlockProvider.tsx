@@ -13,12 +13,17 @@ import { useFlowContext } from '../../FlowContext';
 import { parse } from '@nocobase/utils/client';
 
 function useFlowContextData(dataSource) {
-  const { execution } = useFlowContext();
+  const { execution, nodes } = useFlowContext();
+
+  const nodesKeyMap = useMemo(() => {
+    return nodes.reduce((map, node) => Object.assign(map, { [node.id]: node.key }), {});
+  }, [nodes]);
+
   const data = useMemo(
     () => ({
       $context: execution?.context,
       $jobsMapByNodeKey: (execution?.jobs ?? []).reduce(
-        (map, job) => Object.assign(map, { [job.node.key]: job.result }),
+        (map, job) => Object.assign(map, { [nodesKeyMap[job.nodeId]]: job.result }),
         {},
       ),
     }),
