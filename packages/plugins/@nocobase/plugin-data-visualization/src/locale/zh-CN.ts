@@ -76,4 +76,11 @@ export default {
   Collapse: '折叠',
   Expand: '展开',
   'Current filter': '当前筛选',
+  'Add custom field': '添加自定义字段',
+  'To filter with custom fields, use "Current filter" variables in the chart configuration.':
+    '要通过自定义字段筛选，需要在图表配置中使用“当前筛选”变量。',
+  Input: '输入框',
+  'Date range': '日期范围',
+  'Time range': '时间范围',
+  'Edit field options': '编辑字段选项',
 };

@@ -10,6 +10,8 @@ import { ChartFilterGrid, ChartFilterForm } from './FilterBlockInitializer';
 import { useChartsTranslation } from '../locale';
 import { css } from '@emotion/css';
 import { ChartFilterContext } from './FilterProvider';
+import { ChartFilterCheckbox } from './FilterCheckbox';
+import { ArrayItems } from '@formily/antd-v5';
 
 export const ChartFilterBlockProvider: React.FC = (props) => {
   const { t } = useChartsTranslation();
@@ -28,7 +30,7 @@ export const ChartFilterBlockProvider: React.FC = (props) => {
       `}
     >
       <SchemaComponentOptions
-        components={{ ChartFilterItemDesigner, ChartFilterForm, ChartFilterGrid }}
+        components={{ ChartFilterItemDesigner, ChartFilterForm, ChartFilterGrid, ChartFilterCheckbox, ArrayItems }}
         scope={{ t, useChartFilterActionProps, useChartFilterResetProps, useChartFilterCollapseProps }}
       >
         {props.children}

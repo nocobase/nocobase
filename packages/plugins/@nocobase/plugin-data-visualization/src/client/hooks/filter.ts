@@ -74,7 +74,7 @@ export const useChartFilter = () => {
       ?.map((field) => {
         const fieldTitle = Schema.compile(field.uiSchema?.title || field.name, { t });
         const interfaceConfig = getInterface(field.interface);
-        const defaultOperator = interfaceConfig?.filterable?.operators?.[0]?.value;
+        const defaultOperator = interfaceConfig?.filterable?.operators;
         const targetCollection = getCollection(field.target);
         let schema = {
           type: 'string',
@@ -139,10 +139,11 @@ export const useChartFilter = () => {
     const filter = {};
     Object.entries(values).forEach(([collection, fields]) => {
       Object.entries(fields).forEach(([field, value]) => {
+        const operator = fieldProps[collection]?.[field]?.operator;
         if (!value) {
           return;
         }
-        const op = fieldProps[collection]?.[field]?.operator || '$eq';
+        const op = operator?.value || '$eq';
         if (collection !== 'custom') {
           filter[collection] = filter[collection] || { $and: [] };
           filter[collection].$and.push({ [field]: { [op]: value } });
@@ -218,7 +219,7 @@ export const useFilterVariable = () => {
     enabled,
     fields: { custom = [] },
   } = useContext(ChartFilterContext);
-  const dateOptions = Object.entries(custom)
+  const options = Object.entries(custom)
     .filter(([_, value]) => value)
     .map(([name, { title }]) => {
       return {
@@ -232,12 +233,12 @@ export const useFilterVariable = () => {
       label: t('Current filter'),
       value: '$nFilter',
       key: '$nFilter',
-      children: dateOptions,
+      children: options,
     }),
-    [dateOptions, t],
+    [options, t],
   );
 
-  if (!enabled) return null;
+  if (!enabled || !options.length) return null;
 
   return result;
 };

@@ -8,7 +8,10 @@ export const ChartFilterContext = createContext<{
     [collection: string]: {
       [field: string]: {
         title: string;
-        operator?: string;
+        operator?: {
+          value: string;
+          noValue?: boolean;
+        };
       };
     };
   };

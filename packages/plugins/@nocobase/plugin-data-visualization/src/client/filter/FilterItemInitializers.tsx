@@ -10,11 +10,19 @@ import {
 } from '@nocobase/client';
 import React, { useCallback, useContext } from 'react';
 import { useChartsTranslation } from '../locale';
-import { Schema, SchemaOptionsContext } from '@formily/react';
+import { Schema, SchemaOptionsContext, observer, useForm } from '@formily/react';
 import { useMemoizedFn } from 'ahooks';
-import { FormLayout } from '@formily/antd-v5';
+import { FormLayout, ArrayItems } from '@formily/antd-v5';
 import { uid } from '@formily/shared';
-import { useChartData, useChartFilter, useCustomFieldInterface } from '../hooks/filter';
+import { useChartData, useChartFilter } from '../hooks/filter';
+import { Alert } from 'antd';
+import { getPropsSchemaByComponent } from './utils';
+
+const FieldComponentProps: React.FC = observer((props) => {
+  const form = useForm();
+  const schema = getPropsSchemaByComponent(form.values.component);
+  return schema ? <SchemaComponent schema={schema} {...props} /> : null;
+});
 
 export const ChartFilterCustomItemInitializer: React.FC<{
   insert?: any;
@@ -24,22 +32,22 @@ export const ChartFilterCustomItemInitializer: React.FC<{
   const { scope, components } = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
   const { insert } = props;
-  const { getSchemaByInterface } = useCustomFieldInterface();
   const handleClick = useCallback(async () => {
     const values = await FormDialog(
       t('Add custom field'),
       () => (
-        <SchemaComponentOptions scope={scope} components={{ ...components }}>
+        <SchemaComponentOptions scope={scope} components={{ ...components, FieldComponentProps }}>
           <FormLayout layout={'vertical'}>
+            <Alert
+              type="info"
+              message={t('To filter with custom fields, use "Current filter" variables in the chart configuration.')}
+              style={{ marginBottom: 16 }}
+            />
             <SchemaComponent
               schema={{
                 properties: {
                   name: {
                     type: 'string',
-                    title: t('Field name'),
-                    'x-component': 'Input',
-                    'x-decorator': 'FormItem',
-                    'x-disabled': true,
                     required: true,
                   },
                   title: {
@@ -49,19 +57,28 @@ export const ChartFilterCustomItemInitializer: React.FC<{
                     'x-decorator': 'FormItem',
                     required: true,
                   },
-                  interface: {
+                  component: {
                     type: 'string',
-                    title: t('Field interface'),
+                    title: t('Field component'),
                     'x-component': 'Select',
                     'x-decorator': 'FormItem',
                     required: true,
                     enum: [
-                      { label: t('Single line text'), value: 'input' },
-                      { label: t('Number'), value: 'number' },
-                      { label: t('Date & Time'), value: 'datetime' },
-                      { label: t('Single select'), value: 'select' },
-                      { label: t('Multiple select'), value: 'multipleSelect' },
+                      { label: t('Input'), value: 'Input' },
+                      { label: t('Number'), value: 'InputNumber' },
+                      { label: t('Date'), value: 'DatePicker' },
+                      { label: t('Date range'), value: 'DatePicker.RangePicker' },
+                      { label: t('Time'), value: 'TimePicker' },
+                      { label: t('Time range'), value: 'TimePicker.RangePicker' },
+                      { label: t('Select'), value: 'Select' },
+                      { label: t('Radio group'), value: 'Radio.Group' },
+                      { label: t('Checkbox group'), value: 'Checkbox.Group' },
                     ],
+                  },
+                  props: {
+                    type: 'object',
+                    title: t('Component properties'),
+                    'x-component': 'FieldComponentProps',
                   },
                 },
               }}
@@ -71,12 +88,11 @@ export const ChartFilterCustomItemInitializer: React.FC<{
       ),
       theme,
     ).open({
-      initialValues: {
+      values: {
         name: `f_${uid()}`,
       },
     });
-    const { name, title, interface: fieldInterface } = values;
-    const uiSchema = getSchemaByInterface(fieldInterface);
+    const { name, title, component, props } = values;
     insert(
       gridRowColWrap({
         type: 'string',
@@ -84,10 +100,9 @@ export const ChartFilterCustomItemInitializer: React.FC<{
         name: `custom.${name}`,
         required: false,
         'x-designer': 'ChartFilterItemDesigner',
-        'x-component': 'CollectionField',
+        'x-component': component,
         'x-decorator': 'FormItem',
-        'x-field-interface': fieldInterface,
-        ...uiSchema,
+        'x-component-props': props,
       }),
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps

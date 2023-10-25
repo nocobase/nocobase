@@ -22,4 +22,11 @@ export default {
     'Sign in button name, which will be displayed on the sign in page',
   Expand: 'Expand',
   'Current filter': 'Current filter',
+  'Add custom field': 'Add custom field',
+  'To filter with custom fields, use "Current filter" variables in the chart configuration.':
+    'To filter with custom fields, use "Current filter" variables in the chart configuration.',
+  Input: 'Input',
+  'Date range': 'Date range',
+  'Time range': 'Time range',
+  'Edit field options': 'Edit field options',
 };

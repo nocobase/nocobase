@@ -1,91 +1,110 @@
-import { Schema } from '@formily/react';
-import { CollectionOptions, SchemaInitializerItemOptions, i18n, isAssocField } from '@nocobase/client';
-
-export const getCollectionsFromChartBlock = (schema: Schema) => {
-  const getChartBlock = (schema: any) => {
-    return schema['x-decorator'] === 'ChartV2Block' ? schema : schema.parent ? getChartBlock(schema.parent) : [];
+export const getOptionsSchema = () => {
+  const options = {
+    title: '{{t("Options")}}',
+    type: 'array',
+    'x-decorator': 'FormItem',
+    'x-component': 'ArrayItems',
+    items: {
+      type: 'object',
+      'x-decorator': 'ArrayItems.Item',
+      properties: {
+        space: {
+          type: 'void',
+          'x-component': 'Space',
+          properties: {
+            label: {
+              type: 'string',
+              'x-decorator': 'FormItem',
+              'x-component': 'Input',
+              'x-component-props': {
+                placeholder: '{{t("Option label")}}',
+              },
+            },
+            value: {
+              type: 'string',
+              'x-decorator': 'FormItem',
+              'x-component': 'Input',
+              'x-component-props': {
+                placeholder: '{{t("Option value")}}',
+              },
+            },
+            remove: {
+              type: 'void',
+              'x-decorator': 'FormItem',
+              'x-component': 'ArrayItems.Remove',
+            },
+          },
+        },
+      },
+    },
+    properties: {
+      add: {
+        type: 'void',
+        title: 'Add',
+        'x-component': 'ArrayItems.Addition',
+      },
+    },
   };
-  const chartBlock = getChartBlock(schema);
-  return chartBlock.reduceProperties((collections: any, row: any) => {
-    row.reduceProperties((_: any, col: any) => {
-      col.reduceProperties((_: any, chart: any) => {
-        if (chart['x-decorator'] === 'ChartRendererProvider') {
-          const collection = chart['x-decorator-props'].collection;
-          if (!collections.includes(collection)) {
-            collections.push(collection);
-          }
-        }
-      });
-    });
-    return collections;
-  }, []);
+  return options;
 };
 
-export const getChartFilterFields = (
-  collection: CollectionOptions,
-  form: any,
-  action: string,
-  getInterface: any,
-  getCollection: any,
-) => {
-  const name = collection.name;
-  const fields = collection.fields || [];
-  const collectionTitle = Schema.compile(collection.title, { t: i18n.t });
-
-  return fields
-    ?.filter((field) => field?.interface && !field?.isForeignKey && getInterface(field.interface)?.filterable)
-    ?.map((field) => {
-      const fieldTitle = Schema.compile(field.uiSchema?.title || field.name, { t: i18n.t });
-      const interfaceConfig = getInterface(field.interface);
-      const targetCollection = getCollection(field.target);
-      let schema = {
-        type: 'string',
-        title: `${collectionTitle} / ${fieldTitle}`,
-        name: `${collection.name}.${field.name}`,
-        required: false,
-        'x-designer': 'ChartFilterItemDesigner',
-        'x-component': 'CollectionField',
-        'x-decorator': 'FormItem',
-        'x-collection-field': `${name}.${field.name}`,
-        'x-component-props': {},
-      };
-      if (isAssocField(field)) {
-        schema = {
+export const getPropsSchemaByComponent = (component: string) => {
+  const showTime = {
+    type: 'boolean',
+    'x-content': '{{ t("Show time") }}',
+    'x-decorator': 'FormItem',
+    'x-component': 'Checkbox',
+  };
+  const options = getOptionsSchema();
+  const propsSchema = {
+    DatePicker: {
+      type: 'object',
+      properties: {
+        showTime,
+      },
+    },
+    'DatePicker.RangePicker': {
+      type: 'object',
+      properties: {
+        showTime,
+      },
+    },
+    Select: {
+      type: 'object',
+      properties: {
+        mode: {
           type: 'string',
-          title: `${collectionTitle} / ${fieldTitle}`,
-          name: `${collection.name}.${field.name}`,
-          required: false,
-          'x-designer': 'ChartFilterItemDesigner',
-          'x-component': 'CollectionField',
-          'x-decorator': 'FormItem',
-          'x-collection-field': `${name}.${field.name}`,
-          'x-component-props': field.uiSchema?.['x-component-props'],
-        };
-      }
-      const resultItem = {
-        type: 'item',
-        title: field?.uiSchema?.title || field.name,
-        component: 'CollectionFieldInitializer',
-        remove: (schema, cb) => {
-          cb(schema, {
-            removeParentsIfNoChildren: true,
-            breakRemoveOn: {
-              'x-component': 'Grid',
+          enum: [
+            {
+              label: '{{ t("Single select") }}',
+              value: '',
             },
-          });
+            {
+              label: '{{ t("Multiple select") }}',
+              value: 'multiple',
+            },
+          ],
+          'x-decorator': 'FormItem',
+          'x-component': 'Radio.Group',
+          'x-component-props': {
+            defaultValue: '',
+          },
         },
-        schemaInitialize: (s: any) => {
-          interfaceConfig?.schemaInitialize?.(s, {
-            field,
-            block: 'FilterForm',
-            readPretty: form.readPretty,
-            action,
-            targetCollection,
-          });
-        },
-        schema,
-      } as SchemaInitializerItemOptions;
-
-      return resultItem;
-    });
+        options,
+      },
+    },
+    'Checkbox.Group': {
+      type: 'object',
+      properties: {
+        options,
+      },
+    },
+    'Radio.Group': {
+      type: 'object',
+      properties: {
+        options,
+      },
+    },
+  };
+  return propsSchema[component];
 };

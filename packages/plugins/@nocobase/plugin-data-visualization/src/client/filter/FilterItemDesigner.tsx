@@ -9,10 +9,11 @@ import {
   useDesignable,
 } from '@nocobase/client';
 import { useChartsTranslation } from '../locale';
-import { useField, useFieldSchema } from '@formily/react';
+import { Schema, useField, useFieldSchema } from '@formily/react';
 import { Field } from '@formily/core';
 import _ from 'lodash';
 import { ChartFilterContext } from './FilterProvider';
+import { getOptionsSchema } from './utils';
 
 const EditTitle = () => {
   const field = useField<Field>();
@@ -71,15 +72,20 @@ const EditOperator = () => {
   const defaultComponent = interfaceConfig?.default?.uiSchema?.['x-component'] || 'Input';
   const operator = fieldSchema['x-component-props']?.filterOperator;
 
-  const setOperatorComponent = (operator: string, component: any) => {
+  const setOperatorComponent = (operator: any, component: any, props = {}) => {
     const componentProps = field.componentProps || {};
     field.component = component;
     field.componentProps = {
       ...componentProps,
       filterOperator: operator,
+      ...props,
     };
     fieldSchema['x-component'] = component;
-    fieldSchema['x-component-props']['filterOperator'] = operator;
+    fieldSchema['x-component-props'] = {
+      ...fieldSchema['x-component-props'],
+      filterOperator: operator,
+      ...props,
+    };
     dn.emit('patch', {
       schema: {
         'x-uid': fieldSchema['x-uid'],
@@ -87,6 +93,7 @@ const EditOperator = () => {
         'x-component-props': {
           ...fieldSchema['x-component-props'],
           filterOperator: operator,
+          ...props,
         },
       },
     });
@@ -96,21 +103,64 @@ const EditOperator = () => {
     <SchemaSettings.SelectItem
       key="operator"
       title={t('Operator')}
-      value={operator || operatorList[0]?.value}
+      value={operator?.value || operatorList[0]?.value}
       options={compile(operatorList)}
       onChange={(op: string) => {
         const operator = operatorList.find((item: any) => item.value === op);
-        if (operator?.schema?.['x-component']) {
-          setOperatorComponent(op, operator.schema['x-component']);
+        if (operator.noValue) {
+          setOperatorComponent(operator, 'ChartFilterCheckbox', {
+            content: Schema.compile(operator.label, { t }),
+          });
+        } else if (operator.schema?.['x-component']) {
+          setOperatorComponent(operator, operator.schema['x-component']);
         } else {
-          setOperatorComponent(op, defaultComponent);
+          setOperatorComponent(operator, defaultComponent);
         }
 
-        addField(fieldName, { title: field.title, operator: op });
+        addField(fieldName, { title: field.title, operator });
         dn.refresh();
       }}
     />
   ) : null;
+};
+
+const EditOptions = () => {
+  const { t } = useChartsTranslation();
+  const { dn } = useDesignable();
+  const optionsSchema = getOptionsSchema();
+  const field = useField<Field>();
+  const fieldSchema = useFieldSchema();
+  const options = fieldSchema['x-component-props']?.options;
+  return (
+    <SchemaSettings.ModalItem
+      key="edit-field-options"
+      title={t('Edit field options')}
+      schema={{
+        type: 'object',
+        title: t('Edit field options'),
+        properties: {
+          options: {
+            ...optionsSchema,
+            default: options,
+          },
+        },
+      }}
+      onSubmit={({ options }) => {
+        field.componentProps.options = options;
+        fieldSchema['x-component-props'].options = options;
+        dn.emit('patch', {
+          schema: {
+            'x-uid': fieldSchema['x-uid'],
+            'x-component-props': {
+              ...fieldSchema['x-component-props'],
+              options,
+            },
+          },
+        });
+        dn.refresh();
+      }}
+    />
+  );
 };
 
 export const ChartFilterItemDesigner: React.FC = () => {
@@ -120,11 +170,12 @@ export const ChartFilterItemDesigner: React.FC = () => {
   const fieldSchema = useFieldSchema();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
   const isCustom = (fieldSchema['name'] as string).startsWith('custom.');
-
+  const hasOptions = fieldSchema['x-component-props']?.options;
   return (
     <GeneralSchemaDesigner disableInitializer>
       <EditTitle />
       <EditDescription />
+      {hasOptions && isCustom && <EditOptions />}
       {!isCustom && <EditOperator />}
       {collectionField ? <SchemaSettings.Divider /> : null}
       <SchemaSettings.Remove
