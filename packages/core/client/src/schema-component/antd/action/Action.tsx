@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { useActionContext } from '../..';
 import { useDesignable } from '../../';
 import { Icon } from '../../../icon';
-import { RecordProvider, useRecord, useRecordIndex } from '../../../record-provider';
+import { RecordProvider, useRecord } from '../../../record-provider';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { SortableItem } from '../../common';
 import { useCompile, useComponent, useDesigner } from '../../hooks';
@@ -54,7 +54,6 @@ export const Action: ComposedAction = observer(
     const compile = useCompile();
     const form = useForm();
     const record = useRecord();
-    const recordIndex = useRecordIndex();
     const designerProps = fieldSchema['x-designer-props'];
     const openMode = fieldSchema?.['x-component-props']?.['openMode'];
     const disabled = form.disabled || field.disabled || field.data?.disabled || props.disabled;
@@ -135,7 +134,7 @@ export const Action: ComposedAction = observer(
       return (
         <SortableItem
           role="button"
-          aria-label={getAriaLabel(recordIndex != null ? String(recordIndex) : '')}
+          aria-label={getAriaLabel()}
           {...others}
           loading={field?.data?.loading}
           icon={icon ? <Icon type={icon} /> : null}

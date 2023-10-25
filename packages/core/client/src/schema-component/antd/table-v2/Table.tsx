@@ -160,16 +160,17 @@ const SortableRow = (props) => {
 };
 
 const SortHandle = (props) => {
+  const { id, ...otherProps } = props;
   const { listeners } = useSortable({
-    id: props.id,
+    id,
   });
-  return <MenuOutlined {...listeners} style={{ cursor: 'grab' }} />;
+  return <MenuOutlined {...otherProps} {...listeners} style={{ cursor: 'grab' }} />;
 };
 
 const TableIndex = (props) => {
-  const { index } = props;
+  const { index, ...otherProps } = props;
   return (
-    <div className={classNames('nb-table-index')} style={{ padding: '0 8px 0 16px' }}>
+    <div className={classNames('nb-table-index')} style={{ padding: '0 8px 0 16px' }} {...otherProps}>
       {index}
     </div>
   );
@@ -388,6 +389,11 @@ export const Table: any = observer(
               setSelectedRowKeys(selectedRowKeys);
               onRowSelectionChange?.(selectedRowKeys, selectedRows);
             },
+            getCheckboxProps(record) {
+              return {
+                'aria-label': `checkbox`,
+              };
+            },
             renderCell: (checked, record, index, originNode) => {
               if (!dragSort && !showIndex) {
                 return originNode;
@@ -404,7 +410,8 @@ export const Table: any = observer(
               }
               return (
                 <div
-                  data-testid={`table-index-${index}`}
+                  role="button"
+                  aria-label={`table-index-${index}`}
                   className={classNames(
                     checked ? 'checked' : null,
                     css`

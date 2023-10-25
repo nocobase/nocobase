@@ -191,6 +191,8 @@ export const ConfigurationTabs = () => {
     return {
       items: [
         {
+          role: 'button',
+          'aria-label': 'edit-category',
           key: 'edit',
           label: (
             <SchemaComponent
@@ -209,6 +211,8 @@ export const ConfigurationTabs = () => {
           ),
         },
         {
+          role: 'button',
+          'aria-label': 'delete-category',
           key: 'delete',
           label: compile("{{t('Delete category')}}"),
           onClick: () => remove(item.id),
@@ -256,7 +260,8 @@ export const ConfigurationTabs = () => {
             closable: item.closable,
             closeIcon: (
               <Dropdown menu={menu(item)}>
-                <MenuOutlined />
+                {/* 这里的样式是为了扩大图标的点击范围，以使其更容易 Playwright 录制工具中被点中 */}
+                <MenuOutlined role="button" aria-label={compile(item.name)} style={{ padding: 8, margin: '-8px' }} />
               </Dropdown>
             ),
             children: (

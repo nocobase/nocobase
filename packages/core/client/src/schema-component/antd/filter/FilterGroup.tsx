@@ -42,7 +42,7 @@ export const FilterGroup = connect((props) => {
         }
       >
         {remove && !mergedDisabled && (
-          <a data-testid="close-icon-button">
+          <a role="button" aria-label="icon-close">
             <CloseCircleOutlined
               style={{
                 position: 'absolute',

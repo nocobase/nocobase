@@ -7,6 +7,7 @@ import { CollectionFieldOptions, useCollectionManager, useCompile } from '../../
 export type AppendsTreeSelectProps = {
   value: string[] | string;
   onChange: (value: string[] | string) => void;
+  title?: string;
   multiple?: boolean;
   filter?(field): boolean;
   collection?: string;
@@ -72,6 +73,7 @@ function getCollectionFieldOptions(this: CallScope, collection, parentNode?): Tr
 
 export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
   const {
+    title,
     value: propsValue,
     onChange,
     collection,
@@ -219,7 +221,9 @@ export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
 
   return (
     <TreeSelect
-      data-testid="antd-tree-select"
+      // @ts-ignore
+      role="button"
+      aria-label={`select-field${title ? `-${title}` : ''}`}
       value={filteredValue}
       placeholder={t('Select field')}
       showCheckedStrategy={TreeSelect.SHOW_ALL}

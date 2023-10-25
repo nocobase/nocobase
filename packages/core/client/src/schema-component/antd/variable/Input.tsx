@@ -271,7 +271,7 @@ export function Input(props) {
 
               &:hover {
                 .clear-button {
-                  opacity: 0.8;
+                  display: inline-block;
                 }
               }
 
@@ -293,6 +293,8 @@ export function Input(props) {
           )}
         >
           <div
+            role="button"
+            aria-label="variable-tag"
             onInput={(e) => e.preventDefault()}
             onKeyDown={(e) => {
               if (e.key !== 'Backspace') {
@@ -311,10 +313,11 @@ export function Input(props) {
           </div>
           {!disabled ? (
             <span
+              role="button"
+              aria-label="icon-close"
               className={cx('clear-button')}
               // eslint-disable-next-line react/no-unknown-property
               unselectable="on"
-              aria-hidden
               onClick={() => onChange(null)}
             >
               <CloseCircleFilled />

@@ -127,7 +127,7 @@ export const EditCollection = (props) => {
 };
 
 export const EditCollectionAction = (props) => {
-  const { scope, getContainer, item: record, children } = props;
+  const { scope, getContainer, item: record, children, ...otherProps } = props;
   const { getTemplate } = useCollectionManager();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
@@ -138,6 +138,7 @@ export const EditCollectionAction = (props) => {
     <RecordProvider record={record}>
       <ActionContextProvider value={{ visible, setVisible }}>
         <a
+          {...otherProps}
           onClick={async () => {
             const templateConf = getTemplate(record.template);
             const schema = getSchema(

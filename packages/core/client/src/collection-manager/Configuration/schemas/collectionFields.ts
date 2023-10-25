@@ -218,6 +218,8 @@ export const collectionFieldSchema: ISchema = {
                   title: '{{ t("Edit") }}',
                   'x-component': 'EditCollectionField',
                   'x-component-props': {
+                    role: 'button',
+                    'aria-label': '{{ "edit-button-" + $record.name }}',
                     type: 'primary',
                   },
                 },

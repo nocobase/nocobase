@@ -21,6 +21,7 @@ import { useFlowContext } from '../FlowContext';
 import { DrawerDescription } from '../components/DrawerDescription';
 import { StatusButton } from '../components/StatusButton';
 import { JobStatusOptionsMap } from '../constants';
+import { useGetAriaLabelOfAddButton } from '../hooks/useGetAriaLabelOfAddButton';
 import { lang } from '../locale';
 import useStyles from '../style';
 import { VariableOption, VariableOptions } from '../variable';
@@ -137,7 +138,7 @@ export function useUpstreamScopes(node) {
 
 export function Node({ data }) {
   const { styles } = useStyles();
-  const ariaLabel = ['add-button', data?.type, data?.title].filter(Boolean).join('-');
+  const { getAriaLabel } = useGetAriaLabelOfAddButton(data);
   const { component: Component = NodeDefaultView, endding } = instructions.get(data.type);
 
   return (
@@ -145,7 +146,7 @@ export function Node({ data }) {
       <div className={cx(styles.nodeBlockClass)}>
         <Component data={data} />
         {!endding ? (
-          <AddButton aria-label={ariaLabel} upstream={data} />
+          <AddButton aria-label={getAriaLabel()} upstream={data} />
         ) : (
           <div
             className={css`

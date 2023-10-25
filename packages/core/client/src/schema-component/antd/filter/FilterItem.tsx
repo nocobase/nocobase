@@ -81,7 +81,7 @@ export const FilterItem = observer(
             <DynamicComponent value={value} schema={schema} collectionField={collectionField} onChange={setValue} />
           ) : null}
           {!props.disabled && (
-            <a data-testid="close-icon-button">
+            <a role="button" aria-label="icon-close">
               <CloseCircleOutlined onClick={remove} style={removeStyle} />
             </a>
           )}
