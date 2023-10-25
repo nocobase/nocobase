@@ -1,6 +1,6 @@
 {
-  "name": "@nocobase/smtp",
-  "version": "1.0.0",
+  "name": "@codenula/plugin-forgot-password",
+  "version": "0.14.0-alpha.6",
   "main": "dist/server/index.js",
   "dependencies": {},
   "peerDependencies": {

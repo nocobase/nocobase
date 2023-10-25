@@ -1,22 +1,25 @@
 import { useForm } from '@formily/react';
 import { Plugin, css } from '@nocobase/client';
-
+import { ResetPassword } from './pages/ResetPassword';
 import { ISchema } from '@formily/react';
-import { Authenticator, SchemaComponent, SignupPageContext, useSignIn } from '@nocobase/client';
+import { Authenticator, SchemaComponent, SignupPageContext, useSignIn, useAPIClient } from '@nocobase/client';
 import React, { useContext } from 'react';
-import './signin.css';
+import './forgotPassword.css';
 import './assets/icomoon/icomoon.css';
 import LogoImg from './assets/logo.svg';
 import ArrowImg from './assets/arrow-r.svg';
 import CodenulaImg from './assets/logo-codenula.png';
 import RightImg from './assets/image-login-right.png';
+import { verifyOtp } from '../utils/schema';
+import cloneDeep from 'lodash/cloneDeep';
 
-const passwordForm: ISchema = {
+
+const forgotPasswordForm: ISchema = {
   type: 'object',
-  name: 'passwordForm',
+  name: 'forgotPasswordForm',
   'x-component': 'FormV2',
   properties: {
-    account: {
+    email: {
       type: 'string',
       'x-component': 'Input',
       'x-validator': `{{(value) => {
@@ -33,105 +36,103 @@ const passwordForm: ISchema = {
       }}}`,
       'x-decorator': 'FormItem',
       'x-component-props': {
-        placeholder: '{{"Username/Email"}}',
+        placeholder: '{{"Enter your email"}}',
         style: { backgroundColor: '#e7f0fe', color: 'blue', height: '50px', padding: '10px 19px' },
       },
     },
-    password: {
-      type: 'string',
-      'x-component': 'Password',
-      required: true,
-      'x-decorator': 'FormItem',
-      'x-component-props': {
-        placeholder: '{{"Password"}}',
-        style: { backgroundColor: '#e7f0fe', color: 'blue', height: '50px', padding: '10px 19px' },
-      },
-    },
+
     actions: {
       type: 'void',
       'x-component': 'div',
       properties: {
         submit: {
-          title: '{{"Sign in"}}',
+          title: '{{"Send Reset Link"}}',
           type: 'void',
           'x-component': 'Action',
           'x-component-props': {
             htmlType: 'submit',
             block: true,
             type: 'primary',
-            useAction: `{{ useBasicSignIn }}`,
+            useAction: `{{ useForgotPasswordEmailSubmit }}`,
             style: { width: '100%', height: '44px' },
           },
         },
       },
     },
-    signup: {
-      type: 'void',
-      'x-component': 'Link',
-      'x-component-props': {
-        to: '{{ signupLink }}',
-        style: {
-          height: '50px',
-          padding: '10px 19px',
-          with: '100%',
-          display: 'block',
-          textAlign: 'center',
-          marginTop: '20px',
-        },
-      },
-      'x-content': '{{"Create an account test"}}',
-      'x-visible': '{{ allowSignUp }}',
-    },
-    forgotPassword: {
-      type: 'void',
-      'x-component': 'Link',
-      'x-component-props': {
-        to: '{{ forgotPasswordLink }}',
-        style: {
-          with: '100%',
-          display: 'block',
-          textAlign: 'center',
-          marginTop: '3px',
-        },
-      },
-      'x-content': '{{"Forgot Password?"}}',
-      'x-visible': '{{ allowSignUp }}',
-    },
   },
 };
-const CustomSigninPage = () => {
+
+
+
+//sending otp to email
+const useForgotPasswordEmailSubmit = () => {
+  const form = useForm();
+
+  const api = useAPIClient();
+
+  return {
+    async run() {
+      await form.submit();
+      const values = cloneDeep(form.values);
+
+      console.log(values);
+
+      await api
+        .request({
+          url: 'users:lostpassword',
+          method: 'post',
+          data: values,
+        })
+        .then((res) => {
+          window.alert("Reset link sent successfully!")
+         
+          
+          console.log(res);
+        })
+        .catch((err) => console.log(err));
+    },
+  };
+};
+
+export const CustomForgotPasswordPage = () => {
+  const [isEmailVerified, setIsEmailVerified] = React.useState(false);
   const { authType, name, options } = { authType: 'Email/Password', name: 'basic', options: {} };
   const signupPages = useContext(SignupPageContext);
   const allowSignUp = true;
   const signupLink = `/signup?authType=${authType}&name=${name}`;
-  const forgotPasswordLink = `/forgotPassword`;
+  const forgotPasswordLink = `/forgotPassword?authType=${authType}&name=${name}`;
 
   const useBasicSignIn = () => {
-    return useSignIn("something");
+    return useSignIn(name);
   };
-  return (
-    <div>
-      <section className="login-box">
-        <div className="login-wrapper">
-          <div className="login-left">
-            <div className="logo-wrap">
-              <img src={LogoImg} className="d-lg-block" alt="..." />
-            </div>
-            <div className="mx-login-left">
-              <div className="login-form-box">
-                <div className="login-form-wrapper">
-                  <div className="top-headings">
-                    <h3 className="main-heading">Welcome! to Your Company Name</h3>
-                    <p className="sub-heading">
-                      Please enter your email address and password to continue to your account.
-                    </p>
-                  </div>
-                  <SchemaComponent
-                    schema={passwordForm}
-                    scope={{ useBasicSignIn, allowSignUp, signupLink, forgotPasswordLink }}
-                  />
 
-                  {/* <div className="form-group">
+  
+  return (
+    
+      <div>
+        <section className="login-box">
+          <div className="login-wrapper">
+            <div className="login-left">
+              <div className="logo-wrap">
+                <img src={LogoImg} className="d-lg-block" alt="..." />
+              </div>
+              <div className="mx-login-left">
+                <div className="login-form-box">
+                  <div className="login-form-wrapper">
+                    <div className="top-headings">
+                      <h3 className="main-heading">Welcome! to Your Company Name</h3>
+                      <p className="sub-heading">
+                        Please enter your email address and password to continue to your account.
+                      </p>
+                    </div>
+                   
+                      <SchemaComponent
+                        schema={forgotPasswordForm}
+                        scope={{ useBasicSignIn, allowSignUp, signupLink, forgotPasswordLink, useForgotPasswordEmailSubmit }}
+                      />
+                   
+
+                    {/* <div className="form-group">
                     <input type="text" className="form-control gray-placeholder" id="username" placeholder="Email*" />
                     <span className="icon-round-check input-state success"></span>
                     <span className="icon-round-cross input-state error"></span>
@@ -175,38 +176,53 @@ const CustomSigninPage = () => {
                       Sign up for free
                     </a>
                   </div> */}
+                  </div>
+                </div>
+              </div>
+              <img src={CodenulaImg} className="d-lg-block" alt="..." />
+            </div>
+            <div className="login-right">
+              <div className="login-right-wrap">
+                <div className="login-right-top">
+                  <h2 className="heading-right">
+                    Build Faster <span>together</span>
+                  </h2>
+                  <p className="right-sub-heading">Conceive, Design and Build processes in the digital age​</p>
+                  <p className="summary">
+                    No Code Solution CodeNula empowers businesses to create and customize applications without coding,
+                    accelerating development and innovation while reducing time-to-market and avoiding technical
+                    barriers.
+                  </p>
+                  <div className="radial-bg">
+                    <img src={RightImg} className="img-bg" alt="..." />
+                  </div>
                 </div>
               </div>
             </div>
-            <img src={CodenulaImg} className="d-lg-block" alt="..." />
           </div>
-          <div className="login-right">
-            <div className="login-right-wrap">
-              <div className="login-right-top">
-                <h2 className="heading-right">
-                  Build Faster <span>together</span>
-                </h2>
-                <p className="right-sub-heading">Conceive, Design and Build processes in the digital age​</p>
-                <p className="summary">
-                  No Code Solution CodeNula empowers businesses to create and customize applications without coding,
-                  accelerating development and innovation while reducing time-to-market and avoiding technical barriers.
-                </p>
-                <div className="radial-bg">
-                  <img src={RightImg} className="img-bg" alt="..." />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-      {/* <SchemaComponent schema={passwordForm} scope={{ useBasicSignIn, allowSignUp, signupLink }} /> */}
-    </div>
+        </section>
+        {/* <SchemaComponent schema={forgotPasswordForm} scope={{ useBasicSignIn, allowSignUp, signupLink }} /> */}
+      </div>
+   
   );
 };
 export class TestSigninClient extends Plugin {
   async load() {
+    this.addRoutes();
     this.app.addComponents({
-      SigninPage: CustomSigninPage,
+      CustomForgotPasswordPage,
+      ResetPassword
+    });
+
+  }
+  addRoutes() {
+    this.app.router.add('forgotPassword', {
+      path: '/forgotPassword',
+      element: <CustomForgotPasswordPage />,
+    });
+    this.app.router.add('resetPassword', {
+      path: '/resetPassword/:email/:token',
+      element: <ResetPassword />,
     });
   }
 }

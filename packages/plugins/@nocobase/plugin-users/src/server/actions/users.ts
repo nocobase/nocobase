@@ -3,6 +3,8 @@ import { PasswordField } from '@nocobase/database';
 import { branch } from '@nocobase/resourcer';
 import crypto from 'crypto';
 import { namespace } from '../';
+import axios from 'axios';
+import { APIClient } from '@nocobase/sdk';
 
 export async function check(ctx: Context, next: Next) {
   if (ctx.state.currentUser) {
@@ -47,6 +49,11 @@ export async function signup(ctx: Context, next: Next) {
 }
 
 export async function lostpassword(ctx: Context, next: Next) {
+  const { origin, hostname } = ctx.request;
+  const api = new APIClient({
+    baseURL: `${origin}/api`,
+  });
+
   const {
     values: { email },
   } = ctx.action.params;
@@ -66,12 +73,38 @@ export async function lostpassword(ctx: Context, next: Next) {
     });
   }
   user.resetToken = crypto.randomBytes(20).toString('hex');
+  try {
+    await api.request({
+      url: 'email:forgotPassword',
+      method: 'post',
+      data: {
+        email,
+        resetToken: user.resetToken,
+      },
+    });
+  } catch (err) {
+    console.log(err);
+    ctx.throw(404, {
+      code: 'InvalidUserData',
+      message: ctx.t('smtp plugin not enabled', { ns: namespace }),
+    });
+  }
+
   await user.save();
+
+  //sending email request
+
   ctx.body = user;
   await next();
 }
 
 export async function resetpassword(ctx: Context, next: Next) {
+  console.log('****************************************************');
+  console.log('****************************************************');
+  console.log('****************************************************');
+  console.log('****************************************************');
+  console.log('****************************************************');
+  console.log(JSON.stringify(ctx.action));
   const {
     values: { email, password, resetToken },
   } = ctx.action.params;
