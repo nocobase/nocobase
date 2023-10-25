@@ -20,10 +20,14 @@ function getTransport(data, force = false) {
   return getTransport['transport'];
 }
 
+const transporter = nodemailer.createTransport({
+  host: 'localhost',
+  port: 1025,
+});
 export class SmtpRequestServer extends Plugin {
-  afterAdd() { }
+  afterAdd() {}
 
-  beforeLoad() { }
+  beforeLoad() {}
 
   async load() {
     // Visit: http://localhost:13000/api/email:sendMyEmail
@@ -42,7 +46,14 @@ export class SmtpRequestServer extends Plugin {
       ],
     });
 
-
+    this.db.collection({
+      name: 'otp',
+      fields: [
+        { type: 'string', name: 'email' },
+        { type: 'integer', name: 'otp' },
+        { type: 'integer', name: 'expiresAt' },
+      ],
+    });
 
     await this.db.sync();
 
@@ -113,6 +124,76 @@ export class SmtpRequestServer extends Plugin {
           ctx.body = { data, info, allowed_users, currentUser, isAllowed };
           await next();
         },
+
+        async forgotPassword(ctx, next) {
+          // Get the user email from the request body.
+          // const userEmail = ctx.request.body.email;
+          // const username = ctx.request.body.username;
+          // const origin = ctx.request.origin;
+          // const token = ctx.request.body.token
+
+          const { email, resetToken } = ctx.request.body;
+          const { origin } = ctx.request;
+          
+          const data = await ctx.db.getRepository('users').findOne({
+            filter: {
+              email,
+            },
+            projectFields: ['resetToken'],
+          });
+
+          const link = `http://localhost:13000/resetPassword/${email}/${resetToken}`;
+
+          const emailOption = {
+            to: email,
+            from: `Test <bcd@bcd.com>`,
+            subject: 'Password reset',
+            text: `This link is valid for 5 minutes only ${link}`,
+          };
+          const info = await transporter.sendMail(emailOption);
+
+          // Respond to the request with a success message.
+          ctx.body = {
+            message: 'reset password link has been sent to your email.',
+            origin,
+            data,
+          };
+
+          await next();
+        },
+
+        async verifyOtp(ctx, next) {
+          // Get the user email and OTP from the request body.
+          const userEmail = ctx.request.body.email;
+          const userOtp = ctx.request.body.otp;
+
+          // Get the OTP from the database using the user's email address.
+          const otp = await ctx.db.getRepository('otp').findOne({
+            filter: {
+              email: userEmail,
+            },
+          });
+          global.otp = otp;
+          // Check if the OTP has expired.
+          if (otp && otp.expiresAt < new Date()) {
+            // The OTP has expired.
+            ctx.throw(400, 'The OTP has expired.');
+          }
+
+          // // Compare the OTP provided by the user to the OTP stored in the database.
+          if (otp && otp.otp !== userOtp) {
+            // The OTPs do not match.
+            ctx.throw(400, 'The OTP is incorrect.');
+          }
+
+          // The OTP has been verified.
+          // Send back a success response.
+          ctx.body = {
+            message: 'OTP has been verified successfully.',
+          };
+
+          await next();
+        },
       },
     });
 
@@ -140,10 +221,13 @@ export class SmtpRequestServer extends Plugin {
     });
 
     this.app.acl.allow('email', 'sendMyEmail', 'admin');
+    this.app.acl.allow('email', 'forgotPassword');
+    this.app.acl.allow('email', 'verifyOtp');
     this.app.acl.allow('smtpRequest', '*');
+    this.app.acl.allow('otp', '*');
   }
 
-  async install(options?: InstallOptions) { }
+  async install(options?: InstallOptions) {}
 
   async afterEnable() {
     await this.db.getRepository('smtpRequest').create({
@@ -154,14 +238,14 @@ export class SmtpRequestServer extends Plugin {
         password: '',
         admin: false,
         root: false,
-        member: false
+        member: false,
       },
     });
   }
 
-  async afterDisable() { }
+  async afterDisable() {}
 
-  async remove() { }
+  async remove() {}
 }
 
 export default SmtpRequestServer;

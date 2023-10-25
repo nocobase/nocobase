@@ -82,6 +82,21 @@ const passwordForm: ISchema = {
       'x-content': '{{"Create an account test"}}',
       'x-visible': '{{ allowSignUp }}',
     },
+    forgotPassword: {
+      type: 'void',
+      'x-component': 'Link',
+      'x-component-props': {
+        to: '{{ forgotPasswordLink }}',
+        style: {
+          with: '100%',
+          display: 'block',
+          textAlign: 'center',
+          marginTop: '3px',
+        },
+      },
+      'x-content': '{{"Forgot Password?"}}',
+      'x-visible': '{{ allowSignUp }}',
+    },
   },
 };
 const CustomSigninPage = () => {
@@ -89,9 +104,10 @@ const CustomSigninPage = () => {
   const signupPages = useContext(SignupPageContext);
   const allowSignUp = true;
   const signupLink = `/signup?authType=${authType}&name=${name}`;
+  const forgotPasswordLink = `/forgotPassword`;
 
   const useBasicSignIn = () => {
-    return useSignIn(name);
+    return useSignIn("something");
   };
   return (
     <div>
@@ -110,7 +126,10 @@ const CustomSigninPage = () => {
                       Please enter your email address and password to continue to your account.
                     </p>
                   </div>
-                  <SchemaComponent schema={passwordForm} scope={{ useBasicSignIn, allowSignUp, signupLink }} />
+                  <SchemaComponent
+                    schema={passwordForm}
+                    scope={{ useBasicSignIn, allowSignUp, signupLink, forgotPasswordLink }}
+                  />
 
                   {/* <div className="form-group">
                     <input type="text" className="form-control gray-placeholder" id="username" placeholder="Email*" />
