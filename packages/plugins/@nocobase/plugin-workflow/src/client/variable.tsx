@@ -37,7 +37,7 @@ export const defaultFieldNames = { label: 'label', value: 'value', children: 'ch
 
 export const nodesOptions = {
   label: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
-  value: '$jobsMapByNodeId',
+  value: '$jobsMapByNodeKey',
   useOptions(options: OptionsOfUseVariableOptions) {
     const current = useNodeContext();
     const upstreams = useAvailableUpstreams(current);
@@ -76,8 +76,8 @@ export const scopeOptions = {
       const subOptions = instruction.useScopeVariables?.(node, options);
       if (subOptions) {
         result.push({
-          key: node.id.toString(),
-          [fieldNames.value]: node.id.toString(),
+          key: node.key,
+          [fieldNames.value]: node.key,
           [fieldNames.label]: node.title ?? `#${node.id}`,
           [fieldNames.children]: subOptions,
         });
