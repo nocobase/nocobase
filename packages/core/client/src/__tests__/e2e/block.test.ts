@@ -6,26 +6,26 @@ const tablePageSchema = {
   type: 'void',
   'x-component': 'Page',
   properties: {
-    nfiw626bmae: {
+    mwxaaxb9y9v: {
       _isJSONSchemaObject: true,
       version: '2.0',
       type: 'void',
       'x-component': 'Grid',
       'x-initializer': 'BlockInitializers',
       properties: {
-        '6zubot4baeg': {
+        ibb0kjq3kyl: {
           _isJSONSchemaObject: true,
           version: '2.0',
           type: 'void',
           'x-component': 'Grid.Row',
           properties: {
-            p5vddyamvmh: {
+            p39cigcjpij: {
               _isJSONSchemaObject: true,
               version: '2.0',
               type: 'void',
               'x-component': 'Grid.Col',
               properties: {
-                '65mh1a7jk13': {
+                '237ec1x538e': {
                   _isJSONSchemaObject: true,
                   version: '2.0',
                   type: 'void',
@@ -59,11 +59,12 @@ const tablePageSchema = {
                         },
                       },
                       properties: {
-                        mc0dr7t0i5u: {
+                        lmeom75gry5: {
                           _isJSONSchemaObject: true,
                           version: '2.0',
                           type: 'void',
                           'x-action': 'create',
+                          'x-acl-action': 'create',
                           title: "{{t('Add new')}}",
                           'x-designer': 'Action.Designer',
                           'x-component': 'Action',
@@ -112,36 +113,36 @@ const tablePageSchema = {
                                           type: 'void',
                                           'x-component': 'Grid',
                                           'x-initializer': 'CreateFormBlockInitializers',
-                                          'x-uid': 'y4gqt9b1ftl',
+                                          'x-uid': 'w224zhqyair',
                                           'x-async': false,
                                           'x-index': 1,
                                         },
                                       },
-                                      'x-uid': 'qwyp3iu3jsc',
+                                      'x-uid': 'lll44vre1t6',
                                       'x-async': false,
                                       'x-index': 1,
                                     },
                                   },
-                                  'x-uid': '5m8h1atxs69',
+                                  'x-uid': 'c025dgp5tyk',
                                   'x-async': false,
                                   'x-index': 1,
                                 },
                               },
-                              'x-uid': 'tkpv0m3k97b',
+                              'x-uid': 'og2z02rfxhx',
                               'x-async': false,
                               'x-index': 1,
                             },
                           },
-                          'x-uid': 'ysgq2erbi1m',
+                          'x-uid': 'vn9wxzx83y3',
                           'x-async': false,
                           'x-index': 1,
                         },
                       },
-                      'x-uid': 'qvtl2vfb3am',
+                      'x-uid': '7s3fcxfjc0y',
                       'x-async': false,
                       'x-index': 1,
                     },
-                    t6hmlz97y8w: {
+                    zqdtqsjqgc1: {
                       _isJSONSchemaObject: true,
                       version: '2.0',
                       type: 'array',
@@ -176,7 +177,7 @@ const tablePageSchema = {
                                 split: '|',
                               },
                               properties: {
-                                ep69p7v8k7x: {
+                                kdcs236lihl: {
                                   _isJSONSchemaObject: true,
                                   version: '2.0',
                                   type: 'void',
@@ -226,88 +227,92 @@ const tablePageSchema = {
                                                   type: 'void',
                                                   'x-component': 'Grid',
                                                   'x-initializer': 'RecordBlockInitializers',
-                                                  'x-uid': '2a0ebei04nl',
+                                                  'x-uid': 's49vs6v3qs0',
                                                   'x-async': false,
                                                   'x-index': 1,
                                                 },
                                               },
-                                              'x-uid': 'hhe75j1j9ti',
+                                              'x-uid': '33qff1grgqn',
                                               'x-async': false,
                                               'x-index': 1,
                                             },
                                           },
-                                          'x-uid': 'nyji3i1v1tu',
+                                          'x-uid': '3z1hbrs3bre',
                                           'x-async': false,
                                           'x-index': 1,
                                         },
                                       },
-                                      'x-uid': '58wvntfrzko',
+                                      'x-uid': '09vwzm2det2',
                                       'x-async': false,
                                       'x-index': 1,
                                     },
                                   },
-                                  'x-uid': 'xxhynhvddzv',
+                                  'x-uid': 'bgdfnken9ua',
                                   'x-async': false,
                                   'x-index': 1,
                                 },
                               },
-                              'x-uid': 'ako63d8ih0l',
+                              'x-uid': 'tn98i5lgydw',
                               'x-async': false,
                               'x-index': 1,
                             },
                           },
-                          'x-uid': 'sbh7l3mfswh',
+                          'x-uid': 'ubmt489cxzn',
                           'x-async': false,
                           'x-index': 1,
                         },
                       },
-                      'x-uid': 'mwa5havp4ru',
+                      'x-uid': 't6eg1ye4wf4',
                       'x-async': false,
                       'x-index': 2,
                     },
                   },
-                  'x-uid': '6fihoeceup9',
+                  'x-uid': 'h4yvac2sy2g',
                   'x-async': false,
                   'x-index': 1,
                 },
               },
-              'x-uid': 'apvwtuceule',
+              'x-uid': '3xei2593vgu',
               'x-async': false,
               'x-index': 1,
             },
           },
-          'x-uid': 'rvkphdnxw24',
+          'x-uid': 'm67du7wrojo',
           'x-async': false,
           'x-index': 1,
         },
       },
-      'x-uid': 'ba5rblyi04p',
+      'x-uid': '7aige8a5w3q',
       'x-async': false,
       'x-index': 1,
     },
   },
-  'x-uid': '7mk2xsg9nl6',
+  'x-uid': 'qpbgsjdsgaq',
   'x-async': true,
   'x-index': 1,
 };
+
 test.describe('add block & delete block', () => {
   test('add block,then delete block', async ({ page, mockPage }) => {
     await mockPage().goto();
     await page.getByLabel('schema-initializer-Grid-BlockInitializers').click();
-    await page.getByRole('menuitem', { name: 'table Table right' }).click();
-    await page.getByRole('menuitem', { name: 'Users' }).click();
-    await page.getByRole('menuitem', { name: 'Users' }).hover();
-    await expect(page.getByTestId('block-item')).toBeVisible();
-    await expect(page.getByTestId('configure-actions-button-of-table-block-users')).toBeVisible();
-    await expect(page.getByTestId('configure-columns-button-of-table-block-users')).toBeVisible();
+    await page.getByLabel('dataBlocks-table', { exact: true }).click();
+    await page.getByLabel('dataBlocks-table-Users').click();
+    await page.getByLabel('dataBlocks-table-Users').hover();
+    await expect(page.getByLabel('block-item-CardItem-users-table')).toBeVisible();
+    await expect(page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-users')).toBeVisible();
+    await expect(await page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-users')).toBeVisible();
     //删除区块
-    await page.getByTestId('block-item').hover();
-    await page.getByTestId('block-item').getByRole('button', { name: 'designer-schema-settings' }).click();
+    await page.getByLabel('block-item-CardItem-users-table').hover();
+    await page
+      .getByLabel('block-item-CardItem-users-table')
+      .getByRole('button', { name: 'designer-schema-settings' })
+      .click();
     await page.getByLabel('Delete').click();
     await page.getByRole('button', { name: 'OK' }).click();
-    await expect(page.getByTestId('block-item')).not.toBeVisible();
-    await expect(page.getByTestId('configure-actions-button-of-table-block-users')).not.toBeVisible();
-    await expect(page.getByTestId('configure-columns-button-of-table-block-users')).not.toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-users-table')).not.toBeVisible();
+    await expect(page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-users')).not.toBeVisible();
+    await expect(await page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-users')).not.toBeVisible();
   });
 });
 
@@ -316,17 +321,25 @@ test.describe('block title', () => {
     await mockPage({
       pageSchema: tablePageSchema,
     }).goto();
-    await page.getByTestId('block-item').click();
-    await page.getByTestId('block-item').getByRole('button', { name: 'designer-schema-settings' }).click();
+    await page.getByLabel('block-item-CardItem-users-table').click();
+    await page
+      .getByLabel('block-item-CardItem-users-table')
+      .getByRole('button', { name: 'designer-schema-settings' })
+      .click();
     await page.getByText('Edit block title').click();
     await page.getByRole('textbox').click();
     await page.getByRole('textbox').fill('block title');
     await page.getByRole('button', { name: 'OK' }).click();
-    await expect(page.getByTestId('block-item').locator('.ant-card-head')).toBeVisible();
-    await expect(await page.getByTestId('block-item').locator('.ant-card-head').innerText()).toBe('block title');
+    await expect(page.getByLabel('block-item-CardItem-users-table').locator('.ant-card-head')).toBeVisible();
+    await expect(await page.getByLabel('block-item-CardItem-users-table').locator('.ant-card-head').innerText()).toBe(
+      'block title',
+    );
 
     //回显
-    await page.getByTestId('block-item').getByRole('button', { name: 'designer-schema-settings' }).click();
+    await page
+      .getByLabel('block-item-CardItem-users-table')
+      .getByRole('button', { name: 'designer-schema-settings' })
+      .click();
     await page.getByText('Edit block title').click();
     const inputValue = await page.getByRole('textbox').inputValue();
     await expect(inputValue).toBe('block title');
@@ -482,16 +495,18 @@ test.describe('blcok template', () => {
         'x-index': 1,
       },
     }).goto();
-    await page.getByTestId('form-block-users').click();
-    await page.getByTestId('form-block-users').getByRole('button', { name: 'designer-schema-settings' }).click();
-    await page.getByRole('menuitem', { name: 'Save as block template' }).click();
+    await page.getByLabel('block-item-CardItem-users-form').click();
+    await page
+      .getByLabel('block-item-CardItem-users-form')
+      .getByLabel('designer-schema-settings-CardItem-FormV2.Designer-users')
+      .click();
+    await page.getByLabel('Save as block template').click();
     await page.getByLabel('Save as template').getByRole('textbox').fill('Users_Form');
     await page.getByRole('button', { name: 'OK' }).click();
-
-    await page.getByTestId('form-block-users').hover();
+    await page.getByLabel('block-item-CardItem-users-form').hover();
     await page.waitForTimeout(1000);
     //保存模板后当前区块为引用区块
-    const titleTag = await page.getByTestId('form-block-users').locator('.title-tag').nth(1).innerText();
+    const titleTag = await page.getByLabel('block-item-CardItem-users-form').locator('.title-tag').nth(1).innerText();
     await expect(titleTag).toContain('Reference template');
   });
   test('using block template ', async ({ page, mockPage }) => {
@@ -501,35 +516,39 @@ test.describe('blcok template', () => {
     }).goto();
     await page.getByLabel('schema-initializer-Grid-BlockInitializers').click();
     //使用复制模板
-    await page.getByRole('menuitem', { name: 'form Form right' }).first().click();
-    await page.getByRole('menuitem', { name: 'Users right' }).click();
+    await page.getByLabel('dataBlocks-form', { exact: true }).click();
+    await page.getByLabel('dataBlocks-form-FormItem_table_subMenu').click();
     await page.getByRole('menuitem', { name: 'Duplicate template right' }).click();
-    await page.getByRole('menuitem', { name: 'Users_Form (Fields only)' }).first().click();
-    await expect(page.getByTestId('form-block-users')).toBeVisible();
+    await page.getByText('Users_Form (Fields only)').first().click();
+    await expect(page.getByLabel('block-item-CardItem-users-form')).toBeVisible();
 
     //在新建操作中使用引用模板
-    await page.getByTestId('block-item').getByRole('button', { name: 'plus Add new' }).click();
-    await page.getByTestId('action-drawer').getByRole('button', { name: 'plus Add block' }).click();
+    await page.getByLabel('action-Action-Add new-create-users-table').click();
+    await page.getByLabel('schema-initializer-Grid-CreateFormBlockInitializers-users').click();
     await page.getByRole('menuitem', { name: 'form Form right' }).click();
     await page.getByRole('menuitem', { name: 'Reference template right' }).click();
-    await page.getByRole('menuitem', { name: 'Users_Form (Fields only)' }).first().click();
-    await page.getByTestId('action-drawer').getByRole('button', { name: 'plus Add block' }).hover();
-    await page.getByTestId('action-drawer').getByTestId('form-block-users').click();
+    await page.getByRole('button', { name: 'Users_Form (Fields only)' }).first().click();
+    await page.getByLabel('schema-initializer-Grid-CreateFormBlockInitializers-users').hover();
+    await expect(page.locator('.ant-drawer').getByLabel('block-item-CardItem-users-form')).toBeVisible();
     await page.locator('.ant-drawer-mask').click();
 
     //在编辑操作中使用引用模板
-    await page.getByTestId('block-item').getByLabel('Edit').click();
-    await page.getByTestId('action-drawer').getByRole('button', { name: 'plus Add block' }).click();
+    await page.getByLabel('block-item-CardItem-users-table').getByLabel('Edit').click();
+    await page.getByLabel('schema-initializer-Grid-RecordBlockInitializers-users').click();
     await page.getByRole('menuitem', { name: 'form Form right' }).click();
     await page.getByRole('menuitem', { name: 'Reference template right' }).click();
-    await page.getByRole('menuitem', { name: 'Users_Form (Fields only)' }).first().click();
+    await page.getByRole('button', { name: 'Users_Form (Fields only)' }).first().click();
+    await page.getByLabel('schema-initializer-Grid-RecordBlockInitializers-users').hover();
+
     //修改引用模板
-    await page.getByTestId('action-drawer').getByTestId('configure-fields-button-of-form-item-users').click();
-    await page.getByRole('menuitem', { name: 'Phone' }).click();
+    await page.locator('.ant-drawer').getByLabel('schema-initializer-Grid-FormItemInitializers-users').click();
+    await page.getByLabel('Display collection fields-Phone').click();
     await page.locator('.ant-drawer-mask').click();
     //复制模板不同步，引用模板同步
-    await expect(page.getByTestId('form-block-users').getByTestId('form-block-field-users.phone')).not.toBeVisible();
-    await page.getByTestId('block-item').getByRole('button', { name: 'plus Add new' }).click();
-    await expect(page.getByTestId('form-block-field-users.phone')).toBeVisible();
+    await expect(
+      page.getByLabel('block-item-CardItem-users-form').getByLabel('block-item-CollectionField-users-form-users.phone'),
+    ).not.toBeVisible();
+    await page.getByLabel('block-item-CardItem-users-table').getByLabel('action-Action-Add').click();
+    await expect(await page.getByLabel('block-item-CollectionField-users-form-users.phone')).toBeVisible();
   });
 });
