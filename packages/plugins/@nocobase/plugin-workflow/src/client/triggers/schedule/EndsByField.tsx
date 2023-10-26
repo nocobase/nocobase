@@ -16,7 +16,6 @@ export function EndsByField({ value, onChange }) {
       `}
     >
       <Select
-        data-testid="antd-select"
         value={type}
         onChange={(t) => {
           onChange(t ? (t === 'field' ? {} : new Date()) : null);

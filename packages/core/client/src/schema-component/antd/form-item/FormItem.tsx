@@ -395,7 +395,6 @@ FormItem.Designer = function Designer() {
           <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
             {t('Popup size')}
             <Select
-              data-testid="antd-select"
               bordered={false}
               options={[
                 { label: t('Small'), value: 'small' },

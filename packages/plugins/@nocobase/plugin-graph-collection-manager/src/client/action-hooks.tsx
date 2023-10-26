@@ -36,7 +36,6 @@ export const SourceCollection = observer(
     return (
       <div>
         <Select
-          data-testid="antd-select"
           popupMatchSelectWidth={false}
           disabled
           value={record.name}

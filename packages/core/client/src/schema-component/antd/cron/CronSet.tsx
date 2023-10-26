@@ -64,7 +64,6 @@ const CronSetInternal = (props: CronSetProps) => {
   return (
     <fieldset>
       <Select
-        data-testid="antd-select"
         popupMatchSelectWidth={false}
         allowClear
         {...props}

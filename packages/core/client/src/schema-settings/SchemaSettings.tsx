@@ -1922,7 +1922,6 @@ function SelectWithTitle({
     >
       {title}
       <Select
-        data-testid="antd-select"
         open={open}
         popupMatchSelectWidth={false}
         bordered={false}

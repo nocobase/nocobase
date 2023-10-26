@@ -21,7 +21,6 @@ const InternalSelect = connect(
     const group2 = options.filter((option) => option.group === 1);
     return (
       <AntdSelect
-        data-testid="antd-select"
         showSearch
         filterOption={filterOption}
         allowClear

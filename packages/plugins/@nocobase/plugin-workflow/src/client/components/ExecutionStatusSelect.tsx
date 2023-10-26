@@ -31,13 +31,7 @@ function ExecutionStatusOption(props) {
 
 export function ExecutionStatusSelect({ ...props }) {
   return (
-    <Select
-      data-testid="antd-select"
-      {...props}
-      mode={props.multiple ? 'multiple' : null}
-      optionLabelProp="label"
-      tagRender={LabelTag}
-    >
+    <Select {...props} mode={props.multiple ? 'multiple' : null} optionLabelProp="label" tagRender={LabelTag}>
       {ExecutionStatusOptions.filter((item) => Boolean(item.value) && item.value !== EXECUTION_STATUS.ABORTED).map(
         (option) => (
           <Select.Option key={option.value} {...option}>

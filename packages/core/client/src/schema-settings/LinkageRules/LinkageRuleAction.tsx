@@ -72,7 +72,6 @@ export const FormFieldLinkageRuleAction = observer(
               placeholder={t('Select field')}
             />
             <Select
-              data-testid="antd-select"
               popupMatchSelectWidth={false}
               value={operator}
               className={css`

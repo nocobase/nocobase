@@ -38,12 +38,7 @@ const InternalExpiresSelect = (props) => {
 
   return (
     <Space className={spaceCSS}>
-      <Select
-        data-testid="antd-select"
-        {...props}
-        value={isCustom ? 'custom' : props.value}
-        onChange={onSelectChange}
-      ></Select>
+      <Select {...props} value={isCustom ? 'custom' : props.value} onChange={onSelectChange}></Select>
       {isCustom ? (
         <DatePicker
           disabledDate={(date) => {

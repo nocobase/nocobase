@@ -47,7 +47,7 @@ function SelectWithTitle({ t, roles, api }: { t; roles: any; api: APIClient }) {
       <Select
         style={{ textAlign: 'right', minWidth: 100 }}
         open={open}
-        data-testid="antd-select"
+        data-testid="select-switch-role"
         bordered={false}
         popupMatchSelectWidth={false}
         fieldNames={{

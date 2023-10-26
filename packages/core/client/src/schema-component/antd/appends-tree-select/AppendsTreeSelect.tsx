@@ -205,7 +205,7 @@ export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
       }
       const { fullTitle } = optionsMap[value] ?? {};
       return (
-        <Tag data-testid="antd-tag" closable={closable && !disabled} onClose={onClose}>
+        <Tag closable={closable && !disabled} onClose={onClose}>
           {fullTitle?.join(' / ')}
         </Tag>
       );

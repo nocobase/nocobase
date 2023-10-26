@@ -61,7 +61,7 @@ function TypeSelect(props) {
   });
 
   return (
-    <Select data-testid="antd-select" {...props}>
+    <Select {...props}>
       {Object.keys(types).map((key) => (
         <Select.Option key={key} value={key}>
           {types[key].title}

@@ -29,7 +29,7 @@ export const useLanguageSettings = () => {
         >
           {t('Language')}{' '}
           <Select
-            data-testid="antd-select"
+            data-testid="select-language"
             popupMatchSelectWidth={false}
             style={{ minWidth: 100 }}
             bordered={false}
