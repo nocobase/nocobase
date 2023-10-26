@@ -95,47 +95,6 @@ export function getFormValues({
   }
 
   return form.values;
-  const values = {};
-  for (const key in form.values) {
-    if (fieldNames.includes(key)) {
-      const collectionField = getField(key);
-      if (filterByTk) {
-        if (field.added && !field.added.has(key)) {
-          continue;
-        }
-        if (['subTable', 'o2m', 'o2o', 'oho', 'obo', 'm2o'].includes(collectionField.interface)) {
-          values[key] = form.values[key];
-          continue;
-        }
-      }
-      const items = form.values[key];
-      if (['linkTo', 'm2o', 'm2m'].includes(collectionField.interface)) {
-        const targetKey = collectionField.targetKey || 'id';
-        if (resource instanceof TableFieldResource) {
-          if (Array.isArray(items)) {
-            values[key] = filterValue(items);
-          } else if (items && typeof items === 'object') {
-            values[key] = filterValue(items);
-          } else {
-            values[key] = items;
-          }
-        } else {
-          if (Array.isArray(items)) {
-            values[key] = items.map((item) => item[targetKey]);
-          } else if (items && typeof items === 'object') {
-            values[key] = items[targetKey];
-          } else {
-            values[key] = items;
-          }
-        }
-      } else {
-        values[key] = form.values[key];
-      }
-    } else {
-      values[key] = form.values[key];
-    }
-  }
-  return values;
 }
 
 export const useCreateActionProps = () => {
@@ -1040,10 +999,9 @@ export const useDetailPrintActionProps = () => {
       * {
         margin: 0;
       }
-      div.ant-formily-layout>div:first-child {
+      :not(.ant-formily-item-control-content-component) > div.ant-formily-layout>div:first-child {
         overflow: hidden; height: 0;
       }
-
     }`,
   });
   return {
