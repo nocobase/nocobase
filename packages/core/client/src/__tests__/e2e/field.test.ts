@@ -111,45 +111,55 @@ const formPageSchema = {
 test.describe('add field & remove field in block', () => {
   test('add field,then remove field in block', async ({ page, mockPage }) => {
     await mockPage({ pageSchema: formPageSchema }).goto();
-    await page.getByTestId('configure-fields-button-of-form-item-users').click();
-    await page.getByRole('menuitem', { name: 'Nickname' }).click();
-    await page.getByRole('menuitem', { name: 'Username' }).click();
-    await page.getByRole('menuitem', { name: 'Email' }).click();
+    await page.getByLabel('schema-initializer-Grid-FormItemInitializers-users').click();
+    await page.getByLabel('Display collection fields-Nickname').click();
+    await page.getByLabel('Display collection fields-Username').click();
+    await page.getByLabel('Display collection fields-Email').click();
     //添加字段
-    await expect(page.getByTestId('form-block-field-users.username')).toBeVisible();
-    await expect(page.getByTestId('form-block-field-users.email')).toBeVisible();
-    await expect(page.getByTestId('form-block-field-users.nickname')).toBeVisible();
-    await expect(await page.getByRole('menuitem', { name: 'Nickname' }).getByRole('switch').isChecked()).toBe(true);
-    await expect(await page.getByRole('menuitem', { name: 'Username' }).getByRole('switch').isChecked()).toBe(true);
-    await expect(await page.getByRole('menuitem', { name: 'Email' }).getByRole('switch').isChecked()).toBe(true);
+    await expect(page.getByLabel('block-item-CollectionField-users-form-users.nickname')).toBeVisible();
+    await expect(page.getByLabel('block-item-CollectionField-users-form-users.username')).toBeVisible();
+    await expect(page.getByLabel('block-item-CollectionField-users-form-users.email')).toBeVisible();
+    //激活的状态
+    await expect(await page.getByLabel('Display collection fields-Nickname').getByRole('switch').isChecked()).toBe(
+      true,
+    );
+    await expect(await page.getByLabel('Display collection fields-Username').getByRole('switch').isChecked()).toBe(
+      true,
+    );
+    await expect(await page.getByLabel('Display collection fields-Email').getByRole('switch').isChecked()).toBe(true);
     //移除字段
-    await page.getByRole('menuitem', { name: 'Nickname' }).click();
-    await page.getByRole('menuitem', { name: 'Username' }).click();
-    await page.getByRole('menuitem', { name: 'Email' }).click();
-    await expect(page.getByTestId('form-block-field-users.username')).not.toBeVisible();
-    await expect(page.getByTestId('form-block-field-users.email')).not.toBeVisible();
-    await expect(page.getByTestId('form-block-field-users.nickname')).not.toBeVisible();
+    await page.getByLabel('Display collection fields-Nickname').click();
+    await page.getByLabel('Display collection fields-Username').click();
+    await page.getByLabel('Display collection fields-Email').click();
+    await expect(page.getByLabel('block-item-CollectionField-users-form-users.nickname')).not.toBeVisible();
+    await expect(page.getByLabel('block-item-CollectionField-users-form-users.username')).not.toBeVisible();
+    await expect(page.getByLabel('block-item-CollectionField-users-form-users.email')).not.toBeVisible();
   });
 });
 
 test.describe('drag field in block', () => {
   test('drag field for layout', async ({ page, mockPage }) => {
     await mockPage({ pageSchema: formPageSchema }).goto();
-    await page.getByTestId('configure-fields-button-of-form-item-users').click();
-    await page.getByRole('menuitem', { name: 'Nickname' }).click();
-    await page.getByRole('menuitem', { name: 'Username' }).click();
-    await page.getByRole('menuitem', { name: 'Email' }).click();
+    await page.getByLabel('schema-initializer-Grid-FormItemInitializers-users').click();
+    await page.getByLabel('Display collection fields-Nickname').click();
+    await page.getByLabel('Display collection fields-Username').click();
+    await page.getByLabel('Display collection fields-Email').click();
 
-    const sourceElement = await page.getByTestId('form-block-field-users.nickname');
+    const sourceElement = await page.getByLabel('block-item-CollectionField-users-form-users.nickname');
     await sourceElement.hover();
-    const source = await page.getByTestId('form-block-field-users.nickname').getByLabel('designer-drag');
+    const source = await page
+      .getByLabel('block-item-CollectionField-users-form-users.nickname')
+      .getByLabel('designer-drag');
     await source.hover();
 
-    const targetElement = await page.getByTestId('form-block-field-users.username');
+    const targetElement = await page.getByLabel('block-item-CollectionField-users-form-users.username');
     await source.dragTo(targetElement);
-    const targetElement2 = await page.getByTestId('form-block-field-users.email');
-    await page.getByTestId('form-block-field-users.nickname').getByLabel('designer-drag').hover();
-    await page.getByTestId('form-block-field-users.nickname').getByLabel('designer-drag').dragTo(targetElement2);
+    const targetElement2 = await page.getByLabel('block-item-CollectionField-users-form-users.email');
+    await page.getByLabel('block-item-CollectionField-users-form-users.nickname').getByLabel('designer-drag').hover();
+    await page
+      .getByLabel('block-item-CollectionField-users-form-users.nickname')
+      .getByLabel('designer-drag')
+      .dragTo(targetElement2);
 
     const nickname = await source.boundingBox();
     const username = await targetElement.boundingBox();
@@ -163,44 +173,58 @@ test.describe('drag field in block', () => {
 test.describe('field setting config ', () => {
   test('edit field label in block', async ({ page, mockPage }) => {
     await mockPage({ pageSchema: formPageSchema }).goto();
-    await page.getByTestId('configure-fields-button-of-form-item-users').click();
-    await page.getByRole('menuitem', { name: 'Username' }).click();
-    await page.getByTestId('form-block-field-users.username').click();
-    await page.getByTestId('form-block-field-users.username').getByLabel('designer-schema-settings').hover();
-    await page.getByRole('menuitem', { name: 'Edit field title' }).click();
-    await page.getByTestId('block-item').getByRole('textbox').fill('Username1');
+    await page.getByLabel('schema-initializer-Grid-FormItemInitializers-users').click();
+    await page.getByLabel('Display collection fields-Username').click();
+    await page.getByLabel('block-item-CollectionField-users-form-users.username').hover();
+    await page.getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-users-users.username').click();
+    // await page.getByLabel('block-item-CollectionField-users-form-users.username').getByLabel('designer-schema-settings').click();
+    await page.getByLabel('Edit field title').click();
+    await page.getByLabel('block-item-Input-users-Field title').getByRole('textbox').fill('Username1');
     await page.getByRole('button', { name: 'OK' }).click();
-    await expect(page.getByTestId('form-block-field-users.username').getByText('Username1')).toBeVisible();
+    await expect(
+      page.getByLabel('block-item-CollectionField-users-form-users.username').getByText('Username1'),
+    ).toBeVisible();
     //回显
-    await page.getByTestId('form-block-field-users.username').click();
-    await page.getByTestId('form-block-field-users.username').getByLabel('designer-schema-settings').hover();
-    await page.getByRole('menuitem', { name: 'Edit field title' }).click();
+    await page.getByLabel('block-item-CollectionField-users-form-users.username').click();
+    await page
+      .getByLabel('block-item-CollectionField-users-form-users.username')
+      .getByLabel('designer-schema-settings')
+      .hover();
+    await page.getByLabel('Edit field title').click();
     await page.waitForTimeout(1000); // 等待1秒钟
-    await expect(await page.getByTestId('block-item').getByRole('textbox').inputValue()).toBe('Username1');
+    await expect(await page.getByLabel('block-item-Input-users-Field title').getByRole('textbox').inputValue()).toBe(
+      'Username1',
+    );
   });
   test('display & not display field label in block ', async ({ page, mockPage }) => {
     await mockPage({ pageSchema: formPageSchema }).goto();
-    await page.getByTestId('configure-fields-button-of-form-item-users').click();
-    await page.getByRole('menuitem', { name: 'Username' }).click();
-    await page.getByTestId('form-block-field-users.username').click();
-    await page.getByTestId('form-block-field-users.username').getByLabel('designer-schema-settings').hover();
-    await page.getByRole('menuitem', { name: 'Display title' }).hover();
+    await page.getByLabel('schema-initializer-Grid-FormItemInitializers-users').click();
+    await page.getByLabel('Display collection fields-Username').click();
+    await page.getByLabel('block-item-CollectionField-users-form-users.username').click();
+    await page
+      .getByLabel('block-item-CollectionField-users-form-users.username')
+      .getByLabel('designer-schema-settings')
+      .hover();
+    await page.getByLabel('Display title').hover();
     //默认显示
-    await expect(await page.getByRole('menuitem', { name: 'Display title' }).getByRole('switch').isChecked()).toBe(
-      true,
-    );
+    await expect(await page.getByLabel('Display title').getByRole('switch').isChecked()).toBe(true);
     //设置不显示标题
-    await page.getByRole('menuitem', { name: 'Display title' }).click();
-    const labelItem = page.getByTestId('form-block-field-users.username').locator('.ant-formily-item-label');
+    await page.getByLabel('Display title').click();
+    const labelItem = page
+      .getByLabel('block-item-CollectionField-users-form-users.username')
+      .locator('.ant-formily-item-label');
     const labelDisplay = await labelItem.evaluate((element) => {
       const computedStyle = window.getComputedStyle(element);
       return computedStyle.display;
     });
     expect(labelDisplay).toBe('none');
     //设置显示标题
-    await page.getByTestId('form-block-field-users.username').click();
-    await page.getByTestId('form-block-field-users.username').getByLabel('designer-schema-settings').hover();
-    await page.getByRole('menuitem', { name: 'Display title' }).click();
+    await page.getByLabel('block-item-CollectionField-users-form-users.username').click();
+    await page
+      .getByLabel('block-item-CollectionField-users-form-users.username')
+      .getByLabel('designer-schema-settings')
+      .hover();
+    await page.getByLabel('Display title').click();
     const labelDisplay1 = await labelItem.evaluate((element) => {
       const computedStyle = window.getComputedStyle(element);
       return computedStyle.display;
@@ -211,15 +235,18 @@ test.describe('field setting config ', () => {
     await mockPage({ pageSchema: formPageSchema }).goto();
     const description = 'field description';
     const descriptionColor = 'rgba(0, 0, 0, 0.65)';
-    await page.getByTestId('configure-fields-button-of-form-item-users').click();
-    await page.getByRole('menuitem', { name: 'Username' }).click();
-    await page.getByTestId('form-block-field-users.username').click();
-    await page.getByTestId('form-block-field-users.username').getByLabel('designer-schema-settings').hover();
-    await page.getByText('Edit description').click();
-    await page.getByTestId('block-item').locator('textarea').fill(description);
+    await page.getByLabel('schema-initializer-Grid-FormItemInitializers-users').click();
+    await page.getByLabel('Display collection fields-Username').click();
+    await page.getByLabel('block-item-CollectionField-users-form-users.username').click();
+    await page
+      .getByLabel('block-item-CollectionField-users-form-users.username')
+      .getByLabel('designer-schema-settings')
+      .hover();
+    await page.getByLabel('Edit description').click();
+    await page.getByLabel('block-item-Input.TextArea-users').locator('textarea').fill(description);
     await page.getByRole('button', { name: 'OK' }).click();
     const descriptionItem = await page
-      .getByTestId('form-block-field-users.username')
+      .getByLabel('block-item-CollectionField-users-form-users.username')
       .locator('.ant-formily-item-extra');
     const descriptionItemColor = await descriptionItem.evaluate((element) => {
       const computedStyle = window.getComputedStyle(element);
@@ -232,20 +259,25 @@ test.describe('field setting config ', () => {
   });
   test('field required ', async ({ page, mockPage }) => {
     await mockPage({ pageSchema: formPageSchema }).goto();
-    await page.getByTestId('configure-fields-button-of-form-item-users').click();
-    await page.getByRole('menuitem', { name: 'Nickname' }).click();
-    await page.getByTestId('form-block-field-users.nickname').click();
-    await page.getByTestId('form-block-field-users.nickname').getByLabel('designer-schema-settings').click();
-    await page.getByRole('menuitem', { name: 'Required' }).click();
+    await page.getByLabel('schema-initializer-Grid-FormItemInitializers-users').click();
+    await page.getByLabel('Display collection fields-Nickname').click();
+    await page.getByLabel('block-item-CollectionField-users-form-users.nickname').click();
+    await page
+      .getByLabel('block-item-CollectionField-users-form-users.nickname')
+      .getByLabel('designer-schema-settings')
+      .click();
+    await page.getByLabel('Required').click();
     await page.getByTestId('configure-actions-button-of-form-block-users').click();
-    await page.getByRole('menuitem', { name: 'Submit' }).click();
+    await page.getByLabel('Enable actions-Submit').click();
     await page.getByLabel('Submit').click();
     await page.waitForTimeout(1000);
     //必填校验符合预期
     await expect(
-      await page.getByTestId('form-block-field-users.nickname').locator('.ant-formily-item-error-help'),
+      await page
+        .getByLabel('block-item-CollectionField-users-form-users.nickname')
+        .locator('.ant-formily-item-error-help'),
     ).toBeVisible();
-    const inputItem = page.getByTestId('form-block-field-users.nickname').locator('input');
+    const inputItem = page.getByLabel('block-item-CollectionField-users-form-users.nickname').locator('input');
     const inputErrorBorderColor = await inputItem.evaluate((element) => {
       const computedStyle = window.getComputedStyle(element);
       return computedStyle.borderColor;
@@ -258,47 +290,61 @@ test.describe('field setting config ', () => {
   test('field validation rule ', async ({ page, mockPage }) => {
     await mockPage({ pageSchema: formPageSchema }).goto();
     const errorMessage = 'this is error message';
-    await page.getByTestId('configure-fields-button-of-form-item-users').click();
-    await page.getByRole('menuitem', { name: 'Nickname' }).click();
-    await page.getByTestId('form-block-field-users.nickname').click();
-    await page.getByTestId('form-block-field-users.nickname').getByLabel('designer-schema-settings').click();
+    await page.getByLabel('schema-initializer-Grid-FormItemInitializers-users').click();
+    await page.getByLabel('Display collection fields-Nickname').click();
+
+    await page.getByLabel('block-item-CollectionField-users-form-users.nickname').click();
+    await page
+      .getByLabel('block-item-CollectionField-users-form-users.nickname')
+      .getByLabel('designer-schema-settings')
+      .click();
     await page.getByText('Set validation rules').click();
-    await page.getByTestId('block-item').getByRole('button', { name: 'plus Add validation rule' }).click();
+    await page.getByRole('button', { name: 'plus Add validation rule' }).click();
     await page
       .getByRole('button', { name: 'Max length : Increase Value Decrease Value' })
       .getByRole('spinbutton')
       .fill('8');
     await page.getByRole('button', { name: 'Error message' }).locator('textarea').fill(errorMessage);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
-    await page.getByTestId('form-block-field-users.nickname').getByRole('textbox').fill('111111111');
-    const errorInfo = await page.getByTestId('form-block-field-users.nickname').locator('.ant-formily-item-error-help');
+    await page
+      .getByLabel('block-item-CollectionField-users-form-users.nickname')
+      .getByRole('textbox')
+      .fill('111111111');
+    const errorInfo = await page
+      .getByLabel('block-item-CollectionField-users-form-users.nickname')
+      .locator('.ant-formily-item-error-help');
     await expect(errorInfo).toBeVisible();
     //报错信息符合预期
     await expect(await errorInfo.innerText()).toBe(errorMessage);
 
     await page.getByTestId('configure-actions-button-of-form-block-users').click();
-    await page.getByRole('menuitem', { name: 'Submit' }).click();
-    await page.getByLabel('Submit').click();
+    await page.getByLabel('Enable actions-Submit').click();
+    await page.getByLabel('action-Action-Submit-submit-users-form').click();
     await page.waitForTimeout(1000);
     // 断言表单未被提交
     expect(await page.getByTestId('form-block-field-users')).not.toHaveProperty('submitted', true);
   });
   test('field pattern ', async ({ page, mockPage }) => {
     await mockPage({ pageSchema: formPageSchema }).goto();
-    await page.getByTestId('configure-fields-button-of-form-item-users').click();
-    await page.getByRole('menuitem', { name: 'Nickname' }).click();
-    await page.getByTestId('form-block-field-users.nickname').click();
-    const inputElement = await page.getByTestId('form-block-field-users.nickname').locator('input');
-    await page.getByTestId('form-block-field-users.nickname').getByLabel('designer-schema-settings').click();
-    await page.getByRole('menuitem', { name: 'Pattern' }).click();
+    await page.getByLabel('schema-initializer-Grid-FormItemInitializers-users').click();
+    await page.getByLabel('Display collection fields-Nickname').click();
+
+    await page.getByLabel('block-item-CollectionField-users-form-users.nickname').click();
+    const inputElement = await page.getByLabel('block-item-CollectionField-users-form-users.nickname').locator('input');
+    await page
+      .getByLabel('block-item-CollectionField-users-form-users.nickname')
+      .getByLabel('designer-schema-settings')
+      .click();
+    await page.getByLabel('Pattern').click();
+
     //禁用
     await page.getByRole('option', { name: 'Readonly' }).click();
     await expect(await inputElement.isDisabled()).toBe(true);
-    await page.getByRole('menuitem', { name: 'Pattern' }).click();
+    await page.getByLabel('Pattern').click();
     //只读
     await page.getByText('Easy-reading').click();
     await expect(
-      await page.getByTestId('form-block-field-users.nickname').locator('.ant-description-input'),
+      await page.getByLabel('block-item-CollectionField-users-form-users.nickname').locator('.ant-description-input'),
     ).toBeInViewport();
   });
 });
