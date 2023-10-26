@@ -94,12 +94,7 @@ export const GeneralSchemaDesigner = (props: any) => {
           </Space>
         </div>
       )}
-      <div
-        onClick={(e) => {
-          e.stopPropagation();
-        }}
-        className={'general-schema-designer-icons'}
-      >
+      <div className={'general-schema-designer-icons'}>
         <Space size={2} align={'center'}>
           {draggable && (
             <DragHandler>

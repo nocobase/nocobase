@@ -1,4 +1,4 @@
-import type { Page, Locator } from '@nocobase/test/client';
+import type { Locator, Page } from '@nocobase/test/client';
 
 export class CreateWorkFlow {
   readonly page: Page;
@@ -9,14 +9,10 @@ export class CreateWorkFlow {
 
   constructor(page: Page) {
     this.page = page;
-    this.name = page.getByTestId('title-item').getByRole('textbox');
-    this.triggerType = page.getByTestId('type-item').getByLabel('Search');
+    this.name = page.getByLabel('block-item-CollectionField-workflows-Name').getByRole('textbox');
+    this.triggerType = page.getByTestId('select-single').getByLabel('Search');
     this.description = page.getByTestId('description-item').getByRole('textbox');
-    this.autoDeleteHistory = page
-      .getByTestId('deleteExecutionOnStatus-item')
-      .getByTestId('antd-select')
-      .locator('div')
-      .nth(1);
+    this.autoDeleteHistory = page.getByTestId('select-multiple');
   }
 }
 

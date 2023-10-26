@@ -344,9 +344,9 @@ test('check table row', async ({ page, mockPage }) => {
   await mockPage(config).goto();
   await expect(page.getByText('cur vulpes suppellex')).toBeVisible();
 
-  await page.getByTestId('table-index-1').hover();
-  await page.getByTestId('table-index-1').getByLabel('').click();
-  await page.getByTestId('destroy-action').click();
+  await page.getByLabel('table-index-1').hover();
+  await page.getByRole('checkbox', { name: 'checkbox' }).click();
+  await page.getByLabel('action-Action-Delete-destroy-t_fhdhd0nk7b9-table').click();
 
   // 显示确认弹窗
   await expect(page.getByText('Are you sure you want to delete it?')).toBeVisible();

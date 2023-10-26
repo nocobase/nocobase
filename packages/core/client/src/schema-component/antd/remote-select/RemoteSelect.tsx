@@ -76,19 +76,27 @@ const InternalRemoteSelect = connect(
                       const option = targetField.uiSchema.enum.find((i) => i.value === item);
                       if (option) {
                         return (
-                          <Tag key={index} color={option.color} style={{ marginRight: 3 }}>
+                          <Tag role="button" key={index} color={option.color} style={{ marginRight: 3 }}>
                             {option?.label || item}
                           </Tag>
                         );
                       } else {
-                        return <Tag key={item}>{item}</Tag>;
+                        return (
+                          <Tag role="button" key={item}>
+                            {item}
+                          </Tag>
+                        );
                       }
                     })
                     .reverse();
                 } else {
                   const item = targetField.uiSchema.enum.find((i) => i.value === label);
                   if (item) {
-                    label = <Tag color={item.color}>{item.label}</Tag>;
+                    label = (
+                      <Tag role="button" color={item.color}>
+                        {item.label}
+                      </Tag>
+                    );
                   }
                 }
               }
