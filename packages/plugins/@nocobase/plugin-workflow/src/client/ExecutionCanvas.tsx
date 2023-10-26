@@ -32,6 +32,7 @@ function attachJobs(nodes, jobs: any[] = []): void {
     node.jobs.push(item);
     item.node = {
       id: node.id,
+      key: node.key,
       title: node.title,
       type: node.type,
     };
