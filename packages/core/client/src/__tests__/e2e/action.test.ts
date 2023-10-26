@@ -1,4 +1,4 @@
-import { enableToConfig, expect, test } from '@nocobase/test/client';
+import { expect, test } from '@nocobase/test/client';
 const tablePageSchema = {
   _isJSONSchemaObject: true,
   version: '2.0',
@@ -143,7 +143,7 @@ test.describe('add action & remove action', () => {
     //添加按钮
     await page.getByRole('menuitem', { name: 'Filter' }).click();
     await page.getByRole('menuitem', { name: 'Add new' }).click();
-    await page.getByRole('menuitem', { name: 'Delete' }).click();
+    await page.getByLabel('Delete').click();
     await page.getByTestId('configure-actions-button-of-table-block-users').hover();
     await page.getByText('Enable actions').hover();
     await page.waitForTimeout(1000); // 等待1秒钟
@@ -153,11 +153,11 @@ test.describe('add action & remove action', () => {
     await expect(page.getByTestId('block-item').getByLabel('Delete', { exact: true })).toBeVisible();
     await expect(await page.getByRole('menuitem', { name: 'Filter' }).getByRole('switch').isChecked()).toBe(true);
     await expect(await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').isChecked()).toBe(true);
-    await expect(await page.getByRole('menuitem', { name: 'Delete' }).getByRole('switch').isChecked()).toBe(true);
+    await expect(await page.getByLabel('Delete').getByRole('switch').isChecked()).toBe(true);
     //移除按钮
     await page.getByRole('menuitem', { name: 'Filter' }).click();
     await page.getByRole('menuitem', { name: 'Add new' }).click();
-    await page.getByRole('menuitem', { name: 'Delete' }).click();
+    await page.getByLabel('Delete').click();
     await expect(page.getByTestId('block-item').getByRole('button', { name: 'plus Add new' })).not.toBeVisible();
     await expect(page.getByTestId('block-item').getByRole('button', { name: 'Delete' })).not.toBeVisible();
     await expect(page.getByTestId('block-item').getByLabel('Filter', { exact: true })).not.toBeVisible();
@@ -171,7 +171,7 @@ test.describe('action drag in block', () => {
     await page.getByTestId('configure-actions-button-of-table-block-users').click();
     //添加按钮
     await page.getByRole('menuitem', { name: 'Add new' }).click();
-    await page.getByRole('menuitem', { name: 'Delete' }).click();
+    await page.getByLabel('Delete').click();
     await page.getByRole('menuitem', { name: 'Refresh' }).click();
     await page.getByTestId('configure-actions-button-of-table-block-users').hover();
     await page.getByText('Enable actions').hover();

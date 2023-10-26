@@ -78,7 +78,7 @@ test.describe('page tabs', () => {
     await expect(page.getByRole('tab').locator('div').filter({ hasText: 'Unnamed' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'plus Add tab' })).toBeVisible();
     await page.getByRole('tab').locator('div').filter({ hasText: 'Unnamed' }).click();
-    await expect(page.getByTestId('add-block-button-in-page')).toBeVisible();
+    await expect(page.getByLabel('schema-initializer-Grid-BlockInitializers')).toBeVisible();
 
     //添加新的tab
     await page.getByRole('button', { name: 'plus Add tab' }).click();
@@ -101,7 +101,7 @@ test.describe('page tabs', () => {
     //激活的tab样式符合预期
     await expect(page.getByText('page tab 1')).toBeVisible();
     await expect(page.getByText('page tab 2')).toBeVisible();
-    await expect(page.getByTestId('add-block-button-in-page')).toBeVisible();
+    await expect(page.getByLabel('schema-initializer-Grid-BlockInitializers')).toBeVisible();
     await expect(tabMenuItemActivedColor).toBe('rgb(22, 119, 255)');
 
     //修改tab名称
@@ -118,14 +118,14 @@ test.describe('page tabs', () => {
       return computedStyle.color;
     });
     await expect(tabMenuItem1).toBeVisible();
-    await expect(page.getByTestId('add-block-button-in-page')).toBeVisible();
+    await expect(page.getByLabel('schema-initializer-Grid-BlockInitializers')).toBeVisible();
     await expect(tabMenuItemActivedColor1).toBe('rgb(22, 119, 255)');
 
     //删除 tab
     await page.getByRole('tab').getByText('page tab', { exact: true }).click();
     await page.getByRole('tab').getByText('page tab', { exact: true }).hover();
     await page.getByRole('button', { name: 'menu', exact: true }).hover();
-    await page.getByRole('menuitem', { name: 'Delete' }).click();
+    await page.getByLabel('Delete').click();
     await page.getByRole('button', { name: 'OK' }).click();
     await expect(page.getByRole('tab').getByText('page tab', { exact: true })).not.toBeVisible();
     await page.getByRole('tab').getByText('page tab 1').click();

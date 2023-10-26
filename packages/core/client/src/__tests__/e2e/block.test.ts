@@ -293,7 +293,7 @@ const tablePageSchema = {
 test.describe('add block & delete block', () => {
   test('add block,then delete block', async ({ page, mockPage }) => {
     await mockPage().goto();
-    await page.getByTestId('add-block-button-in-page').click();
+    await page.getByLabel('schema-initializer-Grid-BlockInitializers').click();
     await page.getByRole('menuitem', { name: 'table Table right' }).click();
     await page.getByRole('menuitem', { name: 'Users' }).click();
     await page.getByRole('menuitem', { name: 'Users' }).hover();
@@ -303,7 +303,7 @@ test.describe('add block & delete block', () => {
     //删除区块
     await page.getByTestId('block-item').hover();
     await page.getByTestId('block-item').getByRole('button', { name: 'designer-schema-settings' }).click();
-    await page.getByRole('menuitem', { name: 'Delete' }).click();
+    await page.getByLabel('Delete').click();
     await page.getByRole('button', { name: 'OK' }).click();
     await expect(page.getByTestId('block-item')).not.toBeVisible();
     await expect(page.getByTestId('configure-actions-button-of-table-block-users')).not.toBeVisible();
@@ -490,6 +490,7 @@ test.describe('blcok template', () => {
 
     await page.getByTestId('form-block-users').hover();
     await page.waitForTimeout(1000);
+    //保存模板后当前区块为引用区块
     const titleTag = await page.getByTestId('form-block-users').locator('.title-tag').nth(1).innerText();
     await expect(titleTag).toContain('Reference template');
   });
@@ -498,7 +499,7 @@ test.describe('blcok template', () => {
       name: 'block template',
       pageSchema: tablePageSchema,
     }).goto();
-    await page.getByTestId('add-block-button-in-page').click();
+    await page.getByLabel('schema-initializer-Grid-BlockInitializers').click();
     //使用复制模板
     await page.getByRole('menuitem', { name: 'form Form right' }).first().click();
     await page.getByRole('menuitem', { name: 'Users right' }).click();
